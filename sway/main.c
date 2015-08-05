@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	return 0;
-	// TODO:
 
 	static struct wlc_interface interface = { };
 	if (!wlc_init(&interface, argc, argv)) {
