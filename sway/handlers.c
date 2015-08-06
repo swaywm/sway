@@ -5,6 +5,7 @@
 #include "handlers.h"
 
 bool handle_output_created(wlc_handle output) {
+	add_output(output);
 	return true;
 }
 

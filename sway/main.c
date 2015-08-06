@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <wlc/wlc.h>
+#include "layout.h"
 #include "config.h"
 #include "handlers.h"
 
@@ -27,6 +28,7 @@ void load_config() {
 
 int main(int argc, char **argv) {
 	load_config();
+	init_layout();
 
 	static struct wlc_interface interface = {
 		.output = {
