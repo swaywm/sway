@@ -49,6 +49,7 @@ int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	}
 	list_free(split);
 
+	// TODO: Check if there are other commands with this key binding
 	list_add(config->current_mode->bindings, binding);
 
 	fprintf(stderr, "bindsym - Bound %s to command %s\n", argv[0], binding->command);
