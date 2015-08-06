@@ -10,6 +10,7 @@ bool handle_output_created(wlc_handle output) {
 }
 
 void handle_output_destroyed(wlc_handle output) {
+	destroy_output(output);
 }
 
 void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
