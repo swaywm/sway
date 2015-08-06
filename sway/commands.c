@@ -43,7 +43,9 @@ int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 			// Ignore for now, we need to deal with modifier keys
 			// return 1;
 		}
-		list_add(binding->keys, split->items[i]);
+		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
+		*key = sym;
+		list_add(binding->keys, key);
 	}
 	list_free(split);
 
