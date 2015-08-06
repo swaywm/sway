@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <wlc/wlc.h>
 #include "config.h"
+#include "handlers.h"
 
 struct sway_config *config;
 
@@ -27,7 +28,19 @@ void load_config() {
 int main(int argc, char **argv) {
 	load_config();
 
-	static struct wlc_interface interface = { };
+	static struct wlc_interface interface = {
+		.output = {
+			.created = handle_output_created,
+			.destroyed = handle_output_destroyed,
+			.resolution = handle_output_resolution_change
+		},
+		.view = {
+			.created = handle_view_created,
+			.destroyed = handle_view_destroyed,
+			.focus = handle_view_focus
+		}
+	};
+
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
