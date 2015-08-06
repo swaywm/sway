@@ -26,7 +26,6 @@ void load_config() {
 
 int main(int argc, char **argv) {
 	load_config();
-	return 0;
 
 	static struct wlc_interface interface = { };
 	if (!wlc_init(&interface, argc, argv)) {

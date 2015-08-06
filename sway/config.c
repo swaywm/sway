@@ -33,7 +33,7 @@ struct sway_config *read_config(FILE *file) {
 			goto _continue;
 		}
 
-		if (!handle_command(config, line)) {
+		if (handle_command(config, line) != 0) {
 			success = false;
 		}
 		

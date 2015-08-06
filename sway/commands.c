@@ -139,7 +139,8 @@ int handle_command(struct sway_config *config, char *exec) {
 	}
 	struct cmd_handler *handler = find_handler(handlers, sizeof(handlers) / sizeof(struct cmd_handler), cmd);
 	if (handler == NULL) {
-		return 1;
+		fprintf(stderr, "Unknown command '%s'\n", cmd);
+		return 0; // TODO: return error, probably
 	}
 	int argc;
 	char **argv = split_directive(exec + strlen(handler->command), &argc);
