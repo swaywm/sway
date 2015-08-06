@@ -50,3 +50,31 @@ _continue:
 
 	return config;
 }
+
+char *do_var_replacement(struct sway_config *config, char *str) {
+	// TODO: Handle escaping $ and using $ in string literals
+	int i;
+	for (i = 0; str[i]; ++i) {
+		if (str[i] == '$') {
+			// Try for match (note: this could be faster)
+			int j;
+			for (j = 0; j < config->symbols->length; ++j) {
+				struct sway_variable *var = config->symbols->items[j];
+				if (strstr(str + i, var->name) == str + i) {
+					// Match, do replacement
+					char *new_string = malloc(
+						strlen(str) -
+						strlen(var->name) +
+						strlen(var->value) + 1);
+					strncpy(new_string, str, i);
+					new_string[i] = 0;
+					strcat(new_string, var->value);
+					strcat(new_string, str + i + strlen(var->name));
+					free(str);
+					str = new_string;
+				}
+			}
+		}
+	}
+	return str;
+}

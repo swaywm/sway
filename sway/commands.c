@@ -1,3 +1,5 @@
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-names.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,17 +22,40 @@ int cmd_set(struct sway_config *config, int argc, char **argv) {
 }
 
 int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
-	if (argc != 2) {
+	if (argc < 2) {
 		fprintf(stderr, "Invalid bindsym command (expected 2 arguments, got %d)\n", argc);
 		return 1;
 	}
-	// TODO: parse out keybindings
+	argv[0] = do_var_replacement(config, argv[0]);
+
+	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
+	binding->keys = create_list();
+	binding->modifiers = 0;
+	binding->command = join_args(argv + 1, argc - 1);
+	
+	list_t *split = split_string(argv[0], "+");
+	int i;
+	for (i = 0; i < split->length; ++i) {
+		// TODO: Parse modifier keys
+		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i], XKB_KEYSYM_CASE_INSENSITIVE);
+		if (!sym) {
+			fprintf(stderr, "bindsym - unknown key '%s'\n", (char *)split->items[i]);
+			// Ignore for now, we need to deal with modifier keys
+			// return 1;
+		}
+		list_add(binding->keys, split->items[i]);
+	}
+	list_free(split);
+
+	list_add(config->current_mode->bindings, binding);
+
+	fprintf(stderr, "bindsym - Bound %s to command %s\n", argv[0], binding->command);
 	return 0;
 }
 
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
-	{ "bindsym", cmd_bindsym }
+	{ "bindsym", cmd_bindsym },
 	{ "set", cmd_set }
 };
 

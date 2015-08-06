@@ -9,5 +9,6 @@ void free_flat_list(list_t *list);
 char *code_strchr(const char *string, char delimiter);
 char *code_strstr(const char *haystack, const char *needle);
 int unescape_string(char *string);
+char *join_args(char **argv, int argc);
 
 #endif

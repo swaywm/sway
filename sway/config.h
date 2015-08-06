@@ -12,7 +12,7 @@ struct sway_variable {
 
 struct sway_binding {
     list_t *keys;
-    struct wlc_modifiers modifiers;
+    uint32_t modifiers;
     char *command;
 };
 
@@ -28,5 +28,6 @@ struct sway_config {
 };
 
 struct sway_config *read_config(FILE *file);
+char *do_var_replacement(struct sway_config *config, char *str);
 
 #endif
