@@ -6,7 +6,7 @@
 
 struct sway_config *config;
 
-bool load_config() {
+void load_config() {
 	// TODO: Allow use of more config file locations
 	const char *name = "/.i3/config";
 	const char *home = getenv("HOME");
@@ -22,13 +22,10 @@ bool load_config() {
 	free(temp);
 	config = read_config(f);
 	fclose(f);
-	return true;
 }
 
 int main(int argc, char **argv) {
-	if (!load_config()) {
-		return 0;
-	}
+	load_config();
 	return 0;
 
 	static struct wlc_interface interface = { };
