@@ -5,6 +5,11 @@
 #include <wlc/wlc.h>
 #include "list.h"
 
+struct sway_variable {
+    char *name;
+    char *value;
+};
+
 struct sway_binding {
     list_t *keys;
     struct wlc_modifiers modifiers;
@@ -19,6 +24,7 @@ struct sway_mode {
 struct sway_config {
     list_t *symbols;
     list_t *modes;
+    struct sway_mode *current_mode;
 };
 
 struct sway_config *read_config(FILE *file);

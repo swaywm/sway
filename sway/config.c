@@ -11,8 +11,14 @@ struct sway_config *read_config(FILE *file) {
 	struct sway_config *config = malloc(sizeof(struct sway_config));
 	config->symbols = create_list();
 	config->modes = create_list();
+	config->current_mode = malloc(sizeof(struct sway_mode));
+	config->current_mode->name = NULL;
+	config->current_mode->bindings = create_list();
+	list_add(config->modes, config->current_mode);
 
-	int temp_braces = 0; // Temporary: skip all config sections with braces
+	bool success = true;
+
+	int temp_depth = 0; // Temporary: skip all config sections with depth
 
 	while (!feof(file)) {
 		int _;
@@ -22,18 +28,24 @@ struct sway_config *read_config(FILE *file) {
 		if (!line[0]) {
 			goto _continue;
 		}
-		if (temp_braces && line[0] == '}') {
-			temp_braces--;
+		if (temp_depth && line[0] == '}') {
+			temp_depth--;
 			goto _continue;
 		}
 
-		handle_command(config, line);
+		if (!handle_command(config, line)) {
+			success = false;
+		}
 		
 _continue:
 		if (line && line[strlen(line) - 1] == '{') {
-			temp_braces++;
+			temp_depth++;
 		}
 		free(line);
+	}
+
+	if (!success) {
+		exit(1);
 	}
 
 	return config;

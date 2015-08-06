@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -5,16 +6,36 @@
 #include "commands.h"
 
 int cmd_set(struct sway_config *config, int argc, char **argv) {
+	if (argc != 2) {
+		fprintf(stderr, "Invalid set command (expected 2 arguments, got %d)\n", argc);
+		return 1;
+	}
+	struct sway_variable *var = malloc(sizeof(struct sway_variable));
+	var->name = malloc(strlen(argv[0]) + 1);
+	strcpy(var->name, argv[0]);
+	var->value = malloc(strlen(argv[1]) + 1);
+	strcpy(var->value, argv[1]);
+	list_add(config->symbols, var);
+	return 0;
+}
+
+int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
+	if (argc != 2) {
+		fprintf(stderr, "Invalid bindsym command (expected 2 arguments, got %d)\n", argc);
+		return 1;
+	}
+	// TODO: parse out keybindings
 	return 0;
 }
 
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
+	{ "bindsym", cmd_bindsym }
 	{ "set", cmd_set }
 };
 
 char **split_directive(char *line, int *argc) {
-	const char *delimiters = ",";
+	const char *delimiters = " ";
 	*argc = 0;
 	while (isspace(*line) && *line) ++line;
 
@@ -94,5 +115,11 @@ int handle_command(struct sway_config *config, char *exec) {
 	}
 	int argc;
 	char **argv = split_directive(exec + strlen(handler->command), &argc);
-	return handler->handle(config, argc, argv);
+	int ret = handler->handle(config, argc, argv);
+	int i;
+	for (i = 0; i < argc; ++i) {
+		free(argv[i]);
+	}
+	free(argv);
+	return ret;
 }
