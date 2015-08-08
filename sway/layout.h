@@ -27,6 +27,10 @@ struct sway_container {
     // Not including borders or margins
     int width, height;
 
+    int x, y;
+
+    int weight;
+
     char *name;
 
     list_t *children;
@@ -40,11 +44,13 @@ typedef struct sway_container swayc_t;
 extern swayc_t root_container;
 
 void init_layout();
+void add_child(swayc_t *parent, swayc_t *child);
 void add_output(wlc_handle output);
 void destroy_output(wlc_handle output);
 void destroy_view(swayc_t *view);
 void add_view(wlc_handle view);
 void focus_view(swayc_t *view);
+void arrange_windows(swayc_t *container, int width, int height);
 
 swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent);
 

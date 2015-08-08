@@ -7,8 +7,66 @@
 
 swayc_t root_container;
 
-void arrange_windows() {
-	// TODO
+void arrange_windows(swayc_t *container, int width, int height) {
+	int i;
+	if (width == -1 || height == -1) {
+		sway_log(L_DEBUG, "Arranging layout for %p", container);
+	}
+	if (width == -1) {
+		width = container->width;
+	}
+	if (height == -1) {
+		height = container->height;
+	}
+
+	if (container->type == C_ROOT) {
+		for (i = 0; i < container->children->length; ++i) {
+			arrange_windows(container->children->items[i], -1, -1);
+		}
+		return;
+	}
+
+	if (container->type == C_VIEW) {
+		sway_log(L_DEBUG, "Setting view to %d x %d @ %d, %d", width, height, container->x, container->y);
+		struct wlc_geometry geometry = {
+			.origin = {
+				.x = container->x,
+				.y = container->y
+			},
+			.size = {
+				.w = width,
+				.h = height
+			}
+		};
+		wlc_view_set_geometry(container->handle, &geometry);
+		return;
+	}
+	container->width = width;
+	container->height = height;
+
+	double total_weight = 0;
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		total_weight += child->weight;
+	}
+
+	int x = 0, y = 0;
+	switch (container->layout) {
+	case L_HORIZ:
+	default:
+		for (i = 0; i < container->children->length; ++i) {
+			swayc_t *child = container->children->items[i];
+			double percent = child->weight / total_weight;
+			sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will receive %.2f of %d)", child, child->type, percent, width);
+			child->x = x + container->x;
+			child->y = y + container->y;
+			int w = width * percent;
+			int h = height;
+			arrange_windows(child, w, h);
+			x += w;
+		}
+		break;
+	}
 }
 
 void init_layout() {
@@ -52,34 +110,36 @@ swayc_t *get_focused_container(swayc_t *parent) {
 
 void add_view(wlc_handle view_handle) {
 	swayc_t *parent = get_focused_container(&root_container);
-	sway_log(L_DEBUG, "Adding new view %d under container %d", view_handle, (int)parent->type);
+	sway_log(L_DEBUG, "Adding new view %d under container %p %d", view_handle, parent, parent->type);
 
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
 	}
 
 	swayc_t *view = calloc(1, sizeof(swayc_t));
+	view->weight = 1;
 	view->layout = L_NONE;
 	view->handle = view_handle;
 	view->parent = parent;
 	view->type = C_VIEW;
-	list_add(parent->children, view);
+	add_child(parent, view);
 
 	wlc_view_focus(view_handle);
 
-	arrange_windows();
+	arrange_windows(parent, -1, -1);
 }
 
 void destroy_view(swayc_t *view) {
 	sway_log(L_DEBUG, "Destroying container %p", view);
-	if (!view->parent) {
+	swayc_t *parent = view->parent;
+	if (!parent) {
 		return;
 	}
 
 	int i;
-	for (i = 0; i < view->parent->children->length; ++i) {
-		if (view->parent->children->items[i] == view) {
-			list_del(view->parent->children, i);
+	for (i = 0; i < parent->children->length; ++i) {
+		if (parent->children->items[i] == view) {
+			list_del(parent->children, i);
 			break;
 		}
 	}
@@ -88,7 +148,7 @@ void destroy_view(swayc_t *view) {
 
 	// TODO: Focus some other window
 
-	arrange_windows();
+	arrange_windows(parent, -1, -1);
 }
 
 void focus_view(swayc_t *view) {
@@ -99,11 +159,18 @@ void focus_view(swayc_t *view) {
 	focus_view(view->parent);
 }
 
+void add_child(swayc_t *parent, swayc_t *child) {
+	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+			child->width, child->height, parent, parent->type, parent->width, parent->height);
+	list_add(parent->children, child);
+}
+
 void add_output(wlc_handle output) {
 	sway_log(L_DEBUG, "Adding output %d", output);
 	const struct wlc_size* size = wlc_output_get_resolution(output);
 
 	swayc_t *container = calloc(1, sizeof(swayc_t));
+	container->weight = 1;
 	container->handle = output;
 	container->type = C_OUTPUT;
 	container->children = create_list();
@@ -111,10 +178,10 @@ void add_output(wlc_handle output) {
 	container->layout = L_NONE;
 	container->width = size->w;
 	container->height = size->h;
-
-	list_add(root_container.children, container);
+	add_child(&root_container, container);
 
 	swayc_t *workspace = calloc(1, sizeof(swayc_t));
+	workspace->weight = 1;
 	workspace->handle = -1;
 	workspace->type = C_WORKSPACE;
 	workspace->parent = container;
@@ -122,8 +189,7 @@ void add_output(wlc_handle output) {
 	workspace->height = size->h;
 	workspace->layout = L_HORIZ; // TODO: Get default layout from config
 	workspace->children = create_list();
-
-	list_add(container->children, workspace);
+	add_child(container, workspace);
 
 	if (root_container.focused == NULL) {
 		focus_view(workspace);
