@@ -13,4 +13,7 @@ void handle_view_destroyed(wlc_handle view);
 void handle_view_focus(wlc_handle view, bool focus);
 void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry);
 
+bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
+		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state);
+
 #endif

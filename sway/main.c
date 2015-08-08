@@ -11,7 +11,7 @@ struct sway_config *config;
 
 void load_config() {
 	// TODO: Allow use of more config file locations
-	const char *name = "/.i3/config";
+	const char *name = "/.sway/config";
 	const char *home = getenv("HOME");
 	char *temp = malloc(strlen(home) + strlen(name) + 1);
 	strcpy(temp, home);
@@ -45,6 +45,9 @@ int main(int argc, char **argv) {
 			.request = {
 				.geometry = handle_view_geometry_request
 			}
+		},
+		.keyboard = {
+			.key = handle_key
 		}
 	};
 

@@ -30,4 +30,6 @@ struct sway_config {
 struct sway_config *read_config(FILE *file);
 char *do_var_replacement(struct sway_config *config, char *str);
 
+extern struct sway_config *config;
+
 #endif

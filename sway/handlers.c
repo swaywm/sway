@@ -1,8 +1,12 @@
+#include <xkbcommon/xkbcommon.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <wlc/wlc.h>
+#include <ctype.h>
 #include "layout.h"
 #include "log.h"
+#include "config.h"
+#include "commands.h"
 #include "handlers.h"
 
 bool handle_output_created(wlc_handle output) {
@@ -40,4 +44,42 @@ void handle_view_focus(wlc_handle view, bool focus) {
 
 void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry) {
 	// deny that shit
+}
+
+bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
+		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
+	// TODO: handle keybindings with more than 1 non-modifier key involved
+	// Note: reminder to check conflicts with mod+q+a versus mod+q
+	
+	bool ret = true;
+	struct sway_mode *mode = config->current_mode;
+	sway_log(L_DEBUG, "key pressed: %d %d", sym, modifiers->mods);
+
+	// Lowercase if necessary
+	sym = tolower(sym);
+
+	if (state == WLC_KEY_STATE_PRESSED) {
+		int i;
+		for (i = 0; i < mode->bindings->length; ++i) {
+			struct sway_binding *binding = mode->bindings->items[i];
+
+			if ((modifiers->mods & binding->modifiers) == binding->modifiers) {
+				bool match = true;
+				int j;
+				for (j = 0; j < binding->keys->length; ++j) {
+					xkb_keysym_t *k = binding->keys->items[j];
+					if (sym != *k) {
+						match = false;
+						break;
+					}
+				}
+
+				if (match) {
+					ret = false;
+					handle_command(config, binding->command);
+				}
+			}
+		}
+	}
+	return ret;
 }
