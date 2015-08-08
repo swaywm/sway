@@ -4,6 +4,7 @@
 #include <wlc/wlc.h>
 #include "layout.h"
 #include "config.h"
+#include "log.h"
 #include "handlers.h"
 
 struct sway_config *config;
@@ -27,6 +28,7 @@ void load_config() {
 }
 
 int main(int argc, char **argv) {
+	init_log(L_DEBUG); // TODO: Control this with command line arg
 	load_config();
 	init_layout();
 
