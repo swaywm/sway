@@ -4,29 +4,48 @@
 #include <wlc/wlc.h>
 #include "list.h"
 
-typedef enum {
-    LAYOUT_IS_VIEW,
-    LAYOUT_TILE_HORIZ,
-    LAYOUT_TILE_VERT,
-    LAYOUT_TABBED,
-    LAYOUT_STACKED
-} container_layout_t;
-
 struct sway_container {
-    wlc_handle output;
+    wlc_handle handle;
+
+    enum {
+        C_ROOT,
+        C_OUTPUT,
+        C_WORKSPACE,
+        C_CONTAINER,
+        C_VIEW
+    } type;
+
+    enum {
+        L_NONE,
+        L_HORIZ,
+        L_VERT,
+        L_STACKED,
+        L_TABBED,
+        L_FLOATING
+    } layout;
+
+    // Not including borders or margins
+    int width, height;
+
+    char *name;
+
     list_t *children;
-    container_layout_t layout;
+
     struct sway_container *parent;
+    struct sway_container *focused;
 };
 
-extern list_t *outputs;
-extern wlc_handle focused_view;
+typedef struct sway_container swayc_t;
+
+extern swayc_t root_container;
 
 void init_layout();
 void add_output(wlc_handle output);
 void destroy_output(wlc_handle output);
-wlc_handle get_topmost(wlc_handle output, size_t offset);
-void destroy_view(wlc_handle view);
+void destroy_view(swayc_t *view);
 void add_view(wlc_handle view);
+void focus_view(swayc_t *view);
+
+swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent);
 
 #endif

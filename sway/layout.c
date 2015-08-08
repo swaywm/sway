@@ -5,40 +5,37 @@
 #include "log.h"
 #include "layout.h"
 
-list_t *outputs;
-wlc_handle focused_view;
+swayc_t root_container;
 
 void arrange_windows() {
+	// TODO
 }
 
 void init_layout() {
-	outputs = create_list();
-	focused_view = -1;
+	root_container.type = C_ROOT;
+	root_container.layout = L_HORIZ; // TODO: Default layout
+	root_container.children = create_list();
+	root_container.handle = -1;
 }
 
-struct sway_container *get_container(wlc_handle output, int *index) {
-	int i;
-	for (i = 0; i < outputs->length; ++i) {
-		struct sway_container *c = outputs->items[i];
-		if (c->output == output) {
-			return c;
-		}
+void free_swayc(swayc_t *container) {
+	// NOTE: Does not handle moving children into a different container
+	list_free(container->children);
+	free(container);
+}
+
+swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
+	if (parent->children == NULL) {
+		return NULL;
 	}
-	return NULL;
-}
-
-struct sway_container *get_container_for_view_recurse(wlc_handle handle, int *index, struct sway_container *parent) {
-	int j;
-	for (j = 0; j < parent->children->length; ++j) {
-		struct sway_container *child = parent->children->items[j];
-		if (child->layout == LAYOUT_IS_VIEW) {
-			if (child->output == handle) {
-				*index = j;
-				return parent;
-			}
+	int i;
+	for (i = 0; i < parent->children->length; ++i) {
+		swayc_t *child = parent->children->items[i];
+		if (child->handle == handle) {
+			return child;
 		} else {
-			struct sway_container *res;
-			if ((res = get_container_for_view_recurse(handle, index, child))) {
+			swayc_t *res;
+			if ((res = get_swayc_for_handle(handle, child))) {
 				return res;
 			}
 		}
@@ -46,77 +43,102 @@ struct sway_container *get_container_for_view_recurse(wlc_handle handle, int *in
 	return NULL;
 }
 
-struct sway_container *get_container_for_view(wlc_handle handle, int *index) {
-	int i;
-	for (i = 0; i < outputs->length; ++i) {
-		struct sway_container *c = outputs->items[i];
-		struct sway_container *res;
-		if ((res = get_container_for_view_recurse(handle, index, c))) {
-			return res;
-		}
+swayc_t *get_focused_container(swayc_t *parent) {
+	if (parent->focused == NULL) {
+		return parent;
 	}
-	return NULL;
+	return get_focused_container(parent->focused);
 }
 
 void add_view(wlc_handle view_handle) {
-	struct sway_container *container;
-	int _;
+	swayc_t *parent = get_focused_container(&root_container);
+	sway_log(L_DEBUG, "Adding new view %d under container %d", view_handle, (int)parent->type);
 
-	if (focused_view == -1) { // Add it to the output container
-		sway_log(L_DEBUG, "Adding initial view for output", view_handle);
-		wlc_handle output = wlc_get_focused_output();
-		container = get_container(output, &_);
-	} else {
-		sway_log(L_DEBUG, "Adding view %d to output", view_handle);
-		// TODO
+	while (parent->type == C_VIEW) {
+		parent = parent->parent;
 	}
 
-	// Create "container" for this view
-	struct sway_container *view = malloc(sizeof(struct sway_container));
-	view->layout = LAYOUT_IS_VIEW;
-	view->children = NULL;
-	view->output = view_handle;
-	list_add(container->children, view);
+	swayc_t *view = calloc(1, sizeof(swayc_t));
+	view->layout = L_NONE;
+	view->handle = view_handle;
+	view->parent = parent;
+	view->type = C_VIEW;
+	list_add(parent->children, view);
 
 	wlc_view_focus(view_handle);
 
 	arrange_windows();
 }
 
-void destroy_view(wlc_handle view) {
-	sway_log(L_DEBUG, "Destroying view %d", view);
+void destroy_view(swayc_t *view) {
+	sway_log(L_DEBUG, "Destroying container %p", view);
+	if (!view->parent) {
+		return;
+	}
 
-	int index;
-	struct sway_container *container = get_container_for_view(view, &index);
-	list_del(container->children, index);
+	int i;
+	for (i = 0; i < view->parent->children->length; ++i) {
+		if (view->parent->children->items[i] == view) {
+			list_del(view->parent->children, i);
+			break;
+		}
+	}
 
-	wlc_view_focus(get_topmost(wlc_view_get_output(view), 0));
+	free_swayc(view);
+
+	// TODO: Focus some other window
 
 	arrange_windows();
 }
 
+void focus_view(swayc_t *view) {
+	if (view == &root_container) {
+		return;
+	}
+	view->parent->focused = view;
+	focus_view(view->parent);
+}
+
 void add_output(wlc_handle output) {
-	struct sway_container *container = malloc(sizeof(struct sway_container));
-	// TODO: Get default layout from config
-	container->output = output;
+	sway_log(L_DEBUG, "Adding output %d", output);
+	const struct wlc_size* size = wlc_output_get_resolution(output);
+
+	swayc_t *container = calloc(1, sizeof(swayc_t));
+	container->handle = output;
+	container->type = C_OUTPUT;
 	container->children = create_list();
-	container->layout = LAYOUT_TILE_HORIZ;
-	list_add(outputs, container);
+	container->parent = &root_container;
+	container->layout = L_NONE;
+	container->width = size->w;
+	container->height = size->h;
+
+	list_add(root_container.children, container);
+
+	swayc_t *workspace = calloc(1, sizeof(swayc_t));
+	workspace->handle = -1;
+	workspace->type = C_WORKSPACE;
+	workspace->parent = container;
+	workspace->width = size->w; // TODO: gaps
+	workspace->height = size->h;
+	workspace->layout = L_HORIZ; // TODO: Get default layout from config
+	workspace->children = create_list();
+
+	list_add(container->children, workspace);
+
+	if (root_container.focused == NULL) {
+		focus_view(workspace);
+	}
 }
 
 void destroy_output(wlc_handle output) {
-	int index;
-	struct sway_container *c = get_container(output, &index);
-	// TODO: Move all windows in this output somewhere else?
-	// I don't think this will ever be called unless we destroy the output ourselves
-	if (!c) {
-		return;
+	sway_log(L_DEBUG, "Destroying output %d", output);
+	int i;
+	for (i = 0; i < root_container.children->length; ++i) {
+		swayc_t *c = root_container.children->items[i];
+		if (c->handle == output) {
+			list_del(root_container.children, i);
+			free_swayc(c);
+			return;
+		}
 	}
-	list_del(outputs, index);
-}
-
-wlc_handle get_topmost(wlc_handle output, size_t offset) {
-   size_t memb;
-   const wlc_handle *views = wlc_output_get_views(output, &memb);
-   return (memb > 0 ? views[(memb - 1 + offset) % memb] : 0);
 }

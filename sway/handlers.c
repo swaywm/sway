@@ -22,12 +22,11 @@ bool handle_view_created(wlc_handle view) {
 }
 
 void handle_view_destroyed(wlc_handle view) {
-	destroy_view(view);
+	destroy_view(get_swayc_for_handle(view, &root_container));
 	return true;
 }
 
 void handle_view_focus(wlc_handle view, bool focus) {
-	printf("View focused\n");
 	wlc_view_set_state(view, WLC_BIT_ACTIVATED, focus);
-	focused_view = view;
+	focus_view(get_swayc_for_handle(view, &root_container));
 }

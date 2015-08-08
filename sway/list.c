@@ -12,6 +12,9 @@ list_t *create_list() {
 }
 
 void list_free(list_t *list) {
+	if (list == NULL) {
+		return;
+	}
 	free(list->items);
 	free(list);
 }
