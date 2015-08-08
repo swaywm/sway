@@ -11,22 +11,17 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	int i;
 	if (width == -1 || height == -1) {
 		sway_log(L_DEBUG, "Arranging layout for %p", container);
-	}
-	if (width == -1) {
 		width = container->width;
-	}
-	if (height == -1) {
 		height = container->height;
 	}
 
-	if (container->type == C_ROOT) {
+	switch (container->type) {
+	case C_ROOT:
 		for (i = 0; i < container->children->length; ++i) {
 			arrange_windows(container->children->items[i], -1, -1);
 		}
 		return;
-	}
-
-	if (container->type == C_VIEW) {
+	case C_VIEW:
 		sway_log(L_DEBUG, "Setting view to %d x %d @ %d, %d", width, height, container->x, container->y);
 		struct wlc_geometry geometry = {
 			.origin = {
@@ -39,10 +34,14 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			}
 		};
 		wlc_view_set_geometry(container->handle, &geometry);
+		container->width = width;
+		container->height = height;
 		return;
+	default:
+		container->width = width;
+		container->height = height;
+		break;
 	}
-	container->width = width;
-	container->height = height;
 
 	double total_weight = 0;
 	for (i = 0; i < container->children->length; ++i) {
@@ -66,12 +65,25 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			x += w;
 		}
 		break;
+	case L_VERT:
+		for (i = 0; i < container->children->length; ++i) {
+			swayc_t *child = container->children->items[i];
+			double percent = child->weight / total_weight;
+			sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will receive %.2f of %d)", child, child->type, percent, width);
+			child->x = x + container->x;
+			child->y = y + container->y;
+			int w = width;
+			int h = height * percent;
+			arrange_windows(child, w, h);
+			y += h;
+		}
+		break;
 	}
 }
 
 void init_layout() {
 	root_container.type = C_ROOT;
-	root_container.layout = L_HORIZ; // TODO: Default layout
+	root_container.layout = L_NONE;
 	root_container.children = create_list();
 	root_container.handle = -1;
 }
@@ -146,12 +158,36 @@ void destroy_view(swayc_t *view) {
 
 	free_swayc(view);
 
-	// TODO: Focus some other window
+	if (parent->children->length != 0) {
+		focus_view(parent->children->items[0]);
+	} else {
+		focus_view(parent);
+	}
 
 	arrange_windows(parent, -1, -1);
 }
 
+void unfocus_all(swayc_t *container) {
+	if (container->children == NULL) {
+		return;
+	}
+	int i;
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *view = container->children->items[i];
+		if (view->type == C_VIEW) {
+			wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, false);
+		} else {
+			unfocus_all(view);
+		}
+	}
+}
+
 void focus_view(swayc_t *view) {
+	if (view->type == C_VIEW) {
+		unfocus_all(&root_container);
+		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);
+		wlc_view_focus(view->handle);
+	}
 	if (view == &root_container) {
 		return;
 	}
