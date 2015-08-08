@@ -11,5 +11,6 @@ void handle_output_resolution_change(wlc_handle output, const struct wlc_size *f
 bool handle_view_created(wlc_handle view);
 void handle_view_destroyed(wlc_handle view);
 void handle_view_focus(wlc_handle view, bool focus);
+void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry);
 
 #endif

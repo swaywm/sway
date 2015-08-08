@@ -41,7 +41,10 @@ int main(int argc, char **argv) {
 		.view = {
 			.created = handle_view_created,
 			.destroyed = handle_view_destroyed,
-			.focus = handle_view_focus
+			.focus = handle_view_focus,
+			.request = {
+				.geometry = handle_view_geometry_request
+			}
 		}
 	};
 
