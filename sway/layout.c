@@ -161,7 +161,7 @@ void add_view(wlc_handle view_handle) {
 	view->type = C_VIEW;
 	add_child(parent, view);
 
-	wlc_view_focus(view_handle);
+	focus_view(view);
 
 	arrange_windows(parent, -1, -1);
 }
@@ -186,6 +186,10 @@ void destroy_view(swayc_t *view) {
 	}
 
 	free_swayc(view);
+
+	if (parent->focused == view) {
+		parent->focused = NULL;
+	}
 
 	if (parent->children->length != 0) {
 		focus_view(parent->children->items[0]);

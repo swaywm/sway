@@ -39,8 +39,7 @@ void handle_view_destroyed(wlc_handle view) {
 }
 
 void handle_view_focus(wlc_handle view, bool focus) {
-	wlc_view_set_state(view, WLC_BIT_ACTIVATED, focus);
-	focus_view(get_swayc_for_handle(view, &root_container));
+	return;
 }
 
 void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry) {
