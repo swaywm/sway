@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <ctype.h>
 #include "stringop.h"
 #include "log.h"
@@ -70,6 +71,20 @@ int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	return 0;
 }
 
+int cmd_exec(struct sway_config *config, int argc, char **argv) {
+	if (argc < 1) {
+		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
+		return 1;
+	}
+	if (fork() == 0) {
+		char *args = join_args(argv, argc);
+		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
+		free(args);
+		exit(0);
+	}
+	return 0;
+}
+
 int cmd_exit(struct sway_config *config, int argc, char **argv) {
 	if (argc != 0) {
 		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
@@ -79,7 +94,6 @@ int cmd_exit(struct sway_config *config, int argc, char **argv) {
 	exit(0);
 	return 0;
 }
-
 
 int cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
 	if (argc != 1) {
@@ -108,6 +122,7 @@ int cmd_set(struct sway_config *config, int argc, char **argv) {
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
+	{ "exec", cmd_exec },
 	{ "exit", cmd_exit },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "set", cmd_set },
