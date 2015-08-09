@@ -121,6 +121,12 @@ swayc_t *get_focused_container(swayc_t *parent) {
 }
 
 void add_view(wlc_handle view_handle) {
+	const uint32_t type = wlc_view_get_type(view_handle);
+	if (type & WLC_BIT_UNMANAGED) {
+		sway_log(L_DEBUG, "Leaving view %d alone (unmanaged)", view_handle);
+		return;
+	}
+
 	swayc_t *parent = get_focused_container(&root_container);
 	sway_log(L_DEBUG, "Adding new view %d under container %p %d", view_handle, parent, parent->type);
 
@@ -142,6 +148,10 @@ void add_view(wlc_handle view_handle) {
 }
 
 void destroy_view(swayc_t *view) {
+	if (view == NULL) {
+		sway_log(L_DEBUG, "Warning: NULL passed into destroy_view");
+		return;
+	}
 	sway_log(L_DEBUG, "Destroying container %p", view);
 	swayc_t *parent = view->parent;
 	if (!parent) {

@@ -33,6 +33,7 @@ bool handle_view_created(wlc_handle view) {
 }
 
 void handle_view_destroyed(wlc_handle view) {
+	sway_log(L_DEBUG, "Destroying window %d", view);
 	destroy_view(get_swayc_for_handle(view, &root_container));
 	return true;
 }
@@ -53,7 +54,6 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 	
 	bool ret = true;
 	struct sway_mode *mode = config->current_mode;
-	sway_log(L_DEBUG, "key pressed: %d %d", sym, modifiers->mods);
 
 	// Lowercase if necessary
 	sym = tolower(sym);
