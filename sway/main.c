@@ -58,6 +58,7 @@ int main(int argc, char **argv) {
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
+	setenv("DISPLAY", ":1", 1);
 	wlc_run();
 	return 0;
 }
