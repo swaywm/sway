@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include "stringop.h"
+#include "layout.h"
 #include "log.h"
 #include "commands.h"
 
@@ -106,6 +107,31 @@ int cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
 	return 0;
 }
 
+int cmd_layout(struct sway_config *config, int argc, char **argv) {
+	if (argc < 1) {
+		sway_log(L_ERROR, "Invalid layout command (expected at least 1 argument, got %d)", argc);
+		return 1;
+	}
+	swayc_t *parent = get_focused_container(&root_container);
+	while (parent->type == C_VIEW) {
+		parent = parent->parent;
+	}
+	if (strcasecmp(argv[0], "splith") == 0) {
+		parent->layout = L_HORIZ;
+	} else if (strcasecmp(argv[0], "splitv") == 0) {
+		parent->layout = L_VERT;
+	} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
+		if (parent->layout == L_VERT) {
+			parent->layout = L_HORIZ;
+		} else {
+			parent->layout = L_VERT;
+		}
+	}
+	arrange_windows(parent, parent->width, parent->height);
+
+	return 0;
+}
+
 int cmd_set(struct sway_config *config, int argc, char **argv) {
 	if (argc != 2) {
 		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
@@ -126,6 +152,7 @@ struct cmd_handler handlers[] = {
 	{ "exec", cmd_exec },
 	{ "exit", cmd_exit },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "layout", cmd_layout },
 	{ "set", cmd_set },
 };
 
