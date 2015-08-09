@@ -38,7 +38,7 @@ void sway_log(int verbosity, char* format, ...) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
-		if(colored) {
+		if (colored) {
 			fprintf(stderr, verbosity_colors[c]);
 		}
 
@@ -47,7 +47,7 @@ void sway_log(int verbosity, char* format, ...) {
 		vfprintf(stderr, format, args);
 		va_end(args);
 
-		if(colored) {
+		if (colored) {
 			fprintf(stderr, "\x1B[0m\n");
 		}
 	}
