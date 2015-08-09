@@ -29,7 +29,6 @@ void load_config() {
 
 int main(int argc, char **argv) {
 	init_log(L_DEBUG); // TODO: Control this with command line arg
-	load_config();
 	init_layout();
 
 	static struct wlc_interface interface = {
@@ -58,7 +57,10 @@ int main(int argc, char **argv) {
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
+
 	setenv("DISPLAY", ":1", 1);
+	load_config();
+
 	wlc_run();
 	return 0;
 }

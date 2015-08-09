@@ -73,11 +73,12 @@ int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 
 int cmd_exec(struct sway_config *config, int argc, char **argv) {
 	if (argc < 1) {
-		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
+		sway_log(L_ERROR, "Invalid exec command (expected at least 1 argument, got %d)", argc);
 		return 1;
 	}
 	if (fork() == 0) {
 		char *args = join_args(argv, argc);
+		sway_log(L_DEBUG, "Executing %s", args);
 		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
 		free(args);
 		exit(0);
