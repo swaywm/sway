@@ -25,6 +25,10 @@ struct sway_config {
     list_t *symbols;
     list_t *modes;
     struct sway_mode *current_mode;
+
+    // Flags
+    bool focus_follows_mouse;
+    bool mouse_warping;
 };
 
 struct sway_config *read_config(FILE *file);

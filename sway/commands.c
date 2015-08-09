@@ -9,30 +9,6 @@
 #include "log.h"
 #include "commands.h"
 
-int cmd_set(struct sway_config *config, int argc, char **argv) {
-	if (argc != 2) {
-		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
-		return 1;
-	}
-	struct sway_variable *var = malloc(sizeof(struct sway_variable));
-	var->name = malloc(strlen(argv[0]) + 1);
-	strcpy(var->name, argv[0]);
-	var->value = malloc(strlen(argv[1]) + 1);
-	strcpy(var->value, argv[1]);
-	list_add(config->symbols, var);
-	return 0;
-}
-
-int cmd_exit(struct sway_config *config, int argc, char **argv) {
-	if (argc != 0) {
-		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
-		return 1;
-	}
-	// TODO: Some kind of clean up is probably in order
-	exit(0);
-	return 0;
-}
-
 struct modifier_key {
 	char *name;
 	uint32_t mod;
@@ -94,10 +70,46 @@ int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	return 0;
 }
 
+int cmd_exit(struct sway_config *config, int argc, char **argv) {
+	if (argc != 0) {
+		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
+		return 1;
+	}
+	// TODO: Some kind of clean up is probably in order
+	exit(0);
+	return 0;
+}
+
+
+int cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
+	if (argc != 1) {
+		sway_log(L_ERROR, "Invalid focus_follows_mouse command (expected 1 arguments, got %d)", argc);
+		return 1;
+	}
+
+	config->focus_follows_mouse = !strcasecmp(argv[0], "yes");
+	return 0;
+}
+
+int cmd_set(struct sway_config *config, int argc, char **argv) {
+	if (argc != 2) {
+		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
+		return 1;
+	}
+	struct sway_variable *var = malloc(sizeof(struct sway_variable));
+	var->name = malloc(strlen(argv[0]) + 1);
+	strcpy(var->name, argv[0]);
+	var->value = malloc(strlen(argv[1]) + 1);
+	strcpy(var->value, argv[1]);
+	list_add(config->symbols, var);
+	return 0;
+}
+
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
 	{ "exit", cmd_exit },
+	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "set", cmd_set },
 };
 

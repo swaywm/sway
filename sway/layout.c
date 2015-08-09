@@ -7,6 +7,25 @@
 
 swayc_t root_container;
 
+swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
+	if (!container->children) {
+		return NULL;
+	}
+	int i;
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		if (test(child, data)) {
+			return child;
+		} else {
+			swayc_t *_ = find_container(child, test, data);
+			if (_) {
+				return _;
+			}
+		}
+	}
+	return NULL;
+}
+
 void arrange_windows(swayc_t *container, int width, int height) {
 	int i;
 	if (width == -1 || height == -1) {

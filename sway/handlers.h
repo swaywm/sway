@@ -16,4 +16,8 @@ void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* ge
 bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state);
 
+bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin);
+bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
+		uint32_t button, enum wlc_button_state state);
+
 #endif

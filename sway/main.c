@@ -48,6 +48,10 @@ int main(int argc, char **argv) {
 		},
 		.keyboard = {
 			.key = handle_key
+		},
+		.pointer = {
+			.motion = handle_pointer_motion,
+			.button = handle_pointer_button
 		}
 	};
 

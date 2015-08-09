@@ -8,14 +8,21 @@
 #include "commands.h"
 #include "config.h"
 
-struct sway_config *read_config(FILE *file) {
-	struct sway_config *config = malloc(sizeof(struct sway_config));
+void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
 	list_add(config->modes, config->current_mode);
+	// Flags
+	config->focus_follows_mouse = true;
+	config->mouse_warping = true;
+}
+
+struct sway_config *read_config(FILE *file) {
+	struct sway_config *config = malloc(sizeof(struct sway_config));
+	config_defaults(config);
 
 	bool success = true;
 
