@@ -9,6 +9,7 @@ typedef enum {
 } log_importance_t;
 
 void init_log(int verbosity);
+void sway_log_colors(int mode);
 void sway_log(int verbosity, char* format, ...);
 void sway_abort(char* format, ...);
 

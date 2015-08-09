@@ -17,6 +17,10 @@ void init_log(int verbosity) {
 	v = verbosity;
 }
 
+void sway_log_colors(int mode) {
+    colored = (mode == 1) ? 1 : 0;
+}
+
 void sway_abort(char *format, ...) {
 	fprintf(stderr, "ERROR: ");
 	va_list args;
@@ -33,11 +37,18 @@ void sway_log(int verbosity, char* format, ...) {
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
-		fprintf(stderr, verbosity_colors[c]);
+
+		if(colored) {
+			fprintf(stderr, verbosity_colors[c]);
+		}
+
 		va_list args;
 		va_start(args, format);
 		vfprintf(stderr, format, args);
 		va_end(args);
-		fprintf(stderr, "\x1B[0m\n");
+
+		if(colored) {
+			fprintf(stderr, "\x1B[0m\n");
+		}
 	}
 }
