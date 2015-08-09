@@ -27,6 +27,14 @@ void list_add(list_t *list, void *item) {
 	list->items[list->length++] = item;
 }
 
+void list_insert(list_t *list, int index, void *item) {
+	if (list->length == list->capacity) {
+		list->capacity += 10;
+		list->items = realloc(list->items, sizeof(void*) * list->capacity);
+	}
+	list->items[list->length++] = item;
+}
+
 void list_del(list_t *list, int index) {
 	list->length--;
 	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->capacity - index - 1));

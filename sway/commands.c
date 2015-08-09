@@ -146,21 +146,38 @@ int cmd_set(struct sway_config *config, int argc, char **argv) {
 	return 0;
 }
 
-int cmd_log_colors(struct sway_config *config, int argc, char **argv) {
-	if (argc != 1) {
-		sway_log(L_ERROR, "Invalid log_colors command (expected 1 argument, got %d)", argc);
+int _do_split(struct sway_config *config, int argc, char **argv, int layout) {
+	if (argc != 0) {
+		sway_log(L_ERROR, "Invalid splitv command (expected 0 arguments, got %d)", argc);
 		return 1;
 	}
-
-	if (strcasecmp(argv[0], "no") != 0 && strcasecmp(argv[0], "yes") != 0) {
-		sway_log(L_ERROR, "Invalid log_colors command (expected `yes` or `no`, got '%s')", argv[0]);
-		return 1;
-	}
-
-	sway_log_colors(!strcasecmp(argv[0], "yes"));
+	swayc_t *focused = get_focused_container(&root_container);
+	swayc_t *parent = focused->parent;
+	sway_log(L_DEBUG, "Splitting %p vertically with %p", parent, focused);
+	int index = remove_container_from_parent(parent, focused);
+	swayc_t *new_container = create_container(parent, -1);
+	new_container->layout = layout;
+	new_container->weight = focused->weight;
+	new_container->width = focused->width;
+	new_container->height = focused->height;
+	new_container->x = focused->x;
+	new_container->y = focused->y;
+	focused->weight = 1;
+	focused->parent = new_container;
+	list_insert(parent->children, index, new_container);
+	list_add(new_container->children, focused);
+	focus_view(focused);
+	arrange_windows(parent, -1, -1);
 	return 0;
 }
 
+int cmd_splitv(struct sway_config *config, int argc, char **argv) {
+	return _do_split(config, argc, argv, L_VERT);
+}
+
+int cmd_splith(struct sway_config *config, int argc, char **argv) {
+	return _do_split(config, argc, argv, L_HORIZ);
+}
 
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
@@ -169,8 +186,9 @@ struct cmd_handler handlers[] = {
 	{ "exit", cmd_exit },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "layout", cmd_layout },
-	{ "log_colors", cmd_log_colors },
 	{ "set", cmd_set },
+	{ "splith", cmd_splith },
+	{ "splitv", cmd_splitv }
 };
 
 char **split_directive(char *line, int *argc) {
