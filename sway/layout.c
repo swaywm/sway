@@ -216,6 +216,10 @@ void destroy_view(swayc_t *view) {
 	}
 
 	arrange_windows(parent, -1, -1);
+
+	if (parent->children->length == 0 && parent->type == C_CONTAINER) {
+		destroy_view(parent);
+	}
 }
 
 void unfocus_all(swayc_t *container) {
