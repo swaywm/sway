@@ -41,31 +41,35 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		}
 		return;
 	case C_VIEW:
-		sway_log(L_DEBUG, "Setting view to %d x %d @ %d, %d", width, height, container->x, container->y);
-		struct wlc_geometry geometry = {
-			.origin = {
-				.x = container->x,
-				.y = container->y
-			},
-			.size = {
-				.w = width,
-				.h = height
+		{
+			struct wlc_geometry geometry = {
+				.origin = {
+					.x = container->x,
+					.y = container->y
+				},
+				.size = {
+					.w = width,
+					.h = height
+				}
+			};
+			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
+				swayc_t *parent = container;
+				while(parent->type != C_OUTPUT) {
+					parent = parent->parent;
+				}
+				geometry.origin.x = 0;
+				geometry.origin.y = 0;
+				geometry.size.w = parent->width;
+				geometry.size.h = parent->height;
+				wlc_view_set_geometry(container->handle, &geometry);
+				wlc_view_bring_to_front(container->handle);
+			} else {
+				wlc_view_set_geometry(container->handle, &geometry);
+				container->width = width;
+				container->height = height;
 			}
-		};
-		if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
-			swayc_t *parent = container;
-			while(parent->type != C_OUTPUT) {
-				parent = parent->parent;
-			}
-			geometry.origin.x = 0;
-			geometry.origin.y = 0;
-			geometry.size.w = parent->width;
-			geometry.size.h = parent->height;
-			wlc_view_set_geometry(container->handle, &geometry);
-		} else {
-			wlc_view_set_geometry(container->handle, &geometry);
-			container->width = width;
-			container->height = height;
+			sway_log(L_DEBUG, "Set view to %d x %d @ %d, %d", geometry.size.w, geometry.size.h,
+					geometry.origin.x, geometry.origin.y);
 		}
 		return;
 	default:
