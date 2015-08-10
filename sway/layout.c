@@ -166,6 +166,9 @@ void add_view(wlc_handle view_handle) {
 	if ((type & WLC_BIT_OVERRIDE_REDIRECT) || (type & WLC_BIT_UNMANAGED) || (type &
 			WLC_BIT_POPUP) || (type & WLC_BIT_MODAL) || (type & WLC_BIT_SPLASH)) {
 		sway_log(L_DEBUG, "Leaving view %d:%s alone (unmanaged)", view_handle, title);
+		unfocus_all(&root_container);
+		wlc_view_set_state(view_handle, WLC_BIT_ACTIVATED, true);
+		wlc_view_focus(view_handle);
 		return;
 	}
 
