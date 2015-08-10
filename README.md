@@ -14,7 +14,7 @@ zero lines of source code after two years.
 
 ## Status
 
-Not really usable yet.
+[See "i3 feature support"](https://github.com/SirCmpwn/sway/issues/2)
 
 ## Compile / Install
 
