@@ -4,6 +4,7 @@
 #include "list.h"
 #include "log.h"
 #include "layout.h"
+#include "workspace.h"
 
 swayc_t root_container;
 
@@ -314,10 +315,13 @@ void add_output(wlc_handle output) {
 
 	swayc_t *workspace = create_container(container, -1);
 	workspace->type = C_WORKSPACE;
+	workspace->name = workspace_next_name();
 	workspace->width = size->w; // TODO: gaps
 	workspace->height = size->h;
 	workspace->layout = L_HORIZ; // TODO: Get default layout from config
 	add_child(container, workspace);
+
+	workspace_switch(workspace);
 
 	if (root_container.focused == NULL) {
 		unfocus_all(&root_container);

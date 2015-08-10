@@ -10,6 +10,7 @@
 #include "layout.h"
 #include "movement.h"
 #include "log.h"
+#include "workspace.h"
 #include "commands.h"
 
 struct modifier_key {
@@ -262,6 +263,21 @@ int cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	return 1;
 }
 
+int cmd_workspace(struct sway_config *config, int argc, char **argv) {
+	if (argc != 1) {
+		sway_log(L_ERROR, "Invalid workspace command (expected 1 arguments, got %d)", argc);
+		return 1;
+	}
+
+	swayc_t *workspace = workspace_find_by_name(argv[0]);
+	if (!workspace) {
+		workspace = workspace_create(argv[0]);
+	} else sway_log(L_DEBUG, "workspace exists, all ok");
+
+	workspace_switch(workspace);
+	return 1;
+}
+
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
@@ -276,7 +292,8 @@ struct cmd_handler handlers[] = {
 	{ "reload", cmd_reload },
 	{ "set", cmd_set },
 	{ "splith", cmd_splith },
-	{ "splitv", cmd_splitv }
+	{ "splitv", cmd_splitv },
+	{ "workspace", cmd_workspace }
 };
 
 char **split_directive(char *line, int *argc) {
