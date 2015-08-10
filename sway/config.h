@@ -6,31 +6,31 @@
 #include "list.h"
 
 struct sway_variable {
-    char *name;
-    char *value;
+	char *name;
+	char *value;
 };
 
 struct sway_binding {
-    list_t *keys;
-    uint32_t modifiers;
-    char *command;
+	list_t *keys;
+	uint32_t modifiers;
+	char *command;
 };
 
 struct sway_mode {
-    char *name;
-    list_t *bindings;
+	char *name;
+	list_t *bindings;
 };
 
 struct sway_config {
-    list_t *symbols;
-    list_t *modes;
-    struct sway_mode *current_mode;
+	list_t *symbols;
+	list_t *modes;
+	struct sway_mode *current_mode;
 
-    // Flags
-    bool focus_follows_mouse;
-    bool mouse_warping;
-    
-    bool reloading;
+	// Flags
+	bool focus_follows_mouse;
+	bool mouse_warping;
+	
+	bool reloading;
 };
 
 struct sway_config *read_config(FILE *file, bool is_active);

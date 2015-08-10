@@ -79,10 +79,10 @@ int cmd_exec(struct sway_config *config, int argc, char **argv) {
 		return 1;
 	}
 
-    if (config->reloading) {
-        sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
-        return 0;
-    }
+	if (config->reloading) {
+		sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
+		return 0;
+	}
 
 	if (fork() == 0) {
 		char *args = join_args(argv, argc);
@@ -190,7 +190,7 @@ int cmd_reload(struct sway_config *config, int argc, char **argv) {
 	if (!f) {
 		sway_log(L_ERROR, "Sway config file not found, aborting reload!");
 		free(temp);
-        return 1;
+		return 1;
 	}
 	free(temp);
 	config = read_config(f, true);

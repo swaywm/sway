@@ -2,9 +2,9 @@
 #define _SWAY_LIST_H
 
 typedef struct {
-    int capacity;
-    int length;
-    void **items;
+	int capacity;
+	int length;
+	void **items;
 } list_t;
 
 list_t *create_list();

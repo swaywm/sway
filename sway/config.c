@@ -18,16 +18,16 @@ void config_defaults(struct sway_config *config) {
 	// Flags
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;
-    config->reloading = false;
+	config->reloading = false;
 }
 
 struct sway_config *read_config(FILE *file, bool is_active) {
 	struct sway_config *config = malloc(sizeof(struct sway_config));
 	config_defaults(config);
 
-    if (is_active) {
-        config->reloading = true;
-    }
+	if (is_active) {
+		config->reloading = true;
+	}
 
 	bool success = true;
 
@@ -61,9 +61,9 @@ _continue:
 		exit(1);
 	}
 
-    if (is_active) {
-        config->reloading = true;
-    }
+	if (is_active) {
+		config->reloading = true;
+	}
 
 	return config;
 }
