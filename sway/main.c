@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 		}
 	};
 
+	setenv("WLC_DIM", "0", 0);
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
