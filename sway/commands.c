@@ -180,9 +180,9 @@ int cmd_reload(struct sway_config *config, int argc, char **argv) {
 		return 1;
 	}
 	if (!load_config()) {
-		return 1;	
+		return 1;
 	}
-
+	arrange_windows(&root_container, -1, -1);
 	return 0;
 }
 
