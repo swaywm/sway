@@ -346,9 +346,10 @@ struct cmd_handler *find_handler(struct cmd_handler handlers[], int l, char *lin
 int handle_command(struct sway_config *config, char *exec) {
 	sway_log(L_INFO, "Handling command '%s'", exec);
 	char *ptr, *cmd;
+	int ret;
+
 	if ((ptr = strchr(exec, ' ')) == NULL) {
-		cmd = malloc(strlen(exec) + 1);
-		strcpy(cmd, exec);
+		cmd = exec;
 	} else {
 		int index = ptr - exec;
 		cmd = malloc(index + 1);
@@ -358,18 +359,22 @@ int handle_command(struct sway_config *config, char *exec) {
 	struct cmd_handler *handler = find_handler(handlers, sizeof(handlers) / sizeof(struct cmd_handler), cmd);
 	if (handler == NULL) {
 		sway_log(L_ERROR, "Unknown command '%s'", cmd);
-		return 0; // TODO: return error, probably
+		ret = 0; // TODO: return error, probably
+	} else {
+		int argc;
+		char **argv = split_directive(exec + strlen(handler->command), &argc);
+		int i;
+		ret = handler->handle(config, argc, argv);
+		for (i = 0; i < argc; ++i) {
+			free(argv[i]);
+		}
+		free(argv);
+		if (ret != 0) {
+			sway_log(L_ERROR, "Command failed: %s", cmd);
+		}
 	}
-	int argc;
-	char **argv = split_directive(exec + strlen(handler->command), &argc);
-	int ret = handler->handle(config, argc, argv);
-	int i;
-	for (i = 0; i < argc; ++i) {
-		free(argv[i]);
-	}
-	free(argv);
-	if (ret != 0) {
-		sway_log(L_ERROR, "Command failed: %s", cmd);
+	if(ptr) {
+		free(cmd);
 	}
 	return ret;
 }
