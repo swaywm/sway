@@ -5,7 +5,7 @@
 
 struct cmd_handler {
 	char *command;
-	int (*handle)(struct sway_config *config, int argc, char **argv);
+	bool (*handle)(struct sway_config *config, int argc, char **argv);
 };
 
 int handle_command(struct sway_config *config, char *command);
