@@ -29,7 +29,9 @@ struct sway_container {
 
 	int x, y;
 
-	int weight;
+	bool visible;
+
+    int weight;
 
 	char *name;
 

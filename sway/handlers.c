@@ -85,7 +85,8 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
 	if (view->type == C_VIEW && origin->x >= view->x && origin->y >= view->y
-			&& origin->x < view->x + view->width && origin->y < view->y + view->height) {
+			&& origin->x < view->x + view->width && origin->y < view->y + view->height
+			&& view->visible) {
 		return true;
 	}
 	return false;

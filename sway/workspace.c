@@ -40,6 +40,7 @@ void set_mask(swayc_t *view, void *data) {
 
 	if(view->type == C_VIEW) {
 		wlc_view_set_mask(view->handle, *p);
+		view->visible = (*p == 2);
 	}
 }
 
