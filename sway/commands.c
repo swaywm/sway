@@ -217,6 +217,19 @@ int cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 	return 0;
 }
 
+int cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
+	if (argc != 1) {
+		sway_log(L_ERROR, "Invalid fullscreen command (expected 1 arguments, got %d)", argc);
+		return 1;
+	}
+
+	swayc_t *container = get_focused_container(&root_container);
+	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, true);
+	arrange_windows(container, -1, -1);
+
+	return 1;
+}
+
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
@@ -224,6 +237,7 @@ struct cmd_handler handlers[] = {
 	{ "exit", cmd_exit },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "fullscreen", cmd_fullscreen },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
 	{ "set", cmd_set },

@@ -42,6 +42,10 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		return;
 	case C_VIEW:
 		sway_log(L_DEBUG, "Setting view to %d x %d @ %d, %d", width, height, container->x, container->y);
+		// If the view is fullscreen, we need to tell wlc to draw it as such
+		if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN > 0) {
+			sway_log(L_DEBUG, "window is fullscreen!");
+		}
 		struct wlc_geometry geometry = {
 			.origin = {
 				.x = container->x,
