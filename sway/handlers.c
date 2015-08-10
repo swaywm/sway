@@ -74,8 +74,7 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 				}
 
 				if (match) {
-					ret = false;
-					handle_command(config, binding->command);
+					ret = handle_command(config, binding->command) == 0;
 				}
 			}
 		}

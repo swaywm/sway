@@ -11,6 +11,6 @@ enum movement_direction{
     MOVE_DOWN
 };
 
-void move_focus(enum movement_direction direction);
+int move_focus(enum movement_direction direction);
 
 #endif

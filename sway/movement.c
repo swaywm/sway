@@ -5,7 +5,7 @@
 #include "layout.h"
 #include "movement.h"
 
-void move_focus(enum movement_direction direction) {
+int move_focus(enum movement_direction direction) {
 	swayc_t *current = get_focused_container(&root_container);
 	swayc_t *parent = current->parent;
 
@@ -42,7 +42,7 @@ void move_focus(enum movement_direction direction) {
 			} else {
 				unfocus_all(&root_container);
 				focus_view(parent->children->items[desired]);
-				return;
+				return 0;
 			}
 		}
 		if (!can_move) {
@@ -51,7 +51,7 @@ void move_focus(enum movement_direction direction) {
 			parent = parent->parent;
 			if (parent->type == C_ROOT) {
 				// Nothing we can do
-				return;
+				return 1;
 			}
 		}
 	}

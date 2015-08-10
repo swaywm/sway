@@ -104,13 +104,13 @@ int cmd_focus(struct sway_config *config, int argc, char **argv) {
 		return 1;
 	}
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_focus(MOVE_LEFT);
+		return move_focus(MOVE_LEFT);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_focus(MOVE_RIGHT);
+		return move_focus(MOVE_RIGHT);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_focus(MOVE_UP);
+		return move_focus(MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_focus(MOVE_DOWN);
+		return move_focus(MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "parent") == 0) {
 		swayc_t *current = get_focused_container(&root_container);
 		if (current && current->parent) {
