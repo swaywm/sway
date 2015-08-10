@@ -179,24 +179,8 @@ int cmd_reload(struct sway_config *config, int argc, char **argv) {
 		sway_log(L_ERROR, "Invalid reload command (expected 0 arguments, got %d)", argc);
 		return 1;
 	}
-
-	// TODO: Allow use of more config file locations
-	const char *name = "/.sway/config";
-	const char *home = getenv("HOME");
-	char *temp = malloc(strlen(home) + strlen(name) + 1);
-	strcpy(temp, home);
-	strcat(temp, name);
-	FILE *f = fopen(temp, "r");
-	if (!f) {
-		sway_log(L_ERROR, "Sway config file not found, aborting reload!");
-		free(temp);
-		return 1;
-	}
-	free(temp);
-	config = read_config(f, true);
-	fclose(f);
-	if (load_config()) {
-	
+	if (!load_config()) {
+		return 1;	
 	}
 
 	return 0;
