@@ -113,9 +113,11 @@ int cmd_focus(struct sway_config *config, int argc, char **argv) {
 		move_focus(MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "parent") == 0) {
 		swayc_t *current = get_focused_container(&root_container);
-		current->parent->focused = NULL;
-		unfocus_all(current->parent);
-		focus_view(current->parent);
+		if (current && current->parent) {
+			current->parent->focused = NULL;
+			unfocus_all(current->parent);
+			focus_view(current->parent);
+		}
 	}
 	return 0;
 }
