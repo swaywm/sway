@@ -197,6 +197,21 @@ int cmd_splith(struct sway_config *config, int argc, char **argv) {
 	return _do_split(config, argc, argv, L_HORIZ);
 }
 
+int cmd_log_colors(struct sway_config *config, int argc, char **argv) {
+	if (argc != 1) {
+		sway_log(L_ERROR, "Invalid log_colors command (expected 1 argument, got %d)", argc);
+		return 1;
+	}
+
+	if (strcasecmp(argv[0], "no") != 0 && strcasecmp(argv[0], "yes") != 0) {
+		sway_log(L_ERROR, "Invalid log_colors command (expected `yes` or `no`, got '%s')", argv[0]);
+		return 1;
+	}
+
+	sway_log_colors(!strcasecmp(argv[0], "yes"));
+	return 0;
+}
+
 /* Keep alphabetized */
 struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
@@ -205,6 +220,7 @@ struct cmd_handler handlers[] = {
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "layout", cmd_layout },
+	{ "log_colors", cmd_log_colors },
 	{ "set", cmd_set },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv }
