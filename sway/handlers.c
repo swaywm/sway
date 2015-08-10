@@ -103,6 +103,7 @@ bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_orig
 	swayc_t *focused = get_focused_container(&root_container);
 	if (c && c != focused) {
 		sway_log(L_DEBUG, "Switching focus to %p", c);
+		unfocus_all(&root_container);
 		focus_view(c);
 	}
 	return true;
@@ -115,6 +116,7 @@ bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modi
 		swayc_t *focused = get_focused_container(&root_container);
 		if (c && c != focused) {
 			sway_log(L_DEBUG, "Switching focus to %p", c);
+			unfocus_all(&root_container);
 			focus_view(c);
 			return false;
 		}
