@@ -186,6 +186,7 @@ void add_view(wlc_handle view_handle) {
 	view->handle = view_handle;
 	view->parent = parent;
 	view->type = C_VIEW;
+	view->visible = true;
 	if (title) {
 		view->name = malloc(strlen(title) + 1);
 		strcpy(view->name, title);
