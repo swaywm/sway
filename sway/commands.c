@@ -39,7 +39,7 @@ int cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->command = join_args(argv + 1, argc - 1);
-	
+
 	list_t *split = split_string(argv[0], "+");
 	int i;
 	for (i = 0; i < split->length; ++i) {
@@ -78,6 +78,28 @@ int cmd_exec(struct sway_config *config, int argc, char **argv) {
 		sway_log(L_ERROR, "Invalid exec command (expected at least 1 argument, got %d)", argc);
 		return 1;
 	}
+
+	if (config->reloading) {
+		sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
+		return 0;
+	}
+
+	if (fork() == 0) {
+		char *args = join_args(argv, argc);
+		sway_log(L_DEBUG, "Executing %s", args);
+		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
+		free(args);
+		exit(0);
+	}
+	return 0;
+}
+
+int cmd_exec_always(struct sway_config *config, int argc, char **argv) {
+	if (argc < 1) {
+		sway_log(L_ERROR, "Invalid exec_always command (expected at least 1 argument, got %d)", argc);
+		return 1;
+	}
+
 	if (fork() == 0) {
 		char *args = join_args(argv, argc);
 		sway_log(L_DEBUG, "Executing %s", args);
@@ -148,6 +170,18 @@ int cmd_layout(struct sway_config *config, int argc, char **argv) {
 		}
 	}
 	arrange_windows(parent, parent->width, parent->height);
+
+	return 0;
+}
+
+int cmd_reload(struct sway_config *config, int argc, char **argv) {
+	if (argc != 0) {
+		sway_log(L_ERROR, "Invalid reload command (expected 0 arguments, got %d)", argc);
+		return 1;
+	}
+	if (!load_config()) {
+		return 1;	
+	}
 
 	return 0;
 }
@@ -232,12 +266,14 @@ int cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
+	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
+	{ "reload", cmd_reload },
 	{ "set", cmd_set },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv }

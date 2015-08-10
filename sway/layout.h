@@ -5,38 +5,38 @@
 #include "list.h"
 
 struct sway_container {
-    wlc_handle handle;
+	wlc_handle handle;
 
-    enum {
-        C_ROOT,
-        C_OUTPUT,
-        C_WORKSPACE,
-        C_CONTAINER,
-        C_VIEW
-    } type;
+	enum {
+		C_ROOT,
+		C_OUTPUT,
+		C_WORKSPACE,
+		C_CONTAINER,
+		C_VIEW
+	} type;
 
-    enum {
-        L_NONE,
-        L_HORIZ,
-        L_VERT,
-        L_STACKED,
-        L_TABBED,
-        L_FLOATING
-    } layout;
+	enum {
+		L_NONE,
+		L_HORIZ,
+		L_VERT,
+		L_STACKED,
+		L_TABBED,
+		L_FLOATING
+	} layout;
 
-    // Not including borders or margins
-    int width, height;
+	// Not including borders or margins
+	int width, height;
 
-    int x, y;
+	int x, y;
 
-    int weight;
+	int weight;
 
-    char *name;
+	char *name;
 
-    list_t *children;
+	list_t *children;
 
-    struct sway_container *parent;
-    struct sway_container *focused;
+	struct sway_container *parent;
+	struct sway_container *focused;
 };
 
 typedef struct sway_container swayc_t;

@@ -18,7 +18,7 @@ void init_log(int verbosity) {
 }
 
 void sway_log_colors(int mode) {
-    colored = (mode == 1) ? 1 : 0;
+	colored = (mode == 1) ? 1 : 0;
 }
 
 void sway_abort(char *format, ...) {

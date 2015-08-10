@@ -8,6 +8,25 @@
 #include "commands.h"
 #include "config.h"
 
+bool load_config() {
+	// TODO: Allow use of more config file locations
+	const char *name = "/.sway/config";
+	const char *home = getenv("HOME");
+	char *temp = malloc(strlen(home) + strlen(name) + 1);
+	strcpy(temp, home);
+	strcat(temp, name);
+	FILE *f = fopen(temp, "r");
+	if (!f) {
+		fprintf(stderr, "Unable to open %s for reading", temp);
+		free(temp);
+		return false;
+	}
+	free(temp);
+	config = read_config(f, false);
+	fclose(f);
+	return true;
+}
+
 void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
@@ -18,11 +37,16 @@ void config_defaults(struct sway_config *config) {
 	// Flags
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;
+	config->reloading = false;
 }
 
-struct sway_config *read_config(FILE *file) {
+struct sway_config *read_config(FILE *file, bool is_active) {
 	struct sway_config *config = malloc(sizeof(struct sway_config));
 	config_defaults(config);
+
+	if (is_active) {
+		config->reloading = true;
+	}
 
 	bool success = true;
 
@@ -44,7 +68,7 @@ struct sway_config *read_config(FILE *file) {
 		if (!temp_depth && handle_command(config, line) != 0) {
 			success = false;
 		}
-		
+
 _continue:
 		if (line && line[strlen(line) - 1] == '{') {
 			temp_depth++;
@@ -54,6 +78,10 @@ _continue:
 
 	if (!success) {
 		exit(1);
+	}
+
+	if (is_active) {
+		config->reloading = true;
 	}
 
 	return config;
