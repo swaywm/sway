@@ -49,6 +49,7 @@ void add_output(wlc_handle output);
 void destroy_output(wlc_handle output);
 void destroy_view(swayc_t *view);
 void add_view(wlc_handle view);
+void unfocus_all(swayc_t *container);
 void focus_view(swayc_t *view);
 void arrange_windows(swayc_t *container, int width, int height);
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data);

@@ -163,6 +163,7 @@ void add_view(wlc_handle view_handle) {
 	view->type = C_VIEW;
 	add_child(parent, view);
 
+	unfocus_all(&root_container);
 	focus_view(view);
 
 	arrange_windows(parent, -1, -1);
@@ -209,6 +210,7 @@ void destroy_view(swayc_t *view) {
 		parent->focused = NULL;
 	}
 
+	unfocus_all(&root_container);
 	if (parent->children->length != 0) {
 		focus_view(parent->children->items[0]);
 	} else {
@@ -238,12 +240,17 @@ void unfocus_all(swayc_t *container) {
 }
 
 void focus_view(swayc_t *view) {
-	if (view->type == C_VIEW) {
-		unfocus_all(&root_container);
-		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);
-		wlc_view_focus(view->handle);
-	}
+	sway_log(L_DEBUG, "Setting focus for %p", view);
 	if (view == &root_container) {
+		// Propegate wayland focus down
+		swayc_t *child = view->focused;
+		while (child && child->type != C_VIEW) {
+			child = child->focused;
+		}
+		if (child) {
+			wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, true);
+			wlc_view_focus(child->handle);
+		}
 		return;
 	}
 	view->parent->focused = view;
@@ -285,6 +292,7 @@ void add_output(wlc_handle output) {
 	add_child(container, workspace);
 
 	if (root_container.focused == NULL) {
+		unfocus_all(&root_container);
 		focus_view(workspace);
 	}
 }

@@ -28,6 +28,7 @@ void list_add(list_t *list, void *item) {
 }
 
 void list_insert(list_t *list, int index, void *item) {
+	// TODO: Implement this properly
 	if (list->length == list->capacity) {
 		list->capacity += 10;
 		list->items = realloc(list->items, sizeof(void*) * list->capacity);

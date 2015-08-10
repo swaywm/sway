@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include "stringop.h"
 #include "layout.h"
+#include "movement.h"
 #include "log.h"
 #include "commands.h"
 
@@ -94,6 +95,23 @@ int cmd_exit(struct sway_config *config, int argc, char **argv) {
 	}
 	// TODO: Some kind of clean up is probably in order
 	exit(0);
+	return 0;
+}
+
+int cmd_focus(struct sway_config *config, int argc, char **argv) {
+	if (argc != 1) {
+		sway_log(L_ERROR, "Invalid focus command (expected 1 arguments, got %d)", argc);
+		return 1;
+	}
+	if (strcasecmp(argv[0], "left") == 0) {
+		move_focus(MOVE_LEFT);
+	} else if (strcasecmp(argv[0], "right") == 0) {
+		move_focus(MOVE_RIGHT);
+	} else if (strcasecmp(argv[0], "up") == 0) {
+		move_focus(MOVE_UP);
+	} else if (strcasecmp(argv[0], "down") == 0) {
+		move_focus(MOVE_DOWN);
+	}
 	return 0;
 }
 
@@ -184,6 +202,7 @@ struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
 	{ "exit", cmd_exit },
+	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "layout", cmd_layout },
 	{ "set", cmd_set },
