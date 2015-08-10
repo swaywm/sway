@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
 	}
 
 	setenv("DISPLAY", ":1", 1);
-	if (load_config()) {
-		exit(1);
+	if (!load_config()) {
+		sway_abort("Unable to load config");
 	}
 
 	wlc_run();

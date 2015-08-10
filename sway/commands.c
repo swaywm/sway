@@ -368,5 +368,8 @@ int handle_command(struct sway_config *config, char *exec) {
 		free(argv[i]);
 	}
 	free(argv);
+	if (ret != 0) {
+		sway_log(L_ERROR, "Command failed: %s", cmd);
+	}
 	return ret;
 }
