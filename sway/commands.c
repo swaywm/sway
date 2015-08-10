@@ -260,7 +260,7 @@ int cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
 	arrange_windows(container, -1, -1);
 
-	return 1;
+	return 0;
 }
 
 int cmd_workspace(struct sway_config *config, int argc, char **argv) {
@@ -275,7 +275,7 @@ int cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	} else sway_log(L_DEBUG, "workspace exists, all ok");
 
 	workspace_switch(workspace);
-	return 1;
+	return 0;
 }
 
 /* Keep alphabetized */
