@@ -224,7 +224,8 @@ int cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	}
 
 	swayc_t *container = get_focused_container(&root_container);
-	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, true);
+	bool current = (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) > 0;
+	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
 	arrange_windows(container, -1, -1);
 
 	return 1;
