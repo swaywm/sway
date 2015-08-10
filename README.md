@@ -5,7 +5,7 @@
 sway is an i3-compatible window manager for
 [Wayland](http://wayland.freedesktop.org/).
 
-![](https://sr.ht/iQyr.png)
+![](https://sr.ht/qxGE.png)
 
 ## Rationale
 
