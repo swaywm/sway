@@ -163,13 +163,14 @@ swayc_t *get_focused_container(swayc_t *parent) {
 void add_view(wlc_handle view_handle) {
 	const uint32_t type = wlc_view_get_type(view_handle);
 	const char *title = wlc_view_get_title(view_handle);
-	if ((type & WLC_BIT_UNMANAGED) || (type & WLC_BIT_POPUP) || (type & WLC_BIT_MODAL) || (type & WLC_BIT_SPLASH)) {
+	if ((type & WLC_BIT_OVERRIDE_REDIRECT) || (type & WLC_BIT_UNMANAGED) || (type &
+			WLC_BIT_POPUP) || (type & WLC_BIT_MODAL) || (type & WLC_BIT_SPLASH)) {
 		sway_log(L_DEBUG, "Leaving view %d:%s alone (unmanaged)", view_handle, title);
 		return;
 	}
 
 	swayc_t *parent = get_focused_container(&root_container);
-	sway_log(L_DEBUG, "Adding new view %d:%s under container %p %d", view_handle, title, parent, parent->type);
+	sway_log(L_DEBUG, "Adding new view %d:%s:%d under container %p %d", view_handle, title, type, parent, parent->type);
 
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
@@ -181,8 +182,10 @@ void add_view(wlc_handle view_handle) {
 	view->handle = view_handle;
 	view->parent = parent;
 	view->type = C_VIEW;
-	view->name = malloc(strlen(title) + 1);
-	strcpy(view->name, title);
+	if (title) {
+		view->name = malloc(strlen(title) + 1);
+		strcpy(view->name, title);
+	}
 	add_child(parent, view);
 
 	unfocus_all(&root_container);
