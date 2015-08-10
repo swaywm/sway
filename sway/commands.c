@@ -195,6 +195,9 @@ int cmd_reload(struct sway_config *config, int argc, char **argv) {
 	free(temp);
 	config = read_config(f, true);
 	fclose(f);
+	if (load_config()) {
+	
+	}
 
 	return 0;
 }

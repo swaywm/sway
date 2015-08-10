@@ -33,6 +33,7 @@ struct sway_config {
 	bool reloading;
 };
 
+bool load_config();
 struct sway_config *read_config(FILE *file, bool is_active);
 char *do_var_replacement(struct sway_config *config, char *str);
 
