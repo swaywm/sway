@@ -80,7 +80,7 @@ int cmd_exec(struct sway_config *config, int argc, char **argv) {
 	}
 
     if (config->reloading) {
-		sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
+        sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
         return 0;
     }
 
@@ -176,7 +176,7 @@ int cmd_layout(struct sway_config *config, int argc, char **argv) {
 
 int cmd_reload(struct sway_config *config, int argc, char **argv) {
 	if (argc != 0) {
-		sway_log(L_ERROR, "Invalid reload command (expected 1 arguments, got %d)", argc);
+		sway_log(L_ERROR, "Invalid reload command (expected 0 arguments, got %d)", argc);
 		return 1;
 	}
 
@@ -188,9 +188,9 @@ int cmd_reload(struct sway_config *config, int argc, char **argv) {
 	strcat(temp, name);
 	FILE *f = fopen(temp, "r");
 	if (!f) {
-		fprintf(stderr, "Unable to open %s for reading", temp);
+		sway_log(L_ERROR, "Sway config file not found, aborting reload!");
 		free(temp);
-		exit(1);
+        return 1;
 	}
 	free(temp);
 	config = read_config(f, true);

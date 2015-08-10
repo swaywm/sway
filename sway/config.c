@@ -18,7 +18,7 @@ void config_defaults(struct sway_config *config) {
 	// Flags
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;
-    config->reloading = false; 
+    config->reloading = false;
 }
 
 struct sway_config *read_config(FILE *file, bool is_active) {
@@ -26,7 +26,7 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 	config_defaults(config);
 
     if (is_active) {
-        config->reloading = true; 
+        config->reloading = true;
     }
 
 	bool success = true;
@@ -49,7 +49,7 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 		if (!temp_depth && handle_command(config, line) != 0) {
 			success = false;
 		}
-		
+
 _continue:
 		if (line && line[strlen(line) - 1] == '{') {
 			temp_depth++;
@@ -61,7 +61,9 @@ _continue:
 		exit(1);
 	}
 
-    config->reloading = false; 
+    if (is_active) {
+        config->reloading = true;
+    }
 
 	return config;
 }
