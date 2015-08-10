@@ -51,7 +51,7 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 	// TODO: handle keybindings with more than 1 non-modifier key involved
 	// Note: reminder to check conflicts with mod+q+a versus mod+q
 	
-	bool ret = true;
+	bool cmd_success = true;
 	struct sway_mode *mode = config->current_mode;
 
 	// Lowercase if necessary
@@ -74,12 +74,12 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 				}
 
 				if (match) {
-					ret = handle_command(config, binding->command) != 0;
+					cmd_success = handle_command(config, binding->command);
 				}
 			}
 		}
 	}
-	return ret;
+	return cmd_success;
 }
 
 bool pointer_test(swayc_t *view, void *_origin) {
