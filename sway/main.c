@@ -23,7 +23,7 @@ void load_config() {
 		exit(1);
 	}
 	free(temp);
-	config = read_config(f);
+	config = read_config(f, false);
 	fclose(f);
 }
 
@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
 			.motion = handle_pointer_motion,
 			.button = handle_pointer_button
 		}
+
 	};
 
 	setenv("WLC_DIM", "0", 0);
