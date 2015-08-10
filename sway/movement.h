@@ -4,11 +4,12 @@
 #include <wlc/wlc.h>
 #include "list.h"
 
-enum movement_direction{
-    MOVE_LEFT,
-    MOVE_RIGHT,
-    MOVE_UP,
-    MOVE_DOWN
+enum movement_direction {
+	MOVE_LEFT,
+	MOVE_RIGHT,
+	MOVE_UP,
+	MOVE_DOWN,
+	MOVE_PARENT
 };
 
 int move_focus(enum movement_direction direction);

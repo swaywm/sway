@@ -9,6 +9,20 @@ int move_focus(enum movement_direction direction) {
 	swayc_t *current = get_focused_container(&root_container);
 	swayc_t *parent = current->parent;
 
+	if(direction == MOVE_PARENT) {
+		current = parent;
+		parent  = parent->parent;
+		if(parent->type == C_ROOT) {
+			sway_log(L_DEBUG, "Focus cannot move to parent");
+			return 1;
+		} else {
+			sway_log(L_DEBUG, "Moving focus away from %p", current);
+			unfocus_all(parent);
+			focus_view (parent);
+			return 0;
+		}
+	}
+
 	while (true) {
 		sway_log(L_DEBUG, "Moving focus away from %p", current);
 
