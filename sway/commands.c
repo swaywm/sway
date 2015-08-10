@@ -275,7 +275,7 @@ int cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	} else sway_log(L_DEBUG, "workspace exists, all ok");
 
 	workspace_switch(workspace);
-	return 1;
+	return 0;
 }
 
 /* Keep alphabetized */
