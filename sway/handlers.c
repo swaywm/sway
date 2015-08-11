@@ -77,7 +77,6 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 	} else if (state == WLC_KEY_STATE_RELEASED && mid < head) {
 		memmove(array + mid, array + mid + 1, sizeof*array * (--head - mid));
 	}
-	sway_log(L_INFO,"%d", head);
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
 	for (i = 0; i < mode->bindings->length; ++i) {
