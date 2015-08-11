@@ -55,10 +55,10 @@ void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* ge
 	// deny that shit
 }
 
-enum { QSIZE = 32 };
 
 bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
+	enum { QSIZE = 32 };
 	static uint8_t  head = 0;
 	static uint32_t array[QSIZE];
 
