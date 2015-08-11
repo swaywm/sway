@@ -39,7 +39,7 @@ bool workspace_by_name(swayc_t *view, void *data) {
 
 bool workspace_destroy(swayc_t *workspace) {
 	//Dont destroy if there are children
-	if(workspace->children->length) {
+	if (workspace->children->length) {
 		return false;
 	}
 	sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
@@ -64,8 +64,8 @@ swayc_t *workspace_find_by_name(const char* name) {
 void workspace_switch(swayc_t *workspace) {
 	if (active_workspace) {
 		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", active_workspace->name, workspace->name);
-		if(strcmp(active_workspace->name, workspace->name) == 0) {
-			return; //Dont do anything if they are the same workspace
+		if (active_workspace == workspace) {
+			return;
 		}
 		uint32_t mask = 1;
 		// set all c_views in the old workspace to the invisible mask
