@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <wlc/wlc.h>
 #include <ctype.h>
+#include <string.h>
 #include "layout.h"
 #include "log.h"
 #include "config.h"
@@ -57,41 +58,63 @@ void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* ge
 
 bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
-	// TODO: handle keybindings with more than 1 non-modifier key involved
-	// Note: reminder to check conflicts with mod+q+a versus mod+q
-	
-	bool cmd_success = true;
-	struct sway_mode *mode = config->current_mode;
+#define QSIZE 32
+	static uint8_t  head = 1;
+	static uint32_t array[QSIZE];
 
+	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
 	sym = tolower(sym);
 
+	//Add or remove key to array
+	if (state == WLC_KEY_STATE_PRESSED && head + 1 < QSIZE) {
+		array[head++] = sym;
+	} else if (state == WLC_KEY_STATE_RELEASED) {
+		uint8_t mid = 0;
+		while (mid != head && array[mid] != sym) {
+			++mid;
+		}
+		while (mid < head) {
+			array[mid] = array[mid+1];
+			++mid;
+		}
+		--head;
+	}
+	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
 
 		if ((modifiers->mods & binding->modifiers) == binding->modifiers) {
-			bool match = true;
+			bool match;
 			int j;
 			for (j = 0; j < binding->keys->length; ++j) {
-				xkb_keysym_t *k = binding->keys->items[j];
-				if (sym != *k) {
-					match = false;
+				match = false;
+				xkb_keysym_t *key = binding->keys->items[j];
+				uint8_t k;
+				for (k = 0; k < head; ++k) {
+					if (array[k] == *key) {
+						match = true;
+						break;
+					}
+				}
+				if (match == false) {
 					break;
 				}
 			}
 
 			if (match) {
-				// TODO: --released
 				if (state == WLC_KEY_STATE_PRESSED) {
-					cmd_success = !handle_command(config, binding->command);
-				} else {
-					cmd_success = true;
+					handle_command(config, binding->command);
+				} else if (state == WLC_KEY_STATE_RELEASED) {
+					// TODO: --released
 				}
 			}
 		}
 	}
-	return cmd_success;
+	//repeating sent input is bad
+	return true;
+#undef Q_SIZE
 }
 
 bool pointer_test(swayc_t *view, void *_origin) {
