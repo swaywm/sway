@@ -119,7 +119,6 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 			}
 		}
 	}
-	//repeating sent input is bad
 	return true;
 #undef Q_SIZE
 }
