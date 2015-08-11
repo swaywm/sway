@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <wlc/wlc.h>
 #include <ctype.h>
-#include <string.h>
 #include "layout.h"
 #include "log.h"
 #include "config.h"
