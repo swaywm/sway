@@ -11,6 +11,14 @@ list_t *create_list(void) {
 	return list;
 }
 
+static
+void list_resize(list_t *list) {
+	if (list->length == list->capacity) {
+		list->capacity += 10;
+		list->items = realloc(list->items, sizeof(void*) * list->capacity);
+	}
+}
+
 void list_free(list_t *list) {
 	if (list == NULL) {
 		return;
@@ -20,25 +28,20 @@ void list_free(list_t *list) {
 }
 
 void list_add(list_t *list, void *item) {
-	if (list->length == list->capacity) {
-		list->capacity += 10;
-		list->items = realloc(list->items, sizeof(void*) * list->capacity);
-	}
+	list_resize(list);
 	list->items[list->length++] = item;
 }
 
 void list_insert(list_t *list, int index, void *item) {
-	// TODO: Implement this properly
-	if (list->length == list->capacity) {
-		list->capacity += 10;
-		list->items = realloc(list->items, sizeof(void*) * list->capacity);
-	}
-	list->items[list->length++] = item;
+	list_resize(list);
+	memmove(&list->items[index + 1], &list->items[index], sizeof(void*) * (list->length - index));
+	list->length++;
+	list->items[index] = item;
 }
 
 void list_del(list_t *list, int index) {
 	list->length--;
-	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->capacity - index - 1));
+	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->length - index));
 }
 
 void list_cat(list_t *list, list_t *source) {
