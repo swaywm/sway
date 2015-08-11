@@ -9,6 +9,8 @@ It's a work in progress, proceed at your own risk.
 
 ![](https://sr.ht/qxGE.png)
 
+Chat on #sway on irc.freenode.net
+
 ## Rationale
 
 I use i3 on xorg. Wayland is coming, and [i3way](http://i3way.org/) still has
