@@ -360,7 +360,7 @@ struct cmd_handler *find_handler(struct cmd_handler handlers[], int l, char *lin
 	return res;
 }
 
-int handle_command(struct sway_config *config, char *exec) {
+bool handle_command(struct sway_config *config, char *exec) {
 	sway_log(L_INFO, "Handling command '%s'", exec);
 	char *ptr, *cmd;
 	bool exec_success;

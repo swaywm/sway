@@ -45,7 +45,7 @@ typedef struct sway_container swayc_t;
 
 extern swayc_t root_container;
 
-void init_layout();
+void init_layout(void);
 void add_child(swayc_t *parent, swayc_t *child);
 void add_output(wlc_handle output);
 void destroy_output(wlc_handle output);
@@ -58,6 +58,7 @@ swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *da
 swayc_t *get_focused_container(swayc_t *parent);
 int remove_container_from_parent(swayc_t *parent, swayc_t *container);
 swayc_t *create_container(swayc_t *parent, wlc_handle handle);
+void free_swayc(swayc_t *container);
 swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent);
 
 #endif
