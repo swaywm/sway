@@ -56,10 +56,11 @@ void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* ge
 	// deny that shit
 }
 
+
 bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
 #define QSIZE 32
-	static uint8_t  head = 1;
+	static uint8_t  head = 0;
 	static uint32_t array[QSIZE];
 
 	struct sway_mode *mode = config->current_mode;
@@ -74,11 +75,9 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		while (mid != head && array[mid] != sym) {
 			++mid;
 		}
-		while (mid < head) {
-			array[mid] = array[mid+1];
-			++mid;
-		}
-		--head;
+		if (mid < head) {
+			memmove(array + mid, array + mid + 1, sizeof*array * (--head - mid));
+		} /* else { key is not found as its been removed } */
 	}
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
@@ -104,6 +103,15 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 			}
 
 			if (match) {
+				//Remove matched keys from array
+				int j;
+				for (j = 0; j < binding->keys->length; ++j) {
+					uint8_t k;
+					for (k = 0; k < head; ++k) {
+						memmove(array + k, array + k + 1, sizeof*array * (--head - k));
+						break;
+					}
+				}
 				if (state == WLC_KEY_STATE_PRESSED) {
 					handle_command(config, binding->command);
 				} else if (state == WLC_KEY_STATE_RELEASED) {
