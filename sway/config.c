@@ -8,6 +8,8 @@
 #include "commands.h"
 #include "config.h"
 
+struct sway_config *config;
+
 bool load_config() {
 	sway_log(L_INFO, "Loading config");
 	// TODO: Allow use of more config file locations
@@ -82,7 +84,7 @@ _continue:
 	}
 
 	if (is_active) {
-		config->reloading = true;
+		config->reloading = false;
 	}
 
 	return config;

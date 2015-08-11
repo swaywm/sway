@@ -34,7 +34,6 @@ bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
 		return false;
 	}
-	argv[0] = do_var_replacement(config, argv[0]);
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();
@@ -381,6 +380,12 @@ bool handle_command(struct sway_config *config, char *exec) {
 		int argc;
 		char **argv = split_directive(exec + strlen(handler->command), &argc);
 		int i;
+
+		 //Perform var subs on all parts of the command
+		 for (i = 0; i < argc; ++i) {
+			 argv[i] = do_var_replacement(config, argv[i]);
+		 }
+
 		exec_success = handler->handle(config, argc, argv);
 		for (i = 0; i < argc; ++i) {
 			free(argv[i]);
