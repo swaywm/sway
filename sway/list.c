@@ -11,8 +11,7 @@ list_t *create_list(void) {
 	return list;
 }
 
-static
-void list_resize(list_t *list) {
+static void list_resize(list_t *list) {
 	if (list->length == list->capacity) {
 		list->capacity += 10;
 		list->items = realloc(list->items, sizeof(void*) * list->capacity);
