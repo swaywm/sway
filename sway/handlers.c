@@ -27,6 +27,15 @@ void handle_output_resolution_change(wlc_handle output, const struct wlc_size *f
 	arrange_windows(&root_container, -1, -1);
 }
 
+void handle_output_focused(wlc_handle output, bool focus) {
+	swayc_t *c = get_swayc_for_handle(output, &root_container);
+	if (!c) return;
+	if (focus) {
+		unfocus_all(&root_container);
+		focus_view(c);
+	}
+}
+
 bool handle_view_created(wlc_handle view) {
 	add_view(view);
 	return true;

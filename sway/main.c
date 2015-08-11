@@ -17,7 +17,8 @@ int main(int argc, char **argv) {
 		.output = {
 			.created = handle_output_created,
 			.destroyed = handle_output_destroyed,
-			.resolution = handle_output_resolution_change
+			.resolution = handle_output_resolution_change,
+			.focus = handle_output_focused
 		},
 		.view = {
 			.created = handle_view_created,

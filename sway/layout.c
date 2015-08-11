@@ -44,10 +44,16 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			sway_log(L_DEBUG, "Arranging output at %d", x);
 			child->x = x;
 			child->y = y;
-			arrange_windows(child, child->width, child->height);
+			arrange_windows(child, -1, -1);
 			x += child->width;
 		}
 		return;
+	case C_OUTPUT:
+		container->width = width;
+		container->height = height;
+		x -= container->x;
+		y -= container->y;
+		break;
 	case C_VIEW:
 		{
 			struct wlc_geometry geometry = {
@@ -342,9 +348,8 @@ void add_output(wlc_handle output) {
 	add_child(container, workspace);
 	sway_log(L_DEBUG, "Added workspace %s for output %d", workspace->name, output);
 
-	workspace_switch(workspace);
-
 	if (root_container.focused == NULL) {
+		workspace_switch(workspace);
 		unfocus_all(&root_container);
 		focus_view(workspace);
 	}
