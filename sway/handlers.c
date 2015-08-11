@@ -57,24 +57,27 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 	// Lowercase if necessary
 	sym = tolower(sym);
 
-	if (state == WLC_KEY_STATE_PRESSED) {
-		int i;
-		for (i = 0; i < mode->bindings->length; ++i) {
-			struct sway_binding *binding = mode->bindings->items[i];
+	int i;
+	for (i = 0; i < mode->bindings->length; ++i) {
+		struct sway_binding *binding = mode->bindings->items[i];
 
-			if ((modifiers->mods & binding->modifiers) == binding->modifiers) {
-				bool match = true;
-				int j;
-				for (j = 0; j < binding->keys->length; ++j) {
-					xkb_keysym_t *k = binding->keys->items[j];
-					if (sym != *k) {
-						match = false;
-						break;
-					}
+		if ((modifiers->mods & binding->modifiers) == binding->modifiers) {
+			bool match = true;
+			int j;
+			for (j = 0; j < binding->keys->length; ++j) {
+				xkb_keysym_t *k = binding->keys->items[j];
+				if (sym != *k) {
+					match = false;
+					break;
 				}
+			}
 
-				if (match) {
-					cmd_success = handle_command(config, binding->command);
+			if (match) {
+				// TODO: --released
+				if (state == WLC_KEY_STATE_PRESSED) {
+					cmd_success = !handle_command(config, binding->command);
+				} else {
+					cmd_success = true;
 				}
 			}
 		}

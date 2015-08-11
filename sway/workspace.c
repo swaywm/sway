@@ -9,10 +9,18 @@
 
 swayc_t *active_workspace = NULL;
 
+int ws_num = 1;
+
 char *workspace_next_name(void) {
-	//TODO change this i guess. seems pretty bad
-	char *name = malloc(sizeof("1"));
-	return strcpy(name, "1");
+	int l = 1;
+	if (ws_num >= 10) {
+		l = 2;
+	} else if (ws_num >= 100) {
+		l = 3;
+	}
+	char *name = malloc(l + 1);
+	sprintf(name, "%d", ws_num++);
+	return name;
 }
 
 swayc_t *workspace_create(const char* name) {
@@ -45,7 +53,6 @@ bool workspace_destroy(swayc_t *workspace) {
 	sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
 	free_swayc(workspace);
 	return true;
-
 }
 
 void set_mask(swayc_t *view, void *data) {

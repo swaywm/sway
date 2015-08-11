@@ -4,6 +4,7 @@
 #include "list.h"
 #include "log.h"
 #include "layout.h"
+#include "container.h"
 #include "workspace.h"
 
 swayc_t root_container;
@@ -35,10 +36,16 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		height = container->height;
 	}
 
+	int x = 0, y = 0;
 	switch (container->type) {
 	case C_ROOT:
 		for (i = 0; i < container->children->length; ++i) {
-			arrange_windows(container->children->items[i], -1, -1);
+			swayc_t *child = container->children->items[i];
+			sway_log(L_DEBUG, "Arranging output at %d", x);
+			child->x = x;
+			child->y = y;
+			arrange_windows(child, child->width, child->height);
+			x += child->width;
 		}
 		return;
 	case C_VIEW:
@@ -85,7 +92,6 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		total_weight += child->weight;
 	}
 
-	int x = 0, y = 0;
 	switch (container->layout) {
 	case L_HORIZ:
 	default:
@@ -307,6 +313,13 @@ swayc_t *create_container(swayc_t *parent, wlc_handle handle) {
 	return c;
 }
 
+void add_output_widths(swayc_t *container, void *_width) {
+	int *width = _width;
+	if (container->type == C_OUTPUT) {
+		*width += container->width;
+	}
+}
+
 void add_output(wlc_handle output) {
 	sway_log(L_DEBUG, "Adding output %d", output);
 	const struct wlc_size* size = wlc_output_get_resolution(output);
@@ -317,6 +330,9 @@ void add_output(wlc_handle output) {
 	container->height = size->h;
 	add_child(&root_container, container);
 
+	int total_width = 0;
+	container_map(&root_container, add_output_widths, &total_width);
+
 	swayc_t *workspace = create_container(container, -1);
 	workspace->type = C_WORKSPACE;
 	workspace->name = workspace_next_name();
@@ -324,6 +340,7 @@ void add_output(wlc_handle output) {
 	workspace->height = size->h;
 	workspace->layout = L_HORIZ; // TODO: Get default layout from config
 	add_child(container, workspace);
+	sway_log(L_DEBUG, "Added workspace %s for output %d", workspace->name, output);
 
 	workspace_switch(workspace);
 
