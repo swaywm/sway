@@ -34,12 +34,19 @@ bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
 		return false;
 	}
-	argv[0] = do_var_replacement(config, argv[0]);
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->command = join_args(argv + 1, argc - 1);
+
+	//Set the first workspace name found to the init_workspace
+	if (!config->init_workspace) {
+		if (strcmp("workspace", argv[1]) == 0) {
+			config->init_workspace = malloc(strlen(argv[2]) + 1);
+			strcpy(config->init_workspace, argv[2]);
+		}
+	}
 
 	list_t *split = split_string(argv[0], "+");
 	int i;
@@ -381,6 +388,12 @@ bool handle_command(struct sway_config *config, char *exec) {
 		int argc;
 		char **argv = split_directive(exec + strlen(handler->command), &argc);
 		int i;
+
+		//Perform var subs on all parts of the command
+		for (i = 0; i < argc; ++i) {
+			argv[i] = do_var_replacement(config, argv[i]);
+		}
+
 		exec_success = handler->handle(config, argc, argv);
 		for (i = 0; i < argc; ++i) {
 			free(argv[i]);
