@@ -62,11 +62,8 @@ swayc_t *workspace_find_by_name(const char* name) {
 }
 
 void workspace_switch(swayc_t *workspace) {
-	if (active_workspace) {
+	if (workspace != active_workspace && active_workspace) {
 		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", active_workspace->name, workspace->name);
-		if (active_workspace == workspace) {
-			return;
-		}
 		uint32_t mask = 1;
 		// set all c_views in the old workspace to the invisible mask
 		container_map(active_workspace, set_mask, &mask);
