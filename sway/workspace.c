@@ -6,21 +6,17 @@
 #include "list.h"
 #include "log.h"
 #include "container.h"
+#include "config.h"
 
 swayc_t *active_workspace = NULL;
 
 int ws_num = 1;
 
-char *workspace_next_name(void) {
-	int l = 1;
-	if (ws_num >= 10) {
-		l = 2;
-	} else if (ws_num >= 100) {
-		l = 3;
-	}
-	char *name = malloc(l + 1);
-	sprintf(name, "%d", ws_num++);
-	return name;
+char *workspace_init_name(void) {
+	//It should be fine to just return the init name, since
+	//any non bound workspace can't be used outside of the very
+	//first workspace created
+	return config->init_workspace;
 }
 
 swayc_t *workspace_create(const char* name) {

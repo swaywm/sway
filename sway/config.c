@@ -8,6 +8,8 @@
 #include "commands.h"
 #include "config.h"
 
+struct sway_config *config;
+
 bool load_config() {
 	sway_log(L_INFO, "Loading config");
 	// TODO: Allow use of more config file locations
@@ -34,6 +36,7 @@ void config_defaults(struct sway_config *config) {
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
+	config->init_workspace = NULL;
 	list_add(config->modes, config->current_mode);
 	// Flags
 	config->focus_follows_mouse = true;
@@ -82,7 +85,12 @@ _continue:
 	}
 
 	if (is_active) {
-		config->reloading = true;
+		config->reloading = false;
+	}
+	
+	if (!config->init_workspace) {
+		sway_log(L_INFO, "No workspace names set, defaulting to 1");
+		config->init_workspace = "1";
 	}
 
 	return config;

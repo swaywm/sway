@@ -25,6 +25,7 @@ struct sway_config {
 	list_t *symbols;
 	list_t *modes;
 	struct sway_mode *current_mode;
+	char *init_workspace;
 
 	// Flags
 	bool focus_follows_mouse;

@@ -341,7 +341,7 @@ void add_output(wlc_handle output) {
 
 	swayc_t *workspace = create_container(container, -1);
 	workspace->type = C_WORKSPACE;
-	workspace->name = workspace_next_name();
+	workspace->name = workspace_init_name();
 	workspace->width = size->w; // TODO: gaps
 	workspace->height = size->h;
 	workspace->layout = L_HORIZ; // TODO: Get default layout from config
