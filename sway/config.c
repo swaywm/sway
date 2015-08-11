@@ -90,7 +90,9 @@ _continue:
 	
 	if (!config->init_workspace) {
 		sway_log(L_INFO, "No workspace names set, defaulting to 1");
-		config->init_workspace = "1";
+		char* default_init_workspace = "1";
+		config->init_workspace = malloc(strlen(default_init_workspace) + 1);
+		strcpy(config->init_workspace, default_init_workspace);
 	}
 
 	return config;
