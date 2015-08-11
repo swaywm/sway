@@ -61,22 +61,23 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 	enum { QSIZE = 32 };
 	static uint8_t  head = 0;
 	static uint32_t array[QSIZE];
+	bool cmd_success = true;
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
 	sym = tolower(sym);
-	//Add or remove key to array
-	if (state == WLC_KEY_STATE_PRESSED && head + 1 < QSIZE) {
-		array[head++] = sym;
-	} else if (state == WLC_KEY_STATE_RELEASED) {
-		uint8_t mid = 0;
-		while (mid != head && array[mid] != sym) {
-			++mid;
-		}
-		if (mid < head) {
-			memmove(array + mid, array + mid + 1, sizeof*array * (--head - mid));
-		} /* else { key is not found as its been removed } */
+
+	//Find key, if it has been pressed
+	int mid = 0;
+	while (mid < head && array[mid] != sym) {
+		++mid;
 	}
+	if (state == WLC_KEY_STATE_PRESSED && mid == head && head + 1 < QSIZE) {
+		array[head++] = sym;
+	} else if (state == WLC_KEY_STATE_RELEASED && mid < head) {
+		memmove(array + mid, array + mid + 1, sizeof*array * (--head - mid));
+	}
+	sway_log(L_INFO,"%d", head);
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
 	for (i = 0; i < mode->bindings->length; ++i) {
@@ -111,14 +112,14 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 					}
 				}
 				if (state == WLC_KEY_STATE_PRESSED) {
-					handle_command(config, binding->command);
+					cmd_success = !handle_command(config, binding->command);
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
 				}
 			}
 		}
 	}
-	return true;
+	return cmd_success;
 }
 
 bool pointer_test(swayc_t *view, void *_origin) {
