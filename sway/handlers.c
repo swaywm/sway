@@ -55,17 +55,16 @@ void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* ge
 	// deny that shit
 }
 
+enum { QSIZE = 32 };
 
 bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
-#define QSIZE 32
 	static uint8_t  head = 0;
 	static uint32_t array[QSIZE];
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
 	sym = tolower(sym);
-
 	//Add or remove key to array
 	if (state == WLC_KEY_STATE_PRESSED && head + 1 < QSIZE) {
 		array[head++] = sym;
@@ -120,7 +119,6 @@ bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		}
 	}
 	return true;
-#undef Q_SIZE
 }
 
 bool pointer_test(swayc_t *view, void *_origin) {
