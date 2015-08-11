@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-list_t *create_list() {
+list_t *create_list(void) {
 	list_t *list = malloc(sizeof(list_t));
 	list->capacity = 10;
 	list->length = 0;

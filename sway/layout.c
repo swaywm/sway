@@ -119,7 +119,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	}
 }
 
-void init_layout() {
+void init_layout(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
 	root_container.children = create_list();
@@ -128,6 +128,9 @@ void init_layout() {
 
 void free_swayc(swayc_t *container) {
 	// NOTE: Does not handle moving children into a different container
+	if (container->parent) {
+		remove_container_from_parent(container->parent, container);
+	}
 	list_free(container->children);
 	if (container->name) {
 		free(container->name);

@@ -9,8 +9,10 @@
 
 swayc_t *active_workspace = NULL;
 
-char *workspace_next_name() {
-	return "1";
+char *workspace_next_name(void) {
+	//TODO change this i guess. seems pretty bad
+	char *name = malloc(sizeof("1"));
+	return strcpy(name, "1");
 }
 
 swayc_t *workspace_create(const char* name) {
@@ -35,6 +37,17 @@ bool workspace_by_name(swayc_t *view, void *data) {
 		   (strcasecmp(view->name, (char *) data) == 0);
 }
 
+bool workspace_destroy(swayc_t *workspace) {
+	//Dont destroy if there are children
+	if(workspace->children->length) {
+		return false;
+	}
+	sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
+	free_swayc(workspace);
+	return true;
+
+}
+
 void set_mask(swayc_t *view, void *data) {
 	uint32_t *p = data;
 
@@ -49,12 +62,15 @@ swayc_t *workspace_find_by_name(const char* name) {
 }
 
 void workspace_switch(swayc_t *workspace) {
-	if(active_workspace) {
-		sway_log(L_DEBUG, "workspace: changing from %s to %s", active_workspace->name, workspace->name);
-
+	if (active_workspace) {
+		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", active_workspace->name, workspace->name);
+		if(strcmp(active_workspace->name, workspace->name) == 0) {
+			return; //Dont do anything if they are the same workspace
+		}
 		uint32_t mask = 1;
 		// set all c_views in the old workspace to the invisible mask
 		container_map(active_workspace, set_mask, &mask);
+
 		// and c_views in the new workspace to the visible mask
 		mask = 2;
 		container_map(workspace, set_mask, &mask);
@@ -62,7 +78,7 @@ void workspace_switch(swayc_t *workspace) {
 		wlc_output_set_mask(wlc_get_focused_output(), 2);
 		unfocus_all(active_workspace);
 		focus_view(workspace);
+		workspace_destroy(active_workspace);
 	}
-
 	active_workspace = workspace;
 }

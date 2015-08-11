@@ -7,7 +7,7 @@ typedef struct {
 	void **items;
 } list_t;
 
-list_t *create_list();
+list_t *create_list(void);
 void list_free(list_t *list);
 void list_add(list_t *list, void *item);
 void list_insert(list_t *list, int index, void *item);

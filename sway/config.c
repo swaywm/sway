@@ -9,6 +9,7 @@
 #include "config.h"
 
 bool load_config() {
+	sway_log(L_INFO, "Loading config");
 	// TODO: Allow use of more config file locations
 	const char *name = "/.sway/config";
 	const char *home = getenv("HOME");
@@ -65,7 +66,7 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 			goto _continue;
 		}
 
-		if (!temp_depth && handle_command(config, line) != 0) {
+		if (!temp_depth && handle_command(config, line) != true) {
 			success = false;
 		}
 
@@ -76,7 +77,7 @@ _continue:
 		free(line);
 	}
 
-	if (!success) {
+	if (success == false) {
 		exit(1);
 	}
 
