@@ -1,5 +1,7 @@
 # sway
 
+[![Build Status](https://ci.gensok.io/job/Sway-Main/badge/icon)](https://ci.gensok.io/job/Sway-Main/)
+
 "**S**irCmpwn's **Way**land window manager"
 
 sway is an i3-compatible window manager for
