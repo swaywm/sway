@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include <ctype.h>
 #include "stringop.h"
 #include "layout.h"
@@ -118,6 +119,22 @@ static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
 	if(cleanup == false) {
 		signal(SIGCHLD, cmd_exec_cleanup);
 		cleanup = true;
+		/* Set it so filedescriptors are closed for executed programs */
+		int flag_out = fcntl(STDOUT_FILENO, F_GETFD);
+		int flag_in  = fcntl(STDIN_FILENO, F_GETFD);
+		int flag_err  = fcntl(STDERR_FILENO, F_GETFD);
+		if (flag_out != -1) {
+			flag_out |= FD_CLOEXEC;
+			fcntl(STDOUT_FILENO, F_SETFD, flag_out);
+		}
+		if (flag_in != -1) {
+			flag_in |= FD_CLOEXEC;
+			fcntl(STDIN_FILENO, F_SETFD, flag_in);
+		}
+		if (flag_err != -1) {
+			flag_err |= FD_CLOEXEC;
+			fcntl(STDERR_FILENO, F_SETFD, flag_err);
+		}
 	}
 
 	if (checkarg(argc, "exec_always", EXPECTED_MORE_THEN, 0) == false) {
@@ -287,7 +304,7 @@ static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "fullscreen", EXPECTED_SAME_AS, 1) == false) {
+	if (checkarg(argc, "fullscreen", EXPECTED_SAME_AS, 0) == false) {
 		return false;
 	}
 
