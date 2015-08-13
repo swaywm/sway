@@ -72,7 +72,6 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 		// Any command which would require wlc to be initialized
 		// should be queue for later execution
 		list_t *args = split_string(line, " ");
-		sway_log(L_DEBUG, "Checking command %s", line);
 		if (strcmp("workspace", args->items[0]) == 0) {
 			sway_log(L_DEBUG, "Deferring command %s", line);
 			char *cmd = malloc(strlen(line) + 1);
@@ -92,7 +91,6 @@ _continue:
 	}
 
 	if (success == false) {
-		sway_log(L_DEBUG, "Config load failed, exiting");
 		exit(1);
 	}
 
