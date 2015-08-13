@@ -30,12 +30,13 @@ struct sway_config {
 	// Flags
 	bool focus_follows_mouse;
 	bool mouse_warping;
-	
+	bool active;	
+	bool failed;	
 	bool reloading;
 };
 
 bool load_config();
-struct sway_config *read_config(FILE *file, bool is_active);
+bool read_config(FILE *file, bool is_active);
 char *do_var_replacement(struct sway_config *config, char *str);
 
 extern struct sway_config *config;
