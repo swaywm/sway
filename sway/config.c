@@ -33,6 +33,7 @@ bool load_config() {
 void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
+	config->cmd_queue = create_list();
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
@@ -68,9 +69,20 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 			goto _continue;
 		}
 
-		if (!temp_depth && handle_command(config, line) != true) {
+		// Any command which would require wlc to be initialized
+		// should be queue for later execution
+		list_t *args = split_string(line, " ");
+		sway_log(L_DEBUG, "Checking command %s", line);
+		if (strcmp("workspace", args->items[0]) == 0) {
+			sway_log(L_DEBUG, "Deferring command %s", line);
+			char *cmd = malloc(strlen(line) + 1);
+			strcpy(cmd, line);
+			list_add(config->cmd_queue, cmd);
+		}else if (!temp_depth && !handle_command(config, line)) {
+			sway_log(L_DEBUG, "Config load failed for line %s", line);
 			success = false;
-		}
+		} 
+		list_free(args);
 
 _continue:
 		if (line && line[strlen(line) - 1] == '{') {
@@ -80,6 +92,7 @@ _continue:
 	}
 
 	if (success == false) {
+		sway_log(L_DEBUG, "Config load failed, exiting");
 		exit(1);
 	}
 
