@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <ctype.h>
 #include "stringop.h"
 #include "layout.h"
@@ -28,6 +29,8 @@ struct modifier_key modifiers[] = {
 	{ XKB_MOD_NAME_LOGO, WLC_BIT_MOD_LOGO },
 	{ "Mod5", WLC_BIT_MOD_MOD5 },
 };
+
+
 
 bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	if (argc < 2) {
@@ -73,44 +76,55 @@ bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_exec(struct sway_config *config, int argc, char **argv) {
+static void cmd_exec_cleanup(int signal) {
+	while (waitpid((pid_t)-1, 0, WNOHANG) > 0){};
+}
+
+static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
+	/* setup signal handler to cleanup dead proccesses */
+	/* TODO: replace this with a function that has constructor attribute? */
+	static bool cleanup = false;
+	if(cleanup == false) {
+		signal(SIGCHLD, cmd_exec_cleanup);
+		cleanup = true;
+	}
+
 	if (argc < 1) {
 		sway_log(L_ERROR, "Invalid exec command (expected at least 1 argument, got %d)", argc);
 		return false;
 	}
 
-	if (config->reloading) {
-		sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
-		return true;
-	}
-
-	if (fork() == 0) {
-		char *args = join_args(argv, argc);
-		sway_log(L_DEBUG, "Executing %s", args);
-		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
-		free(args);
-		exit(0);
-	}
-	return true;
-}
-
-bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
-	if (argc < 1) {
-		sway_log(L_ERROR, "Invalid exec_always command (expected at least 1 argument, got %d)", argc);
+	pid_t pid = fork();
+	/* Failed to fork */
+	if (pid  < 0) {
+		sway_log(L_ERROR, "exec command failed, sway did not fork");
 		return false;
 	}
-
-	if (fork() == 0) {
+	/* Child process */
+	if (pid == 0) {
 		char *args = join_args(argv, argc);
 		sway_log(L_DEBUG, "Executing %s", args);
 		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
+		/* Execl doesnt return unless failure */
+		sway_log(L_ERROR, "could not find /bin/sh");
 		free(args);
-		exit(0);
+		exit(-1);
 	}
+	/* Parent */
 	return true;
 }
 
-bool cmd_exit(struct sway_config *config, int argc, char **argv) {
+static bool cmd_exec(struct sway_config *config, int argc, char **argv) {
+	if (config->reloading) {
+		char *args = join_args(argv, argc);
+		sway_log(L_DEBUG, "Ignoring exec %s due to reload", args);
+		free(args);
+		return true;
+	}
+	return cmd_exec_always(config, argc, argv);
+}
+
+static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	if (argc != 0) {
 		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
 		return false;
@@ -120,7 +134,7 @@ bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_focus(struct sway_config *config, int argc, char **argv) {
+static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 	if (argc != 1) {
 		sway_log(L_ERROR, "Invalid focus command (expected 1 arguments, got %d)", argc);
 		return false;
@@ -139,7 +153,7 @@ bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
+static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
 	if (argc != 1) {
 		sway_log(L_ERROR, "Invalid focus_follows_mouse command (expected 1 arguments, got %d)", argc);
 		return false;
@@ -149,7 +163,7 @@ bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) 
 	return true;
 }
 
-bool cmd_layout(struct sway_config *config, int argc, char **argv) {
+static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 	if (argc < 1) {
 		sway_log(L_ERROR, "Invalid layout command (expected at least 1 argument, got %d)", argc);
 		return false;
@@ -174,7 +188,7 @@ bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_reload(struct sway_config *config, int argc, char **argv) {
+static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	if (argc != 0) {
 		sway_log(L_ERROR, "Invalid reload command (expected 0 arguments, got %d)", argc);
 		return false;
@@ -186,7 +200,7 @@ bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_set(struct sway_config *config, int argc, char **argv) {
+static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	if (argc != 2) {
 		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
 		return false;
@@ -200,7 +214,7 @@ bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
+static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
 	if (argc != 0) {
 		sway_log(L_ERROR, "Invalid splitv command (expected 0 arguments, got %d)", argc);
 		return false;
@@ -225,15 +239,15 @@ bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
 	return true;
 }
 
-bool cmd_splitv(struct sway_config *config, int argc, char **argv) {
+static bool cmd_splitv(struct sway_config *config, int argc, char **argv) {
 	return _do_split(config, argc, argv, L_VERT);
 }
 
-bool cmd_splith(struct sway_config *config, int argc, char **argv) {
+static bool cmd_splith(struct sway_config *config, int argc, char **argv) {
 	return _do_split(config, argc, argv, L_HORIZ);
 }
 
-bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
+static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 	if (argc != 1) {
 		sway_log(L_ERROR, "Invalid log_colors command (expected 1 argument, got %d)", argc);
 		return false;
@@ -248,7 +262,7 @@ bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
+static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	if (argc != 1) {
 		sway_log(L_ERROR, "Invalid fullscreen command (expected 1 arguments, got %d)", argc);
 		return false;
@@ -262,7 +276,7 @@ bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
+static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	if (argc != 1) {
 		sway_log(L_ERROR, "Invalid workspace command (expected 1 arguments, got %d)", argc);
 		return false;
