@@ -12,6 +12,6 @@ enum movement_direction {
 	MOVE_PARENT
 };
 
-int move_focus(enum movement_direction direction);
+bool move_focus(enum movement_direction direction);
 
 #endif

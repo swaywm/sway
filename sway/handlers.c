@@ -9,16 +9,16 @@
 #include "commands.h"
 #include "handlers.h"
 
-bool handle_output_created(wlc_handle output) {
+static bool handle_output_created(wlc_handle output) {
 	add_output(output);
 	return true;
 }
 
-void handle_output_destroyed(wlc_handle output) {
+static void handle_output_destroyed(wlc_handle output) {
 	destroy_output(output);
 }
 
-void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
+static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
 	sway_log(L_DEBUG, "Output %d resolution changed to %d x %d", output, to->w, to->h);
 	swayc_t *c = get_swayc_for_handle(output, &root_container);
 	if (!c) return;
@@ -27,7 +27,7 @@ void handle_output_resolution_change(wlc_handle output, const struct wlc_size *f
 	arrange_windows(&root_container, -1, -1);
 }
 
-void handle_output_focused(wlc_handle output, bool focus) {
+static void handle_output_focused(wlc_handle output, bool focus) {
 	swayc_t *c = get_swayc_for_handle(output, &root_container);
 	if (!c) return;
 	if (focus) {
@@ -36,27 +36,26 @@ void handle_output_focused(wlc_handle output, bool focus) {
 	}
 }
 
-bool handle_view_created(wlc_handle view) {
+static bool handle_view_created(wlc_handle view) {
 	add_view(view);
 	return true;
 }
 
-void handle_view_destroyed(wlc_handle view) {
+static void handle_view_destroyed(wlc_handle view) {
 	sway_log(L_DEBUG, "Destroying window %d", view);
 	destroy_view(get_swayc_for_handle(view, &root_container));
-	return true;
 }
 
-void handle_view_focus(wlc_handle view, bool focus) {
+static void handle_view_focus(wlc_handle view, bool focus) {
 	return;
 }
 
-void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry) {
+static void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry) {
 	// deny that shit
 }
 
 
-bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
+static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
 	enum { QSIZE = 32 };
 	static uint8_t  head = 0;
@@ -133,7 +132,7 @@ bool pointer_test(swayc_t *view, void *_origin) {
 
 struct wlc_origin mouse_origin;
 
-bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin) {
+static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin) {
 	mouse_origin = *origin;
 	if (!config->focus_follows_mouse) {
 		return true;
@@ -148,7 +147,7 @@ bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_orig
 	return true;
 }
 
-bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
+static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state) {
 	if (state == WLC_BUTTON_STATE_PRESSED) {
 		swayc_t *c = find_container(&root_container, pointer_test, &mouse_origin);
@@ -163,3 +162,29 @@ bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modi
 	}
 	return true;
 }
+
+
+struct wlc_interface interface = {
+	.output = {
+		.created = handle_output_created,
+		.destroyed = handle_output_destroyed,
+		.resolution = handle_output_resolution_change,
+		.focus = handle_output_focused
+	},
+	.view = {
+		.created = handle_view_created,
+		.destroyed = handle_view_destroyed,
+		.focus = handle_view_focus,
+		.request = {
+			.geometry = handle_view_geometry_request
+		}
+	},
+	.keyboard = {
+		.key = handle_key
+	},
+	.pointer = {
+		.motion = handle_pointer_motion,
+		.button = handle_pointer_button
+	}
+};
+

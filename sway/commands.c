@@ -18,7 +18,7 @@ struct modifier_key {
 	uint32_t mod;
 };
 
-struct modifier_key modifiers[] = {
+static struct modifier_key modifiers[] = {
 	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
 	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
 	{ XKB_MOD_NAME_CTRL, WLC_BIT_MOD_CTRL },
@@ -29,11 +29,46 @@ struct modifier_key modifiers[] = {
 	{ "Mod5", WLC_BIT_MOD_MOD5 },
 };
 
-bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
-	if (argc < 2) {
-		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
-		return false;
+enum expected_args {
+	EXPECTED_MORE_THAN,
+	EXPECTED_LESS_THAN,
+	EXPECTED_EQUAL_TO
+};
+
+static bool checkarg(int argc, char *name, enum expected_args type, int val) {
+	switch (type) {
+		case EXPECTED_MORE_THAN:
+			if (argc > val) {
+				return true;
+			}
+			sway_log(L_ERROR, "Invalid %s command."
+				"(expected more then %d argument%s, got %d",
+				name, val, (char*[2]){"s", ""}[argc==1], argc);
+			break;
+		case EXPECTED_LESS_THAN:
+			if (argc  < val) {
+				return true;
+			};
+			sway_log(L_ERROR, "Invalid %s command."
+				"(expected less then %d argument%s, got %d",
+				name, val, (char*[2]){"s", ""}[argc==1], argc);
+			break;
+		case EXPECTED_EQUAL_TO:
+			if (argc == val) {
+				return true;
+			};
+			sway_log(L_ERROR, "Invalid %s command."
+				"(expected %d arguments, got %d", name, val, argc);
+			break;
 	}
+	return false;
+}
+
+
+static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)) {
+		return false;
+	};
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();
@@ -73,46 +108,43 @@ bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_exec(struct sway_config *config, int argc, char **argv) {
-	if (argc < 1) {
-		sway_log(L_ERROR, "Invalid exec command (expected at least 1 argument, got %d)", argc);
+static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return false;
 	}
 
+	pid_t pid = fork();
+	/* Failed to fork */
+	if (pid  < 0) {
+		sway_log(L_ERROR, "exec command failed, sway did not fork");
+		return false;
+	}
+	/* Child process */
+	if (pid == 0) {
+		char *args = join_args(argv, argc);
+		sway_log(L_DEBUG, "Executing %s", args);
+		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
+		/* Execl doesnt return unless failure */
+		sway_log(L_ERROR, "could not find /bin/sh");
+		free(args);
+		exit(-1);
+	}
+	/* Parent */
+	return true;
+}
+
+static bool cmd_exec(struct sway_config *config, int argc, char **argv) {
 	if (config->reloading) {
-		sway_log(L_DEBUG, "Ignoring exec %s due to reload", join_args(argv, argc));
+		char *args = join_args(argv, argc);
+		sway_log(L_DEBUG, "Ignoring exec %s due to reload", args);
+		free(args);
 		return true;
 	}
-
-	if (fork() == 0) {
-		char *args = join_args(argv, argc);
-		sway_log(L_DEBUG, "Executing %s", args);
-		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
-		free(args);
-		exit(0);
-	}
-	return true;
+	return cmd_exec_always(config, argc, argv);
 }
 
-bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
-	if (argc < 1) {
-		sway_log(L_ERROR, "Invalid exec_always command (expected at least 1 argument, got %d)", argc);
-		return false;
-	}
-
-	if (fork() == 0) {
-		char *args = join_args(argv, argc);
-		sway_log(L_DEBUG, "Executing %s", args);
-		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
-		free(args);
-		exit(0);
-	}
-	return true;
-}
-
-bool cmd_exit(struct sway_config *config, int argc, char **argv) {
-	if (argc != 0) {
-		sway_log(L_ERROR, "Invalid exit command (expected 1 arguments, got %d)", argc);
+static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
 	// TODO: Some kind of clean up is probably in order
@@ -120,9 +152,8 @@ bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_focus(struct sway_config *config, int argc, char **argv) {
-	if (argc != 1) {
-		sway_log(L_ERROR, "Invalid focus command (expected 1 arguments, got %d)", argc);
+static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
 	if (strcasecmp(argv[0], "left") == 0) {
@@ -139,9 +170,8 @@ bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
-	if (argc != 1) {
-		sway_log(L_ERROR, "Invalid focus_follows_mouse command (expected 1 arguments, got %d)", argc);
+static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
 
@@ -149,9 +179,8 @@ bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) 
 	return true;
 }
 
-bool cmd_layout(struct sway_config *config, int argc, char **argv) {
-	if (argc < 1) {
-		sway_log(L_ERROR, "Invalid layout command (expected at least 1 argument, got %d)", argc);
+static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)) {
 		return false;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
@@ -174,9 +203,8 @@ bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_reload(struct sway_config *config, int argc, char **argv) {
-	if (argc != 0) {
-		sway_log(L_ERROR, "Invalid reload command (expected 0 arguments, got %d)", argc);
+static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
 	if (!load_config()) {
@@ -186,9 +214,8 @@ bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_set(struct sway_config *config, int argc, char **argv) {
-	if (argc != 2) {
-		sway_log(L_ERROR, "Invalid set command (expected 2 arguments, got %d)", argc);
+static bool cmd_set(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "set", EXPECTED_EQUAL_TO, 2)) {
 		return false;
 	}
 	struct sway_variable *var = malloc(sizeof(struct sway_variable));
@@ -200,9 +227,11 @@ bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
-	if (argc != 0) {
-		sway_log(L_ERROR, "Invalid splitv command (expected 0 arguments, got %d)", argc);
+static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
+	char *name = layout == L_VERT  ? "splitv":
+	             layout == L_HORIZ ? "splith":
+	                                 "split";
+	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
 	swayc_t *focused = get_focused_container(&root_container);
@@ -225,20 +254,18 @@ bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
 	return true;
 }
 
-bool cmd_splitv(struct sway_config *config, int argc, char **argv) {
+static bool cmd_splitv(struct sway_config *config, int argc, char **argv) {
 	return _do_split(config, argc, argv, L_VERT);
 }
 
-bool cmd_splith(struct sway_config *config, int argc, char **argv) {
+static bool cmd_splith(struct sway_config *config, int argc, char **argv) {
 	return _do_split(config, argc, argv, L_HORIZ);
 }
 
-bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
-	if (argc != 1) {
-		sway_log(L_ERROR, "Invalid log_colors command (expected 1 argument, got %d)", argc);
+static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "log_colors", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
-
 	if (strcasecmp(argv[0], "no") != 0 && strcasecmp(argv[0], "yes") != 0) {
 		sway_log(L_ERROR, "Invalid log_colors command (expected `yes` or `no`, got '%s')", argv[0]);
 		return false;
@@ -248,9 +275,8 @@ bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
-	if (argc != 1) {
-		sway_log(L_ERROR, "Invalid fullscreen command (expected 1 arguments, got %d)", argc);
+static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "fullscreen", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
 
@@ -262,9 +288,8 @@ bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
-	if (argc != 1) {
-		sway_log(L_ERROR, "Invalid workspace command (expected 1 arguments, got %d)", argc);
+static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
 
@@ -278,7 +303,7 @@ bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 }
 
 /* Keep alphabetized */
-struct cmd_handler handlers[] = {
+static struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
@@ -295,7 +320,7 @@ struct cmd_handler handlers[] = {
 	{ "workspace", cmd_workspace }
 };
 
-char **split_directive(char *line, int *argc) {
+static char **split_directive(char *line, int *argc) {
 	const char *delimiters = " ";
 	*argc = 0;
 	while (isspace(*line) && *line) ++line;
@@ -347,13 +372,13 @@ char **split_directive(char *line, int *argc) {
 	return parts;
 }
 
-int handler_compare(const void *_a, const void *_b) {
+static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
 	return strcasecmp(a->command, b->command);
 }
 
-struct cmd_handler *find_handler(struct cmd_handler handlers[], int l, char *line) {
+static struct cmd_handler *find_handler(struct cmd_handler handlers[], int l, char *line) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = bsearch(&d, handlers, l, sizeof(struct cmd_handler), handler_compare);
 	return res;
@@ -395,7 +420,7 @@ bool handle_command(struct sway_config *config, char *exec) {
 			sway_log(L_ERROR, "Command failed: %s", cmd);
 		}
 	}
-	if(ptr) {
+	if (ptr) {
 		free(cmd);
 	}
 	return exec_success;
