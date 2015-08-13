@@ -167,7 +167,6 @@ static void handle_wlc_ready(void) {
 	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
 	int i;
 	for (i = 0; i < config->cmd_queue->length; ++i) {
-		sway_log(L_DEBUG, "Handling command %s", config->cmd_queue->items[i]);
 		handle_command(config, config->cmd_queue->items[i]);
 	}
 	list_free(config->cmd_queue);
