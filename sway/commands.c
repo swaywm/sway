@@ -6,7 +6,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <fcntl.h>
 #include <ctype.h>
 #include "stringop.h"
 #include "layout.h"
@@ -20,7 +19,7 @@ struct modifier_key {
 	uint32_t mod;
 };
 
-struct modifier_key modifiers[] = {
+static struct modifier_key modifiers[] = {
 	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
 	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
 	{ XKB_MOD_NAME_CTRL, WLC_BIT_MOD_CTRL },
@@ -38,20 +37,22 @@ enum expected_args {
 };
 
 static bool checkarg(int argc, char *name, enum expected_args type, int val) {
-	switch(type) {
+	switch (type) {
 		case EXPECTED_MORE_THEN:
 			if (argc > val) {
 				return true;
 			}
 			sway_log(L_ERROR, "Invalid %s command."
-				"(expected more then %d arguments, got %d", name, val, argc);
+				"(expected more then %d argument%s, got %d",
+				name, val, (char*[2]){"s", ""}[argc==1], argc);
 			break;
 		case EXPECTED_LESS_THEN:
 			if (argc  < val) {
 				return true;
 			};
 			sway_log(L_ERROR, "Invalid %s command."
-				"(expected less then %d arguments, got %d", name, val, argc);
+				"(expected less then %d argument%s, got %d",
+				name, val, (char*[2]){"s", ""}[argc==1], argc);
 			break;
 		case EXPECTED_SAME_AS:
 			if (argc == val) {
@@ -116,25 +117,9 @@ static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
 	/* setup signal handler to cleanup dead proccesses */
 	/* TODO: replace this with a function that has constructor attribute? */
 	static bool cleanup = false;
-	if(cleanup == false) {
+	if (cleanup == false) {
 		signal(SIGCHLD, cmd_exec_cleanup);
 		cleanup = true;
-		/* Set it so filedescriptors are closed for executed programs */
-		int flag_out = fcntl(STDOUT_FILENO, F_GETFD);
-		int flag_in  = fcntl(STDIN_FILENO, F_GETFD);
-		int flag_err  = fcntl(STDERR_FILENO, F_GETFD);
-		if (flag_out != -1) {
-			flag_out |= FD_CLOEXEC;
-			fcntl(STDOUT_FILENO, F_SETFD, flag_out);
-		}
-		if (flag_in != -1) {
-			flag_in |= FD_CLOEXEC;
-			fcntl(STDIN_FILENO, F_SETFD, flag_in);
-		}
-		if (flag_err != -1) {
-			flag_err |= FD_CLOEXEC;
-			fcntl(STDERR_FILENO, F_SETFD, flag_err);
-		}
 	}
 
 	if (checkarg(argc, "exec_always", EXPECTED_MORE_THEN, 0) == false) {
@@ -448,7 +433,7 @@ bool handle_command(struct sway_config *config, char *exec) {
 			sway_log(L_ERROR, "Command failed: %s", cmd);
 		}
 	}
-	if(ptr) {
+	if (ptr) {
 		free(cmd);
 	}
 	return exec_success;
