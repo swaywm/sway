@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/wait.h>
 #include <ctype.h>
 #include "stringop.h"
 #include "layout.h"
@@ -109,19 +108,7 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static void cmd_exec_cleanup(int signal) {
-	while (waitpid((pid_t)-1, 0, WNOHANG) > 0){};
-}
-
 static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
-	/* setup signal handler to cleanup dead proccesses */
-	/* TODO: replace this with a function that has constructor attribute? */
-	static bool cleanup = false;
-	if (cleanup == false) {
-		signal(SIGCHLD, cmd_exec_cleanup);
-		cleanup = true;
-	}
-
 	if (checkarg(argc, "exec_always", EXPECTED_MORE_THEN, 0) == false) {
 		return false;
 	}
