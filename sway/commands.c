@@ -30,14 +30,14 @@ static struct modifier_key modifiers[] = {
 };
 
 enum expected_args {
-	EXPECTED_MORE_THEN,
-	EXPECTED_LESS_THEN,
+	EXPECTED_MORE_THAN,
+	EXPECTED_LESS_THAN,
 	EXPECTED_SAME_AS
 };
 
 static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 	switch (type) {
-		case EXPECTED_MORE_THEN:
+		case EXPECTED_MORE_THAN:
 			if (argc > val) {
 				return true;
 			}
@@ -45,7 +45,7 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 				"(expected more then %d argument%s, got %d",
 				name, val, (char*[2]){"s", ""}[argc==1], argc);
 			break;
-		case EXPECTED_LESS_THEN:
+		case EXPECTED_LESS_THAN:
 			if (argc  < val) {
 				return true;
 			};
@@ -66,7 +66,7 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 
 
 static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "bindsym", EXPECTED_MORE_THEN, 1) == false) {
+	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)) {
 		return false;
 	};
 
@@ -109,7 +109,7 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "exec_always", EXPECTED_MORE_THEN, 0) == false) {
+	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return false;
 	}
 
@@ -144,7 +144,7 @@ static bool cmd_exec(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "exit", EXPECTED_SAME_AS, 0) == false) {
+	if (!checkarg(argc, "exit", EXPECTED_SAME_AS, 0)) {
 		return false;
 	}
 	// TODO: Some kind of clean up is probably in order
@@ -153,7 +153,7 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "focus", EXPECTED_SAME_AS, 1) == false) {
+	if (!checkarg(argc, "focus", EXPECTED_SAME_AS, 1)) {
 		return false;
 	}
 	if (strcasecmp(argv[0], "left") == 0) {
@@ -171,7 +171,7 @@ static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "focus_follows_mouse", EXPECTED_SAME_AS, 1) == false) {
+	if (!checkarg(argc, "focus_follows_mouse", EXPECTED_SAME_AS, 1)) {
 		return false;
 	}
 
@@ -180,7 +180,7 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "layout", EXPECTED_MORE_THEN, 0) == false) {
+	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)) {
 		return false;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
@@ -204,7 +204,7 @@ static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "reload", EXPECTED_SAME_AS, 0) == false) {
+	if (!checkarg(argc, "reload", EXPECTED_SAME_AS, 0)) {
 		return false;
 	}
 	if (!load_config()) {
@@ -215,7 +215,7 @@ static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_set(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "set", EXPECTED_SAME_AS, 2) == false) {
+	if (!checkarg(argc, "set", EXPECTED_SAME_AS, 2)) {
 		return false;
 	}
 	struct sway_variable *var = malloc(sizeof(struct sway_variable));
@@ -231,7 +231,7 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	char *name = layout == L_VERT  ? "splitv":
 	             layout == L_HORIZ ? "splith":
 	                                 "split";
-	if (checkarg(argc, name, EXPECTED_SAME_AS, 0) == false) {
+	if (!checkarg(argc, name, EXPECTED_SAME_AS, 0)) {
 		return false;
 	}
 	swayc_t *focused = get_focused_container(&root_container);
@@ -263,7 +263,7 @@ static bool cmd_splith(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "log_colors", EXPECTED_SAME_AS, 1) == false) {
+	if (!checkarg(argc, "log_colors", EXPECTED_SAME_AS, 1)) {
 		return false;
 	}
 	if (strcasecmp(argv[0], "no") != 0 && strcasecmp(argv[0], "yes") != 0) {
@@ -276,7 +276,7 @@ static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "fullscreen", EXPECTED_SAME_AS, 0) == false) {
+	if (!checkarg(argc, "fullscreen", EXPECTED_SAME_AS, 0)) {
 		return false;
 	}
 
@@ -289,7 +289,7 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
-	if (checkarg(argc, "workspace", EXPECTED_SAME_AS, 1) == false) {
+	if (!checkarg(argc, "workspace", EXPECTED_SAME_AS, 1)) {
 		return false;
 	}
 
