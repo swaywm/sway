@@ -25,14 +25,22 @@ bool load_config() {
 		return false;
 	}
 	free(temp);
-	config = read_config(f, false);
+
+	bool config_load_success;
+	if (config) {
+		config_load_success = read_config(f, true);
+	} else {
+		config_load_success = read_config(f, false);
+	}
 	fclose(f);
-	return true;
+
+	return config_load_success;
 }
 
 void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
+	config->cmd_queue = create_list();
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
@@ -41,14 +49,17 @@ void config_defaults(struct sway_config *config) {
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;
 	config->reloading = false;
+	config->active = false;
+	config->failed = false;
 }
 
-struct sway_config *read_config(FILE *file, bool is_active) {
-	struct sway_config *config = malloc(sizeof(struct sway_config));
-	config_defaults(config);
-
+bool read_config(FILE *file, bool is_active) {
+	struct sway_config *temp_config = malloc(sizeof(struct sway_config));
+	config_defaults(temp_config);
 	if (is_active) {
-		config->reloading = true;
+		sway_log(L_DEBUG, "Performing configuration file reload");
+		temp_config->reloading = true;
+		temp_config->active = true;
 	}
 
 	bool success = true;
@@ -68,9 +79,24 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 			goto _continue;
 		}
 
-		if (!temp_depth && handle_command(config, line) != true) {
+		// Any command which would require wlc to be initialized
+		// should be queued for later execution
+		list_t *args = split_string(line, " ");
+		if (!is_active && (
+			strcmp("workspace", args->items[0]) == 0 ||
+			strcmp("exec", args->items[0]) == 0 ||
+			strcmp("exec_always", args->items[0]) == 0 )) {
+			sway_log(L_DEBUG, "Deferring command %s", line);
+
+			char *cmd = malloc(strlen(line) + 1);
+			strcpy(cmd, line);
+			list_add(temp_config->cmd_queue, cmd);
+		} else if (!temp_depth && !handle_command(temp_config, line)) {
+			sway_log(L_DEBUG, "Config load failed for line %s", line);
 			success = false;
-		}
+			temp_config->failed = true;
+		} 
+		list_free(args);
 
 _continue:
 		if (line && line[strlen(line) - 1] == '{') {
@@ -79,15 +105,12 @@ _continue:
 		free(line);
 	}
 
-	if (success == false) {
-		exit(1);
-	}
-
 	if (is_active) {
-		config->reloading = false;
+		temp_config->reloading = false;
 	}
+	config = temp_config;
 
-	return config;
+	return success;
 }
 
 char *do_var_replacement(struct sway_config *config, char *str) {

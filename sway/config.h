@@ -24,17 +24,19 @@ struct sway_mode {
 struct sway_config {
 	list_t *symbols;
 	list_t *modes;
+	list_t *cmd_queue;
 	struct sway_mode *current_mode;
 
 	// Flags
 	bool focus_follows_mouse;
 	bool mouse_warping;
-	
+	bool active;	
+	bool failed;	
 	bool reloading;
 };
 
 bool load_config();
-struct sway_config *read_config(FILE *file, bool is_active);
+bool read_config(FILE *file, bool is_active);
 char *do_var_replacement(struct sway_config *config, char *str);
 
 extern struct sway_config *config;

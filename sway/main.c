@@ -18,6 +18,9 @@ int main(int argc, char **argv) {
 	/* Signal handling */
 	signal(SIGCHLD, sigchld_handle);
 
+	if (!load_config()) {
+		sway_log(L_ERROR, "Config load failed, aborting sway post init!");
+	}
 
 	setenv("WLC_DIM", "0", 0);
 	if (!wlc_init(&interface, argc, argv)) {
@@ -25,11 +28,8 @@ int main(int argc, char **argv) {
 	}
 	setenv("DISPLAY", ":1", 1);
 
-	if (!load_config()) {
-		sway_abort("Unable to load config");
-	}
-
 	wlc_run();
+
 	return 0;
 }
 
