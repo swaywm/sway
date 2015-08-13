@@ -229,7 +229,7 @@ static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 
 static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv":
-	         layout == L_HORIZ ? "splith":"split";
+		     layout == L_HORIZ ? "splith":"split";
 	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
