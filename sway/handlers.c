@@ -169,7 +169,7 @@ static void handle_wlc_ready(void) {
 	for (i = 0; i < config->cmd_queue->length; ++i) {
 		handle_command(config, config->cmd_queue->items[i]);
 	}
-	list_free(config->cmd_queue);
+	free_flat_list(config->cmd_queue);
 }
 
 

@@ -77,7 +77,7 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 			char *cmd = malloc(strlen(line) + 1);
 			strcpy(cmd, line);
 			list_add(config->cmd_queue, cmd);
-		}else if (!temp_depth && !handle_command(config, line)) {
+		} else if (!temp_depth && !handle_command(config, line)) {
 			sway_log(L_DEBUG, "Config load failed for line %s", line);
 			success = false;
 		} 
