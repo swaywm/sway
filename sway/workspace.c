@@ -26,8 +26,8 @@ char *workspace_next_name(void) {
 
 		if (strcmp("workspace", args->items[0]) == 0 && args->length > 1) {
 			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", args->items[1]);
-			const char* target = args->items[1];
-
+			char* target = malloc(strlen(args->items[1]) + 1);
+			strcpy(target, args->items[1]);
 			while (*target == ' ' || *target == '\t')
 				target++; 
 
@@ -43,13 +43,14 @@ char *workspace_next_name(void) {
 				continue;
 		   
 			//Make sure that the workspace doesn't already exist 
-			if (workspace_find_by_name(args->items[1]))
+			if (workspace_find_by_name(target)) {
 			   continue; 
+			}
 
 			list_free(args);
 
-			sway_log(L_DEBUG, "Workspace: Found free name %s", args->items[1]);
-			return args->items[1];
+			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
+			return target;
 		}
 	}
 	// As a fall back, get the current number of active workspaces
