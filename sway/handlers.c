@@ -163,6 +163,15 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	return true;
 }
 
+static void handle_wlc_ready(void) {
+	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
+	int i;
+	for (i = 0; i < config->cmd_queue->length; ++i) {
+		handle_command(config, config->cmd_queue->items[i]);
+	}
+	free_flat_list(config->cmd_queue);
+}
+
 
 struct wlc_interface interface = {
 	.output = {
@@ -185,6 +194,9 @@ struct wlc_interface interface = {
 	.pointer = {
 		.motion = handle_pointer_motion,
 		.button = handle_pointer_button
+	},
+	.compositor = {
+		.ready = handle_wlc_ready 
 	}
 };
 

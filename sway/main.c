@@ -18,16 +18,15 @@ int main(int argc, char **argv) {
 	/* Signal handling */
 	signal(SIGCHLD, sigchld_handle);
 
+	if (!load_config()) {
+		sway_abort("Unable to load config");
+	}
 
 	setenv("WLC_DIM", "0", 0);
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
 	setenv("DISPLAY", ":1", 1);
-
-	if (!load_config()) {
-		sway_abort("Unable to load config");
-	}
 
 	wlc_run();
 	return 0;

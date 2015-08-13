@@ -24,6 +24,7 @@ struct sway_mode {
 struct sway_config {
 	list_t *symbols;
 	list_t *modes;
+	list_t *cmd_queue;
 	struct sway_mode *current_mode;
 
 	// Flags
