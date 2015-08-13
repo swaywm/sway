@@ -70,7 +70,7 @@ struct sway_config *read_config(FILE *file, bool is_active) {
 		}
 
 		// Any command which would require wlc to be initialized
-		// should be queue for later execution
+		// should be queued for later execution
 		list_t *args = split_string(line, " ");
 		if (strcmp("workspace", args->items[0]) == 0) {
 			sway_log(L_DEBUG, "Deferring command %s", line);
