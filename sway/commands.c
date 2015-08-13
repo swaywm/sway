@@ -235,6 +235,10 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 		return false;
 	}
 	swayc_t *focused = get_focused_container(&root_container);
+	if (focused->type == C_WORKSPACE) {
+		sway_log(L_DEBUG, "Dont split workspaces");
+		return true;
+	}
 	swayc_t *parent = focused->parent;
 	sway_log(L_DEBUG, "Splitting %p vertically with %p", parent, focused);
 	int index = remove_container_from_parent(parent, focused);
