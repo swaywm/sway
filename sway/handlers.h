@@ -6,4 +6,7 @@
 
 extern struct wlc_interface interface;
 
+//set focus to current pointer location
+void focus_pointer(void);
+
 #endif

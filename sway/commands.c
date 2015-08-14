@@ -228,33 +228,25 @@ static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
-	char *name = layout == L_VERT  ? "splitv":
-		     layout == L_HORIZ ? "splith":"split";
+	char *name = layout == L_VERT  ? "splitv" :
+		layout == L_HORIZ ? "splith" : "split";
 	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
 	swayc_t *focused = get_focused_container(&root_container);
+
+	/* Case that focus is on an empty workspace. change its layout */
 	if (focused->type == C_WORKSPACE) {
-		sway_log(L_DEBUG, "Dont split workspaces");
-		if (focused->children->length == 0) {
-			focused->layout = layout;
-		}
+		focused->layout = layout;
 		return true;
 	}
-	swayc_t *parent = focused->parent;
-	sway_log(L_DEBUG, "Splitting %p vertically with %p", parent, focused);
-	int index = remove_container_from_parent(parent, focused);
-	swayc_t *new_container = create_container(parent, -1);
-	new_container->layout = layout;
-	new_container->weight = focused->weight;
-	new_container->width = focused->width;
-	new_container->height = focused->height;
-	new_container->x = focused->x;
-	new_container->y = focused->y;
-	focused->weight = 1;
-	focused->parent = new_container;
-	list_insert(parent->children, index, new_container);
-	list_add(new_container->children, focused);
+	/* Case of no siblings. change parent layout */
+	if (focused->parent->children->length == 1) {
+		focused->parent->layout = layout;
+		return true;
+	}
+	/* regular case where new split container is build around focused container */
+	swayc_t *parent = new_container(focused, layout);
 	focus_view(focused);
 	arrange_windows(parent, -1, -1);
 	return true;
@@ -302,15 +294,72 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	swayc_t *workspace = workspace_find_by_name(argv[0]);
 	if (!workspace) {
 		workspace = workspace_create(argv[0]);
-	} else sway_log(L_DEBUG, "workspace exists, all ok");
-
+	}
 	workspace_switch(workspace);
 	return true;
 }
 
+/* XXX:DEBUG:XXX */
+static void container_log(const swayc_t *c) {
+	fprintf(stderr, "focus:%c|",
+		c == get_focused_container(&root_container) ? 'F' : //Focused
+		c == active_workspace ? 'W' : //active workspace
+		c == &root_container  ? 'R' : //root
+		'X');//not any others
+	fprintf(stderr,"(%p)",c);
+	fprintf(stderr,"(p:%p)",c->parent);
+	fprintf(stderr,"(f:%p)",c->focused);
+	fprintf(stderr,"Type:");
+	fprintf(stderr,
+		c->type == C_ROOT      ? "Root|" :
+		c->type == C_OUTPUT    ? "Output|" :
+		c->type == C_WORKSPACE ? "Workspace|" :
+		c->type == C_CONTAINER ? "Container|" :
+		c->type == C_VIEW      ? "View|" :
+		                         "Unknown|");
+	fprintf(stderr,"layout:");
+	fprintf(stderr,
+		c->layout == L_NONE     ? "NONE|" :
+		c->layout == L_HORIZ    ? "Horiz|":
+		c->layout == L_VERT     ? "Vert|":
+		c->layout == L_STACKED  ? "Stacked|":
+		c->layout == L_FLOATING ? "Floating|":
+		                          "Unknown|");
+	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
+	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
+	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
+	fprintf(stderr, "wgt:%d|", c->weight);
+	fprintf(stderr, "name:%.16s|", c->name);
+	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
+}
+void layout_log(const swayc_t *c, int depth) {
+	int i;
+	int e = c->children?c->children->length:0;
+	for (i = 0; i < depth; ++i) fputc(' ', stderr);
+	container_log(c);
+	if (e) {
+		for (i = 0; i < depth; ++i) fputc(' ', stderr);
+		fprintf(stderr,"(\n");
+		for (i = 0; i < e; ++i) {
+			layout_log(c->children->items[i], depth + 1);
+		}
+		for (i = 0; i < depth; ++i) fputc(' ', stderr);
+		fprintf(stderr,")\n");
+	}
+}
+bool cmd_debug_print_layout(struct sway_config *config, int argc, char **argv) {
+	fprintf(stderr,"root:%p\nactive workspace:%p\n",&root_container, active_workspace);
+	layout_log(&root_container, 0);
+	return true;
+}
+/* XXX:DEBUG:XXX */
+
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
+	//DEBUG
+	{ "debug_print_layout", cmd_debug_print_layout },
+	//DEBUG
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },

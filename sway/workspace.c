@@ -6,6 +6,7 @@
 #include "list.h"
 #include "log.h"
 #include "container.h"
+#include "handlers.h"
 #include "config.h"
 #include "stringop.h"
 
@@ -71,16 +72,7 @@ swayc_t *workspace_create(const char* name) {
 	while(parent->type != C_OUTPUT) {
 		parent = parent->parent;
 	}
-
-	swayc_t *workspace = create_container(parent, -1);
-	workspace->type = C_WORKSPACE;
-	workspace->name = strdup(name);
-	workspace->width = parent->width;
-	workspace->height = parent->height;
-	workspace->layout = L_HORIZ; // todo: thing
-	
-	add_child(parent, workspace);
-	return workspace;
+	return new_workspace(parent, name);
 }
 
 bool workspace_by_name(swayc_t *view, void *data) {
@@ -88,23 +80,13 @@ bool workspace_by_name(swayc_t *view, void *data) {
 		   (strcasecmp(view->name, (char *) data) == 0);
 }
 
-bool workspace_destroy(swayc_t *workspace) {
-	//Dont destroy if there are children
-	if (workspace->children->length) {
-		return false;
-	}
-	sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
-	free_swayc(workspace);
-	return true;
-}
-
 void set_mask(swayc_t *view, void *data) {
 	uint32_t *p = data;
 
 	if(view->type == C_VIEW) {
 		wlc_view_set_mask(view->handle, *p);
-		view->visible = (*p == 2);
 	}
+	view->visible = (*p == 2);
 }
 
 swayc_t *workspace_find_by_name(const char* name) {
@@ -123,9 +105,9 @@ void workspace_switch(swayc_t *workspace) {
 		container_map(workspace, set_mask, &mask);
 
 		wlc_output_set_mask(wlc_get_focused_output(), 2);
-		unfocus_all(active_workspace);
+		unfocus_all(&root_container);
 		focus_view(workspace);
-		workspace_destroy(active_workspace);
+		destroy_workspace(active_workspace);
 	}
 	active_workspace = workspace;
 }
