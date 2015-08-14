@@ -31,7 +31,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
-	if(parent->focused == NULL) {
+	if (parent->focused == NULL) {
 		parent->focused = child;
 	}
 }
@@ -118,7 +118,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
 				swayc_t *parent = container;
-				while(parent->type != C_OUTPUT) {
+				while (parent->type != C_OUTPUT) {
 					parent = parent->parent;
 				}
 				geometry.origin.x = 0;

@@ -69,7 +69,7 @@ char *workspace_next_name(void) {
 
 swayc_t *workspace_create(const char* name) {
 	swayc_t *parent = get_focused_container(&root_container);
-	while(parent->type != C_OUTPUT) {
+	while (parent->type != C_OUTPUT) {
 		parent = parent->parent;
 	}
 	return new_workspace(parent, name);
@@ -83,7 +83,7 @@ bool workspace_by_name(swayc_t *view, void *data) {
 void set_mask(swayc_t *view, void *data) {
 	uint32_t *p = data;
 
-	if(view->type == C_VIEW) {
+	if (view->type == C_VIEW) {
 		wlc_view_set_mask(view->handle, *p);
 	}
 	view->visible = (*p == 2);
