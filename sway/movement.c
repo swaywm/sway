@@ -10,14 +10,12 @@ bool move_focus(enum movement_direction direction) {
 	swayc_t *parent = current->parent;
 
 	if (direction == MOVE_PARENT) {
-		current = parent;
-		parent  = parent->parent;
-		if (parent->type == C_ROOT) {
+		if (parent->type == C_OUTPUT) {
 			sway_log(L_DEBUG, "Focus cannot move to parent");
 			return false;
 		} else {
-			sway_log(L_DEBUG, "Moving focus away from %p", current);
-			unfocus_all(parent);
+			sway_log(L_DEBUG, "Moving focus away from %p to %p", current, parent);
+			unfocus_all(parent->parent);
 			focus_view(parent);
 			return true;
 		}

@@ -9,14 +9,53 @@
 #include "commands.h"
 #include "handlers.h"
 #include "stringop.h"
+#include "workspace.h"
+
+static struct wlc_origin mouse_origin;
+
+static bool pointer_test(swayc_t *view, void *_origin) {
+	const struct wlc_origin *origin = _origin;
+	if (view->type == C_VIEW && origin->x >= view->x && origin->y >= view->y
+			&& origin->x < view->x + view->width && origin->y < view->y + view->height
+			&& view->visible) {
+		return true;
+	}
+	return false;
+}
+
+void focus_pointer(void) {
+	swayc_t *focused = find_container(&root_container, pointer_test, &mouse_origin);
+	if (focused) {
+		sway_log(L_DEBUG, "Switching focus to %p", focused);
+		unfocus_all(&root_container);
+		focus_view(focused);
+	} else {
+		focus_view(active_workspace);
+	}
+}
 
 static bool handle_output_created(wlc_handle output) {
-	add_output(output);
+	swayc_t *op = new_output(output);
+
+	//Switch to workspace if we need to
+	if (active_workspace == NULL) {
+		swayc_t *ws = op->children->items[0];
+		workspace_switch(ws);
+	}
 	return true;
 }
 
 static void handle_output_destroyed(wlc_handle output) {
-	destroy_output(output);
+	int i;
+	list_t *list = root_container.children;
+	for (i = 0; i < list->length; ++i) {
+		if (((swayc_t *)list->items[i])->handle == output) {
+			break;
+		}
+	}
+	if (i < list->length) {
+		destroy_output(list->items[i]);
+	}
 }
 
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
@@ -37,14 +76,33 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 	}
 }
 
-static bool handle_view_created(wlc_handle view) {
-	add_view(view);
+static bool handle_view_created(wlc_handle handle) {
+	swayc_t *container = get_focused_container(&root_container);
+	swayc_t *view = new_view(container, handle);
+	unfocus_all(&root_container);
+	if (view) {
+		focus_view(view);
+		arrange_windows(view->parent, -1, -1);
+	} else { //Unmanaged view
+		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
+		wlc_view_focus(handle);
+	}
 	return true;
 }
 
-static void handle_view_destroyed(wlc_handle view) {
-	sway_log(L_DEBUG, "Destroying window %d", view);
-	destroy_view(get_swayc_for_handle(view, &root_container));
+static void handle_view_destroyed(wlc_handle handle) {
+	sway_log(L_DEBUG, "Destroying window %d", handle);
+	swayc_t *view = get_swayc_for_handle(handle, &root_container);
+	swayc_t *parent;
+	swayc_t *focused = get_focused_container(&root_container);
+
+	if (view) {
+		parent = destroy_view(view);
+		arrange_windows(parent, -1, -1);
+	}
+	if (!focused || focused == view) {
+		focus_pointer();
+	}
 }
 
 static void handle_view_focus(wlc_handle view, bool focus) {
@@ -120,18 +178,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 	return cmd_success;
 }
-
-bool pointer_test(swayc_t *view, void *_origin) {
-	const struct wlc_origin *origin = _origin;
-	if (view->type == C_VIEW && origin->x >= view->x && origin->y >= view->y
-			&& origin->x < view->x + view->width && origin->y < view->y + view->height
-			&& view->visible) {
-		return true;
-	}
-	return false;
-}
-
-struct wlc_origin mouse_origin;
 
 static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin) {
 	mouse_origin = *origin;

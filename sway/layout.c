@@ -9,24 +9,74 @@
 
 swayc_t root_container;
 
-swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
-	if (!container->children) {
-		return NULL;
-	}
+void init_layout(void) {
+	root_container.type = C_ROOT;
+	root_container.layout = L_NONE;
+	root_container.children = create_list();
+	root_container.handle = -1;
+}
+
+static int index_child(swayc_t *parent, swayc_t *child) {
 	int i;
-	for (i = 0; i < container->children->length; ++i) {
-		swayc_t *child = container->children->items[i];
-		if (test(child, data)) {
-			return child;
-		} else {
-			swayc_t *_ = find_container(child, test, data);
-			if (_) {
-				return _;
-			}
+	for (i = 0; i < parent->children->length; ++i) {
+		if (parent->children->items[i] == child) {
+			break;
 		}
 	}
-	return NULL;
+	return i;
 }
+
+void add_child(swayc_t *parent, swayc_t *child) {
+	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+		child->width, child->height, parent, parent->type, parent->width, parent->height);
+	list_add(parent->children, child);
+	child->parent = parent;
+	if (parent->focused == NULL) {
+		parent->focused = child;
+	}
+}
+
+swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
+	swayc_t *parent = sibling->parent;
+	int i = index_child(parent, sibling);
+	if (i == parent->children->length) {
+		--i;
+	}
+	list_insert(parent->children, i+1, child);
+	child->parent = parent;
+	return child->parent;
+}
+
+swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
+	swayc_t *parent = child->parent;
+	if (parent == NULL) {
+		return NULL;
+	}
+	int i = index_child(parent, child);
+	parent->children->items[i] = new_child;
+	new_child->parent = child->parent;
+
+	if (child->parent->focused == child) {
+		child->parent->focused = new_child;
+	}
+	child->parent = NULL;
+	return parent;
+}
+
+swayc_t *remove_child(swayc_t *parent, swayc_t *child) {
+	int i;
+	for (i = 0; i < parent->children->length; ++i) {
+		if (parent->children->items[i] == child) {
+			list_del(parent->children, i);
+			break;
+		}
+	}
+	if (parent->focused == child) {
+		parent->focused = NULL;
+	}
+	return parent;
+}
+
 
 void arrange_windows(swayc_t *container, int width, int height) {
 	int i;
@@ -68,7 +118,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
 				swayc_t *parent = container;
-				while(parent->type != C_OUTPUT) {
+				while (parent->type != C_OUTPUT) {
 					parent = parent->parent;
 				}
 				geometry.origin.x = 0;
@@ -131,25 +181,6 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	}
 }
 
-void init_layout(void) {
-	root_container.type = C_ROOT;
-	root_container.layout = L_NONE;
-	root_container.children = create_list();
-	root_container.handle = -1;
-}
-
-void free_swayc(swayc_t *container) {
-	// NOTE: Does not handle moving children into a different container
-	if (container->parent) {
-		remove_container_from_parent(container->parent, container);
-	}
-	list_free(container->children);
-	if (container->name) {
-		free(container->name);
-	}
-	free(container);
-}
-
 swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
 	if (parent->children == NULL) {
 		return NULL;
@@ -176,99 +207,6 @@ swayc_t *get_focused_container(swayc_t *parent) {
 	return get_focused_container(parent->focused);
 }
 
-void add_view(wlc_handle view_handle) {
-	const uint32_t type = wlc_view_get_type(view_handle);
-	const char *title = wlc_view_get_title(view_handle);
-	if ((type & WLC_BIT_OVERRIDE_REDIRECT) || (type & WLC_BIT_UNMANAGED) || (type &
-			WLC_BIT_POPUP) || (type & WLC_BIT_MODAL) || (type & WLC_BIT_SPLASH)) {
-		sway_log(L_DEBUG, "Leaving view %d:%s alone (unmanaged)", view_handle, title);
-		unfocus_all(&root_container);
-		wlc_view_set_state(view_handle, WLC_BIT_ACTIVATED, true);
-		wlc_view_focus(view_handle);
-		return;
-	}
-
-	swayc_t *parent = get_focused_container(&root_container);
-	sway_log(L_DEBUG, "Adding new view %d:%s:%d under container %p %d", view_handle, title, type, parent, parent->type);
-
-	while (parent->type == C_VIEW) {
-		parent = parent->parent;
-	}
-
-	swayc_t *view = calloc(1, sizeof(swayc_t));
-	view->weight = 1;
-	view->layout = L_NONE;
-	view->handle = view_handle;
-	view->parent = parent;
-	view->type = C_VIEW;
-	view->visible = true;
-	if (title) {
-		view->name = malloc(strlen(title) + 1);
-		strcpy(view->name, title);
-	}
-	add_child(parent, view);
-
-	unfocus_all(&root_container);
-	focus_view(view);
-
-	arrange_windows(parent, -1, -1);
-}
-
-int remove_container_from_parent(swayc_t *parent, swayc_t *container) {
-	int i;
-	for (i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == container) {
-			list_del(parent->children, i);
-			break;
-		}
-	}
-
-	if (parent->focused == container) {
-		parent->focused = NULL;
-	}
-
-	return i;
-}
-
-void destroy_view(swayc_t *view) {
-	if (view == NULL) {
-		sway_log(L_DEBUG, "Warning: NULL passed into destroy_view");
-		return;
-	}
-	sway_log(L_DEBUG, "Destroying container %p", view);
-	swayc_t *parent = view->parent;
-	if (!parent) {
-		return;
-	}
-
-	int i;
-	for (i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == view) {
-			list_del(parent->children, i);
-			break;
-		}
-	}
-
-	free_swayc(view);
-
-	if (parent->focused == view) {
-		parent->focused = NULL;
-	}
-
-	unfocus_all(&root_container);
-	if (parent->children->length != 0) {
-		focus_view(parent->children->items[0]);
-	} else {
-		focus_view(parent);
-	}
-
-	arrange_windows(parent, -1, -1);
-
-	if (parent->children->length == 0 && parent->type == C_CONTAINER) {
-		destroy_view(parent);
-	}
-}
-
 void unfocus_all(swayc_t *container) {
 	if (container->children == NULL) {
 		return;
@@ -285,85 +223,16 @@ void unfocus_all(swayc_t *container) {
 }
 
 void focus_view(swayc_t *view) {
-	sway_log(L_DEBUG, "Setting focus for %p", view);
-	if (view == &root_container) {
-		// Propegate wayland focus down
-		swayc_t *child = view->focused;
-		while (child && child->type != C_VIEW) {
-			child = child->focused;
-		}
-		if (child) {
-			wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, true);
-			wlc_view_focus(child->handle);
-		}
-		return;
+	sway_log(L_DEBUG, "Setting focus to %p", view);
+	if (view->type == C_VIEW) {
+		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);
+		wlc_view_bring_to_front(view->handle);
+		wlc_view_focus(view->handle);
 	}
-	view->parent->focused = view;
-	focus_view(view->parent);
-}
-
-void add_child(swayc_t *parent, swayc_t *child) {
-	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
-			child->width, child->height, parent, parent->type, parent->width, parent->height);
-	list_add(parent->children, child);
-}
-
-swayc_t *create_container(swayc_t *parent, wlc_handle handle) {
-	swayc_t *c = calloc(1, sizeof(swayc_t));
-	c->weight = 1;
-	c->handle = handle;
-	c->parent = parent;
-	c->layout = L_NONE;
-	c->type = C_CONTAINER;
-	c->children = create_list();
-	return c;
-}
-
-void add_output_widths(swayc_t *container, void *_width) {
-	int *width = _width;
-	if (container->type == C_OUTPUT) {
-		*width += container->width;
+	// Propagete focus up
+	while (view != &root_container) {
+		view->parent->focused = view;
+		view = view->parent;
 	}
 }
 
-void add_output(wlc_handle output) {
-	sway_log(L_DEBUG, "Adding output %d", output);
-	const struct wlc_size* size = wlc_output_get_resolution(output);
-
-	swayc_t *container = create_container(&root_container, output);
-	container->type = C_OUTPUT;
-	container->width = size->w;
-	container->height = size->h;
-	add_child(&root_container, container);
-
-	int total_width = 0;
-	container_map(&root_container, add_output_widths, &total_width);
-
-	swayc_t *workspace = create_container(container, -1);
-	workspace->type = C_WORKSPACE;
-	workspace->name = workspace_next_name();
-	workspace->width = size->w; // TODO: gaps
-	workspace->height = size->h;
-	workspace->layout = L_HORIZ; // TODO: Get default layout from config
-	add_child(container, workspace);
-	sway_log(L_DEBUG, "Added workspace %s for output %d", workspace->name, output);
-
-	if (root_container.focused == NULL) {
-		workspace_switch(workspace);
-		unfocus_all(&root_container);
-		focus_view(workspace);
-	}
-}
-
-void destroy_output(wlc_handle output) {
-	sway_log(L_DEBUG, "Destroying output %d", output);
-	int i;
-	for (i = 0; i < root_container.children->length; ++i) {
-		swayc_t *c = root_container.children->items[i];
-		if (c->handle == output) {
-			list_del(root_container.children, i);
-			free_swayc(c);
-			return;
-		}
-	}
-}
