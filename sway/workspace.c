@@ -94,20 +94,77 @@ swayc_t *workspace_find_by_name(const char* name) {
 }
 
 void workspace_switch(swayc_t *workspace) {
-	if (workspace != active_workspace && active_workspace) {
-		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", active_workspace->name, workspace->name);
+	swayc_t *parent = workspace;
+	while (parent->type != C_OUTPUT) {
+		parent = parent->parent;
+	}
+	// The current workspace of the output our target workspace is in
+	swayc_t *c_workspace = parent->focused;
+	if (workspace != c_workspace && c_workspace) {
+		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", c_workspace->name, workspace->name);
 		uint32_t mask = 1;
-		// set all c_views in the old workspace to the invisible mask
-		container_map(active_workspace, set_mask, &mask);
 
-		// and c_views in the new workspace to the visible mask
+		// set all c_views in the old workspace to the invisible mask if the workspace
+		// is in the same output & c_views in the new workspace to the visible mask
+		container_map(c_workspace, set_mask, &mask);
 		mask = 2;
 		container_map(workspace, set_mask, &mask);
-
 		wlc_output_set_mask(wlc_get_focused_output(), 2);
+
 		unfocus_all(&root_container);
 		focus_view(workspace);
-		destroy_workspace(active_workspace);
+
+		destroy_workspace(c_workspace);
 	}
 	active_workspace = workspace;
 }
+
+/* XXX:DEBUG:XXX */
+static void container_log(const swayc_t *c) {
+	fprintf(stderr, "focus:%c|",
+		c == get_focused_container(&root_container) ? 'F' : //Focused
+		c == active_workspace ? 'W' : //active workspace
+		c == &root_container  ? 'R' : //root
+		'X');//not any others
+	fprintf(stderr,"(%p)",c);
+	fprintf(stderr,"(p:%p)",c->parent);
+	fprintf(stderr,"(f:%p)",c->focused);
+	fprintf(stderr,"Type:");
+	fprintf(stderr,
+		c->type == C_ROOT	  ? "Root|" :
+		c->type == C_OUTPUT	? "Output|" :
+		c->type == C_WORKSPACE ? "Workspace|" :
+		c->type == C_CONTAINER ? "Container|" :
+		c->type == C_VIEW	  ? "View|" :
+								 "Unknown|");
+	fprintf(stderr,"layout:");
+	fprintf(stderr,
+		c->layout == L_NONE	 ? "NONE|" :
+		c->layout == L_HORIZ	? "Horiz|":
+		c->layout == L_VERT	 ? "Vert|":
+		c->layout == L_STACKED  ? "Stacked|":
+		c->layout == L_FLOATING ? "Floating|":
+								  "Unknown|");
+	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
+	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
+	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
+	fprintf(stderr, "wgt:%d|", c->weight);
+	fprintf(stderr, "name:%.16s|", c->name);
+	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
+}
+void layout_log(const swayc_t *c, int depth) {
+	int i;
+	int e = c->children?c->children->length:0;
+	for (i = 0; i < depth; ++i) fputc(' ', stderr);
+	container_log(c);
+	if (e) {
+		for (i = 0; i < depth; ++i) fputc(' ', stderr);
+		fprintf(stderr,"(\n");
+		for (i = 0; i < e; ++i) {
+			layout_log(c->children->items[i], depth + 1);
+		}
+		for (i = 0; i < depth; ++i) fputc(' ', stderr);
+		fprintf(stderr,")\n");
+	}
+}
+/* XXX:DEBUG:XXX */

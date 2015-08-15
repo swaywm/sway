@@ -179,6 +179,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		}
 		break;
 	}
+	layout_log(&root_container, 0);
 }
 
 swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
