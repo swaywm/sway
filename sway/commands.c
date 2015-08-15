@@ -226,7 +226,6 @@ static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	list_add(config->symbols, var);
 	return true;
 }
-static void container_log(const swayc_t *c);
 
 static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv" :
@@ -235,8 +234,6 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 		return false;
 	}
 	swayc_t *focused = get_focused_container(&root_container);
-
-	container_log(focused);
 
 	/* Case that focus is on an workspace with 0/1 children.change its layout */
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
@@ -256,7 +253,7 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 		focus_view(focused);
 		arrange_windows(parent, -1, -1);
 	}
-	container_log(focused);
+
 	return true;
 }
 
