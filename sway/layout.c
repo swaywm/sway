@@ -223,20 +223,17 @@ void unfocus_all(swayc_t *container) {
 }
 
 void focus_view(swayc_t *view) {
- 	sway_log(L_DEBUG, "Setting focus for %p", view);
-	if (view == &root_container) {
-		// Propegate wayland focus down
-		swayc_t *child = view->focused;
-		while (child && child->type != C_VIEW) {
-			child = child->focused;
-		}
-		if (child) {
-			wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, true);
-			wlc_view_focus(child->handle);
-		}
-		return;
+	sway_log(L_DEBUG, "Setting focus for %p", view);
+	while (view != &root_container) {
+		view->parent->focused = view;
+		view = view->parent;
 	}
-	view->parent->focused = view;
-	focus_view(view->parent);
+	while (view && view->type != C_VIEW) {
+		view = view->focused;
+	}
+	if (view) {
+		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);
+		wlc_view_focus(view->handle);
+	}
 }
 
