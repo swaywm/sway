@@ -44,9 +44,9 @@ swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
 
 	swayc_t *output = new_swayc(C_OUTPUT);
-	output->width   = size->w;
-	output->height  = size->h;
-	output->handle  = handle;
+	output->width = size->w;
+	output->height = size->h;
+	output->handle = handle;
 
 	add_child(&root_container, output);
 
@@ -66,10 +66,10 @@ swayc_t *new_workspace(swayc_t * output, const char *name) {
 	sway_log(L_DEBUG, "Added workspace %s for output %d", name, output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
-	workspace->layout  = L_HORIZ; // TODO:default layout
-	workspace->width   = output->width;
-	workspace->height  = output->height;
-	workspace->name    = strdup(name);
+	workspace->layout = L_HORIZ; // TODO:default layout
+	workspace->width = output->width;
+	workspace->height = output->height;
+	workspace->name = strdup(name);
 	workspace->visible = true;
 
 	add_child(output, workspace);
@@ -81,12 +81,12 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 
 	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
 
-	cont->layout   = layout;
-	cont->width	   = child->width;
-	cont->height   = child->height;
-	cont->x		   = child->x;
-	cont->y		   = child->y;
-	cont->visible  = child->visible;
+	cont->layout = layout;
+	cont->width	= child->width;
+	cont->height = child->height;
+	cont->x	= child->x;
+	cont->y = child->y;
+	cont->visible = child->visible;
 
 	swayc_t *parent = replace_child(child, cont);
 	if (parent) {
@@ -109,8 +109,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	sway_log(L_DEBUG, "Adding new view %d:%s:%d to container %p %d",
 		handle, title, type, sibling, sibling?sibling->type:0);
 	//Setup values
-	view->handle  = handle;
-	view->name	= strdup(title);
+	view->handle = handle;
+	view->name = strdup(title);
 	view->visible = true;
 
 	//Case of focused workspace, just create as child of it
