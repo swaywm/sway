@@ -157,6 +157,7 @@ swayc_t *destroy_output(swayc_t *output) {
 }
 
 swayc_t *destroy_workspace(swayc_t *workspace) {
+	//NOTE: This is called from elsewhere without checking children length
 	//TODO move containers to other workspaces?
 	//for now just dont delete
 	if (workspace->children->length == 0) {

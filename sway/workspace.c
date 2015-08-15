@@ -94,7 +94,7 @@ swayc_t *workspace_find_by_name(const char* name) {
 }
 
 void workspace_switch(swayc_t *workspace) {
-	swayc_t *parent = workspace;
+	swayc_t *parent = workspace->parent;
 	while (parent->type != C_OUTPUT) {
 		parent = parent->parent;
 	}
@@ -111,10 +111,20 @@ void workspace_switch(swayc_t *workspace) {
 		container_map(workspace, set_mask, &mask);
 		wlc_output_set_mask(wlc_get_focused_output(), 2);
 
-		unfocus_all(&root_container);
-		focus_view(workspace);
-
 		destroy_workspace(c_workspace);
+	}
+	unfocus_all(&root_container);
+	focus_view(workspace);
+
+	// focus the output this workspace is on
+	swayc_t *output = workspace->parent;
+	sway_log(L_DEBUG, "Switching focus to output %p (%d)", output, output->type);
+	while (output && output->type != C_OUTPUT) {
+		output = output->parent;
+	}
+	if (output) {
+		sway_log(L_DEBUG, "Switching focus to output %p (%d)", output, output->type);
+		wlc_output_focus(output->handle);
 	}
 	active_workspace = workspace;
 }
