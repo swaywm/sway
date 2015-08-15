@@ -95,15 +95,28 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			child->x = x;
 			child->y = y;
 			arrange_windows(child, -1, -1);
-			x += child->width;
+			// Removed for now because wlc works with relative positions
+			// Addition can be reconsidered once wlc positions are changed
+			// x += child->width;
 		}
 		return;
 	case C_OUTPUT:
 		container->width = width;
 		container->height = height;
-		x -= container->x;
-		y -= container->y;
-		break;
+		// These lines make x/y negative and result in stuff glitching out
+		// Their addition can be reconsidered once wlc positions are changed
+		// x -= container->x;
+		// y -= container->y;
+		for (i = 0; i < container->children->length; ++i) {
+			swayc_t *child = container->children->items[i];
+			sway_log(L_DEBUG, "Arranging workspace #%d", i);
+			child->x = x;
+			child->y = y;
+			child->width = width;
+			child->height = height;
+			arrange_windows(child, -1, -1);
+		}
+		return;
 	case C_VIEW:
 		{
 			struct wlc_geometry geometry = {
