@@ -15,9 +15,14 @@ static struct wlc_origin mouse_origin;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
+    //Determine the output that the view is under
+	swayc_t *parent = view;
+	while (parent->type != C_OUTPUT) {
+		parent = parent->parent;
+	}
 	if (view->type == C_VIEW && origin->x >= view->x && origin->y >= view->y
 			&& origin->x < view->x + view->width && origin->y < view->y + view->height
-			&& view->visible) {
+			&& view->visible && parent == root_container.focused) {
 		return true;
 	}
 	return false;
@@ -187,6 +192,9 @@ static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct w
 	swayc_t *c = find_container(&root_container, pointer_test, (void *)origin);
 	swayc_t *focused = get_focused_container(&root_container);
 	if (c && c != focused) {
+	    sway_log(L_DEBUG, "Mouse pointer at X: %d, Y: %d", origin->x, origin->y);
+	    sway_log(L_DEBUG, "Container to focus on is at X: %d, Y: %d, with W: %d, H: %d", c->x, c->y, c->width, c->height);
+	    sway_log(L_DEBUG, "Focused container is at X: %d, Y: %d, with W: %d, H: %d", c->x, c->y, c->width, c->height);
 		sway_log(L_DEBUG, "Switching focus to %p", c);
 		unfocus_all(&root_container);
 		focus_view(c);
@@ -254,4 +262,3 @@ struct wlc_interface interface = {
 		.ready = handle_wlc_ready 
 	}
 };
-
