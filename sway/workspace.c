@@ -99,19 +99,19 @@ void workspace_switch(swayc_t *workspace) {
 		parent = parent->parent;
 	}
 	// The current workspace of the output our target workspace is in
-	swayc_t *c_workspace = parent->focused;
-	if (workspace != c_workspace && c_workspace) {
-		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", c_workspace->name, workspace->name);
+	swayc_t *focused_workspace = parent->focused;
+	if (workspace != focused_workspace && focused_workspace) {
+		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", focused_workspace->name, workspace->name);
 		uint32_t mask = 1;
 
 		// set all c_views in the old workspace to the invisible mask if the workspace
 		// is in the same output & c_views in the new workspace to the visible mask
-		container_map(c_workspace, set_mask, &mask);
+		container_map(focused_workspace, set_mask, &mask);
 		mask = 2;
 		container_map(workspace, set_mask, &mask);
 		wlc_output_set_mask(wlc_get_focused_output(), 2);
 
-		destroy_workspace(c_workspace);
+		destroy_workspace(focused_workspace);
 	}
 	unfocus_all(&root_container);
 	focus_view(workspace);
