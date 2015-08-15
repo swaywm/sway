@@ -82,7 +82,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
 
 	cont->layout = layout;
-	cont->width	= child->width;
+	cont->width = child->width;
 	cont->height = child->height;
 	cont->x	= child->x;
 	cont->y = child->y;
