@@ -94,12 +94,12 @@ swayc_t *workspace_find_by_name(const char* name) {
 }
 
 void workspace_switch(swayc_t *workspace) {
-	swayc_t *parent = workspace->parent;
-	while (parent->type != C_OUTPUT) {
-		parent = parent->parent;
+	swayc_t *ws_output = workspace->parent;
+	while (ws_output->type != C_OUTPUT) {
+		ws_output = ws_output->parent;
 	}
 	// The current workspace of the output our target workspace is in
-	swayc_t *focused_workspace = parent->focused;
+	swayc_t *focused_workspace = ws_output->focused;
 	if (workspace != focused_workspace && focused_workspace) {
 		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", focused_workspace->name, workspace->name);
 		uint32_t mask = 1;
@@ -109,7 +109,7 @@ void workspace_switch(swayc_t *workspace) {
 		container_map(focused_workspace, set_mask, &mask);
 		mask = 2;
 		container_map(workspace, set_mask, &mask);
-		wlc_output_set_mask(wlc_get_focused_output(), 2);
+		wlc_output_set_mask(ws_output->handle, 2);
 
 		destroy_workspace(focused_workspace);
 	}
