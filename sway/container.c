@@ -69,7 +69,7 @@ swayc_t *new_workspace(swayc_t * output, const char *name) {
 	workspace->layout  = L_HORIZ; // TODO:default layout
 	workspace->width   = output->width;
 	workspace->height  = output->height;
-	workspace->name    = strdup(name);
+	workspace->name	= strdup(name);
 	workspace->visible = true;
 
 	add_child(output, workspace);
@@ -82,10 +82,10 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
 
 	cont->layout   = layout;
-	cont->width    = child->width;
+	cont->width	= child->width;
 	cont->height   = child->height;
-	cont->x        = child->x;
-	cont->y        = child->y;
+	cont->x		= child->x;
+	cont->y		= child->y;
 	cont->visible  = child->visible;
 
 	swayc_t *parent = replace_child(child, cont);
@@ -110,7 +110,7 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 		handle, title, type, sibling, sibling?sibling->type:0);
 	//Setup values
 	view->handle  = handle;
-	view->name    = strdup(title);
+	view->name	= strdup(title);
 	view->visible = true;
 
 	//Case of focused workspace, just create as child of it
