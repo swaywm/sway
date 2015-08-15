@@ -26,6 +26,9 @@ static void free_swayc(swayc_t *c) {
 		list_free(c->children);
 	}
 	if (c->parent) {
+		if (c->parent->focused == c) {
+			c->parent->focused = NULL;
+		}
 		remove_child(c->parent, c);
 	}
 	free(c);
@@ -88,9 +91,28 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	cont->y        = child->y;
 	cont->visible  = child->visible;
 
-	swayc_t *parent = replace_child(child, cont);
-	if (parent) {
-		add_child(cont, child);
+	/* Container inherits all of workspaces children, layout and whatnot */
+	if (child->type == C_WORKSPACE) {
+		swayc_t *workspace = child;
+		//reorder focus
+		cont->focused = workspace->focused;
+		workspace->focused = cont;
+		//Swap children
+		list_t  *tmp_list  = workspace->children;
+		workspace->children = cont->children;
+		cont->children = tmp_list;
+		//add container to workspace chidren
+		add_child(workspace, cont);
+		//give them proper layouts
+		cont->layout = workspace->layout;
+		workspace->layout = layout;
+	}
+	//Or is built around container
+	else {
+		swayc_t *parent = replace_child(child, cont);
+		if (parent) {
+			add_child(cont, child);
+		}
 	}
 	return cont;
 }
@@ -152,9 +174,6 @@ swayc_t *destroy_container(swayc_t *container) {
 		swayc_t *parent = container->parent;
 		free_swayc(container);
 
-		if (parent->focused == container) {
-			parent->focused = NULL;
-		}
 		container = parent;
 	}
 	return container;
@@ -169,9 +188,6 @@ swayc_t *destroy_view(swayc_t *view) {
 	swayc_t *parent = view->parent;
 	free_swayc(view);
 
-	if (parent->focused == view) {
-		parent->focused = NULL;
-	}
 	//Destroy empty containers
 	if (parent->type == C_CONTAINER) {
 		return destroy_container(parent);

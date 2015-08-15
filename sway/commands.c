@@ -226,6 +226,7 @@ static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	list_add(config->symbols, var);
 	return true;
 }
+static void container_log(const swayc_t *c);
 
 static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv" :
@@ -235,20 +236,27 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
-	/* Case that focus is on an empty workspace. change its layout */
-	if (focused->type == C_WORKSPACE) {
+	container_log(focused);
+
+	/* Case that focus is on an workspace with 0/1 children.change its layout */
+	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
+		sway_log(L_DEBUG, "changing workspace layout");
 		focused->layout = layout;
-		return true;
 	}
 	/* Case of no siblings. change parent layout */
-	if (focused->parent->children->length == 1) {
+	else if (focused->type != C_WORKSPACE && focused->parent->children->length == 1) {
+		sway_log(L_DEBUG, "changing container layout");
 		focused->parent->layout = layout;
-		return true;
 	}
-	/* regular case where new split container is build around focused container */
-	swayc_t *parent = new_container(focused, layout);
-	focus_view(focused);
-	arrange_windows(parent, -1, -1);
+	/* regular case where new split container is build around focused container
+	 * or in case of workspace, container inherits its children */
+	else {
+		sway_log(L_DEBUG, "Adding new container around current focused container");
+		swayc_t *parent = new_container(focused, layout);
+		focus_view(focused);
+		arrange_windows(parent, -1, -1);
+	}
+	container_log(focused);
 	return true;
 }
 
