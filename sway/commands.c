@@ -286,6 +286,14 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	swayc_t *container = get_focused_container(&root_container);
 	bool current = (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) > 0;
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
+	//Resize workspace if going from  fullscreen -> notfullscreen
+	//otherwise just resize container
+	if (current) {
+		while (container->type != C_WORKSPACE) {
+			container = container->parent;
+		}
+	}
+	//Only resize container when going into fullscreen
 	arrange_windows(container, -1, -1);
 
 	return true;

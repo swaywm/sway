@@ -28,15 +28,19 @@ static bool pointer_test(swayc_t *view, void *_origin) {
 	return false;
 }
 
-void focus_pointer(void) {
-	swayc_t *focused = find_container(&root_container, pointer_test, &mouse_origin);
-	if (focused) {
-		sway_log(L_DEBUG, "Switching focus to %p", focused);
-		unfocus_all(&root_container);
-		focus_view(focused);
-	} else {
-		focus_view(active_workspace);
+swayc_t *focus_pointer(void) {
+	swayc_t *focused = get_focused_container(&root_container);
+	if (!(wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)) {
+		swayc_t *pointer = find_container(&root_container, pointer_test, &mouse_origin);
+		if (pointer && focused != pointer) {
+			unfocus_all(&root_container);
+			focus_view(pointer);
+		} else if (!focused){
+			focus_view(active_workspace);
+		}
+		focused = pointer;
 	}
+	return focused;
 }
 
 static bool handle_output_created(wlc_handle output) {
@@ -82,15 +86,20 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 }
 
 static bool handle_view_created(wlc_handle handle) {
-	swayc_t *container = get_focused_container(&root_container);
-	swayc_t *view = new_view(container, handle);
-	unfocus_all(&root_container);
+	swayc_t *focused = get_focused_container(&root_container);
+	swayc_t *view = new_view(focused, handle);
 	if (view) {
+		unfocus_all(&root_container);
 		focus_view(view);
 		arrange_windows(view->parent, -1, -1);
 	} else { //Unmanaged view
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_focus(handle);
+	}
+	if (wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+		unfocus_all(&root_container);
+		focus_view(focused);
+		arrange_windows(focused, -1, -1);
 	}
 	return true;
 }
@@ -189,28 +198,16 @@ static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct w
 	if (!config->focus_follows_mouse) {
 		return true;
 	}
-	swayc_t *c = find_container(&root_container, pointer_test, (void *)origin);
-	swayc_t *focused = get_focused_container(&root_container);
-	if (c && c != focused) {
-		sway_log(L_DEBUG, "Switching focus to %p", c);
-		unfocus_all(&root_container);
-		focus_view(c);
-	}
+	focus_pointer();
 	return true;
 }
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state) {
+	swayc_t *focused = get_focused_container(&root_container);
 	if (state == WLC_BUTTON_STATE_PRESSED) {
-		swayc_t *c = find_container(&root_container, pointer_test, &mouse_origin);
-		swayc_t *focused = get_focused_container(&root_container);
-		if (c && c != focused) {
-			sway_log(L_DEBUG, "Switching focus to %p", c);
-			unfocus_all(&root_container);
-			focus_view(c);
-			return false;
-		}
-		return true;
+		swayc_t *pointer = focus_pointer();
+		return !(pointer && pointer != focused);
 	}
 	return true;
 }
