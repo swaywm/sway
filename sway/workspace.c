@@ -106,14 +106,11 @@ void workspace_switch(swayc_t *workspace) {
 
 		// set all c_views in the old workspace to the invisible mask if the workspace
 		// is in the same output & c_views in the new workspace to the visible mask
-
 		container_map(c_workspace, set_mask, &mask);
 		mask = 2;
 		container_map(workspace, set_mask, &mask);
 		wlc_output_set_mask(wlc_get_focused_output(), 2);
 
-
-		//wlc_output_set_mask(wlc_get_focused_output(), 2);
 		unfocus_all(&root_container);
 		focus_view(workspace);
 
