@@ -22,7 +22,7 @@ zero lines of source code after two years.
 
 ### Arch Linux
 
-Install [aur/wlc-git](https://aur.archlinux.org/packages/wlc-git/) and [aur/sway-git](https://aur.archlinux.org/packages/sway-git/).
+Install [aur/sway-git](https://aur.archlinux.org/packages/sway-git/).
 
 ### Manual
 
