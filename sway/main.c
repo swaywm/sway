@@ -9,6 +9,7 @@
 #include "config.h"
 #include "log.h"
 #include "handlers.h"
+#include "ipc.h"
 
 static void sigchld_handle(int signal);
 
@@ -98,6 +99,8 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		free(config_path);
 	}
+
+	init_ipc();
 
 	wlc_run();
 	if (devnull) {
