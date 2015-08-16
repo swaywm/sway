@@ -45,11 +45,15 @@ static void add_output_widths(swayc_t *container, void *_width) {
 swayc_t *new_output(wlc_handle handle) {
 	sway_log(L_DEBUG, "Added output %d", handle);
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
+	const char *name = wlc_output_get_name(handle);
 
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->width = size->w;
 	output->height = size->h;
 	output->handle = handle;
+	if (name) {
+		output->name = strdup(name);
+	}
 
 	add_child(&root_container, output);
 
