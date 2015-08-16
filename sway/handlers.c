@@ -136,7 +136,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	enum { QSIZE = 32 };
 	static uint8_t  head = 0;
 	static uint32_t array[QSIZE];
-	bool cmd_success = true;
+	bool cmd_success = false;
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
@@ -186,7 +186,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 					}
 				}
 				if (state == WLC_KEY_STATE_PRESSED) {
-					cmd_success = !handle_command(config, binding->command);
+					cmd_success = handle_command(config, binding->command);
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
 				}
