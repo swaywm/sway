@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
 		sway_log(L_ERROR, "Errors loading config!");
 	}
 
-	setenv("WLC_IDLE_TIME", "0", 0);
 	setenv("WLC_DIM", "0", 0);
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
