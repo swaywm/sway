@@ -21,7 +21,7 @@ FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
 
 include_directories(
    ${WLC_INCLUDE_DIRS}
-   sway/
+   include/
 )
 
 add_executable(sway
