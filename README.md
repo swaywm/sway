@@ -26,6 +26,8 @@ Dependencies:
 * [wlc](https://github.com/Cloudef/wlc)
 * xwayland
 
+Compiling:
+
     cmake .
     make
     # sudo make install
