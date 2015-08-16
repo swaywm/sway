@@ -67,6 +67,7 @@ list_t *split_string(const char *str, const char *delims) {
 				j++;
 				i++;
 			}
+			free(left);
 		}
 	}
 	return res;

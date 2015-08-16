@@ -88,21 +88,21 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 static bool handle_view_created(wlc_handle handle) {
 	swayc_t *focused = get_focused_container(&root_container);
 	swayc_t *view = new_view(focused, handle);
+	//Leave unamanaged windows alone
 	if (view) {
-		//Set maximize flag for windows.
-		//TODO: floating windows have this unset
-		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
-		unfocus_all(&root_container);
-		focus_view(view);
 		arrange_windows(view->parent, -1, -1);
-	} else { //Unmanaged view
+		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
+		if (!(wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)) {
+			unfocus_all(&root_container);
+			focus_view(view);
+		}
+		else {
+			wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
+			wlc_view_focus(handle);
+		}
+	} else {
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_focus(handle);
-	}
-	if (wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
-		unfocus_all(&root_container);
-		focus_view(focused);
-		arrange_windows(focused, -1, -1);
 	}
 	return true;
 }
