@@ -19,8 +19,8 @@ static char* get_config_path() {
 	char *name = "/.sway/config";
 	const char *home = getenv("HOME");
 
-	sway_log(L_DEBUG, "Trying to find config in ~/.sway/config");
 	// Check home dir
+	sway_log(L_DEBUG, "Trying to find config in ~/.sway/config");
 	char *temp = malloc(strlen(home) + strlen(name) + 1);
 	strcpy(temp, home);
 	strcat(temp, name);
@@ -60,6 +60,58 @@ static char* get_config_path() {
 	if (xdg_config_dirs != NULL) {
 		list_t *paths = split_string(xdg_config_dirs, ":");
 		name = "/sway/config";
+		int i;
+		for (i = 0; i < paths->length; i++ ) {
+			temp = malloc(strlen(paths->items[i]) + strlen(name) + 1);
+			strcpy(temp, paths->items[i]);
+			strcat(temp, name);
+			if (exists(temp)) {
+				free_flat_list(paths);
+				return temp;
+			}
+		}
+		free_flat_list(paths);
+	}
+
+	//Now fall back to i3 paths and try the same thing
+	name = "/.i3/config";
+	sway_log(L_DEBUG, "Trying to find config in ~/.i3/config");
+	char *temp = malloc(strlen(home) + strlen(name) + 1);
+	strcpy(temp, home);
+	strcat(temp, name);
+	if (exists(temp)) {
+		return temp;
+	}
+
+	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/i3/config");
+	char *xdg_config_home = getenv("XDG_CONFIG_HOME");
+	if (xdg_config_home == NULL) {
+		sway_log(L_DEBUG, "Falling back to ~/.config/i3/config");
+		name = "/.config/i3/config";
+		temp = malloc(strlen(home) + strlen(name) + 1);
+		strcpy(temp, home);
+		strcat(temp, name);
+	} else {
+		name = "/i3/config";
+		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
+		strcpy(temp, home);
+		strcat(temp, name);
+	}
+	if (exists(temp)) {
+		return temp;
+	}
+
+	sway_log(L_DEBUG, "Trying to find config in /etc/i3/config");
+	strcpy(temp, "/etc/i3/config");
+	if (exists(temp)) {
+		return temp;
+	}
+
+	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
+	char *xdg_config_dirs = getenv("XDG_CONFIG_DIRS");
+	if (xdg_config_dirs != NULL) {
+		list_t *paths = split_string(xdg_config_dirs, ":");
+		name = "/i3/config";
 		int i;
 		for (i = 0; i < paths->length; i++ ) {
 			temp = malloc(strlen(paths->items[i]) + strlen(name) + 1);
