@@ -69,7 +69,7 @@ static void handle_output_destroyed(wlc_handle output) {
 
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
 	sway_log(L_DEBUG, "Output %d resolution changed to %d x %d", output, to->w, to->h);
-	swayc_t *c = get_swayc_for_handle(output, &root_container);
+	swayc_t *c = wlc_handle_get_user_data(output);
 	if (!c) return;
 	c->width = to->w;
 	c->height = to->h;
@@ -77,7 +77,7 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 }
 
 static void handle_output_focused(wlc_handle output, bool focus) {
-	swayc_t *c = get_swayc_for_handle(output, &root_container);
+	swayc_t *c = wlc_handle_get_user_data(output);
 	if (!c) return;
 	if (focus) {
 		unfocus_all(&root_container);
@@ -109,7 +109,7 @@ static bool handle_view_created(wlc_handle handle) {
 
 static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %d", handle);
-	swayc_t *view = get_swayc_for_handle(handle, &root_container);
+	swayc_t *view = wlc_handle_get_user_data(handle);
 	swayc_t *parent;
 	swayc_t *focused = get_focused_container(&root_container);
 
