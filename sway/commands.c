@@ -188,6 +188,12 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 	return true;
 }
 
+static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
+	swayc_t *view = get_focused_container(&root_container);
+    wlc_view_close(view->handle);
+    return true;
+}
+
 static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)) {
 		return false;
@@ -345,6 +351,7 @@ static struct cmd_handler handlers[] = {
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
+	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
 	{ "reload", cmd_reload },
