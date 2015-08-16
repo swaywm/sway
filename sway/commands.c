@@ -12,6 +12,7 @@
 #include "log.h"
 #include "workspace.h"
 #include "commands.h"
+#include "container.h"
 
 struct modifier_key {
 	char *name;
@@ -152,11 +153,18 @@ static bool cmd_exec(struct sway_config *config, int argc, char **argv) {
 	return cmd_exec_always(config, argc, argv);
 }
 
+static void kill_views(swayc_t *container, void *data) {
+	if (container->type == C_VIEW) {
+		wlc_view_close(container->handle);
+	}
+}
+
 static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
-	// TODO: Some kind of clean up is probably in order
+	// Close all views
+	container_map(&root_container, kill_views, NULL);
 	exit(0);
 	return true;
 }
@@ -185,6 +193,12 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 	}
 
 	config->focus_follows_mouse = !strcasecmp(argv[0], "yes");
+	return true;
+}
+
+static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
+	swayc_t *view = get_focused_container(&root_container);
+	wlc_view_close(view->handle);
 	return true;
 }
 
@@ -345,6 +359,7 @@ static struct cmd_handler handlers[] = {
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
+	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
 	{ "reload", cmd_reload },
