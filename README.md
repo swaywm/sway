@@ -2,10 +2,8 @@
 
 "**S**irCmpwn's **Way**land window manager"
 
-sway is an i3-compatible window manager for
+sway is a **work in progress** i3-compatible window manager for
 [Wayland](http://wayland.freedesktop.org/).
-
-It's a work in progress, proceed at your own risk.
 
 ![](https://sr.ht/qxGE.png)
 
@@ -26,9 +24,7 @@ Dependencies:
 
 * cmake
 * [wlc](https://github.com/Cloudef/wlc)
-* xkb
-
-Notably missing: weston is not required.
+* xwayland
 
     cmake .
     make
@@ -38,8 +34,8 @@ Binary shows up in `./bin` (or `/usr/bin` if you `make install`).
 
 ## Configuration
 
-    mkdir ~/.sway
-    cp ~/.i3/config ~/.sway/config
+    mkdir ~/.config/sway
+    cp ~/.config/i3/config ~/.config/sway/
 
 [See also](http://i3wm.org/docs/)
 
