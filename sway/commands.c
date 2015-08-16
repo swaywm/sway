@@ -354,12 +354,12 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	}
 
 	// Handle workspace output_next/prev
-	if (strcmp(argv[0], "output_next") == 0) {
+	if (strcmp(argv[0], "next_on_output") == 0) {
 		workspace_output_next();
 		return true;
 	}
 
-	if (strcmp(argv[0], "output_prev") == 0) {
+	if (strcmp(argv[0], "prev_on_output") == 0) {
 		workspace_output_prev();
 		return true;
 	}
