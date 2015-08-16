@@ -38,3 +38,8 @@ INSTALL(
     TARGETS sway
     RUNTIME DESTINATION bin
 )
+
+INSTALL(
+    FILES ${PROJECT_SOURCE_DIR}/config
+    DESTINATION /etc/sway/
+)
