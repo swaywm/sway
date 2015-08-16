@@ -31,9 +31,6 @@ static void free_swayc(swayc_t *c) {
 		}
 		remove_child(c->parent, c);
 	}
-	if (c->name) {
-		free(c->name);
-	}
 	free(c);
 }
 
@@ -54,10 +51,8 @@ swayc_t *new_output(wlc_handle handle) {
 	output->height = size->h;
 	output->handle = handle;
 
-	//link this to handler
-	wlc_handle_set_user_data(handle, output);
-
 	add_child(&root_container, output);
+
 	//TODO something with this
 	int total_width = 0;
 	container_map(&root_container, add_output_widths, &total_width);
@@ -140,8 +135,6 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = strdup(title);
 	view->visible = true;
 
-	//Link view to handle
-	wlc_handle_set_user_data(handle, view);
 	//Case of focused workspace, just create as child of it
 	if (sibling->type == C_WORKSPACE) {
 		add_child(sibling, view);

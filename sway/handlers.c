@@ -69,7 +69,7 @@ static void handle_output_destroyed(wlc_handle output) {
 
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
 	sway_log(L_DEBUG, "Output %d resolution changed to %d x %d", output, to->w, to->h);
-	swayc_t *c = wlc_handle_get_user_data(output);
+	swayc_t *c = get_swayc_for_handle(output, &root_container);
 	if (!c) return;
 	c->width = to->w;
 	c->height = to->h;
@@ -77,7 +77,7 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 }
 
 static void handle_output_focused(wlc_handle output, bool focus) {
-	swayc_t *c = wlc_handle_get_user_data(output);
+	swayc_t *c = get_swayc_for_handle(output, &root_container);
 	if (!c) return;
 	if (focus) {
 		unfocus_all(&root_container);
@@ -88,28 +88,28 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 static bool handle_view_created(wlc_handle handle) {
 	swayc_t *focused = get_focused_container(&root_container);
 	swayc_t *view = new_view(focused, handle);
-	//Leave unamanaged windows alone
 	if (view) {
-		arrange_windows(view->parent, -1, -1);
+		//Set maximize flag for windows.
+		//TODO: floating windows have this unset
 		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
-		if (!(wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)) {
-			unfocus_all(&root_container);
-			focus_view(view);
-		}
-		else {
-			wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
-			wlc_view_focus(handle);
-		}
-	} else {
+		unfocus_all(&root_container);
+		focus_view(view);
+		arrange_windows(view->parent, -1, -1);
+	} else { //Unmanaged view
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_focus(handle);
+	}
+	if (wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+		unfocus_all(&root_container);
+		focus_view(focused);
+		arrange_windows(focused, -1, -1);
 	}
 	return true;
 }
 
 static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %d", handle);
-	swayc_t *view = wlc_handle_get_user_data(handle);
+	swayc_t *view = get_swayc_for_handle(handle, &root_container);
 	swayc_t *parent;
 	swayc_t *focused = get_focused_container(&root_container);
 
