@@ -18,7 +18,13 @@ zero lines of source code after two years.
 
 [See "i3 feature support"](https://github.com/SirCmpwn/sway/issues/2)
 
-## Compile / Install
+## Installation
+
+### Arch Linux
+
+Install [aur/wlc-git](https://aur.archlinux.org/packages/wlc-git/) and [aur/sway-git](https://aur.archlinux.org/packages/sway-git/).
+
+### Manual
 
 Dependencies:
 
