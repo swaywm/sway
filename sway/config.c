@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "readline.h"
 #include "stringop.h"
 #include "list.h"
@@ -10,21 +11,138 @@
 
 struct sway_config *config;
 
-bool load_config() {
-	sway_log(L_INFO, "Loading config");
-	// TODO: Allow use of more config file locations
-	const char *name = "/.sway/config";
+static bool exists(const char *path) {
+	return access(path, R_OK) != -1;
+}
+
+static char* get_config_path() {
+	char *name = "/.sway/config";
 	const char *home = getenv("HOME");
+
+	// Check home dir
+	sway_log(L_DEBUG, "Trying to find config in ~/.sway/config");
 	char *temp = malloc(strlen(home) + strlen(name) + 1);
 	strcpy(temp, home);
 	strcat(temp, name);
-	FILE *f = fopen(temp, "r");
-	if (!f) {
-		fprintf(stderr, "Unable to open %s for reading", temp);
-		free(temp);
+	if (exists(temp)) {
+		return temp;
+	}
+
+	// Check XDG_CONFIG_HOME with fallback to ~/.config/
+	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/sway/config");
+	char *xdg_config_home = getenv("XDG_CONFIG_HOME");
+	if (xdg_config_home == NULL) {
+		sway_log(L_DEBUG, "Falling back to ~/.config/sway/config");
+		name = "/.config/sway/config";
+		temp = malloc(strlen(home) + strlen(name) + 1);
+		strcpy(temp, home);
+		strcat(temp, name);
+	} else {
+		name = "/sway/config";
+		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
+		strcpy(temp, home);
+		strcat(temp, name);
+	}
+	if (exists(temp)) {
+		return temp;
+	}
+
+	// Check /etc/
+	sway_log(L_DEBUG, "Trying to find config in /etc/sway/config");
+	strcpy(temp, "/etc/sway/config");
+	if (exists(temp)) {
+		return temp;
+	}
+
+	// Check XDG_CONFIG_DIRS
+	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
+	char *xdg_config_dirs = getenv("XDG_CONFIG_DIRS");
+	if (xdg_config_dirs != NULL) {
+		list_t *paths = split_string(xdg_config_dirs, ":");
+		name = "/sway/config";
+		int i;
+		for (i = 0; i < paths->length; i++ ) {
+			temp = malloc(strlen(paths->items[i]) + strlen(name) + 1);
+			strcpy(temp, paths->items[i]);
+			strcat(temp, name);
+			if (exists(temp)) {
+				free_flat_list(paths);
+				return temp;
+			}
+		}
+		free_flat_list(paths);
+	}
+
+	//Now fall back to i3 paths and try the same thing
+	name = "/.i3/config";
+	sway_log(L_DEBUG, "Trying to find config in ~/.i3/config");
+	temp = malloc(strlen(home) + strlen(name) + 1);
+	strcpy(temp, home);
+	strcat(temp, name);
+	if (exists(temp)) {
+		return temp;
+	}
+
+	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/i3/config");
+	if (xdg_config_home == NULL) {
+		sway_log(L_DEBUG, "Falling back to ~/.config/i3/config");
+		name = "/.config/i3/config";
+		temp = malloc(strlen(home) + strlen(name) + 1);
+		strcpy(temp, home);
+		strcat(temp, name);
+	} else {
+		name = "/i3/config";
+		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
+		strcpy(temp, home);
+		strcat(temp, name);
+	}
+	if (exists(temp)) {
+		return temp;
+	}
+
+	sway_log(L_DEBUG, "Trying to find config in /etc/i3/config");
+	strcpy(temp, "/etc/i3/config");
+	if (exists(temp)) {
+		return temp;
+	}
+
+	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
+	if (xdg_config_dirs != NULL) {
+		list_t *paths = split_string(xdg_config_dirs, ":");
+		name = "/i3/config";
+		int i;
+		for (i = 0; i < paths->length; i++ ) {
+			temp = malloc(strlen(paths->items[i]) + strlen(name) + 1);
+			strcpy(temp, paths->items[i]);
+			strcat(temp, name);
+			if (exists(temp)) {
+				free_flat_list(paths);
+				return temp;
+			}
+		}
+		free_flat_list(paths);
+	}
+
+	return NULL;
+}
+
+bool load_config() {
+	sway_log(L_INFO, "Loading config");
+
+	char *path = get_config_path();
+
+	if (path == NULL) {
+		sway_log(L_ERROR, "Unable to find a config file!");
 		return false;
 	}
-	free(temp);
+
+	FILE *f = fopen(path, "r");
+	if (!f) {
+		fprintf(stderr, "Unable to open %s for reading", path);
+		free(path);
+		return false;
+	}
+	free(path);
 
 	bool config_load_success;
 	if (config) {
@@ -95,7 +213,7 @@ bool read_config(FILE *file, bool is_active) {
 			sway_log(L_DEBUG, "Config load failed for line %s", line);
 			success = false;
 			temp_config->failed = true;
-		} 
+		}
 		list_free(args);
 
 _continue:
