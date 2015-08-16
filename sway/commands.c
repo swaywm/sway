@@ -31,6 +31,7 @@ static struct modifier_key modifiers[] = {
 
 enum expected_args {
 	EXPECTED_MORE_THAN,
+	EXPECTED_AT_LEAST,
 	EXPECTED_LESS_THAN,
 	EXPECTED_EQUAL_TO
 };
@@ -42,7 +43,15 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 				return true;
 			}
 			sway_log(L_ERROR, "Invalid %s command."
-				"(expected more then %d argument%s, got %d",
+				"(expected more than %d argument%s, got %d",
+				name, val, (char*[2]){"s", ""}[argc==1], argc);
+			break;
+		case EXPECTED_AT_LEAST:
+			if (argc >= val) {
+				return true;
+			}
+			sway_log(L_ERROR, "Invalid %s command."
+				"(expected at least %d argument%s, got %d",
 				name, val, (char*[2]){"s", ""}[argc==1], argc);
 			break;
 		case EXPECTED_LESS_THAN:
@@ -50,7 +59,7 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 				return true;
 			};
 			sway_log(L_ERROR, "Invalid %s command."
-				"(expected less then %d argument%s, got %d",
+				"(expected less than %d argument%s, got %d",
 				name, val, (char*[2]){"s", ""}[argc==1], argc);
 			break;
 		case EXPECTED_EQUAL_TO:
@@ -257,6 +266,21 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	return true;
 }
 
+static bool cmd_split(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "split", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
+		_do_split(config, argc, argv, L_VERT);
+	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
+		_do_split(config, argc, argv, L_HORIZ);
+	} else {
+		sway_log(L_ERROR, "Invalid split command (expected either horiziontal or vertical).");
+		return false;
+	}
+	return true;
+}
+
 static bool cmd_splitv(struct sway_config *config, int argc, char **argv) {
 	return _do_split(config, argc, argv, L_VERT);
 }
@@ -279,7 +303,7 @@ static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "fullscreen", EXPECTED_EQUAL_TO, 0)) {
+	if (!checkarg(argc, "fullscreen", EXPECTED_AT_LEAST, 0)) {
 		return false;
 	}
 
@@ -325,6 +349,7 @@ static struct cmd_handler handlers[] = {
 	{ "log_colors", cmd_log_colors },
 	{ "reload", cmd_reload },
 	{ "set", cmd_set },
+	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv },
 	{ "workspace", cmd_workspace }
