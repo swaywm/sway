@@ -244,6 +244,9 @@ void focus_view(swayc_t *view) {
 	}
 	while (view && view->type != C_VIEW) {
 		view = view->focused;
+		if (view && view->type == C_OUTPUT) {
+			wlc_output_focus(view->handle);
+		}
 	}
 	if (view) {
 		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);

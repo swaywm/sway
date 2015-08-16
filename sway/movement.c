@@ -28,7 +28,7 @@ bool move_focus(enum movement_direction direction) {
 		bool can_move = false;
 		int diff = 0;
 		if (direction == MOVE_LEFT || direction == MOVE_RIGHT) {
-			if (parent->layout == L_HORIZ) {
+			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
 				can_move = true;
 				diff = direction == MOVE_LEFT ? -1 : 1;
 			}
@@ -61,7 +61,7 @@ bool move_focus(enum movement_direction direction) {
 			sway_log(L_DEBUG, "Can't move at current level, moving up tree");
 			current = parent;
 			parent = parent->parent;
-			if (parent->type == C_ROOT) {
+			if (!parent) {
 				// Nothing we can do
 				return false;
 			}
