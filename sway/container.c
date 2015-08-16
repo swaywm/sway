@@ -31,6 +31,9 @@ static void free_swayc(swayc_t *c) {
 		}
 		remove_child(c->parent, c);
 	}
+	if (c->name) {
+		free(c->name);
+	}
 	free(c);
 }
 
