@@ -199,19 +199,20 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin) {
 	mouse_origin = *origin;
 	if (!config->focus_follows_mouse) {
-		return false;
+		return true;
 	}
 	focus_pointer();
-	return false;
+	return true;
 }
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state) {
-	get_focused_container(&root_container);
+	swayc_t *focused = get_focused_container(&root_container);
 	if (state == WLC_BUTTON_STATE_PRESSED) {
-		focus_pointer();
+		swayc_t *pointer = focus_pointer();
+		return !(pointer && pointer != focused);
 	}
-	return false;
+	return true;
 }
 
 static void handle_wlc_ready(void) {
