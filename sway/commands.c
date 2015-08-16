@@ -285,9 +285,9 @@ static bool cmd_split(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
-		_do_split(config, argc, argv, L_VERT);
+		_do_split(config, argc - 1, argv + 1, L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
-		_do_split(config, argc, argv, L_HORIZ);
+		_do_split(config, argc - 1, argv + 1, L_HORIZ);
 	} else {
 		sway_log(L_ERROR, "Invalid split command (expected either horiziontal or vertical).");
 		return false;
