@@ -215,10 +215,10 @@ swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
 }
 
 swayc_t *get_focused_container(swayc_t *parent) {
-	while (parent->focused) {
-		parent = parent->focused;
+	if (parent->focused == NULL) {
+		return parent;
 	}
-	return parent;
+	return get_focused_container(parent->focused);
 }
 
 void unfocus_all(swayc_t *container) {

@@ -53,9 +53,8 @@ char *strip_comments(char *str) {
 list_t *split_string(const char *str, const char *delims) {
 	list_t *res = create_list();
 	int i, j;
-	int len = strlen(str);
-	for (i = 0, j = 0; i < len + 1; ++i) {
-		if (strchr(delims, str[i]) || i == len) {
+	for (i = 0, j = 0; i < strlen(str) + 1; ++i) {
+		if (strchr(delims, str[i]) || i == strlen(str)) {
 			if (i - j == 0) {
 				continue;
 			}
@@ -64,7 +63,7 @@ list_t *split_string(const char *str, const char *delims) {
 			left[i - j] = 0;
 			list_add(res, left);
 			j = i + 1;
-			while (j <= len && str[j] && strchr(delims, str[j])) {
+			while (j <= strlen(str) && str[j] && strchr(delims, str[j])) {
 				j++;
 				i++;
 			}
@@ -111,43 +110,39 @@ int unescape_string(char *string) {
 	for (i = 0; string[i]; ++i) {
 		if (string[i] == '\\') {
 			--len;
-			int shift = 0;
 			switch (string[++i]) {
 			case '0':
 				string[i - 1] = '\0';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 'a':
 				string[i - 1] = '\a';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 'b':
 				string[i - 1] = '\b';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 't':
 				string[i - 1] = '\t';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 'n':
 				string[i - 1] = '\n';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 'v':
 				string[i - 1] = '\v';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 'f':
 				string[i - 1] = '\f';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
 			case 'r':
 				string[i - 1] = '\r';
-				shift = 1;
+				memmove(string + i, string + i + 1, len - i);
 				break;
-			}
-			if (shift) {
-				memmove(string + i, string + i + shift, len - i);
 			}
 		}
 	}
