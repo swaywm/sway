@@ -342,6 +342,28 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 
+	// Handle workspace next/prev
+	if (strcmp(argv[0], "next") == 0) {
+		workspace_next();
+		return true;
+	}
+
+	if (strcmp(argv[0], "prev") == 0) {
+		workspace_next();
+		return true;
+	}
+
+	// Handle workspace output_next/prev
+	if (strcmp(argv[0], "output_next") == 0) {
+		workspace_output_next();
+		return true;
+	}
+
+	if (strcmp(argv[0], "output_prev") == 0) {
+		workspace_output_prev();
+		return true;
+	}
+
 	swayc_t *workspace = workspace_find_by_name(argv[0]);
 	if (!workspace) {
 		workspace = workspace_create(argv[0]);
