@@ -32,7 +32,7 @@ Compiling:
     make
     # sudo make install
 
-Binary shows up in `./bin` (or `/usr/bin` if you `make install`).
+Binary shows up in `./bin` (or `/usr/local/bin` if you `make install`).
 
 ## Configuration
 
