@@ -76,7 +76,7 @@ static char* get_config_path() {
 	//Now fall back to i3 paths and try the same thing
 	name = "/.i3/config";
 	sway_log(L_DEBUG, "Trying to find config in ~/.i3/config");
-	char *temp = malloc(strlen(home) + strlen(name) + 1);
+	temp = malloc(strlen(home) + strlen(name) + 1);
 	strcpy(temp, home);
 	strcat(temp, name);
 	if (exists(temp)) {
@@ -84,7 +84,6 @@ static char* get_config_path() {
 	}
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/i3/config");
-	char *xdg_config_home = getenv("XDG_CONFIG_HOME");
 	if (xdg_config_home == NULL) {
 		sway_log(L_DEBUG, "Falling back to ~/.config/i3/config");
 		name = "/.config/i3/config";
@@ -108,7 +107,6 @@ static char* get_config_path() {
 	}
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
-	char *xdg_config_dirs = getenv("XDG_CONFIG_DIRS");
 	if (xdg_config_dirs != NULL) {
 		list_t *paths = split_string(xdg_config_dirs, ":");
 		name = "/i3/config";
