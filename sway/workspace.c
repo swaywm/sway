@@ -93,6 +93,94 @@ swayc_t *workspace_find_by_name(const char* name) {
 	return find_container(&root_container, workspace_by_name, (void *) name);
 }
 
+void workspace_output_next() {
+	// Get the index of the workspace in the current output, and change the view to index+1 workspace.
+	// if we're currently focused on the last workspace in the output, switch to the first
+	swayc_t *current_output = active_workspace->parent;
+	int i;
+	for (i = 0; i < current_output->children->length - 1; i++) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+			workspace_switch(current_output->children->items[i + 1]);
+			return;
+		}
+	}
+	workspace_switch(current_output->children->items[0]);
+}
+
+void workspace_next() {
+	// Get the index of the workspace in the current output, and change the view to index+1 workspace.
+	// if we're currently focused on the last workspace in the output, change focus to there
+	// and call workspace_output_next(), as long as another output actually exists
+	swayc_t *current_output = active_workspace->parent;
+	int i;
+	for (i = 0; i < current_output->children->length - 1; i++) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+			workspace_switch(current_output->children->items[i + 1]);
+			return;
+		}
+	}
+	if (root_container.children->length > 1) {
+		for (i = 0; i < root_container.children->length - 1; i++) {
+			if (root_container.children->items[i] == current_output) {
+				workspace_switch(((swayc_t *)root_container.children->items[i + 1])->focused);
+				workspace_output_next();
+				return;
+			}
+		}
+		// If we're at the last output, then go to the first
+		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
+		workspace_output_next();
+		return;
+	} else {
+		workspace_switch(current_output->children->items[0]);
+	}
+}
+
+void workspace_output_prev() {
+	// Get the index of the workspace in the current output, and change the view to index+1 workspace
+	// if we're currently focused on the first workspace in the output, do nothing and return false
+	swayc_t *current_output = active_workspace->parent;
+	int i;
+	for (i = 1; i < current_output->children->length; i++) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+			workspace_switch(current_output->children->items[i - 1]);
+			return;
+		}
+	}
+	workspace_switch(current_output->children->items[current_output->children->length - 1]);
+}
+
+void workspace_prev() {
+	// Get the index of the workspace in the current output, and change the view to index-1 workspace.
+	// if we're currently focused on the last workspace in the output, change focus to there
+	// and call workspace_output_next(), as long as another output actually exists
+
+	swayc_t *current_output = active_workspace->parent;
+	int i;
+	for (i = 1; i < current_output->children->length; i++) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+			workspace_switch(current_output->children->items[i - 1]);
+			return;
+		}
+	}
+	if (root_container.children->length > 1) {
+		for (i = 1; i < root_container.children->length; i++) {
+			if (root_container.children->items[i] == current_output) {
+				workspace_switch(((swayc_t *)root_container.children->items[i - 1])->focused);
+				workspace_output_next();
+				return;
+			}
+		}
+		// If we're at the first output, then go to the last
+		workspace_switch(((swayc_t *)root_container.children->items[root_container.children->length-1])->focused);
+		workspace_output_next();
+		return;
+	} else {
+		workspace_switch(current_output->children->items[current_output->children->length - 1]);
+	}
+
+}
+
 void workspace_switch(swayc_t *workspace) {
 	swayc_t *ws_output = workspace->parent;
 	while (ws_output->type != C_OUTPUT) {
