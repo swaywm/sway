@@ -89,6 +89,9 @@ static bool handle_view_created(wlc_handle handle) {
 	swayc_t *focused = get_focused_container(&root_container);
 	swayc_t *view = new_view(focused, handle);
 	if (view) {
+		//Set maximize flag for windows.
+		//TODO: floating windows have this unset
+		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		unfocus_all(&root_container);
 		focus_view(view);
 		arrange_windows(view->parent, -1, -1);
