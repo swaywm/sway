@@ -26,7 +26,7 @@ char *workspace_next_name(void) {
 		list_t *args = split_string(command, " ");
 
 		if (strcmp("workspace", args->items[0]) == 0 && args->length > 1) {
-			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", args->items[1]);
+			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", (char *)args->items[1]);
 			char* target = malloc(strlen(args->items[1]) + 1);
 			strcpy(target, args->items[1]);
 			while (*target == ' ' || *target == '\t')
