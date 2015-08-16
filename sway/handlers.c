@@ -86,7 +86,6 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 }
 
 static bool handle_view_created(wlc_handle handle) {
-
 	swayc_t *focused = get_focused_container(&root_container);
 	swayc_t *view = new_view(focused, handle);
 	if (view) {
