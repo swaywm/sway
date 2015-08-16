@@ -223,12 +223,6 @@ static void handle_wlc_ready(void) {
 		handle_command(config, config->cmd_queue->items[i]);
 	}
 	free_flat_list(config->cmd_queue);
-
-	if (config->failed) {
-		sway_log(L_ERROR, "Programs have been execd, aborting!");
-		sway_abort("Unable to load config");
-	}
-
 	config->active = true;
 }
 

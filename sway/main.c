@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 	signal(SIGCHLD, sigchld_handle);
 
 	if (!load_config()) {
-		sway_log(L_ERROR, "Config load failed, aborting sway post init!");
+		sway_log(L_ERROR, "Errors loading config!");
 	}
 
 	setenv("WLC_IDLE_TIME", "0", 0);
