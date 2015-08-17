@@ -285,6 +285,9 @@ void unfocus_all(swayc_t *container) {
 }
 
 void focus_view(swayc_t *view) {
+	if (!view) {
+		return;
+	}
 	sway_log(L_DEBUG, "Setting focus for %p:%ld", view, view->handle);
 	swayc_t *c = view;
 	//Set focus from root to view
