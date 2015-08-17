@@ -12,17 +12,17 @@
 static void sigchld_handle(int signal);
 
 int main(int argc, char **argv) {
-	init_log(L_DEBUG); // TODO: Control this with command line arg
-	init_layout();
-
 	/* Signal handling */
 	signal(SIGCHLD, sigchld_handle);
 
 	setenv("WLC_DIM", "0", 0);
+	/* Changing code earlier than this point requires detailed review */
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
-	setenv("DISPLAY", ":1", 1);
+
+	init_log(L_DEBUG); // TODO: Control this with command line arg
+	init_layout();
 
 	if (!load_config()) {
 		sway_log(L_ERROR, "Error(s) loading config!");
