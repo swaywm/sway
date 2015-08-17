@@ -137,8 +137,10 @@ static void handle_view_destroyed(wlc_handle handle) {
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		sway_log(L_DEBUG,"Unmanaged window of type %x was destroyed", type);
 		if (type & WLC_BIT_UNMANAGED) {
+			// We need to call focus_view() on focus_pointer because when unmanaged windows
+			// do not alter the focus structure of the container tree. This makes focus_pointer()
+			// think that it doesn't need to do anything, so we manually focus the result.
 			focus_view(focus_pointer());
-			arrange_windows(active_workspace, -1, -1);
 			return;
 		}
 
@@ -147,11 +149,8 @@ static void handle_view_destroyed(wlc_handle handle) {
 			focus_view(focus_pointer());
 			return;
 		}
-		if (type & WLC_BIT_POPUP) {
-			swayc_t *view = get_swayc_for_handle(handle, &root_container);
-			destroy_view(view);
-		}
 	}
+
 	swayc_t *view = get_swayc_for_handle(handle, &root_container);
 	swayc_t *parent;
 	swayc_t *focused = get_focused_container(&root_container);
