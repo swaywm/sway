@@ -239,10 +239,11 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin) {
 	mouse_origin = *origin;
-	if (!config->focus_follows_mouse) {
-		return false;
+	static wlc_handle prev_view = -1;
+	if (config->focus_follows_mouse && prev_view != view) {
+		focus_pointer();
 	}
-	focus_pointer();
+	prev_view = view;
 	return false;
 }
 
