@@ -238,19 +238,38 @@ void unfocus_all(swayc_t *container) {
 
 void focus_view(swayc_t *view) {
 	sway_log(L_DEBUG, "Setting focus for %p", view);
-	while (view != &root_container) {
-		view->parent->focused = view;
-		view = view->parent;
+	swayc_t *c = view;
+	//Set focus from root to view
+	while (c != &root_container) {
+		c->parent->focused = c;
+		c = c->parent;
 	}
+	//Set output
+	wlc_output_focus(c->focused->handle);
+	//get focus for views focused window
 	while (view && view->type != C_VIEW) {
 		view = view->focused;
-		if (view && view->type == C_OUTPUT) {
-			wlc_output_focus(view->handle);
-		}
 	}
 	if (view) {
 		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_focus(view->handle);
 	}
 }
+
+void focus_view_for(swayc_t *top, swayc_t *view) {
+	swayc_t *find = view;
+	//Make sure top is a ancestor of view
+	while (find != top) {
+		if (find == &root_container) {
+			return;
+		}
+		find = find->parent;
+	}
+	//Set focus for top to go to view
+	while (view != top) {
+		view->parent->focused = view;
+		view = view->parent;
+	}
+}
+
 
