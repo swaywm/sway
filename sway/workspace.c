@@ -80,15 +80,6 @@ bool workspace_by_name(swayc_t *view, void *data) {
 		   (strcasecmp(view->name, (char *) data) == 0);
 }
 
-void set_mask(swayc_t *view, void *data) {
-	uint32_t *p = data;
-
-	if (view->type == C_VIEW) {
-		wlc_view_set_mask(view->handle, *p);
-	}
-	view->visible = (*p == 2);
-}
-
 swayc_t *workspace_find_by_name(const char* name) {
 	return find_container(&root_container, workspace_by_name, (void *) name);
 }
@@ -194,9 +185,9 @@ void workspace_switch(swayc_t *workspace) {
 
 		// set all c_views in the old workspace to the invisible mask if the workspace
 		// is in the same output & c_views in the new workspace to the visible mask
-		container_map(focused_workspace, set_mask, &mask);
+		container_map(focused_workspace, set_view_visibility, &mask);
 		mask = 2;
-		container_map(workspace, set_mask, &mask);
+		container_map(workspace, set_view_visibility, &mask);
 		wlc_output_set_mask(ws_output->handle, 2);
 
 		destroy_workspace(focused_workspace);
