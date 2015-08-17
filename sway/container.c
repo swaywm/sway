@@ -48,7 +48,7 @@ static void add_output_widths(swayc_t *container, void *_width) {
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
-	sway_log(L_DEBUG, "Added output %d %s", handle, name);
+	sway_log(L_DEBUG, "Added output %u %s", (unsigned int)handle, name);
 
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->width = size->w;
@@ -73,7 +73,7 @@ swayc_t *new_output(wlc_handle handle) {
 }
 
 swayc_t *new_workspace(swayc_t * output, const char *name) {
-	sway_log(L_DEBUG, "Added workspace %s for output %d", name, output->handle);
+	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
 	workspace->layout = L_HORIZ; // TODO:default layout
@@ -127,8 +127,8 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	const char   *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %d:%s to container %p %d",
-		handle, title, sibling, sibling?sibling->type:0);
+	sway_log(L_DEBUG, "Adding new view %u:%s to container %p %d",
+		(unsigned int)handle, title, sibling, sibling?sibling->type:0);
 	//Setup values
 	view->handle = handle;
 	view->name = strdup(title);
@@ -150,7 +150,7 @@ swayc_t *destroy_output(swayc_t *output) {
 	if (output->children->length == 0) {
 		//TODO move workspaces to other outputs
 	}
-	sway_log(L_DEBUG, "OUTPUT: Destroying output '%d'", output->handle);
+	sway_log(L_DEBUG, "OUTPUT: Destroying output '%u'", (unsigned int)output->handle);
 	free_swayc(output);
 	return &root_container;
 }
