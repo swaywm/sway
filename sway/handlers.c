@@ -104,6 +104,7 @@ static bool handle_view_created(wlc_handle handle) {
 		// Float popups
 		if (type & WLC_BIT_POPUP) {
 			swayc_t *view = new_floating_view(handle);
+			wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, false);
 			focus_view(view);
 			arrange_windows(active_workspace, -1, -1);
 		}
@@ -136,12 +137,16 @@ static void handle_view_destroyed(wlc_handle handle) {
 			focus_view(focus_pointer());
 			arrange_windows(active_workspace, -1, -1);
 			return;
-		} 
+		}
 
 		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
 			focus_view(focus_pointer());
 			arrange_windows(active_workspace, -1, -1);
 			return;
+		}
+		if (type & WLC_BIT_POPUP) {
+			swayc_t *view = get_swayc_for_handle(handle, &root_container);
+			destroy_view(view);
 		}
 	}
 	swayc_t *view = get_swayc_for_handle(handle, &root_container);
