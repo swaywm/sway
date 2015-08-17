@@ -201,7 +201,6 @@ bool read_config(FILE *file, bool is_active) {
 		// should be queued for later execution
 		list_t *args = split_string(line, " ");
 		if (!is_active && (
-			strcmp("workspace", args->items[0]) == 0 ||
 			strcmp("exec", args->items[0]) == 0 ||
 			strcmp("exec_always", args->items[0]) == 0 )) {
 			sway_log(L_DEBUG, "Deferring command %s", line);
