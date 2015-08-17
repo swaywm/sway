@@ -87,17 +87,26 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 
 static bool handle_view_created(wlc_handle handle) {
 	swayc_t *focused = get_focused_container(&root_container);
-	swayc_t *view = new_view(focused, handle);
-	if (view) {
+	uint32_t type = wlc_view_get_type(handle);
+	//If override_redirect/unmanaged/popup/modal/splach
+	if (type) {
+		sway_log(L_DEBUG,"Unmanaged window of type %x left alone", type);
+		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
+		if (type & WLC_BIT_UNMANAGED) {
+			return true;
+		}
+		//for things like Dmenu
+		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
+			wlc_view_focus(handle);
+		}
+	} else {
+		swayc_t *view = new_view(focused, handle);
 		//Set maximize flag for windows.
 		//TODO: floating windows have this unset
 		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		unfocus_all(&root_container);
 		focus_view(view);
 		arrange_windows(view->parent, -1, -1);
-	} else { //Unmanaged view
-		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
-		wlc_view_focus(handle);
 	}
 	if (wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
 		unfocus_all(&root_container);
