@@ -45,6 +45,13 @@ Binary shows up in `./bin` (or `/usr/local/bin` if you `make install`).
     mkdir ~/.config/sway
     cp ~/.config/i3/config ~/.config/sway/
 
+Or if you don't already use i3:
+
+    mkdir ~/.config/sway
+    cp /etc/sway/config ~/.config/sway/
+
+Edit to your liking.
+
 [See also](http://i3wm.org/docs/)
 
 ## Running
