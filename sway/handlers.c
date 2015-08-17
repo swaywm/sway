@@ -10,6 +10,7 @@
 #include "handlers.h"
 #include "stringop.h"
 #include "workspace.h"
+#include "container.h"
 
 static struct wlc_origin mouse_origin;
 
@@ -88,16 +89,23 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 static bool handle_view_created(wlc_handle handle) {
 	swayc_t *focused = get_focused_container(&root_container);
 	uint32_t type = wlc_view_get_type(handle);
-	//If override_redirect/unmanaged/popup/modal/splach
+	// If override_redirect/unmanaged/popup/modal/splach
 	if (type) {
 		sway_log(L_DEBUG,"Unmanaged window of type %x left alone", type);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		if (type & WLC_BIT_UNMANAGED) {
 			return true;
 		}
-		//for things like Dmenu
+		// For things like Dmenu
 		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
 			wlc_view_focus(handle);
+		}
+
+		// Float popups
+		if (type & WLC_BIT_POPUP) {
+			swayc_t *view = new_floating_view(handle);
+			focus_view(view);
+			arrange_windows(active_workspace, -1, -1);
 		}
 	} else {
 		swayc_t *view = new_view(focused, handle);
@@ -118,6 +126,24 @@ static bool handle_view_created(wlc_handle handle) {
 
 static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %u", (unsigned int)handle);
+
+	// Properly handle unmanaged views
+	uint32_t type = wlc_view_get_type(handle);
+	if (type) {
+		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
+		sway_log(L_DEBUG,"Unmanaged window of type %x was destroyed", type);
+		if (type & WLC_BIT_UNMANAGED) {
+			focus_view(focus_pointer());
+			arrange_windows(active_workspace, -1, -1);
+			return;
+		} 
+
+		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
+			focus_view(focus_pointer());
+			arrange_windows(active_workspace, -1, -1);
+			return;
+		}
+	}
 	swayc_t *view = get_swayc_for_handle(handle, &root_container);
 	swayc_t *parent;
 	swayc_t *focused = get_focused_container(&root_container);
@@ -135,8 +161,23 @@ static void handle_view_focus(wlc_handle view, bool focus) {
 	return;
 }
 
-static void handle_view_geometry_request(wlc_handle view, const struct wlc_geometry* geometry) {
-	// deny that shit
+static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry* geometry) {
+	// If the view is floating, then apply the geometry.
+	// Otherwise save the desired width/height for the view.
+	// This will not do anything for the time being as WLC improperly sends geometry requests
+	swayc_t *view = get_swayc_for_handle(handle, &root_container);
+	if (view) {
+		view->desired_width = geometry->size.w;
+		view->desired_height = geometry->size.h;
+
+		if (view->is_floating) {
+			view->width = view->desired_width;
+			view->height = view->desired_height;
+			view->x = geometry->origin.x;
+			view->y = geometry->origin.y;
+			arrange_windows(view->parent, -1, -1);
+		}	
+	}
 }
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {

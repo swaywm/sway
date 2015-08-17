@@ -81,6 +81,7 @@ swayc_t *new_workspace(swayc_t * output, const char *name) {
 	workspace->height = output->height;
 	workspace->name = strdup(name);
 	workspace->visible = true;
+	workspace->floating = create_list();
 
 	add_child(output, workspace);
 	return workspace;
@@ -134,6 +135,12 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = strdup(title);
 	view->visible = true;
 
+	view->desired_width = -1;
+	view->desired_height = -1;
+
+	// TODO: properly set this
+	view->is_floating = false;
+
 	//Case of focused workspace, just create as child of it
 	if (sibling->type == C_WORKSPACE) {
 		add_child(sibling, view);
@@ -141,6 +148,38 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	//Regular case, create as sibling of current container
 	else {
 		add_sibling(sibling, view);
+	}
+	return view;
+}
+
+swayc_t *new_floating_view(wlc_handle handle) {
+	const char   *title = wlc_view_get_title(handle);
+	swayc_t *view = new_swayc(C_VIEW);
+	sway_log(L_DEBUG, "Adding new view %u:%s as a floating view",
+		(unsigned int)handle, title);
+	//Setup values
+	view->handle = handle;
+	view->name = strdup(title);
+	view->visible = true;
+
+	// Set the geometry of the floating view
+	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
+
+	view->x = geometry->origin.x;
+	view->y = geometry->origin.y;
+	view->width = geometry->size.w;
+	view->height = geometry->size.h;
+
+	view->desired_width = view->width;
+	view->desired_height = view->height;
+
+	view->is_floating = true;
+
+	//Case of focused workspace, just create as child of it
+	list_add(active_workspace->floating, view);
+	view->parent = active_workspace;
+	if (active_workspace->focused == NULL) {
+		active_workspace->focused = view;
 	}
 	return view;
 }
@@ -192,23 +231,32 @@ swayc_t *destroy_view(swayc_t *view) {
 	if (parent->type == C_CONTAINER) {
 		return destroy_container(parent);
 	}
+
 	return parent;
 }
-
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {
 		return NULL;
 	}
+	// Special case for checking floating stuff
 	int i;
+	if (container->type == C_WORKSPACE) {
+		for (i = 0; i < container->floating->length; ++i) {
+			swayc_t *child = container->floating->items[i];
+			if (test(child, data)) {
+				return child;
+			}
+		}
+	}
 	for (i = 0; i < container->children->length; ++i) {
 		swayc_t *child = container->children->items[i];
 		if (test(child, data)) {
 			return child;
 		} else {
-			swayc_t *_ = find_container(child, test, data);
-			if (_) {
-				return _;
+			swayc_t *res = find_container(child, test, data);
+			if (res) {
+				return res;
 			}
 		}
 	}

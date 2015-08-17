@@ -65,10 +65,20 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 
 swayc_t *remove_child(swayc_t *parent, swayc_t *child) {
 	int i;
-	for (i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == child) {
-			list_del(parent->children, i);
-			break;
+	// Special case for floating views
+	if (child->is_floating) {
+		for (i = 0; i < parent->floating->length; ++i) {
+			if (parent->floating->items[i] == child) {
+				list_del(parent->floating, i);
+				break;
+			}
+		}
+	} else {
+		for (i = 0; i < parent->children->length; ++i) {
+			if (parent->children->items[i] == child) {
+				list_del(parent->children, i);
+				break;
+			}
 		}
 	}
 	if (parent->focused == child) {
@@ -192,6 +202,33 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		}
 		break;
 	}
+
+	// Arrage floating layouts for workspaces last
+	if (container->type == C_WORKSPACE) {
+		for (i = 0; i < container->floating->length; ++i) {
+			swayc_t *view = ((swayc_t *)container->floating->items[i]);
+			// Set the geometry
+			struct wlc_geometry geometry = {
+				.origin = {
+					.x = view->x,
+					.y = view->y
+				},
+				.size = {
+					.w = view->width,
+					.h = view->height
+				}
+			};
+			wlc_view_set_geometry(view->handle, &geometry);
+
+			// Bring the views to the front in order of the list, the list
+			// will be kept up to date so that more recently focused views
+			// have higher indexes
+			// This is conditional on there not being a fullscreen view in the workspace
+			if (!(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
+				wlc_view_bring_to_front(view->handle);
+			}
+		}
+	}
 	layout_log(&root_container, 0);
 }
 
@@ -199,7 +236,18 @@ swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
 	if (parent->children == NULL) {
 		return NULL;
 	}
+
+	// Search for floating workspaces
 	int i;
+	if (parent->type == C_WORKSPACE) {
+		for (i = 0; i < parent->floating->length; ++i) {
+			swayc_t *child = parent->floating->items[i];
+			if (child->handle == handle) {
+				return child;
+			}
+		}
+	}
+
 	for (i = 0; i < parent->children->length; ++i) {
 		swayc_t *child = parent->children->items[i];
 		if (child->handle == handle) {

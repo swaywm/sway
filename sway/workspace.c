@@ -255,5 +255,18 @@ void layout_log(const swayc_t *c, int depth) {
 		for (i = 0; i < depth; ++i) fputc(' ', stderr);
 		fprintf(stderr,")\n");
 	}
+	if (c->type == C_WORKSPACE) {
+		e = c->floating?c->floating->length:0;
+		for (i = 0; i < depth; ++i) fputc(' ', stderr);
+		if (e) {
+			for (i = 0; i < depth; ++i) fputc(' ', stderr);
+			fprintf(stderr,"(\n");
+			for (i = 0; i < e; ++i) {
+				layout_log(c->floating->items[i], depth + 1);
+			}
+			for (i = 0; i < depth; ++i) fputc(' ', stderr);
+			fprintf(stderr,")\n");
+		}
+	}
 }
 /* XXX:DEBUG:XXX */
