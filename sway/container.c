@@ -54,9 +54,7 @@ swayc_t *new_output(wlc_handle handle) {
 	output->width = size->w;
 	output->height = size->h;
 	output->handle = handle;
-	if (name) {
-		output->name = strdup(name);
-	}
+	output->name = name ? strdup(name) : NULL;
 
 	add_child(&root_container, output);
 
@@ -95,7 +93,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	cont->layout = layout;
 	cont->width = child->width;
 	cont->height = child->height;
-	cont->x	= child->x;
+	cont->x = child->x;
 	cont->y = child->y;
 	cont->visible = child->visible;
 
@@ -132,7 +130,7 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 		(unsigned int)handle, title, sibling, sibling?sibling->type:0);
 	//Setup values
 	view->handle = handle;
-	view->name = strdup(title);
+	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
 
 	view->desired_width = -1;
@@ -159,7 +157,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 		(unsigned int)handle, title);
 	//Setup values
 	view->handle = handle;
-	view->name = strdup(title);
+	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
 
 	// Set the geometry of the floating view
