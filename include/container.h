@@ -40,11 +40,16 @@ struct sway_container {
 
 	bool visible;
 
+    bool is_floating;
+
 	int weight;
 
 	char *name;
 
 	list_t *children;
+
+    // Special list for floating windows in workspaces
+	list_t *floating;
 
 	struct sway_container *parent;
 	struct sway_container *focused;

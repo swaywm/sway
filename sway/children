@@ -1,0 +1,26 @@
+workspace.c:90:35:	swayc_t *current_output = active_workspace->parent;
+workspace.c:93:78:		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+workspace.c:105:35:	swayc_t *current_output = active_workspace->parent;
+workspace.c:108:78:		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+workspace.c:133:35:	swayc_t *current_output = active_workspace->parent;
+workspace.c:136:78:		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+workspace.c:149:35:	swayc_t *current_output = active_workspace->parent;
+workspace.c:152:78:		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+workspace.c:176:23:	swayc_t *ws_output = workspace->parent;
+workspace.c:183:70:		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", focused_workspace->name, workspace->name);
+workspace.c:199:20:	swayc_t *output = workspace->parent;
+
+container.c:79:2:	workspace->layout = L_HORIZ; // TODO:default layout
+container.c:80:2:	workspace->width = output->width;
+container.c:81:2:	workspace->height = output->height;
+container.c:82:2:	workspace->name = strdup(name);
+container.c:83:2:	workspace->visible = true;
+container.c:105:19:		cont->focused = workspace->focused;
+container.c:106:3:		workspace->focused = cont;
+container.c:108:24:		list_t  *tmp_list  = workspace->children;
+container.c:109:3:		workspace->children = cont->children;
+container.c:114:18:		cont->layout = workspace->layout;
+container.c:115:3:		workspace->layout = layout;
+container.c:162:6:	if (workspace->children->length == 0) {
+container.c:163:61:		sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
+container.c:164:21:		swayc_t *parent = workspace->parent;

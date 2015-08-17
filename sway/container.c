@@ -81,6 +81,7 @@ swayc_t *new_workspace(swayc_t * output, const char *name) {
 	workspace->height = output->height;
 	workspace->name = strdup(name);
 	workspace->visible = true;
+	workspace->floating = create_list();
 
 	add_child(output, workspace);
 	return workspace;
@@ -133,6 +134,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->handle = handle;
 	view->name = strdup(title);
 	view->visible = true;
+
+	// TODO: properly set this
+	view->is_floating = false;
 
 	//Case of focused workspace, just create as child of it
 	if (sibling->type == C_WORKSPACE) {
@@ -192,23 +196,32 @@ swayc_t *destroy_view(swayc_t *view) {
 	if (parent->type == C_CONTAINER) {
 		return destroy_container(parent);
 	}
+
 	return parent;
 }
-
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {
 		return NULL;
 	}
+	// Special case for checking floating stuff
 	int i;
+	if (container->type == C_WORKSPACE) {
+		for (i = 0; i < container->floating->length; ++i) {
+			swayc_t *child = container->floating->items[i];
+			if (test(child, data)) {
+				return child;
+			}
+		}
+	}
 	for (i = 0; i < container->children->length; ++i) {
 		swayc_t *child = container->children->items[i];
 		if (test(child, data)) {
 			return child;
 		} else {
-			swayc_t *_ = find_container(child, test, data);
-			if (_) {
-				return _;
+			swayc_t *res = find_container(child, test, data);
+			if (res) {
+				return res;
 			}
 		}
 	}

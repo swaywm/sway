@@ -13,6 +13,7 @@
 #include "workspace.h"
 #include "commands.h"
 #include "container.h"
+#include "handlers.h"
 
 struct modifier_key {
 	char *name;
@@ -166,6 +167,72 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	// Close all views
 	container_map(&root_container, kill_views, NULL);
 	exit(0);
+	return true;
+}
+
+static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
+	if (strcasecmp(argv[0], "toggle") == 0) {
+		swayc_t *view = get_focused_container(&root_container);
+		// Prevent running floating commands on things like workspaces
+		if (view->type != C_VIEW) {
+			return true;
+		}
+		int i;
+		// Change from nonfloating to floating
+		if (!view->is_floating) {
+			view->is_floating = true;
+			for (i = 0; i < view->parent->children->length; i++) {
+				if (view->parent->children->items[i] == view) {
+					// Cut down on width/height so it's obvious that you've gone floating
+					// if this is the only view
+					view->width = view->width - 30;
+					view->height = view->height - 30;
+
+					// Swap from the list of whatever container the view was in
+					// to the workspace->floating list
+					// TODO: Destroy any remaining empty containers
+					list_del(view->parent->children, i);
+					list_add(active_workspace->floating, view);
+
+					// Set the new position of the container and arrange windows
+					view->x = (active_workspace->width - view->width)/2;
+					view->y = (active_workspace->height - view->height)/2;
+					sway_log(L_INFO, "Setting container %p to floating at coordinates X:%d Y:%d, W:%d, H:%d", view, view->x, view->y, view->width, view->height);
+					// Change parent to active_workspace
+					view->parent = active_workspace;
+					arrange_windows(active_workspace, -1, -1);
+					return true;
+				}
+			}
+		} else {
+			// Delete the view from the floating list and unset its is_floating flag
+			// Using length-1 as the index is safe because the view must be the currently
+			// focused floating output
+			list_del(active_workspace->floating, active_workspace->floating->length - 1);
+			view->is_floating = false;
+			active_workspace->focused = NULL;
+			// Get the properly focused container, and add in the view there
+			swayc_t *focused = focus_pointer();
+			// If focused is null, it's because the currently focused container is a workspace
+			if (focused == NULL) {
+				focused = active_workspace;
+			}
+
+			sway_log(L_DEBUG, "Non-floating focused container is %p", focused);
+
+			//Case of focused workspace, just create as child of it
+			if (focused->type == C_WORKSPACE) {
+				add_child(focused, view);
+			}
+			//Regular case, create as sibling of current container
+			else {
+				add_sibling(focused, view);
+			}
+			arrange_windows(active_workspace, -1, -1);
+			return true;
+		}
+	}
+
 	return true;
 }
 
@@ -378,6 +445,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
+	{ "floating", cmd_floating },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
