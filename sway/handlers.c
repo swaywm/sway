@@ -38,7 +38,7 @@ swayc_t *focus_pointer(void) {
 		if (pointer && focused != pointer) {
 			unfocus_all(&root_container);
 			focus_view(pointer);
-		} else if (!focused){
+		} else if (!focused) {
 			focus_view(active_workspace);
 		}
 		focused = pointer;
@@ -137,14 +137,14 @@ static void handle_view_destroyed(wlc_handle handle) {
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		sway_log(L_DEBUG,"Unmanaged window of type %x was destroyed", type);
 		if (type & WLC_BIT_UNMANAGED) {
-			focus_pointer();
+			focus_view(focus_pointer());
 			arrange_windows(active_workspace, -1, -1);
 			return;
 		}
 
 		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
 			override_redirect = false;
-			focus_pointer();
+			focus_view(focus_pointer());
 			return;
 		}
 		if (type & WLC_BIT_POPUP) {
