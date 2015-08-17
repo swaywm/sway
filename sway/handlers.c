@@ -167,16 +167,16 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 	// This will not do anything for the time being as WLC improperly sends geometry requests
 	swayc_t *view = get_swayc_for_handle(handle, &root_container);
 	if (view) {
+		view->desired_width = geometry->size.w;
+		view->desired_height = geometry->size.h;
+
 		if (view->is_floating) {
-			view->width = geometry->size.w;
-			view->height = geometry->size.h;
+			view->width = view->desired_width;
+			view->height = view->desired_height;
 			view->x = geometry->origin.x;
 			view->y = geometry->origin.y;
 			arrange_windows(view->parent, -1, -1);
-		} else {
-			view->desired_width = geometry->size.w;
-			view->desired_height = geometry->size.h;
-		}
+		}	
 	}
 }
 

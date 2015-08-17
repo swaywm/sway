@@ -170,8 +170,8 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	view->width = geometry->size.w;
 	view->height = geometry->size.h;
 
-	view->desired_width = -1;
-	view->desired_height = -1;
+	view->desired_width = view->width;
+	view->desired_height = view->height;
 
 	view->is_floating = true;
 

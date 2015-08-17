@@ -36,14 +36,14 @@ struct sway_container {
 	// Not including borders or margins
 	int width, height;
 
-    // Used for setting floating geometry
-    int desired_width, desired_height;
+	// Used for setting floating geometry
+	int desired_width, desired_height;
 
 	int x, y;
 
 	bool visible;
 
-    bool is_floating;
+	bool is_floating;
 
 	int weight;
 
@@ -51,7 +51,7 @@ struct sway_container {
 
 	list_t *children;
 
-    // Special list for floating windows in workspaces
+	// Special list for floating windows in workspaces
 	list_t *floating;
 
 	struct sway_container *parent;
