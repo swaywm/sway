@@ -125,18 +125,10 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 }
 
 swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
-	const uint32_t type = wlc_view_get_type(handle);
 	const char   *title = wlc_view_get_title(handle);
-	/* Skip if unmanaged window */
-	if ((type & WLC_BIT_OVERRIDE_REDIRECT) || (type & WLC_BIT_UNMANAGED) ||
-		(type & WLC_BIT_POPUP) || (type & WLC_BIT_MODAL) || (type & WLC_BIT_SPLASH)) {
-		sway_log(L_DEBUG, "Leaving view %d:%s alone (unmanaged)", handle, title);
-		return NULL;
-	}
-
 	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %d:%s:%d to container %p %d",
-		handle, title, type, sibling, sibling?sibling->type:0);
+	sway_log(L_DEBUG, "Adding new view %d:%s to container %p %d",
+		handle, title, sibling, sibling?sibling->type:0);
 	//Setup values
 	view->handle = handle;
 	view->name = strdup(title);
