@@ -13,6 +13,8 @@
 #include "container.h"
 
 static struct wlc_origin mouse_origin;
+//Keyboard input is being overrided by window (dmenu)
+static bool override_redirect = false;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -98,6 +100,7 @@ static bool handle_view_created(wlc_handle handle) {
 		}
 		// For things like Dmenu
 		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
+			override_redirect = true;
 			wlc_view_focus(handle);
 		}
 
@@ -134,14 +137,14 @@ static void handle_view_destroyed(wlc_handle handle) {
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		sway_log(L_DEBUG,"Unmanaged window of type %x was destroyed", type);
 		if (type & WLC_BIT_UNMANAGED) {
-			focus_view(focus_pointer());
+			focus_pointer();
 			arrange_windows(active_workspace, -1, -1);
 			return;
 		}
 
 		if (type & WLC_BIT_OVERRIDE_REDIRECT) {
-			focus_view(focus_pointer());
-			arrange_windows(active_workspace, -1, -1);
+			override_redirect = false;
+			focus_pointer();
 			return;
 		}
 		if (type & WLC_BIT_POPUP) {
@@ -221,6 +224,9 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
 	enum { QSIZE = 32 };
+	if (override_redirect) {
+		return false;
+	}
 	static uint8_t  head = 0;
 	static uint32_t array[QSIZE];
 	bool cmd_success = false;
