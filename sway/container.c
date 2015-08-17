@@ -227,3 +227,15 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 	}
 }
 
+void set_view_visibility(swayc_t *view, void *data) {
+	uint32_t *p = data;
+	if (view->type == C_VIEW) {
+		wlc_view_set_mask(view->handle, *p);
+		if (*p == 2) {
+			wlc_view_bring_to_front(view->handle);
+		} else {
+			wlc_view_send_to_back(view->handle);
+		}
+	}
+	view->visible = (*p == 2);
+}

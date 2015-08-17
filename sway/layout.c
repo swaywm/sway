@@ -272,4 +272,3 @@ void focus_view_for(swayc_t *top, swayc_t *view) {
 	}
 }
 
-
