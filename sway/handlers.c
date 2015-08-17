@@ -130,6 +130,38 @@ static void handle_view_geometry_request(wlc_handle view, const struct wlc_geome
 	// deny that shit
 }
 
+static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {
+	switch(state) {
+	case WLC_BIT_FULLSCREEN:
+		{
+			//I3 just lets it become fullscreen
+			wlc_view_set_state(view,state,toggle);
+			swayc_t *c = get_swayc_for_handle(view, &root_container);
+			sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d",view,c->name,toggle);
+			if (c) {
+				arrange_windows(c->parent, -1, -1);
+				//Set it as focused window for that workspace if its going
+				//fullscreen
+				if (toggle) {
+					swayc_t *ws = c;
+					while (ws->type != C_WORKSPACE) {
+						ws = ws->parent;
+					}
+					//Set ws focus to c
+					focus_view_for(ws, c);
+				}
+			}
+			break;
+		}
+	case WLC_BIT_MAXIMIZED:
+	case WLC_BIT_RESIZING:
+	case WLC_BIT_MOVING:
+	case WLC_BIT_ACTIVATED:
+		break;
+	}
+	return;
+}
+
 
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
@@ -239,7 +271,8 @@ struct wlc_interface interface = {
 		.destroyed = handle_view_destroyed,
 		.focus = handle_view_focus,
 		.request = {
-			.geometry = handle_view_geometry_request
+			.geometry = handle_view_geometry_request,
+			.state = handle_view_state_request
 		}
 	},
 	.keyboard = {
@@ -250,6 +283,6 @@ struct wlc_interface interface = {
 		.button = handle_pointer_button
 	},
 	.compositor = {
-		.ready = handle_wlc_ready 
+		.ready = handle_wlc_ready
 	}
 };

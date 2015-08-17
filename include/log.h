@@ -10,7 +10,7 @@ typedef enum {
 
 void init_log(int verbosity);
 void sway_log_colors(int mode);
-void sway_log(int verbosity, char* format, ...);
-void sway_abort(char* format, ...);
+void sway_log(int verbosity, char* format, ...) __attribute__((format(printf,2,3)));
+void sway_abort(char* format, ...)__attribute__((format(printf,1,2)));
 
 #endif
