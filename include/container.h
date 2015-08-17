@@ -36,6 +36,9 @@ struct sway_container {
 	// Not including borders or margins
 	int width, height;
 
+    // Used for setting floating geometry
+    int desired_width, desired_height;
+
 	int x, y;
 
 	bool visible;
@@ -62,6 +65,8 @@ swayc_t *new_workspace(swayc_t * output, const char *name);
 swayc_t *new_container(swayc_t *child, enum swayc_layouts layout);
 //Creates view as a sibling of current focused container, or as child of a workspace
 swayc_t *new_view(swayc_t *sibling, wlc_handle handle);
+//Creates view as a new floating view which is in the active workspace
+swayc_t *new_floating_view(wlc_handle handle);
 
 
 swayc_t *destroy_output(swayc_t *output);

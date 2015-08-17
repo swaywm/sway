@@ -183,16 +183,19 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			view->is_floating = true;
 			for (i = 0; i < view->parent->children->length; i++) {
 				if (view->parent->children->items[i] == view) {
-					// Cut down on width/height so it's obvious that you've gone floating
-					// if this is the only view
-					view->width = view->width - 30;
-					view->height = view->height - 30;
+					// Try to use desired geometry to set w/h
+					if (view->desired_width != -1) {
+						view->width = view->desired_width;
+					}
+					if (view->desired_height != -1) {
+						view->height = view->desired_height;
+					}
 
 					// Swap from the list of whatever container the view was in
 					// to the workspace->floating list
-					// TODO: Destroy any remaining empty containers
 					list_del(view->parent->children, i);
 					list_add(active_workspace->floating, view);
+					destroy_container(view->parent);
 
 					// Set the new position of the container and arrange windows
 					view->x = (active_workspace->width - view->width)/2;

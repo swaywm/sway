@@ -73,11 +73,12 @@ swayc_t *remove_child(swayc_t *parent, swayc_t *child) {
 				break;
 			}
 		}
-	}
-	for (i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == child) {
-			list_del(parent->children, i);
-			break;
+	} else {
+		for (i = 0; i < parent->children->length; ++i) {
+			if (parent->children->items[i] == child) {
+				list_del(parent->children, i);
+				break;
+			}
 		}
 	}
 	if (parent->focused == child) {

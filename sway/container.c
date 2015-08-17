@@ -135,6 +135,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = strdup(title);
 	view->visible = true;
 
+	view->desired_width = -1;
+	view->desired_height = -1;
+
 	// TODO: properly set this
 	view->is_floating = false;
 
@@ -145,6 +148,38 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	//Regular case, create as sibling of current container
 	else {
 		add_sibling(sibling, view);
+	}
+	return view;
+}
+
+swayc_t *new_floating_view(wlc_handle handle) {
+	const char   *title = wlc_view_get_title(handle);
+	swayc_t *view = new_swayc(C_VIEW);
+	sway_log(L_DEBUG, "Adding new view %u:%s as a floating view",
+		(unsigned int)handle, title);
+	//Setup values
+	view->handle = handle;
+	view->name = strdup(title);
+	view->visible = true;
+
+	// Set the geometry of the floating view
+	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
+
+	view->x = geometry->origin.x;
+	view->y = geometry->origin.y;
+	view->width = geometry->size.w;
+	view->height = geometry->size.h;
+
+	view->desired_width = -1;
+	view->desired_height = -1;
+
+	view->is_floating = true;
+
+	//Case of focused workspace, just create as child of it
+	list_add(active_workspace->floating, view);
+	view->parent = active_workspace;
+	if (active_workspace->focused == NULL) {
+		active_workspace->focused = view;
 	}
 	return view;
 }
