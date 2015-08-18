@@ -1,3 +1,5 @@
+// See https://i3wm.org/docs/ipc.html for protocol information
+
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -6,6 +8,8 @@
 #include <wlc/wlc.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stropts.h>
+#include <sys/ioctl.h>
 #include "ipc.h"
 #include "log.h"
 #include "config.h"
@@ -15,10 +19,18 @@ static int ipc_socket = -1;
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
-int ipc_handle_connection(int fd, uint32_t mask, void *data);
-size_t ipc_handle_command(char **reply_data, char *data, ssize_t length);
-size_t ipc_format_reply(char **data, enum ipc_command_type command_type, const char *payload, uint32_t payload_length);
+struct ipc_client {
+	struct wlc_event_source *event_source;
+	int fd;
+	uint32_t payload_length;
+	enum ipc_command_type current_command;
+};
 
+int ipc_handle_connection(int fd, uint32_t mask, void *data);
+int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
+void ipc_client_disconnect(struct ipc_client *client);
+void ipc_client_handle_command(struct ipc_client *client);
+bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 
 void init_ipc() {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -46,91 +58,150 @@ void init_ipc() {
 
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	sway_log(L_DEBUG, "Event on IPC listening socket");
-	int client_socket = accept(ipc_socket, NULL, NULL);
-	if (client_socket == -1) {
-		char error[256];
-		strerror_r(errno, error, sizeof(error));
-		sway_log(L_INFO, "Unable to accept IPC client connection: %s", error);
+	assert(mask == WLC_EVENT_READABLE);
+
+	int client_fd = accept(ipc_socket, NULL, NULL);
+	if (client_fd == -1) {
+		sway_log_errno(L_INFO, "Unable to accept IPC client connection");
 		return 0;
 	}
 
-	char buf[1024];
-	// Leave one byte of space at the end of the buffer for NULL terminator
-	ssize_t received = recv(client_socket, buf, sizeof(buf) - 1, 0);
-	if (received == -1) {
-		char error[256];
-		strerror_r(errno, error, sizeof(error));
-		sway_log(L_INFO, "Unable to receive from IPC client: %s", error);
-		close(client_socket);
-		return 0;
-	}
+	struct ipc_client* client = malloc(sizeof(struct ipc_client));
+	client->payload_length = 0;
+	client->fd = client_fd;
+	client->event_source = wlc_event_loop_add_fd(client_fd, WLC_EVENT_READABLE, ipc_client_handle_readable, client);
 
-	char *reply_buf;
-	size_t reply_length = ipc_handle_command(&reply_buf, buf, received);
-	sway_log(L_DEBUG, "IPC reply: %s", reply_buf);
-
-	if (send(client_socket, reply_buf, reply_length, 0) == -1) {
-		char error[256];
-		strerror_r(errno, error, sizeof(error));
-		sway_log(L_INFO, "Unable to send to IPC client: %s", error);
-	}
-
-	free(reply_buf);
-	close(client_socket);
 	return 0;
 }
 
 static const int ipc_header_size = sizeof(ipc_magic)+8;
 
-size_t ipc_handle_command(char **reply_data, char *data, ssize_t length) {
-	// See https://i3wm.org/docs/ipc.html for protocol details
+int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
+	struct ipc_client *client = data;
+	sway_log(L_DEBUG, "Event on IPC client socket %d", client_fd);
 
-	if (length < ipc_header_size) {
-		sway_log(L_DEBUG, "IPC data too short");
-		return false;
+	if (mask & WLC_EVENT_ERROR) {
+		sway_log(L_INFO, "IPC Client socket error, removing client");
+		ipc_client_disconnect(client);
+		return 0;
 	}
 
-	if (memcmp(data, ipc_magic, sizeof(ipc_magic)) != 0) {
-		sway_log(L_DEBUG, "IPC header check failed");
-		return false;
+	if (mask & WLC_EVENT_HANGUP) {
+		ipc_client_disconnect(client);
+		return 0;
 	}
 
-	uint32_t payload_length = *(uint32_t *)&data[sizeof(ipc_magic)];
-	uint32_t command_type = *(uint32_t *)&data[sizeof(ipc_magic)+4];
+	int read_available;
+	ioctl(client_fd, FIONREAD, &read_available);
 
-	if (length != payload_length + ipc_header_size) {
-		// TODO: try to read enough data
-		sway_log(L_DEBUG, "IPC payload size mismatch");
-		return false;
-	}
-
-	switch (command_type) {
-		case IPC_COMMAND:
-		{
-			char *cmd = &data[ipc_header_size];
-			data[ipc_header_size + payload_length] = '\0';
-			bool success = handle_command(config, cmd);
-			char buf[64];
-			int length = snprintf(buf, sizeof(buf), "{\"success\":%s}", success ? "true" : "false");
-			return ipc_format_reply(reply_data, IPC_COMMAND, buf, (uint32_t) length);
+	// Wait for the rest of the command payload in case the header has already been read
+	if (client->payload_length > 0) {
+		if (read_available >= client->payload_length) {
+			ipc_client_handle_command(client);
 		}
-		default:
-			sway_log(L_INFO, "Unknown IPC command type %i", command_type);
-			return false;
+		else {
+			sway_log(L_DEBUG, "Too little data to read payload on IPC Client socket, waiting for more (%d < %d)", read_available, client->payload_length);
+		}
+		return 0;
 	}
+
+	if (read_available < ipc_header_size) {
+		sway_log(L_DEBUG, "Too little data to read header on IPC Client socket, waiting for more (%d < %d)", read_available, ipc_header_size);
+		return 0;
+	}
+
+	char buf[ipc_header_size];
+	ssize_t received = recv(client_fd, buf, ipc_header_size, 0);
+	if (received == -1) {
+		sway_log_errno(L_INFO, "Unable to receive header from IPC client");
+		ipc_client_disconnect(client);
+		return 0;
+	}
+
+	if (memcmp(buf, ipc_magic, sizeof(ipc_magic)) != 0) {
+		sway_log(L_DEBUG, "IPC header check failed");
+		ipc_client_disconnect(client);
+		return 0;
+	}
+
+	client->payload_length = *(uint32_t *)&buf[sizeof(ipc_magic)];
+	client->current_command = (enum ipc_command_type) *(uint32_t *)&buf[sizeof(ipc_magic)+4];
+
+	if (read_available - received >= client->payload_length) {
+		ipc_client_handle_command(client);
+	}
+
+	return 0;
 }
 
-size_t ipc_format_reply(char **data, enum ipc_command_type command_type, const char *payload, uint32_t payload_length) {
-	assert(data);
+void ipc_client_disconnect(struct ipc_client *client)
+{
+	if (!sway_assert(client != NULL, "client != NULL")) {
+		return;
+	}
+
+	sway_log(L_INFO, "IPC Client %d disconnected", client->fd);
+	wlc_event_source_remove(client->event_source);
+	close(client->fd);
+	free(client);
+}
+
+void ipc_client_handle_command(struct ipc_client *client) {
+	if (!sway_assert(client != NULL, "client != NULL")) {
+		return;
+	}
+
+	char buf[client->payload_length + 1];
+	if (client->payload_length > 0)
+	{
+		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
+		if (received == -1)
+		{
+			sway_log_errno(L_INFO, "Unable to receive payload from IPC client");
+			ipc_client_disconnect(client);
+			return;
+		}
+	}
+
+	switch (client->current_command) {
+		case IPC_COMMAND:
+		{
+			buf[client->payload_length] = '\0';
+			bool success = handle_command(config, buf);
+			char reply[64];
+			int length = snprintf(reply, sizeof(reply), "{\"success\":%s}", success ? "true" : "false");
+			ipc_send_reply(client, reply, (uint32_t) length);
+			break;
+		}
+		default:
+			sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
+			ipc_client_disconnect(client);
+			break;
+	}
+
+	client->payload_length = 0;
+}
+
+bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length) {
 	assert(payload);
 
-	size_t length = ipc_header_size + payload_length;
-	*data = malloc(length);
+	char data[ipc_header_size];
 
-	memcpy(*data, ipc_magic, sizeof(ipc_magic));
-	*(uint32_t *)&((*data)[sizeof(ipc_magic)]) = payload_length;
-	*(uint32_t *)&((*data)[sizeof(ipc_magic)+4]) = command_type;
-	memcpy(&(*data)[ipc_header_size], payload, payload_length);
+	memcpy(data, ipc_magic, sizeof(ipc_magic));
+	*(uint32_t *)&(data[sizeof(ipc_magic)]) = payload_length;
+	*(uint32_t *)&(data[sizeof(ipc_magic)+4]) = client->current_command;
 
-	return length;
+	if (write(client->fd, data, ipc_header_size) == -1) {
+		sway_log_errno(L_INFO, "Unable to send header to IPC client");
+		ipc_client_disconnect(client);
+		return false;
+	}
+
+	if (write(client->fd, payload, payload_length) == -1) {
+		sway_log_errno(L_INFO, "Unable to send payload to IPC client");
+		ipc_client_disconnect(client);
+		return false;
+	}
+
+	return true;
 }
