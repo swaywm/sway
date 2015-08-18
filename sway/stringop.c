@@ -40,7 +40,7 @@ char *strip_comments(char *str) {
 		} else if (str[i] == '\'' && !in_string) {
 			in_character = !in_character;
 		} else if (!in_character && !in_string) {
-			if (str[i] == '#' && i == 0) {
+			if (str[i] == '#') {
 				str[i] = '\0';
 				break;
 			}

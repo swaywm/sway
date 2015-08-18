@@ -190,6 +190,7 @@ bool read_config(FILE *file, bool is_active) {
 		char *line = read_line(file);
 		line = strip_whitespace(line, &_);
 		line = strip_comments(line);
+		line = strip_whitespace(line, &_);
 		if (!line[0]) {
 			goto _continue;
 		}
