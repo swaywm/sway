@@ -152,10 +152,10 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				geometry.origin.y = 0;
 				geometry.size.w = parent->width;
 				geometry.size.h = parent->height;
-				wlc_view_set_geometry(container->handle, &geometry);
+				wlc_view_set_geometry(container->handle, 0, &geometry);
 				wlc_view_bring_to_front(container->handle);
 			} else {
-				wlc_view_set_geometry(container->handle, &geometry);
+				wlc_view_set_geometry(container->handle, 0, &geometry);
 				container->width = width;
 				container->height = height;
 			}
@@ -232,10 +232,10 @@ void arrange_windows(swayc_t *container, int width, int height) {
 					geometry.origin.y = 0;
 					geometry.size.w = parent->width;
 					geometry.size.h = parent->height;
-					wlc_view_set_geometry(view->handle, &geometry);
+					wlc_view_set_geometry(view->handle, 0, &geometry);
 					wlc_view_bring_to_front(view->handle);
 				} else {
-					wlc_view_set_geometry(view->handle, &geometry);
+					wlc_view_set_geometry(view->handle, 0, &geometry);
 					view->width = width;
 					view->height = height;
 					// Bring the views to the front in order of the list, the list
