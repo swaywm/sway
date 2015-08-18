@@ -1,0 +1,90 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+sway (5)
+========
+
+Name
+----
+sway - configuration file and commands
+
+Description
+-----------
+
+A sway configuration file is a list of sway commands that are exected by sway on
+startup. These commands usually consist of setting your preferences and setting
+key bindings. An example config is likely present in /etc/sway/config for you to
+check out.
+
+All of these commands may be issued at runtime through **sway-msg**(1).
+
+Commands
+--------
+
+**bindsym** <key combo> <command>::
+	Binds _key combo_ to execute _command_ when pressed. You may use XKB key names
+	here (**xev**(1) is a good tool for discovering them). An example bindsym
+	command would be _bindsym Mod1+Shift+f exec firefox_, which would execute
+	Firefox if the alt, shift, and F keys are pressed together. Any valid sway
+	command is eligible to be bound to a key combo.
+
+**exec** <shell command>::
+	Executes _shell command_ with sh.
+
+**exec_always** <shell command>::
+	Like exec, but the shell command will be executed _again_ after *reload* or
+	*restart* is executed.
+
+**exit**::
+	Exit sway and end your Wayland session.
+
+**floating** toggle::
+	Toggles the "floating" status of the focused view.
+
+**focus** <direction>::
+	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
+	directional focus commands will move the focus in that direction. The parent
+	focus command will change the focus to the parent of the currently focused
+	container, which is useful, for example, to open a sibling of the parent
+	container, or to move the entire container around.
+
+**focus_follows_mouse** <yes|no>::
+	If set to _yes_, the currently focused view will change as you move your
+	mouse around the screen to the view that ends up underneath your mouse.
+
+**kill**::
+	Closes the currently focused view.
+
+**layout** <mode>::
+	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
+	_splitv_, or _toggle split_.
+
+**reload**::
+	Reloads the sway config file without restarting sway.
+
+**set** <name> <value>::
+	Creates a substitution for _value_ that can be used with $_name_ in other
+	commands.
+
+**split** <vertical|horizontal>::
+	Splits the current container, vertically or horiziontally. The letters "h" and
+	"v" can be used instead of the full words "vertical" or "horizontal".
+
+**splith**::
+	Equivalent to **split horizontal**.
+
+**splitv**::
+	Equivalent to **split vertical**.
+
+**fullscreen**:
+	Toggles fullscreen status for the focused view.
+
+**workspace** <name>:
+	Switches to the specified workspace.
+
+**workspace** <prev_on_output|next_on_output>:
+	Switches to the next workspace on the current output.
+
+**workspace** <name> output <output>::
+	Specifies that the workspace named _name_ should appear on the specified
+	_output_.
