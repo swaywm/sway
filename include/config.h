@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <wlc/wlc.h>
+#include <xkbcommon/xkbcommon.h>
 #include "list.h"
 
 struct sway_variable {
@@ -32,16 +33,17 @@ struct sway_config {
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
 	struct sway_mode *current_mode;
+	uint32_t floating_mod;
 
 	// Flags
 	bool focus_follows_mouse;
 	bool mouse_warping;
-	bool active;	
-	bool failed;	
+	bool active;
+	bool failed;
 	bool reloading;
 };
 
-bool load_config();
+bool load_config(void);
 bool read_config(FILE *file, bool is_active);
 char *do_var_replacement(struct sway_config *config, char *str);
 

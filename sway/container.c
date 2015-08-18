@@ -27,10 +27,7 @@ static void free_swayc(swayc_t *c) {
 		list_free(c->children);
 	}
 	if (c->parent) {
-		if (c->parent->focused == c) {
-			c->parent->focused = NULL;
-		}
-		remove_child(c->parent, c);
+		remove_child(c);
 	}
 	if (c->name) {
 		free(c->name);
@@ -39,17 +36,11 @@ static void free_swayc(swayc_t *c) {
 }
 
 /* New containers */
-static void add_output_widths(swayc_t *container, void *_width) {
-	int *width = _width;
-	if (container->type == C_OUTPUT) {
-		*width += container->width;
-	}
-}
 
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
-	sway_log(L_DEBUG, "Added output %u %s", (unsigned int)handle, name);
+	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->width = size->w;
@@ -59,9 +50,12 @@ swayc_t *new_output(wlc_handle handle) {
 
 	add_child(&root_container, output);
 
-	//TODO something with this
-	int total_width = 0;
-	container_map(&root_container, add_output_widths, &total_width);
+//TODO still dont know why this is here?
+//	int total_width = 0;
+//	int i;
+//	for (i = 0; i < root_container.children->length; ++i) {
+//		total_width += ((swayc_t*)root_container.children->items[i])->width;
+//	}
 
 	//Create workspace
 	char *ws_name = NULL;
@@ -79,7 +73,10 @@ swayc_t *new_output(wlc_handle handle) {
 	if (!ws_name) {
 		ws_name = workspace_next_name();
 	}
-	new_workspace(output, ws_name);
+	//create and initilize default workspace
+	swayc_t *ws = new_workspace(output, ws_name);
+	ws->is_focused = true;
+
 	free(ws_name);
 	
 	return output;
@@ -118,6 +115,11 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		//reorder focus
 		cont->focused = workspace->focused;
 		workspace->focused = cont;
+		//set all children focu to container
+		int i;
+		for (i = 0; i < workspace->children->length; ++i) {
+			((swayc_t *)workspace->children->items[i])->parent = cont;
+		}
 		//Swap children
 		list_t  *tmp_list  = workspace->children;
 		workspace->children = cont->children;
@@ -139,14 +141,15 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 }
 
 swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
-	const char   *title = wlc_view_get_title(handle);
+	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %u:%s to container %p %d",
-		(unsigned int)handle, title, sibling, sibling?sibling->type:0);
+	sway_log(L_DEBUG, "Adding new view %lu:%s to container %p %d",
+		handle, title, sibling, sibling ? sibling->type : 0);
 	//Setup values
 	view->handle = handle;
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
+	view->is_focused = true;
 
 	view->desired_width = -1;
 	view->desired_height = -1;
@@ -168,8 +171,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 swayc_t *new_floating_view(wlc_handle handle) {
 	const char   *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %u:%s as a floating view",
-		(unsigned int)handle, title);
+	sway_log(L_DEBUG, "Adding new view %lu:%x:%s as a floating view",
+		handle, wlc_view_get_type(handle), title);
 	//Setup values
 	view->handle = handle;
 	view->name = title ? strdup(title) : NULL;
@@ -197,12 +200,13 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	return view;
 }
 
+/* Destroy container */
 
 swayc_t *destroy_output(swayc_t *output) {
 	if (output->children->length == 0) {
 		//TODO move workspaces to other outputs
 	}
-	sway_log(L_DEBUG, "OUTPUT: Destroying output '%u'", (unsigned int)output->handle);
+	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
 	free_swayc(output);
 	return &root_container;
 }
@@ -244,7 +248,6 @@ swayc_t *destroy_view(swayc_t *view) {
 	if (parent->type == C_CONTAINER) {
 		return destroy_container(parent);
 	}
-
 	return parent;
 }
 
@@ -300,3 +303,5 @@ void set_view_visibility(swayc_t *view, void *data) {
 	}
 	view->visible = (*p == 2);
 }
+
+

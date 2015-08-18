@@ -13,7 +13,7 @@ void add_child(swayc_t *parent, swayc_t *child);
 //Returns parent container which needs to be rearranged.
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child);
 swayc_t *replace_child(swayc_t *child, swayc_t *new_child);
-swayc_t *remove_child(swayc_t *parent, swayc_t *child);
+swayc_t *remove_child(swayc_t *child);
 
 //Layout
 void arrange_windows(swayc_t *container, int width, int height);

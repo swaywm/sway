@@ -8,7 +8,7 @@
 int colored = 1;
 int v = 0;
 
-const char *verbosity_colors[] = {
+static const char *verbosity_colors[] = {
 	"", // L_SILENT
 	"\x1B[1;31m", // L_ERROR
 	"\x1B[1;34m", // L_INFO
