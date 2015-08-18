@@ -337,6 +337,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	}
 	// Do checks to determine if proper keys are being held
 	swayc_t *view = active_workspace->focused;
+	uint32_t edge = 0;
 	if (m1_held && view) {
 		if (view->is_floating) {
 			while (keys_pressed[i++]) {
@@ -348,7 +349,6 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 
 					view->x += dx;
 					view->y += dy;
-					changed_floating = true;
 					break;
 				}
 			}
@@ -366,25 +366,30 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					int midway_x = view->x + view->width/2;
 					int midway_y = view->y + view->height/2;
 
+
 					if (dx < 0) {
 						changed_floating = true;
 						if (mouse_origin.x > midway_x) {
 							sway_log(L_INFO, "Downsizing view to the left");
 							view->width += dx;
+							edge = WLC_RESIZE_EDGE_RIGHT;
 						} else {
 							sway_log(L_INFO, "Upsizing view to the left");
 							view->x += dx;
 							view->width -= dx;
+							edge = WLC_RESIZE_EDGE_LEFT;
 						}
 					} else if (dx > 0){
 						changed_floating = true;
 						if (mouse_origin.x > midway_x) {
 							sway_log(L_INFO, "Upsizing to the right");
 							view->width += dx;
+							edge = WLC_RESIZE_EDGE_RIGHT;
 						} else {
 							sway_log(L_INFO, "Downsizing to the right");
 							view->x += dx;
 							view->width -= dx;
+							edge = WLC_RESIZE_EDGE_LEFT;
 						}
 					}
 
@@ -393,20 +398,25 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 						if (mouse_origin.y > midway_y) {
 							sway_log(L_INFO, "Downsizing view to the top");
 							view->height += dy;
+							edge += WLC_RESIZE_EDGE_BOTTOM;
 						} else {
 							sway_log(L_INFO, "Upsizing the view to the top");
 							view->y += dy;
 							view->height -= dy;
+							edge += WLC_RESIZE_EDGE_TOP;
 						}
 					} else if (dy > 0) {
 						changed_floating = true;
 						if (mouse_origin.y > midway_y) {
 							sway_log(L_INFO, "Upsizing to the bottom");
 							view->height += dy;
+							edge += WLC_RESIZE_EDGE_BOTTOM;
 						} else {
+							edge = WLC_RESIZE_EDGE_BOTTOM;
 							sway_log(L_INFO, "Downsizing to the bottom");
 							view->y += dy;
 							view->height -= dy;
+							edge += WLC_RESIZE_EDGE_TOP;
 						}
 					}
 					break;
@@ -424,7 +434,17 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	prev_handle = handle;
 	prev_pos = mouse_origin;
 	if (changed_floating) {
-		arrange_windows(view, -1, -1);
+		struct wlc_geometry geometry = {
+			.origin = {
+				.x = view->x,
+				.y = view->y
+			},
+			.size = {
+				.w = view->width,
+				.h = view->height
+			}
+		};
+		wlc_view_set_geometry(view->handle, edge, &geometry);
 		return true;
 	}
 	return false;
