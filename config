@@ -9,10 +9,13 @@
 
 
 ### Variables
-
-set $mod Mod4       # Logo key. Use Mod1 for Alt.
-set $term urxvt     # Your preferred terminal emulator
-set $menu dmenu_run # Your preferred application launcher
+#
+# Logo key. Use Mod1 for Alt.
+set $mod Mod4
+# Your preferred terminal emulator
+set $term urxvt
+# Your preferred application launcher
+set $menu dmenu_run
 
 ### Key bindings
 #
