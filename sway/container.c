@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <strings.h>
+#include "config.h"
 #include "container.h"
 #include "workspace.h"
 #include "layout.h"
@@ -63,14 +64,28 @@ swayc_t *new_output(wlc_handle handle) {
 	container_map(&root_container, add_output_widths, &total_width);
 
 	//Create workspace
-	char *ws_name = workspace_next_name();
+	char *ws_name = NULL;
+	if (name) {
+		int i;
+		for (i = 0; i < config->workspace_outputs->length; ++i) {
+			struct workspace_output *wso = config->workspace_outputs->items[i];
+			if (strcasecmp(wso->output, name) == 0) {
+				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
+				ws_name = strdup(wso->workspace);
+				break;
+			}
+		}
+	}
+	if (!ws_name) {
+		ws_name = workspace_next_name();
+	}
 	new_workspace(output, ws_name);
 	free(ws_name);
 	
 	return output;
 }
 
-swayc_t *new_workspace(swayc_t * output, const char *name) {
+swayc_t *new_workspace(swayc_t *output, const char *name) {
 	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 

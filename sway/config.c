@@ -159,6 +159,7 @@ void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
 	config->cmd_queue = create_list();
+	config->workspace_outputs = create_list();
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();

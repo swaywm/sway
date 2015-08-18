@@ -21,10 +21,16 @@ struct sway_mode {
 	list_t *bindings;
 };
 
+struct workspace_output {
+	char *output;
+	char *workspace;
+};
+
 struct sway_config {
 	list_t *symbols;
 	list_t *modes;
 	list_t *cmd_queue;
+	list_t *workspace_outputs;
 	struct sway_mode *current_mode;
 
 	// Flags

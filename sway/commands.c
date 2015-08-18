@@ -410,37 +410,51 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
+	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
 
-	// Handle workspace next/prev
-	if (strcmp(argv[0], "next") == 0) {
-		workspace_next();
-		return true;
-	}
+	if (argc == 1) {
+		// Handle workspace next/prev
+		if (strcmp(argv[0], "next") == 0) {
+			workspace_next();
+			return true;
+		}
 
-	if (strcmp(argv[0], "prev") == 0) {
-		workspace_next();
-		return true;
-	}
+		if (strcmp(argv[0], "prev") == 0) {
+			workspace_next();
+			return true;
+		}
 
-	// Handle workspace output_next/prev
-	if (strcmp(argv[0], "next_on_output") == 0) {
-		workspace_output_next();
-		return true;
-	}
+		// Handle workspace output_next/prev
+		if (strcmp(argv[0], "next_on_output") == 0) {
+			workspace_output_next();
+			return true;
+		}
 
-	if (strcmp(argv[0], "prev_on_output") == 0) {
-		workspace_output_prev();
-		return true;
-	}
+		if (strcmp(argv[0], "prev_on_output") == 0) {
+			workspace_output_prev();
+			return true;
+		}
 
-	swayc_t *workspace = workspace_find_by_name(argv[0]);
-	if (!workspace) {
-		workspace = workspace_create(argv[0]);
+		swayc_t *workspace = workspace_find_by_name(argv[0]);
+		if (!workspace) {
+			workspace = workspace_create(argv[0]);
+		}
+		workspace_switch(workspace);
+	} else {
+		if (strcasecmp(argv[1], "output") == 0) {
+			if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 3)) {
+				return false;
+			}
+			struct workspace_output *wso = calloc(1, sizeof(struct workspace_output));
+			sway_log(L_DEBUG, "Assigning workspace %s to output %s", argv[0], argv[2]);
+			wso->workspace = strdup(argv[0]);
+			wso->output = strdup(argv[2]);
+			list_add(config->workspace_outputs, wso);
+			// TODO: Consider moving any existing workspace to that output? This might be executed sometime after config load
+		}
 	}
-	workspace_switch(workspace);
 	return true;
 }
 
