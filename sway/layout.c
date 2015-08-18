@@ -4,6 +4,7 @@
 #include "layout.h"
 #include "log.h"
 #include "list.h"
+#include "config.h"
 #include "container.h"
 #include "workspace.h"
 #include "focus.h"
@@ -123,11 +124,11 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		// y -= container->y;
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *child = container->children->items[i];
-			sway_log(L_DEBUG, "Arranging workspace #%d", i);
-			child->x = x;
-			child->y = y;
-			child->width = width;
-			child->height = height;
+			child->x = x + container->gaps;
+			child->y = y + container->gaps;
+			child->width = width - container->gaps * 2;
+			child->height = height - container->gaps * 2;
+			sway_log(L_DEBUG, "Arranging workspace #%d at %d, %d", i, child->x, child->y);
 			arrange_windows(child, -1, -1);
 		}
 		return;
@@ -135,12 +136,12 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		{
 			struct wlc_geometry geometry = {
 				.origin = {
-					.x = container->x + container->gaps / 2,
-					.y = container->y + container->gaps / 2
+					.x = container->x + container->gaps,
+					.y = container->y + container->gaps
 				},
 				.size = {
-					.w = width - container->gaps,
-					.h = height - container->gaps
+					.w = width - container->gaps * 2,
+					.h = height - container->gaps * 2
 				}
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
@@ -148,10 +149,10 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				while (parent->type != C_OUTPUT) {
 					parent = parent->parent;
 				}
-				geometry.origin.x = container->gaps / 2;
-				geometry.origin.y = container->gaps / 2;
-				geometry.size.w = parent->width - container->gaps;
-				geometry.size.h = parent->height - container->gaps;
+				geometry.origin.x = 0;
+				geometry.origin.y = 0;
+				geometry.size.w = parent->width;
+				geometry.size.h = parent->height;
 				wlc_view_set_geometry(container->handle, 0, &geometry);
 				wlc_view_bring_to_front(container->handle);
 			} else {

@@ -307,9 +307,9 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 			errno = 0;
 			return false;
 		}
-		if (strcmp(argv[0], "inner") == 0) {
+		if (strcasecmp(argv[0], "inner") == 0) {
 			config->gaps_inner = amount;
-		} else if (strcmp(argv[0], "outer") == 0) {
+		} else if (strcasecmp(argv[0], "outer") == 0) {
 			config->gaps_outer = amount;
 		} else {
 			return false;

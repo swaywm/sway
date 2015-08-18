@@ -168,7 +168,11 @@ static bool handle_view_created(wlc_handle handle) {
 	}
 	if (newview) {
 		set_focused_container(newview);
-		arrange_windows(newview->parent, -1, -1);
+		swayc_t *output = newview->parent;
+		while (output && output->type != C_OUTPUT) {
+			output = output->parent;
+		}
+		arrange_windows(output, -1, -1);
 	}
 	return true;
 }

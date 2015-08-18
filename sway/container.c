@@ -63,12 +63,11 @@ swayc_t *new_output(wlc_handle handle) {
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
 	swayc_t *output = new_swayc(C_OUTPUT);
-	output->x = (config->gaps_outer + config->gaps_inner) / 2;
-	output->y = (config->gaps_outer + config->gaps_inner) / 2;
-	output->width = size->w - (config->gaps_outer + config->gaps_inner);
-	output->height = size->h - (config->gaps_outer + config->gaps_inner);
+	output->width = size->w;
+	output->height = size->h;
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
+	output->gaps = config->gaps_outer;
 
 	add_child(&root_container, output);
 
@@ -176,7 +175,6 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->desired_width = -1;
 	view->desired_height = -1;
 
-	// TODO: properly set this
 	view->is_floating = false;
 
 	if (sibling->type == C_WORKSPACE) {
