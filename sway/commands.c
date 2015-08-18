@@ -281,6 +281,11 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 	return true;
 }
 
+static bool cmd_move(struct sway_config *config, int argc, char **argv) {
+	sway_log(L_DEBUG, "move cmd stub called");//Stubbed method until I get back.
+	return true;
+}
+
 static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
 	swayc_t *view = get_focused_container(&root_container);
 	wlc_view_close(view->handle);
@@ -492,7 +497,8 @@ static struct cmd_handler handlers[] = {
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv },
-	{ "workspace", cmd_workspace }
+	{ "workspace", cmd_workspace },
+	{ "cmd_move",cmd_move}
 };
 
 static char **split_directive(char *line, int *argc) {
