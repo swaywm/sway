@@ -345,10 +345,10 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					int dx = mouse_origin.x - prev_pos.x;
 					int dy = mouse_origin.y - prev_pos.y;
 					sway_log(L_DEBUG, "Moving from px: %d to cx: %d and from py: %d to cy: %d", prev_pos.x, mouse_origin.x, prev_pos.y, mouse_origin.y);
-					sway_log(L_DEBUG, "Moving: dx: %d, dy: %d", dx, dy);
 
 					view->x += dx;
 					view->y += dy;
+					changed_floating = true;
 					break;
 				}
 			}
@@ -360,7 +360,6 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					int dx = mouse_origin.x - prev_pos.x;
 					int dy = mouse_origin.y - prev_pos.y;
 					sway_log(L_DEBUG, "Moving from px: %d to cx: %d and from py: %d to cy: %d", prev_pos.x, mouse_origin.x, prev_pos.y, mouse_origin.y);
-					sway_log(L_INFO, "Moving: dx: %d, dy: %d", dx, dy);
 
 					// Move and resize the view based on the dx/dy and mouse position
 					int midway_x = view->x + view->width/2;
