@@ -171,6 +171,10 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+
 	if (strcasecmp(argv[0], "toggle") == 0) {
 		swayc_t *view = get_focused_container(&root_container);
 		// Prevent running floating commands on things like workspaces
@@ -239,6 +243,14 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		}
 	}
 
+	return true;
+}
+
+static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+	config->floating_mod = xkb_keysym_from_name(argv[0], XKB_KEYSYM_CASE_INSENSITIVE);
 	return true;
 }
 
@@ -466,6 +478,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
+	{ "floating_modifier", cmd_floating_mod },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
