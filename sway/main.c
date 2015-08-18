@@ -100,12 +100,14 @@ int main(int argc, char **argv) {
 		free(config_path);
 	}
 
-	init_ipc();
+	ipc_init();
 
 	wlc_run();
 	if (devnull) {
 		fclose(devnull);
 	}
+
+	ipc_shutdown();
 
 	return 0;
 }

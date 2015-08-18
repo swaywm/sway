@@ -186,7 +186,7 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	}
 	// Close all views
 	container_map(&root_container, kill_views, NULL);
-	exit(0);
+	wlc_terminate();
 	return true;
 }
 

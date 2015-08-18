@@ -12,6 +12,7 @@ enum ipc_command_type {
 	IPC_GET_VERSION    = 7,
 };
 
-void init_ipc(void);
+void ipc_init(void);
+void ipc_shutdown(void);
 
 #endif

@@ -16,6 +16,11 @@
 #include "commands.h"
 
 static int ipc_socket = -1;
+static struct wlc_event_source *ipc_event_source =  NULL;
+static struct sockaddr_un ipc_sockaddr = {
+	.sun_family = AF_UNIX,
+	.sun_path = "/tmp/sway-ipc.sock"
+};
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
@@ -32,16 +37,11 @@ void ipc_client_disconnect(struct ipc_client *client);
 void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 
-void init_ipc() {
+void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (ipc_socket == -1) {
 		sway_abort("Unable to create IPC socket");
 	}
-
-	struct sockaddr_un ipc_sockaddr = {
-		.sun_family = AF_UNIX,
-		.sun_path = "/tmp/sway-ipc.sock"
-	};
 
 	if (getenv("SWAYSOCK") != NULL) {
 		strncpy(ipc_sockaddr.sun_path, getenv("SWAYSOCK"), sizeof(ipc_sockaddr.sun_path));
@@ -56,10 +56,19 @@ void init_ipc() {
 		sway_abort("Unable to listen on IPC socket");
 	}
 
-	wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
+	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
+}
+
+void ipc_shutdown(void) {
+	if (ipc_event_source) {
+		wlc_event_source_remove(ipc_event_source);
+	}
+	close(ipc_socket);
+	unlink(ipc_sockaddr.sun_path);
 }
 
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
+	(void) fd; (void) data;
 	sway_log(L_DEBUG, "Event on IPC listening socket");
 	assert(mask == WLC_EVENT_READABLE);
 
