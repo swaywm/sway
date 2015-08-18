@@ -2,8 +2,7 @@
 
 "**S**irCmpwn's **Way**land window manager" is a **work in progress**
 i3-compatible window manager for [Wayland](http://wayland.freedesktop.org/).
-
-[FAQ & wiki](https://github.com/SirCmpwn/sway/wiki)
+Read the [FAQ](https://github.com/SirCmpwn/sway/wiki).
 
 ![](https://sr.ht/qxGE.png)
 
