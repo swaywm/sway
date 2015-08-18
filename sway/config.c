@@ -40,7 +40,7 @@ static char* get_config_path() {
 	} else {
 		name = "/sway/config";
 		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
-		strcpy(temp, home);
+		strcpy(xdg_config_home, home);
 		strcat(temp, name);
 	}
 	if (exists(temp)) {
@@ -93,7 +93,7 @@ static char* get_config_path() {
 	} else {
 		name = "/i3/config";
 		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
-		strcpy(temp, home);
+		strcpy(xdg_config_home, home);
 		strcat(temp, name);
 	}
 	if (exists(temp)) {
