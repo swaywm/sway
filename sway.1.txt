@@ -1,0 +1,82 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+sway (1)
+========
+
+Name
+----
+sway - SirCmpwn's Wayland window manager
+
+Synopsis
+--------
+'sway' [options] [command]
+
+Options
+-------
+
+*-c, \--config* <config>::
+	Specifies a config file.
+
+*-C, \--validate*::
+	Check the validity of the config file, then exit.
+
+*-d, --debug*::
+	Enables full logging, including debug information.
+
+*-v, \--version*::
+	Show the version number and quit.
+
+*-V, --verbose*::
+	Enables more verbose logging.
+
+*--get-socketpath*::
+	Gets the IPC socket path and prints it, then exits.
+
+Description
+-----------
+
+sway was created to fill the need of an i3-like window manager for Wayland. The
+upstream i3 developers have no intention of porting i3 to Wayland, and projects
+proposed by others ended up as vaporware. Many thanks to the i3 folks for
+providing such a great piece of software, so good that your users would rather
+write an entirely new window manager from scratch that behaved _exactly_ like i3
+rather than switch to something else.
+
+You may run sway from an ongoing x11 session to run it within x. Otherwise, you
+can run sway on a tty and it will use your outputs directly.
+
+*Important note for nvidia users*: The proprietary nvidia driver does _not_ have
+support for Wayland as of 2015-08-17. Use nouveau.
+
+Commands
+--------
+
+If sway is currently running, you may run _sway [command]_ to send _command_ to
+the running instance of sway. The same commands you would use in the config file
+are valid here (see **sway**(5)). For compatability reasons, you may also issue
+commands with **sway-msg**(1) or **i3-msg**(1) (or even with **i3**(1), probably).
+
+Configuration
+-------------
+
+If _-c_ is not specified, sway will look in several locations for your config
+file. The default one is provided at /etc/sway/config. The suggested location for
+your config file is ~/.config/sway/config. ~/.sway/config will also work, and the
+rest of the usual XDG config locations are supported. If no sway config is found,
+sway will attempt to load an i3 config from all the config locations i3 supports.
+If still nothing is found, you will receive an error.
+
+For information on the config file format, see **sway**(5).
+
+Authors
+-------
+
+Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
+source contributors. For more information about sway development, see
+<https://github.com/SirCmpwn/sway>.
+
+See Also
+--------
+
+**sway**(5)

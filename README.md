@@ -31,6 +31,7 @@ Dependencies:
 * cmake
 * [wlc](https://github.com/Cloudef/wlc)
 * xwayland
+* asciidoc
 
 Compiling:
 
