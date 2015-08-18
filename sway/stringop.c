@@ -41,7 +41,7 @@ void strip_comments(char *str) {
 		} else if (str[i] == '\'' && !in_string) {
 			in_character = !in_character;
 		} else if (!in_character && !in_string) {
-			if (str[i] == '#') {
+			if (str[i] == '#' && i == 0) {
 				str[i] = '\0';
 				break;
 			}
