@@ -237,8 +237,6 @@ void arrange_windows(swayc_t *container, int width, int height) {
 					wlc_view_bring_to_front(view->handle);
 				} else {
 					wlc_view_set_geometry(view->handle, 0, &geometry);
-					view->width = width;
-					view->height = height;
 					// Bring the views to the front in order of the list, the list
 					// will be kept up to date so that more recently focused views
 					// have higher indexes
