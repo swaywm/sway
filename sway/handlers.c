@@ -192,7 +192,7 @@ static void handle_view_focus(wlc_handle view, bool focus) {
 
 static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry* geometry) {
 	sway_log(L_DEBUG, "geometry request %d x %d : %d x %d",
-			geometry->origin.x, geometry->origin.y, geometry->size.w, geometry->size.h);
+			geometry->origin.x, geometry->origin.y, geometry->size.w,geometry->size.h);
 	// If the view is floating, then apply the geometry.
 	// Otherwise save the desired width/height for the view.
 	// This will not do anything for the time being as WLC improperly sends geometry requests
@@ -213,12 +213,12 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {
 	swayc_t *c = NULL;
-	switch (state) {
+	switch(state) {
 	case WLC_BIT_FULLSCREEN:
 		//I3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
 		c = get_swayc_for_handle(view, &root_container);
-		sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d", view, c->name, toggle);
+		sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d",view,c->name,toggle);
 		if (c) {
 			arrange_windows(c->parent, -1, -1);
 			//Set it as focused window for that workspace if its going
