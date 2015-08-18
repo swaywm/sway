@@ -9,6 +9,7 @@
 #include "handlers.h"
 #include "config.h"
 #include "stringop.h"
+#include "focus.h"
 
 swayc_t *active_workspace = NULL;
 
@@ -173,64 +174,33 @@ void workspace_prev() {
 }
 
 void workspace_switch(swayc_t *workspace) {
-	swayc_t *ws_output = workspace->parent;
-	while (ws_output->type != C_OUTPUT) {
-		ws_output = ws_output->parent;
-	}
-	// The current workspace of the output our target workspace is in
-	swayc_t *focused_workspace = ws_output->focused;
-	if (workspace != focused_workspace && focused_workspace) {
-		sway_log(L_DEBUG, "workspace: changing from '%s' to '%s'", focused_workspace->name, workspace->name);
-		uint32_t mask = 1;
-
-		// set all c_views in the old workspace to the invisible mask if the workspace
-		// is in the same output & c_views in the new workspace to the visible mask
-		container_map(focused_workspace, set_view_visibility, &mask);
-		mask = 2;
-		container_map(workspace, set_view_visibility, &mask);
-		wlc_output_set_mask(ws_output->handle, 2);
-
-		destroy_workspace(focused_workspace);
-	}
-	unfocus_all(&root_container);
-	focus_view(workspace);
-
-	// focus the output this workspace is on
-	swayc_t *output = workspace->parent;
-	sway_log(L_DEBUG, "Switching focus to output %p (%d)", output, output->type);
-	while (output && output->type != C_OUTPUT) {
-		output = output->parent;
-	}
-	if (output) {
-		sway_log(L_DEBUG, "Switching focus to output %p (%d)", output, output->type);
-		wlc_output_focus(output->handle);
-	}
+	set_focused_container(workspace);
 	active_workspace = workspace;
 }
 
 /* XXX:DEBUG:XXX */
 static void container_log(const swayc_t *c) {
 	fprintf(stderr, "focus:%c|",
-		c == get_focused_container(&root_container) ? 'F' : //Focused
+		c->is_focused ? 'F' : //Focused
 		c == active_workspace ? 'W' : //active workspace
 		c == &root_container  ? 'R' : //root
 		'X');//not any others
 	fprintf(stderr,"(%p)",c);
 	fprintf(stderr,"(p:%p)",c->parent);
 	fprintf(stderr,"(f:%p)",c->focused);
+	fprintf(stderr,"(h:%ld)",c->handle);
 	fprintf(stderr,"Type:");
 	fprintf(stderr,
-		c->type == C_ROOT	  ? "Root|" :
-		c->type == C_OUTPUT	? "Output|" :
+		c->type == C_ROOT   ? "Root|" :
+		c->type == C_OUTPUT ? "Output|" :
 		c->type == C_WORKSPACE ? "Workspace|" :
 		c->type == C_CONTAINER ? "Container|" :
-		c->type == C_VIEW	  ? "View|" :
-								 "Unknown|");
+		c->type == C_VIEW   ? "View|" : "Unknown|");
 	fprintf(stderr,"layout:");
 	fprintf(stderr,
-		c->layout == L_NONE	 ? "NONE|" :
-		c->layout == L_HORIZ	? "Horiz|":
-		c->layout == L_VERT	 ? "Vert|":
+		c->layout == L_NONE ? "NONE|" :
+		c->layout == L_HORIZ ? "Horiz|":
+		c->layout == L_VERT ? "Vert|":
 		c->layout == L_STACKED  ? "Stacked|":
 		c->layout == L_FLOATING ? "Floating|":
 								  "Unknown|");

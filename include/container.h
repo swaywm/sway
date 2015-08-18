@@ -45,6 +45,8 @@ struct sway_container {
 
 	bool is_floating;
 
+	bool is_focused;
+
 	int weight;
 
 	char *name;

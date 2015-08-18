@@ -8,7 +8,7 @@
 #include <ctype.h>
 #include "stringop.h"
 #include "layout.h"
-#include "movement.h"
+#include "focus.h"
 #include "log.h"
 #include "workspace.h"
 #include "commands.h"
@@ -215,11 +215,12 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			view->is_floating = false;
 			active_workspace->focused = NULL;
 			// Get the properly focused container, and add in the view there
-			swayc_t *focused = focus_pointer();
+			swayc_t *focused = container_under_pointer();
 			// If focused is null, it's because the currently focused container is a workspace
 			if (focused == NULL) {
 				focused = active_workspace;
 			}
+			set_focused_container(focused);
 
 			sway_log(L_DEBUG, "Non-floating focused container is %p", focused);
 
@@ -232,7 +233,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 				add_sibling(focused, view);
 			}
 			// Refocus on the view once its been put back into the layout
-			focus_view(view);
+			set_focused_container(view);
 			arrange_windows(active_workspace, -1, -1);
 			return true;
 		}
@@ -345,7 +346,7 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	else {
 		sway_log(L_DEBUG, "Adding new container around current focused container");
 		swayc_t *parent = new_container(focused, layout);
-		focus_view(focused);
+		set_focused_container(focused);
 		arrange_windows(parent, -1, -1);
 	}
 

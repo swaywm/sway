@@ -31,9 +31,6 @@ void add_child(swayc_t *parent, swayc_t *child) {
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
-	if (parent->focused == NULL) {
-		parent->focused = child;
-	}
 }
 
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
@@ -206,7 +203,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	// Arrage floating layouts for workspaces last
 	if (container->type == C_WORKSPACE) {
 		for (i = 0; i < container->floating->length; ++i) {
-			swayc_t *view = ((swayc_t *)container->floating->items[i]);
+			swayc_t *view = container->floating->items[i];
 			// Set the geometry
 			struct wlc_geometry geometry = {
 				.origin = {
@@ -260,66 +257,5 @@ swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
 		}
 	}
 	return NULL;
-}
-
-swayc_t *get_focused_container(swayc_t *parent) {
-	if (parent->focused == NULL) {
-		return parent;
-	}
-	return get_focused_container(parent->focused);
-}
-
-void unfocus_all(swayc_t *container) {
-	if (container->children == NULL) {
-		return;
-	}
-	int i;
-	for (i = 0; i < container->children->length; ++i) {
-		swayc_t *view = container->children->items[i];
-		if (view->type == C_VIEW) {
-			wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, false);
-		} else {
-			unfocus_all(view);
-		}
-	}
-}
-
-void focus_view(swayc_t *view) {
-	if (!view) {
-		return;
-	}
-	sway_log(L_DEBUG, "Setting focus for %p:%ld", view, view->handle);
-	swayc_t *c = view;
-	//Set focus from root to view
-	while (c != &root_container) {
-		c->parent->focused = c;
-		c = c->parent;
-	}
-	//Set output
-	wlc_output_focus(c->focused->handle);
-	//get focus for views focused window
-	while (view && view->type != C_VIEW) {
-		view = view->focused;
-	}
-	if (view) {
-		wlc_view_set_state(view->handle, WLC_BIT_ACTIVATED, true);
-		wlc_view_focus(view->handle);
-	}
-}
-
-void focus_view_for(swayc_t *top, swayc_t *view) {
-	swayc_t *find = view;
-	//Make sure top is a ancestor of view
-	while (find != top) {
-		if (find == &root_container) {
-			return;
-		}
-		find = find->parent;
-	}
-	//Set focus for top to go to view
-	while (view != top) {
-		view->parent->focused = view;
-		view = view->parent;
-	}
 }
 
