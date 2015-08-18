@@ -106,6 +106,12 @@ static void handle_output_destroyed(wlc_handle output) {
 	if (i < list->length) {
 		destroy_output(list->items[i]);
 	}
+	if (list->length == 0) {
+		active_workspace = NULL;
+	} else {
+		//switch to other outputs active workspace
+		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
+	}
 }
 
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
@@ -320,6 +326,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	mouse_origin = *origin;
 	bool changed_floating = false;
 	int i = 0;
+	if (!active_workspace) {
+		return false;
+	}
 	// Do checks to determine if proper keys are being held
 	swayc_t *view = active_workspace->focused;
 	if (m1_held && view) {
@@ -400,7 +409,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		}
 	}
 	if (config->focus_follows_mouse && prev_handle != handle) {
-		set_focused_container(container_under_pointer());
+		//Dont change focus if fullscreen
+		swayc_t *focused = get_focused_view(view);
+		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)) {
+			set_focused_container(container_under_pointer());
+		}
 	}
 	prev_handle = handle;
 	prev_pos = mouse_origin;
@@ -414,6 +427,10 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state) {
 	swayc_t *focused = get_focused_container(&root_container);
+	//dont change focus if fullscreen
+	if (focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+		return false;
+	}
 	if (state == WLC_BUTTON_STATE_PRESSED) {
 		sway_log(L_DEBUG, "Mouse button %u pressed", button);
 		if (button == 272) {
