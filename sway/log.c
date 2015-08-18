@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 int colored = 1;
 int v = 0;
@@ -32,7 +33,7 @@ void sway_log_colors(int mode) {
 	colored = (mode == 1) ? 1 : 0;
 }
 
-void sway_abort(char *format, ...) {
+void sway_abort(const char *format, ...) {
 	fprintf(stderr, "ERROR: ");
 	va_list args;
 	va_start(args, format);
@@ -42,7 +43,7 @@ void sway_abort(char *format, ...) {
 	exit(1);
 }
 
-void sway_log(int verbosity, char* format, ...) {
+void sway_log(int verbosity, const char* format, ...) {
 	if (verbosity <= v) {
 		int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
@@ -63,4 +64,21 @@ void sway_log(int verbosity, char* format, ...) {
 		}
 		fprintf(stderr, "\n");
 	}
+}
+
+bool sway_assert(bool condition, const char* format, ...) {
+	if (condition) {
+		return true;
+	}
+
+#ifndef NDEBUG
+	raise(SIGABRT);
+#endif
+
+	va_list args;
+	va_start(args, format);
+	sway_log(L_ERROR, format, args);
+	va_end(args);
+
+	return false;
 }
