@@ -40,37 +40,37 @@ enum expected_args {
 
 static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 	switch (type) {
-		case EXPECTED_MORE_THAN:
-			if (argc > val) {
-				return true;
-			}
-			sway_log(L_ERROR, "Invalid %s command."
-				"(expected more than %d argument%s, got %d",
-				name, val, (char*[2]){"s", ""}[argc==1], argc);
-			break;
-		case EXPECTED_AT_LEAST:
-			if (argc >= val) {
-				return true;
-			}
-			sway_log(L_ERROR, "Invalid %s command."
-				"(expected at least %d argument%s, got %d",
-				name, val, (char*[2]){"s", ""}[argc==1], argc);
-			break;
-		case EXPECTED_LESS_THAN:
-			if (argc  < val) {
-				return true;
-			};
-			sway_log(L_ERROR, "Invalid %s command."
-				"(expected less than %d argument%s, got %d",
-				name, val, (char*[2]){"s", ""}[argc==1], argc);
-			break;
-		case EXPECTED_EQUAL_TO:
-			if (argc == val) {
-				return true;
-			};
-			sway_log(L_ERROR, "Invalid %s command."
-				"(expected %d arguments, got %d", name, val, argc);
-			break;
+	case EXPECTED_MORE_THAN:
+		if (argc > val) {
+			return true;
+		}
+		sway_log(L_ERROR, "Invalid %s command."
+			"(expected more than %d argument%s, got %d",
+			name, val, (char*[2]){"s", ""}[argc==1], argc);
+		break;
+	case EXPECTED_AT_LEAST:
+		if (argc >= val) {
+			return true;
+		}
+		sway_log(L_ERROR, "Invalid %s command."
+			"(expected at least %d argument%s, got %d",
+			name, val, (char*[2]){"s", ""}[argc==1], argc);
+		break;
+	case EXPECTED_LESS_THAN:
+		if (argc  < val) {
+			return true;
+		};
+		sway_log(L_ERROR, "Invalid %s command."
+			"(expected less than %d argument%s, got %d",
+			name, val, (char*[2]){"s", ""}[argc==1], argc);
+		break;
+	case EXPECTED_EQUAL_TO:
+		if (argc == val) {
+			return true;
+		};
+		sway_log(L_ERROR, "Invalid %s command."
+			"(expected %d arguments, got %d", name, val, argc);
+		break;
 	}
 	return false;
 }
@@ -292,9 +292,11 @@ static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
+
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
 	}
+
 	if (strcasecmp(argv[0], "splith") == 0) {
 		parent->layout = L_HORIZ;
 	} else if (strcasecmp(argv[0], "splitv") == 0) {
@@ -343,19 +345,17 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
-	/* Case that focus is on an workspace with 0/1 children.change its layout */
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
+		/* Case that focus is on an workspace with 0/1 children.change its layout */
 		sway_log(L_DEBUG, "changing workspace layout");
 		focused->layout = layout;
-	}
-	/* Case of no siblings. change parent layout */
-	else if (focused->type != C_WORKSPACE && focused->parent->children->length == 1) {
+	} else if (focused->type != C_WORKSPACE && focused->parent->children->length == 1) {
+		/* Case of no siblings. change parent layout */
 		sway_log(L_DEBUG, "changing container layout");
 		focused->parent->layout = layout;
-	}
-	/* regular case where new split container is build around focused container
-	 * or in case of workspace, container inherits its children */
-	else {
+	} else {
+		/* regular case where new split container is build around focused container
+		 * or in case of workspace, container inherits its children */
 		sway_log(L_DEBUG, "Adding new container around current focused container");
 		swayc_t *parent = new_container(focused, layout);
 		set_focused_container(focused);
@@ -369,6 +369,7 @@ static bool cmd_split(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "split", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
+
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
 		_do_split(config, argc - 1, argv + 1, L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
@@ -377,6 +378,7 @@ static bool cmd_split(struct sway_config *config, int argc, char **argv) {
 		sway_log(L_ERROR, "Invalid split command (expected either horiziontal or vertical).");
 		return false;
 	}
+
 	return true;
 }
 

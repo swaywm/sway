@@ -15,7 +15,7 @@ static bool exists(const char *path) {
 	return access(path, R_OK) != -1;
 }
 
-static char* get_config_path() {
+static char *get_config_path() {
 	char *name = "/.sway/config";
 	const char *home = getenv("HOME");
 

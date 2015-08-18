@@ -17,8 +17,7 @@ static const char *verbosity_colors[] = {
 
 void init_log(int verbosity) {
 	v = verbosity;
-	/* set FD_CLOEXEC flag to prevent programs called with exec to write into
-	 * logs */
+	/* set FD_CLOEXEC flag to prevent programs called with exec to write into logs */
 	int i, flag;
 	int fd[] = { STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO };
 	for (i = 0; i < 3; ++i) {

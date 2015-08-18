@@ -7,10 +7,10 @@
 bool locked_container_focus = false;
 bool locked_view_focus = false;
 
-//switches parent focus to c. will switch it accordingly
-//TODO, everything needs a handle, so we can set front/back position properly
+// switches parent focus to c. will switch it accordingly
+// TODO: Everything needs a handle, so we can set front/back position properly
 static void update_focus(swayc_t *c) {
-	//Handle if focus switches
+	// Handle if focus switches
 	swayc_t *parent = c->parent;
 	if (parent->focused != c) {
 		switch (c->type) {
@@ -18,14 +18,14 @@ static void update_focus(swayc_t *c) {
 		case C_OUTPUT:
 			wlc_output_focus(c->parent->handle);
 			break;
-		//switching workspaces
+		// switching workspaces
 		case C_WORKSPACE:
 			if (parent->focused) {
 				swayc_t *ws = parent->focused;
-				//hide visibility of old workspace
+				// hide visibility of old workspace
 				uint32_t mask = 1;
 				container_map(ws, set_view_visibility, &mask);
-				//set visibility of new workspace
+				// set visibility of new workspace
 				mask = 2;
 				container_map(c, set_view_visibility, &mask);
 				wlc_output_set_mask(parent->handle, 2);
@@ -36,8 +36,8 @@ static void update_focus(swayc_t *c) {
 		default:
 		case C_VIEW:
 		case C_CONTAINER:
-			//TODO whatever to do when container changes
-			//for example, stacked and tabbing change stuff.
+			// TODO whatever to do when container changes
+			// for example, stacked and tabbing change stuff.
 			break;
 		}
 	}
@@ -115,7 +115,7 @@ swayc_t *get_focused_container(swayc_t *parent) {
 	while (parent && !parent->is_focused) {
 		parent = parent->focused;
 	}
-	//just incase
+	// just incase
 	if (parent == NULL) {
 		sway_log(L_DEBUG, "get_focused_container unable to find container");
 		return active_workspace;
@@ -140,7 +140,7 @@ void set_focused_container(swayc_t *c) {
 	}
 	if (!locked_view_focus) {
 		p = get_focused_view(c);
-		//Set focus to p
+		// Set focus to p
 		if (p && !(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
 			if (prev_view) {
 				wlc_view_set_state(prev_view->handle, WLC_BIT_ACTIVATED, false);
@@ -175,7 +175,7 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 	}
 	if (!locked_view_focus) {
 		p = get_focused_view(c);
-		//Set focus to p
+		// Set focus to p
 		if (p) {
 			wlc_view_focus(p->handle);
 			wlc_view_set_state(p->handle, WLC_BIT_ACTIVATED, true);
@@ -189,4 +189,3 @@ swayc_t *get_focused_view(swayc_t *parent) {
 	}
 	return parent;
 }
-

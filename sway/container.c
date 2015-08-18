@@ -50,14 +50,7 @@ swayc_t *new_output(wlc_handle handle) {
 
 	add_child(&root_container, output);
 
-//TODO still dont know why this is here?
-//	int total_width = 0;
-//	int i;
-//	for (i = 0; i < root_container.children->length; ++i) {
-//		total_width += ((swayc_t*)root_container.children->items[i])->width;
-//	}
-
-	//Create workspace
+	// Create workspace
 	char *ws_name = NULL;
 	if (name) {
 		int i;
@@ -73,7 +66,8 @@ swayc_t *new_output(wlc_handle handle) {
 	if (!ws_name) {
 		ws_name = workspace_next_name();
 	}
-	//create and initilize default workspace
+
+	// create and initilize default workspace
 	swayc_t *ws = new_workspace(output, ws_name);
 	ws->is_focused = true;
 
@@ -86,7 +80,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
-	workspace->layout = L_HORIZ; // TODO:default layout
+	workspace->layout = L_HORIZ; // TODO: default layout
 	workspace->width = output->width;
 	workspace->height = output->height;
 	workspace->name = strdup(name);
@@ -112,26 +106,24 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	/* Container inherits all of workspaces children, layout and whatnot */
 	if (child->type == C_WORKSPACE) {
 		swayc_t *workspace = child;
-		//reorder focus
+		// reorder focus
 		cont->focused = workspace->focused;
 		workspace->focused = cont;
-		//set all children focu to container
+		// set all children focu to container
 		int i;
 		for (i = 0; i < workspace->children->length; ++i) {
 			((swayc_t *)workspace->children->items[i])->parent = cont;
 		}
-		//Swap children
+		// Swap children
 		list_t  *tmp_list  = workspace->children;
 		workspace->children = cont->children;
 		cont->children = tmp_list;
-		//add container to workspace chidren
+		// add container to workspace chidren
 		add_child(workspace, cont);
-		//give them proper layouts
+		// give them proper layouts
 		cont->layout = workspace->layout;
 		workspace->layout = layout;
-	}
-	//Or is built around container
-	else {
+	} else { // Or is built around container
 		swayc_t *parent = replace_child(child, cont);
 		if (parent) {
 			add_child(cont, child);
@@ -145,7 +137,7 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	swayc_t *view = new_swayc(C_VIEW);
 	sway_log(L_DEBUG, "Adding new view %lu:%s to container %p %d",
 		handle, title, sibling, sibling ? sibling->type : 0);
-	//Setup values
+	// Setup values
 	view->handle = handle;
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
@@ -157,23 +149,22 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	// TODO: properly set this
 	view->is_floating = false;
 
-	//Case of focused workspace, just create as child of it
 	if (sibling->type == C_WORKSPACE) {
+		// Case of focused workspace, just create as child of it
 		add_child(sibling, view);
-	}
-	//Regular case, create as sibling of current container
-	else {
+	} else {
+		// Regular case, create as sibling of current container
 		add_sibling(sibling, view);
 	}
 	return view;
 }
 
 swayc_t *new_floating_view(wlc_handle handle) {
-	const char   *title = wlc_view_get_title(handle);
+	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
 	sway_log(L_DEBUG, "Adding new view %lu:%x:%s as a floating view",
 		handle, wlc_view_get_type(handle), title);
-	//Setup values
+	// Setup values
 	view->handle = handle;
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
@@ -191,7 +182,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 
 	view->is_floating = true;
 
-	//Case of focused workspace, just create as child of it
+	// Case of focused workspace, just create as child of it
 	list_add(active_workspace->floating, view);
 	view->parent = active_workspace;
 	if (active_workspace->focused == NULL) {
@@ -204,7 +195,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 
 swayc_t *destroy_output(swayc_t *output) {
 	if (output->children->length == 0) {
-		//TODO move workspaces to other outputs
+		// TODO move workspaces to other outputs
 	}
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
 	free_swayc(output);
@@ -212,9 +203,9 @@ swayc_t *destroy_output(swayc_t *output) {
 }
 
 swayc_t *destroy_workspace(swayc_t *workspace) {
-	//NOTE: This is called from elsewhere without checking children length
-	//TODO move containers to other workspaces?
-	//for now just dont delete
+	// NOTE: This is called from elsewhere without checking children length
+	// TODO move containers to other workspaces?
+	// for now just dont delete
 	if (workspace->children->length == 0) {
 		sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
 		swayc_t *parent = workspace->parent;
@@ -244,7 +235,7 @@ swayc_t *destroy_view(swayc_t *view) {
 	swayc_t *parent = view->parent;
 	free_swayc(view);
 
-	//Destroy empty containers
+	// Destroy empty containers
 	if (parent->type == C_CONTAINER) {
 		return destroy_container(parent);
 	}
@@ -303,5 +294,3 @@ void set_view_visibility(swayc_t *view, void *data) {
 	}
 	view->visible = (*p == 2);
 }
-
-

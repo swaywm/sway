@@ -63,8 +63,8 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 swayc_t *remove_child(swayc_t *child) {
 	int i;
 	swayc_t *parent = child->parent;
-	// Special case for floating views
 	if (child->is_floating) {
+		// Special case for floating views
 		for (i = 0; i < parent->floating->length; ++i) {
 			if (parent->floating->items[i] == child) {
 				list_del(parent->floating, i);

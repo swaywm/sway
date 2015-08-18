@@ -23,7 +23,7 @@ static bool m2_held = false;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
-	//Determine the output that the view is under
+	// Determine the output that the view is under
 	swayc_t *parent = view;
 	while (parent->type != C_OUTPUT) {
 		parent = parent->parent;
@@ -37,25 +37,25 @@ static bool pointer_test(swayc_t *view, void *_origin) {
 }
 
 swayc_t *container_under_pointer(void) {
-	//root.output->workspace
+	// root.output->workspace
 	if (!root_container.focused || !root_container.focused->focused) {
 		return NULL;
 	}
 	swayc_t *lookup = root_container.focused->focused;
-	//Case of empty workspace
+	// Case of empty workspace
 	if (lookup->children == 0) {
 		return NULL;
 	}
 	while (lookup->type != C_VIEW) {
 		int i;
 		int len;
-		//if tabbed/stacked go directly to focused container, otherwise search
-		//children
+		// if tabbed/stacked go directly to focused container, otherwise search
+		// children
 		if (lookup->layout == L_TABBED || lookup->layout == L_STACKED) {
 			lookup = lookup->focused;
 			continue;
 		}
-		//if workspace, search floating
+		// if workspace, search floating
 		if (lookup->type == C_WORKSPACE) {
 			len = lookup->floating->length;
 			for (i = 0; i < len; ++i) {
@@ -68,7 +68,7 @@ swayc_t *container_under_pointer(void) {
 				continue;
 			}
 		}
-		//search children
+		// search children
 		len = lookup->children->length;
 		for (i = 0; i < len; ++i) {
 			if (pointer_test(lookup->children->items[i], &mouse_origin)) {
@@ -76,7 +76,7 @@ swayc_t *container_under_pointer(void) {
 				break;
 			}
 		}
-		//when border and titles are done, this could happen
+		// when border and titles are done, this could happen
 		if (i == len) {
 			break;
 		}
@@ -119,7 +119,7 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 
 static void handle_output_focused(wlc_handle output, bool focus) {
 	swayc_t *c = get_swayc_for_handle(output, &root_container);
-	//if for some reason this output doesnt exist, create it.
+	// if for some reason this output doesnt exist, create it.
 	if (!c) {
 		handle_output_created(output);
 	}
@@ -132,12 +132,12 @@ static bool handle_view_created(wlc_handle handle) {
 	swayc_t *focused = get_focused_container(&root_container);
 	swayc_t *newview = NULL;
 	switch (wlc_view_get_type(handle)) {
-	//regular view created regularly
+	// regular view created regularly
 	case 0:
 		newview = new_view(focused, handle);
 		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		break;
-	//takes keyboard focus
+	// takes keyboard focus
 	case WLC_BIT_OVERRIDE_REDIRECT:
 		sway_log(L_DEBUG, "view %ld with OVERRIDE_REDIRECT", handle);
 		locked_view_focus = true;
@@ -145,13 +145,13 @@ static bool handle_view_created(wlc_handle handle) {
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);
 		break;
-	//Takes container focus
+	// Takes container focus
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
 		sway_log(L_DEBUG, "view %ld with OVERRIDE_REDIRECT|WLC_BIT_MANAGED", handle);
 		wlc_view_bring_to_front(handle);
 		locked_container_focus = true;
 		break;
-	//set modals as floating containers
+	// set modals as floating containers
 	case WLC_BIT_MODAL:
 		wlc_view_bring_to_front(handle);
 		newview = new_floating_view(handle);
@@ -170,7 +170,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 	swayc_t *view = get_swayc_for_handle(handle, &root_container);
 
 	switch (wlc_view_get_type(handle)) {
-	//regular view created regularly
+	// regular view created regularly
 	case 0:
 	case WLC_BIT_MODAL:
 		if (view) {
@@ -178,11 +178,11 @@ static void handle_view_destroyed(wlc_handle handle) {
 			arrange_windows(parent, -1, -1);
 		}
 		break;
-	//takes keyboard focus
+	// takes keyboard focus
 	case WLC_BIT_OVERRIDE_REDIRECT:
 		locked_view_focus = false;
 		break;
-	//Takes container focus
+	// Takes container focus
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
 		locked_container_focus = false;
 	case WLC_BIT_POPUP:
@@ -195,7 +195,7 @@ static void handle_view_focus(wlc_handle view, bool focus) {
 	return;
 }
 
-static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry* geometry) {
+static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry *geometry) {
 	sway_log(L_DEBUG, "geometry request %d x %d : %d x %d",
 			geometry->origin.x, geometry->origin.y, geometry->size.w,geometry->size.h);
 	// If the view is floating, then apply the geometry.
@@ -220,20 +220,19 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 	swayc_t *c = NULL;
 	switch(state) {
 	case WLC_BIT_FULLSCREEN:
-		//I3 just lets it become fullscreen
+		// i3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
 		c = get_swayc_for_handle(view, &root_container);
 		sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d",view,c->name,toggle);
 		if (c) {
 			arrange_windows(c->parent, -1, -1);
-			//Set it as focused window for that workspace if its going
-			//fullscreen
+			// Set it as focused window for that workspace if its going fullscreen
 			if (toggle) {
 				swayc_t *ws = c;
 				while (ws->type != C_WORKSPACE) {
 					ws = ws->parent;
 				}
-				//Set ws focus to c
+				// Set ws focus to c
 				set_focused_container_for(ws, c);
 			}
 		}
@@ -248,8 +247,8 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 }
 
 
-static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
-		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
+static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
+		uint32_t key, uint32_t sym, enum wlc_key_state state) {
 	enum { QSIZE = 32 };
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return false;
@@ -261,7 +260,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	// Lowercase if necessary
 	sym = tolower(sym);
 
-	//Find key, if it has been pressed
+	// Find key, if it has been pressed
 	int mid = 0;
 	while (mid < head && keys_pressed[mid] != sym) {
 		++mid;
@@ -295,7 +294,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			}
 
 			if (match) {
-				//Remove matched keys from keys_pressed
+				// Remove matched keys from keys_pressed
 				int j;
 				for (j = 0; j < binding->keys->length; ++j) {
 					uint8_t k;
