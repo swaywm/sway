@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
+find_package(A2X REQUIRED)
 
 if (UNIX)
    find_library(DL_LIBRARY dl)
@@ -45,13 +46,13 @@ INSTALL(
 )
 
 ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/sway.1
-  COMMAND a2x --no-xmllint --doctype manpage --format manpage
+  COMMAND ${A2X_COMMAND} --no-xmllint --doctype manpage --format manpage
     -D ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${CMAKE_CURRENT_SOURCE_DIR}/sway.1.txt 
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/sway.1.txt
 )
 
 ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/sway.5
-  COMMAND a2x --no-xmllint --doctype manpage --format manpage
+  COMMAND ${A2X_COMMAND} --no-xmllint --doctype manpage --format manpage
     -D ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${CMAKE_CURRENT_SOURCE_DIR}/sway.5.txt 
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/sway.5.txt
 )
