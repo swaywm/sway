@@ -33,10 +33,11 @@ static void update_focus(swayc_t *c) {
 			}
 			active_workspace = c;
 			break;
+		default:
 		case C_VIEW:
 		case C_CONTAINER:
 			//TODO whatever to do when container changes
-			//for example, stacked and tabbing change whatever.
+			//for example, stacked and tabbing change stuff.
 			break;
 		}
 	}
@@ -113,6 +114,11 @@ bool move_focus(enum movement_direction direction) {
 swayc_t *get_focused_container(swayc_t *parent) {
 	while (parent && !parent->is_focused) {
 		parent = parent->focused;
+	}
+	//just incase
+	if (parent == NULL) {
+		sway_log(L_DEBUG, "get_focused_container unable to find container");
+		return active_workspace;
 	}
 	return parent;
 }

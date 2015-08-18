@@ -126,7 +126,7 @@ static char* get_config_path() {
 	return NULL;
 }
 
-bool load_config() {
+bool load_config(void) {
 	sway_log(L_INFO, "Loading config");
 
 	char *path = get_config_path();

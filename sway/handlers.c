@@ -252,7 +252,7 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers
 		*modifiers, uint32_t key, uint32_t sym, enum wlc_key_state state) {
 	enum { QSIZE = 32 };
-	if (locked_view_focus) {
+	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return false;
 	}
 	static uint8_t  head = 0;
