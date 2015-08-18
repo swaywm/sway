@@ -506,7 +506,7 @@ static char **split_directive(char *line, int *argc) {
 	if (!*line) return parts;
 
 	int in_string = 0, in_character = 0;
-	int i, j;
+	int i, j, _;
 	for (i = 0, j = 0; line[i]; ++i) {
 		if (line[i] == '\\') {
 			++i;
@@ -519,7 +519,7 @@ static char **split_directive(char *line, int *argc) {
 				char *item = malloc(i - j + 1);
 				strncpy(item, line + j, i - j);
 				item[i - j] = '\0';
-				strip_whitespace(item);
+				item = strip_whitespace(item, &_);
 				if (item[0] == '\0') {
 					free(item);
 				} else {
@@ -537,7 +537,7 @@ static char **split_directive(char *line, int *argc) {
 	char *item = malloc(i - j + 1);
 	strncpy(item, line + j, i - j);
 	item[i - j] = '\0';
-	strip_whitespace(item);
+	item = strip_whitespace(item, &_);
 	if (*argc == capacity) {
 		capacity++;
 		parts = realloc(parts, sizeof(char *) * capacity);
