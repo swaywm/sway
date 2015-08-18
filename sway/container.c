@@ -27,10 +27,7 @@ static void free_swayc(swayc_t *c) {
 		list_free(c->children);
 	}
 	if (c->parent) {
-		if (c->parent->focused == c) {
-			c->parent->focused = NULL;
-		}
-		remove_child(c->parent, c);
+		remove_child(c);
 	}
 	if (c->name) {
 		free(c->name);
@@ -118,6 +115,11 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		//reorder focus
 		cont->focused = workspace->focused;
 		workspace->focused = cont;
+		//set all children focu to container
+		int i;
+		for (i = 0; i < workspace->children->length; ++i) {
+			((swayc_t *)workspace->children->items[i])->parent = cont;
+		}
 		//Swap children
 		list_t  *tmp_list  = workspace->children;
 		workspace->children = cont->children;
@@ -204,7 +206,7 @@ swayc_t *destroy_output(swayc_t *output) {
 	if (output->children->length == 0) {
 		//TODO move workspaces to other outputs
 	}
-	sway_log(L_DEBUG, "OUTPUT: Destroying output '%u'", (unsigned int)output->handle);
+	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
 	free_swayc(output);
 	return &root_container;
 }
@@ -246,7 +248,6 @@ swayc_t *destroy_view(swayc_t *view) {
 	if (parent->type == C_CONTAINER) {
 		return destroy_container(parent);
 	}
-
 	return parent;
 }
 

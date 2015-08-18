@@ -135,7 +135,7 @@ void set_focused_container(swayc_t *c) {
 	if (!locked_view_focus) {
 		p = get_focused_view(c);
 		//Set focus to p
-		if (p && p != prev_view && !(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
+		if (p && !(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
 			if (prev_view) {
 				wlc_view_set_state(prev_view->handle, WLC_BIT_ACTIVATED, false);
 			}

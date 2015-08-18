@@ -38,6 +38,9 @@ static bool pointer_test(swayc_t *view, void *_origin) {
 
 swayc_t *container_under_pointer(void) {
 	//root.output->workspace
+	if (!root_container.focused || !root_container.focused->focused) {
+		return NULL;
+	}
 	swayc_t *lookup = root_container.focused->focused;
 	//Case of empty workspace
 	if (lookup->children == 0) {
@@ -174,9 +177,6 @@ static void handle_view_destroyed(wlc_handle handle) {
 		if (view) {
 			swayc_t *parent = destroy_view(view);
 			arrange_windows(parent, -1, -1);
-			if (!focused || focused == view) {
-				set_focused_container(container_under_pointer());
-			}
 		}
 		break;
 	//takes keyboard focus

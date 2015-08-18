@@ -60,8 +60,9 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	return parent;
 }
 
-swayc_t *remove_child(swayc_t *parent, swayc_t *child) {
+swayc_t *remove_child(swayc_t *child) {
 	int i;
+	swayc_t *parent = child->parent;
 	// Special case for floating views
 	if (child->is_floating) {
 		for (i = 0; i < parent->floating->length; ++i) {
@@ -79,7 +80,11 @@ swayc_t *remove_child(swayc_t *parent, swayc_t *child) {
 		}
 	}
 	if (parent->focused == child) {
-		parent->focused = NULL;
+		if (parent->children->length > 0) {
+			parent->focused = parent->children->items[i?i-1:0];
+		} else {
+			parent->focused = NULL;
+		}
 	}
 	return parent;
 }
