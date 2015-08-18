@@ -4,6 +4,7 @@
 #include "config.h"
 #include "container.h"
 #include "workspace.h"
+#include "focus.h"
 #include "layout.h"
 #include "log.h"
 
@@ -21,10 +22,25 @@ static swayc_t *new_swayc(enum swayc_types type) {
 }
 
 static void free_swayc(swayc_t *c) {
-	//TODO does not properly handle containers with children,
-	//TODO but functions that call this usually check for that
+	// TODO does not properly handle containers with children,
+	// TODO but functions that call this usually check for that
 	if (c->children) {
+		if (c->children->length) {
+			int i;
+			for (i = 0; i < c->children->length; ++i) {
+				free_swayc(c->children->items[i]);
+			}
+		}
 		list_free(c->children);
+	}
+	if (c->floating) {
+		if (c->floating->length) {
+			int i;
+			for (i = 0; i < c->floating->length; ++i) {
+				free_swayc(c->floating->items[i]);
+			}
+		}
+		list_free(c->floating);
 	}
 	if (c->parent) {
 		remove_child(c);
@@ -194,7 +210,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	list_add(active_workspace->floating, view);
 	view->parent = active_workspace;
 	if (active_workspace->focused == NULL) {
-		active_workspace->focused = view;
+		set_focused_container_for(active_workspace, view);
 	}
 	return view;
 }
@@ -291,7 +307,7 @@ swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *da
 }
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (!container->children || !container->children->length)  {
+	if (!container || !container->children || !container->children->length)  {
 		return;
 	}
 	int i;
@@ -299,6 +315,13 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 		swayc_t *child = container->children->items[i];
 		f(child, data);
 		container_map(child, f, data);
+	}
+	if (container->type == C_WORKSPACE) {
+		for (i = 0; i < container->floating->length; ++i) {
+			swayc_t *child = container->floating->items[i];
+			f(child, data);
+			container_map(child, f, data);
+		}
 	}
 }
 

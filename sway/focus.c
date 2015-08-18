@@ -14,11 +14,15 @@ static void update_focus(swayc_t *c) {
 	swayc_t *parent = c->parent;
 	if (parent->focused != c) {
 		switch (c->type) {
+		// Shouldnt happen
 		case C_ROOT: return;
+
+		// Case where output changes
 		case C_OUTPUT:
 			wlc_output_focus(c->handle);
 			break;
-		// switching workspaces
+
+		// Case where workspace changes
 		case C_WORKSPACE:
 			if (parent->focused) {
 				swayc_t *ws = parent->focused;
@@ -29,10 +33,12 @@ static void update_focus(swayc_t *c) {
 				mask = 2;
 				container_map(c, set_view_visibility, &mask);
 				wlc_output_set_mask(parent->handle, 2);
+				c->parent->focused = c;
 				destroy_workspace(ws);
 			}
 			active_workspace = c;
 			break;
+
 		default:
 		case C_VIEW:
 		case C_CONTAINER:
@@ -49,6 +55,10 @@ bool move_focus(enum movement_direction direction) {
 		return false;
 	}
 	swayc_t *current = get_focused_container(&root_container);
+	if (current->type == C_VIEW
+		&& wlc_view_get_state(current->handle) & WLC_BIT_FULLSCREEN) {
+		return false;
+	}
 	swayc_t *parent = current->parent;
 
 	if (direction == MOVE_PARENT) {
@@ -128,23 +138,39 @@ void set_focused_container(swayc_t *c) {
 		return;
 	}
 	sway_log(L_DEBUG, "Setting focus to %p:%ld", c, c->handle);
-	if (c->type != C_ROOT && c->type != C_OUTPUT) {
-		c->is_focused = true;
+
+	// Find previous focused view, and the new focused view, if they are the same return
+	swayc_t *focused = get_focused_view(&root_container);
+	swayc_t *workspace = active_workspace;
+	if (focused == get_focused_view(c)) {
+		return;
 	}
-	swayc_t *prev_view = get_focused_view(&root_container);
+
+	// update container focus from here to root, making necessary changes along
+	// the way
 	swayc_t *p = c;
 	while (p != &root_container) {
 		update_focus(p);
 		p = p->parent;
 		p->is_focused = false;
 	}
-	if (!locked_view_focus) {
-		p = get_focused_view(c);
-		// Set focus to p
-		if (p && !(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
-			if (prev_view) {
-				wlc_view_set_state(prev_view->handle, WLC_BIT_ACTIVATED, false);
-			}
+
+	// if the workspace is the same, and previous focus is fullscreen, dont
+	// change focus
+	if (workspace == active_workspace
+		&& wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+		return;
+	}
+
+	// get new focused view and set focus to it.
+	p = get_focused_view(c);
+	if (p->type == C_VIEW && !(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
+		// unactivate previous focus
+		if (focused->type == C_VIEW) {
+			wlc_view_set_state(focused->handle, WLC_BIT_ACTIVATED, false);
+		}
+		// activate current focus
+		if (p->type == C_VIEW) {
 			wlc_view_focus(p->handle);
 			wlc_view_set_state(p->handle, WLC_BIT_ACTIVATED, true);
 		}
@@ -156,11 +182,24 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 		return;
 	}
 	swayc_t *find = c;
-	//Ensure that a is an ancestor of c
+	// Ensure that a is an ancestor of c
 	while (find != a && (find = find->parent)) {
 		if (find == &root_container) {
 			return;
 		}
+	}
+	// Check if we changing a parent container that will see chnage
+	bool effective = true;
+	while (find != &root_container) {
+		if (find->parent->focused != find) {
+			effective = false;
+		}
+		find = find->parent;
+	}
+	if (effective) {
+		// Go to set_focused_container
+		set_focused_container(c);
+		return;
 	}
 
 	sway_log(L_DEBUG, "Setting focus for %p:%ld to %p:%ld",
@@ -173,19 +212,17 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 		p = p->parent;
 		p->is_focused = false;
 	}
-	if (!locked_view_focus) {
-		p = get_focused_view(c);
-		// Set focus to p
-		if (p) {
-			wlc_view_focus(p->handle);
-			wlc_view_set_state(p->handle, WLC_BIT_ACTIVATED, true);
-		}
-	}
 }
 
 swayc_t *get_focused_view(swayc_t *parent) {
 	while (parent && parent->type != C_VIEW) {
+		if (parent->type == C_WORKSPACE && parent->focused == NULL) {
+			return parent;
+		}
 		parent = parent->focused;
+	}
+	if (parent == NULL) {
+		return active_workspace;
 	}
 	return parent;
 }

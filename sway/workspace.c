@@ -178,43 +178,37 @@ void workspace_switch(swayc_t *workspace) {
 		return;
 	}
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
-
-	// Remove focus from current view
-	swayc_t *current = get_focused_view(&root_container);
-	if (current && current->type == C_VIEW) {
-		wlc_view_set_state(current->handle, WLC_BIT_ACTIVATED, false);
-	}
-
-	set_focused_container(workspace);
+	set_focused_container(get_focused_view(workspace));
+	arrange_windows(workspace, -1, -1);
 	active_workspace = workspace;
 }
 
 /* XXX:DEBUG:XXX */
 static void container_log(const swayc_t *c) {
 	fprintf(stderr, "focus:%c|",
-		c->is_focused ? 'F' : //Focused
-		c == active_workspace ? 'W' : //active workspace
-		c == &root_container  ? 'R' : //root
-		'X');//not any others
+			c->is_focused ? 'F' : //Focused
+			c == active_workspace ? 'W' : //active workspace
+			c == &root_container  ? 'R' : //root
+			'X');//not any others
 	fprintf(stderr,"(%p)",c);
 	fprintf(stderr,"(p:%p)",c->parent);
 	fprintf(stderr,"(f:%p)",c->focused);
 	fprintf(stderr,"(h:%ld)",c->handle);
 	fprintf(stderr,"Type:");
 	fprintf(stderr,
-		c->type == C_ROOT   ? "Root|" :
-		c->type == C_OUTPUT ? "Output|" :
-		c->type == C_WORKSPACE ? "Workspace|" :
-		c->type == C_CONTAINER ? "Container|" :
-		c->type == C_VIEW   ? "View|" : "Unknown|");
+			c->type == C_ROOT   ? "Root|" :
+			c->type == C_OUTPUT ? "Output|" :
+			c->type == C_WORKSPACE ? "Workspace|" :
+			c->type == C_CONTAINER ? "Container|" :
+			c->type == C_VIEW   ? "View|" : "Unknown|");
 	fprintf(stderr,"layout:");
 	fprintf(stderr,
-		c->layout == L_NONE ? "NONE|" :
-		c->layout == L_HORIZ ? "Horiz|":
-		c->layout == L_VERT ? "Vert|":
-		c->layout == L_STACKED  ? "Stacked|":
-		c->layout == L_FLOATING ? "Floating|":
-								  "Unknown|");
+			c->layout == L_NONE ? "NONE|" :
+			c->layout == L_HORIZ ? "Horiz|":
+			c->layout == L_VERT ? "Vert|":
+			c->layout == L_STACKED  ? "Stacked|":
+			c->layout == L_FLOATING ? "Floating|":
+			"Unknown|");
 	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
 	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
@@ -223,30 +217,24 @@ static void container_log(const swayc_t *c) {
 	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
 }
 void layout_log(const swayc_t *c, int depth) {
-	int i;
-	int e = c->children?c->children->length:0;
-	for (i = 0; i < depth; ++i) fputc(' ', stderr);
+	int i, d;
+	int e = c->children ? c->children->length : 0;
 	container_log(c);
 	if (e) {
-		for (i = 0; i < depth; ++i) fputc(' ', stderr);
-		fprintf(stderr,"(\n");
 		for (i = 0; i < e; ++i) {
+			fputc('|',stderr);
+			for (d = 0; d < depth; ++d) fputc('-', stderr);
 			layout_log(c->children->items[i], depth + 1);
 		}
-		for (i = 0; i < depth; ++i) fputc(' ', stderr);
-		fprintf(stderr,")\n");
 	}
 	if (c->type == C_WORKSPACE) {
 		e = c->floating?c->floating->length:0;
-		for (i = 0; i < depth; ++i) fputc(' ', stderr);
 		if (e) {
-			for (i = 0; i < depth; ++i) fputc(' ', stderr);
-			fprintf(stderr,"(\n");
 			for (i = 0; i < e; ++i) {
+				fputc('|',stderr);
+				for (d = 0; d < depth; ++d) fputc('-', stderr);
 				layout_log(c->floating->items[i], depth + 1);
 			}
-			for (i = 0; i < depth; ++i) fputc(' ', stderr);
-			fprintf(stderr,")\n");
 		}
 	}
 }
