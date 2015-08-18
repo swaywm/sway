@@ -12,9 +12,14 @@
 #include "workspace.h"
 #include "container.h"
 
+uint32_t keys_pressed[32];
+
 static struct wlc_origin mouse_origin;
 //Keyboard input is being overrided by window (dmenu)
 static bool override_redirect = false;
+
+static bool m1_held = false;
+static bool m2_held = false;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -186,7 +191,7 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 			view->x = geometry->origin.x;
 			view->y = geometry->origin.y;
 			arrange_windows(view->parent, -1, -1);
-		}	
+		}
 	}
 }
 
@@ -230,7 +235,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		return false;
 	}
 	static uint8_t  head = 0;
-	static uint32_t array[QSIZE];
 	bool cmd_success = false;
 
 	struct sway_mode *mode = config->current_mode;
@@ -239,13 +243,13 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	//Find key, if it has been pressed
 	int mid = 0;
-	while (mid < head && array[mid] != sym) {
+	while (mid < head && keys_pressed[mid] != sym) {
 		++mid;
 	}
 	if (state == WLC_KEY_STATE_PRESSED && mid == head && head + 1 < QSIZE) {
-		array[head++] = sym;
+		keys_pressed[head++] = sym;
 	} else if (state == WLC_KEY_STATE_RELEASED && mid < head) {
-		memmove(array + mid, array + mid + 1, sizeof*array * (--head - mid));
+		memmove(keys_pressed + mid, keys_pressed + mid + 1, sizeof*keys_pressed * (--head - mid));
 	}
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
@@ -260,7 +264,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 				xkb_keysym_t *key = binding->keys->items[j];
 				uint8_t k;
 				for (k = 0; k < head; ++k) {
-					if (array[k] == *key) {
+					if (keys_pressed[k] == *key) {
 						match = true;
 						break;
 					}
@@ -271,12 +275,12 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			}
 
 			if (match) {
-				//Remove matched keys from array
+				//Remove matched keys from keys_pressed
 				int j;
 				for (j = 0; j < binding->keys->length; ++j) {
 					uint8_t k;
 					for (k = 0; k < head; ++k) {
-						memmove(array + k, array + k + 1, sizeof*array * (--head - k));
+						memmove(keys_pressed + k, keys_pressed + k + 1, sizeof*keys_pressed * (--head - k));
 						break;
 					}
 				}
@@ -291,13 +295,100 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	return cmd_success;
 }
 
-static bool handle_pointer_motion(wlc_handle view, uint32_t time, const struct wlc_origin *origin) {
-	static wlc_handle prev_view = 0;
+static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
+	static struct wlc_origin prev_pos;
+	static wlc_handle prev_handle = 0;
 	mouse_origin = *origin;
-	if (config->focus_follows_mouse && prev_view != view) {
+	bool changed_floating = false;
+	int i = 0;
+	// Do checks to determine if proper keys are being held
+	swayc_t *view = active_workspace->focused;
+	if (m1_held) {
+		if (view->is_floating) {
+			while (keys_pressed[i++]) {
+				if (keys_pressed[i] == config->floating_mod) {
+					int dx = mouse_origin.x - prev_pos.x;
+					int dy = mouse_origin.y - prev_pos.y;
+					sway_log(L_DEBUG, "Moving from px: %d to cx: %d and from py: %d to cy: %d", prev_pos.x, mouse_origin.x, prev_pos.y, mouse_origin.y);
+					sway_log(L_DEBUG, "Moving: dx: %d, dy: %d", dx, dy);
+
+					view->x += dx;
+					view->y += dy;
+					changed_floating = true;
+					break;
+				}
+			}
+		}
+	} else if (m2_held) {
+		if (view->is_floating) {
+			while (keys_pressed[i++]) {
+				if (keys_pressed[i] == config->floating_mod) {
+					int dx = mouse_origin.x - prev_pos.x;
+					int dy = mouse_origin.y - prev_pos.y;
+					sway_log(L_DEBUG, "Moving from px: %d to cx: %d and from py: %d to cy: %d", prev_pos.x, mouse_origin.x, prev_pos.y, mouse_origin.y);
+					sway_log(L_INFO, "Moving: dx: %d, dy: %d", dx, dy);
+
+					// Move and resize the view based on the dx/dy and mouse position
+					int midway_x = view->x + view->width/2;
+					int midway_y = view->y + view->height/2;
+
+					if (dx < 0) {
+						changed_floating = true;
+						if (mouse_origin.x > midway_x) {
+							sway_log(L_INFO, "Downsizing view to the left");
+							view->width += dx;
+						} else {
+							sway_log(L_INFO, "Upsizing view to the left");
+							view->x += dx;
+							view->width -= dx;
+						}
+					} else if (dx > 0){
+						changed_floating = true;
+						if (mouse_origin.x > midway_x) {
+							sway_log(L_INFO, "Upsizing to the right");
+							view->width += dx;
+						} else {
+							sway_log(L_INFO, "Downsizing to the right");
+							view->x += dx;
+							view->width -= dx;
+						}
+					}
+
+					if (dy < 0) {
+						changed_floating = true;
+						if (mouse_origin.y > midway_y) {
+							sway_log(L_INFO, "Downsizing view to the top");
+							view->height += dy;
+						} else {
+							sway_log(L_INFO, "Upsizing the view to the top");
+							view->y += dy;
+							view->height -= dy;
+						}
+					} else if (dy > 0) {
+						changed_floating = true;
+						if (mouse_origin.y > midway_y) {
+							sway_log(L_INFO, "Upsizing to the bottom");
+							view->height += dy;
+						} else {
+							sway_log(L_INFO, "Downsizing to the bottom");
+							view->y += dy;
+							view->height -= dy;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+	if (config->focus_follows_mouse && prev_handle != handle) {
 		focus_pointer();
 	}
-	prev_view = view;
+	prev_handle = handle;
+	prev_pos = mouse_origin;
+	if (changed_floating) {
+		arrange_windows(view, -1, -1);
+		return true;
+	}
 	return false;
 }
 
@@ -305,8 +396,23 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		uint32_t button, enum wlc_button_state state) {
 	swayc_t *focused = get_focused_container(&root_container);
 	if (state == WLC_BUTTON_STATE_PRESSED) {
+		sway_log(L_DEBUG, "Mouse button %u pressed", button);
+		if (button == 272) {
+			m1_held = true;
+		}
+		if (button == 273) {
+			m2_held = true;
+		}
 		swayc_t *pointer = focus_pointer();
 		return (pointer && pointer != focused);
+	} else {
+		sway_log(L_DEBUG, "Mouse button %u released", button);
+		if (button == 272) {
+			m1_held = false;
+		}
+		if (button == 273) {
+			m2_held = false;
+		}
 	}
 	return false;
 }
