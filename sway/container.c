@@ -37,6 +37,10 @@ static void free_swayc(swayc_t *c) {
 
 /* New containers */
 
+static bool workspace_test(swayc_t *view, void *name) {
+	return strcasecmp(view->name, (char *)name);
+}
+
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
@@ -58,6 +62,10 @@ swayc_t *new_output(wlc_handle handle) {
 			struct workspace_output *wso = config->workspace_outputs->items[i];
 			if (strcasecmp(wso->output, name) == 0) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
+				// Check if any other workspaces are using this name
+				if (find_container(&root_container, workspace_test, wso->workspace)) {
+					break;
+				}
 				ws_name = strdup(wso->workspace);
 				break;
 			}
@@ -206,6 +214,18 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 	// NOTE: This is called from elsewhere without checking children length
 	// TODO move containers to other workspaces?
 	// for now just dont delete
+	
+	// Do not destroy this if it's the last workspace on this output
+	swayc_t *output = workspace->parent;
+	while (output && output->type != C_OUTPUT) {
+		output = output->parent;
+	}
+	if (output) {
+		if (output->children->length == 1) {
+			return NULL;
+		}
+	}
+
 	if (workspace->children->length == 0) {
 		sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
 		swayc_t *parent = workspace->parent;

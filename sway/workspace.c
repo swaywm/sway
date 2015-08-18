@@ -174,6 +174,17 @@ void workspace_prev() {
 }
 
 void workspace_switch(swayc_t *workspace) {
+	if (!workspace) {
+		return;
+	}
+	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
+
+	// Remove focus from current view
+	swayc_t *current = get_focused_view(&root_container);
+	if (current && current->type == C_VIEW) {
+		wlc_view_set_state(current->handle, WLC_BIT_ACTIVATED, false);
+	}
+
 	set_focused_container(workspace);
 	active_workspace = workspace;
 }

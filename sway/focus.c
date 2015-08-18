@@ -16,7 +16,7 @@ static void update_focus(swayc_t *c) {
 		switch (c->type) {
 		case C_ROOT: return;
 		case C_OUTPUT:
-			wlc_output_focus(c->parent->handle);
+			wlc_output_focus(c->handle);
 			break;
 		// switching workspaces
 		case C_WORKSPACE:
