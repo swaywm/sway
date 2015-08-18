@@ -3,6 +3,7 @@
 #include <wlc/wlc.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -281,6 +282,44 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 	return true;
 }
 
+static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
+		return false;
+	}
+
+	if (argc == 1) {
+		char *end;
+		int amount = (int)strtol(argv[0], &end, 10);
+		if (errno == ERANGE || amount == 0) {
+			errno = 0;
+			return false;
+		}
+		if (config->gaps_inner == 0) {
+			config->gaps_inner = amount;
+		}
+		if (config->gaps_outer == 0) {
+			config->gaps_outer = amount;
+		}
+	} else if (argc == 2) {
+		char *end;
+		int amount = (int)strtol(argv[1], &end, 10);
+		if (errno == ERANGE || amount == 0) {
+			errno = 0;
+			return false;
+		}
+		if (strcmp(argv[0], "inner") == 0) {
+			config->gaps_inner = amount;
+		} else if (strcmp(argv[0], "outer") == 0) {
+			config->gaps_outer = amount;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+	return true;
+}
+
 static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
 	swayc_t *view = get_focused_container(&root_container);
 	wlc_view_close(view->handle);
@@ -484,6 +523,7 @@ static struct cmd_handler handlers[] = {
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
+	{ "gaps", cmd_gaps },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },

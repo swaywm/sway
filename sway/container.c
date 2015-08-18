@@ -43,8 +43,10 @@ swayc_t *new_output(wlc_handle handle) {
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
 	swayc_t *output = new_swayc(C_OUTPUT);
-	output->width = size->w;
-	output->height = size->h;
+	output->x = (config->gaps_outer + config->gaps_inner) / 2;
+	output->y = (config->gaps_outer + config->gaps_inner) / 2;
+	output->width = size->w - (config->gaps_outer + config->gaps_inner);
+	output->height = size->h - (config->gaps_outer + config->gaps_inner);
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
 
@@ -81,6 +83,8 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
 	workspace->layout = L_HORIZ; // TODO: default layout
+	workspace->x = output->x;
+	workspace->y = output->y;
 	workspace->width = output->width;
 	workspace->height = output->height;
 	workspace->name = strdup(name);
@@ -142,6 +146,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
 	view->is_focused = true;
+
+	view->gaps = config->gaps_inner;
 
 	view->desired_width = -1;
 	view->desired_height = -1;

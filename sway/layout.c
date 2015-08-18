@@ -133,12 +133,12 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		{
 			struct wlc_geometry geometry = {
 				.origin = {
-					.x = container->x,
-					.y = container->y
+					.x = container->x + container->gaps / 2,
+					.y = container->y + container->gaps / 2
 				},
 				.size = {
-					.w = width,
-					.h = height
+					.w = width - container->gaps,
+					.h = height - container->gaps
 				}
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
@@ -146,10 +146,10 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				while (parent->type != C_OUTPUT) {
 					parent = parent->parent;
 				}
-				geometry.origin.x = 0;
-				geometry.origin.y = 0;
-				geometry.size.w = parent->width;
-				geometry.size.h = parent->height;
+				geometry.origin.x = container->gaps / 2;
+				geometry.origin.y = container->gaps / 2;
+				geometry.size.w = parent->width - container->gaps;
+				geometry.size.h = parent->height - container->gaps;
 				wlc_view_set_geometry(container->handle, &geometry);
 				wlc_view_bring_to_front(container->handle);
 			} else {

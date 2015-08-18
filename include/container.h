@@ -48,6 +48,8 @@ struct sway_container {
 
 	char *name;
 
+	int gaps;
+
 	list_t *children;
 	list_t *floating;
 
