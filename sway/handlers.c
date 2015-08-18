@@ -168,7 +168,6 @@ static bool handle_view_created(wlc_handle handle) {
 static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %lu", handle);
 	swayc_t *view = get_swayc_for_handle(handle, &root_container);
-	swayc_t *focused = get_focused_container(&root_container);
 
 	switch (wlc_view_get_type(handle)) {
 	//regular view created regularly

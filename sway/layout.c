@@ -226,7 +226,8 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			// will be kept up to date so that more recently focused views
 			// have higher indexes
 			// This is conditional on there not being a fullscreen view in the workspace
-			if (!(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
+			if (!container->focused
+				|| !(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
 				wlc_view_bring_to_front(view->handle);
 			}
 		}
