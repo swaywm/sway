@@ -57,14 +57,16 @@ swayc_t *container_under_pointer(void) {
 		}
 		// if workspace, search floating
 		if (lookup->type == C_WORKSPACE) {
-			len = lookup->floating->length;
-			for (i = 0; i < len; ++i) {
+			i = len = lookup->floating->length;
+			bool got_floating = false;
+			while (--i > -1) {
 				if (pointer_test(lookup->floating->items[i], &mouse_origin)) {
 					lookup = lookup->floating->items[i];
+					got_floating = true;
 					break;
 				}
 			}
-			if (i < len) {
+			if (got_floating) {
 				continue;
 			}
 		}
@@ -441,6 +443,17 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		}
 		swayc_t *pointer = container_under_pointer();
 		set_focused_container(pointer);
+		if (pointer->is_floating) {
+			int i;
+			for (i = 0; i < pointer->parent->floating->length; i++) {
+				if (pointer->parent->floating->items[i] == pointer) {
+					list_del(pointer->parent->floating, i);
+					list_add(pointer->parent->floating, pointer);
+					break;
+				}
+			}
+			arrange_windows(pointer->parent, -1, -1);
+		}
 		return (pointer && pointer != focused);
 	} else {
 		sway_log(L_DEBUG, "Mouse button %u released", button);
