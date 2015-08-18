@@ -186,10 +186,9 @@ bool read_config(FILE *file, bool is_active) {
 	int temp_depth = 0; // Temporary: skip all config sections with depth
 
 	while (!feof(file)) {
-		int _;
 		char *line = read_line(file);
-		line = strip_comments(line);
-		line = strip_whitespace(line, &_);
+		strip_comments(line);
+		strip_whitespace(line);
 		if (!line[0]) {
 			goto _continue;
 		}
