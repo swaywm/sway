@@ -76,13 +76,24 @@ Commands
 **splitv**::
 	Equivalent to **split vertical**.
 
-**fullscreen**:
+**floating_modifier** <modifier>::
+	When the _modifier_ key is held down, you may use left click to drag floating
+	windows, and right click to resize them.
+
+**fullscreen**::
 	Toggles fullscreen status for the focused view.
 
-**workspace** <name>:
+**gaps** <amount>**::
+	Adds _amount_ pixels between each view, and around each output.
+
+**gaps** <inner|outer> <amount>**::
+	Adds _amount_ pixels as an _inner_ or _outer_ gap, where the former affects
+	spacing between views and the latter affects the space around each output.
+
+**workspace** <name>::
 	Switches to the specified workspace.
 
-**workspace** <prev_on_output|next_on_output>:
+**workspace** <prev_on_output|next_on_output>::
 	Switches to the next workspace on the current output.
 
 **workspace** <name> output <output>::
