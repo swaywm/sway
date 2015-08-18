@@ -322,7 +322,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	int i = 0;
 	// Do checks to determine if proper keys are being held
 	swayc_t *view = active_workspace->focused;
-	if (m1_held) {
+	if (m1_held && view) {
 		if (view->is_floating) {
 			while (keys_pressed[i++]) {
 				if (keys_pressed[i] == config->floating_mod) {
@@ -338,7 +338,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 			}
 		}
-	} else if (m2_held) {
+	} else if (m2_held && view) {
 		if (view->is_floating) {
 			while (keys_pressed[i++]) {
 				if (keys_pressed[i] == config->floating_mod) {
