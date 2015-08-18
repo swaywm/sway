@@ -427,7 +427,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 }
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
-		uint32_t button, enum wlc_button_state state) {
+		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
 	swayc_t *focused = get_focused_container(&root_container);
 	//dont change focus if fullscreen
 	if (focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
