@@ -60,9 +60,7 @@ swayc_t *container_under_pointer(void) {
 			i = len = lookup->floating->length;
 			bool got_floating = false;
 			while (--i > -1) {
-				sway_log(L_DEBUG, "Checking index %d of floating items", i);
 				if (pointer_test(lookup->floating->items[i], &mouse_origin)) {
-					sway_log(L_DEBUG, "Got hit for floatin on %d", i);
 					lookup = lookup->floating->items[i];
 					got_floating = true;
 					break;
@@ -75,7 +73,6 @@ swayc_t *container_under_pointer(void) {
 		// search children
 		len = lookup->children->length;
 		for (i = 0; i < len; ++i) {
-			sway_log(L_DEBUG, "Checking index %d of standard children", i);
 			if (pointer_test(lookup->children->items[i], &mouse_origin)) {
 				lookup = lookup->children->items[i];
 				break;
