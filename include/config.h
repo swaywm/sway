@@ -41,6 +41,9 @@ struct sway_config {
 	bool active;
 	bool failed;
 	bool reloading;
+
+	int gaps_inner;
+	int gaps_outer;
 };
 
 bool load_config(void);

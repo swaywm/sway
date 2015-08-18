@@ -170,6 +170,8 @@ void config_defaults(struct sway_config *config) {
 	config->reloading = false;
 	config->active = false;
 	config->failed = false;
+	config->gaps_inner = 0;
+	config->gaps_outer = 0;
 }
 
 bool read_config(FILE *file, bool is_active) {
