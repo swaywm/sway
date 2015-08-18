@@ -40,9 +40,12 @@ void init_ipc() {
 
 	struct sockaddr_un ipc_sockaddr = {
 		.sun_family = AF_UNIX,
-		// TODO: use a proper socket path
-		.sun_path = "/tmp/sway.sock"
+		.sun_path = "/tmp/sway-ipc.sock"
 	};
+
+	if (getenv("SWAYSOCK") != NULL) {
+		strncpy(ipc_sockaddr.sun_path, getenv("SWAYSOCK"), sizeof(ipc_sockaddr.sun_path));
+	}
 
 	unlink(ipc_sockaddr.sun_path);
 	if (bind(ipc_socket, (struct sockaddr *)&ipc_sockaddr, sizeof(ipc_sockaddr)) == -1) {
