@@ -371,24 +371,24 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 						if (mouse_origin.x > midway_x) {
 							sway_log(L_INFO, "Downsizing view to the left");
 							view->width += dx;
-							edge = WLC_RESIZE_EDGE_RIGHT;
+							edge += WLC_RESIZE_EDGE_RIGHT;
 						} else {
 							sway_log(L_INFO, "Upsizing view to the left");
 							view->x += dx;
 							view->width -= dx;
-							edge = WLC_RESIZE_EDGE_LEFT;
+							edge += WLC_RESIZE_EDGE_LEFT;
 						}
 					} else if (dx > 0){
 						changed_floating = true;
 						if (mouse_origin.x > midway_x) {
 							sway_log(L_INFO, "Upsizing to the right");
 							view->width += dx;
-							edge = WLC_RESIZE_EDGE_RIGHT;
+							edge += WLC_RESIZE_EDGE_RIGHT;
 						} else {
 							sway_log(L_INFO, "Downsizing to the right");
 							view->x += dx;
 							view->width -= dx;
-							edge = WLC_RESIZE_EDGE_LEFT;
+							edge += WLC_RESIZE_EDGE_LEFT;
 						}
 					}
 
