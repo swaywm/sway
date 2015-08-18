@@ -4,6 +4,7 @@
 #include "config.h"
 #include "container.h"
 #include "workspace.h"
+#include "focus.h"
 #include "layout.h"
 #include "log.h"
 
@@ -21,10 +22,25 @@ static swayc_t *new_swayc(enum swayc_types type) {
 }
 
 static void free_swayc(swayc_t *c) {
-	//TODO does not properly handle containers with children,
-	//TODO but functions that call this usually check for that
+	// TODO does not properly handle containers with children,
+	// TODO but functions that call this usually check for that
 	if (c->children) {
+		if (c->children->length) {
+			int i;
+			for (i = 0; i < c->children->length; ++i) {
+				free_swayc(c->children->items[i]);
+			}
+		}
 		list_free(c->children);
+	}
+	if (c->floating) {
+		if (c->floating->length) {
+			int i;
+			for (i = 0; i < c->floating->length; ++i) {
+				free_swayc(c->floating->items[i]);
+			}
+		}
+		list_free(c->floating);
 	}
 	if (c->parent) {
 		remove_child(c);
@@ -36,6 +52,10 @@ static void free_swayc(swayc_t *c) {
 }
 
 /* New containers */
+
+static bool workspace_test(swayc_t *view, void *name) {
+	return strcasecmp(view->name, (char *)name);
+}
 
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
@@ -60,6 +80,10 @@ swayc_t *new_output(wlc_handle handle) {
 			struct workspace_output *wso = config->workspace_outputs->items[i];
 			if (strcasecmp(wso->output, name) == 0) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
+				// Check if any other workspaces are using this name
+				if (find_container(&root_container, workspace_test, wso->workspace)) {
+					break;
+				}
 				ws_name = strdup(wso->workspace);
 				break;
 			}
@@ -192,7 +216,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	list_add(active_workspace->floating, view);
 	view->parent = active_workspace;
 	if (active_workspace->focused == NULL) {
-		active_workspace->focused = view;
+		set_focused_container_for(active_workspace, view);
 	}
 	return view;
 }
@@ -212,6 +236,18 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 	// NOTE: This is called from elsewhere without checking children length
 	// TODO move containers to other workspaces?
 	// for now just dont delete
+	
+	// Do not destroy this if it's the last workspace on this output
+	swayc_t *output = workspace->parent;
+	while (output && output->type != C_OUTPUT) {
+		output = output->parent;
+	}
+	if (output) {
+		if (output->children->length == 1) {
+			return NULL;
+		}
+	}
+
 	if (workspace->children->length == 0) {
 		sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
 		swayc_t *parent = workspace->parent;
@@ -277,7 +313,7 @@ swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *da
 }
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (!container->children || !container->children->length)  {
+	if (!container || !container->children || !container->children->length)  {
 		return;
 	}
 	int i;
@@ -285,6 +321,13 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 		swayc_t *child = container->children->items[i];
 		f(child, data);
 		container_map(child, f, data);
+	}
+	if (container->type == C_WORKSPACE) {
+		for (i = 0; i < container->floating->length; ++i) {
+			swayc_t *child = container->floating->items[i];
+			f(child, data);
+			container_map(child, f, data);
+		}
 	}
 }
 

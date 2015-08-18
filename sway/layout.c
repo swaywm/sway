@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <wlc/wlc.h>
-#include "list.h"
-#include "log.h"
 #include "layout.h"
+#include "log.h"
+#include "list.h"
 #include "container.h"
 #include "workspace.h"
+#include "focus.h"
 
 swayc_t root_container;
 
@@ -79,9 +80,10 @@ swayc_t *remove_child(swayc_t *child) {
 			}
 		}
 	}
+	//Set focused to new container
 	if (parent->focused == child) {
 		if (parent->children->length > 0) {
-			parent->focused = parent->children->items[i?i-1:0];
+			set_focused_container_for(parent, parent->children->items[i?i-1:0]);
 		} else {
 			parent->focused = NULL;
 		}
@@ -150,10 +152,10 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				geometry.origin.y = container->gaps / 2;
 				geometry.size.w = parent->width - container->gaps;
 				geometry.size.h = parent->height - container->gaps;
-				wlc_view_set_geometry(container->handle, &geometry);
+				wlc_view_set_geometry(container->handle, 0, &geometry);
 				wlc_view_bring_to_front(container->handle);
 			} else {
-				wlc_view_set_geometry(container->handle, &geometry);
+				wlc_view_set_geometry(container->handle, 0, &geometry);
 				container->width = width;
 				container->height = height;
 			}
@@ -209,26 +211,42 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	if (container->type == C_WORKSPACE) {
 		for (i = 0; i < container->floating->length; ++i) {
 			swayc_t *view = container->floating->items[i];
-			// Set the geometry
-			struct wlc_geometry geometry = {
-				.origin = {
-					.x = view->x,
-					.y = view->y
-				},
-				.size = {
-					.w = view->width,
-					.h = view->height
+			if (view->type == C_VIEW) {
+				// Set the geometry
+				struct wlc_geometry geometry = {
+					.origin = {
+						.x = view->x,
+						.y = view->y
+					},
+					.size = {
+						.w = view->width,
+						.h = view->height
+					}
+				};
+				if (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN) {
+					swayc_t *parent = view;
+					while (parent->type != C_OUTPUT) {
+						parent = parent->parent;
+					}
+					geometry.origin.x = 0;
+					geometry.origin.y = 0;
+					geometry.size.w = parent->width;
+					geometry.size.h = parent->height;
+					wlc_view_set_geometry(view->handle, 0, &geometry);
+					wlc_view_bring_to_front(view->handle);
+				} else {
+					wlc_view_set_geometry(view->handle, 0, &geometry);
+					view->width = width;
+					view->height = height;
+					// Bring the views to the front in order of the list, the list
+					// will be kept up to date so that more recently focused views
+					// have higher indexes
+					// This is conditional on there not being a fullscreen view in the workspace
+					if (!container->focused
+							|| !(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
+						wlc_view_bring_to_front(view->handle);
+					}
 				}
-			};
-			wlc_view_set_geometry(view->handle, &geometry);
-
-			// Bring the views to the front in order of the list, the list
-			// will be kept up to date so that more recently focused views
-			// have higher indexes
-			// This is conditional on there not being a fullscreen view in the workspace
-			if (!container->focused
-				|| !(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
-				wlc_view_bring_to_front(view->handle);
 			}
 		}
 	}
