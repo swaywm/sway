@@ -1,13 +1,10 @@
 # sway
 
-"**S**irCmpwn's **Way**land window manager"
-
-sway is a **work in progress** i3-compatible window manager for
-[Wayland](http://wayland.freedesktop.org/).
+"**S**irCmpwn's **Way**land window manager" is a **work in progress**
+i3-compatible window manager for [Wayland](http://wayland.freedesktop.org/).
+Read the [FAQ](https://github.com/SirCmpwn/sway/wiki).
 
 ![](https://sr.ht/qxGE.png)
-
-Chat on #sway on irc.freenode.net
 
 ## Rationale
 
@@ -20,44 +17,39 @@ zero lines of source code after two years.
 
 ## Installation
 
-### Arch Linux
+### From Packages
 
-Install [aur/sway-git](https://aur.archlinux.org/packages/sway-git/).
+sway is not supported by many distributions yet. Here's a list of packages
+available for you to install:
 
-### Manual
+* [Arch Linux](https://aur.archlinux.org/packages/sway-git/).
 
-Dependencies:
+### Compiling from Source
+
+Install dependencies:
 
 * cmake
 * [wlc](https://github.com/Cloudef/wlc)
 * xwayland
 * asciidoc
 
-Compiling:
+Run these commands:
 
     cmake .
     make
-    # sudo make install
-
-Binary shows up in `./bin` (or `/usr/local/bin` if you `make install`).
+    sudo make install
 
 ## Configuration
 
-    mkdir ~/.config/sway
-    cp ~/.config/i3/config ~/.config/sway/
-
-Or if you don't already use i3:
-
-    mkdir ~/.config/sway
-    cp /etc/sway/config ~/.config/sway/
-
-Edit to your liking.
-
-[See also](http://i3wm.org/docs/)
+If you already use i3, then copy your i3 config to `~/.config/sway/config` and
+it'll work out of the box. Otherwise, copy `/etc/sway/config` to
+`~/.config/sway/config`. Run `man 5 sway` for information on the configuration.
 
 ## Running
 
+Run this from a tty (instead of starting x):
+
     sway
 
-If you run this while xorg is running, it'll run inside of an x window (useful
-for testing). Otherwise, it'll run wayland properly.
+If you run it from within x, it will spawn x windows instead of using your
+hardware directly (useful for development).
