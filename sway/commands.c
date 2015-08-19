@@ -231,6 +231,17 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			return true;
 		}
 		set_focused_container(view);
+	} else if (strcasecmp(argv[0], "mode_toggle") == 0) {
+		if (get_focused_view(active_workspace)->is_floating) {
+			if (active_workspace->children->length > 0) {
+				set_focused_container(get_focused_view(active_workspace->children->items[0]));
+			}
+		} else {
+			if (active_workspace->floating->length > 0) {
+				swayc_t *floating = active_workspace->floating->items[active_workspace->floating->length-1];
+				set_focused_container(get_focused_view(floating));
+			}
+		}
 	}
 
 	return true;
