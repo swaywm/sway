@@ -28,6 +28,7 @@ static char *get_config_path() {
 	if (exists(temp)) {
 		return temp;
 	}
+	free(temp);
 
 	// Check XDG_CONFIG_HOME with fallback to ~/.config/
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/sway/config");
@@ -54,6 +55,7 @@ static char *get_config_path() {
 	if (exists(temp)) {
 		return temp;
 	}
+	free(temp);
 
 	// Check XDG_CONFIG_DIRS
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
@@ -70,6 +72,7 @@ static char *get_config_path() {
 				free_flat_list(paths);
 				return temp;
 			}
+			free(temp);
 		}
 		free_flat_list(paths);
 	}
@@ -83,6 +86,7 @@ static char *get_config_path() {
 	if (exists(temp)) {
 		return temp;
 	}
+	free(temp);
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/i3/config");
 	if (xdg_config_home == NULL) {
@@ -106,6 +110,7 @@ static char *get_config_path() {
 	if (exists(temp)) {
 		return temp;
 	}
+	free(temp);
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
 	if (xdg_config_dirs != NULL) {
@@ -120,6 +125,7 @@ static char *get_config_path() {
 				free_flat_list(paths);
 				return temp;
 			}
+			free(temp);
 		}
 		free_flat_list(paths);
 	}

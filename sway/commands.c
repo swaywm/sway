@@ -105,6 +105,10 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i], XKB_KEYSYM_CASE_INSENSITIVE);
 		if (!sym) {
 			sway_log(L_ERROR, "bindsym - unknown key %s", (char *)split->items[i]);
+			list_free(binding->keys);
+			free(binding->command);
+			free(binding);
+			list_free(split);
 			return false;
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
