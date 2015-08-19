@@ -242,7 +242,6 @@ static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) 
 	}
 	int i, j;
 	list_t *split = split_string(argv[0], "+");
-	fprintf(stderr,"%s, %d,%d\n",argv[0], split->length,split->items);
 	config->floating_mod = 0;
 
 	//set modifer keys
