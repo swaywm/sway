@@ -423,7 +423,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					view->width -= dx;
 					edge += WLC_RESIZE_EDGE_LEFT;
 				}
-			} else if (dx > 0){
+			} else if (dx > 0) {
 				if (mouse_origin.x > midway_x && !lock_right) {
 					changed_floating = true;
 					view->width += dx;
