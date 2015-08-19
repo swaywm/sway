@@ -124,6 +124,7 @@ static char *get_config_path() {
 				return test;
 			}
 			free(test);
+			test = NULL;
 		}
 		free_flat_list(paths);
 	}
