@@ -16,121 +16,121 @@ static bool exists(const char *path) {
 	return access(path, R_OK) != -1;
 }
 
+void config_defaults(struct sway_config *config) {
+	config->symbols = create_list();
+	config->modes = create_list();
+	config->cmd_queue = create_list();
+	config->workspace_outputs = create_list();
+	config->current_mode = malloc(sizeof(struct sway_mode));
+	config->current_mode->name = NULL;
+	config->current_mode->bindings = create_list();
+	list_add(config->modes, config->current_mode);
+	// Flags
+	config->focus_follows_mouse = true;
+	config->mouse_warping = true;
+	config->reloading = false;
+	config->active = false;
+	config->failed = false;
+	config->gaps_inner = 0;
+	config->gaps_outer = 0;
+}
+
+void free_mode(struct sway_mode *mode) {
+	free(mode->name);
+	free_flat_list(mode->bindings);
+}
+
+void free_config(struct sway_config *config) {
+	int i;
+	for (i = 0; i < config->modes->length; ++i) {
+		free_mode((struct sway_mode *)config->modes->items[i]);
+	}
+	free_flat_list(config->modes);
+	for (i = 0; i < config->workspace_outputs->length; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		free(wso->output);
+		free(wso->workspace);
+	}
+	free_flat_list(config->workspace_outputs);
+	free_flat_list(config->cmd_queue);
+	for (i = 0; i < config->symbols->length; ++i) {
+		struct sway_variable *sym = config->symbols->items[i];
+		free(sym->name);
+		free(sym->value);
+	}
+	free_flat_list(config->symbols);
+}
+
+static const char *search_paths[] = {
+	"$home/.sway/config",
+	"$config/.sway/config",
+	"/etc/sway/config",
+	"$home/.i3/config",
+	"$config/.i3/config",
+	"/etc/i3/config"
+};
+
 static char *get_config_path() {
-	char *name = "/.sway/config";
-	const char *home = getenv("HOME");
-
-	// Check home dir
-	sway_log(L_DEBUG, "Trying to find config in ~/.sway/config");
-	char *temp = malloc(strlen(home) + strlen(name) + 1);
-	strcpy(temp, home);
-	strcat(temp, name);
-	if (exists(temp)) {
-		return temp;
-	}
-	free(temp);
-
-	// Check XDG_CONFIG_HOME with fallback to ~/.config/
-	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/sway/config");
-	char *xdg_config_home = getenv("XDG_CONFIG_HOME");
-	if (xdg_config_home == NULL) {
-		sway_log(L_DEBUG, "Falling back to ~/.config/sway/config");
-		name = "/.config/sway/config";
-		temp = malloc(strlen(home) + strlen(name) + 1);
-		strcpy(temp, home);
-		strcat(temp, name);
-	} else {
-		name = "/sway/config";
-		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
-		strcpy(temp, xdg_config_home);
-		strcat(temp, name);
-	}
-	if (exists(temp)) {
-		return temp;
+	char *home = getenv("HOME");
+	char *config = getenv("XDG_CONFIG_HOME");
+	if (!config) {
+		const char *def = "/.config/sway";
+		config = malloc(strlen(home) + strlen(def) + 1);
+		strcpy(config, home);
+		strcat(config, def);
 	}
 
-	// Check /etc/
-	sway_log(L_DEBUG, "Trying to find config in /etc/sway/config");
-	strcpy(temp, "/etc/sway/config");
-	if (exists(temp)) {
-		return temp;
-	}
-	free(temp);
+	// Set up a temporary config for holding set variables
+	struct sway_config *temp_config = malloc(sizeof(struct sway_config));
+	config_defaults(temp_config);
+	const char *set_home = "set $home ";
+	char *_home = malloc(strlen(home) + strlen(set_home) + 1);
+	strcpy(_home, set_home);
+	strcat(_home, home);
+	handle_command(temp_config, _home);
+	free(_home);
+	const char *set_config = "set $config ";
+	char *_config = malloc(strlen(config) + strlen(set_config) + 1);
+	strcpy(_config, set_config);
+	strcat(_config, config);
+	handle_command(temp_config, _config);
+	free(_config);
 
-	// Check XDG_CONFIG_DIRS
+	char *test = NULL;
+	int i;
+	for (i = 0; i < sizeof(search_paths) / sizeof(char *); ++i) {
+		test = strdup(search_paths[i]);
+		test = do_var_replacement(temp_config, test);
+		sway_log(L_DEBUG, "Checking for config at %s", test);
+		if (exists(test)) {
+			goto _continue;
+		}
+		free(test);
+		test = NULL;
+	}
+
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
 	char *xdg_config_dirs = getenv("XDG_CONFIG_DIRS");
 	if (xdg_config_dirs != NULL) {
 		list_t *paths = split_string(xdg_config_dirs, ":");
-		name = "/sway/config";
+		char *name = "/sway/config";
 		int i;
 		for (i = 0; i < paths->length; i++ ) {
-			temp = malloc(strlen(paths->items[i]) + strlen(name) + 1);
-			strcpy(temp, paths->items[i]);
-			strcat(temp, name);
-			if (exists(temp)) {
+			test = malloc(strlen(paths->items[i]) + strlen(name) + 1);
+			strcpy(test, paths->items[i]);
+			strcat(test, name);
+			if (exists(test)) {
 				free_flat_list(paths);
-				return temp;
+				return test;
 			}
-			free(temp);
+			free(test);
 		}
 		free_flat_list(paths);
 	}
 
-	//Now fall back to i3 paths and try the same thing
-	name = "/.i3/config";
-	sway_log(L_DEBUG, "Trying to find config in ~/.i3/config");
-	temp = malloc(strlen(home) + strlen(name) + 1);
-	strcpy(temp, home);
-	strcat(temp, name);
-	if (exists(temp)) {
-		return temp;
-	}
-	free(temp);
-
-	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_HOME/i3/config");
-	if (xdg_config_home == NULL) {
-		sway_log(L_DEBUG, "Falling back to ~/.config/i3/config");
-		name = "/.config/i3/config";
-		temp = malloc(strlen(home) + strlen(name) + 1);
-		strcpy(temp, home);
-		strcat(temp, name);
-	} else {
-		name = "/i3/config";
-		temp = malloc(strlen(xdg_config_home) + strlen(name) + 1);
-		strcpy(temp, xdg_config_home);
-		strcat(temp, name);
-	}
-	if (exists(temp)) {
-		return temp;
-	}
-
-	sway_log(L_DEBUG, "Trying to find config in /etc/i3/config");
-	strcpy(temp, "/etc/i3/config");
-	if (exists(temp)) {
-		return temp;
-	}
-	free(temp);
-
-	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
-	if (xdg_config_dirs != NULL) {
-		list_t *paths = split_string(xdg_config_dirs, ":");
-		name = "/i3/config";
-		int i;
-		for (i = 0; i < paths->length; i++ ) {
-			temp = malloc(strlen(paths->items[i]) + strlen(name) + 1);
-			strcpy(temp, paths->items[i]);
-			strcat(temp, name);
-			if (exists(temp)) {
-				free_flat_list(paths);
-				return temp;
-			}
-			free(temp);
-		}
-		free_flat_list(paths);
-	}
-
-	return NULL;
+_continue:
+	free_config(temp_config);
+	return test;
 }
 
 bool load_config(void) {
@@ -160,25 +160,6 @@ bool load_config(void) {
 	fclose(f);
 
 	return config_load_success;
-}
-
-void config_defaults(struct sway_config *config) {
-	config->symbols = create_list();
-	config->modes = create_list();
-	config->cmd_queue = create_list();
-	config->workspace_outputs = create_list();
-	config->current_mode = malloc(sizeof(struct sway_mode));
-	config->current_mode->name = NULL;
-	config->current_mode->bindings = create_list();
-	list_add(config->modes, config->current_mode);
-	// Flags
-	config->focus_follows_mouse = true;
-	config->mouse_warping = true;
-	config->reloading = false;
-	config->active = false;
-	config->failed = false;
-	config->gaps_inner = 0;
-	config->gaps_outer = 0;
 }
 
 bool read_config(FILE *file, bool is_active) {
