@@ -26,7 +26,7 @@ static bool resizing = false;
 static bool lock_left, lock_right, lock_top, lock_bottom = false;
 
 static bool floating_mod_pressed(void) {
-	return key_modifiers & config->floating_mod; 
+	return key_modifiers & config->floating_mod;
 }
 
 static bool pointer_test(swayc_t *view, void *_origin) {
