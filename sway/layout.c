@@ -33,6 +33,9 @@ void add_child(swayc_t *parent, swayc_t *child) {
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
+	if (parent->children->length == 1) {
+		parent->focused = child;
+	}
 }
 
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
