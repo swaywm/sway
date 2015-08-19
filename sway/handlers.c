@@ -139,35 +139,54 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 }
 
 static bool handle_view_created(wlc_handle handle) {
-	swayc_t *focused = get_focused_container(&root_container);
+	// if view is child of another view, the use that as focused container
+	wlc_handle parent = wlc_view_get_parent(handle);
+	swayc_t *focused = NULL;
 	swayc_t *newview = NULL;
+
+	// Get parent container, to add view in
+	if (parent) {
+		focused = get_swayc_for_handle(parent, &root_container);
+	}
+	if (!focused || focused->type == C_OUTPUT) {
+		focused = get_focused_container(&root_container);
+	}
+	sway_log(L_DEBUG, "creating view %ld with type %x, state %x, with parent %ld",
+		handle, wlc_view_get_type(handle), wlc_view_get_state(handle), parent);
+
+	// TODO properly figure out how each window should be handled.
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
 	case 0:
 		newview = new_view(focused, handle);
 		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		break;
-	// takes keyboard focus
+
+	// Dmenu keeps viewfocus, but others with this flag dont, for now simulate
+	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
-		sway_log(L_DEBUG, "view %ld with OVERRIDE_REDIRECT", handle);
-		locked_view_focus = true;
+//		locked_view_focus = true;
 		wlc_view_focus(handle);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);
 		break;
-	// Takes container focus
+
+	// Firefox popups have this flag set.
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
-		sway_log(L_DEBUG, "view %ld with OVERRIDE_REDIRECT|WLC_BIT_MANAGED", handle);
 		wlc_view_bring_to_front(handle);
 		locked_container_focus = true;
 		break;
-	// set modals as floating containers
+
+	// Modals, get focus, popups do not
 	case WLC_BIT_MODAL:
+		wlc_view_focus(handle);
 		wlc_view_bring_to_front(handle);
 		newview = new_floating_view(handle);
 	case WLC_BIT_POPUP:
+		wlc_view_bring_to_front(handle);
 		break;
 	}
+
 	if (newview) {
 		set_focused_container(newview);
 		swayc_t *output = newview->parent;
@@ -187,19 +206,19 @@ static void handle_view_destroyed(wlc_handle handle) {
 	// regular view created regularly
 	case 0:
 	case WLC_BIT_MODAL:
+	case WLC_BIT_POPUP:
 		if (view) {
 			swayc_t *parent = destroy_view(view);
 			arrange_windows(parent, -1, -1);
 		}
 		break;
-	// takes keyboard focus
+	// DMENU has this flag, and takes view_focus, but other things with this
+	// flag dont
 	case WLC_BIT_OVERRIDE_REDIRECT:
-		locked_view_focus = false;
+//		locked_view_focus = false;
 		break;
-	// Takes container focus
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
 		locked_container_focus = false;
-	case WLC_BIT_POPUP:
 		break;
 	}
 	set_focused_container(get_focused_view(&root_container));
@@ -279,10 +298,12 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	while (mid < head && keys_pressed[mid] != sym) {
 		++mid;
 	}
+	//Add or remove key depending on state
 	if (state == WLC_KEY_STATE_PRESSED && mid == head && head + 1 < QSIZE) {
 		keys_pressed[head++] = sym;
 	} else if (state == WLC_KEY_STATE_RELEASED && mid < head) {
 		memmove(keys_pressed + mid, keys_pressed + mid + 1, sizeof*keys_pressed * (--head - mid));
+		keys_pressed[head] = 0;
 	}
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
@@ -314,6 +335,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 					uint8_t k;
 					for (k = 0; k < head; ++k) {
 						memmove(keys_pressed + k, keys_pressed + k + 1, sizeof*keys_pressed * (--head - k));
+						keys_pressed[head] = 0;
 						break;
 					}
 				}
@@ -469,6 +491,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			arrange_windows(pointer->parent, -1, -1);
 			dragging = m1_held;
 			resizing = m2_held;
+			return true;
 		}
 		return (pointer && pointer != focused);
 	} else {
