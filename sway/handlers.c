@@ -91,6 +91,31 @@ swayc_t *container_under_pointer(void) {
 	return lookup;
 }
 
+static struct wlc_geometry saved_floating;
+
+static void start_floating(swayc_t *view) {
+	if (view->is_floating) {
+		saved_floating.origin.x = view->x;
+		saved_floating.origin.y = view->y;
+		saved_floating.size.w = view->width;
+		saved_floating.size.h = view->height;
+	}
+}
+
+static void reset_floating(swayc_t *view) {
+	if (view->is_floating) {
+		view->x = saved_floating.origin.x;
+		view->y = saved_floating.origin.y;
+		view->width = saved_floating.size.w;
+		view->height = saved_floating.size.h;
+		arrange_windows(view->parent, -1, -1);
+	}
+	dragging = resizing = false;
+	lock_left = lock_right = lock_top = lock_bottom = false;
+}
+
+/* Handles */
+
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
@@ -233,7 +258,7 @@ static void handle_view_focus(wlc_handle view, bool focus) {
 
 static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry *geometry) {
 	sway_log(L_DEBUG, "geometry request %d x %d : %d x %d",
-			geometry->origin.x, geometry->origin.y, geometry->size.w,geometry->size.h);
+			geometry->origin.x, geometry->origin.y, geometry->size.w, geometry->size.h);
 	// If the view is floating, then apply the geometry.
 	// Otherwise save the desired width/height for the view.
 	// This will not do anything for the time being as WLC improperly sends geometry requests
@@ -254,12 +279,12 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {
 	swayc_t *c = NULL;
-	switch(state) {
+	switch (state) {
 	case WLC_BIT_FULLSCREEN:
 		// i3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
 		c = get_swayc_for_handle(view, &root_container);
-		sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d",view,c->name,toggle);
+		sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d", view, c->name, toggle);
 		if (c) {
 			arrange_windows(c->parent, -1, -1);
 			// Set it as focused window for that workspace if its going fullscreen
@@ -290,6 +315,10 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		return false;
 	}
 	bool cmd_success = false;
+
+	if ((modifiers->mods & config->floating_mod) && (dragging || resizing)) {
+		reset_floating(get_focused_view(&root_container));
+	}
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
@@ -500,6 +529,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				lock_top = !lock_bottom;
 				lock_right = origin->x < midway_x;
 				lock_left = !lock_right;
+				start_floating(pointer);
 			}
 			//Dont want pointer sent to window while dragging or resizing
 			return (dragging || resizing);
