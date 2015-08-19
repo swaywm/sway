@@ -388,15 +388,13 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			int midway_x = view->x + view->width/2;
 			int midway_y = view->y + view->height/2;
 			if (dx < 0) {
-				if (mouse_origin.x > midway_x && !lock_right) {
+				if (!lock_right) {
 					if (view->width > min_sane_w) {
-						lock_left = true;
 						changed_floating = true;
 						view->width += dx;
 						edge += WLC_RESIZE_EDGE_RIGHT;
 					}
 				} else if (mouse_origin.x < midway_x && !lock_left) {
-					lock_right = true;
 					changed_floating = true;
 					view->x += dx;
 					view->width -= dx;
@@ -404,16 +402,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 			} else if (dx > 0){
 				if (mouse_origin.x > midway_x && !lock_right) {
-					lock_left = true;
 					changed_floating = true;
 					view->width += dx;
 					edge += WLC_RESIZE_EDGE_RIGHT;
+				} else if (!lock_left) {
 					if (view->width > min_sane_w) {
-						lock_left = false;
-					}
-				} else if (mouse_origin.x < midway_x && !lock_left) {
-					if (view->width > min_sane_w) {
-						lock_right = true;
 						changed_floating = true;
 						view->x += dx;
 						view->width -= dx;
@@ -423,15 +416,13 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			}
 
 			if (dy < 0) {
-				if (mouse_origin.y > midway_y && !lock_bottom) {
+				if (!lock_bottom) {
 					if (view->height > min_sane_h) {
-						lock_top = true;
 						changed_floating = true;
 						view->height += dy;
 						edge += WLC_RESIZE_EDGE_BOTTOM;
 					}
 				} else if (mouse_origin.y < midway_y && !lock_top) {
-					lock_bottom = true;
 					changed_floating = true;
 					view->y += dy;
 					view->height -= dy;
@@ -439,13 +430,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 			} else if (dy > 0) {
 				if (mouse_origin.y > midway_y && !lock_bottom) {
-					lock_top = true;
 					changed_floating = true;
 					view->height += dy;
 					edge += WLC_RESIZE_EDGE_BOTTOM;
-				} else if (mouse_origin.y < midway_y && !lock_top) {
+				} else if (!lock_top) {
 					if (view->height > min_sane_h) {
-						lock_bottom = true;
 						changed_floating = true;
 						view->y += dy;
 						view->height -= dy;
@@ -511,6 +500,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			if (floating_mod_pressed()) {
 				dragging = m1_held;
 				resizing = m2_held;
+				int midway_x = pointer->x + pointer->width/2;
+				int midway_y = pointer->y + pointer->height/2;
+				lock_bottom = origin->y < midway_y;
+				lock_top = !lock_bottom;
+				lock_right = origin->x < midway_x;
+				lock_left = !lock_right;
 			}
 			//Dont want pointer sent to window while dragging or resizing
 			return (dragging || resizing);
