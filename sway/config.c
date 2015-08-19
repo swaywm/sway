@@ -63,7 +63,7 @@ void free_config(struct sway_config *config) {
 
 static const char *search_paths[] = {
 	"$home/.sway/config",
-	"$config/.sway/config",
+	"$config/sway/config",
 	"/etc/sway/config",
 	"$home/.i3/config",
 	"$config/.i3/config",
