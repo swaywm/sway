@@ -15,7 +15,6 @@
 #include "focus.h"
 
 uint32_t keys_pressed[32];
-uint32_t key_modifiers;
 int keys_pressed_length = 0;
 
 
@@ -26,10 +25,6 @@ static bool dragging = false;
 static bool m2_held = false;
 static bool resizing = false;
 static bool lock_left, lock_right, lock_top, lock_bottom = false;
-
-static bool floating_mod_pressed(void) {
-	return key_modifiers & config->floating_mod;
-}
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -295,7 +290,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		return false;
 	}
 	bool cmd_success = false;
-	key_modifiers = modifiers->mods;
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
@@ -497,7 +491,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				}
 			}
 			arrange_windows(pointer->parent, -1, -1);
-			if (floating_mod_pressed()) {
+			if (modifiers->mods & config->floating_mod) {
 				dragging = m1_held;
 				resizing = m2_held;
 				int midway_x = pointer->x + pointer->width/2;
@@ -516,7 +510,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		if (button == 272) {
 			m1_held = false;
 			dragging = false;
-			lock_top = lock_bottom = lock_left = lock_right = false;
 		}
 		if (button == 273) {
 			m2_held = false;
