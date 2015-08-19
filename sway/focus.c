@@ -142,9 +142,6 @@ void set_focused_container(swayc_t *c) {
 	// Find previous focused view, and the new focused view, if they are the same return
 	swayc_t *focused = get_focused_view(&root_container);
 	swayc_t *workspace = active_workspace;
-	if (focused == get_focused_view(c)) {
-		return;
-	}
 
 	// update container focus from here to root, making necessary changes along
 	// the way
