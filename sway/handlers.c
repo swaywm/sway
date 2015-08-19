@@ -15,6 +15,7 @@
 #include "focus.h"
 
 uint32_t keys_pressed[32];
+int keys_pressed_length = 0;
 
 static struct wlc_origin mouse_origin;
 
@@ -22,6 +23,15 @@ static bool m1_held = false;
 static bool dragging = false;
 static bool m2_held = false;
 static bool resizing = false;
+
+static bool floating_mod_pressed(void) {
+	int i = 0;
+	while (i < keys_pressed_length) {
+		if (keys_pressed[i++] == config->floating_mod)
+			return true;
+	}
+	return false;
+}
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -139,35 +149,54 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 }
 
 static bool handle_view_created(wlc_handle handle) {
-	swayc_t *focused = get_focused_container(&root_container);
+	// if view is child of another view, the use that as focused container
+	wlc_handle parent = wlc_view_get_parent(handle);
+	swayc_t *focused = NULL;
 	swayc_t *newview = NULL;
+
+	// Get parent container, to add view in
+	if (parent) {
+		focused = get_swayc_for_handle(parent, &root_container);
+	}
+	if (!focused || focused->type == C_OUTPUT) {
+		focused = get_focused_container(&root_container);
+	}
+	sway_log(L_DEBUG, "creating view %ld with type %x, state %x, with parent %ld",
+		handle, wlc_view_get_type(handle), wlc_view_get_state(handle), parent);
+
+	// TODO properly figure out how each window should be handled.
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
 	case 0:
 		newview = new_view(focused, handle);
 		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		break;
-	// takes keyboard focus
+
+	// Dmenu keeps viewfocus, but others with this flag dont, for now simulate
+	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
-		sway_log(L_DEBUG, "view %ld with OVERRIDE_REDIRECT", handle);
-		locked_view_focus = true;
+//		locked_view_focus = true;
 		wlc_view_focus(handle);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);
 		break;
-	// Takes container focus
+
+	// Firefox popups have this flag set.
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
-		sway_log(L_DEBUG, "view %ld with OVERRIDE_REDIRECT|WLC_BIT_MANAGED", handle);
 		wlc_view_bring_to_front(handle);
 		locked_container_focus = true;
 		break;
-	// set modals as floating containers
+
+	// Modals, get focus, popups do not
 	case WLC_BIT_MODAL:
+		wlc_view_focus(handle);
 		wlc_view_bring_to_front(handle);
 		newview = new_floating_view(handle);
 	case WLC_BIT_POPUP:
+		wlc_view_bring_to_front(handle);
 		break;
 	}
+
 	if (newview) {
 		set_focused_container(newview);
 		swayc_t *output = newview->parent;
@@ -187,19 +216,19 @@ static void handle_view_destroyed(wlc_handle handle) {
 	// regular view created regularly
 	case 0:
 	case WLC_BIT_MODAL:
+	case WLC_BIT_POPUP:
 		if (view) {
 			swayc_t *parent = destroy_view(view);
 			arrange_windows(parent, -1, -1);
 		}
 		break;
-	// takes keyboard focus
+	// DMENU has this flag, and takes view_focus, but other things with this
+	// flag dont
 	case WLC_BIT_OVERRIDE_REDIRECT:
-		locked_view_focus = false;
+//		locked_view_focus = false;
 		break;
-	// Takes container focus
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
 		locked_container_focus = false;
-	case WLC_BIT_POPUP:
 		break;
 	}
 	set_focused_container(get_focused_view(&root_container));
@@ -267,7 +296,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return false;
 	}
-	static uint8_t  head = 0;
 	bool cmd_success = false;
 
 	struct sway_mode *mode = config->current_mode;
@@ -276,13 +304,15 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	// Find key, if it has been pressed
 	int mid = 0;
-	while (mid < head && keys_pressed[mid] != sym) {
+	while (mid < keys_pressed_length && keys_pressed[mid] != sym) {
 		++mid;
 	}
-	if (state == WLC_KEY_STATE_PRESSED && mid == head && head + 1 < QSIZE) {
-		keys_pressed[head++] = sym;
-	} else if (state == WLC_KEY_STATE_RELEASED && mid < head) {
-		memmove(keys_pressed + mid, keys_pressed + mid + 1, sizeof*keys_pressed * (--head - mid));
+	//Add or remove key depending on state
+	if (state == WLC_KEY_STATE_PRESSED && mid == keys_pressed_length && keys_pressed_length + 1 < QSIZE) {
+		keys_pressed[keys_pressed_length++] = sym;
+	} else if (state == WLC_KEY_STATE_RELEASED && mid < keys_pressed_length) {
+		memmove(keys_pressed + mid, keys_pressed + mid + 1, sizeof*keys_pressed * (--keys_pressed_length - mid));
+		keys_pressed[keys_pressed_length] = 0;
 	}
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
@@ -296,7 +326,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 				match = false;
 				xkb_keysym_t *key = binding->keys->items[j];
 				uint8_t k;
-				for (k = 0; k < head; ++k) {
+				for (k = 0; k < keys_pressed_length; ++k) {
 					if (keys_pressed[k] == *key) {
 						match = true;
 						break;
@@ -312,8 +342,9 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 				int j;
 				for (j = 0; j < binding->keys->length; ++j) {
 					uint8_t k;
-					for (k = 0; k < head; ++k) {
-						memmove(keys_pressed + k, keys_pressed + k + 1, sizeof*keys_pressed * (--head - k));
+					for (k = 0; k < keys_pressed_length; ++k) {
+						memmove(keys_pressed + k, keys_pressed + k + 1, sizeof*keys_pressed * (--keys_pressed_length - k));
+						keys_pressed[keys_pressed_length] = 0;
 						break;
 					}
 				}
@@ -333,84 +364,67 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	static wlc_handle prev_handle = 0;
 	mouse_origin = *origin;
 	bool changed_floating = false;
-	int i = 0;
 	if (!active_workspace) {
 		return false;
 	}
 	// Do checks to determine if proper keys are being held
-	swayc_t *view = active_workspace->focused;
+	swayc_t *view = get_focused_view(active_workspace);
 	uint32_t edge = 0;
-	if (dragging && view) {
-		if (view->is_floating) {
-			while (keys_pressed[i++]) {
-				if (keys_pressed[i] == config->floating_mod) {
-					int dx = mouse_origin.x - prev_pos.x;
-					int dy = mouse_origin.y - prev_pos.y;
-					view->x += dx;
-					view->y += dy;
-					changed_floating = true;
-					break;
-				}
+	if (dragging && view && view->is_floating) {
+		int dx = mouse_origin.x - prev_pos.x;
+		int dy = mouse_origin.y - prev_pos.y;
+		view->x += dx;
+		view->y += dy;
+		changed_floating = true;
+	} else if (resizing && view && view->is_floating) {
+		int dx = mouse_origin.x - prev_pos.x;
+		int dy = mouse_origin.y - prev_pos.y;
+
+		// Move and resize the view based on the dx/dy and mouse position
+		int midway_x = view->x + view->width/2;
+		int midway_y = view->y + view->height/2;
+		if (dx < 0) {
+			changed_floating = true;
+			if (mouse_origin.x > midway_x) {
+				view->width += dx;
+				edge += WLC_RESIZE_EDGE_RIGHT;
+			} else {
+				view->x += dx;
+				view->width -= dx;
+				edge += WLC_RESIZE_EDGE_LEFT;
+			}
+		} else if (dx > 0){
+			changed_floating = true;
+			if (mouse_origin.x > midway_x) {
+				view->width += dx;
+				edge += WLC_RESIZE_EDGE_RIGHT;
+			} else {
+				view->x += dx;
+				view->width -= dx;
+				edge += WLC_RESIZE_EDGE_LEFT;
 			}
 		}
-	} else if (resizing && view) {
-		if (view->is_floating) {
-			while (keys_pressed[i++]) {
-				if (keys_pressed[i] == config->floating_mod) {
-					int dx = mouse_origin.x - prev_pos.x;
-					int dy = mouse_origin.y - prev_pos.y;
 
-					// Move and resize the view based on the dx/dy and mouse position
-					int midway_x = view->x + view->width/2;
-					int midway_y = view->y + view->height/2;
-
-
-					if (dx < 0) {
-						changed_floating = true;
-						if (mouse_origin.x > midway_x) {
-							view->width += dx;
-							edge += WLC_RESIZE_EDGE_RIGHT;
-						} else {
-							view->x += dx;
-							view->width -= dx;
-							edge += WLC_RESIZE_EDGE_LEFT;
-						}
-					} else if (dx > 0){
-						changed_floating = true;
-						if (mouse_origin.x > midway_x) {
-							view->width += dx;
-							edge += WLC_RESIZE_EDGE_RIGHT;
-						} else {
-							view->x += dx;
-							view->width -= dx;
-							edge += WLC_RESIZE_EDGE_LEFT;
-						}
-					}
-
-					if (dy < 0) {
-						changed_floating = true;
-						if (mouse_origin.y > midway_y) {
-							view->height += dy;
-							edge += WLC_RESIZE_EDGE_BOTTOM;
-						} else {
-							view->y += dy;
-							view->height -= dy;
-							edge += WLC_RESIZE_EDGE_TOP;
-						}
-					} else if (dy > 0) {
-						changed_floating = true;
-						if (mouse_origin.y > midway_y) {
-							view->height += dy;
-							edge += WLC_RESIZE_EDGE_BOTTOM;
-						} else {
-							edge = WLC_RESIZE_EDGE_BOTTOM;
-							view->y += dy;
-							view->height -= dy;
-							edge += WLC_RESIZE_EDGE_TOP;
-						}
-					}
-					break;
-				}
+		if (dy < 0) {
+			changed_floating = true;
+			if (mouse_origin.y > midway_y) {
+				view->height += dy;
+				edge += WLC_RESIZE_EDGE_BOTTOM;
+			} else {
+				view->y += dy;
+				view->height -= dy;
+				edge += WLC_RESIZE_EDGE_TOP;
+			}
+		} else if (dy > 0) {
+			changed_floating = true;
+			if (mouse_origin.y > midway_y) {
+				view->height += dy;
+				edge += WLC_RESIZE_EDGE_BOTTOM;
+			} else {
+				edge = WLC_RESIZE_EDGE_BOTTOM;
+				view->y += dy;
+				view->height -= dy;
+				edge += WLC_RESIZE_EDGE_TOP;
 			}
 		}
 	}
@@ -467,8 +481,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				}
 			}
 			arrange_windows(pointer->parent, -1, -1);
-			dragging = m1_held;
-			resizing = m2_held;
+			if (floating_mod_pressed()) {
+				dragging = m1_held;
+				resizing = m2_held;
+			}
+			//Dont want pointer sent to window while dragging or resizing
+			return (dragging || resizing);
 		}
 		return (pointer && pointer != focused);
 	} else {

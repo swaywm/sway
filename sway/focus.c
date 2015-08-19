@@ -146,6 +146,9 @@ void set_focused_container(swayc_t *c) {
 	// update container focus from here to root, making necessary changes along
 	// the way
 	swayc_t *p = c;
+	if (p->type != C_OUTPUT && p->type != C_ROOT) {
+		p->is_focused = true;
+	}
 	while (p != &root_container) {
 		update_focus(p);
 		p = p->parent;
@@ -168,8 +171,11 @@ void set_focused_container(swayc_t *c) {
 		}
 		// activate current focus
 		if (p->type == C_VIEW) {
-			wlc_view_focus(p->handle);
 			wlc_view_set_state(p->handle, WLC_BIT_ACTIVATED, true);
+			//set focus if view_focus is unlocked
+			if (!locked_view_focus) {
+				wlc_view_focus(p->handle);
+			}
 		}
 	}
 }
