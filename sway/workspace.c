@@ -31,7 +31,7 @@ char *workspace_next_name(void) {
 			char* target = malloc(strlen(args->items[1]) + 1);
 			strcpy(target, args->items[1]);
 			while (*target == ' ' || *target == '\t')
-				target++; 
+				target++;
 
 			// Make sure that the command references an actual workspace
 			// not a command about workspaces
@@ -42,11 +42,15 @@ char *workspace_next_name(void) {
 				strcmp(target, "number") == 0 ||
 				strcmp(target, "back_and_forth") == 0 ||
 				strcmp(target, "current") == 0)
+			{
+				list_free(args);
 				continue;
-		   
-			//Make sure that the workspace doesn't already exist 
+			}
+
+			//Make sure that the workspace doesn't already exist
 			if (workspace_find_by_name(target)) {
-			   continue; 
+				list_free(args);
+				continue;
 			}
 
 			list_free(args);
@@ -54,6 +58,7 @@ char *workspace_next_name(void) {
 			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
 			return target;
 		}
+		list_free(args);
 	}
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name
@@ -77,7 +82,7 @@ swayc_t *workspace_create(const char* name) {
 }
 
 bool workspace_by_name(swayc_t *view, void *data) {
-	return (view->type == C_WORKSPACE) && 
+	return (view->type == C_WORKSPACE) &&
 		   (strcasecmp(view->name, (char *) data) == 0);
 }
 
