@@ -54,7 +54,7 @@ static void free_swayc(swayc_t *c) {
 /* New containers */
 
 static bool workspace_test(swayc_t *view, void *name) {
-	return strcasecmp(view->name, (char *)name);
+	return strcasecmp(view->name, (char *)name) == 0;
 }
 
 swayc_t *new_output(wlc_handle handle) {
@@ -81,8 +81,10 @@ swayc_t *new_output(wlc_handle handle) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
 				// Check if any other workspaces are using this name
 				if (find_container(&root_container, workspace_test, wso->workspace)) {
+					sway_log(L_DEBUG, "But it's already taken");
 					break;
 				}
+				sway_log(L_DEBUG, "So we're going to use it");
 				ws_name = strdup(wso->workspace);
 				break;
 			}
