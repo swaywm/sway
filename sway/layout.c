@@ -38,6 +38,17 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	}
 }
 
+void add_floating(swayc_t *ws, swayc_t *child) {
+	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+		child->width, child->height, ws, ws->type, ws->width, ws->height);
+	list_add(ws->floating, child);
+	child->parent = ws;
+	child->is_floating = true;
+	if (!ws->focused) {
+		ws->focused = child;
+	}
+}
+
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
 	swayc_t *parent = sibling->parent;
 	int i = index_child(parent, sibling);
@@ -76,6 +87,7 @@ swayc_t *remove_child(swayc_t *child) {
 				break;
 			}
 		}
+		i = 0;
 	} else {
 		for (i = 0; i < parent->children->length; ++i) {
 			if (parent->children->items[i] == child) {

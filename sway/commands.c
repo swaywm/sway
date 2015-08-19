@@ -185,40 +185,23 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		int i;
 		// Change from nonfloating to floating
 		if (!view->is_floating) {
-			view->is_floating = true;
-			for (i = 0; i < view->parent->children->length; i++) {
-				if (view->parent->children->items[i] == view) {
-					// Try to use desired geometry to set w/h
-					if (view->desired_width != -1) {
-						view->width = view->desired_width;
-					}
-					if (view->desired_height != -1) {
-						view->height = view->desired_height;
-					}
-
-					// Swap from the list of whatever container the view was in
-					// to the workspace->floating list
-					list_del(view->parent->children, i);
-					list_add(active_workspace->floating, view);
-					destroy_container(view->parent);
-
-					// Set the new position of the container and arrange windows
-					view->x = (active_workspace->width - view->width)/2;
-					view->y = (active_workspace->height - view->height)/2;
-					sway_log(L_INFO, "Setting container %p to floating at coordinates X:%d Y:%d, W:%d, H:%d", view, view->x, view->y, view->width, view->height);
-					// Change parent to active_workspace
-					view->parent = active_workspace;
-					arrange_windows(active_workspace, -1, -1);
-					return true;
-				}
+			remove_child(view);
+			add_floating(active_workspace,view);
+			view->x = (active_workspace->width - view->width)/2;
+			view->y = (active_workspace->height - view->height)/2;
+			arrange_windows(active_workspace, -1, -1);
+			if (view->desired_width != -1) {
+				view->width = view->desired_width;
+			}
+			if (view->desired_height != -1) {
+				view->height = view->desired_height;
 			}
 		} else {
 			// Delete the view from the floating list and unset its is_floating flag
 			// Using length-1 as the index is safe because the view must be the currently
 			// focused floating output
-			list_del(active_workspace->floating, active_workspace->floating->length - 1);
+			remove_child(view);
 			view->is_floating = false;
-			active_workspace->focused = NULL;
 			// Get the properly focused container, and add in the view there
 			swayc_t *focused = container_under_pointer();
 			// If focused is null, it's because the currently focused container is a workspace
