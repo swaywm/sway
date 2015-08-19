@@ -182,20 +182,22 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		if (view->type != C_VIEW) {
 			return true;
 		}
-		int i;
 		// Change from nonfloating to floating
 		if (!view->is_floating) {
-			remove_child(view);
+			//Remove view from its current location
+			destroy_container(remove_child(view));
+			
+			//and move it into workspace floating
 			add_floating(active_workspace,view);
 			view->x = (active_workspace->width - view->width)/2;
 			view->y = (active_workspace->height - view->height)/2;
-			arrange_windows(active_workspace, -1, -1);
 			if (view->desired_width != -1) {
 				view->width = view->desired_width;
 			}
 			if (view->desired_height != -1) {
 				view->height = view->desired_height;
 			}
+			arrange_windows(active_workspace, -1, -1);
 		} else {
 			// Delete the view from the floating list and unset its is_floating flag
 			// Using length-1 as the index is safe because the view must be the currently
@@ -221,10 +223,10 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 				add_sibling(focused, view);
 			}
 			// Refocus on the view once its been put back into the layout
-			set_focused_container(view);
 			arrange_windows(active_workspace, -1, -1);
 			return true;
 		}
+		set_focused_container(view);
 	}
 
 	return true;

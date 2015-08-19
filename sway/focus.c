@@ -146,6 +146,9 @@ void set_focused_container(swayc_t *c) {
 	// update container focus from here to root, making necessary changes along
 	// the way
 	swayc_t *p = c;
+	if (p->type != C_OUTPUT && p->type != C_ROOT) {
+		p->is_focused = true;
+	}
 	while (p != &root_container) {
 		update_focus(p);
 		p = p->parent;

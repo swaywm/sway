@@ -261,7 +261,6 @@ swayc_t *destroy_container(swayc_t *container) {
 		sway_log(L_DEBUG, "Container: Destroying container '%p'", container);
 		swayc_t *parent = container->parent;
 		free_swayc(container);
-
 		container = parent;
 	}
 	return container;
