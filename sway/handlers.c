@@ -19,7 +19,9 @@ uint32_t keys_pressed[32];
 static struct wlc_origin mouse_origin;
 
 static bool m1_held = false;
+static bool dragging = false;
 static bool m2_held = false;
+static bool resizing = false;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -338,14 +340,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	// Do checks to determine if proper keys are being held
 	swayc_t *view = active_workspace->focused;
 	uint32_t edge = 0;
-	if (m1_held && view) {
+	if (dragging && view) {
 		if (view->is_floating) {
 			while (keys_pressed[i++]) {
 				if (keys_pressed[i] == config->floating_mod) {
 					int dx = mouse_origin.x - prev_pos.x;
 					int dy = mouse_origin.y - prev_pos.y;
-					sway_log(L_DEBUG, "Moving from px: %d to cx: %d and from py: %d to cy: %d", prev_pos.x, mouse_origin.x, prev_pos.y, mouse_origin.y);
-
 					view->x += dx;
 					view->y += dy;
 					changed_floating = true;
@@ -353,13 +353,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 			}
 		}
-	} else if (m2_held && view) {
+	} else if (resizing && view) {
 		if (view->is_floating) {
 			while (keys_pressed[i++]) {
 				if (keys_pressed[i] == config->floating_mod) {
 					int dx = mouse_origin.x - prev_pos.x;
 					int dy = mouse_origin.y - prev_pos.y;
-					sway_log(L_DEBUG, "Moving from px: %d to cx: %d and from py: %d to cy: %d", prev_pos.x, mouse_origin.x, prev_pos.y, mouse_origin.y);
 
 					// Move and resize the view based on the dx/dy and mouse position
 					int midway_x = view->x + view->width/2;
@@ -369,11 +368,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					if (dx < 0) {
 						changed_floating = true;
 						if (mouse_origin.x > midway_x) {
-							sway_log(L_INFO, "Downsizing view to the left");
 							view->width += dx;
 							edge += WLC_RESIZE_EDGE_RIGHT;
 						} else {
-							sway_log(L_INFO, "Upsizing view to the left");
 							view->x += dx;
 							view->width -= dx;
 							edge += WLC_RESIZE_EDGE_LEFT;
@@ -381,11 +378,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					} else if (dx > 0){
 						changed_floating = true;
 						if (mouse_origin.x > midway_x) {
-							sway_log(L_INFO, "Upsizing to the right");
 							view->width += dx;
 							edge += WLC_RESIZE_EDGE_RIGHT;
 						} else {
-							sway_log(L_INFO, "Downsizing to the right");
 							view->x += dx;
 							view->width -= dx;
 							edge += WLC_RESIZE_EDGE_LEFT;
@@ -395,11 +390,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					if (dy < 0) {
 						changed_floating = true;
 						if (mouse_origin.y > midway_y) {
-							sway_log(L_INFO, "Downsizing view to the top");
 							view->height += dy;
 							edge += WLC_RESIZE_EDGE_BOTTOM;
 						} else {
-							sway_log(L_INFO, "Upsizing the view to the top");
 							view->y += dy;
 							view->height -= dy;
 							edge += WLC_RESIZE_EDGE_TOP;
@@ -407,12 +400,10 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					} else if (dy > 0) {
 						changed_floating = true;
 						if (mouse_origin.y > midway_y) {
-							sway_log(L_INFO, "Upsizing to the bottom");
 							view->height += dy;
 							edge += WLC_RESIZE_EDGE_BOTTOM;
 						} else {
 							edge = WLC_RESIZE_EDGE_BOTTOM;
-							sway_log(L_INFO, "Downsizing to the bottom");
 							view->y += dy;
 							view->height -= dy;
 							edge += WLC_RESIZE_EDGE_TOP;
@@ -426,7 +417,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	if (config->focus_follows_mouse && prev_handle != handle) {
 		//Dont change focus if fullscreen
 		swayc_t *focused = get_focused_view(view);
-		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)) {
+		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) && !(m1_held || m2_held)) {
 			set_focused_container(container_under_pointer());
 		}
 	}
@@ -476,15 +467,19 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				}
 			}
 			arrange_windows(pointer->parent, -1, -1);
+			dragging = m1_held;
+			resizing = m2_held;
 		}
 		return (pointer && pointer != focused);
 	} else {
 		sway_log(L_DEBUG, "Mouse button %u released", button);
 		if (button == 272) {
 			m1_held = false;
+			dragging = false;
 		}
 		if (button == 273) {
 			m2_held = false;
+			resizing = false;
 		}
 	}
 	return false;

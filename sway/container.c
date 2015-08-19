@@ -341,3 +341,12 @@ void set_view_visibility(swayc_t *view, void *data) {
 	}
 	view->visible = (*p == 2);
 }
+
+void reset_gaps(swayc_t *view, void *data) {
+	if (view->type == C_OUTPUT) {
+		view->gaps = config->gaps_outer;
+	}
+	if (view->type == C_VIEW) {
+		view->gaps = config->gaps_inner;
+	}
+}
