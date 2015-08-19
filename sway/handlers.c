@@ -322,9 +322,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 	bool cmd_success = false;
 
-	sway_log(L_DEBUG, "modifier %x: state %d: key %d, sym: %d",
-			modifiers->mods, state, key, sym);
-
 	//Revert floating container back to original position on keypress
 	if (state == WLC_KEY_STATE_PRESSED && (dragging || resizing)) {
 		reset_floating(get_focused_view(&root_container));
