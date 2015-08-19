@@ -15,7 +15,9 @@
 #include "focus.h"
 
 uint32_t keys_pressed[32];
+uint32_t key_modifiers;
 int keys_pressed_length = 0;
+
 
 static struct wlc_origin mouse_origin;
 
@@ -25,12 +27,7 @@ static bool m2_held = false;
 static bool resizing = false;
 
 static bool floating_mod_pressed(void) {
-	int i = 0;
-	while (i < keys_pressed_length) {
-		if (keys_pressed[i++] == config->floating_mod)
-			return true;
-	}
-	return false;
+	return key_modifiers & config->floating_mod;
 }
 
 static bool pointer_test(swayc_t *view, void *_origin) {
@@ -297,6 +294,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		return false;
 	}
 	bool cmd_success = false;
+	key_modifiers = modifiers->mods;
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary

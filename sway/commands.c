@@ -240,7 +240,24 @@ static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) 
 	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
-	config->floating_mod = xkb_keysym_from_name(argv[0], XKB_KEYSYM_CASE_INSENSITIVE);
+	int i, j;
+	list_t *split = split_string(argv[0], "+");
+	fprintf(stderr,"%s, %d,%d\n",argv[0], split->length,split->items);
+	config->floating_mod = 0;
+
+	//set modifer keys
+	for (i = 0; i < split->length; ++i) {
+		for (j = 0; j < sizeof(modifiers) / sizeof(struct modifier_key); ++j) {
+			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
+				config->floating_mod |= modifiers[j].mod;
+			}
+		}
+	}
+	list_free(split);
+	if (!config->floating_mod) {
+		sway_log(L_ERROR, "bindsym - unknown keys %s", argv[0]);
+		return false;
+	}
 	return true;
 }
 
