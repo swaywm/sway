@@ -71,8 +71,8 @@ static const char *search_paths[] = {
 };
 
 static char *get_config_path() {
-	char *home = getenv("HOME");
-	char *config = getenv("XDG_CONFIG_HOME");
+	char *home = strdup(getenv("HOME"));
+	char *config = strdup(getenv("XDG_CONFIG_HOME"));
 	if (!config) {
 		const char *def = "/.config/sway";
 		config = malloc(strlen(home) + strlen(def) + 1);
@@ -130,6 +130,8 @@ static char *get_config_path() {
 
 _continue:
 	free_config(temp_config);
+	free(home);
+	free(config);
 	return test;
 }
 
