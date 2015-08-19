@@ -71,13 +71,21 @@ static const char *search_paths[] = {
 };
 
 static char *get_config_path() {
-	char *home = strdup(getenv("HOME"));
-	char *config = strdup(getenv("XDG_CONFIG_HOME"));
-	if (!config) {
-		const char *def = "/.config/sway";
+	char *home = getenv("HOME");
+	if (home) {
+		home = strdup(getenv("HOME"));
+	}
+	char *config = getenv("XDG_CONFIG_HOME");
+	if (config) {
+		config = strdup(getenv("XDG_CONFIG_HOME"));
+	} else if (home) {
+		const char *def = "/.config";
 		config = malloc(strlen(home) + strlen(def) + 1);
 		strcpy(config, home);
 		strcat(config, def);
+	} else {
+		home = strdup("");
+		config = strdup("");
 	}
 
 	// Set up a temporary config for holding set variables
