@@ -41,6 +41,9 @@ Commands
 **floating** toggle::
 	Toggles the "floating" status of the focused view.
 
+**floating** mode_toggle::
+	Toggles focus between floating view and tiled view.
+
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
 	directional focus commands will move the focus in that direction. The parent
