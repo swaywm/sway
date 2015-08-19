@@ -33,8 +33,9 @@ void add_child(swayc_t *parent, swayc_t *child) {
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
+	//set focus for this container
 	if (parent->children->length == 1) {
-		parent->focused = child;
+		set_focused_container_for(parent, child);
 	}
 }
 
@@ -45,7 +46,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	child->parent = ws;
 	child->is_floating = true;
 	if (!ws->focused) {
-		ws->focused = child;
+		set_focused_container_for(ws, child);
 	}
 }
 
@@ -70,7 +71,7 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	new_child->parent = child->parent;
 
 	if (child->parent->focused == child) {
-		child->parent->focused = new_child;
+		set_focused_container_for(child->parent, new_child);
 	}
 	child->parent = NULL;
 	return parent;

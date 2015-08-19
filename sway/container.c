@@ -150,6 +150,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		// give them proper layouts
 		cont->layout = workspace->layout;
 		workspace->layout = layout;
+		set_focused_container_for(workspace, get_focused_view(workspace));
 	} else { // Or is built around container
 		swayc_t *parent = replace_child(child, cont);
 		if (parent) {
