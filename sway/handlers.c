@@ -503,6 +503,14 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	return false;
 }
 
+enum pointer_values {
+	M_LEFT_CLICK = 272,
+	M_RIGHT_CLICK = 273,
+	M_SCROLL_CLICK = 274,
+	M_SCROLL_UP = 275,
+	M_SCROLL_DOWN = 276,
+};
+
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
 	swayc_t *focused = get_focused_container(&root_container);
@@ -512,10 +520,10 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	}
 	if (state == WLC_BUTTON_STATE_PRESSED) {
 		sway_log(L_DEBUG, "Mouse button %u pressed", button);
-		if (button == 272) {
+		if (button == M_LEFT_CLICK) {
 			m1_held = true;
 		}
-		if (button == 273) {
+		if (button == M_RIGHT_CLICK) {
 			m2_held = true;
 		}
 		swayc_t *pointer = container_under_pointer();
@@ -547,11 +555,11 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		return (pointer && pointer != focused);
 	} else {
 		sway_log(L_DEBUG, "Mouse button %u released", button);
-		if (button == 272) {
+		if (button == M_LEFT_CLICK) {
 			m1_held = false;
 			dragging = false;
 		}
-		if (button == 273) {
+		if (button == M_RIGHT_CLICK) {
 			m2_held = false;
 			resizing = false;
 			lock_top = lock_bottom = lock_left = lock_right = false;
