@@ -20,6 +20,8 @@ static void update_focus(swayc_t *c) {
 		// Case where output changes
 		case C_OUTPUT:
 			wlc_output_focus(c->handle);
+			//Set new workspace to the outputs focused workspace
+			active_workspace = c->focused;
 			break;
 
 		// Case where workspace changes

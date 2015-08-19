@@ -179,8 +179,14 @@ static bool handle_view_created(wlc_handle handle) {
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
 	}
-	sway_log(L_DEBUG, "creating view %ld with type %x, state %x, with parent %ld",
-		handle, wlc_view_get_type(handle), wlc_view_get_state(handle), parent);
+	sway_log(L_DEBUG, "handle:%ld type:%x state:%x parent:%ld "
+			"mask:%d (x:%d y:%d w:%d h:%d) title:%s "
+			"class:%s appid:%s",
+		handle, wlc_view_get_type(handle), wlc_view_get_state(handle), parent,
+		wlc_view_get_mask(handle), wlc_view_get_geometry(handle)->origin.x,
+		wlc_view_get_geometry(handle)->origin.y,wlc_view_get_geometry(handle)->size.w,
+		wlc_view_get_geometry(handle)->size.h, wlc_view_get_title(handle),
+		wlc_view_get_class(handle), wlc_view_get_app_id(handle));
 
 	// TODO properly figure out how each window should be handled.
 	switch (wlc_view_get_type(handle)) {
@@ -319,6 +325,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	sway_log(L_DEBUG, "modifier %x: state %d: key %d, sym: %d",
 			modifiers->mods, state, key, sym);
 
+	//Revert floating container back to original position on keypress
 	if (state == WLC_KEY_STATE_PRESSED && (dragging || resizing)) {
 		reset_floating(get_focused_view(&root_container));
 	}
