@@ -91,6 +91,31 @@ swayc_t *container_under_pointer(void) {
 	return lookup;
 }
 
+static struct wlc_geometry saved_floating;
+
+static void start_floating(swayc_t *view) {
+	if (view->is_floating) {
+		saved_floating.origin.x = view->x;
+		saved_floating.origin.y = view->y;
+		saved_floating.size.w = view->width;
+		saved_floating.size.h = view->height;
+	}
+}
+
+static void reset_floating(swayc_t *view) {
+	if (view->is_floating) {
+		view->x = saved_floating.origin.x;
+		view->y = saved_floating.origin.y;
+		view->width = saved_floating.size.w;
+		view->height = saved_floating.size.h;
+		arrange_windows(view->parent, -1, -1);
+	}
+	dragging = resizing = false;
+	lock_left = lock_right = lock_top = lock_bottom = false;
+}
+
+/* Handles */
+
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
@@ -290,6 +315,10 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		return false;
 	}
 	bool cmd_success = false;
+
+	if ((modifiers->mods & config->floating_mod) && (dragging||resizing)) {
+		reset_floating(get_focused_view(&root_container));
+	}
 
 	struct sway_mode *mode = config->current_mode;
 	// Lowercase if necessary
@@ -500,6 +529,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				lock_top = !lock_bottom;
 				lock_right = origin->x < midway_x;
 				lock_left = !lock_right;
+				start_floating(pointer);
 			}
 			//Dont want pointer sent to window while dragging or resizing
 			return (dragging || resizing);
