@@ -161,10 +161,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				}
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
-				swayc_t *parent = container;
-				while (parent->type != C_OUTPUT) {
-					parent = parent->parent;
-				}
+				swayc_t *parent = swayc_parent_by_type(container, C_OUTPUT);
 				geometry.origin.x = 0;
 				geometry.origin.y = 0;
 				geometry.size.w = parent->width;
@@ -263,10 +260,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 					}
 				};
 				if (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN) {
-					swayc_t *parent = view;
-					while (parent->type != C_OUTPUT) {
-						parent = parent->parent;
-					}
+					swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 					geometry.origin.x = 0;
 					geometry.origin.y = 0;
 					geometry.size.w = parent->width;

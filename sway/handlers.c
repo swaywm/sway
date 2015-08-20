@@ -20,10 +20,7 @@ static struct wlc_origin mouse_origin;
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
 	// Determine the output that the view is under
-	swayc_t *parent = view;
-	while (parent->type != C_OUTPUT) {
-		parent = parent->parent;
-	}
+	swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 	if (origin->x >= view->x && origin->y >= view->y
 		&& origin->x < view->x + view->width && origin->y < view->y + view->height
 		&& view->visible && parent == root_container.focused) {
@@ -191,10 +188,7 @@ static bool handle_view_created(wlc_handle handle) {
 
 	if (newview) {
 		set_focused_container(newview);
-		swayc_t *output = newview->parent;
-		while (output && output->type != C_OUTPUT) {
-			output = output->parent;
-		}
+		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
 	}
 	return true;
@@ -262,10 +256,7 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 			arrange_windows(c->parent, -1, -1);
 			// Set it as focused window for that workspace if its going fullscreen
 			if (toggle) {
-				swayc_t *ws = c;
-				while (ws->type != C_WORKSPACE) {
-					ws = ws->parent;
-				}
+				swayc_t *ws = swayc_parent_by_type(c, C_WORKSPACE);
 				// Set ws focus to c
 				set_focused_container_for(ws, c);
 			}

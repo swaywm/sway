@@ -75,9 +75,7 @@ char *workspace_next_name(void) {
 
 swayc_t *workspace_create(const char* name) {
 	swayc_t *parent = get_focused_container(&root_container);
-	while (parent->type != C_OUTPUT) {
-		parent = parent->parent;
-	}
+	parent = swayc_parent_by_type(parent, C_OUTPUT);
 	return new_workspace(parent, name);
 }
 

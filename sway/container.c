@@ -8,6 +8,8 @@
 #include "layout.h"
 #include "log.h"
 
+#define ASSERT_NONNULL(PTR) \
+	sway_assert (PTR, "%s: " #PTR "must be non-null", __func__)
 
 static swayc_t *new_swayc(enum swayc_types type) {
 	swayc_t *c = calloc(1, sizeof(swayc_t));
@@ -20,37 +22,40 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	return c;
 }
 
-static void free_swayc(swayc_t *c) {
+static void free_swayc(swayc_t *cont) {
+	if (!ASSERT_NONNULL(cont)) {
+		return;
+	}
 	// TODO does not properly handle containers with children,
 	// TODO but functions that call this usually check for that
-	if (c->children) {
-		if (c->children->length) {
+	if (cont->children) {
+		if (cont->children->length) {
 			int i;
-			for (i = 0; i < c->children->length; ++i) {
-				free_swayc(c->children->items[i]);
+			for (i = 0; i < cont->children->length; ++i) {
+				free_swayc(cont->children->items[i]);
 			}
 		}
-		list_free(c->children);
+		list_free(cont->children);
 	}
-	if (c->floating) {
-		if (c->floating->length) {
+	if (cont->floating) {
+		if (cont->floating->length) {
 			int i;
-			for (i = 0; i < c->floating->length; ++i) {
-				free_swayc(c->floating->items[i]);
+			for (i = 0; i < cont->floating->length; ++i) {
+				free_swayc(cont->floating->items[i]);
 			}
 		}
-		list_free(c->floating);
+		list_free(cont->floating);
 	}
-	if (c->parent) {
-		remove_child(c);
+	if (cont->parent) {
+		remove_child(cont);
 	}
-	if (c->name) {
-		free(c->name);
+	if (cont->name) {
+		free(cont->name);
 	}
-	free(c);
+	free(cont);
 }
 
-/* New containers */
+// New containers
 
 static bool workspace_test(swayc_t *view, void *name) {
 	return strcasecmp(view->name, (char *)name) == 0;
@@ -103,6 +108,9 @@ swayc_t *new_output(wlc_handle handle) {
 }
 
 swayc_t *new_workspace(swayc_t *output, const char *name) {
+	if (!ASSERT_NONNULL(output)) {
+		return NULL;
+	}
 	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
@@ -120,6 +128,9 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 }
 
 swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
+	if (!ASSERT_NONNULL(child)) {
+		return NULL;
+	}
 	swayc_t *cont = new_swayc(C_CONTAINER);
 
 	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
@@ -162,6 +173,9 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 }
 
 swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
+	if (!ASSERT_NONNULL(sibling)) {
+		return NULL;
+	}
 	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
 	sway_log(L_DEBUG, "Adding new view %lu:%s to container %p %d",
@@ -172,13 +186,13 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->visible = true;
 	view->is_focused = true;
 	// Setup geometry
+	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
 	view->width = 0;
 	view->height = 0;
+	view->desired_width = geometry->size.w;
+	view->desired_height = geometry->size.h;
 
 	view->gaps = config->gaps_inner;
-
-	view->desired_width = -1;
-	view->desired_height = -1;
 
 	view->is_floating = false;
 
@@ -225,9 +239,12 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	return view;
 }
 
-/* Destroy container */
+// Destroy container
 
 swayc_t *destroy_output(swayc_t *output) {
+	if (!ASSERT_NONNULL(output)) {
+		return NULL;
+	}
 	if (output->children->length == 0) {
 		// TODO move workspaces to other outputs
 	}
@@ -237,23 +254,21 @@ swayc_t *destroy_output(swayc_t *output) {
 }
 
 swayc_t *destroy_workspace(swayc_t *workspace) {
+	if (!ASSERT_NONNULL(workspace)) {
+		return NULL;
+	}
 	// NOTE: This is called from elsewhere without checking children length
 	// TODO move containers to other workspaces?
 	// for now just dont delete
 	
 	// Do not destroy this if it's the last workspace on this output
-	swayc_t *output = workspace->parent;
-	while (output && output->type != C_OUTPUT) {
-		output = output->parent;
-	}
-	if (output) {
-		if (output->children->length == 1) {
-			return NULL;
-		}
+	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
+	if (output && output->children->length == 1) {
+		return NULL;
 	}
 
 	if (workspace->children->length == 0) {
-		sway_log(L_DEBUG, "Workspace: Destroying workspace '%s'", workspace->name);
+		sway_log(L_DEBUG, "%s: '%s'", __func__, workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
 		return parent;
@@ -262,6 +277,9 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 }
 
 swayc_t *destroy_container(swayc_t *container) {
+	if (!ASSERT_NONNULL(container)) {
+		return NULL;
+	}
 	while (container->children->length == 0 && container->type == C_CONTAINER) {
 		sway_log(L_DEBUG, "Container: Destroying container '%p'", container);
 		swayc_t *parent = container->parent;
@@ -272,8 +290,7 @@ swayc_t *destroy_container(swayc_t *container) {
 }
 
 swayc_t *destroy_view(swayc_t *view) {
-	if (view == NULL) {
-		sway_log(L_DEBUG, "Warning: NULL passed into destroy_view");
+	if (!ASSERT_NONNULL(view)) {
 		return NULL;
 	}
 	sway_log(L_DEBUG, "Destroying view '%p'", view);
@@ -285,6 +302,34 @@ swayc_t *destroy_view(swayc_t *view) {
 		return destroy_container(parent);
 	}
 	return parent;
+}
+
+// Container lookup
+
+swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
+	if (!ASSERT_NONNULL(container)) {
+		return NULL;
+	}
+	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "%s: invalid type", __func__)) {
+		return NULL;
+	}
+	do {
+		container = container->parent;
+	} while(container && container->type != type);
+	return container;
+}
+
+swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts layout) {
+	if (!ASSERT_NONNULL(container)) {
+		return NULL;
+	}
+	if (!sway_assert(layout < L_LAYOUTS && layout >= L_NONE, "%s: invalid layout", __func__)) {
+		return NULL;
+	}
+	do {
+		container = container->parent;
+	} while (container && container->layout != layout);
+	return container;
 }
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
@@ -316,25 +361,27 @@ swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *da
 }
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (!container || !container->children || !container->children->length)  {
-		return;
-	}
-	int i;
-	for (i = 0; i < container->children->length; ++i) {
-		swayc_t *child = container->children->items[i];
-		f(child, data);
-		container_map(child, f, data);
-	}
-	if (container->type == C_WORKSPACE) {
-		for (i = 0; i < container->floating->length; ++i) {
-			swayc_t *child = container->floating->items[i];
+	if (container && container->children && container->children->length)  {
+		int i;
+		for (i = 0; i < container->children->length; ++i) {
+			swayc_t *child = container->children->items[i];
 			f(child, data);
 			container_map(child, f, data);
+		}
+		if (container->type == C_WORKSPACE) {
+			for (i = 0; i < container->floating->length; ++i) {
+				swayc_t *child = container->floating->items[i];
+				f(child, data);
+				container_map(child, f, data);
+			}
 		}
 	}
 }
 
 void set_view_visibility(swayc_t *view, void *data) {
+	if (!ASSERT_NONNULL(view)) {
+		return;
+	}
 	uint32_t *p = data;
 	if (view->type == C_VIEW) {
 		wlc_view_set_mask(view->handle, *p);
@@ -348,6 +395,9 @@ void set_view_visibility(swayc_t *view, void *data) {
 }
 
 void reset_gaps(swayc_t *view, void *data) {
+	if (!ASSERT_NONNULL(view)) {
+		return;
+	}
 	if (view->type == C_OUTPUT) {
 		view->gaps = config->gaps_outer;
 	}
