@@ -91,6 +91,50 @@ swayc_t *remove_child(swayc_t *child) {
 	return parent;
 }
 
+void move_container(swayc_t *container,swayc_t* root,int direction){
+	sway_log(L_DEBUG, "Moved window");
+	swayc_t *temp;
+	int i;
+	uint clength = root->children->length;
+	//Rearrange
+	for (i = 0; i < clength; ++i) {
+		swayc_t *child = root->children->items[i];
+		if(child->handle == container->handle){
+			if(clength == 1){
+				//Only one container, meh.
+				break;
+			}
+
+			//TODO: Implement move to a different workspace.
+			if(direction == MOVE_LEFT && i > 0){
+				temp = root->children->items[i-1];
+				root->children->items[i] = temp;
+				root->children->items[i-1] = container;
+				arrange_windows(&root_container,-1,-1);
+			}
+			else if(direction == MOVE_RIGHT && i < clength-1){
+				temp = root->children->items[i+1];
+				root->children->items[i] = temp;
+				root->children->items[i+1] = container;
+				arrange_windows(&root_container,-1,-1);
+
+			}
+			else if(direction == MOVE_UP){
+				sway_log(L_INFO, "Moving up not implemented");
+			}
+			else if(direction == MOVE_DOWN){
+				sway_log(L_INFO, "Moving down not implemented");
+			}
+
+			break;
+		}
+		else if(child->children != NULL){
+			move_container(container,child,direction);
+		}
+	}
+
+}
+
 
 void arrange_windows(swayc_t *container, int width, int height) {
 	int i;
@@ -282,4 +326,3 @@ swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
 	}
 	return NULL;
 }
-

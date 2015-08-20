@@ -282,8 +282,27 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
-	sway_log(L_DEBUG, "move cmd stub called");//Stubbed method until I get back.
+	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+
+	swayc_t *view = get_focused_container(&root_container);
+
+	if (strcasecmp(argv[0], "left") == 0) {
+		move_container(view,&root_container,MOVE_LEFT);
+	} else if (strcasecmp(argv[0], "right") == 0) {
+		move_container(view,&root_container,MOVE_RIGHT);
+	} else if (strcasecmp(argv[0], "up") == 0) {
+		move_container(view,&root_container,MOVE_UP);
+	} else if (strcasecmp(argv[0], "down") == 0) {
+		move_container(view,&root_container,MOVE_DOWN);
+	} else
+	{
+		return false;
+	}
+
 	return true;
+
 }
 
 static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
@@ -492,13 +511,13 @@ static struct cmd_handler handlers[] = {
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
+	{ "move",cmd_move},
 	{ "reload", cmd_reload },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv },
-	{ "workspace", cmd_workspace },
-	{ "cmd_move",cmd_move}
+	{ "workspace", cmd_workspace }
 };
 
 static char **split_directive(char *line, int *argc) {
