@@ -3,6 +3,7 @@
 #include "focus.h"
 #include "log.h"
 #include "workspace.h"
+#include "layout.h"
 
 bool locked_container_focus = false;
 bool locked_view_focus = false;
@@ -53,74 +54,17 @@ static void update_focus(swayc_t *c) {
 }
 
 bool move_focus(enum movement_direction direction) {
-	if (locked_container_focus) {
-		return false;
-	}
-	swayc_t *current = get_focused_container(&root_container);
-	if (current->type == C_VIEW
-		&& wlc_view_get_state(current->handle) & WLC_BIT_FULLSCREEN) {
-		return false;
-	}
-	swayc_t *parent = current->parent;
-
-	if (direction == MOVE_PARENT) {
-		if (parent->type == C_OUTPUT) {
-			sway_log(L_DEBUG, "Focus cannot move to parent");
-			return false;
+	swayc_t *view = get_swayc_in_direction(
+			get_focused_container(&root_container), direction);
+	if (view) {
+		if (direction == MOVE_PARENT) {
+			set_focused_container(view);
 		} else {
-			sway_log(L_DEBUG, "Moving focus from %p:%ld to %p:%ld",
-				current, current->handle, parent, parent->handle);
-			set_focused_container(parent);
-			return true;
+			set_focused_container(get_focused_view(view));
 		}
+		return true;
 	}
-
-	while (true) {
-		sway_log(L_DEBUG, "Moving focus away from %p", current);
-
-		// Test if we can even make a difference here
-		bool can_move = false;
-		int diff = 0;
-		if (direction == MOVE_LEFT || direction == MOVE_RIGHT) {
-			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
-				can_move = true;
-				diff = direction == MOVE_LEFT ? -1 : 1;
-			}
-		} else {
-			if (parent->layout == L_VERT) {
-				can_move = true;
-				diff = direction == MOVE_UP ? -1 : 1;
-			}
-		}
-		sway_log(L_DEBUG, "Can move? %s", can_move ? "yes" : "no");
-		if (can_move) {
-			int i;
-			for (i = 0; i < parent->children->length; ++i) {
-				swayc_t *child = parent->children->items[i];
-				if (child == current) {
-					break;
-				}
-			}
-			int desired = i + diff;
-			sway_log(L_DEBUG, "Moving from %d to %d", i, desired);
-			if (desired < 0 || desired >= parent->children->length) {
-				can_move = false;
-			} else {
-				swayc_t *newview = parent->children->items[desired];
-				set_focused_container(get_focused_view(newview));
-				return true;
-			}
-		}
-		if (!can_move) {
-			sway_log(L_DEBUG, "Can't move at current level, moving up tree");
-			current = parent;
-			parent = parent->parent;
-			if (!parent) {
-				// Nothing we can do
-				return false;
-			}
-		}
-	}
+	return false;
 }
 
 swayc_t *get_focused_container(swayc_t *parent) {

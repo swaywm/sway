@@ -22,11 +22,11 @@ Commands
 --------
 
 **bindsym** <key combo> <command>::
-	Binds _key combo_ to execute _command_ when pressed. You may use XKB key names
-	here (**xev**(1) is a good tool for discovering them). An example bindsym
-	command would be _bindsym Mod1+Shift+f exec firefox_, which would execute
-	Firefox if the alt, shift, and F keys are pressed together. Any valid sway
-	command is eligible to be bound to a key combo.
+	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
+	names here (**xev**(1) is a good tool for discovering them). An example
+	bindsym command would be _bindsym Mod1+Shift+f exec firefox_, which would
+	execute Firefox if the alt, shift, and F keys are pressed together. Any
+	valid sway command is eligible to be bound to a key combo.
 
 **exec** <shell command>::
 	Executes _shell command_ with sh.
@@ -41,15 +41,15 @@ Commands
 **floating** toggle::
 	Toggles the "floating" status of the focused view.
 
-**floating** mode_toggle::
-	Toggles focus between floating view and tiled view.
-
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
 	directional focus commands will move the focus in that direction. The parent
 	focus command will change the focus to the parent of the currently focused
 	container, which is useful, for example, to open a sibling of the parent
 	container, or to move the entire container around.
+
+**focus** mode_toggle::
+	Toggles focus between floating view and tiled view.
 
 **focus_follows_mouse** <yes|no>::
 	If set to _yes_, the currently focused view will change as you move your
@@ -86,10 +86,10 @@ Commands
 **fullscreen**::
 	Toggles fullscreen status for the focused view.
 
-**gaps** <amount>**::
+**gaps** <amount>::
 	Adds _amount_ pixels between each view, and around each output.
 
-**gaps** <inner|outer> <amount>**::
+**gaps** <inner|outer> <amount>::
 	Adds _amount_ pixels as an _inner_ or _outer_ gap, where the former affects
 	spacing between views and the latter affects the space around each output.
 
