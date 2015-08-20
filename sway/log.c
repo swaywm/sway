@@ -19,10 +19,10 @@ static const char *verbosity_colors[] = {
 void init_log(int verbosity) {
 	v = verbosity;
 	/* set FD_CLOEXEC flag to prevent programs called with exec to write into logs */
-	int i, flag;
+	int i;
 	int fd[] = { STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO };
 	for (i = 0; i < 3; ++i) {
-		flag = fcntl(fd[i], F_GETFD);
+		int flag = fcntl(fd[i], F_GETFD);
 		if (flag != -1) {
 			fcntl(fd[i], F_SETFD, flag | FD_CLOEXEC);
 		}
