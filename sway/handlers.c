@@ -290,8 +290,8 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 		// i3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
 		c = get_swayc_for_handle(view, &root_container);
-		sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d", view, c->name, toggle);
 		if (c) {
+			sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d", view, c->name, toggle);
 			arrange_windows(c->parent, -1, -1);
 			// Set it as focused window for that workspace if its going fullscreen
 			if (toggle) {
