@@ -67,7 +67,7 @@ swayc_t *new_output(wlc_handle handle) {
 	output->height = size->h;
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
-	output->gaps = config->gaps_outer;
+	output->gaps = config->gaps_outer + config->gaps_inner / 2;
 
 	add_child(&root_container, output);
 

@@ -152,12 +152,12 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		{
 			struct wlc_geometry geometry = {
 				.origin = {
-					.x = container->x + container->gaps,
-					.y = container->y + container->gaps
+					.x = container->x + container->gaps / 2,
+					.y = container->y + container->gaps / 2
 				},
 				.size = {
-					.w = width - container->gaps * 2,
-					.h = height - container->gaps * 2
+					.w = width - container->gaps,
+					.h = height - container->gaps
 				}
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
