@@ -57,7 +57,7 @@ bool move_focus(enum movement_direction direction) {
 	swayc_t *view = get_swayc_in_direction(
 			get_focused_container(&root_container), direction);
 	if (view) {
-		set_focused_container(view);
+		set_focused_container(get_focused_view(view));
 		return true;
 	}
 	return false;
