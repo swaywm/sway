@@ -57,6 +57,9 @@ void ipc_init(void) {
 		sway_abort("Unable to listen on IPC socket");
 	}
 
+	// Set i3 IPC socket path so that i3-msg works out of the box
+	setenv("I3SOCK", ipc_sockaddr.sun_path, 1);
+
 	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
 }
 
