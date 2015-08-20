@@ -114,7 +114,6 @@ static void container_log(const swayc_t *c) {
 	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
 	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
-	fprintf(stderr, "wgt:%d|", c->weight);
 	fprintf(stderr, "name:%.16s|", c->name);
 	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
 }
