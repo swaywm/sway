@@ -242,6 +242,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 				add_sibling(focused, view);
 			}
 			// Refocus on the view once its been put back into the layout
+			view->width = view->height = 0;
 			arrange_windows(active_workspace, -1, -1);
 		}
 		set_focused_container(view);

@@ -14,7 +14,6 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->handle = -1;
 	c->layout = L_NONE;
 	c->type = type;
-	c->weight  = 1;
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}
@@ -172,6 +171,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
 	view->is_focused = true;
+	//Setup geometry
+	view->width = 0;
+	view->height = 0;
 
 	view->gaps = config->gaps_inner;
 

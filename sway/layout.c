@@ -186,40 +186,62 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		break;
 	}
 
-	double total_weight = 0;
-	for (i = 0; i < container->children->length; ++i) {
-		swayc_t *child = container->children->items[i];
-		total_weight += child->weight;
-	}
-
+	x = y = 0;
+	double scale = 0;
 	switch (container->layout) {
 	case L_HORIZ:
 	default:
-		sway_log(L_DEBUG, "Arranging %p horizontally", container);
+		//Calculate total width
 		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
-			double percent = child->weight / total_weight;
-			sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will receive %.2f of %d)", child, child->type, percent, width);
-			child->x = x + container->x;
-			child->y = y + container->y;
-			int w = width * percent;
-			int h = height;
-			arrange_windows(child, w, h);
-			x += w;
+			int *old_width = &((swayc_t *)container->children->items[i])->width;
+			if (*old_width <= 0) {
+				if (container->children->length > 1) {
+					*old_width = width / (container->children->length - 1);
+				} else {
+					*old_width = width;
+				}
+			}
+			scale += *old_width;
+		}
+		//Resize windows
+		if (scale > 0.1) {
+			scale = width / scale;
+			sway_log(L_DEBUG, "Arranging %p horizontally", container);
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %d by %f)", child, child->type, width, scale);
+				child->x = x + container->x;
+				child->y = y + container->y;
+				arrange_windows(child, child->width * scale, height);
+				x += child->width;
+			}
 		}
 		break;
 	case L_VERT:
-		sway_log(L_DEBUG, "Arranging %p vertically", container);
+		//Calculate total height
 		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
-			double percent = child->weight / total_weight;
-			sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will receive %.2f of %d)", child, child->type, percent, width);
-			child->x = x + container->x;
-			child->y = y + container->y;
-			int w = width;
-			int h = height * percent;
-			arrange_windows(child, w, h);
-			y += h;
+			int *old_height = &((swayc_t *)container->children->items[i])->height;
+			if (*old_height <= 0) {
+				if (container->children->length > 1) {
+					*old_height = height / (container->children->length - 1);
+				} else {
+					*old_height = height;
+				}
+			}
+			scale += *old_height;
+		}
+		//Resize
+		if (scale > 0.1) {
+			scale = height / scale;
+			sway_log(L_DEBUG, "Arranging %p vertically", container);
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %d by %f)", child, child->type, height, scale);
+				child->x = x + container->x;
+				child->y = y + container->y;
+				arrange_windows(child, width, child->height * scale);
+				y += child->height;
+			}
 		}
 		break;
 	}
