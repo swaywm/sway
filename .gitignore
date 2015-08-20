@@ -9,3 +9,4 @@ bin/
 test/
 build/
 .lvimrc
+config-debug

@@ -1,10 +1,13 @@
 #include "log.h"
+#include "sway.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
+#include <string.h>
 
 int colored = 1;
 int v = 0;
@@ -19,10 +22,10 @@ static const char *verbosity_colors[] = {
 void init_log(int verbosity) {
 	v = verbosity;
 	/* set FD_CLOEXEC flag to prevent programs called with exec to write into logs */
-	int i, flag;
+	int i;
 	int fd[] = { STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO };
 	for (i = 0; i < 3; ++i) {
-		flag = fcntl(fd[i], F_GETFD);
+		int flag = fcntl(fd[i], F_GETFD);
 		if (flag != -1) {
 			fcntl(fd[i], F_SETFD, flag | FD_CLOEXEC);
 		}
@@ -40,7 +43,7 @@ void sway_abort(const char *format, ...) {
 	vfprintf(stderr, format, args);
 	va_end(args);
 	fprintf(stderr, "\n");
-	exit(1);
+	sway_terminate();
 }
 
 void sway_log(int verbosity, const char* format, ...) {
@@ -58,6 +61,34 @@ void sway_log(int verbosity, const char* format, ...) {
 		va_start(args, format);
 		vfprintf(stderr, format, args);
 		va_end(args);
+
+		if (colored) {
+			fprintf(stderr, "\x1B[0m");
+		}
+		fprintf(stderr, "\n");
+	}
+}
+
+void sway_log_errno(int verbosity, char* format, ...) {
+	if (verbosity <= v) {
+		int c = verbosity;
+		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
+			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
+		}
+
+		if (colored) {
+			fprintf(stderr, verbosity_colors[c]);
+		}
+
+		va_list args;
+		va_start(args, format);
+		vfprintf(stderr, format, args);
+		va_end(args);
+
+		fprintf(stderr, ": ");
+		char error[256];
+		strerror_r(errno, error, sizeof(error));
+		fprintf(stderr, error);
 
 		if (colored) {
 			fprintf(stderr, "\x1B[0m");
@@ -88,10 +119,10 @@ bool sway_assert(bool condition, const char* format, ...) {
 /* XXX:DEBUG:XXX */
 static void container_log(const swayc_t *c) {
 	fprintf(stderr, "focus:%c|",
-			c->is_focused ? 'F' : //Focused
-			c == active_workspace ? 'W' : //active workspace
-			c == &root_container  ? 'R' : //root
-			'X');//not any others
+			c->is_focused ? 'F' : // Focused
+			c == active_workspace ? 'W' : // active workspace
+			c == &root_container  ? 'R' : // root
+			'X');// not any others
 	fprintf(stderr,"(%p)",c);
 	fprintf(stderr,"(p:%p)",c->parent);
 	fprintf(stderr,"(f:%p)",c->focused);
@@ -114,7 +145,6 @@ static void container_log(const swayc_t *c) {
 	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
 	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
-	fprintf(stderr, "wgt:%d|", c->weight);
 	fprintf(stderr, "name:%.16s|", c->name);
 	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
 }

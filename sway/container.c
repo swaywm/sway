@@ -14,7 +14,6 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->handle = -1;
 	c->layout = L_NONE;
 	c->type = type;
-	c->weight  = 1;
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}
@@ -54,7 +53,7 @@ static void free_swayc(swayc_t *c) {
 /* New containers */
 
 static bool workspace_test(swayc_t *view, void *name) {
-	return strcasecmp(view->name, (char *)name);
+	return strcasecmp(view->name, (char *)name) == 0;
 }
 
 swayc_t *new_output(wlc_handle handle) {
@@ -67,7 +66,7 @@ swayc_t *new_output(wlc_handle handle) {
 	output->height = size->h;
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
-	output->gaps = config->gaps_outer;
+	output->gaps = config->gaps_outer + config->gaps_inner / 2;
 
 	add_child(&root_container, output);
 
@@ -81,8 +80,10 @@ swayc_t *new_output(wlc_handle handle) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
 				// Check if any other workspaces are using this name
 				if (find_container(&root_container, workspace_test, wso->workspace)) {
+					sway_log(L_DEBUG, "But it's already taken");
 					break;
 				}
+				sway_log(L_DEBUG, "So we're going to use it");
 				ws_name = strdup(wso->workspace);
 				break;
 			}
@@ -150,6 +151,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		// give them proper layouts
 		cont->layout = workspace->layout;
 		workspace->layout = layout;
+		set_focused_container_for(workspace, get_focused_view(workspace));
 	} else { // Or is built around container
 		swayc_t *parent = replace_child(child, cont);
 		if (parent) {
@@ -169,6 +171,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
 	view->is_focused = true;
+	// Setup geometry
+	view->width = 0;
+	view->height = 0;
 
 	view->gaps = config->gaps_inner;
 
@@ -200,7 +205,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	// Set the geometry of the floating view
 	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
 
-	//give it requested geometry, but place in center
+	// give it requested geometry, but place in center
 	view->x = (active_workspace->width - geometry->size.w) / 2;
 	view->y = (active_workspace->height- geometry->size.h) / 2;
 	view->width = geometry->size.w;

@@ -47,7 +47,7 @@ char *workspace_next_name(void) {
 				continue;
 			}
 
-			//Make sure that the workspace doesn't already exist
+			// Make sure that the workspace doesn't already exist
 			if (workspace_find_by_name(target)) {
 				list_free(args);
 				continue;
@@ -183,7 +183,6 @@ void workspace_switch(swayc_t *workspace) {
 		return;
 	}
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
-	active_workspace = workspace;
 	set_focused_container(get_focused_view(workspace));
 	arrange_windows(workspace, -1, -1);
 }

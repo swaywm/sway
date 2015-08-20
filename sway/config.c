@@ -144,10 +144,15 @@ _continue:
 	return test;
 }
 
-bool load_config(void) {
+bool load_config(const char *file) {
 	sway_log(L_INFO, "Loading config");
 
-	char *path = get_config_path();
+	char *path;
+	if (file != NULL) {
+		path = strdup(file);
+	} else {
+		path = get_config_path();
+	}
 
 	if (path == NULL) {
 		sway_log(L_ERROR, "Unable to find a config file!");

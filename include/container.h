@@ -11,7 +11,7 @@ enum swayc_types{
 	C_WORKSPACE,
 	C_CONTAINER,
 	C_VIEW,
-	//Keep last
+	// Keep last
 	C_TYPES,
 };
 
@@ -22,7 +22,7 @@ enum swayc_layouts{
 	L_STACKED,
 	L_TABBED,
 	L_FLOATING,
-	//Keep last
+	// Keep last
 	L_LAYOUTS,
 };
 
@@ -43,8 +43,6 @@ struct sway_container {
 	bool visible;
 	bool is_floating;
 	bool is_focused;
-
-	int weight;
 
 	char *name;
 
