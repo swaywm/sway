@@ -76,6 +76,18 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 	return false;
 }
 
+static int bindsym_sort(const void *_lbind, const void *_rbind) {
+	const struct sway_binding *lbind = *(void **)_lbind;
+	const struct sway_binding *rbind = *(void **)_rbind;
+	unsigned int lmod = 0, rmod = 0, i;
+
+	//Count how any modifiers are pressed
+	for (i = 0; i < 8 * sizeof(lbind->modifiers); ++i) {
+		lmod += lbind->modifiers & 1 << i;
+		rmod += rbind->modifiers & 1 << i;
+	}
+	return (rbind->keys->length + rmod) - (lbind->keys->length + lmod);
+}
 
 static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)) {
@@ -118,7 +130,10 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	list_free(split);
 
 	// TODO: Check if there are other commands with this key binding
-	list_add(config->current_mode->bindings, binding);
+	struct sway_mode *mode = config->current_mode;
+	list_add(mode->bindings, binding);
+	qsort(mode->bindings->items, mode->bindings->length,
+			sizeof(mode->bindings->items[0]), bindsym_sort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
 	return true;

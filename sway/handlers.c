@@ -13,9 +13,7 @@
 #include "workspace.h"
 #include "container.h"
 #include "focus.h"
-
-#define KEY_CACHE_SIZE 32
-uint32_t keys_pressed[KEY_CACHE_SIZE];
+#include "key_state.h"
 
 static struct wlc_origin mouse_origin;
 
@@ -327,7 +325,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return false;
 	}
-	bool cmd_success = false;
 
 	// Revert floating container back to original position on keypress
 	if (state == WLC_KEY_STATE_PRESSED && (dragging || resizing)) {
@@ -356,16 +353,10 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		}
 	}
 
-	int total = 0;
-	for (i = 0; i < KEY_CACHE_SIZE && !mod; ++i) {
-		total += keys_pressed[i] != 0;
-		if (state == WLC_KEY_STATE_PRESSED && keys_pressed[i] == 0) {
-			keys_pressed[i] = sym;
-			break;
-		} else if (state == WLC_KEY_STATE_RELEASED && keys_pressed[i] == sym) {
-			keys_pressed[i] = 0;
-			break;
-		}
+	if (state == WLC_KEY_STATE_PRESSED) {
+		press_key(sym);
+	} else { // WLC_KEY_STATE_RELEASED
+		release_key(sym);
 	}
 
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
@@ -376,32 +367,22 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			bool match;
 			int j;
 			for (j = 0; j < binding->keys->length; ++j) {
-				match = false;
 				xkb_keysym_t *key = binding->keys->items[j];
-				int k;
-				for (k = 0; k < KEY_CACHE_SIZE; ++k) {
-					if (keys_pressed[k] == *key) {
-						match = true;
-						break;
-					}
-				}
-				if (match == false) {
+				if ((match = check_key(*key)) == false) {
 					break;
 				}
 			}
-
 			if (match) {
-				// Remove matched keys from keys_pressed
 				if (state == WLC_KEY_STATE_PRESSED) {
 					handle_command(config, binding->command);
-					cmd_success = true;
+					return true;
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
 				}
 			}
 		}
 	}
-	return cmd_success;
+	return false;
 }
 
 static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
@@ -590,10 +571,6 @@ static void handle_wlc_ready(void) {
 	}
 	free_flat_list(config->cmd_queue);
 	config->active = true;
-
-	for (i = 0; i < KEY_CACHE_SIZE; ++i) {
-		keys_pressed[i] = 0;
-	}
 }
 
 
