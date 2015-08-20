@@ -378,14 +378,14 @@ void recursive_resize(swayc_t *container, double amount, enum movement_direction
 		container->x += (int) amount;
 		container->width += (int) amount;
 		layout_match = container->layout == L_HORIZ;
-	} else if(dir == MOVE_RIGHT) {
+	} else if (dir == MOVE_RIGHT) {
 		container->width += (int) amount;
 		layout_match = container->layout == L_HORIZ;
-	} else if(dir == MOVE_UP) {
+	} else if (dir == MOVE_UP) {
 		container->y += (int) amount;
 		container->height += (int) amount;
 		layout_match = container->layout == L_VERT;
-	} else if(dir == MOVE_DOWN) {
+	} else if (dir == MOVE_DOWN) {
 		container->height += (int) amount;
 		layout_match = container->layout == L_VERT;
 	}

@@ -563,7 +563,6 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		arrange_windows(active_workspace, -1, -1);
 		return true;
 	}
-	sway_log(L_INFO, "Done with resize");
 	return true;
 }
 
