@@ -194,7 +194,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		//Calculate total width
 		for (i = 0; i < container->children->length; ++i) {
 			int *old_width = &((swayc_t *)container->children->items[i])->width;
-			if (*old_width == 0) {
+			if (*old_width <= 0) {
 				if (container->children->length > 1) {
 					*old_width = width / (container->children->length - 1);
 				} else {
@@ -221,12 +221,12 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		//Calculate total height
 		for (i = 0; i < container->children->length; ++i) {
 			int *old_height = &((swayc_t *)container->children->items[i])->height;
+			if (*old_height <= 0) {
 				if (container->children->length > 1) {
 					*old_height = height / (container->children->length - 1);
 				} else {
 					*old_height = height;
 				}
-			if (*old_height == 0) {
 			}
 			scale += *old_height;
 		}

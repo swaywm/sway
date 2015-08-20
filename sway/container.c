@@ -172,13 +172,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->visible = true;
 	view->is_focused = true;
 	//Setup geometry
-	view->width = sibling->parent->width;
-	view->height = sibling->parent->height;
-	if (sibling->parent->layout == L_HORIZ) {
-		view->width /= sibling->parent->children->length;
-	} else {
-		view->height /= sibling->parent->children->length;
-	}
+	view->width = 0;
+	view->height = 0;
 
 	view->gaps = config->gaps_inner;
 
