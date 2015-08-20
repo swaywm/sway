@@ -14,9 +14,8 @@
 #include "container.h"
 #include "focus.h"
 
-uint32_t keys_pressed[32];
-int keys_pressed_length = 0;
-
+#define KEY_CACHE_SIZE 32
+uint32_t keys_pressed[KEY_CACHE_SIZE];
 
 static struct wlc_origin mouse_origin;
 
@@ -284,12 +283,11 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 }
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {
-	swayc_t *c = NULL;
+	swayc_t *c = get_swayc_for_handle(view, &root_container);
 	switch (state) {
 	case WLC_BIT_FULLSCREEN:
 		// i3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
-		c = get_swayc_for_handle(view, &root_container);
 		if (c) {
 			sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d", view, c->name, toggle);
 			arrange_windows(c->parent, -1, -1);
@@ -307,7 +305,9 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 	case WLC_BIT_MAXIMIZED:
 	case WLC_BIT_RESIZING:
 	case WLC_BIT_MOVING:
+		break;
 	case WLC_BIT_ACTIVATED:
+		sway_log(L_DEBUG, "View %p requested to be activated", c);
 		break;
 	}
 	return;
@@ -316,13 +316,12 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t key, uint32_t sym, enum wlc_key_state state) {
-	enum { QSIZE = 32 };
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return false;
 	}
 	bool cmd_success = false;
 
-	//Revert floating container back to original position on keypress
+	// Revert floating container back to original position on keypress
 	if (state == WLC_KEY_STATE_PRESSED && (dragging || resizing)) {
 		reset_floating(get_focused_view(&root_container));
 	}
@@ -331,20 +330,23 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	// Lowercase if necessary
 	sym = tolower(sym);
 
-	// Find key, if it has been pressed
-	int mid = 0;
-	while (mid < keys_pressed_length && keys_pressed[mid] != sym) {
-		++mid;
-	}
-	//Add or remove key depending on state
-	if (state == WLC_KEY_STATE_PRESSED && mid == keys_pressed_length && keys_pressed_length + 1 < QSIZE) {
-		keys_pressed[keys_pressed_length++] = sym;
-	} else if (state == WLC_KEY_STATE_RELEASED && mid < keys_pressed_length) {
-		memmove(keys_pressed + mid, keys_pressed + mid + 1, sizeof*keys_pressed * (--keys_pressed_length - mid));
-		keys_pressed[keys_pressed_length] = 0;
-	}
-	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	int i;
+
+	for (i = 0; i < KEY_CACHE_SIZE; ++i) {
+		if (state == WLC_KEY_STATE_PRESSED && keys_pressed[i] == 0) {
+			keys_pressed[i] = sym;
+			break;
+		} else if (state == WLC_KEY_STATE_RELEASED && keys_pressed[i] == sym) {
+			keys_pressed[i] = 0;
+			break;
+		}
+	}
+	if (i == KEY_CACHE_SIZE) {
+		sway_log(L_DEBUG, "Key buffer full!");
+		return false;
+	}
+
+	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
 
@@ -354,8 +356,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			for (j = 0; j < binding->keys->length; ++j) {
 				match = false;
 				xkb_keysym_t *key = binding->keys->items[j];
-				uint8_t k;
-				for (k = 0; k < keys_pressed_length; ++k) {
+				int k;
+				for (k = 0; k < KEY_CACHE_SIZE; ++k) {
 					if (keys_pressed[k] == *key) {
 						match = true;
 						break;
@@ -368,15 +370,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 			if (match) {
 				// Remove matched keys from keys_pressed
-				int j;
-				for (j = 0; j < binding->keys->length; ++j) {
-					uint8_t k;
-					for (k = 0; k < keys_pressed_length; ++k) {
-						memmove(keys_pressed + k, keys_pressed + k + 1, sizeof*keys_pressed * (--keys_pressed_length - k));
-						keys_pressed[keys_pressed_length] = 0;
-						break;
-					}
-				}
 				if (state == WLC_KEY_STATE_PRESSED) {
 					cmd_success = handle_command(config, binding->command);
 				} else if (state == WLC_KEY_STATE_RELEASED) {
@@ -574,6 +567,10 @@ static void handle_wlc_ready(void) {
 	}
 	free_flat_list(config->cmd_queue);
 	config->active = true;
+
+	for (i = 0; i < KEY_CACHE_SIZE; ++i) {
+		keys_pressed[i] = 0;
+	}
 }
 
 
