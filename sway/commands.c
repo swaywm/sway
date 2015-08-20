@@ -206,7 +206,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		if (!view->is_floating) {
 			// Remove view from its current location
 			destroy_container(remove_child(view));
-			
+
 			// and move it into workspace floating
 			add_floating(active_workspace,view);
 			view->x = (active_workspace->width - view->width)/2;
@@ -356,11 +356,9 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 		move_container(view,&root_container,MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
 		move_container(view,&root_container,MOVE_DOWN);
-	} else
-	{
+	} else {
 		return false;
 	}
-
 	return true;
 }
 
@@ -606,7 +604,7 @@ static struct cmd_handler handlers[] = {
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
-	{ "move",cmd_move},
+	{ "move", cmd_move},
 	{ "reload", cmd_reload },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
