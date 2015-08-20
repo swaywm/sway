@@ -29,4 +29,6 @@ swayc_t *get_focused_container(swayc_t *parent);
 swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent);
 swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir);
 
+void recursive_resize(swayc_t *container, double amount, enum movement_direction dir);
+
 #endif
