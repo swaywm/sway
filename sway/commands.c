@@ -445,7 +445,8 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 	if (!parent) {
 		return true;
 	}
-	// Find the closest possible sibling and resize using that edge
+	// Find the closest parent container which has siblings of the proper layout.
+	// Then apply the resize to all of them.
 	int i;
 	if (strcmp(argv[1], "width") == 0) {
 		int lnumber = 0;
