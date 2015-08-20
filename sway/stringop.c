@@ -4,6 +4,7 @@
 #include "string.h"
 #include "list.h"
 #include <strings.h>
+#include <log.h>
 
 /* Note: This returns 8 characters for trimmed_start per tab character. */
 char *strip_whitespace(char *_str, int *trimmed_start) {
@@ -195,5 +196,43 @@ char *join_args(char **argv, int argc) {
 		res[len++] = ' ';
 	}
 	res[len - 1] = '\0';
+	return res;
+}
+
+/*
+ * Join a list of strings, adding separator in between. Separator can be NULL.
+ */
+char *join_list(list_t *list, char *separator) {
+	if (!sway_assert(list != NULL, "list != NULL") || list->length == 0) {
+		return NULL;
+	}
+
+	size_t len = 1; // NULL terminator
+	size_t sep_len = 0;
+	if (separator != NULL) {
+		sep_len = strlen(separator);
+		len += (list->length - 1) * sep_len;
+	}
+
+	for (int i = 0; i < list->length; i++) {
+		len += strlen(list->items[i]);
+	}
+
+	char *res = malloc(len);
+
+	char *p = res + strlen(list->items[0]);
+	strcpy(res, list->items[0]);
+
+	for (int i = 1; i < list->length; i++) {
+		if (sep_len) {
+			memcpy(p, separator, sep_len);
+			p += sep_len;
+		}
+		strcpy(p, list->items[i]);
+		p += strlen(list->items[i]);
+	}
+
+	*p = '\0';
+
 	return res;
 }
