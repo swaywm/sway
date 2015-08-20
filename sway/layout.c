@@ -370,3 +370,35 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 		}
 	}
 }
+
+void recursive_resize(swayc_t *container, double amount, enum movement_direction dir) {
+	int i;
+	bool layout_match = true;
+	if (dir == MOVE_LEFT) {
+		container->x += (int) amount;
+		container->width += (int) amount;
+		layout_match = container->layout == L_HORIZ;
+	} else if(dir == MOVE_RIGHT) {
+		container->width += (int) amount;
+		layout_match = container->layout == L_HORIZ;
+	} else if(dir == MOVE_UP) {
+		container->y += (int) amount;
+		container->height += (int) amount;
+		layout_match = container->layout == L_VERT;
+	} else if(dir == MOVE_DOWN) {
+		container->height += (int) amount;
+		layout_match = container->layout == L_VERT;
+	}
+	if (container->type == C_VIEW) {
+		return;
+	}
+	if (layout_match) {
+		for (i = 0; i < container->children->length; i++) {
+			recursive_resize(container->children->items[i], amount/container->children->length, dir);
+		}
+	} else {
+		for (i = 0; i < container->children->length; i++) {
+			recursive_resize(container->children->items[i], amount, dir);
+		}
+	}
+}

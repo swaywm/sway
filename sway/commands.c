@@ -422,6 +422,150 @@ static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
+static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "resize", EXPECTED_AT_LEAST, 3)) {
+		return false;
+	}
+	char *end;
+	int amount = (int)strtol(argv[2], &end, 10);
+	if (errno == ERANGE || amount == 0) {
+		errno = 0;
+		return false;
+	}
+	if (strcmp(argv[0], "shrink") != 0 && strcmp(argv[0], "grow") != 0) {
+		return false;
+	}
+	if (strcmp(argv[0], "shrink") == 0) {
+		amount *= -1;
+	}
+
+	swayc_t *parent = get_focused_view(active_workspace);
+	swayc_t *focused = parent;
+	swayc_t *sibling;
+	if (!parent) {
+		return true;
+	}
+	// Find the closest possible sibling and resize using that edge
+	int i;
+	if (strcmp(argv[1], "width") == 0) {
+		int lnumber = 0;
+		int rnumber = 0;
+		while (parent->parent) {
+			if (parent->parent->layout == L_HORIZ) {
+				for (i = 0; i < parent->parent->children->length; i++) {
+					sibling = parent->parent->children->items[i];
+					if (sibling->x != focused->x) {
+						if (sibling->x < parent->x) {
+							lnumber++;
+						} else if (sibling->x > parent->x) {
+							rnumber++;
+						}
+					}
+				}
+				if (rnumber || lnumber) {
+					break;
+				}
+			}
+			parent = parent->parent;
+		}
+		if (parent == &root_container) {
+			return true;
+		}
+		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d l conts, and %d r conts", parent->parent, lnumber, rnumber);
+		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
+		for (i = 0; i < parent->parent->children->length; i++) {
+			sibling = parent->parent->children->items[i];
+			if (sibling->x != focused->x) {
+				if (sibling->x < parent->x) {
+					double pixels = -1 * (amount/lnumber);
+					if (lnumber) {
+						recursive_resize(sibling, pixels/2, MOVE_RIGHT);
+					} else {
+						recursive_resize(sibling, pixels, MOVE_RIGHT);
+					}
+				} else if (sibling->x > parent->x) {
+					double pixels = -1 * (amount/rnumber);
+					if (rnumber) {
+						recursive_resize(sibling, pixels/2, MOVE_LEFT);
+					} else {
+						recursive_resize(sibling, pixels, MOVE_LEFT);
+					}
+				}
+			} else {
+				if (rnumber != 0 && lnumber != 0) {
+					recursive_resize(parent, amount/2, MOVE_LEFT);
+					recursive_resize(parent, amount/2, MOVE_RIGHT);
+				} else if (rnumber) {
+					recursive_resize(parent, amount, MOVE_RIGHT);
+				} else if (lnumber) {
+					recursive_resize(parent, amount, MOVE_LEFT);
+				}
+			}
+		}
+		arrange_windows(active_workspace, -1, -1);
+		return true;
+	} else if (strcmp(argv[1], "height") == 0) {
+		int tnumber = 0;
+		int bnumber = 0;
+		while (parent->parent) {
+			if (parent->parent->layout == L_VERT) {
+				for (i = 0; i < parent->parent->children->length; i++) {
+					sibling = parent->parent->children->items[i];
+					if (sibling->y != focused->y) {
+						if (sibling->y < parent->y) {
+							bnumber++;
+						} else if (sibling->y > parent->y) {
+							tnumber++;
+						}
+					}
+				}
+				if (bnumber || tnumber) {
+					break;
+				}
+			}
+			parent = parent->parent;
+		}
+		if (parent == &root_container) {
+			return true;
+		}
+		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d b conts, and %d t conts", parent->parent, bnumber, tnumber);
+		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
+		for (i = 0; i < parent->parent->children->length; i++) {
+			sibling = parent->parent->children->items[i];
+			if (sibling->y != focused->y) {
+				if (sibling->y < parent->y) {
+					double pixels = -1 * (amount/bnumber);
+					if (tnumber) {
+						recursive_resize(sibling, pixels/2, MOVE_UP);
+					} else {
+						recursive_resize(sibling, pixels, MOVE_UP);
+					}
+				} else if (sibling->x > parent->x) {
+					double pixels = -1 * (amount/tnumber);
+					if (bnumber) {
+						recursive_resize(sibling, pixels/2, MOVE_DOWN);
+					} else {
+						recursive_resize(sibling, pixels, MOVE_DOWN);
+					}
+				}
+			} else {
+				if (bnumber != 0 && tnumber != 0) {
+					recursive_resize(parent, amount/2, MOVE_UP);
+					recursive_resize(parent, amount/2, MOVE_DOWN);
+				} else if (tnumber) {
+					recursive_resize(parent, amount, MOVE_UP);
+				} else if (bnumber) {
+					recursive_resize(parent, amount, MOVE_DOWN);
+				}
+			}
+		}
+		arrange_windows(active_workspace, -1, -1);
+		return true;
+	}
+	sway_log(L_INFO, "Done with resize");
+	return true;
+}
+
 static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "set", EXPECTED_EQUAL_TO, 2)) {
 		return false;
@@ -587,6 +731,7 @@ static struct cmd_handler handlers[] = {
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
 	{ "reload", cmd_reload },
+	{ "resize", cmd_resize },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
