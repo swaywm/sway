@@ -414,7 +414,7 @@ static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
-	if (!load_config()) {
+	if (!load_config(NULL)) { // TODO: Use config given from -c
 		return false;
 	}
 	arrange_windows(&root_container, -1, -1);
