@@ -339,7 +339,6 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 			}
 		}
 		if (!can_move) {
-			sway_log(L_DEBUG, "Can't move at current level, moving up tree");
 			container = parent;
 			parent = parent->parent;
 			if (!parent) {
