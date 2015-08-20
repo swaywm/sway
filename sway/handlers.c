@@ -336,9 +336,11 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
-	if (!isalnum(sym) && sym != ' ' && sym != XKB_KEY_Escape && sym != XKB_KEY_Tab) {
-		// God fucking dammit
-		return false;
+	if (sym < 70000 /* bullshit made up number */) {
+		if (!isalnum(sym) && sym != ' ' && sym != XKB_KEY_Escape && sym != XKB_KEY_Tab) {
+			// God fucking dammit
+			return false;
+		}
 	}
 
 	// Lowercase if necessary
