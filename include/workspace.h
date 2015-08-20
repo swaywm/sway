@@ -15,6 +15,5 @@ void workspace_output_next();
 void workspace_next();
 void workspace_output_prev();
 void workspace_prev();
-void layout_log(const swayc_t *c, int depth);
 
 #endif

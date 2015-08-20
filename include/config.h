@@ -41,9 +41,12 @@ struct sway_config {
 	bool active;
 	bool failed;
 	bool reloading;
+
+	int gaps_inner;
+	int gaps_outer;
 };
 
-bool load_config(void);
+bool load_config(const char *file);
 bool read_config(FILE *file, bool is_active);
 char *do_var_replacement(struct sway_config *config, char *str);
 

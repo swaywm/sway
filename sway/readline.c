@@ -17,18 +17,22 @@ char *read_line(FILE *file) {
 			continue;
 		}
 		if (length == size) {
-			string = realloc(string, size *= 2);
-			if (!string) {
+			char *new_string = realloc(string, size *= 2);
+			if (!new_string) {
+				free(string);
 				return NULL;
 			}
+			string = new_string;
 		}
 		string[length++] = c;
 	}
 	if (length + 1 == size) {
-		string = realloc(string, length + 1);
-		if (!string) {
+		char *new_string = realloc(string, length + 1);
+		if (!new_string) {
+			free(string);
 			return NULL;
 		}
+		string = new_string;
 	}
 	string[length] = '\0';
 	return string;

@@ -3,6 +3,7 @@
 #include <wlc/wlc.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -14,6 +15,7 @@
 #include "commands.h"
 #include "container.h"
 #include "handlers.h"
+#include "sway.h"
 
 struct modifier_key {
 	char *name;
@@ -75,6 +77,18 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 	return false;
 }
 
+static int bindsym_sort(const void *_lbind, const void *_rbind) {
+	const struct sway_binding *lbind = *(void **)_lbind;
+	const struct sway_binding *rbind = *(void **)_rbind;
+	unsigned int lmod = 0, rmod = 0, i;
+
+	// Count how any modifiers are pressed
+	for (i = 0; i < 8 * sizeof(lbind->modifiers); ++i) {
+		lmod += lbind->modifiers & 1 << i;
+		rmod += rbind->modifiers & 1 << i;
+	}
+	return (rbind->keys->length + rmod) - (lbind->keys->length + lmod);
+}
 
 static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)) {
@@ -104,6 +118,10 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i], XKB_KEYSYM_CASE_INSENSITIVE);
 		if (!sym) {
 			sway_log(L_ERROR, "bindsym - unknown key %s", (char *)split->items[i]);
+			list_free(binding->keys);
+			free(binding->command);
+			free(binding);
+			list_free(split);
 			return false;
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
@@ -113,7 +131,10 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	list_free(split);
 
 	// TODO: Check if there are other commands with this key binding
-	list_add(config->current_mode->bindings, binding);
+	struct sway_mode *mode = config->current_mode;
+	list_add(mode->bindings, binding);
+	qsort(mode->bindings->items, mode->bindings->length,
+			sizeof(mode->bindings->items[0]), bindsym_sort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
 	return true;
@@ -166,7 +187,7 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	}
 	// Close all views
 	container_map(&root_container, kill_views, NULL);
-	exit(0);
+	sway_terminate();
 	return true;
 }
 
@@ -181,43 +202,28 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		if (view->type != C_VIEW) {
 			return true;
 		}
-		int i;
 		// Change from nonfloating to floating
 		if (!view->is_floating) {
-			view->is_floating = true;
-			for (i = 0; i < view->parent->children->length; i++) {
-				if (view->parent->children->items[i] == view) {
-					// Try to use desired geometry to set w/h
-					if (view->desired_width != -1) {
-						view->width = view->desired_width;
-					}
-					if (view->desired_height != -1) {
-						view->height = view->desired_height;
-					}
-
-					// Swap from the list of whatever container the view was in
-					// to the workspace->floating list
-					list_del(view->parent->children, i);
-					list_add(active_workspace->floating, view);
-					destroy_container(view->parent);
-
-					// Set the new position of the container and arrange windows
-					view->x = (active_workspace->width - view->width)/2;
-					view->y = (active_workspace->height - view->height)/2;
-					sway_log(L_INFO, "Setting container %p to floating at coordinates X:%d Y:%d, W:%d, H:%d", view, view->x, view->y, view->width, view->height);
-					// Change parent to active_workspace
-					view->parent = active_workspace;
-					arrange_windows(active_workspace, -1, -1);
-					return true;
-				}
+			// Remove view from its current location
+			destroy_container(remove_child(view));
+			
+			// and move it into workspace floating
+			add_floating(active_workspace,view);
+			view->x = (active_workspace->width - view->width)/2;
+			view->y = (active_workspace->height - view->height)/2;
+			if (view->desired_width != -1) {
+				view->width = view->desired_width;
 			}
+			if (view->desired_height != -1) {
+				view->height = view->desired_height;
+			}
+			arrange_windows(active_workspace, -1, -1);
 		} else {
 			// Delete the view from the floating list and unset its is_floating flag
 			// Using length-1 as the index is safe because the view must be the currently
 			// focused floating output
-			list_del(active_workspace->floating, active_workspace->floating->length - 1);
+			remove_child(view);
 			view->is_floating = false;
-			active_workspace->focused = NULL;
 			// Get the properly focused container, and add in the view there
 			swayc_t *focused = container_under_pointer();
 			// If focused is null, it's because the currently focused container is a workspace
@@ -228,21 +234,20 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 
 			sway_log(L_DEBUG, "Non-floating focused container is %p", focused);
 
-			//Case of focused workspace, just create as child of it
+			// Case of focused workspace, just create as child of it
 			if (focused->type == C_WORKSPACE) {
 				add_child(focused, view);
 			}
-			//Regular case, create as sibling of current container
+			// Regular case, create as sibling of current container
 			else {
 				add_sibling(focused, view);
 			}
 			// Refocus on the view once its been put back into the layout
-			set_focused_container(view);
+			view->width = view->height = 0;
 			arrange_windows(active_workspace, -1, -1);
-			return true;
 		}
+		set_focused_container(view);
 	}
-
 	return true;
 }
 
@@ -250,11 +255,29 @@ static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) 
 	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
-	config->floating_mod = xkb_keysym_from_name(argv[0], XKB_KEYSYM_CASE_INSENSITIVE);
+	int i, j;
+	list_t *split = split_string(argv[0], "+");
+	config->floating_mod = 0;
+
+	// set modifer keys
+	for (i = 0; i < split->length; ++i) {
+		for (j = 0; j < sizeof(modifiers) / sizeof(struct modifier_key); ++j) {
+			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
+				config->floating_mod |= modifiers[j].mod;
+			}
+		}
+	}
+	list_free(split);
+	if (!config->floating_mod) {
+		sway_log(L_ERROR, "bindsym - unknown keys %s", argv[0]);
+		return false;
+	}
 	return true;
 }
 
 static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
+	static int floating_toggled_index = 0;
+	static int tiled_toggled_index = 0;
 	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -268,7 +291,44 @@ static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 		return move_focus(MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "parent") == 0) {
 		return move_focus(MOVE_PARENT);
+	} else if (strcasecmp(argv[0], "mode_toggle") == 0) {
+		int i;
+		swayc_t *focused = get_focused_view(active_workspace);
+		if (focused->is_floating) {
+			if (active_workspace->children->length > 0) {
+				for (i = 0;i < active_workspace->floating->length; i++) {
+					if (active_workspace->floating->items[i] == focused) {
+						floating_toggled_index = i;
+						break;
+					}
+				}
+				if (active_workspace->children->length > tiled_toggled_index) {
+					set_focused_container(get_focused_view(active_workspace->children->items[tiled_toggled_index]));
+				} else {
+					set_focused_container(get_focused_view(active_workspace->children->items[0]));
+					tiled_toggled_index = 0;
+				}
+			}
+		} else {
+			if (active_workspace->floating->length > 0) {
+				for (i = 0;i < active_workspace->children->length; i++) {
+					if (active_workspace->children->items[i] == focused) {
+						tiled_toggled_index = i;
+						break;
+					}
+				}
+				if (active_workspace->floating->length > floating_toggled_index) {
+					swayc_t *floating = active_workspace->floating->items[floating_toggled_index];
+					set_focused_container(get_focused_view(floating));
+				} else {
+					swayc_t *floating = active_workspace->floating->items[active_workspace->floating->length - 1];
+					set_focused_container(get_focused_view(floating));
+					tiled_toggled_index = active_workspace->floating->length - 1;
+				}
+			}
+		}
 	}
+
 	return true;
 }
 
@@ -303,6 +363,42 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 
 	return true;
 
+static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
+		return false;
+	}
+
+	if (argc == 1) {
+		char *end;
+		int amount = (int)strtol(argv[0], &end, 10);
+		if (errno == ERANGE || amount == 0) {
+			errno = 0;
+			return false;
+		}
+		if (config->gaps_inner == 0) {
+			config->gaps_inner = amount;
+		}
+		if (config->gaps_outer == 0) {
+			config->gaps_outer = amount;
+		}
+	} else if (argc == 2) {
+		char *end;
+		int amount = (int)strtol(argv[1], &end, 10);
+		if (errno == ERANGE || amount == 0) {
+			errno = 0;
+			return false;
+		}
+		if (strcasecmp(argv[0], "inner") == 0) {
+			config->gaps_inner = amount;
+		} else if (strcasecmp(argv[0], "outer") == 0) {
+			config->gaps_outer = amount;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+	return true;
 }
 
 static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
@@ -316,7 +412,6 @@ static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
-
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
 	}
@@ -341,7 +436,7 @@ static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
-	if (!load_config()) {
+	if (!load_config(NULL)) { // TODO: Use config given from -c
 		return false;
 	}
 	arrange_windows(&root_container, -1, -1);
@@ -435,14 +530,12 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	swayc_t *container = get_focused_view(&root_container);
 	bool current = (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) > 0;
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
-	//Resize workspace if going from  fullscreen -> notfullscreen
-	//otherwise just resize container
+	// Resize workspace if going from  fullscreen -> notfullscreen
+	// otherwise just resize container
 	if (current) {
-		while (container->type != C_WORKSPACE) {
-			container = container->parent;
-		}
+		container = swayc_parent_by_type(container, C_WORKSPACE);
 	}
-	//Only resize container when going into fullscreen
+	// Only resize container when going into fullscreen
 	arrange_windows(container, -1, -1);
 
 	return true;
@@ -508,6 +601,7 @@ static struct cmd_handler handlers[] = {
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "fullscreen", cmd_fullscreen },
+	{ "gaps", cmd_gaps },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
@@ -606,7 +700,7 @@ bool handle_command(struct sway_config *config, char *exec) {
 		char **argv = split_directive(exec + strlen(handler->command), &argc);
 		int i;
 
-		 //Perform var subs on all parts of the command
+		 // Perform var subs on all parts of the command
 		 for (i = 0; i < argc; ++i) {
 			 argv[i] = do_var_replacement(config, argv[i]);
 		 }

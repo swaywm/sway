@@ -31,7 +31,7 @@ char *workspace_next_name(void) {
 			char* target = malloc(strlen(args->items[1]) + 1);
 			strcpy(target, args->items[1]);
 			while (*target == ' ' || *target == '\t')
-				target++; 
+				target++;
 
 			// Make sure that the command references an actual workspace
 			// not a command about workspaces
@@ -42,11 +42,15 @@ char *workspace_next_name(void) {
 				strcmp(target, "number") == 0 ||
 				strcmp(target, "back_and_forth") == 0 ||
 				strcmp(target, "current") == 0)
+			{
+				list_free(args);
 				continue;
-		   
-			//Make sure that the workspace doesn't already exist 
+			}
+
+			// Make sure that the workspace doesn't already exist
 			if (workspace_find_by_name(target)) {
-			   continue; 
+				list_free(args);
+				continue;
 			}
 
 			list_free(args);
@@ -54,6 +58,7 @@ char *workspace_next_name(void) {
 			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
 			return target;
 		}
+		list_free(args);
 	}
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name
@@ -70,14 +75,12 @@ char *workspace_next_name(void) {
 
 swayc_t *workspace_create(const char* name) {
 	swayc_t *parent = get_focused_container(&root_container);
-	while (parent->type != C_OUTPUT) {
-		parent = parent->parent;
-	}
+	parent = swayc_parent_by_type(parent, C_OUTPUT);
 	return new_workspace(parent, name);
 }
 
 bool workspace_by_name(swayc_t *view, void *data) {
-	return (view->type == C_WORKSPACE) && 
+	return (view->type == C_WORKSPACE) &&
 		   (strcasecmp(view->name, (char *) data) == 0);
 }
 
@@ -180,62 +183,4 @@ void workspace_switch(swayc_t *workspace) {
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
 	set_focused_container(get_focused_view(workspace));
 	arrange_windows(workspace, -1, -1);
-	active_workspace = workspace;
 }
-
-/* XXX:DEBUG:XXX */
-static void container_log(const swayc_t *c) {
-	fprintf(stderr, "focus:%c|",
-			c->is_focused ? 'F' : //Focused
-			c == active_workspace ? 'W' : //active workspace
-			c == &root_container  ? 'R' : //root
-			'X');//not any others
-	fprintf(stderr,"(%p)",c);
-	fprintf(stderr,"(p:%p)",c->parent);
-	fprintf(stderr,"(f:%p)",c->focused);
-	fprintf(stderr,"(h:%ld)",c->handle);
-	fprintf(stderr,"Type:");
-	fprintf(stderr,
-			c->type == C_ROOT   ? "Root|" :
-			c->type == C_OUTPUT ? "Output|" :
-			c->type == C_WORKSPACE ? "Workspace|" :
-			c->type == C_CONTAINER ? "Container|" :
-			c->type == C_VIEW   ? "View|" : "Unknown|");
-	fprintf(stderr,"layout:");
-	fprintf(stderr,
-			c->layout == L_NONE ? "NONE|" :
-			c->layout == L_HORIZ ? "Horiz|":
-			c->layout == L_VERT ? "Vert|":
-			c->layout == L_STACKED  ? "Stacked|":
-			c->layout == L_FLOATING ? "Floating|":
-			"Unknown|");
-	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
-	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
-	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
-	fprintf(stderr, "wgt:%d|", c->weight);
-	fprintf(stderr, "name:%.16s|", c->name);
-	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
-}
-void layout_log(const swayc_t *c, int depth) {
-	int i, d;
-	int e = c->children ? c->children->length : 0;
-	container_log(c);
-	if (e) {
-		for (i = 0; i < e; ++i) {
-			fputc('|',stderr);
-			for (d = 0; d < depth; ++d) fputc('-', stderr);
-			layout_log(c->children->items[i], depth + 1);
-		}
-	}
-	if (c->type == C_WORKSPACE) {
-		e = c->floating?c->floating->length:0;
-		if (e) {
-			for (i = 0; i < e; ++i) {
-				fputc('|',stderr);
-				for (d = 0; d < depth; ++d) fputc('-', stderr);
-				layout_log(c->floating->items[i], depth + 1);
-			}
-		}
-	}
-}
-/* XXX:DEBUG:XXX */
