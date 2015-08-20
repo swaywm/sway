@@ -15,6 +15,7 @@
 #include "commands.h"
 #include "container.h"
 #include "handlers.h"
+#include "sway.h"
 
 struct modifier_key {
 	char *name;
@@ -186,7 +187,7 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	}
 	// Close all views
 	container_map(&root_container, kill_views, NULL);
-	exit(0);
+	sway_terminate();
 	return true;
 }
 

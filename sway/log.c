@@ -1,10 +1,13 @@
 #include "log.h"
+#include "sway.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
+#include <string.h>
 
 int colored = 1;
 int v = 0;
@@ -40,7 +43,7 @@ void sway_abort(const char *format, ...) {
 	vfprintf(stderr, format, args);
 	va_end(args);
 	fprintf(stderr, "\n");
-	exit(1);
+	sway_terminate();
 }
 
 void sway_log(int verbosity, const char* format, ...) {
@@ -58,6 +61,34 @@ void sway_log(int verbosity, const char* format, ...) {
 		va_start(args, format);
 		vfprintf(stderr, format, args);
 		va_end(args);
+
+		if (colored) {
+			fprintf(stderr, "\x1B[0m");
+		}
+		fprintf(stderr, "\n");
+	}
+}
+
+void sway_log_errno(int verbosity, char* format, ...) {
+	if (verbosity <= v) {
+		int c = verbosity;
+		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
+			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
+		}
+
+		if (colored) {
+			fprintf(stderr, verbosity_colors[c]);
+		}
+
+		va_list args;
+		va_start(args, format);
+		vfprintf(stderr, format, args);
+		va_end(args);
+
+		fprintf(stderr, ": ");
+		char error[256];
+		strerror_r(errno, error, sizeof(error));
+		fprintf(stderr, error);
 
 		if (colored) {
 			fprintf(stderr, "\x1B[0m");
