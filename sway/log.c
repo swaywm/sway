@@ -1,4 +1,5 @@
 #include "log.h"
+#include "sway.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +43,7 @@ void sway_abort(const char *format, ...) {
 	vfprintf(stderr, format, args);
 	va_end(args);
 	fprintf(stderr, "\n");
-	exit(1);
+	sway_terminate();
 }
 
 void sway_log(int verbosity, const char* format, ...) {

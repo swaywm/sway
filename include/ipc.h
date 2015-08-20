@@ -13,6 +13,6 @@ enum ipc_command_type {
 };
 
 void ipc_init(void);
-void ipc_shutdown(void);
+void ipc_terminate(void);
 
 #endif

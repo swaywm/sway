@@ -60,7 +60,7 @@ void ipc_init(void) {
 	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
 }
 
-void ipc_shutdown(void) {
+void ipc_terminate(void) {
 	if (ipc_event_source) {
 		wlc_event_source_remove(ipc_event_source);
 	}

@@ -10,6 +10,14 @@
 #include "log.h"
 #include "handlers.h"
 #include "ipc.h"
+#include "sway.h"
+
+static bool terminate_request = false;
+
+void sway_terminate(void) {
+	terminate_request = true;
+	wlc_terminate();
+}
 
 static void sigchld_handle(int signal);
 
@@ -102,12 +110,15 @@ int main(int argc, char **argv) {
 
 	ipc_init();
 
-	wlc_run();
+	if (!terminate_request) {
+		wlc_run();
+	}
+
 	if (devnull) {
 		fclose(devnull);
 	}
 
-	ipc_shutdown();
+	ipc_terminate();
 
 	return 0;
 }
