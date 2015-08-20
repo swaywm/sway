@@ -316,6 +316,14 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t key, uint32_t sym, enum wlc_key_state state) {
+
+	static const uint32_t modifier_syms[] = {
+		XKB_KEY_Shift_L, XKB_KEY_Shift_R, XKB_KEY_Control_L, XKB_KEY_Control_R,
+		XKB_KEY_Caps_Lock, XKB_KEY_Shift_Lock, XKB_KEY_Meta_L, XKB_KEY_Meta_R,
+		XKB_KEY_Alt_L, XKB_KEY_Alt_R, XKB_KEY_Super_L, XKB_KEY_Super_R,
+		XKB_KEY_Hyper_L, XKB_KEY_Hyper_R
+	};
+
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return false;
 	}
@@ -327,12 +335,28 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 
 	struct sway_mode *mode = config->current_mode;
+
+	if (!isalnum(sym)) {
+		// God fucking dammit
+		return false;
+	}
+
 	// Lowercase if necessary
 	sym = tolower(sym);
 
 	int i;
+	bool mod = false;
 
-	for (i = 0; i < KEY_CACHE_SIZE; ++i) {
+	for (i = 0; i < sizeof(modifier_syms) / sizeof(uint32_t); ++i) {
+		if (modifier_syms[i] == sym) {
+			mod = true;
+			break;
+		}
+	}
+
+	int total = 0;
+	for (i = 0; i < KEY_CACHE_SIZE && !mod; ++i) {
+		total += keys_pressed[i] != 0;
 		if (state == WLC_KEY_STATE_PRESSED && keys_pressed[i] == 0) {
 			keys_pressed[i] = sym;
 			break;
@@ -340,10 +364,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			keys_pressed[i] = 0;
 			break;
 		}
-	}
-	if (i == KEY_CACHE_SIZE) {
-		sway_log(L_DEBUG, "Key buffer full!");
-		return false;
 	}
 
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
