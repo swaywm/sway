@@ -82,6 +82,7 @@ swayc_t *destroy_view(swayc_t *view);
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types);
 swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts);
+swayc_t *swayc_by_handle(wlc_handle handle);
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data);
 void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);

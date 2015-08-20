@@ -16,7 +16,7 @@ static const char *verbosity_colors[] = {
 	"", // L_SILENT
 	"\x1B[1;31m", // L_ERROR
 	"\x1B[1;34m", // L_INFO
-	"\x1B[1;30m", // L_DEBUG
+	"\x1B[1;32m", // L_DEBUG
 };
 
 void init_log(int verbosity) {
@@ -151,6 +151,7 @@ static void container_log(const swayc_t *c) {
 void layout_log(const swayc_t *c, int depth) {
 	int i, d;
 	int e = c->children ? c->children->length : 0;
+	if (L_DEBUG > v) return;
 	container_log(c);
 	if (e) {
 		for (i = 0; i < e; ++i) {
