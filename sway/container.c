@@ -171,7 +171,7 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = title ? strdup(title) : NULL;
 	view->visible = true;
 	view->is_focused = true;
-	//Setup geometry
+	// Setup geometry
 	view->width = 0;
 	view->height = 0;
 
@@ -205,7 +205,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	// Set the geometry of the floating view
 	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
 
-	//give it requested geometry, but place in center
+	// give it requested geometry, but place in center
 	view->x = (active_workspace->width - geometry->size.w) / 2;
 	view->y = (active_workspace->height- geometry->size.h) / 2;
 	view->width = geometry->size.w;

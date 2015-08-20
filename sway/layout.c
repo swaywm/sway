@@ -33,7 +33,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
-	//set focus for this container
+	// set focus for this container
 	if (parent->children->length == 1) {
 		set_focused_container_for(parent, child);
 	}
@@ -97,7 +97,7 @@ swayc_t *remove_child(swayc_t *child) {
 			}
 		}
 	}
-	//Set focused to new container
+	// Set focused to new container
 	if (parent->focused == child) {
 		if (parent->children->length > 0) {
 			set_focused_container_for(parent, parent->children->items[i?i-1:0]);
@@ -191,7 +191,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	switch (container->layout) {
 	case L_HORIZ:
 	default:
-		//Calculate total width
+		// Calculate total width
 		for (i = 0; i < container->children->length; ++i) {
 			int *old_width = &((swayc_t *)container->children->items[i])->width;
 			if (*old_width <= 0) {
@@ -203,7 +203,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			}
 			scale += *old_width;
 		}
-		//Resize windows
+		// Resize windows
 		if (scale > 0.1) {
 			scale = width / scale;
 			sway_log(L_DEBUG, "Arranging %p horizontally", container);
@@ -218,7 +218,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 		}
 		break;
 	case L_VERT:
-		//Calculate total height
+		// Calculate total height
 		for (i = 0; i < container->children->length; ++i) {
 			int *old_height = &((swayc_t *)container->children->items[i])->height;
 			if (*old_height <= 0) {
@@ -230,7 +230,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			}
 			scale += *old_height;
 		}
-		//Resize
+		// Resize
 		if (scale > 0.1) {
 			scale = height / scale;
 			sway_log(L_DEBUG, "Arranging %p vertically", container);

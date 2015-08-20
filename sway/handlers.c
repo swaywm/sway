@@ -87,7 +87,7 @@ swayc_t *container_under_pointer(void) {
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
-	//Switch to workspace if we need to
+	// Switch to workspace if we need to
 	if (active_workspace == NULL) {
 		swayc_t *ws = op->children->items[0];
 		workspace_switch(ws);
@@ -109,7 +109,7 @@ static void handle_output_destroyed(wlc_handle output) {
 	if (list->length == 0) {
 		active_workspace = NULL;
 	} else {
-		//switch to other outputs active workspace
+		// switch to other outputs active workspace
 		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
 	}
 }
@@ -167,7 +167,7 @@ static bool handle_view_created(wlc_handle handle) {
 	// Dmenu keeps viewfocus, but others with this flag dont, for now simulate
 	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
-//		locked_view_focus = true;
+// 		locked_view_focus = true;
 		wlc_view_focus(handle);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);
@@ -217,7 +217,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 	// DMENU has this flag, and takes view_focus, but other things with this
 	// flag dont
 	case WLC_BIT_OVERRIDE_REDIRECT:
-//		locked_view_focus = false;
+// 		locked_view_focus = false;
 		break;
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
 		locked_container_focus = false;
@@ -444,7 +444,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		}
 	}
 	if (config->focus_follows_mouse && prev_handle != handle) {
-		//Dont change focus if fullscreen
+		// Dont change focus if fullscreen
 		swayc_t *focused = get_focused_view(view);
 		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)
 				&& !(pointer_state.l_held || pointer_state.r_held)) {
@@ -474,7 +474,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
 	swayc_t *focused = get_focused_container(&root_container);
-	//dont change focus if fullscreen
+	// dont change focus if fullscreen
 	if (focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
 		return false;
 	}
@@ -510,7 +510,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				pointer_state.lock.left = !pointer_state.lock.right;
 				start_floating(pointer);
 			}
-			//Dont want pointer sent to window while dragging or resizing
+			// Dont want pointer sent to window while dragging or resizing
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		}
 		return (pointer && pointer != focused);

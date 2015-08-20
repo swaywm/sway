@@ -21,7 +21,7 @@ static void update_focus(swayc_t *c) {
 		// Case where output changes
 		case C_OUTPUT:
 			wlc_output_focus(c->handle);
-			//Set new workspace to the outputs focused workspace
+			// Set new workspace to the outputs focused workspace
 			active_workspace = c->focused;
 			break;
 
@@ -118,7 +118,7 @@ void set_focused_container(swayc_t *c) {
 		// activate current focus
 		if (p->type == C_VIEW) {
 			wlc_view_set_state(p->handle, WLC_BIT_ACTIVATED, true);
-			//set focus if view_focus is unlocked
+			// set focus if view_focus is unlocked
 			if (!locked_view_focus) {
 				wlc_view_focus(p->handle);
 			}

@@ -36,7 +36,7 @@ void press_key(keycode key) {
 void release_key(keycode key) {
 	uint8_t index = find_key(key);
 	if (index < KEY_STATE_MAX_LENGTH) {
-		//shift it over and remove key
+		// shift it over and remove key
 		key_state_array[index] = 0;
 	}
 }

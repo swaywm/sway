@@ -88,10 +88,10 @@ bool sway_assert(bool condition, const char* format, ...) {
 /* XXX:DEBUG:XXX */
 static void container_log(const swayc_t *c) {
 	fprintf(stderr, "focus:%c|",
-			c->is_focused ? 'F' : //Focused
-			c == active_workspace ? 'W' : //active workspace
-			c == &root_container  ? 'R' : //root
-			'X');//not any others
+			c->is_focused ? 'F' : // Focused
+			c == active_workspace ? 'W' : // active workspace
+			c == &root_container  ? 'R' : // root
+			'X');// not any others
 	fprintf(stderr,"(%p)",c);
 	fprintf(stderr,"(p:%p)",c->parent);
 	fprintf(stderr,"(f:%p)",c->focused);

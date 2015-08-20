@@ -47,7 +47,7 @@ char *workspace_next_name(void) {
 				continue;
 			}
 
-			//Make sure that the workspace doesn't already exist
+			// Make sure that the workspace doesn't already exist
 			if (workspace_find_by_name(target)) {
 				list_free(args);
 				continue;
