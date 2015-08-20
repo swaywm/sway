@@ -200,7 +200,6 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				} else {
 					*old_width = width;
 				}
-				sway_log(L_DEBUG,"setting width as %d",*old_width);
 			}
 			scale += *old_width;
 		}
