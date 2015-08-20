@@ -243,7 +243,6 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			}
 			// Refocus on the view once its been put back into the layout
 			arrange_windows(active_workspace, -1, -1);
-			return true;
 		}
 		set_focused_container(view);
 	}

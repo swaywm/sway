@@ -1,7 +1,5 @@
 #ifndef _SWAY_FOCUS_H
 #define _SWAY_FOCUS_H
-#include "container.h"
-
 enum movement_direction {
 	MOVE_LEFT,
 	MOVE_RIGHT,
@@ -9,6 +7,8 @@ enum movement_direction {
 	MOVE_DOWN,
 	MOVE_PARENT
 };
+
+#include "container.h"
 
 // focused_container - the container found by following the `focused` pointer
 // from a given container to a container with `is_focused` boolean set

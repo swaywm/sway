@@ -13,15 +13,9 @@
 #include "workspace.h"
 #include "container.h"
 #include "focus.h"
-#include "key_state.h"
+#include "input_state.h"
 
 static struct wlc_origin mouse_origin;
-
-static bool m1_held = false;
-static bool dragging = false;
-static bool m2_held = false;
-static bool resizing = false;
-static bool lock_left, lock_right, lock_top, lock_bottom = false;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -86,29 +80,6 @@ swayc_t *container_under_pointer(void) {
 		}
 	}
 	return lookup;
-}
-
-static struct wlc_geometry saved_floating;
-
-static void start_floating(swayc_t *view) {
-	if (view->is_floating) {
-		saved_floating.origin.x = view->x;
-		saved_floating.origin.y = view->y;
-		saved_floating.size.w = view->width;
-		saved_floating.size.h = view->height;
-	}
-}
-
-static void reset_floating(swayc_t *view) {
-	if (view->is_floating) {
-		view->x = saved_floating.origin.x;
-		view->y = saved_floating.origin.y;
-		view->width = saved_floating.size.w;
-		view->height = saved_floating.size.h;
-		arrange_windows(view->parent, -1, -1);
-	}
-	dragging = resizing = false;
-	lock_left = lock_right = lock_top = lock_bottom = false;
 }
 
 /* Handles */
@@ -327,7 +298,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 
 	// Revert floating container back to original position on keypress
-	if (state == WLC_KEY_STATE_PRESSED && (dragging || resizing)) {
+	if (state == WLC_KEY_STATE_PRESSED &&
+			(pointer_state.floating.drag || pointer_state.floating.resize)) {
 		reset_floating(get_focused_view(&root_container));
 	}
 
@@ -396,7 +368,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	// Do checks to determine if proper keys are being held
 	swayc_t *view = get_focused_view(active_workspace);
 	uint32_t edge = 0;
-	if (dragging && view) {
+	if (pointer_state.floating.drag && view) {
 		if (view->is_floating) {
 			int dx = mouse_origin.x - prev_pos.x;
 			int dy = mouse_origin.y - prev_pos.y;
@@ -404,7 +376,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			view->y += dy;
 			changed_floating = true;
 		}
-	} else if (resizing && view) {
+	} else if (pointer_state.floating.resize && view) {
 		if (view->is_floating) {
 			int dx = mouse_origin.x - prev_pos.x;
 			int dy = mouse_origin.y - prev_pos.y;
@@ -415,24 +387,24 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			int midway_x = view->x + view->width/2;
 			int midway_y = view->y + view->height/2;
 			if (dx < 0) {
-				if (!lock_right) {
+				if (!pointer_state.lock.right) {
 					if (view->width > min_sane_w) {
 						changed_floating = true;
 						view->width += dx;
 						edge += WLC_RESIZE_EDGE_RIGHT;
 					}
-				} else if (mouse_origin.x < midway_x && !lock_left) {
+				} else if (mouse_origin.x < midway_x && !pointer_state.lock.left) {
 					changed_floating = true;
 					view->x += dx;
 					view->width -= dx;
 					edge += WLC_RESIZE_EDGE_LEFT;
 				}
 			} else if (dx > 0) {
-				if (mouse_origin.x > midway_x && !lock_right) {
+				if (mouse_origin.x > midway_x && !pointer_state.lock.right) {
 					changed_floating = true;
 					view->width += dx;
 					edge += WLC_RESIZE_EDGE_RIGHT;
-				} else if (!lock_left) {
+				} else if (!pointer_state.lock.left) {
 					if (view->width > min_sane_w) {
 						changed_floating = true;
 						view->x += dx;
@@ -443,24 +415,24 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			}
 
 			if (dy < 0) {
-				if (!lock_bottom) {
+				if (!pointer_state.lock.bottom) {
 					if (view->height > min_sane_h) {
 						changed_floating = true;
 						view->height += dy;
 						edge += WLC_RESIZE_EDGE_BOTTOM;
 					}
-				} else if (mouse_origin.y < midway_y && !lock_top) {
+				} else if (mouse_origin.y < midway_y && !pointer_state.lock.top) {
 					changed_floating = true;
 					view->y += dy;
 					view->height -= dy;
 					edge += WLC_RESIZE_EDGE_TOP;
 				}
 			} else if (dy > 0) {
-				if (mouse_origin.y > midway_y && !lock_bottom) {
+				if (mouse_origin.y > midway_y && !pointer_state.lock.bottom) {
 					changed_floating = true;
 					view->height += dy;
 					edge += WLC_RESIZE_EDGE_BOTTOM;
-				} else if (!lock_top) {
+				} else if (!pointer_state.lock.top) {
 					if (view->height > min_sane_h) {
 						changed_floating = true;
 						view->y += dy;
@@ -474,7 +446,8 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	if (config->focus_follows_mouse && prev_handle != handle) {
 		//Dont change focus if fullscreen
 		swayc_t *focused = get_focused_view(view);
-		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) && !(m1_held || m2_held)) {
+		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)
+				&& !(pointer_state.l_held || pointer_state.r_held)) {
 			set_focused_container(container_under_pointer());
 		}
 	}
@@ -497,13 +470,6 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	return false;
 }
 
-enum pointer_values {
-	M_LEFT_CLICK = 272,
-	M_RIGHT_CLICK = 273,
-	M_SCROLL_CLICK = 274,
-	M_SCROLL_UP = 275,
-	M_SCROLL_DOWN = 276,
-};
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
@@ -515,10 +481,10 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	if (state == WLC_BUTTON_STATE_PRESSED) {
 		sway_log(L_DEBUG, "Mouse button %u pressed", button);
 		if (button == M_LEFT_CLICK) {
-			m1_held = true;
+			pointer_state.l_held = true;
 		}
 		if (button == M_RIGHT_CLICK) {
-			m2_held = true;
+			pointer_state.r_held = true;
 		}
 		swayc_t *pointer = container_under_pointer();
 		set_focused_container(pointer);
@@ -533,30 +499,31 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			}
 			arrange_windows(pointer->parent, -1, -1);
 			if (modifiers->mods & config->floating_mod) {
-				dragging = m1_held;
-				resizing = m2_held;
 				int midway_x = pointer->x + pointer->width/2;
 				int midway_y = pointer->y + pointer->height/2;
-				lock_bottom = origin->y < midway_y;
-				lock_top = !lock_bottom;
-				lock_right = origin->x < midway_x;
-				lock_left = !lock_right;
+
+				pointer_state.floating.drag = pointer_state.l_held;
+				pointer_state.floating.resize = pointer_state.r_held;
+				pointer_state.lock.bottom = origin->y < midway_y;
+				pointer_state.lock.top = !pointer_state.lock.bottom;
+				pointer_state.lock.right = origin->x < midway_x;
+				pointer_state.lock.left = !pointer_state.lock.right;
 				start_floating(pointer);
 			}
 			//Dont want pointer sent to window while dragging or resizing
-			return (dragging || resizing);
+			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		}
 		return (pointer && pointer != focused);
 	} else {
 		sway_log(L_DEBUG, "Mouse button %u released", button);
 		if (button == M_LEFT_CLICK) {
-			m1_held = false;
-			dragging = false;
+			pointer_state.l_held = false;
+			pointer_state.floating.drag = false;
 		}
 		if (button == M_RIGHT_CLICK) {
-			m2_held = false;
-			resizing = false;
-			lock_top = lock_bottom = lock_left = lock_right = false;
+			pointer_state.r_held = false;
+			pointer_state.floating.resize = false;
+			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false};
 		}
 	}
 	return false;

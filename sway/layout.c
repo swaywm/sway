@@ -298,3 +298,54 @@ swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
 	return NULL;
 }
 
+swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir) {
+	swayc_t *parent = container->parent;
+
+	if (dir == MOVE_PARENT) {
+		if (parent->type == C_OUTPUT) {
+			return NULL;
+		} else {
+			return parent;
+		}
+	}
+	while (true) {
+		// Test if we can even make a difference here
+		bool can_move = false;
+		int diff = 0;
+		if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
+				can_move = true;
+				diff = dir == MOVE_LEFT ? -1 : 1;
+			}
+		} else {
+			if (parent->layout == L_VERT) {
+				can_move = true;
+				diff = dir == MOVE_UP ? -1 : 1;
+			}
+		}
+		if (can_move) {
+			int i;
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *child = parent->children->items[i];
+				if (child == container) {
+					break;
+				}
+			}
+			int desired = i + diff;
+			if (desired < 0 || desired >= parent->children->length) {
+				can_move = false;
+			} else {
+				return parent->children->items[desired];
+			}
+		}
+		if (!can_move) {
+			sway_log(L_DEBUG, "Can't move at current level, moving up tree");
+			container = parent;
+			parent = parent->parent;
+			if (!parent) {
+				// Nothing we can do
+				return NULL;
+			}
+		}
+	}
+}
