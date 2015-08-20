@@ -336,7 +336,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
-	if (!isalnum(sym)) {
+	if (!isalnum(sym) && sym != ' ' && sym != XKB_KEY_Escape && sym != XKB_KEY_Tab) {
 		// God fucking dammit
 		return false;
 	}
@@ -391,7 +391,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			if (match) {
 				// Remove matched keys from keys_pressed
 				if (state == WLC_KEY_STATE_PRESSED) {
-					cmd_success = handle_command(config, binding->command);
+					handle_command(config, binding->command);
+					cmd_success = true;
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
 				}
