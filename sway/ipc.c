@@ -183,19 +183,19 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 
 	switch (client->current_command) {
-		case IPC_COMMAND:
-		{
-			buf[client->payload_length] = '\0';
-			bool success = handle_command(config, buf);
-			char reply[64];
-			int length = snprintf(reply, sizeof(reply), "{\"success\":%s}", success ? "true" : "false");
-			ipc_send_reply(client, reply, (uint32_t) length);
-			break;
-		}
-		default:
-			sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
-			ipc_client_disconnect(client);
-			break;
+	case IPC_COMMAND:
+	{
+		buf[client->payload_length] = '\0';
+		bool success = handle_command(config, buf);
+		char reply[64];
+		int length = snprintf(reply, sizeof(reply), "{\"success\":%s}", success ? "true" : "false");
+		ipc_send_reply(client, reply, (uint32_t) length);
+		break;
+	}
+	default:
+		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
+		ipc_client_disconnect(client);
+		break;
 	}
 
 	client->payload_length = 0;
