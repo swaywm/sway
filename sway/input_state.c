@@ -8,6 +8,13 @@
 
 static keycode key_state_array[KEY_STATE_MAX_LENGTH];
 
+void input_init(void) {
+	int i;
+	for (i = 0; i < KEY_STATE_MAX_LENGTH; ++i) {
+		key_state_array[i] = 0;
+	}
+}
+
 static uint8_t find_key(keycode key) {
 	int i;
 	for (i = 0; i < KEY_STATE_MAX_LENGTH; ++i) {

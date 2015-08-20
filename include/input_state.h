@@ -44,6 +44,7 @@ extern struct pointer_state {
 
 void start_floating(swayc_t *view);
 void reset_floating(swayc_t *view);
+void input_init(void);
 
 #endif
 

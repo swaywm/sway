@@ -9,6 +9,7 @@
 #include "commands.h"
 #include "config.h"
 #include "layout.h"
+#include "input_state.h"
 
 struct sway_config *config;
 
@@ -146,6 +147,8 @@ _continue:
 
 bool load_config(const char *file) {
 	sway_log(L_INFO, "Loading config");
+
+	input_init();
 
 	char *path;
 	if (file != NULL) {
