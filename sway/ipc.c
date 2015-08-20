@@ -11,10 +11,13 @@
 #include <stropts.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include "ipc.h"
 #include "log.h"
 #include "config.h"
 #include "commands.h"
+#include "list.h"
+#include "stringop.h"
 
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;
@@ -37,6 +40,10 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
 void ipc_client_disconnect(struct ipc_client *client);
 void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
+void ipc_get_workspaces_callback(swayc_t *container, void *data);
+void ipc_get_outputs_callback(swayc_t *container, void *data);
+
+char *json_list(list_t *items);
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -195,6 +202,26 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		ipc_send_reply(client, reply, (uint32_t) length);
 		break;
 	}
+	case IPC_GET_WORKSPACES:
+	{
+		list_t *workspaces = create_list();
+		container_map(&root_container, ipc_get_workspaces_callback, workspaces);
+		char *json = json_list(workspaces);
+		free_flat_list(workspaces);
+		ipc_send_reply(client, json, strlen(json));
+		free(json);
+		break;
+	}
+	case IPC_GET_OUTPUTS:
+	{
+		list_t *outputs = create_list();
+		container_map(&root_container, ipc_get_outputs_callback, outputs);
+		char *json = json_list(outputs);
+		free_flat_list(outputs);
+		ipc_send_reply(client, json, strlen(json));
+		free(json);
+		break;
+	}
 	default:
 		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
 		ipc_client_disconnect(client);
@@ -226,4 +253,69 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	}
 
 	return true;
+}
+
+char *json_list(list_t *items) {
+	char *json_elements = join_list(items, ",");
+	size_t len = strlen(json_elements);
+	char *json = malloc(len + 3);
+	json[0] = '[';
+	memcpy(json + 1, json_elements, len);
+	json[len+1] = ']';
+	json[len+2] = '\0';
+	free(json_elements);
+	return json;
+}
+
+void ipc_get_workspaces_callback(swayc_t *container, void *data) {
+	if (container->type == C_WORKSPACE) {
+		char *json = malloc(512); // Output should usually be around 180 chars
+		int num = isdigit(container->name[0]) ? atoi(container->name) : -1;
+		// TODO: escape the name (quotation marks, unicode)
+		sprintf(json,
+			"{"
+				"\"num\":%d,"
+				"\"name\":\"%s\","
+				"\"visible\":%s,"
+				"\"focused\":%s,"
+				"\"rect\":{"
+					"\"x\":%d,"
+					"\"y\":%d,"
+					"\"width\":%d,"
+					"\"height\":%d"
+				"},"
+				"\"output\":\"%s\","
+				"\"urgent\":%s"
+			"}",
+			num, container->name, container->visible ? "true" : "false", container->is_focused ? "true" : "false",
+			container->x, container->y, container->width, container->height,
+			container->parent->name, "false" // TODO: urgent hint
+		);
+		list_add((list_t *)data, json);
+	}
+}
+
+void ipc_get_outputs_callback(swayc_t *container, void *data) {
+	if (container->type == C_OUTPUT) {
+		char *json = malloc(512); // Output should usually be around 130 chars
+		// TODO: escape the name (quotation marks, unicode)
+		sprintf(json,
+			"{"
+				"\"name\":\"%s\","
+				"\"active\":%s,"
+				"\"primary\":%s,"
+				"\"rect\":{"
+					"\"x\":%d,"
+					"\"y\":%d,"
+					"\"width\":%d,"
+					"\"height\":%d"
+				"},"
+				"\"current_workspace\":\"%s\""
+			"}",
+			container->name, "true", "false", // TODO: active, primary
+			container->x, container->y, container->width, container->height,
+			container->focused ? container->focused->name : ""
+		);
+		list_add((list_t *)data, json);
+	}
 }
