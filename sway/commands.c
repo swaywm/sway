@@ -390,7 +390,6 @@ static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
-
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
 	}
@@ -512,9 +511,7 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	// Resize workspace if going from  fullscreen -> notfullscreen
 	// otherwise just resize container
 	if (current) {
-		while (container->type != C_WORKSPACE) {
-			container = container->parent;
-		}
+		container = swayc_parent_by_type(container, C_WORKSPACE);
 	}
 	// Only resize container when going into fullscreen
 	arrange_windows(container, -1, -1);
