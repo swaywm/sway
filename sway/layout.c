@@ -108,7 +108,9 @@ swayc_t *remove_child(swayc_t *child) {
 	return parent;
 }
 
-void move_container(swayc_t *container,swayc_t* root,int direction){
+//TODO: Implement horizontal movement.
+//TODO: Implement move to a different workspace.
+void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction){
 	sway_log(L_DEBUG, "Moved window");
 	swayc_t *temp;
 	int i;
@@ -121,8 +123,6 @@ void move_container(swayc_t *container,swayc_t* root,int direction){
 				//Only one container, meh.
 				break;
 			}
-			//TODO: Implement horizontal movement.
-			//TODO: Implement move to a different workspace.
 			if(direction == MOVE_LEFT && i > 0){
 				temp = root->children->items[i-1];
 				root->children->items[i] = temp;

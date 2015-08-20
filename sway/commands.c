@@ -362,6 +362,7 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	}
 
 	return true;
+}
 
 static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
