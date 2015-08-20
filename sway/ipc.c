@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stropts.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
 #include "ipc.h"
 #include "log.h"
 #include "config.h"
@@ -75,6 +76,12 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	int client_fd = accept(ipc_socket, NULL, NULL);
 	if (client_fd == -1) {
 		sway_log_errno(L_INFO, "Unable to accept IPC client connection");
+		return 0;
+	}
+
+	int flags;
+	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
+		sway_log_errno(L_INFO, "Unable to set CLOEXEC on IPC client socket");
 		return 0;
 	}
 
