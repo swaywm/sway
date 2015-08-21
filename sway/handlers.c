@@ -1,6 +1,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include <wlc/wlc.h>
 #include <ctype.h>
 
@@ -351,7 +352,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		return false;
 	}
 	// Do checks to determine if proper keys are being held
-	swayc_t *view = get_focused_view(active_workspace);
+	swayc_t *view = container_under_pointer();
 	uint32_t edge = 0;
 	if (pointer_state.floating.drag && view) {
 		if (view->is_floating) {
@@ -426,6 +427,91 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 			}
+		}	
+	} else if (pointer_state.tiling.resize && view) {
+		if (!view->is_floating) {
+			// Handle layout resizes -- Find the biggest parent container then apply resizes to that
+			// and its bordering siblings
+			swayc_t *parent = view;
+			double dx = mouse_origin.x - prev_pos.x;
+			double dy = mouse_origin.y - prev_pos.y;
+			if (pointer_state.lock.top) {
+				while (parent->type != C_WORKSPACE) {
+					// TODO: Absolute value is a bad hack here to compensate for rounding. Find a better
+					// way of doing this.
+					if (fabs(parent->parent->y + parent->parent->height - (view->y + view->height)) <= 1) {
+						parent = parent->parent;
+					} else {
+						break;
+					}
+				}
+				if (parent->parent->children->length > 1 && parent->parent->layout == L_VERT) {
+					sway_log(L_DEBUG, "Top is locked, found biggest valid parent at: %p", parent);
+					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_DOWN);
+					if (sibling) {
+						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
+						recursive_resize(parent, dy, WLC_RESIZE_EDGE_BOTTOM);
+						recursive_resize(sibling, -1 * dy, WLC_RESIZE_EDGE_TOP);
+					}
+				}
+			} else {
+				while (parent->type != C_WORKSPACE) {
+					if (fabs(parent->parent->y - view->y) <= 1) {
+						parent = parent->parent;
+					} else {
+						break;
+					}
+				}
+				if (parent->parent->children->length > 1 && parent->parent->layout == L_VERT) {
+					sway_log(L_DEBUG, "Bot is locked, found biggest valid parent at: %p", parent);
+					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_UP);
+					if (sibling) {
+						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
+						recursive_resize(parent, -1 * dy, WLC_RESIZE_EDGE_TOP);
+						recursive_resize(sibling, dy, WLC_RESIZE_EDGE_BOTTOM);
+					}
+				}
+			}
+
+			parent = view;
+			if (pointer_state.lock.left) {
+				while (parent->type != C_WORKSPACE) {
+					if (fabs(parent->parent->x + parent->parent->width - (view->x + view->width)) <= 1) {
+						parent = parent->parent;
+					} else {
+						sway_log(L_DEBUG, "view: %f vs parent: %f", view->x + view->width, parent->parent->x + parent->parent->width);
+						break;
+					}
+				}
+				sway_log(L_DEBUG, "Left is locked, found biggest valid parent at: %p", parent);
+				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
+					sway_log(L_DEBUG, "Left is locked, found biggest valid parent at: %p", parent);
+					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_RIGHT);
+					if (sibling) {
+						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
+						recursive_resize(parent, dx, WLC_RESIZE_EDGE_RIGHT);
+						recursive_resize(sibling, -1 * dx, WLC_RESIZE_EDGE_LEFT);
+					}
+				}
+			} else {
+				while (parent->type != C_WORKSPACE) {
+					if (fabs(parent->parent->x - view->x) <= 1 && parent->parent) {
+						parent = parent->parent;
+					} else {
+						break;
+					}
+				}
+				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
+					sway_log(L_DEBUG, "Right is locked, found biggest valid parent at: %p", parent);
+					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_LEFT);
+					if (sibling) {
+						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
+						recursive_resize(parent, -1 * dx, WLC_RESIZE_EDGE_LEFT);
+						recursive_resize(sibling, dx, WLC_RESIZE_EDGE_RIGHT);
+					}
+				}
+			}
+			arrange_windows(active_workspace, -1, -1);
 		}
 	}
 	if (config->focus_follows_mouse && prev_handle != handle) {
@@ -472,7 +558,16 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			pointer_state.r_held = true;
 		}
 		swayc_t *pointer = container_under_pointer();
-		set_focused_container(pointer);
+		if (pointer) {
+			set_focused_container(pointer);
+			int midway_x = pointer->x + pointer->width/2;
+			int midway_y = pointer->y + pointer->height/2;
+			pointer_state.lock.bottom = origin->y < midway_y;
+			pointer_state.lock.top = !pointer_state.lock.bottom;
+			pointer_state.lock.right = origin->x < midway_x;
+			pointer_state.lock.left = !pointer_state.lock.right;
+		}
+
 		if (pointer->is_floating) {
 			int i;
 			for (i = 0; i < pointer->parent->floating->length; i++) {
@@ -484,19 +579,14 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			}
 			arrange_windows(pointer->parent, -1, -1);
 			if (modifiers->mods & config->floating_mod) {
-				int midway_x = pointer->x + pointer->width/2;
-				int midway_y = pointer->y + pointer->height/2;
-
 				pointer_state.floating.drag = pointer_state.l_held;
 				pointer_state.floating.resize = pointer_state.r_held;
-				pointer_state.lock.bottom = origin->y < midway_y;
-				pointer_state.lock.top = !pointer_state.lock.bottom;
-				pointer_state.lock.right = origin->x < midway_x;
-				pointer_state.lock.left = !pointer_state.lock.right;
 				start_floating(pointer);
 			}
 			// Dont want pointer sent to window while dragging or resizing
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
+		} else {
+			pointer_state.tiling.resize = pointer_state.r_held;
 		}
 		return (pointer && pointer != focused);
 	} else {
@@ -508,6 +598,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		if (button == M_RIGHT_CLICK) {
 			pointer_state.r_held = false;
 			pointer_state.floating.resize = false;
+			pointer_state.tiling.resize = false;
 			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false};
 		}
 	}

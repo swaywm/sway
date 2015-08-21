@@ -34,6 +34,9 @@ extern struct pointer_state {
 		bool drag;
 		bool resize;
 	} floating;
+	struct pointer_tiling {
+		bool resize;
+	} tiling;
 	struct pointer_lock {
 		bool left;
 		bool right;

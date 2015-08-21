@@ -18,7 +18,7 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child);
 swayc_t *remove_child(swayc_t *child);
 
 // Layout
-void arrange_windows(swayc_t *container, int width, int height);
+void arrange_windows(swayc_t *container, double width, double height);
 
 // Focus
 void unfocus_all(swayc_t *container);

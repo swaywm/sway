@@ -109,7 +109,7 @@ swayc_t *remove_child(swayc_t *child) {
 }
 
 
-void arrange_windows(swayc_t *container, int width, int height) {
+void arrange_windows(swayc_t *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
 		sway_log(L_DEBUG, "Arranging layout for %p", container);
@@ -209,7 +209,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			sway_log(L_DEBUG, "Arranging %p horizontally", container);
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %d by %f)", child, child->type, width, scale);
+				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
 				child->x = x + container->x;
 				child->y = y + container->y;
 				arrange_windows(child, child->width * scale, height);
@@ -236,7 +236,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			sway_log(L_DEBUG, "Arranging %p vertically", container);
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %d by %f)", child, child->type, height, scale);
+				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
 				child->x = x + container->x;
 				child->y = y + container->y;
 				arrange_windows(child, width, child->height * scale);

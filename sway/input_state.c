@@ -41,7 +41,7 @@ void release_key(keycode key) {
 	}
 }
 
-struct pointer_state pointer_state = {0, 0, {0, 0}, {0, 0, 0, 0}};
+struct pointer_state pointer_state = {0, 0, {0, 0}, {0}, {0, 0, 0, 0}};
 
 static struct wlc_geometry saved_floating;
 
@@ -65,4 +65,3 @@ void reset_floating(swayc_t *view) {
 	pointer_state.floating = (struct pointer_floating){0,0};
 	pointer_state.lock = (struct pointer_lock){0,0,0,0};
 }
-
