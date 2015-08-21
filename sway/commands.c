@@ -327,8 +327,7 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "down") == 0) {
 		move_container(view, &root_container, MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "scratchpad") == 0 && view->type == C_VIEW) {
-		swayc_t *parent = view->parent;
-		destroy_container(remove_child(view));
+		swayc_t *parent = destroy_container(remove_child(view));
 		scratchpad_push(view);
 		set_focused_container(get_focused_view(parent));
 		arrange_windows(parent, -1, -1);
