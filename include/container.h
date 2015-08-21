@@ -15,6 +15,7 @@ enum swayc_types{
 	C_TYPES,
 };
 
+
 enum swayc_layouts{
 	L_NONE,
 	L_HORIZ,
@@ -85,6 +86,7 @@ swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts);
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data);
 void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);
+
 
 // Mappings
 void set_view_visibility(swayc_t *view, void *data);

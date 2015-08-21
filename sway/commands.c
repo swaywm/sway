@@ -206,7 +206,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		if (!view->is_floating) {
 			// Remove view from its current location
 			destroy_container(remove_child(view));
-			
+
 			// and move it into workspace floating
 			add_floating(active_workspace,view);
 			view->x = (active_workspace->width - view->width)/2;
@@ -338,6 +338,27 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 	}
 
 	config->focus_follows_mouse = !strcasecmp(argv[0], "yes");
+	return true;
+}
+
+static bool cmd_move(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+
+	swayc_t *view = get_focused_container(&root_container);
+
+	if (strcasecmp(argv[0], "left") == 0) {
+		move_container(view,&root_container,MOVE_LEFT);
+	} else if (strcasecmp(argv[0], "right") == 0) {
+		move_container(view,&root_container,MOVE_RIGHT);
+	} else if (strcasecmp(argv[0], "up") == 0) {
+		move_container(view,&root_container,MOVE_UP);
+	} else if (strcasecmp(argv[0], "down") == 0) {
+		move_container(view,&root_container,MOVE_DOWN);
+	} else {
+		return false;
+	}
 	return true;
 }
 
@@ -736,6 +757,7 @@ static struct cmd_handler handlers[] = {
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
+	{ "move", cmd_move},
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
 	{ "set", cmd_set },

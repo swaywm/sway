@@ -17,6 +17,9 @@ swayc_t *add_sibling(swayc_t *sibling, swayc_t *child);
 swayc_t *replace_child(swayc_t *child, swayc_t *new_child);
 swayc_t *remove_child(swayc_t *child);
 
+void move_container(swayc_t* container,swayc_t* root,enum movement_direction direction);
+
+
 // Layout
 void arrange_windows(swayc_t *container, double width, double height);
 
