@@ -288,7 +288,7 @@ void ipc_get_workspaces_callback(swayc_t *container, void *data) {
 				"\"urgent\":%s"
 			"}",
 			num, container->name, container->visible ? "true" : "false", container->is_focused ? "true" : "false",
-			container->x, container->y, container->width, container->height,
+			(int)container->x, (int)container->y, (int)container->width, (int)container->height,
 			container->parent->name, "false" // TODO: urgent hint
 		);
 		list_add((list_t *)data, json);
@@ -313,7 +313,7 @@ void ipc_get_outputs_callback(swayc_t *container, void *data) {
 				"\"current_workspace\":\"%s\""
 			"}",
 			container->name, "true", "false", // TODO: active, primary
-			container->x, container->y, container->width, container->height,
+			(int)container->x, (int)container->y, (int)container->width, (int)container->height,
 			container->focused ? container->focused->name : ""
 		);
 		list_add((list_t *)data, json);
