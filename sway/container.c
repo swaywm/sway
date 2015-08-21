@@ -57,10 +57,6 @@ static void free_swayc(swayc_t *cont) {
 
 // New containers
 
-static bool workspace_test(swayc_t *view, void *name) {
-	return strcasecmp(view->name, (char *)name) == 0;
-}
-
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size* size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
@@ -84,7 +80,7 @@ swayc_t *new_output(wlc_handle handle) {
 			if (strcasecmp(wso->output, name) == 0) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
 				// Check if any other workspaces are using this name
-				if (find_container(&root_container, workspace_test, wso->workspace)) {
+				if (workspace_by_name(wso->workspace)) {
 					sway_log(L_DEBUG, "But it's already taken");
 					break;
 				}
@@ -128,7 +124,8 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 }
 
 swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
-	if (!ASSERT_NONNULL(child)) {
+	if (!ASSERT_NONNULL(child)
+			&& !sway_assert(!child->is_floating, "cannot create container around floating window")) {
 		return NULL;
 	}
 	swayc_t *cont = new_swayc(C_CONTAINER);
@@ -207,6 +204,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 }
 
 swayc_t *new_floating_view(wlc_handle handle) {
+	if (swayc_active_workspace() == NULL) {
+		return NULL;
+	}
 	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
 	sway_log(L_DEBUG, "Adding new view %lu:%x:%s as a floating view",
@@ -220,8 +220,8 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
 
 	// give it requested geometry, but place in center
-	view->x = (active_workspace->width - geometry->size.w) / 2;
-	view->y = (active_workspace->height- geometry->size.h) / 2;
+	view->x = (swayc_active_workspace()->width - geometry->size.w) / 2;
+	view->y = (swayc_active_workspace()->height- geometry->size.h) / 2;
 	view->width = geometry->size.w;
 	view->height = geometry->size.h;
 
@@ -231,10 +231,10 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	view->is_floating = true;
 
 	// Case of focused workspace, just create as child of it
-	list_add(active_workspace->floating, view);
-	view->parent = active_workspace;
-	if (active_workspace->focused == NULL) {
-		set_focused_container_for(active_workspace, view);
+	list_add(swayc_active_workspace()->floating, view);
+	view->parent = swayc_active_workspace();
+	if (swayc_active_workspace()->focused == NULL) {
+		set_focused_container_for(swayc_active_workspace(), view);
 	}
 	return view;
 }
@@ -306,6 +306,35 @@ swayc_t *destroy_view(swayc_t *view) {
 
 // Container lookup
 
+
+swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
+	if (!container->children) {
+		return NULL;
+	}
+	// Special case for checking floating stuff
+	int i;
+	if (container->type == C_WORKSPACE) {
+		for (i = 0; i < container->floating->length; ++i) {
+			swayc_t *child = container->floating->items[i];
+			if (test(child, data)) {
+				return child;
+			}
+		}
+	}
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		if (test(child, data)) {
+			return child;
+		} else {
+			swayc_t *res = swayc_by_test(child, test, data);
+			if (res) {
+				return res;
+			}
+		}
+	}
+	return NULL;
+}
+
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 	if (!ASSERT_NONNULL(container)) {
 		return NULL;
@@ -332,33 +361,68 @@ swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts layout) {
 	return container;
 }
 
-swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
-	if (!container->children) {
+static swayc_t *_swayc_by_handle_helper(wlc_handle handle, swayc_t *parent) {
+	if (!parent || !parent->children) {
 		return NULL;
 	}
-	// Special case for checking floating stuff
-	int i;
-	if (container->type == C_WORKSPACE) {
-		for (i = 0; i < container->floating->length; ++i) {
-			swayc_t *child = container->floating->items[i];
-			if (test(child, data)) {
-				return child;
+	int i, len;
+	swayc_t **child;
+	if (parent->type == C_WORKSPACE) {
+		len = parent->floating->length;
+		child = (swayc_t **)parent->floating->items;
+		for (i = 0; i < len; ++i, ++child) {
+			if ((*child)->handle == handle) {
+				return *child;
 			}
 		}
 	}
-	for (i = 0; i < container->children->length; ++i) {
-		swayc_t *child = container->children->items[i];
-		if (test(child, data)) {
-			return child;
+
+	len = parent->children->length;
+	child = (swayc_t**)parent->children->items;
+	for (i = 0; i < len; ++i, ++child) {
+		if ((*child)->handle == handle) {
+			return *child;
 		} else {
-			swayc_t *res = find_container(child, test, data);
-			if (res) {
+			swayc_t *res;
+			if ((res = _swayc_by_handle_helper(handle, *child))) {
 				return res;
 			}
 		}
 	}
 	return NULL;
 }
+
+swayc_t *swayc_by_handle(wlc_handle handle) {
+	return _swayc_by_handle_helper(handle, &root_container);
+}
+
+swayc_t *swayc_active_output(void) {
+	return root_container.focused;
+}
+
+swayc_t *swayc_active_workspace(void) {
+	return root_container.focused ? root_container.focused->focused : NULL;
+}
+
+swayc_t *swayc_active_workspace_for(swayc_t *cont) {
+	if (! cont) {
+		return NULL;
+	}
+	switch (cont->type) {
+	case C_ROOT: cont = cont->focused;
+	case C_OUTPUT: cont = cont->focused;
+	case C_WORKSPACE: return cont;
+	default: return swayc_parent_by_type(cont, C_WORKSPACE);
+	}
+}
+
+// Container information
+
+bool swayc_is_fullscreen(swayc_t *view) {
+	return view && view->type == C_VIEW && (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN);
+}
+
+// Mapping
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
 	if (container && container->children && container->children->length)  {

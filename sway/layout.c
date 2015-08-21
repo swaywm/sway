@@ -35,7 +35,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	child->parent = parent;
 	// set focus for this container
 	if (parent->children->length == 1) {
-		set_focused_container_for(parent, child);
+		parent->focused = child;
 	}
 }
 
@@ -46,7 +46,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	child->parent = ws;
 	child->is_floating = true;
 	if (!ws->focused) {
-		set_focused_container_for(ws, child);
+		ws->focused = child;
 	}
 }
 
@@ -71,7 +71,7 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	new_child->parent = child->parent;
 
 	if (child->parent->focused == child) {
-		set_focused_container_for(child->parent, new_child);
+		child->parent->focused = new_child;
 	}
 	child->parent = NULL;
 	return parent;
@@ -100,7 +100,7 @@ swayc_t *remove_child(swayc_t *child) {
 	// Set focused to new container
 	if (parent->focused == child) {
 		if (parent->children->length > 0) {
-			set_focused_container_for(parent, parent->children->items[i?i-1:0]);
+			parent->focused = parent->children->items[i?i-1:0];
 		} else {
 			parent->focused = NULL;
 		}
@@ -328,35 +328,6 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	layout_log(&root_container, 0);
 }
 
-swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
-	if (parent->children == NULL) {
-		return NULL;
-	}
-
-	// Search for floating workspaces
-	int i;
-	if (parent->type == C_WORKSPACE) {
-		for (i = 0; i < parent->floating->length; ++i) {
-			swayc_t *child = parent->floating->items[i];
-			if (child->handle == handle) {
-				return child;
-			}
-		}
-	}
-
-	for (i = 0; i < parent->children->length; ++i) {
-		swayc_t *child = parent->children->items[i];
-		if (child->handle == handle) {
-			return child;
-		} else {
-			swayc_t *res;
-			if ((res = get_swayc_for_handle(handle, child))) {
-				return res;
-			}
-		}
-	}
-	return NULL;
-}
 
 swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir) {
 	swayc_t *parent = container->parent;
