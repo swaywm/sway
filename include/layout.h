@@ -30,4 +30,6 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 
 void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge edge);
 
+void view_set_floating(swayc_t *view, bool floating);
+
 #endif
