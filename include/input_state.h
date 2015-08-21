@@ -36,6 +36,7 @@ extern struct pointer_state {
 	} floating;
 	struct pointer_tiling {
 		bool resize;
+		swayc_t *init_view;
 	} tiling;
 	struct pointer_lock {
 		bool left;

@@ -348,6 +348,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	static wlc_handle prev_handle = 0;
 	mouse_origin = *origin;
 	bool changed_floating = false;
+	bool changed_tiling = false;
+	int min_sane_w = 100;
+	int min_sane_h = 60;
 	if (!active_workspace) {
 		return false;
 	}
@@ -366,8 +369,6 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		if (view->is_floating) {
 			int dx = mouse_origin.x - prev_pos.x;
 			int dy = mouse_origin.y - prev_pos.y;
-			int min_sane_w = 100;
-			int min_sane_h = 60;
 
 			// Move and resize the view based on the dx/dy and mouse position
 			int midway_x = view->x + view->width/2;
@@ -429,7 +430,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			}
 		}	
 	} else if (pointer_state.tiling.resize && view) {
-		if (!view->is_floating) {
+		if (view != pointer_state.tiling.init_view) {
+			// Quit out of the resize
+			pointer_state.tiling.init_view = NULL;
+		}
+		if (!view->is_floating && view == pointer_state.tiling.init_view) {
 			// Handle layout resizes -- Find the biggest parent container then apply resizes to that
 			// and its bordering siblings
 			swayc_t *parent = view;
@@ -450,8 +455,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_DOWN);
 					if (sibling) {
 						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
-						recursive_resize(parent, dy, WLC_RESIZE_EDGE_BOTTOM);
-						recursive_resize(sibling, -1 * dy, WLC_RESIZE_EDGE_TOP);
+						if ((parent->height > min_sane_h || dy > 0) && (sibling->height > min_sane_h || dy < 0)) {
+							recursive_resize(parent, dy, WLC_RESIZE_EDGE_BOTTOM);
+							recursive_resize(sibling, -1 * dy, WLC_RESIZE_EDGE_TOP);
+							changed_tiling = true;
+						}
 					}
 				}
 			} else {
@@ -467,8 +475,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_UP);
 					if (sibling) {
 						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
-						recursive_resize(parent, -1 * dy, WLC_RESIZE_EDGE_TOP);
-						recursive_resize(sibling, dy, WLC_RESIZE_EDGE_BOTTOM);
+						if ((parent->height > min_sane_h || dy < 0) && (sibling->height > min_sane_h || dy > 0)) {
+							recursive_resize(parent, -1 * dy, WLC_RESIZE_EDGE_TOP);
+							recursive_resize(sibling, dy, WLC_RESIZE_EDGE_BOTTOM);
+							changed_tiling = true;
+						}
 					}
 				}
 			}
@@ -483,14 +494,16 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 						break;
 					}
 				}
-				sway_log(L_DEBUG, "Left is locked, found biggest valid parent at: %p", parent);
 				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
 					sway_log(L_DEBUG, "Left is locked, found biggest valid parent at: %p", parent);
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_RIGHT);
 					if (sibling) {
 						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
-						recursive_resize(parent, dx, WLC_RESIZE_EDGE_RIGHT);
-						recursive_resize(sibling, -1 * dx, WLC_RESIZE_EDGE_LEFT);
+						if ((parent->width > min_sane_w || dx > 0) && (sibling->width > min_sane_w || dx < 0)) {
+							recursive_resize(parent, dx, WLC_RESIZE_EDGE_RIGHT);
+							recursive_resize(sibling, -1 * dx, WLC_RESIZE_EDGE_LEFT);
+							changed_tiling = true;
+						}
 					}
 				}
 			} else {
@@ -506,8 +519,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_LEFT);
 					if (sibling) {
 						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
-						recursive_resize(parent, -1 * dx, WLC_RESIZE_EDGE_LEFT);
-						recursive_resize(sibling, dx, WLC_RESIZE_EDGE_RIGHT);
+						if ((parent->width > min_sane_w || dx < 0) && (sibling->width > min_sane_w || dx > 0)) {
+							recursive_resize(parent, -1 * dx, WLC_RESIZE_EDGE_LEFT);
+							recursive_resize(sibling, dx, WLC_RESIZE_EDGE_RIGHT);
+							changed_tiling = true;
+						}
 					}
 				}
 			}
@@ -536,6 +552,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			}
 		};
 		wlc_view_set_geometry(view->handle, edge, &geometry);
+		return true;
+	}
+	if (changed_tiling) {
 		return true;
 	}
 	return false;
@@ -587,6 +606,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		} else {
 			pointer_state.tiling.resize = pointer_state.r_held;
+			pointer_state.tiling.init_view = pointer;
 		}
 		return (pointer && pointer != focused);
 	} else {
@@ -599,6 +619,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			pointer_state.r_held = false;
 			pointer_state.floating.resize = false;
 			pointer_state.tiling.resize = false;
+			pointer_state.tiling.init_view = NULL;
 			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false};
 		}
 	}

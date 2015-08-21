@@ -149,6 +149,7 @@ static void container_log(const swayc_t *c) {
 	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
 }
 void layout_log(const swayc_t *c, int depth) {
+	if (L_DEBUG > v) return;
 	int i, d;
 	int e = c->children ? c->children->length : 0;
 	container_log(c);
