@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <wlc/wlc.h>
+#include <string.h>
 #include "workspace.h"
 #include "layout.h"
 #include "list.h"
@@ -10,8 +11,6 @@
 #include "config.h"
 #include "stringop.h"
 #include "focus.h"
-
-swayc_t *active_workspace = NULL;
 
 char *workspace_next_name(void) {
 	sway_log(L_DEBUG, "Workspace: Generating new name");
@@ -48,7 +47,7 @@ char *workspace_next_name(void) {
 			}
 
 			// Make sure that the workspace doesn't already exist
-			if (workspace_find_by_name(target)) {
+			if (workspace_by_name(target)) {
 				list_free(args);
 				continue;
 			}
@@ -79,22 +78,22 @@ swayc_t *workspace_create(const char* name) {
 	return new_workspace(parent, name);
 }
 
-bool workspace_by_name(swayc_t *view, void *data) {
+static bool _workspace_by_name(swayc_t *view, void *data) {
 	return (view->type == C_WORKSPACE) &&
 		   (strcasecmp(view->name, (char *) data) == 0);
 }
 
-swayc_t *workspace_find_by_name(const char* name) {
-	return find_container(&root_container, workspace_by_name, (void *) name);
+swayc_t *workspace_by_name(const char* name) {
+	return swayc_by_test(&root_container, _workspace_by_name, (void *) name);
 }
 
 void workspace_output_next() {
 	// Get the index of the workspace in the current output, and change the view to index+1 workspace.
 	// if we're currently focused on the last workspace in the output, switch to the first
-	swayc_t *current_output = active_workspace->parent;
+	swayc_t *current_output = swayc_active_workspace()->parent;
 	int i;
 	for (i = 0; i < current_output->children->length - 1; i++) {
-		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), swayc_active_workspace()->name) == 0) {
 			workspace_switch(current_output->children->items[i + 1]);
 			return;
 		}
@@ -106,10 +105,10 @@ void workspace_next() {
 	// Get the index of the workspace in the current output, and change the view to index+1 workspace.
 	// if we're currently focused on the last workspace in the output, change focus to there
 	// and call workspace_output_next(), as long as another output actually exists
-	swayc_t *current_output = active_workspace->parent;
+	swayc_t *current_output = swayc_active_workspace()->parent;
 	int i;
 	for (i = 0; i < current_output->children->length - 1; i++) {
-		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), swayc_active_workspace()->name) == 0) {
 			workspace_switch(current_output->children->items[i + 1]);
 			return;
 		}
@@ -134,10 +133,10 @@ void workspace_next() {
 void workspace_output_prev() {
 	// Get the index of the workspace in the current output, and change the view to index+1 workspace
 	// if we're currently focused on the first workspace in the output, do nothing and return false
-	swayc_t *current_output = active_workspace->parent;
+	swayc_t *current_output = swayc_active_workspace()->parent;
 	int i;
 	for (i = 1; i < current_output->children->length; i++) {
-		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), swayc_active_workspace()->name) == 0) {
 			workspace_switch(current_output->children->items[i - 1]);
 			return;
 		}
@@ -150,10 +149,10 @@ void workspace_prev() {
 	// if we're currently focused on the last workspace in the output, change focus to there
 	// and call workspace_output_next(), as long as another output actually exists
 
-	swayc_t *current_output = active_workspace->parent;
+	swayc_t *current_output = swayc_active_workspace()->parent;
 	int i;
 	for (i = 1; i < current_output->children->length; i++) {
-		if (strcmp((((swayc_t *)current_output->children->items[i])->name), active_workspace->name) == 0) {
+		if (strcmp((((swayc_t *)current_output->children->items[i])->name), swayc_active_workspace()->name) == 0) {
 			workspace_switch(current_output->children->items[i - 1]);
 			return;
 		}

@@ -208,16 +208,16 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			destroy_container(remove_child(view));
 
 			// and move it into workspace floating
-			add_floating(active_workspace,view);
-			view->x = (active_workspace->width - view->width)/2;
-			view->y = (active_workspace->height - view->height)/2;
+			add_floating(swayc_active_workspace(),view);
+			view->x = (swayc_active_workspace()->width - view->width)/2;
+			view->y = (swayc_active_workspace()->height - view->height)/2;
 			if (view->desired_width != -1) {
 				view->width = view->desired_width;
 			}
 			if (view->desired_height != -1) {
 				view->height = view->desired_height;
 			}
-			arrange_windows(active_workspace, -1, -1);
+			arrange_windows(swayc_active_workspace(), -1, -1);
 		} else {
 			// Delete the view from the floating list and unset its is_floating flag
 			// Using length-1 as the index is safe because the view must be the currently
@@ -228,7 +228,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			swayc_t *focused = container_under_pointer();
 			// If focused is null, it's because the currently focused container is a workspace
 			if (focused == NULL) {
-				focused = active_workspace;
+				focused = swayc_active_workspace();
 			}
 			set_focused_container(focused);
 
@@ -244,7 +244,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			}
 			// Refocus on the view once its been put back into the layout
 			view->width = view->height = 0;
-			arrange_windows(active_workspace, -1, -1);
+			arrange_windows(swayc_active_workspace(), -1, -1);
 		}
 		set_focused_container(view);
 	}
@@ -293,37 +293,38 @@ static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 		return move_focus(MOVE_PARENT);
 	} else if (strcasecmp(argv[0], "mode_toggle") == 0) {
 		int i;
-		swayc_t *focused = get_focused_view(active_workspace);
+		swayc_t *workspace = swayc_active_workspace();
+		swayc_t *focused = get_focused_view(workspace);
 		if (focused->is_floating) {
-			if (active_workspace->children->length > 0) {
-				for (i = 0;i < active_workspace->floating->length; i++) {
-					if (active_workspace->floating->items[i] == focused) {
+			if (workspace->children->length > 0) {
+				for (i = 0;i < workspace->floating->length; i++) {
+					if (workspace->floating->items[i] == focused) {
 						floating_toggled_index = i;
 						break;
 					}
 				}
-				if (active_workspace->children->length > tiled_toggled_index) {
-					set_focused_container(get_focused_view(active_workspace->children->items[tiled_toggled_index]));
+				if (workspace->children->length > tiled_toggled_index) {
+					set_focused_container(get_focused_view(workspace->children->items[tiled_toggled_index]));
 				} else {
-					set_focused_container(get_focused_view(active_workspace->children->items[0]));
+					set_focused_container(get_focused_view(workspace->children->items[0]));
 					tiled_toggled_index = 0;
 				}
 			}
 		} else {
-			if (active_workspace->floating->length > 0) {
-				for (i = 0;i < active_workspace->children->length; i++) {
-					if (active_workspace->children->items[i] == focused) {
+			if (workspace->floating->length > 0) {
+				for (i = 0;i < workspace->children->length; i++) {
+					if (workspace->children->items[i] == focused) {
 						tiled_toggled_index = i;
 						break;
 					}
 				}
-				if (active_workspace->floating->length > floating_toggled_index) {
-					swayc_t *floating = active_workspace->floating->items[floating_toggled_index];
+				if (workspace->floating->length > floating_toggled_index) {
+					swayc_t *floating = workspace->floating->items[floating_toggled_index];
 					set_focused_container(get_focused_view(floating));
 				} else {
-					swayc_t *floating = active_workspace->floating->items[active_workspace->floating->length - 1];
+					swayc_t *floating = workspace->floating->items[workspace->floating->length - 1];
 					set_focused_container(get_focused_view(floating));
-					tiled_toggled_index = active_workspace->floating->length - 1;
+					tiled_toggled_index = workspace->floating->length - 1;
 				}
 			}
 		}
@@ -459,7 +460,7 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		amount *= -1;
 	}
 
-	swayc_t *parent = get_focused_view(active_workspace);
+	swayc_t *parent = get_focused_view(swayc_active_workspace());
 	swayc_t *focused = parent;
 	swayc_t *sibling;
 	if (!parent) {
@@ -529,7 +530,7 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		}
 		// Recursive resize does not handle positions, let arrange_windows
 		// take care of that.
-		arrange_windows(active_workspace, -1, -1);
+		arrange_windows(swayc_active_workspace(), -1, -1);
 		return true;
 	} else if (strcmp(argv[1], "height") == 0) {
 		int tnumber = 0;
@@ -589,7 +590,7 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 				}
 			}
 		}
-		arrange_windows(active_workspace, -1, -1);
+		arrange_windows(swayc_active_workspace(), -1, -1);
 		return true;
 	}
 	return true;
@@ -616,8 +617,12 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
+	// Case of floating window, dont split
+	if (focused->is_floating) {
+		return true;
+	}
+	/* Case that focus is on an workspace with 0/1 children.change its layout */
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
-		/* Case that focus is on an workspace with 0/1 children.change its layout */
 		sway_log(L_DEBUG, "changing workspace layout");
 		focused->layout = layout;
 	} else if (focused->type != C_WORKSPACE && focused->parent->children->length == 1) {
@@ -632,7 +637,6 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 		set_focused_container(focused);
 		arrange_windows(parent, -1, -1);
 	}
-
 	return true;
 }
 
@@ -680,7 +684,7 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	}
 
 	swayc_t *container = get_focused_view(&root_container);
-	bool current = (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) > 0;
+	bool current = swayc_is_fullscreen(container);
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
 	// Resize workspace if going from  fullscreen -> notfullscreen
 	// otherwise just resize container
@@ -721,7 +725,7 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 			return true;
 		}
 
-		swayc_t *workspace = workspace_find_by_name(argv[0]);
+		swayc_t *workspace = workspace_by_name(argv[0]);
 		if (!workspace) {
 			workspace = workspace_create(argv[0]);
 		}

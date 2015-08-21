@@ -86,7 +86,7 @@ static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
 	// Switch to workspace if we need to
-	if (active_workspace == NULL) {
+	if (swayc_active_workspace() == NULL) {
 		swayc_t *ws = op->children->items[0];
 		workspace_switch(ws);
 	}
@@ -104,9 +104,7 @@ static void handle_output_destroyed(wlc_handle output) {
 	if (i < list->length) {
 		destroy_output(list->items[i]);
 	}
-	if (list->length == 0) {
-		active_workspace = NULL;
-	} else {
+	if (list->length > 0) {
 		// switch to other outputs active workspace
 		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
 	}
@@ -114,7 +112,7 @@ static void handle_output_destroyed(wlc_handle output) {
 
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
 	sway_log(L_DEBUG, "Output %u resolution changed to %d x %d", (unsigned int)output, to->w, to->h);
-	swayc_t *c = get_swayc_for_handle(output, &root_container);
+	swayc_t *c = swayc_by_handle(output);
 	if (!c) return;
 	c->width = to->w;
 	c->height = to->h;
@@ -122,7 +120,7 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 }
 
 static void handle_output_focused(wlc_handle output, bool focus) {
-	swayc_t *c = get_swayc_for_handle(output, &root_container);
+	swayc_t *c = swayc_by_handle(output);
 	// if for some reason this output doesnt exist, create it.
 	if (!c) {
 		handle_output_created(output);
@@ -140,7 +138,7 @@ static bool handle_view_created(wlc_handle handle) {
 
 	// Get parent container, to add view in
 	if (parent) {
-		focused = get_swayc_for_handle(parent, &root_container);
+		focused = swayc_by_handle(parent);
 	}
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
@@ -197,7 +195,7 @@ static bool handle_view_created(wlc_handle handle) {
 
 static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %lu", handle);
-	swayc_t *view = get_swayc_for_handle(handle, &root_container);
+	swayc_t *view = swayc_by_handle(handle);
 
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
@@ -231,7 +229,7 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 	// If the view is floating, then apply the geometry.
 	// Otherwise save the desired width/height for the view.
 	// This will not do anything for the time being as WLC improperly sends geometry requests
-	swayc_t *view = get_swayc_for_handle(handle, &root_container);
+	swayc_t *view = swayc_by_handle(handle);
 	if (view) {
 		view->desired_width = geometry->size.w;
 		view->desired_height = geometry->size.h;
@@ -247,7 +245,7 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 }
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {
-	swayc_t *c = get_swayc_for_handle(view, &root_container);
+	swayc_t *c = swayc_by_handle(view);
 	switch (state) {
 	case WLC_BIT_FULLSCREEN:
 		// i3 just lets it become fullscreen
@@ -342,7 +340,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	bool changed_tiling = false;
 	int min_sane_w = 100;
 	int min_sane_h = 60;
-	if (!active_workspace) {
+	if (!swayc_active_workspace()) {
 		return false;
 	}
 	// Do checks to determine if proper keys are being held
@@ -568,13 +566,13 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 			}
-			arrange_windows(active_workspace, -1, -1);
+			arrange_windows(swayc_active_workspace(), -1, -1);
 		}
 	}
 	if (config->focus_follows_mouse && prev_handle != handle) {
 		// Dont change focus if fullscreen
 		swayc_t *focused = get_focused_view(view);
-		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)
+		if (!swayc_is_fullscreen(focused)
 				&& !(pointer_state.l_held || pointer_state.r_held)) {
 			set_focused_container(container_under_pointer());
 		}
@@ -606,7 +604,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
 	swayc_t *focused = get_focused_container(&root_container);
 	// dont change focus if fullscreen
-	if (focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+	if (swayc_is_fullscreen(focused)) {
 		return false;
 	}
 	if (state == WLC_BUTTON_STATE_PRESSED) {
@@ -646,8 +644,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			// Dont want pointer sent to window while dragging or resizing
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		} else {
-			pointer_state.tiling.resize = pointer_state.r_held;
-			pointer_state.tiling.init_view = pointer;
+			if (modifiers->mods & config->floating_mod) {
+				pointer_state.tiling.resize = pointer_state.r_held;
+				pointer_state.tiling.init_view = pointer;
+				// Dont want pointer sent when resizing
+				return (pointer_state.tiling.resize);
+			}
 		}
 		return (pointer && pointer != focused);
 	} else {
