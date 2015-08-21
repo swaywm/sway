@@ -8,6 +8,13 @@
 
 static keycode key_state_array[KEY_STATE_MAX_LENGTH];
 
+void input_init(void) {
+	int i;
+	for (i = 0; i < KEY_STATE_MAX_LENGTH; ++i) {
+		key_state_array[i] = 0;
+	}
+}
+
 static uint8_t find_key(keycode key) {
 	int i;
 	for (i = 0; i < KEY_STATE_MAX_LENGTH; ++i) {
@@ -41,7 +48,7 @@ void release_key(keycode key) {
 	}
 }
 
-struct pointer_state pointer_state = {0, 0, {0, 0}, {0, 0, 0, 0}};
+struct pointer_state pointer_state = {0, 0, {0, 0}, {0, 0, 0}, {0, 0, 0, 0}};
 
 static struct wlc_geometry saved_floating;
 
@@ -65,4 +72,3 @@ void reset_floating(swayc_t *view) {
 	pointer_state.floating = (struct pointer_floating){0,0};
 	pointer_state.lock = (struct pointer_lock){0,0,0,0};
 }
-

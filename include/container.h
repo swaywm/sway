@@ -15,6 +15,7 @@ enum swayc_types{
 	C_TYPES,
 };
 
+
 enum swayc_layouts{
 	L_NONE,
 	L_HORIZ,
@@ -33,12 +34,12 @@ struct sway_container {
 	enum swayc_layouts layout;
 
 	// Not including borders or margins
-	int width, height;
+	double width, height;
 
 	// Used for setting floating geometry
 	int desired_width, desired_height;
 
-	int x, y;
+	double x, y;
 
 	bool visible;
 	bool is_floating;
@@ -55,6 +56,7 @@ struct sway_container {
 	struct sway_container *focused;
 };
 
+// Container Creation
 
 swayc_t *new_output(wlc_handle handle);
 swayc_t *new_workspace(swayc_t *output, const char *name);
@@ -65,15 +67,26 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle);
 // Creates view as a new floating view which is in the active workspace
 swayc_t *new_floating_view(wlc_handle handle);
 
+// Container Destroying
 
 swayc_t *destroy_output(swayc_t *output);
 // Destroys workspace if empty and returns parent pointer, else returns NULL
 swayc_t *destroy_workspace(swayc_t *workspace);
+// Destroyes container and all parent container if they are empty, returns
+// topmost non-empty parent. returns NULL otherwise
 swayc_t *destroy_container(swayc_t *container);
+// Destroys view and all empty parent containers. return topmost non-empty
+// parent
 swayc_t *destroy_view(swayc_t *view);
+
+// Container Lookup
+
+swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types);
+swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts);
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data);
 void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);
+
 
 // Mappings
 void set_view_visibility(swayc_t *view, void *data);

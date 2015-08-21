@@ -10,7 +10,7 @@
 #include <string.h>
 
 int colored = 1;
-int v = 0;
+log_importance_t v = L_SILENT;
 
 static const char *verbosity_colors[] = {
 	"", // L_SILENT
@@ -19,7 +19,7 @@ static const char *verbosity_colors[] = {
 	"\x1B[1;30m", // L_DEBUG
 };
 
-void init_log(int verbosity) {
+void init_log(log_importance_t verbosity) {
 	v = verbosity;
 	/* set FD_CLOEXEC flag to prevent programs called with exec to write into logs */
 	int i;
@@ -46,15 +46,15 @@ void sway_abort(const char *format, ...) {
 	sway_terminate();
 }
 
-void sway_log(int verbosity, const char* format, ...) {
+void sway_log(log_importance_t verbosity, const char* format, ...) {
 	if (verbosity <= v) {
-		int c = verbosity;
+		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
 		if (colored) {
-			fprintf(stderr, verbosity_colors[c]);
+			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
 		va_list args;
@@ -69,15 +69,15 @@ void sway_log(int verbosity, const char* format, ...) {
 	}
 }
 
-void sway_log_errno(int verbosity, char* format, ...) {
+void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 	if (verbosity <= v) {
-		int c = verbosity;
+		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
 		if (colored) {
-			fprintf(stderr, verbosity_colors[c]);
+			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
 		va_list args;
@@ -88,7 +88,7 @@ void sway_log_errno(int verbosity, char* format, ...) {
 		fprintf(stderr, ": ");
 		char error[256];
 		strerror_r(errno, error, sizeof(error));
-		fprintf(stderr, error);
+		fprintf(stderr, "%s", error);
 
 		if (colored) {
 			fprintf(stderr, "\x1B[0m");
@@ -142,13 +142,14 @@ static void container_log(const swayc_t *c) {
 			c->layout == L_STACKED  ? "Stacked|":
 			c->layout == L_FLOATING ? "Floating|":
 			"Unknown|");
-	fprintf(stderr, "w:%d|h:%d|", c->width, c->height);
-	fprintf(stderr, "x:%d|y:%d|", c->x, c->y);
+	fprintf(stderr, "w:%f|h:%f|", c->width, c->height);
+	fprintf(stderr, "x:%f|y:%f|", c->x, c->y);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
 	fprintf(stderr, "name:%.16s|", c->name);
 	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
 }
 void layout_log(const swayc_t *c, int depth) {
+	if (L_DEBUG > v) return;
 	int i, d;
 	int e = c->children ? c->children->length : 0;
 	container_log(c);

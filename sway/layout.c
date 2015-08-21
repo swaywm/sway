@@ -29,7 +29,7 @@ static int index_child(swayc_t *parent, swayc_t *child) {
 }
 
 void add_child(swayc_t *parent, swayc_t *child) {
-	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
@@ -40,7 +40,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 }
 
 void add_floating(swayc_t *ws, swayc_t *child) {
-	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, ws, ws->type, ws->width, ws->height);
 	list_add(ws->floating, child);
 	child->parent = ws;
@@ -108,8 +108,52 @@ swayc_t *remove_child(swayc_t *child) {
 	return parent;
 }
 
+//TODO: Implement horizontal movement.
+//TODO: Implement move to a different workspace.
+void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction){
+	sway_log(L_DEBUG, "Moved window");
+	swayc_t *temp;
+	int i;
+	int clength = root->children->length;
+	//Rearrange
+	for (i = 0; i < clength; ++i) {
+		swayc_t *child = root->children->items[i];
+		if (child->handle == container->handle){
+			if (clength == 1){
+				//Only one container, meh.
+				break;
+			}
+			if (direction == MOVE_LEFT && i > 0){
+				temp = root->children->items[i-1];
+				root->children->items[i] = temp;
+				root->children->items[i-1] = container;
+				arrange_windows(&root_container,-1,-1);
+			}
+			else if (direction == MOVE_RIGHT && i < clength-1){
+				temp = root->children->items[i+1];
+				root->children->items[i] = temp;
+				root->children->items[i+1] = container;
+				arrange_windows(&root_container,-1,-1);
 
-void arrange_windows(swayc_t *container, int width, int height) {
+			}
+			else if (direction == MOVE_UP){
+				sway_log(L_INFO, "Moving up not implemented");
+			}
+			else if (direction == MOVE_DOWN){
+				sway_log(L_INFO, "Moving down not implemented");
+			}
+
+			break;
+		}
+		else if (child->children != NULL){
+			move_container(container,child,direction);
+		}
+	}
+
+}
+
+
+void arrange_windows(swayc_t *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
 		sway_log(L_DEBUG, "Arranging layout for %p", container);
@@ -144,7 +188,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			child->y = y + container->gaps;
 			child->width = width - container->gaps * 2;
 			child->height = height - container->gaps * 2;
-			sway_log(L_DEBUG, "Arranging workspace #%d at %d, %d", i, child->x, child->y);
+			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
 			arrange_windows(child, -1, -1);
 		}
 		return;
@@ -161,10 +205,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 				}
 			};
 			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
-				swayc_t *parent = container;
-				while (parent->type != C_OUTPUT) {
-					parent = parent->parent;
-				}
+				swayc_t *parent = swayc_parent_by_type(container, C_OUTPUT);
 				geometry.origin.x = 0;
 				geometry.origin.y = 0;
 				geometry.size.w = parent->width;
@@ -193,7 +234,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	default:
 		// Calculate total width
 		for (i = 0; i < container->children->length; ++i) {
-			int *old_width = &((swayc_t *)container->children->items[i])->width;
+			double *old_width = &((swayc_t *)container->children->items[i])->width;
 			if (*old_width <= 0) {
 				if (container->children->length > 1) {
 					*old_width = width / (container->children->length - 1);
@@ -209,7 +250,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			sway_log(L_DEBUG, "Arranging %p horizontally", container);
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %d by %f)", child, child->type, width, scale);
+				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
 				child->x = x + container->x;
 				child->y = y + container->y;
 				arrange_windows(child, child->width * scale, height);
@@ -220,7 +261,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	case L_VERT:
 		// Calculate total height
 		for (i = 0; i < container->children->length; ++i) {
-			int *old_height = &((swayc_t *)container->children->items[i])->height;
+			double *old_height = &((swayc_t *)container->children->items[i])->height;
 			if (*old_height <= 0) {
 				if (container->children->length > 1) {
 					*old_height = height / (container->children->length - 1);
@@ -236,7 +277,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			sway_log(L_DEBUG, "Arranging %p vertically", container);
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %d by %f)", child, child->type, height, scale);
+				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
 				child->x = x + container->x;
 				child->y = y + container->y;
 				arrange_windows(child, width, child->height * scale);
@@ -263,10 +304,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 					}
 				};
 				if (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN) {
-					swayc_t *parent = view;
-					while (parent->type != C_OUTPUT) {
-						parent = parent->parent;
-					}
+					swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 					geometry.origin.x = 0;
 					geometry.origin.y = 0;
 					geometry.size.w = parent->width;
@@ -367,6 +405,42 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 				// Nothing we can do
 				return NULL;
 			}
+		}
+	}
+}
+
+void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge edge) {
+	int i;
+	bool layout_match = true;
+	sway_log(L_DEBUG, "Resizing %p with amount: %f", container, amount);
+	if (edge == WLC_RESIZE_EDGE_LEFT || edge == WLC_RESIZE_EDGE_RIGHT) {
+		container->width += amount;
+		layout_match = container->layout == L_HORIZ;
+	} else if (edge == WLC_RESIZE_EDGE_TOP || edge == WLC_RESIZE_EDGE_BOTTOM) {
+		container->height += amount;
+		layout_match = container->layout == L_VERT;
+	}
+	if (container->type == C_VIEW) {
+		struct wlc_geometry geometry = {
+			.origin = {
+				.x = container->x + container->gaps / 2,
+				.y = container->y + container->gaps / 2
+			},
+			.size = {
+				.w = container->width - container->gaps,
+				.h = container->height - container->gaps
+			}
+		};
+		wlc_view_set_geometry(container->handle, edge, &geometry);
+		return;
+	}
+	if (layout_match) {
+		for (i = 0; i < container->children->length; i++) {
+			recursive_resize(container->children->items[i], amount/container->children->length, edge);
+		}
+	} else {
+		for (i = 0; i < container->children->length; i++) {
+			recursive_resize(container->children->items[i], amount, edge);
 		}
 	}
 }

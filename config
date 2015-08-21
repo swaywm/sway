@@ -22,7 +22,7 @@ set $menu dmenu_run
 # Basics:
 #
     # start a terminal
-    bindsym $mod+Return exec urxvt
+    bindsym $mod+Return exec $term
 
     # kill focused window
     bindsym $mod+Shift+q kill
