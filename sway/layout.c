@@ -37,7 +37,8 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	child->parent = parent;
 	// set focus for this container
 	if (parent->children->length == 1) {
-		set_focused_container_for(parent, child);
+		parent->focused = child;
+		set_focused_container_for(parent, get_focused_view(parent));
 	}
 }
 
@@ -48,7 +49,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	child->parent = ws;
 	child->is_floating = true;
 	if (!ws->focused) {
-		set_focused_container_for(ws, child);
+		ws->focused = child;
 	}
 }
 
@@ -73,7 +74,7 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	new_child->parent = child->parent;
 
 	if (child->parent->focused == child) {
-		set_focused_container_for(child->parent, new_child);
+		child->parent->focused = new_child;
 	}
 	child->parent = NULL;
 	return parent;
@@ -102,7 +103,7 @@ swayc_t *remove_child(swayc_t *child) {
 	// Set focused to new container
 	if (parent->focused == child) {
 		if (parent->children->length > 0) {
-			set_focused_container_for(parent, parent->children->items[i?i-1:0]);
+			parent->focused = parent->children->items[i?i-1:0];
 		} else {
 			parent->focused = NULL;
 		}
