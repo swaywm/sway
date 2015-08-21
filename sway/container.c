@@ -135,7 +135,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 }
 
 swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
-	if (!ASSERT_NONNULL(child)) {
+	if (!ASSERT_NONNULL(child) || child->is_floating) {
 		return NULL;
 	}
 	swayc_t *cont = new_swayc(C_CONTAINER, 0);

@@ -84,10 +84,13 @@ void set_focused_container(swayc_t *c) {
 		return;
 	}
 	sway_log(L_DEBUG, "Setting focus to %p:%ld", c, c->handle);
-
-	// Find previous focused view, and the new focused view, if they are the same return
-	swayc_t *focused = get_focused_view(&root_container);
-	swayc_t *workspace = active_workspace;
+	// Get workspace for c, get that workspaces current focused container.
+	// if that focsued container is fullscreen dont change focus
+	swayc_t *workspace = swayc_parent_by_type(c, C_WORKSPACE);
+	swayc_t *focused = get_focused_view(workspace);
+	if (swayc_is_fullscreen(focused)) {
+		return;
+	}
 
 	// update container focus from here to root, making necessary changes along
 	// the way
@@ -99,13 +102,6 @@ void set_focused_container(swayc_t *c) {
 		update_focus(p);
 		p = p->parent;
 		p->is_focused = false;
-	}
-
-	// if the workspace is the same, and previous focus is fullscreen, dont
-	// change focus
-	sway_log(L_DEBUG,"%p==%p, f:%d", workspace, active_workspace, swayc_is_fullscreen(focused));
-	if (workspace == active_workspace && swayc_is_fullscreen(focused)) {
-		return;
 	}
 
 	// get new focused view and set focus to it.
@@ -137,6 +133,15 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 			return;
 		}
 	}
+
+	// Get workspace for c, get that workspaces current focused container.
+	// if that focsued container is fullscreen dont change focus
+	swayc_t *workspace = swayc_parent_by_type(c, C_WORKSPACE);
+	swayc_t *focused = get_focused_view(workspace);
+	if (swayc_is_fullscreen(focused)) {
+		return;
+	}
+
 	// Check if we changing a parent container that will see chnage
 	bool effective = true;
 	while (find != &root_container) {

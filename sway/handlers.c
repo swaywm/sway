@@ -420,9 +420,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		}
 	}
 	if (config->focus_follows_mouse && prev_handle != handle) {
-		// Dont change focus if fullscreen
-		swayc_t *focused = get_focused_view(view);
-		if (!swayc_is_fullscreen(focused) && !(pointer_state.l_held || pointer_state.r_held)) {
+		if (!(pointer_state.l_held || pointer_state.r_held)) {
 			set_focused_container(container_under_pointer());
 		}
 	}

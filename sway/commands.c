@@ -445,6 +445,9 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
+	if (focused->is_floating) {
+		return true;
+	}
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
 		/* Case that focus is on an workspace with 0/1 children.change its layout */
 		sway_log(L_DEBUG, "changing workspace layout");
@@ -508,6 +511,7 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 
+	//get focused view and check current state.
 	swayc_t *container = get_focused_view(&root_container);
 	bool current = swayc_is_fullscreen(container);
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
