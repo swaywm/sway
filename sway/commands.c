@@ -319,18 +319,19 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view,&root_container,MOVE_LEFT);
+		move_container(view, &root_container, MOVE_LEFT);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view,&root_container,MOVE_RIGHT);
+		move_container(view, &root_container, MOVE_RIGHT);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view,&root_container,MOVE_UP);
+		move_container(view, &root_container, MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view,&root_container,MOVE_DOWN);
-	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
+		move_container(view, &root_container, MOVE_DOWN);
+	} else if (strcasecmp(argv[0], "scratchpad") == 0 && view->type == C_VIEW) {
 		swayc_t *parent = view->parent;
 		destroy_container(remove_child(view));
 		scratchpad_push(view);
-		set_focused_container(parent);
+		set_focused_container(get_focused_view(parent));
+		arrange_windows(parent, -1, -1);
 	} else {
 		return false;
 	}

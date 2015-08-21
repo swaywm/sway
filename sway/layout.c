@@ -471,6 +471,8 @@ void view_set_floating(swayc_t *view, bool floating) {
 
 void scratchpad_push(swayc_t *view) {
 	add_floating(scratchpad, view);
+	wlc_view_set_mask(view->handle, 2); // invisible mask
+    wlc_view_send_to_back(view->handle);
 }
 
 swayc_t *scratchpad_pop(void) {
@@ -478,6 +480,7 @@ swayc_t *scratchpad_pop(void) {
 		return NULL;
 	}
 	swayc_t *view = scratchpad->floating->items[0];
+	wlc_view_set_mask(view->handle, 1); // visible mask
 	remove_child(view);
 	return view;
 }
