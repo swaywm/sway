@@ -33,12 +33,12 @@ struct sway_container {
 	enum swayc_layouts layout;
 
 	// Not including borders or margins
-	int width, height;
+	double width, height;
 
 	// Used for setting floating geometry
 	int desired_width, desired_height;
 
-	int x, y;
+	double x, y;
 
 	bool visible;
 	bool is_floating;

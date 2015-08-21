@@ -29,7 +29,7 @@ static int index_child(swayc_t *parent, swayc_t *child) {
 }
 
 void add_child(swayc_t *parent, swayc_t *child) {
-	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
@@ -40,7 +40,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 }
 
 void add_floating(swayc_t *ws, swayc_t *child) {
-	sway_log(L_DEBUG, "Adding %p (%d, %dx%d) to %p (%d, %dx%d)", child, child->type,
+	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, ws, ws->type, ws->width, ws->height);
 	list_add(ws->floating, child);
 	child->parent = ws;
@@ -144,7 +144,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 			child->y = y + container->gaps;
 			child->width = width - container->gaps * 2;
 			child->height = height - container->gaps * 2;
-			sway_log(L_DEBUG, "Arranging workspace #%d at %d, %d", i, child->x, child->y);
+			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
 			arrange_windows(child, -1, -1);
 		}
 		return;
@@ -193,7 +193,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	default:
 		// Calculate total width
 		for (i = 0; i < container->children->length; ++i) {
-			int *old_width = &((swayc_t *)container->children->items[i])->width;
+			double *old_width = &((swayc_t *)container->children->items[i])->width;
 			if (*old_width <= 0) {
 				if (container->children->length > 1) {
 					*old_width = width / (container->children->length - 1);
@@ -220,7 +220,7 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	case L_VERT:
 		// Calculate total height
 		for (i = 0; i < container->children->length; ++i) {
-			int *old_height = &((swayc_t *)container->children->items[i])->height;
+			double *old_height = &((swayc_t *)container->children->items[i])->height;
 			if (*old_height <= 0) {
 				if (container->children->length > 1) {
 					*old_height = height / (container->children->length - 1);
@@ -371,34 +371,38 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 	}
 }
 
-void recursive_resize(swayc_t *container, double amount, enum movement_direction dir) {
+void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge edge) {
 	int i;
 	bool layout_match = true;
-	if (dir == MOVE_LEFT) {
-		container->x += (int) amount;
-		container->width += (int) amount;
+	sway_log(L_DEBUG, "Resizing %p with amount: %f", container, amount);
+	if (edge == WLC_RESIZE_EDGE_LEFT || edge == WLC_RESIZE_EDGE_RIGHT) {
+		container->width += amount;
 		layout_match = container->layout == L_HORIZ;
-	} else if (dir == MOVE_RIGHT) {
-		container->width += (int) amount;
-		layout_match = container->layout == L_HORIZ;
-	} else if (dir == MOVE_UP) {
-		container->y += (int) amount;
-		container->height += (int) amount;
-		layout_match = container->layout == L_VERT;
-	} else if (dir == MOVE_DOWN) {
-		container->height += (int) amount;
+	} else if (edge == WLC_RESIZE_EDGE_TOP || edge == WLC_RESIZE_EDGE_BOTTOM) {
+		container->height += amount;
 		layout_match = container->layout == L_VERT;
 	}
 	if (container->type == C_VIEW) {
+		struct wlc_geometry geometry = {
+			.origin = {
+				.x = container->x + container->gaps / 2,
+				.y = container->y + container->gaps / 2
+			},
+			.size = {
+				.w = container->width - container->gaps,
+				.h = container->height - container->gaps
+			}
+		};
+		wlc_view_set_geometry(container->handle, edge, &geometry);
 		return;
 	}
 	if (layout_match) {
 		for (i = 0; i < container->children->length; i++) {
-			recursive_resize(container->children->items[i], amount/container->children->length, dir);
+			recursive_resize(container->children->items[i], amount/container->children->length, edge);
 		}
 	} else {
 		for (i = 0; i < container->children->length; i++) {
-			recursive_resize(container->children->items[i], amount, dir);
+			recursive_resize(container->children->items[i], amount, edge);
 		}
 	}
 }
