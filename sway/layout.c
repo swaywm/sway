@@ -204,7 +204,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 					.h = height - container->gaps
 				}
 			};
-			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
+			if (swayc_is_fullscreen(container)) {
 				swayc_t *parent = swayc_parent_by_type(container, C_OUTPUT);
 				geometry.origin.x = 0;
 				geometry.origin.y = 0;
@@ -303,7 +303,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 						.h = view->height
 					}
 				};
-				if (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN) {
+				if (swayc_is_fullscreen(view)) {
 					swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 					geometry.origin.x = 0;
 					geometry.origin.y = 0;
@@ -318,7 +318,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 					// have higher indexes
 					// This is conditional on there not being a fullscreen view in the workspace
 					if (!container->focused
-							|| !(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
+							|| !swayc_is_fullscreen(container->focused)) {
 						wlc_view_bring_to_front(view->handle);
 					}
 				}
