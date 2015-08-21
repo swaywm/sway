@@ -26,14 +26,11 @@ static void free_swayc(swayc_t *cont) {
 	if (!ASSERT_NONNULL(cont)) {
 		return;
 	}
-	// TODO does not properly handle containers with children,
-	// TODO but functions that call this usually check for that
 	if (cont->children) {
-		if (cont->children->length) {
-			int i;
-			for (i = 0; i < cont->children->length; ++i) {
-				free_swayc(cont->children->items[i]);
-			}
+		// remove children until there are no more, free_swayc calls
+		// remove_child, which removes child from this container
+		while (cont->children->length) {
+			free_swayc(cont->children->items[0]);
 		}
 		list_free(cont->children);
 	}
@@ -409,9 +406,13 @@ swayc_t *swayc_active_workspace_for(swayc_t *cont) {
 		return NULL;
 	}
 	switch (cont->type) {
+		/* set root -> output */
 	case C_ROOT: cont = cont->focused;
+		/* set output -> workspace  */
 	case C_OUTPUT: cont = cont->focused;
+		/* return workspace */
 	case C_WORKSPACE: return cont;
+		/* Find parent workspace */
 	default: return swayc_parent_by_type(cont, C_WORKSPACE);
 	}
 }
