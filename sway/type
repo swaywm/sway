@@ -1,0 +1,113 @@
+workspace.c:78:9:	while (parent->type != C_OUTPUT) {
+workspace.c:79:12:		parent = parent->parent;
+
+focus.c:16:6:	if (parent->focused != c) {
+focus.c:30:8:			if (parent->focused) {
+focus.c:31:19:				swayc_t *ws = parent->focused;
+focus.c:38:25:				wlc_output_set_mask(parent->handle, 2);
+focus.c:39:8:				c->parent->focused = c;
+focus.c:53:5:	c->parent->focused = c;
+focus.c:71:20:	while (parent && !parent->is_focused) {
+focus.c:72:12:		parent = parent->focused;
+focus.c:143:13:		if (find->parent->focused != find) {
+focus.c:167:19:	while (parent && parent->type != C_VIEW) {
+focus.c:168:7:		if (parent->type == C_WORKSPACE && parent->focused == NULL) {
+focus.c:171:12:		parent = parent->focused;
+
+handlers.c:24:9:	while (parent->type != C_OUTPUT) {
+handlers.c:25:12:		parent = parent->parent;
+handlers.c:436:18:				while (parent->parent && parent->y + parent->height == view->y + view->height && parent->type != L_WORKSPACE) {
+handlers.c:437:30:					parent = parent->parent;
+handlers.c:440:50:				if (parent == &root_container || parent->children->length == 1) {
+handlers.c:444:18:				while (parent->parent && parent->y == view->y) {
+handlers.c:445:30:					parent = parent->parent;
+handlers.c:448:50:				if (parent == &root_container || parent->children->length == 1) {
+handlers.c:454:18:				while (parent->parent && parent->x + parent->width == view->x + view->width) {
+handlers.c:455:30:					parent = parent->parent;
+handlers.c:458:50:				if (parent == &root_container || parent->children->length == 1) {
+handlers.c:462:18:				while (parent->parent && parent->x + parent->width == view->x) {
+handlers.c:463:30:					parent = parent->parent;
+handlers.c:466:50:				if (parent == &root_container || parent->children->length == 1) {
+handlers.c:528:29:			for (i = 0; i < pointer->parent->floating->length; i++) {
+handlers.c:529:18:				if (pointer->parent->floating->items[i] == pointer) {
+handlers.c:530:24:					list_del(pointer->parent->floating, i);
+handlers.c:531:24:					list_add(pointer->parent->floating, pointer);
+
+container.c:284:6:	if (parent->type == C_CONTAINER) {
+
+layout.c:23:18:	for (i = 0; i < parent->children->length; ++i) {
+layout.c:24:7:		if (parent->children->items[i] == child) {
+layout.c:33:40:		child->width, child->height, parent, parent->type, parent->width, parent->height);
+layout.c:34:11:	list_add(parent->children, child);
+layout.c:37:6:	if (parent->children->length == 1) {
+layout.c:56:11:	if (i == parent->children->length) {
+layout.c:59:14:	list_insert(parent->children, i+1, child);
+layout.c:70:2:	parent->children->items[i] = new_child;
+layout.c:73:13:	if (child->parent->focused == child) {
+layout.c:85:19:		for (i = 0; i < parent->floating->length; ++i) {
+layout.c:86:8:			if (parent->floating->items[i] == child) {
+layout.c:87:14:				list_del(parent->floating, i);
+layout.c:93:19:		for (i = 0; i < parent->children->length; ++i) {
+layout.c:94:8:			if (parent->children->items[i] == child) {
+layout.c:95:14:				list_del(parent->children, i);
+layout.c:101:6:	if (parent->focused == child) {
+layout.c:102:7:		if (parent->children->length > 0) {
+layout.c:103:38:			set_focused_container_for(parent, parent->children->items[i?i-1:0]);
+layout.c:105:4:			parent->focused = NULL;
+layout.c:165:12:				while (parent->type != C_OUTPUT) {
+layout.c:166:15:					parent = parent->parent;
+layout.c:170:23:				geometry.size.w = parent->width;
+layout.c:171:23:				geometry.size.h = parent->height;
+layout.c:267:13:					while (parent->type != C_OUTPUT) {
+layout.c:268:16:						parent = parent->parent;
+layout.c:272:24:					geometry.size.w = parent->width;
+layout.c:273:24:					geometry.size.h = parent->height;
+layout.c:294:6:	if (parent->children == NULL) {
+layout.c:300:6:	if (parent->type == C_WORKSPACE) {
+layout.c:301:19:		for (i = 0; i < parent->floating->length; ++i) {
+layout.c:302:21:			swayc_t *child = parent->floating->items[i];
+layout.c:309:18:	for (i = 0; i < parent->children->length; ++i) {
+layout.c:310:20:		swayc_t *child = parent->children->items[i];
+layout.c:327:7:		if (parent->type == C_OUTPUT) {
+layout.c:338:8:			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
+layout.c:343:8:			if (parent->layout == L_VERT) {
+layout.c:350:20:			for (i = 0; i < parent->children->length; ++i) {
+layout.c:351:22:				swayc_t *child = parent->children->items[i];
+layout.c:357:34:			if (desired < 0 || desired >= parent->children->length) {
+layout.c:360:12:				return parent->children->items[desired];
+layout.c:365:13:			parent = parent->parent;
+
+commands.c:394:9:	while (parent->type == C_VIEW) {
+commands.c:395:12:		parent = parent->parent;
+commands.c:399:3:		parent->layout = L_HORIZ;
+commands.c:401:3:		parent->layout = L_VERT;
+commands.c:403:7:		if (parent->layout == L_VERT) {
+commands.c:404:4:			parent->layout = L_HORIZ;
+commands.c:406:4:			parent->layout = L_VERT;
+commands.c:409:26:	arrange_windows(parent, parent->width, parent->height);
+commands.c:454:10:		while (parent->parent) {
+commands.c:455:8:			if (parent->parent->layout == L_HORIZ) {
+commands.c:456:21:				for (i = 0; i < parent->parent->children->length; i++) {
+commands.c:457:16:					sibling = parent->parent->children->items[i];
+commands.c:459:24:						if (sibling->x < parent->x) {
+commands.c:461:31:						} else if (sibling->x > parent->x) {
+commands.c:470:13:			parent = parent->parent;
+commands.c:475:87:		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d l conts, and %d r conts", parent->parent, lnumber, rnumber);
+commands.c:477:19:		for (i = 0; i < parent->parent->children->length; i++) {
+commands.c:478:14:			sibling = parent->parent->children->items[i];
+commands.c:480:22:				if (sibling->x < parent->x) {
+commands.c:488:29:				} else if (sibling->x > parent->x) {
+commands.c:517:10:		while (parent->parent) {
+commands.c:518:8:			if (parent->parent->layout == L_VERT) {
+commands.c:519:21:				for (i = 0; i < parent->parent->children->length; i++) {
+commands.c:520:16:					sibling = parent->parent->children->items[i];
+commands.c:522:24:						if (sibling->y < parent->y) {
+commands.c:524:31:						} else if (sibling->y > parent->y) {
+commands.c:533:13:			parent = parent->parent;
+commands.c:538:87:		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d b conts, and %d t conts", parent->parent, bnumber, tnumber);
+commands.c:540:19:		for (i = 0; i < parent->parent->children->length; i++) {
+commands.c:541:14:			sibling = parent->parent->children->items[i];
+commands.c:543:22:				if (sibling->y < parent->y) {
+commands.c:551:29:				} else if (sibling->x > parent->x) {
+commands.c:603:54:	} else if (focused->type != C_WORKSPACE && focused->parent->children->length == 1) {
+commands.c:606:12:		focused->parent->layout = layout;

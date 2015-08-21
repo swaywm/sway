@@ -34,6 +34,10 @@ extern struct pointer_state {
 		bool drag;
 		bool resize;
 	} floating;
+	struct pointer_tiling {
+		bool resize;
+		swayc_t *init_view;
+	} tiling;
 	struct pointer_lock {
 		bool left;
 		bool right;
