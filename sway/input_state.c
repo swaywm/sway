@@ -48,7 +48,7 @@ void release_key(keycode key) {
 	}
 }
 
-struct pointer_state pointer_state = {0, 0, {0, 0}, {0, 0, 0}, {0, 0, 0, 0}};
+struct pointer_state pointer_state = {0, 0, {0, 0}, {0, 0, {0, 0}}, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 static struct wlc_geometry saved_floating;
 

@@ -421,16 +421,42 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			}
 		}
 	} else if (pointer_state.tiling.resize && view) {
-		if (view != pointer_state.tiling.init_view) {
-			// Quit out of the resize
-			//pointer_state.tiling.init_view = NULL;
+		bool valid = true;
+		double dx = mouse_origin.x - prev_pos.x;
+		double dy = mouse_origin.y - prev_pos.y;
+
+		if ((dx < 0 || mouse_origin.x < pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_left) {
+			changed_tiling = true;
+			valid = false;
+		} else if (dx > 0 && pointer_state.lock.temp_left) {
+			pointer_state.lock.temp_left = false;
 		}
-		if (!view->is_floating && view == pointer_state.tiling.init_view) {
+
+		if ((dx > 0 || mouse_origin.x > pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_right) {
+			changed_tiling = true;
+			valid = false;
+		} else if (dx < 0 && pointer_state.lock.temp_right) {
+			pointer_state.lock.temp_right = false;
+		}
+
+		if ((dy < 0 || mouse_origin.y < pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_up) {
+			changed_tiling = true;
+			valid = false;
+		} else if (dy > 0 && pointer_state.lock.temp_up) {
+			pointer_state.lock.temp_up = false;
+		}
+
+		if ((dy > 0 || mouse_origin.y > pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_down) {
+			changed_tiling = true;
+			valid = false;
+		} else if (dy < 0 && pointer_state.lock.temp_down) {
+			pointer_state.lock.temp_down = false;
+		}
+
+		if (!view->is_floating && valid) {
 			// Handle layout resizes -- Find the biggest parent container then apply resizes to that
 			// and its bordering siblings
 			swayc_t *parent = view;
-			double dx = mouse_origin.x - prev_pos.x;
-			double dy = mouse_origin.y - prev_pos.y;
 			if (!pointer_state.lock.bottom) {
 				while (parent->type != C_WORKSPACE) {
 					// TODO: Absolute value is a bad hack here to compensate for rounding. Find a better
@@ -442,14 +468,19 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 				if (parent->parent->children->length > 1 && parent->parent->layout == L_VERT) {
-					sway_log(L_DEBUG, "Top is locked, found biggest valid parent at: %p", parent);
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_DOWN);
 					if (sibling) {
-						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
 						if ((parent->height > min_sane_h || dy > 0) && (sibling->height > min_sane_h || dy < 0)) {
 							recursive_resize(parent, dy, WLC_RESIZE_EDGE_BOTTOM);
 							recursive_resize(sibling, -1 * dy, WLC_RESIZE_EDGE_TOP);
 							changed_tiling = true;
+						} else {
+							pointer_state.tiling.lock_pos.y = mouse_origin.y;
+							if (parent->height < min_sane_h) {
+								pointer_state.lock.temp_up = true;
+							} else if (sibling->height < min_sane_h) {
+								pointer_state.lock.temp_down = true;
+							}
 						}
 					}
 				}
@@ -462,14 +493,19 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 				if (parent->parent->children->length > 1 && parent->parent->layout == L_VERT) {
-					sway_log(L_DEBUG, "Bot is locked, found biggest valid parent at: %p", parent);
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_UP);
 					if (sibling) {
-						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
 						if ((parent->height > min_sane_h || dy < 0) && (sibling->height > min_sane_h || dy > 0)) {
 							recursive_resize(parent, -1 * dy, WLC_RESIZE_EDGE_TOP);
 							recursive_resize(sibling, dy, WLC_RESIZE_EDGE_BOTTOM);
 							changed_tiling = true;
+						} else {
+							pointer_state.tiling.lock_pos.y = mouse_origin.y;
+							if (parent->height < min_sane_h) {
+								pointer_state.lock.temp_down = true;
+							} else if (sibling->height < min_sane_h) {
+								pointer_state.lock.temp_up = true;
+							}
 						}
 					}
 				}
@@ -486,14 +522,19 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
-					sway_log(L_DEBUG, "Left is locked, found biggest valid parent at: %p", parent);
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_RIGHT);
 					if (sibling) {
-						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
 						if ((parent->width > min_sane_w || dx > 0) && (sibling->width > min_sane_w || dx < 0)) {
 							recursive_resize(parent, dx, WLC_RESIZE_EDGE_RIGHT);
 							recursive_resize(sibling, -1 * dx, WLC_RESIZE_EDGE_LEFT);
 							changed_tiling = true;
+						} else {
+							pointer_state.tiling.lock_pos.x = mouse_origin.x;
+							if (parent->width < min_sane_w) {
+								pointer_state.lock.temp_left = true;
+							} else if (sibling->width < min_sane_w) {
+								pointer_state.lock.temp_right = true;
+							}
 						}
 					}
 				}
@@ -506,14 +547,19 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
-					sway_log(L_DEBUG, "Right is locked, found biggest valid parent at: %p", parent);
 					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_LEFT);
 					if (sibling) {
-						sway_log(L_DEBUG, "Found sibling at: %p", sibling);
 						if ((parent->width > min_sane_w || dx < 0) && (sibling->width > min_sane_w || dx > 0)) {
 							recursive_resize(parent, -1 * dx, WLC_RESIZE_EDGE_LEFT);
 							recursive_resize(sibling, dx, WLC_RESIZE_EDGE_RIGHT);
 							changed_tiling = true;
+						} else {
+							pointer_state.tiling.lock_pos.x = mouse_origin.x;
+							if (parent->width < min_sane_w) {
+								pointer_state.lock.temp_right = true;
+							} else if (sibling->width < min_sane_w) {
+								pointer_state.lock.temp_left = true;
+							}
 						}
 					}
 				}
@@ -611,7 +657,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			pointer_state.floating.resize = false;
 			pointer_state.tiling.resize = false;
 			pointer_state.tiling.init_view = NULL;
-			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false};
+			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false, false, false, false, false};
 		}
 	}
 	return false;
