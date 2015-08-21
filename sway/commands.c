@@ -200,13 +200,13 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 	swayc_t *view = get_focused_container(&root_container);
 
 	bool floating;
-	if (strcasecmp(argv[0], "toggle") != 0) {
+	if (strcasecmp(argv[0], "toggle") == 0) {
 		floating = !view->is_floating;
 	}
-	else if (strcasecmp(argv[0], "enable") != 0) {
+	else if (strcasecmp(argv[0], "enable") == 0) {
 		floating = true;
 	}
-	else if (strcasecmp(argv[0], "disable") != 0) {
+	else if (strcasecmp(argv[0], "disable") == 0) {
 		floating = false;
 	}
 	else {
@@ -326,9 +326,33 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 		move_container(view,&root_container,MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
 		move_container(view,&root_container,MOVE_DOWN);
+	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
+		swayc_t *parent = view->parent;
+		destroy_container(remove_child(view));
+		scratchpad_push(view);
+		set_focused_container(parent);
 	} else {
 		return false;
 	}
+	return true;
+}
+
+static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+
+	if (strcasecmp(argv[0], "show") != 0) {
+		sway_log(L_ERROR, "scratchpad - unknown token '%s', expected show", argv[0]);
+		return false;
+	}
+
+	swayc_t *view = scratchpad_pop();
+	if (view == NULL) {
+		return false;
+	}
+	view_set_floating(view, true);
+
 	return true;
 }
 
@@ -668,6 +692,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output},
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },

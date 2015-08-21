@@ -32,4 +32,9 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 
 void view_set_floating(swayc_t *view, bool floating);
 
+// Scratchpad
+
+void scratchpad_push(swayc_t *view);
+swayc_t *scratchpad_pop(void);
+
 #endif

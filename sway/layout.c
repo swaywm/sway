@@ -14,11 +14,15 @@ swayc_t root_container;
 int min_sane_h = 60;
 int min_sane_w = 100;
 
+static swayc_t *scratchpad = NULL;
+
 void init_layout(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
 	root_container.children = create_list();
 	root_container.handle = -1;
+
+	scratchpad = new_workspace(&root_container, "__i3_scratch");
 }
 
 static int index_child(swayc_t *parent, swayc_t *child) {
@@ -463,4 +467,17 @@ void view_set_floating(swayc_t *view, bool floating) {
 		view->width = view->height = 0;
 		arrange_windows(swayc_active_workspace(), -1, -1);
 	}
+}
+
+void scratchpad_push(swayc_t *view) {
+	add_floating(scratchpad, view);
+}
+
+swayc_t *scratchpad_pop(void) {
+	if (scratchpad->floating->length == 0) {
+		return NULL;
+	}
+	swayc_t *view = scratchpad->floating->items[0];
+	remove_child(view);
+	return view;
 }
