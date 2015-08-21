@@ -121,11 +121,15 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	}
 
 	int read_available;
-	ioctl(client_fd, FIONREAD, &read_available);
+	if (ioctl(client_fd, FIONREAD, &read_available) == -1) {
+		sway_log_errno(L_INFO, "Unable to read IPC socket buffer size");
+		ipc_client_disconnect(client);
+		return 0;
+	}
 
 	// Wait for the rest of the command payload in case the header has already been read
 	if (client->payload_length > 0) {
-		if (read_available >= client->payload_length) {
+		if ((uint32_t)read_available >= client->payload_length) {
 			ipc_client_handle_command(client);
 		}
 		else {

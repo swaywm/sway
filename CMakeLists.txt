@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.5)
 project(sway C)
 set(CMAKE_C_FLAGS "-g")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin/")
-add_definitions("-Wall")
+add_definitions("-Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 
 find_package(XKBCommon REQUIRED)

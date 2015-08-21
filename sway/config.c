@@ -107,7 +107,7 @@ static char *get_config_path() {
 
 	char *test = NULL;
 	int i;
-	for (i = 0; i < sizeof(search_paths) / sizeof(char *); ++i) {
+	for (i = 0; i < (int)(sizeof(search_paths) / sizeof(char *)); ++i) {
 		test = strdup(search_paths[i]);
 		test = do_var_replacement(temp_config, test);
 		sway_log(L_DEBUG, "Checking for config at %s", test);
