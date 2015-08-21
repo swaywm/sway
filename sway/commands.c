@@ -294,36 +294,39 @@ static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "mode_toggle") == 0) {
 		int i;
 		swayc_t *focused = get_focused_view(active_workspace);
-		if (focused->is_floating) {
-			if (active_workspace->children->length > 0) {
-				for (i = 0;i < active_workspace->floating->length; i++) {
-					if (active_workspace->floating->items[i] == focused) {
-						floating_toggled_index = i;
-						break;
+		// Dont change focus if fullscreen
+		if (!swayc_is_fullscreen(focused)) {
+			if (focused->is_floating) {
+				if (active_workspace->children->length > 0) {
+					for (i = 0;i < active_workspace->floating->length; i++) {
+						if (active_workspace->floating->items[i] == focused) {
+							floating_toggled_index = i;
+							break;
+						}
+					}
+					if (active_workspace->children->length > tiled_toggled_index) {
+						set_focused_container(get_focused_view(active_workspace->children->items[tiled_toggled_index]));
+					} else {
+						set_focused_container(get_focused_view(active_workspace->children->items[0]));
+						tiled_toggled_index = 0;
 					}
 				}
-				if (active_workspace->children->length > tiled_toggled_index) {
-					set_focused_container(get_focused_view(active_workspace->children->items[tiled_toggled_index]));
-				} else {
-					set_focused_container(get_focused_view(active_workspace->children->items[0]));
-					tiled_toggled_index = 0;
-				}
-			}
-		} else {
-			if (active_workspace->floating->length > 0) {
-				for (i = 0;i < active_workspace->children->length; i++) {
-					if (active_workspace->children->items[i] == focused) {
-						tiled_toggled_index = i;
-						break;
+			} else {
+				if (active_workspace->floating->length > 0) {
+					for (i = 0;i < active_workspace->children->length; i++) {
+						if (active_workspace->children->items[i] == focused) {
+							tiled_toggled_index = i;
+							break;
+						}
 					}
-				}
-				if (active_workspace->floating->length > floating_toggled_index) {
-					swayc_t *floating = active_workspace->floating->items[floating_toggled_index];
-					set_focused_container(get_focused_view(floating));
-				} else {
-					swayc_t *floating = active_workspace->floating->items[active_workspace->floating->length - 1];
-					set_focused_container(get_focused_view(floating));
-					tiled_toggled_index = active_workspace->floating->length - 1;
+					if (active_workspace->floating->length > floating_toggled_index) {
+						swayc_t *floating = active_workspace->floating->items[floating_toggled_index];
+						set_focused_container(get_focused_view(floating));
+					} else {
+						swayc_t *floating = active_workspace->floating->items[active_workspace->floating->length - 1];
+						set_focused_container(get_focused_view(floating));
+						tiled_toggled_index = active_workspace->floating->length - 1;
+					}
 				}
 			}
 		}
@@ -442,6 +445,9 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
+	if (focused->is_floating) {
+		return true;
+	}
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
 		/* Case that focus is on an workspace with 0/1 children.change its layout */
 		sway_log(L_DEBUG, "changing workspace layout");
@@ -505,17 +511,15 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 
+	//get focused view and check current state.
 	swayc_t *container = get_focused_view(&root_container);
-	bool current = (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) > 0;
+	bool current = swayc_is_fullscreen(container);
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
-	// Resize workspace if going from  fullscreen -> notfullscreen
-	// otherwise just resize container
-	if (current) {
-		container = swayc_parent_by_type(container, C_WORKSPACE);
+	// Resize workspace
+	container = swayc_parent_by_type(container, C_WORKSPACE);
+	if (container) {
+		arrange_windows(container, -1, -1);
 	}
-	// Only resize container when going into fullscreen
-	arrange_windows(container, -1, -1);
-
 	return true;
 }
 

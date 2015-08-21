@@ -25,8 +25,4 @@ void unfocus_all(swayc_t *container);
 void focus_view(swayc_t *view);
 void focus_view_for(swayc_t *ancestor, swayc_t *container);
 
-swayc_t *get_focused_container(swayc_t *parent);
-swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent);
-swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir);
-
 #endif

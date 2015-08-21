@@ -182,5 +182,5 @@ void workspace_switch(swayc_t *workspace) {
 	}
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
 	set_focused_container(get_focused_view(workspace));
-	arrange_windows(workspace, -1, -1);
+	arrange_windows(workspace->parent, -1, -1);
 }
