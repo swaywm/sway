@@ -341,7 +341,7 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 	}
 	do {
 		container = container->parent;
-	} while(container && container->type != type);
+	} while (container && container->type != type);
 	return container;
 }
 
@@ -402,18 +402,23 @@ swayc_t *swayc_active_workspace(void) {
 }
 
 swayc_t *swayc_active_workspace_for(swayc_t *cont) {
-	if (! cont) {
+	if (!cont) {
 		return NULL;
 	}
 	switch (cont->type) {
-		/* set root -> output */
-	case C_ROOT: cont = cont->focused;
-		/* set output -> workspace  */
-	case C_OUTPUT: cont = cont->focused;
-		/* return workspace */
-	case C_WORKSPACE: return cont;
-		/* Find parent workspace */
-	default: return swayc_parent_by_type(cont, C_WORKSPACE);
+	case C_ROOT:
+		cont = cont->focused;
+		/* Fallthrough */
+
+	case C_OUTPUT:
+		cont = cont->focused;
+		/* Fallthrough */
+
+	case C_WORKSPACE:
+		return cont;
+
+	default:
+		return swayc_parent_by_type(cont, C_WORKSPACE);
 	}
 }
 
