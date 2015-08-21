@@ -88,7 +88,7 @@ void set_focused_container(swayc_t *c) {
 	// if that focsued container is fullscreen dont change focus
 	swayc_t *workspace = swayc_parent_by_type(c, C_WORKSPACE);
 	swayc_t *focused = get_focused_view(workspace);
-	if (swayc_is_fullscreen(focused)) {
+	if (active_workspace == workspace && swayc_is_fullscreen(focused)) {
 		return;
 	}
 
