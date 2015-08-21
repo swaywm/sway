@@ -425,6 +425,10 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		double dx = mouse_origin.x - prev_pos.x;
 		double dy = mouse_origin.y - prev_pos.y;
 
+		if (view != pointer_state.tiling.init_view) {
+			valid = false;
+		}
+
 		if ((dx < 0 || mouse_origin.x < pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_left) {
 			changed_tiling = true;
 			valid = false;
