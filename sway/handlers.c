@@ -419,11 +419,11 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 					}
 				}
 			}
-		}	
+		}
 	} else if (pointer_state.tiling.resize && view) {
 		if (view != pointer_state.tiling.init_view) {
 			// Quit out of the resize
-			pointer_state.tiling.init_view = NULL;
+			//pointer_state.tiling.init_view = NULL;
 		}
 		if (!view->is_floating && view == pointer_state.tiling.init_view) {
 			// Handle layout resizes -- Find the biggest parent container then apply resizes to that
@@ -431,7 +431,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			swayc_t *parent = view;
 			double dx = mouse_origin.x - prev_pos.x;
 			double dy = mouse_origin.y - prev_pos.y;
-			if (pointer_state.lock.top) {
+			if (!pointer_state.lock.bottom) {
 				while (parent->type != C_WORKSPACE) {
 					// TODO: Absolute value is a bad hack here to compensate for rounding. Find a better
 					// way of doing this.
@@ -453,7 +453,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 						}
 					}
 				}
-			} else {
+			} else if (!pointer_state.lock.top) {
 				while (parent->type != C_WORKSPACE) {
 					if (fabs(parent->parent->y - view->y) <= 1) {
 						parent = parent->parent;
@@ -476,7 +476,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			}
 
 			parent = view;
-			if (pointer_state.lock.left) {
+			if (!pointer_state.lock.right) {
 				while (parent->type != C_WORKSPACE) {
 					if (fabs(parent->parent->x + parent->parent->width - (view->x + view->width)) <= 1) {
 						parent = parent->parent;
@@ -497,7 +497,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 						}
 					}
 				}
-			} else {
+			} else if (!pointer_state.lock.left) {
 				while (parent->type != C_WORKSPACE) {
 					if (fabs(parent->parent->x - view->x) <= 1 && parent->parent) {
 						parent = parent->parent;
