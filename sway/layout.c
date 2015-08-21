@@ -114,7 +114,7 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 	sway_log(L_DEBUG, "Moved window");
 	swayc_t *temp;
 	int i;
-	uint clength = root->children->length;
+	int clength = root->children->length;
 	//Rearrange
 	for (i = 0; i < clength; ++i) {
 		swayc_t *child = root->children->items[i];

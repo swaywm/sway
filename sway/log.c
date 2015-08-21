@@ -10,7 +10,7 @@
 #include <string.h>
 
 int colored = 1;
-int v = 0;
+log_importance_t v = L_SILENT;
 
 static const char *verbosity_colors[] = {
 	"", // L_SILENT
@@ -19,7 +19,7 @@ static const char *verbosity_colors[] = {
 	"\x1B[1;30m", // L_DEBUG
 };
 
-void init_log(int verbosity) {
+void init_log(log_importance_t verbosity) {
 	v = verbosity;
 	/* set FD_CLOEXEC flag to prevent programs called with exec to write into logs */
 	int i;
@@ -46,9 +46,9 @@ void sway_abort(const char *format, ...) {
 	sway_terminate();
 }
 
-void sway_log(int verbosity, const char* format, ...) {
+void sway_log(log_importance_t verbosity, const char* format, ...) {
 	if (verbosity <= v) {
-		int c = verbosity;
+		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
@@ -69,9 +69,9 @@ void sway_log(int verbosity, const char* format, ...) {
 	}
 }
 
-void sway_log_errno(int verbosity, char* format, ...) {
+void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 	if (verbosity <= v) {
-		int c = verbosity;
+		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}

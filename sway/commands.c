@@ -106,7 +106,7 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 		// Check for a modifier key
 		int j;
 		bool is_mod = false;
-		for (j = 0; j < sizeof(modifiers) / sizeof(struct modifier_key); ++j) {
+		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
 			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
 				binding->modifiers |= modifiers[j].mod;
 				is_mod = true;
@@ -261,7 +261,7 @@ static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) 
 
 	// set modifer keys
 	for (i = 0; i < split->length; ++i) {
-		for (j = 0; j < sizeof(modifiers) / sizeof(struct modifier_key); ++j) {
+		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
 			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
 				config->floating_mod |= modifiers[j].mod;
 			}
