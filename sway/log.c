@@ -54,7 +54,7 @@ void sway_log(int verbosity, const char* format, ...) {
 		}
 
 		if (colored) {
-			fprintf(stderr, verbosity_colors[c]);
+			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
 		va_list args;
@@ -77,7 +77,7 @@ void sway_log_errno(int verbosity, char* format, ...) {
 		}
 
 		if (colored) {
-			fprintf(stderr, verbosity_colors[c]);
+			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
 		va_list args;
@@ -88,7 +88,7 @@ void sway_log_errno(int verbosity, char* format, ...) {
 		fprintf(stderr, ": ");
 		char error[256];
 		strerror_r(errno, error, sizeof(error));
-		fprintf(stderr, error);
+		fprintf(stderr, "%s", error);
 
 		if (colored) {
 			fprintf(stderr, "\x1B[0m");
