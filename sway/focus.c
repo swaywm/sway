@@ -54,8 +54,8 @@ static void update_focus(swayc_t *c) {
 }
 
 bool move_focus(enum movement_direction direction) {
-	swayc_t *view = get_swayc_in_direction(
-			get_focused_container(&root_container), direction);
+	swayc_t *view = get_focused_container(&root_container);
+	view = swayc_by_direction(view, direction);
 	if (view) {
 		if (direction == MOVE_PARENT) {
 			set_focused_container(view);
@@ -103,8 +103,8 @@ void set_focused_container(swayc_t *c) {
 
 	// if the workspace is the same, and previous focus is fullscreen, dont
 	// change focus
-	if (workspace == active_workspace
-		&& wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+	sway_log(L_DEBUG,"%p==%p, f:%d", workspace, active_workspace, swayc_is_fullscreen(focused));
+	if (workspace == active_workspace && swayc_is_fullscreen(focused)) {
 		return;
 	}
 

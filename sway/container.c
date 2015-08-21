@@ -32,17 +32,16 @@ static void free_swayc(swayc_t *cont) {
 	if (!ASSERT_NONNULL(cont)) {
 		return;
 	}
-	if (cont->handle > 0) {
+	sway_log(L_DEBUG, "destroying container %p, handle:%ld",cont, cont->handle);
+	if (cont->handle) {
 		wlc_handle_set_user_data(cont->handle, 0);
 	}
-	// TODO does not properly handle containers with children,
-	// TODO but functions that call this usually check for that
+	// Destroy all children
 	if (cont->children) {
-		if (cont->children->length) {
-			int i;
-			for (i = 0; i < cont->children->length; ++i) {
-				free_swayc(cont->children->items[i]);
-			}
+		// children remove themselves from parent, so continue until theres no
+		// more children
+		while (cont->children->length) {
+			free_swayc(cont->children->items[0]);
 		}
 		list_free(cont->children);
 	}
@@ -255,7 +254,7 @@ DESTROY_FUNC destroy_output(swayc_t *output) {
 	if (output->children->length == 0) {
 		// TODO move workspaces to other outputs
 	}
-	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
+	sway_log(L_DEBUG, "%s:'%lu'", __func__, output->handle);
 	free_swayc(output);
 	return &root_container;
 }
@@ -288,7 +287,7 @@ DESTROY_FUNC destroy_container(swayc_t *container) {
 		return NULL;
 	}
 	while (container->children->length == 0 && container->type == C_CONTAINER) {
-		sway_log(L_DEBUG, "Container: Destroying container '%p'", container);
+		sway_log(L_DEBUG, "%s: '%p'", __func__, container);
 		swayc_t *parent = container->parent;
 		free_swayc(container);
 		container = parent;
@@ -300,7 +299,7 @@ DESTROY_FUNC destroy_view(swayc_t *view) {
 	if (!ASSERT_NONNULL(view)) {
 		return NULL;
 	}
-	sway_log(L_DEBUG, "Destroying view '%p'", view);
+	sway_log(L_DEBUG, "%s: '%p'", __func__, view);
 	swayc_t *parent = view->parent;
 	free_swayc(view);
 
@@ -311,6 +310,14 @@ DESTROY_FUNC destroy_view(swayc_t *view) {
 	return parent;
 }
 #undef DESTROY_FUNC
+
+// Container info function
+
+bool swayc_is_fullscreen(swayc_t *view) {
+	return view
+		&& view->type == C_VIEW
+		&& (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN);
+}
 
 // Container lookup
 
@@ -344,6 +351,56 @@ swayc_t *swayc_by_handle(wlc_handle handle) {
 	return wlc_handle_get_user_data(handle);
 }
 
+swayc_t *swayc_by_direction(swayc_t *container, enum movement_direction dir) {
+	swayc_t *parent = container->parent;
+
+	if (dir == MOVE_PARENT) {
+		if (parent->type == C_OUTPUT) {
+			return NULL;
+		} else {
+			return parent;
+		}
+	}
+	while (true) {
+		// Test if we can even make a difference here
+		bool can_move = false;
+		int diff = 0;
+		if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
+				can_move = true;
+				diff = dir == MOVE_LEFT ? -1 : 1;
+			}
+		} else {
+			if (parent->layout == L_VERT) {
+				can_move = true;
+				diff = dir == MOVE_UP ? -1 : 1;
+			}
+		}
+		if (can_move) {
+			int i;
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *child = parent->children->items[i];
+				if (child == container) {
+					break;
+				}
+			}
+			int desired = i + diff;
+			if (desired < 0 || desired >= parent->children->length) {
+				can_move = false;
+			} else {
+				return parent->children->items[desired];
+			}
+		}
+		if (!can_move) {
+			container = parent;
+			parent = parent->parent;
+			if (!parent) {
+				// Nothing we can do
+				return NULL;
+			}
+		}
+	}
+}
 
 swayc_t *find_container(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {

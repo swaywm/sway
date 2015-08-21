@@ -422,8 +422,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	if (config->focus_follows_mouse && prev_handle != handle) {
 		// Dont change focus if fullscreen
 		swayc_t *focused = get_focused_view(view);
-		if (!(focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN)
-				&& !(pointer_state.l_held || pointer_state.r_held)) {
+		if (!swayc_is_fullscreen(focused) && !(pointer_state.l_held || pointer_state.r_held)) {
 			set_focused_container(container_under_pointer());
 		}
 	}
@@ -451,7 +450,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
 	swayc_t *focused = get_focused_container(&root_container);
 	// dont change focus if fullscreen
-	if (focused->type == C_VIEW && wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN) {
+	if (swayc_is_fullscreen(focused)) {
 		return false;
 	}
 	if (state == WLC_BUTTON_STATE_PRESSED) {

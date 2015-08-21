@@ -107,12 +107,12 @@ swayc_t *remove_child(swayc_t *child) {
 			parent->focused = NULL;
 		}
 	}
+	child->parent = NULL;
 	return parent;
 }
 
 // Fitting functions
 #define FIT_FUNC __attribute__((nonnull)) static void
-
 FIT_FUNC _fit_view(swayc_t *view) {
 	sway_log(L_DEBUG, "%s:%p: (%dx%d@%dx%d)", __func__, view,
 			view->width, view->height, view->x, view->y);
@@ -174,7 +174,6 @@ FIT_FUNC _fit_container(swayc_t *container) {
 			}
 			s += *prev_w;
 		}
-		sway_log(L_DEBUG,"s:%f",s);
 		if (s < 0.001) {
 			return;
 		}
@@ -307,6 +306,7 @@ __attribute__((nonnull)) static wlc_handle order_children(swayc_t *swayc, wlc_ha
 	// Put handle below current top, or if there is no top, set it as bottom
 	if (top) {
 		wlc_view_send_below(bottom, top);
+		sway_log(L_DEBUG,"putting %ld below %ld", bottom, top);
 	} else {
 		top = bottom;
 	}
@@ -322,6 +322,7 @@ __attribute__((nonnull)) static wlc_handle order_children(swayc_t *swayc, wlc_ha
 		// Update current top, send it below previous bottom, and set new bottom
 		top = order_children(*child, bottom);
 		wlc_view_send_below(top, bottom);
+		sway_log(L_DEBUG,"putting %ld below %ld", bottom, top);
 		bottom = top;
 	}
 	
@@ -330,18 +331,32 @@ __attribute__((nonnull)) static wlc_handle order_children(swayc_t *swayc, wlc_ha
 	if (swayc->type == C_WORKSPACE) {
 		// TODO using the same hacky implementation as before.
 		// send floating windows to front
-		len = swayc->children->length;
+		len = swayc->floating->length;
 		child = (swayc_t **)swayc->floating->items;
 		
 		// chekc whether to send floating windows to the back or front
 		swayc_t *focused = get_focused_view(swayc);
-		bool tofront = swayc->parent->focused == swayc || (focused->type == C_VIEW
-				&& (wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN));
-		for (i = 0; i < len; ++i) {
+
+		bool tofront = swayc->parent->focused == swayc;
+		// Send focused view to front or back if fullscreen depending on tofront
+		if (!focused->is_floating && swayc_is_fullscreen(focused)) {
+			if (tofront) {
+				wlc_view_bring_to_front(focused->handle);
+				sway_log(L_DEBUG,"bring %ld to front (fullscreen)", focused->handle);
+				// we dont want to bring floating windows above fullscreen
+				// window
+				tofront = false;
+			} else {
+				wlc_view_send_to_back(focused->handle);
+			}
+		}
+		for (i = 0; i < len; ++i, ++child) {
 			if (tofront) {
 				wlc_view_bring_to_front((*child)->handle);
+				sway_log(L_DEBUG,"bring %ld to front (floating)", focused->handle);
 			} else {
 				wlc_view_send_to_back((*child)->handle);
+				sway_log(L_DEBUG,"sending %ld to back (floating)", focused->handle);
 			}
 		}
 	}
@@ -358,54 +373,3 @@ void arrange_windows(swayc_t *container, int width, int height) {
 	return;
 }
 
-
-swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir) {
-	swayc_t *parent = container->parent;
-
-	if (dir == MOVE_PARENT) {
-		if (parent->type == C_OUTPUT) {
-			return NULL;
-		} else {
-			return parent;
-		}
-	}
-	while (true) {
-		// Test if we can even make a difference here
-		bool can_move = false;
-		int diff = 0;
-		if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
-			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
-				can_move = true;
-				diff = dir == MOVE_LEFT ? -1 : 1;
-			}
-		} else {
-			if (parent->layout == L_VERT) {
-				can_move = true;
-				diff = dir == MOVE_UP ? -1 : 1;
-			}
-		}
-		if (can_move) {
-			int i;
-			for (i = 0; i < parent->children->length; ++i) {
-				swayc_t *child = parent->children->items[i];
-				if (child == container) {
-					break;
-				}
-			}
-			int desired = i + diff;
-			if (desired < 0 || desired >= parent->children->length) {
-				can_move = false;
-			} else {
-				return parent->children->items[desired];
-			}
-		}
-		if (!can_move) {
-			container = parent;
-			parent = parent->parent;
-			if (!parent) {
-				// Nothing we can do
-				return NULL;
-			}
-		}
-	}
-}
