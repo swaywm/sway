@@ -640,8 +640,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			// Dont want pointer sent to window while dragging or resizing
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		} else {
-			pointer_state.tiling.resize = pointer_state.r_held;
-			pointer_state.tiling.init_view = pointer;
+			if (modifiers->mods & config->floating_mod) {
+				pointer_state.tiling.resize = pointer_state.r_held;
+				pointer_state.tiling.init_view = pointer;
+				// Dont want pointer sent when resizing
+				return (pointer_state.tiling.resize);
+			}
 		}
 		return (pointer && pointer != focused);
 	} else {
