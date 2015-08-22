@@ -86,6 +86,7 @@ swayc_t *new_output(wlc_handle handle) {
 	
 	// Find position for it
 	if (oc && oc->x != -1 && oc->y != -1) {
+		sway_log(L_DEBUG, "Set %s position to %d, %d", name, oc->x, oc->y);
 		output->x = oc->x;
 		output->y = oc->y;
 	} else {
