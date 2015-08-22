@@ -59,7 +59,7 @@ swayc_t *new_output(wlc_handle handle) {
 	const char *name = wlc_output_get_name(handle);
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
-	struct output_config *oc ;
+	struct output_config *oc = NULL;
 	int i;
 	for (i = 0; i < config->output_configs->length; ++i) {
 		oc = config->output_configs->items[i];
@@ -83,6 +83,23 @@ swayc_t *new_output(wlc_handle handle) {
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
 	output->gaps = config->gaps_outer + config->gaps_inner / 2;
+	
+	// Find position for it
+	if (oc && oc->x != -1 && oc->y != -1) {
+		output->x = oc->x;
+		output->y = oc->y;
+	} else {
+		int x = 0;
+		for (i = 0; i < root_container.children->length; ++i) {
+			swayc_t *c = root_container.children->items[i];
+			if (c->type == C_OUTPUT) {
+				if (c->width + c->x > x) {
+					x = c->width + c->x;
+				}
+			}
+		}
+		output->x = x;
+	}
 
 	add_child(&root_container, output);
 

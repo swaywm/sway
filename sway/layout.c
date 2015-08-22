@@ -172,18 +172,13 @@ void arrange_windows(swayc_t *container, double width, double height) {
 			child->x = x;
 			child->y = y;
 			arrange_windows(child, -1, -1);
-			// Removed for now because wlc works with relative positions
-			// Addition can be reconsidered once wlc positions are changed
-			// x += child->width;
+			x += child->width;
 		}
 		return;
 	case C_OUTPUT:
 		container->width = width;
 		container->height = height;
-		// These lines make x/y negative and result in stuff glitching out
-		// Their addition can be reconsidered once wlc positions are changed
-		// x -= container->x;
-		// y -= container->y;
+		x = 0, y = 0;
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *child = container->children->items[i];
 			child->x = x + container->gaps;
