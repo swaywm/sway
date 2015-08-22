@@ -364,6 +364,66 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
+static bool cmd_output(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
+		return false;
+	}
+
+	struct output_config *output = calloc(1, sizeof(struct output_config));
+	output->x = output->y = output->width = output->height = -1;
+	output->name = strdup(argv[0]);
+
+	// TODO: atoi doesn't handle invalid numbers
+
+	int i;
+	for (i = 1; i < argc; ++i) {
+		if (strcasecmp(argv[i], "resolution") == 0 || strcasecmp(argv[i], "res") == 0) {
+			char *res = argv[++i];
+			char *x = strchr(res, 'x');
+			int width = -1, height = -1;
+			if (x != NULL) {
+				// Format is 1234x4321
+				*x = '\0';
+				width = atoi(res);
+				height = atoi(x + 1);
+				*x = 'x';
+			} else {
+				// Format is 1234 4321
+				width = atoi(res);
+				res = argv[++i];
+				height = atoi(res);
+			}
+			output->width = width;
+			output->height = height;
+		} else if (strcasecmp(argv[i], "position") == 0 || strcasecmp(argv[i], "pos") == 0) {
+			char *res = argv[++i];
+			char *c = strchr(res, ',');
+			int x = -1, y = -1;
+			if (c != NULL) {
+				// Format is 1234,4321
+				*c = '\0';
+				x = atoi(res);
+				y = atoi(c + 1);
+				*c = ',';
+			} else {
+				// Format is 1234 4321
+				x = atoi(res);
+				res = argv[++i];
+				y = atoi(res);
+			}
+			output->x = x;
+			output->y = y;
+		}
+	}
+
+	list_add(config->output_configs, output);
+
+	sway_log(L_DEBUG, "Configured output %s to %d x %d @ %d, %d",
+			output->name, output->width, output->height, output->x, output->y);
+
+	return true;
+}
+
 static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
 		return false;
@@ -637,6 +697,7 @@ static struct cmd_handler handlers[] = {
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
 	{ "move", cmd_move},
+	{ "output", cmd_output},
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
 	{ "set", cmd_set },

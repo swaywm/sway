@@ -55,13 +55,31 @@ static void free_swayc(swayc_t *cont) {
 // New containers
 
 swayc_t *new_output(wlc_handle handle) {
-	const struct wlc_size* size = wlc_output_get_resolution(handle);
+	const struct wlc_size *size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
+	struct output_config *oc ;
+	int i;
+	for (i = 0; i < config->output_configs->length; ++i) {
+		oc = config->output_configs->items[i];
+		if (strcasecmp(name, oc->name) == 0) {
+			sway_log(L_DEBUG, "Matched output config for %s", name);
+			break;
+		}
+		oc = NULL;
+	}
+
 	swayc_t *output = new_swayc(C_OUTPUT);
-	output->width = size->w;
-	output->height = size->h;
+	if (oc && oc->width != -1 && oc->height != -1) {
+		output->width = oc->width;
+		output->height = oc->height;
+		struct wlc_size new_size = { .w = oc->width, .h = oc->width };
+		wlc_output_set_resolution(handle, &new_size);
+	} else {
+		output->width = size->w;
+		output->height = size->h;
+	}
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
 	output->gaps = config->gaps_outer + config->gaps_inner / 2;
@@ -71,7 +89,6 @@ swayc_t *new_output(wlc_handle handle) {
 	// Create workspace
 	char *ws_name = NULL;
 	if (name) {
-		int i;
 		for (i = 0; i < config->workspace_outputs->length; ++i) {
 			struct workspace_output *wso = config->workspace_outputs->items[i];
 			if (strcasecmp(wso->output, name) == 0) {
