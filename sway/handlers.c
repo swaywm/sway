@@ -422,9 +422,25 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		bool valid = true;
 		double dx = mouse_origin.x - prev_pos.x;
 		double dy = mouse_origin.y - prev_pos.y;
-
 		if (view != pointer_state.tiling.init_view) {
+			changed_tiling = true;
 			valid = false;
+			if (view->type != C_WORKSPACE) {
+				if (view->x < pointer_state.tiling.init_view->x) {
+					pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
+					pointer_state.lock.temp_left = true;
+				} else if (view->x > pointer_state.tiling.init_view->x) {
+					pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
+					pointer_state.lock.temp_right = true;
+				}
+				if (view->y < pointer_state.tiling.init_view->y) {
+					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
+					pointer_state.lock.temp_up = true;
+				} else if (view->y > pointer_state.tiling.init_view->y) {
+					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
+					pointer_state.lock.temp_down = true;
+				}
+			}
 		}
 
 		if ((dx < 0 || mouse_origin.x < pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_left) {
@@ -432,6 +448,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			valid = false;
 		} else if (dx > 0 && pointer_state.lock.temp_left) {
 			pointer_state.lock.temp_left = false;
+			pointer_state.tiling.lock_pos.x = 0;
 		}
 
 		if ((dx > 0 || mouse_origin.x > pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_right) {
@@ -439,6 +456,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			valid = false;
 		} else if (dx < 0 && pointer_state.lock.temp_right) {
 			pointer_state.lock.temp_right = false;
+			pointer_state.tiling.lock_pos.x = 0;
 		}
 
 		if ((dy < 0 || mouse_origin.y < pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_up) {
@@ -446,6 +464,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			valid = false;
 		} else if (dy > 0 && pointer_state.lock.temp_up) {
 			pointer_state.lock.temp_up = false;
+			pointer_state.tiling.lock_pos.y = 0;
 		}
 
 		if ((dy > 0 || mouse_origin.y > pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_down) {
@@ -453,6 +472,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			valid = false;
 		} else if (dy < 0 && pointer_state.lock.temp_down) {
 			pointer_state.lock.temp_down = false;
+			pointer_state.tiling.lock_pos.y = 0;
 		}
 
 		if (!view->is_floating && valid) {
@@ -477,10 +497,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 							recursive_resize(sibling, -1 * dy, WLC_RESIZE_EDGE_TOP);
 							changed_tiling = true;
 						} else {
-							pointer_state.tiling.lock_pos.y = mouse_origin.y;
 							if (parent->height < min_sane_h) {
+								//pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
+								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
 								pointer_state.lock.temp_up = true;
 							} else if (sibling->height < min_sane_h) {
+								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
 								pointer_state.lock.temp_down = true;
 							}
 						}
@@ -502,10 +524,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 							recursive_resize(sibling, dy, WLC_RESIZE_EDGE_BOTTOM);
 							changed_tiling = true;
 						} else {
-							pointer_state.tiling.lock_pos.y = mouse_origin.y;
 							if (parent->height < min_sane_h) {
+								//pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
+								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
 								pointer_state.lock.temp_down = true;
 							} else if (sibling->height < min_sane_h) {
+								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
 								pointer_state.lock.temp_up = true;
 							}
 						}
@@ -531,11 +555,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 							recursive_resize(sibling, -1 * dx, WLC_RESIZE_EDGE_LEFT);
 							changed_tiling = true;
 						} else {
-							pointer_state.tiling.lock_pos.x = mouse_origin.x;
 							if (parent->width < min_sane_w) {
 								pointer_state.lock.temp_left = true;
+								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
 							} else if (sibling->width < min_sane_w) {
 								pointer_state.lock.temp_right = true;
+								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
 							}
 						}
 					}
@@ -556,11 +581,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 							recursive_resize(sibling, dx, WLC_RESIZE_EDGE_RIGHT);
 							changed_tiling = true;
 						} else {
-							pointer_state.tiling.lock_pos.x = mouse_origin.x;
 							if (parent->width < min_sane_w) {
 								pointer_state.lock.temp_right = true;
+								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
 							} else if (sibling->width < min_sane_w) {
 								pointer_state.lock.temp_left = true;
+								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
 							}
 						}
 					}

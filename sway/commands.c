@@ -448,6 +448,8 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 	char *end;
+	int min_sane_w = 100;
+	int min_sane_h = 60;
 	int amount = (int)strtol(argv[2], &end, 10);
 	if (errno == ERANGE || amount == 0) {
 		errno = 0;
@@ -496,6 +498,7 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d l conts, and %d r conts", parent->parent, lnumber, rnumber);
 		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
 		for (i = 0; i < parent->parent->children->length; i++) {
+			bool valid = true;
 			sibling = parent->parent->children->items[i];
 			if (sibling->x != focused->x) {
 				if (sibling->x < parent->x) {
