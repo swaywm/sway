@@ -497,43 +497,85 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		}
 		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d l conts, and %d r conts", parent->parent, lnumber, rnumber);
 		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
+		bool valid = true;
 		for (i = 0; i < parent->parent->children->length; i++) {
-			bool valid = true;
 			sibling = parent->parent->children->items[i];
 			if (sibling->x != focused->x) {
 				if (sibling->x < parent->x) {
 					double pixels = -1 * amount;
 					pixels /= lnumber;
 					if (rnumber) {
-						recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_RIGHT);
+						if ((sibling->width + pixels/2) < min_sane_w) {
+							valid = false;
+							break;
+						}
 					} else {
-						recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_RIGHT);
+						if ((sibling->width + pixels) < min_sane_w) {
+							valid = false;
+							break;
+						}
 					}
 				} else if (sibling->x > parent->x) {
 					double pixels = -1 * amount;
 					pixels /= rnumber;
 					if (lnumber) {
-						recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_LEFT);
+						if ((sibling->width + pixels/2) < min_sane_w) {
+							valid = false;
+							break;
+						}
 					} else {
-						recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_LEFT);
+						if ((sibling->width + pixels) < min_sane_w) {
+							valid = false;
+							break;
+						}
 					}
 				}
 			} else {
-				if (rnumber != 0 && lnumber != 0) {
-					double pixels = amount;
-					pixels /= 2;
-					recursive_resize(parent, pixels, WLC_RESIZE_EDGE_LEFT);
-					recursive_resize(parent, pixels, WLC_RESIZE_EDGE_RIGHT);
-				} else if (rnumber) {
-					recursive_resize(parent, amount, WLC_RESIZE_EDGE_RIGHT);
-				} else if (lnumber) {
-					recursive_resize(parent, amount, WLC_RESIZE_EDGE_LEFT);
+				double pixels = amount;
+				if (parent->width + pixels < min_sane_w) {
+					valid = false;
+					break;
 				}
 			}
 		}
-		// Recursive resize does not handle positions, let arrange_windows
-		// take care of that.
-		arrange_windows(swayc_active_workspace(), -1, -1);
+		if (valid) {
+			for (i = 0; i < parent->parent->children->length; i++) {
+				sibling = parent->parent->children->items[i];
+				if (sibling->x != focused->x) {
+					if (sibling->x < parent->x) {
+						double pixels = -1 * amount;
+						pixels /= lnumber;
+						if (rnumber) {
+							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_RIGHT);
+						} else {
+							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_RIGHT);
+						}
+					} else if (sibling->x > parent->x) {
+						double pixels = -1 * amount;
+						pixels /= rnumber;
+						if (lnumber) {
+							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_LEFT);
+						} else {
+							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_LEFT);
+						}
+					}
+				} else {
+					if (rnumber != 0 && lnumber != 0) {
+						double pixels = amount;
+						pixels /= 2;
+						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_LEFT);
+						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_RIGHT);
+					} else if (rnumber) {
+						recursive_resize(parent, amount, WLC_RESIZE_EDGE_RIGHT);
+					} else if (lnumber) {
+						recursive_resize(parent, amount, WLC_RESIZE_EDGE_LEFT);
+					}
+				}
+			}
+			// Recursive resize does not handle positions, let arrange_windows
+			// take care of that.
+			arrange_windows(swayc_active_workspace(), -1, -1);
+		}
 		return true;
 	} else if (strcmp(argv[1], "height") == 0) {
 		int tnumber = 0;
@@ -561,6 +603,7 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		}
 		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d b conts, and %d t conts", parent->parent, bnumber, tnumber);
 		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
+		bool valid = true;
 		for (i = 0; i < parent->parent->children->length; i++) {
 			sibling = parent->parent->children->items[i];
 			if (sibling->y != focused->y) {
@@ -568,32 +611,74 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 					double pixels = -1 * amount;
 					pixels /= bnumber;
 					if (tnumber) {
-						recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_BOTTOM);
+						if ((sibling->height + pixels/2) < min_sane_h) {
+							valid = false;
+							break;
+						}
 					} else {
-						recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_BOTTOM);
+						if ((sibling->height + pixels) < min_sane_h) {
+							valid = false;
+							break;
+						}
 					}
-				} else if (sibling->x > parent->x) {
+				} else if (sibling->y > parent->y) {
 					double pixels = -1 * amount;
 					pixels /= tnumber;
 					if (bnumber) {
-						recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_TOP);
+						if ((sibling->height + pixels/2) < min_sane_h) {
+							valid = false;
+							break;
+						}
 					} else {
-						recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_TOP);
+						if ((sibling->height + pixels) < min_sane_h) {
+							valid = false;
+							break;
+						}
 					}
 				}
 			} else {
-				if (bnumber != 0 && tnumber != 0) {
-					double pixels = amount/2;
-					recursive_resize(parent, pixels, WLC_RESIZE_EDGE_TOP);
-					recursive_resize(parent, pixels, WLC_RESIZE_EDGE_BOTTOM);
-				} else if (tnumber) {
-					recursive_resize(parent, amount, WLC_RESIZE_EDGE_TOP);
-				} else if (bnumber) {
-					recursive_resize(parent, amount, WLC_RESIZE_EDGE_BOTTOM);
+				double pixels = amount;
+				if (parent->height + pixels < min_sane_h) {
+					valid = false;
+					break;
 				}
 			}
 		}
-		arrange_windows(swayc_active_workspace(), -1, -1);
+		if (valid) {
+			for (i = 0; i < parent->parent->children->length; i++) {
+				sibling = parent->parent->children->items[i];
+				if (sibling->y != focused->y) {
+					if (sibling->y < parent->y) {
+						double pixels = -1 * amount;
+						pixels /= bnumber;
+						if (tnumber) {
+							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_BOTTOM);
+						} else {
+							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_BOTTOM);
+						}
+					} else if (sibling->x > parent->x) {
+						double pixels = -1 * amount;
+						pixels /= tnumber;
+						if (bnumber) {
+							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_TOP);
+						} else {
+							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_TOP);
+						}
+					}
+				} else {
+					if (bnumber != 0 && tnumber != 0) {
+						double pixels = amount/2;
+						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_TOP);
+						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_BOTTOM);
+					} else if (tnumber) {
+						recursive_resize(parent, amount, WLC_RESIZE_EDGE_TOP);
+					} else if (bnumber) {
+						recursive_resize(parent, amount, WLC_RESIZE_EDGE_BOTTOM);
+					}
+				}
+			}
+			arrange_windows(swayc_active_workspace(), -1, -1);
+		}
 		return true;
 	}
 	return true;
