@@ -435,7 +435,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_UP) == view) {
 					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
 					pointer_state.lock.temp_up = true;
-				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_UP) == view) {
+				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_DOWN) == view) {
 					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
 					pointer_state.lock.temp_down = true;
 				}
