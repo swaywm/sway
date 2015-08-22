@@ -362,6 +362,37 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			};
 			wlc_view_set_geometry(view->handle, 0, &geometry);
 			changed_floating = true;
+		} else {
+			swayc_t *init_view = pointer_state.tiling.init_view;
+			if (view != init_view && view->type == C_VIEW) {
+				changed_tiling = true;
+				int i, j;
+				for (i = 0; i < view->parent->children->length; i++) {
+					if (view->parent->children->items[i] == view) {
+						for (j = 0; j < init_view->parent->children->length; j++) {
+							if (init_view->parent->children->items[j] == init_view) {
+								double temp_w = view->width;
+								double temp_h = view->height;
+								view->width = init_view->width;
+								view->height = init_view->height;
+								init_view->width = temp_w;
+								init_view->height = temp_h;
+
+								init_view->parent->children->items[j] = view;
+								view->parent->children->items[i] = init_view;
+
+								swayc_t *temp = view->parent;
+								view->parent = init_view->parent;
+								init_view->parent = temp;
+
+								arrange_windows(&root_container, -1, -1);
+								break;
+							}
+						}
+						break;
+					}
+				}
+			}
 		}
 	} else if (pointer_state.floating.resize && view) {
 		changed_floating = resize_floating(prev_pos);
@@ -430,6 +461,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		} else {
 			if (modifiers->mods & config->floating_mod) {
+				pointer_state.floating.drag = pointer_state.l_held;
 				pointer_state.tiling.resize = pointer_state.r_held;
 				pointer_state.tiling.init_view = pointer;
 				// Dont want pointer sent when resizing
@@ -442,6 +474,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		if (button == M_LEFT_CLICK) {
 			pointer_state.l_held = false;
 			pointer_state.floating.drag = false;
+			pointer_state.tiling.init_view = NULL;
 		}
 		if (button == M_RIGHT_CLICK) {
 			pointer_state.r_held = false;
