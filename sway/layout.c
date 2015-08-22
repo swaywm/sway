@@ -14,15 +14,26 @@ swayc_t root_container;
 int min_sane_h = 60;
 int min_sane_w = 100;
 
+static swayc_t null_output;
 static swayc_t *scratchpad = NULL;
 
 void init_layout(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
+	null_output.name = "root";
 	root_container.children = create_list();
 	root_container.handle = -1;
 
-	scratchpad = new_workspace(&root_container, "__i3_scratch");
+	null_output.type = C_OUTPUT;
+	null_output.layout = L_NONE;
+	null_output.name = "__i3";
+	null_output.children = create_list();
+	null_output.handle = -1;
+	null_output.internal = true;
+	add_child(&root_container, &null_output);
+
+	scratchpad = new_workspace(&null_output, "__i3_scratch");
+	scratchpad->internal = true;
 }
 
 static int index_child(swayc_t *parent, swayc_t *child) {

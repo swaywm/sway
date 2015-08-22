@@ -113,20 +113,17 @@ void workspace_next() {
 			return;
 		}
 	}
-	if (root_container.children->length > 1) {
-		for (i = 0; i < root_container.children->length - 1; i++) {
-			if (root_container.children->items[i] == current_output) {
-				workspace_switch(((swayc_t *)root_container.children->items[i + 1])->focused);
-				workspace_output_next();
-				return;
+
+	for (i = 0; i < root_container.children->length; i++) {
+		if (root_container.children->items[i] == current_output) {
+			swayc_t *next_output = root_container.children->items[(i + 1)%root_container.children->length];
+			if (next_output->internal) {
+				next_output = root_container.children->items[(i + 2)%root_container.children->length];
 			}
+			workspace_switch(next_output->focused);
+			workspace_output_next();
+			return;
 		}
-		// If we're at the last output, then go to the first
-		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
-		workspace_output_next();
-		return;
-	} else {
-		workspace_switch(current_output->children->items[0]);
 	}
 }
 
@@ -157,20 +154,18 @@ void workspace_prev() {
 			return;
 		}
 	}
-	if (root_container.children->length > 1) {
-		for (i = 1; i < root_container.children->length; i++) {
-			if (root_container.children->items[i] == current_output) {
-				workspace_switch(((swayc_t *)root_container.children->items[i - 1])->focused);
-				workspace_output_next();
-				return;
+
+	int num_outputs = root_container.children->length;
+	for (i = 0; i < num_outputs; i++) {
+		if (root_container.children->items[i] == current_output) {
+			swayc_t *next_output = root_container.children->items[(num_outputs + i - 1)%num_outputs];
+			if (next_output->internal) {
+				next_output = root_container.children->items[(num_outputs + i - 2)%num_outputs];
 			}
+			workspace_switch(next_output->focused);
+			workspace_output_next();
+			return;
 		}
-		// If we're at the first output, then go to the last
-		workspace_switch(((swayc_t *)root_container.children->items[root_container.children->length-1])->focused);
-		workspace_output_next();
-		return;
-	} else {
-		workspace_switch(current_output->children->items[current_output->children->length - 1]);
 	}
 
 }
