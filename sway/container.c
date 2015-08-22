@@ -74,7 +74,7 @@ swayc_t *new_output(wlc_handle handle) {
 	if (oc && oc->width != -1 && oc->height != -1) {
 		output->width = oc->width;
 		output->height = oc->height;
-		struct wlc_size new_size = { .w = oc->width, .h = oc->width };
+		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
 		wlc_output_set_resolution(handle, &new_size);
 	} else {
 		output->width = size->w;
