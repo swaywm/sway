@@ -5,6 +5,7 @@
 #include <wlc/wlc.h>
 
 extern struct wlc_interface interface;
+extern struct wlc_origin mouse_origin;
 extern uint32_t keys_pressed[32];
 
 // set focus to current pointer location and return focused container
