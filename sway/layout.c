@@ -10,6 +10,8 @@
 #include "focus.h"
 
 swayc_t root_container;
+int min_sane_h = 60;
+int min_sane_w = 100;
 
 void init_layout(void) {
 	root_container.type = C_ROOT;

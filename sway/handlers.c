@@ -15,8 +15,9 @@
 #include "container.h"
 #include "focus.h"
 #include "input_state.h"
+#include "resize.h"
 
-static struct wlc_origin mouse_origin;
+struct wlc_origin mouse_origin;
 
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct wlc_origin *origin = _origin;
@@ -338,261 +339,65 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	mouse_origin = *origin;
 	bool changed_floating = false;
 	bool changed_tiling = false;
-	int min_sane_w = 100;
-	int min_sane_h = 60;
 	if (!swayc_active_workspace()) {
 		return false;
 	}
 	// Do checks to determine if proper keys are being held
 	swayc_t *view = container_under_pointer();
-	uint32_t edge = 0;
 	if (pointer_state.floating.drag && view) {
 		if (view->is_floating) {
 			int dx = mouse_origin.x - prev_pos.x;
 			int dy = mouse_origin.y - prev_pos.y;
 			view->x += dx;
 			view->y += dy;
+			struct wlc_geometry geometry = {
+				.origin = {
+					.x = view->x,
+					.y = view->y
+				},
+				.size = {
+					.w = view->width,
+					.h = view->height
+				}
+			};
+			wlc_view_set_geometry(view->handle, 0, &geometry);
 			changed_floating = true;
+		} else {
+			swayc_t *init_view = pointer_state.tiling.init_view;
+			if (view != init_view && view->type == C_VIEW) {
+				changed_tiling = true;
+				int i, j;
+				for (i = 0; i < view->parent->children->length; i++) {
+					if (view->parent->children->items[i] == view) {
+						for (j = 0; j < init_view->parent->children->length; j++) {
+							if (init_view->parent->children->items[j] == init_view) {
+								double temp_w = view->width;
+								double temp_h = view->height;
+								view->width = init_view->width;
+								view->height = init_view->height;
+								init_view->width = temp_w;
+								init_view->height = temp_h;
+
+								init_view->parent->children->items[j] = view;
+								view->parent->children->items[i] = init_view;
+
+								swayc_t *temp = view->parent;
+								view->parent = init_view->parent;
+								init_view->parent = temp;
+
+								arrange_windows(&root_container, -1, -1);
+								break;
+							}
+						}
+						break;
+					}
+				}
+			}
 		}
 	} else if (pointer_state.floating.resize && view) {
-		if (view->is_floating) {
-			int dx = mouse_origin.x - prev_pos.x;
-			int dy = mouse_origin.y - prev_pos.y;
-
-			// Move and resize the view based on the dx/dy and mouse position
-			int midway_x = view->x + view->width/2;
-			int midway_y = view->y + view->height/2;
-			if (dx < 0) {
-				if (!pointer_state.lock.right) {
-					if (view->width > min_sane_w) {
-						changed_floating = true;
-						view->width += dx;
-						edge += WLC_RESIZE_EDGE_RIGHT;
-					}
-				} else if (mouse_origin.x < midway_x && !pointer_state.lock.left) {
-					changed_floating = true;
-					view->x += dx;
-					view->width -= dx;
-					edge += WLC_RESIZE_EDGE_LEFT;
-				}
-			} else if (dx > 0) {
-				if (mouse_origin.x > midway_x && !pointer_state.lock.right) {
-					changed_floating = true;
-					view->width += dx;
-					edge += WLC_RESIZE_EDGE_RIGHT;
-				} else if (!pointer_state.lock.left) {
-					if (view->width > min_sane_w) {
-						changed_floating = true;
-						view->x += dx;
-						view->width -= dx;
-						edge += WLC_RESIZE_EDGE_LEFT;
-					}
-				}
-			}
-
-			if (dy < 0) {
-				if (!pointer_state.lock.bottom) {
-					if (view->height > min_sane_h) {
-						changed_floating = true;
-						view->height += dy;
-						edge += WLC_RESIZE_EDGE_BOTTOM;
-					}
-				} else if (mouse_origin.y < midway_y && !pointer_state.lock.top) {
-					changed_floating = true;
-					view->y += dy;
-					view->height -= dy;
-					edge += WLC_RESIZE_EDGE_TOP;
-				}
-			} else if (dy > 0) {
-				if (mouse_origin.y > midway_y && !pointer_state.lock.bottom) {
-					changed_floating = true;
-					view->height += dy;
-					edge += WLC_RESIZE_EDGE_BOTTOM;
-				} else if (!pointer_state.lock.top) {
-					if (view->height > min_sane_h) {
-						changed_floating = true;
-						view->y += dy;
-						view->height -= dy;
-						edge += WLC_RESIZE_EDGE_TOP;
-					}
-				}
-			}
-		}
+		changed_floating = resize_floating(prev_pos);
 	} else if (pointer_state.tiling.resize && view) {
-		bool valid = true;
-		double dx = mouse_origin.x - prev_pos.x;
-		double dy = mouse_origin.y - prev_pos.y;
-		if (view != pointer_state.tiling.init_view) {
-			changed_tiling = true;
-			valid = false;
-			if (view->type != C_WORKSPACE) {
-				if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_LEFT) == view) {
-					pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
-					pointer_state.lock.temp_left = true;
-				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_RIGHT) == view) {
-					pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
-					pointer_state.lock.temp_right = true;
-				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_UP) == view) {
-					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
-					pointer_state.lock.temp_up = true;
-				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_DOWN) == view) {
-					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
-					pointer_state.lock.temp_down = true;
-				}
-			}
-		}
-
-		if ((dx < 0 || mouse_origin.x < pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_left) {
-			changed_tiling = true;
-			valid = false;
-		} else if (dx > 0 && pointer_state.lock.temp_left) {
-			pointer_state.lock.temp_left = false;
-			pointer_state.tiling.lock_pos.x = 0;
-		}
-
-		if ((dx > 0 || mouse_origin.x > pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_right) {
-			changed_tiling = true;
-			valid = false;
-		} else if (dx < 0 && pointer_state.lock.temp_right) {
-			pointer_state.lock.temp_right = false;
-			pointer_state.tiling.lock_pos.x = 0;
-		}
-
-		if ((dy < 0 || mouse_origin.y < pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_up) {
-			changed_tiling = true;
-			valid = false;
-		} else if (dy > 0 && pointer_state.lock.temp_up) {
-			pointer_state.lock.temp_up = false;
-			pointer_state.tiling.lock_pos.y = 0;
-		}
-
-		if ((dy > 0 || mouse_origin.y > pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_down) {
-			changed_tiling = true;
-			valid = false;
-		} else if (dy < 0 && pointer_state.lock.temp_down) {
-			pointer_state.lock.temp_down = false;
-			pointer_state.tiling.lock_pos.y = 0;
-		}
-
-		if (!view->is_floating && valid) {
-			// Handle layout resizes -- Find the biggest parent container then apply resizes to that
-			// and its bordering siblings
-			swayc_t *parent = view;
-			if (!pointer_state.lock.bottom) {
-				while (parent->type != C_WORKSPACE) {
-					// TODO: Absolute value is a bad hack here to compensate for rounding. Find a better
-					// way of doing this.
-					if (fabs(parent->parent->y + parent->parent->height - (view->y + view->height)) <= 1) {
-						parent = parent->parent;
-					} else {
-						break;
-					}
-				}
-				if (parent->parent->children->length > 1 && parent->parent->layout == L_VERT) {
-					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_DOWN);
-					if (sibling) {
-						if ((parent->height > min_sane_h || dy > 0) && (sibling->height > min_sane_h || dy < 0)) {
-							recursive_resize(parent, dy, WLC_RESIZE_EDGE_BOTTOM);
-							recursive_resize(sibling, -1 * dy, WLC_RESIZE_EDGE_TOP);
-							changed_tiling = true;
-						} else {
-							if (parent->height < min_sane_h) {
-								//pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
-								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
-								pointer_state.lock.temp_up = true;
-							} else if (sibling->height < min_sane_h) {
-								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
-								pointer_state.lock.temp_down = true;
-							}
-						}
-					}
-				}
-			} else if (!pointer_state.lock.top) {
-				while (parent->type != C_WORKSPACE) {
-					if (fabs(parent->parent->y - view->y) <= 1) {
-						parent = parent->parent;
-					} else {
-						break;
-					}
-				}
-				if (parent->parent->children->length > 1 && parent->parent->layout == L_VERT) {
-					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_UP);
-					if (sibling) {
-						if ((parent->height > min_sane_h || dy < 0) && (sibling->height > min_sane_h || dy > 0)) {
-							recursive_resize(parent, -1 * dy, WLC_RESIZE_EDGE_TOP);
-							recursive_resize(sibling, dy, WLC_RESIZE_EDGE_BOTTOM);
-							changed_tiling = true;
-						} else {
-							if (parent->height < min_sane_h) {
-								//pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
-								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
-								pointer_state.lock.temp_down = true;
-							} else if (sibling->height < min_sane_h) {
-								pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
-								pointer_state.lock.temp_up = true;
-							}
-						}
-					}
-				}
-			}
-
-			parent = view;
-			if (!pointer_state.lock.right) {
-				while (parent->type != C_WORKSPACE) {
-					if (fabs(parent->parent->x + parent->parent->width - (view->x + view->width)) <= 1) {
-						parent = parent->parent;
-					} else {
-						sway_log(L_DEBUG, "view: %f vs parent: %f", view->x + view->width, parent->parent->x + parent->parent->width);
-						break;
-					}
-				}
-				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
-					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_RIGHT);
-					if (sibling) {
-						if ((parent->width > min_sane_w || dx > 0) && (sibling->width > min_sane_w || dx < 0)) {
-							recursive_resize(parent, dx, WLC_RESIZE_EDGE_RIGHT);
-							recursive_resize(sibling, -1 * dx, WLC_RESIZE_EDGE_LEFT);
-							changed_tiling = true;
-						} else {
-							if (parent->width < min_sane_w) {
-								pointer_state.lock.temp_left = true;
-								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
-							} else if (sibling->width < min_sane_w) {
-								pointer_state.lock.temp_right = true;
-								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
-							}
-						}
-					}
-				}
-			} else if (!pointer_state.lock.left) {
-				while (parent->type != C_WORKSPACE) {
-					if (fabs(parent->parent->x - view->x) <= 1 && parent->parent) {
-						parent = parent->parent;
-					} else {
-						break;
-					}
-				}
-				if (parent->parent->children->length > 1 && parent->parent->layout == L_HORIZ) {
-					swayc_t *sibling = get_swayc_in_direction(parent, MOVE_LEFT);
-					if (sibling) {
-						if ((parent->width > min_sane_w || dx < 0) && (sibling->width > min_sane_w || dx > 0)) {
-							recursive_resize(parent, -1 * dx, WLC_RESIZE_EDGE_LEFT);
-							recursive_resize(sibling, dx, WLC_RESIZE_EDGE_RIGHT);
-							changed_tiling = true;
-						} else {
-							if (parent->width < min_sane_w) {
-								pointer_state.lock.temp_right = true;
-								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
-							} else if (sibling->width < min_sane_w) {
-								pointer_state.lock.temp_left = true;
-								pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
-							}
-						}
-					}
-				}
-			}
-			arrange_windows(swayc_active_workspace(), -1, -1);
-		}
+		changed_tiling = mouse_resize_tiled(prev_pos);
 	}
 	if (config->focus_follows_mouse && prev_handle != handle) {
 		// Dont change focus if fullscreen
@@ -604,21 +409,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	}
 	prev_handle = handle;
 	prev_pos = mouse_origin;
-	if (changed_floating) {
-		struct wlc_geometry geometry = {
-			.origin = {
-				.x = view->x,
-				.y = view->y
-			},
-			.size = {
-				.w = view->width,
-				.h = view->height
-			}
-		};
-		wlc_view_set_geometry(view->handle, edge, &geometry);
-		return true;
-	}
-	if (changed_tiling) {
+	if (changed_tiling || changed_floating) {
 		return true;
 	}
 	return false;
@@ -670,6 +461,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			return (pointer_state.floating.drag || pointer_state.floating.resize);
 		} else {
 			if (modifiers->mods & config->floating_mod) {
+				pointer_state.floating.drag = pointer_state.l_held;
 				pointer_state.tiling.resize = pointer_state.r_held;
 				pointer_state.tiling.init_view = pointer;
 				// Dont want pointer sent when resizing
@@ -682,6 +474,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		if (button == M_LEFT_CLICK) {
 			pointer_state.l_held = false;
 			pointer_state.floating.drag = false;
+			pointer_state.tiling.init_view = NULL;
 		}
 		if (button == M_RIGHT_CLICK) {
 			pointer_state.r_held = false;

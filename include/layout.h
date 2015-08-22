@@ -8,6 +8,9 @@
 
 extern swayc_t root_container;
 
+extern int min_sane_w;
+extern int min_sane_h;
+
 void init_layout(void);
 
 void add_child(swayc_t *parent, swayc_t *child);
