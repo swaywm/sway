@@ -362,12 +362,8 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 							}
 						}
 					} else if (dir == MOVE_LEFT) {
-						sway_log(L_DEBUG, "next->x: %d, next->width: %d, container->x: %d",
-								(int)next->x, (int)next->width, (int)container->x);
-						if (container->x > next->x + next->width) {
-							sway_log(L_DEBUG, "match");
+						if (container->x >= next->x + next->width) {
 							if (target == -1 || max_x < next->x) {
-								sway_log(L_DEBUG, "hit");
 								target = i;
 								max_x = next->x;
 							}
@@ -380,7 +376,7 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 							}
 						}
 					} else if (dir == MOVE_UP) {
-						if (container->y > next->y + next->height) {
+						if (container->y >= next->y + next->height) {
 							if (target == -1 || max_y < next->y) {
 								target = i;
 								max_y = next->y;
