@@ -312,25 +312,40 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
+	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
 
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view, &root_container, MOVE_LEFT);
+		move_container_to_direction(view, &root_container, MOVE_LEFT);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view, &root_container, MOVE_RIGHT);
+		move_container_to_direction(view, &root_container, MOVE_RIGHT);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view, &root_container, MOVE_UP);
+		move_container_to_direction(view, &root_container, MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view, &root_container, MOVE_DOWN);
+		move_container_to_direction(view, &root_container, MOVE_DOWN);
+	} else if (strcasecmp(argv[0], "container") == 0) {
+		// "move container to workspace x"
+		if (!checkarg(argc, "move container", EXPECTED_EQUAL_TO, 4) ||
+			strcasecmp(argv[1], "to") != 0 ||
+			strcasecmp(argv[2], "workspace") != 0) {
+			return false;
+		}
+
+		if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			return false;
+		}
+
+		swayc_t *ws = workspace_by_name(argv[3]);
+		if (ws == NULL) {
+			ws = workspace_create(argv[3]);
+		}
+		move_container_to(view, ws);
 	} else if (strcasecmp(argv[0], "scratchpad") == 0 && view->type == C_VIEW) {
-		swayc_t *parent = destroy_container(remove_child(view));
-		scratchpad_push(view);
-		set_focused_container(get_focused_view(parent));
-		arrange_windows(parent, -1, -1);
+		view_set_floating(view, true);
+		move_container_to(view, scratchpad);
 	} else {
 		return false;
 	}
@@ -347,11 +362,14 @@ static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 
-	swayc_t *view = scratchpad_pop();
-	if (view == NULL) {
+	if (scratchpad->floating->length == 0) {
 		return false;
 	}
-	view_set_floating(view, true);
+
+	swayc_t *view = scratchpad->floating->items[0];
+	sway_log(L_DEBUG, "Popped view %p from scratchpad", view);
+	remove_child(view);
+	move_container_to(view, swayc_active_workspace());
 
 	return true;
 }

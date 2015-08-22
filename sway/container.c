@@ -490,8 +490,10 @@ void set_view_visibility(swayc_t *view, void *data) {
 	if (view->type == C_VIEW) {
 		wlc_view_set_mask(view->handle, *p);
 		if (*p == 2) {
+			sway_log(L_DEBUG, "Showing view %p(%s)", view, view->name);
 			wlc_view_bring_to_front(view->handle);
 		} else {
+			sway_log(L_DEBUG, "Hiding view %p(%s)", view, view->name);
 			wlc_view_send_to_back(view->handle);
 		}
 	}

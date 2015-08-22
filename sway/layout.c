@@ -15,7 +15,7 @@ int min_sane_h = 60;
 int min_sane_w = 100;
 
 static swayc_t null_output;
-static swayc_t *scratchpad = NULL;
+swayc_t *scratchpad = NULL;
 
 void init_layout(void) {
 	root_container.type = C_ROOT;
@@ -128,7 +128,7 @@ swayc_t *remove_child(swayc_t *child) {
 
 //TODO: Implement horizontal movement.
 //TODO: Implement move to a different workspace.
-void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction){
+void move_container_to_direction(swayc_t *container,swayc_t* root,enum movement_direction direction){
 	sway_log(L_DEBUG, "Moved window");
 	swayc_t *temp;
 	int i;
@@ -164,10 +164,26 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 			break;
 		}
 		else if (child->children != NULL){
-			move_container(container,child,direction);
+			move_container_to_direction(container,child,direction);
 		}
 	}
 
+}
+
+
+void move_container_to(swayc_t* container, swayc_t* destination) {
+	destroy_container(remove_child(container));
+	set_focused_container(get_focused_view(&root_container));
+	if (container->is_floating) {
+		add_floating(destination, container);
+	} else {
+		add_child(destination, container);
+	}
+	// TODO: don't set it invisible here, it could have been
+	// moved to another visible workspace, or from the scratchpad
+	uint32_t mask = 2;
+	set_view_visibility(container, &mask);
+	arrange_windows(&root_container, -1, -1);
 }
 
 
@@ -478,21 +494,4 @@ void view_set_floating(swayc_t *view, bool floating) {
 		view->width = view->height = 0;
 		arrange_windows(swayc_active_workspace(), -1, -1);
 	}
-}
-
-void scratchpad_push(swayc_t *view) {
-	add_floating(scratchpad, view);
-	wlc_view_set_mask(view->handle, 2); // invisible mask
-	wlc_view_send_to_back(view->handle);
-}
-
-swayc_t *scratchpad_pop(void) {
-	if (scratchpad->floating->length == 0) {
-		return NULL;
-	}
-
-	swayc_t *view = scratchpad->floating->items[0];
-	wlc_view_set_mask(view->handle, 1); // visible mask
-	remove_child(view);
-	return view;
 }
