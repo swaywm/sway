@@ -426,17 +426,16 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			changed_tiling = true;
 			valid = false;
 			if (view->type != C_WORKSPACE) {
-				if (view->x < pointer_state.tiling.init_view->x) {
+				if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_LEFT) == view) {
 					pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + 20;
 					pointer_state.lock.temp_left = true;
-				} else if (view->x > pointer_state.tiling.init_view->x) {
+				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_RIGHT) == view) {
 					pointer_state.tiling.lock_pos.x = pointer_state.tiling.init_view->x + pointer_state.tiling.init_view->width - 20;
 					pointer_state.lock.temp_right = true;
-				}
-				if (view->y < pointer_state.tiling.init_view->y) {
+				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_UP) == view) {
 					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + 20;
 					pointer_state.lock.temp_up = true;
-				} else if (view->y > pointer_state.tiling.init_view->y) {
+				} else if (get_swayc_in_direction(pointer_state.tiling.init_view, MOVE_UP) == view) {
 					pointer_state.tiling.lock_pos.y = pointer_state.tiling.init_view->y + pointer_state.tiling.init_view->height - 20;
 					pointer_state.lock.temp_down = true;
 				}
