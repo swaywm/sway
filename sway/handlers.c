@@ -17,10 +17,8 @@
 #include "input_state.h"
 #include "resize.h"
 
-struct wlc_origin mouse_origin;
-
 static bool pointer_test(swayc_t *view, void *_origin) {
-	const struct wlc_origin *origin = _origin;
+	const struct mouse_origin *origin = _origin;
 	// Determine the output that the view is under
 	swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 	if (origin->x >= view->x && origin->y >= view->y
@@ -55,7 +53,7 @@ swayc_t *container_under_pointer(void) {
 			i = len = lookup->floating->length;
 			bool got_floating = false;
 			while (--i > -1) {
-				if (pointer_test(lookup->floating->items[i], &mouse_origin)) {
+				if (pointer_test(lookup->floating->items[i], &pointer_state.origin)) {
 					lookup = lookup->floating->items[i];
 					got_floating = true;
 					break;
@@ -68,7 +66,7 @@ swayc_t *container_under_pointer(void) {
 		// search children
 		len = lookup->children->length;
 		for (i = 0; i < len; ++i) {
-			if (pointer_test(lookup->children->items[i], &mouse_origin)) {
+			if (pointer_test(lookup->children->items[i], &pointer_state.origin)) {
 				lookup = lookup->children->items[i];
 				break;
 			}
@@ -281,10 +279,9 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		return false;
 	}
 
-	// Revert floating container back to original position on keypress
-	if (state == WLC_KEY_STATE_PRESSED &&
-			(pointer_state.floating.drag || pointer_state.floating.resize)) {
-		reset_floating(get_focused_view(&root_container));
+	// reset pointer mode on keypress
+	if (state == WLC_KEY_STATE_PRESSED && pointer_state.mode) {
+		pointer_mode_reset();
 	}
 
 	struct sway_mode *mode = config->current_mode;
@@ -334,83 +331,25 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 }
 
 static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
-	static struct wlc_origin prev_pos;
-	static wlc_handle prev_handle = 0;
-	mouse_origin = *origin;
-	bool changed_floating = false;
-	bool changed_tiling = false;
-	if (!swayc_active_workspace()) {
-		return false;
+	// Update pointer origin
+	pointer_state.delta.x = origin->x - pointer_state.origin.x;
+	pointer_state.delta.y = origin->y - pointer_state.origin.y;
+	pointer_state.origin.x = origin->x;
+	pointer_state.origin.y = origin->y;
+
+	// Update view under pointer
+	swayc_t *prev_view = pointer_state.view;
+	pointer_state.view = container_under_pointer();
+
+	// If pointer is in a mode, update it
+	if (pointer_state.mode) {
+		pointer_mode_update();
 	}
-	// Do checks to determine if proper keys are being held
-	swayc_t *view = container_under_pointer();
-	if (pointer_state.floating.drag && view) {
-		if (view->is_floating) {
-			int dx = mouse_origin.x - prev_pos.x;
-			int dy = mouse_origin.y - prev_pos.y;
-			view->x += dx;
-			view->y += dy;
-			struct wlc_geometry geometry = {
-				.origin = {
-					.x = view->x,
-					.y = view->y
-				},
-				.size = {
-					.w = view->width,
-					.h = view->height
-				}
-			};
-			wlc_view_set_geometry(view->handle, 0, &geometry);
-			changed_floating = true;
-		} else {
-			swayc_t *init_view = pointer_state.tiling.init_view;
-			if (view != init_view && view->type == C_VIEW) {
-				changed_tiling = true;
-				int i, j;
-				for (i = 0; i < view->parent->children->length; i++) {
-					if (view->parent->children->items[i] == view) {
-						for (j = 0; j < init_view->parent->children->length; j++) {
-							if (init_view->parent->children->items[j] == init_view) {
-								double temp_w = view->width;
-								double temp_h = view->height;
-								view->width = init_view->width;
-								view->height = init_view->height;
-								init_view->width = temp_w;
-								init_view->height = temp_h;
-
-								init_view->parent->children->items[j] = view;
-								view->parent->children->items[i] = init_view;
-
-								swayc_t *temp = view->parent;
-								view->parent = init_view->parent;
-								init_view->parent = temp;
-
-								arrange_windows(&root_container, -1, -1);
-								break;
-							}
-						}
-						break;
-					}
-				}
-			}
+	// Otherwise change focus if config is set an
+	else if (prev_view != pointer_state.view && config->focus_follows_mouse) {
+		if (pointer_state.view && pointer_state.view->type == C_VIEW) {
+			set_focused_container(pointer_state.view);
 		}
-	} else if (pointer_state.floating.resize && view) {
-		changed_floating = resize_floating(prev_pos);
-	} else if (pointer_state.tiling.resize && view) {
-		changed_tiling = mouse_resize_tiled(prev_pos);
-	}
-	if (config->focus_follows_mouse && prev_handle != handle) {
-		// Dont change focus if fullscreen
-		swayc_t *focused = get_focused_view(view);
-		if (!swayc_is_fullscreen(focused)
-				&& !(pointer_state.l_held || pointer_state.r_held)) {
-			set_focused_container(container_under_pointer());
-		}
-	}
-	prev_handle = handle;
-	prev_pos = mouse_origin;
-	if (changed_tiling || changed_floating) {
-		return true;
 	}
 	return false;
 }
@@ -418,11 +357,82 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
+	enum { DONT_SEND_CLICK = true, SEND_CLICK = false };
+
+	// Update pointer_state
+	switch (button) {
+	case M_LEFT_CLICK:
+		pointer_state.l_held = state == WLC_BUTTON_STATE_PRESSED;
+		break;
+
+	case M_RIGHT_CLICK:
+		pointer_state.r_held = state == WLC_BUTTON_STATE_PRESSED;
+		break;
+
+	case M_SCROLL_CLICK:
+		pointer_state.s_held = state == WLC_BUTTON_STATE_PRESSED;
+		break;
+
+	case M_SCROLL_UP:
+		pointer_state.s_up = state == WLC_BUTTON_STATE_PRESSED;
+		break;
+
+	case M_SCROLL_DOWN:
+		pointer_state.s_down = state == WLC_BUTTON_STATE_PRESSED;
+		break;
+	}
+
+	// Update pointer origin
+	pointer_state.origin.x = origin->x;
+	pointer_state.origin.y = origin->y;
+
+	// Update view pointer is on
+	pointer_state.view = container_under_pointer();
+
+	// set pointer mode
+	pointer_mode_set(button,
+		(modifiers->mods & config->floating_mod) == config->floating_mod);
+
+	// Return if mode has been set
+	if (pointer_state.mode) {
+		return DONT_SEND_CLICK;
+	}
+
+	// Always send mouse release
+	if (state == WLC_BUTTON_STATE_RELEASED) {
+		return SEND_CLICK;
+	}
+
+	// get focused window and check if to change focus on mouse click
 	swayc_t *focused = get_focused_container(&root_container);
+
+	// Check whether to change focus
+	swayc_t *pointer = pointer_state.view;
+	if (pointer && focused != pointer) {
+		set_focused_container(pointer_state.view);
+		// Send to front if floating
+		if (pointer->is_floating) {
+			int i;
+			for (i = 0; i < pointer->parent->floating->length; i++) {
+				if (pointer->parent->floating->items[i] == pointer) {
+					list_del(pointer->parent->floating, i);
+					list_add(pointer->parent->floating, pointer);
+					break;
+				}
+			}
+			wlc_view_bring_to_front(view);
+		}
+	}
+
 	// dont change focus if fullscreen
 	if (swayc_is_fullscreen(focused)) {
-		return false;
+		return SEND_CLICK;
 	}
+
+	// Finally send click
+	return SEND_CLICK;
+
+	/* OLD */
 	if (state == WLC_BUTTON_STATE_PRESSED) {
 		sway_log(L_DEBUG, "Mouse button %u pressed", button);
 		if (button == M_LEFT_CLICK) {
@@ -443,15 +453,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		}
 
 		if (pointer->is_floating) {
-			int i;
-			for (i = 0; i < pointer->parent->floating->length; i++) {
-				if (pointer->parent->floating->items[i] == pointer) {
-					list_del(pointer->parent->floating, i);
-					list_add(pointer->parent->floating, pointer);
-					break;
-				}
-			}
-			arrange_windows(pointer->parent, -1, -1);
 			if (modifiers->mods & config->floating_mod) {
 				pointer_state.floating.drag = pointer_state.l_held;
 				pointer_state.floating.resize = pointer_state.r_held;
@@ -484,6 +485,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false, false, false, false, false};
 		}
 	}
+	/* OLD */
 	return false;
 }
 

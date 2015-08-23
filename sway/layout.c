@@ -20,7 +20,8 @@ void init_layout(void) {
 	root_container.handle = -1;
 }
 
-static int index_child(swayc_t *parent, swayc_t *child) {
+static int index_child(swayc_t *child) {
+	swayc_t *parent = child->parent;
 	int i;
 	for (i = 0; i < parent->children->length; ++i) {
 		if (parent->children->items[i] == child) {
@@ -54,7 +55,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
 	swayc_t *parent = sibling->parent;
-	int i = index_child(parent, sibling);
+	int i = index_child(sibling);
 	if (i == parent->children->length) {
 		--i;
 	}
@@ -68,15 +69,63 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	if (parent == NULL) {
 		return NULL;
 	}
-	int i = index_child(parent, child);
+	int i = index_child(child);
 	parent->children->items[i] = new_child;
 	new_child->parent = child->parent;
 
+	// Set parent for new child
 	if (child->parent->focused == child) {
 		child->parent->focused = new_child;
 	}
 	child->parent = NULL;
+	// Set geometry for new child
+	new_child->x = child->x;
+	new_child->y = child->y;
+	new_child->width = child->width;
+	new_child->height = child->height;
+	// set child geometry to 0
+	child->x = 0;
+	child->y = 0;
+	child->width = 0;
+	child->height = 0;
 	return parent;
+}
+
+void swap_container(swayc_t *a, swayc_t *b) {
+	//TODO doesnt handle floating <-> tiling swap
+	if (!sway_assert(a&&b, "%s: parameters must be non null",__func__) ||
+		!sway_assert(a->parent && b->parent, "%s: containers must have parents",__func__)) {
+		return;
+	}
+	size_t a_index = index_child(a);
+	size_t b_index = index_child(b);
+	swayc_t *a_parent = a->parent;
+	swayc_t *b_parent = b->parent;
+	// Swap the pointers
+	a_parent->children->items[a_index] = b;
+	b_parent->children->items[b_index] = a;
+	a->parent = b_parent;
+	b->parent = a_parent;
+	if (a_parent->focused == a) {
+		a_parent->focused = b;
+	}
+	// dont want to double switch
+	if (b_parent->focused == b && a_parent != b_parent) {
+		b_parent->focused = a;
+	}
+	// and their geometry
+	double x = a->x;
+	double y = a->y;
+	double w = a->width;
+	double h = a->height;
+	a->x = b->x;
+	a->y = b->y;
+	a->width = b->width;
+	a->height = b->height;
+	b->x = x;
+	b->y = y;
+	b->width = w;
+	b->height = h;
 }
 
 swayc_t *remove_child(swayc_t *child) {
@@ -154,6 +203,30 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 
 }
 
+void update_geometry(swayc_t *container) {
+	if (container->type != C_VIEW) {
+		return;
+	}
+	struct wlc_geometry geometry = {
+		.origin = {
+			.x = container->x + container->gaps / 2,
+			.y = container->y + container->gaps / 2
+		},
+		.size = {
+			.w = container->width - container->gaps,
+			.h = container->height - container->gaps
+		}
+	};
+	if (swayc_is_fullscreen(container)) {
+		swayc_t *parent = swayc_parent_by_type(container, C_OUTPUT);
+		geometry.origin.x = 0;
+		geometry.origin.y = 0;
+		geometry.size.w = parent->width;
+		geometry.size.h = parent->height;
+	}
+	wlc_view_set_geometry(container->handle, 0, &geometry);
+	return;
+}
 
 void arrange_windows(swayc_t *container, double width, double height) {
 	int i;
@@ -196,31 +269,11 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		return;
 	case C_VIEW:
 		{
-			struct wlc_geometry geometry = {
-				.origin = {
-					.x = container->x + container->gaps / 2,
-					.y = container->y + container->gaps / 2
-				},
-				.size = {
-					.w = width - container->gaps,
-					.h = height - container->gaps
-				}
-			};
-			if (swayc_is_fullscreen(container)) {
-				swayc_t *parent = swayc_parent_by_type(container, C_OUTPUT);
-				geometry.origin.x = 0;
-				geometry.origin.y = 0;
-				geometry.size.w = parent->width;
-				geometry.size.h = parent->height;
-				wlc_view_set_geometry(container->handle, 0, &geometry);
-				wlc_view_bring_to_front(container->handle);
-			} else {
-				wlc_view_set_geometry(container->handle, 0, &geometry);
-				container->width = width;
-				container->height = height;
-			}
-			sway_log(L_DEBUG, "Set view to %d x %d @ %d, %d", geometry.size.w, geometry.size.h,
-					geometry.origin.x, geometry.origin.y);
+			container->width = width;
+			container->height = height;
+			update_geometry(container);
+			sway_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f", container->width,
+					container->height, container->x, container->y);
 		}
 		return;
 	default:

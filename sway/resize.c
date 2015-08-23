@@ -10,8 +10,8 @@ bool mouse_resize_tiled(struct wlc_origin prev_pos) {
 	swayc_t *view = container_under_pointer();
 	bool valid = true;
 	bool changed_tiling = false;
-	double dx = mouse_origin.x - prev_pos.x;
-	double dy = mouse_origin.y - prev_pos.y;
+	double dx = pointer_state.origin.x - prev_pos.x;
+	double dy = pointer_state.origin.y - prev_pos.y;
 	if (view != pointer_state.tiling.init_view) {
 		changed_tiling = true;
 		valid = false;
@@ -32,7 +32,7 @@ bool mouse_resize_tiled(struct wlc_origin prev_pos) {
 		}
 	}
 
-	if ((dx < 0 || mouse_origin.x < pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_left) {
+	if ((dx < 0 || pointer_state.origin.x < pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_left) {
 		changed_tiling = true;
 		valid = false;
 	} else if (dx > 0 && pointer_state.lock.temp_left) {
@@ -40,7 +40,7 @@ bool mouse_resize_tiled(struct wlc_origin prev_pos) {
 		pointer_state.tiling.lock_pos.x = 0;
 	}
 
-	if ((dx > 0 || mouse_origin.x > pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_right) {
+	if ((dx > 0 || pointer_state.origin.x > pointer_state.tiling.lock_pos.x) && pointer_state.lock.temp_right) {
 		changed_tiling = true;
 		valid = false;
 	} else if (dx < 0 && pointer_state.lock.temp_right) {
@@ -48,7 +48,7 @@ bool mouse_resize_tiled(struct wlc_origin prev_pos) {
 		pointer_state.tiling.lock_pos.x = 0;
 	}
 
-	if ((dy < 0 || mouse_origin.y < pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_up) {
+	if ((dy < 0 || pointer_state.origin.y < pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_up) {
 		changed_tiling = true;
 		valid = false;
 	} else if (dy > 0 && pointer_state.lock.temp_up) {
@@ -56,7 +56,7 @@ bool mouse_resize_tiled(struct wlc_origin prev_pos) {
 		pointer_state.tiling.lock_pos.y = 0;
 	}
 
-	if ((dy > 0 || mouse_origin.y > pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_down) {
+	if ((dy > 0 || pointer_state.origin.y > pointer_state.tiling.lock_pos.y) && pointer_state.lock.temp_down) {
 		changed_tiling = true;
 		valid = false;
 	} else if (dy < 0 && pointer_state.lock.temp_down) {
@@ -190,8 +190,8 @@ bool resize_floating(struct wlc_origin prev_pos) {
 	bool changed = false;
 	swayc_t *view = container_under_pointer();
 	uint32_t edge = 0;
-	int dx = mouse_origin.x - prev_pos.x;
-	int dy = mouse_origin.y - prev_pos.y;
+	int dx = pointer_state.origin.x - prev_pos.x;
+	int dy = pointer_state.origin.y - prev_pos.y;
 
 	// Move and resize the view based on the dx/dy and mouse position
 	int midway_x = view->x + view->width/2;
@@ -203,14 +203,14 @@ bool resize_floating(struct wlc_origin prev_pos) {
 				view->width += dx;
 				edge += WLC_RESIZE_EDGE_RIGHT;
 			}
-		} else if (mouse_origin.x < midway_x && !pointer_state.lock.left) {
+		} else if (pointer_state.origin.x < midway_x && !pointer_state.lock.left) {
 			changed = true;
 			view->x += dx;
 			view->width -= dx;
 			edge += WLC_RESIZE_EDGE_LEFT;
 		}
 	} else if (dx > 0) {
-		if (mouse_origin.x > midway_x && !pointer_state.lock.right) {
+		if (pointer_state.origin.x > midway_x && !pointer_state.lock.right) {
 			changed = true;
 			view->width += dx;
 			edge += WLC_RESIZE_EDGE_RIGHT;
@@ -231,14 +231,14 @@ bool resize_floating(struct wlc_origin prev_pos) {
 				view->height += dy;
 				edge += WLC_RESIZE_EDGE_BOTTOM;
 			}
-		} else if (mouse_origin.y < midway_y && !pointer_state.lock.top) {
+		} else if (pointer_state.origin.y < midway_y && !pointer_state.lock.top) {
 			changed = true;
 			view->y += dy;
 			view->height -= dy;
 			edge += WLC_RESIZE_EDGE_TOP;
 		}
 	} else if (dy > 0) {
-		if (mouse_origin.y > midway_y && !pointer_state.lock.bottom) {
+		if (pointer_state.origin.y > midway_y && !pointer_state.lock.bottom) {
 			changed = true;
 			view->height += dy;
 			edge += WLC_RESIZE_EDGE_BOTTOM;
