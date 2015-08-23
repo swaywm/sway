@@ -234,7 +234,8 @@ void pointer_mode_update(void) {
 
 	case M_TILING | M_DRAGGING:
 		// swap current view under pointer with dragged view
-		if (pointer_state.view && pointer_state.view != initial.ptr) {
+		if (pointer_state.view && pointer_state.view->type == C_VIEW
+				&& pointer_state.view != initial.ptr) {
 			// Swap them around
 			swap_container(pointer_state.view, initial.ptr);
 			update_geometry(pointer_state.view);
@@ -254,12 +255,10 @@ void pointer_mode_update(void) {
 				if (initial.w + dx > min_sane_w && initial.lr.w - dx > min_sane_w) {
 					initial.ptr->width = initial.w + dx;
 					initial.lr.ptr->width = initial.lr.w - dx;
-					initial.lr.ptr->x = initial.lr.x + dx;
 				}
 			} else { //lock.right
 				if (initial.w - dx > min_sane_w && initial.lr.w + dx > min_sane_w) {
 					initial.ptr->width = initial.w - dx;
-					initial.ptr->x = initial.x + dx;
 					initial.lr.ptr->width = initial.lr.w + dx;
 				}
 				changed = true;
@@ -271,12 +270,10 @@ void pointer_mode_update(void) {
 				if (initial.h + dy > min_sane_h && initial.tb.h - dy > min_sane_h) {
 					initial.ptr->height = initial.h + dy;
 					initial.tb.ptr->height = initial.tb.h - dy;
-					initial.tb.ptr->y = initial.tb.y + dy;
 				}
 			} else { //lock.bottom
 				if (initial.h - dy > min_sane_h && initial.tb.h + dy > min_sane_h) {
 					initial.ptr->height = initial.h - dy;
-					initial.ptr->y = initial.y + dy;
 					initial.tb.ptr->height = initial.tb.h + dy;
 				}
 				changed = true;
