@@ -6,16 +6,14 @@
 
 /* Keyboard state */
 
-typedef uint32_t keycode;
-
 // returns true if key has been pressed, otherwise false
-bool check_key(keycode key);
+bool check_key(uint32_t key_sym, uint32_t key_code);
 
 // sets a key as pressed
-void press_key(keycode key);
+void press_key(uint32_t key_sym, uint32_t key_code);
 
 // unsets a key as pressed
-void release_key(keycode key);
+void release_key(uint32_t key_sym, uint32_t key_code);
 
 
 /* Pointer state */

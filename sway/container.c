@@ -59,7 +59,7 @@ swayc_t *new_output(wlc_handle handle) {
 	const char *name = wlc_output_get_name(handle);
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
-	struct output_config *oc ;
+	struct output_config *oc = NULL;
 	int i;
 	for (i = 0; i < config->output_configs->length; ++i) {
 		oc = config->output_configs->items[i];
@@ -68,6 +68,10 @@ swayc_t *new_output(wlc_handle handle) {
 			break;
 		}
 		oc = NULL;
+	}
+
+	if (oc && !oc->enabled) {
+		return NULL;
 	}
 
 	swayc_t *output = new_swayc(C_OUTPUT);
@@ -83,6 +87,24 @@ swayc_t *new_output(wlc_handle handle) {
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
 	output->gaps = config->gaps_outer + config->gaps_inner / 2;
+	
+	// Find position for it
+	if (oc && oc->x != -1 && oc->y != -1) {
+		sway_log(L_DEBUG, "Set %s position to %d, %d", name, oc->x, oc->y);
+		output->x = oc->x;
+		output->y = oc->y;
+	} else {
+		int x = 0;
+		for (i = 0; i < root_container.children->length; ++i) {
+			swayc_t *c = root_container.children->items[i];
+			if (c->type == C_OUTPUT) {
+				if (c->width + c->x > x) {
+					x = c->width + c->x;
+				}
+			}
+		}
+		output->x = x;
+	}
 
 	add_child(&root_container, output);
 
@@ -281,7 +303,8 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 		return NULL;
 	}
 
-	if (workspace->children->length == 0) {
+	// Do not destroy if there are children
+	if (workspace->children->length == 0 && workspace->floating->length == 0) {
 		sway_log(L_DEBUG, "%s: '%s'", __func__, workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
@@ -448,14 +471,16 @@ bool swayc_is_fullscreen(swayc_t *view) {
 // Mapping
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (container && container->children && container->children->length)  {
+	if (container) {
 		int i;
-		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
-			f(child, data);
-			container_map(child, f, data);
+		if (container->children)  {
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				f(child, data);
+				container_map(child, f, data);
+			}
 		}
-		if (container->type == C_WORKSPACE) {
+		if (container->floating) {
 			for (i = 0; i < container->floating->length; ++i) {
 				swayc_t *child = container->floating->items[i];
 				f(child, data);

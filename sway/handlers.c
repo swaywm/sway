@@ -90,6 +90,10 @@ swayc_t *container_under_pointer(void) {
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
+	if (!op) {
+		return false;
+	}
+
 	// Switch to workspace if we need to
 	if (swayc_active_workspace() == NULL) {
 		swayc_t *ws = op->children->items[0];
@@ -108,6 +112,8 @@ static void handle_output_destroyed(wlc_handle output) {
 	}
 	if (i < list->length) {
 		destroy_output(list->items[i]);
+	} else {
+		return;
 	}
 	if (list->length > 0) {
 		// switch to other outputs active workspace
@@ -292,22 +298,12 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
-	if (sym < 70000 /* bullshit made up number */) {
-		if (!isalnum(sym) && sym != ' ' && sym != XKB_KEY_Escape && sym != XKB_KEY_Tab) {
-			// God fucking dammit
-			return EVENT_PASSTHROUGH;
-		}
-	}
-
-	// Lowercase if necessary
-	sym = tolower(sym);
-
 	int i;
 
 	if (state == WLC_KEY_STATE_PRESSED) {
-		press_key(sym);
+		press_key(sym, key);
 	} else { // WLC_KEY_STATE_RELEASED
-		release_key(sym);
+		release_key(sym, key);
 	}
 
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
@@ -319,7 +315,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			int j;
 			for (j = 0; j < binding->keys->length; ++j) {
 				xkb_keysym_t *key = binding->keys->items[j];
-				if ((match = check_key(*key)) == false) {
+				if ((match = check_key(*key, 0)) == false) {
 					break;
 				}
 			}
@@ -466,7 +462,6 @@ static void handle_wlc_ready(void) {
 	free_flat_list(config->cmd_queue);
 	config->active = true;
 }
-
 
 struct wlc_interface interface = {
 	.output = {

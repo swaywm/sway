@@ -85,6 +85,9 @@ Commands
 	arranged at the given position in the layout tree. You may omit either of
 	these parameters if you only want to set one of them.
 
+**output** <name> disable::
+	Disables the specified output.
+
 **reload**::
 	Reloads the sway config file without restarting sway.
 

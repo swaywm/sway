@@ -53,7 +53,7 @@ void sway_log(log_importance_t verbosity, const char* format, ...) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
-		if (colored) {
+		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
@@ -62,7 +62,7 @@ void sway_log(log_importance_t verbosity, const char* format, ...) {
 		vfprintf(stderr, format, args);
 		va_end(args);
 
-		if (colored) {
+		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "\x1B[0m");
 		}
 		fprintf(stderr, "\n");
@@ -76,7 +76,7 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
-		if (colored) {
+		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
@@ -90,7 +90,7 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 		strerror_r(errno, error, sizeof(error));
 		fprintf(stderr, "%s", error);
 
-		if (colored) {
+		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "\x1B[0m");
 		}
 		fprintf(stderr, "\n");
