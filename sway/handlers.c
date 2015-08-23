@@ -295,22 +295,12 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
-	if (sym < 70000 /* bullshit made up number */) {
-		if (!isalnum(sym) && sym != ' ' && sym != XKB_KEY_Escape && sym != XKB_KEY_Tab) {
-			// God fucking dammit
-			return false;
-		}
-	}
-
-	// Lowercase if necessary
-	sym = tolower(sym);
-
 	int i;
 
 	if (state == WLC_KEY_STATE_PRESSED) {
-		press_key(sym);
+		press_key(sym, key);
 	} else { // WLC_KEY_STATE_RELEASED
-		release_key(sym);
+		release_key(sym, key);
 	}
 
 	// TODO: reminder to check conflicts with mod+q+a versus mod+q
@@ -322,7 +312,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			int j;
 			for (j = 0; j < binding->keys->length; ++j) {
 				xkb_keysym_t *key = binding->keys->items[j];
-				if ((match = check_key(*key)) == false) {
+				if ((match = check_key(*key, 0)) == false) {
 					break;
 				}
 			}

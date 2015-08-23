@@ -1,50 +1,76 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "log.h"
 
 #include "input_state.h"
 
 #define KEY_STATE_MAX_LENGTH 64
 
-static keycode key_state_array[KEY_STATE_MAX_LENGTH];
+struct key_state {
+	/*
+	 * Aims to store state regardless of modifiers.
+	 * If you press a key, then hold shift, then release the key, we'll
+	 * get two different key syms, but the same key code. This handles
+	 * that scenario and makes sure we can use the right bindings.
+	 */
+	uint32_t key_sym;
+	uint32_t alt_sym;
+	uint32_t key_code;
+};
+
+static struct key_state key_state_array[KEY_STATE_MAX_LENGTH];
 
 void input_init(void) {
 	int i;
 	for (i = 0; i < KEY_STATE_MAX_LENGTH; ++i) {
-		key_state_array[i] = 0;
+		struct key_state none = { 0, 0, 0 };
+		key_state_array[i] = none;
 	}
 }
 
-static uint8_t find_key(keycode key) {
+static uint8_t find_key(uint32_t key_sym, uint32_t key_code, bool update) {
 	int i;
 	for (i = 0; i < KEY_STATE_MAX_LENGTH; ++i) {
-		if (key_state_array[i] == key) {
+		if (0 == key_sym && 0 == key_code && key_state_array[i].key_sym == 0) {
+			break;
+		}
+		if (key_state_array[i].key_sym == key_sym
+			|| key_state_array[i].alt_sym == key_sym) {
+			break;
+		}
+		if (update && key_state_array[i].key_code == key_code) {
+			key_state_array[i].alt_sym = key_sym;
 			break;
 		}
 	}
 	return i;
 }
 
-bool check_key(keycode key) {
-	return find_key(key) < KEY_STATE_MAX_LENGTH;
+bool check_key(uint32_t key_sym, uint32_t key_code) {
+	return find_key(key_sym, key_code, false) < KEY_STATE_MAX_LENGTH;
 }
 
-void press_key(keycode key) {
+void press_key(uint32_t key_sym, uint32_t key_code) {
+	if (key_code == 0) {
+		return;
+	}
 	// Check if key exists
-	if (!check_key(key)) {
+	if (!check_key(key_sym, key_code)) {
 		// Check that we dont exceed buffer length
-		int insert = find_key(0);
+		int insert = find_key(0, 0, true);
 		if (insert < KEY_STATE_MAX_LENGTH) {
-			key_state_array[insert] = key;
+			key_state_array[insert].key_sym = key_sym;
+			key_state_array[insert].key_code = key_code;
 		}
 	}
 }
 
-void release_key(keycode key) {
-	uint8_t index = find_key(key);
+void release_key(uint32_t key_sym, uint32_t key_code) {
+	uint8_t index = find_key(key_sym, key_code, true);
 	if (index < KEY_STATE_MAX_LENGTH) {
-		// shift it over and remove key
-		key_state_array[index] = 0;
+		struct key_state none = { 0, 0, 0 };
+		key_state_array[index] = none;
 	}
 }
 
