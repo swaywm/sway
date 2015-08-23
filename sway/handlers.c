@@ -359,35 +359,53 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
 	enum { DONT_SEND_CLICK = true, SEND_CLICK = false };
 
-	// Update pointer_state
-	switch (button) {
-	case M_LEFT_CLICK:
-		pointer_state.l_held = state == WLC_BUTTON_STATE_PRESSED;
-		break;
-
-	case M_RIGHT_CLICK:
-		pointer_state.r_held = state == WLC_BUTTON_STATE_PRESSED;
-		break;
-
-	case M_SCROLL_CLICK:
-		pointer_state.s_held = state == WLC_BUTTON_STATE_PRESSED;
-		break;
-
-	case M_SCROLL_UP:
-		pointer_state.s_up = state == WLC_BUTTON_STATE_PRESSED;
-		break;
-
-	case M_SCROLL_DOWN:
-		pointer_state.s_down = state == WLC_BUTTON_STATE_PRESSED;
-		break;
-	}
+	// Update view pointer is on
+	pointer_state.view = container_under_pointer();
 
 	// Update pointer origin
 	pointer_state.origin.x = origin->x;
 	pointer_state.origin.y = origin->y;
 
-	// Update view pointer is on
-	pointer_state.view = container_under_pointer();
+	// Update pointer_state
+	switch (button) {
+	case M_LEFT_CLICK:
+		if (state == WLC_BUTTON_STATE_PRESSED) {
+			pointer_state.left.held = true;
+			pointer_state.left.x = origin->x;
+			pointer_state.left.y = origin->y;
+			pointer_state.left.view = pointer_state.view;
+		} else {
+			pointer_state.left.held = false;
+		}
+		break;
+
+	case M_RIGHT_CLICK:
+		if (state == WLC_BUTTON_STATE_PRESSED) {
+			pointer_state.right.held = true;
+			pointer_state.right.x = origin->x;
+			pointer_state.right.y = origin->y;
+			pointer_state.right.view = pointer_state.view;
+		} else {
+			pointer_state.right.held = false;
+		}
+		break;
+
+	case M_SCROLL_CLICK:
+		if (state == WLC_BUTTON_STATE_PRESSED) {
+			pointer_state.scroll.held = true;
+			pointer_state.scroll.x = origin->x;
+			pointer_state.scroll.y = origin->y;
+			pointer_state.scroll.view = pointer_state.view;
+		} else {
+			pointer_state.scroll.held = false;
+		}
+		break;
+
+		//TODO scrolling behavior
+	case M_SCROLL_UP:
+	case M_SCROLL_DOWN:
+		break;
+	}
 
 	// set pointer mode
 	pointer_mode_set(button,
@@ -431,62 +449,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	// Finally send click
 	return SEND_CLICK;
-
-	/* OLD */
-	if (state == WLC_BUTTON_STATE_PRESSED) {
-		sway_log(L_DEBUG, "Mouse button %u pressed", button);
-		if (button == M_LEFT_CLICK) {
-			pointer_state.l_held = true;
-		}
-		if (button == M_RIGHT_CLICK) {
-			pointer_state.r_held = true;
-		}
-		swayc_t *pointer = container_under_pointer();
-		if (pointer) {
-			set_focused_container(pointer);
-			int midway_x = pointer->x + pointer->width/2;
-			int midway_y = pointer->y + pointer->height/2;
-			pointer_state.lock.bottom = origin->y < midway_y;
-			pointer_state.lock.top = !pointer_state.lock.bottom;
-			pointer_state.lock.right = origin->x < midway_x;
-			pointer_state.lock.left = !pointer_state.lock.right;
-		}
-
-		if (pointer->is_floating) {
-			if (modifiers->mods & config->floating_mod) {
-				pointer_state.floating.drag = pointer_state.l_held;
-				pointer_state.floating.resize = pointer_state.r_held;
-				start_floating(pointer);
-			}
-			// Dont want pointer sent to window while dragging or resizing
-			return (pointer_state.floating.drag || pointer_state.floating.resize);
-		} else {
-			if (modifiers->mods & config->floating_mod) {
-				pointer_state.floating.drag = pointer_state.l_held;
-				pointer_state.tiling.resize = pointer_state.r_held;
-				pointer_state.tiling.init_view = pointer;
-				// Dont want pointer sent when resizing
-				return (pointer_state.tiling.resize);
-			}
-		}
-		return (pointer && pointer != focused);
-	} else {
-		sway_log(L_DEBUG, "Mouse button %u released", button);
-		if (button == M_LEFT_CLICK) {
-			pointer_state.l_held = false;
-			pointer_state.floating.drag = false;
-			pointer_state.tiling.init_view = NULL;
-		}
-		if (button == M_RIGHT_CLICK) {
-			pointer_state.r_held = false;
-			pointer_state.floating.resize = false;
-			pointer_state.tiling.resize = false;
-			pointer_state.tiling.init_view = NULL;
-			pointer_state.lock = (struct pointer_lock){false ,false ,false ,false, false, false, false, false};
-		}
-	}
-	/* OLD */
-	return false;
 }
 
 static void handle_wlc_ready(void) {

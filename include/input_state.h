@@ -37,52 +37,34 @@ enum pointer_mode {
 	M_RESIZING = 1 << 3,
 };
 
+struct pointer_button_state {
+	bool held;
+	// state at the point it was pressed
+	int x, y;
+	swayc_t *view;
+};
+
 extern struct pointer_state {
 	// mouse clicks
-	bool l_held : 1;
-	bool r_held : 1;
-
-	// scroll wheel
-	bool s_held : 1;
-	bool s_up : 1;
-	bool s_down :1;
+	struct pointer_button_state left;
+	struct pointer_button_state right;
+	struct pointer_button_state scroll;
 
 	// pointer position
 	struct mouse_origin{
 		int x, y;
 	} origin;
+
+	// change in pointer position
 	struct {
 		int x, y;
 	} delta;
 
-	// view pointer is over
+	// view pointer is currently over
 	swayc_t *view;
 
 	// Pointer mode
 	int mode;
-
-	// OLD
-	struct pointer_floating {
-		bool drag;
-		bool resize;
-	} floating;
-	struct pointer_tiling {
-		bool resize;
-		swayc_t *init_view;
-		struct wlc_origin lock_pos;
-	} tiling;
-	struct pointer_lock {
-		// Lock movement for certain edges
-		bool left;
-		bool right;
-		bool top;
-		bool bottom;
-		// Lock movement in certain directions
-		bool temp_left;
-		bool temp_right;
-		bool temp_up;
-		bool temp_down;
-	} lock;
 } pointer_state;
 
 // on button release unset mode depending on the button.
@@ -95,8 +77,6 @@ void pointer_mode_update(void);
 // Reset mode on any keypress;
 void pointer_mode_reset(void);
 
-void start_floating(swayc_t *view);
-void reset_floating(swayc_t *view);
 void input_init(void);
 
 #endif

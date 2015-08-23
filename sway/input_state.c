@@ -48,75 +48,81 @@ void release_key(keycode key) {
 	}
 }
 
+// Pointer state and mode
+
 struct pointer_state pointer_state;
 
-// Pointer mode values
 static struct mode_state {
-	// Initial view state
+	// initial view state
+	double x, y, w, h;
+	swayc_t *ptr;
+	// containers resized with tiling resize
 	struct {
-		double x, y, w, h;
+		double x, w;
 		swayc_t *ptr;
-	} view;
-	// Initial pointer state
+	} lr;
 	struct {
-		int x, y;
-	} coor;
+		double y, h;
+		swayc_t *ptr;
+	} tb;
 } initial;
 
 static struct {
-	enum { LEFT=1, RIGHT=0 } lr;
-	enum { TOP=1, BOTTOM=0 } tb;
+	bool left;
+	bool top;
 } lock;
 
 // Floating set/unset
 
-static void pointer_mode_set_floating(void) {
-	initial.view.x = initial.view.ptr->x;
-	initial.view.y = initial.view.ptr->y;
-	initial.view.w = initial.view.ptr->width;
-	initial.view.h = initial.view.ptr->height;
-	// setup initial cooridinates
-	initial.coor.x = pointer_state.origin.x;
-	initial.coor.y = pointer_state.origin.y;
+static void set_initial_view(swayc_t *view) {
+	initial.ptr = view;
+	initial.x = view->x;
+	initial.y = view->y;
+	initial.w = view->width;
+	initial.h = view->height;
 }
 
-static void pointer_mode_reset_floating(void) {
-	initial.view.ptr->x = initial.view.x;
-	initial.view.ptr->y = initial.view.y;
-	initial.view.ptr->width = initial.view.w;
-	initial.view.ptr->height = initial.view.h;
-	arrange_windows(initial.view.ptr, -1, -1);
+static void reset_initial_view(void) {
+	initial.ptr->x = initial.x;
+	initial.ptr->y = initial.y;
+	initial.ptr->width = initial.w;
+	initial.ptr->height = initial.h;
+	arrange_windows(initial.ptr, -1, -1);
 	pointer_state.mode = 0;
 }
 
 // Mode set left/right click
 
 static void pointer_mode_set_left(void) {
-	swayc_t *view = pointer_state.view;
-	initial.view.ptr = view;
-	if (view->is_floating) {
+	set_initial_view(pointer_state.left.view);
+	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_DRAGGING | M_FLOATING;
-		pointer_mode_set_floating();
 	} else {
 		pointer_state.mode = M_DRAGGING | M_TILING;
 	}
 }
 
 static void pointer_mode_set_right(void) {
-	swayc_t *view = pointer_state.view;
-	initial.view.ptr = view;
+	set_initial_view(pointer_state.right.view);
 	// Setup locking information
-	int midway_x = view->x + view->width/2;
-	int midway_y = view->y + view->height/2;
+	int midway_x = initial.ptr->x + initial.ptr->width/2;
+	int midway_y = initial.ptr->y + initial.ptr->height/2;
 
-	lock.lr = pointer_state.origin.x > midway_x;
-	lock.tb = pointer_state.origin.y > midway_y;
+	lock.left = pointer_state.origin.x > midway_x;
+	lock.top = pointer_state.origin.y > midway_y;
 
-	if (view->is_floating) {
+	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_RESIZING | M_FLOATING;
-		pointer_mode_set_floating();
 	} else {
 		pointer_state.mode = M_RESIZING | M_TILING;
+		if ((initial.lr.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
+			initial.lr.x = initial.lr.ptr->x;
+			initial.lr.w = initial.lr.ptr->width;
+		}
+		if ((initial.tb.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
+			initial.tb.y = initial.tb.ptr->y;
+			initial.tb.h = initial.tb.ptr->height;
+		}
 	}
 }
 
@@ -127,14 +133,14 @@ void pointer_mode_set(uint32_t button, bool condition) {
 	switch (pointer_state.mode & (M_DRAGGING | M_RESIZING)) {
 	case M_DRAGGING:
 	// end drag mode when left click is unpressed
-		if (!pointer_state.l_held) {
+		if (!pointer_state.left.held) {
 			pointer_state.mode = 0;
 		}
 		break;
 
 	case M_RESIZING:
 	// end resize mode when right click is unpressed
-		if (!pointer_state.r_held) {
+		if (!pointer_state.right.held) {
 			pointer_state.mode = 0;
 		}
 		break;
@@ -145,12 +151,13 @@ void pointer_mode_set(uint32_t button, bool condition) {
 		if (!condition || !pointer_state.view) {
 			break;
 		}
+
 		// Set mode depending on current button press
 		switch (button) {
 		// Start dragging mode
 		case M_LEFT_CLICK:
 			// if button release dont do anything
-			if (pointer_state.l_held) {
+			if (pointer_state.left.held) {
 				pointer_mode_set_left();
 			}
 			break;
@@ -158,98 +165,123 @@ void pointer_mode_set(uint32_t button, bool condition) {
 		// Start resize mode
 		case M_RIGHT_CLICK:
 			// if button release dont do anyhting
-			if (pointer_state.r_held) {
+			if (pointer_state.right.held) {
 				pointer_mode_set_right();
 			}
 			break;
-
-		case M_SCROLL_UP:
-		case M_SCROLL_DOWN:
-			//TODO add scrolling behavior here
-			;
 		}
 	}
 }
 
 void pointer_mode_update(void) {
-	swayc_t *view = initial.view.ptr;
-	if (view->type != C_VIEW) {
+	if (initial.ptr->type != C_VIEW) {
 		pointer_state.mode = 0;
 		return;
 	}
-	int dx = pointer_state.origin.x - initial.coor.x;
-	int dy = pointer_state.origin.y - initial.coor.y;
+	int dx = pointer_state.origin.x;
+	int dy = pointer_state.origin.y;
 	bool changed = false;
 
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:
 		// Update position
-		if (initial.view.x + dx != view->x) {
-			view->x = initial.view.x + dx;
+		dx -= pointer_state.left.x;
+		dy -= pointer_state.left.y;
+		if (initial.x + dx != initial.ptr->x) {
+			initial.ptr->x = initial.x + dx;
 			changed = true;
 		}
-		if (initial.view.y + dy != view->y) {
-			view->y = initial.view.y + dy;
+		if (initial.y + dy != initial.ptr->y) {
+			initial.ptr->y = initial.y + dy;
 			changed = true;
 		}
+		update_geometry(initial.ptr);
 		break;
 
 	case M_FLOATING | M_RESIZING:
-		if (lock.lr) {
-			if (initial.view.w + dx > min_sane_w) {
-				if (initial.view.w + dx != view->width) {
-					view->width = initial.view.w + dx;
-					changed = true;
-				}
+		dx -= pointer_state.right.x;
+		dy -= pointer_state.right.y;
+		initial.ptr = pointer_state.right.view;
+		if (lock.left) {
+			if (initial.w + dx > min_sane_w) {
+				initial.ptr->width = initial.w + dx;
 			}
 		} else { //lock.right
-			if (initial.view.w - dx > min_sane_w) {
-				if (initial.view.w - dx != view->width) {
-					view->width = initial.view.w - dx;
-					view->x = initial.view.x + dx;
-					changed = true;
-				}
+			if (initial.w - dx > min_sane_w) {
+				initial.ptr->width = initial.w - dx;
+				initial.ptr->x = initial.x + dx;
 			}
 		}
-		if (lock.tb) {
-			if (initial.view.h + dy > min_sane_h) {
-				if (initial.view.y - dy != view->height) {
-					view->height = initial.view.h + dy;
-					changed = true;
-				}
+		if (lock.top) {
+			if (initial.h + dy > min_sane_h) {
+				initial.ptr->height = initial.h + dy;
 			}
 		} else { //lock.bottom
-			if (initial.view.h - dy > min_sane_h) {
-				if (initial.view.h - dy != view->height) {
-					view->height = initial.view.h - dy;
-					view->y = initial.view.y + dy;
-					changed = true;
-				}
+			if (initial.h - dy > min_sane_h) {
+				initial.ptr->height = initial.h - dy;
+				initial.ptr->y = initial.y + dy;
 			}
 		}
+		update_geometry(initial.ptr);
 		break;
 
 	case M_TILING | M_DRAGGING:
 		// swap current view under pointer with dragged view
-		if (pointer_state.view && pointer_state.view != initial.view.ptr) {
+		if (pointer_state.view && pointer_state.view != initial.ptr) {
 			// Swap them around
-			swap_container(pointer_state.view, initial.view.ptr);
+			swap_container(pointer_state.view, initial.ptr);
 			update_geometry(pointer_state.view);
-			update_geometry(initial.view.ptr);
+			update_geometry(initial.ptr);
 			// Set focus back to initial view
-			set_focused_container(initial.view.ptr);
+			set_focused_container(initial.ptr);
 		}
 		break;
 
 	case M_TILING | M_RESIZING:
-		
-		
-
+		dx -= pointer_state.right.x;
+		dy -= pointer_state.right.y;
+		// resize if we can
+		if (initial.lr.ptr) {
+			if (lock.left) {
+				// Check whether its fine to resize
+				if (initial.w + dx > min_sane_w && initial.lr.w - dx > min_sane_w) {
+					initial.ptr->width = initial.w + dx;
+					initial.lr.ptr->width = initial.lr.w - dx;
+					initial.lr.ptr->x = initial.lr.x + dx;
+				}
+			} else { //lock.right
+				if (initial.w - dx > min_sane_w && initial.lr.w + dx > min_sane_w) {
+					initial.ptr->width = initial.w - dx;
+					initial.ptr->x = initial.x + dx;
+					initial.lr.ptr->width = initial.lr.w + dx;
+				}
+				changed = true;
+			}
+			arrange_windows(initial.lr.ptr->parent, -1, -1);
+		}
+		if (initial.tb.ptr) {
+			if (lock.top) {
+				if (initial.h + dy > min_sane_h && initial.tb.h - dy > min_sane_h) {
+					initial.ptr->height = initial.h + dy;
+					initial.tb.ptr->height = initial.tb.h - dy;
+					initial.tb.ptr->y = initial.tb.y + dy;
+				}
+			} else { //lock.bottom
+				if (initial.h - dy > min_sane_h && initial.tb.h + dy > min_sane_h) {
+					initial.ptr->height = initial.h - dy;
+					initial.ptr->y = initial.y + dy;
+					initial.tb.ptr->height = initial.tb.h + dy;
+				}
+				changed = true;
+			}
+			arrange_windows(initial.tb.ptr->parent, -1, -1);
+		}
+		if (changed) {
+			arrange_windows(initial.ptr->parent, -1, -1);
+		}
+		changed = false;
 	default:
 		return;
-	}
-	if (changed) {
-		update_geometry(view);
 	}
 }
 
@@ -257,7 +289,7 @@ void pointer_mode_reset(void) {
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:
 	case M_FLOATING | M_RESIZING:
-		pointer_mode_reset_floating();
+		reset_initial_view();
 		break;
 
 	case M_TILING | M_DRAGGING:
@@ -265,29 +297,5 @@ void pointer_mode_reset(void) {
 	default:
 		return;
 	}
-}
-
-
-static struct wlc_geometry saved_floating;
-
-void start_floating(swayc_t *view) {
-	if (view->is_floating) {
-		saved_floating.origin.x = view->x;
-		saved_floating.origin.y = view->y;
-		saved_floating.size.w = view->width;
-		saved_floating.size.h = view->height;
-	}
-}
-
-void reset_floating(swayc_t *view) {
-	if (view->is_floating) {
-		view->x = saved_floating.origin.x;
-		view->y = saved_floating.origin.y;
-		view->width = saved_floating.size.w;
-		view->height = saved_floating.size.h;
-		arrange_windows(view->parent, -1, -1);
-	}
-	pointer_state.floating = (struct pointer_floating){0, 0};
-	pointer_state.lock = (struct pointer_lock){0, 0, 0, 0, 0, 0, 0, 0};
 }
 
