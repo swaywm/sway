@@ -114,14 +114,21 @@ static void pointer_mode_set_right(void) {
 	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_RESIZING | M_FLOATING;
 	} else {
+		bool reset = true;
 		pointer_state.mode = M_RESIZING | M_TILING;
 		if ((initial.lr.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
 			initial.lr.x = initial.lr.ptr->x;
 			initial.lr.w = initial.lr.ptr->width;
+			reset = false;
 		}
 		if ((initial.tb.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
 			initial.tb.y = initial.tb.ptr->y;
 			initial.tb.h = initial.tb.ptr->height;
+			reset = false;
+		}
+		// If nothing changes just undo the mode
+		if (reset) {
+			pointer_state.mode = 0;
 		}
 	}
 }
