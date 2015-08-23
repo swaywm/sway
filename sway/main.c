@@ -21,6 +21,16 @@ void sway_terminate(void) {
 
 static void sigchld_handle(int signal);
 
+static void wlc_log_handler(enum wlc_log_type type, const char *str) {
+	if (type == WLC_LOG_ERROR) {
+		sway_log(L_ERROR, "%s", str);
+	} else if (type == WLC_LOG_WARN) {
+		sway_log(L_INFO, "%s", str);
+	} else {
+		sway_log(L_DEBUG, "%s", str);
+	}
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -37,6 +47,8 @@ int main(int argc, char **argv) {
 	signal(SIGCHLD, sigchld_handle);
 
 	setenv("WLC_DIM", "0", 0);
+
+	wlc_log_set_handler(wlc_log_handler);
 
 	/* Changing code earlier than this point requires detailed review */
 	if (!wlc_init(&interface, argc, argv)) {

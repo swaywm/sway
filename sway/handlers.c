@@ -498,7 +498,6 @@ static void handle_wlc_ready(void) {
 	config->active = true;
 }
 
-
 struct wlc_interface interface = {
 	.output = {
 		.created = handle_output_created,
