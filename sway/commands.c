@@ -372,8 +372,13 @@ static bool cmd_output(struct sway_config *config, int argc, char **argv) {
 	struct output_config *output = calloc(1, sizeof(struct output_config));
 	output->x = output->y = output->width = output->height = -1;
 	output->name = strdup(argv[0]);
+	output->enabled = true;
 
 	// TODO: atoi doesn't handle invalid numbers
+	
+	if (strcasecmp(argv[1], "disable") == 0) {
+		output->enabled = false;
+	}
 
 	int i;
 	for (i = 1; i < argc; ++i) {

@@ -86,6 +86,10 @@ swayc_t *container_under_pointer(void) {
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
+	if (!op) {
+		return false;
+	}
+
 	// Switch to workspace if we need to
 	if (swayc_active_workspace() == NULL) {
 		swayc_t *ws = op->children->items[0];
@@ -104,6 +108,8 @@ static void handle_output_destroyed(wlc_handle output) {
 	}
 	if (i < list->length) {
 		destroy_output(list->items[i]);
+	} else {
+		return;
 	}
 	if (list->length > 0) {
 		// switch to other outputs active workspace
