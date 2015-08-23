@@ -60,10 +60,12 @@ static struct mode_state {
 	struct {
 		double x, w;
 		swayc_t *ptr;
+		swayc_t *sib;
 	} lr;
 	struct {
 		double y, h;
 		swayc_t *ptr;
+		swayc_t *sib;
 	} tb;
 } initial;
 
@@ -72,7 +74,7 @@ static struct {
 	bool top;
 } lock;
 
-// Floating set/unset
+// initial set/unset
 
 static void set_initial_view(swayc_t *view) {
 	initial.ptr = view;
@@ -80,6 +82,26 @@ static void set_initial_view(swayc_t *view) {
 	initial.y = view->y;
 	initial.w = view->width;
 	initial.h = view->height;
+}
+
+static void set_initial_sibling(void) {
+	bool reset = true;
+	if ((initial.lr.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
+		initial.lr.sib = get_swayc_in_direction(initial.lr.ptr, lock.left ? MOVE_LEFT : MOVE_RIGHT);
+		initial.lr.x = initial.lr.ptr->x;
+		initial.lr.w = initial.lr.ptr->width;
+		reset = false;
+	}
+	if ((initial.tb.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
+		initial.tb.sib = get_swayc_in_direction(initial.tb.ptr, lock.top ? MOVE_UP : MOVE_DOWN);
+		initial.tb.y = initial.tb.ptr->y;
+		initial.tb.h = initial.tb.ptr->height;
+		reset = false;
+	}
+	// If nothing changes just undo the mode
+	if (reset) {
+		pointer_state.mode = 0;
+	}
 }
 
 static void reset_initial_view(void) {
@@ -114,22 +136,8 @@ static void pointer_mode_set_right(void) {
 	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_RESIZING | M_FLOATING;
 	} else {
-		bool reset = true;
 		pointer_state.mode = M_RESIZING | M_TILING;
-		if ((initial.lr.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
-			initial.lr.x = initial.lr.ptr->x;
-			initial.lr.w = initial.lr.ptr->width;
-			reset = false;
-		}
-		if ((initial.tb.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
-			initial.tb.y = initial.tb.ptr->y;
-			initial.tb.h = initial.tb.ptr->height;
-			reset = false;
-		}
-		// If nothing changes just undo the mode
-		if (reset) {
-			pointer_state.mode = 0;
-		}
+		set_initial_sibling();
 	}
 }
 
@@ -187,7 +195,6 @@ void pointer_mode_update(void) {
 	}
 	int dx = pointer_state.origin.x;
 	int dy = pointer_state.origin.y;
-	bool changed = false;
 
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:
@@ -196,11 +203,9 @@ void pointer_mode_update(void) {
 		dy -= pointer_state.left.y;
 		if (initial.x + dx != initial.ptr->x) {
 			initial.ptr->x = initial.x + dx;
-			changed = true;
 		}
 		if (initial.y + dy != initial.ptr->y) {
 			initial.ptr->y = initial.y + dy;
-			changed = true;
 		}
 		update_geometry(initial.ptr);
 		break;
@@ -253,37 +258,31 @@ void pointer_mode_update(void) {
 			if (lock.left) {
 				// Check whether its fine to resize
 				if (initial.w + dx > min_sane_w && initial.lr.w - dx > min_sane_w) {
-					initial.ptr->width = initial.w + dx;
+					initial.lr.sib->width = initial.w + dx;
 					initial.lr.ptr->width = initial.lr.w - dx;
 				}
 			} else { //lock.right
 				if (initial.w - dx > min_sane_w && initial.lr.w + dx > min_sane_w) {
-					initial.ptr->width = initial.w - dx;
+					initial.lr.sib->width = initial.w - dx;
 					initial.lr.ptr->width = initial.lr.w + dx;
 				}
-				changed = true;
 			}
 			arrange_windows(initial.lr.ptr->parent, -1, -1);
 		}
 		if (initial.tb.ptr) {
 			if (lock.top) {
 				if (initial.h + dy > min_sane_h && initial.tb.h - dy > min_sane_h) {
-					initial.ptr->height = initial.h + dy;
+					initial.tb.sib->height = initial.h + dy;
 					initial.tb.ptr->height = initial.tb.h - dy;
 				}
 			} else { //lock.bottom
 				if (initial.h - dy > min_sane_h && initial.tb.h + dy > min_sane_h) {
-					initial.ptr->height = initial.h - dy;
+					initial.tb.sib->height = initial.h - dy;
 					initial.tb.ptr->height = initial.tb.h + dy;
 				}
-				changed = true;
 			}
 			arrange_windows(initial.tb.ptr->parent, -1, -1);
 		}
-		if (changed) {
-			arrange_windows(initial.ptr->parent, -1, -1);
-		}
-		changed = false;
 	default:
 		return;
 	}

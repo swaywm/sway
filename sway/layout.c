@@ -209,12 +209,12 @@ void update_geometry(swayc_t *container) {
 	}
 	struct wlc_geometry geometry = {
 		.origin = {
-			.x = container->x + container->gaps / 2,
-			.y = container->y + container->gaps / 2
+			.x = container->x + (container->is_floating ? 0 : container->gaps / 2),
+			.y = container->y + (container->is_floating ? 0 : container->gaps / 2)
 		},
 		.size = {
-			.w = container->width - container->gaps,
-			.h = container->height - container->gaps
+			.w = container->width - (container->is_floating ? 0 : container->gaps),
+			.h = container->height - (container->is_floating ? 0 : container->gaps)
 		}
 	};
 	if (swayc_is_fullscreen(container)) {
@@ -347,35 +347,12 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		for (i = 0; i < container->floating->length; ++i) {
 			swayc_t *view = container->floating->items[i];
 			if (view->type == C_VIEW) {
-				// Set the geometry
-				struct wlc_geometry geometry = {
-					.origin = {
-						.x = view->x,
-						.y = view->y
-					},
-					.size = {
-						.w = view->width,
-						.h = view->height
-					}
-				};
+				update_geometry(view);
 				if (swayc_is_fullscreen(view)) {
-					swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
-					geometry.origin.x = 0;
-					geometry.origin.y = 0;
-					geometry.size.w = parent->width;
-					geometry.size.h = parent->height;
-					wlc_view_set_geometry(view->handle, 0, &geometry);
 					wlc_view_bring_to_front(view->handle);
-				} else {
-					wlc_view_set_geometry(view->handle, 0, &geometry);
-					// Bring the views to the front in order of the list, the list
-					// will be kept up to date so that more recently focused views
-					// have higher indexes
-					// This is conditional on there not being a fullscreen view in the workspace
-					if (!container->focused
-							|| !swayc_is_fullscreen(container->focused)) {
-						wlc_view_bring_to_front(view->handle);
-					}
+				} else if (!container->focused
+						|| !swayc_is_fullscreen(container->focused)) {
+					wlc_view_bring_to_front(view->handle);
 				}
 			}
 		}
