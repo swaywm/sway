@@ -90,18 +90,11 @@ static bool handle_output_created(wlc_handle output) {
 		return false;
 	}
 
-		wlc_output_focus(output);
 	// Switch to workspace if we need to
 	if (swayc_active_workspace() == NULL) {
-		sway_log(L_INFO, "Focus switch");
 		swayc_t *ws = op->children->items[0];
 		workspace_switch(ws);
 	}
-	/*
-	if (wlc_output_get_sleep(wlc_get_focused_output())) {
-		wlc_output_focus(output);
-	}
-	*/
 	return true;
 }
 
@@ -115,6 +108,8 @@ static void handle_output_destroyed(wlc_handle output) {
 	}
 	if (i < list->length) {
 		destroy_output(list->items[i]);
+	} else {
+		return;
 	}
 	if (list->length > 0) {
 		// switch to other outputs active workspace
