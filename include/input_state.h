@@ -30,11 +30,11 @@ enum pointer_values {
 
 enum pointer_mode {
 	// Target
-	M_FLOATING = 1 << 0,
-	M_TILING = 1 << 1,
+	M_FLOATING = 1,
+	M_TILING = 2,
 	// Action
-	M_DRAGGING = 1 << 2,
-	M_RESIZING = 1 << 3,
+	M_DRAGGING = 4,
+	M_RESIZING = 8,
 };
 
 struct pointer_button_state {

@@ -17,6 +17,12 @@
 #include "input_state.h"
 #include "resize.h"
 
+// Event should be sent to client
+#define EVENT_PASSTHROUGH false
+
+// Event handled by sway and should not be sent to client
+#define EVENT_HANDLED true
+
 static bool pointer_test(swayc_t *view, void *_origin) {
 	const struct mouse_origin *origin = _origin;
 	// Determine the output that the view is under
@@ -276,7 +282,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		uint32_t key, uint32_t sym, enum wlc_key_state state) {
 
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
-		return false;
+		return EVENT_PASSTHROUGH;
 	}
 
 	// reset pointer mode on keypress
@@ -289,7 +295,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	if (sym < 70000 /* bullshit made up number */) {
 		if (!isalnum(sym) && sym != ' ' && sym != XKB_KEY_Escape && sym != XKB_KEY_Tab) {
 			// God fucking dammit
-			return false;
+			return EVENT_PASSTHROUGH;
 		}
 	}
 
@@ -320,14 +326,14 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			if (match) {
 				if (state == WLC_KEY_STATE_PRESSED) {
 					handle_command(config, binding->command);
-					return true;
+					return EVENT_HANDLED;
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
 				}
 			}
 		}
 	}
-	return false;
+	return EVENT_PASSTHROUGH;
 }
 
 static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
@@ -351,13 +357,12 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			set_focused_container(pointer_state.view);
 		}
 	}
-	return false;
+	return EVENT_PASSTHROUGH;
 }
 
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
-	enum { DONT_SEND_CLICK = true, SEND_CLICK = false };
 
 	// Update view pointer is on
 	pointer_state.view = container_under_pointer();
@@ -412,7 +417,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	// dont change focus or mode if fullscreen
 	if (swayc_is_fullscreen(focused)) {
-		return SEND_CLICK;
+		return EVENT_PASSTHROUGH;
 	}
 
 	// set pointer mode
@@ -421,12 +426,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	// Return if mode has been set
 	if (pointer_state.mode) {
-		return DONT_SEND_CLICK;
+		return EVENT_HANDLED;
 	}
 
 	// Always send mouse release
 	if (state == WLC_BUTTON_STATE_RELEASED) {
-		return SEND_CLICK;
+		return EVENT_PASSTHROUGH;
 	}
 
 	// Check whether to change focus
@@ -448,7 +453,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	}
 
 	// Finally send click
-	return SEND_CLICK;
+	return EVENT_PASSTHROUGH;
 }
 
 static void handle_wlc_ready(void) {

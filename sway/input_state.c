@@ -56,23 +56,24 @@ static struct mode_state {
 	// initial view state
 	double x, y, w, h;
 	swayc_t *ptr;
-	// containers resized with tiling resize
+	// Containers used for resizing horizontally
 	struct {
-		double x, w;
+		double w;
 		swayc_t *ptr;
 		struct {
-			double x, w;
+			double w;
 			swayc_t *ptr;
-		} sib;
-	} lr;
+		} parent;
+	} horiz;
+	// Containers used for resizing vertically
 	struct {
-		double y, h;
+		double h;
 		swayc_t *ptr;
 		struct {
-			double y, h;
+			double h;
 			swayc_t *ptr;
-		} sib;
-	} tb;
+		} parent;
+	} vert;
 } initial;
 
 static struct {
@@ -92,23 +93,19 @@ static void set_initial_view(swayc_t *view) {
 
 static void set_initial_sibling(void) {
 	bool reset = true;
-	if ((initial.lr.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
-		initial.lr.x = initial.lr.ptr->x;
-		initial.lr.w = initial.lr.ptr->width;
-		initial.lr.sib.ptr = get_swayc_in_direction(initial.lr.ptr, lock.left ? MOVE_LEFT : MOVE_RIGHT);
-		initial.lr.sib.x = initial.lr.sib.ptr->x;
-		initial.lr.sib.w = initial.lr.sib.ptr->width;
+	if ((initial.horiz.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
+		initial.horiz.w = initial.horiz.ptr->width;
+		initial.horiz.parent.ptr = get_swayc_in_direction(initial.horiz.ptr, lock.left ? MOVE_LEFT : MOVE_RIGHT);
+		initial.horiz.parent.w = initial.horiz.parent.ptr->width;
 		reset = false;
 	}
-	if ((initial.tb.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
-		initial.tb.y = initial.tb.ptr->y;
-		initial.tb.h = initial.tb.ptr->height;
-		initial.tb.sib.ptr = get_swayc_in_direction(initial.tb.ptr, lock.top ? MOVE_UP : MOVE_DOWN);
-		initial.tb.sib.y = initial.tb.sib.ptr->y;
-		initial.tb.sib.h = initial.tb.sib.ptr->height;
+	if ((initial.vert.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
+		initial.vert.h = initial.vert.ptr->height;
+		initial.vert.parent.ptr = get_swayc_in_direction(initial.vert.ptr, lock.top ? MOVE_UP : MOVE_DOWN);
+		initial.vert.parent.h = initial.vert.parent.ptr->height;
 		reset = false;
 	}
-	// If nothing changes just undo the mode
+	// If nothing will change just undo the mode
 	if (reset) {
 		pointer_state.mode = 0;
 	}
@@ -120,6 +117,16 @@ static void reset_initial_view(void) {
 	initial.ptr->width = initial.w;
 	initial.ptr->height = initial.h;
 	arrange_windows(initial.ptr, -1, -1);
+	pointer_state.mode = 0;
+}
+
+static void reset_initial_sibling(void) {
+	initial.horiz.ptr->width = initial.horiz.w;
+	initial.horiz.parent.ptr->width = initial.horiz.parent.w;
+	initial.vert.ptr->height = initial.vert.h;
+	initial.vert.parent.ptr->height = initial.vert.parent.h;
+	arrange_windows(initial.horiz.ptr->parent, -1, -1);
+	arrange_windows(initial.vert.ptr->parent, -1, -1);
 	pointer_state.mode = 0;
 }
 
@@ -228,7 +235,7 @@ void pointer_mode_update(void) {
 			if (initial.w + dx > min_sane_w) {
 				initial.ptr->width = initial.w + dx;
 			}
-		} else { //lock.right
+		} else { // lock.right
 			if (initial.w - dx > min_sane_w) {
 				initial.ptr->width = initial.w - dx;
 				initial.ptr->x = initial.x + dx;
@@ -238,7 +245,7 @@ void pointer_mode_update(void) {
 			if (initial.h + dy > min_sane_h) {
 				initial.ptr->height = initial.h + dy;
 			}
-		} else { //lock.bottom
+		} else { // lock.bottom
 			if (initial.h - dy > min_sane_h) {
 				initial.ptr->height = initial.h - dy;
 				initial.ptr->y = initial.y + dy;
@@ -264,34 +271,34 @@ void pointer_mode_update(void) {
 		dx -= pointer_state.right.x;
 		dy -= pointer_state.right.y;
 		// resize if we can
-		if (initial.lr.ptr) {
+		if (initial.horiz.ptr) {
 			if (lock.left) {
 				// Check whether its fine to resize
-				if (initial.w + dx > min_sane_w && initial.lr.w - dx > min_sane_w) {
-					initial.lr.ptr->width = initial.lr.w - dx;
-					initial.lr.sib.ptr->width = initial.lr.sib.w + dx;
+				if (initial.w + dx > min_sane_w && initial.horiz.w - dx > min_sane_w) {
+					initial.horiz.ptr->width = initial.horiz.w - dx;
+					initial.horiz.parent.ptr->width = initial.horiz.parent.w + dx;
 				}
-			} else { //lock.right
-				if (initial.w - dx > min_sane_w && initial.lr.w + dx > min_sane_w) {
-					initial.lr.ptr->width = initial.lr.w + dx;
-					initial.lr.sib.ptr->width = initial.lr.sib.w - dx;
+			} else { // lock.right
+				if (initial.w - dx > min_sane_w && initial.horiz.w + dx > min_sane_w) {
+					initial.horiz.ptr->width = initial.horiz.w + dx;
+					initial.horiz.parent.ptr->width = initial.horiz.parent.w - dx;
 				}
 			}
-			arrange_windows(initial.lr.ptr->parent, -1, -1);
+			arrange_windows(initial.horiz.ptr->parent, -1, -1);
 		}
-		if (initial.tb.ptr) {
+		if (initial.vert.ptr) {
 			if (lock.top) {
-				if (initial.h + dy > min_sane_h && initial.tb.h - dy > min_sane_h) {
-					initial.tb.ptr->height = initial.tb.h - dy;
-					initial.tb.sib.ptr->height = initial.tb.sib.h + dy;
+				if (initial.h + dy > min_sane_h && initial.vert.h - dy > min_sane_h) {
+					initial.vert.ptr->height = initial.vert.h - dy;
+					initial.vert.parent.ptr->height = initial.vert.parent.h + dy;
 				}
-			} else { //lock.bottom
-				if (initial.h - dy > min_sane_h && initial.tb.h + dy > min_sane_h) {
-					initial.tb.ptr->height = initial.tb.h + dy;
-					initial.tb.sib.ptr->height = initial.tb.sib.h - dy;
+			} else { // lock.bottom
+				if (initial.h - dy > min_sane_h && initial.vert.h + dy > min_sane_h) {
+					initial.vert.ptr->height = initial.vert.h + dy;
+					initial.vert.parent.ptr->height = initial.vert.parent.h - dy;
 				}
 			}
-			arrange_windows(initial.tb.ptr->parent, -1, -1);
+			arrange_windows(initial.vert.ptr->parent, -1, -1);
 		}
 	default:
 		return;
@@ -300,15 +307,17 @@ void pointer_mode_update(void) {
 
 void pointer_mode_reset(void) {
 	switch (pointer_state.mode) {
-	case M_FLOATING | M_DRAGGING:
 	case M_FLOATING | M_RESIZING:
+	case M_FLOATING | M_DRAGGING:
 		reset_initial_view();
 		break;
 
-	case M_TILING | M_DRAGGING:
 	case M_TILING | M_RESIZING:
+		(void) reset_initial_sibling;
+		break;
+
+	case M_TILING | M_DRAGGING:
 	default:
-		return;
+		break;
 	}
 }
-
