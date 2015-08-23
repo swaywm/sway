@@ -46,11 +46,11 @@ set $menu dmenu_run
 #
 # Moving around:
 # 
-    # Move your focus around with $mod+[h|j|k|l], like vim
-    bindsym $mod+h focus left
-    bindsym $mod+j focus down
-    bindsym $mod+k focus up
-    bindsym $mod+l focus right
+    # Move your focus around with $mod+[j|k|l|;], vim keys shifted right
+    bindsym $mod+j focus left
+    bindsym $mod+k focus down
+    bindsym $mod+l focus up
+    bindsym $mod+semicolon focus right
     # or use $mod+[up|down|left|right]
     bindsym $mod+Left focus left
     bindsym $mod+Down focus down
@@ -58,10 +58,10 @@ set $menu dmenu_run
     bindsym $mod+Right focus right
 
     # _move_ the focused window with the same, but add Shift
-    bindsym $mod+Shift+h move left
-    bindsym $mod+Shift+j move down
-    bindsym $mod+Shift+k move up
-    bindsym $mod+Shift+l move right
+    bindsym $mod+Shift+j move left
+    bindsym $mod+Shift+k move down
+    bindsym $mod+Shift+l move up
+    bindsym $mod+Shift+semicolon move right
     # ditto, with arrow keys
     bindsym $mod+Shift+Left move left
     bindsym $mod+Shift+Down move down
