@@ -407,6 +407,14 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		break;
 	}
 
+	// get focused window and check if to change focus on mouse click
+	swayc_t *focused = get_focused_container(&root_container);
+
+	// dont change focus or mode if fullscreen
+	if (swayc_is_fullscreen(focused)) {
+		return SEND_CLICK;
+	}
+
 	// set pointer mode
 	pointer_mode_set(button,
 		(modifiers->mods & config->floating_mod) == config->floating_mod);
@@ -420,9 +428,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	if (state == WLC_BUTTON_STATE_RELEASED) {
 		return SEND_CLICK;
 	}
-
-	// get focused window and check if to change focus on mouse click
-	swayc_t *focused = get_focused_container(&root_container);
 
 	// Check whether to change focus
 	swayc_t *pointer = pointer_state.view;
@@ -440,11 +445,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			}
 			wlc_view_bring_to_front(view);
 		}
-	}
-
-	// dont change focus if fullscreen
-	if (swayc_is_fullscreen(focused)) {
-		return SEND_CLICK;
 	}
 
 	// Finally send click
