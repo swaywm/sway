@@ -60,12 +60,18 @@ static struct mode_state {
 	struct {
 		double x, w;
 		swayc_t *ptr;
-		swayc_t *sib;
+		struct {
+			double x, w;
+			swayc_t *ptr;
+		} sib;
 	} lr;
 	struct {
 		double y, h;
 		swayc_t *ptr;
-		swayc_t *sib;
+		struct {
+			double y, h;
+			swayc_t *ptr;
+		} sib;
 	} tb;
 } initial;
 
@@ -87,15 +93,19 @@ static void set_initial_view(swayc_t *view) {
 static void set_initial_sibling(void) {
 	bool reset = true;
 	if ((initial.lr.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
-		initial.lr.sib = get_swayc_in_direction(initial.lr.ptr, lock.left ? MOVE_LEFT : MOVE_RIGHT);
 		initial.lr.x = initial.lr.ptr->x;
 		initial.lr.w = initial.lr.ptr->width;
+		initial.lr.sib.ptr = get_swayc_in_direction(initial.lr.ptr, lock.left ? MOVE_LEFT : MOVE_RIGHT);
+		initial.lr.sib.x = initial.lr.sib.ptr->x;
+		initial.lr.sib.w = initial.lr.sib.ptr->width;
 		reset = false;
 	}
 	if ((initial.tb.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
-		initial.tb.sib = get_swayc_in_direction(initial.tb.ptr, lock.top ? MOVE_UP : MOVE_DOWN);
 		initial.tb.y = initial.tb.ptr->y;
 		initial.tb.h = initial.tb.ptr->height;
+		initial.tb.sib.ptr = get_swayc_in_direction(initial.tb.ptr, lock.top ? MOVE_UP : MOVE_DOWN);
+		initial.tb.sib.y = initial.tb.sib.ptr->y;
+		initial.tb.sib.h = initial.tb.sib.ptr->height;
 		reset = false;
 	}
 	// If nothing changes just undo the mode
@@ -258,13 +268,13 @@ void pointer_mode_update(void) {
 			if (lock.left) {
 				// Check whether its fine to resize
 				if (initial.w + dx > min_sane_w && initial.lr.w - dx > min_sane_w) {
-					initial.lr.sib->width = initial.w + dx;
 					initial.lr.ptr->width = initial.lr.w - dx;
+					initial.lr.sib.ptr->width = initial.lr.sib.w + dx;
 				}
 			} else { //lock.right
 				if (initial.w - dx > min_sane_w && initial.lr.w + dx > min_sane_w) {
-					initial.lr.sib->width = initial.w - dx;
 					initial.lr.ptr->width = initial.lr.w + dx;
+					initial.lr.sib.ptr->width = initial.lr.sib.w - dx;
 				}
 			}
 			arrange_windows(initial.lr.ptr->parent, -1, -1);
@@ -272,13 +282,13 @@ void pointer_mode_update(void) {
 		if (initial.tb.ptr) {
 			if (lock.top) {
 				if (initial.h + dy > min_sane_h && initial.tb.h - dy > min_sane_h) {
-					initial.tb.sib->height = initial.h + dy;
 					initial.tb.ptr->height = initial.tb.h - dy;
+					initial.tb.sib.ptr->height = initial.tb.sib.h + dy;
 				}
 			} else { //lock.bottom
 				if (initial.h - dy > min_sane_h && initial.tb.h + dy > min_sane_h) {
-					initial.tb.sib->height = initial.h - dy;
 					initial.tb.ptr->height = initial.tb.h + dy;
+					initial.tb.sib.ptr->height = initial.tb.sib.h - dy;
 				}
 			}
 			arrange_windows(initial.tb.ptr->parent, -1, -1);
