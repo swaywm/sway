@@ -10,6 +10,8 @@
 #include "focus.h"
 
 swayc_t root_container;
+int min_sane_h = 60;
+int min_sane_w = 100;
 
 void init_layout(void) {
 	root_container.type = C_ROOT;
@@ -35,7 +37,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	child->parent = parent;
 	// set focus for this container
 	if (parent->children->length == 1) {
-		set_focused_container_for(parent, child);
+		parent->focused = child;
 	}
 }
 
@@ -46,7 +48,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	child->parent = ws;
 	child->is_floating = true;
 	if (!ws->focused) {
-		set_focused_container_for(ws, child);
+		ws->focused = child;
 	}
 }
 
@@ -71,7 +73,7 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	new_child->parent = child->parent;
 
 	if (child->parent->focused == child) {
-		set_focused_container_for(child->parent, new_child);
+		child->parent->focused = new_child;
 	}
 	child->parent = NULL;
 	return parent;
@@ -100,7 +102,7 @@ swayc_t *remove_child(swayc_t *child) {
 	// Set focused to new container
 	if (parent->focused == child) {
 		if (parent->children->length > 0) {
-			set_focused_container_for(parent, parent->children->items[i?i-1:0]);
+			parent->focused = parent->children->items[i?i-1:0];
 		} else {
 			parent->focused = NULL;
 		}
@@ -167,21 +169,14 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *child = container->children->items[i];
 			sway_log(L_DEBUG, "Arranging output at %d", x);
-			child->x = x;
-			child->y = y;
 			arrange_windows(child, -1, -1);
-			// Removed for now because wlc works with relative positions
-			// Addition can be reconsidered once wlc positions are changed
-			// x += child->width;
+			x += child->width;
 		}
 		return;
 	case C_OUTPUT:
 		container->width = width;
 		container->height = height;
-		// These lines make x/y negative and result in stuff glitching out
-		// Their addition can be reconsidered once wlc positions are changed
-		// x -= container->x;
-		// y -= container->y;
+		x = 0, y = 0;
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *child = container->children->items[i];
 			child->x = x + container->gaps;
@@ -204,7 +199,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 					.h = height - container->gaps
 				}
 			};
-			if (wlc_view_get_state(container->handle) & WLC_BIT_FULLSCREEN) {
+			if (swayc_is_fullscreen(container)) {
 				swayc_t *parent = swayc_parent_by_type(container, C_OUTPUT);
 				geometry.origin.x = 0;
 				geometry.origin.y = 0;
@@ -303,7 +298,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 						.h = view->height
 					}
 				};
-				if (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN) {
+				if (swayc_is_fullscreen(view)) {
 					swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 					geometry.origin.x = 0;
 					geometry.origin.y = 0;
@@ -318,7 +313,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 					// have higher indexes
 					// This is conditional on there not being a fullscreen view in the workspace
 					if (!container->focused
-							|| !(wlc_view_get_state(container->focused->handle) & WLC_BIT_FULLSCREEN)) {
+							|| !swayc_is_fullscreen(container->focused)) {
 						wlc_view_bring_to_front(view->handle);
 					}
 				}
@@ -328,35 +323,6 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	layout_log(&root_container, 0);
 }
 
-swayc_t *get_swayc_for_handle(wlc_handle handle, swayc_t *parent) {
-	if (parent->children == NULL) {
-		return NULL;
-	}
-
-	// Search for floating workspaces
-	int i;
-	if (parent->type == C_WORKSPACE) {
-		for (i = 0; i < parent->floating->length; ++i) {
-			swayc_t *child = parent->floating->items[i];
-			if (child->handle == handle) {
-				return child;
-			}
-		}
-	}
-
-	for (i = 0; i < parent->children->length; ++i) {
-		swayc_t *child = parent->children->items[i];
-		if (child->handle == handle) {
-			return child;
-		} else {
-			swayc_t *res;
-			if ((res = get_swayc_for_handle(handle, child))) {
-				return res;
-			}
-		}
-	}
-	return NULL;
-}
 
 swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir) {
 	swayc_t *parent = container->parent;
@@ -372,19 +338,75 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 		// Test if we can even make a difference here
 		bool can_move = false;
 		int diff = 0;
-		if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
-			if (parent->layout == L_HORIZ || parent->type == C_ROOT) {
+		int i;
+		if (parent->type == C_ROOT) {
+			// Find the next output
+			int target = -1, max_x = 0, max_y = 0, self = -1;
+			sway_log(L_DEBUG, "Moving between outputs");
+			
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *next = parent->children->items[i];
+				if (next == container) {
+					self = i;
+					sway_log(L_DEBUG, "self is %p %d", next, self);
+					continue;
+				}
+				if (next->type == C_OUTPUT) {
+					sway_log(L_DEBUG, "Testing with %p %d (dir %d)", next, i, dir);
+					// Check if it's more extreme
+					if (dir == MOVE_RIGHT) {
+						if (container->x + container->width <= next->x) {
+							if (target == -1 || next->x < max_x) {
+								target = i;
+								max_x = next->x;
+							}
+						}
+					} else if (dir == MOVE_LEFT) {
+						if (container->x >= next->x + next->width) {
+							if (target == -1 || max_x < next->x) {
+								target = i;
+								max_x = next->x;
+							}
+						}
+					} else if (dir == MOVE_DOWN) {
+						if (container->y + container->height <= next->y) {
+							if (target == -1 || next->y < max_y) {
+								target = i;
+								max_y = next->y;
+							}
+						}
+					} else if (dir == MOVE_UP) {
+						if (container->y >= next->y + next->height) {
+							if (target == -1 || max_y < next->y) {
+								target = i;
+								max_y = next->y;
+							}
+						}
+					}
+				}
+			}
+
+			if (target == -1) {
+				can_move = false;
+			} else {
 				can_move = true;
-				diff = dir == MOVE_LEFT ? -1 : 1;
+				diff = target - self;
 			}
 		} else {
-			if (parent->layout == L_VERT) {
-				can_move = true;
-				diff = dir == MOVE_UP ? -1 : 1;
+			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+				if (parent->layout == L_HORIZ) {
+					can_move = true;
+					diff = dir == MOVE_LEFT ? -1 : 1;
+				}
+			} else {
+				if (parent->layout == L_VERT) {
+					can_move = true;
+					diff = dir == MOVE_UP ? -1 : 1;
+				}
 			}
 		}
+
 		if (can_move) {
-			int i;
 			for (i = 0; i < parent->children->length; ++i) {
 				swayc_t *child = parent->children->items[i];
 				if (child == container) {

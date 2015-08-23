@@ -37,13 +37,19 @@ extern struct pointer_state {
 	struct pointer_tiling {
 		bool resize;
 		swayc_t *init_view;
-		struct wlc_origin *lock_pos;
+		struct wlc_origin lock_pos;
 	} tiling;
 	struct pointer_lock {
+		// Lock movement for certain edges
 		bool left;
 		bool right;
 		bool top;
 		bool bottom;
+		// Lock movement in certain directions
+		bool temp_left;
+		bool temp_right;
+		bool temp_up;
+		bool temp_down;
 	} lock;
 } pointer_state;
 

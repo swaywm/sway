@@ -22,6 +22,7 @@ void config_defaults(struct sway_config *config) {
 	config->modes = create_list();
 	config->cmd_queue = create_list();
 	config->workspace_outputs = create_list();
+	config->output_configs = create_list();
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
@@ -60,6 +61,7 @@ void free_config(struct sway_config *config) {
 		free(sym->value);
 	}
 	free_flat_list(config->symbols);
+	free_flat_list(config->output_configs);
 }
 
 static const char *search_paths[] = {

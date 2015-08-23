@@ -41,6 +41,11 @@ Commands
 **floating** toggle::
 	Toggles the "floating" status of the focused view.
 
+**floating_modifier** <modifier>::
+	When the _modifier_ key is held down, you may use left click to drag floating
+	windows, and right click to resize them. Unlike i3, this modifier may also be
+	used to resize and move windows that are tiled.
+
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
 	directional focus commands will move the focus in that direction. The parent
@@ -55,34 +60,6 @@ Commands
 	If set to _yes_, the currently focused view will change as you move your
 	mouse around the screen to the view that ends up underneath your mouse.
 
-**kill**::
-	Closes the currently focused view.
-
-**layout** <mode>::
-	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, or _toggle split_.
-
-**reload**::
-	Reloads the sway config file without restarting sway.
-
-**set** <name> <value>::
-	Creates a substitution for _value_ that can be used with $_name_ in other
-	commands.
-
-**split** <vertical|horizontal>::
-	Splits the current container, vertically or horiziontally. The letters "h" and
-	"v" can be used instead of the full words "vertical" or "horizontal".
-
-**splith**::
-	Equivalent to **split horizontal**.
-
-**splitv**::
-	Equivalent to **split vertical**.
-
-**floating_modifier** <modifier>::
-	When the _modifier_ key is held down, you may use left click to drag floating
-	windows, and right click to resize them.
-
 **fullscreen**::
 	Toggles fullscreen status for the focused view.
 
@@ -92,6 +69,41 @@ Commands
 **gaps** <inner|outer> <amount>::
 	Adds _amount_ pixels as an _inner_ or _outer_ gap, where the former affects
 	spacing between views and the latter affects the space around each output.
+
+**kill**::
+	Closes the currently focused view.
+
+**layout** <mode>::
+	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
+	_splitv_, or _toggle split_.
+
+**move** <left|right|up|down>::
+	Moves the focused container _left_, _right_, _up_, or _down_.
+
+**output** <name> <resolution|res WIDTHxHEIGHT> <position|pos X,Y>::
+	Configures the specified output. It will use the given resolution and be
+	arranged at the given position in the layout tree. You may omit either of
+	these parameters if you only want to set one of them.
+
+**reload**::
+	Reloads the sway config file without restarting sway.
+
+**resize** <shrink|grow> <width|height> <amount>::
+	Resizes the currently focused container or view by _amount_. _amount_ can be
+	specified as "n px" or "n ppt" or "n px or n ppt".
+
+**set** <name> <value>::
+	Creates a substitution for _value_ that can be used with $_name_ in other
+	commands.
+
+**split** <vertical|v|horizontal|h>::
+	Splits the current container, vertically or horiziontally.
+
+**splith**::
+	Equivalent to **split horizontal**.
+
+**splitv**::
+	Equivalent to **split vertical**.
 
 **workspace** <name>::
 	Switches to the specified workspace.

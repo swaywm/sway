@@ -38,12 +38,6 @@ int main(int argc, char **argv) {
 
 	setenv("WLC_DIM", "0", 0);
 
-	FILE *devnull = fopen("/dev/null", "w");
-	if (devnull) {
-		// NOTE: Does not work, see wlc issue #54
-		wlc_set_log_file(devnull);
-	}
-
 	/* Changing code earlier than this point requires detailed review */
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
@@ -85,9 +79,6 @@ int main(int argc, char **argv) {
 
 	if (debug) {
 		init_log(L_DEBUG);
-		wlc_set_log_file(stderr);
-		fclose(devnull);
-		devnull = NULL;
 	} else if (verbose || validate) {
 		init_log(L_INFO);
 	} else {
@@ -112,10 +103,6 @@ int main(int argc, char **argv) {
 
 	if (!terminate_request) {
 		wlc_run();
-	}
-
-	if (devnull) {
-		fclose(devnull);
 	}
 
 	ipc_terminate();
