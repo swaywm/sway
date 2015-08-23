@@ -299,7 +299,8 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 		return NULL;
 	}
 
-	if (workspace->children->length == 0) {
+	// Do not destroy if there are children
+	if (workspace->children->length == 0 && workspace->floating->length == 0) {
 		sway_log(L_DEBUG, "%s: '%s'", __func__, workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
@@ -466,14 +467,16 @@ bool swayc_is_fullscreen(swayc_t *view) {
 // Mapping
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (container && container->children && container->children->length)  {
+	if (container) {
 		int i;
-		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
-			f(child, data);
-			container_map(child, f, data);
+		if (container->children)  {
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				f(child, data);
+				container_map(child, f, data);
+			}
 		}
-		if (container->type == C_WORKSPACE) {
+		if (container->floating) {
 			for (i = 0; i < container->floating->length; ++i) {
 				swayc_t *child = container->floating->items[i];
 				f(child, data);

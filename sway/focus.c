@@ -34,7 +34,6 @@ static void update_focus(swayc_t *c) {
 				mask = 2;
 				container_map(c, set_view_visibility, &mask);
 				wlc_output_set_mask(parent->handle, 2);
-				c->parent->focused = c;
 				destroy_workspace(ws);
 			}
 			break;
