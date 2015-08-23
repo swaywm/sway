@@ -376,7 +376,7 @@ static bool cmd_output(struct sway_config *config, int argc, char **argv) {
 
 	// TODO: atoi doesn't handle invalid numbers
 	
-	if (strcmp(argv[1], "disable") == 0) {
+	if (strcasecmp(argv[1], "disable") == 0) {
 		output->enabled = false;
 	}
 
