@@ -23,11 +23,11 @@ static void sigchld_handle(int signal);
 
 static void wlc_log_handler(enum wlc_log_type type, const char *str) {
 	if (type == WLC_LOG_ERROR) {
-		sway_log(L_ERROR, "%s", str);
+		sway_log(L_ERROR, "[wlc] %s", str);
 	} else if (type == WLC_LOG_WARN) {
-		sway_log(L_INFO, "%s", str);
+		sway_log(L_INFO, "[wlc] %s", str);
 	} else {
-		sway_log(L_DEBUG, "%s", str);
+		sway_log(L_DEBUG, "[wlc] %s", str);
 	}
 }
 
