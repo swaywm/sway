@@ -24,6 +24,7 @@ struct sway_mode {
 
 struct output_config {
 	char *name;
+    bool enabled;
 	int width, height;
 	int x, y;
 };

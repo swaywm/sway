@@ -86,11 +86,22 @@ swayc_t *container_under_pointer(void) {
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
+    if (!op) {
+        return false;
+    }
+
+        wlc_output_focus(output);
 	// Switch to workspace if we need to
 	if (swayc_active_workspace() == NULL) {
+        sway_log(L_INFO, "Focus switch");
 		swayc_t *ws = op->children->items[0];
 		workspace_switch(ws);
 	}
+    /*
+    if (wlc_output_get_sleep(wlc_get_focused_output())) {
+        wlc_output_focus(output);
+    }
+    */
 	return true;
 }
 

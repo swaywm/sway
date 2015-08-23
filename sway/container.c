@@ -70,6 +70,10 @@ swayc_t *new_output(wlc_handle handle) {
 		oc = NULL;
 	}
 
+    if (oc && !oc->enabled) {
+        return NULL;
+    }
+
 	swayc_t *output = new_swayc(C_OUTPUT);
 	if (oc && oc->width != -1 && oc->height != -1) {
 		output->width = oc->width;
