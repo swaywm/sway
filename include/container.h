@@ -84,6 +84,11 @@ swayc_t *destroy_view(swayc_t *view);
 swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data);
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types);
 swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts);
+// Follow focused until type/layout
+swayc_t *swayc_focus_by_type(swayc_t *container, enum swayc_types);
+swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts);
+
+
 swayc_t *swayc_by_handle(wlc_handle handle);
 swayc_t *swayc_active_output(void);
 swayc_t *swayc_active_workspace(void);

@@ -353,8 +353,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	layout_log(&root_container, 0);
 }
 
-
-swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir) {
+swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit) {
 	swayc_t *parent = container->parent;
 
 	if (dir == MOVE_PARENT) {
@@ -453,12 +452,16 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 		if (!can_move) {
 			container = parent;
 			parent = parent->parent;
-			if (!parent) {
+			if (!parent || container == limit) {
 				// Nothing we can do
 				return NULL;
 			}
 		}
 	}
+}
+
+swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir) {
+	return get_swayc_in_direction_under(container, dir, NULL);
 }
 
 void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge edge) {

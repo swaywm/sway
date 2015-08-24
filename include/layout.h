@@ -29,6 +29,7 @@ void arrange_windows(swayc_t *container, double width, double height);
 
 swayc_t *get_focused_container(swayc_t *parent);
 swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir);
+swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit);
 
 void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge edge);
 

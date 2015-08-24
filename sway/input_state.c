@@ -119,15 +119,20 @@ static void set_initial_view(swayc_t *view) {
 
 static void set_initial_sibling(void) {
 	bool reset = true;
-	if ((initial.horiz.ptr = get_swayc_in_direction(initial.ptr, lock.left ? MOVE_RIGHT: MOVE_LEFT))) {
+	swayc_t *ws = swayc_active_workspace_for(initial.ptr);
+	if ((initial.horiz.ptr = get_swayc_in_direction_under(initial.ptr,
+			lock.left ? MOVE_RIGHT: MOVE_LEFT, ws))) {
 		initial.horiz.w = initial.horiz.ptr->width;
-		initial.horiz.parent.ptr = get_swayc_in_direction(initial.horiz.ptr, lock.left ? MOVE_LEFT : MOVE_RIGHT);
+		initial.horiz.parent.ptr = get_swayc_in_direction_under(initial.horiz.ptr,
+			lock.left ? MOVE_LEFT : MOVE_RIGHT, ws);
 		initial.horiz.parent.w = initial.horiz.parent.ptr->width;
 		reset = false;
 	}
-	if ((initial.vert.ptr = get_swayc_in_direction(initial.ptr, lock.top ? MOVE_DOWN: MOVE_UP))) {
+	if ((initial.vert.ptr = get_swayc_in_direction_under(initial.ptr,
+			lock.top ? MOVE_DOWN: MOVE_UP, ws))) {
 		initial.vert.h = initial.vert.ptr->height;
-		initial.vert.parent.ptr = get_swayc_in_direction(initial.vert.ptr, lock.top ? MOVE_UP : MOVE_DOWN);
+		initial.vert.parent.ptr = get_swayc_in_direction_under(initial.vert.ptr,
+			lock.top ? MOVE_UP : MOVE_DOWN, ws);
 		initial.vert.parent.h = initial.vert.parent.ptr->height;
 		reset = false;
 	}

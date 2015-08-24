@@ -398,6 +398,32 @@ swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts layout) {
 	return container;
 }
 
+swayc_t *swayc_focus_by_type(swayc_t *container, enum swayc_types type) {
+	if (!ASSERT_NONNULL(container)) {
+		return NULL;
+	}
+	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "%s: invalid type", __func__)) {
+		return NULL;
+	}
+	do {
+		container = container->focused;
+	} while (container && container->type != type);
+	return container;
+}
+swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts layout) {
+	if (!ASSERT_NONNULL(container)) {
+		return NULL;
+	}
+	if (!sway_assert(layout < L_LAYOUTS && layout >= L_NONE, "%s: invalid layout", __func__)) {
+		return NULL;
+	}
+	do {
+		container = container->focused;
+	} while (container && container->layout != layout);
+	return container;
+}
+
+
 static swayc_t *_swayc_by_handle_helper(wlc_handle handle, swayc_t *parent) {
 	if (!parent || !parent->children) {
 		return NULL;
