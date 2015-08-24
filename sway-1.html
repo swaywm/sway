@@ -1,0 +1,169 @@
+<!-- Creator     : groff version 1.22.3 -->
+<!-- CreationDate: Sun Aug 23 20:47:38 2015 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       pre     { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       table   { margin-top: 0; margin-bottom: 0; vertical-align: top }
+       h1      { text-align: center }
+       body    { width: 500px; margin: 0 auto; background: #111; color: #fff; }
+       a       { color: #0275D8; }
+</style>
+<title>SWAY</title>
+
+</head>
+<body>
+
+<h1 align="center">SWAY</h1>
+
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#COMMANDS">COMMANDS</a><br>
+<a href="#CONFIGURATION">CONFIGURATION</a><br>
+<a href="#AUTHORS">AUTHORS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+
+<hr>
+
+
+<h2>NAME
+<a name="NAME"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">sway &minus;
+SirCmpwn's Wayland window manager</p>
+
+<h2>SYNOPSIS
+<a name="SYNOPSIS"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em"><i>sway</i>
+[options] [command]</p>
+
+<h2>OPTIONS
+<a name="OPTIONS"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em"><b>&minus;c,
+&minus;&minus;config</b> &lt;config&gt;</p>
+
+<p style="margin-left:17%;">Specifies a config file.</p>
+
+<p style="margin-left:11%; margin-top: 1em"><b>&minus;C,
+&minus;&minus;validate</b></p>
+
+<p style="margin-left:17%;">Check the validity of the
+config file, then exit.</p>
+
+<p style="margin-left:11%; margin-top: 1em"><b>&minus;d,
+&minus;&minus;debug</b></p>
+
+<p style="margin-left:17%;">Enables full logging, including
+debug information.</p>
+
+<p style="margin-left:11%; margin-top: 1em"><b>&minus;v,
+&minus;&minus;version</b></p>
+
+<p style="margin-left:17%;">Show the version number and
+quit.</p>
+
+<p style="margin-left:11%; margin-top: 1em"><b>&minus;V,
+&minus;&minus;verbose</b></p>
+
+<p style="margin-left:17%;">Enables more verbose
+logging.</p>
+
+
+<p style="margin-left:11%; margin-top: 1em"><b>&minus;&minus;get&minus;socketpath</b></p>
+
+<p style="margin-left:17%;">Gets the IPC socket path and
+prints it, then exits.</p>
+
+<h2>DESCRIPTION
+<a name="DESCRIPTION"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">sway was
+created to fill the need of an i3&minus;like window manager
+for Wayland. The upstream i3 developers have no intention of
+porting i3 to Wayland, and projects proposed by others ended
+up as vaporware. Many thanks to the i3 folks for providing
+such a great piece of software, so good that your users
+would rather write an entirely new window manager from
+scratch that behaved <i>exactly</i> like i3 rather than
+switch to something else.</p>
+
+<p style="margin-left:11%; margin-top: 1em">You may run
+sway from an ongoing x11 session to run it within x.
+Otherwise, you can run sway on a tty and it will use your
+outputs directly.</p>
+
+<p style="margin-left:11%; margin-top: 1em"><b>Important
+note for nvidia users</b>: The proprietary nvidia driver
+does <i>not</i> have support for Wayland as of
+2015&minus;08&minus;17. Use nouveau.</p>
+
+<h2>COMMANDS
+<a name="COMMANDS"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">If sway is
+currently running, you may run <i>sway [command]</i> to send
+<i>command</i> to the running instance of sway. The same
+commands you would use in the config file are valid here
+(see <b>sway</b>(5)). For compatability reasons, you may
+also issue commands with <b>sway&minus;msg</b>(1) or
+<b>i3&minus;msg</b>(1) (or even with <b>i3</b>(1),
+probably).</p>
+
+<h2>CONFIGURATION
+<a name="CONFIGURATION"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">If
+<i>&minus;c</i> is not specified, sway will look in several
+locations for your config file. The default one is provided
+at /etc/sway/config. The suggested location for your config
+file is ~/.config/sway/config. ~/.sway/config will also
+work, and the rest of the usual XDG config locations are
+supported. If no sway config is found, sway will attempt to
+load an i3 config from all the config locations i3 supports.
+If still nothing is found, you will receive an error.</p>
+
+<p style="margin-left:11%; margin-top: 1em">For information
+on the config file format, see <b>sway</b>(5).</p>
+
+<h2>AUTHORS
+<a name="AUTHORS"></a>
+</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">Maintained by
+Drew DeVault &lt;sir@cmpwn.com&gt;, who is assisted by other
+open source contributors. For more information about sway
+development, see https://github.com/SirCmpwn/sway.</p>
+
+<h2>SEE ALSO
+<a name="SEE ALSO"></a>
+</h2>
+
+
+
+<p style="margin-left:11%; margin-top: 1em"><b>sway</b>(5)</p>
+<hr>
+</body>
+</html>
