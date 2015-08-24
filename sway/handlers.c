@@ -298,6 +298,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
+	sym = tolower(sym);
+
 	int i;
 
 	if (state == WLC_KEY_STATE_PRESSED) {
@@ -310,7 +312,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
 
-		if ((modifiers->mods & binding->modifiers) == binding->modifiers) {
+		if ((modifiers->mods ^ binding->modifiers) == 0) {
 			bool match;
 			int j;
 			for (j = 0; j < binding->keys->length; ++j) {
