@@ -129,7 +129,7 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 		*key = sym;
 		list_add(binding->keys, key);
 	}
-	list_free(split);
+	free_flat_list(split);
 
 	// TODO: Check if there are other commands with this key binding
 	struct sway_mode *mode = config->current_mode;
@@ -268,7 +268,7 @@ static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) 
 			}
 		}
 	}
-	list_free(split);
+	free_flat_list(split);
 	if (!config->floating_mod) {
 		sway_log(L_ERROR, "bindsym - unknown keys %s", argv[0]);
 		return false;

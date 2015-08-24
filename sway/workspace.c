@@ -42,22 +42,22 @@ char *workspace_next_name(void) {
 				strcmp(target, "back_and_forth") == 0 ||
 				strcmp(target, "current") == 0)
 			{
-				list_free(args);
+				free_flat_list(args);
 				continue;
 			}
 
 			// Make sure that the workspace doesn't already exist
 			if (workspace_by_name(target)) {
-				list_free(args);
+				free_flat_list(args);
 				continue;
 			}
 
-			list_free(args);
+			free_flat_list(args);
 
 			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
 			return target;
 		}
-		list_free(args);
+		free_flat_list(args);
 	}
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name

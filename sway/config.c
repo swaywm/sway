@@ -131,6 +131,7 @@ static char *get_config_path() {
 			strcpy(test, paths->items[i]);
 			strcat(test, name);
 			if (exists(test)) {
+				free_config(temp_config);
 				free_flat_list(paths);
 				return test;
 			}
@@ -225,7 +226,7 @@ bool read_config(FILE *file, bool is_active) {
 			success = false;
 			temp_config->failed = true;
 		}
-		list_free(args);
+		free_flat_list(args);
 
 _continue:
 		if (line && line[strlen(line) - 1] == '{') {
