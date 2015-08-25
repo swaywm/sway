@@ -296,7 +296,7 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 
 
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
-		uint32_t key, uint32_t sym, enum wlc_key_state state) {
+		uint32_t key, enum wlc_key_state state) {
 
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return EVENT_PASSTHROUGH;
@@ -309,7 +309,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
-	sym = tolower(sym);
+	uint32_t sym = tolower(wlc_keyboard_get_keysym_for_key(key, modifiers));
 
 	int i;
 
