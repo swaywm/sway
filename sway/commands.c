@@ -344,7 +344,7 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
+	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
 
@@ -358,6 +358,29 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 		move_container(view,&root_container,MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
 		move_container(view,&root_container,MOVE_DOWN);
+	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
+		// "move container to workspace x"
+		if (!checkarg(argc, "move container/window", EXPECTED_EQUAL_TO, 4) ||
+			strcasecmp(argv[1], "to") != 0 ||
+			strcasecmp(argv[2], "workspace") != 0) {
+			return false;
+		}
+
+		if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			return false;
+		}
+
+		const char *ws_name = argv[3];
+		if (argc == 5) {
+			// move "container to workspace number x"
+			ws_name = argv[4];
+		}
+
+		swayc_t *ws = workspace_by_name(ws_name);
+		if (ws == NULL) {
+			ws = workspace_create(ws_name);
+		}
+		move_container_to(view, ws);
 	} else {
 		return false;
 	}

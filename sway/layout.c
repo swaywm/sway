@@ -203,6 +203,21 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 
 }
 
+void move_container_to(swayc_t* container, swayc_t* destination) {
+	if (container->parent == destination) {
+		return;
+	}
+	destroy_container(remove_child(container));
+	set_focused_container(get_focused_view(&root_container));
+	if (container->is_floating) {
+		add_floating(destination, container);
+	} else {
+		add_child(destination, container);
+	}
+	update_visibility(container);
+	arrange_windows(&root_container, -1, -1);
+}
+
 void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW) {
 		return;
