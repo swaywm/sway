@@ -230,9 +230,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 
     swayc_t *focused_view = get_focused_view(&root_container);
     if(focused_view->type == C_WORKSPACE && focused_view->children->length == 0){
-        sway_log(L_DEBUG, "we are here first");
         if(focused_view->floating->length > 0){
-            sway_log(L_DEBUG, "we are here %d", focused_view->floating->length);
             focused_view = focused_view->floating->items[focused_view->floating->length-1];
             focused_view = get_focused_view(focused_view);
         }
