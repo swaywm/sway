@@ -477,7 +477,7 @@ swayc_t *swayc_active_workspace_for(swayc_t *cont) {
 		/* Fallthrough */
 
 	case C_OUTPUT:
-		cont = cont->focused;
+		cont = cont ? cont->focused : NULL;
 		/* Fallthrough */
 
 	case C_WORKSPACE:

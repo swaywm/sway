@@ -19,6 +19,7 @@ enum movement_direction {
 
 swayc_t *get_focused_container(swayc_t *parent);
 swayc_t *get_focused_view(swayc_t *parent);
+swayc_t *get_focused_float(swayc_t *ws);
 
 void set_focused_container(swayc_t *container);
 void set_focused_container_for(swayc_t *ancestor, swayc_t *container);

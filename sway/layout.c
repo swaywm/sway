@@ -151,7 +151,9 @@ swayc_t *remove_child(swayc_t *child) {
 	// Set focused to new container
 	if (parent->focused == child) {
 		if (parent->children->length > 0) {
-			parent->focused = parent->children->items[i?i-1:0];
+			parent->focused = parent->children->items[i ? i-1:0];
+		} else if (parent->floating && parent->floating->length) {
+			parent->focused = parent->floating->items[parent->floating->length - 1];
 		} else {
 			parent->focused = NULL;
 		}
