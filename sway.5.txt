@@ -80,6 +80,10 @@ Commands
 **move** <left|right|up|down>::
 	Moves the focused container _left_, _right_, _up_, or _down_.
 
+**move** <container|window> to workspace <name>::
+	Moves the focused container to the workspace identified by _name_.
+	_name_ may be a special workspace name. See **workspace**.
+
 **output** <name> <resolution|res WIDTHxHEIGHT> <position|pos X,Y>::
 	Configures the specified output. It will use the given resolution and be
 	arranged at the given position in the layout tree. You may omit either of
@@ -110,6 +114,10 @@ Commands
 
 **workspace** <name>::
 	Switches to the specified workspace.
+
+**workspace** <prev|next>::
+	Switches to the next workspace on the current output or on the next output
+	if currently on the last workspace.
 
 **workspace** <prev_on_output|next_on_output>::
 	Switches to the next workspace on the current output.

@@ -56,6 +56,10 @@ struct sway_container {
 	struct sway_container *focused;
 };
 
+enum visibility_mask {
+	VISIBLE = 1
+};
+
 // Container Creation
 
 swayc_t *new_output(wlc_handle handle);
@@ -105,5 +109,8 @@ void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);
 // Mappings
 void set_view_visibility(swayc_t *view, void *data);
 void reset_gaps(swayc_t *view, void *data);
+
+
+void update_visibility(swayc_t *container);
 
 #endif

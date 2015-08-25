@@ -22,6 +22,7 @@ swayc_t *remove_child(swayc_t *child);
 void swap_container(swayc_t *a, swayc_t *b);
 
 void move_container(swayc_t* container,swayc_t* root,enum movement_direction direction);
+void move_container_to(swayc_t* container, swayc_t* destination);
 
 // Layout
 void update_geometry(swayc_t *view);
