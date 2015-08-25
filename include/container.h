@@ -99,11 +99,15 @@ swayc_t *swayc_active_workspace_for(swayc_t *view);
 bool swayc_is_fullscreen(swayc_t *view);
 
 // Mapping functions
-
-void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);
+void swayc_map(swayc_t *, void f(swayc_t *));
+void swayc_map_r(swayc_t *, void f(swayc_t *, void *), void *);
 
 // Mappings
-void set_view_visibility(swayc_t *view, void *data);
-void reset_gaps(swayc_t *view, void *data);
+void swayc_show(swayc_t *view);
+void swayc_hide(swayc_t *view);
+// Sets visibility depending on parent
+void swayc_inherit_visibility(swayc_t *view);
+
+void reset_gaps(swayc_t *view);
 
 #endif

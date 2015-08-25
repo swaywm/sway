@@ -203,6 +203,68 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 
 }
 
+static wlc_handle _order_children(swayc_t *swayc, wlc_handle top) {
+	// return handle
+	if (swayc->type == C_VIEW) {
+		return swayc->handle;
+	}
+	// return if no focus
+	if (swayc->focused == NULL) {
+		return 0;
+	}
+
+	// Recurse and get handle of focused container
+	wlc_handle bottom = _order_children(swayc->focused, top);
+
+	// Put handle below current top, or if there is no top, set it as bottom
+	if (top) {
+		wlc_view_send_below(bottom, top);
+	} else {
+		top = bottom;
+	}
+
+	// recurse for all children with the current bottom handle as their top.
+	int i, len = swayc->children->length;
+	swayc_t **child = (swayc_t **)swayc->children->items;
+	for (i = 0; i < len; ++i, ++child) {
+		// Skip over the focused child
+		if (*child == swayc->focused) {
+			continue;
+		}
+		// Update current top, send it below previous bottom, and set new bottom
+		top = _order_children(*child, bottom);
+		wlc_view_send_below(top, bottom);
+		bottom = top;
+	}
+
+	// If we are at a workspace, put floating containers above topmost
+	if (swayc->type == C_WORKSPACE) {
+		// send floating windows to front
+		len = swayc->children->length;
+		child = (swayc_t **)swayc->floating->items;
+
+		// chekc whether to send floating windows to the back or front
+		swayc_t *focused = get_focused_view(swayc);
+		bool tofront = swayc->parent->focused == swayc
+			|| (focused->type == C_VIEW
+				&& (wlc_view_get_state(focused->handle) & WLC_BIT_FULLSCREEN));
+		for (i = 0; i < len; ++i) {
+			if (tofront) {
+				wlc_view_bring_to_front((*child)->handle);
+			} else {
+				wlc_view_send_to_back((*child)->handle);
+			}
+		}
+	}
+	// Return the bottom of this, which shall be the top of others,
+	return bottom;
+}
+
+void order_windows(swayc_t *swayc) {
+	_order_children(swayc, 0);
+}
+
+
 void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW) {
 		return;
@@ -228,7 +290,7 @@ void update_geometry(swayc_t *container) {
 	return;
 }
 
-void arrange_windows(swayc_t *container, double width, double height) {
+static void _arrange_windows(swayc_t *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
 		sway_log(L_DEBUG, "Arranging layout for %p", container);
@@ -242,7 +304,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *child = container->children->items[i];
 			sway_log(L_DEBUG, "Arranging output at %d", x);
-			arrange_windows(child, -1, -1);
+			_arrange_windows(child, -1, -1);
 			x += child->width;
 		}
 		return;
@@ -257,7 +319,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 			child->width = width - container->gaps * 2;
 			child->height = height - container->gaps * 2;
 			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
-			arrange_windows(child, -1, -1);
+			_arrange_windows(child, -1, -1);
 		}
 		return;
 	case C_VIEW:
@@ -301,7 +363,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
 				child->x = x + container->x;
 				child->y = y + container->y;
-				arrange_windows(child, child->width * scale, height);
+				_arrange_windows(child, child->width * scale, height);
 				x += child->width;
 			}
 		}
@@ -328,7 +390,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
 				child->x = x + container->x;
 				child->y = y + container->y;
-				arrange_windows(child, width, child->height * scale);
+				_arrange_windows(child, width, child->height * scale);
 				y += child->height;
 			}
 		}
@@ -350,6 +412,12 @@ void arrange_windows(swayc_t *container, double width, double height) {
 			}
 		}
 	}
+}
+
+void arrange_windows(swayc_t *container, double width, double height) {
+	_arrange_windows(container, width, height);
+	order_windows(container);
+	swayc_map(container, swayc_inherit_visibility);
 	layout_log(&root_container, 0);
 }
 
@@ -476,17 +544,7 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 		layout_match = container->layout == L_VERT;
 	}
 	if (container->type == C_VIEW) {
-		struct wlc_geometry geometry = {
-			.origin = {
-				.x = container->x + container->gaps / 2,
-				.y = container->y + container->gaps / 2
-			},
-			.size = {
-				.w = container->width - container->gaps,
-				.h = container->height - container->gaps
-			}
-		};
-		wlc_view_set_geometry(container->handle, edge, &geometry);
+		update_geometry(container);
 		return;
 	}
 	if (layout_match) {

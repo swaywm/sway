@@ -28,14 +28,13 @@ static void update_focus(swayc_t *c) {
 			if (parent->focused) {
 				swayc_t *ws = parent->focused;
 				// hide visibility of old workspace
-				uint32_t mask = 1;
-				container_map(ws, set_view_visibility, &mask);
-				// set visibility of new workspace
-				mask = 2;
-				container_map(c, set_view_visibility, &mask);
-				wlc_output_set_mask(parent->handle, 2);
+				swayc_hide(ws);
+				swayc_map(ws, swayc_inherit_visibility);
 				destroy_workspace(ws);
 			}
+			// set visibility of new workspace
+			swayc_show(c);
+			swayc_map(c, swayc_inherit_visibility);
 			break;
 
 		default:
@@ -165,14 +164,16 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 }
 
 swayc_t *get_focused_view(swayc_t *parent) {
-	while (parent && parent->type != C_VIEW) {
-		if (parent->type == C_WORKSPACE && parent->focused == NULL) {
-			return parent;
+	swayc_t *c = parent;
+	while (c && c->type != C_VIEW) {
+		if (c->type == C_WORKSPACE && c->focused == NULL) {
+			return c;
 		}
-		parent = parent->focused;
+		c = c->focused;
 	}
-	if (parent == NULL) {
-		return swayc_active_workspace_for(parent);
+	if (c == NULL) {
+		c = swayc_active_workspace_for(parent);
 	}
-	return parent;
+	return c;
 }
+

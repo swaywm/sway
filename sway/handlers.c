@@ -207,6 +207,7 @@ static bool handle_view_created(wlc_handle handle) {
 static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %lu", handle);
 	swayc_t *view = swayc_by_handle(handle);
+	swayc_t *focus = get_focused_view(&root_container);
 
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
@@ -227,7 +228,10 @@ static void handle_view_destroyed(wlc_handle handle) {
 		locked_container_focus = false;
 		break;
 	}
-	set_focused_container(get_focused_view(&root_container));
+	// get and set new focus
+	if (focus && view == focus) {
+		set_focused_container(get_focused_view(&root_container));
+	}
 }
 
 static void handle_view_focus(wlc_handle view, bool focus) {

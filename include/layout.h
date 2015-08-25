@@ -26,8 +26,8 @@ void move_container(swayc_t* container,swayc_t* root,enum movement_direction dir
 // Layout
 void update_geometry(swayc_t *view);
 void arrange_windows(swayc_t *container, double width, double height);
+void order_windows(swayc_t *container);
 
-swayc_t *get_focused_container(swayc_t *parent);
 swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir);
 swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit);
 
