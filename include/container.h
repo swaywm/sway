@@ -30,6 +30,9 @@ enum swayc_layouts{
 struct sway_container {
 	wlc_handle handle;
 
+	// Internal container, e.g. scratchpad
+	bool internal;
+
 	enum swayc_types type;
 	enum swayc_layouts layout;
 

@@ -197,58 +197,26 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 
+	swayc_t *view = get_focused_container(&root_container);
+
+	bool floating;
 	if (strcasecmp(argv[0], "toggle") == 0) {
-		swayc_t *view = get_focused_container(&root_container);
-		// Prevent running floating commands on things like workspaces
-		if (view->type != C_VIEW) {
-			return true;
-		}
-		// Change from nonfloating to floating
-		if (!view->is_floating) {
-			// Remove view from its current location
-			destroy_container(remove_child(view));
-
-			// and move it into workspace floating
-			add_floating(swayc_active_workspace(),view);
-			view->x = (swayc_active_workspace()->width - view->width)/2;
-			view->y = (swayc_active_workspace()->height - view->height)/2;
-			if (view->desired_width != -1) {
-				view->width = view->desired_width;
-			}
-			if (view->desired_height != -1) {
-				view->height = view->desired_height;
-			}
-			arrange_windows(swayc_active_workspace(), -1, -1);
-		} else {
-			// Delete the view from the floating list and unset its is_floating flag
-			// Using length-1 as the index is safe because the view must be the currently
-			// focused floating output
-			remove_child(view);
-			view->is_floating = false;
-			// Get the properly focused container, and add in the view there
-			swayc_t *focused = container_under_pointer();
-			// If focused is null, it's because the currently focused container is a workspace
-			if (focused == NULL) {
-				focused = swayc_active_workspace();
-			}
-			set_focused_container(focused);
-
-			sway_log(L_DEBUG, "Non-floating focused container is %p", focused);
-
-			// Case of focused workspace, just create as child of it
-			if (focused->type == C_WORKSPACE) {
-				add_child(focused, view);
-			}
-			// Regular case, create as sibling of current container
-			else {
-				add_sibling(focused, view);
-			}
-			// Refocus on the view once its been put back into the layout
-			view->width = view->height = 0;
-			arrange_windows(swayc_active_workspace(), -1, -1);
-		}
-		set_focused_container(view);
+		floating = !view->is_floating;
 	}
+	else if (strcasecmp(argv[0], "enable") == 0) {
+		floating = true;
+	}
+	else if (strcasecmp(argv[0], "disable") == 0) {
+		floating = false;
+	}
+	else {
+		sway_log(L_ERROR, "floating - unknown token '%s', expected one of toggle, enable or disable", argv[0]);
+		return false;
+	}
+
+	// Change from non-floating to floating or vice versa
+	view_set_floating(view, floating);
+	set_focused_container(view);
 	return true;
 }
 
@@ -344,23 +312,65 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 1)) {
+	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
 
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view,&root_container,MOVE_LEFT);
+		move_container_to_direction(view, &root_container, MOVE_LEFT);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view,&root_container,MOVE_RIGHT);
+		move_container_to_direction(view, &root_container, MOVE_RIGHT);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view,&root_container,MOVE_UP);
+		move_container_to_direction(view, &root_container, MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view,&root_container,MOVE_DOWN);
+		move_container_to_direction(view, &root_container, MOVE_DOWN);
+	} else if (strcasecmp(argv[0], "container") == 0) {
+		// "move container to workspace x"
+		if (!checkarg(argc, "move container", EXPECTED_EQUAL_TO, 4) ||
+			strcasecmp(argv[1], "to") != 0 ||
+			strcasecmp(argv[2], "workspace") != 0) {
+			return false;
+		}
+
+		if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			return false;
+		}
+
+		swayc_t *ws = workspace_by_name(argv[3]);
+		if (ws == NULL) {
+			ws = workspace_create(argv[3]);
+		}
+		move_container_to(view, ws);
+	} else if (strcasecmp(argv[0], "scratchpad") == 0 && view->type == C_VIEW) {
+		view_set_floating(view, true);
+		move_container_to(view, scratchpad);
 	} else {
 		return false;
 	}
+	return true;
+}
+
+static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+
+	if (strcasecmp(argv[0], "show") != 0) {
+		sway_log(L_ERROR, "scratchpad - unknown token '%s', expected show", argv[0]);
+		return false;
+	}
+
+	if (scratchpad->floating->length == 0) {
+		return false;
+	}
+
+	swayc_t *view = scratchpad->floating->items[0];
+	sway_log(L_DEBUG, "Popped view %p from scratchpad", view);
+	remove_child(view);
+	move_container_to(view, swayc_active_workspace());
+
 	return true;
 }
 
@@ -705,6 +715,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output},
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },

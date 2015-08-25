@@ -8,16 +8,32 @@
 #include "container.h"
 #include "workspace.h"
 #include "focus.h"
+#include "handlers.h"
 
 swayc_t root_container;
 int min_sane_h = 60;
 int min_sane_w = 100;
 
+static swayc_t null_output;
+swayc_t *scratchpad = NULL;
+
 void init_layout(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
+	null_output.name = "root";
 	root_container.children = create_list();
 	root_container.handle = -1;
+
+	null_output.type = C_OUTPUT;
+	null_output.layout = L_NONE;
+	null_output.name = "__i3";
+	null_output.children = create_list();
+	null_output.handle = -1;
+	null_output.internal = true;
+	add_child(&root_container, &null_output);
+
+	scratchpad = new_workspace(&null_output, "__i3_scratch");
+	scratchpad->internal = true;
 }
 
 static int index_child(swayc_t *child) {
@@ -161,7 +177,7 @@ swayc_t *remove_child(swayc_t *child) {
 
 //TODO: Implement horizontal movement.
 //TODO: Implement move to a different workspace.
-void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction){
+void move_container_to_direction(swayc_t *container,swayc_t* root,enum movement_direction direction){
 	sway_log(L_DEBUG, "Moved window");
 	swayc_t *temp;
 	int i;
@@ -197,7 +213,7 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 			break;
 		}
 		else if (child->children != NULL){
-			move_container(container,child,direction);
+			move_container_to_direction(container,child,direction);
 		}
 	}
 
@@ -227,6 +243,22 @@ void update_geometry(swayc_t *container) {
 	wlc_view_set_geometry(container->handle, 0, &geometry);
 	return;
 }
+
+void move_container_to(swayc_t* container, swayc_t* destination) {
+	destroy_container(remove_child(container));
+	set_focused_container(get_focused_view(&root_container));
+	if (container->is_floating) {
+		add_floating(destination, container);
+	} else {
+		add_child(destination, container);
+	}
+	// TODO: don't set it invisible here, it could have been
+	// moved to another visible workspace, or from the scratchpad
+	uint32_t mask = 2;
+	set_view_visibility(container, &mask);
+	arrange_windows(&root_container, -1, -1);
+}
+
 
 void arrange_windows(swayc_t *container, double width, double height) {
 	int i;
@@ -497,5 +529,56 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 		for (i = 0; i < container->children->length; i++) {
 			recursive_resize(container->children->items[i], amount, edge);
 		}
+	}
+}
+
+void view_set_floating(swayc_t *view, bool floating) {
+	// Prevent running floating commands on things like workspaces
+	if (view->type != C_VIEW) {
+		return;
+	}
+
+	if (floating) {
+		// Remove view from its current location
+		destroy_container(remove_child(view));
+
+		// and move it into workspace floating
+		add_floating(swayc_active_workspace(),view);
+		view->x = (swayc_active_workspace()->width - view->width)/2;
+		view->y = (swayc_active_workspace()->height - view->height)/2;
+		if (view->desired_width != -1) {
+			view->width = view->desired_width;
+		}
+		if (view->desired_height != -1) {
+			view->height = view->desired_height;
+		}
+		arrange_windows(swayc_active_workspace(), -1, -1);
+	} else {
+		// Delete the view from the floating list and unset its is_floating flag
+		// Using length-1 as the index is safe because the view must be the currently
+		// focused floating output
+		remove_child(view);
+		view->is_floating = false;
+		// Get the properly focused container, and add in the view there
+		swayc_t *focused = container_under_pointer();
+		// If focused is null, it's because the currently focused container is a workspace
+		if (focused == NULL) {
+			focused = swayc_active_workspace();
+		}
+		set_focused_container(focused);
+
+		sway_log(L_DEBUG, "Non-floating focused container is %p", focused);
+
+		// Case of focused workspace, just create as child of it
+		if (focused->type == C_WORKSPACE) {
+			add_child(focused, view);
+		}
+			// Regular case, create as sibling of current container
+		else {
+			add_sibling(focused, view);
+		}
+		// Refocus on the view once its been put back into the layout
+		view->width = view->height = 0;
+		arrange_windows(swayc_active_workspace(), -1, -1);
 	}
 }
