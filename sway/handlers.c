@@ -90,7 +90,7 @@ swayc_t *container_under_pointer(void) {
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
 
-	// Visibilty mask to be able to make view invisible
+	// Visibility mask to be able to make view invisible
 	wlc_output_set_mask(output, VISIBLE);
 
 	if (!op) {

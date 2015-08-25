@@ -28,11 +28,11 @@ static void update_focus(swayc_t *c) {
 			if (parent->focused) {
 				swayc_t *ws = parent->focused;
 				// hide visibility of old workspace
-				uint32_t mask = INVISIBLE;
-				container_map(ws, set_view_visibility, &mask);
+				bool visible = false;
+				container_map(ws, set_view_visibility, &visible);
 				// set visibility of new workspace
-				mask = VISIBLE;
-				container_map(c, set_view_visibility, &mask);
+				visible = true;
+				container_map(c, set_view_visibility, &visible);
 				destroy_workspace(ws);
 			}
 			break;

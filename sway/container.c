@@ -520,25 +520,24 @@ void set_view_visibility(swayc_t *view, void *data) {
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}
-	uint32_t mask = *(uint32_t *)data;
+	bool visible = *(bool *)data;
 	if (view->type == C_VIEW) {
-		wlc_view_set_mask(view->handle, mask);
-		if (mask & VISIBLE) {
+		wlc_view_set_mask(view->handle, visible ? VISIBLE : 0);
+		if (visible) {
 			wlc_view_bring_to_front(view->handle);
 		} else {
 			wlc_view_send_to_back(view->handle);
 		}
 	}
-	view->visible = mask & VISIBLE;
-	sway_log(L_DEBUG, "Container %p is now %s", view, view->visible ? "visible" : "invisible");
+	view->visible = visible;
+	sway_log(L_DEBUG, "Container %p is now %s", view, visible ? "visible" : "invisible");
 }
 
 void update_visibility(swayc_t *container) {
 	swayc_t *ws = swayc_active_workspace_for(container);
-	bool visible = ws->parent->focused == container;
-	uint32_t mask = visible ? VISIBLE : INVISIBLE;
+	bool visible = (ws->parent->focused == container);
 	sway_log(L_DEBUG, "Setting visibility of container %p to %s", container, visible ? "visible" : "invisible");
-	container_map(ws, set_view_visibility, &mask);
+	container_map(ws, set_view_visibility, &visible);
 }
 
 void reset_gaps(swayc_t *view, void *data) {

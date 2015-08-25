@@ -56,9 +56,8 @@ struct sway_container {
 	struct sway_container *focused;
 };
 
-enum view_visibility {
-	INVISIBLE = 1,
-	VISIBLE = 2
+enum visibility_mask {
+	VISIBLE = 1
 };
 
 // Container Creation
