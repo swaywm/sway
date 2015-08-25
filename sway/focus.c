@@ -164,14 +164,25 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 }
 
 swayc_t *get_focused_view(swayc_t *parent) {
-	while (parent && parent->type != C_VIEW) {
-		if (parent->type == C_WORKSPACE && parent->focused == NULL) {
-			return parent;
+	swayc_t *c = parent;
+	while (c && c->type != C_VIEW) {
+		if (c->type == C_WORKSPACE && c->focused == NULL) {
+			return c;
 		}
-		parent = parent->focused;
+		c = c->focused;
 	}
-	if (parent == NULL) {
-		return swayc_active_workspace_for(parent);
+	if (c == NULL) {
+		c = swayc_active_workspace_for(parent);
 	}
-	return parent;
+	return c;
+}
+
+swayc_t *get_focused_float(swayc_t *ws) {
+	if(!sway_assert(ws->type == C_WORKSPACE, "must be of workspace type")) {
+		ws = swayc_active_workspace();
+	}
+	if (ws->floating->length) {
+		return ws->floating->items[ws->floating->length - 1];
+	}
+	return NULL;
 }

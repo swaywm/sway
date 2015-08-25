@@ -231,14 +231,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 		break;
 	}
 
-	swayc_t *focused_view = get_focused_view(&root_container);
-	if (focused_view->type == C_WORKSPACE && focused_view->children->length == 0) {
-		if (focused_view->floating->length > 0) {
-			focused_view = focused_view->floating->items[focused_view->floating->length-1];
-			focused_view = get_focused_view(focused_view);
-		}
-	}
-	set_focused_container(focused_view);
+	set_focused_container(get_focused_view(&root_container));
 }
 
 static void handle_view_focus(wlc_handle view, bool focus) {
