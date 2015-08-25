@@ -668,23 +668,23 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	if (argc == 1) {
 		// Handle workspace next/prev
 		if (strcmp(argv[0], "next") == 0) {
-			workspace_next();
+			workspace_switch(workspace_next());
 			return true;
 		}
 
 		if (strcmp(argv[0], "prev") == 0) {
-			workspace_next();
+			workspace_switch(workspace_prev());
 			return true;
 		}
 
 		// Handle workspace output_next/prev
 		if (strcmp(argv[0], "next_on_output") == 0) {
-			workspace_output_next();
+			workspace_switch(workspace_output_next());
 			return true;
 		}
 
 		if (strcmp(argv[0], "prev_on_output") == 0) {
-			workspace_output_prev();
+			workspace_switch(workspace_output_prev());
 			return true;
 		}
 
