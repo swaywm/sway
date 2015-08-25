@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#include <execinfo.h>
 
 int colored = 1;
 log_importance_t v = L_SILENT;
@@ -30,6 +31,8 @@ void init_log(log_importance_t verbosity) {
 			fcntl(fd[i], F_SETFD, flag | FD_CLOEXEC);
 		}
 	}
+	signal(SIGSEGV, error_handler);
+	signal(SIGABRT, error_handler);
 }
 
 void sway_log_colors(int mode) {
@@ -112,6 +115,28 @@ bool sway_assert(bool condition, const char* format, ...) {
 	va_end(args);
 
 	return false;
+}
+
+void error_handler(int sig) {
+	int i;
+	int max_lines = 20;
+	void *array[max_lines];
+	char **bt;
+	size_t bt_len;
+
+	sway_log(L_ERROR, "Error: Signal %d. Printing backtrace", sig);
+	bt_len = backtrace(array, max_lines);
+	bt = backtrace_symbols(array, bt_len);
+	if (!bt) {
+		sway_log(L_ERROR, "Could not allocate sufficient memory for backtrace_symbols(), falling back to stderr");
+		backtrace_symbols_fd(array, bt_len, STDERR_FILENO);
+		exit(1);
+	}
+
+	for (i = 0; (size_t)i < bt_len; i++) {
+		sway_log(L_ERROR, "Backtrace: %s", bt[i]);
+	}
+	exit(1);
 }
 
 #include "workspace.h"
