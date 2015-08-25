@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
 		{"version", no_argument, NULL, 'v'},
 		{"verbose", no_argument, &verbose, 1},
 		{"get-socketpath", no_argument, NULL, 'p'},
+		{0,0,0,0}
 	};
 
 	/* Signal handling */
