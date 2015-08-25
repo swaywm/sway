@@ -28,12 +28,11 @@ static void update_focus(swayc_t *c) {
 			if (parent->focused) {
 				swayc_t *ws = parent->focused;
 				// hide visibility of old workspace
-				uint32_t mask = 1;
+				uint32_t mask = INVISIBLE;
 				container_map(ws, set_view_visibility, &mask);
 				// set visibility of new workspace
-				mask = 2;
+				mask = VISIBLE;
 				container_map(c, set_view_visibility, &mask);
-				wlc_output_set_mask(parent->handle, 2);
 				destroy_workspace(ws);
 			}
 			break;
@@ -45,8 +44,8 @@ static void update_focus(swayc_t *c) {
 			// for example, stacked and tabbing change stuff.
 			break;
 		}
+		c->parent->focused = c;
 	}
-	c->parent->focused = c;
 }
 
 bool move_focus(enum movement_direction direction) {
