@@ -522,6 +522,7 @@ void set_view_visibility(swayc_t *view, void *data) {
 	}
 	bool visible = *(bool *)data;
 	if (view->type == C_VIEW) {
+		wlc_view_set_output(view->handle, swayc_parent_by_type(view, C_OUTPUT)->handle);
 		wlc_view_set_mask(view->handle, visible ? VISIBLE : 0);
 		if (visible) {
 			wlc_view_bring_to_front(view->handle);
@@ -535,7 +536,7 @@ void set_view_visibility(swayc_t *view, void *data) {
 
 void update_visibility(swayc_t *container) {
 	swayc_t *ws = swayc_active_workspace_for(container);
-	bool visible = (ws->parent->focused == container);
+	bool visible = (ws->parent->focused == ws);
 	sway_log(L_DEBUG, "Setting visibility of container %p to %s", container, visible ? "visible" : "invisible");
 	container_map(ws, set_view_visibility, &visible);
 }
