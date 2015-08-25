@@ -16,6 +16,7 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->handle = -1;
 	c->layout = L_NONE;
 	c->type = type;
+	c->visible = true;
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}
@@ -477,7 +478,7 @@ swayc_t *swayc_active_workspace_for(swayc_t *cont) {
 		/* Fallthrough */
 
 	case C_OUTPUT:
-		cont = cont->focused;
+		cont = cont ? cont->focused : NULL;
 		/* Fallthrough */
 
 	case C_WORKSPACE:
@@ -496,43 +497,96 @@ bool swayc_is_fullscreen(swayc_t *view) {
 
 // Mapping
 
-void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (container) {
-		int i;
-		if (container->children)  {
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				f(child, data);
-				container_map(child, f, data);
+void swayc_map(swayc_t *c, void f(swayc_t *)) {
+	if (c) {
+		int i, len;
+		swayc_t **child;
+		if (c->children) {
+			child = (swayc_t **)c->children->items;
+			len = c->children->length;
+			for (i = 0; i < len; ++i, ++child) {
+				f(*child);
+				swayc_map(*child,f);
 			}
 		}
-		if (container->floating) {
-			for (i = 0; i < container->floating->length; ++i) {
-				swayc_t *child = container->floating->items[i];
-				f(child, data);
-				container_map(child, f, data);
+		if (c->floating) {
+			child = (swayc_t **)c->floating->items;
+			len = c->floating->length;
+			for (i = 0; i < len; ++i, ++child) {
+				f(*child);
+				swayc_map(*child,f);
 			}
 		}
 	}
 }
 
-void set_view_visibility(swayc_t *view, void *data) {
+void swayc_map_r(swayc_t *c, void f(swayc_t *, void *), void *data) {
+	if (c) {
+		int i, len;
+		swayc_t **child;
+		if (c->children) {
+			child = (swayc_t **)c->children->items;
+			len = c->children->length;
+			for (i = 0; i < len; ++i, ++child) {
+				f(*child, data);
+				swayc_map_r(*child, f, data);
+			}
+		}
+		if (c->floating) {
+			child = (swayc_t **)c->floating->items;
+			len = c->floating->length;
+			for (i = 0; i < len; ++i, ++child) {
+				f(*child, data);
+				swayc_map_r(*child, f, data);
+			}
+		}
+	}
+}
+
+// Set bitmask to 1
+void swayc_show(swayc_t *view) {
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}
-	uint32_t *p = data;
 	if (view->type == C_VIEW) {
-		wlc_view_set_mask(view->handle, *p);
-		if (*p == 2) {
-			wlc_view_bring_to_front(view->handle);
-		} else {
-			wlc_view_send_to_back(view->handle);
-		}
+		wlc_view_set_mask(view->handle, 1);
 	}
-	view->visible = (*p == 2);
+	view->visible = true;
 }
 
-void reset_gaps(swayc_t *view, void *data) {
+// Set bitmask to 0
+void swayc_hide(swayc_t *view) {
+	if (!ASSERT_NONNULL(view)) {
+		return;
+	}
+	if (view->type == C_VIEW) {
+		wlc_view_set_mask(view->handle, 0);
+	}
+	view->visible = false;
+}
+
+void swayc_inherit_visibility(swayc_t *view) {
+	if (!view || view->type == C_ROOT || view->type == C_OUTPUT) {
+		return;
+	}
+	swayc_t *parent = view->parent;
+	// inherit parent if invisible
+	if ((view->visible = parent->visible)) {
+		// Hide or show depending on parent layout
+		if (parent->layout == L_STACKED || parent->layout == L_TABBED) {
+			view->visible = parent->focused == view;
+		} else {
+			view->visible = true;
+		}
+	}
+	if (view->visible) {
+		swayc_show(view);
+	} else {
+		swayc_hide(view);
+	}
+}
+
+void reset_gaps(swayc_t *view) {
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}

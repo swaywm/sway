@@ -209,7 +209,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_WORKSPACES:
 	{
 		list_t *workspaces = create_list();
-		container_map(&root_container, ipc_get_workspaces_callback, workspaces);
+		swayc_map_r(&root_container, ipc_get_workspaces_callback, workspaces);
 		char *json = json_list(workspaces);
 		free_flat_list(workspaces);
 		ipc_send_reply(client, json, strlen(json));
@@ -219,7 +219,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_OUTPUTS:
 	{
 		list_t *outputs = create_list();
-		container_map(&root_container, ipc_get_outputs_callback, outputs);
+		swayc_map_r(&root_container, ipc_get_outputs_callback, outputs);
 		char *json = json_list(outputs);
 		free_flat_list(outputs);
 		ipc_send_reply(client, json, strlen(json));

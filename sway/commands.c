@@ -176,7 +176,7 @@ static bool cmd_exec(struct sway_config *config, int argc, char **argv) {
 	return cmd_exec_always(config, argc, argv);
 }
 
-static void kill_views(swayc_t *container, void *data) {
+static void kill_views(swayc_t *container) {
 	if (container->type == C_VIEW) {
 		wlc_view_close(container->handle);
 	}
@@ -187,7 +187,7 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 		return false;
 	}
 	// Close all views
-	container_map(&root_container, kill_views, NULL);
+	swayc_map(&root_container, kill_views);
 	sway_terminate();
 	return true;
 }
