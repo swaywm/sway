@@ -302,7 +302,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	struct sway_mode *mode = config->current_mode;
 
-	uint32_t sym = tolower(wlc_keyboard_get_keysym_for_key(key, modifiers));
+	struct wlc_modifiers no_mods = { 0, 0 };
+	uint32_t sym = tolower(wlc_keyboard_get_keysym_for_key(key, &no_mods));
 
 	int i;
 
