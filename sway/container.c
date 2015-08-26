@@ -524,6 +524,19 @@ void set_view_visibility(swayc_t *view, void *data) {
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}
+	// TODO add something like this.
+//	if (container->type == C_ROOT) {
+//		container->visible = true;
+//	} else {
+//		// Inherit visibility
+//		swayc_t *parent = container->parent;
+//		container->visible = parent->visible;
+//		// special cases where visibility depends on focus
+//		if (parent->type == C_OUTPUT || parent->layout == L_TABBED ||
+//				parent->layout == L_STACKED) {
+//			container->visible = parent->focused == container;
+//		}
+//	}
 	bool visible = *(bool *)data;
 	if (view->type == C_VIEW) {
 		wlc_view_set_output(view->handle, swayc_parent_by_type(view, C_OUTPUT)->handle);

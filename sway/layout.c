@@ -19,6 +19,7 @@ void init_layout(void) {
 	root_container.layout = L_NONE;
 	root_container.children = create_list();
 	root_container.handle = -1;
+	root_container.visible = true;
 }
 
 int index_child(const swayc_t *child) {
@@ -238,11 +239,16 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 	// Destroy old container if we need to
 	parent = destroy_container(parent);
 	// Refocus
-	set_focused_container(get_focused_view(&root_container));
-	update_visibility(container);
-	update_visibility(parent);
-	arrange_windows(parent, -1, -1);
-	arrange_windows(destination->parent, -1, -1);
+	swayc_t *op1 = swayc_parent_by_type(destination, C_OUTPUT);
+	swayc_t *op2 = swayc_parent_by_type(parent, C_OUTPUT);
+	set_focused_container(get_focused_view(op1));
+	arrange_windows(op1, -1, -1);
+	update_visibility(op1);
+	if (op1 != op2) {
+		set_focused_container(get_focused_view(op2));
+		arrange_windows(op2, -1, -1);
+		update_visibility(op2);
+	}
 }
 
 void update_geometry(swayc_t *container) {
