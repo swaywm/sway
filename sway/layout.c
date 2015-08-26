@@ -10,6 +10,7 @@
 #include "focus.h"
 
 swayc_t root_container;
+
 int min_sane_h = 60;
 int min_sane_w = 100;
 
@@ -20,13 +21,16 @@ void init_layout(void) {
 	root_container.handle = -1;
 }
 
-static int index_child(swayc_t *child) {
+int index_child(const swayc_t *child) {
 	swayc_t *parent = child->parent;
-	int i;
-	for (i = 0; i < parent->children->length; ++i) {
+	int i, len = parent->children->length;
+	for (i = 0; i < len; ++i) {
 		if (parent->children->items[i] == child) {
 			break;
 		}
+	}
+	if (!sway_assert(i < len, "Stray container")) {
+		return -1;
 	}
 	return i;
 }
@@ -37,7 +41,7 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	list_add(parent->children, child);
 	child->parent = parent;
 	// set focus for this container
-	if (parent->children->length == 1) {
+	if (!parent->focused) {
 		parent->focused = child;
 	}
 }
@@ -59,9 +63,6 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
 	swayc_t *parent = sibling->parent;
 	int i = index_child(sibling);
-	if (i == parent->children->length) {
-		--i;
-	}
 	list_insert(parent->children, i+1, child);
 	child->parent = parent;
 	return child->parent;
@@ -74,23 +75,65 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 	}
 	int i = index_child(child);
 	parent->children->items[i] = new_child;
-	new_child->parent = child->parent;
 
-	// Set parent for new child
+	// Set parent and focus for new_child
+	new_child->parent = child->parent;
 	if (child->parent->focused == child) {
 		child->parent->focused = new_child;
 	}
 	child->parent = NULL;
+
 	// Set geometry for new child
 	new_child->x = child->x;
 	new_child->y = child->y;
 	new_child->width = child->width;
 	new_child->height = child->height;
-	// set child geometry to 0
-	child->x = 0;
-	child->y = 0;
+
+	// reset geometry for child
 	child->width = 0;
 	child->height = 0;
+
+	// deactivate child
+	if (child->type == C_VIEW) {
+		wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, false);
+	}
+	return parent;
+}
+
+swayc_t *remove_child(swayc_t *child) {
+	int i;
+	swayc_t *parent = child->parent;
+	if (child->is_floating) {
+		// Special case for floating views
+		for (i = 0; i < parent->floating->length; ++i) {
+			if (parent->floating->items[i] == child) {
+				list_del(parent->floating, i);
+				break;
+			}
+		}
+		i = 0;
+	} else {
+		for (i = 0; i < parent->children->length; ++i) {
+			if (parent->children->items[i] == child) {
+				list_del(parent->children, i);
+				break;
+			}
+		}
+	}
+	// Set focused to new container
+	if (parent->focused == child) {
+		if (parent->children->length > 0) {
+			parent->focused = parent->children->items[i ? i-1:0];
+		} else if (parent->floating && parent->floating->length) {
+			parent->focused = parent->floating->items[parent->floating->length - 1];
+		} else {
+			parent->focused = NULL;
+		}
+	}
+	// deactivate view
+	if (child->type == C_VIEW) {
+		wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, false);
+	}
 	return parent;
 }
 
@@ -131,46 +174,9 @@ void swap_container(swayc_t *a, swayc_t *b) {
 	b->height = h;
 }
 
-swayc_t *remove_child(swayc_t *child) {
-	int i;
-	swayc_t *parent = child->parent;
-	if (child->is_floating) {
-		// Special case for floating views
-		for (i = 0; i < parent->floating->length; ++i) {
-			if (parent->floating->items[i] == child) {
-				list_del(parent->floating, i);
-				break;
-			}
-		}
-		i = 0;
-	} else {
-		for (i = 0; i < parent->children->length; ++i) {
-			if (parent->children->items[i] == child) {
-				list_del(parent->children, i);
-				break;
-			}
-		}
-	}
-	// Set focused to new container
-	if (parent->focused == child) {
-		if (parent->children->length > 0) {
-			parent->focused = parent->children->items[i ? i-1:0];
-		} else if (parent->floating && parent->floating->length) {
-			parent->focused = parent->floating->items[parent->floating->length - 1];
-		} else {
-			parent->focused = NULL;
-		}
-	}
-	// deactivate view
-	if (child->type == C_VIEW) {
-		wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, false);
-	}
-	return parent;
-}
-
 //TODO: Implement horizontal movement.
 //TODO: Implement move to a different workspace.
-void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction){
+void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction) {
 	sway_log(L_DEBUG, "Moved window");
 	swayc_t *temp;
 	int i;

@@ -11,14 +11,33 @@ extern swayc_t root_container;
 extern int min_sane_w;
 extern int min_sane_h;
 
+// Set initial values for root_container
 void init_layout(void);
 
+// Returns the index of child for its parent
+int index_child(const swayc_t *child);
+
+// Adds child to parent, if parent has no focus, it is set to child
+// parent must be of type C_WORKSPACE or C_CONTAINER
 void add_child(swayc_t *parent, swayc_t *child);
+
+// Adds child as floating window to ws, if there is no focus it is set to child.
+// ws must be of type C_WORKSPACE
 void add_floating(swayc_t *ws, swayc_t *child);
-// Returns parent container which needs to be rearranged.
+
+// insert child after sibling in parents children.
 swayc_t *add_sibling(swayc_t *sibling, swayc_t *child);
+
+// Replace child with new_child in parents children
+// new_child will inherit childs geometry, childs geometry will be reset
+// if parents focus is on child, it will be changed to new_child
 swayc_t *replace_child(swayc_t *child, swayc_t *new_child);
+
+// Remove child from its parent, if focus is on child, focus will be changed to
+// a sibling, or to a floating window, or NULL
 swayc_t *remove_child(swayc_t *child);
+
+// 2 containers are swapped, they inherit eachothers geometry and focus
 void swap_container(swayc_t *a, swayc_t *b);
 
 void move_container(swayc_t* container,swayc_t* root,enum movement_direction direction);

@@ -86,7 +86,7 @@ swayc_t *new_output(wlc_handle handle) {
 	}
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
-	output->gaps = config->gaps_outer + config->gaps_inner / 2;
+	output->gaps = config->gaps_outer;
 	
 	// Find position for it
 	if (oc && oc->x != -1 && oc->y != -1) {
