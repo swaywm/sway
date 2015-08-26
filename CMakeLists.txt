@@ -22,12 +22,15 @@ find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
 find_package(A2X REQUIRED)
 find_package(PCRE REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSON REQUIRED json-c)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
 
 include_directories(
    ${WLC_INCLUDE_DIRS}
    ${PCRE_INCLUDE_DIRS}
+   ${JSON_INCLUDE_DIRS}
    include/
 )
 
@@ -39,6 +42,7 @@ target_link_libraries(sway
    ${WLC_LIBRARIES}
    ${XKBCOMMON_LIBRARIES}
    ${PCRE_LIBRARIES}
+   ${JSON_LIBRARIES}
 )
 
 INSTALL(

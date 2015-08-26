@@ -12,6 +12,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <json-c/json.h>
 #include "ipc.h"
 #include "log.h"
 #include "config.h"
@@ -224,6 +225,18 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		free_flat_list(outputs);
 		ipc_send_reply(client, json, strlen(json));
 		free(json);
+		break;
+	}
+	case IPC_GET_VERSION:
+	{
+		json_object *json = json_object_new_object();
+		json_object_object_add(json, "human_readable", json_object_new_string(SWAY_GIT_VERSION));
+		json_object_object_add(json, "major", json_object_new_int(0));
+		json_object_object_add(json, "minor", json_object_new_int(0));
+		json_object_object_add(json, "patch", json_object_new_int(1));
+		const char *json_string = json_object_to_json_string(json);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(json); // free
 		break;
 	}
 	default:
