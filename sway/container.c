@@ -9,7 +9,7 @@
 #include "log.h"
 
 #define ASSERT_NONNULL(PTR) \
-	sway_assert (PTR, "%s: " #PTR "must be non-null", __func__)
+	sway_assert (PTR, #PTR "must be non-null")
 
 static swayc_t *new_swayc(enum swayc_types type) {
 	swayc_t *c = calloc(1, sizeof(swayc_t));
@@ -305,7 +305,7 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 
 	// Do not destroy if there are children
 	if (workspace->children->length == 0 && workspace->floating->length == 0) {
-		sway_log(L_DEBUG, "%s: '%s'", __func__, workspace->name);
+		sway_log(L_DEBUG, "'%s'", workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
 		return parent;
@@ -376,7 +376,7 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 	if (!ASSERT_NONNULL(container)) {
 		return NULL;
 	}
-	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "%s: invalid type", __func__)) {
+	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "invalid type")) {
 		return NULL;
 	}
 	do {
@@ -389,7 +389,7 @@ swayc_t *swayc_parent_by_layout(swayc_t *container, enum swayc_layouts layout) {
 	if (!ASSERT_NONNULL(container)) {
 		return NULL;
 	}
-	if (!sway_assert(layout < L_LAYOUTS && layout >= L_NONE, "%s: invalid layout", __func__)) {
+	if (!sway_assert(layout < L_LAYOUTS && layout >= L_NONE, "invalid layout")) {
 		return NULL;
 	}
 	do {
@@ -402,7 +402,7 @@ swayc_t *swayc_focus_by_type(swayc_t *container, enum swayc_types type) {
 	if (!ASSERT_NONNULL(container)) {
 		return NULL;
 	}
-	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "%s: invalid type", __func__)) {
+	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "invalid type")) {
 		return NULL;
 	}
 	do {
@@ -410,11 +410,12 @@ swayc_t *swayc_focus_by_type(swayc_t *container, enum swayc_types type) {
 	} while (container && container->type != type);
 	return container;
 }
+
 swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts layout) {
 	if (!ASSERT_NONNULL(container)) {
 		return NULL;
 	}
-	if (!sway_assert(layout < L_LAYOUTS && layout >= L_NONE, "%s: invalid layout", __func__)) {
+	if (!sway_assert(layout < L_LAYOUTS && layout >= L_NONE, "invalid layout")) {
 		return NULL;
 	}
 	do {
@@ -494,6 +495,10 @@ bool swayc_is_fullscreen(swayc_t *view) {
 	return view && view->type == C_VIEW && (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN);
 }
 
+bool swayc_is_active(swayc_t *view) {
+	return view && view->type == C_VIEW && (wlc_view_get_state(view->handle) & WLC_BIT_ACTIVATED);
+}
+
 // Mapping
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
@@ -536,6 +541,7 @@ void set_view_visibility(swayc_t *view, void *data) {
 
 void update_visibility(swayc_t *container) {
 	swayc_t *ws = swayc_active_workspace_for(container);
+	// TODO better visibility setting
 	bool visible = (ws->parent->focused == ws);
 	sway_log(L_DEBUG, "Setting visibility of container %p to %s", container, visible ? "visible" : "invisible");
 	container_map(ws, set_view_visibility, &visible);

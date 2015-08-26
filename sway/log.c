@@ -100,7 +100,7 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 	}
 }
 
-bool sway_assert(bool condition, const char* format, ...) {
+bool _sway_assert(bool condition, const char* format, ...) {
 	if (condition) {
 		return true;
 	}

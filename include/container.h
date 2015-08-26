@@ -101,6 +101,7 @@ swayc_t *swayc_active_workspace_for(swayc_t *view);
 // Container information
 
 bool swayc_is_fullscreen(swayc_t *view);
+bool swayc_is_active(swayc_t *view);
 
 // Mapping functions
 
@@ -109,7 +110,6 @@ void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);
 // Mappings
 void set_view_visibility(swayc_t *view, void *data);
 void reset_gaps(swayc_t *view, void *data);
-
 
 void update_visibility(swayc_t *container);
 

@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 		{"version", no_argument, NULL, 'v'},
 		{"verbose", no_argument, &verbose, 1},
 		{"get-socketpath", no_argument, NULL, 'p'},
-		{0,0,0,0}
+		{0, 0, 0, 0}
 	};
 
 	/* Signal handling */
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-static void sigchld_handle(int signal) {
+void sigchld_handle(int signal) {
 	(void) signal;
 	while (waitpid((pid_t)-1, 0, WNOHANG) > 0);
 }
