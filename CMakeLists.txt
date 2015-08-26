@@ -9,19 +9,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
 find_package(A2X REQUIRED)
-
-if (UNIX)
-   find_library(DL_LIBRARY dl)
-   mark_as_advanced(DL_LIBRARY)
-   if (NOT DL_LIBRARY)
-      message(FATAL_ERROR "libdl is needed on unix systems")
-   endif ()
-endif (UNIX)
+find_package(PCRE REQUIRED)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
 
 include_directories(
    ${WLC_INCLUDE_DIRS}
+   ${PCRE_INCLUDE_DIRS}
    include/
 )
 
@@ -32,7 +26,7 @@ add_executable(sway
 target_link_libraries(sway
    ${WLC_LIBRARIES}
    ${XKBCOMMON_LIBRARIES}
-   ${DL_LIBRARY}
+   ${PCRE_LIBRARIES}
 )
 
 INSTALL(
