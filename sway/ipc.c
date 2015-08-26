@@ -41,10 +41,8 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
 void ipc_client_disconnect(struct ipc_client *client);
 void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
-void ipc_get_workspaces_callback(swayc_t *container, void *data);
+void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
-
-char *json_list(list_t *items);
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -209,22 +207,20 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 	case IPC_GET_WORKSPACES:
 	{
-		list_t *workspaces = create_list();
+		json_object *workspaces = json_object_new_array();
 		container_map(&root_container, ipc_get_workspaces_callback, workspaces);
-		char *json = json_list(workspaces);
-		free_flat_list(workspaces);
-		ipc_send_reply(client, json, strlen(json));
-		free(json);
+		const char *json_string = json_object_to_json_string(workspaces);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(workspaces); // free
 		break;
 	}
 	case IPC_GET_OUTPUTS:
 	{
-		list_t *outputs = create_list();
+		json_object *outputs = json_object_new_array();
 		container_map(&root_container, ipc_get_outputs_callback, outputs);
-		char *json = json_list(outputs);
-		free_flat_list(outputs);
-		ipc_send_reply(client, json, strlen(json));
-		free(json);
+		const char *json_string = json_object_to_json_string(outputs);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(outputs); // free
 		break;
 	}
 	case IPC_GET_VERSION:
@@ -272,67 +268,44 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	return true;
 }
 
-char *json_list(list_t *items) {
-	char *json_elements = join_list(items, ",");
-	size_t len = strlen(json_elements);
-	char *json = malloc(len + 3);
-	json[0] = '[';
-	memcpy(json + 1, json_elements, len);
-	json[len+1] = ']';
-	json[len+2] = '\0';
-	free(json_elements);
-	return json;
-}
+void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
+	if (workspace->type == C_WORKSPACE) {
+		int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
+		json_object *object = json_object_new_object();
+		json_object *rect = json_object_new_object();
+		json_object_object_add(rect, "x", json_object_new_int((int32_t) workspace->x));
+		json_object_object_add(rect, "y", json_object_new_int((int32_t) workspace->y));
+		json_object_object_add(rect, "width", json_object_new_int((int32_t) workspace->width));
+		json_object_object_add(rect, "height", json_object_new_int((int32_t) workspace->height));
 
-void ipc_get_workspaces_callback(swayc_t *container, void *data) {
-	if (container->type == C_WORKSPACE) {
-		char *json = malloc(512); // Output should usually be around 180 chars
-		int num = isdigit(container->name[0]) ? atoi(container->name) : -1;
-		// TODO: escape the name (quotation marks, unicode)
-		sprintf(json,
-			"{"
-				"\"num\":%d,"
-				"\"name\":\"%s\","
-				"\"visible\":%s,"
-				"\"focused\":%s,"
-				"\"rect\":{"
-					"\"x\":%d,"
-					"\"y\":%d,"
-					"\"width\":%d,"
-					"\"height\":%d"
-				"},"
-				"\"output\":\"%s\","
-				"\"urgent\":%s"
-			"}",
-			num, container->name, container->visible ? "true" : "false", container->is_focused ? "true" : "false",
-			(int)container->x, (int)container->y, (int)container->width, (int)container->height,
-			container->parent->name, "false" // TODO: urgent hint
-		);
-		list_add((list_t *)data, json);
+		json_object_object_add(object, "num", json_object_new_int(num));
+		json_object_object_add(object, "name", json_object_new_string(workspace->name));
+		json_object_object_add(object, "visible", json_object_new_boolean(workspace->visible));
+		bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
+		json_object_object_add(object, "focused", json_object_new_boolean(focused));
+		json_object_object_add(object, "rect", rect);
+		json_object_object_add(object, "output", json_object_new_string(workspace->parent->name));
+		json_object_object_add(object, "urgent", json_object_new_boolean(false));
+
+		json_object_array_add((json_object *)data, object);
 	}
 }
 
 void ipc_get_outputs_callback(swayc_t *container, void *data) {
 	if (container->type == C_OUTPUT) {
-		char *json = malloc(512); // Output should usually be around 130 chars
-		// TODO: escape the name (quotation marks, unicode)
-		sprintf(json,
-			"{"
-				"\"name\":\"%s\","
-				"\"active\":%s,"
-				"\"primary\":%s,"
-				"\"rect\":{"
-					"\"x\":%d,"
-					"\"y\":%d,"
-					"\"width\":%d,"
-					"\"height\":%d"
-				"},"
-				"\"current_workspace\":\"%s\""
-			"}",
-			container->name, "true", "false", // TODO: active, primary
-			(int)container->x, (int)container->y, (int)container->width, (int)container->height,
-			container->focused ? container->focused->name : ""
-		);
-		list_add((list_t *)data, json);
+		json_object *object = json_object_new_object();
+		json_object *rect = json_object_new_object();
+		json_object_object_add(rect, "x", json_object_new_int((int32_t) container->x));
+		json_object_object_add(rect, "y", json_object_new_int((int32_t) container->y));
+		json_object_object_add(rect, "width", json_object_new_int((int32_t) container->width));
+		json_object_object_add(rect, "height", json_object_new_int((int32_t) container->height));
+
+		json_object_object_add(object, "name", json_object_new_string(container->name));
+		json_object_object_add(object, "active", json_object_new_boolean(true));
+		json_object_object_add(object, "primary", json_object_new_boolean(false));
+		json_object_object_add(object, "rect", rect);
+		json_object_object_add(object, "current_workspace", container->focused ? json_object_new_string(container->focused->name) : NULL);
+
+		json_object_array_add((json_object *)data, object);
 	}
 }
