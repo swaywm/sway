@@ -380,7 +380,7 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 		if (ws == NULL) {
 			ws = workspace_create(ws_name);
 		}
-		move_container_to(view, ws);
+		move_container_to(view, get_focused_container(ws));
 	} else {
 		return false;
 	}

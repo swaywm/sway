@@ -45,6 +45,9 @@ void add_child(swayc_t *parent, swayc_t *child) {
 void add_floating(swayc_t *ws, swayc_t *child) {
 	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, ws, ws->type, ws->width, ws->height);
+	if (!sway_assert(ws->type == C_WORKSPACE, "Must be of workspace type")) {
+		return;
+	}
 	list_add(ws->floating, child);
 	child->parent = ws;
 	child->is_floating = true;
@@ -93,8 +96,8 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 
 void swap_container(swayc_t *a, swayc_t *b) {
 	//TODO doesnt handle floating <-> tiling swap
-	if (!sway_assert(a&&b, "%s: parameters must be non null",__func__) ||
-		!sway_assert(a->parent && b->parent, "%s: containers must have parents",__func__)) {
+	if (!sway_assert(a&&b, "parameters must be non null") ||
+		!sway_assert(a->parent && b->parent, "containers must have parents")) {
 		return;
 	}
 	size_t a_index = index_child(a);
@@ -158,6 +161,10 @@ swayc_t *remove_child(swayc_t *child) {
 			parent->focused = NULL;
 		}
 	}
+	// deactivate view
+	if (child->type == C_VIEW) {
+		wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, false);
+	}
 	return parent;
 }
 
@@ -209,15 +216,24 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 	if (container->parent == destination) {
 		return;
 	}
-	destroy_container(remove_child(container));
-	set_focused_container(get_focused_view(&root_container));
+	swayc_t *parent = remove_child(container);
+	// reset container geometry
+	container->width = container->height = 0;
+
+	// Send to new destination
 	if (container->is_floating) {
-		add_floating(destination, container);
-	} else {
+		add_floating(swayc_active_workspace_for(destination), container);
+	} else if (destination->type == C_WORKSPACE) {
 		add_child(destination, container);
+	} else {
+		add_sibling(destination, container);
 	}
+	// Destroy old container if we need to
+	parent = destroy_container(parent);
+	set_focused_container(get_focused_view(&root_container));
 	update_visibility(container);
-	arrange_windows(&root_container, -1, -1);
+	arrange_windows(parent, -1, -1);
+	arrange_windows(destination->parent, -1, -1);
 }
 
 void update_geometry(swayc_t *container) {
