@@ -78,7 +78,11 @@ int main(int argc, char **argv) {
 			debug = 1;
 			break;
 		case 'v': // version
-			// todo
+#ifdef SWAY_GIT_VERSION
+			fprintf(stdout, "sway build %s\n", SWAY_GIT_VERSION);
+#else
+			fprintf(stdout, "version not detected\n");
+#endif
 			exit(0);
 			break;
 		case 'V': // verbose
