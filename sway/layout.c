@@ -130,6 +130,7 @@ swayc_t *remove_child(swayc_t *child) {
 			parent->focused = NULL;
 		}
 	}
+	child->parent = NULL;
 	// deactivate view
 	if (child->type == C_VIEW) {
 		wlc_view_set_state(child->handle, WLC_BIT_ACTIVATED, false);
@@ -219,7 +220,7 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 }
 
 void move_container_to(swayc_t* container, swayc_t* destination) {
-	if (container->parent == destination) {
+	if (container == destination) {
 		return;
 	}
 	swayc_t *parent = remove_child(container);
@@ -236,8 +237,10 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 	}
 	// Destroy old container if we need to
 	parent = destroy_container(parent);
+	// Refocus
 	set_focused_container(get_focused_view(&root_container));
 	update_visibility(container);
+	update_visibility(parent);
 	arrange_windows(parent, -1, -1);
 	arrange_windows(destination->parent, -1, -1);
 }

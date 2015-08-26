@@ -105,14 +105,14 @@ bool _sway_assert(bool condition, const char* format, ...) {
 		return true;
 	}
 
-#ifndef NDEBUG
-	raise(SIGABRT);
-#endif
-
 	va_list args;
 	va_start(args, format);
 	sway_log(L_ERROR, format, args);
 	va_end(args);
+
+#ifndef NDEBUG
+	raise(SIGABRT);
+#endif
 
 	return false;
 }
