@@ -152,7 +152,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	workspace->width = output->width;
 	workspace->height = output->height;
 	workspace->name = strdup(name);
-	workspace->visible = true;
+	workspace->visible = false;
 	workspace->floating = create_list();
 
 	add_child(output, workspace);
@@ -503,18 +503,17 @@ bool swayc_is_active(swayc_t *view) {
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
 	if (container) {
+		f(container, data);
 		int i;
 		if (container->children)  {
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
-				f(child, data);
 				container_map(child, f, data);
 			}
 		}
 		if (container->floating) {
 			for (i = 0; i < container->floating->length; ++i) {
 				swayc_t *child = container->floating->items[i];
-				f(child, data);
 				container_map(child, f, data);
 			}
 		}
