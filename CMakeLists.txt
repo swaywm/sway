@@ -5,6 +5,20 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin/")
 add_definitions("-Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+  execute_process(
+    COMMAND git log -1 --format=%h
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+else(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+  set(GIT_COMMIT_HASH "Not Found")
+endif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+
+SET(GIT_VERSION_FLAG "-DSWAY_GIT_VERSION=\"${GIT_COMMIT_HASH}\"")
+
+add_definitions("${GIT_VERSION_FLAG}")
+
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
 find_package(A2X REQUIRED)
