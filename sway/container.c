@@ -281,8 +281,21 @@ swayc_t *destroy_output(swayc_t *output) {
 	if (!ASSERT_NONNULL(output)) {
 		return NULL;
 	}
-	if (output->children->length == 0) {
-		// TODO move workspaces to other outputs
+	if (output->children->length > 0) {
+		int i, len = root_container.children->length;
+		// TODO save workspaces when there are no outputs.
+		// TODO also check if there will ever be no outputs except for exiting
+		// program
+		if (len > 1) {
+			len = output->children->length;
+			int p = root_container.children->items[0] == output;
+			// Move workspace from this output to another output
+			for (i = 0; i < len; ++i) {
+				swayc_t *child = output->children->items[i];
+				remove_child(child);
+				add_child(root_container.children->items[p], child);
+			}
+		}
 	}
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
 	free_swayc(output);
