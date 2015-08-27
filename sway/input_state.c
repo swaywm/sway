@@ -169,6 +169,11 @@ static void pointer_mode_set_left(void) {
 		pointer_state.mode = M_DRAGGING | M_FLOATING;
 	} else {
 		pointer_state.mode = M_DRAGGING | M_TILING;
+		// unset mode if we cant drag tile
+		if (initial.ptr->parent->type == C_WORKSPACE &&
+				initial.ptr->parent->children->length == 1) {
+			pointer_state.mode = 0;
+		}
 	}
 }
 
