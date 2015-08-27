@@ -7,16 +7,32 @@ add_definitions("-Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-  execute_process(
-    COMMAND git describe --always
-    OUTPUT_VARIABLE GIT_COMMIT_HASH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+    execute_process(
+        COMMAND git describe --always
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND  git rev-parse --abbrev-ref HEAD
+        OUTPUT_VARIABLE GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 endif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
 
-SET(GIT_VERSION_FLAG "-DSWAY_GIT_VERSION=\"${GIT_COMMIT_HASH}\"")
+SET(VERSION_GIT_COMMIT_FLAG "-DSWAY_GIT_VERSION=\"g${GIT_COMMIT_HASH}\"")
+add_definitions("${VERSION_GIT_COMMIT_FLAG}")
 
-add_definitions("${GIT_VERSION_FLAG}")
+SET(VERSION_GIT_BRANCH_FLAG "-DSWAY_GIT_BRANCH=\"${GIT_BRANCH}\"")
+add_definitions("${VERSION_GIT_BRANCH_FLAG}")
+
+execute_process(
+    COMMAND date +"%Y-%m-%d"
+    OUTPUT_VARIABLE CURRENT_DATE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+SET(VERSION_DATE_FLAG "-DSWAY_VERSION_DATE=${CURRENT_DATE}")
+add_definitions("${VERSION_DATE_FLAG}")
 
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)

@@ -225,14 +225,30 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 	case IPC_GET_VERSION:
 	{
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+		char *full_version = calloc(strlen(SWAY_GIT_VERSION) + strlen(SWAY_GIT_BRANCH) + strlen(SWAY_VERSION_DATE) + 20, 1);
+		strcat(full_version, SWAY_GIT_VERSION);
+		strcat(full_version, " (");
+		strcat(full_version, SWAY_VERSION_DATE);
+		strcat(full_version, ", branch \"");
+		strcat(full_version, SWAY_GIT_BRANCH);
+		strcat(full_version, "\")");
 		json_object *json = json_object_new_object();
-		json_object_object_add(json, "human_readable", json_object_new_string(SWAY_GIT_VERSION));
+		json_object_object_add(json, "human_readable", json_object_new_string(full_version));
+		// Todo once we actually release a version
 		json_object_object_add(json, "major", json_object_new_int(0));
 		json_object_object_add(json, "minor", json_object_new_int(0));
 		json_object_object_add(json, "patch", json_object_new_int(1));
+#else
+		json_object_object_add(json, "human_readable", json_object_new_string("version not found"));
+		json_object_object_add(json, "major", json_object_new_int(0));
+		json_object_object_add(json, "minor", json_object_new_int(0));
+		json_object_object_add(json, "patch", json_object_new_int(0));
+#endif
 		const char *json_string = json_object_to_json_string(json);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(json); // free
+		free(full_version);
 		break;
 	}
 	default:

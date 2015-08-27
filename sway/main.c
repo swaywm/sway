@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
 			debug = 1;
 			break;
 		case 'v': // version
-#ifdef SWAY_GIT_VERSION
-			fprintf(stdout, "sway build %s\n", SWAY_GIT_VERSION);
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+			fprintf(stdout, "sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #else
 			fprintf(stdout, "version not detected\n");
 #endif
