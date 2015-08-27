@@ -293,7 +293,8 @@ void pointer_mode_update(void) {
 	case M_TILING | M_DRAGGING:
 		// swap current view under pointer with dragged view
 		if (pointer_state.view && pointer_state.view->type == C_VIEW
-				&& pointer_state.view != initial.ptr) {
+				&& pointer_state.view != initial.ptr
+				&& !pointer_state.view->is_floating) {
 			// Swap them around
 			swap_container(pointer_state.view, initial.ptr);
 			update_geometry(pointer_state.view);
