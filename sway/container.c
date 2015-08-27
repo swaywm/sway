@@ -295,6 +295,8 @@ swayc_t *destroy_output(swayc_t *output) {
 				remove_child(child);
 				add_child(root_container.children->items[p], child);
 			}
+			update_visibility(root_container.children->items[p]);
+			arrange_windows(root_container.children->items[p], -1, -1);
 		}
 	}
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
