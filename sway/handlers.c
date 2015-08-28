@@ -431,7 +431,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	}
 
 	// set pointer mode only if floating mod has been set
-	if(config->floating_mod) {
+	if (config->floating_mod) {
 		pointer_mode_set(button, !(modifiers->mods ^ config->floating_mod));
 	}
 
