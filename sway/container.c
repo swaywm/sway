@@ -603,10 +603,18 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 		}
 	}
 	// Update visibility for children
-	else if (container->children) {
-		int i, len = container->children->length;
-		for (i = 0; i < len; ++i) {
-			update_visibility_output(container->children->items[i], output);
+	else {
+		if (container->children) {
+			int i, len = container->children->length;
+			for (i = 0; i < len; ++i) {
+				update_visibility_output(container->children->items[i], output);
+			}
+		}
+		if (container->floating) {
+			int i, len = container->floating->length;
+			for (i = 0; i < len; ++i) {
+				update_visibility_output(container->floating->items[i], output);
+			}
 		}
 	}
 }
