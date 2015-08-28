@@ -515,8 +515,7 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 				can_move = true;
 				diff = target - self;
 			}
-		}
-		else {
+		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ) {
 					can_move = true;
