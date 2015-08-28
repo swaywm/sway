@@ -94,6 +94,7 @@ swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts);
 
 
 swayc_t *swayc_by_handle(wlc_handle handle);
+swayc_t *swayc_by_name(const char *name);
 swayc_t *swayc_active_output(void);
 swayc_t *swayc_active_workspace(void);
 swayc_t *swayc_active_workspace_for(swayc_t *view);

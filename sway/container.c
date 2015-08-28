@@ -57,6 +57,19 @@ static void free_swayc(swayc_t *cont) {
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size *size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
+	// Find current outputs to see if this already exists
+	{
+		int i, len = root_container.children->length;
+		for (i = 0; i < len; ++i) {
+			swayc_t *op = root_container.children->items[i];
+			const char *op_name = op->name;
+			if (op_name && name && strcmp(op_name, name) == 0) {
+				sway_log(L_DEBUG, "restoring output %lu:%s", handle, op_name);
+				return op;
+			}
+		}
+	}
+
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
 	struct output_config *oc = NULL;
@@ -329,7 +342,7 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 
 	// Do not destroy if there are children
 	if (workspace->children->length == 0 && workspace->floating->length == 0) {
-		sway_log(L_DEBUG, "'%s'", workspace->name);
+		sway_log(L_DEBUG, "destroying '%s'", workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
 		return parent;
@@ -394,6 +407,17 @@ swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *dat
 		}
 	}
 	return NULL;
+}
+
+static bool test_name(swayc_t *view, void *data) {
+	if (!view && !view->name) {
+		return false;
+	}
+	return strcmp(view->name, data) == 0;
+}
+
+swayc_t *swayc_by_name(const char *name) {
+	return swayc_by_test(&root_container, test_name, (void *)name);
 }
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
