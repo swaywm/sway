@@ -146,7 +146,16 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
-	workspace->layout = L_HORIZ; // TODO: default layout
+	// TODO: default_layout
+	if (config->default_layout != L_NONE) {
+		workspace->layout = config->default_layout;
+	} else if (config->default_orientation != L_NONE) {
+		workspace->layout = config->default_orientation;
+	} else if (output->width >= output->height) {
+		workspace->layout = L_HORIZ;
+	} else {
+		workspace->layout = L_VERT;
+	}
 	workspace->x = output->x;
 	workspace->y = output->y;
 	workspace->width = output->width;

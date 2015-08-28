@@ -5,6 +5,7 @@
 #include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon.h>
 #include "list.h"
+#include "layout.h"
 
 struct sway_variable {
 	char *name;
@@ -42,6 +43,8 @@ struct sway_config {
 	list_t *output_configs;
 	struct sway_mode *current_mode;
 	uint32_t floating_mod;
+	enum swayc_layouts default_orientation;
+	enum swayc_layouts default_layout;
 
 	// Flags
 	bool focus_follows_mouse;

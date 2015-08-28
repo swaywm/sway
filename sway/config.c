@@ -27,6 +27,8 @@ void config_defaults(struct sway_config *config) {
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
 	list_add(config->modes, config->current_mode);
+	config->default_layout = L_NONE;
+	config->default_orientation = L_NONE;
 	// Flags
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;

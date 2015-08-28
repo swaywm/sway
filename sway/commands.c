@@ -388,6 +388,19 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
+static bool cmd_orientation(struct sway_config *config, int argc, char **argv) {
+	if (strcasecmp(argv[0],"horizontal") == 0) {
+		config->default_orientation = L_HORIZ;
+	} else if (strcasecmp(argv[0], "vertical") == 0) {
+		config->default_orientation = L_VERT;
+	} else if (strcasecmp(argv[0], "auto") == 0) {
+		// Do nothing
+	} else {
+		return false;
+	}
+	return true;
+}
+
 static bool cmd_output(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return false;
@@ -713,6 +726,7 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
+	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
