@@ -221,7 +221,7 @@ void move_container(swayc_t *container,swayc_t* root,enum movement_direction dir
 }
 
 void move_container_to(swayc_t* container, swayc_t* destination) {
-	if (container == destination) {
+	if (container == destination && swayc_is_parent_of(container, destination)) {
 		return;
 	}
 	swayc_t *parent = remove_child(container);

@@ -14,6 +14,10 @@ static void update_focus(swayc_t *c) {
 	// Handle if focus switches
 	swayc_t *parent = c->parent;
 	if (parent->focused != c) {
+		// Get previous focus
+		swayc_t *prev = parent->focused;
+		// Set new focus
+		parent->focused = c;
 		switch (c->type) {
 		// Shouldnt happen
 		case C_ROOT: return;
@@ -25,16 +29,13 @@ static void update_focus(swayc_t *c) {
 
 		// Case where workspace changes
 		case C_WORKSPACE:
-			if (parent->focused) {
-				swayc_t *ws = parent->focused;
-				// hide visibility of old workspace
-				bool visible = false;
-				container_map(ws, set_view_visibility, &visible);
-				// set visibility of new workspace
-				visible = true;
-				container_map(c, set_view_visibility, &visible);
-				destroy_workspace(ws);
+			if (prev) {
+				// update visibility of old workspace
+				update_visibility(prev);
+				destroy_workspace(prev);
 			}
+			// Update visibility of newly focused workspace
+			update_visibility(c);
 			break;
 
 		default:
@@ -44,7 +45,6 @@ static void update_focus(swayc_t *c) {
 			// for example, stacked and tabbing change stuff.
 			break;
 		}
-		c->parent->focused = c;
 	}
 }
 
