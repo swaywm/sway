@@ -37,10 +37,13 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child);
 // a sibling, or to a floating window, or NULL
 swayc_t *remove_child(swayc_t *child);
 
-// 2 containers are swapped, they inherit eachothers geometry and focus
+// 2 containers are swapped, they inherit eachothers focus
 void swap_container(swayc_t *a, swayc_t *b);
 
-void move_container(swayc_t* container,swayc_t* root,enum movement_direction direction);
+// 2 Containers geometry are swapped, used with `swap_container`
+void swap_geometry(swayc_t *a, swayc_t *b);
+
+void move_container(swayc_t* container, enum movement_direction direction);
 void move_container_to(swayc_t* container, swayc_t* destination);
 
 // Layout
