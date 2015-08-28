@@ -430,8 +430,10 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		return EVENT_PASSTHROUGH;
 	}
 
-	// set pointer mode
-	pointer_mode_set(button, !(modifiers->mods ^ config->floating_mod));
+	// set pointer mode only if floating mod has been set
+	if(config->floating_mod) {
+		pointer_mode_set(button, !(modifiers->mods ^ config->floating_mod));
+	}
 
 	// Return if mode has been set
 	if (pointer_state.mode) {
