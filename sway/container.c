@@ -342,7 +342,7 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 
 	// Do not destroy if there are children
 	if (workspace->children->length == 0 && workspace->floating->length == 0) {
-		sway_log(L_DEBUG, "destroying '%s'", workspace->name);
+		sway_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
 		return parent;
@@ -600,7 +600,22 @@ void set_view_visibility(swayc_t *view, void *data) {
 }
 
 void update_visibility(swayc_t *container) {
-	swayc_t *ws = swayc_active_workspace_for(container);
+	if (!container) {
+		return;
+	}
+	swayc_t *ws;
+	if (container->type == C_ROOT || container->type == C_OUTPUT) {
+		int i, len = container->children->length;
+		for (i = 0; i < len; ++i) {
+			update_visibility(container->children->items[i]);
+		}
+		return;
+	} else if (container->type == C_WORKSPACE) {
+		container->visible = container->parent->focused == container;
+		ws = container;
+	} else {
+		ws = swayc_active_workspace_for(container);
+	}
 	// TODO better visibility setting
 	bool visible = (ws->parent->focused == ws);
 	sway_log(L_DEBUG, "Setting visibility of container %p to %s", container, visible ? "visible" : "invisible");
