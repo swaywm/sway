@@ -27,6 +27,7 @@ void config_defaults(struct sway_config *config) {
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
 	list_add(config->modes, config->current_mode);
+	config->floating_mod = 0;
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	// Flags
@@ -35,6 +36,7 @@ void config_defaults(struct sway_config *config) {
 	config->reloading = false;
 	config->active = false;
 	config->failed = false;
+
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
 }
