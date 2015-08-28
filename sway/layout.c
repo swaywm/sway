@@ -259,6 +259,8 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 			return;
 		}
 	}
+	// Dirty hack to fix a certain case
+	arrange_windows(parent, -1, -1);
 	arrange_windows(parent->parent, -1, -1);
 	update_visibility(parent->parent);
 	set_focused_container_for(parent->parent, container);
