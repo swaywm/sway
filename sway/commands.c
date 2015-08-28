@@ -209,7 +209,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			destroy_container(remove_child(view));
 
 			// and move it into workspace floating
-			add_floating(swayc_active_workspace(),view);
+			add_floating(swayc_active_workspace(), view);
 			view->x = (swayc_active_workspace()->width - view->width)/2;
 			view->y = (swayc_active_workspace()->height - view->height)/2;
 			if (view->desired_width != -1) {
@@ -351,13 +351,13 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view,&root_container,MOVE_LEFT);
+		move_container(view, MOVE_LEFT);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view,&root_container,MOVE_RIGHT);
+		move_container(view, MOVE_RIGHT);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view,&root_container,MOVE_UP);
+		move_container(view, MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view,&root_container,MOVE_DOWN);
+		move_container(view, MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
 		// "move container to workspace x"
 		if (!checkarg(argc, "move container/window", EXPECTED_EQUAL_TO, 4) ||
@@ -389,7 +389,7 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 }
 
 static bool cmd_orientation(struct sway_config *config, int argc, char **argv) {
-	if (strcasecmp(argv[0],"horizontal") == 0) {
+	if (strcasecmp(argv[0], "horizontal") == 0) {
 		config->default_orientation = L_HORIZ;
 	} else if (strcasecmp(argv[0], "vertical") == 0) {
 		config->default_orientation = L_VERT;

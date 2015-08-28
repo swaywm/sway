@@ -297,6 +297,7 @@ void pointer_mode_update(void) {
 				&& !pointer_state.view->is_floating) {
 			// Swap them around
 			swap_container(pointer_state.view, initial.ptr);
+			swap_geometry(pointer_state.view, initial.ptr);
 			update_geometry(pointer_state.view);
 			update_geometry(initial.ptr);
 			// Set focus back to initial view

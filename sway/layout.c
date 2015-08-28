@@ -47,6 +47,20 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	}
 }
 
+void insert_child(swayc_t *parent, swayc_t *child, int index) {
+	if (index > parent->children->length) {
+		index = parent->children->length;
+	}
+	if (index < 0) {
+		index = 0;
+	}
+	list_insert(parent->children, index, child);
+	child->parent = parent;
+	if (!parent->focused) {
+		parent->focused = child;
+	}
+}
+
 void add_floating(swayc_t *ws, swayc_t *child) {
 	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, ws, ws->type, ws->width, ws->height);
@@ -161,7 +175,9 @@ void swap_container(swayc_t *a, swayc_t *b) {
 	if (b_parent->focused == b && a_parent != b_parent) {
 		b_parent->focused = a;
 	}
-	// and their geometry
+}
+
+void swap_geometry(swayc_t *a, swayc_t *b) {
 	double x = a->x;
 	double y = a->y;
 	double w = a->width;
@@ -176,48 +192,78 @@ void swap_container(swayc_t *a, swayc_t *b) {
 	b->height = h;
 }
 
-//TODO: Implement horizontal movement.
-//TODO: Implement move to a different workspace.
-void move_container(swayc_t *container,swayc_t* root,enum movement_direction direction) {
-	sway_log(L_DEBUG, "Moved window");
-	swayc_t *temp;
-	int i;
-	int clength = root->children->length;
-	//Rearrange
-	for (i = 0; i < clength; ++i) {
-		swayc_t *child = root->children->items[i];
-		if (child->handle == container->handle){
-			if (clength == 1){
-				//Only one container, meh.
+// TODO fix workspace movement, as in
+// [a][b][c] => |move b| => [aa][cc]
+// [a][b][c] => |down  | => [bbbbbb]
+// 
+void move_container(swayc_t *container, enum movement_direction dir) {
+	enum swayc_layouts layout;
+	if (container->is_floating) {
+		return;
+	}
+	if (dir == MOVE_UP || dir == MOVE_DOWN) {
+		layout = L_VERT;
+	} else if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+		layout = L_HORIZ;
+	} else {
+		return;
+	}
+	swayc_t *parent = container->parent;
+	swayc_t *child = container;
+	while (true) {
+		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
+				container,parent,child);
+		if (parent->layout == layout) {
+			int diff;
+			// When child == container the container is removed,
+			// so when inserting it back in, it needs to be -1, or 1
+			// inserts at 1-1 or 1+1
+			// 0 1 2 3 => 0 1 2 => 0 1 2 3 or 0 1 2 3
+			// |0|1|2| => |0|2| => |1|0|2| or |0|2|1|
+			// When child != container, no container is removed
+			// inserts at 1+0 or 1+1
+			// 0 1 2 3 => 0 1 2 3 4 or 0 1 2 3 4
+			// |0|1|2| => |0|n|1|2| or |0|1|n|2|
+			if (child == container) {
+				diff = dir == MOVE_LEFT || dir == MOVE_UP ? -1 : 1;
+			} else {
+				diff = dir == MOVE_LEFT || dir == MOVE_UP ? 0 : 1;
+			}
+			int desired = index_child(child) + diff;
+			// Legal position
+			// when child == container, desired must be less then parent,
+			// when child != container, desired can be equal to parent length
+			if (desired >= 0 && desired - (child != container) < parent->children->length) {
+				// Case where we descend into a container
+				if (child == container) {
+					child = parent->children->items[desired];
+					// Move container Into child container.
+					if (child->type == C_CONTAINER) {
+						parent = child;
+						desired = index_child(child->focused);
+						//reset geometry
+						container->width = container->height = 0;
+					}
+				}
+				swayc_t *old_parent = remove_child(container);
+				insert_child(parent, container, desired);
+				destroy_container(old_parent);
+				sway_log(L_DEBUG,"Moving to %p %d",parent, desired);
 				break;
 			}
-			if (direction == MOVE_LEFT && i > 0){
-				temp = root->children->items[i-1];
-				root->children->items[i] = temp;
-				root->children->items[i-1] = container;
-				arrange_windows(&root_container,-1,-1);
-			}
-			else if (direction == MOVE_RIGHT && i < clength-1){
-				temp = root->children->items[i+1];
-				root->children->items[i] = temp;
-				root->children->items[i+1] = container;
-				arrange_windows(&root_container,-1,-1);
-
-			}
-			else if (direction == MOVE_UP){
-				sway_log(L_INFO, "Moving up not implemented");
-			}
-			else if (direction == MOVE_DOWN){
-				sway_log(L_INFO, "Moving down not implemented");
-			}
-
-			break;
 		}
-		else if (child->children != NULL){
-			move_container(container,child,direction);
+		child = parent;
+		parent = child->parent;
+		if (!parent || child->type == C_WORKSPACE) {
+			sway_log(L_DEBUG, "Failed to move container");
+			return;
 		}
 	}
-
+	// Dirty hack to fix a certain case
+	arrange_windows(parent, -1, -1);
+	arrange_windows(parent->parent, -1, -1);
+	update_visibility(parent->parent);
+	set_focused_container_for(parent->parent, container);
 }
 
 void move_container_to(swayc_t* container, swayc_t* destination) {
@@ -484,13 +530,7 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 		}
 
 		if (can_move) {
-			for (i = 0; i < parent->children->length; ++i) {
-				swayc_t *child = parent->children->items[i];
-				if (child == container) {
-					break;
-				}
-			}
-			int desired = i + diff;
+			int desired = index_child(container) + diff;
 			if (desired < 0 || desired >= parent->children->length) {
 				can_move = false;
 			} else {
