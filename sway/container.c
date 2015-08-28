@@ -57,6 +57,19 @@ static void free_swayc(swayc_t *cont) {
 swayc_t *new_output(wlc_handle handle) {
 	const struct wlc_size *size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
+	// Find current outputs to see if this already exists
+	{
+		int i, len = root_container.children->length;
+		for (i = 0; i < len; ++i) {
+			swayc_t *op = root_container.children->items[i];
+			const char *op_name = op->name;
+			if (op_name && name && strcmp(op_name, name) == 0) {
+				sway_log(L_DEBUG, "restoring output %lu:%s", handle, op_name);
+				return op;
+			}
+		}
+	}
+
 	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
 	struct output_config *oc = NULL;
@@ -329,7 +342,7 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 
 	// Do not destroy if there are children
 	if (workspace->children->length == 0 && workspace->floating->length == 0) {
-		sway_log(L_DEBUG, "'%s'", workspace->name);
+		sway_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
 		swayc_t *parent = workspace->parent;
 		free_swayc(workspace);
 		return parent;
@@ -394,6 +407,17 @@ swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *dat
 		}
 	}
 	return NULL;
+}
+
+static bool test_name(swayc_t *view, void *data) {
+	if (!view && !view->name) {
+		return false;
+	}
+	return strcmp(view->name, data) == 0;
+}
+
+swayc_t *swayc_by_name(const char *name) {
+	return swayc_by_test(&root_container, test_name, (void *)name);
 }
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
@@ -523,6 +547,20 @@ bool swayc_is_active(swayc_t *view) {
 	return view && view->type == C_VIEW && (wlc_view_get_state(view->handle) & WLC_BIT_ACTIVATED);
 }
 
+bool swayc_is_parent_of(swayc_t *parent, swayc_t *child) {
+	while (child != &root_container) {
+		child = child->parent;
+		if (child == parent) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool swayc_is_child_of(swayc_t *child, swayc_t *parent) {
+	return swayc_is_parent_of(parent, child);
+}
+
 // Mapping
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
@@ -544,43 +582,72 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 	}
 }
 
-void set_view_visibility(swayc_t *view, void *data) {
-	if (!ASSERT_NONNULL(view)) {
-		return;
+void update_visibility_output(swayc_t *container, wlc_handle output) {
+	// Inherit visibility
+	swayc_t *parent = container->parent;
+	container->visible = parent->visible;
+	// special cases where visibility depends on focus
+	if (parent->type == C_OUTPUT
+			|| parent->layout == L_TABBED
+			|| parent->layout == L_STACKED) {
+		container->visible = parent->focused == container;
 	}
-	// TODO add something like this.
-//	if (container->type == C_ROOT) {
-//		container->visible = true;
-//	} else {
-//		// Inherit visibility
-//		swayc_t *parent = container->parent;
-//		container->visible = parent->visible;
-//		// special cases where visibility depends on focus
-//		if (parent->type == C_OUTPUT || parent->layout == L_TABBED ||
-//				parent->layout == L_STACKED) {
-//			container->visible = parent->focused == container;
-//		}
-//	}
-	bool visible = *(bool *)data;
-	if (view->type == C_VIEW) {
-		wlc_view_set_output(view->handle, swayc_parent_by_type(view, C_OUTPUT)->handle);
-		wlc_view_set_mask(view->handle, visible ? VISIBLE : 0);
-		if (visible) {
-			wlc_view_bring_to_front(view->handle);
+	// Set visibility and output for view
+	if (container->type == C_VIEW) {
+		wlc_view_set_output(container->handle, output);
+		wlc_view_set_mask(container->handle, container->visible ? VISIBLE : 0);
+		if (container->visible) {
+			wlc_view_bring_to_front(container->handle);
 		} else {
-			wlc_view_send_to_back(view->handle);
+			wlc_view_send_to_back(container->handle);
 		}
 	}
-	view->visible = visible;
-	sway_log(L_DEBUG, "Container %p is now %s", view, visible ? "visible" : "invisible");
+	// Update visibility for children
+	else {
+		if (container->children) {
+			int i, len = container->children->length;
+			for (i = 0; i < len; ++i) {
+				update_visibility_output(container->children->items[i], output);
+			}
+		}
+		if (container->floating) {
+			int i, len = container->floating->length;
+			for (i = 0; i < len; ++i) {
+				update_visibility_output(container->floating->items[i], output);
+			}
+		}
+	}
 }
 
 void update_visibility(swayc_t *container) {
-	swayc_t *ws = swayc_active_workspace_for(container);
-	// TODO better visibility setting
-	bool visible = (ws->parent->focused == ws);
-	sway_log(L_DEBUG, "Setting visibility of container %p to %s", container, visible ? "visible" : "invisible");
-	container_map(ws, set_view_visibility, &visible);
+	if (!container) return;
+	switch (container->type) {
+	case C_ROOT:
+		container->visible = true;
+		if (container->children) {
+			int i, len = container->children->length;
+			for (i = 0; i < len; ++i) {
+				update_visibility(container->children->items[i]);
+			}
+		}
+		return;
+
+	case C_OUTPUT:
+		container->visible = true;
+		if (container->children) {
+			int i, len = container->children->length;
+			for (i = 0; i < len; ++i) {
+				update_visibility_output(container->children->items[i], container->handle);
+			}
+		}
+		return;
+
+	default:
+		{
+			swayc_t *op = swayc_parent_by_type(container, C_OUTPUT);
+			update_visibility_output(container, op->handle);
+		}
+	}
 }
 
 void reset_gaps(swayc_t *view, void *data) {

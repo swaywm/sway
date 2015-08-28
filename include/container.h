@@ -94,6 +94,7 @@ swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts);
 
 
 swayc_t *swayc_by_handle(wlc_handle handle);
+swayc_t *swayc_by_name(const char *name);
 swayc_t *swayc_active_output(void);
 swayc_t *swayc_active_workspace(void);
 swayc_t *swayc_active_workspace_for(swayc_t *view);
@@ -102,6 +103,10 @@ swayc_t *swayc_active_workspace_for(swayc_t *view);
 
 bool swayc_is_fullscreen(swayc_t *view);
 bool swayc_is_active(swayc_t *view);
+// Is `parent` the parent of `child`
+bool swayc_is_parent_of(swayc_t *parent, swayc_t *child);
+// Is `child` a child of `parent`
+bool swayc_is_child_of(swayc_t *child, swayc_t *parent);
 
 // Mapping functions
 
