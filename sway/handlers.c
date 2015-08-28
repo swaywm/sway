@@ -130,6 +130,13 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 	if (!c) return;
 	c->width = to->w;
 	c->height = to->h;
+	if (config->default_layout == L_NONE && config->default_orientation == L_NONE) {
+		if (c->width >= c->height) {
+			((swayc_t*)c->children->items[0])->layout = L_HORIZ;
+		} else {
+			((swayc_t*)c->children->items[0])->layout = L_VERT;
+		}
+	}
 	arrange_windows(&root_container, -1, -1);
 }
 
