@@ -26,10 +26,20 @@ void init_layout(void) {
 
 int index_child(const swayc_t *child) {
 	swayc_t *parent = child->parent;
-	int i, len = parent->children->length;
-	for (i = 0; i < len; ++i) {
-		if (parent->children->items[i] == child) {
-			break;
+	int i, len;
+	if (!child->is_floating) {
+		len = parent->children->length;
+		for (i = 0; i < len; ++i) {
+			if (parent->children->items[i] == child) {
+				break;
+			}
+		}
+	} else {
+		len = parent->floating->length;
+		for (i = 0; i < len; ++i) {
+			if (parent->floating->items[i] == child) {
+				break;
+			}
 		}
 	}
 	if (!sway_assert(i < len, "Stray container")) {

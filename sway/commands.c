@@ -382,27 +382,23 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 		}
 		move_container_to(view, get_focused_container(ws));
 	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
-		int i;
+		if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			return false;
+		}
 		swayc_t *view = get_focused_container(&root_container);
 		list_add(scratchpad, view);
-		if (view->is_floating) {
-			for (i = 0; i < view->parent->floating; i++) {
-				if (view->parent->floating->items[i] == view) {
-					list_del(view->parent->floating, i);
-					break;
-				}
-			}
-			wlc_view_set_mask(view->handle, 0);
+		if (!view->is_floating) {
+			destroy_container(remove_child(view));
 		} else {
-			for (i = 0; i < view->parent->children) {
-				if (view->parent->children->items[i] == view) {
-					list_del(view->parent->children, i);
-					break;
-				}
-			}
-			wlc_view_set_mask(view->handle, 0);
+			remove_child(view);
 		}
-		arrange_windows(&root_container, -1, -1);
+		wlc_view_set_mask(view->handle, 0);
+		arrange_windows(swayc_active_workspace(), -1, -1);
+		swayc_t *focused = container_under_pointer();
+		if (focused == NULL) {
+			focused = swayc_active_workspace();
+		}
+		set_focused_container(focused);
 	} else {
 		return false;
 	}
@@ -592,6 +588,37 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 		return resize_tiled(amount, false);
 	}
 	return false;
+}
+
+static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+	if (strcasecmp(argv[0], "show") == 0) {
+		if (scratchpad->length > 0) {
+			swayc_t *view = scratchpad->items[0];
+			list_del(scratchpad, 0);
+			add_floating(swayc_active_workspace(), view);
+			view->x = (swayc_active_workspace()->width - view->width)/2;
+			view->y = (swayc_active_workspace()->height - view->height)/2;
+			if (view->desired_width != -1) {
+				view->width = view->desired_width;
+			}
+			if (view->desired_height != -1) {
+				view->height = view->desired_height;
+			}
+			wlc_view_set_mask(view->handle, VISIBLE);
+			arrange_windows(swayc_active_workspace(), -1, -1);
+			swayc_t *focused = container_under_pointer();
+			if (focused == NULL) {
+				focused = swayc_active_workspace();
+			}
+			set_focused_container(focused);
+		}
+		return true;
+	} else {
+		return false;
+	}
 }
 
 static bool cmd_set(struct sway_config *config, int argc, char **argv) {
