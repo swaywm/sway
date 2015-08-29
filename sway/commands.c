@@ -344,7 +344,7 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
+	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
 
@@ -381,6 +381,28 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 			ws = workspace_create(ws_name);
 		}
 		move_container_to(view, get_focused_container(ws));
+	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
+		int i;
+		swayc_t *view = get_focused_container(&root_container);
+		list_add(scratchpad, view);
+		if (view->is_floating) {
+			for (i = 0; i < view->parent->floating; i++) {
+				if (view->parent->floating->items[i] == view) {
+					list_del(view->parent->floating, i);
+					break;
+				}
+			}
+			wlc_view_set_mask(view->handle, 0);
+		} else {
+			for (i = 0; i < view->parent->children) {
+				if (view->parent->children->items[i] == view) {
+					list_del(view->parent->children, i);
+					break;
+				}
+			}
+			wlc_view_set_mask(view->handle, 0);
+		}
+		arrange_windows(&root_container, -1, -1);
 	} else {
 		return false;
 	}
@@ -742,6 +764,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output},
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },

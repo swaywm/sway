@@ -10,6 +10,7 @@
 #include "focus.h"
 
 swayc_t root_container;
+list_t *scratchpad;
 
 int min_sane_h = 60;
 int min_sane_w = 100;
@@ -20,6 +21,7 @@ void init_layout(void) {
 	root_container.children = create_list();
 	root_container.handle = -1;
 	root_container.visible = true;
+	scratchpad = create_list();
 }
 
 int index_child(const swayc_t *child) {

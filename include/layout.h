@@ -8,6 +8,8 @@
 
 extern swayc_t root_container;
 
+extern list_t *scratchpad;
+
 extern int min_sane_w;
 extern int min_sane_h;
 
