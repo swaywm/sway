@@ -195,7 +195,6 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 // TODO fix workspace movement, as in
 // [a][b][c] => |move b| => [aa][cc]
 // [a][b][c] => |down  | => [bbbbbb]
-// 
 void move_container(swayc_t *container, enum movement_direction dir) {
 	enum swayc_layouts layout;
 	if (container->is_floating) {
@@ -210,37 +209,37 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 	}
 	swayc_t *parent = container->parent;
 	swayc_t *child = container;
+	bool ascended = false;
 	while (true) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
 		if (parent->layout == layout) {
 			int diff;
-			// When child == container the container is removed,
-			// so when inserting it back in, it needs to be -1, or 1
-			// inserts at 1-1 or 1+1
-			// 0 1 2 3 => 0 1 2 => 0 1 2 3 or 0 1 2 3
-			// |0|1|2| => |0|2| => |1|0|2| or |0|2|1|
-			// When child != container, no container is removed
-			// inserts at 1+0 or 1+1
-			// 0 1 2 3 => 0 1 2 3 4 or 0 1 2 3 4
-			// |0|1|2| => |0|n|1|2| or |0|1|n|2|
-			if (child == container) {
-				diff = dir == MOVE_LEFT || dir == MOVE_UP ? -1 : 1;
-			} else {
+			// If it has ascended (parent has moved up), no container is removed
+			// so insert it at index, or index+1.
+			// if it has not, the moved container is removed, so it needs to be
+			// inserted at index-1, or index+1
+			if (ascended) {
 				diff = dir == MOVE_LEFT || dir == MOVE_UP ? 0 : 1;
+			} else {
+				diff = dir == MOVE_LEFT || dir == MOVE_UP ? -1 : 1;
 			}
 			int desired = index_child(child) + diff;
-			// Legal position
-			// when child == container, desired must be less then parent,
-			// when child != container, desired can be equal to parent length
-			if (desired >= 0 && desired - (child != container) < parent->children->length) {
-				// Case where we descend into a container
-				if (child == container) {
+			// when it has ascended, legal insertion position is 0:len
+			// when it has not, legal insertion position is 0:len-1
+			if (desired >= 0 && desired - ascended < parent->children->length) {
+				if (!ascended) {
 					child = parent->children->items[desired];
-					// Move container Into child container.
+					// Move container into sibling container
 					if (child->type == C_CONTAINER) {
 						parent = child;
-						desired = index_child(child->focused);
+						// Insert it in first/last if matching layout,otherwise
+						// inesrt it next to focused container
+						if (parent->layout == layout) {
+							desired = (diff < 0) * parent->children->length;
+						} else {
+							desired = index_child(child->focused);
+						}
 						//reset geometry
 						container->width = container->height = 0;
 					}
@@ -252,12 +251,22 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				break;
 			}
 		}
+		// Change parent layout if we need to
+		if (parent->children->length == 1 && parent->layout != layout) {
+			parent->layout = layout;
+			continue;
+		}
+		if (parent->type == C_WORKSPACE) {
+			// We simply cannot move any further.
+			if (parent->layout == layout) {
+				break;
+			}
+			// Create container around workspace to insert child into
+			parent = new_container(parent, layout);
+		}
+		ascended = true;
 		child = parent;
 		parent = child->parent;
-		if (!parent || child->type == C_WORKSPACE) {
-			sway_log(L_DEBUG, "Failed to move container");
-			return;
-		}
 	}
 	// Dirty hack to fix a certain case
 	arrange_windows(parent, -1, -1);

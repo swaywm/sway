@@ -366,7 +366,6 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 			return false;
 		}
 
-		// TODO handle case of workspace, something similar to _do_split
 		if (view->type != C_CONTAINER && view->type != C_VIEW) {
 			return false;
 		}
