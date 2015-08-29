@@ -344,7 +344,7 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 }
 
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
-	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
+	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
 
@@ -381,6 +381,24 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 			ws = workspace_create(ws_name);
 		}
 		move_container_to(view, get_focused_container(ws));
+	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
+		if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			return false;
+		}
+		swayc_t *view = get_focused_container(&root_container);
+		list_add(scratchpad, view);
+		if (!view->is_floating) {
+			destroy_container(remove_child(view));
+		} else {
+			remove_child(view);
+		}
+		wlc_view_set_mask(view->handle, 0);
+		arrange_windows(swayc_active_workspace(), -1, -1);
+		swayc_t *focused = container_under_pointer();
+		if (focused == NULL) {
+			focused = swayc_active_workspace();
+		}
+		set_focused_container(focused);
 	} else {
 		return false;
 	}
@@ -572,6 +590,37 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 	return false;
 }
 
+static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+	if (strcasecmp(argv[0], "show") == 0) {
+		if (scratchpad->length > 0) {
+			swayc_t *view = scratchpad->items[0];
+			list_del(scratchpad, 0);
+			add_floating(swayc_active_workspace(), view);
+			view->x = (swayc_active_workspace()->width - view->width)/2;
+			view->y = (swayc_active_workspace()->height - view->height)/2;
+			if (view->desired_width != -1) {
+				view->width = view->desired_width;
+			}
+			if (view->desired_height != -1) {
+				view->height = view->desired_height;
+			}
+			wlc_view_set_mask(view->handle, VISIBLE);
+			arrange_windows(swayc_active_workspace(), -1, -1);
+			swayc_t *focused = container_under_pointer();
+			if (focused == NULL) {
+				focused = swayc_active_workspace();
+			}
+			set_focused_container(focused);
+		}
+		return true;
+	} else {
+		return false;
+	}
+}
+
 static bool cmd_set(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "set", EXPECTED_EQUAL_TO, 2)) {
 		return false;
@@ -742,6 +791,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output},
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },

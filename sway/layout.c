@@ -10,6 +10,7 @@
 #include "focus.h"
 
 swayc_t root_container;
+list_t *scratchpad;
 
 int min_sane_h = 60;
 int min_sane_w = 100;
@@ -20,14 +21,25 @@ void init_layout(void) {
 	root_container.children = create_list();
 	root_container.handle = -1;
 	root_container.visible = true;
+	scratchpad = create_list();
 }
 
 int index_child(const swayc_t *child) {
 	swayc_t *parent = child->parent;
-	int i, len = parent->children->length;
-	for (i = 0; i < len; ++i) {
-		if (parent->children->items[i] == child) {
-			break;
+	int i, len;
+	if (!child->is_floating) {
+		len = parent->children->length;
+		for (i = 0; i < len; ++i) {
+			if (parent->children->items[i] == child) {
+				break;
+			}
+		}
+	} else {
+		len = parent->floating->length;
+		for (i = 0; i < len; ++i) {
+			if (parent->floating->items[i] == child) {
+				break;
+			}
 		}
 	}
 	if (!sway_assert(i < len, "Stray container")) {
