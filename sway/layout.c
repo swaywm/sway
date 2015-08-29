@@ -204,9 +204,6 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 	b->height = h;
 }
 
-// TODO fix workspace movement, as in
-// [a][b][c] => |move b| => [aa][cc]
-// [a][b][c] => |down  | => [bbbbbb]
 void move_container(swayc_t *container, enum movement_direction dir) {
 	enum swayc_layouts layout;
 	if (container->is_floating) {
@@ -288,7 +285,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 }
 
 void move_container_to(swayc_t* container, swayc_t* destination) {
-	if (container == destination && swayc_is_parent_of(container, destination)) {
+	if (container == destination || swayc_is_parent_of(container, destination)) {
 		return;
 	}
 	swayc_t *parent = remove_child(container);
