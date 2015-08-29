@@ -459,8 +459,11 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	// Check whether to change focus
 	swayc_t *pointer = pointer_state.view;
-	if (pointer && focused != pointer) {
-		set_focused_container(pointer_state.view);
+	sway_log(L_DEBUG, "pointer:%p",pointer);
+	if (pointer) {
+		if (focused != pointer) {
+			set_focused_container(pointer_state.view);
+		}
 		// Send to front if floating
 		if (pointer->is_floating) {
 			int i;
@@ -471,7 +474,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 					break;
 				}
 			}
-			wlc_view_bring_to_front(view);
+			wlc_view_bring_to_front(pointer->handle);
 		}
 	}
 
