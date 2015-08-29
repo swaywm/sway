@@ -447,19 +447,8 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		pointer_mode_set(button, !(modifiers->mods ^ config->floating_mod));
 	}
 
-	// Return if mode has been set
-	if (pointer_state.mode) {
-		return EVENT_HANDLED;
-	}
-
-	// Always send mouse release
-	if (state == WLC_BUTTON_STATE_RELEASED) {
-		return EVENT_PASSTHROUGH;
-	}
-
 	// Check whether to change focus
 	swayc_t *pointer = pointer_state.view;
-	sway_log(L_DEBUG, "pointer:%p",pointer);
 	if (pointer) {
 		if (focused != pointer) {
 			set_focused_container(pointer_state.view);
@@ -476,6 +465,16 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 			}
 			wlc_view_bring_to_front(pointer->handle);
 		}
+	}
+
+	// Return if mode has been set
+	if (pointer_state.mode) {
+		return EVENT_HANDLED;
+	}
+
+	// Always send mouse release
+	if (state == WLC_BUTTON_STATE_RELEASED) {
+		return EVENT_PASSTHROUGH;
 	}
 
 	// Finally send click
