@@ -163,6 +163,18 @@ static bool handle_view_created(wlc_handle handle) {
 	}
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
+		// Move focus from floating view
+		if (focused->is_floating) {
+			// To workspace if there are no children
+			if (focused->parent->children->length == 0) {
+				focused = focused->parent;
+			}
+			// TODO find a better way of doing this
+			// Or to focused container
+			else {
+				focused = get_focused_container(focused->parent->children->items[0]);
+			}
+		}
 	}
 	sway_log(L_DEBUG, "handle:%ld type:%x state:%x parent:%ld "
 			"mask:%d (x:%d y:%d w:%d h:%d) title:%s "
