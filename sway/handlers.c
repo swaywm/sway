@@ -230,16 +230,12 @@ static void handle_view_destroyed(wlc_handle handle) {
 	sway_log(L_DEBUG, "Destroying window %lu", handle);
 	swayc_t *view = swayc_by_handle(handle);
 
+	// destroy views by type
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
 	case 0:
 	case WLC_BIT_MODAL:
 	case WLC_BIT_POPUP:
-		if (view) {
-			swayc_t *parent = destroy_view(view);
-			remove_view_from_scratchpad(view);
-			arrange_windows(parent, -1, -1);
-		}
 		break;
 	// DMENU has this flag, and takes view_focus, but other things with this
 	// flag dont
@@ -251,6 +247,11 @@ static void handle_view_destroyed(wlc_handle handle) {
 		break;
 	}
 
+	if (view) {
+		swayc_t *parent = destroy_view(view);
+		remove_view_from_scratchpad(view);
+		arrange_windows(parent, -1, -1);
+	}
 	set_focused_container(get_focused_view(&root_container));
 }
 
