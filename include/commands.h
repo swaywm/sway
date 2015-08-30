@@ -10,4 +10,6 @@ struct cmd_handler {
 
 bool handle_command(struct sway_config *config, char *command);
 
+void remove_view_from_scratchpad();
+
 #endif

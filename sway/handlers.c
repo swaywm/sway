@@ -237,6 +237,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 	case WLC_BIT_POPUP:
 		if (view) {
 			swayc_t *parent = destroy_view(view);
+			remove_view_from_scratchpad(view);
 			arrange_windows(parent, -1, -1);
 		}
 		break;

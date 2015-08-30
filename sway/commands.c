@@ -23,6 +23,9 @@ struct modifier_key {
 	uint32_t mod;
 };
 
+swayc_t *sp_view;
+int sp_index = 0;
+
 static struct modifier_key modifiers[] = {
 	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
 	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
@@ -246,6 +249,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 			// Refocus on the view once its been put back into the layout
 			view->width = view->height = 0;
 			arrange_windows(swayc_active_workspace(), -1, -1);
+			remove_view_from_scratchpad(view);
 		}
 		set_focused_container(view);
 	}
@@ -343,6 +347,22 @@ static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char *
 	return true;
 }
 
+static void hide_view_in_scratchpad(swayc_t *sp_view) {
+	if(sp_view == NULL) {
+		return;
+	}
+
+	wlc_view_set_mask(sp_view->handle, 0);
+	sp_view->visible = false;
+	swayc_t *ws = sp_view->parent;
+	remove_child(sp_view);
+	if (swayc_active_workspace() != ws && ws->floating->length == 0 && ws->children->length == 0) {
+		destroy_workspace(ws);
+	}
+	arrange_windows(ws, -1, -1);
+	set_focused_container(container_under_pointer());
+}
+
 static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return false;
@@ -386,6 +406,14 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 			return false;
 		}
 		swayc_t *view = get_focused_container(&root_container);
+		int i;
+		for (i = 0; i < scratchpad->length; i++) {
+			if (scratchpad->items[i] == view) {
+				hide_view_in_scratchpad(view);
+				sp_view = NULL;
+				return true;
+			}
+		}
 		list_add(scratchpad, view);
 		if (!view->is_floating) {
 			destroy_container(remove_child(view));
@@ -590,30 +618,71 @@ static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
 	return false;
 }
 
+static swayc_t *fetch_view_from_scratchpad() {
+	if (sp_index >= scratchpad->length) {
+		sp_index = 0;
+	}
+	swayc_t *view = scratchpad->items[sp_index++];
+
+	if (wlc_view_get_output(view->handle) != swayc_active_output()->handle) {
+		wlc_view_set_output(view->handle, swayc_active_output()->handle);
+	}
+	if (!view->is_floating) {
+		view->width = swayc_active_workspace()->width/2;
+		view->height = swayc_active_workspace()->height/2;
+		view->x = (swayc_active_workspace()->width - view->width)/2;
+		view->y = (swayc_active_workspace()->height - view->height)/2;
+	}
+	if (swayc_active_workspace()->width < view->x + 20 || view->x + view->width < 20) {
+		view->x = (swayc_active_workspace()->width - view->width)/2;
+	}
+	if (swayc_active_workspace()->height < view->y + 20 || view->y + view->height < 20) {
+		view->y = (swayc_active_workspace()->height - view->height)/2;
+	}
+
+	add_floating(swayc_active_workspace(), view);
+	wlc_view_set_mask(view->handle, VISIBLE);
+	view->visible = true;
+	arrange_windows(swayc_active_workspace(), -1, -1);
+	set_focused_container(view);
+	return view;
+}
+
+void remove_view_from_scratchpad(swayc_t *view) {
+	int i;
+	for (i = 0; i < scratchpad->length; i++) {
+		if (scratchpad->items[i] == view) {
+			if (sp_index == 0) {
+				sp_index = scratchpad->length - 1;
+			} else {
+				sp_index--;
+			}
+			list_del(scratchpad, sp_index);
+			sp_view = NULL;
+		}
+	}
+}
+
 static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
-	if (strcasecmp(argv[0], "show") == 0) {
-		if (scratchpad->length > 0) {
-			swayc_t *view = scratchpad->items[0];
-			list_del(scratchpad, 0);
-			add_floating(swayc_active_workspace(), view);
-			view->x = (swayc_active_workspace()->width - view->width)/2;
-			view->y = (swayc_active_workspace()->height - view->height)/2;
-			if (view->desired_width != -1) {
-				view->width = view->desired_width;
+
+	if (strcasecmp(argv[0], "show") == 0 && scratchpad->length > 0) {
+		if (!sp_view) {
+			sp_view = fetch_view_from_scratchpad();
+		} else {
+			if (swayc_active_workspace() != sp_view->parent) {
+				hide_view_in_scratchpad(sp_view);
+				if (sp_index == 0) {
+					sp_index = scratchpad->length;
+				}
+				sp_index--;
+				sp_view = fetch_view_from_scratchpad();
+			} else {
+				hide_view_in_scratchpad(sp_view);
+				sp_view = NULL;
 			}
-			if (view->desired_height != -1) {
-				view->height = view->desired_height;
-			}
-			wlc_view_set_mask(view->handle, VISIBLE);
-			arrange_windows(swayc_active_workspace(), -1, -1);
-			swayc_t *focused = container_under_pointer();
-			if (focused == NULL) {
-				focused = swayc_active_workspace();
-			}
-			set_focused_container(focused);
 		}
 		return true;
 	} else {
