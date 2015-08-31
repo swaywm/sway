@@ -36,6 +36,7 @@ void config_defaults(struct sway_config *config) {
 	config->reloading = false;
 	config->active = false;
 	config->failed = false;
+	config->auto_back_and_forth = false;
 
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
