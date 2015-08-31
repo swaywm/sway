@@ -5,6 +5,8 @@
 #include "list.h"
 #include "layout.h"
 
+extern char *prev_workspace_name;
+
 char *workspace_next_name(void);
 swayc_t *workspace_create(const char*);
 swayc_t *workspace_by_name(const char*);

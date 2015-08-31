@@ -13,6 +13,8 @@
 #include "focus.h"
 #include "util.h"
 
+char *prev_workspace_name;
+
 char *workspace_next_name(void) {
 	sway_log(L_DEBUG, "Workspace: Generating new name");
 	int i;
@@ -180,6 +182,11 @@ void workspace_switch(swayc_t *workspace) {
 	if (!workspace) {
 		return;
 	}
+	if (!prev_workspace_name || strcmp(prev_workspace_name, swayc_active_workspace()->name) != 0) {
+		prev_workspace_name = malloc(strlen(swayc_active_workspace()->name) + 1);
+		strcpy(prev_workspace_name, swayc_active_workspace()->name);
+	}
+
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
 	set_focused_container(get_focused_view(workspace));
 	arrange_windows(workspace, -1, -1);
