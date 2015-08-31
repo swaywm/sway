@@ -800,24 +800,34 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 
 	if (argc == 1) {
 		// Handle workspace next/prev
-		if (strcmp(argv[0], "next") == 0) {
+		if (strcasecmp(argv[0], "next") == 0) {
 			workspace_switch(workspace_next());
 			return true;
 		}
 
-		if (strcmp(argv[0], "prev") == 0) {
+		if (strcasecmp(argv[0], "prev") == 0) {
 			workspace_switch(workspace_prev());
 			return true;
 		}
 
 		// Handle workspace output_next/prev
-		if (strcmp(argv[0], "next_on_output") == 0) {
+		if (strcasecmp(argv[0], "next_on_output") == 0) {
 			workspace_switch(workspace_output_next());
 			return true;
 		}
 
-		if (strcmp(argv[0], "prev_on_output") == 0) {
+		if (strcasecmp(argv[0], "prev_on_output") == 0) {
 			workspace_switch(workspace_output_prev());
+			return true;
+		}
+		if (strcasecmp(argv[0], "back_and_forth") == 0) {
+			if (prev_workspace_name) {
+				if (workspace_by_name(prev_workspace_name)) {
+					workspace_switch(workspace_by_name(prev_workspace_name));
+				} else {
+					workspace_switch(workspace_create(prev_workspace_name));
+				}
+			}
 			return true;
 		}
 
