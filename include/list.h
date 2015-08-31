@@ -19,8 +19,8 @@ void list_cat(list_t *list, list_t *source);
 // ITEM will be NULL after empty list
 #define list_for(ITEM, LIST) \
 	ITEM = LIST->length ? LIST->items[0] : NULL; \
-for(int list_it = 0, list_len = LIST->length; \
-	list_it < list_len; \
-	ITEM = LIST->items[++list_it])
+	for (int list_it = 0, list_len = LIST->length; \
+		list_it < list_len; \
+		ITEM = LIST->items[++list_it])
 
 #endif
