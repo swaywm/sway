@@ -35,11 +35,8 @@ static void free_swayc(swayc_t *cont) {
 		list_free(cont->children);
 	}
 	if (cont->floating) {
-		if (cont->floating->length) {
-			int i;
-			for (i = 0; i < cont->floating->length; ++i) {
-				free_swayc(cont->floating->items[i]);
-			}
+		while (cont->floating->length) {
+			free_swayc(cont->floating->items[0]);
 		}
 		list_free(cont->floating);
 	}
@@ -304,16 +301,14 @@ swayc_t *destroy_output(swayc_t *output) {
 		return NULL;
 	}
 	if (output->children->length > 0) {
-		int i, len = root_container.children->length;
 		// TODO save workspaces when there are no outputs.
 		// TODO also check if there will ever be no outputs except for exiting
 		// program
-		if (len > 1) {
-			len = output->children->length;
+		if (root_container.children->length > 1) {
 			int p = root_container.children->items[0] == output;
 			// Move workspace from this output to another output
-			for (i = 0; i < len; ++i) {
-				swayc_t *child = output->children->items[i];
+			while (output->children->length) {
+				swayc_t *child = output->children->items[0];
 				remove_child(child);
 				add_child(root_container.children->items[p], child);
 			}
@@ -651,6 +646,7 @@ void update_visibility(swayc_t *container) {
 }
 
 void reset_gaps(swayc_t *view, void *data) {
+	(void) data;
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}
