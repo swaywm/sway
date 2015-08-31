@@ -852,6 +852,16 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
+static bool cmd_ws_auto_back_and_forth(struct sway_config *config, int argc, char **argv) {
+	if (!checkarg(argc, "workspace_auto_back_and_forth", EXPECTED_EQUAL_TO, 1)) {
+		return false;
+	}
+	if (strcasecmp(argv[0], "yes") == 0) {
+		config->auto_back_and_forth = true;
+	}
+	return true;
+}
+
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
@@ -877,7 +887,8 @@ static struct cmd_handler handlers[] = {
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv },
-	{ "workspace", cmd_workspace }
+	{ "workspace", cmd_workspace },
+	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth }
 };
 
 static char **split_directive(char *line, int *argc) {
