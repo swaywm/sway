@@ -32,6 +32,8 @@ Install dependencies:
 * [wlc](https://github.com/Cloudef/wlc)
 * xwayland
 * asciidoc
+* pcre
+* json-c
 
 Run these commands:
 
