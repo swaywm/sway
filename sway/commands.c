@@ -822,11 +822,8 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 		}
 		if (strcasecmp(argv[0], "back_and_forth") == 0) {
 			if (prev_workspace_name) {
-				if (workspace_by_name(prev_workspace_name)) {
-					workspace_switch(workspace_by_name(prev_workspace_name));
-				} else {
-					workspace_switch(workspace_create(prev_workspace_name));
-				}
+				swayc_t *ws = workspace_by_name(prev_workspace_name);
+				workspace_switch(ws ? ws : workspace_create(prev_workspace_name));
 			}
 			return true;
 		}
