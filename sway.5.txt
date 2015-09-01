@@ -11,7 +11,7 @@ sway - configuration file and commands
 Description
 -----------
 
-A sway configuration file is a list of sway commands that are exected by sway on
+A sway configuration file is a list of sway commands that are executed by sway on
 startup. These commands usually consist of setting your preferences and setting
 key bindings. An example config is likely present in /etc/sway/config for you to
 check out.
@@ -104,7 +104,7 @@ Commands
 	commands.
 
 **split** <vertical|v|horizontal|h>::
-	Splits the current container, vertically or horiziontally.
+	Splits the current container, vertically or horizontally.
 
 **splith**::
 	Equivalent to **split horizontal**.

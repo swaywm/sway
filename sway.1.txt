@@ -56,7 +56,7 @@ Commands
 
 If sway is currently running, you may run _sway [command]_ to send _command_ to
 the running instance of sway. The same commands you would use in the config file
-are valid here (see **sway**(5)). For compatability reasons, you may also issue
+are valid here (see **sway**(5)). For compatibility reasons, you may also issue
 commands with **sway-msg**(1) or **i3-msg**(1) (or even with **i3**(1), probably).
 
 Configuration
