@@ -32,6 +32,10 @@ Install dependencies:
 * [wlc](https://github.com/Cloudef/wlc)
 * xwayland
 * asciidoc
+* pcre
+* json-c
+
+Oneliner for Arch Linux: `yaourt -S cmake xorg-server-xwayland asciidoc pcre json-c wlc-git`
 
 Run these commands:
 
