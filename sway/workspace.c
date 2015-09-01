@@ -13,7 +13,7 @@
 #include "focus.h"
 #include "util.h"
 
-char *prev_workspace_name = "";
+char *prev_workspace_name = NULL;
 
 char *workspace_next_name(void) {
 	sway_log(L_DEBUG, "Workspace: Generating new name");
@@ -182,13 +182,18 @@ void workspace_switch(swayc_t *workspace) {
 	if (!workspace) {
 		return;
 	}
-	if (strcmp(prev_workspace_name, swayc_active_workspace()->name) != 0 && swayc_active_workspace() != workspace) {
-		prev_workspace_name = malloc(strlen(swayc_active_workspace()->name) + 1);
-		strcpy(prev_workspace_name, swayc_active_workspace()->name);
-	} else if (config->auto_back_and_forth && swayc_active_workspace() == workspace && strlen(prev_workspace_name) != 0) {
-		workspace = workspace_by_name(prev_workspace_name) ? workspace_by_name(prev_workspace_name) : workspace_create(prev_workspace_name);
-		prev_workspace_name = malloc(strlen(swayc_active_workspace()->name) + 1);
-		strcpy(prev_workspace_name, swayc_active_workspace()->name);
+	swayc_t *active_ws = swayc_active_workspace();
+	if (config->auto_back_and_forth && active_ws == workspace && prev_workspace_name) {
+		swayc_t *new_ws = workspace_by_name(prev_workspace_name);
+		workspace = new_ws ? new_ws : workspace_create(prev_workspace_name);
+	}
+
+	if (!prev_workspace_name
+			|| (strcmp(prev_workspace_name, active_ws->name)
+				&& active_ws != workspace)) {
+		free(prev_workspace_name);
+		prev_workspace_name = malloc(strlen(active_ws->name)+1);
+		strcpy(prev_workspace_name, active_ws->name);
 	}
 
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
