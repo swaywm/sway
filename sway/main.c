@@ -8,6 +8,7 @@
 #include "layout.h"
 #include "config.h"
 #include "log.h"
+#include "readline.h"
 #include "handlers.h"
 #include "ipc.h"
 #include "sway.h"
@@ -31,6 +32,22 @@ static void wlc_log_handler(enum wlc_log_type type, const char *str) {
 	}
 }
 
+void detect_nvidia() {
+	FILE *f = fopen("/proc/modules", "r");
+	if (!f) {
+		return;
+	}
+	while (!feof(f)) {
+		char *line = read_line(f);
+		if (strstr(line, "nvidia")) {
+			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
+			free(line);
+			return;
+		}
+		free(line);
+	}
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -50,6 +67,8 @@ int main(int argc, char **argv) {
 	setenv("WLC_DIM", "0", 0);
 
 	wlc_log_set_handler(wlc_log_handler);
+
+	detect_nvidia();
 
 	/* Changing code earlier than this point requires detailed review */
 	if (!wlc_init(&interface, argc, argv)) {
