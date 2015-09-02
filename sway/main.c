@@ -102,6 +102,10 @@ int main(int argc, char **argv) {
 		init_log(L_ERROR);
 	}
 
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
+#endif
+
 	if (validate) {
 		bool valid = load_config(config_path);
 		return valid ? 0 : 1;
