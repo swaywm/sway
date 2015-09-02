@@ -8,7 +8,6 @@
 #include <wlc/wlc.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stropts.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <ctype.h>
