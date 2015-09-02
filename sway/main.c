@@ -42,10 +42,11 @@ void detect_nvidia() {
 		if (strstr(line, "nvidia")) {
 			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
 			free(line);
-			return;
+			break;
 		}
 		free(line);
 	}
+	fclose(f);
 }
 
 int main(int argc, char **argv) {
