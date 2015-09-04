@@ -7,11 +7,10 @@ git submodule update --init --recursive # - initialize and fetch submodules
 mkdir target && cd target               # - create build target directory
 cmake -DCMAKE_BUILD_TYPE=Upstream ..    # - run CMake
 make                                    # - compile
+sudo make install                       # - install
 
 cd ../..
 
 # build sway
-cmake \
-    -DWLC_LIBRARIES=wlc/target/src/libwlc.so \
-    -DWLC_INCLUDE_DIRS=wlc/include .
+cmake .
 make
