@@ -218,18 +218,22 @@ bool read_config(FILE *file, bool is_active) {
 		// Any command which would require wlc to be initialized
 		// should be queued for later execution
 		list_t *args = split_string(line, " ");
-		if (!is_active && (
-			strcmp("exec", args->items[0]) == 0 ||
-			strcmp("exec_always", args->items[0]) == 0 )) {
-			sway_log(L_DEBUG, "Deferring command %s", line);
-
-			char *cmd = malloc(strlen(line) + 1);
-			strcpy(cmd, line);
-			list_add(temp_config->cmd_queue, cmd);
-		} else if (!temp_depth && !handle_command(temp_config, line)) {
-			sway_log(L_DEBUG, "Config load failed for line %s", line);
-			success = false;
-			temp_config->failed = true;
+		struct cmd_handler *handler;
+		if ((handler = find_handler(args->items[0]))) {
+			if (handler->config_type > 0) {
+				sway_log(L_ERROR, "Invalid command during config ``%s''", line);
+			} else if (handler->config_type < 0 && !is_active) {
+				sway_log(L_DEBUG, "Deferring command ``%s''", line);
+				char *cmd = malloc(strlen(line) + 1);
+				strcpy(cmd, line);
+				list_add(temp_config->cmd_queue, cmd);
+			} else if (!temp_depth && !handle_command(temp_config, line)) {
+				sway_log(L_DEBUG, "Config load failed for line ``%s''", line);
+				success = false;
+				temp_config->failed = true;
+			}
+		} else {
+			sway_log(L_ERROR, "Invalid command %s",args->items[0]);
 		}
 		free_flat_list(args);
 

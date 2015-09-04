@@ -860,31 +860,31 @@ static bool cmd_ws_auto_back_and_forth(struct sway_config *config, int argc, cha
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
-	{ "bindsym", cmd_bindsym },
-	{ "default_orientation", cmd_orientation },
-	{ "exec", cmd_exec },
-	{ "exec_always", cmd_exec_always },
-	{ "exit", cmd_exit },
-	{ "floating", cmd_floating },
-	{ "floating_modifier", cmd_floating_mod },
-	{ "focus", cmd_focus },
-	{ "focus_follows_mouse", cmd_focus_follows_mouse },
-	{ "fullscreen", cmd_fullscreen },
-	{ "gaps", cmd_gaps },
-	{ "kill", cmd_kill },
-	{ "layout", cmd_layout },
-	{ "log_colors", cmd_log_colors },
-	{ "move", cmd_move},
-	{ "output", cmd_output},
-	{ "reload", cmd_reload },
-	{ "resize", cmd_resize },
-	{ "scratchpad", cmd_scratchpad },
-	{ "set", cmd_set },
-	{ "split", cmd_split },
-	{ "splith", cmd_splith },
-	{ "splitv", cmd_splitv },
-	{ "workspace", cmd_workspace },
-	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth }
+	{ "bindsym", cmd_bindsym, 0 },
+	{ "default_orientation", cmd_orientation, 0},
+	{ "exec", cmd_exec, -1 },
+	{ "exec_always", cmd_exec_always, -1 },
+	{ "exit", cmd_exit, 1 },
+	{ "floating", cmd_floating, 1 },
+	{ "floating_modifier", cmd_floating_mod, 0 },
+	{ "focus", cmd_focus, 1 },
+	{ "focus_follows_mouse", cmd_focus_follows_mouse, 0 },
+	{ "fullscreen", cmd_fullscreen, 1 },
+	{ "gaps", cmd_gaps, 0 },
+	{ "kill", cmd_kill, 1 },
+	{ "layout", cmd_layout, 1 },
+	{ "log_colors", cmd_log_colors, 0 },
+	{ "move", cmd_move, 1 },
+	{ "output", cmd_output, 0 },
+	{ "reload", cmd_reload, 1 },
+	{ "resize", cmd_resize, 1 },
+	{ "scratchpad", cmd_scratchpad, 1 },
+	{ "set", cmd_set, 0 },
+	{ "split", cmd_split, 1 },
+	{ "splith", cmd_splith, 1 },
+	{ "splitv", cmd_splitv, 1 },
+	{ "workspace", cmd_workspace, -1 },
+	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth, 0 }
 };
 
 static char **split_directive(char *line, int *argc) {
@@ -945,9 +945,11 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
-static struct cmd_handler *find_handler(struct cmd_handler handlers[], int l, char *line) {
+struct cmd_handler *find_handler(char *line) {
 	struct cmd_handler d = { .command=line };
-	struct cmd_handler *res = bsearch(&d, handlers, l, sizeof(struct cmd_handler), handler_compare);
+	struct cmd_handler *res = bsearch(&d, handlers,
+			sizeof(handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
 	return res;
 }
 
@@ -964,7 +966,7 @@ bool handle_command(struct sway_config *config, char *exec) {
 		strncpy(cmd, exec, index);
 		cmd[index] = '\0';
 	}
-	struct cmd_handler *handler = find_handler(handlers, sizeof(handlers) / sizeof(struct cmd_handler), cmd);
+	struct cmd_handler *handler = find_handler(cmd);
 	if (handler == NULL) {
 		sway_log(L_ERROR, "Unknown command '%s'", cmd);
 		exec_success = false; // TODO: return error, probably
