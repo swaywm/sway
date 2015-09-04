@@ -107,6 +107,8 @@ bool swayc_is_active(swayc_t *view);
 bool swayc_is_parent_of(swayc_t *parent, swayc_t *child);
 // Is `child` a child of `parent`
 bool swayc_is_child_of(swayc_t *child, swayc_t *parent);
+// Return gap of specified container
+int swayc_gap(swayc_t *container);
 
 // Mapping functions
 

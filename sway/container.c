@@ -14,6 +14,7 @@
 static swayc_t *new_swayc(enum swayc_types type) {
 	swayc_t *c = calloc(1, sizeof(swayc_t));
 	c->handle = -1;
+	c->gaps = -1;
 	c->layout = L_NONE;
 	c->type = type;
 	if (type != C_VIEW) {
@@ -96,7 +97,6 @@ swayc_t *new_output(wlc_handle handle) {
 	}
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
-	output->gaps = config->gaps_outer;
 	
 	// Find position for it
 	if (oc && oc->x != -1 && oc->y != -1) {
@@ -243,8 +243,6 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->height = 0;
 	view->desired_width = geometry->size.w;
 	view->desired_height = geometry->size.h;
-
-	view->gaps = config->gaps_inner;
 
 	view->is_floating = false;
 
@@ -556,6 +554,16 @@ bool swayc_is_child_of(swayc_t *child, swayc_t *parent) {
 	return swayc_is_parent_of(parent, child);
 }
 
+int swayc_gap(swayc_t *container) {
+	if (container->type == C_VIEW) {
+		return container->gaps >= 0 ? container->gaps : config->gaps_inner;
+	} else if (container->type == C_WORKSPACE) {
+		return container->gaps >= 0 ? container->gaps : config->gaps_outer;
+	} else {
+		return 0;
+	}
+}
+
 // Mapping
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
@@ -650,10 +658,10 @@ void reset_gaps(swayc_t *view, void *data) {
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}
-	if (view->type == C_OUTPUT) {
-		view->gaps = config->gaps_outer;
+	if (view->type == C_WORKSPACE) {
+		view->gaps = -1;
 	}
 	if (view->type == C_VIEW) {
-		view->gaps = config->gaps_inner;
+		view->gaps = -1;
 	}
 }
