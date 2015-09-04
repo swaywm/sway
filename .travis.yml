@@ -7,11 +7,16 @@ arch:
     - asciidoc
     - pcre
     - json-c
-    # aur
-    - wlc-git
+    - pixman
+    - wayland
+    - libxkbcommon
+    - libinput
+    - libx11
+    - libxcb
+    - libgl
+    - mesa
   script:
-    - "cmake ."
-    - "make"
+    - "bash .ci/build.sh"
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
