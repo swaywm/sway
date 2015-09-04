@@ -1,0 +1,22 @@
+sudo: required
+
+arch:
+  packages:
+    - cmake
+    - xorg-server-xwayland
+    - asciidoc
+    - pcre
+    - json-c
+    - pixman
+    - wayland
+    - libxkbcommon
+    - libinput
+    - libx11
+    - libxcb
+    - libgl
+    - mesa
+  script:
+    - "bash .ci/build.sh"
+
+script:
+  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
