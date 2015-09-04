@@ -1,4 +1,4 @@
-# sway
+# sway ![](https://api.travis-ci.org/SirCmpwn/sway.svg)
 
 "**S**irCmpwn's **Way**land window manager" is a **work in progress**
 i3-compatible window manager for [Wayland](http://wayland.freedesktop.org/).
