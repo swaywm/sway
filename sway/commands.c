@@ -519,8 +519,7 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 	}
 
 	if (argc == 1) {
-		char *end;
-		int amount = (int)strtol(argv[0], &end, 10);
+		int amount = (int)strtol(argv[0], NULL, 10);
 		if (errno == ERANGE || amount == 0) {
 			errno = 0;
 			return false;
@@ -532,8 +531,7 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 			config->gaps_outer = amount;
 		}
 	} else if (argc == 2) {
-		char *end;
-		int amount = (int)strtol(argv[1], &end, 10);
+		int amount = (int)strtol(argv[1], NULL, 10);
 		if (errno == ERANGE || amount == 0) {
 			errno = 0;
 			return false;
@@ -548,6 +546,7 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 	} else {
 		return false;
 	}
+	arrange_windows(&root_container, -1, -1);
 	return true;
 }
 

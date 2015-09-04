@@ -319,14 +319,15 @@ void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW) {
 		return;
 	}
+	int gap = swayc_gap(container);
 	struct wlc_geometry geometry = {
 		.origin = {
-			.x = container->x + (container->is_floating ? 0 : container->gaps / 2),
-			.y = container->y + (container->is_floating ? 0 : container->gaps / 2)
+			.x = container->x + (container->is_floating ? 0 : gap / 2),
+			.y = container->y + (container->is_floating ? 0 : gap / 2)
 		},
 		.size = {
-			.w = container->width - (container->is_floating ? 0 : container->gaps),
-			.h = container->height - (container->is_floating ? 0 : container->gaps)
+			.w = container->width - (container->is_floating ? 0 : gap),
+			.h = container->height - (container->is_floating ? 0 : gap)
 		}
 	};
 	if (swayc_is_fullscreen(container)) {
@@ -364,10 +365,11 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		x = 0, y = 0;
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *child = container->children->items[i];
-			child->x = x + container->gaps;
-			child->y = y + container->gaps;
-			child->width = width - container->gaps * 2;
-			child->height = height - container->gaps * 2;
+			int gap = swayc_gap(child);
+			child->x = x + gap;
+			child->y = y + gap;
+			child->width = width - gap * 2;
+			child->height = height - gap * 2;
 			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
 			arrange_windows(child, -1, -1);
 		}
@@ -582,17 +584,7 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 		layout_match = container->layout == L_VERT;
 	}
 	if (container->type == C_VIEW) {
-		struct wlc_geometry geometry = {
-			.origin = {
-				.x = container->x + container->gaps / 2,
-				.y = container->y + container->gaps / 2
-			},
-			.size = {
-				.w = container->width - container->gaps,
-				.h = container->height - container->gaps
-			}
-		};
-		wlc_view_set_geometry(container->handle, edge, &geometry);
+		update_geometry(container);
 		return;
 	}
 	if (layout_match) {
