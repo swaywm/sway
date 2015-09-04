@@ -1,0 +1,17 @@
+sudo: required
+
+arch:
+  packages:
+    - cmake
+    - xorg-server-xwayland
+    - asciidoc
+    - pcre
+    - json-c
+    # aur
+    - wlc-git
+  script:
+    - "cmake ."
+    - "make"
+
+script:
+  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
