@@ -233,7 +233,7 @@ bool read_config(FILE *file, bool is_active) {
 				temp_config->failed = true;
 			}
 		} else {
-			sway_log(L_ERROR, "Invalid command %s",args->items[0]);
+			sway_log(L_ERROR, "Invalid command ``%s''", line);
 		}
 		free_flat_list(args);
 
