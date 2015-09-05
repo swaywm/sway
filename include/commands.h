@@ -6,9 +6,6 @@
 struct cmd_handler {
 	char *command;
 	bool (*handle)(struct sway_config *config, int argc, char **argv);
-	// if <0 command is deffered until compositor is ready.
-	// if =0 command can be called anytime.
-	// if >0 command can only be called via keybind, ignored in config
 	enum {
 		CMD_COMPOSITOR_READY,
 		CMD_KEYBIND,
