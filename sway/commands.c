@@ -860,31 +860,31 @@ static bool cmd_ws_auto_back_and_forth(struct sway_config *config, int argc, cha
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
-	{ "bindsym", cmd_bindsym },
-	{ "default_orientation", cmd_orientation },
-	{ "exec", cmd_exec },
-	{ "exec_always", cmd_exec_always },
-	{ "exit", cmd_exit },
-	{ "floating", cmd_floating },
-	{ "floating_modifier", cmd_floating_mod },
-	{ "focus", cmd_focus },
-	{ "focus_follows_mouse", cmd_focus_follows_mouse },
-	{ "fullscreen", cmd_fullscreen },
-	{ "gaps", cmd_gaps },
-	{ "kill", cmd_kill },
-	{ "layout", cmd_layout },
-	{ "log_colors", cmd_log_colors },
-	{ "move", cmd_move},
-	{ "output", cmd_output},
-	{ "reload", cmd_reload },
-	{ "resize", cmd_resize },
-	{ "scratchpad", cmd_scratchpad },
-	{ "set", cmd_set },
-	{ "split", cmd_split },
-	{ "splith", cmd_splith },
-	{ "splitv", cmd_splitv },
-	{ "workspace", cmd_workspace },
-	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth }
+	{ "bindsym", cmd_bindsym, CMD_ANYTIME },
+	{ "default_orientation", cmd_orientation, CMD_ANYTIME},
+	{ "exec", cmd_exec, CMD_COMPOSITOR_READY },
+	{ "exec_always", cmd_exec_always, CMD_COMPOSITOR_READY },
+	{ "exit", cmd_exit, CMD_KEYBIND },
+	{ "floating", cmd_floating, CMD_KEYBIND },
+	{ "floating_modifier", cmd_floating_mod, CMD_ANYTIME },
+	{ "focus", cmd_focus, CMD_KEYBIND },
+	{ "focus_follows_mouse", cmd_focus_follows_mouse, CMD_ANYTIME },
+	{ "fullscreen", cmd_fullscreen, CMD_KEYBIND },
+	{ "gaps", cmd_gaps, CMD_ANYTIME },
+	{ "kill", cmd_kill, CMD_KEYBIND },
+	{ "layout", cmd_layout, CMD_KEYBIND },
+	{ "log_colors", cmd_log_colors, CMD_ANYTIME },
+	{ "move", cmd_move, CMD_KEYBIND },
+	{ "output", cmd_output, CMD_ANYTIME },
+	{ "reload", cmd_reload, CMD_KEYBIND },
+	{ "resize", cmd_resize, CMD_KEYBIND },
+	{ "scratchpad", cmd_scratchpad, CMD_KEYBIND },
+	{ "set", cmd_set, CMD_ANYTIME },
+	{ "split", cmd_split, CMD_KEYBIND },
+	{ "splith", cmd_splith, CMD_KEYBIND },
+	{ "splitv", cmd_splitv, CMD_KEYBIND },
+	{ "workspace", cmd_workspace, CMD_COMPOSITOR_READY },
+	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth, CMD_ANYTIME },
 };
 
 static char **split_directive(char *line, int *argc) {
@@ -945,9 +945,11 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
-static struct cmd_handler *find_handler(struct cmd_handler handlers[], int l, char *line) {
+struct cmd_handler *find_handler(char *line) {
 	struct cmd_handler d = { .command=line };
-	struct cmd_handler *res = bsearch(&d, handlers, l, sizeof(struct cmd_handler), handler_compare);
+	struct cmd_handler *res = bsearch(&d, handlers,
+			sizeof(handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
 	return res;
 }
 
@@ -964,7 +966,7 @@ bool handle_command(struct sway_config *config, char *exec) {
 		strncpy(cmd, exec, index);
 		cmd[index] = '\0';
 	}
-	struct cmd_handler *handler = find_handler(handlers, sizeof(handlers) / sizeof(struct cmd_handler), cmd);
+	struct cmd_handler *handler = find_handler(cmd);
 	if (handler == NULL) {
 		sway_log(L_ERROR, "Unknown command '%s'", cmd);
 		exec_success = false; // TODO: return error, probably
