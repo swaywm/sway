@@ -220,9 +220,9 @@ bool read_config(FILE *file, bool is_active) {
 		list_t *args = split_string(line, " ");
 		struct cmd_handler *handler;
 		if ((handler = find_handler(args->items[0]))) {
-			if (handler->config_type > 0) {
+			if (handler->config_type == CMD_KEYBIND) {
 				sway_log(L_ERROR, "Invalid command during config ``%s''", line);
-			} else if (handler->config_type < 0 && !is_active) {
+			} else if (handler->config_type == CMD_COMPOSITOR_READY && !is_active) {
 				sway_log(L_DEBUG, "Deferring command ``%s''", line);
 				char *cmd = malloc(strlen(line) + 1);
 				strcpy(cmd, line);

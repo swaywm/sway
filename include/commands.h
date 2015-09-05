@@ -9,7 +9,11 @@ struct cmd_handler {
 	// if <0 command is deffered until compositor is ready.
 	// if =0 command can be called anytime.
 	// if >0 command can only be called via keybind, ignored in config
-	int config_type;
+	enum {
+		CMD_COMPOSITOR_READY,
+		CMD_KEYBIND,
+		CMD_ANYTIME
+	} config_type;
 };
 
 struct cmd_handler *find_handler(char *line);
