@@ -517,9 +517,10 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
-
-	if (argc == 1) {
-		int amount = (int)strtol(argv[0], NULL, 10);
+	const char *amount_str = argv[0];
+	// gaps amount
+	if (argc >= 1 && isdigit(*amount_str)) {
+		int amount = (int)strtol(amount_str, NULL, 10);
 		if (errno == ERANGE || amount == 0) {
 			errno = 0;
 			return false;
@@ -530,23 +531,127 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 		if (config->gaps_outer == 0) {
 			config->gaps_outer = amount;
 		}
-	} else if (argc == 2) {
-		int amount = (int)strtol(argv[1], NULL, 10);
+		return true;
+	}
+	// gaps inner|outer n
+	else if (argc >= 2 && isdigit((amount_str = argv[1])[0])) {
+		int amount = (int)strtol(amount_str, NULL, 10);
 		if (errno == ERANGE || amount == 0) {
 			errno = 0;
 			return false;
 		}
-		if (strcasecmp(argv[0], "inner") == 0) {
+		const char *target_str = argv[0];
+		if (strcasecmp(target_str, "inner") == 0) {
 			config->gaps_inner = amount;
-		} else if (strcasecmp(argv[0], "outer") == 0) {
+		} else if (strcasecmp(target_str, "outer") == 0) {
 			config->gaps_outer = amount;
+		}
+		return true;
+	}
+	// gaps inner|outer current|all set|plus|minus n
+	if (argc < 4) {
+		return false;
+	}
+	// gaps inner|outer ...
+	const char *inout_str = argv[0];
+	enum {INNER, OUTER} inout;
+	if (strcasecmp(inout_str, "inner") == 0) {
+		inout = INNER;
+	} else if (strcasecmp(inout_str, "outer") == 0) {
+		inout = OUTER;
+	} else {
+		return false;
+	}
+
+	// gaps ... current|all ...
+	const char *target_str = argv[1];
+	enum {CURRENT, WORKSPACE, ALL} target;
+	if (strcasecmp(target_str, "current") == 0) {
+		target = CURRENT;
+	} else if (strcasecmp(target_str, "all") == 0) {
+		target = ALL;
+	} else if (strcasecmp(target_str, "workspace") == 0){
+		if (inout == OUTER) {
+			target = CURRENT;
 		} else {
-			return false;
+			// Set gap for views in workspace
+			target = WORKSPACE;
 		}
 	} else {
 		return false;
 	}
-	arrange_windows(&root_container, -1, -1);
+
+	// gaps ... n
+	amount_str = argv[3];
+	int amount = (int)strtol(amount_str, NULL, 10);
+	if (errno == ERANGE || amount == 0) {
+		errno = 0;
+		return false;
+	}
+
+	// gaps ... set|plus|minus ...
+	const char *method_str = argv[2];
+	enum {SET, ADD} method;
+	if (strcasecmp(method_str, "set") == 0) {
+		method = SET;
+	} else if (strcasecmp(method_str, "plus") == 0) {
+		method = ADD;
+	} else if (strcasecmp(method_str, "minus") == 0) {
+		method = ADD;
+		amount *= -1;
+	} else {
+		return false;
+	}
+
+	if (target == CURRENT) {
+		swayc_t *cont;
+		if (inout == OUTER) {
+			if ((cont = swayc_active_workspace()) == NULL) {
+				return false;
+			}
+		} else {
+			if ((cont = get_focused_view(&root_container))->type != C_VIEW) {
+				return false;
+			}
+		}
+		cont->gaps = swayc_gap(cont);
+		if (method == SET) {
+			cont->gaps = amount;
+		} else if ((cont->gaps += amount) < 0) {
+			cont->gaps = 0;
+		}
+		arrange_windows(cont->parent, -1, -1);
+	} else if (inout == OUTER) {
+		//resize all workspace.
+		int i,j;
+		for (i = 0; i < root_container.children->length; ++i) {
+			swayc_t *op = root_container.children->items[i];
+			for (j = 0; j < op->children->length; ++j) {
+				swayc_t *ws = op->children->items[j];
+				if (method == SET) {
+					ws->gaps = amount;
+				} else if ((ws->gaps += amount) < 0) {
+					ws->gaps = 0;
+				}
+			}
+		}
+		arrange_windows(&root_container, -1, -1);
+	} else {
+		// Resize gaps for all views in workspace
+		swayc_t *top;
+		if (target == WORKSPACE) {
+			if ((top = swayc_active_workspace()) == NULL) {
+				return false;
+			}
+		} else {
+			top = &root_container;
+		}
+		int top_gap = top->gaps;
+		container_map(top, method == SET ? set_gaps : add_gaps, &amount);
+		top->gaps = top_gap;
+		arrange_windows(top, -1, -1);
+	}
+
 	return true;
 }
 
@@ -975,10 +1080,10 @@ bool handle_command(struct sway_config *config, char *exec) {
 		char **argv = split_directive(exec + strlen(handler->command), &argc);
 		int i;
 
-		 // Perform var subs on all parts of the command
-		 for (i = 0; i < argc; ++i) {
-			 argv[i] = do_var_replacement(config, argv[i]);
-		 }
+		// Perform var subs on all parts of the command
+		for (i = 0; i < argc; ++i) {
+			argv[i] = do_var_replacement(config, argv[i]);
+		}
 
 		exec_success = handler->handle(config, argc, argv);
 		for (i = 0; i < argc; ++i) {

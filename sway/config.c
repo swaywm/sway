@@ -246,7 +246,6 @@ _continue:
 
 	if (is_active) {
 		temp_config->reloading = false;
-		container_map(&root_container, reset_gaps, NULL);
 		arrange_windows(&root_container, -1, -1);
 	}
 	config = temp_config;

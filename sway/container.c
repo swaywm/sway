@@ -653,15 +653,24 @@ void update_visibility(swayc_t *container) {
 	}
 }
 
-void reset_gaps(swayc_t *view, void *data) {
-	(void) data;
+void set_gaps(swayc_t *view, void *_data) {
+	int *data = _data;
 	if (!ASSERT_NONNULL(view)) {
 		return;
 	}
-	if (view->type == C_WORKSPACE) {
-		view->gaps = -1;
+	if (view->type == C_WORKSPACE || view->type == C_VIEW) {
+		view->gaps = *data;
 	}
-	if (view->type == C_VIEW) {
-		view->gaps = -1;
+}
+
+void add_gaps(swayc_t *view, void *_data) {
+	int *data = _data;
+	if (!ASSERT_NONNULL(view)) {
+		return;
+	}
+	if (view->type == C_WORKSPACE || view->type == C_VIEW) {
+		if ((view->gaps += *data) < 0) {
+			view->gaps = 0;
+		}
 	}
 }
