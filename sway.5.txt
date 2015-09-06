@@ -64,11 +64,19 @@ Commands
 	Toggles fullscreen status for the focused view.
 
 **gaps** <amount>::
-	Adds _amount_ pixels between each view, and around each output.
+	Sets _amount_ pixels as the gap between each view, and around each
+	workspace.
 
 **gaps** <inner|outer> <amount>::
-	Adds _amount_ pixels as an _inner_ or _outer_ gap, where the former affects
-	spacing between views and the latter affects the space around each output.
+	Sets _amount_ pixels as the _inner_ or _outer_ gap, where the former affects
+	spacing between views and the latter affects the space around each
+	workspace.
+
+**gaps** <inner|outer> <all|workspace|current> <set|plus|minus> <amount>::
+	Changes the gaps for the _inner_ or _outer_ gap. _all_ changes the gaps for
+	all views or workspace, _workspace_ changes gaps for all views in current
+	workspace, or current workspace, and _current_ changes gaps for the current
+	view or workspace.
 
 **kill**::
 	Closes the currently focused view.

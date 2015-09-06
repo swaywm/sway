@@ -159,8 +159,9 @@ static void container_log(const swayc_t *c) {
 			c->layout == L_STACKED  ? "Stacked|":
 			c->layout == L_FLOATING ? "Floating|":
 			"Unknown|");
-	fprintf(stderr, "w:%f|h:%f|", c->width, c->height);
-	fprintf(stderr, "x:%f|y:%f|", c->x, c->y);
+	fprintf(stderr, "w:%.f|h:%.f|", c->width, c->height);
+	fprintf(stderr, "x:%.f|y:%.f|", c->x, c->y);
+	fprintf(stderr, "g:%d|",c->gaps);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
 	fprintf(stderr, "name:%.16s|", c->name);
 	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);

@@ -116,7 +116,9 @@ void container_map(swayc_t *, void (*f)(swayc_t *, void *), void *);
 
 // Mappings
 void set_view_visibility(swayc_t *view, void *data);
-void reset_gaps(swayc_t *view, void *data);
+// Set or add to gaps
+void set_gaps(swayc_t *view, void *amount);
+void add_gaps(swayc_t *view, void *amount);
 
 void update_visibility(swayc_t *container);
 
