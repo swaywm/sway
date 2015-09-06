@@ -570,7 +570,7 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 		target = CURRENT;
 	} else if (strcasecmp(target_str, "all") == 0) {
 		target = ALL;
-	} else if (strcasecmp(target_str, "workspace") == 0){
+	} else if (strcasecmp(target_str, "workspace") == 0) {
 		if (inout == OUTER) {
 			target = CURRENT;
 		} else {
