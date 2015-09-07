@@ -334,7 +334,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		release_key(sym, key);
 	}
 
-	// TODO: reminder to check conflicts with mod+q+a versus mod+q
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
 
