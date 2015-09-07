@@ -96,7 +96,7 @@ static int bindsym_sort(const void *_lbind, const void *_rbind) {
 	return (rbind->keys->length + rmod) - (lbind->keys->length + lmod);
 }
 
-static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
+static bool cmd_bindsym(int argc, char **argv) {
 	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)) {
 		return false;
 	};
@@ -146,7 +146,7 @@ static bool cmd_bindsym(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
+static bool cmd_exec_always(int argc, char **argv) {
 	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return false;
 	}
@@ -171,14 +171,14 @@ static bool cmd_exec_always(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_exec(struct sway_config *config, int argc, char **argv) {
+static bool cmd_exec(int argc, char **argv) {
 	if (config->reloading) {
 		char *args = join_args(argv, argc);
 		sway_log(L_DEBUG, "Ignoring exec %s due to reload", args);
 		free(args);
 		return true;
 	}
-	return cmd_exec_always(config, argc, argv);
+	return cmd_exec_always(argc, argv);
 }
 
 static void kill_views(swayc_t *container, void *data) {
@@ -187,7 +187,7 @@ static void kill_views(swayc_t *container, void *data) {
 	}
 }
 
-static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
+static bool cmd_exit(int argc, char **argv) {
 	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
@@ -197,7 +197,7 @@ static bool cmd_exit(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
+static bool cmd_floating(int argc, char **argv) {
 	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -258,7 +258,7 @@ static bool cmd_floating(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) {
+static bool cmd_floating_mod(int argc, char **argv) {
 	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -282,7 +282,7 @@ static bool cmd_floating_mod(struct sway_config *config, int argc, char **argv) 
 	return true;
 }
 
-static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
+static bool cmd_focus(int argc, char **argv) {
 	static int floating_toggled_index = 0;
 	static int tiled_toggled_index = 0;
 	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)) {
@@ -340,7 +340,7 @@ static bool cmd_focus(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_focus_follows_mouse(struct sway_config *config, int argc, char **argv) {
+static bool cmd_focus_follows_mouse(int argc, char **argv) {
 	if (!checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -365,7 +365,39 @@ static void hide_view_in_scratchpad(swayc_t *sp_view) {
 	set_focused_container(container_under_pointer());
 }
 
-static bool cmd_move(struct sway_config *config, int argc, char **argv) {
+static bool cmd_mode(int argc, char **argv) {
+	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
+		return false;
+	}
+	const char *mode_name = argv[0];
+	struct sway_mode *mode = NULL;
+	// Find mode
+	int i, len = config->modes->length;
+	for (i = 0; i < len; ++i) {
+		struct sway_mode *find = config->modes->items[i];
+		if (strcasecmp(find->name, mode_name)==0) {
+			mode = find;
+			break;
+		}
+	}
+	// Create mode if it doesnt exist
+	if (!mode && argc >= 2 && strncmp(argv[1],"{",1) == 0) {
+		mode = malloc(sizeof*mode);
+		mode->name = strdup(mode_name);
+		mode->bindings = create_list();
+		list_add(config->modes, mode);
+	}
+	if (!mode) {
+		sway_log(L_ERROR, "Invalide mode `%s'", mode_name);
+		return false;
+	}
+	sway_log(L_DEBUG, "Switching to mode `%s'",mode->name);
+	// Set current mode
+	config->current_mode = mode;
+	return true;
+}
+
+static bool cmd_move(int argc, char **argv) {
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
@@ -435,7 +467,7 @@ static bool cmd_move(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_orientation(struct sway_config *config, int argc, char **argv) {
+static bool cmd_orientation(int argc, char **argv) {
 	if (strcasecmp(argv[0], "horizontal") == 0) {
 		config->default_orientation = L_HORIZ;
 	} else if (strcasecmp(argv[0], "vertical") == 0) {
@@ -448,7 +480,7 @@ static bool cmd_orientation(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_output(struct sway_config *config, int argc, char **argv) {
+static bool cmd_output(int argc, char **argv) {
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
@@ -513,7 +545,7 @@ static bool cmd_output(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
+static bool cmd_gaps(int argc, char **argv) {
 	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
@@ -655,13 +687,13 @@ static bool cmd_gaps(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_kill(struct sway_config *config, int argc, char **argv) {
+static bool cmd_kill(int argc, char **argv) {
 	swayc_t *view = get_focused_container(&root_container);
 	wlc_view_close(view->handle);
 	return true;
 }
 
-static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
+static bool cmd_layout(int argc, char **argv) {
 	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)) {
 		return false;
 	}
@@ -686,7 +718,7 @@ static bool cmd_layout(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
+static bool cmd_reload(int argc, char **argv) {
 	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)) {
 		return false;
 	}
@@ -697,7 +729,7 @@ static bool cmd_reload(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_resize(struct sway_config *config, int argc, char **argv) {
+static bool cmd_resize(int argc, char **argv) {
 	if (!checkarg(argc, "resize", EXPECTED_AT_LEAST, 3)) {
 		return false;
 	}
@@ -769,7 +801,7 @@ void remove_view_from_scratchpad(swayc_t *view) {
 	}
 }
 
-static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
+static bool cmd_scratchpad(int argc, char **argv) {
 	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -796,20 +828,18 @@ static bool cmd_scratchpad(struct sway_config *config, int argc, char **argv) {
 	}
 }
 
-static bool cmd_set(struct sway_config *config, int argc, char **argv) {
+static bool cmd_set(int argc, char **argv) {
 	if (!checkarg(argc, "set", EXPECTED_EQUAL_TO, 2)) {
 		return false;
 	}
 	struct sway_variable *var = malloc(sizeof(struct sway_variable));
-	var->name = malloc(strlen(argv[0]) + 1);
-	strcpy(var->name, argv[0]);
-	var->value = malloc(strlen(argv[1]) + 1);
-	strcpy(var->value, argv[1]);
+	var->name = strdup(argv[0]);
+	var->value = strdup(argv[1]);
 	list_add(config->symbols, var);
 	return true;
 }
 
-static bool _do_split(struct sway_config *config, int argc, char **argv, int layout) {
+static bool _do_split(int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv" :
 		layout == L_HORIZ ? "splith" : "split";
 	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)) {
@@ -840,15 +870,15 @@ static bool _do_split(struct sway_config *config, int argc, char **argv, int lay
 	return true;
 }
 
-static bool cmd_split(struct sway_config *config, int argc, char **argv) {
+static bool cmd_split(int argc, char **argv) {
 	if (!checkarg(argc, "split", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
 
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
-		_do_split(config, argc - 1, argv + 1, L_VERT);
+		_do_split(argc - 1, argv + 1, L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
-		_do_split(config, argc - 1, argv + 1, L_HORIZ);
+		_do_split(argc - 1, argv + 1, L_HORIZ);
 	} else {
 		sway_log(L_ERROR, "Invalid split command (expected either horiziontal or vertical).");
 		return false;
@@ -857,15 +887,15 @@ static bool cmd_split(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_splitv(struct sway_config *config, int argc, char **argv) {
-	return _do_split(config, argc, argv, L_VERT);
+static bool cmd_splitv(int argc, char **argv) {
+	return _do_split(argc, argv, L_VERT);
 }
 
-static bool cmd_splith(struct sway_config *config, int argc, char **argv) {
-	return _do_split(config, argc, argv, L_HORIZ);
+static bool cmd_splith(int argc, char **argv) {
+	return _do_split(argc, argv, L_HORIZ);
 }
 
-static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
+static bool cmd_log_colors(int argc, char **argv) {
 	if (!checkarg(argc, "log_colors", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -878,7 +908,7 @@ static bool cmd_log_colors(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
+static bool cmd_fullscreen(int argc, char **argv) {
 	if (!checkarg(argc, "fullscreen", EXPECTED_AT_LEAST, 0)) {
 		return false;
 	}
@@ -897,7 +927,7 @@ static bool cmd_fullscreen(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
+static bool cmd_workspace(int argc, char **argv) {
 	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
@@ -953,7 +983,7 @@ static bool cmd_workspace(struct sway_config *config, int argc, char **argv) {
 	return true;
 }
 
-static bool cmd_ws_auto_back_and_forth(struct sway_config *config, int argc, char **argv) {
+static bool cmd_ws_auto_back_and_forth(int argc, char **argv) {
 	if (!checkarg(argc, "workspace_auto_back_and_forth", EXPECTED_EQUAL_TO, 1)) {
 		return false;
 	}
@@ -979,6 +1009,7 @@ static struct cmd_handler handlers[] = {
 	{ "kill", cmd_kill, CMD_KEYBIND },
 	{ "layout", cmd_layout, CMD_KEYBIND },
 	{ "log_colors", cmd_log_colors, CMD_ANYTIME },
+	{ "mode", cmd_mode, CMD_ANYTIME },
 	{ "move", cmd_move, CMD_KEYBIND },
 	{ "output", cmd_output, CMD_ANYTIME },
 	{ "reload", cmd_reload, CMD_KEYBIND },
@@ -991,58 +1022,6 @@ static struct cmd_handler handlers[] = {
 	{ "workspace", cmd_workspace, CMD_COMPOSITOR_READY },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth, CMD_ANYTIME },
 };
-
-static char **split_directive(char *line, int *argc) {
-	const char *delimiters = " ";
-	*argc = 0;
-	while (isspace(*line) && *line) ++line;
-
-	int capacity = 10;
-	char **parts = malloc(sizeof(char *) * capacity);
-
-	if (!*line) return parts;
-
-	int in_string = 0, in_character = 0;
-	int i, j, _;
-	for (i = 0, j = 0; line[i]; ++i) {
-		if (line[i] == '\\') {
-			++i;
-		} else if (line[i] == '"' && !in_character) {
-			in_string = !in_string;
-		} else if (line[i] == '\'' && !in_string) {
-			in_character = !in_character;
-		} else if (!in_character && !in_string) {
-			if (strchr(delimiters, line[i]) != NULL) {
-				char *item = malloc(i - j + 1);
-				strncpy(item, line + j, i - j);
-				item[i - j] = '\0';
-				item = strip_whitespace(item, &_);
-				if (item[0] == '\0') {
-					free(item);
-				} else {
-					if (*argc == capacity) {
-						capacity *= 2;
-						parts = realloc(parts, sizeof(char *) * capacity);
-					}
-					parts[*argc] = item;
-					j = i + 1;
-					++*argc;
-				}
-			}
-		}
-	}
-	char *item = malloc(i - j + 1);
-	strncpy(item, line + j, i - j);
-	item[i - j] = '\0';
-	item = strip_whitespace(item, &_);
-	if (*argc == capacity) {
-		capacity++;
-		parts = realloc(parts, sizeof(char *) * capacity);
-	}
-	parts[*argc] = item;
-	++*argc;
-	return parts;
-}
 
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
@@ -1058,44 +1037,25 @@ struct cmd_handler *find_handler(char *line) {
 	return res;
 }
 
-bool handle_command(struct sway_config *config, char *exec) {
+bool handle_command(char *exec) {
 	sway_log(L_INFO, "Handling command '%s'", exec);
-	char *ptr, *cmd;
-	bool exec_success;
-
-	if ((ptr = strchr(exec, ' ')) == NULL) {
-		cmd = exec;
-	} else {
-		int index = ptr - exec;
-		cmd = malloc(index + 1);
-		strncpy(cmd, exec, index);
-		cmd[index] = '\0';
+	int argc;
+	char **argv = split_args(exec, &argc);
+	if (argc == 0) {
+		return false;
 	}
-	struct cmd_handler *handler = find_handler(cmd);
-	if (handler == NULL) {
-		sway_log(L_ERROR, "Unknown command '%s'", cmd);
-		exec_success = false; // TODO: return error, probably
-	} else {
-		int argc;
-		char **argv = split_directive(exec + strlen(handler->command), &argc);
+	struct cmd_handler *handler = find_handler(argv[0]);
+	bool exec_success = false;
+	if (handler) {
 		int i;
-
-		// Perform var subs on all parts of the command
-		for (i = 0; i < argc; ++i) {
-			argv[i] = do_var_replacement(config, argv[i]);
+		for (i = 1; i < argc; ++i) {
+			argv[i] = do_var_replacement(argv[i]);
 		}
-
-		exec_success = handler->handle(config, argc, argv);
-		for (i = 0; i < argc; ++i) {
-			free(argv[i]);
-		}
-		free(argv);
-		if (!exec_success) {
-			sway_log(L_ERROR, "Command failed: %s", cmd);
-		}
+		exec_success = handler->handle(argc - 1, argv + 1);
 	}
-	if (ptr) {
-		free(cmd);
+	if (exec_success == false) {
+		sway_log(L_ERROR, "Command failed: %s", argv[0]);
 	}
+	free_argv(argc, argv);
 	return exec_success;
 }
