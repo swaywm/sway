@@ -326,8 +326,10 @@ void update_geometry(swayc_t *container) {
 			.y = container->y + (container->is_floating ? 0 : gap / 2)
 		},
 		.size = {
-			.w = container->width - (container->is_floating ? 0 : gap),
-			.h = container->height - (container->is_floating ? 0 : gap)
+			.w = container->width > (container->is_floating ? 0 : gap) ?
+				container->width - (container->is_floating ? 0 : gap) : 0,
+			.h = container->height > (container->is_floating ? 0 : gap) ?
+				container->height - (container->is_floating ? 0 : gap) : 0,
 		}
 	};
 	if (swayc_is_fullscreen(container)) {
