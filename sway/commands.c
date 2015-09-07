@@ -383,9 +383,8 @@ static bool cmd_mode(int argc, char **argv) {
 	// Create mode if it doesnt exist
 	if (!mode && argc >= 2 && strncmp(argv[1],"{",1) == 0) {
 		mode = malloc(sizeof*mode);
-		mode->name = malloc(strlen(mode_name) + 1);
+		mode->name = strdup(mode_name);
 		mode->bindings = create_list();
-		strcpy(mode->name, mode_name);
 		list_add(config->modes, mode);
 	}
 	if (!mode) {
@@ -834,10 +833,8 @@ static bool cmd_set(int argc, char **argv) {
 		return false;
 	}
 	struct sway_variable *var = malloc(sizeof(struct sway_variable));
-	var->name = malloc(strlen(argv[0]) + 1);
-	strcpy(var->name, argv[0]);
-	var->value = malloc(strlen(argv[1]) + 1);
-	strcpy(var->value, argv[1]);
+	var->name = strdup(argv[0]);
+	var->value = strdup(argv[1]);
 	list_add(config->symbols, var);
 	return true;
 }

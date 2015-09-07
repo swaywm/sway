@@ -17,14 +17,13 @@ char *strip_whitespace(char *_str) {
 	while (*_str == ' ' || *_str == '\t') {
 		_str++;
 	}
-	char *str = malloc(strlen(_str) + 1);
-	strcpy(str, _str);
+	char *str = strdup(_str);
 	free(strold);
 	int i;
 	for (i = 0; str[i] != '\0'; ++i);
 	do {
 		i--;
-	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t')); 
+	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
 	str[i + 1] = '\0';
 	return str;
 }
@@ -76,9 +75,8 @@ void strip_quotes(char *str) {
 
 list_t *split_string(const char *str, const char *delims) {
 	list_t *res = create_list();
-	char *copy = malloc(strlen(str) + 1);
+	char *copy = strdup(str);
 	char *token;
-	strcpy(copy, str);
 
 	token = strtok(copy, delims);
 	while(token) {

@@ -249,8 +249,7 @@ bool read_config(FILE *file, bool is_active) {
 				sway_log(L_ERROR, "Invalid command during config ``%s''", line);
 			} else if (handler->config_type == CMD_COMPOSITOR_READY && !is_active) {
 				sway_log(L_DEBUG, "Deferring command ``%s''", line);
-				char *cmd = malloc(strlen(line) + 1);
-				strcpy(cmd, line);
+				char *cmd = strdup(line);
 				list_add(config->cmd_queue, cmd);
 			} else if (!handle_command(line)) {
 				sway_log(L_DEBUG, "Config load failed for line ``%s''", line);
