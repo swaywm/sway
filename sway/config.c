@@ -13,6 +13,7 @@
 
 struct sway_config *config = NULL;
 
+
 static void free_variable(struct sway_variable *var) {
 	free(var->name);
 	free(var->value);
@@ -46,39 +47,7 @@ static void free_workspace_output(struct workspace_output *wo) {
 	free(wo);
 }
 
-static bool file_exists(const char *path) {
-	return access(path, R_OK) != -1;
-}
-
-static void config_defaults(struct sway_config *config) {
-	config->symbols = create_list();
-	config->modes = create_list();
-	config->workspace_outputs = create_list();
-	config->output_configs = create_list();
-
-	config->cmd_queue = create_list();
-
-	config->current_mode = malloc(sizeof(struct sway_mode));
-	config->current_mode->name = NULL;
-	config->current_mode->bindings = create_list();
-	list_add(config->modes, config->current_mode);
-
-	config->floating_mod = 0;
-	config->default_layout = L_NONE;
-	config->default_orientation = L_NONE;
-	// Flags
-	config->focus_follows_mouse = true;
-	config->mouse_warping = true;
-	config->reloading = false;
-	config->active = false;
-	config->failed = false;
-	config->auto_back_and_forth = false;
-
-	config->gaps_inner = 0;
-	config->gaps_outer = 0;
-}
-
-void free_config(struct sway_config *config) {
+static void free_config(struct sway_config *config) {
 	int i;
 	for (i = 0; i < config->symbols->length; ++i) {
 		free_variable(config->symbols->items[i]);
@@ -102,6 +71,40 @@ void free_config(struct sway_config *config) {
 	}
 	list_free(config->output_configs);
 	free(config);
+}
+
+
+static bool file_exists(const char *path) {
+	return access(path, R_OK) != -1;
+}
+
+static void config_defaults(struct sway_config *config) {
+	config->symbols = create_list();
+	config->modes = create_list();
+	config->workspace_outputs = create_list();
+	config->output_configs = create_list();
+
+	config->cmd_queue = create_list();
+
+	config->current_mode = malloc(sizeof(struct sway_mode));
+	config->current_mode->name = malloc(sizeof("default"));
+	strcpy(config->current_mode->name, "default");
+	config->current_mode->bindings = create_list();
+	list_add(config->modes, config->current_mode);
+
+	config->floating_mod = 0;
+	config->default_layout = L_NONE;
+	config->default_orientation = L_NONE;
+	// Flags
+	config->focus_follows_mouse = true;
+	config->mouse_warping = true;
+	config->reloading = false;
+	config->active = false;
+	config->failed = false;
+	config->auto_back_and_forth = false;
+
+	config->gaps_inner = 0;
+	config->gaps_outer = 0;
 }
 
 static char *get_config_path(void) {
@@ -210,34 +213,35 @@ bool load_config(const char *file) {
 }
 
 bool read_config(FILE *file, bool is_active) {
-	struct sway_config *temp_config = malloc(sizeof(struct sway_config));
-	config_defaults(temp_config);
+	struct sway_config *old_config = config;
+	struct sway_mode *default_mode;
+	config = malloc(sizeof(struct sway_config));
+
+	config_defaults(config);
+	default_mode = config->current_mode;
+
 	if (is_active) {
 		sway_log(L_DEBUG, "Performing configuration file reload");
-		temp_config->reloading = true;
-		temp_config->active = true;
+		config->reloading = true;
+		config->active = true;
 	}
-
 	bool success = true;
 
-	int temp_depth = 0; // Temporary: skip all config sections with depth
-
+	char *line;
 	while (!feof(file)) {
-		int _;
-		char *line = read_line(file);
-		line = strip_whitespace(line, &_);
+		line = read_line(file);
 		line = strip_comments(line);
-		if (!line[0]) {
+		if (line[0] == '\0') {
 			goto _continue;
 		}
-		if (temp_depth && line[0] == '}') {
-			temp_depth--;
+		if (line[0] == '}') {
+			config->current_mode = default_mode;
 			goto _continue;
 		}
 
 		// Any command which would require wlc to be initialized
 		// should be queued for later execution
-		list_t *args = split_string(line, " ");
+		list_t *args = split_string(line, whitespace);
 		struct cmd_handler *handler;
 		if ((handler = find_handler(args->items[0]))) {
 			if (handler->config_type == CMD_KEYBIND) {
@@ -246,11 +250,11 @@ bool read_config(FILE *file, bool is_active) {
 				sway_log(L_DEBUG, "Deferring command ``%s''", line);
 				char *cmd = malloc(strlen(line) + 1);
 				strcpy(cmd, line);
-				list_add(temp_config->cmd_queue, cmd);
-			} else if (!temp_depth && !handle_command(temp_config, line)) {
+				list_add(config->cmd_queue, cmd);
+			} else if (!handle_command(line)) {
 				sway_log(L_DEBUG, "Config load failed for line ``%s''", line);
 				success = false;
-				temp_config->failed = true;
+				config->failed = true;
 			}
 		} else {
 			sway_log(L_ERROR, "Invalid command ``%s''", line);
@@ -258,25 +262,21 @@ bool read_config(FILE *file, bool is_active) {
 		free_flat_list(args);
 
 _continue:
-		if (line && line[strlen(line) - 1] == '{') {
-			temp_depth++;
-		}
 		free(line);
 	}
 
 	if (is_active) {
-		temp_config->reloading = false;
+		config->reloading = false;
 		arrange_windows(&root_container, -1, -1);
 	}
-	if (config) {
-		free_config(config);
+	if (old_config) {
+		free_config(old_config);
 	}
-	config = temp_config;
 
 	return success;
 }
 
-char *do_var_replacement(struct sway_config *config, char *str) {
+char *do_var_replacement(char *str) {
 	// TODO: Handle escaping $ and using $ in string literals
 	int i;
 	for (i = 0; str[i]; ++i) {

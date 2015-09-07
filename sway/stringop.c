@@ -1,34 +1,26 @@
-#include "stringop.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <strings.h>
+#include <ctype.h>
+#include "stringop.h"
+#include "log.h"
 #include "string.h"
 #include "list.h"
-#include <strings.h>
-#include <log.h>
+
+const char *whitespace = " \f\n\r\t\v";
 
 /* Note: This returns 8 characters for trimmed_start per tab character. */
-char *strip_whitespace(char *_str, int *trimmed_start) {
-	*trimmed_start = 0;
-	if (*_str == '\0')
-		return _str;
-	char *strold = _str;
-	while (*_str == ' ' || *_str == '\t') {
-		if (*_str == '\t') {
-			*trimmed_start += 8;
-		} else {
-			*trimmed_start += 1;
-		}
-		_str++;
-	}
-	char *str = malloc(strlen(_str) + 1);
-	strcpy(str, _str);
-	free(strold);
-	int i;
-	for (i = 0; str[i] != '\0'; ++i);
+char *strip_whitespace(char *_str) {
+	int ws = strspn(_str, whitespace);
+	int len = strlen(_str) - ws + 1;
+	sway_log(L_DEBUG,"%d, %d..",ws,len);
+	char *str = malloc(len);
+	strcpy(str, _str+ws);
+	free(_str);
 	do {
-		i--;
-	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
-	str[i + 1] = '\0';
+		len--;
+	} while (len >= 0 && (str[len] == ' ' || str[len] == '\t'));
+	str[len + 1] = '\0';
 	return str;
 }
 
@@ -41,7 +33,7 @@ char *strip_comments(char *str) {
 		} else if (str[i] == '\'' && !in_string) {
 			in_character = !in_character;
 		} else if (!in_character && !in_string) {
-			if (str[i] == '#' && i == 0) {
+			if (str[i] == '#') {
 				str[i] = '\0';
 				break;
 			}
@@ -51,26 +43,45 @@ char *strip_comments(char *str) {
 	return str;
 }
 
+void strip_quotes(char *str) {
+	bool in_str = false;
+	bool in_chr = false;
+	bool escaped = false;
+	char *end = strchr(str,0);
+	while (*str) {
+		if (*str == '\'' && !in_str && !escaped) {
+			in_chr = !in_chr;
+			goto shift_over;
+		} else if (*str == '\"' && !in_chr && !escaped) {
+			in_str = !in_str;
+			goto shift_over;
+		} else if (*str == '\\') {
+			escaped = !escaped;
+			++str;
+			continue;
+		}
+		escaped = false;
+		++str;
+		continue;
+		shift_over:
+		memmove(str, str+1, end-- - str);
+	}
+	*end = '\0';
+}
+
 list_t *split_string(const char *str, const char *delims) {
 	list_t *res = create_list();
-	int i, j;
-	int len = strlen(str);
-	for (i = 0, j = 0; i < len + 1; ++i) {
-		if (strchr(delims, str[i]) || i == len) {
-			if (i - j == 0) {
-				continue;
-			}
-			char *left = malloc(i - j + 1);
-			memcpy(left, str + j, i - j);
-			left[i - j] = 0;
-			list_add(res, left);
-			j = i + 1;
-			while (j <= len && str[j] && strchr(delims, str[j])) {
-				j++;
-				i++;
-			}
-		}
+	char *copy = malloc(strlen(str) + 1);
+	char *token;
+	strcpy(copy, str);
+
+	token = strtok(copy, delims);
+	while(token) {
+		token = strdup(token);
+		list_add(res, token);
+		token = strtok(NULL, delims);
 	}
+	free(copy);
 	return res;
 }
 
@@ -80,6 +91,60 @@ void free_flat_list(list_t *list) {
 		free(list->items[i]);
 	}
 	list_free(list);
+}
+
+char **split_args(const char *start, int *argc) {
+	*argc = 0;
+	int alloc = 2;
+	char **parts = malloc(sizeof(char *) * alloc);
+	bool in_token = false;
+	bool in_string = false;
+	bool in_char = false;
+	bool escaped = false;
+	const char *end = start;
+	while (*start) {
+		if (!in_token) {
+			start = (end += strspn(end, whitespace));
+			in_token = true;
+		}
+		if (*end == '"' && !in_char && !escaped) {
+			in_string = !in_string;
+		} else if (*end == '\'' && !in_string && !escaped) {
+			in_char = !in_char;
+		} else if (*end == '\\') {
+			escaped = !escaped;
+		} else if (*end == '\0' || (!in_string && !in_char && !escaped
+				&& strchr(whitespace, *end))) {
+			goto add_part;
+		}
+		if (*end != '\\') {
+			escaped = false;
+		}
+		++end;
+		continue;
+		add_part:
+		if (end - start > 0) {
+			char *token = malloc(end - start + 1);
+			strncpy(token, start, end - start + 1);
+			token[end - start] = '\0';
+			strip_quotes(token);
+			unescape_string(token);
+			parts[*argc] = token;
+			if (++*argc == alloc) {
+				parts = realloc(parts, (alloc *= 2) * sizeof(char *));
+			}
+		}
+		in_token = false;
+		escaped = false;
+	}
+	return parts;
+}
+
+void free_argv(int argc, char **argv) {
+	while (--argc) {
+		free(argv[argc]);
+	}
+	free(argv);
 }
 
 char *code_strstr(const char *haystack, const char *needle) {
@@ -177,7 +242,7 @@ int unescape_string(char *string) {
 					string[i - 1] = c;
 				}
 			}
-			memmove(string + i, string + i + shift, len - i);
+			memmove(string + i, string + i + shift, len - i + 1);
 		}
 	}
 	return len;

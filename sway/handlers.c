@@ -130,13 +130,6 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 	if (!c) return;
 	c->width = to->w;
 	c->height = to->h;
-	if (config->default_layout == L_NONE && config->default_orientation == L_NONE) {
-		if (c->width >= c->height) {
-			((swayc_t*)c->children->items[0])->layout = L_HORIZ;
-		} else {
-			((swayc_t*)c->children->items[0])->layout = L_VERT;
-		}
-	}
 	arrange_windows(&root_container, -1, -1);
 }
 
@@ -348,7 +341,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			}
 			if (match) {
 				if (state == WLC_KEY_STATE_PRESSED) {
-					handle_command(config, binding->command);
+					handle_command(binding->command);
 					return EVENT_HANDLED;
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
@@ -486,7 +479,7 @@ static void handle_wlc_ready(void) {
 	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
 	// Execute commands until there are none left
 	while (config->cmd_queue->length) {
-		handle_command(config, config->cmd_queue->items[0]);
+		handle_command(config->cmd_queue->items[0]);
 		free(config->cmd_queue->items[0]);
 		list_del(config->cmd_queue, 0);
 	}
