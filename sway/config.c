@@ -11,7 +11,7 @@
 #include "layout.h"
 #include "input_state.h"
 
-struct sway_config *config;
+struct sway_config *config = NULL;
 
 static bool file_exists(const char *path) {
 	return access(path, R_OK) != -1;
@@ -59,26 +59,40 @@ void free_mode(struct sway_mode *mode) {
 
 void free_config(struct sway_config *config) {
 	int i;
-	for (i = 0; i < config->modes->length; ++i) {
-		free_mode((struct sway_mode *)config->modes->items[i]);
+	for (i = 0; i < config->symbols->length; ++i) {
+		struct sway_variable *var = config->symbols->items[i];
+		free(var->name);
+		free(var->value);
+		free(var);
 	}
-	free_flat_list(config->modes);
+	list_free(config->symbols);
+
+	for (i = 0; i < config->modes->length; ++i) {
+		free_mode(config->modes->items[i]);
+	}
+	list_free(config->modes);
+
+	for (i = 0; i < config->cmd_queue->length; ++i) {
+		free(config->cmd_queue->items[i]);
+	}
+	list_free(config->cmd_queue);
+
 	for (i = 0; i < config->workspace_outputs->length; ++i) {
 		struct workspace_output *wso = config->workspace_outputs->items[i];
 		free(wso->output);
 		free(wso->workspace);
+		free(wso);
 	}
-	free_flat_list(config->workspace_outputs);
-	free_flat_list(config->cmd_queue);
-	for (i = 0; i < config->symbols->length; ++i) {
-		struct sway_variable *sym = config->symbols->items[i];
-		free(sym->name);
-		free(sym->value);
-	}
-	free_flat_list(config->symbols);
-	free_flat_list(config->output_configs);
-}
+	list_free(config->workspace_outputs);
 
+	for (i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *oc = config->output_configs->items[i];
+		free(oc->name);
+		free(oc);
+	}
+	list_free(config->output_configs);
+	free(config);
+}
 
 static char *get_config_path(void) {
 	char *config_path = NULL;
@@ -243,6 +257,9 @@ _continue:
 	if (is_active) {
 		temp_config->reloading = false;
 		arrange_windows(&root_container, -1, -1);
+	}
+	if (config) {
+		free_config(config);
 	}
 	config = temp_config;
 
