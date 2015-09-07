@@ -11,22 +11,58 @@
 #include "layout.h"
 #include "input_state.h"
 
-struct sway_config *config;
+struct sway_config *config = NULL;
 
-static bool exists(const char *path) {
+static void free_variable(struct sway_variable *var) {
+	free(var->name);
+	free(var->value);
+	free(var);
+}
+
+static void free_binding(struct sway_binding *bind) {
+	free_flat_list(bind->keys);
+	free(bind->command);
+	free(bind);
+}
+
+static void free_mode(struct sway_mode *mode) {
+	free(mode->name);
+	int i;
+	for (i = 0; i < mode->bindings->length; ++i) {
+		free_binding(mode->bindings->items[i]);
+	}
+	list_free(mode->bindings);
+	free(mode);
+}
+
+static void free_outut_config(struct output_config *oc) {
+	free(oc->name);
+	free(oc);
+}
+
+static void free_workspace_output(struct workspace_output *wo) {
+	free(wo->output);
+	free(wo->workspace);
+	free(wo);
+}
+
+static bool file_exists(const char *path) {
 	return access(path, R_OK) != -1;
 }
 
-void config_defaults(struct sway_config *config) {
+static void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
-	config->cmd_queue = create_list();
 	config->workspace_outputs = create_list();
 	config->output_configs = create_list();
+
+	config->cmd_queue = create_list();
+
 	config->current_mode = malloc(sizeof(struct sway_mode));
 	config->current_mode->name = NULL;
 	config->current_mode->bindings = create_list();
 	list_add(config->modes, config->current_mode);
+
 	config->floating_mod = 0;
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
@@ -42,115 +78,99 @@ void config_defaults(struct sway_config *config) {
 	config->gaps_outer = 0;
 }
 
-void free_mode(struct sway_mode *mode) {
-	free(mode->name);
-	free_flat_list(mode->bindings);
-}
-
 void free_config(struct sway_config *config) {
 	int i;
-	for (i = 0; i < config->modes->length; ++i) {
-		free_mode((struct sway_mode *)config->modes->items[i]);
-	}
-	free_flat_list(config->modes);
-	for (i = 0; i < config->workspace_outputs->length; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		free(wso->output);
-		free(wso->workspace);
-	}
-	free_flat_list(config->workspace_outputs);
-	free_flat_list(config->cmd_queue);
 	for (i = 0; i < config->symbols->length; ++i) {
-		struct sway_variable *sym = config->symbols->items[i];
-		free(sym->name);
-		free(sym->value);
+		free_variable(config->symbols->items[i]);
 	}
-	free_flat_list(config->symbols);
-	free_flat_list(config->output_configs);
+	list_free(config->symbols);
+
+	for (i = 0; i < config->modes->length; ++i) {
+		free_mode(config->modes->items[i]);
+	}
+	list_free(config->modes);
+
+	free_flat_list(config->cmd_queue);
+
+	for (i = 0; i < config->workspace_outputs->length; ++i) {
+		free_workspace_output(config->workspace_outputs->items[i]);
+	}
+	list_free(config->workspace_outputs);
+
+	for (i = 0; i < config->output_configs->length; ++i) {
+		free_outut_config(config->output_configs->items[i]);
+	}
+	list_free(config->output_configs);
+	free(config);
 }
 
-static const char *search_paths[] = {
-	"$home/.sway/config",
-	"$config/sway/config",
-	"/etc/sway/config",
-	"$home/.i3/config",
-	"$config/.i3/config",
-	"/etc/i3/config"
-};
-
-static char *get_config_path() {
-	char *home = getenv("HOME");
-	if (home) {
-		home = strdup(getenv("HOME"));
-	}
-	char *config = getenv("XDG_CONFIG_HOME");
-	if (config) {
-		config = strdup(getenv("XDG_CONFIG_HOME"));
+static char *get_config_path(void) {
+	char *config_path = NULL;
+	char *paths[3] = {getenv("HOME"), getenv("XDG_CONFIG_HOME"), ""};
+	int pathlen[3] = {0, 0, 0};
+	int i;
+#define home paths[0]
+#define conf paths[1]
+	// Get home and config directories
+	home = home ? strdup(home) : NULL;
+	if (conf) {
+		conf = strdup(conf);
 	} else if (home) {
 		const char *def = "/.config";
-		config = malloc(strlen(home) + strlen(def) + 1);
-		strcpy(config, home);
-		strcat(config, def);
+		conf = malloc(strlen(home) + strlen(def) + 1);
+		strcpy(conf, home);
+		strcat(conf, def);
 	} else {
 		home = strdup("");
-		config = strdup("");
+		conf = strdup("");
 	}
-
-	// Set up a temporary config for holding set variables
-	struct sway_config *temp_config = malloc(sizeof(struct sway_config));
-	config_defaults(temp_config);
-	const char *set_home = "set $home ";
-	char *_home = malloc(strlen(home) + strlen(set_home) + 1);
-	strcpy(_home, set_home);
-	strcat(_home, home);
-	handle_command(temp_config, _home);
-	free(_home);
-	const char *set_config = "set $config ";
-	char *_config = malloc(strlen(config) + strlen(set_config) + 1);
-	strcpy(_config, set_config);
-	strcat(_config, config);
-	handle_command(temp_config, _config);
-	free(_config);
-
-	char *test = NULL;
-	int i;
+	pathlen[0] = strlen(home);
+	pathlen[1] = strlen(conf);
+#undef home
+#undef conf
+	// Search for config file from search paths
+	static const char *search_paths[] = {
+		"/.sway/config", // Prepend with $home
+		"/sway/config", // Prepend with $config
+		"/etc/sway/config",
+		"/.i3/config", // $home
+		"/.i3/config", // $config
+		"/etc/i3/config"
+	};
 	for (i = 0; i < (int)(sizeof(search_paths) / sizeof(char *)); ++i) {
-		test = strdup(search_paths[i]);
-		test = do_var_replacement(temp_config, test);
+		char *test = malloc(pathlen[i%3] + strlen(search_paths[i]) + 1);
+		strcpy(test, paths[i%3]);
+		strcat(test, search_paths[i]);
 		sway_log(L_DEBUG, "Checking for config at %s", test);
-		if (exists(test)) {
-			goto _continue;
+		if (file_exists(test)) {
+			config_path = test;
+			goto cleanup;
 		}
 		free(test);
-		test = NULL;
 	}
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
 	char *xdg_config_dirs = getenv("XDG_CONFIG_DIRS");
-	if (xdg_config_dirs != NULL) {
+	if (xdg_config_dirs) {
 		list_t *paths = split_string(xdg_config_dirs, ":");
-		char *name = "/sway/config";
-		int i;
+		const char *name = "/sway/config";
 		for (i = 0; i < paths->length; i++ ) {
-			test = malloc(strlen(paths->items[i]) + strlen(name) + 1);
+			char *test = malloc(strlen(paths->items[i]) + strlen(name) + 1);
 			strcpy(test, paths->items[i]);
 			strcat(test, name);
-			if (exists(test)) {
-				free_config(temp_config);
-				free_flat_list(paths);
-				return test;
+			if (file_exists(test)) {
+				config_path = test;
+				break;
 			}
 			free(test);
-			test = NULL;
 		}
 		free_flat_list(paths);
 	}
 
-_continue:
-	free_config(temp_config);
-	free(home);
-	free(config);
-	return test;
+cleanup:
+	free(paths[0]);
+	free(paths[1]);
+	return config_path;
 }
 
 bool load_config(const char *file) {
@@ -247,6 +267,9 @@ _continue:
 	if (is_active) {
 		temp_config->reloading = false;
 		arrange_windows(&root_container, -1, -1);
+	}
+	if (config) {
+		free_config(config);
 	}
 	config = temp_config;
 
