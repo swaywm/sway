@@ -13,6 +13,39 @@
 
 struct sway_config *config = NULL;
 
+static void free_variable(struct sway_variable *var) {
+	free(var->name);
+	free(var->value);
+	free(var);
+}
+
+static void free_binding(struct sway_binding *bind) {
+	free_flat_list(bind->keys);
+	free(bind->command);
+	free(bind);
+}
+
+static void free_mode(struct sway_mode *mode) {
+	free(mode->name);
+	int i;
+	for (i = 0; i < mode->bindings->length; ++i) {
+		free_binding(mode->bindings->items[i]);
+	}
+	list_free(mode->bindings);
+	free(mode);
+}
+
+static void free_outut_config(struct output_config *oc) {
+	free(oc->name);
+	free(oc);
+}
+
+static void free_workspace_output(struct workspace_output *wo) {
+	free(wo->output);
+	free(wo->workspace);
+	free(wo);
+}
+
 static bool file_exists(const char *path) {
 	return access(path, R_OK) != -1;
 }
@@ -45,25 +78,10 @@ static void config_defaults(struct sway_config *config) {
 	config->gaps_outer = 0;
 }
 
-void free_mode(struct sway_mode *mode) {
-	free(mode->name);
-	int i;
-	for (i = 0; i < mode->bindings->length; ++i) {
-		struct sway_binding *bind = mode->bindings->items[i];
-		list_free(bind->keys);
-		free(bind->command);
-		free(bind);
-	}
-	list_free(mode->bindings);
-}
-
 void free_config(struct sway_config *config) {
 	int i;
 	for (i = 0; i < config->symbols->length; ++i) {
-		struct sway_variable *var = config->symbols->items[i];
-		free(var->name);
-		free(var->value);
-		free(var);
+		free_variable(config->symbols->items[i]);
 	}
 	list_free(config->symbols);
 
@@ -72,23 +90,15 @@ void free_config(struct sway_config *config) {
 	}
 	list_free(config->modes);
 
-	for (i = 0; i < config->cmd_queue->length; ++i) {
-		free(config->cmd_queue->items[i]);
-	}
-	list_free(config->cmd_queue);
+	free_flat_list(config->cmd_queue);
 
 	for (i = 0; i < config->workspace_outputs->length; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		free(wso->output);
-		free(wso->workspace);
-		free(wso);
+		free_workspace_output(config->workspace_outputs->items[i]);
 	}
 	list_free(config->workspace_outputs);
 
 	for (i = 0; i < config->output_configs->length; ++i) {
-		struct output_config *oc = config->output_configs->items[i];
-		free(oc->name);
-		free(oc);
+		free_outut_config(config->output_configs->items[i]);
 	}
 	list_free(config->output_configs);
 	free(config);
