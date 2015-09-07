@@ -230,6 +230,7 @@ bool read_config(FILE *file, bool is_active) {
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
+		line = strip_whitespace(line);
 		line = strip_comments(line);
 		if (line[0] == '\0') {
 			goto _continue;

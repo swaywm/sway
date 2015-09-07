@@ -11,16 +11,21 @@ const char *whitespace = " \f\n\r\t\v";
 
 /* Note: This returns 8 characters for trimmed_start per tab character. */
 char *strip_whitespace(char *_str) {
-	int ws = strspn(_str, whitespace);
-	int len = strlen(_str) - ws + 1;
-	sway_log(L_DEBUG,"%d, %d..",ws,len);
-	char *str = malloc(len);
-	strcpy(str, _str+ws);
-	free(_str);
+	if (*_str == '\0')
+		return _str;
+	char *strold = _str;
+	while (*_str == ' ' || *_str == '\t') {
+		_str++;
+	}
+	char *str = malloc(strlen(_str) + 1);
+	strcpy(str, _str);
+	free(strold);
+	int i;
+	for (i = 0; str[i] != '\0'; ++i);
 	do {
-		len--;
-	} while (len >= 0 && (str[len] == ' ' || str[len] == '\t'));
-	str[len + 1] = '\0';
+		i--;
+	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t')); 
+	str[i + 1] = '\0';
 	return str;
 }
 
