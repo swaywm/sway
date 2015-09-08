@@ -214,12 +214,9 @@ bool load_config(const char *file) {
 
 bool read_config(FILE *file, bool is_active) {
 	struct sway_config *old_config = config;
-	struct sway_mode *default_mode;
 	config = malloc(sizeof(struct sway_config));
 
 	config_defaults(config);
-	default_mode = config->current_mode;
-
 	if (is_active) {
 		sway_log(L_DEBUG, "Performing configuration file reload");
 		config->reloading = true;
