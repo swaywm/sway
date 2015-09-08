@@ -179,76 +179,82 @@ int unescape_string(char *string) {
 	int i;
 	for (i = 0; string[i]; ++i) {
 		if (string[i] == '\\') {
-			--len;
-			int shift = 0;
 			switch (string[++i]) {
 			case '0':
 				string[i - 1] = '\0';
-				shift = 1;
-				break;
+				return i - 1;
 			case 'a':
 				string[i - 1] = '\a';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 'b':
 				string[i - 1] = '\b';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 'f':
 				string[i - 1] = '\f';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 'n':
 				string[i - 1] = '\n';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 'r':
 				string[i - 1] = '\r';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 't':
 				string[i - 1] = '\t';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 'v':
 				string[i - 1] = '\v';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case '\\':
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case '\'':
 				string[i - 1] = '\'';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case '\"':
 				string[i - 1] = '\"';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case '?':
 				string[i - 1] = '?';
-				shift = 1;
+				string[i] = '\0';
 				break;
 			case 'x':
 				{
 					unsigned char c = 0;
-					shift = 1;
 					if (string[i+1] >= '0' && string[i+1] <= '9') {
-						shift = 2;
 						c = string[i+1] - '0';
 						if (string[i+2] >= '0' && string[i+2] <= '9') {
-							shift = 3;
 							c *= 0x10;
 							c += string[i+2] - '0';
+							string[i+2] = '\0';
 						}
+						string[i+1] = '\0';
 					}
+					string[i] = '\0';
 					string[i - 1] = c;
 				}
 			}
-			memmove(string + i, string + i + shift, len - i + 1);
 		}
 	}
-	return len;
+	// Shift characters over nullspaces
+	int shift = 0;
+	for (i = 0; i < len; ++i) {
+		if (string[i] == 0) {
+			shift++;
+			continue;
+		}
+		string[i-shift] = string[i];
+	}
+	string[len - shift] = 0;
+	return len - shift;
 }
 
 char *join_args(char **argv, int argc) {

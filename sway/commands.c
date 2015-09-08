@@ -835,7 +835,7 @@ static int compare_set(const void *_l, const void *_r) {
 }
 
 static bool cmd_set(int argc, char **argv) {
-	if (!checkarg(argc, "set", EXPECTED_EQUAL_TO, 2)) {
+	if (!checkarg(argc, "set", EXPECTED_AT_LEAST, 2)) {
 		return false;
 	}
 	struct sway_variable *var = NULL;
@@ -856,7 +856,7 @@ static bool cmd_set(int argc, char **argv) {
 		list_add(config->symbols, var);
 		list_sort(config->symbols, compare_set);
 	}
-	var->value = strdup(argv[1]);
+	var->value = join_args(argv + 1, argc - 1);
 	return true;
 }
 
@@ -1067,17 +1067,54 @@ bool handle_command(char *exec) {
 	}
 	struct cmd_handler *handler = find_handler(argv[0]);
 	bool exec_success = false;
-	if (handler) {
-		int i;
-		// Skip var replacement for first value of cmd_set
-		for (i = (handler->handle == cmd_set ? 2 : 1); i < argc; ++i) {
-			argv[i] = do_var_replacement(argv[i]);
-		}
-		exec_success = handler->handle(argc - 1, argv + 1);
-	}
-	if (exec_success == false) {
+	if (handler && !(handler->handle(argc - 1, argv + 1))) {
 		sway_log(L_ERROR, "Command failed: %s", argv[0]);
 	}
 	free_argv(argc, argv);
 	return exec_success;
+}
+
+bool config_command(char *exec) {
+	sway_log(L_INFO, "handling config command '%s'", exec);
+	struct cmd_handler *handler;
+	int argc;
+	char **argv = split_args(exec, &argc);
+	bool res = false;
+	if (!argc) {
+		return true;
+	}
+	//TODO make this better, it only handles modes right now, and very
+	//simply at that
+	if (strncmp(argv[0], "}", 1) == 0) {
+		config->current_mode = config->modes->items[0];
+		res = true;
+		goto cleanup;
+	}
+	if ((handler = find_handler(argv[0]))) {
+		int i = 1, e = argc;
+		// dont var replace first argument
+		if (handler->handle == cmd_set) {
+			i = 2;
+		}
+		for (; i < e; ++i) {
+			argv[i] = do_var_replacement(argv[i]);
+		}
+		if (handler->config_type == CMD_KEYBIND) {
+			sway_log(L_ERROR, "Invalid command during config `%s'", exec);
+		} else if (handler->config_type == CMD_COMPOSITOR_READY && !config->active) {
+			sway_log(L_DEBUG, "Defferring command `%s'", exec);
+			char *cmd = join_args(argv, argc);
+			list_add(config->cmd_queue, cmd);
+			res = true;
+		} else if (!handler->handle(argc-1, argv+1)) {
+			sway_log(L_DEBUG, "Config load failed for line `%s'", exec);
+		} else {
+			res = true;
+		}
+	} else {
+		sway_log(L_ERROR, "Unknown command `%s'", exec);
+	}
+	cleanup:
+	free_argv(argc, argv);
+	return res;
 }

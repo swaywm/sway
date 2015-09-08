@@ -231,34 +231,9 @@ bool read_config(FILE *file, bool is_active) {
 	while (!feof(file)) {
 		line = read_line(file);
 		line = strip_comments(line);
-		list_t *args = split_string(line, whitespace);
-		if (!args->length) {
-			goto cleanup;
+		if (!config_command(line)) {
+			success = false;
 		}
-		//TODO make this better, it only handles modes right now, and very
-		//simply at that
-		if (strncmp(args->items[0], "}", 1) == 0) {
-			config->current_mode = default_mode;
-			goto cleanup;
-		}
-		struct cmd_handler *handler;
-		if ((handler = find_handler(args->items[0]))) {
-			if (handler->config_type == CMD_KEYBIND) {
-				sway_log(L_ERROR, "Invalid command during config ``%s''", line);
-			} else if (handler->config_type == CMD_COMPOSITOR_READY && !is_active) {
-				sway_log(L_DEBUG, "Deferring command ``%s''", line);
-				char *cmd = strdup(line);
-				list_add(config->cmd_queue, cmd);
-			} else if (!handle_command(line)) {
-				sway_log(L_DEBUG, "Config load failed for line ``%s''", line);
-				success = false;
-				config->failed = true;
-			}
-		} else {
-			sway_log(L_ERROR, "Invalid command ``%s''", line);
-		}
-		cleanup:
-		free_flat_list(args);
 		free(line);
 	}
 

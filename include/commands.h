@@ -15,6 +15,8 @@ struct cmd_handler {
 
 struct cmd_handler *find_handler(char *line);
 bool handle_command(char *command);
+// Handles commands during config
+bool config_command(char *command);
 
 void remove_view_from_scratchpad();
 
