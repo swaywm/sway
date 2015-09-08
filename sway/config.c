@@ -304,6 +304,9 @@ char *do_var_replacement(char *str) {
 				break;
 			}
 		}
+		if (i == config->symbols->length) {
+			++find;
+		}
 	}
 	return str;
 }
