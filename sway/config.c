@@ -36,7 +36,7 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode);
 }
 
-static void free_outut_config(struct output_config *oc) {
+static void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc);
 }
@@ -67,7 +67,7 @@ static void free_config(struct sway_config *config) {
 	list_free(config->workspace_outputs);
 
 	for (i = 0; i < config->output_configs->length; ++i) {
-		free_outut_config(config->output_configs->items[i]);
+		free_output_config(config->output_configs->items[i]);
 	}
 	list_free(config->output_configs);
 	free(config);
