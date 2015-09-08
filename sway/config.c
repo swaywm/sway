@@ -278,8 +278,9 @@ char *do_var_replacement(char *str) {
 	char *find = str;
 	while ((find = strchr(find, '$'))) {
 		// Skip if escaped.
-		if (find > str + 1 && find[-1] == '\\') {
-			if (!(find > str + 2 && find[-2] == '\\')) {
+		if (find > str && find[-1] == '\\') {
+			if (find == str + 1 || !(find > str + 1 && find[-2] == '\\')) {
+				++find;
 				continue;
 			}
 		}
