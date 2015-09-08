@@ -368,26 +368,27 @@ static bool cmd_mode(int argc, char **argv) {
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return false;
 	}
-	const char *mode_name = argv[0];
+	bool mode_make = strcmp(argv[argc-1], "{") == 0;
+	const char *mode_name = join_args(argv, argc - mode_make);
 	struct sway_mode *mode = NULL;
 	// Find mode
 	int i, len = config->modes->length;
 	for (i = 0; i < len; ++i) {
 		struct sway_mode *find = config->modes->items[i];
-		if (strcasecmp(find->name, mode_name)==0) {
+		if (strcasecmp(find->name, mode_name) == 0) {
 			mode = find;
 			break;
 		}
 	}
 	// Create mode if it doesnt exist
-	if (!mode && argc >= 2 && strncmp(argv[1],"{",1) == 0) {
+	if (!mode && mode_make) {
 		mode = malloc(sizeof*mode);
 		mode->name = strdup(mode_name);
 		mode->bindings = create_list();
 		list_add(config->modes, mode);
 	}
 	if (!mode) {
-		sway_log(L_ERROR, "Invalide mode `%s'", mode_name);
+		sway_log(L_ERROR, "Unknown mode `%s'", mode_name);
 		return false;
 	}
 	sway_log(L_DEBUG, "Switching to mode `%s'",mode->name);

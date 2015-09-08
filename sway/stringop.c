@@ -99,7 +99,7 @@ void free_flat_list(list_t *list) {
 char **split_args(const char *start, int *argc) {
 	*argc = 0;
 	int alloc = 2;
-	char **parts = malloc(sizeof(char *) * alloc);
+	char **argv = malloc(sizeof(char *) * alloc);
 	bool in_token = false;
 	bool in_string = false;
 	bool in_char = false;
@@ -132,15 +132,16 @@ char **split_args(const char *start, int *argc) {
 			token[end - start] = '\0';
 			strip_quotes(token);
 			unescape_string(token);
-			parts[*argc] = token;
-			if (++*argc == alloc) {
-				parts = realloc(parts, (alloc *= 2) * sizeof(char *));
+			argv[*argc] = token;
+			if (++*argc + 1 == alloc) {
+				argv = realloc(argv, (alloc *= 2) * sizeof(char *));
 			}
 		}
 		in_token = false;
 		escaped = false;
 	}
-	return parts;
+	argv[*argc] = NULL;
+	return argv;
 }
 
 void free_argv(int argc, char **argv) {
