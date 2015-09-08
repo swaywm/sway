@@ -230,19 +230,17 @@ bool read_config(FILE *file, bool is_active) {
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
-		line = strip_whitespace(line);
 		line = strip_comments(line);
-		if (line[0] == '\0') {
-			goto _continue;
-		}
-		if (line[0] == '}') {
-			config->current_mode = default_mode;
-			goto _continue;
-		}
-
-		// Any command which would require wlc to be initialized
-		// should be queued for later execution
 		list_t *args = split_string(line, whitespace);
+		if (!args->length) {
+			goto cleanup;
+		}
+		//TODO make this better, it only handles modes right now, and very
+		//simply at that
+		if (strncmp(args->items[0], "}", 1) == 0) {
+			config->current_mode = default_mode;
+			goto cleanup;
+		}
 		struct cmd_handler *handler;
 		if ((handler = find_handler(args->items[0]))) {
 			if (handler->config_type == CMD_KEYBIND) {
@@ -259,9 +257,8 @@ bool read_config(FILE *file, bool is_active) {
 		} else {
 			sway_log(L_ERROR, "Invalid command ``%s''", line);
 		}
+		cleanup:
 		free_flat_list(args);
-
-_continue:
 		free(line);
 	}
 
@@ -277,27 +274,33 @@ _continue:
 }
 
 char *do_var_replacement(char *str) {
-	// TODO: Handle escaping $ and using $ in string literals
 	int i;
-	for (i = 0; str[i]; ++i) {
-		if (str[i] == '$') {
-			// Try for match (note: this could be faster)
-			int j;
-			for (j = 0; j < config->symbols->length; ++j) {
-				struct sway_variable *var = config->symbols->items[j];
-				if (strstr(str + i, var->name) == str + i) {
-					// Match, do replacement
-					char *new_string = malloc(
-						strlen(str) -
-						strlen(var->name) +
-						strlen(var->value) + 1);
-					strncpy(new_string, str, i);
-					new_string[i] = 0;
-					strcat(new_string, var->value);
-					strcat(new_string, str + i + strlen(var->name));
-					free(str);
-					str = new_string;
-				}
+	char *find = str;
+	while ((find = strchr(find, '$'))) {
+		// Skip if escaped.
+		if (find > str + 1 && find[-1] == '\\') {
+			if (!(find > str + 2 && find[-2] == '\\')) {
+				continue;
+			}
+		}
+		// Find matching variable
+		for (i = 0; i < config->symbols->length; ++i) {
+			struct sway_variable *var = config->symbols->items[i];
+			int vnlen = strlen(var->name);
+			if (strncmp(find, var->name, vnlen) == 0) {
+				int vvlen = strlen(var->value);
+				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
+				char *newptr = newstr;
+				int offset = find - str;
+				strncpy(newptr, str, offset);
+				newptr += offset;
+				strncpy(newptr, var->value, vvlen);
+				newptr += vvlen;
+				strcpy(newptr, find + vnlen);
+				free(str);
+				str = newstr;
+				find = str + offset + vvlen;
+				break;
 			}
 		}
 	}

@@ -13,5 +13,7 @@ void list_add(list_t *list, void *item);
 void list_insert(list_t *list, int index, void *item);
 void list_del(list_t *list, int index);
 void list_cat(list_t *list, list_t *source);
+// See qsort
+void list_sort(list_t *list, int compare(const void *left, const void *right));
 
 #endif

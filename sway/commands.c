@@ -139,8 +139,7 @@ static bool cmd_bindsym(int argc, char **argv) {
 	// TODO: Check if there are other commands with this key binding
 	struct sway_mode *mode = config->current_mode;
 	list_add(mode->bindings, binding);
-	qsort(mode->bindings->items, mode->bindings->length,
-			sizeof(mode->bindings->items[0]), bindsym_sort);
+	list_sort(mode->bindings, bindsym_sort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
 	return true;
@@ -828,14 +827,36 @@ static bool cmd_scratchpad(int argc, char **argv) {
 	}
 }
 
+// sort in order of longest->shortest
+static int compare_set(const void *_l, const void *_r) {
+	struct sway_variable * const *l = _l;
+	struct sway_variable * const *r = _r;
+	return strlen((*r)->name) - strlen((*l)->name);
+}
+
 static bool cmd_set(int argc, char **argv) {
 	if (!checkarg(argc, "set", EXPECTED_EQUAL_TO, 2)) {
 		return false;
 	}
-	struct sway_variable *var = malloc(sizeof(struct sway_variable));
-	var->name = strdup(argv[0]);
+	struct sway_variable *var = NULL;
+	// Find old variable if it exists
+	int i;
+	for (i = 0; i < config->symbols->length; ++i) {
+		var = config->symbols->items[i];
+		if (strcmp(var->name, argv[0]) == 0) {
+			break;
+		}
+		var = NULL;
+	}
+	if (var) {
+		free(var->value);
+	} else {
+		var = malloc(sizeof(struct sway_variable));
+		var->name = strdup(argv[0]);
+		list_add(config->symbols, var);
+		list_sort(config->symbols, compare_set);
+	}
 	var->value = strdup(argv[1]);
-	list_add(config->symbols, var);
 	return true;
 }
 
@@ -1048,7 +1069,8 @@ bool handle_command(char *exec) {
 	bool exec_success = false;
 	if (handler) {
 		int i;
-		for (i = 1; i < argc; ++i) {
+		// Skip var replacement for first value of cmd_set
+		for (i = (handler->handle == cmd_set ? 2 : 1); i < argc; ++i) {
 			argv[i] = do_var_replacement(argv[i]);
 		}
 		exec_success = handler->handle(argc - 1, argv + 1);
