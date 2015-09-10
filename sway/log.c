@@ -20,6 +20,14 @@ static const char *verbosity_colors[] = {
 	"\x1B[1;30m", // L_DEBUG
 };
 
+static const char *log_str[] = {
+	[L_SILENT] = "Msg",
+	[L_DEBUG]  = "Debug",
+	[L_INFO]   = "Info",
+	[L_ERROR]  = "Error",
+};
+
+
 void init_log(log_importance_t verbosity) {
 	v = verbosity;
 	signal(SIGSEGV, error_handler);
@@ -40,7 +48,7 @@ void sway_abort(const char *format, ...) {
 	sway_terminate();
 }
 
-void sway_log(log_importance_t verbosity, const char* format, ...) {
+void sway_log_func(log_importance_t verbosity, const char *func, const char* format, ...) {
 	if (verbosity <= v) {
 		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
@@ -48,7 +56,8 @@ void sway_log(log_importance_t verbosity, const char* format, ...) {
 		}
 
 		if (colored && isatty(STDERR_FILENO)) {
-			fprintf(stderr, "%s", verbosity_colors[c]);
+			fprintf(stderr, "%s%-5s| %-32s | ", verbosity_colors[c],
+					log_str[verbosity], func);
 		}
 
 		va_list args;
@@ -91,14 +100,14 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 	}
 }
 
-bool _sway_assert(bool condition, const char* format, ...) {
+bool sway_assert_func(bool condition, const char *func, const char *format, ...) {
 	if (condition) {
 		return true;
 	}
 
 	va_list args;
 	va_start(args, format);
-	sway_log(L_ERROR, format, args);
+	sway_log_func(L_ERROR, func, format, args);
 	va_end(args);
 
 #ifndef NDEBUG
