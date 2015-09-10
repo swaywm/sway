@@ -18,15 +18,13 @@
 #include "sway.h"
 #include "resize.h"
 
-struct modifier_key {
-	char *name;
-	uint32_t mod;
-};
-
 swayc_t *sp_view;
 int sp_index = 0;
 
-static struct modifier_key modifiers[] = {
+static struct modifier_key {
+	char *name;
+	uint32_t mod;
+} modifiers[] = {
 	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
 	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
 	{ XKB_MOD_NAME_CTRL, WLC_BIT_MOD_CTRL },
@@ -46,14 +44,14 @@ enum expected_args {
 	EXPECTED_EQUAL_TO
 };
 
-static bool checkarg(int argc, char *name, enum expected_args type, int val) {
+static bool checkarg(int argc, const char *name, enum expected_args type, int val) {
 	switch (type) {
 	case EXPECTED_MORE_THAN:
 		if (argc > val) {
 			return true;
 		}
 		sway_log(L_ERROR, "Invalid %s command."
-			"(expected more than %d argument%s, got %d",
+			"(expected more than %d argument%s, got %d)",
 			name, val, (char*[2]){"s", ""}[argc==1], argc);
 		break;
 	case EXPECTED_AT_LEAST:
@@ -61,7 +59,7 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 			return true;
 		}
 		sway_log(L_ERROR, "Invalid %s command."
-			"(expected at least %d argument%s, got %d",
+			"(expected at least %d argument%s, got %d)",
 			name, val, (char*[2]){"s", ""}[argc==1], argc);
 		break;
 	case EXPECTED_LESS_THAN:
@@ -69,7 +67,7 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 			return true;
 		};
 		sway_log(L_ERROR, "Invalid %s command."
-			"(expected less than %d argument%s, got %d",
+			"(expected less than %d argument%s, got %d)",
 			name, val, (char*[2]){"s", ""}[argc==1], argc);
 		break;
 	case EXPECTED_EQUAL_TO:
@@ -77,7 +75,7 @@ static bool checkarg(int argc, char *name, enum expected_args type, int val) {
 			return true;
 		};
 		sway_log(L_ERROR, "Invalid %s command."
-			"(expected %d arguments, got %d", name, val, argc);
+			"(expected %d arguments, got %d)", name, val, argc);
 		break;
 	}
 	return false;
@@ -96,9 +94,10 @@ static int bindsym_sort(const void *_lbind, const void *_rbind) {
 	return (rbind->keys->length + rmod) - (lbind->keys->length + lmod);
 }
 
-static bool cmd_bindsym(int argc, char **argv) {
-	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)) {
-		return false;
+static enum cmd_status cmd_bindsym(int argc, char **argv) {
+	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)
+			|| !config->reading) {
+		return CMD_FAILURE;
 	};
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
@@ -128,7 +127,7 @@ static bool cmd_bindsym(int argc, char **argv) {
 			free(binding->command);
 			free(binding);
 			list_free(split);
-			return false;
+			return CMD_FAILURE;
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
 		*key = sym;
@@ -142,19 +141,22 @@ static bool cmd_bindsym(int argc, char **argv) {
 	list_sort(mode->bindings, bindsym_sort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_exec_always(int argc, char **argv) {
+static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
-		return false;
+		return CMD_FAILURE;
+	}
+	if (!config->active) {
+		return CMD_DEFER;
 	}
 
 	pid_t pid = fork();
 	/* Failed to fork */
 	if (pid  < 0) {
 		sway_log(L_ERROR, "exec command failed, sway did not fork");
-		return false;
+		return CMD_FAILURE;
 	}
 	/* Child process */
 	if (pid == 0) {
@@ -167,15 +169,18 @@ static bool cmd_exec_always(int argc, char **argv) {
 		exit(-1);
 	}
 	/* Parent */
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_exec(int argc, char **argv) {
+static enum cmd_status cmd_exec(int argc, char **argv) {
+	if (!config->active) {
+		return CMD_DEFER;
+	}
 	if (config->reloading) {
 		char *args = join_args(argv, argc);
-		sway_log(L_DEBUG, "Ignoring exec %s due to reload", args);
+		sway_log(L_DEBUG, "Ignoring 'exec %s' due to reload", args);
 		free(args);
-		return true;
+		return CMD_SUCCESS;
 	}
 	return cmd_exec_always(argc, argv);
 }
@@ -186,26 +191,28 @@ static void kill_views(swayc_t *container, void *data) {
 	}
 }
 
-static bool cmd_exit(int argc, char **argv) {
-	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)) {
-		return false;
+static enum cmd_status cmd_exit(int argc, char **argv) {
+	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 	// Close all views
 	container_map(&root_container, kill_views, NULL);
 	sway_terminate();
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_floating(int argc, char **argv) {
-	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+static enum cmd_status cmd_floating(int argc, char **argv) {
+	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 
 	if (strcasecmp(argv[0], "toggle") == 0) {
 		swayc_t *view = get_focused_container(&root_container);
 		// Prevent running floating commands on things like workspaces
 		if (view->type != C_VIEW) {
-			return true;
+			return CMD_SUCCESS;
 		}
 		// Change from nonfloating to floating
 		if (!view->is_floating) {
@@ -254,12 +261,13 @@ static bool cmd_floating(int argc, char **argv) {
 		}
 		set_focused_container(view);
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_floating_mod(int argc, char **argv) {
-	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+static enum cmd_status cmd_floating_mod(int argc, char **argv) {
+	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)
+			|| !config->reading) {
+		return CMD_FAILURE;
 	}
 	int i, j;
 	list_t *split = split_string(argv[0], "+");
@@ -276,27 +284,28 @@ static bool cmd_floating_mod(int argc, char **argv) {
 	free_flat_list(split);
 	if (!config->floating_mod) {
 		sway_log(L_ERROR, "bindsym - unknown keys %s", argv[0]);
-		return false;
+		return CMD_FAILURE;
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_focus(int argc, char **argv) {
+static enum cmd_status cmd_focus(int argc, char **argv) {
 	static int floating_toggled_index = 0;
 	static int tiled_toggled_index = 0;
-	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 	if (strcasecmp(argv[0], "left") == 0) {
-		return move_focus(MOVE_LEFT);
+		move_focus(MOVE_LEFT);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		return move_focus(MOVE_RIGHT);
+		move_focus(MOVE_RIGHT);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		return move_focus(MOVE_UP);
+		move_focus(MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		return move_focus(MOVE_DOWN);
+		move_focus(MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "parent") == 0) {
-		return move_focus(MOVE_PARENT);
+		move_focus(MOVE_PARENT);
 	} else if (strcasecmp(argv[0], "mode_toggle") == 0) {
 		int i;
 		swayc_t *workspace = swayc_active_workspace();
@@ -335,17 +344,16 @@ static bool cmd_focus(int argc, char **argv) {
 			}
 		}
 	}
-
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_focus_follows_mouse(int argc, char **argv) {
+static enum cmd_status cmd_focus_follows_mouse(int argc, char **argv) {
 	if (!checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	config->focus_follows_mouse = !strcasecmp(argv[0], "yes");
-	return true;
+	return CMD_SUCCESS;
 }
 
 static void hide_view_in_scratchpad(swayc_t *sp_view) {
@@ -364,12 +372,16 @@ static void hide_view_in_scratchpad(swayc_t *sp_view) {
 	set_focused_container(container_under_pointer());
 }
 
-static bool cmd_mode(int argc, char **argv) {
+static enum cmd_status cmd_mode(int argc, char **argv) {
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
-		return false;
+		return CMD_FAILURE;
 	}
-	bool mode_make = strcmp(argv[argc-1], "{") == 0;
-	const char *mode_name = join_args(argv, argc - mode_make);
+	bool mode_make = !strcmp(argv[argc-1], "{");
+	if (mode_make && !config->reading) {
+		return CMD_FAILURE;
+	}
+
+	char *mode_name = join_args(argv, argc - mode_make);
 	struct sway_mode *mode = NULL;
 	// Find mode
 	int i, len = config->modes->length;
@@ -389,17 +401,20 @@ static bool cmd_mode(int argc, char **argv) {
 	}
 	if (!mode) {
 		sway_log(L_ERROR, "Unknown mode `%s'", mode_name);
-		return false;
+		free(mode_name);
+		return CMD_FAILURE;
 	}
 	sway_log(L_DEBUG, "Switching to mode `%s'",mode->name);
+	free(mode_name);
 	// Set current mode
 	config->current_mode = mode;
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_move(int argc, char **argv) {
-	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
-		return false;
+static enum cmd_status cmd_move(int argc, char **argv) {
+	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 
 	swayc_t *view = get_focused_container(&root_container);
@@ -414,14 +429,14 @@ static bool cmd_move(int argc, char **argv) {
 		move_container(view, MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
 		// "move container to workspace x"
-		if (!checkarg(argc, "move container/window", EXPECTED_EQUAL_TO, 4) ||
-			strcasecmp(argv[1], "to") != 0 ||
-			strcasecmp(argv[2], "workspace") != 0) {
-			return false;
+		if (!checkarg(argc, "move container/window", EXPECTED_EQUAL_TO, 4)
+				|| strcasecmp(argv[1], "to") != 0
+				|| strcasecmp(argv[2], "workspace") != 0) {
+			return CMD_FAILURE;
 		}
 
 		if (view->type != C_CONTAINER && view->type != C_VIEW) {
-			return false;
+			return CMD_FAILURE;
 		}
 
 		const char *ws_name = argv[3];
@@ -437,7 +452,7 @@ static bool cmd_move(int argc, char **argv) {
 		move_container_to(view, get_focused_container(ws));
 	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
 		if (view->type != C_CONTAINER && view->type != C_VIEW) {
-			return false;
+			return CMD_FAILURE;
 		}
 		swayc_t *view = get_focused_container(&root_container);
 		int i;
@@ -445,7 +460,7 @@ static bool cmd_move(int argc, char **argv) {
 			if (scratchpad->items[i] == view) {
 				hide_view_in_scratchpad(view);
 				sp_view = NULL;
-				return true;
+				return CMD_SUCCESS;
 			}
 		}
 		list_add(scratchpad, view);
@@ -462,12 +477,16 @@ static bool cmd_move(int argc, char **argv) {
 		}
 		set_focused_container(focused);
 	} else {
-		return false;
+		return CMD_FAILURE;
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_orientation(int argc, char **argv) {
+static enum cmd_status cmd_orientation(int argc, char **argv) {
+	if (!checkarg(argc, "orientation", EXPECTED_EQUAL_TO, 1)
+			|| !config->reading) {
+		return CMD_FAILURE;
+	}
 	if (strcasecmp(argv[0], "horizontal") == 0) {
 		config->default_orientation = L_HORIZ;
 	} else if (strcasecmp(argv[0], "vertical") == 0) {
@@ -475,14 +494,14 @@ static bool cmd_orientation(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "auto") == 0) {
 		// Do nothing
 	} else {
-		return false;
+		return CMD_FAILURE;
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_output(int argc, char **argv) {
+static enum cmd_status cmd_output(int argc, char **argv) {
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	struct output_config *output = calloc(1, sizeof(struct output_config));
@@ -542,12 +561,12 @@ static bool cmd_output(int argc, char **argv) {
 	sway_log(L_DEBUG, "Configured output %s to %d x %d @ %d, %d",
 			output->name, output->width, output->height, output->x, output->y);
 
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_gaps(int argc, char **argv) {
+static enum cmd_status cmd_gaps(int argc, char **argv) {
 	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
-		return false;
+		return CMD_FAILURE;
 	}
 	const char *amount_str = argv[0];
 	// gaps amount
@@ -555,7 +574,7 @@ static bool cmd_gaps(int argc, char **argv) {
 		int amount = (int)strtol(amount_str, NULL, 10);
 		if (errno == ERANGE || amount == 0) {
 			errno = 0;
-			return false;
+			return CMD_FAILURE;
 		}
 		if (config->gaps_inner == 0) {
 			config->gaps_inner = amount;
@@ -563,14 +582,14 @@ static bool cmd_gaps(int argc, char **argv) {
 		if (config->gaps_outer == 0) {
 			config->gaps_outer = amount;
 		}
-		return true;
+		return CMD_SUCCESS;
 	}
 	// gaps inner|outer n
 	else if (argc >= 2 && isdigit((amount_str = argv[1])[0])) {
 		int amount = (int)strtol(amount_str, NULL, 10);
 		if (errno == ERANGE || amount == 0) {
 			errno = 0;
-			return false;
+			return CMD_FAILURE;
 		}
 		const char *target_str = argv[0];
 		if (strcasecmp(target_str, "inner") == 0) {
@@ -578,11 +597,11 @@ static bool cmd_gaps(int argc, char **argv) {
 		} else if (strcasecmp(target_str, "outer") == 0) {
 			config->gaps_outer = amount;
 		}
-		return true;
+		return CMD_SUCCESS;
 	}
 	// gaps inner|outer current|all set|plus|minus n
-	if (argc < 4) {
-		return false;
+	if (argc < 4 || config->reading) {
+		return CMD_FAILURE;
 	}
 	// gaps inner|outer ...
 	const char *inout_str = argv[0];
@@ -592,7 +611,7 @@ static bool cmd_gaps(int argc, char **argv) {
 	} else if (strcasecmp(inout_str, "outer") == 0) {
 		inout = OUTER;
 	} else {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	// gaps ... current|all ...
@@ -610,7 +629,7 @@ static bool cmd_gaps(int argc, char **argv) {
 			target = WORKSPACE;
 		}
 	} else {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	// gaps ... n
@@ -618,7 +637,7 @@ static bool cmd_gaps(int argc, char **argv) {
 	int amount = (int)strtol(amount_str, NULL, 10);
 	if (errno == ERANGE || amount == 0) {
 		errno = 0;
-		return false;
+		return CMD_FAILURE;
 	}
 
 	// gaps ... set|plus|minus ...
@@ -632,18 +651,18 @@ static bool cmd_gaps(int argc, char **argv) {
 		method = ADD;
 		amount *= -1;
 	} else {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	if (target == CURRENT) {
 		swayc_t *cont;
 		if (inout == OUTER) {
 			if ((cont = swayc_active_workspace()) == NULL) {
-				return false;
+				return CMD_FAILURE;
 			}
 		} else {
 			if ((cont = get_focused_view(&root_container))->type != C_VIEW) {
-				return false;
+				return CMD_FAILURE;
 			}
 		}
 		cont->gaps = swayc_gap(cont);
@@ -673,7 +692,7 @@ static bool cmd_gaps(int argc, char **argv) {
 		swayc_t *top;
 		if (target == WORKSPACE) {
 			if ((top = swayc_active_workspace()) == NULL) {
-				return false;
+				return CMD_FAILURE;
 			}
 		} else {
 			top = &root_container;
@@ -684,18 +703,22 @@ static bool cmd_gaps(int argc, char **argv) {
 		arrange_windows(top, -1, -1);
 	}
 
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_kill(int argc, char **argv) {
+static enum cmd_status cmd_kill(int argc, char **argv) {
+	if (config->reading || !config->active) {
+		return CMD_FAILURE;
+	}
 	swayc_t *view = get_focused_container(&root_container);
 	wlc_view_close(view->handle);
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_layout(int argc, char **argv) {
-	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)) {
-		return false;
+static enum cmd_status cmd_layout(int argc, char **argv) {
+	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
 	while (parent->type == C_VIEW) {
@@ -715,33 +738,33 @@ static bool cmd_layout(int argc, char **argv) {
 	}
 	arrange_windows(parent, parent->width, parent->height);
 
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_reload(int argc, char **argv) {
-	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)) {
-		return false;
-	}
-	if (!load_config(NULL)) { // TODO: Use config given from -c
-		return false;
+static enum cmd_status cmd_reload(int argc, char **argv) {
+	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)
+			|| config->reading
+			|| !load_config(NULL)) {
+		return CMD_FAILURE;
 	}
 	arrange_windows(&root_container, -1, -1);
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_resize(int argc, char **argv) {
-	if (!checkarg(argc, "resize", EXPECTED_AT_LEAST, 3)) {
-		return false;
+static enum cmd_status cmd_resize(int argc, char **argv) {
+	if (!checkarg(argc, "resize", EXPECTED_AT_LEAST, 3)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 	char *end;
 	int amount = (int)strtol(argv[2], &end, 10);
 	if (errno == ERANGE || amount == 0) {
 		errno = 0;
-		return false;
+		return CMD_FAILURE;
 	}
 
 	if (strcmp(argv[0], "shrink") != 0 && strcmp(argv[0], "grow") != 0) {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	if (strcmp(argv[0], "shrink") == 0) {
@@ -749,11 +772,13 @@ static bool cmd_resize(int argc, char **argv) {
 	}
 
 	if (strcmp(argv[1], "width") == 0) {
-		return resize_tiled(amount, true);
+		resize_tiled(amount, true);
 	} else if (strcmp(argv[1], "height") == 0) {
-		return resize_tiled(amount, false);
+		resize_tiled(amount, false);
+	} else {
+		return CMD_FAILURE;
 	}
-	return false;
+	return CMD_SUCCESS;
 }
 
 static swayc_t *fetch_view_from_scratchpad() {
@@ -801,9 +826,10 @@ void remove_view_from_scratchpad(swayc_t *view) {
 	}
 }
 
-static bool cmd_scratchpad(int argc, char **argv) {
-	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+static enum cmd_status cmd_scratchpad(int argc, char **argv) {
+	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 
 	if (strcasecmp(argv[0], "show") == 0 && scratchpad->length > 0) {
@@ -822,10 +848,9 @@ static bool cmd_scratchpad(int argc, char **argv) {
 				sp_view = NULL;
 			}
 		}
-		return true;
-	} else {
-		return false;
+		return CMD_SUCCESS;
 	}
+	return CMD_FAILURE;
 }
 
 // sort in order of longest->shortest
@@ -835,9 +860,10 @@ static int compare_set(const void *_l, const void *_r) {
 	return strlen((*r)->name) - strlen((*l)->name);
 }
 
-static bool cmd_set(int argc, char **argv) {
-	if (!checkarg(argc, "set", EXPECTED_AT_LEAST, 2)) {
-		return false;
+static enum cmd_status cmd_set(int argc, char **argv) {
+	if (!checkarg(argc, "set", EXPECTED_AT_LEAST, 2)
+			|| !config->reading) {
+		return CMD_FAILURE;
 	}
 	struct sway_variable *var = NULL;
 	// Find old variable if it exists
@@ -858,20 +884,21 @@ static bool cmd_set(int argc, char **argv) {
 		list_sort(config->symbols, compare_set);
 	}
 	var->value = join_args(argv + 1, argc - 1);
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool _do_split(int argc, char **argv, int layout) {
+static enum cmd_status _do_split(int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv" :
 		layout == L_HORIZ ? "splith" : "split";
-	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)) {
-		return false;
+	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
 	// Case of floating window, dont split
 	if (focused->is_floating) {
-		return true;
+		return CMD_SUCCESS;
 	}
 	/* Case that focus is on an workspace with 0/1 children.change its layout */
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
@@ -889,12 +916,13 @@ static bool _do_split(int argc, char **argv, int layout) {
 		set_focused_container(focused);
 		arrange_windows(parent, -1, -1);
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_split(int argc, char **argv) {
-	if (!checkarg(argc, "split", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+static enum cmd_status cmd_split(int argc, char **argv) {
+	if (!checkarg(argc, "split", EXPECTED_EQUAL_TO, 1)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
@@ -903,36 +931,39 @@ static bool cmd_split(int argc, char **argv) {
 		_do_split(argc - 1, argv + 1, L_HORIZ);
 	} else {
 		sway_log(L_ERROR, "Invalid split command (expected either horiziontal or vertical).");
-		return false;
+		return CMD_FAILURE;
 	}
-
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_splitv(int argc, char **argv) {
+static enum cmd_status cmd_splitv(int argc, char **argv) {
 	return _do_split(argc, argv, L_VERT);
 }
 
-static bool cmd_splith(int argc, char **argv) {
+static enum cmd_status cmd_splith(int argc, char **argv) {
 	return _do_split(argc, argv, L_HORIZ);
 }
 
-static bool cmd_log_colors(int argc, char **argv) {
-	if (!checkarg(argc, "log_colors", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+static enum cmd_status cmd_log_colors(int argc, char **argv) {
+	if (!checkarg(argc, "log_colors", EXPECTED_EQUAL_TO, 1)
+			|| !config->reading) {
+		return CMD_FAILURE;
 	}
-	if (strcasecmp(argv[0], "no") != 0 && strcasecmp(argv[0], "yes") != 0) {
+	if (strcasecmp(argv[0], "no") == 0) {
+		sway_log_colors(0);
+	} else if(strcasecmp(argv[0], "yes") == 0) {
+		sway_log_colors(1);
+	} else {
 		sway_log(L_ERROR, "Invalid log_colors command (expected `yes` or `no`, got '%s')", argv[0]);
-		return false;
+		return CMD_FAILURE;
 	}
-
-	sway_log_colors(!strcasecmp(argv[0], "yes"));
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_fullscreen(int argc, char **argv) {
-	if (!checkarg(argc, "fullscreen", EXPECTED_AT_LEAST, 0)) {
-		return false;
+static enum cmd_status cmd_fullscreen(int argc, char **argv) {
+	if (!checkarg(argc, "fullscreen", EXPECTED_AT_LEAST, 0)
+			|| config->reading || !config->active) {
+		return CMD_FAILURE;
 	}
 
 	swayc_t *container = get_focused_view(&root_container);
@@ -946,103 +977,100 @@ static bool cmd_fullscreen(int argc, char **argv) {
 	// Only resize container when going into fullscreen
 	arrange_windows(container, -1, -1);
 
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_workspace(int argc, char **argv) {
+static enum cmd_status cmd_workspace(int argc, char **argv) {
 	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
-		return false;
+		return CMD_FAILURE;
 	}
 
 	if (argc == 1) {
+		if (config->reading || !config->active) {
+			return CMD_DEFER;
+		}
 		// Handle workspace next/prev
+		swayc_t *ws = NULL;
 		if (strcasecmp(argv[0], "next") == 0) {
-			workspace_switch(workspace_next());
-			return true;
-		}
-
-		if (strcasecmp(argv[0], "prev") == 0) {
-			workspace_switch(workspace_prev());
-			return true;
-		}
-
-		// Handle workspace output_next/prev
-		if (strcasecmp(argv[0], "next_on_output") == 0) {
-			workspace_switch(workspace_output_next());
-			return true;
-		}
-
-		if (strcasecmp(argv[0], "prev_on_output") == 0) {
-			workspace_switch(workspace_output_prev());
-			return true;
-		}
-		if (strcasecmp(argv[0], "back_and_forth") == 0) {
+			ws = workspace_next();
+		} else if (strcasecmp(argv[0], "prev") == 0) {
+			ws = workspace_prev();
+		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
+			ws = workspace_output_next();
+		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
+			ws = workspace_output_prev();
+		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
 			if (prev_workspace_name) {
-				swayc_t *ws = workspace_by_name(prev_workspace_name);
-				workspace_switch(ws ? ws : workspace_create(prev_workspace_name));
+				if (!(ws = workspace_by_name(prev_workspace_name))) {
+					ws = workspace_create(prev_workspace_name);
+				}
 			}
-			return true;
+		} else {
+			if (!(ws= workspace_by_name(argv[0]))) {
+				ws = workspace_create(argv[0]);
+			}
 		}
-
-		swayc_t *workspace = workspace_by_name(argv[0]);
-		if (!workspace) {
-			workspace = workspace_create(argv[0]);
-		}
-		workspace_switch(workspace);
+		workspace_switch(ws);
 	} else {
 		if (strcasecmp(argv[1], "output") == 0) {
 			if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 3)) {
-				return false;
+				return CMD_FAILURE;
 			}
 			struct workspace_output *wso = calloc(1, sizeof(struct workspace_output));
 			sway_log(L_DEBUG, "Assigning workspace %s to output %s", argv[0], argv[2]);
 			wso->workspace = strdup(argv[0]);
 			wso->output = strdup(argv[2]);
 			list_add(config->workspace_outputs, wso);
-			// TODO: Consider moving any existing workspace to that output? This might be executed sometime after config load
+			if (!config->reading) {
+				// TODO: Move workspace to output. (dont do so when reloading)
+			}
 		}
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
-static bool cmd_ws_auto_back_and_forth(int argc, char **argv) {
+static enum cmd_status cmd_ws_auto_back_and_forth(int argc, char **argv) {
 	if (!checkarg(argc, "workspace_auto_back_and_forth", EXPECTED_EQUAL_TO, 1)) {
-		return false;
+		return CMD_FAILURE;
 	}
 	if (strcasecmp(argv[0], "yes") == 0) {
 		config->auto_back_and_forth = true;
+	} else if (strcasecmp(argv[0], "no") == 0) {
+		config->auto_back_and_forth = false;
+	} else {
+		return CMD_FAILURE;
 	}
-	return true;
+	return CMD_SUCCESS;
 }
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
-	{ "bindsym", cmd_bindsym, CMD_ANYTIME },
-	{ "default_orientation", cmd_orientation, CMD_ANYTIME},
-	{ "exec", cmd_exec, CMD_COMPOSITOR_READY },
-	{ "exec_always", cmd_exec_always, CMD_COMPOSITOR_READY },
-	{ "exit", cmd_exit, CMD_KEYBIND },
-	{ "floating", cmd_floating, CMD_KEYBIND },
-	{ "floating_modifier", cmd_floating_mod, CMD_ANYTIME },
-	{ "focus", cmd_focus, CMD_KEYBIND },
-	{ "focus_follows_mouse", cmd_focus_follows_mouse, CMD_ANYTIME },
-	{ "fullscreen", cmd_fullscreen, CMD_KEYBIND },
-	{ "gaps", cmd_gaps, CMD_ANYTIME },
-	{ "kill", cmd_kill, CMD_KEYBIND },
-	{ "layout", cmd_layout, CMD_KEYBIND },
-	{ "log_colors", cmd_log_colors, CMD_ANYTIME },
-	{ "mode", cmd_mode, CMD_ANYTIME },
-	{ "move", cmd_move, CMD_KEYBIND },
-	{ "output", cmd_output, CMD_ANYTIME },
-	{ "reload", cmd_reload, CMD_KEYBIND },
-	{ "resize", cmd_resize, CMD_KEYBIND },
-	{ "scratchpad", cmd_scratchpad, CMD_KEYBIND },
-	{ "set", cmd_set, CMD_ANYTIME },
-	{ "split", cmd_split, CMD_KEYBIND },
-	{ "splith", cmd_splith, CMD_KEYBIND },
-	{ "splitv", cmd_splitv, CMD_KEYBIND },
-	{ "workspace", cmd_workspace, CMD_COMPOSITOR_READY },
-	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth, CMD_ANYTIME },
+	{ "bindsym", cmd_bindsym },
+	{ "default_orientation", cmd_orientation },
+	{ "exec", cmd_exec },
+	{ "exec_always", cmd_exec_always },
+	{ "exit", cmd_exit },
+	{ "floating", cmd_floating },
+	{ "floating_modifier", cmd_floating_mod },
+	{ "focus", cmd_focus },
+	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "fullscreen", cmd_fullscreen },
+	{ "gaps", cmd_gaps },
+	{ "kill", cmd_kill },
+	{ "layout", cmd_layout },
+	{ "log_colors", cmd_log_colors },
+	{ "mode", cmd_mode },
+	{ "move", cmd_move },
+	{ "output", cmd_output },
+	{ "reload", cmd_reload },
+	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
+	{ "set", cmd_set },
+	{ "split", cmd_split },
+	{ "splith", cmd_splith },
+	{ "splitv", cmd_splitv },
+	{ "workspace", cmd_workspace },
+	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -1059,63 +1087,58 @@ static struct cmd_handler *find_handler(char *line) {
 	return res;
 }
 
-bool handle_command(char *exec) {
+enum cmd_status handle_command(char *exec) {
 	sway_log(L_INFO, "Handling command '%s'", exec);
 	int argc;
 	char **argv = split_args(exec, &argc);
-	if (argc == 0) {
-		return false;
+	enum cmd_status status = CMD_FAILURE;
+	struct cmd_handler *handler;
+	if (!argc) {
+		return status;
 	}
-	struct cmd_handler *handler = find_handler(argv[0]);
-	bool exec_success = false;
-	if (handler && !(handler->handle(argc - 1, argv + 1))) {
+	if ((handler = find_handler(argv[0])) == NULL
+			|| (status = handler->handle(argc - 1, argv + 1)) != CMD_SUCCESS) {
 		sway_log(L_ERROR, "Command failed: %s", argv[0]);
 	}
 	free_argv(argc, argv);
-	return exec_success;
+	return status;
 }
 
-bool config_command(char *exec) {
+enum cmd_status config_command(char *exec) {
 	sway_log(L_INFO, "handling config command '%s'", exec);
-	struct cmd_handler *handler;
 	int argc;
 	char **argv = split_args(exec, &argc);
-	bool res = false;
+	enum cmd_status status = CMD_FAILURE;
+	struct cmd_handler *handler;
 	if (!argc) {
-		return true;
+		status = CMD_SUCCESS;
+		goto cleanup;
 	}
-	//TODO make this better, it only handles modes right now, and very
-	//simply at that
+	// TODO better block handling
 	if (strncmp(argv[0], "}", 1) == 0) {
 		config->current_mode = config->modes->items[0];
-		res = true;
+		status = CMD_SUCCESS;
 		goto cleanup;
 	}
 	if ((handler = find_handler(argv[0]))) {
-		int i = 1, e = argc;
-		// dont var replace first argument
-		if (handler->handle == cmd_set) {
-			i = 2;
-		}
+		// Dont replace first argument in cmd_set
+		int i = handler->handle == cmd_set ? 2 : 1;
+		int e = argc;
 		for (; i < e; ++i) {
 			argv[i] = do_var_replacement(argv[i]);
 		}
-		if (handler->config_type == CMD_KEYBIND) {
-			sway_log(L_ERROR, "Invalid command during config `%s'", exec);
-		} else if (handler->config_type == CMD_COMPOSITOR_READY && !config->active) {
+		status = handler->handle(argc - 1, argv + 1);
+		if (status == CMD_FAILURE) {
+			sway_log(L_ERROR, "Config load failed for line `%s'", exec);
+		} else if (status == CMD_DEFER) {
 			sway_log(L_DEBUG, "Defferring command `%s'", exec);
-			char *cmd = join_args(argv, argc);
-			list_add(config->cmd_queue, cmd);
-			res = true;
-		} else if (!handler->handle(argc-1, argv+1)) {
-			sway_log(L_DEBUG, "Config load failed for line `%s'", exec);
-		} else {
-			res = true;
+			list_add(config->cmd_queue, strdup(exec));
+			status = CMD_SUCCESS;
 		}
 	} else {
 		sway_log(L_ERROR, "Unknown command `%s'", exec);
 	}
 	cleanup:
 	free_argv(argc, argv);
-	return res;
+	return status;
 }

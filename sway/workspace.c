@@ -76,7 +76,26 @@ char *workspace_next_name(void) {
 }
 
 swayc_t *workspace_create(const char* name) {
-	swayc_t *parent = get_focused_container(&root_container);
+	swayc_t *parent;
+	// Search for workspace<->output pair
+	int i, e = config->workspace_outputs->length;
+	for (i = 0; i < e; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcasecmp(wso->workspace, name) == 0)
+		{
+			// Find output to use if it exists
+			e = root_container.children->length;
+			for (i = 0; i < e; ++i) {
+				parent = root_container.children->items[i];
+				if (strcmp(parent->name, wso->output) == 0) {
+					return new_workspace(parent, name);
+				}
+			}
+			break;
+		}
+	}
+	// Otherwise create a new one
+	parent = get_focused_container(&root_container);
 	parent = swayc_parent_by_type(parent, C_OUTPUT);
 	return new_workspace(parent, name);
 }

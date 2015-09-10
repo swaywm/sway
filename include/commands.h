@@ -5,17 +5,16 @@
 
 struct cmd_handler {
 	char *command;
-	bool (*handle)(int argc, char **argv);
-	enum {
-		CMD_COMPOSITOR_READY,
-		CMD_KEYBIND,
-		CMD_ANYTIME
-	} config_type;
+	enum  cmd_status {
+		CMD_SUCCESS,
+		CMD_FAILURE,
+		CMD_DEFER,
+	} (*handle)(int argc, char **argv);
 };
 
-bool handle_command(char *command);
+enum cmd_status handle_command(char *command);
 // Handles commands during config
-bool config_command(char *command);
+enum cmd_status config_command(char *command);
 
 void remove_view_from_scratchpad();
 

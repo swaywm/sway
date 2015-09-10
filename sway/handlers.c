@@ -478,12 +478,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 static void handle_wlc_ready(void) {
 	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
 	// Execute commands until there are none left
+	config->active = true;
 	while (config->cmd_queue->length) {
 		handle_command(config->cmd_queue->items[0]);
 		free(config->cmd_queue->items[0]);
 		list_del(config->cmd_queue, 0);
 	}
-	config->active = true;
 }
 
 struct wlc_interface interface = {
