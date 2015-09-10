@@ -52,6 +52,7 @@ struct sway_config {
 	bool active;
 	bool failed;
 	bool reloading;
+	bool reading;
 	bool auto_back_and_forth;
 
 	int gaps_inner;

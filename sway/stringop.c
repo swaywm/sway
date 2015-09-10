@@ -145,7 +145,7 @@ char **split_args(const char *start, int *argc) {
 }
 
 void free_argv(int argc, char **argv) {
-	while (--argc) {
+	while (--argc > 0) {
 		free(argv[argc]);
 	}
 	free(argv);

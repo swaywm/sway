@@ -102,6 +102,7 @@ static void config_defaults(struct sway_config *config) {
 	config->active = false;
 	config->failed = false;
 	config->auto_back_and_forth = false;
+	config->reading = false;
 
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
@@ -217,6 +218,7 @@ bool read_config(FILE *file, bool is_active) {
 	config = malloc(sizeof(struct sway_config));
 
 	config_defaults(config);
+	config->reading = true;
 	if (is_active) {
 		sway_log(L_DEBUG, "Performing configuration file reload");
 		config->reloading = true;
@@ -228,7 +230,8 @@ bool read_config(FILE *file, bool is_active) {
 	while (!feof(file)) {
 		line = read_line(file);
 		line = strip_comments(line);
-		if (!config_command(line)) {
+		if (config_command(line) == CMD_FAILURE) {
+			sway_log(L_ERROR, "Error on line '%s'", line);
 			success = false;
 		}
 		free(line);
@@ -242,6 +245,7 @@ bool read_config(FILE *file, bool is_active) {
 		free_config(old_config);
 	}
 
+	config->reading = false;
 	return success;
 }
 
