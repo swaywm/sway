@@ -12,13 +12,16 @@ typedef enum {
 
 void init_log(log_importance_t verbosity);
 void sway_log_colors(int mode);
-void sway_log(log_importance_t verbosity, const char* format, ...) __attribute__((format(printf,2,3)));
+void sway_log_func(log_importance_t verbosity, const char *func, const char* format, ...) __attribute__((format(printf,3,4)));
 void sway_log_errno(log_importance_t verbosity, char* format, ...) __attribute__((format(printf,2,3)));
 void sway_abort(const char* format, ...) __attribute__((format(printf,1,2)));
+bool sway_assert_func(bool condition, const char *func, const char* format, ...) __attribute__((format(printf,3,4)));
 
-bool _sway_assert(bool condition, const char* format, ...) __attribute__((format(printf,2,3)));
+#define sway_log(V, FMT, ...) \
+	sway_log_func(V, __PRETTY_FUNCTION__, FMT, ##__VA_ARGS__)
+
 #define sway_assert(COND, FMT, ...) \
-	_sway_assert(COND, "%s:" FMT, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+	sway_assert_func(COND, __PRETTY_FUNCTION__, FMT, ##__VA_ARGS__)
 
 void error_handler(int sig);
 
