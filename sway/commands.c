@@ -391,7 +391,7 @@ static void debug_for_window(swayc_t *view, void *data) {
 }
 
 enum cmd_status cmd_for_window(char *criteria, int argc, char **argv) {
-	if (!checkarg(argc, "for_window", EXPECTED_AT_LEAST, 2)) {
+	if (!checkarg(argc, "for_window", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
 	//TODO
