@@ -37,8 +37,8 @@ struct sway_container {
 	int desired_width, desired_height;
 
 	enum visibility_mask {
-		INVISIBLE = 0,
-		VISIBLE = 1,
+		INVISIBLE = false,
+		VISIBLE = true,
 	} visible;
 
 	bool is_floating;
