@@ -15,7 +15,26 @@
 
 char *prev_workspace_name = NULL;
 
-char *workspace_next_name(void) {
+static swayc_t *workspace_by_name_only(const char *name);
+
+const char *workspace_output_open_name(swayc_t *output) {
+	struct workspace_output *wsop;
+	int i, len = config->workspace_outputs->length;
+	// Search config for output
+	for (i = 0; i < len; ++i) {
+		wsop = config->workspace_outputs->items[i];
+		// Find matching outputs
+		if (strcasecmp(wsop->output, output->name)) {
+			// Check if workspace is available and use that name
+			if (!workspace_by_name(wsop->workspace)) {
+				return wsop->workspace;
+			}
+		}
+	}
+	return NULL;
+}
+
+const char *workspace_next_name(void) {
 	sway_log(L_DEBUG, "Workspace: Generating new name");
 	int i;
 	int l = 1;
@@ -25,42 +44,29 @@ char *workspace_next_name(void) {
 
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
-		const char* command = binding->command;
-		list_t *args = split_string(command, " ");
-
-		if (strcmp("workspace", args->items[0]) == 0 && args->length > 1) {
-			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", (char *)args->items[1]);
-			char* target = malloc(strlen(args->items[1]) + 1);
-			strcpy(target, args->items[1]);
-			while (*target == ' ' || *target == '\t')
-				target++;
-
-			// Make sure that the command references an actual workspace
-			// not a command about workspaces
-			if (strcmp(target, "next") == 0 ||
-				strcmp(target, "prev") == 0 ||
-				strcmp(target, "next_on_output") == 0 ||
-				strcmp(target, "prev_on_output") == 0 ||
-				strcmp(target, "number") == 0 ||
-				strcmp(target, "back_and_forth") == 0 ||
-				strcmp(target, "current") == 0)
-			{
-				free_flat_list(args);
+		const char *command = binding->command;
+		const char *ws = "workspace";
+		const int wslen = sizeof("workspace") - 1;
+		if (strncmp(ws, command, wslen) == 0) {
+			command += wslen;
+			// Skip whitespace
+			command += strspn(command, whitespace);
+			// make sure its not a special command
+			if (strcmp(command, "next") == 0
+					|| strcmp(command, "prev") == 0
+					|| strcmp(command, "next_on_output") == 0
+					|| strcmp(command, "prev_on_output") == 0
+					|| strcmp(command, "number") == 0
+					|| strcmp(command, "back_and_forth") == 0
+					|| strcmp(command, "current") == 0
+					// Or if it already exists
+					|| workspace_by_name_only(command)) {
 				continue;
+			} else {
+				// otherwise we found it
+				return command;
 			}
-
-			// Make sure that the workspace doesn't already exist
-			if (workspace_by_name(target)) {
-				free_flat_list(args);
-				continue;
-			}
-
-			free_flat_list(args);
-
-			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
-			return target;
 		}
-		free_flat_list(args);
 	}
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name
@@ -75,55 +81,40 @@ char *workspace_next_name(void) {
 	return name;
 }
 
-swayc_t *workspace_create(const char* name) {
-	swayc_t *parent;
-	// Search for workspace<->output pair
-	int i, e = config->workspace_outputs->length;
-	for (i = 0; i < e; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcasecmp(wso->workspace, name) == 0)
-		{
-			// Find output to use if it exists
-			e = root_container.children->length;
-			for (i = 0; i < e; ++i) {
-				parent = root_container.children->items[i];
-				if (strcmp(parent->name, wso->output) == 0) {
-					return new_workspace(parent, name);
-				}
+swayc_t *workspace_by_name_only(const char *name) {
+	int i, len = root_container.children->length;
+	for (i = 0; i < len; ++i) {
+		swayc_t *op = root_container.children->items[i];
+		int i, len = op->children->length;
+		for (i = 0; i < len; ++i) {
+			swayc_t *ws = op->children->items[i];
+			if (strcasecmp(ws->name, name) == 0) {
+				return ws;
 			}
-			break;
 		}
 	}
-	// Otherwise create a new one
-	parent = get_focused_container(&root_container);
-	parent = swayc_parent_by_type(parent, C_OUTPUT);
-	return new_workspace(parent, name);
-}
-
-static bool _workspace_by_name(swayc_t *view, void *data) {
-	return (view->type == C_WORKSPACE) &&
-		   (strcasecmp(view->name, (char *) data) == 0);
+	return NULL;
 }
 
 swayc_t *workspace_by_name(const char* name) {
 	if (strcmp(name, "prev") == 0) {
 		return workspace_prev();
-	}
-	else if (strcmp(name, "prev_on_output") == 0) {
+	} else if (!strcmp(name, "prev_on_output")) {
 		return workspace_output_prev();
-	}
-	else if (strcmp(name, "next") == 0) {
+	} else if (!strcmp(name, "next")) {
 		return workspace_next();
-	}
-	else if (strcmp(name, "next_on_output") == 0) {
+	} else if (!strcmp(name, "next_on_output")) {
 		return workspace_output_next();
-	}
-	else if (strcmp(name, "current") == 0) {
+	} else if (!strcmp(name, "current")) {
 		return swayc_active_workspace();
+	} else if (!strcmp(name, "back_and_forth")) {
+		if (prev_workspace_name) {
+			name = prev_workspace_name;
+		} else { // If there is no prev workspace name. just return current
+			return swayc_active_workspace();
+		}
 	}
-	else {
-		return swayc_by_test(&root_container, _workspace_by_name, (void *) name);
-	}
+	return workspace_by_name_only(name);
 }
 
 /**
@@ -181,19 +172,19 @@ swayc_t *workspace_prev_next_impl(swayc_t *workspace, bool next) {
 	return NULL;
 }
 
-swayc_t *workspace_output_next() {
+swayc_t *workspace_output_next(void) {
 	return workspace_output_prev_next_impl(swayc_active_output(), true);
 }
 
-swayc_t *workspace_next() {
+swayc_t *workspace_next(void) {
 	return workspace_prev_next_impl(swayc_active_workspace(), true);
 }
 
-swayc_t *workspace_output_prev() {
+swayc_t *workspace_output_prev(void) {
 	return workspace_output_prev_next_impl(swayc_active_output(), false);
 }
 
-swayc_t *workspace_prev() {
+swayc_t *workspace_prev(void) {
 	return workspace_prev_next_impl(swayc_active_workspace(), false);
 }
 
@@ -202,17 +193,17 @@ void workspace_switch(swayc_t *workspace) {
 		return;
 	}
 	swayc_t *active_ws = swayc_active_workspace();
-	if (config->auto_back_and_forth && active_ws == workspace && prev_workspace_name) {
-		swayc_t *new_ws = workspace_by_name(prev_workspace_name);
-		workspace = new_ws ? new_ws : workspace_create(prev_workspace_name);
+	// set workspace to prev_workspace
+	if (config->auto_back_and_forth && active_ws == workspace) {
+		workspace = new_workspace(NULL, "back_and_forth");
 	}
 
+	// set prev workspace name
 	if (!prev_workspace_name
 			|| (strcmp(prev_workspace_name, active_ws->name)
 				&& active_ws != workspace)) {
 		free(prev_workspace_name);
-		prev_workspace_name = malloc(strlen(active_ws->name)+1);
-		strcpy(prev_workspace_name, active_ws->name);
+		prev_workspace_name = strdup(active_ws->name);
 	}
 
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
