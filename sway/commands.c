@@ -21,6 +21,35 @@
 swayc_t *sp_view;
 int sp_index = 0;
 
+// Commands
+static sway_cmd cmd_bindsym;
+static sway_cmd cmd_orientation;
+static sway_cmd cmd_exec;
+static sway_cmd cmd_exec_always;
+static sway_cmd cmd_exit;
+static sway_cmd cmd_floating;
+static sway_cmd cmd_floating_mod;
+static sway_cmd cmd_focus;
+static sway_cmd cmd_focus_follows_mouse;
+static sway_cmd cmd_for_window;
+static sway_cmd cmd_fullscreen;
+static sway_cmd cmd_gaps;
+static sway_cmd cmd_kill;
+static sway_cmd cmd_layout;
+static sway_cmd cmd_log_colors;
+static sway_cmd cmd_mode;
+static sway_cmd cmd_move;
+static sway_cmd cmd_output;
+static sway_cmd cmd_reload;
+static sway_cmd cmd_resize;
+static sway_cmd cmd_scratchpad;
+static sway_cmd cmd_set;
+static sway_cmd cmd_split;
+static sway_cmd cmd_splith;
+static sway_cmd cmd_splitv;
+static sway_cmd cmd_workspace;
+static sway_cmd cmd_ws_auto_back_and_forth;
+
 static struct modifier_key {
 	char *name;
 	uint32_t mod;
@@ -94,7 +123,7 @@ static int bindsym_sort(const void *_lbind, const void *_rbind) {
 	return (rbind->keys->length + rmod) - (lbind->keys->length + lmod);
 }
 
-static enum cmd_status cmd_bindsym(int argc, char **argv) {
+enum cmd_status cmd_bindsym(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1)
 			|| !config->reading) {
 		return CMD_FAILURE;
@@ -103,7 +132,7 @@ static enum cmd_status cmd_bindsym(int argc, char **argv) {
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();
 	binding->modifiers = 0;
-	binding->command = join_args(argv + 1, argc - 1);
+	binding->command = join_args(argc - 1, argv + 1);
 
 	list_t *split = split_string(argv[0], "+");
 	int i;
@@ -144,7 +173,7 @@ static enum cmd_status cmd_bindsym(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_exec_always(int argc, char **argv) {
+enum cmd_status cmd_exec_always(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return CMD_FAILURE;
 	}
@@ -160,7 +189,7 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	}
 	/* Child process */
 	if (pid == 0) {
-		char *args = join_args(argv, argc);
+		char *args = join_args(argc, argv);
 		sway_log(L_DEBUG, "Executing %s", args);
 		execl("/bin/sh", "sh", "-c", args, (char *)NULL);
 		/* Execl doesnt return unless failure */
@@ -172,17 +201,17 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_exec(int argc, char **argv) {
+enum cmd_status cmd_exec(char *criteria, int argc, char **argv) {
 	if (!config->active) {
 		return CMD_DEFER;
 	}
 	if (config->reloading) {
-		char *args = join_args(argv, argc);
+		char *args = join_args(argc, argv);
 		sway_log(L_DEBUG, "Ignoring 'exec %s' due to reload", args);
 		free(args);
 		return CMD_SUCCESS;
 	}
-	return cmd_exec_always(argc, argv);
+	return cmd_exec_always(criteria, argc, argv);
 }
 
 static void kill_views(swayc_t *container, void *data) {
@@ -191,18 +220,19 @@ static void kill_views(swayc_t *container, void *data) {
 	}
 }
 
-static enum cmd_status cmd_exit(int argc, char **argv) {
+enum cmd_status cmd_exit(char *criteria, int argc, char **argv) {
+	(void) argv;
 	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
 	}
 	// Close all views
-	container_map(&root_container, kill_views, NULL);
+	swayc_map(kill_views, NULL);
 	sway_terminate();
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_floating(int argc, char **argv) {
+enum cmd_status cmd_floating(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
@@ -264,7 +294,7 @@ static enum cmd_status cmd_floating(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_floating_mod(int argc, char **argv) {
+enum cmd_status cmd_floating_mod(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)
 			|| !config->reading) {
 		return CMD_FAILURE;
@@ -289,7 +319,7 @@ static enum cmd_status cmd_floating_mod(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_focus(int argc, char **argv) {
+enum cmd_status cmd_focus(char *criteria, int argc, char **argv) {
 	static int floating_toggled_index = 0;
 	static int tiled_toggled_index = 0;
 	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)
@@ -347,13 +377,28 @@ static enum cmd_status cmd_focus(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_focus_follows_mouse(int argc, char **argv) {
+enum cmd_status cmd_focus_follows_mouse(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
 
 	config->focus_follows_mouse = !strcasecmp(argv[0], "yes");
 	return CMD_SUCCESS;
+}
+
+static void debug_for_window(swayc_t *view, void *data) {
+	layout_log(view, 0);
+}
+
+enum cmd_status cmd_for_window(char *criteria, int argc, char **argv) {
+	if (!checkarg(argc, "for_window", EXPECTED_AT_LEAST, 1)) {
+		return CMD_FAILURE;
+	}
+	//TODO
+	void *re = compile_regex(argv[0]);
+	swayc_map_by_test(debug_for_window, test_view_title_regex, NULL, re);
+	free_regex(re);
+	return CMD_FAILURE;
 }
 
 static void hide_view_in_scratchpad(swayc_t *sp_view) {
@@ -372,7 +417,7 @@ static void hide_view_in_scratchpad(swayc_t *sp_view) {
 	set_focused_container(container_under_pointer());
 }
 
-static enum cmd_status cmd_mode(int argc, char **argv) {
+enum cmd_status cmd_mode(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -381,7 +426,7 @@ static enum cmd_status cmd_mode(int argc, char **argv) {
 		return CMD_FAILURE;
 	}
 
-	char *mode_name = join_args(argv, argc - mode_make);
+	char *mode_name = join_args(argc - mode_make, argv);
 	struct sway_mode *mode = NULL;
 	// Find mode
 	int i, len = config->modes->length;
@@ -411,7 +456,7 @@ static enum cmd_status cmd_mode(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_move(int argc, char **argv) {
+enum cmd_status cmd_move(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
@@ -444,11 +489,7 @@ static enum cmd_status cmd_move(int argc, char **argv) {
 			// move "container to workspace number x"
 			ws_name = argv[4];
 		}
-
-		swayc_t *ws = workspace_by_name(ws_name);
-		if (ws == NULL) {
-			ws = workspace_create(ws_name);
-		}
+		swayc_t *ws = new_workspace(NULL, ws_name);
 		move_container_to(view, get_focused_container(ws));
 	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
 		if (view->type != C_CONTAINER && view->type != C_VIEW) {
@@ -482,7 +523,7 @@ static enum cmd_status cmd_move(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_orientation(int argc, char **argv) {
+enum cmd_status cmd_orientation(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "orientation", EXPECTED_EQUAL_TO, 1)
 			|| !config->reading) {
 		return CMD_FAILURE;
@@ -499,7 +540,7 @@ static enum cmd_status cmd_orientation(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_output(int argc, char **argv) {
+enum cmd_status cmd_output(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -564,7 +605,7 @@ static enum cmd_status cmd_output(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_gaps(int argc, char **argv) {
+enum cmd_status cmd_gaps(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -698,15 +739,14 @@ static enum cmd_status cmd_gaps(int argc, char **argv) {
 			top = &root_container;
 		}
 		int top_gap = top->gaps;
-		container_map(top, method == SET ? set_gaps : add_gaps, &amount);
+		swayc_map_r(top, method == SET ? set_gaps : add_gaps, &amount);
 		top->gaps = top_gap;
 		arrange_windows(top, -1, -1);
 	}
-
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_kill(int argc, char **argv) {
+enum cmd_status cmd_kill(char *criteria, int argc, char **argv) {
 	if (config->reading || !config->active) {
 		return CMD_FAILURE;
 	}
@@ -715,7 +755,7 @@ static enum cmd_status cmd_kill(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_layout(int argc, char **argv) {
+enum cmd_status cmd_layout(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "layout", EXPECTED_MORE_THAN, 0)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
@@ -741,7 +781,7 @@ static enum cmd_status cmd_layout(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_reload(int argc, char **argv) {
+enum cmd_status cmd_reload(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "reload", EXPECTED_EQUAL_TO, 0)
 			|| config->reading
 			|| !load_config(NULL)) {
@@ -751,7 +791,7 @@ static enum cmd_status cmd_reload(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_resize(int argc, char **argv) {
+enum cmd_status cmd_resize(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "resize", EXPECTED_AT_LEAST, 3)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
@@ -781,7 +821,7 @@ static enum cmd_status cmd_resize(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static swayc_t *fetch_view_from_scratchpad() {
+static swayc_t *fetch_view_from_scratchpad(void) {
 	if (sp_index >= scratchpad->length) {
 		sp_index = 0;
 	}
@@ -826,7 +866,7 @@ void remove_view_from_scratchpad(swayc_t *view) {
 	}
 }
 
-static enum cmd_status cmd_scratchpad(int argc, char **argv) {
+enum cmd_status cmd_scratchpad(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "scratchpad", EXPECTED_EQUAL_TO, 1)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
@@ -860,7 +900,7 @@ static int compare_set(const void *_l, const void *_r) {
 	return strlen((*r)->name) - strlen((*l)->name);
 }
 
-static enum cmd_status cmd_set(int argc, char **argv) {
+enum cmd_status cmd_set(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "set", EXPECTED_AT_LEAST, 2)
 			|| !config->reading) {
 		return CMD_FAILURE;
@@ -883,11 +923,11 @@ static enum cmd_status cmd_set(int argc, char **argv) {
 		list_add(config->symbols, var);
 		list_sort(config->symbols, compare_set);
 	}
-	var->value = join_args(argv + 1, argc - 1);
+	var->value = join_args(argc - 1, argv + 1);
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status _do_split(int argc, char **argv, int layout) {
+static enum cmd_status _do_split(char *criteria, int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv" :
 		layout == L_HORIZ ? "splith" : "split";
 	if (!checkarg(argc, name, EXPECTED_EQUAL_TO, 0)
@@ -919,16 +959,16 @@ static enum cmd_status _do_split(int argc, char **argv, int layout) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_split(int argc, char **argv) {
+enum cmd_status cmd_split(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "split", EXPECTED_EQUAL_TO, 1)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
 	}
 
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
-		_do_split(argc - 1, argv + 1, L_VERT);
+		_do_split(criteria, argc - 1, argv + 1, L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
-		_do_split(argc - 1, argv + 1, L_HORIZ);
+		_do_split(criteria, argc - 1, argv + 1, L_HORIZ);
 	} else {
 		sway_log(L_ERROR, "Invalid split command (expected either horiziontal or vertical).");
 		return CMD_FAILURE;
@@ -936,15 +976,15 @@ static enum cmd_status cmd_split(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_splitv(int argc, char **argv) {
-	return _do_split(argc, argv, L_VERT);
+enum cmd_status cmd_splitv(char *criteria, int argc, char **argv) {
+	return _do_split(criteria, argc, argv, L_VERT);
 }
 
-static enum cmd_status cmd_splith(int argc, char **argv) {
-	return _do_split(argc, argv, L_HORIZ);
+enum cmd_status cmd_splith(char *criteria, int argc, char **argv) {
+	return _do_split(criteria, argc, argv, L_HORIZ);
 }
 
-static enum cmd_status cmd_log_colors(int argc, char **argv) {
+enum cmd_status cmd_log_colors(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "log_colors", EXPECTED_EQUAL_TO, 1)
 			|| !config->reading) {
 		return CMD_FAILURE;
@@ -960,7 +1000,7 @@ static enum cmd_status cmd_log_colors(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_fullscreen(int argc, char **argv) {
+enum cmd_status cmd_fullscreen(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "fullscreen", EXPECTED_AT_LEAST, 0)
 			|| config->reading || !config->active) {
 		return CMD_FAILURE;
@@ -980,7 +1020,7 @@ static enum cmd_status cmd_fullscreen(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_workspace(int argc, char **argv) {
+enum cmd_status cmd_workspace(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -989,28 +1029,7 @@ static enum cmd_status cmd_workspace(int argc, char **argv) {
 		if (config->reading || !config->active) {
 			return CMD_DEFER;
 		}
-		// Handle workspace next/prev
-		swayc_t *ws = NULL;
-		if (strcasecmp(argv[0], "next") == 0) {
-			ws = workspace_next();
-		} else if (strcasecmp(argv[0], "prev") == 0) {
-			ws = workspace_prev();
-		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
-			ws = workspace_output_next();
-		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
-			ws = workspace_output_prev();
-		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
-			if (prev_workspace_name) {
-				if (!(ws = workspace_by_name(prev_workspace_name))) {
-					ws = workspace_create(prev_workspace_name);
-				}
-			}
-		} else {
-			if (!(ws= workspace_by_name(argv[0]))) {
-				ws = workspace_create(argv[0]);
-			}
-		}
-		workspace_switch(ws);
+		workspace_switch(new_workspace(NULL, argv[0]));
 	} else {
 		if (strcasecmp(argv[1], "output") == 0) {
 			if (!checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 3)) {
@@ -1021,15 +1040,12 @@ static enum cmd_status cmd_workspace(int argc, char **argv) {
 			wso->workspace = strdup(argv[0]);
 			wso->output = strdup(argv[2]);
 			list_add(config->workspace_outputs, wso);
-			if (!config->reading) {
-				// TODO: Move workspace to output. (dont do so when reloading)
-			}
 		}
 	}
 	return CMD_SUCCESS;
 }
 
-static enum cmd_status cmd_ws_auto_back_and_forth(int argc, char **argv) {
+enum cmd_status cmd_ws_auto_back_and_forth(char *criteria, int argc, char **argv) {
 	if (!checkarg(argc, "workspace_auto_back_and_forth", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
@@ -1044,7 +1060,7 @@ static enum cmd_status cmd_ws_auto_back_and_forth(int argc, char **argv) {
 }
 
 /* Keep alphabetized */
-static struct cmd_handler handlers[] = {
+static const struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
 	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
@@ -1054,6 +1070,7 @@ static struct cmd_handler handlers[] = {
 	{ "floating_modifier", cmd_floating_mod },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
 	{ "kill", cmd_kill },
@@ -1090,6 +1107,7 @@ static struct cmd_handler *find_handler(char *line) {
 enum cmd_status handle_command(char *exec) {
 	sway_log(L_INFO, "Handling command '%s'", exec);
 	int argc;
+	char *criteria = NULL;
 	char **argv = split_args(exec, &argc);
 	enum cmd_status status = CMD_FAILURE;
 	struct cmd_handler *handler;
@@ -1097,7 +1115,7 @@ enum cmd_status handle_command(char *exec) {
 		return status;
 	}
 	if ((handler = find_handler(argv[0])) == NULL
-			|| (status = handler->handle(argc - 1, argv + 1)) != CMD_SUCCESS) {
+			|| (status = handler->handle(criteria, argc - 1, argv + 1)) != CMD_SUCCESS) {
 		sway_log(L_ERROR, "Command failed: %s", argv[0]);
 	}
 	free_argv(argc, argv);
@@ -1108,6 +1126,7 @@ enum cmd_status config_command(char *exec) {
 	sway_log(L_INFO, "handling config command '%s'", exec);
 	int argc;
 	char **argv = split_args(exec, &argc);
+	char *criteria = NULL;
 	enum cmd_status status = CMD_FAILURE;
 	struct cmd_handler *handler;
 	if (!argc) {
@@ -1127,7 +1146,7 @@ enum cmd_status config_command(char *exec) {
 		for (; i < e; ++i) {
 			argv[i] = do_var_replacement(argv[i]);
 		}
-		status = handler->handle(argc - 1, argv + 1);
+		status = handler->handle(criteria, argc - 1, argv + 1);
 		if (status == CMD_FAILURE) {
 			sway_log(L_ERROR, "Config load failed for line `%s'", exec);
 		} else if (status == CMD_DEFER) {

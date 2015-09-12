@@ -7,13 +7,17 @@
 
 extern char *prev_workspace_name;
 
-char *workspace_next_name(void);
-swayc_t *workspace_create(const char*);
+// Search for available workspace name on output from config
+const char *workspace_output_open_name(swayc_t *output);
+// Search for any available workspace name
+const char *workspace_next_name(void);
+
+
 swayc_t *workspace_by_name(const char*);
 void workspace_switch(swayc_t*);
-swayc_t *workspace_output_next();
-swayc_t *workspace_next();
-swayc_t *workspace_output_prev();
-swayc_t *workspace_prev();
+swayc_t *workspace_output_next(void);
+swayc_t *workspace_next(void);
+swayc_t *workspace_output_prev(void);
+swayc_t *workspace_prev(void);
 
 #endif
