@@ -207,7 +207,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_WORKSPACES:
 	{
 		json_object *workspaces = json_object_new_array();
-		swayc_map(ipc_get_workspaces_callback, workspaces);
+		container_map(&root_container, ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(workspaces); // free
@@ -216,7 +216,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_OUTPUTS:
 	{
 		json_object *outputs = json_object_new_array();
-		swayc_map(ipc_get_outputs_callback, outputs);
+		container_map(&root_container, ipc_get_outputs_callback, outputs);
 		const char *json_string = json_object_to_json_string(outputs);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(outputs); // free

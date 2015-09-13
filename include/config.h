@@ -63,10 +63,6 @@ bool load_config(const char *file);
 bool read_config(FILE *file, bool is_active);
 char *do_var_replacement(char *str);
 
-// Find workspace_output from config by workspace or output name
-struct workspace_output *wsop_find_workspace(const char *);
-struct workspace_output *wsop_find_output(const char *);
-
 extern struct sway_config *config;
 
 #endif

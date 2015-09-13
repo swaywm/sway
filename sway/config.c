@@ -286,28 +286,3 @@ char *do_var_replacement(char *str) {
 	}
 	return str;
 }
-
-struct workspace_output *wsop_find_workspace(const char *name) {
-	int i, len = config->workspace_outputs->length;
-	struct workspace_output *wsop;
-	for (i = 0; i < len; ++i) {
-		wsop = config->workspace_outputs->items[i];
-		if (strcasecmp(wsop->workspace, name) == 0) {
-			return wsop;
-		}
-	}
-	return NULL;
-}
-
-struct workspace_output *wsop_find_output(const char *name) {
-	int i, len = config->workspace_outputs->length;
-	struct workspace_output *wsop;
-	for (i = 0; i < len; ++i) {
-		wsop = config->workspace_outputs->items[i];
-		if (strcasecmp(wsop->output, name) == 0) {
-			return wsop;
-		}
-	}
-	return NULL;
-}
-

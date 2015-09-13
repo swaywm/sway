@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <strings.h>
-#include <pcre.h>
 #include "config.h"
 #include "container.h"
 #include "workspace.h"
@@ -54,30 +53,26 @@ static void free_swayc(swayc_t *cont) {
 // New containers
 
 swayc_t *new_output(wlc_handle handle) {
+	const struct wlc_size *size = wlc_output_get_resolution(handle);
 	const char *name = wlc_output_get_name(handle);
-	int i, len;
-
 	// Find current outputs to see if this already exists
-	if (name) {
-		len = root_container.children->length;
+	{
+		int i, len = root_container.children->length;
 		for (i = 0; i < len; ++i) {
 			swayc_t *op = root_container.children->items[i];
-			if (strcmp(op->name, name) == 0) {
-				sway_log(L_DEBUG, "restoring output %lu:%s", handle, op->name);
+			const char *op_name = op->name;
+			if (op_name && name && strcmp(op_name, name) == 0) {
+				sway_log(L_DEBUG, "restoring output %lu:%s", handle, op_name);
 				return op;
 			}
 		}
-	} else {
-		sway_log(L_ERROR, "Output has no given name");
-		return NULL;
 	}
 
-	sway_log(L_DEBUG, "Adding output %lu:%s", handle, name);
+	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
 
-	// Find output config
 	struct output_config *oc = NULL;
-	len = config->output_configs->length;
-	for (i = 0; i < len; ++i) {
+	int i;
+	for (i = 0; i < config->output_configs->length; ++i) {
 		oc = config->output_configs->items[i];
 		if (strcasecmp(name, oc->name) == 0) {
 			sway_log(L_DEBUG, "Matched output config for %s", name);
@@ -91,88 +86,77 @@ swayc_t *new_output(wlc_handle handle) {
 	}
 
 	swayc_t *output = new_swayc(C_OUTPUT);
+	if (oc && oc->width != -1 && oc->height != -1) {
+		output->width = oc->width;
+		output->height = oc->height;
+		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
+		wlc_output_set_resolution(handle, &new_size);
+	} else {
+		output->width = size->w;
+		output->height = size->h;
+	}
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
-
-	if (oc) {
-		// Set output width/height
-		if (oc->width > 0 && oc->height > 0) {
-			output->width = oc->width;
-			output->height = oc->height;
-			struct wlc_size geo = { .w = oc->width, .h = oc->height};
-			wlc_output_set_resolution(handle, &geo);
-		} else {
-			struct wlc_size geo = *wlc_output_get_resolution(handle);
-			output->width = geo.w;
-			output->height = geo.h;
-		}
-		// find position in config or find where it should go
-		// TODO more intelligent method
-		if (oc->x > 0 && oc->y > 0) {
-			output->x = oc->x;
-			output->y = oc->y;
-		} else {
-			unsigned int x = 0;
-			len = root_container.children->length;
-			for (i = 0; i < len; ++i) {
-				swayc_t *c = root_container.children->items[i];
-				if (c->type == C_OUTPUT) {
-					unsigned int cx = c->width + c->x;
-					if (cx > x) {
-						x = cx;
-					}
+	
+	// Find position for it
+	if (oc && oc->x != -1 && oc->y != -1) {
+		sway_log(L_DEBUG, "Set %s position to %d, %d", name, oc->x, oc->y);
+		output->x = oc->x;
+		output->y = oc->y;
+	} else {
+		int x = 0;
+		for (i = 0; i < root_container.children->length; ++i) {
+			swayc_t *c = root_container.children->items[i];
+			if (c->type == C_OUTPUT) {
+				if (c->width + c->x > x) {
+					x = c->width + c->x;
 				}
 			}
-			output->x = x;
 		}
+		output->x = x;
 	}
-	// Add as child to root
+
 	add_child(&root_container, output);
 
+	// Create workspace
+	char *ws_name = NULL;
+	if (name) {
+		for (i = 0; i < config->workspace_outputs->length; ++i) {
+			struct workspace_output *wso = config->workspace_outputs->items[i];
+			if (strcasecmp(wso->output, name) == 0) {
+				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
+				// Check if any other workspaces are using this name
+				if (workspace_by_name(wso->workspace)) {
+					sway_log(L_DEBUG, "But it's already taken");
+					break;
+				}
+				sway_log(L_DEBUG, "So we're going to use it");
+				ws_name = strdup(wso->workspace);
+				break;
+			}
+		}
+	}
+	if (!ws_name) {
+		ws_name = workspace_next_name();
+	}
+
 	// create and initilize default workspace
-	swayc_t *ws = new_workspace(output, NULL);
+	swayc_t *ws = new_workspace(output, ws_name);
 	ws->is_focused = true;
 
+	free(ws_name);
+	
 	return output;
 }
 
 swayc_t *new_workspace(swayc_t *output, const char *name) {
-	swayc_t *ws = NULL;
-	struct workspace_output *wsop;
-	if (name) {
-		// Find existing workspace with same name.
-		// or workspace found by special name
-		if ((ws = workspace_by_name(name))) {
-			return ws;
-		}
-		// Find matching output from config
-		if (!output) {
-			if ((wsop = wsop_find_workspace(name))) {
-				int i, len = root_container.children->length;
-				for (i = 0; i < len; ++i) {
-					swayc_t *op = root_container.children->items[i];
-					if (strcasecmp(op->name, wsop->output) == 0) {
-						output = op;
-						goto find_wsop_end;
-					}
-				}
-			}
-			// Set output to active_output if there is no output.
-			output = swayc_active_output();
-			find_wsop_end:;
-		}
-	} else {
-		// No name or output, use active_output
-		if (!output) {
-			output = swayc_active_output();
-		}
-		// search for available output name
-		if (!(name = workspace_output_open_name(output))) {
-			// otherwise just use simple next name
-			name = workspace_next_name();
-		}
+	if (!ASSERT_NONNULL(output)) {
+		return NULL;
 	}
+	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
+
+	// TODO: default_layout
 	if (config->default_layout != L_NONE) {
 		workspace->layout = config->default_layout;
 	} else if (config->default_orientation != L_NONE) {
@@ -390,7 +374,7 @@ swayc_t *destroy_view(swayc_t *view) {
 // Container lookup
 
 
-swayc_t *swayc_by_test_r(swayc_t *container, swayc_test_func test, void *data) {
+swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {
 		return NULL;
 	}
@@ -409,7 +393,7 @@ swayc_t *swayc_by_test_r(swayc_t *container, swayc_test_func test, void *data) {
 		if (test(child, data)) {
 			return child;
 		} else {
-			swayc_t *res = swayc_by_test_r(child, test, data);
+			swayc_t *res = swayc_by_test(child, test, data);
 			if (res) {
 				return res;
 			}
@@ -417,192 +401,17 @@ swayc_t *swayc_by_test_r(swayc_t *container, swayc_test_func test, void *data) {
 	}
 	return NULL;
 }
-swayc_t *swayc_by_test(swayc_test_func test, void *data) {
-	return swayc_by_test_r(&root_container, test, data);
-}
 
-void swayc_map_r(swayc_t *container, swayc_map_func f, void *data) {
-	if (container) {
-		f(container, data);
-		int i;
-		if (container->children)  {
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				swayc_map_r(child, f, data);
-			}
-		}
-		if (container->floating) {
-			for (i = 0; i < container->floating->length; ++i) {
-				swayc_t *child = container->floating->items[i];
-				swayc_map_r(child, f, data);
-			}
-		}
+static bool test_name(swayc_t *view, void *data) {
+	if (!view && !view->name) {
+		return false;
 	}
-}
-void swayc_map(swayc_map_func f, void *data) {
-	swayc_map_r(&root_container, f, data);
+	return strcmp(view->name, data) == 0;
 }
 
-void swayc_map_by_test_r(swayc_t *container,
-		swayc_map_func func, swayc_test_func test,
-		void *funcdata, void *testdata) {
-	if (container) {
-		if (test(container, testdata)) {
-			func(container, funcdata);
-		}
-		int i;
-		if (container->children)  {
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				swayc_map_by_test_r(child, func, test, funcdata, testdata);
-			}
-		}
-		if (container->floating) {
-			for (i = 0; i < container->floating->length; ++i) {
-				swayc_t *child = container->floating->items[i];
-				swayc_map_by_test_r(child, func, test, funcdata, testdata);
-			}
-		}
-	}
+swayc_t *swayc_by_name(const char *name) {
+	return swayc_by_test(&root_container, test_name, (void *)name);
 }
-void swayc_map_by_test(
-		swayc_map_func func, swayc_test_func test,
-		void *funcdata, void *testdata) {
-	swayc_map_by_test_r(&root_container, func, test, funcdata, testdata);
-}
-
-
-
-// Map functions
-void set_gaps(swayc_t *view, void *_data) {
-	int *data = _data;
-	if (view->type == C_WORKSPACE || view->type == C_VIEW) {
-		view->gaps = *data;
-	}
-}
-
-void add_gaps(swayc_t *view, void *_data) {
-	int *data = _data;
-	if (view->type == C_WORKSPACE || view->type == C_VIEW) {
-		if ((view->gaps += *data) < 0) {
-			view->gaps = 0;
-		}
-	}
-}
-
-// Test functions
-bool test_name(swayc_t *view, void *data) {
-	return view->name && strcmp(view->name, data) == 0;
-}
-
-// test_name_regex
-struct test_name_regex {
-	pcre *reg;
-	pcre_extra *regext;
-};
-
-void *compile_regex(const char *pattern) {
-	struct test_name_regex *regex = malloc(sizeof *regex);
-	const char *error;
-	int erroffset;
-	if (!(regex->reg = pcre_compile(pattern, 0, &error, &erroffset, NULL))) {
-		sway_log(L_ERROR, "Regex compilation failed:%s:%s", pattern, error);
-		free(regex);
-		return NULL;
-	}
-	regex->regext = pcre_study(regex->reg, 0, &error);
-	if (error) {
-		sway_log(L_DEBUG, "Regex study failed:%s:%s", pattern, error);
-	}
-	return regex;
-}
-
-void free_regex(void *_regex) {
-	struct test_name_regex *regex = _regex;
-	pcre_free(regex->reg);
-	pcre_free_study(regex->regext);
-	free(regex);
-}
-
-static bool exec_regex(const char *pattern, struct test_name_regex *regex) {
-	int ovector[300];
-	return 0 < pcre_exec(regex->reg, regex->regext, pattern,
-			strlen(pattern), 0, 0, ovector, 300);
-}
-
-bool test_name_regex(swayc_t *view, void *data) {
-	return view->name && exec_regex(view->name, data);
-}
-bool test_layout(swayc_t *view, void *data) {
-	return view->layout & *(enum swayc_layouts *)data;
-}
-bool test_type(swayc_t *view, void *data) {
-	return view->layout & *(enum swayc_types *)data;
-}
-bool test_visibility(swayc_t *view, void *data) {
-	return view->visible == *(bool *)data;
-}
-bool test_handle(swayc_t *view, void *data) {
-	return view->handle == *(wlc_handle *)data;
-}
-
-// C_VIEW tests
-bool test_view_state(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& wlc_view_get_state(view->handle) & *(int *)data;
-}
-bool test_view_type(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& wlc_view_get_type(view->handle) & *(int *)data;
-}
-bool test_view_title(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& strcmp(view->name, data) == 0;
-}
-bool test_view_class(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& strcmp(wlc_view_get_class(view->handle), data) == 0;
-}
-bool test_view_appid(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& strcmp(wlc_view_get_app_id(view->handle), data) == 0;
-}
-bool test_view_title_regex(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& exec_regex(view->name, data);
-}
-bool test_view_class_regex(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& exec_regex(wlc_view_get_class(view->handle), data);
-}
-bool test_view_appid_regex(swayc_t *view, void *data) {
-	return view->type == C_VIEW
-		&& exec_regex(wlc_view_get_app_id(view->handle), data);
-}
-
-// Fancy test combiners
-bool test_and(swayc_t *view, void *data) {
-	struct test_list *list = data;
-	while (list->test) {
-		if (!list->test(view, list->data)) {
-			return false;
-		}
-		++list;
-	}
-	return true;
-}
-bool test_or(swayc_t *view, void *data) {
-	struct test_list *list = data;
-	while (list->test) {
-		if (list->test(view, list->data)) {
-			return true;
-		}
-		++list;
-	}
-	return false;
-}
-
-// Focus|parent lookup
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 	if (!ASSERT_NONNULL(container)) {
@@ -656,6 +465,42 @@ swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts layout) {
 	return container;
 }
 
+
+static swayc_t *_swayc_by_handle_helper(wlc_handle handle, swayc_t *parent) {
+	if (!parent || !parent->children) {
+		return NULL;
+	}
+	int i, len;
+	swayc_t **child;
+	if (parent->type == C_WORKSPACE) {
+		len = parent->floating->length;
+		child = (swayc_t **)parent->floating->items;
+		for (i = 0; i < len; ++i, ++child) {
+			if ((*child)->handle == handle) {
+				return *child;
+			}
+		}
+	}
+
+	len = parent->children->length;
+	child = (swayc_t**)parent->children->items;
+	for (i = 0; i < len; ++i, ++child) {
+		if ((*child)->handle == handle) {
+			return *child;
+		} else {
+			swayc_t *res;
+			if ((res = _swayc_by_handle_helper(handle, *child))) {
+				return res;
+			}
+		}
+	}
+	return NULL;
+}
+
+swayc_t *swayc_by_handle(wlc_handle handle) {
+	return _swayc_by_handle_helper(handle, &root_container);
+}
+
 swayc_t *swayc_active_output(void) {
 	return root_container.focused;
 }
@@ -688,13 +533,11 @@ swayc_t *swayc_active_workspace_for(swayc_t *cont) {
 // Container information
 
 bool swayc_is_fullscreen(swayc_t *view) {
-	return view && view->type == C_VIEW
-		&& wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN;
+	return view && view->type == C_VIEW && (wlc_view_get_state(view->handle) & WLC_BIT_FULLSCREEN);
 }
 
 bool swayc_is_active(swayc_t *view) {
-	return view && view->type == C_VIEW
-		&& wlc_view_get_state(view->handle) & WLC_BIT_ACTIVATED;
+	return view && view->type == C_VIEW && (wlc_view_get_state(view->handle) & WLC_BIT_ACTIVATED);
 }
 
 bool swayc_is_parent_of(swayc_t *parent, swayc_t *child) {
@@ -722,6 +565,25 @@ int swayc_gap(swayc_t *container) {
 }
 
 // Mapping
+
+void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
+	if (container) {
+		f(container, data);
+		int i;
+		if (container->children)  {
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				container_map(child, f, data);
+			}
+		}
+		if (container->floating) {
+			for (i = 0; i < container->floating->length; ++i) {
+				swayc_t *child = container->floating->items[i];
+				container_map(child, f, data);
+			}
+		}
+	}
+}
 
 void update_visibility_output(swayc_t *container, wlc_handle output) {
 	// Inherit visibility
@@ -791,3 +653,24 @@ void update_visibility(swayc_t *container) {
 	}
 }
 
+void set_gaps(swayc_t *view, void *_data) {
+	int *data = _data;
+	if (!ASSERT_NONNULL(view)) {
+		return;
+	}
+	if (view->type == C_WORKSPACE || view->type == C_VIEW) {
+		view->gaps = *data;
+	}
+}
+
+void add_gaps(swayc_t *view, void *_data) {
+	int *data = _data;
+	if (!ASSERT_NONNULL(view)) {
+		return;
+	}
+	if (view->type == C_WORKSPACE || view->type == C_VIEW) {
+		if ((view->gaps += *data) < 0) {
+			view->gaps = 0;
+		}
+	}
+}

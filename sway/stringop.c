@@ -258,7 +258,7 @@ int unescape_string(char *string) {
 	return len - shift;
 }
 
-char *join_args(int argc, char **argv) {
+char *join_args(char **argv, int argc) {
 	int len = 0, i;
 	for (i = 0; i < argc; ++i) {
 		len += strlen(argv[i]) + 1;
