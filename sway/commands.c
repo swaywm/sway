@@ -34,7 +34,6 @@ static sway_cmd cmd_floating;
 static sway_cmd cmd_floating_mod;
 static sway_cmd cmd_focus;
 static sway_cmd cmd_focus_follows_mouse;
-static sway_cmd cmd_for_window;
 static sway_cmd cmd_fullscreen;
 static sway_cmd cmd_gaps;
 static sway_cmd cmd_kill;
@@ -52,10 +51,6 @@ static sway_cmd cmd_splith;
 static sway_cmd cmd_splitv;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
-
-#define NO_BIND() if (!config->reading) return CMD_FAILURE;
-#define NO_CONF() if (config->reading) return CMD_FAILURE;
-#define DEFER() if (!config->active) return CMD_DEFER;
 
 swayc_t *sp_view;
 int sp_index = 0;
@@ -184,7 +179,7 @@ static enum cmd_status cmd_bindsym(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_exec_always(int argc, char **argv) {
-	DEFER();
+	if (!config->active) return CMD_DEFER;;
 	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return CMD_FAILURE;
 	}
@@ -215,7 +210,8 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_exec(int argc, char **argv) {
-	DEFER();
+	if (!config->active) return CMD_DEFER;;
+
 	if (config->reloading) {
 		char *args = join_args(argv, argc);
 		sway_log(L_DEBUG, "Ignoring 'exec %s' due to reload", args);
@@ -420,7 +416,7 @@ static enum cmd_status cmd_mode(int argc, char **argv) {
 	int mode_len = strlen(mode_name);
 	bool mode_make = mode_name[mode_len-1] == '{';
 	if (mode_make) {
-		NO_BIND();
+		if (!config->reading) return CMD_FAILURE;;
 		// Trim trailing spaces
 		do {
 			mode_name[--mode_len] = 0;
@@ -458,7 +454,7 @@ static enum cmd_status cmd_mode(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_move(int argc, char **argv) {
-	NO_CONF();
+	if (config->reading) return CMD_FAILURE;;
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -529,7 +525,7 @@ static enum cmd_status cmd_move(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_orientation(int argc, char **argv) {
-	NO_BIND();
+	if (!config->reading) return CMD_FAILURE;;
 	if (!checkarg(argc, "orientation", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
@@ -547,7 +543,7 @@ static enum cmd_status cmd_orientation(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_output(int argc, char **argv) {
-	NO_BIND();
+	if (!config->reading) return CMD_FAILURE;;
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -1005,11 +1001,6 @@ static enum cmd_status cmd_log_colors(int argc, char **argv) {
 		return CMD_FAILURE;
 	}
 	return CMD_SUCCESS;
-}
-
-__attribute__((unused))
-enum cmd_status cmd_for_window(int argc, char **argv) {
-	return CMD_FAILURE;
 }
 
 static enum cmd_status cmd_fullscreen(int argc, char **argv) {
