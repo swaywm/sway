@@ -179,7 +179,7 @@ static enum cmd_status cmd_bindsym(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_exec_always(int argc, char **argv) {
-	if (!config->active) return CMD_DEFER;;
+	if (!config->active) return CMD_DEFER;
 	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return CMD_FAILURE;
 	}
@@ -190,27 +190,21 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	free(tmp);
 	
 	char *args[] = {"sh", "-c", cmd, 0 };
+	sway_log(L_DEBUG, "Executing %s", cmd);
 
-	pid_t pid = vfork();
-	/* Failed to fork */
-	if (pid  < 0) {
-		sway_log(L_ERROR, "exec command failed, sway did not fork");
+	pid_t pid;
+	if ((pid = vfork()) == 0) {
+		execv("/bin/sh", args);
+		_exit(-1);
+	} else if (pid < 0) {
+		sway_log(L_ERROR, "exec command failed, sway could not fork");
 		return CMD_FAILURE;
 	}
-	/* Child process */
-	if (pid == 0) {
-		sway_log(L_DEBUG, "Executing %s", cmd);
-		execv("/bin/sh", args);
-		/* Execv doesnt return unless failure */
-		sway_log(L_ERROR, "execv failde to return");
-		_exit(-1);
-	}
-	/* Parent */
 	return CMD_SUCCESS;
 }
 
 static enum cmd_status cmd_exec(int argc, char **argv) {
-	if (!config->active) return CMD_DEFER;;
+	if (!config->active) return CMD_DEFER;
 
 	if (config->reloading) {
 		char *args = join_args(argv, argc);
@@ -228,8 +222,8 @@ static void kill_views(swayc_t *container, void *data) {
 }
 
 static enum cmd_status cmd_exit(int argc, char **argv) {
-	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)
-			|| config->reading || !config->active) {
+	if (config->reading) return CMD_INVALID;
+	if (!checkarg(argc, "exit", EXPECTED_EQUAL_TO, 0)) {
 		return CMD_FAILURE;
 	}
 	// Close all views
@@ -239,8 +233,8 @@ static enum cmd_status cmd_exit(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_floating(int argc, char **argv) {
-	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)
-			|| config->reading || !config->active) {
+	if (config->reading) return CMD_INVALID;
+	if (!checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
 
@@ -301,8 +295,8 @@ static enum cmd_status cmd_floating(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_floating_mod(int argc, char **argv) {
-	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)
-			|| !config->reading) {
+	if (!config->reading) return CMD_INVALID;
+	if (!checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
 	int i, j;
@@ -326,10 +320,10 @@ static enum cmd_status cmd_floating_mod(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_focus(int argc, char **argv) {
+	if (config->reading) return CMD_INVALID;
 	static int floating_toggled_index = 0;
 	static int tiled_toggled_index = 0;
-	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)
-			|| config->reading || !config->active) {
+	if (!checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
 	if (strcasecmp(argv[0], "left") == 0) {
@@ -384,6 +378,7 @@ static enum cmd_status cmd_focus(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_focus_follows_mouse(int argc, char **argv) {
+	if (!config->reading) return CMD_INVALID;
 	if (!checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
@@ -393,7 +388,7 @@ static enum cmd_status cmd_focus_follows_mouse(int argc, char **argv) {
 }
 
 static void hide_view_in_scratchpad(swayc_t *sp_view) {
-	if(sp_view == NULL) {
+	if (sp_view == NULL) {
 		return;
 	}
 
@@ -416,7 +411,7 @@ static enum cmd_status cmd_mode(int argc, char **argv) {
 	int mode_len = strlen(mode_name);
 	bool mode_make = mode_name[mode_len-1] == '{';
 	if (mode_make) {
-		if (!config->reading) return CMD_FAILURE;;
+		if (!config->reading) return CMD_INVALID;
 		// Trim trailing spaces
 		do {
 			mode_name[--mode_len] = 0;
@@ -454,7 +449,7 @@ static enum cmd_status cmd_mode(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_move(int argc, char **argv) {
-	if (config->reading) return CMD_FAILURE;;
+	if (config->reading) return CMD_FAILURE;
 	if (!checkarg(argc, "move", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -525,7 +520,7 @@ static enum cmd_status cmd_move(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_orientation(int argc, char **argv) {
-	if (!config->reading) return CMD_FAILURE;;
+	if (!config->reading) return CMD_FAILURE;
 	if (!checkarg(argc, "orientation", EXPECTED_EQUAL_TO, 1)) {
 		return CMD_FAILURE;
 	}
@@ -543,7 +538,7 @@ static enum cmd_status cmd_orientation(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_output(int argc, char **argv) {
-	if (!config->reading) return CMD_FAILURE;;
+	if (!config->reading) return CMD_FAILURE;
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
@@ -994,7 +989,7 @@ static enum cmd_status cmd_log_colors(int argc, char **argv) {
 	}
 	if (strcasecmp(argv[0], "no") == 0) {
 		sway_log_colors(0);
-	} else if(strcasecmp(argv[0], "yes") == 0) {
+	} else if (strcasecmp(argv[0], "yes") == 0) {
 		sway_log_colors(1);
 	} else {
 		sway_log(L_ERROR, "Invalid log_colors command (expected `yes` or `no`, got '%s')", argv[0]);
