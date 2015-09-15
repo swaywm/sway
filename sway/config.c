@@ -225,14 +225,46 @@ bool read_config(FILE *file, bool is_active) {
 		config->active = true;
 	}
 	bool success = true;
+	enum cmd_status block = CMD_BLOCK_END;
 
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
 		line = strip_comments(line);
-		if (config_command(line) == CMD_FAILURE) {
+		switch(config_command(line)) {
+		case CMD_FAILURE:
+		case CMD_INVALID:
 			sway_log(L_ERROR, "Error on line '%s'", line);
 			success = false;
+			break;
+
+		case CMD_DEFER:
+			sway_log(L_DEBUG, "Defferring command `%s'", line);
+			list_add(config->cmd_queue, strdup(line));
+			break;
+
+		case CMD_BLOCK_MODE:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_MODE;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
+		case CMD_BLOCK_END:
+			switch(block) {
+			case CMD_BLOCK_MODE:
+				sway_log(L_DEBUG, "End of mode block");
+				config->current_mode = config->modes->items[0];
+				break;
+
+			case CMD_BLOCK_END:
+				sway_log(L_ERROR, "Unmatched }");
+				break;
+
+			default:;
+			}
+		default:;
 		}
 		free(line);
 	}
