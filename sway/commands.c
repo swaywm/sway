@@ -1182,13 +1182,12 @@ enum cmd_status handle_command(char *_exec) {
 }
 
 enum cmd_status config_command(char *exec) {
-	sway_log(L_INFO, "handling config command '%s'", exec);
 	enum cmd_status status = CMD_SUCCESS;
 	int argc;
 	char **argv = split_args(exec, &argc);
-	if (!argc) {
-		goto cleanup;
-	}
+	if (!argc) goto cleanup;
+
+	sway_log(L_INFO, "handling config command '%s'", exec);
 	// Endblock
 	if (**argv == '}') {
 		status = CMD_BLOCK_END;
