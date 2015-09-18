@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <getopt.h>
 #include "layout.h"
+#include "stringop.h"
 #include "config.h"
 #include "log.h"
 #include "readline.h"

@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <strings.h>
+#include <string.h>
 #include "config.h"
+#include "stringop.h"
 #include "container.h"
 #include "workspace.h"
 #include "focus.h"
