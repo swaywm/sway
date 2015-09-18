@@ -80,9 +80,7 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 		va_end(args);
 
 		fprintf(stderr, ": ");
-		char error[256];
-		strerror_r(errno, error, sizeof(error));
-		fprintf(stderr, "%s", error);
+		fprintf(stderr, "%s", strerror(errno));
 
 		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "\x1B[0m");

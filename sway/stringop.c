@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <strings.h>
 #include <ctype.h>
 #include "stringop.h"
@@ -7,7 +8,7 @@
 #include "string.h"
 #include "list.h"
 
-const char *whitespace = " \f\n\r\t\v";
+const char whitespace[] = " \f\n\r\t\v";
 
 /* Note: This returns 8 characters for trimmed_start per tab character. */
 char *strip_whitespace(char *_str) {
@@ -313,13 +314,16 @@ char *join_list(list_t *list, char *separator) {
 }
 
 char *cmdsep(char **stringp, const char *delim) {
-	char *head = strsep(stringp, delim);
-	// But skip over trailing delims. '3   tokens  here' -> '3' 'tokens  here'
-	if (*stringp) {
-		*stringp += strspn(*stringp, delim);
-		// If skiping over delims brings us to the end of string, set to NULL
-		if (!**stringp) *stringp = NULL;
-	}
+	// skip over leading delims
+	char *head = *stringp + strspn(*stringp, delim);
+	// Find end token
+	char *tail = *stringp += strcspn(*stringp, delim);
+	// Set stringp to begining of next token
+	*stringp += strspn(*stringp, delim);
+	// Set stringp to null if last token
+	if (!**stringp) *stringp = NULL;
+	// Nullify end of first token
+	*tail = 0;
 	return head;
 }
 
@@ -358,3 +362,12 @@ char *argsep(char **stringp, const char *delim) {
 	found:
 	return start;
 }
+
+char *strdup(const char *str) {
+	char *dup = malloc(strlen(str) + 1);
+	if (dup) {
+		strcpy(dup, str);
+	}
+	return dup;
+}
+

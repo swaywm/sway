@@ -3,9 +3,11 @@
 #include <stdbool.h>
 #include <wlc/wlc.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 #include <signal.h>
 #include <getopt.h>
 #include "layout.h"
+#include "stringop.h"
 #include "config.h"
 #include "log.h"
 #include "readline.h"

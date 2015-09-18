@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <sys/types.h>
 #include "stringop.h"
 #include "layout.h"
 #include "focus.h"
@@ -193,7 +195,7 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	sway_log(L_DEBUG, "Executing %s", cmd);
 
 	pid_t pid;
-	if ((pid = vfork()) == 0) {
+	if ((pid = fork()) == 0) {
 		execv("/bin/sh", args);
 		_exit(-1);
 	} else if (pid < 0) {

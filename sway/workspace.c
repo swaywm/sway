@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <wlc/wlc.h>
 #include <string.h>
+#include <strings.h>
 #include "workspace.h"
 #include "layout.h"
 #include "list.h"
