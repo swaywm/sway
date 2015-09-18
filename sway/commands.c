@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <sys/types.h>
 #include "stringop.h"
 #include "layout.h"
 #include "focus.h"
