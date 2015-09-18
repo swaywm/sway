@@ -403,7 +403,7 @@ swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *dat
 }
 
 static bool test_name(swayc_t *view, void *data) {
-	if (!view && !view->name) {
+	if (!view || !view->name) {
 		return false;
 	}
 	return strcmp(view->name, data) == 0;
