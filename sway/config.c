@@ -110,47 +110,49 @@ static void config_defaults(struct sway_config *config) {
 
 static char *get_config_path(void) {
 	char *config_path = NULL;
-	char *paths[3] = {getenv("HOME"), getenv("XDG_CONFIG_HOME"), ""};
-	int pathlen[3] = {0, 0, 0};
+	char *paths[3] = { getenv("HOME"), getenv("XDG_CONFIG_HOME"), "" };
+	int pathlen[3] = { 0, 0, 0 };
 	int i;
 #define home paths[0]
 #define conf paths[1]
 	// Get home and config directories
+	conf = conf ? strdup(conf) : NULL;
 	home = home ? strdup(home) : NULL;
-	if (conf) {
-		conf = strdup(conf);
-	} else if (home) {
+	// If config folder is unset, set it to $HOME/.config
+	if (!conf && home) {
 		const char *def = "/.config";
 		conf = malloc(strlen(home) + strlen(def) + 1);
 		strcpy(conf, home);
 		strcat(conf, def);
-	} else {
-		home = strdup("");
-		conf = strdup("");
 	}
-	pathlen[0] = strlen(home);
-	pathlen[1] = strlen(conf);
+	// Get path lengths
+	pathlen[0] = home ? strlen(home) : 0;
+	pathlen[1] = conf ? strlen(conf) : 0;
 #undef home
 #undef conf
+
 	// Search for config file from search paths
 	static const char *search_paths[] = {
 		"/.sway/config", // Prepend with $home
 		"/sway/config", // Prepend with $config
 		"/etc/sway/config",
 		"/.i3/config", // $home
-		"/.i3/config", // $config
+		"/i3/config", // $config
 		"/etc/i3/config"
 	};
 	for (i = 0; i < (int)(sizeof(search_paths) / sizeof(char *)); ++i) {
-		char *test = malloc(pathlen[i%3] + strlen(search_paths[i]) + 1);
-		strcpy(test, paths[i%3]);
-		strcat(test, search_paths[i]);
-		sway_log(L_DEBUG, "Checking for config at %s", test);
-		if (file_exists(test)) {
-			config_path = test;
-			goto cleanup;
+		// Only try path if it is set by enviroment variables
+		if (paths[i%3]) {
+			char *test = malloc(pathlen[i%3] + strlen(search_paths[i]) + 1);
+			strcpy(test, paths[i%3]);
+			strcpy(test + pathlen[i%3], search_paths[i]);
+			sway_log(L_DEBUG, "Checking for config at %s", test);
+			if (file_exists(test)) {
+				config_path = test;
+				goto cleanup;
+			}
+			free(test);
 		}
-		free(test);
 	}
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
