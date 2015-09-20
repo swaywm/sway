@@ -13,6 +13,7 @@ arch:
     - libinput
     - libx11
     - libxcb
+    - xcb-util-image
     - libgl
     - mesa
   script:
