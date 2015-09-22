@@ -253,8 +253,8 @@ static void handle_view_focus(wlc_handle view, bool focus) {
 }
 
 static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry *geometry) {
-	sway_log(L_DEBUG, "geometry request %d x %d : %d x %d",
-			geometry->origin.x, geometry->origin.y, geometry->size.w, geometry->size.h);
+	sway_log(L_DEBUG, "geometry request for %ld %dx%d : %dx%d",
+			handle, geometry->origin.x, geometry->origin.y, geometry->size.w, geometry->size.h);
 	// If the view is floating, then apply the geometry.
 	// Otherwise save the desired width/height for the view.
 	// This will not do anything for the time being as WLC improperly sends geometry requests
