@@ -3,13 +3,15 @@
 #include <stdbool.h>
 #include "config.h"
 
-struct cmd_handler {
-	char *command;
-	enum  cmd_status {
-		CMD_SUCCESS,
-		CMD_FAILURE,
-		CMD_DEFER,
-	} (*handle)(int argc, char **argv);
+
+enum  cmd_status {
+	CMD_SUCCESS,
+	CMD_FAILURE,
+	CMD_INVALID,
+	CMD_DEFER,
+	// Config Blocks
+	CMD_BLOCK_END,
+	CMD_BLOCK_MODE,
 };
 
 enum cmd_status handle_command(char *command);

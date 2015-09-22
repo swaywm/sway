@@ -14,10 +14,10 @@ int colored = 1;
 log_importance_t v = L_SILENT;
 
 static const char *verbosity_colors[] = {
-	"", // L_SILENT
-	"\x1B[1;31m", // L_ERROR
-	"\x1B[1;34m", // L_INFO
-	"\x1B[1;30m", // L_DEBUG
+	[L_SILENT] = "",
+	[L_ERROR ] = "\x1B[1;31m",
+	[L_INFO  ] = "\x1B[1;34m",
+	[L_DEBUG ] = "\x1B[1;30m",
 };
 
 void init_log(log_importance_t verbosity) {

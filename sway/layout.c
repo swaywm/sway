@@ -206,7 +206,8 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 
 void move_container(swayc_t *container, enum movement_direction dir) {
 	enum swayc_layouts layout;
-	if (container->is_floating) {
+	if (container->is_floating
+			|| (container->type != C_VIEW && container->type != C_CONTAINER)) {
 		return;
 	}
 	if (dir == MOVE_UP || dir == MOVE_DOWN) {
