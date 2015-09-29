@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <strings.h>
 #include <ctype.h>
 #include "stringop.h"
@@ -7,7 +8,7 @@
 #include "string.h"
 #include "list.h"
 
-const char *whitespace = " \f\n\r\t\v";
+const char whitespace[] = " \f\n\r\t\v";
 
 /* Note: This returns 8 characters for trimmed_start per tab character. */
 char *strip_whitespace(char *_str) {
@@ -105,40 +106,40 @@ char **split_args(const char *start, int *argc) {
 	bool in_char = false;
 	bool escaped = false;
 	const char *end = start;
-	while (*start) {
-		if (!in_token) {
-			start = (end += strspn(end, whitespace));
-			in_token = true;
-		}
-		if (*end == '"' && !in_char && !escaped) {
-			in_string = !in_string;
-		} else if (*end == '\'' && !in_string && !escaped) {
-			in_char = !in_char;
-		} else if (*end == '\\') {
-			escaped = !escaped;
-		} else if (*end == '\0' || (!in_string && !in_char && !escaped
-				&& strchr(whitespace, *end))) {
-			goto add_part;
-		}
-		if (*end != '\\') {
+	if (start) {
+		while (*start) {
+			if (!in_token) {
+				start = (end += strspn(end, whitespace));
+				in_token = true;
+			}
+			if (*end == '"' && !in_char && !escaped) {
+				in_string = !in_string;
+			} else if (*end == '\'' && !in_string && !escaped) {
+				in_char = !in_char;
+			} else if (*end == '\\') {
+				escaped = !escaped;
+			} else if (*end == '\0' || (!in_string && !in_char && !escaped
+						&& strchr(whitespace, *end))) {
+				goto add_token;
+			}
+			if (*end != '\\') {
+				escaped = false;
+			}
+			++end;
+			continue;
+			add_token:
+			if (end - start > 0) {
+				char *token = malloc(end - start + 1);
+				strncpy(token, start, end - start + 1);
+				token[end - start] = '\0';
+				argv[*argc] = token;
+				if (++*argc + 1 == alloc) {
+					argv = realloc(argv, (alloc *= 2) * sizeof(char *));
+				}
+			}
+			in_token = false;
 			escaped = false;
 		}
-		++end;
-		continue;
-		add_part:
-		if (end - start > 0) {
-			char *token = malloc(end - start + 1);
-			strncpy(token, start, end - start + 1);
-			token[end - start] = '\0';
-			strip_quotes(token);
-			unescape_string(token);
-			argv[*argc] = token;
-			if (++*argc + 1 == alloc) {
-				argv = realloc(argv, (alloc *= 2) * sizeof(char *));
-			}
-		}
-		in_token = false;
-		escaped = false;
 	}
 	argv[*argc] = NULL;
 	return argv;
@@ -312,6 +313,56 @@ char *join_list(list_t *list, char *separator) {
 	return res;
 }
 
+char *cmdsep(char **stringp, const char *delim) {
+	// skip over leading delims
+	char *head = *stringp + strspn(*stringp, delim);
+	// Find end token
+	char *tail = *stringp += strcspn(*stringp, delim);
+	// Set stringp to begining of next token
+	*stringp += strspn(*stringp, delim);
+	// Set stringp to null if last token
+	if (!**stringp) *stringp = NULL;
+	// Nullify end of first token
+	*tail = 0;
+	return head;
+}
+
+char *argsep(char **stringp, const char *delim) {
+	char *start = *stringp;
+	char *end = start;
+	bool in_string = false;
+	bool in_char = false;
+	bool escaped = false;
+	while (1) {
+		if (*end == '"' && !in_char && !escaped) {
+			in_string = !in_string;
+		} else if (*end == '\'' && !in_string && !escaped) {
+			in_char = !in_char;
+		} else if (*end == '\\') {
+			escaped = !escaped;
+		} else if (*end == '\0') {
+			*stringp = NULL;
+			goto found;
+		} else if (!in_string && !in_char && !escaped && strchr(delim, *end)) {
+			if (end - start) {
+				*(end++) = 0;
+				*stringp = end + strspn(end, delim);;
+				if (!**stringp) *stringp = NULL;
+				goto found;
+			} else {
+				++start;
+				end = start;
+			}
+		}
+		if (*end != '\\') {
+			escaped = false;
+		}
+		++end;
+	}
+	found:
+	return start;
+}
+
 char *strdup(const char *str) {
 	char *dup = malloc(strlen(str) + 1);
 	if (dup) {
@@ -319,3 +370,4 @@ char *strdup(const char *str) {
 	}
 	return dup;
 }
+

@@ -110,47 +110,49 @@ static void config_defaults(struct sway_config *config) {
 
 static char *get_config_path(void) {
 	char *config_path = NULL;
-	char *paths[3] = {getenv("HOME"), getenv("XDG_CONFIG_HOME"), ""};
-	int pathlen[3] = {0, 0, 0};
+	char *paths[3] = { getenv("HOME"), getenv("XDG_CONFIG_HOME"), "" };
+	int pathlen[3] = { 0, 0, 0 };
 	int i;
 #define home paths[0]
 #define conf paths[1]
 	// Get home and config directories
+	conf = conf ? strdup(conf) : NULL;
 	home = home ? strdup(home) : NULL;
-	if (conf) {
-		conf = strdup(conf);
-	} else if (home) {
+	// If config folder is unset, set it to $HOME/.config
+	if (!conf && home) {
 		const char *def = "/.config";
 		conf = malloc(strlen(home) + strlen(def) + 1);
 		strcpy(conf, home);
 		strcat(conf, def);
-	} else {
-		home = strdup("");
-		conf = strdup("");
 	}
-	pathlen[0] = strlen(home);
-	pathlen[1] = strlen(conf);
+	// Get path lengths
+	pathlen[0] = home ? strlen(home) : 0;
+	pathlen[1] = conf ? strlen(conf) : 0;
 #undef home
 #undef conf
+
 	// Search for config file from search paths
 	static const char *search_paths[] = {
 		"/.sway/config", // Prepend with $home
 		"/sway/config", // Prepend with $config
 		"/etc/sway/config",
 		"/.i3/config", // $home
-		"/.i3/config", // $config
+		"/i3/config", // $config
 		"/etc/i3/config"
 	};
 	for (i = 0; i < (int)(sizeof(search_paths) / sizeof(char *)); ++i) {
-		char *test = malloc(pathlen[i%3] + strlen(search_paths[i]) + 1);
-		strcpy(test, paths[i%3]);
-		strcat(test, search_paths[i]);
-		sway_log(L_DEBUG, "Checking for config at %s", test);
-		if (file_exists(test)) {
-			config_path = test;
-			goto cleanup;
+		// Only try path if it is set by enviroment variables
+		if (paths[i%3]) {
+			char *test = malloc(pathlen[i%3] + strlen(search_paths[i]) + 1);
+			strcpy(test, paths[i%3]);
+			strcpy(test + pathlen[i%3], search_paths[i]);
+			sway_log(L_DEBUG, "Checking for config at %s", test);
+			if (file_exists(test)) {
+				config_path = test;
+				goto cleanup;
+			}
+			free(test);
 		}
-		free(test);
 	}
 
 	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
@@ -225,14 +227,46 @@ bool read_config(FILE *file, bool is_active) {
 		config->active = true;
 	}
 	bool success = true;
+	enum cmd_status block = CMD_BLOCK_END;
 
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
 		line = strip_comments(line);
-		if (config_command(line) == CMD_FAILURE) {
+		switch(config_command(line)) {
+		case CMD_FAILURE:
+		case CMD_INVALID:
 			sway_log(L_ERROR, "Error on line '%s'", line);
 			success = false;
+			break;
+
+		case CMD_DEFER:
+			sway_log(L_DEBUG, "Defferring command `%s'", line);
+			list_add(config->cmd_queue, strdup(line));
+			break;
+
+		case CMD_BLOCK_MODE:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_MODE;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
+		case CMD_BLOCK_END:
+			switch(block) {
+			case CMD_BLOCK_MODE:
+				sway_log(L_DEBUG, "End of mode block");
+				config->current_mode = config->modes->items[0];
+				break;
+
+			case CMD_BLOCK_END:
+				sway_log(L_ERROR, "Unmatched }");
+				break;
+
+			default:;
+			}
+		default:;
 		}
 		free(line);
 	}
