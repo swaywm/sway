@@ -253,7 +253,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	default:
 		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
 		ipc_client_disconnect(client);
-		break;
+		return;
 	}
 
 	client->payload_length = 0;

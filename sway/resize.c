@@ -20,7 +20,7 @@ bool resize_tiled(int amount, bool use_width) {
 		int lnumber = 0;
 		int rnumber = 0;
 		while (parent->parent) {
-			if (parent->parent->layout == L_HORIZ) {
+			if (parent->parent->layout == L_HORIZ && parent->parent->children) {
 				for (i = 0; i < parent->parent->children->length; i++) {
 					sibling = parent->parent->children->items[i];
 					if (sibling->x != focused->x) {
@@ -143,7 +143,7 @@ bool resize_tiled(int amount, bool use_width) {
 			}
 			parent = parent->parent;
 		}
-		if (parent == &root_container) {
+		if (parent->parent == NULL || parent->parent->children == NULL) {
 			return true;
 		}
 		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d b conts, and %d t conts", parent->parent, bnumber, tnumber);
