@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include "stringop.h"
 #include "layout.h"
 #include "focus.h"
@@ -190,18 +191,25 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	char cmd[4096];
 	strcpy(cmd, tmp);
 	free(tmp);
-	
-	char *args[] = {"sh", "-c", cmd, 0 };
 	sway_log(L_DEBUG, "Executing %s", cmd);
 
 	pid_t pid;
+	// Fork process
 	if ((pid = fork()) == 0) {
-		execv("/bin/sh", args);
-		_exit(-1);
+		// Fork child process again
+		setsid();
+		if (fork() == 0) {
+			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
+			/* Not reached */
+		}
+		// Close child process
+		_exit(0);
 	} else if (pid < 0) {
 		sway_log(L_ERROR, "exec command failed, sway could not fork");
 		return CMD_FAILURE;
 	}
+	// cleanup child process
+	wait(0);
 	return CMD_SUCCESS;
 }
 
