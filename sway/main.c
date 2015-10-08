@@ -22,6 +22,8 @@ void sway_terminate(void) {
 	wlc_terminate();
 }
 
+static void sigchld_handle(int signal);
+
 static void wlc_log_handler(enum wlc_log_type type, const char *str) {
 	if (type == WLC_LOG_ERROR) {
 		sway_log(L_ERROR, "[wlc] %s", str);
@@ -62,8 +64,8 @@ int main(int argc, char **argv) {
 		{0, 0, 0, 0}
 	};
 
-	/* clean zombie processes */
-	signal(SIGCHLD, SIG_IGN);
+	/* Signal handling */
+	signal(SIGCHLD, sigchld_handle);
 
 	setenv("WLC_DIM", "0", 0);
 
@@ -149,4 +151,9 @@ int main(int argc, char **argv) {
 	ipc_terminate();
 
 	return 0;
+}
+
+void sigchld_handle(int signal) {
+	(void) signal;
+	while (waitpid((pid_t)-1, 0, WNOHANG) > 0);
 }
