@@ -22,7 +22,8 @@ zero lines of source code after two years.
 sway is not supported by many distributions yet. Here's a list of packages
 available for you to install:
 
-* [Arch Linux](https://aur.archlinux.org/packages/sway-git/).
+* [Arch Linux](https://aur.archlinux.org/packages/sway-git/)
+* [Gentoo Linux](https://github.com/zetok/zetok-overlay/)
 
 ### Compiling from Source
 
