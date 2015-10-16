@@ -21,10 +21,7 @@
 
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;
-static struct sockaddr_un ipc_sockaddr = {
-	.sun_family = AF_UNIX,
-	.sun_path = "/tmp/sway-ipc.sock"
-};
+static struct sockaddr_un *ipc_sockaddr = NULL;
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
@@ -35,6 +32,7 @@ struct ipc_client {
 	enum ipc_command_type current_command;
 };
 
+struct sockaddr_un *ipc_user_sockaddr(void);
 int ipc_handle_connection(int fd, uint32_t mask, void *data);
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
 void ipc_client_disconnect(struct ipc_client *client);
@@ -49,12 +47,14 @@ void ipc_init(void) {
 		sway_abort("Unable to create IPC socket");
 	}
 
+	ipc_sockaddr = ipc_user_sockaddr();
+
 	if (getenv("SWAYSOCK") != NULL) {
-		strncpy(ipc_sockaddr.sun_path, getenv("SWAYSOCK"), sizeof(ipc_sockaddr.sun_path));
+		strncpy(ipc_sockaddr->sun_path, getenv("SWAYSOCK"), sizeof(ipc_sockaddr->sun_path));
 	}
 
-	unlink(ipc_sockaddr.sun_path);
-	if (bind(ipc_socket, (struct sockaddr *)&ipc_sockaddr, sizeof(ipc_sockaddr)) == -1) {
+	unlink(ipc_sockaddr->sun_path);
+	if (bind(ipc_socket, (struct sockaddr *)ipc_sockaddr, sizeof(*ipc_sockaddr)) == -1) {
 		sway_abort("Unable to bind IPC socket");
 	}
 
@@ -63,7 +63,7 @@ void ipc_init(void) {
 	}
 
 	// Set i3 IPC socket path so that i3-msg works out of the box
-	setenv("I3SOCK", ipc_sockaddr.sun_path, 1);
+	setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
 
 	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
 }
@@ -73,7 +73,31 @@ void ipc_terminate(void) {
 		wlc_event_source_remove(ipc_event_source);
 	}
 	close(ipc_socket);
-	unlink(ipc_sockaddr.sun_path);
+	unlink(ipc_sockaddr->sun_path);
+
+	if (ipc_sockaddr) {
+		free(ipc_sockaddr);
+	}
+}
+
+struct sockaddr_un *ipc_user_sockaddr(void) {
+	struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
+	if (ipc_sockaddr == NULL) {
+		sway_abort("can't malloc ipc_sockaddr");
+	}
+
+	ipc_sockaddr->sun_family = AF_UNIX;
+
+	int path_size = sizeof(ipc_sockaddr->sun_path);
+
+	// Without logind:
+	int allocating_path_size = snprintf(ipc_sockaddr->sun_path, path_size, "/tmp/sway-ipc.%i.sock", getuid());
+
+	if (allocating_path_size >= path_size) {
+		sway_abort("socket path won't fit into ipc_sockaddr->sun_path");
+	}
+
+	return ipc_sockaddr;
 }
 
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
