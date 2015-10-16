@@ -82,8 +82,8 @@ void ipc_terminate(void) {
 
 struct sockaddr_un *ipc_user_sockaddr(void) {
 	struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
-	if (!sway_assert(ipc_sockaddr != NULL, "can't malloc ipc_sockaddr")) {
-		return NULL;
+	if (ipc_sockaddr == NULL) {
+		sway_abort("can't malloc ipc_sockaddr");
 	}
 
 	ipc_sockaddr->sun_family = AF_UNIX;
@@ -93,8 +93,8 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 	// Without logind:
 	int allocating_path_size = snprintf(ipc_sockaddr->sun_path, path_size, "/tmp/sway-ipc.%i.sock", getuid());
 
-	if (!sway_assert(allocating_path_size < path_size, "socket path won't fit into ipc_sockaddr->sun_path")) {
-		return NULL;
+	if (allocating_path_size >= path_size) {
+		sway_abort("socket path won't fit into ipc_sockaddr->sun_path");
 	}
 
 	return ipc_sockaddr;
