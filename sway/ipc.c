@@ -81,17 +81,17 @@ void ipc_terminate(void) {
 }
 
 struct sockaddr_un *ipc_user_sockaddr(void) {
-  struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
-  assert(ipc_sockaddr != NULL);
+	struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
+	assert(ipc_sockaddr != NULL);
 
-  ipc_sockaddr->sun_family = AF_UNIX;
+	ipc_sockaddr->sun_family = AF_UNIX;
 
-  int path_size = sizeof(ipc_sockaddr->sun_path);
+	int path_size = sizeof(ipc_sockaddr->sun_path);
 
-  // Without logind:
-  assert(snprintf(ipc_sockaddr->sun_path, path_size, "/tmp/sway-ipc.%i.sock", getuid()) < path_size);
+	// Without logind:
+	assert(snprintf(ipc_sockaddr->sun_path, path_size, "/tmp/sway-ipc.%i.sock", getuid()) < path_size);
 
-  return ipc_sockaddr;
+	return ipc_sockaddr;
 }
 
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
