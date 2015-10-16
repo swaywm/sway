@@ -81,7 +81,11 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
   assert(ipc_sockaddr != NULL);
 
   ipc_sockaddr->sun_family = AF_UNIX;
-  strcpy(ipc_sockaddr->sun_path, "/tmp/sway-ipc.sock");
+
+  int path_size = sizeof(ipc_sockaddr->sun_path);
+
+  // Without logind:
+  assert(snprintf(ipc_sockaddr->sun_path, path_size, "/tmp/sway-ipc.%i.sock", getuid()) < path_size);
 
   return ipc_sockaddr;
 }
