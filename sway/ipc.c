@@ -74,6 +74,10 @@ void ipc_terminate(void) {
 	}
 	close(ipc_socket);
 	unlink(ipc_sockaddr->sun_path);
+
+	if (ipc_sockaddr) {
+		free(ipc_sockaddr);
+	}
 }
 
 struct sockaddr_un *ipc_user_sockaddr(void) {
