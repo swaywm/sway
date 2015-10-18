@@ -14,5 +14,6 @@ enum ipc_command_type {
 
 void ipc_init(void);
 void ipc_terminate(void);
+struct sockaddr_un *ipc_user_sockaddr(void);
 
 #endif
