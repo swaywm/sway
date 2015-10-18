@@ -190,6 +190,11 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	char *tmp = NULL;
 	if (strcmp((char*)*argv, "--no-startup-id") == 0) {
 		sway_log(L_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+
+		if (!checkarg(argc - 1, "exec_always", EXPECTED_MORE_THAN, 0)) {
+			return CMD_FAILURE;
+		}
+
 		tmp = join_args(argv + 1, argc - 1);
 	} else {
 		tmp = join_args(argv, argc);
