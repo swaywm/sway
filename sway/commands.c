@@ -186,8 +186,21 @@ static enum cmd_status cmd_exec_always(int argc, char **argv) {
 	if (!checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0)) {
 		return CMD_FAILURE;
 	}
+
+	char *tmp = NULL;
+	if (strcmp((char*)*argv, "--no-startup-id") == 0) {
+		sway_log(L_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+
+		if (!checkarg(argc - 1, "exec_always", EXPECTED_MORE_THAN, 0)) {
+			return CMD_FAILURE;
+		}
+
+		tmp = join_args(argv + 1, argc - 1);
+	} else {
+		tmp = join_args(argv, argc);
+	}
+
 	// Put argument into cmd array
-	char *tmp = join_args(argv, argc);
 	char cmd[4096];
 	strcpy(cmd, tmp);
 	free(tmp);
