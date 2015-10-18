@@ -4,6 +4,7 @@
 #include <wlc/wlc.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <signal.h>
 #include <getopt.h>
 #include "layout.h"
@@ -105,8 +106,11 @@ int main(int argc, char **argv) {
 		case 'V': // verbose
 			verbose = 1;
 			break;
-		case 'p': // --get-socketpath
-			// TODO
+		case 'p': ; // --get-socketpath
+			struct sockaddr_un *ipc_sockaddr = ipc_user_sockaddr();
+			fprintf(stdout, "%s\n", ipc_sockaddr->sun_path);
+			free(ipc_sockaddr);
+			exit(0);
 			break;
 		}
 	}
