@@ -1178,6 +1178,11 @@ enum cmd_status handle_command(char *_exec) {
 			// Split commands
 			cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
+			if (strcmp(cmd, "") == 0) {
+				sway_log(L_INFO, "Ignoring empty command.");
+				continue;
+			}
+
 			sway_log(L_INFO, "Handling command '%s'", cmd);
 			//TODO better handling of argv
 			int argc;
