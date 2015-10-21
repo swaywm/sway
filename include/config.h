@@ -6,6 +6,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "list.h"
 #include "layout.h"
+#include "container.h"
 
 struct sway_variable {
 	char *name;
@@ -62,6 +63,8 @@ struct sway_config {
 bool load_config(const char *file);
 bool read_config(FILE *file, bool is_active);
 char *do_var_replacement(char *str);
+// Setup output container by applying given config
+void apply_output_config(struct output_config *oc, swayc_t *output);
 
 extern struct sway_config *config;
 
