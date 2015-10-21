@@ -410,6 +410,15 @@ static enum cmd_status cmd_focus_follows_mouse(int argc, char **argv) {
 	return CMD_SUCCESS;
 }
 
+static enum cmd_status cmd_seamless_mouse(int argc, char **argv) {
+	if (!checkarg(argc, "seamless_mouse", EXPECTED_EQUAL_TO, 1)) {
+		return CMD_FAILURE;
+	}
+
+	config->seamless_mouse = (strcasecmp(argv[0], "on") == 0 || strcasecmp(argv[0], "yes") == 0);
+	return CMD_SUCCESS;
+}
+
 static void hide_view_in_scratchpad(swayc_t *sp_view) {
 	if (sp_view == NULL) {
 		return;
@@ -1139,6 +1148,7 @@ static struct cmd_handler handlers[] = {
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
 	{ "scratchpad", cmd_scratchpad },
+	{ "seamless_mouse", cmd_seamless_mouse },
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
