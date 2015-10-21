@@ -353,6 +353,41 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 }
 
 static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
+	// Switch to adjacent output if touching output edge.
+	//
+	// Since this doesn't currently support moving windows between outputs we
+	// don't do the switch if the pointer is in a mode.
+	if (!pointer_state.mode) {
+		swayc_t *output = swayc_active_output();
+
+		if (origin->x == 0) {
+			swayc_t *adjacent = output->neighbours->left;
+			if (adjacent) {
+				sway_log(L_DEBUG, "%s: Left adjacent output is: %s", output->name, adjacent->name);
+				workspace_switch(adjacent->focused);
+			}
+		} else if ((double)origin->x == output->width) {
+			swayc_t *adjacent = output->neighbours->right;
+			if (adjacent) {
+				sway_log(L_DEBUG, "%s: Right adjacent output is: %s", output->name, adjacent->name);
+				workspace_switch(adjacent->focused);
+			}
+		}
+		if (origin->y == 0) {
+			swayc_t *adjacent = output->neighbours->top;
+			if (adjacent) {
+				sway_log(L_DEBUG, "%s: Top adjacent output is: %s", output->name, adjacent->name);
+				workspace_switch(adjacent->focused);
+			}
+		} else if ((double)origin->y == output->height) {
+			swayc_t *adjacent = output->neighbours->bottom;
+			if (adjacent) {
+				sway_log(L_DEBUG, "%s: Bottom adjacent output is: %s", output->name, adjacent->name);
+				workspace_switch(adjacent->focused);
+			}
+		}
+	}
+
 	// Update pointer origin
 	pointer_state.delta.x = origin->x - pointer_state.origin.x;
 	pointer_state.delta.y = origin->y - pointer_state.origin.y;

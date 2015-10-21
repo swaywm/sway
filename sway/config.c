@@ -310,6 +310,41 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 		output->x = x;
 	}
+
+	// Populate neighbours struct for given output. Will also update reverse
+	// relations.
+	reset_neighbour_relations(output);
+
+	for(int i = 0; i < root_container.children->length; ++i) {
+		swayc_t *c = root_container.children->items[i];
+		if (c == output || c->type != C_OUTPUT) {
+			continue;
+		}
+
+		// TODO: This implementation is naïve: We assume all outputs are
+		// perfectly aligned.
+		if (c->y == output->y) {
+			if (c->x + c->width == output->x) {
+				sway_log(L_DEBUG, "%s is right of %s", output->name, c->name);
+				c->neighbours->right = output;
+				output->neighbours->left = c;
+			} else if (output->x + output->width == c->x) {
+				sway_log(L_DEBUG, "%s is left of %s", output->name, c->name);
+				c->neighbours->left = output;
+				output->neighbours->right = c;
+			}
+		} else if (c->x == output->x) {
+			if (c->y + c->height == output->y) {
+				sway_log(L_DEBUG, "%s is below %s", output->name, c->name);
+				c->neighbours->bottom = output;
+				output->neighbours->top = c;
+			} else if (output->y + output->height == c->y) {
+				sway_log(L_DEBUG, "%s is above %s", output->name, c->name);
+				c->neighbours->top = output;
+				output->neighbours->bottom = c;
+			}
+		}
+	}
 }
 
 char *do_var_replacement(char *str) {

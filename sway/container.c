@@ -19,9 +19,18 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->gaps = -1;
 	c->layout = L_NONE;
 	c->type = type;
+
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}
+	if (type == C_OUTPUT) {
+		c->neighbours = malloc(sizeof(struct swayc_neighbours));
+		c->neighbours->top = NULL;
+		c->neighbours->right = NULL;
+		c->neighbours->bottom = NULL;
+		c->neighbours->left = NULL;
+	}
+
 	return c;
 }
 
@@ -48,6 +57,9 @@ static void free_swayc(swayc_t *cont) {
 	}
 	if (cont->name) {
 		free(cont->name);
+	}
+	if (cont->neighbours) {
+		free(cont->neighbours);
 	}
 	free(cont);
 }
@@ -292,6 +304,8 @@ swayc_t *destroy_output(swayc_t *output) {
 			arrange_windows(root_container.children->items[p], -1, -1);
 		}
 	}
+
+	reset_neighbour_relations(output);
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
 	free_swayc(output);
 	return &root_container;
@@ -349,8 +363,29 @@ swayc_t *destroy_view(swayc_t *view) {
 	return parent;
 }
 
-// Container lookup
+// Modify container
 
+// Make output inaccesible via its neighbours.
+void reset_neighbour_relations(swayc_t *output) {
+	if (output->neighbours->top) {
+		output->neighbours->top->neighbours->bottom = NULL;
+		output->neighbours->top = NULL;
+	}
+	if (output->neighbours->right) {
+		output->neighbours->right->neighbours->left = NULL;
+		output->neighbours->right = NULL;
+	}
+	if (output->neighbours->bottom) {
+		output->neighbours->bottom->neighbours->top = NULL;
+		output->neighbours->bottom = NULL;
+	}
+	if (output->neighbours->left) {
+		output->neighbours->left->neighbours->right = NULL;
+		output->neighbours->left = NULL;
+	}
+}
+
+// Container lookup
 
 swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {

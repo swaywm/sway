@@ -27,6 +27,15 @@ enum swayc_layouts{
 	L_LAYOUTS,
 };
 
+// This is meant to be used by outputs who need to know who their adjacent
+// outputs are in order for "mouse between outputs" to work.
+//
+// (This is obviously a naïve implementation since it assumes a single,
+// perfectly aligned neighbour per edge.)
+struct swayc_neighbours {
+	struct sway_container *top, *right, *bottom, *left;
+};
+
 struct sway_container {
 	wlc_handle handle;
 
@@ -54,6 +63,8 @@ struct sway_container {
 
 	struct sway_container *parent;
 	struct sway_container *focused;
+
+	struct swayc_neighbours *neighbours;
 };
 
 enum visibility_mask {
@@ -70,6 +81,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout);
 swayc_t *new_view(swayc_t *sibling, wlc_handle handle);
 // Creates view as a new floating view which is in the active workspace
 swayc_t *new_floating_view(wlc_handle handle);
+void reset_neighbour_relations(swayc_t *output);
 
 // Container Destroying
 
