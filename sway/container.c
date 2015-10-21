@@ -70,7 +70,7 @@ swayc_t *new_output(wlc_handle handle) {
 		}
 	}
 
-	sway_log(L_DEBUG, "Added output %lu:%s", handle, name);
+	sway_log(L_DEBUG, "New output %lu:%s", handle, name);
 
 	struct output_config *oc = NULL;
 	int i;

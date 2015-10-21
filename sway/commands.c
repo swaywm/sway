@@ -619,7 +619,7 @@ static enum cmd_status cmd_output(int argc, char **argv) {
 
 	list_add(config->output_configs, output);
 
-	sway_log(L_DEBUG, "Configured output %s to %d x %d @ %d, %d",
+	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d)",
 			output->name, output->width, output->height, output->x, output->y);
 
 	return CMD_SUCCESS;
