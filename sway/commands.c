@@ -561,7 +561,6 @@ static enum cmd_status cmd_orientation(int argc, char **argv) {
 }
 
 static enum cmd_status cmd_output(int argc, char **argv) {
-	if (!config->reading) return CMD_FAILURE;
 	if (!checkarg(argc, "output", EXPECTED_AT_LEAST, 1)) {
 		return CMD_FAILURE;
 	}
