@@ -283,6 +283,35 @@ bool read_config(FILE *file, bool is_active) {
 	return success;
 }
 
+void apply_output_config(struct output_config *oc, swayc_t *output) {
+	if (oc && oc->width != -1 && oc->height != -1) {
+		output->width = oc->width;
+		output->height = oc->height;
+
+		sway_log(L_DEBUG, "Set %s size to %ix%i", oc->name, oc->width, oc->height);
+		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
+		wlc_output_set_resolution(output->handle, &new_size);
+	}
+
+	// Find position for it
+	if (oc && oc->x != -1 && oc->y != -1) {
+		sway_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
+		output->x = oc->x;
+		output->y = oc->y;
+	} else {
+		int x = 0;
+		for (int i = 0; i < root_container.children->length; ++i) {
+			swayc_t *c = root_container.children->items[i];
+			if (c->type == C_OUTPUT) {
+				if (c->width + c->x > x) {
+					x = c->width + c->x;
+				}
+			}
+		}
+		output->x = x;
+	}
+}
+
 char *do_var_replacement(char *str) {
 	int i;
 	char *find = str;

@@ -622,6 +622,20 @@ static enum cmd_status cmd_output(int argc, char **argv) {
 	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d)",
 			output->name, output->width, output->height, output->x, output->y);
 
+	if (output->name) {
+		// Try to find the output container and apply configuration now. If
+		// this is during startup then there will be no container and config
+		// will be applied during normal "new output" event from wlc.
+		swayc_t *cont = NULL;
+		for (int i = 0; i < root_container.children->length; ++i) {
+			cont = root_container.children->items[i];
+			if (cont->name && strcmp(cont->name, output->name) == 0) {
+				apply_output_config(output, cont);
+				break;
+			}
+		}
+	}
+
 	return CMD_SUCCESS;
 }
 
