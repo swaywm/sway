@@ -284,7 +284,7 @@ bool read_config(FILE *file, bool is_active) {
 }
 
 void apply_output_config(struct output_config *oc, swayc_t *output) {
-	if (oc && oc->width != -1 && oc->height != -1) {
+	if (oc && oc->width > 0 && oc->height > 0) {
 		output->width = oc->width;
 		output->height = oc->height;
 
