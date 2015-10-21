@@ -112,6 +112,11 @@ Commands
 	Resizes the currently focused container or view by _amount_. _amount_ can be
 	specified as "n px" or "n ppt" or "n px or n ppt".
 
+**seamless_mouse** <on|off>::
+	Change output seamlessly when pointer touches edge of output. Outputs need to
+	be configured with perfectly aligned adjacent positions for this option to
+	have any effect.
+
 **set** <name> <value>::
 	Creates a substitution for _value_ that can be used with $_name_ in other
 	commands.
