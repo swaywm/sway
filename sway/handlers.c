@@ -353,6 +353,64 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 }
 
 static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
+	// Switch to adjacent output if touching output edge.
+	//
+	// Since this doesn't currently support moving windows between outputs we
+	// don't do the switch if the pointer is in a mode.
+	if (!pointer_state.mode) {
+		swayc_t *output = swayc_active_output();
+
+		// TODO: This implementation is naïve: We assume all outputs are
+		// perfectly aligned (ie. only a single output per edge which covers
+		// the whole edge).
+		if (origin->x == 0) { // Left edge
+			for(int i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = root_container.children->items[i];
+				if (c == output || c->type != C_OUTPUT) {
+					continue;
+				}
+				if (c->y == output->y && c->x + c->width == output->x) {
+					sway_log(L_DEBUG, "%s is right of %s", output->name, c->name);
+					workspace_switch(c);
+				}
+			}
+		} else if ((double)origin->x == output->width) { // Right edge
+			for(int i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = root_container.children->items[i];
+				if (c == output || c->type != C_OUTPUT) {
+					continue;
+				}
+				if (c->y == output->y && output->x + output->width == c->x) {
+					sway_log(L_DEBUG, "%s is left of %s", output->name, c->name);
+					workspace_switch(c);
+				}
+			}
+		}
+		if (origin->y == 0) { // Top edge
+			for(int i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = root_container.children->items[i];
+				if (c == output || c->type != C_OUTPUT) {
+					continue;
+				}
+				if (output->x == c->x && c->y + c->height == output->y) {
+					sway_log(L_DEBUG, "%s is below %s", output->name, c->name);
+					workspace_switch(c);
+				}
+			}
+		} else if ((double)origin->y == output->height) { // Bottom edge
+			for(int i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = root_container.children->items[i];
+				if (c == output || c->type != C_OUTPUT) {
+					continue;
+				}
+				if (output->x == c->x && output->y + output->height == c->y) {
+					sway_log(L_DEBUG, "%s is above %s", output->name, c->name);
+					workspace_switch(c);
+				}
+			}
+		}
+	}
+
 	// Update pointer origin
 	pointer_state.delta.x = origin->x - pointer_state.origin.x;
 	pointer_state.delta.y = origin->y - pointer_state.origin.y;
