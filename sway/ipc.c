@@ -222,10 +222,12 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_COMMAND:
 	{
 		buf[client->payload_length] = '\0';
-		bool success = (handle_command(buf) == CMD_SUCCESS);
-		char reply[64];
-		int length = snprintf(reply, sizeof(reply), "{\"success\":%s}", success ? "true" : "false");
+		struct cmd_results *results = handle_command(buf);
+		const char *json = cmd_results_to_json(results);
+		char reply[256];
+		int length = snprintf(reply, sizeof(reply), "%s", json);
 		ipc_send_reply(client, reply, (uint32_t) length);
+		free_cmd_results(results);
 		break;
 	}
 	case IPC_GET_WORKSPACES:
