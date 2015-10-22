@@ -222,7 +222,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_COMMAND:
 	{
 		buf[client->payload_length] = '\0';
-		bool success = handle_command(buf);
+		bool success = (handle_command(buf) == CMD_SUCCESS);
 		char reply[64];
 		int length = snprintf(reply, sizeof(reply), "{\"success\":%s}", success ? "true" : "false");
 		ipc_send_reply(client, reply, (uint32_t) length);
