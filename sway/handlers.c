@@ -398,7 +398,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				if (output->x == c->x && c->y + c->height == output->y) {
 					sway_log(L_DEBUG, "%s is below %s", output->name, c->name);
 					workspace_switch(c);
-					new_origin.y = 0;
+					new_origin.y = c->height;
 				}
 			}
 		} else if ((double)origin->y == output->height) { // Bottom edge
@@ -410,7 +410,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				if (output->x == c->x && output->y + output->height == c->y) {
 					sway_log(L_DEBUG, "%s is above %s", output->name, c->name);
 					workspace_switch(c);
-					new_origin.y = c->height;
+					new_origin.y = 0;
 				}
 			}
 		}
