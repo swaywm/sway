@@ -362,7 +362,8 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	//
 	// Since this doesn't currently support moving windows between outputs we
 	// don't do the switch if the pointer is in a mode.
-	if (config->seamless_mouse && !pointer_state.mode) {
+	if (config->seamless_mouse && !pointer_state.mode &&
+			!pointer_state.left.held && !pointer_state.right.held && !pointer_state.scroll.held) {
 		swayc_t *output = swayc_active_output();
 
 		// TODO: This implementation is naïve: We assume all outputs are
