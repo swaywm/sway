@@ -323,7 +323,6 @@ static struct cmd_results *cmd_floating(int argc, char **argv) {
 
 static struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (!config->reading) return cmd_results_new(CMD_FAILURE, "floating_modifier", "Can only be used in config file.");
 	if ((error = checkarg(argc, "floating_modifier", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
@@ -408,7 +407,6 @@ static struct cmd_results *cmd_focus(int argc, char **argv) {
 
 static struct cmd_results *cmd_focus_follows_mouse(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (!config->reading) return cmd_results_new(CMD_FAILURE, "focus_follows_mouse", "Can only be used in config file.");
 	if ((error = checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
