@@ -445,7 +445,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			set_focused_container(pointer_state.view);
 		}
 	}
-	wlc_pointer_set_origin(new_origin);
+	wlc_pointer_set_origin(&new_origin);
 	return EVENT_PASSTHROUGH;
 }
 
