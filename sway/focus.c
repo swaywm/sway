@@ -53,11 +53,10 @@ bool move_focus(enum movement_direction direction) {
 	view = get_swayc_in_direction(view, direction);
 	if (view) {
 		if (direction == MOVE_PARENT) {
-			set_focused_container(view);
+			return set_focused_container(view);
 		} else {
-			set_focused_container(get_focused_view(view));
+			return set_focused_container(get_focused_view(view));
 		}
-		return true;
 	}
 	return false;
 }
@@ -73,9 +72,9 @@ swayc_t *get_focused_container(swayc_t *parent) {
 	return parent;
 }
 
-void set_focused_container(swayc_t *c) {
+bool set_focused_container(swayc_t *c) {
 	if (locked_container_focus || !c) {
-		return;
+		return false;
 	}
 	sway_log(L_DEBUG, "Setting focus to %p:%ld", c, c->handle);
 
@@ -84,7 +83,7 @@ void set_focused_container(swayc_t *c) {
 	swayc_t *focused = get_focused_view(workspace);
 	// if the workspace we are changing focus to has a fullscreen view return
 	if (swayc_is_fullscreen(focused) && focused != c) {
-		return;
+		return false;
 	}
 
 	// update container focus from here to root, making necessary changes along
@@ -115,17 +114,18 @@ void set_focused_container(swayc_t *c) {
 			}
 		}
 	}
+	return true;
 }
 
-void set_focused_container_for(swayc_t *a, swayc_t *c) {
+bool set_focused_container_for(swayc_t *a, swayc_t *c) {
 	if (locked_container_focus || !c) {
-		return;
+		return false;
 	}
 	swayc_t *find = c;
 	// Ensure that a is an ancestor of c
 	while (find != a && (find = find->parent)) {
 		if (find == &root_container) {
-			return;
+			return false;
 		}
 	}
 
@@ -134,7 +134,7 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 	swayc_t *focused = get_focused_view(workspace);
 	// if the workspace we are changing focus to has a fullscreen view return
 	if (swayc_is_fullscreen(focused) && c != focused) {
-		return;
+		return false;
 	}
 
 	// Check if we changing a parent container that will see chnage
@@ -147,8 +147,7 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 	}
 	if (effective) {
 		// Go to set_focused_container
-		set_focused_container(c);
-		return;
+		return set_focused_container(c);
 	}
 
 	sway_log(L_DEBUG, "Setting focus for %p:%ld to %p:%ld",
@@ -161,6 +160,7 @@ void set_focused_container_for(swayc_t *a, swayc_t *c) {
 		p = p->parent;
 		p->is_focused = false;
 	}
+	return true;
 }
 
 swayc_t *get_focused_view(swayc_t *parent) {

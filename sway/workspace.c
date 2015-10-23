@@ -198,9 +198,9 @@ swayc_t *workspace_prev() {
 	return workspace_prev_next_impl(swayc_active_workspace(), false);
 }
 
-void workspace_switch(swayc_t *workspace) {
+bool workspace_switch(swayc_t *workspace) {
 	if (!workspace) {
-		return;
+		return false;
 	}
 	swayc_t *active_ws = swayc_active_workspace();
 	if (config->auto_back_and_forth && active_ws == workspace && prev_workspace_name) {
@@ -217,6 +217,9 @@ void workspace_switch(swayc_t *workspace) {
 	}
 
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
-	set_focused_container(get_focused_view(workspace));
+	if (!set_focused_container(get_focused_view(workspace))) {
+		return false;
+	}
 	arrange_windows(workspace, -1, -1);
+	return true;
 }

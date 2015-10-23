@@ -362,7 +362,8 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	//
 	// Since this doesn't currently support moving windows between outputs we
 	// don't do the switch if the pointer is in a mode.
-	if (config->seamless_mouse && !pointer_state.mode) {
+	if (config->seamless_mouse && !pointer_state.mode &&
+			!pointer_state.left.held && !pointer_state.right.held && !pointer_state.scroll.held) {
 		swayc_t *output = swayc_active_output();
 
 		// TODO: This implementation is naïve: We assume all outputs are
@@ -376,8 +377,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 				if (c->y == output->y && c->x + c->width == output->x) {
 					sway_log(L_DEBUG, "%s is right of %s", output->name, c->name);
-					workspace_switch(c);
-					new_origin.x = c->width;
+					if (workspace_switch(c)) {
+						new_origin.x = c->width;
+					}
 				}
 			}
 		} else if ((double)origin->x == output->width) { // Right edge
@@ -388,8 +390,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 				if (c->y == output->y && output->x + output->width == c->x) {
 					sway_log(L_DEBUG, "%s is left of %s", output->name, c->name);
-					workspace_switch(c);
-					new_origin.x = 0;
+					if (workspace_switch(c)) {
+						new_origin.x = 0;
+					}
 				}
 			}
 		}
@@ -401,8 +404,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 				if (output->x == c->x && c->y + c->height == output->y) {
 					sway_log(L_DEBUG, "%s is below %s", output->name, c->name);
-					workspace_switch(c);
-					new_origin.y = c->height;
+					if (workspace_switch(c)) {
+						new_origin.y = c->height;
+					}
 				}
 			}
 		} else if ((double)origin->y == output->height) { // Bottom edge
@@ -413,8 +417,9 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 				}
 				if (output->x == c->x && output->y + output->height == c->y) {
 					sway_log(L_DEBUG, "%s is above %s", output->name, c->name);
-					workspace_switch(c);
-					new_origin.y = 0;
+					if (workspace_switch(c)) {
+						new_origin.y = 0;
+					}
 				}
 			}
 		}
