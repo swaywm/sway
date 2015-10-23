@@ -1249,7 +1249,7 @@ struct cmd_results *handle_command(char *_exec) {
 				if (results) {
 					free_cmd_results(results);
 				}
-				results = cmd_results_new(CMD_INVALID, strdup(cmd), "Unknown/invalid command");
+				results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
 				free_argv(argc, argv);
 				goto cleanup;
 			}
@@ -1291,7 +1291,7 @@ struct cmd_results *config_command(char *exec) {
 	}
 	struct cmd_handler *handler = find_handler(argv[0]);
 	if (!handler) {
-		char *input = argv[0] ? strdup(argv[0]) : "(empty)";
+		char *input = argv[0] ? argv[0] : "(empty)";
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
 		goto cleanup;
 	}
@@ -1314,7 +1314,11 @@ struct cmd_results *config_command(char *exec) {
 struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	results->status = status;
-	results->input = input; // input is the command name
+	if (input) {
+		results->input = strdup(input); // input is the command name
+	} else {
+		results->input = NULL;
+	}
 	if (format) {
 		char *error = malloc(256);
 		va_list args;
@@ -1329,6 +1333,9 @@ struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, c
 }
 
 void free_cmd_results(struct cmd_results *results) {
+	if (results->input) {
+		free(results->input);
+	}
 	if (results->error) {
 		free(results->error);
 	}

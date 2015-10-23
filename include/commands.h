@@ -17,8 +17,7 @@ enum  cmd_status {
 
 struct cmd_results {
 	enum cmd_status status;
-
-	const char *input;
+	char *input;
 	char *error;
 };
 
