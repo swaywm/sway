@@ -341,7 +341,11 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			}
 			if (match) {
 				if (state == WLC_KEY_STATE_PRESSED) {
-					handle_command(binding->command);
+					struct cmd_results *res = handle_command(binding->command);
+					if (res->status != CMD_SUCCESS) {
+						sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+					}
+					free_cmd_results(res);
 					return EVENT_HANDLED;
 				} else if (state == WLC_KEY_STATE_RELEASED) {
 					// TODO: --released
@@ -544,8 +548,13 @@ static void handle_wlc_ready(void) {
 	// Execute commands until there are none left
 	config->active = true;
 	while (config->cmd_queue->length) {
-		handle_command(config->cmd_queue->items[0]);
-		free(config->cmd_queue->items[0]);
+		char *line = config->cmd_queue->items[0];
+		struct cmd_results *res = handle_command(line);
+		if (res->status != CMD_SUCCESS) {
+			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
+		}
+		free_cmd_results(res);
+		free(line);
 		list_del(config->cmd_queue, 0);
 	}
 }

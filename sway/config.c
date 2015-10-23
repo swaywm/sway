@@ -234,10 +234,11 @@ bool read_config(FILE *file, bool is_active) {
 	while (!feof(file)) {
 		line = read_line(file);
 		line = strip_comments(line);
-		switch(config_command(line)) {
+		struct cmd_results *res = config_command(line);
+		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			sway_log(L_ERROR, "Error on line '%s'", line);
+			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
 			success = false;
 			break;
 
@@ -270,6 +271,7 @@ bool read_config(FILE *file, bool is_active) {
 		default:;
 		}
 		free(line);
+		free(res);
 	}
 
 	if (is_active) {
