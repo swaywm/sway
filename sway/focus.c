@@ -76,7 +76,7 @@ bool set_focused_container(swayc_t *c) {
 	if (locked_container_focus || !c) {
 		return false;
 	}
-	sway_log(L_DEBUG, "Setting focus to %p:%ld", c, c->handle);
+	swayc_log(L_DEBUG, c, "Setting focus to %p:%ld", c, c->handle);
 
 	// Get workspace for c, get that workspaces current focused container.
 	swayc_t *workspace = swayc_active_workspace_for(c);
