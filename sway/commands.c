@@ -556,7 +556,7 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	}
 	const char* expected_syntax = "Expected 'move <left|right|up|down>' or "
 		"'move <container|window> to workspace <name>' or "
-		"'move <container|window> to output <name|direction>'";
+		"'move <container|window|workspace> to output <name|direction>'";
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
@@ -606,6 +606,25 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			}
 		} else {
 			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+		}
+	} else if (strcasecmp(argv[0], "workspace") == 0) {
+		// move workspace (to output x)
+		swayc_t *output = NULL;
+		if ((error = checkarg(argc, "move workspace", EXPECTED_EQUAL_TO, 4))) {
+			return error;
+		} else if (strcasecmp(argv[1], "to") != 0 || strcasecmp(argv[2], "output") != 0) {
+			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+		} else if (!(output = output_by_name(argv[3]))) {
+			return cmd_results_new(CMD_FAILURE, "move workspace",
+				"Can't find output with name/at direction '%s'", argv[3]);
+		}
+		if (view->type == C_WORKSPACE) {
+			// This probably means we're moving an empty workspace, but
+			// that's fine.
+			move_workspace_to(view, output);
+		} else {
+			swayc_t *workspace = swayc_parent_by_type(view, C_WORKSPACE);
+			move_workspace_to(workspace, output);
 		}
 	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
 		// move scratchpad ...
