@@ -17,6 +17,7 @@
 #include "workspace.h"
 #include "commands.h"
 #include "container.h"
+#include "output.h"
 #include "handlers.h"
 #include "sway.h"
 #include "resize.h"
@@ -372,7 +373,20 @@ static struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 static struct cmd_results *cmd_focus(int argc, char **argv) {
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "focus", "Can't be used in config file.");
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1))) {
+	if (argc > 0 && strcasecmp(argv[0], "output") == 0) {
+		swayc_t *output = NULL;
+		if ((error = checkarg(argc, "focus", EXPECTED_EQUAL_TO, 2))) {
+			return error;
+		} else if (!(output = output_by_name(argv[1]))) {
+			return cmd_results_new(CMD_FAILURE, "focus output",
+				"Can't find output with name/at direction %s", argv[1]);
+		} else if (!workspace_switch(swayc_active_workspace_for(output))) {
+			return cmd_results_new(CMD_FAILURE, "focus output",
+				"Switching to workspace on output '%s' was blocked", argv[1]);
+		} else {
+			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		}
+	} else if ((error = checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 	static int floating_toggled_index = 0;
@@ -424,6 +438,9 @@ static struct cmd_results *cmd_focus(int argc, char **argv) {
 				}
 			}
 		}
+	} else {
+		return cmd_results_new(CMD_INVALID, "focus",
+				"Expected 'focus <direction|parent|mode_toggle>' or 'focus output <direction|name>'");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

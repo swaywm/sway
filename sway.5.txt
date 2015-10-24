@@ -53,6 +53,11 @@ Commands
 	container, which is useful, for example, to open a sibling of the parent
 	container, or to move the entire container around.
 
+**focus** output <direction|name>::
+	Direction may be one of _up_, _down_, _left_, _right_. The directional focus
+	commands will move the focus to the output in that direction. When name is
+	given the focus is changed to the output with that name.
+
 **focus** mode_toggle::
 	Toggles focus between floating view and tiled view.
 
