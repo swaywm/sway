@@ -555,7 +555,8 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 		return error;
 	}
 	const char* expected_syntax = "Expected 'move <left|right|up|down>' or "
-		"'move <container|window> to workspace <name>'";
+		"'move <container|window> to workspace <name>' or "
+		"'move <container|window> to output <name|direction>'";
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
@@ -587,6 +588,22 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 				ws = workspace_create(ws_name);
 			}
 			move_container_to(view, get_focused_container(ws));
+		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "output") == 0) {
+			// move container to output x
+			swayc_t *output = NULL;
+			if (view->type != C_CONTAINER && view->type != C_VIEW) {
+				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
+			} else if (!(output = output_by_name(argv[3]))) {
+				return cmd_results_new(CMD_FAILURE, "move",
+					"Can't find output with name/direction '%s'", argv[3]);
+			} else {
+				swayc_t *container = get_focused_container(output);
+				if (container->is_floating) {
+					move_container_to(view, container->parent);
+				} else {
+					move_container_to(view, container);
+				}
+			}
 		} else {
 			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 		}

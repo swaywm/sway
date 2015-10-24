@@ -102,6 +102,10 @@ Commands
 	Moves the focused container to the workspace identified by _name_.
 	_name_ may be a special workspace name. See **workspace**.
 
+**move** <container|window> to output <name|direction>::
+	Moves the focused container to the output identified by _name_ or _direction_.
+	_direction_ may be one of _up_, _down_, _left_, _right_.
+
 **mouse_warping** <output|none>::
 	When _output_: place mouse at center of newly focused window when changing
 	output. When _none_: don't move mouse.
