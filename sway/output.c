@@ -5,17 +5,13 @@
 swayc_t *output_by_name(const char* name) {
 	if (strcasecmp(name, "left") == 0) {
 		return swayc_adjacent_output(NULL, MOVE_LEFT);
-	}
-	else if (strcasecmp(name, "right") == 0) {
+	} else if (strcasecmp(name, "right") == 0) {
 		return swayc_adjacent_output(NULL, MOVE_RIGHT);
-	}
-	else if (strcasecmp(name, "up") == 0) {
+	} else if (strcasecmp(name, "up") == 0) {
 		return swayc_adjacent_output(NULL, MOVE_UP);
-	}
-	else if (strcasecmp(name, "down") == 0) {
+	} else if (strcasecmp(name, "down") == 0) {
 		return swayc_adjacent_output(NULL, MOVE_DOWN);
-	}
-	else {
+	} else {
 		for(int i = 0; i < root_container.children->length; ++i) {
 			swayc_t *c = root_container.children->items[i];
 			if (c->type == C_OUTPUT && strcasecmp(c->name, name) == 0) {
