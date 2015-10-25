@@ -13,6 +13,7 @@
 #include "stringop.h"
 #include "workspace.h"
 #include "container.h"
+#include "output.h"
 #include "focus.h"
 #include "input_state.h"
 #include "resize.h"
@@ -364,62 +365,30 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	// don't do the switch if the pointer is in a mode.
 	if (config->seamless_mouse && !pointer_state.mode &&
 			!pointer_state.left.held && !pointer_state.right.held && !pointer_state.scroll.held) {
-		swayc_t *output = swayc_active_output();
 
-		// TODO: This implementation is naïve: We assume all outputs are
-		// perfectly aligned (ie. only a single output per edge which covers
-		// the whole edge).
+		swayc_t *output = swayc_active_output(), *adjacent = NULL;
 		if (origin->x == 0) { // Left edge
-			for(int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
-				if (c == output || c->type != C_OUTPUT) {
-					continue;
-				}
-				if (c->y == output->y && c->x + c->width == output->x) {
-					sway_log(L_DEBUG, "%s is right of %s", output->name, c->name);
-					if (workspace_switch(c)) {
-						new_origin.x = c->width;
-					}
+			if ((adjacent = swayc_adjacent_output(output, MOVE_LEFT))) {
+				if (workspace_switch(adjacent)) {
+					new_origin.x = adjacent->width;
 				}
 			}
 		} else if ((double)origin->x == output->width) { // Right edge
-			for(int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
-				if (c == output || c->type != C_OUTPUT) {
-					continue;
-				}
-				if (c->y == output->y && output->x + output->width == c->x) {
-					sway_log(L_DEBUG, "%s is left of %s", output->name, c->name);
-					if (workspace_switch(c)) {
-						new_origin.x = 0;
-					}
+			if ((adjacent = swayc_adjacent_output(output, MOVE_RIGHT))) {
+				if (workspace_switch(adjacent)) {
+					new_origin.x = 0;
 				}
 			}
-		}
-		if (origin->y == 0) { // Top edge
-			for(int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
-				if (c == output || c->type != C_OUTPUT) {
-					continue;
-				}
-				if (output->x == c->x && c->y + c->height == output->y) {
-					sway_log(L_DEBUG, "%s is below %s", output->name, c->name);
-					if (workspace_switch(c)) {
-						new_origin.y = c->height;
-					}
+		} else if (origin->y == 0) { // Top edge
+			if ((adjacent = swayc_adjacent_output(output, MOVE_UP))) {
+				if (workspace_switch(adjacent)) {
+					new_origin.y = adjacent->height;
 				}
 			}
 		} else if ((double)origin->y == output->height) { // Bottom edge
-			for(int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
-				if (c == output || c->type != C_OUTPUT) {
-					continue;
-				}
-				if (output->x == c->x && output->y + output->height == c->y) {
-					sway_log(L_DEBUG, "%s is above %s", output->name, c->name);
-					if (workspace_switch(c)) {
-						new_origin.y = 0;
-					}
+			if ((adjacent = swayc_adjacent_output(output, MOVE_DOWN))) {
+				if (workspace_switch(adjacent)) {
+					new_origin.y = 0;
 				}
 			}
 		}

@@ -187,4 +187,31 @@ void layout_log(const swayc_t *c, int depth) {
 		}
 	}
 }
+
+const char *swayc_type_string(enum swayc_types type) {
+	return type == C_ROOT ? "ROOT" :
+		type == C_OUTPUT ? "OUTPUT" :
+		type == C_WORKSPACE ? "WORKSPACE" :
+		type == C_CONTAINER ? "CONTAINER" :
+		type == C_VIEW   ? "VIEW" :
+		"UNKNOWN";
+}
+
+// Like sway_log, but also appends some info about given container to log output.
+void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ...) {
+	sway_assert(cont, "swayc_log: no container ...");
+	va_list args;
+	va_start(args, format);
+	char *txt = malloc(128);
+	vsprintf(txt, format, args);
+	va_end(args);
+
+	char *debug_txt = malloc(32);
+	snprintf(debug_txt, 32, "%s '%s'", swayc_type_string(cont->type), cont->name);
+
+	sway_log(verbosity, "%s (%s)", txt, debug_txt);
+	free(txt);
+	free(debug_txt);
+}
+
 /* XXX:DEBUG:XXX */

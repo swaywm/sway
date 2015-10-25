@@ -349,7 +349,7 @@ void update_geometry(swayc_t *container) {
 static void arrange_windows_r(swayc_t *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
-		sway_log(L_DEBUG, "Arranging layout for %p", container);
+		swayc_log(L_DEBUG, container, "Arranging layout for %p", container);
 		width = container->width;
 		height = container->height;
 	}
