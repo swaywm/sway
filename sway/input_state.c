@@ -185,6 +185,13 @@ void pointer_position_set(struct wlc_origin *new_origin, bool force_focus) {
 	wlc_pointer_set_origin(new_origin);
 }
 
+void center_pointer_on(swayc_t *view) {
+	struct wlc_origin new_origin;
+	new_origin.x = view->x + view->width/2;
+	new_origin.y = view->y + view->height/2;
+	pointer_position_set(&new_origin, true);
+}
+
 // Mode set left/right click
 
 static void pointer_mode_set_left(void) {

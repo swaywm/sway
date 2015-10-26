@@ -2,6 +2,7 @@
 #define _SWAY_COMMANDS_H
 #include <stdbool.h>
 #include <json-c/json.h>
+#include <wlc/wlc.h>
 #include "config.h"
 
 

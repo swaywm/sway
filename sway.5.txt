@@ -102,6 +102,10 @@ Commands
 	Moves the focused container to the workspace identified by _name_.
 	_name_ may be a special workspace name. See **workspace**.
 
+**mouse_warping** <output|none>::
+	When _output_: place mouse at center of newly focused window when changing
+	output. When _none_: don't move mouse.
+
 **output** <name> <resolution|res WIDTHxHEIGHT> <position|pos X,Y>::
 	Configures the specified output. It will use the given resolution and be
 	arranged at the given position in the layout tree. You may omit either of

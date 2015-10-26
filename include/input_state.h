@@ -66,6 +66,7 @@ extern struct pointer_state {
 } pointer_state;
 
 void pointer_position_set(struct wlc_origin *new_origin, bool force_focus);
+void center_pointer_on(swayc_t *view);
 
 // on button release unset mode depending on the button.
 // on button press set mode conditionally depending on the button
