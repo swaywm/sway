@@ -28,6 +28,11 @@ Commands
 	execute Firefox if the alt, shift, and F keys are pressed together. Any
 	valid sway command is eligible to be bound to a key combo.
 
+**debuglog** <on|off|toggle>::
+	Turn debug log output _on_ or _off_. This will override any command line
+	option given. _toggle_ will toggle between debug and log level given as
+	command line option.
+
 **exec** <shell command>::
 	Executes _shell command_ with sh.
 

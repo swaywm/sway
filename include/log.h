@@ -11,6 +11,10 @@ typedef enum {
 } log_importance_t;
 
 void init_log(log_importance_t verbosity);
+void set_log_level(log_importance_t verbosity);
+void reset_log_level(void);
+// returns whether debug logging is on after switching.
+bool toggle_debug_logging(void);
 void sway_log_colors(int mode);
 void sway_log(log_importance_t verbosity, const char* format, ...) __attribute__((format(printf,2,3)));
 void sway_log_errno(log_importance_t verbosity, char* format, ...) __attribute__((format(printf,2,3)));
