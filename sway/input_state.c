@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "log.h"
+#include "config.h"
 
 #include "input_state.h"
 
@@ -159,6 +160,29 @@ static void reset_initial_sibling(void) {
 	arrange_windows(initial.horiz.ptr->parent, -1, -1);
 	arrange_windows(initial.vert.ptr->parent, -1, -1);
 	pointer_state.mode = 0;
+}
+
+void pointer_position_set(struct wlc_origin *new_origin, bool force_focus) {
+	pointer_state.delta.x = new_origin->x - pointer_state.origin.x;
+	pointer_state.delta.y = new_origin->y - pointer_state.origin.y;
+	pointer_state.origin.x = new_origin->x;
+	pointer_state.origin.y = new_origin->y;
+
+	// Update view under pointer
+	swayc_t *prev_view = pointer_state.view;
+	pointer_state.view = container_under_pointer();
+
+	// If pointer is in a mode, update it
+	if (pointer_state.mode) {
+		pointer_mode_update();
+	// Otherwise change focus if config is set
+	} else if (force_focus || (prev_view != pointer_state.view && config->focus_follows_mouse)) {
+		if (pointer_state.view && pointer_state.view->type == C_VIEW) {
+			set_focused_container(pointer_state.view);
+		}
+	}
+
+	wlc_pointer_set_origin(new_origin);
 }
 
 // Mode set left/right click

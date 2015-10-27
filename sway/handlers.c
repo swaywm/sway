@@ -332,27 +332,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		}
 	}
 
-	// Update pointer origin
-	pointer_state.delta.x = origin->x - pointer_state.origin.x;
-	pointer_state.delta.y = origin->y - pointer_state.origin.y;
-	pointer_state.origin.x = origin->x;
-	pointer_state.origin.y = origin->y;
-
-	// Update view under pointer
-	swayc_t *prev_view = pointer_state.view;
-	pointer_state.view = container_under_pointer();
-
-	// If pointer is in a mode, update it
-	if (pointer_state.mode) {
-		pointer_mode_update();
-	}
-	// Otherwise change focus if config is set an
-	else if (prev_view != pointer_state.view && config->focus_follows_mouse) {
-		if (pointer_state.view && pointer_state.view->type == C_VIEW) {
-			set_focused_container(pointer_state.view);
-		}
-	}
-	wlc_pointer_set_origin(&new_origin);
+	pointer_position_set(&new_origin, false);
 	return EVENT_PASSTHROUGH;
 }
 

@@ -65,6 +65,8 @@ extern struct pointer_state {
 	int mode;
 } pointer_state;
 
+void pointer_position_set(struct wlc_origin *new_origin, bool force_focus);
+
 // on button release unset mode depending on the button.
 // on button press set mode conditionally depending on the button
 void pointer_mode_set(uint32_t button, bool condition);
