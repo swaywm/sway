@@ -11,6 +11,7 @@
 #include <execinfo.h>
 
 int colored = 1;
+log_importance_t loglevel_default = L_ERROR;
 log_importance_t v = L_SILENT;
 
 static const char *verbosity_colors[] = {
@@ -21,9 +22,27 @@ static const char *verbosity_colors[] = {
 };
 
 void init_log(log_importance_t verbosity) {
+	if (verbosity != L_DEBUG) {
+		// command "debuglog" needs to know the user specified log level when
+		// turning off debug logging.
+		loglevel_default = verbosity;
+	}
 	v = verbosity;
 	signal(SIGSEGV, error_handler);
 	signal(SIGABRT, error_handler);
+}
+
+void set_log_level(log_importance_t verbosity) {
+	v = verbosity;
+}
+
+void reset_log_level(void) {
+	v = loglevel_default;
+}
+
+bool toggle_debug_logging(void) {
+	v = (v == L_DEBUG) ? loglevel_default : L_DEBUG;
+	return (v == L_DEBUG);
 }
 
 void sway_log_colors(int mode) {
