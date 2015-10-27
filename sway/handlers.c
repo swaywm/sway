@@ -369,25 +369,25 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 		swayc_t *output = swayc_active_output(), *adjacent = NULL;
 		if (origin->x == 0) { // Left edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_LEFT))) {
-				if (workspace_switch(adjacent)) {
+				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.x = adjacent->width;
 				}
 			}
 		} else if ((double)origin->x == output->width) { // Right edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_RIGHT))) {
-				if (workspace_switch(adjacent)) {
+				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.x = 0;
 				}
 			}
 		} else if (origin->y == 0) { // Top edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_UP))) {
-				if (workspace_switch(adjacent)) {
+				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.y = adjacent->height;
 				}
 			}
 		} else if ((double)origin->y == output->height) { // Bottom edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_DOWN))) {
-				if (workspace_switch(adjacent)) {
+				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.y = 0;
 				}
 			}
