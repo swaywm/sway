@@ -24,68 +24,6 @@
 // Event handled by sway and should not be sent to client
 #define EVENT_HANDLED true
 
-static bool pointer_test(swayc_t *view, void *_origin) {
-	const struct mouse_origin *origin = _origin;
-	// Determine the output that the view is under
-	swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
-	if (origin->x >= view->x && origin->y >= view->y
-		&& origin->x < view->x + view->width && origin->y < view->y + view->height
-		&& view->visible && parent == root_container.focused) {
-		return true;
-	}
-	return false;
-}
-
-swayc_t *container_under_pointer(void) {
-	// root.output->workspace
-	if (!root_container.focused || !root_container.focused->focused) {
-		return NULL;
-	}
-	swayc_t *lookup = root_container.focused->focused;
-	// Case of empty workspace
-	if (lookup->children == 0) {
-		return NULL;
-	}
-	while (lookup->type != C_VIEW) {
-		int i;
-		int len;
-		// if tabbed/stacked go directly to focused container, otherwise search
-		// children
-		if (lookup->layout == L_TABBED || lookup->layout == L_STACKED) {
-			lookup = lookup->focused;
-			continue;
-		}
-		// if workspace, search floating
-		if (lookup->type == C_WORKSPACE) {
-			i = len = lookup->floating->length;
-			bool got_floating = false;
-			while (--i > -1) {
-				if (pointer_test(lookup->floating->items[i], &pointer_state.origin)) {
-					lookup = lookup->floating->items[i];
-					got_floating = true;
-					break;
-				}
-			}
-			if (got_floating) {
-				continue;
-			}
-		}
-		// search children
-		len = lookup->children->length;
-		for (i = 0; i < len; ++i) {
-			if (pointer_test(lookup->children->items[i], &pointer_state.origin)) {
-				lookup = lookup->children->items[i];
-				break;
-			}
-		}
-		// when border and titles are done, this could happen
-		if (i == len) {
-			break;
-		}
-	}
-	return lookup;
-}
-
 /* Handles */
 
 static bool handle_output_created(wlc_handle output) {
