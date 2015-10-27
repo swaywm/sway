@@ -13,6 +13,7 @@
 #include "stringop.h"
 #include "focus.h"
 #include "util.h"
+#include "ipc.h"
 
 char *prev_workspace_name = NULL;
 
@@ -221,5 +222,8 @@ bool workspace_switch(swayc_t *workspace) {
 		return false;
 	}
 	arrange_windows(workspace, -1, -1);
+
+	ipc_event_workspace(active_ws, workspace);
+
 	return true;
 }
