@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <json-c/json.h>
+#include <list.h>
 #include "ipc.h"
 #include "log.h"
 #include "config.h"
@@ -22,6 +23,7 @@
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;
 static struct sockaddr_un *ipc_sockaddr = NULL;
+static list_t *ipc_client_list = NULL;
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
@@ -30,6 +32,7 @@ struct ipc_client {
 	int fd;
 	uint32_t payload_length;
 	enum ipc_command_type current_command;
+	enum ipc_command_type subscribed_events;
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -65,6 +68,8 @@ void ipc_init(void) {
 	// Set i3 IPC socket path so that i3-msg works out of the box
 	setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
 
+	ipc_client_list = create_list();
+
 	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
 }
 
@@ -74,6 +79,8 @@ void ipc_terminate(void) {
 	}
 	close(ipc_socket);
 	unlink(ipc_sockaddr->sun_path);
+
+	list_free(ipc_client_list);
 
 	if (ipc_sockaddr) {
 		free(ipc_sockaddr);
@@ -122,6 +129,8 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	client->fd = client_fd;
 	client->event_source = wlc_event_loop_add_fd(client_fd, WLC_EVENT_READABLE, ipc_client_handle_readable, client);
 
+	list_add(ipc_client_list, client);
+
 	return 0;
 }
 
@@ -133,11 +142,13 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 
 	if (mask & WLC_EVENT_ERROR) {
 		sway_log(L_INFO, "IPC Client socket error, removing client");
+		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
 	if (mask & WLC_EVENT_HANGUP) {
+		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -195,8 +206,15 @@ void ipc_client_disconnect(struct ipc_client *client)
 		return;
 	}
 
+	if (client->fd != -1) {
+		shutdown(client->fd, SHUT_RDWR);
+	}
+
 	sway_log(L_INFO, "IPC Client %d disconnected", client->fd);
 	wlc_event_source_remove(client->event_source);
+	int i = 0;
+	while (i < ipc_client_list->length && ipc_client_list->items[i] != client) i++;
+	list_del(ipc_client_list, i);
 	close(client->fd);
 	free(client);
 }
@@ -228,6 +246,35 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		int length = snprintf(reply, sizeof(reply), "%s", json);
 		ipc_send_reply(client, reply, (uint32_t) length);
 		free_cmd_results(results);
+		break;
+	}
+	case IPC_SUBSCRIBE:
+	{
+		buf[client->payload_length] = '\0';
+		struct json_object *request = json_tokener_parse(buf);
+		if (request == NULL) {
+			ipc_send_reply(client, "{\"success\": false}", 18);
+			ipc_client_disconnect(client);
+			return;
+		}
+
+		// parse requested event types
+		for (int i = 0; i < json_object_array_length(request); i++) {
+			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
+			if (strcmp(event_type, "workspace") == 0) {
+				client->subscribed_events |= IPC_GET_WORKSPACES;
+			}
+			else {
+				ipc_send_reply(client, "{\"success\": false}", 18);
+				ipc_client_disconnect(client);
+				json_object_put(request);
+				return;
+			}
+		}
+
+		json_object_put(request);
+
+		ipc_send_reply(client, "{\"success\": true}", 17);
 		break;
 	}
 	case IPC_GET_WORKSPACES:
@@ -309,44 +356,69 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	return true;
 }
 
+json_object *ipc_json_describe_workspace(swayc_t *workspace) {
+	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
+	json_object *object = json_object_new_object();
+	json_object *rect = json_object_new_object();
+	json_object_object_add(rect, "x", json_object_new_int((int32_t) workspace->x));
+	json_object_object_add(rect, "y", json_object_new_int((int32_t) workspace->y));
+	json_object_object_add(rect, "width", json_object_new_int((int32_t) workspace->width));
+	json_object_object_add(rect, "height", json_object_new_int((int32_t) workspace->height));
+
+	json_object_object_add(object, "num", json_object_new_int(num));
+	json_object_object_add(object, "name", json_object_new_string(workspace->name));
+	json_object_object_add(object, "visible", json_object_new_boolean(workspace->visible));
+	bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
+	json_object_object_add(object, "focused", json_object_new_boolean(focused));
+	json_object_object_add(object, "rect", rect);
+	json_object_object_add(object, "output", json_object_new_string(workspace->parent ? workspace->parent->name : "null"));
+	json_object_object_add(object, "urgent", json_object_new_boolean(false));
+
+	return object;
+}
+
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
 	if (workspace->type == C_WORKSPACE) {
-		int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
-		json_object *object = json_object_new_object();
-		json_object *rect = json_object_new_object();
-		json_object_object_add(rect, "x", json_object_new_int((int32_t) workspace->x));
-		json_object_object_add(rect, "y", json_object_new_int((int32_t) workspace->y));
-		json_object_object_add(rect, "width", json_object_new_int((int32_t) workspace->width));
-		json_object_object_add(rect, "height", json_object_new_int((int32_t) workspace->height));
-
-		json_object_object_add(object, "num", json_object_new_int(num));
-		json_object_object_add(object, "name", json_object_new_string(workspace->name));
-		json_object_object_add(object, "visible", json_object_new_boolean(workspace->visible));
-		bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
-		json_object_object_add(object, "focused", json_object_new_boolean(focused));
-		json_object_object_add(object, "rect", rect);
-		json_object_object_add(object, "output", json_object_new_string(workspace->parent->name));
-		json_object_object_add(object, "urgent", json_object_new_boolean(false));
-
-		json_object_array_add((json_object *)data, object);
+		json_object_array_add((json_object *)data, ipc_json_describe_workspace(workspace));
 	}
+}
+
+json_object *ipc_json_describe_output(swayc_t *output) {
+	json_object *object = json_object_new_object();
+	json_object *rect = json_object_new_object();
+	json_object_object_add(rect, "x", json_object_new_int((int32_t) output->x));
+	json_object_object_add(rect, "y", json_object_new_int((int32_t) output->y));
+	json_object_object_add(rect, "width", json_object_new_int((int32_t) output->width));
+	json_object_object_add(rect, "height", json_object_new_int((int32_t) output->height));
+
+	json_object_object_add(object, "name", json_object_new_string(output->name));
+	json_object_object_add(object, "active", json_object_new_boolean(true));
+	json_object_object_add(object, "primary", json_object_new_boolean(false));
+	json_object_object_add(object, "rect", rect);
+	json_object_object_add(object, "current_workspace",
+		output->focused ? json_object_new_string(output->focused->name) : NULL);
+
+	return object;
 }
 
 void ipc_get_outputs_callback(swayc_t *container, void *data) {
 	if (container->type == C_OUTPUT) {
-		json_object *object = json_object_new_object();
-		json_object *rect = json_object_new_object();
-		json_object_object_add(rect, "x", json_object_new_int((int32_t) container->x));
-		json_object_object_add(rect, "y", json_object_new_int((int32_t) container->y));
-		json_object_object_add(rect, "width", json_object_new_int((int32_t) container->width));
-		json_object_object_add(rect, "height", json_object_new_int((int32_t) container->height));
-
-		json_object_object_add(object, "name", json_object_new_string(container->name));
-		json_object_object_add(object, "active", json_object_new_boolean(true));
-		json_object_object_add(object, "primary", json_object_new_boolean(false));
-		json_object_object_add(object, "rect", rect);
-		json_object_object_add(object, "current_workspace", container->focused ? json_object_new_string(container->focused->name) : NULL);
-
-		json_object_array_add((json_object *)data, object);
+		json_object_array_add((json_object *)data, ipc_json_describe_output(container));
 	}
+}
+
+void ipc_event_workspace(swayc_t *old, swayc_t *new) {
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string("focus"));
+	json_object_object_add(obj, "old", ipc_json_describe_workspace(old));
+	json_object_object_add(obj, "current", ipc_json_describe_workspace(new));
+	const char *json_string = json_object_to_json_string(obj);
+
+	for (int i = 0; i < ipc_client_list->length; i++) {
+		struct ipc_client *client = ipc_client_list->items[i];
+		if ((client->subscribed_events & IPC_GET_WORKSPACES) == 0) break;
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+	}
+
+	json_object_put(obj); // free
 }
