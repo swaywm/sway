@@ -289,15 +289,16 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 		return;
 	}
 	swayc_t *parent = remove_child(container);
-	// reset container geometry
-	container->width = container->height = 0;
-
 	// Send to new destination
 	if (container->is_floating) {
 		add_floating(swayc_active_workspace_for(destination), container);
 	} else if (destination->type == C_WORKSPACE) {
+		// reset container geometry
+		container->width = container->height = 0;
 		add_child(destination, container);
 	} else {
+		// reset container geometry
+		container->width = container->height = 0;
 		add_sibling(destination, container);
 	}
 	// Destroy old container if we need to
