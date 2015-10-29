@@ -8,6 +8,7 @@
 #include "container.h"
 #include "workspace.h"
 #include "focus.h"
+#include "output.h"
 
 swayc_t root_container;
 list_t *scratchpad;
@@ -480,7 +481,6 @@ void arrange_windows(swayc_t *container, double width, double height) {
 
 swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit) {
 	swayc_t *parent = container->parent;
-
 	if (dir == MOVE_PARENT) {
 		if (parent->type == C_OUTPUT) {
 			return NULL;
@@ -492,60 +492,9 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 		// Test if we can even make a difference here
 		bool can_move = false;
 		int diff = 0;
-		int i;
 		if (parent->type == C_ROOT) {
-			// Find the next output
-			int target = -1, max_x = 0, max_y = 0, self = -1;
 			sway_log(L_DEBUG, "Moving between outputs");
-			
-			for (i = 0; i < parent->children->length; ++i) {
-				swayc_t *next = parent->children->items[i];
-				if (next == container) {
-					self = i;
-					sway_log(L_DEBUG, "self is %p %d", next, self);
-					continue;
-				}
-				if (next->type == C_OUTPUT) {
-					sway_log(L_DEBUG, "Testing with %p %d (dir %d)", next, i, dir);
-					// Check if it's more extreme
-					if (dir == MOVE_RIGHT) {
-						if (container->x + container->width <= next->x) {
-							if (target == -1 || next->x < max_x) {
-								target = i;
-								max_x = next->x;
-							}
-						}
-					} else if (dir == MOVE_LEFT) {
-						if (container->x >= next->x + next->width) {
-							if (target == -1 || max_x < next->x) {
-								target = i;
-								max_x = next->x;
-							}
-						}
-					} else if (dir == MOVE_DOWN) {
-						if (container->y + container->height <= next->y) {
-							if (target == -1 || next->y < max_y) {
-								target = i;
-								max_y = next->y;
-							}
-						}
-					} else if (dir == MOVE_UP) {
-						if (container->y >= next->y + next->height) {
-							if (target == -1 || max_y < next->y) {
-								target = i;
-								max_y = next->y;
-							}
-						}
-					}
-				}
-			}
-
-			if (target == -1) {
-				can_move = false;
-			} else {
-				can_move = true;
-				diff = target - self;
-			}
+			return swayc_adjacent_output(container, dir);
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ) {
