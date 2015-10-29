@@ -5,8 +5,6 @@ typedef struct sway_container swayc_t;
 
 #include "layout.h"
 
-extern struct wlc_origin mouse_origin;
-
 enum swayc_types{
 	C_ROOT,
 	C_OUTPUT,
