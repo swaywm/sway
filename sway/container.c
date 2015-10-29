@@ -510,7 +510,7 @@ swayc_t *swayc_active_workspace_for(swayc_t *cont) {
 }
 
 static bool pointer_test(swayc_t *view, void *_origin) {
-	const struct mouse_origin *origin = _origin;
+	const struct wlc_origin *origin = _origin;
 	// Determine the output that the view is under
 	swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 	if (origin->x >= view->x && origin->y >= view->y
@@ -531,6 +531,8 @@ swayc_t *container_under_pointer(void) {
 	if (lookup->children == 0) {
 		return NULL;
 	}
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
 	while (lookup->type != C_VIEW) {
 		int i;
 		int len;
@@ -545,7 +547,7 @@ swayc_t *container_under_pointer(void) {
 			i = len = lookup->floating->length;
 			bool got_floating = false;
 			while (--i > -1) {
-				if (pointer_test(lookup->floating->items[i], &pointer_state.origin)) {
+				if (pointer_test(lookup->floating->items[i], &origin)) {
 					lookup = lookup->floating->items[i];
 					got_floating = true;
 					break;
@@ -558,7 +560,7 @@ swayc_t *container_under_pointer(void) {
 		// search children
 		len = lookup->children->length;
 		for (i = 0; i < len; ++i) {
-			if (pointer_test(lookup->children->items[i], &pointer_state.origin)) {
+			if (pointer_test(lookup->children->items[i], &origin)) {
 				lookup = lookup->children->items[i];
 				break;
 			}

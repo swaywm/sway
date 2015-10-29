@@ -48,11 +48,6 @@ extern struct pointer_state {
 	struct pointer_button_state right;
 	struct pointer_button_state scroll;
 
-	// pointer position
-	struct mouse_origin{
-		int x, y;
-	} origin;
-
 	// change in pointer position
 	struct {
 		int x, y;

@@ -163,10 +163,10 @@ static void reset_initial_sibling(void) {
 }
 
 void pointer_position_set(struct wlc_origin *new_origin, bool force_focus) {
-	pointer_state.delta.x = new_origin->x - pointer_state.origin.x;
-	pointer_state.delta.y = new_origin->y - pointer_state.origin.y;
-	pointer_state.origin.x = new_origin->x;
-	pointer_state.origin.y = new_origin->y;
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
+	pointer_state.delta.x = new_origin->x - origin.x;
+	pointer_state.delta.y = new_origin->y - origin.y;
 
 	// Update view under pointer
 	swayc_t *prev_view = pointer_state.view;
@@ -214,8 +214,10 @@ static void pointer_mode_set_right(void) {
 	int midway_x = initial.ptr->x + initial.ptr->width/2;
 	int midway_y = initial.ptr->y + initial.ptr->height/2;
 
-	lock.left = pointer_state.origin.x > midway_x;
-	lock.top = pointer_state.origin.y > midway_y;
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
+	lock.left = origin.x > midway_x;
+	lock.top = origin.y > midway_y;
 
 	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_RESIZING | M_FLOATING;
@@ -277,8 +279,10 @@ void pointer_mode_update(void) {
 		pointer_state.mode = 0;
 		return;
 	}
-	int dx = pointer_state.origin.x;
-	int dy = pointer_state.origin.y;
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
+	int dx = origin.x;
+	int dy = origin.y;
 
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:

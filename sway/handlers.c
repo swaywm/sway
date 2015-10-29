@@ -343,10 +343,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	// Update view pointer is on
 	pointer_state.view = container_under_pointer();
 
-	// Update pointer origin
-	pointer_state.origin.x = origin->x;
-	pointer_state.origin.y = origin->y;
-
 	// Update pointer_state
 	switch (button) {
 	case M_LEFT_CLICK:
