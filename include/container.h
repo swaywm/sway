@@ -98,6 +98,8 @@ swayc_t *swayc_by_name(const char *name);
 swayc_t *swayc_active_output(void);
 swayc_t *swayc_active_workspace(void);
 swayc_t *swayc_active_workspace_for(swayc_t *view);
+// set focus to current pointer location and return focused container
+swayc_t *container_under_pointer(void);
 
 // Container information
 

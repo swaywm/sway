@@ -21,6 +21,7 @@
 #include "handlers.h"
 #include "sway.h"
 #include "resize.h"
+#include "input_state.h"
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
@@ -45,6 +46,7 @@ static sway_cmd cmd_kill;
 static sway_cmd cmd_layout;
 static sway_cmd cmd_log_colors;
 static sway_cmd cmd_mode;
+static sway_cmd cmd_mouse_warping;
 static sway_cmd cmd_move;
 static sway_cmd cmd_output;
 static sway_cmd cmd_reload;
@@ -383,9 +385,13 @@ static struct cmd_results *cmd_focus(int argc, char **argv) {
 		} else if (!workspace_switch(swayc_active_workspace_for(output))) {
 			return cmd_results_new(CMD_FAILURE, "focus output",
 				"Switching to workspace on output '%s' was blocked", argv[1]);
-		} else {
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		} else if (config->mouse_warping) {
+			swayc_t *focused = get_focused_view(output);
+			if (focused && focused->type == C_VIEW) {
+				center_pointer_on(focused);
+			}
 		}
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if ((error = checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
@@ -526,6 +532,20 @@ static struct cmd_results *cmd_mode(int argc, char **argv) {
 	// Set current mode
 	config->current_mode = mode;
 	return cmd_results_new(mode_make ? CMD_BLOCK_MODE : CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_mouse_warping(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "mouse_warping", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	} else if (strcasecmp(argv[0], "output") == 0) {
+		config->mouse_warping = true;
+	} else if (strcasecmp(argv[0], "none") == 0) {
+		config->mouse_warping = false;
+	} else {
+		return cmd_results_new(CMD_FAILURE, "mouse_warping", "Expected 'mouse_warping output|none'");
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *cmd_move(int argc, char **argv) {
@@ -1165,7 +1185,16 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 				ws = workspace_create(argv[0]);
 			}
 		}
+		swayc_t *old_output = swayc_active_output();
 		workspace_switch(ws);
+		swayc_t *new_output = swayc_active_output();
+
+		if (config->mouse_warping && old_output != new_output) {
+			swayc_t *focused = get_focused_view(ws);
+			if (focused && focused->type == C_VIEW) {
+				center_pointer_on(focused);
+			}
+		}
 	} else {
 		if (strcasecmp(argv[1], "output") == 0) {
 			if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO, 3))) {
@@ -1217,6 +1246,7 @@ static struct cmd_handler handlers[] = {
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
 	{ "mode", cmd_mode },
+	{ "mouse_warping", cmd_mouse_warping },
 	{ "move", cmd_move },
 	{ "output", cmd_output },
 	{ "reload", cmd_reload },

@@ -4,6 +4,8 @@
 #include "log.h"
 #include "workspace.h"
 #include "layout.h"
+#include "config.h"
+#include "input_state.h"
 
 bool locked_container_focus = false;
 bool locked_view_focus = false;
@@ -49,14 +51,24 @@ static void update_focus(swayc_t *c) {
 }
 
 bool move_focus(enum movement_direction direction) {
-	swayc_t *view = get_focused_container(&root_container);
-	view = get_swayc_in_direction(view, direction);
-	if (view) {
-		if (direction == MOVE_PARENT) {
-			return set_focused_container(view);
-		} else {
-			return set_focused_container(get_focused_view(view));
+	swayc_t *old_view = get_focused_container(&root_container);
+	swayc_t *new_view = get_swayc_in_direction(old_view, direction);
+	if (!new_view) {
+		return false;
+	} else if (direction == MOVE_PARENT) {
+		return set_focused_container(new_view);
+	} else if (config->mouse_warping) {
+		swayc_t *old_op = old_view->type == C_OUTPUT ?
+			old_view : swayc_parent_by_type(old_view, C_OUTPUT);
+		swayc_t *focused = get_focused_view(new_view);
+		if (set_focused_container(focused)) {
+			if (old_op != swayc_active_output() && focused && focused->type == C_VIEW) {
+				center_pointer_on(focused);
+			}
+			return true;
 		}
+	} else {
+		return set_focused_container(get_focused_view(new_view));
 	}
 	return false;
 }

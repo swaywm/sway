@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "log.h"
+#include "config.h"
 
 #include "input_state.h"
 
@@ -161,6 +162,36 @@ static void reset_initial_sibling(void) {
 	pointer_state.mode = 0;
 }
 
+void pointer_position_set(struct wlc_origin *new_origin, bool force_focus) {
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
+	pointer_state.delta.x = new_origin->x - origin.x;
+	pointer_state.delta.y = new_origin->y - origin.y;
+
+	// Update view under pointer
+	swayc_t *prev_view = pointer_state.view;
+	pointer_state.view = container_under_pointer();
+
+	// If pointer is in a mode, update it
+	if (pointer_state.mode) {
+		pointer_mode_update();
+	// Otherwise change focus if config is set
+	} else if (force_focus || (prev_view != pointer_state.view && config->focus_follows_mouse)) {
+		if (pointer_state.view && pointer_state.view->type == C_VIEW) {
+			set_focused_container(pointer_state.view);
+		}
+	}
+
+	wlc_pointer_set_origin(new_origin);
+}
+
+void center_pointer_on(swayc_t *view) {
+	struct wlc_origin new_origin;
+	new_origin.x = view->x + view->width/2;
+	new_origin.y = view->y + view->height/2;
+	pointer_position_set(&new_origin, true);
+}
+
 // Mode set left/right click
 
 static void pointer_mode_set_left(void) {
@@ -183,8 +214,10 @@ static void pointer_mode_set_right(void) {
 	int midway_x = initial.ptr->x + initial.ptr->width/2;
 	int midway_y = initial.ptr->y + initial.ptr->height/2;
 
-	lock.left = pointer_state.origin.x > midway_x;
-	lock.top = pointer_state.origin.y > midway_y;
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
+	lock.left = origin.x > midway_x;
+	lock.top = origin.y > midway_y;
 
 	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_RESIZING | M_FLOATING;
@@ -246,8 +279,10 @@ void pointer_mode_update(void) {
 		pointer_state.mode = 0;
 		return;
 	}
-	int dx = pointer_state.origin.x;
-	int dy = pointer_state.origin.y;
+	struct wlc_origin origin;
+	wlc_pointer_get_origin(&origin);
+	int dx = origin.x;
+	int dy = origin.y;
 
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:

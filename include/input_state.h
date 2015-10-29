@@ -48,11 +48,6 @@ extern struct pointer_state {
 	struct pointer_button_state right;
 	struct pointer_button_state scroll;
 
-	// pointer position
-	struct mouse_origin{
-		int x, y;
-	} origin;
-
 	// change in pointer position
 	struct {
 		int x, y;
@@ -64,6 +59,9 @@ extern struct pointer_state {
 	// Pointer mode
 	int mode;
 } pointer_state;
+
+void pointer_position_set(struct wlc_origin *new_origin, bool force_focus);
+void center_pointer_on(swayc_t *view);
 
 // on button release unset mode depending on the button.
 // on button press set mode conditionally depending on the button
