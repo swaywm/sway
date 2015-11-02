@@ -11,7 +11,6 @@ bool locked_container_focus = false;
 bool locked_view_focus = false;
 
 // switches parent focus to c. will switch it accordingly
-// TODO: Everything needs a handle, so we can set front/back position properly
 static void update_focus(swayc_t *c) {
 	// Handle if focus switches
 	swayc_t *parent = c->parent;
@@ -20,6 +19,7 @@ static void update_focus(swayc_t *c) {
 		swayc_t *prev = parent->focused;
 		// Set new focus
 		parent->focused = c;
+
 		switch (c->type) {
 		// Shouldnt happen
 		case C_ROOT: return;
@@ -32,6 +32,7 @@ static void update_focus(swayc_t *c) {
 		// Case where workspace changes
 		case C_WORKSPACE:
 			if (prev) {
+				ipc_event_workspace(prev, c);
 				// update visibility of old workspace
 				update_visibility(prev);
 				destroy_workspace(prev);

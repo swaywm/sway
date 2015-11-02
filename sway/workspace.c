@@ -223,7 +223,5 @@ bool workspace_switch(swayc_t *workspace) {
 	}
 	arrange_windows(workspace, -1, -1);
 
-	ipc_event_workspace(active_ws, workspace);
-
 	return true;
 }
