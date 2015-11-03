@@ -317,6 +317,30 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 	}
 }
 
+void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
+	if (workspace == destination || swayc_is_parent_of(workspace, destination)) {
+		return;
+	}
+	swayc_t *src_op = remove_child(workspace);
+	// reset container geometry
+	workspace->width = workspace->height = 0;
+	add_child(destination, workspace);
+	// Refocus destination (change to new workspace)
+	set_focused_container(get_focused_view(workspace));
+	arrange_windows(destination, -1, -1);
+	update_visibility(destination);
+
+	// make sure source output has a workspace
+	if (src_op->children->length == 0) {
+		char *ws_name = workspace_next_name();
+		swayc_t *ws = new_workspace(src_op, ws_name);
+		ws->is_focused = true;
+		free(ws_name);
+	}
+	set_focused_container(get_focused_view(src_op));
+	update_visibility(src_op);
+}
+
 void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW) {
 		return;
