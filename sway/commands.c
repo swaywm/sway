@@ -766,7 +766,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	// gaps amount
 	if (argc >= 1 && isdigit(*amount_str)) {
 		int amount = (int)strtol(amount_str, NULL, 10);
-		if (errno == ERANGE || amount == 0) {
+		if (errno == ERANGE) {
 			errno = 0;
 			return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 		}
@@ -781,7 +781,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	// gaps inner|outer n
 	else if (argc >= 2 && isdigit((amount_str = argv[1])[0])) {
 		int amount = (int)strtol(amount_str, NULL, 10);
-		if (errno == ERANGE || amount == 0) {
+		if (errno == ERANGE) {
 			errno = 0;
 			return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 		}
@@ -829,7 +829,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	// gaps ... n
 	amount_str = argv[3];
 	int amount = (int)strtol(amount_str, NULL, 10);
-	if (errno == ERANGE || amount == 0) {
+	if (errno == ERANGE) {
 		errno = 0;
 		return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 	}
