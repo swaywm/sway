@@ -6,6 +6,7 @@
 #include "layout.h"
 #include "config.h"
 #include "input_state.h"
+#include "ipc.h"
 
 bool locked_container_focus = false;
 bool locked_view_focus = false;
