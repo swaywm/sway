@@ -760,6 +760,8 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	const char* expected_syntax =
+		"Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'";
 	const char *amount_str = argv[0];
 	// gaps amount
 	if (argc >= 1 && isdigit(*amount_str)) {
@@ -793,7 +795,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	}
 	// gaps inner|outer current|all set|plus|minus n
 	if (argc < 4 || config->reading) {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 	// gaps inner|outer ...
 	const char *inout_str = argv[0];
@@ -803,7 +805,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	} else if (strcasecmp(inout_str, "outer") == 0) {
 		inout = OUTER;
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 
 	// gaps ... current|all ...
@@ -821,7 +823,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 			target = WORKSPACE;
 		}
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 
 	// gaps ... n
@@ -843,7 +845,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 		method = ADD;
 		amount *= -1;
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 
 	if (target == CURRENT) {
