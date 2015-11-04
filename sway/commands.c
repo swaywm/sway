@@ -771,6 +771,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 		}
 		config->gaps_inner = config->gaps_outer = amount;
+		arrange_windows(&root_container, -1, -1);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	// gaps inner|outer n
@@ -786,6 +787,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 		} else if (strcasecmp(target_str, "outer") == 0) {
 			config->gaps_outer = amount;
 		}
+		arrange_windows(&root_container, -1, -1);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	// gaps inner|outer current|all set|plus|minus n
