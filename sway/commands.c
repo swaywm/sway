@@ -770,12 +770,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 			errno = 0;
 			return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 		}
-		if (config->gaps_inner == 0) {
-			config->gaps_inner = amount;
-		}
-		if (config->gaps_outer == 0) {
-			config->gaps_outer = amount;
-		}
+		config->gaps_inner = config->gaps_outer = amount;
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	// gaps inner|outer n
