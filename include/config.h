@@ -57,6 +57,7 @@ struct sway_config {
 	bool auto_back_and_forth;
 	bool seamless_mouse;
 
+	bool edge_gaps;
 	int gaps_inner;
 	int gaps_outer;
 };
