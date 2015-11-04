@@ -760,26 +760,24 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	const char* expected_syntax =
+		"Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'";
 	const char *amount_str = argv[0];
 	// gaps amount
 	if (argc >= 1 && isdigit(*amount_str)) {
 		int amount = (int)strtol(amount_str, NULL, 10);
-		if (errno == ERANGE || amount == 0) {
+		if (errno == ERANGE) {
 			errno = 0;
 			return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 		}
-		if (config->gaps_inner == 0) {
-			config->gaps_inner = amount;
-		}
-		if (config->gaps_outer == 0) {
-			config->gaps_outer = amount;
-		}
+		config->gaps_inner = config->gaps_outer = amount;
+		arrange_windows(&root_container, -1, -1);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	// gaps inner|outer n
 	else if (argc >= 2 && isdigit((amount_str = argv[1])[0])) {
 		int amount = (int)strtol(amount_str, NULL, 10);
-		if (errno == ERANGE || amount == 0) {
+		if (errno == ERANGE) {
 			errno = 0;
 			return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 		}
@@ -789,11 +787,12 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 		} else if (strcasecmp(target_str, "outer") == 0) {
 			config->gaps_outer = amount;
 		}
+		arrange_windows(&root_container, -1, -1);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	// gaps inner|outer current|all set|plus|minus n
 	if (argc < 4 || config->reading) {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 	// gaps inner|outer ...
 	const char *inout_str = argv[0];
@@ -803,7 +802,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	} else if (strcasecmp(inout_str, "outer") == 0) {
 		inout = OUTER;
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 
 	// gaps ... current|all ...
@@ -821,13 +820,13 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 			target = WORKSPACE;
 		}
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 
 	// gaps ... n
 	amount_str = argv[3];
 	int amount = (int)strtol(amount_str, NULL, 10);
-	if (errno == ERANGE || amount == 0) {
+	if (errno == ERANGE) {
 		errno = 0;
 		return cmd_results_new(CMD_INVALID, "gaps", "Number is out out of range.");
 	}
@@ -843,7 +842,7 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 		method = ADD;
 		amount *= -1;
 	} else {
-		return cmd_results_new(CMD_INVALID, "gaps", "Expected 'gaps <inner|outer> <current|all> <set|plus|minus n>'");
+		return cmd_results_new(CMD_INVALID, "gaps", expected_syntax);
 	}
 
 	if (target == CURRENT) {
