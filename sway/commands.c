@@ -761,7 +761,8 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 		return error;
 	}
 	const char* expected_syntax =
-		"Expected 'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'";
+		"Expected 'gaps edge_gaps <on|off|toggle>' or "
+		"'gaps <inner|outer> <current|all|workspace> <set|plus|minus n>'";
 	const char *amount_str = argv[0];
 	// gaps amount
 	if (argc >= 1 && isdigit(*amount_str)) {
@@ -786,6 +787,20 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 			config->gaps_inner = amount;
 		} else if (strcasecmp(target_str, "outer") == 0) {
 			config->gaps_outer = amount;
+		}
+		arrange_windows(&root_container, -1, -1);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	} else if (argc == 2 && strcasecmp(argv[0], "edge_gaps") == 0) {
+		// gaps edge_gaps <on|off|toggle>
+		if (strcasecmp(argv[1], "toggle") == 0) {
+			if (config->reading) {
+				return cmd_results_new(CMD_FAILURE, "gaps edge_gaps toggle",
+					"Can't be used in config file.");
+			}
+			config->edge_gaps = !config->edge_gaps;
+		} else {
+			config->edge_gaps =
+				(strcasecmp(argv[1], "yes") == 0 || strcasecmp(argv[1], "on") == 0);
 		}
 		arrange_windows(&root_container, -1, -1);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);

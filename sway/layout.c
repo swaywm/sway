@@ -367,9 +367,27 @@ void update_geometry(swayc_t *container) {
 		if (op->focused == ws) {
 			wlc_view_bring_to_front(container->handle);
 		}
+	} else if (!config->edge_gaps && gap > 0) {
+		// Remove gap against the workspace edges. Because a pixel is not
+		// divisable, depending on gap size and the number of siblings our view
+		// might be at the workspace edge without being exactly so (thus test
+		// with gap, and align correctly).
+		if (container->x - gap <= ws->x) {
+			geometry.origin.x = ws->x;
+			geometry.size.w = container->width - gap/2;
+		}
+		if (container->y - gap <= ws->y) {
+			geometry.origin.y = ws->y;
+			geometry.size.h = container->height - gap/2;
+		}
+		if (container->x + container->width + gap >= ws->x + ws->width) {
+			geometry.size.w = ws->width - geometry.origin.x;
+		}
+		if (container->y + container->height + gap >= ws->y + ws->height) {
+			geometry.size.h = ws->height - geometry.origin.y;
+		}
 	}
 	wlc_view_set_geometry(container->handle, 0, &geometry);
-	return;
 }
 
 static void arrange_windows_r(swayc_t *container, double width, double height) {
