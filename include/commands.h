@@ -5,29 +5,55 @@
 #include <wlc/wlc.h>
 #include "config.h"
 
-
-enum  cmd_status {
-	CMD_SUCCESS,
-	CMD_FAILURE, // was or at least could be executed
-	CMD_INVALID, // unknown or parse error
-	CMD_DEFER,
+/**
+ * Indicates the result of a command's execution.
+ */
+enum cmd_status {
+	CMD_SUCCESS, 		/**< The command was successful */
+	CMD_FAILURE,		/**< The command resulted in an error */
+	CMD_INVALID, 		/**< Unknown command or parser error */
+	CMD_DEFER,			/**< Command execution deferred */
 	// Config Blocks
 	CMD_BLOCK_END,
 	CMD_BLOCK_MODE,
 };
 
+/**
+ * Stores the result of executing a command.
+ */
 struct cmd_results {
 	enum cmd_status status;
 	char *input;
+	/**
+	 * Human friendly error message, or NULL on success
+	 */
 	char *error;
 };
 
+/**
+ * Parse and handles a command.
+ */
 struct cmd_results *handle_command(char *command);
-// Handles commands during config
+/**
+ * Parse and handles a command during config file loading.
+ *
+ * Do not use this under normal conditions.
+ */
 struct cmd_results *config_command(char *command);
 
+/**
+ * Allocates a cmd_results object.
+ */
 struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *error, ...);
+/**
+ * Frees a cmd_results object.
+ */
 void free_cmd_results(struct cmd_results *results);
+/**
+ * Serializes cmd_results to a JSON string.
+ *
+ * Free the JSON string later on.
+ */
 const char *cmd_results_to_json(struct cmd_results *results);
 
 void remove_view_from_scratchpad();

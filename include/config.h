@@ -8,22 +8,36 @@
 #include "layout.h"
 #include "container.h"
 
+/**
+ * Describes a variable created via the `set` command.
+ */
 struct sway_variable {
 	char *name;
 	char *value;
 };
 
+/**
+ * A key binding and an associated command.
+ */
 struct sway_binding {
 	list_t *keys;
 	uint32_t modifiers;
 	char *command;
 };
 
+/**
+ * A "mode" of keybindings created via the `mode` command.
+ */
 struct sway_mode {
 	char *name;
 	list_t *bindings;
 };
 
+/**
+ * Size and position configuration for a particular output.
+ *
+ * This is set via the `output` command.
+ */
 struct output_config {
 	char *name;
 	bool enabled;
@@ -31,11 +45,19 @@ struct output_config {
 	int x, y;
 };
 
+/**
+ * Maps a workspace name to an output name.
+ *
+ * Set via `workspace <x> output <y>`
+ */
 struct workspace_output {
 	char *output;
 	char *workspace;
 };
 
+/**
+ * The configuration struct. The result of loading a config file.
+ */
 struct sway_config {
 	list_t *symbols;
 	list_t *modes;
@@ -62,12 +84,24 @@ struct sway_config {
 	int gaps_outer;
 };
 
+/**
+ * Loads the config from the given path.
+ */
 bool load_config(const char *file);
+/** Reads the config from the given FILE.
+ */
 bool read_config(FILE *file, bool is_active);
+/**
+ * Does variable replacement for a string based on the config's currently loaded variables.
+ */
 char *do_var_replacement(char *str);
-// Setup output container by applying given config
+/** Sets up a WLC output handle based on a given output_config.
+ */
 void apply_output_config(struct output_config *oc, swayc_t *output);
 
+/**
+ * Global config singleton.
+ */
 extern struct sway_config *config;
 
 #endif
