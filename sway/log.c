@@ -3,11 +3,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <libgen.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#include <stringop.h>
 #include <execinfo.h>
 
 int colored = 1;
@@ -59,7 +61,11 @@ void sway_abort(const char *format, ...) {
 	sway_terminate();
 }
 
-void sway_log(log_importance_t verbosity, const char* format, ...) {
+#ifndef NDEBUG
+void _sway_log(const char *filename, int line, log_importance_t verbosity, const char* format, ...) {
+#else
+void _sway_log(log_importance_t verbosity, const char* format, ...) {
+#endif
 	if (verbosity <= v) {
 		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
@@ -72,6 +78,11 @@ void sway_log(log_importance_t verbosity, const char* format, ...) {
 
 		va_list args;
 		va_start(args, format);
+#ifndef NDEBUG
+		char *file = strdup(filename);
+		fprintf(stderr, "[%s:%d] ", basename(file), line);
+		free(file);
+#endif
 		vfprintf(stderr, format, args);
 		va_end(args);
 
