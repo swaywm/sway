@@ -98,7 +98,8 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 	int path_size = sizeof(ipc_sockaddr->sun_path);
 
 	// Without logind:
-	int allocating_path_size = snprintf(ipc_sockaddr->sun_path, path_size, "/tmp/sway-ipc.%i.sock", getuid());
+	int allocating_path_size = snprintf(ipc_sockaddr->sun_path, path_size,
+			"/tmp/sway-ipc.%i.%i.sock", getuid(), getpid());
 
 	if (allocating_path_size >= path_size) {
 		sway_abort("socket path won't fit into ipc_sockaddr->sun_path");
@@ -176,7 +177,8 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	char buf[ipc_header_size];
+	uint8_t buf[ipc_header_size];
+	uint32_t *buf32 = (uint32_t*)(buf + sizeof(ipc_magic));
 	ssize_t received = recv(client_fd, buf, ipc_header_size, 0);
 	if (received == -1) {
 		sway_log_errno(L_INFO, "Unable to receive header from IPC client");
@@ -190,8 +192,8 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	client->payload_length = *(uint32_t *)&buf[sizeof(ipc_magic)];
-	client->current_command = (enum ipc_command_type) *(uint32_t *)&buf[sizeof(ipc_magic)+4];
+	client->payload_length = buf32[0];
+	client->current_command = (enum ipc_command_type)buf32[1];
 
 	if (read_available - received >= client->payload_length) {
 		ipc_client_handle_command(client);
@@ -336,10 +338,11 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	assert(payload);
 
 	char data[ipc_header_size];
+	uint32_t *data32 = (uint32_t*)(data + sizeof(ipc_magic));
 
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	*(uint32_t *)&(data[sizeof(ipc_magic)]) = payload_length;
-	*(uint32_t *)&(data[sizeof(ipc_magic)+4]) = client->current_command;
+	data32[0] = payload_length;
+	data32[1] = client->current_command;
 
 	if (write(client->fd, data, ipc_header_size) == -1) {
 		sway_log_errno(L_INFO, "Unable to send header to IPC client");
