@@ -7,6 +7,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin/")
 add_definitions("-Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 
+add_subdirectory(swaybg swaybg)
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
     execute_process(
         COMMAND git describe --always
@@ -40,9 +42,6 @@ find_package(WLC REQUIRED)
 find_package(A2X REQUIRED)
 find_package(PCRE REQUIRED)
 find_package(JsonC REQUIRED)
-FIND_PACKAGE(Wayland REQUIRED)
-FIND_PACKAGE(Cairo REQUIRED)
-FIND_PACKAGE(Pango REQUIRED)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
 
