@@ -139,7 +139,6 @@ static const int ipc_header_size = sizeof(ipc_magic)+8;
 
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
-	sway_log(L_DEBUG, "Event on IPC client socket %d", client_fd);
 
 	if (mask & WLC_EVENT_ERROR) {
 		sway_log(L_INFO, "IPC Client socket error, removing client");
@@ -166,14 +165,10 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		if ((uint32_t)read_available >= client->payload_length) {
 			ipc_client_handle_command(client);
 		}
-		else {
-			sway_log(L_DEBUG, "Too little data to read payload on IPC Client socket, waiting for more (%d < %d)", read_available, client->payload_length);
-		}
 		return 0;
 	}
 
 	if (read_available < ipc_header_size) {
-		sway_log(L_DEBUG, "Too little data to read header on IPC Client socket, waiting for more (%d < %d)", read_available, ipc_header_size);
 		return 0;
 	}
 
@@ -221,12 +216,37 @@ void ipc_client_disconnect(struct ipc_client *client)
 	free(client);
 }
 
+bool output_by_name_test(swayc_t *view, void *data) {
+	char *name = (char *)data;
+	if (view->type != C_OUTPUT) {
+		return false;
+	}
+	return !strcmp(name, view->name);
+}
+
+bool get_pixels_callback(const struct wlc_size *size, uint8_t *rgba, void *arg) {
+	struct ipc_client *client = (struct ipc_client *)arg;
+	char response_header[9];
+	memset(response_header, 0, sizeof(response_header));
+	response_header[0] = 1;
+	uint32_t *_size = (uint32_t *)(response_header + 1);
+	_size[0] = size->w;
+	_size[1] = size->h;
+	size_t len = sizeof(response_header) + (size->w * size->h * 4);
+	char *payload = malloc(len);
+	memcpy(payload, response_header, sizeof(response_header));
+	memcpy(payload + sizeof(response_header), rgba, len - sizeof(response_header));
+	ipc_send_reply(client, payload, len);
+	free(payload);
+	return false;
+}
+
 void ipc_client_handle_command(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
 	}
 
-	char buf[client->payload_length + 1];
+	char *buf = malloc(client->payload_length + 1);
 	if (client->payload_length > 0)
 	{
 		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
@@ -234,6 +254,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		{
 			sway_log_errno(L_INFO, "Unable to receive payload from IPC client");
 			ipc_client_disconnect(client);
+			free(buf);
 			return;
 		}
 	}
@@ -257,6 +278,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		if (request == NULL) {
 			ipc_send_reply(client, "{\"success\": false}", 18);
 			ipc_client_disconnect(client);
+			free(buf);
 			return;
 		}
 
@@ -270,6 +292,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				ipc_client_disconnect(client);
 				json_object_put(request);
+				free(buf);
 				return;
 			}
 		}
@@ -325,6 +348,20 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		free(full_version);
 		break;
 	}
+	case IPC_SWAY_GET_PIXELS:
+	{
+		char response_header[9];
+		memset(response_header, 0, sizeof(response_header));
+		buf[client->payload_length] = '\0';
+		swayc_t *output = swayc_by_test(&root_container, output_by_name_test, buf);
+		if (!output) {
+			sway_log(L_ERROR, "IPC GET_PIXELS request with unknown output name");
+			ipc_send_reply(client, response_header, sizeof(response_header));
+			break;
+		}
+		wlc_output_get_pixels(output->handle, get_pixels_callback, client);
+		break;
+	}
 	default:
 		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
 		ipc_client_disconnect(client);
@@ -332,6 +369,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 
 	client->payload_length = 0;
+	free(buf);
 }
 
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length) {
