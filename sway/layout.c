@@ -398,6 +398,9 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		height = container->height;
 	}
 
+	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
+		container->name, container->width, container->height, container->x, container->y);
+
 	int x = 0, y = 0;
 	switch (container->type) {
 	case C_ROOT:

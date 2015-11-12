@@ -105,7 +105,7 @@ static void config_defaults(struct sway_config *config) {
 	config->seamless_mouse = true;
 	config->reading = false;
 
-	config->edge_gaps = false;
+	config->edge_gaps = true;
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
 }
