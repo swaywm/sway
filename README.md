@@ -32,10 +32,13 @@ Install dependencies:
 
 * cmake
 * [wlc](https://github.com/Cloudef/wlc)
+* wayland
 * xwayland
 * asciidoc
 * pcre
 * json-c
+* pango
+* cairo
 
 Run these commands:
 

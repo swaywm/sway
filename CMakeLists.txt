@@ -40,6 +40,9 @@ find_package(WLC REQUIRED)
 find_package(A2X REQUIRED)
 find_package(PCRE REQUIRED)
 find_package(JsonC REQUIRED)
+FIND_PACKAGE(Wayland REQUIRED)
+FIND_PACKAGE(Cairo REQUIRED)
+FIND_PACKAGE(Pango REQUIRED)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
 
