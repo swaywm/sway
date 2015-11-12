@@ -16,6 +16,8 @@ arch:
     - xcb-util-image
     - libgl
     - mesa
+    - pango
+    - cairo
   script:
     - "bash .ci/build.sh"
 
