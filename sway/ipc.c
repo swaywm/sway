@@ -94,14 +94,15 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 	}
 
 	ipc_sockaddr->sun_family = AF_UNIX;
-
 	int path_size = sizeof(ipc_sockaddr->sun_path);
 
-	// Without logind:
-	int allocating_path_size = snprintf(ipc_sockaddr->sun_path, path_size,
-			"/tmp/sway-ipc.%i.%i.sock", getuid(), getpid());
-
-	if (allocating_path_size >= path_size) {
+	// Env var typically set by logind, e.g. "/run/user/<user-id>"
+	const char *dir = getenv("XDG_RUNTIME_DIR");
+	if (!dir) {
+		dir = "/tmp";
+	}
+	if (path_size <= snprintf(ipc_sockaddr->sun_path, path_size,
+			"%s/sway-ipc.%i.%i.sock", dir, getuid(), getpid())) {
 		sway_abort("socket path won't fit into ipc_sockaddr->sun_path");
 	}
 
