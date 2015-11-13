@@ -93,7 +93,7 @@ static int create_pool_file(size_t size) {
 
     if (fd < 0) {
         return -1;
-	}
+    }
 
     if (ftruncate(fd, size) < 0) {
         close(fd);
@@ -125,6 +125,9 @@ struct buffer *create_buffer(struct client_state *state,
 	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	buf->pool = wl_shm_create_pool(state->shm, fd, size);
 	buf->buffer = wl_shm_pool_create_buffer(buf->pool, 0, width, height, stride, format);
+	wl_shm_pool_destroy(buf->pool);
+	close(fd);
+	fd = -1;
 
 	state->cairo_surface = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
 	state->cairo = cairo_create(state->cairo_surface);
@@ -175,22 +178,21 @@ struct client_state *client_setup(void) {
 	return state;
 }
 
-int client_prerender(struct client_state *state) {
-	wl_display_dispatch_pending(state->display);
-	wl_display_flush(state->display);
-	return 1;
-}
-
 int client_render(struct client_state *state) {
-	if (state->frame_cb) {
+	if (state->frame_cb || state->busy) {
 		return 2;
 	}
+	sway_log(L_INFO, "Rendering");
+
 	state->frame_cb = wl_surface_frame(state->surface);
 	wl_callback_add_listener(state->frame_cb, &listener, state);
-	wl_surface_damage(state->surface, 0, 0, 100, 100);
+
+	wl_surface_damage(state->surface, 0, 0, state->buffer->width, state->buffer->height);
 	wl_surface_attach(state->surface, state->buffer->buffer, 0, 0);
 	wl_surface_commit(state->surface);
+
 	state->busy = true;
+
 	return wl_display_dispatch(state->display) != -1;
 }
 

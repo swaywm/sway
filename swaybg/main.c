@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wayland-client.h>
+#include <time.h>
 #include "client.h"
 #include "log.h"
 
@@ -17,18 +18,28 @@ int main(int argc, char **argv) {
 
 	uint8_t r = 0, g = 0, b = 0;
 
+	long last_ms = 0;
 	int rs;
 	do {
-		if (!client_prerender(state)) continue;
+		struct timespec spec;
+		clock_gettime(CLOCK_MONOTONIC, &spec);
+		long ms = round(spec.tv_nsec / 1.0e6);
+
 		cairo_set_source_rgb(state->cairo, r, g, b);
 		cairo_rectangle(state->cairo, 0, 0, 100, 100);
 		cairo_fill(state->cairo);
 
 		rs = client_render(state);
 
-		if (rs == 1) {
-			sway_log(L_INFO, "rendering %d %d %d", r, g, b);
-			r++; g++; b++;
+		if (ms - last_ms > 100) {
+			r++;
+			if (r == 0) {
+				g++;
+				if (g == 0) {
+					b++;
+				}
+			}
+			ms = last_ms;
 		}
 	} while (rs);
 
