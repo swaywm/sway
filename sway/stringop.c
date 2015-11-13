@@ -362,12 +362,3 @@ char *argsep(char **stringp, const char *delim) {
 	found:
 	return start;
 }
-
-char *strdup(const char *str) {
-	char *dup = malloc(strlen(str) + 1);
-	if (dup) {
-		strcpy(dup, str);
-	}
-	return dup;
-}
-

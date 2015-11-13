@@ -33,5 +33,4 @@ char *cmdsep(char **stringp, const char *delim);
 // Split string into 2 by delim, handle quotes
 char *argsep(char **stringp, const char *delim);
 
-char *strdup(const char *);
 #endif

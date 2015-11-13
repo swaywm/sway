@@ -104,8 +104,8 @@ static int create_pool_file(size_t size) {
 }
 
 static void buffer_release(void *data, struct wl_buffer *buffer) {
-    struct client_state *state = data;
-    state->busy = false;
+	struct client_state *state = data;
+	state->busy = false;
 	sway_log(L_INFO, "buffer release");
 }
 
@@ -138,9 +138,9 @@ struct buffer *create_buffer(struct client_state *state,
 
 static void frame_callback(void *data, struct wl_callback *callback, uint32_t time) {
 	sway_log(L_INFO, "frame callback");
-    struct client_state *state = data;
-    wl_callback_destroy(callback);
-    state->frame_cb = NULL;
+	struct client_state *state = data;
+	wl_callback_destroy(callback);
+	state->frame_cb = NULL;
 }
 
 static const struct wl_callback_listener listener = {
@@ -177,7 +177,7 @@ struct client_state *client_setup(void) {
 
 int client_prerender(struct client_state *state) {
 	wl_display_dispatch_pending(state->display);
-    wl_display_flush(state->display);
+	wl_display_flush(state->display);
 	return 1;
 }
 
