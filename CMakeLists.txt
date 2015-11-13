@@ -29,10 +29,9 @@ add_definitions("-DSWAY_GIT_VERSION=\"g${GIT_COMMIT_HASH}\"")
 add_definitions("-DSWAY_GIT_BRANCH=\"${GIT_BRANCH}\"")
 
 string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
-add_definitions("-DSWAY_VERSION_DATE=${CURRENT_DATE}")
+add_definitions('-DSWAY_VERSION_DATE="${CURRENT_DATE}"')
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
-add_subdirectory(common)
 add_subdirectory(swaybg)
 
 find_package(XKBCommon REQUIRED)
@@ -42,6 +41,7 @@ find_package(PCRE REQUIRED)
 find_package(JsonC REQUIRED)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
+FILE(GLOB common ${PROJECT_SOURCE_DIR}/common/*.c)
 
 include_directories(
    ${WLC_INCLUDE_DIRS}
@@ -60,7 +60,6 @@ target_link_libraries(sway
    ${XKBCOMMON_LIBRARIES}
    ${PCRE_LIBRARIES}
    ${JSONC_LIBRARIES}
-   sway_common
 )
 
 install(
@@ -81,7 +80,7 @@ function (add_manpage name section)
             --no-xmllint
             --doctype manpage
             --format manpage
-            -D "${CMAKE_CURRENT_BINARY_DIR}"
+            -D "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
             "${CMAKE_CURRENT_SOURCE_DIR}/${name}.${section}.txt"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${name}.${section}.txt"
     COMMENT "Generating manpage for ${name}.${section}")

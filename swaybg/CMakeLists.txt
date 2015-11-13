@@ -14,6 +14,7 @@ include_directories(
 )
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
+FILE(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
 FILE(GLOB wl_sources ${PROJECT_SOURCE_DIR}/../wayland/*.c)
 
 add_executable(swaybg
@@ -22,7 +23,7 @@ add_executable(swaybg
   ${common}
 )
 
-TARGET_LINK_LIBRARIES(swaybg ${WAYLAND_CLIENT_LIBRARIES} ${CAIRO_LIBRARIES} ${PANGO_LIBRARIES} sway_common)
+TARGET_LINK_LIBRARIES(swaybg ${WAYLAND_CLIENT_LIBRARIES} ${CAIRO_LIBRARIES} ${PANGO_LIBRARIES})
 
 install(
   TARGETS   swaybg
