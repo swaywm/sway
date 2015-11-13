@@ -52,7 +52,8 @@ void ipc_init(void) {
 
 	ipc_sockaddr = ipc_user_sockaddr();
 
-	if (getenv("SWAYSOCK") != NULL) {
+	// We want to use socket name set by user, not existing socket from another sway instance.
+	if (getenv("SWAYSOCK") != NULL && access(getenv("SWAYSOCK"), F_OK) == -1) {
 		strncpy(ipc_sockaddr->sun_path, getenv("SWAYSOCK"), sizeof(ipc_sockaddr->sun_path));
 	}
 
@@ -66,7 +67,12 @@ void ipc_init(void) {
 	}
 
 	// Set i3 IPC socket path so that i3-msg works out of the box
-	setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
+	if (!getenv("I3SOCK")) {
+		setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
+	}
+	if (!getenv("SWAYSOCK")) {
+		setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
+	}
 
 	ipc_client_list = create_list();
 

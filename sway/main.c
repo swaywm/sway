@@ -107,10 +107,13 @@ int main(int argc, char **argv) {
 			verbose = 1;
 			break;
 		case 'p': ; // --get-socketpath
-			struct sockaddr_un *ipc_sockaddr = ipc_user_sockaddr();
-			fprintf(stdout, "%s\n", ipc_sockaddr->sun_path);
-			free(ipc_sockaddr);
-			exit(0);
+			if (getenv("SWAYSOCK")) {
+				fprintf(stdout, "%s\n", getenv("SWAYSOCK"));
+				exit(0);
+			} else {
+				fprintf(stderr, "sway socket not detected.\n");
+				exit(1);
+			}
 			break;
 		}
 	}
