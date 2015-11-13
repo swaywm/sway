@@ -137,9 +137,9 @@ static char *get_config_path(void) {
 	static const char *search_paths[] = {
 		"/.sway/config", // Prepend with $home
 		"/sway/config", // Prepend with $config
+		"/etc/sway/config",
 		"/.i3/config", // $home
 		"/i3/config", // $config
-		"/etc/sway/config",
 		"/etc/i3/config"
 	};
 	for (i = 0; i < (int)(sizeof(search_paths) / sizeof(char *)); ++i) {
