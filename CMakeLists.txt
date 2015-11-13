@@ -10,8 +10,6 @@ add_definitions("-Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE")
 list(INSERT CMAKE_MODULE_PATH 0
   "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
-add_subdirectory(swaybg swaybg)
-
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
     execute_process(
         COMMAND git describe --always
@@ -31,6 +29,10 @@ add_definitions("-DSWAY_GIT_BRANCH=\"${GIT_BRANCH}\"")
 string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
 add_definitions("-DSWAY_VERSION_DATE=${CURRENT_DATE}")
 
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+add_subdirectory(common)
+add_subdirectory(swaybg)
+
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
 find_package(A2X REQUIRED)
@@ -38,14 +40,12 @@ find_package(PCRE REQUIRED)
 find_package(JsonC REQUIRED)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
-FILE(GLOB common ${PROJECT_SOURCE_DIR}/common/*.c)
 
 include_directories(
    ${WLC_INCLUDE_DIRS}
    ${PCRE_INCLUDE_DIRS}
    ${JSONC_INCLUDE_DIRS}
    ${XKBCOMMON_INCLUDE_DIRS}
-   include/
 )
 
 add_executable(sway
@@ -58,6 +58,7 @@ target_link_libraries(sway
    ${XKBCOMMON_LIBRARIES}
    ${PCRE_LIBRARIES}
    ${JSONC_LIBRARIES}
+   sway_common
 )
 
 install(
