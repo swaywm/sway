@@ -4,7 +4,7 @@ set(CMAKE_C_FLAGS "-g")
 set(CMAKE_C_STANDARD 99)
 SET(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin/")
-add_definitions("-Wall -Wextra -Wno-unused-parameter")
+add_definitions("-Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMake)
 
 add_subdirectory(swaybg swaybg)
@@ -44,6 +44,7 @@ find_package(PCRE REQUIRED)
 find_package(JsonC REQUIRED)
 
 FILE(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
+FILE(GLOB common ${PROJECT_SOURCE_DIR}/common/*.c)
 
 include_directories(
    ${WLC_INCLUDE_DIRS}
@@ -55,6 +56,7 @@ include_directories(
 
 add_executable(sway
     ${sources}
+    ${common}
 )
 
 target_link_libraries(sway
