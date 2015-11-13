@@ -103,6 +103,16 @@ static int create_pool_file(size_t size) {
     return fd;
 }
 
+static void buffer_release(void *data, struct wl_buffer *buffer) {
+    struct client_state *state = data;
+    state->busy = false;
+	sway_log(L_INFO, "buffer release");
+}
+
+static const struct wl_buffer_listener buffer_listener = {
+	.release = buffer_release
+};
+
 struct buffer *create_buffer(struct client_state *state,
 		int32_t width, int32_t height, uint32_t format) {
 
@@ -120,9 +130,22 @@ struct buffer *create_buffer(struct client_state *state,
 	state->cairo = cairo_create(state->cairo_surface);
 	state->pango = pango_cairo_create_context(state->cairo);
 
+	wl_buffer_add_listener(buf->buffer, &buffer_listener, state);
+
 	sway_log(L_INFO, "%p %p", buf->pool, buf->buffer);
 	return buf;
 }
+
+static void frame_callback(void *data, struct wl_callback *callback, uint32_t time) {
+	sway_log(L_INFO, "frame callback");
+    struct client_state *state = data;
+    wl_callback_destroy(callback);
+    state->frame_cb = NULL;
+}
+
+static const struct wl_callback_listener listener = {
+	frame_callback
+};
 
 struct client_state *client_setup(void) {
 	struct client_state *state = malloc(sizeof(struct client_state));
@@ -138,8 +161,8 @@ struct client_state *client_setup(void) {
 
 	struct wl_registry *registry = wl_display_get_registry(state->display);
 	wl_registry_add_listener(registry, &registry_listener, state);
-	wl_display_roundtrip(state->display); // globals
-	wl_display_roundtrip(state->display); // listeners
+	wl_display_dispatch(state->display);
+	wl_display_roundtrip(state->display);
 	wl_registry_destroy(registry);
 
 	state->buffer = create_buffer(state, 100, 100, WL_SHM_FORMAT_ARGB8888);
@@ -148,21 +171,26 @@ struct client_state *client_setup(void) {
 	wl_shell_surface_set_toplevel(state->shell_surface);
 
 	wl_surface_damage(state->surface, 0, 0, 100, 100);
-	wl_surface_attach(state->surface, state->buffer->buffer, 0, 0);
-	wl_surface_commit(state->surface);
 
 	return state;
 }
 
 int client_prerender(struct client_state *state) {
 	wl_display_dispatch_pending(state->display);
-    if (wl_display_flush(state->display) < 0 && errno != EAGAIN) {
-        return 0;
-    }
+    wl_display_flush(state->display);
 	return 1;
 }
 
 int client_render(struct client_state *state) {
+	if (state->frame_cb) {
+		return 2;
+	}
+	state->frame_cb = wl_surface_frame(state->surface);
+	wl_callback_add_listener(state->frame_cb, &listener, state);
+	wl_surface_damage(state->surface, 0, 0, 100, 100);
+	wl_surface_attach(state->surface, state->buffer->buffer, 0, 0);
+	wl_surface_commit(state->surface);
+	state->busy = true;
 	return wl_display_dispatch(state->display) != -1;
 }
 

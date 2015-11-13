@@ -4,6 +4,7 @@
 #include <wayland-client.h>
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
+#include <stdbool.h>
 #include "list.h"
 
 struct output_state {
@@ -28,6 +29,8 @@ struct client_state {
     struct buffer *buffer;
     struct wl_surface *surface;
     struct wl_shell_surface *shell_surface;
+    struct wl_callback *frame_cb;
+    bool busy;
     cairo_t *cairo;
     cairo_surface_t *cairo_surface;
     PangoContext *pango;
