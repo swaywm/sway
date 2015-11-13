@@ -92,7 +92,7 @@ function (add_manpage name section)
     "man-${name}.${section}")
 
   install(
-    FILES       "${CMAKE_CURRENT_BINARY_DIR}/${name}.${section}"
+    FILES       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.${section}"
     DESTINATION "share/man/man${section}"
     COMPONENT   documentation)
 endfunction ()
