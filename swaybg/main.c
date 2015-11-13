@@ -14,7 +14,9 @@ void sway_terminate(void) {
 
 int main(int argc, char **argv) {
 	init_log(L_INFO);
-	state = client_setup();
+	if (!(state = client_setup())) {
+		return -1;
+	}
 
 	uint8_t r = 0, g = 0, b = 0;
 
