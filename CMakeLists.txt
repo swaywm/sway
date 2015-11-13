@@ -60,15 +60,14 @@ target_link_libraries(sway
    ${JSONC_LIBRARIES}
 )
 
-INSTALL(
-    TARGETS sway
-    RUNTIME DESTINATION bin
-)
-
-INSTALL(
-    FILES ${PROJECT_SOURCE_DIR}/config
-    DESTINATION /etc/sway/
-)
+install(
+  TARGETS   sway
+  RUNTIME   DESTINATION bin
+  COMPONENT runtime)
+install(
+  FILES       "${CMAKE_CURRENT_SOURCE_DIR}/config"
+  DESTINATION /etc/sway/
+  COMPONENT   configuration)
 
 add_custom_target(man ALL)
 
@@ -99,10 +98,11 @@ endfunction ()
 add_manpage(sway 1)
 add_manpage(sway 5)
 
-INSTALL(
-  FILES ${PROJECT_SOURCE_DIR}/sway.desktop
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wayland-sessions/)
-
-INSTALL(
-  FILES ${PROJECT_SOURCE_DIR}/sway-xorg.desktop
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/xsessions/)
+install(
+  FILES       "${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop"
+  DESTINATION share/wayland-sessions
+  COMPONENT   data)
+install(
+  FILES       "${CMAKE_CURRENT_SOURCE_DIR}/sway-xorg.desktop"
+  DESTINATION share/xsessions
+  COMPONENT   data)
