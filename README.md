@@ -4,7 +4,7 @@
 i3-compatible window manager for [Wayland](http://wayland.freedesktop.org/).
 Read the [FAQ](https://github.com/SirCmpwn/sway/wiki).
 
-![](https://sr.ht/qxGE.png)
+![](https://sr.ht/i4Cu.png)
 
 ## Rationale
 
