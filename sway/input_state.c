@@ -162,9 +162,9 @@ static void reset_initial_sibling(void) {
 	pointer_state.mode = 0;
 }
 
-void pointer_position_set(struct wlc_origin *new_origin, bool force_focus) {
-	struct wlc_origin origin;
-	wlc_pointer_get_origin(&origin);
+void pointer_position_set(struct wlc_point *new_origin, bool force_focus) {
+	struct wlc_point origin;
+	wlc_pointer_get_position(&origin);
 	pointer_state.delta.x = new_origin->x - origin.x;
 	pointer_state.delta.y = new_origin->y - origin.y;
 
@@ -182,11 +182,11 @@ void pointer_position_set(struct wlc_origin *new_origin, bool force_focus) {
 		}
 	}
 
-	wlc_pointer_set_origin(new_origin);
+	wlc_pointer_set_position(new_origin);
 }
 
 void center_pointer_on(swayc_t *view) {
-	struct wlc_origin new_origin;
+	struct wlc_point new_origin;
 	new_origin.x = view->x + view->width/2;
 	new_origin.y = view->y + view->height/2;
 	pointer_position_set(&new_origin, true);
@@ -214,8 +214,8 @@ static void pointer_mode_set_right(void) {
 	int midway_x = initial.ptr->x + initial.ptr->width/2;
 	int midway_y = initial.ptr->y + initial.ptr->height/2;
 
-	struct wlc_origin origin;
-	wlc_pointer_get_origin(&origin);
+	struct wlc_point origin;
+	wlc_pointer_get_position(&origin);
 	lock.left = origin.x > midway_x;
 	lock.top = origin.y > midway_y;
 
@@ -279,8 +279,8 @@ void pointer_mode_update(void) {
 		pointer_state.mode = 0;
 		return;
 	}
-	struct wlc_origin origin;
-	wlc_pointer_get_origin(&origin);
+	struct wlc_point origin;
+	wlc_pointer_get_position(&origin);
 	int dx = origin.x;
 	int dy = origin.y;
 

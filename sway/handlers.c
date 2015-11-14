@@ -295,8 +295,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	return EVENT_PASSTHROUGH;
 }
 
-static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_origin *origin) {
-	struct wlc_origin new_origin = *origin;
+static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_point *origin) {
+	struct wlc_point new_origin = *origin;
 	// Switch to adjacent output if touching output edge.
 	//
 	// Since this doesn't currently support moving windows between outputs we
@@ -338,7 +338,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 
 
 static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
-		uint32_t button, enum wlc_button_state state, const struct wlc_origin *origin) {
+		uint32_t button, enum wlc_button_state state, const struct wlc_point *origin) {
 
 	// Update view pointer is on
 	pointer_state.view = container_under_pointer();
