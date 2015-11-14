@@ -510,7 +510,7 @@ swayc_t *swayc_active_workspace_for(swayc_t *cont) {
 }
 
 static bool pointer_test(swayc_t *view, void *_origin) {
-	const struct wlc_origin *origin = _origin;
+	const struct wlc_point *origin = _origin;
 	// Determine the output that the view is under
 	swayc_t *parent = swayc_parent_by_type(view, C_OUTPUT);
 	if (origin->x >= view->x && origin->y >= view->y
@@ -531,8 +531,8 @@ swayc_t *container_under_pointer(void) {
 	if (lookup->children == 0) {
 		return NULL;
 	}
-	struct wlc_origin origin;
-	wlc_pointer_get_origin(&origin);
+	struct wlc_point origin;
+	wlc_pointer_get_position(&origin);
 	while (lookup->type != C_VIEW) {
 		int i;
 		int len;
