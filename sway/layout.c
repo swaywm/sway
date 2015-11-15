@@ -533,13 +533,17 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			return parent;
 		}
 	}
+	// If moving to an adjacent output we need a starting position (since this
+	// output might border to multiple outputs).
+	struct wlc_point abs_pos;
+	get_absolute_center_position(container, &abs_pos);
 	while (true) {
 		// Test if we can even make a difference here
 		bool can_move = false;
 		int diff = 0;
 		if (parent->type == C_ROOT) {
 			sway_log(L_DEBUG, "Moving between outputs");
-			return swayc_adjacent_output(container, dir);
+			return swayc_adjacent_output(container, dir, &abs_pos, true);
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ) {

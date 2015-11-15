@@ -377,11 +377,13 @@ static struct cmd_results *cmd_focus(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (argc > 0 && strcasecmp(argv[0], "output") == 0) {
 		swayc_t *output = NULL;
+		struct wlc_point abs_pos;
+		get_absolute_center_position(get_focused_container(&root_container), &abs_pos);
 		if ((error = checkarg(argc, "focus", EXPECTED_EQUAL_TO, 2))) {
 			return error;
-		} else if (!(output = output_by_name(argv[1]))) {
+		} else if (!(output = output_by_name(argv[1], &abs_pos))) {
 			return cmd_results_new(CMD_FAILURE, "focus output",
-				"Can't find output with name/at direction %s", argv[1]);
+				"Can't find output with name/at direction '%s' @ (%i,%i)", argv[1], abs_pos.x, abs_pos.y);
 		} else if (!workspace_switch(swayc_active_workspace_for(output))) {
 			return cmd_results_new(CMD_FAILURE, "focus output",
 				"Switching to workspace on output '%s' was blocked", argv[1]);
@@ -591,11 +593,13 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "output") == 0) {
 			// move container to output x
 			swayc_t *output = NULL;
+			struct wlc_point abs_pos;
+			get_absolute_center_position(view, &abs_pos);
 			if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
-			} else if (!(output = output_by_name(argv[3]))) {
+			} else if (!(output = output_by_name(argv[3], &abs_pos))) {
 				return cmd_results_new(CMD_FAILURE, "move",
-					"Can't find output with name/direction '%s'", argv[3]);
+					"Can't find output with name/direction '%s' @ (%i,%i)", argv[3], abs_pos.x, abs_pos.y);
 			} else {
 				swayc_t *container = get_focused_container(output);
 				if (container->is_floating) {
@@ -610,13 +614,15 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "workspace") == 0) {
 		// move workspace (to output x)
 		swayc_t *output = NULL;
+		struct wlc_point abs_pos;
+		get_absolute_center_position(view, &abs_pos);
 		if ((error = checkarg(argc, "move workspace", EXPECTED_EQUAL_TO, 4))) {
 			return error;
 		} else if (strcasecmp(argv[1], "to") != 0 || strcasecmp(argv[2], "output") != 0) {
 			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
-		} else if (!(output = output_by_name(argv[3]))) {
+		} else if (!(output = output_by_name(argv[3], &abs_pos))) {
 			return cmd_results_new(CMD_FAILURE, "move workspace",
-				"Can't find output with name/at direction '%s'", argv[3]);
+				"Can't find output with name/direction '%s' @ (%i,%i)", argv[3], abs_pos.x, abs_pos.y);
 		}
 		if (view->type == C_WORKSPACE) {
 			// This probably means we're moving an empty workspace, but

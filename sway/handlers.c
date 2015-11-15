@@ -305,28 +305,39 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			!pointer_state.left.held && !pointer_state.right.held && !pointer_state.scroll.held) {
 
 		swayc_t *output = swayc_active_output(), *adjacent = NULL;
+		struct wlc_point abs_pos = *origin;
+		abs_pos.x += output->x;
+		abs_pos.y += output->y;
 		if (origin->x == 0) { // Left edge
-			if ((adjacent = swayc_adjacent_output(output, MOVE_LEFT))) {
+			if ((adjacent = swayc_adjacent_output(output, MOVE_LEFT, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.x = adjacent->width;
+					// adjust for differently aligned outputs (well, this is
+					// only correct when the two outputs have the same
+					// resolution or the same dpi I guess, it should take
+					// physical attributes into account)
+					new_origin.y += (output->y - adjacent->y);
 				}
 			}
 		} else if ((double)origin->x == output->width) { // Right edge
-			if ((adjacent = swayc_adjacent_output(output, MOVE_RIGHT))) {
+			if ((adjacent = swayc_adjacent_output(output, MOVE_RIGHT, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.x = 0;
+					new_origin.y += (output->y - adjacent->y);
 				}
 			}
 		} else if (origin->y == 0) { // Top edge
-			if ((adjacent = swayc_adjacent_output(output, MOVE_UP))) {
+			if ((adjacent = swayc_adjacent_output(output, MOVE_UP, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.y = adjacent->height;
+					new_origin.x += (output->x - adjacent->x);
 				}
 			}
 		} else if ((double)origin->y == output->height) { // Bottom edge
-			if ((adjacent = swayc_adjacent_output(output, MOVE_DOWN))) {
+			if ((adjacent = swayc_adjacent_output(output, MOVE_DOWN, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
 					new_origin.y = 0;
+					new_origin.x += (output->x - adjacent->x);
 				}
 			}
 		}
