@@ -26,6 +26,8 @@ available for you to install:
 * [Gentoo Linux](https://github.com/zetok/zetok-overlay/)
 * [openSUSE](https://build.opensuse.org/project/show/X11:Wayland)
 
+For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-on-other-distros).
+
 ### Compiling from Source
 
 Install dependencies:
