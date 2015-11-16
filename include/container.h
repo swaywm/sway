@@ -63,7 +63,7 @@ struct sway_container {
 
 	/**
 	 * The coordinates that this view appear at, relative to the output they
-	 * are located on.
+	 * are located on (output containers have absolute coordinates).
 	 */
 	double x, y;
 
