@@ -36,7 +36,7 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode);
 }
 
-static void free_output_config(struct output_config *oc) {
+void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc);
 }

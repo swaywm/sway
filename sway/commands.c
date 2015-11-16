@@ -733,6 +733,15 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		}
 	}
 
+	for (i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *oc = config->output_configs->items[i];
+		if (strcmp(oc->name, output->name) == 0) {
+			// replace existing config
+			list_del(config->output_configs, i);
+			free_output_config(oc);
+			break;
+		}
+	}
 	list_add(config->output_configs, output);
 
 	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d)",

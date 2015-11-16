@@ -98,6 +98,7 @@ char *do_var_replacement(char *str);
 /** Sets up a WLC output handle based on a given output_config.
  */
 void apply_output_config(struct output_config *oc, swayc_t *output);
+void free_output_config(struct output_config *oc);
 
 /**
  * Global config singleton.
