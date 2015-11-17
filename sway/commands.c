@@ -1471,6 +1471,13 @@ struct cmd_results *handle_command(char *_exec) {
 	return results;
 }
 
+// this is like handle_command above, except:
+// 1) it ignores empty commands (empty lines)
+// 2) it does variable substitution
+// 3) it doesn't split commands (because the multiple commands are supposed to
+//	  be chained together)
+// 4) handle_command handles all state internally while config_command has some
+//	  state handled outside (notably the block mode, in read_config)
 struct cmd_results *config_command(char *exec) {
 	struct cmd_results *results = NULL;
 	int argc;
