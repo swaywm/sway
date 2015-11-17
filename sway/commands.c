@@ -23,6 +23,7 @@
 #include "sway.h"
 #include "resize.h"
 #include "input_state.h"
+#include "criteria.h"
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
@@ -41,6 +42,7 @@ static sway_cmd cmd_floating;
 static sway_cmd cmd_floating_mod;
 static sway_cmd cmd_focus;
 static sway_cmd cmd_focus_follows_mouse;
+static sway_cmd cmd_for_window;
 static sway_cmd cmd_fullscreen;
 static sway_cmd cmd_gaps;
 static sway_cmd cmd_kill;
@@ -1241,6 +1243,37 @@ static struct cmd_results *cmd_log_colors(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *cmd_for_window(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "for_window", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+	// add command to a criteria/command pair that is run against views when they appear.
+	char *criteria = argv[0], *cmdlist = join_args(argv + 1, argc - 1);
+
+	struct criteria *crit = malloc(sizeof(struct criteria));
+	crit->crit_raw = strdup(criteria);
+	crit->cmdlist = cmdlist;
+	crit->tokens = create_list();
+	char *err_str = extract_crit_tokens(crit->tokens, crit->crit_raw);
+
+	if (err_str) {
+		error = cmd_results_new(CMD_INVALID, "for_window", err_str);
+		free(err_str);
+		free_criteria(crit);
+	} else if (crit->tokens->length == 0) {
+		error = cmd_results_new(CMD_INVALID, "for_window", "Found no name/value pairs in criteria");
+		free_criteria(crit);
+	} else if (list_seq_find(config->criteria, criteria_cmp, crit) != -1) {
+		sway_log(L_DEBUG, "for_window: Duplicate, skipping.");
+		free_criteria(crit);
+	} else {
+		sway_log(L_DEBUG, "for_window: '%s' -> '%s' added", crit->crit_raw, crit->cmdlist);
+		list_add(config->criteria, crit);
+	}
+	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "fullscreen", "Can't be used in config file.");
@@ -1353,6 +1386,7 @@ static struct cmd_handler handlers[] = {
 	{ "floating_modifier", cmd_floating_mod },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
 	{ "kill", cmd_kill },

@@ -19,6 +19,7 @@
 #include "input_state.h"
 #include "resize.h"
 #include "extensions.h"
+#include "criteria.h"
 
 // Event should be sent to client
 #define EVENT_PASSTHROUGH false
@@ -172,6 +173,21 @@ static bool handle_view_created(wlc_handle handle) {
 		set_focused_container(newview);
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
+		// check if it matches for_window in config and execute if so
+		list_t *criteria = criteria_for(newview);
+		for (int i = 0; i < criteria->length; i++) {
+			struct criteria *crit = criteria->items[i];
+			sway_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
+					crit->crit_raw, newview, crit->cmdlist);
+			struct cmd_results *res = handle_command(crit->cmdlist);
+			if (res->status != CMD_SUCCESS) {
+				sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+			}
+			free_cmd_results(res);
+			// view must be focused for commands to affect it, so always
+			// refocus in-between command lists
+			set_focused_container(newview);
+		}
 	}
 	return true;
 }

@@ -66,6 +66,7 @@ struct sway_config {
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
 	list_t *output_configs;
+	list_t *criteria;
 	struct sway_mode *current_mode;
 	uint32_t floating_mod;
 	enum swayc_layouts default_orientation;
