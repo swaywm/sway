@@ -214,22 +214,37 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	free(tmp);
 	sway_log(L_DEBUG, "Executing %s", cmd);
 
+	int fd[2];
+	pipe(fd);
+
 	pid_t pid;
+	pid_t *child = malloc(sizeof(pid_t)); // malloc'd so that Linux can avoid copying the process space
 	// Fork process
 	if ((pid = fork()) == 0) {
 		// Fork child process again
 		setsid();
-		if (fork() == 0) {
+		if ((*child = fork()) == 0) {
 			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
 			/* Not reached */
 		}
-		// Close child process
-		_exit(0);
+		close(fd[0]);
+		write(fd[1], child, sizeof(pid_t));
+		close(fd[1]);
+		_exit(0); // Close child process
 	} else if (pid < 0) {
 		return cmd_results_new(CMD_FAILURE, "exec_always", "Command failed (sway could not fork).");
 	}
+	close(fd[1]); // close write
+	read(fd[0], child, sizeof(pid_t));
+	close(fd[0]);
 	// cleanup child process
 	wait(0);
+	if (*child > 0) {
+		sway_log(L_DEBUG, "Child process created with pid %d", *child);
+		// TODO: keep track of this pid and open the corresponding view on the current workspace
+		// blocked pending feature in wlc
+	}
+	free(child);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
