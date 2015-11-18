@@ -7,7 +7,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/mman.h>
-#include "client.h"
+#include "client/client.h"
+#include "client/buffer.h"
 #include "list.h"
 #include "log.h"
 
@@ -73,87 +74,12 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = registry_global_remove
 };
 
-static int create_pool_file(size_t size) {
-    static const char template[] = "/swaybg-XXXXXX";
-    const char *path = getenv("XDG_RUNTIME_DIR");
-	if (!path) {
-        return -1;
-    }
-
-    int ts = (path[strlen(path) - 1] == '/');
-
-    char *name = malloc(
-		strlen(template) +
-		strlen(path) +
-		(ts ? 1 : 0) + 1);
-	sprintf(name, "%s%s%s", path, ts ? "" : "/", template);
-
-    int fd = mkstemp(name);
-    free(name);
-
-    if (fd < 0) {
-        return -1;
-    }
-
-    if (ftruncate(fd, size) < 0) {
-        close(fd);
-        return -1;
-    }
-
-    return fd;
-}
-
-static void buffer_release(void *data, struct wl_buffer *buffer) {
-	struct client_state *state = data;
-	state->busy = false;
-	sway_log(L_INFO, "buffer release");
-}
-
-static const struct wl_buffer_listener buffer_listener = {
-	.release = buffer_release
-};
-
-struct buffer *create_buffer(struct client_state *state,
-		int32_t width, int32_t height, uint32_t format) {
-
-	struct buffer *buf = malloc(sizeof(struct buffer));
-	memset(buf, 0, sizeof(struct buffer));
-	uint32_t stride = width * 4;
-	uint32_t size = stride * height;
-
-	int fd = create_pool_file(size);
-	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	buf->pool = wl_shm_create_pool(state->shm, fd, size);
-	buf->buffer = wl_shm_pool_create_buffer(buf->pool, 0, width, height, stride, format);
-	wl_shm_pool_destroy(buf->pool);
-	close(fd);
-	fd = -1;
-
-	state->cairo_surface = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
-	state->cairo = cairo_create(state->cairo_surface);
-	state->pango = pango_cairo_create_context(state->cairo);
-
-	wl_buffer_add_listener(buf->buffer, &buffer_listener, state);
-
-	sway_log(L_INFO, "%p %p", buf->pool, buf->buffer);
-	return buf;
-}
-
-static void frame_callback(void *data, struct wl_callback *callback, uint32_t time) {
-	sway_log(L_INFO, "frame callback");
-	struct client_state *state = data;
-	wl_callback_destroy(callback);
-	state->frame_cb = NULL;
-}
-
-static const struct wl_callback_listener listener = {
-	frame_callback
-};
-
-struct client_state *client_setup(void) {
+struct client_state *client_setup(uint32_t width, uint32_t height) {
 	struct client_state *state = malloc(sizeof(struct client_state));
 	memset(state, 0, sizeof(struct client_state));
 	state->outputs = create_list();
+	state->width = width;
+	state->height = height;
 
 	state->display = wl_display_connect(NULL);
 	if (!state->display) {
@@ -168,22 +94,33 @@ struct client_state *client_setup(void) {
 	wl_display_roundtrip(state->display);
 	wl_registry_destroy(registry);
 
-	state->buffer = create_buffer(state, 100, 100, WL_SHM_FORMAT_ARGB8888);
 	state->surface = wl_compositor_create_surface(state->compositor);
 	state->shell_surface = wl_shell_get_shell_surface(state->shell, state->surface);
 	wl_shell_surface_set_toplevel(state->shell_surface);
 
-	wl_surface_damage(state->surface, 0, 0, 100, 100);
-
 	return state;
 }
 
-int client_render(struct client_state *state) {
-	if (state->frame_cb || state->busy) {
-		return 2;
-	}
-	sway_log(L_INFO, "Rendering");
+static void frame_callback(void *data, struct wl_callback *callback, uint32_t time) {
+	struct client_state *state = data;
+	wl_callback_destroy(callback);
+	state->frame_cb = NULL;
+}
 
+static const struct wl_callback_listener listener = {
+	frame_callback
+};
+
+int client_prerender(struct client_state *state) {
+	if (state->frame_cb) {
+		return 0;
+	}
+
+	get_next_buffer(state);
+	return 1;
+}
+
+int client_render(struct client_state *state) {
 	state->frame_cb = wl_surface_frame(state->surface);
 	wl_callback_add_listener(state->frame_cb, &listener, state);
 
@@ -191,9 +128,7 @@ int client_render(struct client_state *state) {
 	wl_surface_attach(state->surface, state->buffer->buffer, 0, 0);
 	wl_surface_commit(state->surface);
 
-	state->busy = true;
-
-	return wl_display_dispatch(state->display) != -1;
+	return 1;
 }
 
 void client_teardown(struct client_state *state) {
