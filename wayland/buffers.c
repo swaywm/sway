@@ -75,44 +75,44 @@ static struct buffer *create_buffer(struct client_state *state, struct buffer *b
 }
 
 static void destroy_buffer(struct buffer *buffer) {
-    if (buffer->buffer) {
-	wl_buffer_destroy(buffer->buffer);
-    }
-    if (buffer->cairo) {
-	cairo_destroy(buffer->cairo);
-    }
-    if (buffer->surface) {
-	cairo_surface_destroy(buffer->surface);
-    }
-    memset(buffer, 0, sizeof(struct buffer));
+	if (buffer->buffer) {
+		wl_buffer_destroy(buffer->buffer);
+	}
+	if (buffer->cairo) {
+		cairo_destroy(buffer->cairo);
+	}
+	if (buffer->surface) {
+		cairo_surface_destroy(buffer->surface);
+	}
+	memset(buffer, 0, sizeof(struct buffer));
 }
 
 struct buffer *get_next_buffer(struct client_state *state) {
-    struct buffer *buffer = NULL;
+	struct buffer *buffer = NULL;
 
-    int i;
-    for (i = 0; i < 2; ++i) {
-	if (state->buffers[i].busy) {
-	    continue;
+	int i;
+	for (i = 0; i < 2; ++i) {
+		if (state->buffers[i].busy) {
+			continue;
+		}
+		buffer = &state->buffers[i];
 	}
-	buffer = &state->buffers[i];
-    }
 
-    if (!buffer) {
-	return NULL;
-    }
-
-    if (buffer->width != state->width || buffer->height != state->height) {
-	destroy_buffer(buffer);
-    }
-
-    if (!buffer->buffer) {
-	if (!create_buffer(state, buffer, state->width, state->height, WL_SHM_FORMAT_ARGB8888)) {
-	    return NULL;
+	if (!buffer) {
+		return NULL;
 	}
-    }
-    
-    state->cairo = buffer->cairo;
-    state->buffer = buffer;
-    return buffer;
+
+	if (buffer->width != state->width || buffer->height != state->height) {
+		destroy_buffer(buffer);
+	}
+
+	if (!buffer->buffer) {
+		if (!create_buffer(state, buffer, state->width, state->height, WL_SHM_FORMAT_ARGB8888)) {
+			return NULL;
+		}
+	}
+
+	state->cairo = buffer->cairo;
+	state->buffer = buffer;
+	return buffer;
 }
