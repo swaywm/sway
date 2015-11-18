@@ -15,6 +15,7 @@ struct output_state {
 
 struct buffer {
     struct wl_buffer *buffer;
+    int fd;
     cairo_surface_t *surface;
     cairo_t *cairo;
     PangoContext *pango;

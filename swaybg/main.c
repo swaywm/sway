@@ -17,11 +17,14 @@ int main(int argc, char **argv) {
 	if (!(state = client_setup(100, 100))) {
 		return -1;
 	}
+	struct output_state *output = state->outputs->items[0];
+	state->width = output->width;
+	state->height = output->height;
 
 	uint8_t r = 100, g = 100, b = 100;
 
 	do {
-		if (client_prerender(state)) {
+		if (client_prerender(state) && state->cairo) {
 			cairo_set_source_rgb(state->cairo, r / 256.0, g / 256.0, b / 256.0);
 			cairo_rectangle(state->cairo, 0, 0, state->width, state->height);
 			cairo_fill(state->cairo);

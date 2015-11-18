@@ -11,34 +11,33 @@
 #include "list.h"
 #include "log.h"
 
-static int create_pool_file(size_t size) {
-    static const char template[] = "/sway-client-XXXXXX";
-    const char *path = getenv("XDG_RUNTIME_DIR");
-	if (!path) {
-        return -1;
-    }
+static int create_pool_file(size_t size, char **name) {
+	static const char template[] = "/sway-client-XXXXXX";
+	const char *path = getenv("XDG_RUNTIME_DIR");
+		if (!path) {
+		return -1;
+	}
 
-    int ts = (path[strlen(path) - 1] == '/');
+	int ts = (path[strlen(path) - 1] == '/');
 
-    char *name = malloc(
+	*name = malloc(
 		strlen(template) +
 		strlen(path) +
 		(ts ? 1 : 0) + 1);
-	sprintf(name, "%s%s%s", path, ts ? "" : "/", template);
+	sprintf(*name, "%s%s%s", path, ts ? "" : "/", template);
 
-    int fd = mkstemp(name);
-    free(name);
+	int fd = mkstemp(*name);
 
-    if (fd < 0) {
-        return -1;
-    }
+	if (fd < 0) {
+		return -1;
+	}
 
-    if (ftruncate(fd, size) < 0) {
-        close(fd);
-        return -1;
-    }
+	if (ftruncate(fd, size) < 0) {
+		close(fd);
+		return -1;
+	}
 
-    return fd;
+	return fd;
 }
 
 static void buffer_release(void *data, struct wl_buffer *wl_buffer) {
@@ -56,12 +55,15 @@ static struct buffer *create_buffer(struct client_state *state, struct buffer *b
 	uint32_t stride = width * 4;
 	uint32_t size = stride * height;
 
-	int fd = create_pool_file(size);
+	char *name;
+	int fd = create_pool_file(size, &name);
 	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	struct wl_shm_pool *pool = wl_shm_create_pool(state->shm, fd, size);
 	buf->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, stride, format);
 	wl_shm_pool_destroy(pool);
 	close(fd);
+	unlink(name);
+	free(name);
 	fd = -1;
 
 	buf->surface = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
