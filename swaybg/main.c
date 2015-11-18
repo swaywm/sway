@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	state->width = output->width;
 	state->height = output->height;
 
-	uint8_t r = 100, g = 100, b = 100;
+	uint8_t r = 0, g = 0, b = 0;
 
 	do {
 		if (client_prerender(state) && state->cairo) {
@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
 			client_render(state);
 
-			r++; if (r == 0) { g++; if (g == 0) { b++; } }
+			r++; g += 2; b += 4;
 		}
 	} while (wl_display_dispatch(state->display) != -1);
 

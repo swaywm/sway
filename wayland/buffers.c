@@ -66,6 +66,8 @@ static struct buffer *create_buffer(struct client_state *state, struct buffer *b
 	free(name);
 	fd = -1;
 
+	buf->width = width;
+	buf->height = height;
 	buf->surface = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
 	buf->cairo = cairo_create(buf->surface);
 	buf->pango = pango_cairo_create_context(buf->cairo);
