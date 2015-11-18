@@ -117,6 +117,7 @@ char **split_args(const char *start, int *argc) {
 	bool in_token = false;
 	bool in_string = false;
 	bool in_char = false;
+	bool in_brackets = false; // brackets are used for critera
 	bool escaped = false;
 	const char *end = start;
 	if (start) {
@@ -129,10 +130,14 @@ char **split_args(const char *start, int *argc) {
 				in_string = !in_string;
 			} else if (*end == '\'' && !in_string && !escaped) {
 				in_char = !in_char;
+			} else if (*end == '[' && !in_string && !in_char && !in_brackets && !escaped) {
+				in_brackets = true;
+			} else if (*end == ']' && !in_string && !in_char && in_brackets && !escaped) {
+				in_brackets = false;
 			} else if (*end == '\\') {
 				escaped = !escaped;
-			} else if (*end == '\0' || (!in_string && !in_char && !escaped
-						&& strchr(whitespace, *end))) {
+			} else if (*end == '\0' || (!in_string && !in_char && !in_brackets
+						&& !escaped && strchr(whitespace, *end))) {
 				goto add_token;
 			}
 			if (*end != '\\') {
