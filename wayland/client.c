@@ -74,6 +74,17 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = registry_global_remove
 };
 
+void shell_surface_configure(void *data, struct wl_shell_surface *wl_shell_surface,
+			  uint32_t edges, int32_t width, int32_t height) {
+	struct client_state *state = data;
+	state->width = width;
+	state->height = height;
+}
+
+static const struct wl_shell_surface_listener surface_listener = {
+	.configure = shell_surface_configure
+};
+
 struct client_state *client_setup(uint32_t width, uint32_t height) {
 	struct client_state *state = malloc(sizeof(struct client_state));
 	memset(state, 0, sizeof(struct client_state));
@@ -96,6 +107,7 @@ struct client_state *client_setup(uint32_t width, uint32_t height) {
 
 	state->surface = wl_compositor_create_surface(state->compositor);
 	state->shell_surface = wl_shell_get_shell_surface(state->shell, state->surface);
+	wl_shell_surface_add_listener(state->shell_surface, &surface_listener, state);
 	wl_shell_surface_set_toplevel(state->shell_surface);
 
 	return state;
