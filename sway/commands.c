@@ -1401,17 +1401,34 @@ struct cmd_results *handle_command(char *_exec) {
 
 	head = exec;
 	do {
-		// Handle criteria
+		// Extract criteria (valid for this command list only).
+		criteria = NULL;
 		if (*head == '[') {
+			++head;
 			criteria = argsep(&head, "]");
 			if (head) {
 				++head;
 				// TODO handle criteria
 			} else {
-				results = cmd_results_new(CMD_INVALID, NULL, "Unmatched [");
+				if (!results) {
+					results = cmd_results_new(CMD_INVALID, criteria, "Unmatched [");
+				}
+				goto cleanup;
 			}
 			// Skip leading whitespace
 			head += strspn(head, whitespace);
+
+			// TODO: it will yield unexpected results to execute commands
+			// (on any view) that where meant for certain views only.
+			if (!results) {
+				int len = strlen(criteria) + strlen(head) + 4;
+				char *tmp = malloc(len);
+				snprintf(tmp, len, "[%s] %s", criteria, head);
+				results = cmd_results_new(CMD_INVALID, tmp,
+					"Can't handle criteria string: Refusing to execute command");
+				free(tmp);
+			}
+			goto cleanup;
 		}
 		// Split command list
 		cmdlist = argsep(&head, ";");
