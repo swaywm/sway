@@ -1,4 +1,5 @@
 #include <wayland-client.h>
+#include "wayland-xdg-shell-client-protocol.h"
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 #include <stdlib.h>
