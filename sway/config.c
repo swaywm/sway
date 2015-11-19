@@ -375,3 +375,11 @@ char *do_var_replacement(char *str) {
 	}
 	return str;
 }
+
+// the naming is intentional (albeit long): a workspace_output_cmp function
+// would compare two structs in full, while this method only compares the
+// workspace.
+int workspace_output_cmp_workspace(const void *a, const void *b) {
+	const struct workspace_output *wsa = a, *wsb = b;
+	return lenient_strcmp(wsa->workspace, wsb->workspace);
+}

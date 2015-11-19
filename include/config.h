@@ -102,6 +102,8 @@ char *do_var_replacement(char *str);
 void apply_output_config(struct output_config *oc, swayc_t *output);
 void free_output_config(struct output_config *oc);
 
+int workspace_output_cmp_workspace(const void *a, const void *b);
+
 /**
  * Global config singleton.
  */

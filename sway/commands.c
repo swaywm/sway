@@ -1318,9 +1318,15 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 				return error;
 			}
 			struct workspace_output *wso = calloc(1, sizeof(struct workspace_output));
-			sway_log(L_DEBUG, "Assigning workspace %s to output %s", argv[0], argv[2]);
 			wso->workspace = strdup(argv[0]);
 			wso->output = strdup(argv[2]);
+			int i = -1;
+			if ((i = list_seq_find(config->workspace_outputs, workspace_output_cmp_workspace, wso)) != -1) {
+				struct workspace_output *old = config->workspace_outputs->items[i];
+				free(old); // workspaces can only be assigned to a single output
+				list_del(config->workspace_outputs, i);
+			}
+			sway_log(L_DEBUG, "Assigning workspace %s to output %s", argv[0], argv[2]);
 			list_add(config->workspace_outputs, wso);
 			if (!config->reading) {
 				// TODO: Move workspace to output. (dont do so when reloading)
