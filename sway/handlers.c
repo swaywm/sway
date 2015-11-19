@@ -70,7 +70,6 @@ static void handle_output_pre_render(wlc_handle output) {
 	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
 		struct background_config *config = desktop_shell.backgrounds->items[i];
 		if (config->output == output) {
-			sway_log(L_DEBUG, "Rendering background surface %d", (int)config->surface);
 			wlc_surface_render(config->surface, &(struct wlc_geometry){ wlc_origin_zero, *wlc_output_get_resolution(output) });
 			break;
 		}

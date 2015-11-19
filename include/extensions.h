@@ -2,10 +2,11 @@
 #define _SWAY_EXTENSIONS_H
 
 #include "list.h"
+#include "wlc/wlc-wayland.h"
 
 struct background_config {
         wlc_handle output;
-        wlc_handle surface;
+        wlc_resource surface;
 };
 
 struct desktop_shell_state {
