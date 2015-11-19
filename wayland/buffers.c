@@ -59,6 +59,7 @@ static struct buffer *create_buffer(struct client_state *state, struct buffer *b
 	int fd = create_pool_file(size, &name);
 	if (fd == -1) {
 		sway_abort("Unable to allocate buffer");
+		return NULL; // never reached
 	}
 	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	struct wl_shm_pool *pool = wl_shm_create_pool(state->shm, fd, size);
