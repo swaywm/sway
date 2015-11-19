@@ -8,6 +8,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <wordexp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "stringop.h"
@@ -76,6 +77,11 @@ static struct modifier_key {
 	{ "Mod3", WLC_BIT_MOD_MOD3 },
 	{ XKB_MOD_NAME_LOGO, WLC_BIT_MOD_LOGO },
 	{ "Mod5", WLC_BIT_MOD_MOD5 },
+};
+
+static char *bg_options[] = {
+	"stretch",
+	"center"
 };
 
 enum expected_args {
@@ -712,6 +718,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	if (strcasecmp(argv[1], "disable") == 0) {
 		output->enabled = false;
 	}
+	// TODO: Check missing params after each sub-command
 
 	int i;
 	for (i = 1; i < argc; ++i) {
@@ -751,6 +758,33 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			output->x = x;
 			output->y = y;
+		} else if (strcasecmp(argv[i], "bg") == 0 || strcasecmp(argv[i], "background") == 0) {
+			wordexp_t p;
+			char *src = argv[++i];
+			char *mode = argv[++i];
+			if (wordexp(src, &p, 0) != 0) {
+				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
+			}
+			src = p.we_wordv[0];
+			if (access(src, F_OK) == -1) {
+				return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
+			}
+			for (char *m = mode; *m; ++m) *m = tolower(*m);
+			// Check mode
+			bool valid = false;
+			size_t j;
+			for (j = 0; j < sizeof(bg_options) / sizeof(char *); ++j) {
+				if (strcasecmp(mode, bg_options[j]) == 0) {
+					valid = true;
+					break;
+				}
+			}
+			if (!valid) {
+				return cmd_results_new(CMD_INVALID, "output", "Invalid background scaling mode.");
+			}
+			output->background = strdup(src);
+			output->background_option = strdup(mode);
+			wordfree(&p);
 		}
 	}
 
@@ -765,8 +799,9 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 	list_add(config->output_configs, output);
 
-	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d)",
-			output->name, output->width, output->height, output->x, output->y);
+	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d) (bg %s %s)",
+			output->name, output->width, output->height, output->x, output->y,
+			output->background, output->background_option);
 
 	if (output->name) {
 		// Try to find the output container and apply configuration now. If

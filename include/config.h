@@ -43,6 +43,8 @@ struct output_config {
 	bool enabled;
 	int width, height;
 	int x, y;
+	char *background;
+	char *background_option;
 };
 
 /**
