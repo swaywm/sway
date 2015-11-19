@@ -50,19 +50,21 @@ int main(int argc, char **argv) {
 	}
 
 	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
+	double width = cairo_image_surface_get_width(image);
+	double height = cairo_image_surface_get_height(image);
 
-	do {
-		for (i = 0; i < surfaces->length; ++i) {
-			struct window *window = surfaces->items[i];
-			if (window_prerender(window) && window->cairo) {
-				cairo_set_source_surface(window->cairo, image, 0, 0);
-				cairo_rectangle(window->cairo, 0, 0, window->width, window->height);
-				cairo_fill(window->cairo);
+	for (i = 0; i < surfaces->length; ++i) {
+		struct window *window = surfaces->items[i];
+		if (window_prerender(window) && window->cairo) {
+			cairo_scale(window->cairo, window->width / width, window->height / height);
+			cairo_set_source_surface(window->cairo, image, 0, 0);
+			cairo_paint(window->cairo);
 
-				window_render(window);
-			}
+			window_render(window);
 		}
-	} while (wl_display_dispatch(registry->display) != -1);
+	}
+
+	while (wl_display_dispatch(registry->display) != -1);
 
 	for (i = 0; i < surfaces->length; ++i) {
 		struct window *window = surfaces->items[i];
