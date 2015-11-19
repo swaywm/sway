@@ -1,4 +1,5 @@
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 #include "wayland-xdg-shell-client-protocol.h"
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
@@ -44,6 +45,37 @@ static const struct wl_output_listener output_listener = {
 	.scale = display_handle_scale
 };
 
+static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
+		     uint32_t serial, struct wl_surface *surface, wl_fixed_t sx_w, wl_fixed_t sy_w) {
+	struct client_state *state = data;
+	struct wl_cursor_image *image = state->cursor.cursor->images[0];
+	wl_pointer_set_cursor(pointer, serial, state->cursor.surface, image->hotspot_x, image->hotspot_y);
+}
+
+static void pointer_handle_leave(void *data, struct wl_pointer *pointer,
+		     uint32_t serial, struct wl_surface *surface) {
+}
+
+static void pointer_handle_motion(void *data, struct wl_pointer *pointer,
+		      uint32_t time, wl_fixed_t sx_w, wl_fixed_t sy_w) {
+}
+
+static void pointer_handle_button(void *data, struct wl_pointer *pointer, uint32_t serial,
+		      uint32_t time, uint32_t button, uint32_t state_w) {
+}
+
+static void pointer_handle_axis(void *data, struct wl_pointer *pointer,
+		    uint32_t time, uint32_t axis, wl_fixed_t value) {
+}
+
+static const struct wl_pointer_listener pointer_listener = {
+	.enter = pointer_handle_enter,
+	.leave = pointer_handle_leave,
+	.motion = pointer_handle_motion,
+	.button = pointer_handle_button,
+	.axis = pointer_handle_axis
+};
+
 static void registry_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	struct client_state *state = data;
@@ -57,6 +89,7 @@ static void registry_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		state->seat = wl_registry_bind(registry, name, &wl_seat_interface, version);
 		state->pointer = wl_seat_get_pointer(state->seat);
+		wl_pointer_add_listener(state->pointer, &pointer_listener, state);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
 		struct wl_output *output = wl_registry_bind(registry, name, &wl_output_interface, version);
 		struct output_state *ostate = malloc(sizeof(struct output_state));
@@ -110,6 +143,16 @@ struct client_state *client_setup(uint32_t width, uint32_t height) {
 	state->shell_surface = wl_shell_get_shell_surface(state->shell, state->surface);
 	wl_shell_surface_add_listener(state->shell_surface, &surface_listener, state);
 	wl_shell_surface_set_toplevel(state->shell_surface);
+
+	state->cursor.cursor_theme = wl_cursor_theme_load("default", 32, state->shm); // TODO: let you customize this
+	state->cursor.cursor = wl_cursor_theme_get_cursor(state->cursor.cursor_theme, "left_ptr");
+	state->cursor.surface = wl_compositor_create_surface(state->compositor);
+
+	struct wl_cursor_image *image = state->cursor.cursor->images[0];
+	struct wl_buffer *cursor_buf = wl_cursor_image_get_buffer(image);
+	wl_surface_attach(state->cursor.surface, cursor_buf, 0, 0);
+	wl_surface_damage(state->cursor.surface, 0, 0, image->width, image->height);
+	wl_surface_commit(state->cursor.surface);
 
 	return state;
 }

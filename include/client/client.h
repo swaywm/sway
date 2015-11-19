@@ -22,6 +22,13 @@ struct buffer {
         bool busy;
 };
 
+struct cursor {
+        struct wl_surface *surface;
+        struct wl_cursor_theme *cursor_theme;
+        struct wl_cursor *cursor;
+        struct wl_poitner *pointer;
+};
+
 struct client_state {
         struct wl_compositor *compositor;
         struct wl_display *display;
@@ -34,6 +41,7 @@ struct client_state {
         struct wl_surface *surface;
         struct wl_shell_surface *shell_surface;
         struct wl_callback *frame_cb;
+        struct cursor cursor;
         uint32_t width, height;
         cairo_t *cairo;
         list_t *outputs;
