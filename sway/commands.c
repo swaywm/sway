@@ -81,7 +81,9 @@ static struct modifier_key {
 
 static char *bg_options[] = {
 	"stretch",
-	"center"
+	"center",
+	"fill",
+	"tile"
 };
 
 enum expected_args {
