@@ -2,6 +2,7 @@
 #define _CLIENT_H
 
 #include <wayland-client.h>
+#include "wayland-desktop-shell-client-protocol.h"
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 #include <stdbool.h>
@@ -41,13 +42,14 @@ struct client_state {
         struct wl_surface *surface;
         struct wl_shell_surface *shell_surface;
         struct wl_callback *frame_cb;
+        struct desktop_shell *desktop_shell;
         struct cursor cursor;
         uint32_t width, height;
         cairo_t *cairo;
         list_t *outputs;
 };
 
-struct client_state *client_setup(uint32_t width, uint32_t height);
+struct client_state *client_setup(uint32_t width, uint32_t height, bool shell_surface);
 void client_teardown(struct client_state *state);
 int client_prerender(struct client_state *state);
 int client_render(struct client_state *state);

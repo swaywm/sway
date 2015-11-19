@@ -1,3 +1,4 @@
+#include "wayland-desktop-shell-client-protocol.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <wayland-client.h>
@@ -14,12 +15,16 @@ void sway_terminate(void) {
 
 int main(int argc, char **argv) {
 	init_log(L_INFO);
-	if (!(state = client_setup(100, 100))) {
+	if (!(state = client_setup(100, 100, false))) {
 		return -1;
+	}
+	if (!state->desktop_shell) {
+		sway_abort("swaybg requires the compositor to support the desktop-shell extension.");
 	}
 	struct output_state *output = state->outputs->items[0];
 	state->width = output->width;
 	state->height = output->height;
+	desktop_shell_set_background(state->desktop_shell, output->output, state->surface);
 
 	uint8_t r = 0, g = 0, b = 0;
 

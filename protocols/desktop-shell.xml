@@ -1,0 +1,138 @@
+<protocol name="desktop">
+
+  <interface name="desktop_shell" version="3">
+    <description summary="create desktop widgets and helpers">
+      Traditional user interfaces can rely on this interface to define the
+      foundations of typical desktops. Currently it's possible to set up
+      background, panels and locking surfaces.
+    </description>
+
+    <request name="set_background">
+      <arg name="output" type="object" interface="wl_output"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+    <request name="set_panel">
+      <arg name="output" type="object" interface="wl_output"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+    <request name="set_lock_surface">
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+    <request name="unlock"/>
+
+    <request name="set_grab_surface">
+      <description summary="set grab surface">
+	The surface set by this request will receive a fake
+	pointer.enter event during grabs at position 0, 0 and is
+	expected to set an appropriate cursor image as described by
+	the grab_cursor event sent just before the enter event.
+      </description>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+    <!-- We'll fold most of wl_shell into this interface and then
+         they'll share the configure event.  -->
+    <event name="configure">
+      <arg name="edges" type="uint"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+      <arg name="width" type="int"/>
+      <arg name="height" type="int"/>
+    </event>
+
+    <event name="prepare_lock_surface">
+      <description summary="tell the client to create, set the lock surface">
+	Tell the client we want it to create and set the lock surface, which is
+	a GUI asking the user to unlock the screen. The lock surface is
+	announced with 'set_lock_surface'. Whether or not the client actually
+	implements locking, it MUST send 'unlock' request to let the normal
+        desktop resume.
+      </description>
+    </event>
+
+    <event name="grab_cursor">
+      <description summary="tell client what cursor to show during a grab">
+	This event will be sent immediately before a fake enter event on the
+	grab surface.
+      </description>
+      <arg name="cursor" type="uint"/>
+    </event>
+
+    <enum name="cursor">
+      <entry name="none" value="0"/>
+
+      <entry name="resize_top" value="1"/>
+      <entry name="resize_bottom" value="2"/>
+
+      <entry name="arrow" value="3"/>
+
+      <entry name="resize_left" value="4"/>
+      <entry name="resize_top_left" value="5"/>
+      <entry name="resize_bottom_left" value="6"/>
+
+      <entry name="move" value="7"/>
+
+      <entry name="resize_right" value="8"/>
+      <entry name="resize_top_right" value="9"/>
+      <entry name="resize_bottom_right" value="10"/>
+
+      <entry name="busy" value="11"/>
+    </enum>
+
+    <!-- Version 2 additions -->
+
+    <request name="desktop_ready" since="2">
+      <description summary="desktop is ready to be shown">
+	Tell the server, that enough desktop elements have been drawn
+	to make the desktop look ready for use. During start-up, the
+	server can wait for this request with a black screen before
+	starting to fade in the desktop, for instance. If the client
+	parts of a desktop take a long time to initialize, we avoid
+	showing temporary garbage.
+      </description>
+    </request>
+
+    <!-- Version 3 additions -->
+
+    <enum name="panel_position">
+      <entry name="top" value="0"/>
+      <entry name="bottom" value="1"/>
+      <entry name="left" value="2"/>
+      <entry name="right" value="3"/>
+    </enum>
+
+    <enum name="error">
+      <entry name="invalid_argument" value="0"
+        summary="an invalid argument was provided in a request"/>
+    </enum>
+
+    <request name="set_panel_position" since="3">
+      <arg name="position" type="uint"/>
+      <description summary="set panel position">
+        Tell the shell which side of the screen the panel is
+        located. This is so that new windows do not overlap the panel
+        and maximized windows maximize properly.
+      </description>
+    </request>
+
+  </interface>
+
+  <interface name="screensaver" version="1">
+    <description summary="interface for implementing screensavers">
+      Only one client can bind this interface at a time.
+    </description>
+
+    <request name="set_surface">
+      <description summary="set the surface type as a screensaver">
+	A screensaver surface is normally hidden, and only visible after an
+        idle timeout.
+      </description>
+
+      <arg name="surface" type="object" interface="wl_surface"/>
+      <arg name="output" type="object" interface="wl_output"/>
+    </request>
+
+  </interface>
+</protocol>

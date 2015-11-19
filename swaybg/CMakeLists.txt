@@ -7,6 +7,7 @@ find_package(Pango REQUIRED)
 include(Wayland)
 set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../bin/)
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell "${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml" xdg-shell)
+WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell "${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml" desktop-shell)
 
 include_directories(
   ${WAYLAND_CLIENT_INCLUDE_DIR}
@@ -24,6 +25,7 @@ add_executable(swaybg
   ${wl_sources}
   ${common}
   ${proto-xdg-shell}
+  ${proto-desktop-shell}
 )
 
 TARGET_LINK_LIBRARIES(swaybg ${WAYLAND_CLIENT_LIBRARIES} ${WAYLAND_CURSOR_LIBRARIES} ${CAIRO_LIBRARIES} ${PANGO_LIBRARIES} m)

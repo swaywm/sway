@@ -1,6 +1,7 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include "wayland-xdg-shell-client-protocol.h"
+#include "wayland-desktop-shell-client-protocol.h"
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 #include <stdlib.h>
@@ -96,6 +97,8 @@ static void registry_global(void *data, struct wl_registry *registry,
 		ostate->output = output;
 		wl_output_add_listener(output, &output_listener, ostate);
 		list_add(state->outputs, ostate);
+	} else if (strcmp(interface, desktop_shell_interface.name) == 0) {
+		state->desktop_shell = wl_registry_bind(registry, name, &desktop_shell_interface, version);
 	}
 }
 
@@ -119,7 +122,7 @@ static const struct wl_shell_surface_listener surface_listener = {
 	.configure = shell_surface_configure
 };
 
-struct client_state *client_setup(uint32_t width, uint32_t height) {
+struct client_state *client_setup(uint32_t width, uint32_t height, bool shell_surface) {
 	struct client_state *state = malloc(sizeof(struct client_state));
 	memset(state, 0, sizeof(struct client_state));
 	state->outputs = create_list();
@@ -140,9 +143,11 @@ struct client_state *client_setup(uint32_t width, uint32_t height) {
 	wl_registry_destroy(registry);
 
 	state->surface = wl_compositor_create_surface(state->compositor);
-	state->shell_surface = wl_shell_get_shell_surface(state->shell, state->surface);
-	wl_shell_surface_add_listener(state->shell_surface, &surface_listener, state);
-	wl_shell_surface_set_toplevel(state->shell_surface);
+	if (shell_surface) {
+		state->shell_surface = wl_shell_get_shell_surface(state->shell, state->surface);
+		wl_shell_surface_add_listener(state->shell_surface, &surface_listener, state);
+		wl_shell_surface_set_toplevel(state->shell_surface);
+	}
 
 	state->cursor.cursor_theme = wl_cursor_theme_load("default", 32, state->shm); // TODO: let you customize this
 	state->cursor.cursor = wl_cursor_theme_get_cursor(state->cursor.cursor_theme, "left_ptr");

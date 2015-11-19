@@ -7,6 +7,7 @@
 #include <sys/un.h>
 #include <signal.h>
 #include <getopt.h>
+#include "extensions.h"
 #include "layout.h"
 #include "stringop.h"
 #include "config.h"
@@ -73,6 +74,8 @@ int main(int argc, char **argv) {
 	if (!wlc_init(&interface, argc, argv)) {
 		return 1;
 	}
+	
+	register_extensions();
 
 	char *config_path = NULL;
 
