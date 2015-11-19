@@ -132,19 +132,6 @@ static struct cmd_results *checkarg(int argc, const char *name, enum expected_ar
 	return error;
 }
 
-static int bindsym_sort(const void *_lbind, const void *_rbind) {
-	const struct sway_binding *lbind = *(void **)_lbind;
-	const struct sway_binding *rbind = *(void **)_rbind;
-	unsigned int lmod = 0, rmod = 0, i;
-
-	// Count how any modifiers are pressed
-	for (i = 0; i < 8 * sizeof(lbind->modifiers); ++i) {
-		lmod += lbind->modifiers & 1 << i;
-		rmod += rbind->modifiers & 1 << i;
-	}
-	return (rbind->keys->length + rmod) - (lbind->keys->length + lmod);
-}
-
 static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
@@ -159,8 +146,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], "+");
-	int i;
-	for (i = 0; i < split->length; ++i) {
+	for (int i = 0; i < split->length; ++i) {
 		// Check for a modifier key
 		int j;
 		bool is_mod = false;
@@ -176,9 +162,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i], XKB_KEYSYM_CASE_INSENSITIVE);
 		if (!sym) {
 			error = cmd_results_new(CMD_INVALID, "bindsym", "Unknown key '%s'", (char *)split->items[i]);
-			list_free(binding->keys);
-			free(binding->command);
-			free(binding);
+			free_sway_binding(binding);
 			list_free(split);
 			return error;
 		}
@@ -188,10 +172,16 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	}
 	free_flat_list(split);
 
-	// TODO: Check if there are other commands with this key binding
 	struct sway_mode *mode = config->current_mode;
+	int i = list_seq_find(mode->bindings, sway_binding_cmp_keys, binding);
+	if (i > -1) {
+		sway_log(L_DEBUG, "bindsym - '%s' already exists, overwriting", argv[0]);
+		struct sway_binding *dup = mode->bindings->items[i];
+		free_sway_binding(dup);
+		list_del(mode->bindings, i);
+	}
 	list_add(mode->bindings, binding);
-	list_sort(mode->bindings, bindsym_sort);
+	list_sort(mode->bindings, sway_binding_cmp);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

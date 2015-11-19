@@ -104,6 +104,10 @@ void free_output_config(struct output_config *oc);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
+int sway_binding_cmp(const void *a, const void *b);
+int sway_binding_cmp_keys(const void *a, const void *b);
+void free_sway_binding(struct sway_binding *sb);
+
 /**
  * Global config singleton.
  */
