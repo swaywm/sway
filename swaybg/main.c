@@ -3,43 +3,69 @@
 #include <stdlib.h>
 #include <wayland-client.h>
 #include <time.h>
-#include "client/client.h"
+#include "client/window.h"
+#include "client/registry.h"
 #include "log.h"
+#include "list.h"
 
-struct client_state *state;
+list_t *surfaces;
+
+struct registry *registry;
 
 void sway_terminate(void) {
-	client_teardown(state);
+	int i;
+	for (i = 0; i < surfaces->length; ++i) {
+		struct window *window = surfaces->items[i];
+		window_teardown(window);
+	}
+	list_free(surfaces);
+	registry_teardown(registry);
 	exit(1);
 }
 
 int main(int argc, char **argv) {
 	init_log(L_INFO);
-	if (!(state = client_setup(100, 100, false))) {
-		return -1;
-	}
-	if (!state->desktop_shell) {
+	surfaces = create_list();
+	registry = registry_poll();
+
+	if (!registry->desktop_shell) {
 		sway_abort("swaybg requires the compositor to support the desktop-shell extension.");
 	}
-	struct output_state *output = state->outputs->items[0];
-	state->width = output->width;
-	state->height = output->height;
-	desktop_shell_set_background(state->desktop_shell, output->output, state->surface);
+
+	int i;
+	for (i = 0; i < registry->outputs->length; ++i) {
+		struct output_state *output = registry->outputs->items[i];
+		struct window *window = window_setup(registry, 100, 100, false);
+		if (!window) {
+			sway_abort("Failed to create surfaces.");
+		}
+		window->width = output->width;
+		window->height = output->height;
+		desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
+		list_add(surfaces, window);
+	}
 
 	uint8_t r = 0, g = 0, b = 0;
 
 	do {
-		if (client_prerender(state) && state->cairo) {
-			cairo_set_source_rgb(state->cairo, r / 256.0, g / 256.0, b / 256.0);
-			cairo_rectangle(state->cairo, 0, 0, state->width, state->height);
-			cairo_fill(state->cairo);
+		for (i = 0; i < surfaces->length; ++i) {
+			struct window *window = surfaces->items[i];
+			if (window_prerender(window) && window->cairo) {
+				cairo_set_source_rgb(window->cairo, r / 256.0, g / 256.0, b / 256.0);
+				cairo_rectangle(window->cairo, 0, 0, window->width, window->height);
+				cairo_fill(window->cairo);
 
-			client_render(state);
-
+				window_render(window);
+			}
 			r++; g += 2; b += 4;
 		}
-	} while (wl_display_dispatch(state->display) != -1);
+	} while (wl_display_dispatch(registry->display) != -1);
 
-	client_teardown(state);
+	for (i = 0; i < surfaces->length; ++i) {
+		struct window *window = surfaces->items[i];
+		window_teardown(window);
+	}
+	list_free(surfaces);
+	registry_teardown(registry);
 	return 0;
 }

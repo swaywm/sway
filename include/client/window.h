@@ -7,12 +7,7 @@
 #include <pango/pangocairo.h>
 #include <stdbool.h>
 #include "list.h"
-
-struct output_state {
-        struct wl_output *output;
-        uint32_t flags;
-        uint32_t width, height;
-};
+#include "client/registry.h"
 
 struct buffer {
         struct wl_buffer *buffer;
@@ -30,28 +25,21 @@ struct cursor {
         struct wl_poitner *pointer;
 };
 
-struct client_state {
-        struct wl_compositor *compositor;
-        struct wl_display *display;
-        struct wl_pointer *pointer;
-        struct wl_seat *seat;
-        struct wl_shell *shell;
-        struct wl_shm *shm;
+struct window {
+        struct registry *registry;
         struct buffer buffers[2];
         struct buffer *buffer;
         struct wl_surface *surface;
         struct wl_shell_surface *shell_surface;
         struct wl_callback *frame_cb;
-        struct desktop_shell *desktop_shell;
         struct cursor cursor;
         uint32_t width, height;
         cairo_t *cairo;
-        list_t *outputs;
 };
 
-struct client_state *client_setup(uint32_t width, uint32_t height, bool shell_surface);
-void client_teardown(struct client_state *state);
-int client_prerender(struct client_state *state);
-int client_render(struct client_state *state);
+struct window *window_setup(struct registry *registry, uint32_t width, uint32_t height, bool shell_surface);
+void window_teardown(struct window *state);
+int window_prerender(struct window *state);
+int window_render(struct window *state);
 
 #endif

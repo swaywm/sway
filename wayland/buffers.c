@@ -49,7 +49,7 @@ static const struct wl_buffer_listener buffer_listener = {
 	.release = buffer_release
 };
 
-static struct buffer *create_buffer(struct client_state *state, struct buffer *buf,
+static struct buffer *create_buffer(struct window *window, struct buffer *buf,
 		int32_t width, int32_t height, uint32_t format) {
 
 	uint32_t stride = width * 4;
@@ -62,7 +62,7 @@ static struct buffer *create_buffer(struct client_state *state, struct buffer *b
 		return NULL; // never reached
 	}
 	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	struct wl_shm_pool *pool = wl_shm_create_pool(state->shm, fd, size);
+	struct wl_shm_pool *pool = wl_shm_create_pool(window->registry->shm, fd, size);
 	buf->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, stride, format);
 	wl_shm_pool_destroy(pool);
 	close(fd);
@@ -76,7 +76,7 @@ static struct buffer *create_buffer(struct client_state *state, struct buffer *b
 	buf->cairo = cairo_create(buf->surface);
 	buf->pango = pango_cairo_create_context(buf->cairo);
 
-	wl_buffer_add_listener(buf->buffer, &buffer_listener, state);
+	wl_buffer_add_listener(buf->buffer, &buffer_listener, buf);
 	return buf;
 }
 
@@ -93,32 +93,32 @@ static void destroy_buffer(struct buffer *buffer) {
 	memset(buffer, 0, sizeof(struct buffer));
 }
 
-struct buffer *get_next_buffer(struct client_state *state) {
+struct buffer *get_next_buffer(struct window *window) {
 	struct buffer *buffer = NULL;
 
 	int i;
 	for (i = 0; i < 2; ++i) {
-		if (state->buffers[i].busy) {
+		if (window->buffers[i].busy) {
 			continue;
 		}
-		buffer = &state->buffers[i];
+		buffer = &window->buffers[i];
 	}
 
 	if (!buffer) {
 		return NULL;
 	}
 
-	if (buffer->width != state->width || buffer->height != state->height) {
+	if (buffer->width != window->width || buffer->height != window->height) {
 		destroy_buffer(buffer);
 	}
 
 	if (!buffer->buffer) {
-		if (!create_buffer(state, buffer, state->width, state->height, WL_SHM_FORMAT_ARGB8888)) {
+		if (!create_buffer(window, buffer, window->width, window->height, WL_SHM_FORMAT_ARGB8888)) {
 			return NULL;
 		}
 	}
 
-	state->cairo = buffer->cairo;
-	state->buffer = buffer;
+	window->cairo = buffer->cairo;
+	window->buffer = buffer;
 	return buffer;
 }
