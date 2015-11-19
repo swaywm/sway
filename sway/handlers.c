@@ -43,6 +43,11 @@ static bool handle_output_created(wlc_handle output) {
 		swayc_t *ws = op->children->items[0];
 		workspace_switch(ws);
 	}
+
+	// Fixes issues with backgrounds and wlc
+	wlc_handle prev = wlc_get_focused_output();
+	wlc_output_focus(output);
+	wlc_output_focus(prev);
 	return true;
 }
 

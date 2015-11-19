@@ -314,6 +314,28 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 		output->x = x;
 	}
+
+	if (oc->background) {
+		int i;
+		for (i = 0; i < root_container.children->length; ++i) {
+			if (root_container.children->items[i] == output) {
+				break;
+			}
+		}
+
+		sway_log(L_DEBUG, "Setting background for output %d to %s", i, oc->background);
+		char *cmd = malloc(
+				strlen("swaybg ") +
+				(i >= 10 ? 2 : 1) +
+				strlen(oc->background) + 3 +
+				strlen(oc->background_option) + 3 +
+				1);
+		sprintf(cmd, "swaybg %d '%s' '%s'", i, oc->background, oc->background_option);
+		if (fork() == 0) {
+			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
+		}
+		free(cmd);
+	}
 }
 
 char *do_var_replacement(char *str) {

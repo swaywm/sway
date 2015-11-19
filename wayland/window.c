@@ -17,7 +17,6 @@
 
 static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
 		     uint32_t serial, struct wl_surface *surface, wl_fixed_t sx_w, wl_fixed_t sy_w) {
-	sway_log(L_INFO, "Set cursor");
 	struct window *window = data;
 	struct wl_cursor_image *image = window->cursor.cursor->images[0];
 	wl_pointer_set_cursor(pointer, serial, window->cursor.surface, image->hotspot_x, image->hotspot_y);
@@ -72,7 +71,6 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 		wl_shell_surface_set_toplevel(window->shell_surface);
 	}
 	if (registry->pointer) {
-		sway_log(L_INFO, "Register pointer");
 		wl_pointer_add_listener(registry->pointer, &pointer_listener, window);
 	}
 

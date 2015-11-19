@@ -28,28 +28,29 @@ int main(int argc, char **argv) {
 	surfaces = create_list();
 	registry = registry_poll();
 
-	if (argc < 2) {
-		sway_abort("Usage: swaybg path/to/file.png");
+	if (argc < 4) {
+		sway_abort("Do not run this program manually. See man 5 sway and look for output options.");
 	}
 
 	if (!registry->desktop_shell) {
 		sway_abort("swaybg requires the compositor to support the desktop-shell extension.");
 	}
 
+	int desired_output = atoi(argv[1]);
+	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	int i;
-	for (i = 0; i < registry->outputs->length; ++i) {
-		struct output_state *output = registry->outputs->items[i];
-		struct window *window = window_setup(registry, 100, 100, false);
-		if (!window) {
-			sway_abort("Failed to create surfaces.");
-		}
-		window->width = output->width;
-		window->height = output->height;
-		desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
-		list_add(surfaces, window);
+	struct output_state *output = registry->outputs->items[desired_output];
+	struct window *window = window_setup(registry, 100, 100, false);
+	if (!window) {
+		sway_abort("Failed to create surfaces.");
 	}
+	window->width = output->width;
+	window->height = output->height;
+	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
+	list_add(surfaces, window);
 
-	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
+	char *scaling_mode = argv[3];
+	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[2]);
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
 

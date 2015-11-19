@@ -115,13 +115,27 @@ Commands
 	When _output_: place mouse at center of newly focused window when changing
 	output. When _none_: don't move mouse.
 
-**output** <name> <resolution|res WIDTHxHEIGHT> <position|pos X,Y>::
-	Configures the specified output. It will use the given resolution and be
-	arranged at the given position in the layout tree. You may omit either of
-	these parameters if you only want to set one of them.
+**output** <name> <resolution|res> <WIDTHxHEIGHT>::
+	Configures the specified output to use the given resolution.
+
+**output** <name> <position|pos> <X,Y>::
+	Configures the specified output to be arranged at the given position.
+
+**output** <name> <background|bg> <file> <mode>::
+	Sets the wallpaper for the given output to the specified file, using the given
+	scaling mode (one of "stretch", "fill", "center", "tile").
 
 **output** <name> disable::
 	Disables the specified output.
+
+**NOTES FOR THE OUTPUT COMMAND**::
+	You may combine output commands into one, like so:
+	+
+	output HDMI-A-1 res 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
+	+
+	You can get a list of output names like so:
+	+
+	swaymsg -t get_outputs
 
 **reload**::
 	Reloads the sway config file without restarting sway.
