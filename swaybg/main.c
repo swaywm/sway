@@ -28,6 +28,10 @@ int main(int argc, char **argv) {
 	surfaces = create_list();
 	registry = registry_poll();
 
+	if (argc < 2) {
+		sway_abort("Usage: swaybg path/to/file.png");
+	}
+
 	if (!registry->desktop_shell) {
 		sway_abort("swaybg requires the compositor to support the desktop-shell extension.");
 	}
@@ -45,19 +49,18 @@ int main(int argc, char **argv) {
 		list_add(surfaces, window);
 	}
 
-	uint8_t r = 0, g = 0, b = 0;
+	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
 
 	do {
 		for (i = 0; i < surfaces->length; ++i) {
 			struct window *window = surfaces->items[i];
 			if (window_prerender(window) && window->cairo) {
-				cairo_set_source_rgb(window->cairo, r / 256.0, g / 256.0, b / 256.0);
+				cairo_set_source_surface(window->cairo, image, 0, 0);
 				cairo_rectangle(window->cairo, 0, 0, window->width, window->height);
 				cairo_fill(window->cairo);
 
 				window_render(window);
 			}
-			r++; g += 2; b += 4;
 		}
 	} while (wl_display_dispatch(registry->display) != -1);
 
