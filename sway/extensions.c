@@ -2,14 +2,26 @@
 #include <wlc/wlc-wayland.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "log.h"
+#include "extensions.h"
+
+struct desktop_shell_state desktop_shell;
 
 static void set_background(struct wl_client *client, struct wl_resource *resource,
-		struct wl_resource *output, struct wl_resource *surface) {
-	sway_log(L_DEBUG, "Surface requesting background for output");
+		struct wl_resource *_output, struct wl_resource *_surface) {
+	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
+	wlc_handle surface = wlc_handle_from_wl_surface_resource(_surface);
+	sway_log(L_DEBUG, "Setting surface %d as background for output %d", (int)surface, (int)output);
+	if (!output || !surface) {
+		return;
+	}
+	struct background_config *config = malloc(sizeof(struct background_config));
+	config->output = output;
+	config->surface = surface;
+	list_add(desktop_shell.backgrounds, config);
 }
 
 static struct desktop_shell_interface desktop_shell_implementation = {
-	.set_background = set_background,
+	.set_background = set_background
 };
 
 static void desktop_shell_bind(struct wl_client *client, void *data,
@@ -29,4 +41,5 @@ static void desktop_shell_bind(struct wl_client *client, void *data,
 
 void register_extensions(void) {
 	wl_global_create(wlc_get_wl_display(), &desktop_shell_interface, 1, NULL, desktop_shell_bind);
+	desktop_shell.backgrounds = create_list();
 }

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <wlc/wlc.h>
+#include <wlc/wlc-wayland.h>
 #include <ctype.h>
 
 #include "handlers.h"
@@ -17,6 +18,7 @@
 #include "focus.h"
 #include "input_state.h"
 #include "resize.h"
+#include "extensions.h"
 
 // Event should be sent to client
 #define EVENT_PASSTHROUGH false
@@ -60,6 +62,18 @@ static void handle_output_destroyed(wlc_handle output) {
 	if (list->length > 0) {
 		// switch to other outputs active workspace
 		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
+	}
+}
+
+static void handle_output_pre_render(wlc_handle output) {
+	int i;
+	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
+		struct background_config *config = desktop_shell.backgrounds->items[i];
+		if (config->output == output) {
+			sway_log(L_DEBUG, "Rendering background surface %d", (int)config->surface);
+			wlc_surface_render(config->surface, &(struct wlc_geometry){ wlc_origin_zero, *wlc_output_get_resolution(output) });
+			break;
+		}
 	}
 }
 
@@ -463,7 +477,10 @@ struct wlc_interface interface = {
 		.created = handle_output_created,
 		.destroyed = handle_output_destroyed,
 		.resolution = handle_output_resolution_change,
-		.focus = handle_output_focused
+		.focus = handle_output_focused,
+		.render = {
+			.pre = handle_output_pre_render
+		}
 	},
 	.view = {
 		.created = handle_view_created,
