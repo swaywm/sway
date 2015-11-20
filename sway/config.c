@@ -315,7 +315,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output->x = x;
 	}
 
-	if (oc->background) {
+	if (oc && oc->background) {
 		int i;
 		for (i = 0; i < root_container.children->length; ++i) {
 			if (root_container.children->items[i] == output) {
