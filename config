@@ -2,10 +2,9 @@
 #
 # Copy this to ~/.config/sway/config and edit it to your liking.
 #
-# Sway is a work in progress implementation of i3 for wayland.
-# Note that some of these defaults may be unimplemented.
+# Read `man 5 sway` for a complete reference.
 #
-# Please see http://i3wm.org/docs/userguide.html for a (more) complete reference!
+# Sway is a work in progress. Some of these defaults are currently unimplemented.
 
 
 ### Variables
