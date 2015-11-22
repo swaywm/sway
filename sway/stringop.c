@@ -74,6 +74,19 @@ void strip_quotes(char *str) {
 	*end = '\0';
 }
 
+// strcmp that also handles null pointers.
+int lenient_strcmp(char *a, char *b) {
+	if (a == b) {
+		return 0;
+	} else if (!a) {
+		return -1;
+	} else if (!b) {
+		return 1;
+	} else {
+		return strcmp(a, b);
+	}
+}
+
 list_t *split_string(const char *str, const char *delims) {
 	list_t *res = create_list();
 	char *copy = strdup(str);

@@ -15,5 +15,8 @@ void list_del(list_t *list, int index);
 void list_cat(list_t *list, list_t *source);
 // See qsort
 void list_sort(list_t *list, int compare(const void *left, const void *right));
+// Return index for first item in list that returns 0 for given compare
+// function or -1 if none matches.
+int list_seq_find(list_t *list, int compare(const void *item, const void *cmp_to), const void *cmp_to);
 
 #endif
