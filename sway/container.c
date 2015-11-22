@@ -50,6 +50,9 @@ static void free_swayc(swayc_t *cont) {
 	if (cont->name) {
 		free(cont->name);
 	}
+	if (cont->class) {
+		free(cont->class);
+	}
 	free(cont);
 }
 
@@ -214,6 +217,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	// Setup values
 	view->handle = handle;
 	view->name = title ? strdup(title) : NULL;
+	const char *class = wlc_view_get_class(handle);
+	view->class = class ? strdup(class) : NULL;
 	view->visible = true;
 	view->is_focused = true;
 	// Setup geometry
@@ -246,6 +251,8 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	// Setup values
 	view->handle = handle;
 	view->name = title ? strdup(title) : NULL;
+	const char *class = wlc_view_get_class(handle);
+	view->class = class ? strdup(class) : NULL;
 	view->visible = true;
 
 	// Set the geometry of the floating view

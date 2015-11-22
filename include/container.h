@@ -75,7 +75,9 @@ struct sway_container {
 	bool is_floating;
 	bool is_focused;
 
+	// Attributes that mostly views have.
 	char *name;
+	char *class;
 
 	int gaps;
 
