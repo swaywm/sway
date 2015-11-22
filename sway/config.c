@@ -383,3 +383,52 @@ int workspace_output_cmp_workspace(const void *a, const void *b) {
 	const struct workspace_output *wsa = a, *wsb = b;
 	return lenient_strcmp(wsa->workspace, wsb->workspace);
 }
+
+int sway_binding_cmp_keys(const void *a, const void *b) {
+	const struct sway_binding *binda = a, *bindb = b;
+
+	if (binda->modifiers > bindb->modifiers) {
+		return 1;
+	} else if (binda->modifiers < bindb->modifiers) {
+		return -1;
+	}
+
+	if (binda->keys->length > bindb->keys->length) {
+		return 1;
+	} else if (binda->keys->length < bindb->keys->length) {
+		return -1;
+	}
+
+	for (int i = 0; i < binda->keys->length; i++) {
+		xkb_keysym_t *ka = binda->keys->items[i],
+				*kb = bindb->keys->items[i];
+		if (*ka > *kb) {
+			return 1;
+		} else if (*ka < *kb) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int sway_binding_cmp(const void *a, const void *b) {
+	int cmp = 0;
+	if ((cmp = sway_binding_cmp_keys(a, b)) != 0) {
+		return cmp;
+	}
+	const struct sway_binding *binda = a, *bindb = b;
+	return lenient_strcmp(binda->command, bindb->command);
+}
+
+void free_sway_binding(struct sway_binding *binding) {
+	if (binding->keys) {
+		for (int i = 0; i < binding->keys->length; i++) {
+			free(binding->keys->items[i]);
+		}
+		list_free(binding->keys);
+	}
+	if (binding->command) {
+		free(binding->command);
+	}
+	free(binding);
+}
