@@ -78,6 +78,7 @@ struct sway_container {
 	// Attributes that mostly views have.
 	char *name;
 	char *class;
+	char *app_id;
 
 	int gaps;
 
