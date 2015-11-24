@@ -401,6 +401,11 @@ int sway_binding_cmp_keys(const void *a, const void *b) {
 	}
 
 	// Otherwise compare keys
+	if (binda->modifiers > bindb->modifiers) {
+		return 1;
+	} else if (binda->modifiers < bindb->modifiers) {
+		return -1;
+	}
 	for (int i = 0; i < binda->keys->length; i++) {
 		xkb_keysym_t *ka = binda->keys->items[i],
 				*kb = bindb->keys->items[i];
