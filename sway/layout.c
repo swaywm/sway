@@ -88,12 +88,16 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	}
 }
 
-swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
-	swayc_t *parent = sibling->parent;
-	int i = index_child(sibling);
-	list_insert(parent->children, i+1, child);
-	child->parent = parent;
-	return child->parent;
+swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
+	swayc_t *parent = fixed->parent;
+	int i = index_child(fixed);
+	if (fixed->is_floating) {
+		list_insert(parent->floating, i + 1, active);
+	} else {
+		list_insert(parent->children, i + 1, active);
+	}
+	active->parent = parent;
+	return active->parent;
 }
 
 swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
