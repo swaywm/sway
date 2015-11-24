@@ -88,12 +88,16 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	}
 }
 
-swayc_t *add_sibling(swayc_t *sibling, swayc_t *child) {
-	swayc_t *parent = sibling->parent;
-	int i = index_child(sibling);
-	list_insert(parent->children, i+1, child);
-	child->parent = parent;
-	return child->parent;
+swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
+	swayc_t *parent = fixed->parent;
+	int i = index_child(fixed);
+	if (fixed->is_floating) {
+		list_insert(parent->floating, i + 1, active);
+	} else {
+		list_insert(parent->children, i + 1, active);
+	}
+	active->parent = parent;
+	return active->parent;
 }
 
 swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
@@ -102,8 +106,11 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 		return NULL;
 	}
 	int i = index_child(child);
-	parent->children->items[i] = new_child;
-
+	if (child->is_floating) {
+		parent->floating->items[i] = new_child;
+	} else {
+		parent->children->items[i] = new_child;
+	}
 	// Set parent and focus for new_child
 	new_child->parent = child->parent;
 	if (child->parent->focused == child) {
@@ -167,7 +174,6 @@ swayc_t *remove_child(swayc_t *child) {
 }
 
 void swap_container(swayc_t *a, swayc_t *b) {
-	//TODO doesnt handle floating <-> tiling swap
 	if (!sway_assert(a&&b, "parameters must be non null") ||
 		!sway_assert(a->parent && b->parent, "containers must have parents")) {
 		return;
@@ -177,8 +183,16 @@ void swap_container(swayc_t *a, swayc_t *b) {
 	swayc_t *a_parent = a->parent;
 	swayc_t *b_parent = b->parent;
 	// Swap the pointers
-	a_parent->children->items[a_index] = b;
-	b_parent->children->items[b_index] = a;
+	if (a->is_floating) {
+		a_parent->floating->items[a_index] = b;
+	} else {
+		a_parent->children->items[a_index] = b;
+	}
+	if (b->is_floating) {
+		b_parent->floating->items[b_index] = a;
+	} else {
+		b_parent->children->items[b_index] = a;
+	}
 	a->parent = b_parent;
 	b->parent = a_parent;
 	if (a_parent->focused == a) {
@@ -560,7 +574,7 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 
 		if (can_move) {
 			int desired = index_child(container) + diff;
-			if (desired < 0 || desired >= parent->children->length) {
+			if (container->is_floating || desired < 0 || desired >= parent->children->length) {
 				can_move = false;
 			} else {
 				return parent->children->items[desired];
