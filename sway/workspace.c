@@ -27,13 +27,19 @@ char *workspace_next_name(void) {
 
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
-		const char* command = binding->command;
-		list_t *args = split_string(command, " ");
+		char *cmdlist = strdup(binding->command);
+		char *dup = cmdlist;
+		char *name = NULL;
 
-		if (strcmp("workspace", args->items[0]) == 0 && args->length > 1) {
-			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", (char *)args->items[1]);
-			char* target = malloc(strlen(args->items[1]) + 1);
-			strcpy(target, args->items[1]);
+		// workspace n
+		char *cmd = argsep(&cmdlist, " ");
+		if (cmdlist) {
+			name = argsep(&cmdlist, " ,;");
+		}
+
+		if (strcmp("workspace", cmd) == 0 && name) {
+			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
+			char* target = strdup(name);
 			while (*target == ' ' || *target == '\t')
 				target++;
 
@@ -47,22 +53,20 @@ char *workspace_next_name(void) {
 				strcmp(target, "back_and_forth") == 0 ||
 				strcmp(target, "current") == 0)
 			{
-				free_flat_list(args);
+				free(target);
 				continue;
 			}
 
 			// Make sure that the workspace doesn't already exist
 			if (workspace_by_name(target)) {
-				free_flat_list(args);
+				free(target);
 				continue;
 			}
-
-			free_flat_list(args);
-
+			free(dup);
 			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
 			return target;
 		}
-		free_flat_list(args);
+		free(dup);
 	}
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name
