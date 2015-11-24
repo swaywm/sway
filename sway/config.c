@@ -387,18 +387,20 @@ int workspace_output_cmp_workspace(const void *a, const void *b) {
 int sway_binding_cmp_keys(const void *a, const void *b) {
 	const struct sway_binding *binda = a, *bindb = b;
 
-	if (binda->modifiers > bindb->modifiers) {
-		return 1;
-	} else if (binda->modifiers < bindb->modifiers) {
-		return -1;
+	// Count keys pressed for this binding. important so we check long before
+	// short ones.  for example mod+a+b  before  mod+a
+	unsigned int moda = 0, modb = 0, i;
+
+	// Count how any modifiers are pressed
+	for (i = 0; i < 8 * sizeof(binda->modifiers); ++i) {
+		moda += (binda->modifiers & 1 << i) != 0;
+		modb += (bindb->modifiers & 1 << i) != 0;
+	}
+	if (bindb->keys->length + modb != binda->keys->length + moda) {
+		return (bindb->keys->length + modb) - (binda->keys->length + moda);
 	}
 
-	if (binda->keys->length > bindb->keys->length) {
-		return 1;
-	} else if (binda->keys->length < bindb->keys->length) {
-		return -1;
-	}
-
+	// Otherwise compare keys
 	for (int i = 0; i < binda->keys->length; i++) {
 		xkb_keysym_t *ka = binda->keys->items[i],
 				*kb = bindb->keys->items[i];

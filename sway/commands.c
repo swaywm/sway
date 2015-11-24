@@ -1128,9 +1128,9 @@ static struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 
 // sort in order of longest->shortest
 static int compare_set(const void *_l, const void *_r) {
-	struct sway_variable * const *l = _l;
-	struct sway_variable * const *r = _r;
-	return strlen((*r)->name) - strlen((*l)->name);
+	struct sway_variable const *l = _l;
+	struct sway_variable const *r = _r;
+	return strlen(r->name) - strlen(l->name);
 }
 
 static struct cmd_results *cmd_set(int argc, char **argv) {
