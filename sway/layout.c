@@ -174,7 +174,6 @@ swayc_t *remove_child(swayc_t *child) {
 }
 
 void swap_container(swayc_t *a, swayc_t *b) {
-	//TODO doesnt handle floating <-> tiling swap
 	if (!sway_assert(a&&b, "parameters must be non null") ||
 		!sway_assert(a->parent && b->parent, "containers must have parents")) {
 		return;
@@ -184,8 +183,16 @@ void swap_container(swayc_t *a, swayc_t *b) {
 	swayc_t *a_parent = a->parent;
 	swayc_t *b_parent = b->parent;
 	// Swap the pointers
-	a_parent->children->items[a_index] = b;
-	b_parent->children->items[b_index] = a;
+	if (a->is_floating) {
+		a_parent->floating->items[a_index] = b;
+	} else {
+		a_parent->children->items[a_index] = b;
+	}
+	if (b->is_floating) {
+		b_parent->floating->items[b_index] = a;
+	} else {
+		b_parent->children->items[b_index] = a;
+	}
 	a->parent = b_parent;
 	b->parent = a_parent;
 	if (a_parent->focused == a) {
