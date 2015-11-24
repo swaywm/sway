@@ -106,8 +106,11 @@ swayc_t *replace_child(swayc_t *child, swayc_t *new_child) {
 		return NULL;
 	}
 	int i = index_child(child);
-	parent->children->items[i] = new_child;
-
+	if (child->is_floating) {
+		parent->floating->items[i] = new_child;
+	} else {
+		parent->children->items[i] = new_child;
+	}
 	// Set parent and focus for new_child
 	new_child->parent = child->parent;
 	if (child->parent->focused == child) {
