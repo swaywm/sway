@@ -574,7 +574,7 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 
 		if (can_move) {
 			int desired = index_child(container) + diff;
-			if (desired < 0 || desired >= parent->children->length) {
+			if (container->is_floating || desired < 0 || desired >= parent->children->length) {
 				can_move = false;
 			} else {
 				return parent->children->items[desired];
