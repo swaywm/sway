@@ -247,62 +247,62 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	for (int i = 0; i < tokens->length; i++) {
 		struct crit_token *crit = tokens->items[i];
 		switch (crit->type) {
-			case CRIT_CLASS:
-				if (!cont->class) {
-					// ignore
-				} else if (strcmp(crit->raw, "focused") == 0) {
-					swayc_t *focused = get_focused_view(&root_container);
-					if (focused->class && strcmp(cont->class, focused->class) == 0) {
-						matches++;
-					}
-				} else if (crit->regex && regexec(crit->regex, cont->class, 0, NULL, 0) == 0) {
+		case CRIT_CLASS:
+			if (!cont->class) {
+				// ignore
+			} else if (strcmp(crit->raw, "focused") == 0) {
+				swayc_t *focused = get_focused_view(&root_container);
+				if (focused->class && strcmp(cont->class, focused->class) == 0) {
 					matches++;
 				}
-				break;
-			case CRIT_ID:
-				if (!cont->app_id) {
-					// ignore
-				} else if (crit->regex && regexec(crit->regex, cont->app_id, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regexec(crit->regex, cont->class, 0, NULL, 0) == 0) {
+				matches++;
+			}
+			break;
+		case CRIT_ID:
+			if (!cont->app_id) {
+				// ignore
+			} else if (crit->regex && regexec(crit->regex, cont->app_id, 0, NULL, 0) == 0) {
+				matches++;
+			}
+			break;
+		case CRIT_INSTANCE:
+			break;
+		case CRIT_TITLE:
+			if (!cont->name) {
+				// ignore
+			} else if (strcmp(crit->raw, "focused") == 0) {
+				swayc_t *focused = get_focused_view(&root_container);
+				if (focused->name && strcmp(cont->name, focused->name) == 0) {
 					matches++;
 				}
-				break;
-			case CRIT_INSTANCE:
-				break;
-			case CRIT_TITLE:
-				if (!cont->name) {
-					// ignore
-				} else if (strcmp(crit->raw, "focused") == 0) {
-					swayc_t *focused = get_focused_view(&root_container);
-					if (focused->name && strcmp(cont->name, focused->name) == 0) {
-						matches++;
-					}
-				} else if (crit->regex && regexec(crit->regex, cont->name, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regexec(crit->regex, cont->name, 0, NULL, 0) == 0) {
+				matches++;
+			}
+			break;
+		case CRIT_URGENT: // "latest" or "oldest"
+			break;
+		case CRIT_WINDOW_ROLE:
+			break;
+		case CRIT_WINDOW_TYPE:
+			// TODO wlc indeed exposes this information
+			break;
+		case CRIT_WORKSPACE: ;
+			swayc_t *cont_ws = swayc_parent_by_type(cont, C_WORKSPACE);
+			if (!cont_ws || !cont_ws->name) {
+				// ignore
+			} else if (strcmp(crit->raw, "focused") == 0) {
+				swayc_t *focused_ws = swayc_active_workspace();
+				if (focused_ws->name && strcmp(cont_ws->name, focused_ws->name) == 0) {
 					matches++;
 				}
-				break;
-			case CRIT_URGENT: // "latest" or "oldest"
-				break;
-			case CRIT_WINDOW_ROLE:
-				break;
-			case CRIT_WINDOW_TYPE:
-				// TODO wlc indeed exposes this information
-				break;
-			case CRIT_WORKSPACE: ;
-				swayc_t *cont_ws = swayc_parent_by_type(cont, C_WORKSPACE);
-				if (!cont_ws || !cont_ws->name) {
-					// ignore
-				} else if (strcmp(crit->raw, "focused") == 0) {
-					swayc_t *focused_ws = swayc_active_workspace();
-					if (focused_ws->name && strcmp(cont_ws->name, focused_ws->name) == 0) {
-						matches++;
-					}
-				} else if (crit->regex && regexec(crit->regex, cont_ws->name, 0, NULL, 0) == 0) {
-					matches++;
-				}
-				break;
-			default:
-				sway_abort("Invalid criteria type (%i)", crit->type);
-				break;
+			} else if (crit->regex && regexec(crit->regex, cont_ws->name, 0, NULL, 0) == 0) {
+				matches++;
+			}
+			break;
+		default:
+			sway_abort("Invalid criteria type (%i)", crit->type);
+			break;
 		}
 	}
 	return matches == tokens->length;
