@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
 	list_add(surfaces, window);
 
-	char *scaling_mode = argv[3];
+	/* char *scaling_mode = argv[3]; */
 	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[2]);
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
