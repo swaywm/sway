@@ -28,7 +28,7 @@ int main(int argc, const char **argv) {
 	surfaces = create_list();
 	registry = registry_poll();
 
-	if (argc < 4) {
+	if (argc != 4) {
 		sway_abort("Do not run this program manually. See man 5 sway and look for output options.");
 	}
 
