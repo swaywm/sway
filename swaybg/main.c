@@ -16,6 +16,7 @@ enum scaling_mode_t {
 	SCALING_MODE_STRETCH,
 	SCALING_MODE_FILL,
 	SCALING_MODE_CENTER,
+	SCALING_MODE_TILE,
 };
 
 void sway_terminate(void) {
@@ -67,6 +68,8 @@ int main(int argc, const char **argv) {
 		scaling_mode = SCALING_MODE_FILL;
 	} else if (strcmp(scaling_mode_str, "center") == 0) {
 		scaling_mode = SCALING_MODE_CENTER;
+	} else if (strcmp(scaling_mode_str, "tile") == 0) {
+		scaling_mode = SCALING_MODE_TILE;
 	} else {
 		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
 	}
@@ -106,6 +109,13 @@ int main(int argc, const char **argv) {
 					cairo_set_source_surface(window->cairo, image,
 							(double) window->width/2 - width/2,
 							(double) window->height/2 - height/2);
+					break;
+				case SCALING_MODE_TILE:
+					{
+						cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
+						cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+						cairo_set_source(window->cairo, pattern);
+					}
 					break;
 				default:
 					sway_abort("Scaling mode '%s' not implemented yet!", scaling_mode_str);
