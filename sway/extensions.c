@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <wlc/wlc.h>
 #include <wlc/wlc-wayland.h>
 #include "wayland-desktop-shell-server-protocol.h"
