@@ -231,15 +231,18 @@ bool read_config(FILE *file, bool is_active) {
 	bool success = true;
 	enum cmd_status block = CMD_BLOCK_END;
 
+	int line_number = 0;
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
+		line_number++;
 		line = strip_comments(line);
 		struct cmd_results *res = config_command(line);
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
+			sway_log(L_ERROR, "Error on line %i '%s': %s", line_number, line,
+				res->error);
 			success = false;
 			break;
 
