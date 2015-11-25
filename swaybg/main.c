@@ -14,6 +14,7 @@ struct registry *registry;
 
 enum scaling_mode_t {
 	SCALING_MODE_STRETCH,
+	SCALING_MODE_FILL,
 };
 
 void sway_terminate(void) {
@@ -61,6 +62,8 @@ int main(int argc, const char **argv) {
 	enum scaling_mode_t scaling_mode;
 	if (strcmp(scaling_mode_str, "stretch") == 0) {
 		scaling_mode = SCALING_MODE_STRETCH;
+	} else if (strcmp(scaling_mode_str, "fill") == 0) {
+		scaling_mode = SCALING_MODE_FILL;
 	} else {
 		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
 	}
@@ -75,6 +78,26 @@ int main(int argc, const char **argv) {
 							(double) window->width / width,
 							(double) window->height / height);
 					cairo_set_source_surface(window->cairo, image, 0, 0);
+					break;
+				case SCALING_MODE_FILL:
+					{
+						double window_ratio = (double) window->width / window->height;
+						double bg_ratio = width / height;
+
+						if (window_ratio > bg_ratio) {
+							double scale = (double) window->width / width;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									0,
+									(double) window->height/2 / scale - height/2);
+						} else {
+							double scale = (double) window->height / height;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									(double) window->width/2 / scale - width/2,
+									0);
+						}
+					}
 					break;
 				default:
 					sway_abort("Scaling mode '%s' not implemented yet!", scaling_mode_str);
