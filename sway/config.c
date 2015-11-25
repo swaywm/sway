@@ -334,17 +334,22 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 
 		sway_log(L_DEBUG, "Setting background for output %d to %s", i, oc->background);
-		char *cmd = malloc(
-				strlen("swaybg ") +
-				(i >= 10 ? 2 : 1) +
-				strlen(oc->background) + 3 +
-				strlen(oc->background_option) + 3 +
-				1);
-		sprintf(cmd, "swaybg %d '%s' '%s'", i, oc->background, oc->background_option);
+
+		size_t bufsize = 4;
+		char output_id[bufsize];
+		snprintf(output_id, bufsize, "%d", i);
+		output_id[bufsize-1] = 0;
+
+		char *const cmd[] = {
+			"swaybg",
+			output_id,
+			oc->background,
+			oc->background_option,
+			NULL,
+		};
 		if (fork() == 0) {
-			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
+			execvp(cmd[0], cmd);
 		}
-		free(cmd);
 	}
 }
 
