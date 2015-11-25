@@ -68,6 +68,10 @@ Commands
 **fullscreen**::
 	Toggles fullscreen status for the focused view.
 
+**for_window** <criteria> <command>::
+	Whenever a window that matches _criteria_ appears, run list of commands. See
+	**Criteria** section below.
+
 **gaps** edge_gaps <on|off|toggle>::
 	Whether or not to add gaps between views and workspace edges if amount of
 	inner gap is not zero. When _no_, no gap is added where the view is aligned to
@@ -175,3 +179,34 @@ Commands
 **workspace** <name> output <output>::
 	Specifies that the workspace named _name_ should appear on the specified
 	_output_.
+
+Criteria
+--------
+
+A criteria is a string in the form of e.g.:
+
+	[class="[Rr]egex.*" title="some title"]
+
+The string contains one or more (space separated) attribute/value pairs and they
+are used by some commands filter which views to execute actions on. All attributes
+must match for the criteria string to match.
+
+Currently supported attributes:
+
+**class**::
+	Compare value against the window class. Can be a regular expression. If value
+	is _focused_ then the window class must be the same as that of the currently
+	focused window.
+
+**id**::
+	Compare value against the app id. Can be a regular expression.
+
+**title**::
+	Compare against the window title. Can be a regular expression. If value is
+	_focused_ then the window title must be the same as that of the currently
+	focused window.
+
+**workspace**::
+	Compare against the workspace name for this view. Can be a regular expression.
+	If value is _focused_ then all the views on the currently focused workspace
+	matches.

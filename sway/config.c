@@ -10,6 +10,7 @@
 #include "config.h"
 #include "layout.h"
 #include "input_state.h"
+#include "criteria.h"
 
 struct sway_config *config = NULL;
 
@@ -66,6 +67,11 @@ static void free_config(struct sway_config *config) {
 	}
 	list_free(config->workspace_outputs);
 
+	for (i = 0; i < config->criteria->length; ++i) {
+		free_criteria(config->criteria->items[i]);
+	}
+	list_free(config->criteria);
+
 	for (i = 0; i < config->output_configs->length; ++i) {
 		free_output_config(config->output_configs->items[i]);
 	}
@@ -82,6 +88,7 @@ static void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
 	config->workspace_outputs = create_list();
+	config->criteria = create_list();
 	config->output_configs = create_list();
 
 	config->cmd_queue = create_list();
