@@ -15,6 +15,7 @@ struct registry *registry;
 enum scaling_mode_t {
 	SCALING_MODE_STRETCH,
 	SCALING_MODE_FILL,
+	SCALING_MODE_FIT,
 	SCALING_MODE_CENTER,
 	SCALING_MODE_TILE,
 };
@@ -66,6 +67,8 @@ int main(int argc, const char **argv) {
 		scaling_mode = SCALING_MODE_STRETCH;
 	} else if (strcmp(scaling_mode_str, "fill") == 0) {
 		scaling_mode = SCALING_MODE_FILL;
+	} else if (strcmp(scaling_mode_str, "fit") == 0) {
+		scaling_mode = SCALING_MODE_FIT;
 	} else if (strcmp(scaling_mode_str, "center") == 0) {
 		scaling_mode = SCALING_MODE_CENTER;
 	} else if (strcmp(scaling_mode_str, "tile") == 0) {
@@ -102,6 +105,26 @@ int main(int argc, const char **argv) {
 							cairo_set_source_surface(window->cairo, image,
 									(double) window->width/2 / scale - width/2,
 									0);
+						}
+					}
+					break;
+				case SCALING_MODE_FIT:
+					{
+						double window_ratio = (double) window->width / window->height;
+						double bg_ratio = width / height;
+
+						if (window_ratio > bg_ratio) {
+							double scale = (double) window->height / height;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									(double) window->width/2 / scale - width/2,
+									0);
+						} else {
+							double scale = (double) window->width / width;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									0,
+									(double) window->height/2 / scale - height/2);
 						}
 					}
 					break;
