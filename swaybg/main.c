@@ -12,6 +12,14 @@ list_t *surfaces;
 
 struct registry *registry;
 
+enum scaling_mode_t {
+	SCALING_MODE_STRETCH,
+	SCALING_MODE_FILL,
+	SCALING_MODE_FIT,
+	SCALING_MODE_CENTER,
+	SCALING_MODE_TILE,
+};
+
 void sway_terminate(void) {
 	int i;
 	for (i = 0; i < surfaces->length; ++i) {
@@ -23,12 +31,12 @@ void sway_terminate(void) {
 	exit(1);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
 	init_log(L_INFO);
 	surfaces = create_list();
 	registry = registry_poll();
 
-	if (argc < 4) {
+	if (argc != 4) {
 		sway_abort("Do not run this program manually. See man 5 sway and look for output options.");
 	}
 
@@ -49,16 +57,93 @@ int main(int argc, char **argv) {
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
 	list_add(surfaces, window);
 
-	char *scaling_mode = argv[3];
 	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[2]);
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
 
+	const char *scaling_mode_str = argv[3];
+	enum scaling_mode_t scaling_mode;
+	if (strcmp(scaling_mode_str, "stretch") == 0) {
+		scaling_mode = SCALING_MODE_STRETCH;
+	} else if (strcmp(scaling_mode_str, "fill") == 0) {
+		scaling_mode = SCALING_MODE_FILL;
+	} else if (strcmp(scaling_mode_str, "fit") == 0) {
+		scaling_mode = SCALING_MODE_FIT;
+	} else if (strcmp(scaling_mode_str, "center") == 0) {
+		scaling_mode = SCALING_MODE_CENTER;
+	} else if (strcmp(scaling_mode_str, "tile") == 0) {
+		scaling_mode = SCALING_MODE_TILE;
+	} else {
+		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
+	}
+
 	for (i = 0; i < surfaces->length; ++i) {
 		struct window *window = surfaces->items[i];
 		if (window_prerender(window) && window->cairo) {
-			cairo_scale(window->cairo, window->width / width, window->height / height);
-			cairo_set_source_surface(window->cairo, image, 0, 0);
+
+			switch (scaling_mode) {
+				case SCALING_MODE_STRETCH:
+					cairo_scale(window->cairo,
+							(double) window->width / width,
+							(double) window->height / height);
+					cairo_set_source_surface(window->cairo, image, 0, 0);
+					break;
+				case SCALING_MODE_FILL:
+					{
+						double window_ratio = (double) window->width / window->height;
+						double bg_ratio = width / height;
+
+						if (window_ratio > bg_ratio) {
+							double scale = (double) window->width / width;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									0,
+									(double) window->height/2 / scale - height/2);
+						} else {
+							double scale = (double) window->height / height;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									(double) window->width/2 / scale - width/2,
+									0);
+						}
+					}
+					break;
+				case SCALING_MODE_FIT:
+					{
+						double window_ratio = (double) window->width / window->height;
+						double bg_ratio = width / height;
+
+						if (window_ratio > bg_ratio) {
+							double scale = (double) window->height / height;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									(double) window->width/2 / scale - width/2,
+									0);
+						} else {
+							double scale = (double) window->width / width;
+							cairo_scale(window->cairo, scale, scale);
+							cairo_set_source_surface(window->cairo, image,
+									0,
+									(double) window->height/2 / scale - height/2);
+						}
+					}
+					break;
+				case SCALING_MODE_CENTER:
+					cairo_set_source_surface(window->cairo, image,
+							(double) window->width/2 - width/2,
+							(double) window->height/2 - height/2);
+					break;
+				case SCALING_MODE_TILE:
+					{
+						cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
+						cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+						cairo_set_source(window->cairo, pattern);
+					}
+					break;
+				default:
+					sway_abort("Scaling mode '%s' not implemented yet!", scaling_mode_str);
+			}
+
 			cairo_paint(window->cairo);
 
 			window_render(window);

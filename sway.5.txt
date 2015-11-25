@@ -127,7 +127,7 @@ Commands
 
 **output** <name> <background|bg> <file> <mode>::
 	Sets the wallpaper for the given output to the specified file, using the given
-	scaling mode (one of "stretch", "fill", "center", "tile").
+	scaling mode (one of "stretch", "fill", "fit", "center", "tile").
 
 **output** <name> disable::
 	Disables the specified output.

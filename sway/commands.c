@@ -85,6 +85,7 @@ static char *bg_options[] = {
 	"stretch",
 	"center",
 	"fill",
+	"fit",
 	"tile"
 };
 
