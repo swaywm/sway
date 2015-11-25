@@ -44,7 +44,7 @@ set $menu dmenu_run
     bindsym $mod+Shift+e exit
 #
 # Moving around:
-# 
+#
     # Move your focus around with $mod+[h|j|k|l], like vim
     bindsym $mod+h focus left
     bindsym $mod+j focus down
@@ -68,7 +68,7 @@ set $menu dmenu_run
     bindsym $mod+Shift+Right move right
 #
 # Workspaces:
-# 
+#
     # switch to workspace
     bindsym $mod+1 workspace 1
     bindsym $mod+2 workspace 2
@@ -91,7 +91,7 @@ set $menu dmenu_run
     bindsym $mod+Shift+8 move container to workspace 8
     bindsym $mod+Shift+9 move container to workspace 9
     bindsym $mod+Shift+0 move container to workspace 10
-# 
+#
 # Layout stuff:
 #
     # You can "split" the current object of your focus with
@@ -118,10 +118,10 @@ set $menu dmenu_run
     bindsym $mod+a focus parent
 #
 # Scratchpad:
-# 
+#
     # Sway has a "scratchpad", which is a bag of holding for windows.
     # You can send windows there and get them back later.
-    
+
     # Move the currently focused window to the scratchpad
     bindsym $mod+Shift+minus move scratchpad
 
