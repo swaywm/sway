@@ -40,7 +40,7 @@ function(WAYLAND_ADD_PROTOCOL_CLIENT _sources _protocol _basename)
 
     get_filename_component(_infile ${_protocol} ABSOLUTE)
     set(_client_header "${CMAKE_CURRENT_BINARY_DIR}/wayland-${_basename}-client-protocol.h")
-    set(_code "${CMAKE_CURRENT_BINARY_DIR}/wayland-${_basename}-protocol.c")
+    set(_code "${CMAKE_CURRENT_BINARY_DIR}/wayland-${_basename}-client-protocol.c")
 
     add_custom_command(OUTPUT "${_client_header}"
         COMMAND ${WAYLAND_SCANNER_EXECUTABLE} client-header < ${_infile} > ${_client_header}
@@ -62,7 +62,7 @@ function(WAYLAND_ADD_PROTOCOL_SERVER _sources _protocol _basename)
 
     get_filename_component(_infile ${_protocol} ABSOLUTE)
     set(_server_header "${CMAKE_CURRENT_BINARY_DIR}/wayland-${_basename}-server-protocol.h")
-    set(_code "${CMAKE_CURRENT_BINARY_DIR}/wayland-${_basename}-protocol.c")
+    set(_code "${CMAKE_CURRENT_BINARY_DIR}/wayland-${_basename}-server-protocol.c")
 
     add_custom_command(OUTPUT "${_server_header}"
         COMMAND ${WAYLAND_SCANNER_EXECUTABLE} server-header < ${_infile} > ${_server_header}
