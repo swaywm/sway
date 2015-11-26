@@ -65,6 +65,18 @@ int main(int argc, char **argv) {
 	};
 
 	char *config_path = NULL;
+
+	const char* usage =
+		"Usage: sway [options] [command]\n"
+		"\n"
+		"  -c, --config <config>  Specify a config file.\n"
+		"  -C, --validate         Check the validity of the config file, then exit.\n"
+		"  -d, --debug            Enables full logging, including debug information.\n"
+		"  -v, --version          Show the version number and quit.\n"
+		"  -V, --verbose          Enables more verbose logging.\n"
+		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
+		"\n";
+
 	int c;
 	while (1) {
 		int option_index = 0;
@@ -104,6 +116,9 @@ int main(int argc, char **argv) {
 				exit(EXIT_FAILURE);
 			}
 			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			exit(EXIT_FAILURE);
 		}
 	}
 
