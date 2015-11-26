@@ -33,7 +33,9 @@ string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
 add_definitions('-DSWAY_VERSION_DATE="${CURRENT_DATE}"')
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 add_subdirectory(swaybg)
+add_subdirectory(swaymsg)
 
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
