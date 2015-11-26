@@ -221,11 +221,31 @@ bool workspace_switch(swayc_t *workspace) {
 		strcpy(prev_workspace_name, active_ws->name);
 	}
 
+	// move sticky containers
+	if (swayc_parent_by_type(active_ws, C_OUTPUT) == swayc_parent_by_type(workspace, C_OUTPUT)) {
+		// don't change list while traversing it, use intermediate list instead
+		list_t *stickies = create_list();
+		for (int i = 0; i < active_ws->floating->length; i++) {
+			swayc_t *cont = active_ws->floating->items[i];
+			if (cont->sticky) {
+				list_add(stickies, cont);
+			}
+		}
+		for (int i = 0; i < stickies->length; i++) {
+			swayc_t *cont = stickies->items[i];
+			sway_log(L_DEBUG, "Moving sticky container %p to %p:%s",
+					cont, workspace, workspace->name);
+			swayc_t *parent = remove_child(cont);
+			add_floating(workspace, cont);
+			// Destroy old container if we need to
+			destroy_container(parent);
+		}
+		list_free(stickies);
+	}
 	sway_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
 	if (!set_focused_container(get_focused_view(workspace))) {
 		return false;
 	}
 	arrange_windows(workspace, -1, -1);
-
 	return true;
 }

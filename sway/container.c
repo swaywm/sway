@@ -226,6 +226,7 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->app_id = app_id ? strdup(app_id) : NULL;
 	view->visible = true;
 	view->is_focused = true;
+	view->sticky = false;
 	// Setup geometry
 	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
 	view->width = 0;
@@ -261,6 +262,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	const char *app_id = wlc_view_get_app_id(handle);
 	view->app_id = app_id ? strdup(app_id) : NULL;
 	view->visible = true;
+	view->sticky = false;
 
 	// Set the geometry of the floating view
 	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);

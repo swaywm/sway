@@ -166,6 +166,10 @@ Commands
 **splitv**::
 	Equivalent to **split vertical**.
 
+**sticky** <enable|disable|toggle>::
+	If enabled and the windows is floating it will always be present on the active
+	workspace on that output.
+
 **workspace** <name>::
 	Switches to the specified workspace.
 

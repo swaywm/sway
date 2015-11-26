@@ -74,6 +74,7 @@ struct sway_container {
 	bool visible;
 	bool is_floating;
 	bool is_focused;
+	bool sticky; // floating view always visible on its output
 
 	// Attributes that mostly views have.
 	char *name;
