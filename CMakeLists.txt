@@ -109,6 +109,7 @@ endfunction ()
 
 add_manpage(sway 1)
 add_manpage(sway 5)
+add_manpage(swaymsg 1)
 
 install(
   FILES       "${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop"

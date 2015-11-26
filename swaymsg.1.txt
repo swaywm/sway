@@ -1,0 +1,69 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+:quotes.~:
+
+swaymsg (1)
+===========
+
+Name
+----
+swaymsg - Send messages to a running instance of sway over the IPC socket.
+
+Synopsis
+--------
+'swaymsg' [options] [message]
+
+Options
+-------
+
+*-q, \--quiet*::
+	Sends the IPC message but does not print the response from sway.
+
+*-v, \--version*::
+	Print the version (of swaymsg) and quit.
+
+*-s, --socket* <path>::
+	Use the specified socket path. Otherwise, swaymsg will ask sway where the
+	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
+
+*-t, \--type* <type>::
+	Specify the type of IPC message. See below.
+
+IPC Message Types
+-----------------
+
+*command*::
+	The message is a sway command (the same commands you can bind to keybindings
+	in your sway config file). It will be executed immediately.
+
+*get_workspaces*::
+	Gets a JSON-encoded list of workspaces and their status.
+
+*get_outputs*::
+	Gets a JSON-encoded list of current outputs.
+
+*get_tree*::
+	Gets a JSON-encoded layout tree of all open windows, containers, outputs,
+	workspaces, and so on.
+
+*get_marks*::
+	Get a JSON-encoded list of marks.
+
+*get_bar_config*::
+	Get a JSON-encoded configuration for swaybar.
+
+*get_version*::
+	Get JSON-encoded version information for the running instance of sway.
+
+Authors
+-------
+
+Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
+source contributors. For more information about sway development, see
+<https://github.com/SirCmpwn/sway>.
+
+See Also
+--------
+
+**sway**(5)
