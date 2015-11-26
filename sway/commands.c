@@ -33,7 +33,6 @@ struct cmd_handler {
 };
 
 static sway_cmd cmd_bindsym;
-static sway_cmd cmd_orientation;
 static sway_cmd cmd_debuglog;
 static sway_cmd cmd_exec;
 static sway_cmd cmd_exec_always;
@@ -51,6 +50,7 @@ static sway_cmd cmd_log_colors;
 static sway_cmd cmd_mode;
 static sway_cmd cmd_mouse_warping;
 static sway_cmd cmd_move;
+static sway_cmd cmd_orientation;
 static sway_cmd cmd_output;
 static sway_cmd cmd_reload;
 static sway_cmd cmd_resize;
