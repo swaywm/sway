@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
 	static struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
 		{"validate", no_argument, &validate, 1},
 		{"debug", no_argument, &debug, 1},
@@ -69,6 +70,7 @@ int main(int argc, char **argv) {
 	const char* usage =
 		"Usage: sway [options] [command]\n"
 		"\n"
+		"  -h, --help             Show help message and quit.\n"
 		"  -c, --config <config>  Specify a config file.\n"
 		"  -C, --validate         Check the validity of the config file, then exit.\n"
 		"  -d, --debug            Enables full logging, including debug information.\n"
@@ -80,12 +82,16 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "CdvVpc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdvVpc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 0: // Flag
+			break;
+		case 'h': // help
+			fprintf(stdout, "%s", usage);
+			exit(EXIT_SUCCESS);
 			break;
 		case 'c': // config
 			config_path = strdup(optarg);

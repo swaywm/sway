@@ -17,6 +17,9 @@ Synopsis
 Options
 -------
 
+*-h, --help*::
+	Show help message and quit.
+
 *-c, \--config* <config>::
 	Specifies a config file.
 
