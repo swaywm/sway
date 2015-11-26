@@ -67,12 +67,8 @@ void ipc_init(void) {
 	}
 
 	// Set i3 IPC socket path so that i3-msg works out of the box
-	if (!getenv("I3SOCK")) {
-		setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
-	}
-	if (!getenv("SWAYSOCK")) {
-		setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
-	}
+	setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
+	setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
 
 	ipc_client_list = create_list();
 
@@ -339,6 +335,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		strcat(full_version, "\")");
 		json_object *json = json_object_new_object();
 		json_object_object_add(json, "human_readable", json_object_new_string(full_version));
+		json_object_object_add(json, "variant", json_object_new_string("sway"));
 		// Todo once we actually release a version
 		json_object_object_add(json, "major", json_object_new_int(0));
 		json_object_object_add(json, "minor", json_object_new_int(0));
