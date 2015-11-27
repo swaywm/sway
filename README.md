@@ -2,7 +2,9 @@
 
 "**S**irCmpwn's **Way**land window manager" is a **work in progress**
 i3-compatible window manager for [Wayland](http://wayland.freedesktop.org/).
-Read the [FAQ](https://github.com/SirCmpwn/sway/wiki).
+Read the [FAQ](https://github.com/SirCmpwn/sway/wiki). Join the
+[IRC channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
+irc.freenode.net).
 
 ![](https://sr.ht/i4Cu.png)
 
@@ -56,9 +58,5 @@ it'll work out of the box. Otherwise, copy `/etc/sway/config` to
 
 ## Running
 
-Run this from a tty (instead of starting x):
-
-    sway
-
-If you run it from within x, it will spawn x windows instead of using your
-hardware directly (useful for development).
+Instead of running `startx`, run `sway`. You can run `sway` from within X as
+well, which is useful for testing.
