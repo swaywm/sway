@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <json-c/json.h>
 #include <list.h>
-#include "ipc.h"
+#include "ipc-server.h"
 #include "log.h"
 #include "config.h"
 #include "commands.h"

@@ -14,7 +14,7 @@
 #include "log.h"
 #include "readline.h"
 #include "handlers.h"
-#include "ipc.h"
+#include "ipc-server.h"
 #include "sway.h"
 
 static bool terminate_request = false;
