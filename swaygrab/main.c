@@ -43,6 +43,8 @@ void grab_and_apply_magick(const char *file, const char *output, int socketfd) {
 	fwrite(pixels, 1, len, f);
 	fflush(f);
 	fclose(f);
+	free(pixels);
+	free(cmd);
 }
 
 int main(int argc, char **argv) {
