@@ -33,7 +33,6 @@ struct cmd_handler {
 };
 
 static sway_cmd cmd_bindsym;
-static sway_cmd cmd_orientation;
 static sway_cmd cmd_debuglog;
 static sway_cmd cmd_exec;
 static sway_cmd cmd_exec_always;
@@ -51,6 +50,7 @@ static sway_cmd cmd_log_colors;
 static sway_cmd cmd_mode;
 static sway_cmd cmd_mouse_warping;
 static sway_cmd cmd_move;
+static sway_cmd cmd_orientation;
 static sway_cmd cmd_output;
 static sway_cmd cmd_reload;
 static sway_cmd cmd_resize;
@@ -59,6 +59,7 @@ static sway_cmd cmd_set;
 static sway_cmd cmd_split;
 static sway_cmd cmd_splith;
 static sway_cmd cmd_splitv;
+static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
@@ -1237,6 +1238,28 @@ static struct cmd_results *cmd_splith(int argc, char **argv) {
 	return _do_split(argc, argv, L_HORIZ);
 }
 
+static struct cmd_results *cmd_sticky(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if (config->reading) return cmd_results_new(CMD_FAILURE, "sticky", "Can't be used in config file.");
+	if (!config->active) return cmd_results_new(CMD_FAILURE, "sticky", "Can only be used when sway is running.");
+	if ((error = checkarg(argc, "sticky", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+	char *action = argv[0];
+	swayc_t *cont = get_focused_view(&root_container);
+	if (strcmp(action, "toggle") == 0) {
+		cont->sticky = !cont->sticky;
+	} else if (strcmp(action, "enable") == 0) {
+		cont->sticky = true;
+	} else if (strcmp(action, "disable") == 0) {
+		cont->sticky = false;
+	} else {
+		return cmd_results_new(CMD_FAILURE, "sticky",
+				"Expected 'sticky enable|disable|toggle'");
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *cmd_log_colors(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (!config->reading) return cmd_results_new(CMD_FAILURE, "log_colors", "Can only be used in config file.");
@@ -1416,6 +1439,7 @@ static struct cmd_handler handlers[] = {
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitv", cmd_splitv },
+	{ "sticky", cmd_sticky },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
