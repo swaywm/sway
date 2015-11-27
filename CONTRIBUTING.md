@@ -9,8 +9,8 @@ your plans.
 
 Sway is written in C. The style guidelines is [kernel
 style](https://www.kernel.org/doc/Documentation/CodingStyle), but all braces go
-on the same line (*"but K&R says so!" is a silly to justify something*). Some
-points to note:
+on the same line (*"but K&R says so!" is a silly way of justifying something*).
+Some points to note:
 
 * Do not use typedefs unless you have a good reason
 * Do not use macros unless you have a *really* good reason
