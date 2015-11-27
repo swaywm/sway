@@ -12,7 +12,7 @@ list_t *surfaces;
 
 struct registry *registry;
 
-enum scaling_mode_t {
+enum scaling_mode {
 	SCALING_MODE_STRETCH,
 	SCALING_MODE_FILL,
 	SCALING_MODE_FIT,
@@ -62,7 +62,7 @@ int main(int argc, const char **argv) {
 	double height = cairo_image_surface_get_height(image);
 
 	const char *scaling_mode_str = argv[3];
-	enum scaling_mode_t scaling_mode;
+	enum scaling_mode scaling_mode;
 	if (strcmp(scaling_mode_str, "stretch") == 0) {
 		scaling_mode = SCALING_MODE_STRETCH;
 	} else if (strcmp(scaling_mode_str, "fill") == 0) {
