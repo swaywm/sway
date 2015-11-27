@@ -31,6 +31,15 @@ Options
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
 	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
 
+Examples
+--------
+
+swaygrab HDMI-A-1 output.png::
+	Grab the contents of HDMI-A-1 and write to output.png.
+
+swaygrab -c HDMI-A-1 output.webm::
+	Capture a webm of HDMI-A-1.
+
 Authors
 -------
 

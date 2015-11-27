@@ -81,4 +81,4 @@ source contributors. For more information about sway development, see
 See Also
 --------
 
-**sway**(5)
+**sway**(5) **swaymsg**(1) **swaygrab**(1)
