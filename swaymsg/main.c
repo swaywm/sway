@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	uint32_t type;
+	uint32_t type = IPC_COMMAND;
 
 	if (strcasecmp(cmdtype, "command") == 0) {
 		type = IPC_COMMAND;
@@ -149,6 +149,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_BAR_CONFIG;
 	} else if (strcasecmp(cmdtype, "get_version") == 0) {
 		type = IPC_GET_VERSION;
+	} else {
+		sway_abort("Unknown message type %s", cmdtype);
 	}
 	free(cmdtype);
 
