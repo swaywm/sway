@@ -16,44 +16,43 @@
 extern log_importance_t v;
 
 /* XXX:DEBUG:XXX */
-static void container_log(const swayc_t *c) {
-	fprintf(stderr, "focus:%c|",
+static void container_log(const swayc_t *c, int depth) {
+	fprintf(stderr, "focus:%c",
 			c == get_focused_view(&root_container) ? 'K':
 			c == get_focused_container(&root_container) ? 'F' : // Focused
 			c == swayc_active_workspace() ? 'W' : // active workspace
 			c == &root_container  ? 'R' : // root
 			'X');// not any others
-	fprintf(stderr,"(%p)",c);
-	fprintf(stderr,"(p:%p)",c->parent);
-	fprintf(stderr,"(f:%p)",c->focused);
-	fprintf(stderr,"(h:%ld)",c->handle);
-	fprintf(stderr,"Type:");
-	fprintf(stderr,
-			c->type == C_ROOT   ? "Root|" :
-			c->type == C_OUTPUT ? "Output|" :
-			c->type == C_WORKSPACE ? "Workspace|" :
-			c->type == C_CONTAINER ? "Container|" :
-			c->type == C_VIEW   ? "View|" : "Unknown|");
-	fprintf(stderr,"layout:");
-	fprintf(stderr,
-			c->layout == L_NONE ? "NONE|" :
-			c->layout == L_HORIZ ? "Horiz|":
-			c->layout == L_VERT ? "Vert|":
-			c->layout == L_STACKED  ? "Stacked|":
-			c->layout == L_FLOATING ? "Floating|":
-			"Unknown|");
-	fprintf(stderr, "w:%.f|h:%.f|", c->width, c->height);
-	fprintf(stderr, "x:%.f|y:%.f|", c->x, c->y);
-	fprintf(stderr, "g:%d|",c->gaps);
+	for (int i = 6; i > depth; i--) { fprintf(stderr, " "); }
+	fprintf(stderr,"|(%p)",c);
+	fprintf(stderr,"(p:%-8p)",c->parent);
+	fprintf(stderr,"(f:%-8p)",c->focused);
+	fprintf(stderr,"(h:%2ld)",c->handle);
+	fprintf(stderr,"Type:%-4s|",
+			c->type == C_ROOT   ? "root" :
+			c->type == C_OUTPUT ? "op" :
+			c->type == C_WORKSPACE ? "ws" :
+			c->type == C_CONTAINER ? "cont" :
+			c->type == C_VIEW   ? "view" : "?");
+	fprintf(stderr,"layout:%-5s|",
+			c->layout == L_NONE ? "-" :
+			c->layout == L_HORIZ ? "Horiz":
+			c->layout == L_VERT ? "Vert":
+			c->layout == L_STACKED  ? "Stack":
+			c->layout == L_FLOATING ? "Float":
+			"Unknown");
+	fprintf(stderr, "w:%4.f|h:%4.f|", c->width, c->height);
+	fprintf(stderr, "x:%4.f|y:%4.f|", c->x, c->y);
+	fprintf(stderr, "g:%3d|",c->gaps);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
-	fprintf(stderr, "name:%.16s|", c->name);
-	fprintf(stderr, "children:%d\n",c->children?c->children->length:0);
+	fprintf(stderr, "children:%2d|",c->children?c->children->length:0);
+	fprintf(stderr, "name:%.16s\n", c->name);
 }
 void layout_log(const swayc_t *c, int depth) {
 	if (L_DEBUG > v) return;
 	int i, d;
 	int e = c->children ? c->children->length : 0;
-	container_log(c);
+	container_log(c, depth);
 	if (e) {
 		for (i = 0; i < e; ++i) {
 			fputc('|',stderr);
