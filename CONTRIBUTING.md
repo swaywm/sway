@@ -5,6 +5,25 @@ successful with your contribution if you visit the [IRC
 channel](http://webchat.freenode.net/?channels=sway&uio=d4) upfront and discuss
 your plans.
 
+## Pull Requests
+
+If you already have your own pull request habits, feel free to use them. If you
+don't, however, allow me to make a suggestion: feature branches pulled from
+upstream. Try this:
+
+1. Fork sway
+2. Clone your fork
+3. git remote add upstream git://github.com/SirCmpwn/sway.git
+
+You only need to do this once. You're never going to use your fork's master
+branch. Instead, when you start working on a feature, do this:
+
+1. git fetch upstream
+2. git checkout -b add-so-and-so-feature upstream/master
+3. work
+4. git push -u origin add-so-and-so-feature
+5. Make pull request from your feature branch
+
 ## Coding Style
 
 Sway is written in C. The style guidelines is [kernel
