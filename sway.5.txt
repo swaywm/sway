@@ -38,8 +38,8 @@ Commands
 **exit**::
 	Exit sway and end your Wayland session.
 
-**floating** toggle::
-	Toggles the "floating" status of the focused view.
+**floating** <enable|disable|toggle>::
+	Make focused view floating, non-floating, or the opposite of what it is now.
 
 **floating_modifier** <modifier>::
 	When the _modifier_ key is held down, you may use left click to drag floating
