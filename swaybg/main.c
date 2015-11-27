@@ -88,57 +88,57 @@ int main(int argc, const char **argv) {
 				cairo_set_source_surface(window->cairo, image, 0, 0);
 				break;
 			case SCALING_MODE_FILL:
-				{
-					double window_ratio = (double) window->width / window->height;
-					double bg_ratio = width / height;
+			{
+				double window_ratio = (double) window->width / window->height;
+				double bg_ratio = width / height;
 
-					if (window_ratio > bg_ratio) {
-						double scale = (double) window->width / width;
-						cairo_scale(window->cairo, scale, scale);
-						cairo_set_source_surface(window->cairo, image,
-								0,
-								(double) window->height/2 / scale - height/2);
-					} else {
-						double scale = (double) window->height / height;
-						cairo_scale(window->cairo, scale, scale);
-						cairo_set_source_surface(window->cairo, image,
-								(double) window->width/2 / scale - width/2,
-								0);
-					}
+				if (window_ratio > bg_ratio) {
+					double scale = (double) window->width / width;
+					cairo_scale(window->cairo, scale, scale);
+					cairo_set_source_surface(window->cairo, image,
+							0,
+							(double) window->height/2 / scale - height/2);
+				} else {
+					double scale = (double) window->height / height;
+					cairo_scale(window->cairo, scale, scale);
+					cairo_set_source_surface(window->cairo, image,
+							(double) window->width/2 / scale - width/2,
+							0);
 				}
 				break;
+			}
 			case SCALING_MODE_FIT:
-				{
-					double window_ratio = (double) window->width / window->height;
-					double bg_ratio = width / height;
+			{
+				double window_ratio = (double) window->width / window->height;
+				double bg_ratio = width / height;
 
-					if (window_ratio > bg_ratio) {
-						double scale = (double) window->height / height;
-						cairo_scale(window->cairo, scale, scale);
-						cairo_set_source_surface(window->cairo, image,
-								(double) window->width/2 / scale - width/2,
-								0);
-					} else {
-						double scale = (double) window->width / width;
-						cairo_scale(window->cairo, scale, scale);
-						cairo_set_source_surface(window->cairo, image,
-								0,
-								(double) window->height/2 / scale - height/2);
-					}
+				if (window_ratio > bg_ratio) {
+					double scale = (double) window->height / height;
+					cairo_scale(window->cairo, scale, scale);
+					cairo_set_source_surface(window->cairo, image,
+							(double) window->width/2 / scale - width/2,
+							0);
+				} else {
+					double scale = (double) window->width / width;
+					cairo_scale(window->cairo, scale, scale);
+					cairo_set_source_surface(window->cairo, image,
+							0,
+							(double) window->height/2 / scale - height/2);
 				}
 				break;
+			}
 			case SCALING_MODE_CENTER:
 				cairo_set_source_surface(window->cairo, image,
 						(double) window->width/2 - width/2,
 						(double) window->height/2 - height/2);
 				break;
 			case SCALING_MODE_TILE:
-				{
-					cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
-					cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
-					cairo_set_source(window->cairo, pattern);
-				}
+			{
+				cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+				cairo_set_source(window->cairo, pattern);
 				break;
+			}
 			default:
 				sway_abort("Scaling mode '%s' not implemented yet!", scaling_mode_str);
 			}
