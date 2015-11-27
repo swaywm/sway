@@ -24,7 +24,7 @@ char *get_socketpath(void) {
 	return line;
 }
 
-char *ipc_single_command(const char *socket_path, uint32_t type, const char *payload, uint32_t len) {
+int ipc_open_socket(const char *socket_path) {
 	struct sockaddr_un addr;
 	int socketfd;
 	if ((socketfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -36,18 +36,21 @@ char *ipc_single_command(const char *socket_path, uint32_t type, const char *pay
 	if (connect(socketfd, (struct sockaddr *)&addr, l) == -1) {
 		sway_abort("Unable to connect to %s", socket_path);
 	}
+	return socketfd;
+}
 
+char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
 	char data[ipc_header_size];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	data32[0] = len;
+	data32[0] = *len;
 	data32[1] = type;
 
 	if (write(socketfd, data, ipc_header_size) == -1) {
 		sway_abort("Unable to send IPC header");
 	}
 
-	if (write(socketfd, payload, len) == -1) {
+	if (write(socketfd, payload, *len) == -1) {
 		sway_abort("Unable to send IPC payload");
 	}
 
@@ -61,18 +64,16 @@ char *ipc_single_command(const char *socket_path, uint32_t type, const char *pay
 	}
 
 	total = 0;
-	len = data32[0];
-	char *response = malloc(len + 1);
-	while (total < len) {
-		ssize_t received = recv(socketfd, response + total, len - total, 0);
+	*len = data32[0];
+	char *response = malloc(*len + 1);
+	while (total < *len) {
+		ssize_t received = recv(socketfd, response + total, *len - total, 0);
 		if (received < 0) {
 			sway_abort("Unable to receive IPC response");
 		}
 		total += received;
 	}
-	response[len] = '\0';
-
-	close(socketfd);
+	response[*len] = '\0';
 
 	return response;
 }

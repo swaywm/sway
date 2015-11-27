@@ -93,10 +93,13 @@ int main(int argc, char **argv) {
 		command = join_args(argv + optind, argc - optind);
 	}
 
-	char *resp = ipc_single_command(socket_path, type, command, strlen(command));
+	int socketfd = ipc_open_socket(socket_path);
+	uint32_t len = strlen(command);
+	char *resp = ipc_single_command(socketfd, type, command, &len);
 	if (!quiet) {
 		printf("%s", resp);
 	}
+	close(socketfd);
 
 	free(command);
 	free(resp);
