@@ -36,6 +36,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_subdirectory(swaybg)
 add_subdirectory(swaymsg)
+add_subdirectory(swaygrab)
 
 find_package(XKBCommon REQUIRED)
 find_package(WLC REQUIRED)
