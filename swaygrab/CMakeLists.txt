@@ -10,6 +10,8 @@ add_executable(swaygrab
   ${common}
 )
 
+TARGET_LINK_LIBRARIES(swaygrab rt)
+
 install(
   TARGETS   swaygrab
   RUNTIME   DESTINATION bin
