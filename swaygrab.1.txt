@@ -1,0 +1,44 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+:quotes.~:
+
+swaygrab (1)
+============
+
+Name
+----
+swaygrab - Grab image data from the current sway session.
+
+Synopsis
+--------
+'swaygrab' [options] [output] [file]
+
+Grabs pixels from _output_ and writes them to _file_. The image will be passed to
+ImageMagick convert for processing.
+
+Options
+-------
+
+*-c, \--capture*::
+	Captures multiple frames as video and passes them into ffmpeg. Continues until
+	you send SIGTERM (ctrl+c) to swaygrab.
+
+*-v, \--version*::
+	Print the version (of swaymsg) and quit.
+
+*-s, --socket* <path>::
+	Use the specified socket path. Otherwise, swaymsg will ask sway where the
+	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
+
+Authors
+-------
+
+Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
+source contributors. For more information about sway development, see
+<https://github.com/SirCmpwn/sway>.
+
+See Also
+--------
+
+**sway**(5)
