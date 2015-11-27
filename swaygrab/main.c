@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	char *file, *output;
+	char *file = NULL, *output = NULL;
 	if (raw) {
 		if (optind >= argc) {
 			sway_abort("Invalid usage. See `man swaygrab` %d %d", argc, optind);
