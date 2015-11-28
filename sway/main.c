@@ -64,21 +64,7 @@ int main(int argc, char **argv) {
 		{0, 0, 0, 0}
 	};
 
-	setenv("WLC_DIM", "0", 0);
-
-	wlc_log_set_handler(wlc_log_handler);
-
-	detect_nvidia();
-
-	/* Changing code earlier than this point requires detailed review */
-	if (!wlc_init(&interface, argc, argv)) {
-		return 1;
-	}
-	
-	register_extensions();
-
 	char *config_path = NULL;
-
 	int c;
 	while (1) {
 		int option_index = 0;
@@ -120,6 +106,18 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
+
+	setenv("WLC_DIM", "0", 0);
+	wlc_log_set_handler(wlc_log_handler);
+	detect_nvidia();
+
+	/* Changing code earlier than this point requires detailed review */
+	/* (That code runs as root on systems without logind, and wlc_init drops to
+	 * another user.) */
+	if (!wlc_init(&interface, argc, argv)) {
+		return 1;
+	}
+	register_extensions();
 
 	if (debug) {
 		init_log(L_DEBUG);
