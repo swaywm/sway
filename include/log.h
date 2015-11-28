@@ -1,7 +1,6 @@
 #ifndef _SWAY_LOG_H
 #define _SWAY_LOG_H
 #include <stdbool.h>
-#include "container.h"
 
 typedef enum {
 	L_SILENT = 0,
@@ -35,7 +34,4 @@ void _sway_log(log_importance_t verbosity, const char* format, ...) __attribute_
 
 void error_handler(int sig);
 
-void layout_log(const swayc_t *c, int depth);
-const char *swayc_type_string(enum swayc_types type);
-void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ...) __attribute__((format(printf,3,4)));
 #endif

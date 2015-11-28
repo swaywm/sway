@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <wayland-client.h>
 #include <time.h>
+#include <string.h>
 #include "client/window.h"
 #include "client/registry.h"
 #include "log.h"

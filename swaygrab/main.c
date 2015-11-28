@@ -3,6 +3,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <math.h>
 #include <time.h>
 #include "log.h"

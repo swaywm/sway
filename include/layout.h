@@ -2,6 +2,7 @@
 #define _SWAY_LAYOUT_H
 
 #include <wlc/wlc.h>
+#include "log.h"
 #include "list.h"
 #include "container.h"
 #include "focus.h"
@@ -58,5 +59,8 @@ swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir)
 swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit);
 
 void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge edge);
+
+void layout_log(const swayc_t *c, int depth);
+void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ...) __attribute__((format(printf,3,4)));
 
 #endif
