@@ -133,10 +133,6 @@ Commands
 	Disables the specified output.
 
 **NOTES FOR THE OUTPUT COMMAND**::
-	You may combine output commands into one, like so:
-	+
-	output HDMI-A-1 res 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
-	+
 	You can get a list of output names like so:
 	+
 	swaymsg -t get_outputs

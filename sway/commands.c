@@ -711,90 +711,106 @@ static struct cmd_results *cmd_orientation(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+int output_name_cmp(const void *item, const void *data)
+{
+	const struct output_config *output = item;
+	const char *name = data;
+
+	return strcmp(output->name, name);
+}
+
 static struct cmd_results *cmd_output(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	struct output_config *output = calloc(1, sizeof(struct output_config));
-	output->x = output->y = output->width = output->height = -1;
-	output->name = strdup(argv[0]);
-	output->enabled = true;
+
+	const char *name = argv[0];
+	const char *command = argv[1];
+
+	struct output_config *output;
+	int index = list_seq_find(config->output_configs, output_name_cmp, name);
+	if (index >= 0) {
+		output = config->output_configs->items[index];
+	} else {
+		output = calloc(1, sizeof(struct output_config));
+		output->x = output->y = output->width = output->height = -1;
+		output->name = strdup(name);
+		output->enabled = true;
+	}
 
 	// TODO: atoi doesn't handle invalid numbers
-	if (strcasecmp(argv[1], "disable") == 0) {
+	if (strcasecmp(command, "disable") == 0) {
 		output->enabled = false;
 	}
 	// TODO: Check missing params after each sub-command
 
-	int i;
-	for (i = 1; i < argc; ++i) {
-		if (strcasecmp(argv[i], "resolution") == 0 || strcasecmp(argv[i], "res") == 0) {
-			char *res = argv[++i];
-			char *x = strchr(res, 'x');
-			int width = -1, height = -1;
-			if (x != NULL) {
-				// Format is 1234x4321
-				*x = '\0';
-				width = atoi(res);
-				height = atoi(x + 1);
-				*x = 'x';
-			} else {
-				// Format is 1234 4321
-				width = atoi(res);
-				res = argv[++i];
-				height = atoi(res);
-			}
-			output->width = width;
-			output->height = height;
-		} else if (strcasecmp(argv[i], "position") == 0 || strcasecmp(argv[i], "pos") == 0) {
-			char *res = argv[++i];
-			char *c = strchr(res, ',');
-			int x = -1, y = -1;
-			if (c != NULL) {
-				// Format is 1234,4321
-				*c = '\0';
-				x = atoi(res);
-				y = atoi(c + 1);
-				*c = ',';
-			} else {
-				// Format is 1234 4321
-				x = atoi(res);
-				res = argv[++i];
-				y = atoi(res);
-			}
-			output->x = x;
-			output->y = y;
-		} else if (strcasecmp(argv[i], "bg") == 0 || strcasecmp(argv[i], "background") == 0) {
-			wordexp_t p;
-			char *src = argv[++i];
-			char *mode = argv[++i];
-			if (wordexp(src, &p, 0) != 0) {
-				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
-			}
-			src = p.we_wordv[0];
-			if (access(src, F_OK) == -1) {
-				return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
-			}
-			for (char *m = mode; *m; ++m) *m = tolower(*m);
-			// Check mode
-			bool valid = false;
-			size_t j;
-			for (j = 0; j < sizeof(bg_options) / sizeof(char *); ++j) {
-				if (strcasecmp(mode, bg_options[j]) == 0) {
-					valid = true;
-					break;
-				}
-			}
-			if (!valid) {
-				return cmd_results_new(CMD_INVALID, "output", "Invalid background scaling mode.");
-			}
-			output->background = strdup(src);
-			output->background_option = strdup(mode);
-			wordfree(&p);
+	if (strcasecmp(command, "resolution") == 0 || strcasecmp(command, "res") == 0) {
+		char *res = argv[2];
+		char *x = strchr(res, 'x');
+		int width = -1, height = -1;
+		if (x != NULL) {
+			// Format is 1234x4321
+			*x = '\0';
+			width = atoi(res);
+			height = atoi(x + 1);
+			*x = 'x';
+		} else {
+			// Format is 1234 4321
+			width = atoi(res);
+			res = argv[3];
+			height = atoi(res);
 		}
+		output->width = width;
+		output->height = height;
+	} else if (strcasecmp(command, "position") == 0 || strcasecmp(command, "pos") == 0) {
+		char *res = argv[2];
+		char *c = strchr(res, ',');
+		int x = -1, y = -1;
+		if (c != NULL) {
+			// Format is 1234,4321
+			*c = '\0';
+			x = atoi(res);
+			y = atoi(c + 1);
+			*c = ',';
+		} else {
+			// Format is 1234 4321
+			x = atoi(res);
+			res = argv[3];
+			y = atoi(res);
+		}
+		output->x = x;
+		output->y = y;
+	} else if (strcasecmp(command, "bg") == 0 || strcasecmp(command, "background") == 0) {
+		wordexp_t p;
+		char *src = argv[2];
+		char *mode = argv[3];
+		if (wordexp(src, &p, 0) != 0) {
+			return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
+		}
+		src = p.we_wordv[0];
+		if (access(src, F_OK) == -1) {
+			return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
+		}
+		for (char *m = mode; *m; ++m) *m = tolower(*m);
+		// Check mode
+		bool valid = false;
+		size_t j;
+		for (j = 0; j < sizeof(bg_options) / sizeof(char *); ++j) {
+			if (strcasecmp(mode, bg_options[j]) == 0) {
+				valid = true;
+				break;
+			}
+		}
+		if (!valid) {
+			return cmd_results_new(CMD_INVALID, "output", "Invalid background scaling mode.");
+		}
+		output->background = strdup(src);
+		output->background_option = strdup(mode);
+		wordfree(&p);
 	}
 
+	int i = 1;
 	for (i = 0; i < config->output_configs->length; ++i) {
 		struct output_config *oc = config->output_configs->items[i];
 		if (strcmp(oc->name, output->name) == 0) {
@@ -804,7 +820,9 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			break;
 		}
 	}
-	list_add(config->output_configs, output);
+	if (index == -1) {
+		list_add(config->output_configs, output);
+	}
 
 	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d) (bg %s %s)",
 			output->name, output->width, output->height, output->x, output->y,
