@@ -10,6 +10,7 @@ WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell "${PROJECT_SOURCE_DIR}/../protocols/
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell "${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml" desktop-shell)
 
 include_directories(
+  ${WLC_INCLUDE_DIRS}
   ${WAYLAND_CLIENT_INCLUDE_DIR}
   ${CAIRO_INCLUDE_DIRS}
   ${PANGO_INCLUDE_DIRS}
