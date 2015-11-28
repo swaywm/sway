@@ -10,7 +10,7 @@
 #include "ipc-client.h"
 
 void sway_terminate(void) {
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 int numlen(int n) {
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 #else
 			fprintf(stdout, "version not detected\n");
 #endif
-			exit(0);
+			exit(EXIT_SUCCESS);
 			break;
 		}
 	}

@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 #else
 			fprintf(stdout, "version not detected\n");
 #endif
-			exit(0);
+			exit(EXIT_SUCCESS);
 			break;
 		case 'V': // verbose
 			verbose = 1;
@@ -98,10 +98,10 @@ int main(int argc, char **argv) {
 		case 'p': ; // --get-socketpath
 			if (getenv("SWAYSOCK")) {
 				fprintf(stdout, "%s\n", getenv("SWAYSOCK"));
-				exit(0);
+				exit(EXIT_SUCCESS);
 			} else {
 				fprintf(stderr, "sway socket not detected.\n");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			break;
 		}

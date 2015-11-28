@@ -29,7 +29,7 @@ void sway_terminate(void) {
 	}
 	list_free(surfaces);
 	registry_teardown(registry);
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 int main(int argc, const char **argv) {
