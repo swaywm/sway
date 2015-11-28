@@ -128,10 +128,10 @@ int main(int argc, char **argv) {
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
-		{"capture", no_argument, &capture, 'c'},
+		{"capture", no_argument, NULL, 'c'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
-		{"raw", no_argument, &raw, 'r'},
+		{"raw", no_argument, NULL, 'r'},
 		{"rate", required_argument, NULL, 'R'},
 		{0, 0, 0, 0}
 	};
@@ -154,8 +154,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 		switch (c) {
-		case 0: // Flag
-			break;
 		case 's': // Socket
 			socket_path = strdup(optarg);
 			break;

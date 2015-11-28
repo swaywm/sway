@@ -57,10 +57,10 @@ int main(int argc, char **argv) {
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
-		{"validate", no_argument, &validate, 1},
-		{"debug", no_argument, &debug, 1},
+		{"validate", no_argument, NULL, 'C'},
+		{"debug", no_argument, NULL, 'd'},
 		{"version", no_argument, NULL, 'v'},
-		{"verbose", no_argument, &verbose, 1},
+		{"verbose", no_argument, NULL, 'V'},
 		{"get-socketpath", no_argument, NULL, 'p'},
 		{0, 0, 0, 0}
 	};
@@ -87,8 +87,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 		switch (c) {
-		case 0: // Flag
-			break;
 		case 'h': // help
 			fprintf(stdout, "%s", usage);
 			exit(EXIT_SUCCESS);
