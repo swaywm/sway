@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <wordexp.h>
 #include "readline.h"
 #include "stringop.h"
 #include "list.h"
@@ -13,7 +14,6 @@
 #include "criteria.h"
 
 struct sway_config *config = NULL;
-
 
 static void free_variable(struct sway_variable *var) {
 	free(var->name);
@@ -118,79 +118,41 @@ static void config_defaults(struct sway_config *config) {
 }
 
 static char *get_config_path(void) {
-	char *config_path = NULL;
-	char *paths[3] = { getenv("HOME"), getenv("XDG_CONFIG_HOME"), "" };
-	int pathlen[3] = { 0, 0, 0 };
-	int i;
-#define home paths[0]
-#define conf paths[1]
-	// Get home and config directories
-	conf = conf ? strdup(conf) : NULL;
-	home = home ? strdup(home) : NULL;
-	// If config folder is unset, set it to $HOME/.config
-	if (!conf && home) {
-		const char *def = "/.config";
-		conf = malloc(strlen(home) + strlen(def) + 1);
-		strcpy(conf, home);
-		strcat(conf, def);
-	}
-	// Get path lengths
-	pathlen[0] = home ? strlen(home) : 0;
-	pathlen[1] = conf ? strlen(conf) : 0;
-#undef home
-#undef conf
-
-	// Search for config file from search paths
-	static const char *search_paths[] = {
-		"/.sway/config", // Prepend with $home
-		"/sway/config", // Prepend with $config
+	static const char *config_paths[] = {
+		"$HOME/.sway/config",
+		"$XDG_CONFIG_HOME/sway/config",
+		"$HOME/.i3/config",
+		"$XDG_CONFIG_HOME/i3/config",
 		"/etc/sway/config",
-		"/.i3/config", // $home
-		"/i3/config", // $config
-		"/etc/i3/config"
+		"/etc/i3/config",
 	};
-	for (i = 0; i < (int)(sizeof(search_paths) / sizeof(char *)); ++i) {
-		// Only try path if it is set by enviroment variables
-		if (paths[i%3]) {
-			char *test = malloc(pathlen[i%3] + strlen(search_paths[i]) + 1);
-			strcpy(test, paths[i%3]);
-			strcpy(test + pathlen[i%3], search_paths[i]);
-			sway_log(L_DEBUG, "Checking for config at %s", test);
-			if (file_exists(test)) {
-				config_path = test;
-				goto cleanup;
+
+	if (!getenv("XDG_CONFIG_HOME")) {
+		char *home = getenv("HOME");
+		char *config_home = malloc(strlen("home") + strlen("/.config") + 1);
+		strcpy(config_home, home);
+		strcat(config_home, "/.config");
+		setenv("XDG_CONFIG_HOME", config_home, 1);
+		sway_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+	}
+
+	wordexp_t p;
+	char *path;
+
+	int i;
+	for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
+		if (wordexp(config_paths[i], &p, 0) == 0) {
+			path = p.we_wordv[0];
+			if (file_exists(path)) {
+				return path;
 			}
-			free(test);
 		}
 	}
 
-	sway_log(L_DEBUG, "Trying to find config in XDG_CONFIG_DIRS");
-	char *xdg_config_dirs = getenv("XDG_CONFIG_DIRS");
-	if (xdg_config_dirs) {
-		list_t *paths = split_string(xdg_config_dirs, ":");
-		const char *name = "/sway/config";
-		for (i = 0; i < paths->length; i++ ) {
-			char *test = malloc(strlen(paths->items[i]) + strlen(name) + 1);
-			strcpy(test, paths->items[i]);
-			strcat(test, name);
-			if (file_exists(test)) {
-				config_path = test;
-				break;
-			}
-			free(test);
-		}
-		free_flat_list(paths);
-	}
-
-cleanup:
-	free(paths[0]);
-	free(paths[1]);
-	return config_path;
+	return NULL; // Not reached
 }
 
 bool load_config(const char *file) {
-	sway_log(L_INFO, "Loading config");
-
 	input_init();
 
 	char *path;
@@ -199,6 +161,8 @@ bool load_config(const char *file) {
 	} else {
 		path = get_config_path();
 	}
+
+	sway_log(L_INFO, "Loading config from %s", path);
 
 	if (path == NULL) {
 		sway_log(L_ERROR, "Unable to find a config file!");
