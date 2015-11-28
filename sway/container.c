@@ -87,7 +87,10 @@ swayc_t *new_output(wlc_handle handle) {
 			sway_log(L_DEBUG, "Matched output config for %s", name);
 			break;
 		}
-		oc = NULL;
+		if (strcasecmp("*", oc->name) == 0) {
+			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			break;
+		}
 	}
 
 	if (oc && !oc->enabled) {

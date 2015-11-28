@@ -140,6 +140,10 @@ Commands
 	You can get a list of output names like so:
 	+
 	swaymsg -t get_outputs
+	+
+	You may also match any output by using the output name "*". Be sure to add
+	this output config after the others, or it will be matched instead of the
+	others.
 
 **reload**::
 	Reloads the sway config file without restarting sway.

@@ -289,6 +289,18 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output->x = x;
 	}
 
+	if (!oc || !oc->background) {
+		// Look for a * config for background
+		int i;
+		for (i = 0; i < config->output_configs->length; ++i) {
+			oc = config->output_configs->items[i];
+			if (strcasecmp("*", oc->name) == 0) {
+				break;
+			}
+			oc = NULL;
+		}
+	}
+
 	if (oc && oc->background) {
 		int i;
 		for (i = 0; i < root_container.children->length; ++i) {
