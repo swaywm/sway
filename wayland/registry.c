@@ -3,6 +3,7 @@
 #include <string.h>
 #include "wayland-desktop-shell-client-protocol.h"
 #include "client/registry.h"
+#include "stringop.h"
 #include "log.h"
 
 static void display_handle_mode(void *data, struct wl_output *wl_output,
@@ -110,7 +111,6 @@ void registry_teardown(struct registry *registry) {
 		wl_display_disconnect(registry->display);
 	}
 	if (registry->outputs) {
-		// TODO: Free the outputs themselves
-		list_free(registry->outputs);
+		free_flat_list(registry->outputs);
 	}
 }
