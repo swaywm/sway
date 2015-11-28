@@ -30,6 +30,14 @@ int main(int argc, char **argv) {
 		{0, 0, 0, 0}
 	};
 
+	const char *usage =
+		"Usage: swaymsg [options] [message]\n"
+		"\n"
+		"  -q, --quiet            Be quiet.\n"
+		"  -v, --version          Show the version number and quit.\n"
+		"  -s, --socket <socket>  Use the specified socket.\n"
+		"  -t, --type <type>      Specify the message type.\n";
+
 	int c;
 	while (1) {
 		int option_index = 0;
@@ -54,6 +62,9 @@ int main(int argc, char **argv) {
 #endif
 			exit(EXIT_SUCCESS);
 			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			exit(EXIT_FAILURE);
 		}
 	}
 
