@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include "log.h"
 #include "stringop.h"
-#include "ipc-server.h"
+#include "ipc.h"
 #include "readline.h"
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
