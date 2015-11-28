@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
 	init_log(L_INFO);
 
 	static struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
 		{"capture", no_argument, &capture, 'c'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
 	const char *usage =
 		"Usage: swaygrab [options] <output> [file]\n"
 		"\n"
+		"  -h, --help             Show help message and quit.\n"
 		"  -c, --capture          Capture video.\n"
 		"  -v, --version          Show the version number and quit.\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
@@ -147,7 +149,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "cvs:r", long_options, &option_index);
+		c = getopt_long(argc, argv, "hcvs:r", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
