@@ -107,7 +107,6 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 		double fts = (double)finish.tv_sec + 1.0e-9*finish.tv_nsec;
 		double sts = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 		long diff = (fts - sts) * 1000000000;
-		sway_log(L_INFO, "%f %f %ld", sts, fts, diff);
 		ts.tv_nsec = ns - diff;
 		if (ts.tv_nsec < 0) {
 			ts.tv_nsec = 0;
