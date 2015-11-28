@@ -17,6 +17,9 @@ Synopsis
 Options
 -------
 
+*-h, --help*::
+	Show help message and quit.
+
 *-q, \--quiet*::
 	Sends the IPC message but does not print the response from sway.
 

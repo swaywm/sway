@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
 	init_log(L_INFO);
 
 	static struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
 		{"quiet", no_argument, &quiet, 'q'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
@@ -33,6 +34,7 @@ int main(int argc, char **argv) {
 	const char *usage =
 		"Usage: swaymsg [options] [message]\n"
 		"\n"
+		"  -h, --help             Show help message and quit.\n"
 		"  -q, --quiet            Be quiet.\n"
 		"  -v, --version          Show the version number and quit.\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
@@ -41,7 +43,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "qvs:t:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hqvs:t:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
