@@ -261,6 +261,14 @@ bool read_config(FILE *file, bool is_active) {
 	return success;
 }
 
+int output_name_cmp(const void *item, const void *data)
+{
+	const struct output_config *output = item;
+	const char *name = data;
+
+	return strcmp(output->name, name);
+}
+
 void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->width > 0 && oc->height > 0) {
 		output->width = oc->width;

@@ -804,14 +804,12 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		}
 	}
 
-	for (i = 0; i < config->output_configs->length; ++i) {
+	i = list_seq_find(config->output_configs, output_name_cmp, name);
+	if (i >= 0) {
+		// replace existing config
 		struct output_config *oc = config->output_configs->items[i];
-		if (strcmp(oc->name, output->name) == 0) {
-			// replace existing config
-			list_del(config->output_configs, i);
-			free_output_config(oc);
-			break;
-		}
+		list_del(config->output_configs, i);
+		free_output_config(oc);
 	}
 	list_add(config->output_configs, output);
 
