@@ -98,7 +98,7 @@ bool read_config(FILE *file, bool is_active);
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
 char *do_var_replacement(char *str);
-int output_name_cmp(const void *item, const void *data);;
+int output_name_cmp(const void *item, const void *data);
 /** Sets up a WLC output handle based on a given output_config.
  */
 void apply_output_config(struct output_config *oc, swayc_t *output);
