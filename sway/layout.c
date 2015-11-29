@@ -427,39 +427,43 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		}
 		return;
 	case C_OUTPUT:
-		for (i = 0; i < desktop_shell.panels->length; ++i) {
-			struct panel_config *config = desktop_shell.panels->items[i];
-			if (config->output == container->handle) {
-				struct wlc_size size = *wlc_surface_get_size(config->surface);
-				switch (desktop_shell.panel_position) {
-				case DESKTOP_SHELL_PANEL_POSITION_TOP:
-					y += size.h; height -= size.h;
-					break;
-				case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
-					height -= size.h;
-					break;
-				case DESKTOP_SHELL_PANEL_POSITION_LEFT:
-					x += size.w; width -= size.w;
-					break;
-				case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
-					width -= size.w;
-					break;
+		{
+			struct wlc_size resolution = *wlc_output_get_resolution(container->handle);
+			width = resolution.w; height = resolution.h;
+			for (i = 0; i < desktop_shell.panels->length; ++i) {
+				struct panel_config *config = desktop_shell.panels->items[i];
+				if (config->output == container->handle) {
+					struct wlc_size size = *wlc_surface_get_size(config->surface);
+					switch (desktop_shell.panel_position) {
+					case DESKTOP_SHELL_PANEL_POSITION_TOP:
+						y += size.h; height -= size.h;
+						break;
+					case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
+						height -= size.h;
+						break;
+					case DESKTOP_SHELL_PANEL_POSITION_LEFT:
+						x += size.w; width -= size.w;
+						break;
+					case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
+						width -= size.w;
+						break;
+					}
 				}
 			}
-		}
 
-		container->width = width;
-		container->height = height;
-		x = 0, y = 0;
-		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
-			int gap = swayc_gap(child);
-			child->x = x + gap;
-			child->y = y + gap;
-			child->width = width - gap * 2;
-			child->height = height - gap * 2;
-			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
-			arrange_windows_r(child, -1, -1);
+			container->width = width;
+			container->height = height;
+			x = 0, y = 0;
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				int gap = swayc_gap(child);
+				child->x = x + gap;
+				child->y = y + gap;
+				child->width = width - gap * 2;
+				child->height = height - gap * 2;
+				sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
+				arrange_windows_r(child, -1, -1);
+			}
 		}
 		return;
 	case C_VIEW:
