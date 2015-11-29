@@ -767,8 +767,14 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			output->y = y;
 		} else if (strcasecmp(argv[i], "bg") == 0 || strcasecmp(argv[i], "background") == 0) {
 			wordexp_t p;
-			char *src = argv[++i];
-			char *mode = argv[++i];
+			if (++i >= argc) {
+				return cmd_results_new(CMD_INVALID, "output", "Missing background file.");
+			}
+			char *src = argv[i];
+			if (++i >= argc) {
+				return cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode.");
+			}
+			char *mode = argv[i];
 			if (wordexp(src, &p, 0) != 0) {
 				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
 			}
