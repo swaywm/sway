@@ -719,7 +719,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	struct output_config *output = calloc(1, sizeof(struct output_config));
 	output->x = output->y = output->width = output->height = -1;
 	output->name = strdup(name);
-	output->enabled = true;
+	output->enabled = -1;
 
 	// TODO: atoi doesn't handle invalid numbers
 	// TODO: Check missing params after each sub-command
@@ -729,7 +729,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		const char *command = argv[i];
 
 		if (strcasecmp(command, "disable") == 0) {
-			output->enabled = false;
+			output->enabled = 0;
 		} else if (strcasecmp(command, "resolution") == 0 || strcasecmp(command, "res") == 0) {
 			char *res = argv[++i];
 			char *x = strchr(res, 'x');
@@ -811,8 +811,8 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 	list_add(config->output_configs, output);
 
-	sway_log(L_DEBUG, "Config stored for output %s (%s) (%d x %d @ %d, %d) (bg %s %s)",
-			output->name, output->enabled ? "enable" : "disable", output->width,
+	sway_log(L_DEBUG, "Config stored for output %s (enabled:%d) (%d x %d @ %d, %d) (bg %s %s)",
+			output->name, output->enabled, output->width,
 			output->height, output->x, output->y, output->background,
 			output->background_option);
 
