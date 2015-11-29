@@ -10,7 +10,6 @@
 
 const char whitespace[] = " \f\n\r\t\v";
 
-/* Note: This returns 8 characters for trimmed_start per tab character. */
 char *strip_whitespace(char *_str) {
 	if (*_str == '\0')
 		return _str;
@@ -26,25 +25,6 @@ char *strip_whitespace(char *_str) {
 		i--;
 	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
 	str[i + 1] = '\0';
-	return str;
-}
-
-char *strip_comments(char *str) {
-	int in_string = 0, in_character = 0;
-	int i = 0;
-	while (str[i] != '\0') {
-		if (str[i] == '"' && !in_character) {
-			in_string = !in_string;
-		} else if (str[i] == '\'' && !in_string) {
-			in_character = !in_character;
-		} else if (!in_character && !in_string) {
-			if (str[i] == '#') {
-				str[i] = '\0';
-				break;
-			}
-		}
-		++i;
-	}
 	return str;
 }
 

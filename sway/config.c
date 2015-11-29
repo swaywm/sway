@@ -207,7 +207,10 @@ bool read_config(FILE *file, bool is_active) {
 	while (!feof(file)) {
 		line = read_line(file);
 		line_number++;
-		line = strip_comments(line);
+		line = strip_whitespace(line);
+		if (line[0] == '#') {
+			continue;
+		}
 		struct cmd_results *res = config_command(line);
 		switch(res->status) {
 		case CMD_FAILURE:
@@ -261,8 +264,7 @@ bool read_config(FILE *file, bool is_active) {
 	return success;
 }
 
-int output_name_cmp(const void *item, const void *data)
-{
+int output_name_cmp(const void *item, const void *data) {
 	const struct output_config *output = item;
 	const char *name = data;
 
