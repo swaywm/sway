@@ -25,34 +25,34 @@ struct colors {
 struct registry *registry;
 struct window *window;
 struct colors colors = {
-	.background = 0x00000000,
-	.statusline = 0xffffffff,
-	.seperator = 0x666666ff,
+	.background = 0x000000FF,
+	.statusline = 0xFFFFFFFF,
+	.seperator = 0x666666FF,
 
 	.focused_workspace = {
-		.border = 0x4c7899ff,
-		.background = 0x285577ff,
-		.text = 0xffffffff
+		.border = 0x4C7899FF,
+		.background = 0x285577FF,
+		.text = 0xFFFFFFFF
 	},
 	.active_workspace = {
-		.border = 0x333333ff,
-		.background = 0x5f676aff,
-		.text = 0xffffffff
+		.border = 0x333333FF,
+		.background = 0x5F676AFF,
+		.text = 0xFFFFFFFF
 	},
 	.inactive_workspace = {
-		.border = 0x333333ff,
-		.background = 0x222222ff,
-		.text = 0x888888ff
+		.border = 0x333333FF,
+		.background = 0x222222FF,
+		.text = 0x888888FF
 	},
 	.urgent_workspace = {
-		.border = 0x2f343aff,
-		.background = 0x900000ff,
-		.text = 0xffffffff
+		.border = 0x2F343AFF,
+		.background = 0x900000FF,
+		.text = 0xFFFFFFFF
 	},
 	.binding_mode = {
-		.border = 0x2f343aff,
-		.background = 0x900000ff,
-		.text = 0xffffffff
+		.border = 0x2F343AFF,
+		.background = 0x900000FF,
+		.text = 0xFFFFFFFF
 	},
 };
 

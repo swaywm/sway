@@ -72,11 +72,43 @@ static void handle_output_destroyed(wlc_handle output) {
 }
 
 static void handle_output_pre_render(wlc_handle output) {
+	struct wlc_size resolution = *wlc_output_get_resolution(output);
+
 	int i;
 	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
 		struct background_config *config = desktop_shell.backgrounds->items[i];
 		if (config->output == output) {
-			wlc_surface_render(config->surface, &(struct wlc_geometry){ wlc_origin_zero, *wlc_output_get_resolution(output) });
+			wlc_surface_render(config->surface, &(struct wlc_geometry){ wlc_origin_zero, resolution });
+			break;
+		}
+	}
+	
+	for (i = 0; i < desktop_shell.panels->length; ++i) {
+		struct panel_config *config = desktop_shell.panels->items[i];
+		if (config->output == output) {
+			struct wlc_size size = *wlc_surface_get_size(config->surface);
+			struct wlc_geometry geo = {
+				.size = size
+			};
+			switch (desktop_shell.panel_position) {
+			case DESKTOP_SHELL_PANEL_POSITION_TOP:
+				geo.origin = (struct wlc_origin){ 0, 0 };
+				break;
+			case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
+				geo.origin = (struct wlc_origin){ 0, resolution.h - size.h };
+				break;
+			case DESKTOP_SHELL_PANEL_POSITION_LEFT:
+				geo.origin = (struct wlc_origin){ 0, 0 };
+				break;
+			case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
+				geo.origin = (struct wlc_origin){ resolution.w - size.w, 0 };
+				break;
+			}
+			wlc_surface_render(config->surface, &geo);
+			if (size.w != desktop_shell.panel_size.w || size.h != desktop_shell.panel_size.h) {
+				desktop_shell.panel_size = size;
+				arrange_windows(&root_container, -1, -1);
+			}
 			break;
 		}
 	}

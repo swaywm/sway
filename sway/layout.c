@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <wlc/wlc.h>
+#include "extensions.h"
 #include "layout.h"
 #include "log.h"
 #include "list.h"
@@ -426,6 +427,27 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		}
 		return;
 	case C_OUTPUT:
+		for (i = 0; i < desktop_shell.panels->length; ++i) {
+			struct panel_config *config = desktop_shell.panels->items[i];
+			if (config->output == container->handle) {
+				struct wlc_size size = *wlc_surface_get_size(config->surface);
+				switch (desktop_shell.panel_position) {
+				case DESKTOP_SHELL_PANEL_POSITION_TOP:
+					y += size.h; height -= size.h;
+					break;
+				case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
+					height -= size.h;
+					break;
+				case DESKTOP_SHELL_PANEL_POSITION_LEFT:
+					x += size.w; width -= size.w;
+					break;
+				case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
+					width -= size.w;
+					break;
+				}
+			}
+		}
+
 		container->width = width;
 		container->height = height;
 		x = 0, y = 0;
