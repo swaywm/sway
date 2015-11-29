@@ -271,6 +271,42 @@ int output_name_cmp(const void *item, const void *data) {
 	return strcmp(output->name, name);
 }
 
+void merge_output_config(struct output_config *dst, struct output_config *src) {
+	if (src->name) {
+		if (dst->name) {
+			free(dst->name);
+		}
+		dst->name = strdup(src->name);
+	}
+	if (src->enabled != -1) {
+		dst->enabled = src->enabled;
+	}
+	if (src->width != -1) {
+		dst->width = src->width;
+	}
+	if (src->height != -1) {
+		dst->height = src->height;
+	}
+	if (src->x != -1) {
+		dst->x = src->x;
+	}
+	if (src->y != -1) {
+		dst->y = src->y;
+	}
+	if (src->background) {
+		if (dst->background) {
+			free(dst->background);
+		}
+		dst->background = strdup(src->background);
+	}
+	if (src->background_option) {
+		if (dst->background_option) {
+			free(dst->background_option);
+		}
+		dst->background_option = strdup(src->background_option);
+	}
+}
+
 void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->width > 0 && oc->height > 0) {
 		output->width = oc->width;
