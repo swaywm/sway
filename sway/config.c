@@ -224,7 +224,7 @@ bool read_config(FILE *file, bool is_active) {
 		if (line[0] == '#') {
 			continue;
 		}
-		struct cmd_results *res = config_command(line);
+		struct cmd_results *res = config_command(line, block);
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:

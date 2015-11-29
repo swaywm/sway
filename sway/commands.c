@@ -1463,15 +1463,38 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_handler bar_handlers[] = {
+	{ "binding_mode_indicator", NULL },
+	{ "bindsym", NULL },
+	{ "colors", NULL },
+	{ "font", NULL },
+	{ "hidden_state", NULL },
+	{ "id", NULL },
+	{ "mode", NULL },
+	{ "modifier", NULL },
+	{ "output", NULL },
+	{ "position", NULL },
+	{ "seperator_symbol", NULL },
+	{ "status_command", NULL },
+	{ "strip_workspace_numbers", NULL },
+	{ "tray_output", NULL },
+	{ "tray_padding", NULL },
+	{ "workspace_buttons", NULL },
+};
+
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
 	return strcasecmp(a->command, b->command);
 }
 
-static struct cmd_handler *find_handler(char *line) {
+static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
+	struct cmd_handler *h = handlers;
+	if (block == CMD_BLOCK_BAR) {
+		h = bar_handlers;
+	}
 	struct cmd_handler d = { .command=line };
-	struct cmd_handler *res = bsearch(&d, handlers,
+	struct cmd_handler *res = bsearch(&d, h,
 			sizeof(handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	return res;
@@ -1537,7 +1560,7 @@ struct cmd_results *handle_command(char *_exec) {
 			if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
 				strip_quotes(argv[1]);
 			}
-			struct cmd_handler *handler = find_handler(argv[0]);
+			struct cmd_handler *handler = find_handler(argv[0], CMD_BLOCK_END);
 			if (!handler) {
 				if (results) {
 					free_cmd_results(results);
@@ -1574,7 +1597,7 @@ struct cmd_results *handle_command(char *_exec) {
 //	  be chained together)
 // 4) handle_command handles all state internally while config_command has some
 //	  state handled outside (notably the block mode, in read_config)
-struct cmd_results *config_command(char *exec) {
+struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	struct cmd_results *results = NULL;
 	int argc;
 	char **argv = split_args(exec, &argc);
@@ -1589,7 +1612,7 @@ struct cmd_results *config_command(char *exec) {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
 		goto cleanup;
 	}
-	struct cmd_handler *handler = find_handler(argv[0]);
+	struct cmd_handler *handler = find_handler(argv[0], block);
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");

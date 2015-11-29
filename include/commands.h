@@ -41,7 +41,7 @@ struct cmd_results *handle_command(char *command);
  *
  * Do not use this under normal conditions.
  */
-struct cmd_results *config_command(char *command);
+struct cmd_results *config_command(char *command, enum cmd_status block);
 
 /**
  * Allocates a cmd_results object.
