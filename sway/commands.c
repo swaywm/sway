@@ -344,14 +344,12 @@ static struct cmd_results *cmd_floating(int argc, char **argv) {
 
 	} else if (view->is_floating && !wants_floating) {
 		// Delete the view from the floating list and unset its is_floating flag
-		// Using length-1 as the index is safe because the view must be the currently
-		// focused floating output
 		remove_child(view);
 		view->is_floating = false;
 		// Get the properly focused container, and add in the view there
 		swayc_t *focused = container_under_pointer();
 		// If focused is null, it's because the currently focused container is a workspace
-		if (focused == NULL) {
+		if (focused == NULL || focused->is_floating) {
 			focused = swayc_active_workspace();
 		}
 		set_focused_container(focused);
