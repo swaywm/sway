@@ -299,12 +299,10 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 
 	if (!oc || !oc->background) {
 		// Look for a * config for background
-		int i;
-		for (i = 0; i < config->output_configs->length; ++i) {
+		int i = list_seq_find(config->output_configs, output_name_cmp, "*");
+		if (i >= 0) {
 			oc = config->output_configs->items[i];
-			if (strcasecmp("*", oc->name) == 0) {
-				break;
-			}
+		} else {
 			oc = NULL;
 		}
 	}
