@@ -34,6 +34,7 @@ struct window {
         struct wl_callback *frame_cb;
         struct cursor cursor;
         uint32_t width, height;
+        char *font;
         cairo_t *cairo;
 };
 

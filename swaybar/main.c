@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include "client/registry.h"
 #include "client/window.h"
+#include "client/pango.h"
 #include "log.h"
+
+#define MARGIN 5
 
 struct box_colors {
 	uint32_t border;
@@ -71,15 +74,17 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 }
 
 void render() {
-	// Reset buffer
 	cairo_save(window->cairo);
 	cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(window->cairo);
 	cairo_restore(window->cairo);
 
-	// Draw bar
 	cairo_set_source_u32(window->cairo, colors.background);
 	cairo_paint(window->cairo);
+
+	cairo_move_to(window->cairo, MARGIN, MARGIN);
+	cairo_set_source_u32(window->cairo, colors.statusline);
+	pango_printf(window, "TODO: finish bar");
 }
 
 int main(int argc, char **argv) {
@@ -100,6 +105,10 @@ int main(int argc, char **argv) {
 	}
 	desktop_shell_set_panel(registry->desktop_shell, output->output, window->surface);
 	desktop_shell_set_panel_position(registry->desktop_shell, DESKTOP_SHELL_PANEL_POSITION_BOTTOM);
+
+	int width, height;
+	get_text_size(window, &width, &height, "Test string for measuring purposes");
+	window->height = height + MARGIN * 2;
 
 	do {
 		if (window_prerender(window) && window->cairo) {

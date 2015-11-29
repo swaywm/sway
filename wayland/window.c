@@ -63,6 +63,7 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 	window->width = width;
 	window->height = height;
 	window->registry = registry;
+	window->font = "monospace 10";
 
 	window->surface = wl_compositor_create_surface(registry->compositor);
 	if (shell_surface) {
@@ -73,6 +74,8 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 	if (registry->pointer) {
 		wl_pointer_add_listener(registry->pointer, &pointer_listener, window);
 	}
+
+	get_next_buffer(window);
 
 	window->cursor.cursor_theme = wl_cursor_theme_load("default", 32, registry->shm); // TODO: let you customize this
 	window->cursor.cursor = wl_cursor_theme_get_cursor(window->cursor.cursor_theme, "left_ptr");
@@ -118,4 +121,5 @@ int window_render(struct window *window) {
 }
 
 void window_teardown(struct window *window) {
+	// TODO
 }
