@@ -804,12 +804,14 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 
 	i = list_seq_find(config->output_configs, output_name_cmp, name);
 	if (i >= 0) {
-		// replace existing config
+		// merge existing config
 		struct output_config *oc = config->output_configs->items[i];
-		list_del(config->output_configs, i);
-		free_output_config(oc);
+		merge_output_config(oc, output);
+		free_output_config(output);
+		output = oc;
+	} else {
+		list_add(config->output_configs, output);
 	}
-	list_add(config->output_configs, output);
 
 	sway_log(L_DEBUG, "Config stored for output %s (enabled:%d) (%d x %d @ %d, %d) (bg %s %s)",
 			output->name, output->enabled, output->width,

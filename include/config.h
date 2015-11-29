@@ -99,6 +99,7 @@ bool read_config(FILE *file, bool is_active);
  */
 char *do_var_replacement(char *str);
 int output_name_cmp(const void *item, const void *data);
+void merge_output_config(struct output_config *dst, struct output_config *src);
 /** Sets up a WLC output handle based on a given output_config.
  */
 void apply_output_config(struct output_config *oc, swayc_t *output);
