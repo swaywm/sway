@@ -16,6 +16,8 @@ enum cmd_status {
 	// Config Blocks
 	CMD_BLOCK_END,
 	CMD_BLOCK_MODE,
+	CMD_BLOCK_BAR,
+	CMD_BLOCK_BAR_COLORS
 };
 
 /**

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon.h>
+#include "wayland-desktop-shell-server-protocol.h"
 #include "list.h"
 #include "layout.h"
 #include "container.h"
@@ -57,6 +58,44 @@ struct workspace_output {
 	char *workspace;
 };
 
+struct bar_config {
+	/**
+	 * One of "dock", "hide", "invisible"
+	 *
+	 * Always visible in dock mode. Visible only when modifier key is held in hide mode.
+	 * Never visible in invisible mode.
+	 */
+	char *mode;
+	/**
+	 * One of "show" or "hide".
+	 *
+	 * In "show" mode, it will always be shown on top of the active workspace.
+	 */
+	char *hidden_state;
+	uint32_t modifier;
+	enum desktop_shell_panel_position position;
+	char *status_command;
+	char *font;
+	int bar_height;
+	bool workspace_buttons;
+	bool strip_workspace_numbers;
+	bool binding_mode_indicator;
+	bool verbose;
+	struct {
+		char *background;
+		char *foreground;
+		char *focused_workspace_border;
+		char *focused_workspace_bg;
+		char *focused_workspace_text;
+		char *active_workspace_border;
+		char *active_workspace_bg;
+		char *active_workspace_text;
+		char *inactive_workspace_border;
+		char *inactive_workspace_bg;
+		char *inactive_workspace_text;
+	} colors;
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -68,6 +107,7 @@ struct sway_config {
 	list_t *output_configs;
 	list_t *criteria;
 	struct sway_mode *current_mode;
+	struct bar_config bar;
 	uint32_t floating_mod;
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;

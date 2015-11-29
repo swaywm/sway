@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <wordexp.h>
+#include "wayland-desktop-shell-server-protocol.h"
 #include "readline.h"
 #include "stringop.h"
 #include "list.h"
@@ -115,6 +116,18 @@ static void config_defaults(struct sway_config *config) {
 	config->edge_gaps = true;
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
+
+	// Bar
+	config->bar.mode = "dock";
+	config->bar.hidden_state = "hide";
+	config->bar.modifier = 0;
+	config->bar.position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
+	config->bar.status_command = "while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done";
+	config->bar.font = "monospace 10";
+	config->bar.bar_height = -1;
+	config->bar.workspace_buttons = true;
+	config->bar.strip_workspace_numbers = false;
+	config->bar.binding_mode_indicator = true;
 }
 
 static char *get_config_path(void) {
@@ -190,7 +203,7 @@ bool load_config(const char *file) {
 
 bool read_config(FILE *file, bool is_active) {
 	struct sway_config *old_config = config;
-	config = malloc(sizeof(struct sway_config));
+	config = calloc(1, sizeof(struct sway_config));
 
 	config_defaults(config);
 	config->reading = true;
