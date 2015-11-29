@@ -722,7 +722,6 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	output->enabled = true;
 
 	// TODO: atoi doesn't handle invalid numbers
-	// TODO: Check missing params after each sub-command
 
 	int i;
 	for (i = 1; i < argc; ++i) {
@@ -731,7 +730,10 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		if (strcasecmp(command, "disable") == 0) {
 			output->enabled = false;
 		} else if (strcasecmp(command, "resolution") == 0 || strcasecmp(command, "res") == 0) {
-			char *res = argv[++i];
+			if (++i >= argc) {
+				return cmd_results_new(CMD_INVALID, "output", "Missing resolution argument.");
+			}
+			char *res = argv[i];
 			char *x = strchr(res, 'x');
 			int width = -1, height = -1;
 			if (x != NULL) {
@@ -743,13 +745,19 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			} else {
 				// Format is 1234 4321
 				width = atoi(res);
-				res = argv[++i];
+				if (++i >= argc) {
+					return cmd_results_new(CMD_INVALID, "output", "Missing resolution argument (height).");
+				}
+				res = argv[i];
 				height = atoi(res);
 			}
 			output->width = width;
 			output->height = height;
 		} else if (strcasecmp(command, "position") == 0 || strcasecmp(command, "pos") == 0) {
-			char *res = argv[++i];
+			if (++i >= argc) {
+				return cmd_results_new(CMD_INVALID, "output", "Missing position argument.");
+			}
+			char *res = argv[i];
 			char *c = strchr(res, ',');
 			int x = -1, y = -1;
 			if (c != NULL) {
@@ -761,7 +769,10 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			} else {
 				// Format is 1234 4321
 				x = atoi(res);
-				res = argv[++i];
+				if (++i >= argc) {
+					return cmd_results_new(CMD_INVALID, "output", "Missing position argument (y).");
+				}
+				res = argv[i];
 				y = atoi(res);
 			}
 			output->x = x;
