@@ -716,20 +716,23 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	if ((error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	const char *name = argv[0];
+
 	struct output_config *output = calloc(1, sizeof(struct output_config));
 	output->x = output->y = output->width = output->height = -1;
-	output->name = strdup(argv[0]);
+	output->name = strdup(name);
 	output->enabled = true;
 
 	// TODO: atoi doesn't handle invalid numbers
-	if (strcasecmp(argv[1], "disable") == 0) {
-		output->enabled = false;
-	}
 	// TODO: Check missing params after each sub-command
 
 	int i;
 	for (i = 1; i < argc; ++i) {
-		if (strcasecmp(argv[i], "resolution") == 0 || strcasecmp(argv[i], "res") == 0) {
+		const char *command = argv[i];
+
+		if (strcasecmp(command, "disable") == 0) {
+			output->enabled = false;
+		} else if (strcasecmp(command, "resolution") == 0 || strcasecmp(command, "res") == 0) {
 			char *res = argv[++i];
 			char *x = strchr(res, 'x');
 			int width = -1, height = -1;
@@ -747,7 +750,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			output->width = width;
 			output->height = height;
-		} else if (strcasecmp(argv[i], "position") == 0 || strcasecmp(argv[i], "pos") == 0) {
+		} else if (strcasecmp(command, "position") == 0 || strcasecmp(command, "pos") == 0) {
 			char *res = argv[++i];
 			char *c = strchr(res, ',');
 			int x = -1, y = -1;
@@ -765,7 +768,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			output->x = x;
 			output->y = y;
-		} else if (strcasecmp(argv[i], "bg") == 0 || strcasecmp(argv[i], "background") == 0) {
+		} else if (strcasecmp(command, "background") == 0 || strcasecmp(command, "bg") == 0) {
 			wordexp_t p;
 			if (++i >= argc) {
 				return cmd_results_new(CMD_INVALID, "output", "Missing background file.");
@@ -801,20 +804,19 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		}
 	}
 
-	for (i = 0; i < config->output_configs->length; ++i) {
+	i = list_seq_find(config->output_configs, output_name_cmp, name);
+	if (i >= 0) {
+		// replace existing config
 		struct output_config *oc = config->output_configs->items[i];
-		if (strcmp(oc->name, output->name) == 0) {
-			// replace existing config
-			list_del(config->output_configs, i);
-			free_output_config(oc);
-			break;
-		}
+		list_del(config->output_configs, i);
+		free_output_config(oc);
 	}
 	list_add(config->output_configs, output);
 
-	sway_log(L_DEBUG, "Config stored for output %s (%d x %d @ %d, %d) (bg %s %s)",
-			output->name, output->width, output->height, output->x, output->y,
-			output->background, output->background_option);
+	sway_log(L_DEBUG, "Config stored for output %s (%s) (%d x %d @ %d, %d) (bg %s %s)",
+			output->name, output->enabled ? "enable" : "disable", output->width,
+			output->height, output->x, output->y, output->background,
+			output->background_option);
 
 	if (output->name) {
 		// Try to find the output container and apply configuration now. If

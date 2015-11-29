@@ -261,6 +261,14 @@ bool read_config(FILE *file, bool is_active) {
 	return success;
 }
 
+int output_name_cmp(const void *item, const void *data)
+{
+	const struct output_config *output = item;
+	const char *name = data;
+
+	return strcmp(output->name, name);
+}
+
 void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->width > 0 && oc->height > 0) {
 		output->width = oc->width;
@@ -291,12 +299,10 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 
 	if (!oc || !oc->background) {
 		// Look for a * config for background
-		int i;
-		for (i = 0; i < config->output_configs->length; ++i) {
+		int i = list_seq_find(config->output_configs, output_name_cmp, "*");
+		if (i >= 0) {
 			oc = config->output_configs->items[i];
-			if (strcasecmp("*", oc->name) == 0) {
-				break;
-			}
+		} else {
 			oc = NULL;
 		}
 	}
