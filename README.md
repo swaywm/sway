@@ -50,6 +50,10 @@ Run these commands:
     make
     sudo make install
 
+On systems without logind, you need to suid the sway binary:
+
+    sudo chmod a+s /usr/bin/sway
+
 ## Configuration
 
 If you already use i3, then copy your i3 config to `~/.config/sway/config` and
