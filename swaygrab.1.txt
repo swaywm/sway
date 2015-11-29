@@ -20,6 +20,9 @@ ImageMagick convert for processing.
 Options
 -------
 
+*-h, --help*::
+	Show help message and quit.
+
 *-c, \--capture*::
 	Captures multiple frames as video and passes them into ffmpeg. Continues until
 	you send SIGTERM (ctrl+c) to swaygrab.

@@ -12,7 +12,7 @@
 #include "log.h"
 
 void sway_terminate(void) {
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv) {
@@ -23,22 +23,33 @@ int main(int argc, char **argv) {
 	init_log(L_INFO);
 
 	static struct option long_options[] = {
-		{"quiet", no_argument, &quiet, 'q'},
+		{"help", no_argument, NULL, 'h'},
+		{"quiet", no_argument, NULL, 'q'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
 		{"type", required_argument, NULL, 't'},
 		{0, 0, 0, 0}
 	};
 
+	const char *usage =
+		"Usage: swaymsg [options] [message]\n"
+		"\n"
+		"  -h, --help             Show help message and quit.\n"
+		"  -q, --quiet            Be quiet.\n"
+		"  -v, --version          Show the version number and quit.\n"
+		"  -s, --socket <socket>  Use the specified socket.\n"
+		"  -t, --type <type>      Specify the message type.\n";
+
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "qvs:t:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hqvs:t:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
-		case 0: // Flag
+		case 'q': // Quiet
+			quiet = 1;
 			break;
 		case 's': // Socket
 			socket_path = strdup(optarg);
@@ -52,8 +63,11 @@ int main(int argc, char **argv) {
 #else
 			fprintf(stdout, "version not detected\n");
 #endif
-			exit(0);
+			exit(EXIT_SUCCESS);
 			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			exit(EXIT_FAILURE);
 		}
 	}
 

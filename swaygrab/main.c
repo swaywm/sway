@@ -10,7 +10,7 @@
 #include "ipc-client.h"
 
 void sway_terminate(void) {
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 int numlen(int n) {
@@ -127,24 +127,33 @@ int main(int argc, char **argv) {
 	init_log(L_INFO);
 
 	static struct option long_options[] = {
-		{"capture", no_argument, &capture, 'c'},
+		{"help", no_argument, NULL, 'h'},
+		{"capture", no_argument, NULL, 'c'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
-		{"raw", no_argument, &raw, 'r'},
+		{"raw", no_argument, NULL, 'r'},
 		{"rate", required_argument, NULL, 'R'},
 		{0, 0, 0, 0}
 	};
 
+	const char *usage =
+		"Usage: swaygrab [options] <output> [file]\n"
+		"\n"
+		"  -h, --help             Show help message and quit.\n"
+		"  -c, --capture          Capture video.\n"
+		"  -v, --version          Show the version number and quit.\n"
+		"  -s, --socket <socket>  Use the specified socket.\n"
+		"  -R, --rate <rate>      Specify framerate (default: 30)\n"
+		"  -r, --raw              Write raw rgba data to stdout.\n";
+
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "cvs:r", long_options, &option_index);
+		c = getopt_long(argc, argv, "hcvs:r", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
-		case 0: // Flag
-			break;
 		case 's': // Socket
 			socket_path = strdup(optarg);
 			break;
@@ -163,8 +172,11 @@ int main(int argc, char **argv) {
 #else
 			fprintf(stdout, "version not detected\n");
 #endif
-			exit(0);
+			exit(EXIT_SUCCESS);
 			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			exit(EXIT_FAILURE);
 		}
 	}
 
