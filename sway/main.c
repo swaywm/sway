@@ -107,6 +107,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// we need to setup logging before wlc_init in case it fails.
+	if (debug) {
+		init_log(L_DEBUG);
+	} else if (verbose || validate) {
+		init_log(L_INFO);
+	} else {
+		init_log(L_ERROR);
+	}
 	setenv("WLC_DIM", "0", 0);
 	wlc_log_set_handler(wlc_log_handler);
 	detect_nvidia();
@@ -118,14 +126,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	register_extensions();
-
-	if (debug) {
-		init_log(L_DEBUG);
-	} else if (verbose || validate) {
-		init_log(L_INFO);
-	} else {
-		init_log(L_ERROR);
-	}
 
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
