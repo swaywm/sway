@@ -49,12 +49,10 @@ int main(int argc, const char **argv) {
 	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	int i;
 	struct output_state *output = registry->outputs->items[desired_output];
-	struct window *window = window_setup(registry, 100, 100, false);
+	struct window *window = window_setup(registry, output->width, output->height, false);
 	if (!window) {
 		sway_abort("Failed to create surfaces.");
 	}
-	window->width = output->width;
-	window->height = output->height;
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
 	list_add(surfaces, window);
 
