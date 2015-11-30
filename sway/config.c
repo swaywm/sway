@@ -136,7 +136,7 @@ static char *get_config_path(void) {
 		"$XDG_CONFIG_HOME/sway/config",
 		"$HOME/.i3/config",
 		"$XDG_CONFIG_HOME/i3/config",
-		"/etc/sway/config",
+                FALLBACK_CONFIG_DIR "config",
 		"/etc/i3/config",
 	};
 
