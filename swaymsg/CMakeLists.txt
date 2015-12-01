@@ -11,6 +11,8 @@ add_executable(swaymsg
 )
 
 install(
-  TARGETS   swaymsg
-  RUNTIME   DESTINATION bin
-  COMPONENT runtime)
+  TARGETS swaymsg
+  RUNTIME
+  DESTINATION bin
+  COMPONENT runtime
+)

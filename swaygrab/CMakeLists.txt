@@ -10,9 +10,13 @@ add_executable(swaygrab
   ${common}
 )
 
-target_link_libraries(swaygrab rt)
+target_link_libraries(swaygrab
+  rt
+)
 
 install(
-  TARGETS   swaygrab
-  RUNTIME   DESTINATION bin
-  COMPONENT runtime)
+  TARGETS swaygrab
+  RUNTIME
+  DESTINATION bin
+  COMPONENT runtime
+)
