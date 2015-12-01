@@ -46,7 +46,9 @@ Install dependencies:
 
 Run these commands:
 
-    cmake .
+    mkdir build
+    cd build
+    cmake ..
     make
     sudo make install
 

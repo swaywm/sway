@@ -5,7 +5,6 @@ find_package(Cairo REQUIRED)
 find_package(Pango REQUIRED)
 
 include(Wayland)
-set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../bin/)
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell
 	"${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml"
 	xdg-shell
