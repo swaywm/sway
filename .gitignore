@@ -10,3 +10,4 @@ test/
 build/
 .lvimrc
 config-debug
+wayland-*-protocol.*
