@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(sway C)
 
+set(FALLBACK_CONFIG_DIR "/etc/sway/")
+add_definitions('-DFALLBACK_CONFIG_DIR=\"${FALLBACK_CONFIG_DIR}\"')
+
 set(CMAKE_C_FLAGS "-g")
 set(CMAKE_C_STANDARD 99)
 SET(CMAKE_C_EXTENSIONS OFF)
@@ -80,7 +83,7 @@ install(
   COMPONENT runtime)
 install(
   FILES       "${CMAKE_CURRENT_SOURCE_DIR}/config"
-  DESTINATION /etc/sway/
+  DESTINATION "${FALLBACK_CONFIG_DIR}"
   COMPONENT   configuration)
 
 add_custom_target(man ALL)
