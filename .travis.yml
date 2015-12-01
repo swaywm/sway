@@ -22,4 +22,5 @@ arch:
     - "bash .ci/build.sh"
 
 script:
+  - export ARCH_TRAVIS_ARCH_ISO=$(date +%Y.%m).01
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
