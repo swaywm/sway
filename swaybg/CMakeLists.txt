@@ -16,9 +16,9 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-FILE(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
-FILE(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
-FILE(GLOB wl_sources ${PROJECT_SOURCE_DIR}/../wayland/*.c)
+file(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
+file(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
+file(GLOB wl_sources ${PROJECT_SOURCE_DIR}/../wayland/*.c)
 
 add_executable(swaybg
   ${sources}
@@ -28,7 +28,7 @@ add_executable(swaybg
   ${proto-desktop-shell}
 )
 
-TARGET_LINK_LIBRARIES(swaybg ${WAYLAND_CLIENT_LIBRARIES} ${WAYLAND_CURSOR_LIBRARIES} ${CAIRO_LIBRARIES} ${PANGO_LIBRARIES} m)
+target_link_libraries(swaybg ${WAYLAND_CLIENT_LIBRARIES} ${WAYLAND_CURSOR_LIBRARIES} ${CAIRO_LIBRARIES} ${PANGO_LIBRARIES} m)
 
 install(
   TARGETS   swaybg

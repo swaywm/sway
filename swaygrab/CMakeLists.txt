@@ -2,15 +2,15 @@ project(swaygrab)
 
 set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../bin/)
 
-FILE(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
-FILE(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
+file(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
+file(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
 
 add_executable(swaygrab
   ${sources}
   ${common}
 )
 
-TARGET_LINK_LIBRARIES(swaygrab rt)
+target_link_libraries(swaygrab rt)
 
 install(
   TARGETS   swaygrab
