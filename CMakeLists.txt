@@ -11,7 +11,13 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CURRENT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
-add_definitions("-Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE")
+add_definitions(
+    -D_GNU_SOURCE
+)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter")
+
 list(INSERT CMAKE_MODULE_PATH 0
 	"${CMAKE_CURRENT_SOURCE_DIR}/CMake"
 )
