@@ -1,16 +1,14 @@
-project(swaybg)
-
 find_package(Wayland REQUIRED)
 find_package(Cairo REQUIRED)
 find_package(Pango REQUIRED)
 
 include(Wayland)
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell
-	${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml
+	../protocols/xdg-shell.xml
 	xdg-shell
 )
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell
-	${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml
+	../protocols/desktop-shell.xml
 	desktop-shell
 )
 
@@ -21,9 +19,9 @@ include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
-file(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
-file(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
-file(GLOB wl_sources ${PROJECT_SOURCE_DIR}/../wayland/*.c)
+file(GLOB sources *.c)
+file(GLOB common ../common/*.c)
+file(GLOB wl_sources ../wayland/*.c)
 
 add_executable(swaybg
 	${sources}
