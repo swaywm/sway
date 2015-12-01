@@ -1,7 +1,5 @@
-project(swaygrab)
-
-file(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
-file(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
+file(GLOB sources *.c)
+file(GLOB common ../common/*.c)
 
 add_executable(swaygrab
 	${sources}
