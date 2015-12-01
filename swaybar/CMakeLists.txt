@@ -5,32 +5,45 @@ find_package(Cairo REQUIRED)
 find_package(Pango REQUIRED)
 
 include(Wayland)
-set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../bin/)
-WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell "${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml" xdg-shell)
-WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell "${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml" desktop-shell)
+WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell
+	${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml
+	xdg-shell
+)
+WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell
+	${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml
+	desktop-shell
+)
 
 include_directories(
-  ${WAYLAND_CLIENT_INCLUDE_DIR}
-  ${CAIRO_INCLUDE_DIRS}
-  ${PANGO_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}
+	${WAYLAND_CLIENT_INCLUDE_DIR}
+	${CAIRO_INCLUDE_DIRS}
+	${PANGO_INCLUDE_DIRS}
+	${CMAKE_CURRENT_BINARY_DIR}
 )
 
-FILE(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
-FILE(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
-FILE(GLOB wl_sources ${PROJECT_SOURCE_DIR}/../wayland/*.c)
+file(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
+file(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
+file(GLOB wl_sources ${PROJECT_SOURCE_DIR}/../wayland/*.c)
 
 add_executable(swaybar
-  ${sources}
-  ${wl_sources}
-  ${common}
-  ${proto-xdg-shell}
-  ${proto-desktop-shell}
+	${sources}
+	${wl_sources}
+	${common}
+	${proto-xdg-shell}
+	${proto-desktop-shell}
 )
 
-TARGET_LINK_LIBRARIES(swaybar ${WAYLAND_CLIENT_LIBRARIES} ${WAYLAND_CURSOR_LIBRARIES} ${CAIRO_LIBRARIES} ${PANGO_LIBRARIES} m)
+target_link_libraries(swaybar
+	${WAYLAND_CLIENT_LIBRARIES}
+	${WAYLAND_CURSOR_LIBRARIES}
+	${CAIRO_LIBRARIES}
+	${PANGO_LIBRARIES}
+	m
+)
 
 install(
-  TARGETS   swaybar
-  RUNTIME   DESTINATION bin
-  COMPONENT runtime)
+	TARGETS swaybar
+	RUNTIME
+	DESTINATION bin
+	COMPONENT runtime
+)
