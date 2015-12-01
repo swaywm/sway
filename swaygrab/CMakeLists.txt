@@ -6,17 +6,17 @@ file(GLOB sources ${PROJECT_SOURCE_DIR}/*.c)
 file(GLOB common ${PROJECT_SOURCE_DIR}/../common/*.c)
 
 add_executable(swaygrab
-  ${sources}
-  ${common}
+	${sources}
+	${common}
 )
 
 target_link_libraries(swaygrab
-  rt
+	rt
 )
 
 install(
-  TARGETS swaygrab
-  RUNTIME
-  DESTINATION bin
-  COMPONENT runtime
+	TARGETS swaygrab
+	RUNTIME
+	DESTINATION bin
+	COMPONENT runtime
 )
