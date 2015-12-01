@@ -82,7 +82,7 @@ static void handle_output_pre_render(wlc_handle output) {
 			break;
 		}
 	}
-	
+
 	for (i = 0; i < desktop_shell.panels->length; ++i) {
 		struct panel_config *config = desktop_shell.panels->items[i];
 		if (config->output == output) {
@@ -92,16 +92,16 @@ static void handle_output_pre_render(wlc_handle output) {
 			};
 			switch (desktop_shell.panel_position) {
 			case DESKTOP_SHELL_PANEL_POSITION_TOP:
-				geo.origin = (struct wlc_origin){ 0, 0 };
+				geo.origin = (struct wlc_point){ 0, 0 };
 				break;
 			case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
-				geo.origin = (struct wlc_origin){ 0, resolution.h - size.h };
+				geo.origin = (struct wlc_point){ 0, resolution.h - size.h };
 				break;
 			case DESKTOP_SHELL_PANEL_POSITION_LEFT:
-				geo.origin = (struct wlc_origin){ 0, 0 };
+				geo.origin = (struct wlc_point){ 0, 0 };
 				break;
 			case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
-				geo.origin = (struct wlc_origin){ resolution.w - size.w, 0 };
+				geo.origin = (struct wlc_point){ resolution.w - size.w, 0 };
 				break;
 			}
 			wlc_surface_render(config->surface, &geo);
