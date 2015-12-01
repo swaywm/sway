@@ -6,11 +6,11 @@ find_package(Pango REQUIRED)
 
 include(Wayland)
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell
-	"${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml"
+	${PROJECT_SOURCE_DIR}/../protocols/xdg-shell.xml
 	xdg-shell
 )
 WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell
-	"${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml"
+	${PROJECT_SOURCE_DIR}/../protocols/desktop-shell.xml
 	desktop-shell
 )
 
