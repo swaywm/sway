@@ -15,6 +15,7 @@ bool locked_view_focus = false;
 static void update_focus(swayc_t *c) {
 	// Handle if focus switches
 	swayc_t *parent = c->parent;
+	if (!parent) return;
 	if (parent->focused != c) {
 		// Get previous focus
 		swayc_t *prev = parent->focused;
@@ -87,7 +88,7 @@ swayc_t *get_focused_container(swayc_t *parent) {
 }
 
 bool set_focused_container(swayc_t *c) {
-	if (locked_container_focus || !c) {
+	if (locked_container_focus || !c || !c->parent) {
 		return false;
 	}
 	swayc_log(L_DEBUG, c, "Setting focus to %p:%ld", c, c->handle);
