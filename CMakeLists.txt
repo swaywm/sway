@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(sway C)
 
-set(FALLBACK_CONFIG_DIR "/etc/sway/")
+set(FALLBACK_CONFIG_DIR "${FALLBACK_CONFIG_DIR}" CACHE STRING "/etc/sway/")
 add_definitions('-DFALLBACK_CONFIG_DIR=\"${FALLBACK_CONFIG_DIR}\"')
 
 set(CMAKE_C_FLAGS "-g")
