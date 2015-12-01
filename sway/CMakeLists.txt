@@ -42,7 +42,7 @@ install(
 	COMPONENT runtime
 )
 install(
-	FILES ${CMAKE_CURRENT_SOURCE_DIR}/config
+	FILES ${PROJECT_SOURCE_DIR}/config
 	DESTINATION ${FALLBACK_CONFIG_DIR}
 	COMPONENT configuration
 )
