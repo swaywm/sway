@@ -82,13 +82,15 @@ swayc_t *new_output(wlc_handle handle) {
 	struct output_config *oc = NULL;
 	int i;
 	for (i = 0; i < config->output_configs->length; ++i) {
-		oc = config->output_configs->items[i];
-		if (strcasecmp(name, oc->name) == 0) {
+		struct output_config *cur = config->output_configs->items[i];
+		if (strcasecmp(name, cur->name) == 0) {
 			sway_log(L_DEBUG, "Matched output config for %s", name);
+			oc = cur;
 			break;
 		}
-		if (strcasecmp("*", oc->name) == 0) {
+		if (strcasecmp("*", cur->name) == 0) {
 			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			oc = cur;
 			break;
 		}
 	}
