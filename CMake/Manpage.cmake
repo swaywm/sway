@@ -4,7 +4,7 @@ add_custom_target(man ALL)
 
 function(add_manpage name section)
 	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${name}.${section}
+		OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.${section}
 		COMMAND ${A2X_COMMAND}
 				--no-xmllint
 				--doctype manpage
@@ -17,7 +17,7 @@ function(add_manpage name section)
 
 	add_custom_target(man-${name}.${section}
 		DEPENDS
-			${CMAKE_CURRENT_BINARY_DIR}/${name}.${section}
+			${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.${section}
 	)
 	add_dependencies(man
 		man-${name}.${section}
