@@ -1,37 +1,17 @@
-find_package(Wayland REQUIRED)
-find_package(Cairo REQUIRED)
-find_package(Pango REQUIRED)
-
-include(Wayland)
-WAYLAND_ADD_PROTOCOL_CLIENT(proto-xdg-shell
-	../protocols/xdg-shell.xml
-	xdg-shell
-)
-WAYLAND_ADD_PROTOCOL_CLIENT(proto-desktop-shell
-	../protocols/desktop-shell.xml
-	desktop-shell
-)
-
 include_directories(
+	${PROTOCOLS_INCLUDE_DIRS}
 	${WAYLAND_CLIENT_INCLUDE_DIR}
 	${CAIRO_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
-	${CMAKE_CURRENT_BINARY_DIR}
 )
 
-file(GLOB sources *.c)
-file(GLOB common ../common/*.c)
-file(GLOB wl_sources ../wayland/*.c)
-
 add_executable(swaybar
-	${sources}
-	${wl_sources}
-	${common}
-	${proto-xdg-shell}
-	${proto-desktop-shell}
+	main.c
 )
 
 target_link_libraries(swaybar
+	sway-common
+	sway-wayland
 	${WAYLAND_CLIENT_LIBRARIES}
 	${WAYLAND_CURSOR_LIBRARIES}
 	${CAIRO_LIBRARIES}

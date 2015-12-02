@@ -1,10 +1,10 @@
-file(GLOB sources *.c)
-file(GLOB common ../common/*.c)
-
 add_executable(swaymsg
-	${sources}
-	${common}
+	main.c
 )
+
+target_link_libraries(swaymsg
+	sway-common
+	)
 
 install(
 	TARGETS swaymsg
