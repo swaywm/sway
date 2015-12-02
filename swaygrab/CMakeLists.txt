@@ -13,3 +13,5 @@ install(
 	DESTINATION bin
 	COMPONENT runtime
 )
+
+add_manpage(swaygrab 1)

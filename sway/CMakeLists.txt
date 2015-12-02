@@ -46,3 +46,6 @@ install(
 	DESTINATION ${FALLBACK_CONFIG_DIR}
 	COMPONENT configuration
 )
+
+add_manpage(sway 1)
+add_manpage(sway 5)

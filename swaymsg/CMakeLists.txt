@@ -12,3 +12,5 @@ install(
 	DESTINATION bin
 	COMPONENT runtime
 )
+
+add_manpage(swaymsg 1)
