@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 	if (!quiet) {
-		printf("%s", resp);
+		printf("%s\n", resp);
 	}
 	close(socketfd);
 
