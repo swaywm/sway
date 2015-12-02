@@ -41,7 +41,19 @@ add_definitions(-DSWAY_GIT_BRANCH=\"${GIT_BRANCH}\")
 string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
 add_definitions(-DSWAY_VERSION_DATE=\"${CURRENT_DATE}\")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+find_package(Cairo REQUIRED)
+find_package(JsonC REQUIRED)
+find_package(PCRE REQUIRED)
+find_package(Pango REQUIRED)
+find_package(WLC REQUIRED)
+find_package(Wayland REQUIRED)
+find_package(XKBCommon REQUIRED)
+
+include_directories(include)
+
+add_subdirectory(protocols)
+add_subdirectory(common)
+add_subdirectory(wayland)
 
 add_subdirectory(sway)
 add_subdirectory(swaybg)

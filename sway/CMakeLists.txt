@@ -1,33 +1,33 @@
-find_package(XKBCommon REQUIRED)
-find_package(WLC REQUIRED)
-find_package(PCRE REQUIRED)
-find_package(Wayland REQUIRED)
-find_package(JsonC REQUIRED)
-
-include(Wayland)
-WAYLAND_ADD_PROTOCOL_SERVER(proto-desktop-shell
-	${PROJECT_SOURCE_DIR}/protocols/desktop-shell.xml
-	desktop-shell
-)
-
-file(GLOB sources ${PROJECT_SOURCE_DIR}/sway/*.c)
-file(GLOB common ${PROJECT_SOURCE_DIR}/common/*.c)
-
 include_directories(
+	${PROTOCOLS_INCLUDE_DIRS}
 	${WLC_INCLUDE_DIRS}
 	${PCRE_INCLUDE_DIRS}
 	${JSONC_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
-	${CMAKE_CURRENT_BINARY_DIR}
 )
 
 add_executable(sway
-	${sources}
-	${common}
-	${proto-desktop-shell}
+	commands.c
+	config.c
+	container.c
+	criteria.c
+	debug_log.c
+	extensions.c
+	focus.c
+	handlers.c
+	input_state.c
+	ipc-server.c
+	layout.c
+	main.c
+	output.c
+	resize.c
+	util.c
+	workspace.c
 )
 
 target_link_libraries(sway
+	sway-common
+	sway-protocols
 	${WLC_LIBRARIES}
 	${XKBCOMMON_LIBRARIES}
 	${PCRE_LIBRARIES}
