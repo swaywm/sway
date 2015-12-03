@@ -5,6 +5,7 @@ cmake_install.cmake
 install_manifest.txt
 *.swp
 *.o
+*.a
 bin/
 test/
 build/
