@@ -8,6 +8,31 @@
 
 struct desktop_shell_state desktop_shell;
 
+void background_surface_destructor(struct wl_resource *resource) {
+	sway_log(L_DEBUG, "Background surface killed");
+	int i;
+	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
+		struct background_config *config = desktop_shell.backgrounds->items[i];
+		if (config->resource == resource) {
+			list_del(desktop_shell.backgrounds, i);
+			break;
+		}
+	}
+}
+
+void panel_surface_destructor(struct wl_resource *resource) {
+	sway_log(L_DEBUG, "Panel surface killed");
+	int i;
+	for (i = 0; i < desktop_shell.panels->length; ++i) {
+		struct panel_config *config = desktop_shell.panels->items[i];
+		if (config->resource == resource) {
+			list_del(desktop_shell.panels, i);
+			arrange_windows(&root_container, -1, -1);
+			break;
+		}
+	}
+}
+
 static void set_background(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
 	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
@@ -18,7 +43,9 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	struct background_config *config = malloc(sizeof(struct background_config));
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
+	config->resource = surface;
 	list_add(desktop_shell.backgrounds, config);
+	wl_resource_set_destructor(surface, background_surface_destructor);
 }
 
 static void set_panel(struct wl_client *client, struct wl_resource *resource,
@@ -31,7 +58,9 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	struct panel_config *config = malloc(sizeof(struct panel_config));
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
+	config->resource = surface;
 	list_add(desktop_shell.panels, config);
+	wl_resource_set_destructor(surface, panel_surface_destructor);
 	desktop_shell.panel_size = *wlc_surface_get_size(config->surface);
 	arrange_windows(&root_container, -1, -1);
 }

@@ -1,18 +1,21 @@
 #ifndef _SWAY_EXTENSIONS_H
 #define _SWAY_EXTENSIONS_H
 
+#include <wayland-server-core.h>
+#include <wlc/wlc-wayland.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "list.h"
-#include "wlc/wlc-wayland.h"
 
 struct background_config {
         wlc_handle output;
         wlc_resource surface;
+        struct wl_resource *resource;
 };
 
 struct panel_config {
         wlc_handle output;
         wlc_resource surface;
+        struct wl_resource *resource;
 };
 
 struct desktop_shell_state {
@@ -20,6 +23,12 @@ struct desktop_shell_state {
         list_t *panels;
         enum desktop_shell_panel_position panel_position;
         struct wlc_size panel_size;
+};
+
+struct swaylock_state {
+        bool active;
+        wlc_handle output;
+        wlc_resource surface;
 };
 
 extern struct desktop_shell_state desktop_shell;
