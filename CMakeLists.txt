@@ -49,6 +49,8 @@ find_package(WLC REQUIRED)
 find_package(Wayland REQUIRED)
 find_package(XKBCommon REQUIRED)
 
+include(Manpage)
+
 include_directories(include)
 
 add_subdirectory(protocols)
@@ -60,12 +62,6 @@ add_subdirectory(swaybg)
 add_subdirectory(swaymsg)
 add_subdirectory(swaygrab)
 add_subdirectory(swaybar)
-
-include(Manpage)
-add_manpage(sway 1)
-add_manpage(sway 5)
-add_manpage(swaymsg 1)
-add_manpage(swaygrab 1)
 
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop
