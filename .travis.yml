@@ -18,6 +18,7 @@ arch:
     - mesa
     - pango
     - cairo
+    - gdk-pixbuf2
   script:
     - "bash .ci/build.sh"
 
