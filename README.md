@@ -43,6 +43,7 @@ Install dependencies:
 * json-c
 * pango
 * cairo
+* gdk-pixbuf2
 
 Run these commands:
 
