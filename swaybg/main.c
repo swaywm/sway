@@ -167,7 +167,7 @@ int main(int argc, const char **argv) {
 	if (!pixbuf) {
 		sway_abort("Failed to load background image.");
 	}
-	cairo_surface_t *image=__gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
+	cairo_surface_t *image = __gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
 	g_object_unref(pixbuf);
 	if (!image) {
 		sway_abort("Failed to read background image.");
