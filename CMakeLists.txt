@@ -48,6 +48,7 @@ find_package(Pango REQUIRED)
 find_package(WLC REQUIRED)
 find_package(Wayland REQUIRED)
 find_package(XKBCommon REQUIRED)
+find_package(GdkPixbuf REQUIRED)
 
 include(Manpage)
 
