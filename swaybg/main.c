@@ -56,8 +56,8 @@ int main(int argc, const char **argv) {
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
 	list_add(surfaces, window);
 
-	GError *err=NULL;
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[2],&err);
+	GError *err = NULL;
+	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[2], &err);
 	if (!pixbuf) {
 		sway_abort("Failed to load background image.");
 	}
