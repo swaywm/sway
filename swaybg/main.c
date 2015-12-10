@@ -11,7 +11,6 @@
 #include "list.h"
 
 list_t *surfaces;
-
 struct registry *registry;
 
 enum scaling_mode {

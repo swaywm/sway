@@ -3,6 +3,7 @@
 
 #include <wayland-client.h>
 #include "wayland-desktop-shell-client-protocol.h"
+#include "wayland-swaylock-client-protocol.h"
 #include "list.h"
 
 struct output_state {
@@ -19,6 +20,7 @@ struct registry {
         struct wl_shell *shell;
         struct wl_shm *shm;
         struct desktop_shell *desktop_shell;
+        struct lock *swaylock;
         list_t *outputs;
 };
 
