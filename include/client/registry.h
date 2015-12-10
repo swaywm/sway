@@ -16,6 +16,7 @@ struct registry {
         struct wl_compositor *compositor;
         struct wl_display *display;
         struct wl_pointer *pointer;
+        struct wl_keyboard *keyboard;
         struct wl_seat *seat;
         struct wl_shell *shell;
         struct wl_shm *shm;
