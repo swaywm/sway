@@ -1,5 +1,8 @@
+#include "wayland-desktop-shell-client-protocol.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "client/window.h"
+#include "client/registry.h"
 #include "log.h"
 
 void sway_terminate(void) {
