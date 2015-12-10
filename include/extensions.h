@@ -1,7 +1,7 @@
 #ifndef _SWAY_EXTENSIONS_H
 #define _SWAY_EXTENSIONS_H
 
-#include <wayland-server-core.h>
+#include <wayland-server.h>
 #include <wlc/wlc-wayland.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "list.h"
