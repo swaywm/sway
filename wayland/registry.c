@@ -1,6 +1,10 @@
 #include <wayland-client.h>
+#include <xkbcommon/xkbcommon.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/timerfd.h>
 #include "wayland-desktop-shell-client-protocol.h"
 #include "wayland-swaylock-client-protocol.h"
 #include "client/registry.h"
@@ -38,8 +42,73 @@ static const struct wl_output_listener output_listener = {
 	.scale = display_handle_scale
 };
 
+const char *XKB_MASK_NAMES[MASK_LAST] = {
+    XKB_MOD_NAME_SHIFT,
+    XKB_MOD_NAME_CAPS,
+    XKB_MOD_NAME_CTRL,
+    XKB_MOD_NAME_ALT,
+    "Mod2",
+    "Mod3",
+    XKB_MOD_NAME_LOGO,
+    "Mod5",
+};
+
+const enum mod_bit XKB_MODS[MASK_LAST] = {
+    MOD_SHIFT,
+    MOD_CAPS,
+    MOD_CTRL,
+    MOD_ALT,
+    MOD_MOD2,
+    MOD_MOD3,
+    MOD_LOGO,
+    MOD_MOD5
+};
+
 static void keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard,
 		uint32_t format, int fd, uint32_t size) {
+	// Keyboard errors are abort-worthy because you wouldn't be able to unlock your screen otherwise.
+
+	struct registry *registry = data;
+	if (!data) {
+		close(fd);
+		return;
+	}
+
+	if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+		close(fd);
+		sway_abort("Unknown keymap format %d, aborting", format);
+	}
+
+	char *map_str = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+	if (map_str == MAP_FAILED) {
+		close(fd);
+		sway_abort("Unable to initialized shared keyboard memory, aborting");
+	}
+
+	struct xkb_keymap *keymap = xkb_keymap_new_from_string(registry->input->xkb.context,
+			map_str, XKB_KEYMAP_FORMAT_TEXT_V1, 0);
+	munmap(map_str, size);
+	close(fd);
+
+	if (!keymap) {
+		sway_abort("Failed to compile keymap, aborting");
+	}
+
+	struct xkb_state *state = xkb_state_new(keymap);
+	if (!state) {
+		xkb_keymap_unref(keymap);
+		sway_abort("Failed to create xkb state, aborting");
+	}
+
+	xkb_keymap_unref(registry->input->xkb.keymap);
+	xkb_state_unref(registry->input->xkb.state);
+	registry->input->xkb.keymap = keymap;
+	registry->input->xkb.state = state;
+
+	int i;
+	for (i = 0; i < MASK_LAST; ++i) {
+		registry->input->xkb.masks[i] = 1 << xkb_keymap_mod_get_index(registry->input->xkb.keymap, XKB_MASK_NAMES[i]);
+	}
 }
 
 static void keyboard_handle_enter(void *data, struct wl_keyboard *keyboard,
@@ -115,6 +184,8 @@ struct registry *registry_poll(void) {
 	struct registry *registry = malloc(sizeof(struct registry));
 	memset(registry, 0, sizeof(struct registry));
 	registry->outputs = create_list();
+	registry->input = calloc(sizeof(struct input), 1);
+	registry->input->xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 
 	registry->display = wl_display_connect(NULL);
 	if (!registry->display) {
