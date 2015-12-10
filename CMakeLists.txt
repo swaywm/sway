@@ -63,6 +63,7 @@ add_subdirectory(swaybg)
 add_subdirectory(swaymsg)
 add_subdirectory(swaygrab)
 add_subdirectory(swaybar)
+add_subdirectory(swaylock)
 
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop
