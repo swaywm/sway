@@ -41,10 +41,12 @@ Commands
 **floating** <enable|disable|toggle>::
 	Make focused view floating, non-floating, or the opposite of what it is now.
 
-**floating_modifier** <modifier>::
+**floating_modifier** <modifier> [normal|inverse]::
 	When the _modifier_ key is held down, you may use left click to drag floating
 	windows, and right click to resize them. Unlike i3, this modifier may also be
-	used to resize and move windows that are tiled.
+	used to resize and move windows that are tiled. With the _inverse_ mode
+	enabled, left click is used for resizing and right click for dragging. The
+	mode paramenter is optional and defaults to _normal_ if it isn't defined.
 
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
