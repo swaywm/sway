@@ -142,7 +142,7 @@ static char *get_config_path(void) {
 
 	if (!getenv("XDG_CONFIG_HOME")) {
 		char *home = getenv("HOME");
-		char *config_home = malloc(strlen("home") + strlen("/.config") + 1);
+		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
 		strcpy(config_home, home);
 		strcat(config_home, "/.config");
 		setenv("XDG_CONFIG_HOME", config_home, 1);
