@@ -51,7 +51,7 @@ struct input {
 	uint32_t last_code;
 	uint32_t modifiers;
 
-	void (*notify)(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code);
+	void (*notify)(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint);
 };
 
 struct registry {

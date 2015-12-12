@@ -29,6 +29,10 @@ void sway_terminate(void) {
 	exit(EXIT_FAILURE);
 }
 
+void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
+	sway_log(L_INFO, "notified of key %c", (char)codepoint);
+}
+
 int main(int argc, char **argv) {
 	init_log(L_INFO);
 	surfaces = create_list();
@@ -48,6 +52,8 @@ int main(int argc, char **argv) {
 		//lock_set_lock_surface(registry->swaylock, output->output, window->surface);
 		list_add(surfaces, window);
 	}
+
+	registry->input->notify = notify_key;
 
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[1], &err); // TODO: Parse i3lock arguments

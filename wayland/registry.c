@@ -133,18 +133,36 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(registry->input->xkb.state, key + 8);
 	registry->input->sym = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? sym : XKB_KEY_NoSymbol);
 	registry->input->code = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? key + 8 : 0);
+	uint32_t codepoint = xkb_state_key_get_utf32(registry->input->xkb.state, registry->input->code);
 	if (registry->input->notify) {
-		registry->input->notify(state, sym, key);
+		registry->input->notify(state, sym, key, codepoint);
 	}
 }
 
 static void keyboard_handle_modifiers(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
 		uint32_t mods_locked, uint32_t group) {
+	struct registry *registry = data;
+
+	if (!registry->input->xkb.keymap) {
+		return;
+	}
+
+	xkb_state_update_mask(registry->input->xkb.state, mods_depressed, mods_latched, mods_locked, 0, 0, group);
+	xkb_mod_mask_t mask = xkb_state_serialize_mods(registry->input->xkb.state,
+			XKB_STATE_MODS_DEPRESSED | XKB_STATE_MODS_LATCHED);
+
+	registry->input->modifiers = 0;
+	for (uint32_t i = 0; i < MASK_LAST; ++i) {
+		if (mask & registry->input->xkb.masks[i]) {
+			registry->input->modifiers |= XKB_MODS[i];
+		}
+	}
 }
 
 static void keyboard_handle_repeat_info(void *data, struct wl_keyboard *keyboard,
 		int32_t rate, int32_t delay) {
+	// this space intentionally left blank
 }
 
 static const struct wl_keyboard_listener keyboard_listener = {
