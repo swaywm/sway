@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <signal.h>
+#include <unistd.h>
 #include <getopt.h>
 #include "extensions.h"
 #include "layout.h"
@@ -14,6 +15,7 @@
 #include "log.h"
 #include "readline.h"
 #include "handlers.h"
+#include "ipc-client.h"
 #include "ipc-server.h"
 #include "sway.h"
 
@@ -49,6 +51,14 @@ void detect_nvidia() {
 		free(line);
 	}
 	fclose(f);
+}
+
+void run_as_ipc_client(char *command, char *socket_path) {
+	int socketfd = ipc_open_socket(socket_path);
+	uint32_t len = strlen(command);
+	char *resp = ipc_single_command(socketfd, IPC_COMMAND, command, &len);
+	printf("%s\n", resp);
+	close(socketfd);
 }
 
 int main(int argc, char **argv) {
@@ -124,6 +134,21 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
 		}
+	}
+
+	if (optind < argc) { // Behave as IPC client
+		if (getuid() != geteuid() || getgid() != getegid()) {
+			if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
+				sway_abort("Unable to drop root");
+			}
+		}
+		char *socket_path = getenv("SWAYSOCK");
+		if (!socket_path) {
+			sway_abort("Unable to retrieve socket path");
+		}
+		char *command = join_args(argv + optind, argc - optind);
+		run_as_ipc_client(command, socket_path);
+		return 0;
 	}
 
 	// we need to setup logging before wlc_init in case it fails.
