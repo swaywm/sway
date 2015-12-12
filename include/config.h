@@ -109,6 +109,8 @@ struct sway_config {
 	struct sway_mode *current_mode;
 	struct bar_config bar;
 	uint32_t floating_mod;
+	uint32_t dragging_key;
+	uint32_t resizing_key;
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 
