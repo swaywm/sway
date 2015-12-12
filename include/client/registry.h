@@ -8,26 +8,26 @@
 #include "list.h"
 
 enum mod_bit {
-    MOD_SHIFT = 1<<0,
-    MOD_CAPS = 1<<1,
-    MOD_CTRL = 1<<2,
-    MOD_ALT = 1<<3,
-    MOD_MOD2 = 1<<4,
-    MOD_MOD3 = 1<<5,
-    MOD_LOGO = 1<<6,
-    MOD_MOD5 = 1<<7,
+	MOD_SHIFT = 1<<0,
+	MOD_CAPS = 1<<1,
+	MOD_CTRL = 1<<2,
+	MOD_ALT = 1<<3,
+	MOD_MOD2 = 1<<4,
+	MOD_MOD3 = 1<<5,
+	MOD_LOGO = 1<<6,
+	MOD_MOD5 = 1<<7,
 };
 
 enum mask {
-    MASK_SHIFT,
-    MASK_CAPS,
-    MASK_CTRL,
-    MASK_ALT,
-    MASK_MOD2,
-    MASK_MOD3,
-    MASK_LOGO,
-    MASK_MOD5,
-    MASK_LAST
+	MASK_SHIFT,
+	MASK_CAPS,
+	MASK_CTRL,
+	MASK_ALT,
+	MASK_MOD2,
+	MASK_MOD3,
+	MASK_LOGO,
+	MASK_MOD5,
+	MASK_LAST
 };
 
 struct output_state {
@@ -44,26 +44,14 @@ struct xkb {
 };
 
 struct input {
-    int *repeat_fd;
+	struct xkb xkb;
 
-    struct xkb xkb;
+	xkb_keysym_t sym;
+	uint32_t code;
+	uint32_t last_code;
+	uint32_t modifiers;
 
-    xkb_keysym_t sym;
-    uint32_t code;
-    uint32_t last_code;
-    uint32_t modifiers;
-
-    xkb_keysym_t repeat_sym;
-    uint32_t repeat_key;
-
-    int32_t repeat_rate_sec;
-    int32_t repeat_rate_nsec;
-    int32_t repeat_delay_sec;
-    int32_t repeat_delay_nsec;
-
-    struct {
-        void (*key)(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code);
-    } notify;
+	void (*notify)(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code);
 };
 
 struct registry {

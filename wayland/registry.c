@@ -43,25 +43,25 @@ static const struct wl_output_listener output_listener = {
 };
 
 const char *XKB_MASK_NAMES[MASK_LAST] = {
-    XKB_MOD_NAME_SHIFT,
-    XKB_MOD_NAME_CAPS,
-    XKB_MOD_NAME_CTRL,
-    XKB_MOD_NAME_ALT,
-    "Mod2",
-    "Mod3",
-    XKB_MOD_NAME_LOGO,
-    "Mod5",
+	XKB_MOD_NAME_SHIFT,
+	XKB_MOD_NAME_CAPS,
+	XKB_MOD_NAME_CTRL,
+	XKB_MOD_NAME_ALT,
+	"Mod2",
+	"Mod3",
+	XKB_MOD_NAME_LOGO,
+	"Mod5",
 };
 
 const enum mod_bit XKB_MODS[MASK_LAST] = {
-    MOD_SHIFT,
-    MOD_CAPS,
-    MOD_CTRL,
-    MOD_ALT,
-    MOD_MOD2,
-    MOD_MOD3,
-    MOD_LOGO,
-    MOD_MOD5
+	MOD_SHIFT,
+	MOD_CAPS,
+	MOD_CTRL,
+	MOD_ALT,
+	MOD_MOD2,
+	MOD_MOD3,
+	MOD_LOGO,
+	MOD_MOD5
 };
 
 static void keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard,
@@ -113,14 +113,29 @@ static void keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard,
 
 static void keyboard_handle_enter(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, struct wl_surface *surface, struct wl_array *keys) {
+	// this space intentionally left blank
 }
 
 static void keyboard_handle_leave(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, struct wl_surface *surface) {
+	// this space intentionally left blank
 }
 
 static void keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, uint32_t time, uint32_t key, uint32_t state_w) {
+	struct registry *registry = data;
+	enum wl_keyboard_key_state state = state_w;
+
+	if (!input->xkb.state) {
+		return;
+	}
+
+	xkb_keysym_t sym = xkb_state_key_get_one_sym(input->xkb.state, key + 8);
+	registry->input->sym = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? sym : XKB_KEY_NoSymbol);
+	registry->input->code = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? key + 8 : 0);
+	if (registry->input->notify) {
+		registry->input->notify(state, sym, key);
+	}
 }
 
 static void keyboard_handle_modifiers(void *data, struct wl_keyboard *keyboard,
