@@ -126,11 +126,11 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
 	struct registry *registry = data;
 	enum wl_keyboard_key_state state = state_w;
 
-	if (!input->xkb.state) {
+	if (!registry->input->xkb.state) {
 		return;
 	}
 
-	xkb_keysym_t sym = xkb_state_key_get_one_sym(input->xkb.state, key + 8);
+	xkb_keysym_t sym = xkb_state_key_get_one_sym(registry->input->xkb.state, key + 8);
 	registry->input->sym = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? sym : XKB_KEY_NoSymbol);
 	registry->input->code = (state == WL_KEYBOARD_KEY_STATE_PRESSED ? key + 8 : 0);
 	if (registry->input->notify) {
