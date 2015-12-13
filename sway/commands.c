@@ -63,6 +63,8 @@ static sway_cmd cmd_splitv;
 static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
+
+static sway_cmd bar_cmd_tray_padding;
 static sway_cmd bar_cmd_workspace_buttons;
 
 swayc_t *sp_view;
@@ -1519,6 +1521,30 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "tray_padding", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "tray_padding", "No bar defined.");
+	}
+
+	int padding = atoi(argv[0]);
+	if (padding < 0) {
+		return cmd_results_new(CMD_INVALID, "tray_padding",
+				"Invalid padding value %s, minimum is 0", argv[0]);
+	}
+
+	if (argc > 1 && strcasecmp("px", argv[1]) != 0) {
+		return cmd_results_new(CMD_INVALID, "tray_padding",
+				"Unknown unit %s", argv[1]);
+	}
+	config->current_bar->tray_padding = padding;
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "workspace_buttons", EXPECTED_EQUAL_TO, 1))) {
@@ -1555,7 +1581,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "status_command", NULL },
 	{ "strip_workspace_numbers", NULL },
 	{ "tray_output", NULL },
-	{ "tray_padding", NULL },
+	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 };
 

@@ -144,6 +144,7 @@ static void config_defaults(struct sway_config *config) {
 	config->bar.workspace_buttons = true;
 	config->bar.strip_workspace_numbers = false;
 	config->bar.binding_mode_indicator = true;
+	config->bar.tray_padding = 2;
 }
 
 static char *get_config_path(void) {
