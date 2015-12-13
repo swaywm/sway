@@ -323,9 +323,6 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 	if (!ASSERT_NONNULL(workspace)) {
 		return NULL;
 	}
-	// NOTE: This is called from elsewhere without checking children length
-	// TODO move containers to other workspaces?
-	// for now just dont delete
 	
 	// Do not destroy this if it's the last workspace on this output
 	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
@@ -333,14 +330,35 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 		return NULL;
 	}
 
-	// Do not destroy if there are children
+	swayc_t *parent = workspace->parent;
+	// destroy the WS if there are no children
 	if (workspace->children->length == 0 && workspace->floating->length == 0) {
 		sway_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
-		swayc_t *parent = workspace->parent;
-		free_swayc(workspace);
-		return parent;
+	} else {
+		// Move children to a different workspace on this output
+		swayc_t *new_workspace = NULL;
+		int i;
+		for(i = 0; i < output->children->length; i++) {
+			if(output->children->items[i] != workspace) {
+				break;
+			}
+		}
+		new_workspace = output->children->items[i];
+
+		sway_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
+			workspace->name, new_workspace->name);
+
+		for(i = 0; i < workspace->children->length; i++) {
+			move_container_to(workspace->children->items[i], new_workspace);
+		}
+
+		for(i = 0; i < workspace->floating->length; i++) {
+			move_container_to(workspace->floating->items[i], new_workspace);
+		}
 	}
-	return NULL;
+
+	free_swayc(workspace);
+	return parent;
 }
 
 swayc_t *destroy_container(swayc_t *container) {
