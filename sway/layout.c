@@ -455,7 +455,6 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 
 			container->width = width;
 			container->height = height;
-			x = 0, y = 0;
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
 				int gap = swayc_gap(child);
