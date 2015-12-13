@@ -202,7 +202,8 @@ void render() {
 	pango_printf(window, "%s", line);
 
 	// Workspaces
-	int x = 0;
+	cairo_set_line_width(window->cairo, 2.0);
+	int x = 1;
 	int i;
 	for (i = 0; i < workspaces->length; ++i) {
 		struct workspace *ws = workspaces->items[i];
@@ -222,7 +223,7 @@ void render() {
 		cairo_fill(window->cairo);
 
 		cairo_set_source_u32(window->cairo, box_colors.border);
-		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
+		cairo_rectangle(window->cairo, x, 2, width + MARGIN * 2, window->height - 4);
 		cairo_stroke(window->cairo);
 
 		cairo_set_source_u32(window->cairo, box_colors.text);
