@@ -95,6 +95,8 @@ bool set_focused_container(swayc_t *c) {
 	if (locked_container_focus || !c || !c->parent) {
 		return false;
 	}
+	swayc_t *active_ws = swayc_active_workspace();
+
 	swayc_log(L_DEBUG, c, "Setting focus to %p:%ld", c, c->handle);
 
 	// Get workspace for c, get that workspaces current focused container.
@@ -132,6 +134,10 @@ bool set_focused_container(swayc_t *c) {
 				wlc_view_focus(p->handle);
 			}
 		}
+	}
+
+	if (active_ws != workspace) {
+		ipc_event_workspace(active_ws, workspace);
 	}
 	return true;
 }
