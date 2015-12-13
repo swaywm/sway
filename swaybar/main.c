@@ -79,6 +79,7 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 
 void update() {
 	if (!feof(command)) {
+		free(line);
 		line = read_line(command);
 		int l = strlen(line) - 1;
 		if (line[l] == '\n') {
