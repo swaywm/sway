@@ -39,20 +39,9 @@ int ipc_open_socket(const char *socket_path) {
 	return socketfd;
 }
 
-char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
+char *ipc_recv_response(int socketfd, uint32_t *len) {
 	char data[ipc_header_size];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
-	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	data32[0] = *len;
-	data32[1] = type;
-
-	if (write(socketfd, data, ipc_header_size) == -1) {
-		sway_abort("Unable to send IPC header");
-	}
-
-	if (write(socketfd, payload, *len) == -1) {
-		sway_abort("Unable to send IPC payload");
-	}
 
 	size_t total = 0;
 	while (total < ipc_header_size) {
@@ -76,4 +65,22 @@ char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint3
 	response[*len] = '\0';
 
 	return response;
+}
+
+char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
+	char data[ipc_header_size];
+	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
+	memcpy(data, ipc_magic, sizeof(ipc_magic));
+	data32[0] = *len;
+	data32[1] = type;
+
+	if (write(socketfd, data, ipc_header_size) == -1) {
+		sway_abort("Unable to send IPC header");
+	}
+
+	if (write(socketfd, payload, *len) == -1) {
+		sway_abort("Unable to send IPC payload");
+	}
+
+	return ipc_recv_response(socketfd, len);
 }

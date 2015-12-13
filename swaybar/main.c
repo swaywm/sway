@@ -3,7 +3,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stropts.h>
 #include <json-c/json.h>
+#include <sys/un.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
 #include "ipc-client.h"
 #include "readline.h"
 #include "client/registry.h"
@@ -93,68 +97,6 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 			(color & 0xFF) / 256.0);
 }
 
-void update() {
-	if (!feof(command)) {
-		free(line);
-		line = read_line(command);
-		int l = strlen(line) - 1;
-		if (line[l] == '\n') {
-			line[l] = '\0';
-		}
-	}
-}
-
-void render() {
-	// Clear
-	cairo_save(window->cairo);
-	cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
-	cairo_paint(window->cairo);
-	cairo_restore(window->cairo);
-
-	// Background
-	cairo_set_source_u32(window->cairo, colors.background);
-	cairo_paint(window->cairo);
-
-	// Command output
-	cairo_set_source_u32(window->cairo, colors.statusline);
-	int width, height;
-	get_text_size(window, &width, &height, "%s", line);
-
-	cairo_move_to(window->cairo, window->width - MARGIN - width, MARGIN);
-	pango_printf(window, "%s", line);
-
-	// Workspaces
-	int x = 0;
-	int i;
-	for (i = 0; i < workspaces->length; ++i) {
-		struct workspace *ws = workspaces->items[i];
-		get_text_size(window, &width, &height, "%s", ws->name);
-		struct box_colors box_colors;
-		if (ws->urgent) {
-			box_colors = colors.urgent_workspace;
-		} else if (ws->focused) {
-			box_colors = colors.focused_workspace;
-		} else if (ws->visible) {
-			box_colors = colors.active_workspace;
-		} else {
-			box_colors = colors.inactive_workspace;
-		}
-		cairo_set_source_u32(window->cairo, box_colors.background);
-		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
-		cairo_fill(window->cairo);
-
-		cairo_set_source_u32(window->cairo, box_colors.border);
-		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
-		cairo_stroke(window->cairo);
-
-		cairo_set_source_u32(window->cairo, box_colors.text);
-		cairo_move_to(window->cairo, x + MARGIN, MARGIN);
-		pango_printf(window, "%s", ws->name);
-
-		x += width + MARGIN * 2 + MARGIN;
-	}
-}
-
 void ipc_update_workspaces() {
 	if (workspaces) {
 		free_flat_list(workspaces);
@@ -212,7 +154,83 @@ void bar_ipc_init(int outputi) {
 	json_object_put(outputs);
 	sway_log(L_INFO, "Running on output %s", output);
 
+	const char *subscribe_json = "[ \"workspace\" ]";
+	len = strlen(subscribe_json);
+	res = ipc_single_command(socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	sway_log(L_INFO, "%s", res);
+
 	ipc_update_workspaces();
+}
+
+void update() {
+	int pending;
+	if (ioctl(fileno(command), FIONREAD, &pending) != -1 && pending > 0) {
+		free(line);
+		line = read_line(command);
+		int l = strlen(line) - 1;
+		if (line[l] == '\n') {
+			line[l] = '\0';
+		}
+	}
+	if (ioctl(socketfd, FIONREAD, &pending) != -1 && pending > 0) {
+		sway_log(L_INFO, "data available");
+		uint32_t len;
+		char *buf = ipc_recv_response(socketfd, &len);
+		sway_log(L_INFO, "%s", buf);
+		free(buf);
+		ipc_update_workspaces();
+	}
+}
+
+void render() {
+	// Clear
+	cairo_save(window->cairo);
+	cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(window->cairo);
+	cairo_restore(window->cairo);
+
+	// Background
+	cairo_set_source_u32(window->cairo, colors.background);
+	cairo_paint(window->cairo);
+
+	// Command output
+	cairo_set_source_u32(window->cairo, colors.statusline);
+	int width, height;
+	get_text_size(window, &width, &height, "%s", line);
+
+	cairo_move_to(window->cairo, window->width - MARGIN - width, MARGIN);
+	pango_printf(window, "%s", line);
+
+	// Workspaces
+	int x = 0;
+	int i;
+	for (i = 0; i < workspaces->length; ++i) {
+		struct workspace *ws = workspaces->items[i];
+		get_text_size(window, &width, &height, "%s", ws->name);
+		struct box_colors box_colors;
+		if (ws->urgent) {
+			box_colors = colors.urgent_workspace;
+		} else if (ws->focused) {
+			box_colors = colors.focused_workspace;
+		} else if (ws->visible) {
+			box_colors = colors.active_workspace;
+		} else {
+			box_colors = colors.inactive_workspace;
+		}
+		cairo_set_source_u32(window->cairo, box_colors.background);
+		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
+		cairo_fill(window->cairo);
+
+		cairo_set_source_u32(window->cairo, box_colors.border);
+		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
+		cairo_stroke(window->cairo);
+
+		cairo_set_source_u32(window->cairo, box_colors.text);
+		cairo_move_to(window->cairo, x + MARGIN, MARGIN);
+		pango_printf(window, "%s", ws->name);
+
+		x += width + MARGIN * 2 + MARGIN;
+	}
 }
 
 int main(int argc, char **argv) {
