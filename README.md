@@ -55,7 +55,7 @@ Run these commands:
 
 On systems without logind, you need to suid the sway binary:
 
-    sudo chmod a+s /usr/bin/sway
+    sudo chmod a+s /usr/local/bin/sway
 
 ## Configuration
 
