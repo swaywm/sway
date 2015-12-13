@@ -63,6 +63,23 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+/* static sway_cmd bar_cmd_binding_mode_indicator; */
+/* static sway_cmd bar_cmd_bindsym; */
+/* static sway_cmd bar_cmd_colors; */
+/* static sway_cmd bar_cmd_font; */
+/* static sway_cmd bar_cmd_hidden_state; */
+/* static sway_cmd bar_cmd_id; */
+/* static sway_cmd bar_cmd_mode; */
+/* static sway_cmd bar_cmd_modifier; */
+/* static sway_cmd bar_cmd_output; */
+/* static sway_cmd bar_cmd_position; */
+/* static sway_cmd bar_cmd_seperator_symbol; */
+/* static sway_cmd bar_cmd_status_command; */
+/* static sway_cmd bar_cmd_strip_workspace_numbers; */
+/* static sway_cmd bar_cmd_tray_output; */
+/* static sway_cmd bar_cmd_tray_padding; */
+/* static sway_cmd bar_cmd_workspace_buttons; */
+
 swayc_t *sp_view;
 int sp_index = 0;
 
@@ -1479,30 +1496,65 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+/* static struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_bindsym(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_colors(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_font(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_id(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_mode(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_modifier(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_output(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_position(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_seperator_symbol(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_status_command(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_tray_output(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv); */
+/* static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv); */
+
 static struct cmd_handler bar_handlers[] = {
 	{ "binding_mode_indicator", NULL },
+	/* { "binding_mode_indicator", bar_cmd_binding_mode_indicator }, */
 	{ "bindsym", NULL },
+	/* { "bindsym", bar_cmd_bindsym }, */
 	{ "colors", NULL },
+	/* { "colors", bar_cmd_colors }, */
 	{ "font", NULL },
+	/* { "font", bar_cmd_font }, */
 	{ "hidden_state", NULL },
+	/* { "hidden_state", bar_cmd_hidden_state }, */
 	{ "id", NULL },
+	/* { "id", bar_cmd_id }, */
 	{ "mode", NULL },
+	/* { "mode", bar_cmd_mode }, */
 	{ "modifier", NULL },
+	/* { "modifier", bar_cmd_modifier }, */
 	{ "output", NULL },
+	/* { "output", bar_cmd_output }, */
 	{ "position", NULL },
+	/* { "position", bar_cmd_position }, */
 	{ "seperator_symbol", NULL },
+	/* { "seperator_symbol", bar_cmd_seperator_symbol }, */
 	{ "status_command", NULL },
+	/* { "status_command", bar_cmd_status_command }, */
 	{ "strip_workspace_numbers", NULL },
+	/* { "strip_workspace_numbers", bar_cmd_strip_workspace_numbers }, */
 	{ "tray_output", NULL },
+	/* { "tray_output", bar_cmd_tray_output }, */
 	{ "tray_padding", NULL },
+	/* { "tray_padding", bar_cmd_tray_padding }, */
 	{ "workspace_buttons", NULL },
+	/* { "workspace_buttons", bar_cmd_workspace_buttons }, */
 };
+
 
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
 	return strcasecmp(a->command, b->command);
 }
+
 
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler *h = handlers;
