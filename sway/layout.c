@@ -579,6 +579,19 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 	// output might border to multiple outputs).
 	struct wlc_point abs_pos;
 	get_absolute_center_position(container, &abs_pos);
+
+	if (container->type == C_VIEW && swayc_is_fullscreen(container)) {
+		sway_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
+		container = swayc_parent_by_type(container, C_OUTPUT);
+		get_absolute_center_position(container, &abs_pos);
+		return swayc_adjacent_output(container, dir, &abs_pos, true);
+	}
+
+	if (container->type == C_WORKSPACE && container->fullscreen) {
+		sway_log(L_DEBUG, "Moving to fullscreen view");
+		return container->fullscreen;
+	}
+
 	while (true) {
 		// Test if we can even make a difference here
 		bool can_move = false;
