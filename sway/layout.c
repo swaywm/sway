@@ -375,10 +375,12 @@ void update_geometry(swayc_t *container) {
 		}
 	};
 	if (swayc_is_fullscreen(container)) {
+		swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+		const struct wlc_size *size = wlc_output_get_resolution(output->handle);
 		geometry.origin.x = 0;
 		geometry.origin.y = 0;
-		geometry.size.w = op->width;
-		geometry.size.h = op->height;
+		geometry.size.w = size->w;
+		geometry.size.h = size->h;
 		if (op->focused == ws) {
 			wlc_view_bring_to_front(container->handle);
 		}
