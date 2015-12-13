@@ -27,6 +27,14 @@ struct sway_binding {
 };
 
 /**
+ * A mouse binding and an associated command.
+ */
+struct sway_mouse_binding {
+	uint32_t button;
+	char *command;
+};
+
+/**
  * A "mode" of keybindings created via the `mode` command.
  */
 struct sway_mode {
@@ -73,6 +81,7 @@ struct bar_config {
 	 */
 	char *hidden_state;
 	uint32_t modifier;
+	list_t *bindings;
 	enum desktop_shell_panel_position position;
 	char *status_command;
 	char *font;
@@ -152,6 +161,10 @@ int workspace_output_cmp_workspace(const void *a, const void *b);
 int sway_binding_cmp(const void *a, const void *b);
 int sway_binding_cmp_keys(const void *a, const void *b);
 void free_sway_binding(struct sway_binding *sb);
+
+int sway_mouse_binding_cmp(const void *a, const void *b);
+int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
+void free_sway_mouse_binding(struct sway_mouse_binding *smb);
 
 /**
  * Global config singleton.
