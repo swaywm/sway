@@ -3,6 +3,7 @@ include_directories(
 	${WAYLAND_CLIENT_INCLUDE_DIR}
 	${CAIRO_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
+	${JSONC_INCLUDE_DIRS}
 )
 
 add_executable(swaybar
@@ -16,6 +17,7 @@ target_link_libraries(swaybar
 	${WAYLAND_CURSOR_LIBRARIES}
 	${CAIRO_LIBRARIES}
 	${PANGO_LIBRARIES}
+	${JSONC_LIBRARIES}
 	m
 )
 

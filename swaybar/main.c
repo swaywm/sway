@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <json-c/json.h>
+#include "ipc-client.h"
 #include "readline.h"
 #include "client/registry.h"
 #include "client/window.h"
 #include "client/pango.h"
+#include "stringop.h"
 #include "log.h"
 
 #define MARGIN 5
@@ -27,10 +32,21 @@ struct colors {
 	struct box_colors binding_mode;
 };
 
+struct workspace {
+	int num;
+	char *name;
+	bool focused;
+	bool visible;
+	bool urgent;
+};
+
+list_t *workspaces = NULL;
+int socketfd;
 FILE *command;
-char *line;
+char *line, *output;
 struct registry *registry;
 struct window *window;
+
 struct colors colors = {
 	.background = 0x000000FF,
 	.statusline = 0xFFFFFFFF,
@@ -89,20 +105,114 @@ void update() {
 }
 
 void render() {
+	// Clear
 	cairo_save(window->cairo);
 	cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(window->cairo);
 	cairo_restore(window->cairo);
 
+	// Background
 	cairo_set_source_u32(window->cairo, colors.background);
 	cairo_paint(window->cairo);
 
+	// Command output
 	cairo_set_source_u32(window->cairo, colors.statusline);
 	int width, height;
 	get_text_size(window, &width, &height, "%s", line);
 
 	cairo_move_to(window->cairo, window->width - MARGIN - width, MARGIN);
 	pango_printf(window, "%s", line);
+
+	// Workspaces
+	int x = 0;
+	int i;
+	for (i = 0; i < workspaces->length; ++i) {
+		struct workspace *ws = workspaces->items[i];
+		get_text_size(window, &width, &height, "%s", ws->name);
+		struct box_colors box_colors;
+		if (ws->urgent) {
+			box_colors = colors.urgent_workspace;
+		} else if (ws->focused) {
+			box_colors = colors.focused_workspace;
+		} else if (ws->visible) {
+			box_colors = colors.active_workspace;
+		} else {
+			box_colors = colors.inactive_workspace;
+		}
+		cairo_set_source_u32(window->cairo, box_colors.background);
+		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
+		cairo_fill(window->cairo);
+
+		cairo_set_source_u32(window->cairo, box_colors.border);
+		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
+		cairo_stroke(window->cairo);
+
+		cairo_set_source_u32(window->cairo, box_colors.text);
+		cairo_move_to(window->cairo, x + MARGIN, MARGIN);
+		pango_printf(window, "%s", ws->name);
+
+		x += width + MARGIN * 2 + MARGIN;
+	}
+}
+
+void ipc_update_workspaces() {
+	if (workspaces) {
+		free_flat_list(workspaces);
+	}
+	workspaces = create_list();
+
+	uint32_t len = 0;
+	char *res = ipc_single_command(socketfd, IPC_GET_WORKSPACES, NULL, &len);
+	json_object *results = json_tokener_parse(res);
+
+	int i;
+	for (i = 0; i < json_object_array_length(results); ++i) {
+		json_object *ws_json = json_object_array_get_idx(results, i);
+		json_object *num, *name, *visible, *focused, *out, *urgent;
+		json_object_object_get_ex(ws_json, "num", &num);
+		json_object_object_get_ex(ws_json, "name", &name);
+		json_object_object_get_ex(ws_json, "visible", &visible);
+		json_object_object_get_ex(ws_json, "focused", &focused);
+		json_object_object_get_ex(ws_json, "output", &out);
+		json_object_object_get_ex(ws_json, "urgent", &urgent);
+
+		if (strcmp(json_object_get_string(out), output) == 0) {
+			struct workspace *ws = malloc(sizeof(struct workspace));
+			ws->num = json_object_get_int(num);
+			ws->name = strdup(json_object_get_string(name));
+			ws->visible = json_object_get_boolean(visible);
+			ws->focused = json_object_get_boolean(focused);
+			ws->urgent = json_object_get_boolean(urgent);
+			list_add(workspaces, ws);
+			sway_log(L_INFO, "Handling workspace %s", ws->name);
+		}
+
+		json_object_put(num);
+		json_object_put(name);
+		json_object_put(visible);
+		json_object_put(focused);
+		json_object_put(out);
+		json_object_put(urgent);
+		json_object_put(ws_json);
+	}
+
+	json_object_put(results);
+	free(res);
+}
+
+void bar_ipc_init(int outputi) {
+	uint32_t len = 0;
+	char *res = ipc_single_command(socketfd, IPC_GET_OUTPUTS, NULL, &len);
+	json_object *outputs = json_tokener_parse(res);
+	json_object *info = json_object_array_get_idx(outputs, outputi);
+	json_object *name;
+	json_object_object_get_ex(info, "name", &name);
+	output = strdup(json_object_get_string(name));
+	free(res);
+	json_object_put(outputs);
+	sway_log(L_INFO, "Running on output %s", output);
+
+	ipc_update_workspaces();
 }
 
 int main(int argc, char **argv) {
@@ -131,6 +241,13 @@ int main(int argc, char **argv) {
 	command = popen(argv[2], "r");
 	line = malloc(1024);
 	line[0] = '\0';
+
+	char *socket_path = get_socketpath();
+	if (!socket_path) {
+		sway_abort("Unable to retrieve socket path");
+	}
+	socketfd = ipc_open_socket(socket_path);
+	bar_ipc_init(desired_output);
 
 	do {
 		if (window_prerender(window) && window->cairo) {
