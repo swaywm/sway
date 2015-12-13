@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "readline.h"
 #include "client/registry.h"
 #include "client/window.h"
 #include "client/pango.h"
@@ -25,6 +27,8 @@ struct colors {
 	struct box_colors binding_mode;
 };
 
+FILE *command;
+char *line;
 struct registry *registry;
 struct window *window;
 struct colors colors = {
@@ -73,6 +77,16 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 			(color & 0xFF) / 256.0);
 }
 
+void update() {
+	if (!feof(command)) {
+		line = read_line(command);
+		int l = strlen(line) - 1;
+		if (line[l] == '\n') {
+			line[l] = '\0';
+		}
+	}
+}
+
 void render() {
 	cairo_save(window->cairo);
 	cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
@@ -82,9 +96,12 @@ void render() {
 	cairo_set_source_u32(window->cairo, colors.background);
 	cairo_paint(window->cairo);
 
-	cairo_move_to(window->cairo, MARGIN, MARGIN);
 	cairo_set_source_u32(window->cairo, colors.statusline);
-	pango_printf(window, "TODO: finish bar");
+	int width, height;
+	get_text_size(window, &width, &height, "%s", line);
+
+	cairo_move_to(window->cairo, window->width - MARGIN - width, MARGIN);
+	pango_printf(window, "%s", line);
 }
 
 int main(int argc, char **argv) {
@@ -110,8 +127,13 @@ int main(int argc, char **argv) {
 	get_text_size(window, &width, &height, "Test string for measuring purposes");
 	window->height = height + MARGIN * 2;
 
+	command = popen(argv[2], "r");
+	line = malloc(1024);
+	line[0] = '\0';
+
 	do {
 		if (window_prerender(window) && window->cairo) {
+			update();
 			render();
 			window_render(window);
 		}
