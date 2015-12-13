@@ -63,6 +63,7 @@ static sway_cmd cmd_splitv;
 static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
+static sway_cmd bar_cmd_workspace_buttons;
 
 swayc_t *sp_view;
 int sp_index = 0;
@@ -1518,6 +1519,27 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "workspace_buttons", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "workspace_buttons", "No bar defined.");
+	}
+
+	if (strcasecmp("yes", argv[0]) == 0) {
+		config->current_bar->workspace_buttons = true;
+	} else if (strcasecmp("no", argv[0]) == 0) {
+		config->current_bar->workspace_buttons = false;
+	} else {
+		error = cmd_results_new(CMD_INVALID, "workspace_buttons", "Invalid value %s", argv[0]);
+		return error;
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_handler bar_handlers[] = {
 	{ "binding_mode_indicator", NULL },
 	{ "bindsym", NULL },
@@ -1534,7 +1556,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "strip_workspace_numbers", NULL },
 	{ "tray_output", NULL },
 	{ "tray_padding", NULL },
-	{ "workspace_buttons", NULL },
+	{ "workspace_buttons", bar_cmd_workspace_buttons },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
