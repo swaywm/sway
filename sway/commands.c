@@ -1349,15 +1349,18 @@ static struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 		return error;
 	}
 	swayc_t *container = get_focused_view(&root_container);
+	swayc_t *workspace = swayc_parent_by_type(container, C_WORKSPACE);
 	bool current = swayc_is_fullscreen(container);
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
 	// Resize workspace if going from  fullscreen -> notfullscreen
 	// otherwise just resize container
 	if (current) {
-		container = swayc_parent_by_type(container, C_WORKSPACE);
+		arrange_windows(workspace, -1, -1);
+		workspace->fullscreen = container;
+	} else {
+		arrange_windows(container, -1, -1);
+		workspace->fullscreen = NULL;
 	}
-	// Only resize container when going into fullscreen
-	arrange_windows(container, -1, -1);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

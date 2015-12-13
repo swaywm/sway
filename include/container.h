@@ -97,6 +97,10 @@ struct sway_container {
 	 * Which of this container's children has focus.
 	 */
 	struct sway_container *focused;
+	/**
+	 * If this container's children include a fullscreen view, this is that view.
+	 */
+	struct sway_container *fullscreen;
 };
 
 enum visibility_mask {
