@@ -65,6 +65,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_bindsym;
 static sway_cmd bar_cmd_mode;
 static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
@@ -1539,6 +1540,41 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
+		return error;
+	} else if (!config->reading) {
+		return cmd_results_new(CMD_FAILURE, "bindsym", "Can only be used in config file.");
+	}
+
+	if (strlen(argv[1]) != 7) {
+		return cmd_results_new(CMD_INVALID, "bindsym", "Invalid mouse binding %s", state);
+	}
+	uint32_t numbutton = (uint32_t) strtol(argv[1] + 6, NULL, 10);
+	if (numbutton < 1 || numbutton > 5) {
+		return cmd_results_new(CMD_INVALID, "bindsym", "Invalid mouse binding %s", state);
+	}
+	if (strncmp(argv[1], "button", 6) != 0) {
+		return cmd_results_new(CMD_INVALID, "bindsym", "Invalid mouse binding %s", state);
+	}
+	struct sway_mouse_binding *binding = malloc(sizeof(struct sway_mouse_binding));
+	binding->button = numbutton;
+	binding->command = join_args(argv + 1, argc - 1);
+
+	struct bar_config bar = config->bar;
+	int i = list_seq_find(bar.bindings, sway_mouse_binding_cmp_buttons, binding);
+	if (i > -1) {
+		sway_log(L_DEBUG, "bindsym - '%s' for swaybar already exists, overwriting", argv[0]);
+		struct sway_mouse_binding *dup = bar.bindings->items[i];
+		free_sway_mouse_binding(dup);
+		list_del(bar.bindings, i);
+	}
+	list_add(bar.bindings, binding);
+	list_sort(bar.bindings, sway_mouse_binding_cmp);
+
+	sway_log(L_DEBUG, "bindsym - Bound %s to command %s when clicking swaybar", argv[0], binding->command);
+
 static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "hidden_state", EXPECTED_EQUAL_TO, 1))) {
@@ -1723,7 +1759,7 @@ static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 
 static struct cmd_handler bar_handlers[] = {
 	{ "binding_mode_indicator", NULL },
-	{ "bindsym", NULL },
+	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", NULL },
 	{ "font", NULL },
 	{ "hidden_state", bar_cmd_hidden_state },
@@ -1740,11 +1776,13 @@ static struct cmd_handler bar_handlers[] = {
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 };
 
+
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
 	return strcasecmp(a->command, b->command);
 }
+
 
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };

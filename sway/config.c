@@ -468,7 +468,7 @@ int sway_binding_cmp_keys(const void *a, const void *b) {
 	const struct sway_binding *binda = a, *bindb = b;
 
 	// Count keys pressed for this binding. important so we check long before
-	// short ones.  for example mod+a+b  before  mod+a
+	// short ones.	for example mod+a+b  before  mod+a
 	unsigned int moda = 0, modb = 0, i;
 
 	// Count how any modifiers are pressed
@@ -514,6 +514,36 @@ void free_sway_binding(struct sway_binding *binding) {
 		}
 		list_free(binding->keys);
 	}
+	if (binding->command) {
+		free(binding->command);
+	}
+	free(binding);
+}
+
+int sway_mouse_binding_cmp_buttons(const void *a, const void *b) {
+	const struct sway_mouse_binding *binda = a, *bindb = b;
+
+		if (binda->button > bindb->button) {
+		  return 1;
+		} 
+		if (binda->button < bindb->button) {
+		  return -1;
+		}
+		return 0;
+}
+
+int sway_mouse_binding_cmp(const void *a, const void *b) {
+	int cmp = 0;
+	if ((cmp = sway_binding_cmp_keys(a, b)) != 0) {
+		return cmp;
+	}
+	const struct sway_mouse_binding *binda = a, *bindb = b;
+	return lenient_strcmp(binda->command, bindb->command);
+}
+
+void free_sway_mouse_binding(struct sway_mouse_binding *binding) {
+		//TODO: AFAIK freeing the button field doesn't make sense
+		//but better be safe than sorry, so ask first
 	if (binding->command) {
 		free(binding->command);
 	}
