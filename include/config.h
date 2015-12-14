@@ -72,6 +72,13 @@ struct bar_config {
 	 * In "show" mode, it will always be shown on top of the active workspace.
 	 */
 	char *hidden_state;
+	/**
+	 * Id name used to identify the bar through IPC.
+	 *
+	 * Defaults to bar-x, where x corresponds to the position of the
+	 * embedding bar block in the config file (bar-0, bar-1, ...).
+	 */
+	char *id;
 	uint32_t modifier;
 	enum desktop_shell_panel_position position;
 	char *status_command;

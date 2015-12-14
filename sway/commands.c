@@ -15,6 +15,7 @@
 #include "layout.h"
 #include "focus.h"
 #include "log.h"
+#include "util.h"
 #include "workspace.h"
 #include "commands.h"
 #include "container.h"
@@ -1124,9 +1125,20 @@ static struct cmd_results *cmd_bar(int argc, char **argv) {
 	bar->tray_padding = config->bar.tray_padding;
 	list_add(config->bars, bar);
 
+	// set bar id
+	int i;
+	for (i = 0; i < config->bars->length; ++i) {
+		if (bar == config->bars->items[i]) {
+			const int len = 5 + numlen(i); // "bar-" + i + \0
+			bar->id = malloc(len * sizeof(char));
+			snprintf(bar->id, len, "bar-%d", i);
+			break;
+		}
+	}
+
 	// Set current bar
 	config->current_bar = bar;
-	sway_log(L_DEBUG, "Configuring bar");
+	sway_log(L_DEBUG, "Configuring bar %s", bar->id);
 	return cmd_results_new(CMD_BLOCK_BAR, NULL, NULL);
 }
 
@@ -1534,7 +1546,7 @@ static struct cmd_results *bar_cmd_position(int argc, char **argv) {
 		return error;
 	}
 
-	sway_log(L_DEBUG, "Setting bar position '%s'", argv[0]);
+	sway_log(L_DEBUG, "Setting bar position '%s' for bar: %s", argv[0], config->current_bar->id);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1550,10 +1562,10 @@ static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv
 
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->strip_workspace_numbers = true;
-		sway_log(L_DEBUG, "Stripping workspace numbers on bar");
+		sway_log(L_DEBUG, "Stripping workspace numbers on bar: %s", config->current_bar->id);
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->strip_workspace_numbers = false;
-		sway_log(L_DEBUG, "Enabling workspace numbers on bar");
+		sway_log(L_DEBUG, "Enabling workspace numbers on bar: %s", config->current_bar->id);
 	} else {
 		error = cmd_results_new(CMD_INVALID, "strip_workspace_numbers", "Invalid value %s", argv[0]);
 		return error;
@@ -1587,7 +1599,7 @@ static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 				"Unknown unit %s", argv[1]);
 	}
 	config->current_bar->tray_padding = padding;
-	sway_log(L_DEBUG, "Enabling tray padding of %d px", padding);
+	sway_log(L_DEBUG, "Enabling tray padding of %d px on bar: %s", padding, config->current_bar->id);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1603,10 +1615,10 @@ static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = true;
-		sway_log(L_DEBUG, "Enabling workspace buttons on bar");
+		sway_log(L_DEBUG, "Enabling workspace buttons on bar: %s", config->current_bar->id);
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = false;
-		sway_log(L_DEBUG, "Disabling workspace buttons on bar");
+		sway_log(L_DEBUG, "Disabling workspace buttons on bar: %s", config->current_bar->id);
 	} else {
 		error = cmd_results_new(CMD_INVALID, "workspace_buttons", "Invalid value %s", argv[0]);
 		return error;
