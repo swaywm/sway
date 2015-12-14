@@ -15,6 +15,7 @@
 #include "layout.h"
 #include "focus.h"
 #include "log.h"
+#include "util.h"
 #include "workspace.h"
 #include "commands.h"
 #include "container.h"
@@ -1124,9 +1125,20 @@ static struct cmd_results *cmd_bar(int argc, char **argv) {
 	bar->tray_padding = config->bar.tray_padding;
 	list_add(config->bars, bar);
 
+	// set bar id
+	int i;
+	for (i = 0; i < config->bars->length; ++i) {
+		if (bar == config->bars->items[i]) {
+			const int len = 5 + numlen(i); // "bar-" + i + \0
+			bar->id = malloc(len * sizeof(char));
+			snprintf(bar->id, len, "bar-%d", i);
+			break;
+		}
+	}
+
 	// Set current bar
 	config->current_bar = bar;
-	sway_log(L_DEBUG, "Configuring bar");
+	sway_log(L_DEBUG, "Configuring bar %s", bar->id);
 	return cmd_results_new(CMD_BLOCK_BAR, NULL, NULL);
 }
 
