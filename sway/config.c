@@ -115,8 +115,6 @@ static void config_defaults(struct sway_config *config) {
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;
-	config->dragging_key = M_LEFT_CLICK;
-	config->resizing_key = M_RIGHT_CLICK;
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	// Flags
