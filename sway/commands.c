@@ -65,6 +65,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
 static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_tray_output;
@@ -1523,6 +1524,35 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_id(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "id", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	const char *name = argv[0];
+	const char *oldname = config->current_bar->id;
+
+	// check if id is used by a previously defined bar
+	int i;
+	for (i = 0; i < config->bars->length; ++i) {
+		struct bar_config *find = config->bars->items[i];
+		if (strcmp(name, find->id) == 0 && config->current_bar != find) {
+			return cmd_results_new(CMD_FAILURE, "id",
+					"Id '%s' already defined for another bar. Id unchanged (%s).",
+					name, oldname);
+		}
+	}
+
+	sway_log(L_DEBUG, "Renaming bar: '%s' to '%s'", oldname, name);
+
+	// free old bar id
+	free(config->current_bar->id);
+
+	config->current_bar->id = strdup(name);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_position(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "position", EXPECTED_EQUAL_TO, 1))) {
@@ -1632,7 +1662,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "colors", NULL },
 	{ "font", NULL },
 	{ "hidden_state", NULL },
-	{ "id", NULL },
+	{ "id", bar_cmd_id },
 	{ "mode", NULL },
 	{ "modifier", NULL },
 	{ "output", NULL },
