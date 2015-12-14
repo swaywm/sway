@@ -64,6 +64,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
 static sway_cmd bar_cmd_workspace_buttons;
 
@@ -1521,6 +1522,11 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
+	sway_log(L_ERROR, "warning: tray_output is not supported on wayland");
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "tray_padding", EXPECTED_AT_LEAST, 1))) {
@@ -1580,7 +1586,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "seperator_symbol", NULL },
 	{ "status_command", NULL },
 	{ "strip_workspace_numbers", NULL },
-	{ "tray_output", NULL },
+	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 };
