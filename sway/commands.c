@@ -70,6 +70,7 @@ static sway_cmd bar_cmd_mode;
 static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
+static sway_cmd bar_cmd_status_command;
 static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
@@ -1685,6 +1686,23 @@ static struct cmd_results *bar_cmd_position(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "status_command", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "status_command", "No bar defined.");
+	}
+	
+	free(config->current_bar->status_command);
+	config->current_bar->status_command = join_args(argv, argc);
+	sway_log(L_DEBUG, "Feeding bar with status command: %s", config->current_bar->status_command);
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "strip_workspace_numbers", EXPECTED_EQUAL_TO, 1))) {
@@ -1773,7 +1791,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "output", NULL },
 	{ "position", bar_cmd_position },
 	{ "seperator_symbol", NULL },
-	{ "status_command", NULL },
+	{ "status_command", bar_cmd_status_command },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
