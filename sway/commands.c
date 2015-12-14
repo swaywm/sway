@@ -64,6 +64,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_position;
 static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
@@ -1523,6 +1524,33 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_position(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "position", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "position", "No bar defined.");
+	}
+
+	if (strcasecmp("top", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_TOP;
+	} else if (strcasecmp("bottom", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
+	} else if (strcasecmp("left", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_LEFT;
+	} else if (strcasecmp("right", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_RIGHT;
+	} else {
+		error = cmd_results_new(CMD_INVALID, "position", "Invalid value %s", argv[0]);
+		return error;
+	}
+
+	sway_log(L_DEBUG, "Setting bar position '%s'", argv[0]);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "strip_workspace_numbers", EXPECTED_EQUAL_TO, 1))) {
@@ -1606,7 +1634,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "mode", NULL },
 	{ "modifier", NULL },
 	{ "output", NULL },
-	{ "position", NULL },
+	{ "position", bar_cmd_position },
 	{ "seperator_symbol", NULL },
 	{ "status_command", NULL },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
