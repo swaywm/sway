@@ -314,7 +314,7 @@ void pointer_mode_update(void) {
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:
 		// Update position
-		switch (config->resizing_key) {
+		switch (config->dragging_key) {
 		case M_LEFT_CLICK:
 			dx -= pointer_state.left.x;
 			dy -= pointer_state.left.y;
