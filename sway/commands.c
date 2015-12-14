@@ -64,6 +64,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
 static sway_cmd bar_cmd_workspace_buttons;
@@ -1522,6 +1523,29 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "strip_workspace_numbers", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "strip_workspace_numbers", "No bar defined.");
+	}
+
+	if (strcasecmp("yes", argv[0]) == 0) {
+		config->current_bar->strip_workspace_numbers = true;
+		sway_log(L_DEBUG, "Stripping workspace numbers on bar");
+	} else if (strcasecmp("no", argv[0]) == 0) {
+		config->current_bar->strip_workspace_numbers = false;
+		sway_log(L_DEBUG, "Enabling workspace numbers on bar");
+	} else {
+		error = cmd_results_new(CMD_INVALID, "strip_workspace_numbers", "Invalid value %s", argv[0]);
+		return error;
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 	sway_log(L_ERROR, "warning: tray_output is not supported on wayland");
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -1585,7 +1609,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "position", NULL },
 	{ "seperator_symbol", NULL },
 	{ "status_command", NULL },
-	{ "strip_workspace_numbers", NULL },
+	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
