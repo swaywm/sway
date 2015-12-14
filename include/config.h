@@ -125,7 +125,6 @@ struct sway_config {
 	list_t *output_configs;
 	list_t *criteria;
 	struct sway_mode *current_mode;
-	struct bar_config bar;
 	struct bar_config *current_bar;
 	uint32_t floating_mod;
 	uint32_t dragging_key;
@@ -175,6 +174,11 @@ void free_sway_binding(struct sway_binding *sb);
 int sway_mouse_binding_cmp(const void *a, const void *b);
 int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
 void free_sway_mouse_binding(struct sway_mouse_binding *smb);
+
+/**
+ * Allocate and initialize default bar configuration.
+ */
+struct bar_config *default_bar_config(void);
 
 /**
  * Global config singleton.
