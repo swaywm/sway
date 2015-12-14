@@ -6,4 +6,9 @@
  */
 int wrap(int i, int max);
 
+/**
+ * Count number of digits in int
+ */
+int numlen(int n);
+
 #endif

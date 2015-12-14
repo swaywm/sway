@@ -455,7 +455,11 @@ void ipc_get_outputs_callback(swayc_t *container, void *data) {
 void ipc_event_workspace(swayc_t *old, swayc_t *new) {
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("focus"));
-	json_object_object_add(obj, "old", ipc_json_describe_workspace(old));
+	if (old) {
+		json_object_object_add(obj, "old", ipc_json_describe_workspace(old));
+	} else {
+		json_object_object_add(obj, "old", NULL);
+	}
 	json_object_object_add(obj, "current", ipc_json_describe_workspace(new));
 	const char *json_string = json_object_to_json_string(obj);
 

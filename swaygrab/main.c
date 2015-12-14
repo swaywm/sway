@@ -8,19 +8,10 @@
 #include <time.h>
 #include "log.h"
 #include "ipc-client.h"
+#include "util.h"
 
 void sway_terminate(void) {
 	exit(EXIT_FAILURE);
-}
-
-int numlen(int n) {
-	if (n >= 1000000) return 7;
-	if (n >= 100000) return 6;
-	if (n >= 10000) return 5;
-	if (n >= 1000) return 4;
-	if (n >= 100) return 3;
-	if (n >= 10) return 2;
-	return 1;
 }
 
 void grab_and_apply_magick(const char *file, const char *output,

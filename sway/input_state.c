@@ -194,16 +194,8 @@ void center_pointer_on(swayc_t *view) {
 
 // Mode set left/right click
 
-static void pointer_mode_set_dragging(void) {
-	switch (config->dragging_key) {
-	case M_LEFT_CLICK:
-		set_initial_view(pointer_state.left.view);
-		break;
-	case M_RIGHT_CLICK:
-		set_initial_view(pointer_state.right.view);
-		break;
-	}
-
+static void pointer_mode_set_left(void) {
+	set_initial_view(pointer_state.left.view);
 	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_DRAGGING | M_FLOATING;
 	} else {
@@ -216,15 +208,8 @@ static void pointer_mode_set_dragging(void) {
 	}
 }
 
-static void pointer_mode_set_resizing(void) {
-	switch (config->resizing_key) {
-	case M_LEFT_CLICK:
-		set_initial_view(pointer_state.left.view);
-		break;
-	case M_RIGHT_CLICK:
-		set_initial_view(pointer_state.right.view);
-		break;
-	}
+static void pointer_mode_set_right(void) {
+	set_initial_view(pointer_state.right.view);
 	// Setup locking information
 	int midway_x = initial.ptr->x + initial.ptr->width/2;
 	int midway_y = initial.ptr->y + initial.ptr->height/2;
@@ -248,19 +233,15 @@ void pointer_mode_set(uint32_t button, bool condition) {
 	// switch on drag/resize mode
 	switch (pointer_state.mode & (M_DRAGGING | M_RESIZING)) {
 	case M_DRAGGING:
-		// end drag mode when 'dragging' click is unpressed
-		if (config->dragging_key == M_LEFT_CLICK && !pointer_state.left.held) {
-			pointer_state.mode = 0;
-		} else if (config->dragging_key == M_RIGHT_CLICK && !pointer_state.right.held) {
+	// end drag mode when left click is unpressed
+		if (!pointer_state.left.held) {
 			pointer_state.mode = 0;
 		}
 		break;
 
 	case M_RESIZING:
-		// end resize mode when 'resizing' click is unpressed
-		if (config->resizing_key == M_LEFT_CLICK && !pointer_state.left.held) {
-			pointer_state.mode = 0;
-		} else if (config->resizing_key == M_RIGHT_CLICK && !pointer_state.right.held) {
+	// end resize mode when right click is unpressed
+		if (!pointer_state.right.held) {
 			pointer_state.mode = 0;
 		}
 		break;
@@ -274,27 +255,19 @@ void pointer_mode_set(uint32_t button, bool condition) {
 
 		// Set mode depending on current button press
 		switch (button) {
-		// Start left-click mode
+		// Start dragging mode
 		case M_LEFT_CLICK:
 			// if button release dont do anything
 			if (pointer_state.left.held) {
-				if (config->dragging_key == M_LEFT_CLICK) {
-					pointer_mode_set_dragging();
-				} else if (config->resizing_key == M_LEFT_CLICK) {
-					pointer_mode_set_resizing();
-				}
+				pointer_mode_set_left();
 			}
 			break;
 
-		// Start right-click mode
+		// Start resize mode
 		case M_RIGHT_CLICK:
 			// if button release dont do anyhting
 			if (pointer_state.right.held) {
-				if (config->dragging_key == M_RIGHT_CLICK) {
-					pointer_mode_set_dragging();
-				} else if (config->resizing_key == M_RIGHT_CLICK) {
-					pointer_mode_set_resizing();
-				}
+				pointer_mode_set_right();
 			}
 			break;
 		}
@@ -314,17 +287,8 @@ void pointer_mode_update(void) {
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:
 		// Update position
-		switch (config->resizing_key) {
-		case M_LEFT_CLICK:
-			dx -= pointer_state.left.x;
-			dy -= pointer_state.left.y;
-			break;
-		case M_RIGHT_CLICK:
-			dx -= pointer_state.right.x;
-			dy -= pointer_state.right.y;
-			break;
-		}
-
+		dx -= pointer_state.left.x;
+		dy -= pointer_state.left.y;
 		if (initial.x + dx != initial.ptr->x) {
 			initial.ptr->x = initial.x + dx;
 		}
@@ -335,19 +299,9 @@ void pointer_mode_update(void) {
 		break;
 
 	case M_FLOATING | M_RESIZING:
-		switch (config->resizing_key) {
-		case M_LEFT_CLICK:
-			dx -= pointer_state.left.x;
-			dy -= pointer_state.left.y;
-			initial.ptr = pointer_state.left.view;
-			break;
-		case M_RIGHT_CLICK:
-			dx -= pointer_state.right.x;
-			dy -= pointer_state.right.y;
-			initial.ptr = pointer_state.right.view;
-			break;
-		}
-
+		dx -= pointer_state.right.x;
+		dy -= pointer_state.right.y;
+		initial.ptr = pointer_state.right.view;
 		if (lock.left) {
 			if (initial.w + dx > min_sane_w) {
 				initial.ptr->width = initial.w + dx;
@@ -387,17 +341,8 @@ void pointer_mode_update(void) {
 		break;
 
 	case M_TILING | M_RESIZING:
-		switch (config->resizing_key) {
-		case M_LEFT_CLICK:
-			dx -= pointer_state.left.x;
-			dy -= pointer_state.left.y;
-			break;
-		case M_RIGHT_CLICK:
-			dx -= pointer_state.right.x;
-			dy -= pointer_state.right.y;
-			break;
-		}
-
+		dx -= pointer_state.right.x;
+		dy -= pointer_state.right.y;
 		// resize if we can
 		if (initial.horiz.ptr) {
 			if (lock.left) {

@@ -21,7 +21,6 @@ add_executable(sway
 	main.c
 	output.c
 	resize.c
-	util.c
 	workspace.c
 )
 

@@ -80,12 +80,20 @@ struct bar_config {
 	 * In "show" mode, it will always be shown on top of the active workspace.
 	 */
 	char *hidden_state;
+	/**
+	 * Id name used to identify the bar through IPC.
+	 *
+	 * Defaults to bar-x, where x corresponds to the position of the
+	 * embedding bar block in the config file (bar-0, bar-1, ...).
+	 */
+	char *id;
 	uint32_t modifier;
 	list_t *bindings;
 	enum desktop_shell_panel_position position;
 	char *status_command;
 	char *font;
 	int bar_height;
+	int tray_padding;
 	bool workspace_buttons;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
@@ -111,15 +119,15 @@ struct bar_config {
 struct sway_config {
 	list_t *symbols;
 	list_t *modes;
+	list_t *bars;
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
 	list_t *output_configs;
 	list_t *criteria;
 	struct sway_mode *current_mode;
 	struct bar_config bar;
+	struct bar_config *current_bar;
 	uint32_t floating_mod;
-	uint32_t dragging_key;
-	uint32_t resizing_key;
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 
