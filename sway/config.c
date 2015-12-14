@@ -38,6 +38,14 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode);
 }
 
+static void free_bar(struct bar_config *bar) {
+	free(bar->mode);
+	free(bar->hidden_state);
+	free(bar->status_command);
+	free(bar->font);
+	free(bar);
+}
+
 void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc);
@@ -60,6 +68,11 @@ static void free_config(struct sway_config *config) {
 		free_mode(config->modes->items[i]);
 	}
 	list_free(config->modes);
+
+	for (i = 0; i < config->bars->length; ++i) {
+		free_bar(config->bars->items[i]);
+	}
+	list_free(config->bars);
 
 	free_flat_list(config->cmd_queue);
 
@@ -88,6 +101,7 @@ static bool file_exists(const char *path) {
 static void config_defaults(struct sway_config *config) {
 	config->symbols = create_list();
 	config->modes = create_list();
+	config->bars = create_list();
 	config->workspace_outputs = create_list();
 	config->criteria = create_list();
 	config->output_configs = create_list();
@@ -248,11 +262,26 @@ bool read_config(FILE *file, bool is_active) {
 			}
 			break;
 
+		case CMD_BLOCK_BAR:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_BAR;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
 		case CMD_BLOCK_END:
 			switch(block) {
 			case CMD_BLOCK_MODE:
 				sway_log(L_DEBUG, "End of mode block");
 				config->current_mode = config->modes->items[0];
+				block = CMD_BLOCK_END;
+				break;
+
+			case CMD_BLOCK_BAR:
+				sway_log(L_DEBUG, "End of bar block");
+				config->current_bar = NULL;
+				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_END:

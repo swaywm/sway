@@ -32,6 +32,7 @@ struct cmd_handler {
 	sway_cmd *handle;
 };
 
+static sway_cmd cmd_bar;
 static sway_cmd cmd_bindsym;
 static sway_cmd cmd_debuglog;
 static sway_cmd cmd_exec;
@@ -1099,6 +1100,43 @@ static struct cmd_results *cmd_resize(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *cmd_bar(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "bar", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (strcmp("{", argv[0]) != 0) {
+		return cmd_results_new(CMD_INVALID, "bar",
+				"Expected '{' at start of bar config definition.");
+	}
+
+	if (!config->reading) {
+		return cmd_results_new(CMD_FAILURE, "bar", "Can only be used in config file.");
+	}
+
+	// Create new bar from default bar config
+	struct bar_config *bar = NULL;
+	bar = malloc(sizeof*bar);
+	bar->mode = strdup(config->bar.mode);
+	bar->hidden_state = strdup(config->bar.hidden_state);
+	bar->modifier = config->bar.modifier;
+	bar->position = config->bar.position;
+	bar->status_command = strdup(config->bar.status_command);
+	bar->font = strdup(config->bar.font);
+	bar->bar_height = config->bar.bar_height;
+	bar->workspace_buttons = config->bar.workspace_buttons;
+	bar->strip_workspace_numbers = config->bar.strip_workspace_numbers;
+	bar->binding_mode_indicator = config->bar.binding_mode_indicator;
+	bar->tray_padding = config->bar.tray_padding;
+	list_add(config->bars, bar);
+
+	// Set current bar
+	config->current_bar = bar;
+	sway_log(L_DEBUG, "Configuring bar");
+	return cmd_results_new(CMD_BLOCK_BAR, NULL, NULL);
+}
+
 static swayc_t *fetch_view_from_scratchpad() {
 	if (sp_index >= scratchpad->length) {
 		sp_index = 0;
@@ -1446,6 +1484,7 @@ static struct cmd_results *cmd_ws_auto_back_and_forth(int argc, char **argv) {
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
+	{ "bar", cmd_bar },
 	{ "bindsym", cmd_bindsym },
 	{ "debuglog", cmd_debuglog },
 	{ "default_orientation", cmd_orientation },
@@ -1505,14 +1544,17 @@ static int handler_compare(const void *_a, const void *_b) {
 }
 
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
-	struct cmd_handler *h = handlers;
-	if (block == CMD_BLOCK_BAR) {
-		h = bar_handlers;
-	}
 	struct cmd_handler d = { .command=line };
-	struct cmd_handler *res = bsearch(&d, h,
+	struct cmd_handler *res = NULL;
+	if (block == CMD_BLOCK_BAR) {
+		res = bsearch(&d, bar_handlers,
+			sizeof(bar_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else {
+		res = bsearch(&d, handlers,
 			sizeof(handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
+	}
 	return res;
 }
 
