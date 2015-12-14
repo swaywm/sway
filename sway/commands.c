@@ -1600,6 +1600,7 @@ static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 				"Unknown unit %s", argv[1]);
 	}
 	config->current_bar->tray_padding = padding;
+	sway_log(L_DEBUG, "Enabling tray padding of %d px", padding);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1615,8 +1616,10 @@ static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = true;
+		sway_log(L_DEBUG, "Enabling workspace buttons on bar");
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = false;
+		sway_log(L_DEBUG, "Disabling workspace buttons on bar");
 	} else {
 		error = cmd_results_new(CMD_INVALID, "workspace_buttons", "Invalid value %s", argv[0]);
 		return error;
