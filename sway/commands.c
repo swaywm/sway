@@ -64,6 +64,9 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_position;
+static sway_cmd bar_cmd_strip_workspace_numbers;
+static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
 static sway_cmd bar_cmd_workspace_buttons;
 
@@ -1508,6 +1511,61 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_position(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "position", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "position", "No bar defined.");
+	}
+
+	if (strcasecmp("top", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_TOP;
+	} else if (strcasecmp("bottom", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
+	} else if (strcasecmp("left", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_LEFT;
+	} else if (strcasecmp("right", argv[0]) == 0) {
+		config->current_bar->position = DESKTOP_SHELL_PANEL_POSITION_RIGHT;
+	} else {
+		error = cmd_results_new(CMD_INVALID, "position", "Invalid value %s", argv[0]);
+		return error;
+	}
+
+	sway_log(L_DEBUG, "Setting bar position '%s'", argv[0]);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "strip_workspace_numbers", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "strip_workspace_numbers", "No bar defined.");
+	}
+
+	if (strcasecmp("yes", argv[0]) == 0) {
+		config->current_bar->strip_workspace_numbers = true;
+		sway_log(L_DEBUG, "Stripping workspace numbers on bar");
+	} else if (strcasecmp("no", argv[0]) == 0) {
+		config->current_bar->strip_workspace_numbers = false;
+		sway_log(L_DEBUG, "Enabling workspace numbers on bar");
+	} else {
+		error = cmd_results_new(CMD_INVALID, "strip_workspace_numbers", "Invalid value %s", argv[0]);
+		return error;
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
+	sway_log(L_ERROR, "warning: tray_output is not supported on wayland");
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "tray_padding", EXPECTED_AT_LEAST, 1))) {
@@ -1529,6 +1587,7 @@ static struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {
 				"Unknown unit %s", argv[1]);
 	}
 	config->current_bar->tray_padding = padding;
+	sway_log(L_DEBUG, "Enabling tray padding of %d px", padding);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1544,8 +1603,10 @@ static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = true;
+		sway_log(L_DEBUG, "Enabling workspace buttons on bar");
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = false;
+		sway_log(L_DEBUG, "Disabling workspace buttons on bar");
 	} else {
 		error = cmd_results_new(CMD_INVALID, "workspace_buttons", "Invalid value %s", argv[0]);
 		return error;
@@ -1563,11 +1624,11 @@ static struct cmd_handler bar_handlers[] = {
 	{ "mode", NULL },
 	{ "modifier", NULL },
 	{ "output", NULL },
-	{ "position", NULL },
+	{ "position", bar_cmd_position },
 	{ "seperator_symbol", NULL },
 	{ "status_command", NULL },
-	{ "strip_workspace_numbers", NULL },
-	{ "tray_output", NULL },
+	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
+	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 };
