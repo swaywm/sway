@@ -1782,7 +1782,11 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
 		strip_quotes(argv[1]);
 	}
-	results = handler->handle(argc-1, argv+1);
+	if (handler->handle) {
+		results = handler->handle(argc-1, argv+1);
+	} else {
+		results = cmd_results_new(CMD_INVALID, argv[0], "This command is shimmed, but unimplemented");
+	}
 	cleanup:
 	free_argv(argc, argv);
 	return results;
