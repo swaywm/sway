@@ -65,6 +65,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
 static sway_cmd bar_cmd_strip_workspace_numbers;
@@ -1524,6 +1525,30 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "hidden_state", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	const char *state = argv[0];
+	char *old_state = config->current_bar->hidden_state;
+
+	if (strcasecmp("hide", state) == 0) {
+		config->current_bar->hidden_state = strdup(state);
+	} else if(strcmp("show", state) == 0) {
+		config->current_bar->hidden_state = strdup(state);
+	} else {
+		return cmd_results_new(CMD_INVALID, "hidden_state", "Invalid value %s", state);
+	}
+
+	sway_log(L_DEBUG, "Setting hidden_state: '%s' for bar: %s", state, config->current_bar->id);
+
+	// free old state
+	free(old_state);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_id(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "id", EXPECTED_EQUAL_TO, 1))) {
@@ -1661,7 +1686,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "bindsym", NULL },
 	{ "colors", NULL },
 	{ "font", NULL },
-	{ "hidden_state", NULL },
+	{ "hidden_state", bar_cmd_hidden_state },
 	{ "id", bar_cmd_id },
 	{ "mode", NULL },
 	{ "modifier", NULL },
