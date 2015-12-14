@@ -36,7 +36,7 @@ static void wlc_log_handler(enum wlc_log_type type, const char *str) {
 	}
 }
 
-void detect_nvidia() {
+void detect_proprietary() {
 	FILE *f = fopen("/proc/modules", "r");
 	if (!f) {
 		return;
@@ -45,6 +45,11 @@ void detect_nvidia() {
 		char *line = read_line(f);
 		if (strstr(line, "nvidia")) {
 			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
+			free(line);
+			break;
+		}
+		if (strstr(line, "fglrx")) {
+			fprintf(stderr, "\x1B[1;31mWarning: Proprietary AMD drivers do NOT support Wayland. Use radeon.\x1B[0m\n");
 			free(line);
 			break;
 		}
@@ -161,7 +166,7 @@ int main(int argc, char **argv) {
 	}
 	setenv("WLC_DIM", "0", 0);
 	wlc_log_set_handler(wlc_log_handler);
-	detect_nvidia();
+	detect_proprietary();
 
 	/* Changing code earlier than this point requires detailed review */
 	/* (That code runs as root on systems without logind, and wlc_init drops to
