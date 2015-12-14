@@ -96,6 +96,7 @@ bool set_focused_container(swayc_t *c) {
 		return false;
 	}
 	swayc_t *active_ws = swayc_active_workspace();
+	int active_ws_child_count = active_ws->children->length + active_ws->floating->length;
 
 	swayc_log(L_DEBUG, c, "Setting focus to %p:%ld", c, c->handle);
 
@@ -117,6 +118,11 @@ bool set_focused_container(swayc_t *c) {
 		update_focus(p);
 		p = p->parent;
 		p->is_focused = false;
+	}
+	// active_ws might have been destroyed by now
+	// (focus swap away from empty ws = destroy ws)
+	if (active_ws_child_count == 0) {
+		active_ws = NULL;
 	}
 
 	// get new focused view and set focus to it.
