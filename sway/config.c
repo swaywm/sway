@@ -519,3 +519,30 @@ void free_sway_binding(struct sway_binding *binding) {
 	}
 	free(binding);
 }
+
+int sway_mouse_binding_cmp_buttons(const void *a, const void *b) {
+	const struct sway_mouse_binding *binda = a, *bindb = b;
+	if (binda->button > bindb->button) {
+		return 1;
+	}
+	if (binda->button < bindb->button) {
+		return -1;
+	}
+	return 0;
+}
+
+int sway_mouse_binding_cmp(const void *a, const void *b) {
+	int cmp = 0;
+	if ((cmp = sway_binding_cmp_keys(a, b)) != 0) {
+		return cmp;
+	}
+	const struct sway_mouse_binding *binda = a, *bindb = b;
+	return lenient_strcmp(binda->command, bindb->command);
+}
+
+void free_sway_mouse_binding(struct sway_mouse_binding *binding) {
+	if (binding->command) {
+		free(binding->command);
+	}
+	free(binding);
+}
