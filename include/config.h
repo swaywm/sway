@@ -99,17 +99,24 @@ struct bar_config {
 	bool binding_mode_indicator;
 	bool verbose;
 	struct {
-		char *background;
-		char *foreground;
-		char *focused_workspace_border;
-		char *focused_workspace_bg;
-		char *focused_workspace_text;
-		char *active_workspace_border;
-		char *active_workspace_bg;
-		char *active_workspace_text;
-		char *inactive_workspace_border;
-		char *inactive_workspace_bg;
-		char *inactive_workspace_text;
+		char background[10];
+		char statusline[10];
+		char separator[10];
+		char focused_workspace_border[10];
+		char focused_workspace_bg[10];
+		char focused_workspace_text[10];
+		char active_workspace_border[10];
+		char active_workspace_bg[10];
+		char active_workspace_text[10];
+		char inactive_workspace_border[10];
+		char inactive_workspace_bg[10];
+		char inactive_workspace_text[10];
+		char urgent_workspace_border[10];
+		char urgent_workspace_bg[10];
+		char urgent_workspace_text[10];
+		char binding_mode_border[10];
+		char binding_mode_bg[10];
+		char binding_mode_text[10];
 	} colors;
 };
 

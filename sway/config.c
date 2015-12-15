@@ -263,6 +263,14 @@ bool read_config(FILE *file, bool is_active) {
 			}
 			break;
 
+		case CMD_BLOCK_BAR_COLORS:
+			if (block == CMD_BLOCK_BAR) {
+				block = CMD_BLOCK_BAR_COLORS;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
 		case CMD_BLOCK_END:
 			switch(block) {
 			case CMD_BLOCK_MODE:
@@ -275,6 +283,11 @@ bool read_config(FILE *file, bool is_active) {
 				sway_log(L_DEBUG, "End of bar block");
 				config->current_bar = NULL;
 				block = CMD_BLOCK_END;
+				break;
+
+			case CMD_BLOCK_BAR_COLORS:
+				sway_log(L_DEBUG, "End of bar colors block");
+				block = CMD_BLOCK_BAR;
 				break;
 
 			case CMD_BLOCK_END:
@@ -554,6 +567,26 @@ struct bar_config *default_bar_config(void) {
 	bar->strip_workspace_numbers = false;
 	bar->binding_mode_indicator = true;
 	bar->tray_padding = 2;
+	// set default colors
+	strcpy(bar->colors.background, "#000000ff");
+	strcpy(bar->colors.statusline, "#ffffffff");
+	strcpy(bar->colors.separator, "#666666ff");
+	strcpy(bar->colors.focused_workspace_border, "#4c7899ff");
+	strcpy(bar->colors.focused_workspace_bg, "#285577ff");
+	strcpy(bar->colors.focused_workspace_text, "#ffffffff");
+	strcpy(bar->colors.active_workspace_border, "333333ff");
+	strcpy(bar->colors.active_workspace_bg, "#5f676aff");
+	strcpy(bar->colors.active_workspace_text, "#ffffffff");
+	strcpy(bar->colors.inactive_workspace_border, "#333333ff");
+	strcpy(bar->colors.inactive_workspace_bg,"#222222ff");
+	strcpy(bar->colors.inactive_workspace_text, "#888888ff");
+	strcpy(bar->colors.urgent_workspace_border, "#2f343aff");
+	strcpy(bar->colors.urgent_workspace_bg,"#900000ff");
+	strcpy(bar->colors.urgent_workspace_text, "#ffffffff");
+	strcpy(bar->colors.binding_mode_border, "#2f343aff");
+	strcpy(bar->colors.binding_mode_bg,"#900000ff");
+	strcpy(bar->colors.binding_mode_text, "#ffffffff");
+
 	list_add(config->bars, bar);
 
 	return bar;

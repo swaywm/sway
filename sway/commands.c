@@ -66,6 +66,7 @@ static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
 static sway_cmd bar_cmd_bindsym;
+static sway_cmd bar_cmd_colors;
 static sway_cmd bar_cmd_mode;
 static sway_cmd bar_cmd_modifier;
 static sway_cmd bar_cmd_hidden_state;
@@ -76,6 +77,16 @@ static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
 static sway_cmd bar_cmd_workspace_buttons;
+
+static sway_cmd bar_colors_cmd_active_workspace;
+static sway_cmd bar_colors_cmd_background;
+static sway_cmd bar_colors_cmd_background;
+static sway_cmd bar_colors_cmd_binding_mode;
+static sway_cmd bar_colors_cmd_focused_workspace;
+static sway_cmd bar_colors_cmd_inactive_workspace;
+static sway_cmd bar_colors_cmd_separator;
+static sway_cmd bar_colors_cmd_statusline;
+static sway_cmd bar_colors_cmd_urgent_workspace;
 
 swayc_t *sp_view;
 int sp_index = 0;
@@ -1567,6 +1578,20 @@ static struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_colors(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "colors", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (strcmp("{", argv[0]) != 0) {
+		return cmd_results_new(CMD_INVALID, "colors",
+				"Expected '{' at the start of colors config definition.");
+	}
+
+	return cmd_results_new(CMD_BLOCK_BAR_COLORS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "hidden_state", EXPECTED_EQUAL_TO, 1))) {
@@ -1804,7 +1829,7 @@ static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 static struct cmd_handler bar_handlers[] = {
 	{ "binding_mode_indicator", NULL },
 	{ "bindsym", bar_cmd_bindsym },
-	{ "colors", NULL },
+	{ "colors", bar_cmd_colors },
 	{ "font", NULL },
 	{ "hidden_state", bar_cmd_hidden_state },
 	{ "id", bar_cmd_id },
@@ -1820,6 +1845,195 @@ static struct cmd_handler bar_handlers[] = {
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
 };
 
+/**
+ * Check and add color to buffer.
+ *
+ * return error object, or NULL if color is valid.
+ */
+static struct cmd_results *add_color(const char *name, char *buffer, const char *color) {
+	int len = strlen(color);
+	if (len != 7 && len != 9 ) {
+		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
+	}
+
+	if (color[0] != '#') {
+		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
+	}
+
+	int i;
+	for (i = 1; i < len; ++i) {
+		if (!isxdigit(color[i])) {
+			return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
+		}
+	}
+
+	// copy color to buffer
+	strncpy(buffer, color, len);
+	// add default alpha channel if color was defined without it
+	if (len == 7) {
+		buffer[7] = 'f';
+		buffer[8] = 'f';
+	}
+	sway_log(L_DEBUG, "Setting %s color %s for bar: %s", name, buffer, config->current_bar->id);
+
+	return NULL;
+}
+
+static struct cmd_results *bar_colors_cmd_active_workspace(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "active_workspace", EXPECTED_EQUAL_TO, 3))) {
+		return error;
+	}
+
+	if ((error = add_color("active_workspace_border", config->current_bar->colors.active_workspace_border, argv[0]))) {
+		return error;
+	}
+
+	if ((error = add_color("active_workspace_bg", config->current_bar->colors.active_workspace_bg, argv[1]))) {
+		return error;
+	}
+
+	if ((error = add_color("active_workspace_text", config->current_bar->colors.active_workspace_text, argv[2]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_background(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "background", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if ((error = add_color("background", config->current_bar->colors.background, argv[0]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_binding_mode(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "binding_mode", EXPECTED_EQUAL_TO, 3))) {
+		return error;
+	}
+
+	if ((error = add_color("binding_mode_border", config->current_bar->colors.binding_mode_border, argv[0]))) {
+		return error;
+	}
+
+	if ((error = add_color("binding_mode_bg", config->current_bar->colors.binding_mode_bg, argv[1]))) {
+		return error;
+	}
+
+	if ((error = add_color("binding_mode_text", config->current_bar->colors.binding_mode_text, argv[2]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_focused_workspace(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "focused_workspace", EXPECTED_EQUAL_TO, 3))) {
+		return error;
+	}
+
+	if ((error = add_color("focused_workspace_border", config->current_bar->colors.focused_workspace_border, argv[0]))) {
+		return error;
+	}
+
+	if ((error = add_color("focused_workspace_bg", config->current_bar->colors.focused_workspace_bg, argv[1]))) {
+		return error;
+	}
+
+	if ((error = add_color("focused_workspace_text", config->current_bar->colors.focused_workspace_text, argv[2]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_inactive_workspace(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "inactive_workspace", EXPECTED_EQUAL_TO, 3))) {
+		return error;
+	}
+
+	if ((error = add_color("inactive_workspace_border", config->current_bar->colors.inactive_workspace_border, argv[0]))) {
+		return error;
+	}
+
+	if ((error = add_color("inactive_workspace_bg", config->current_bar->colors.inactive_workspace_bg, argv[1]))) {
+		return error;
+	}
+
+	if ((error = add_color("inactive_workspace_text", config->current_bar->colors.inactive_workspace_text, argv[2]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_separator(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "separator", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if ((error = add_color("separator", config->current_bar->colors.separator, argv[0]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_statusline(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "statusline", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if ((error = add_color("statusline", config->current_bar->colors.statusline, argv[0]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_colors_cmd_urgent_workspace(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "urgent_workspace", EXPECTED_EQUAL_TO, 3))) {
+		return error;
+	}
+
+	if ((error = add_color("urgent_workspace_border", config->current_bar->colors.urgent_workspace_border, argv[0]))) {
+		return error;
+	}
+
+	if ((error = add_color("urgent_workspace_bg", config->current_bar->colors.urgent_workspace_bg, argv[1]))) {
+		return error;
+	}
+
+	if ((error = add_color("urgent_workspace_text", config->current_bar->colors.urgent_workspace_text, argv[2]))) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_handler bar_colors_handlers[] = {
+	{ "active_workspace", bar_colors_cmd_active_workspace },
+	{ "background", bar_colors_cmd_background },
+	{ "binding_mode", bar_colors_cmd_binding_mode },
+	{ "focused_workspace", bar_colors_cmd_focused_workspace },
+	{ "inactive_workspace", bar_colors_cmd_inactive_workspace },
+	{ "separator", bar_colors_cmd_separator },
+	{ "statusline", bar_colors_cmd_statusline },
+	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
+};
+
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
@@ -1832,6 +2046,10 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	if (block == CMD_BLOCK_BAR) {
 		res = bsearch(&d, bar_handlers,
 			sizeof(bar_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_BAR_COLORS){
+		res = bsearch(&d, bar_colors_handlers,
+			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	} else {
 		res = bsearch(&d, handlers,
