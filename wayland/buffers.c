@@ -12,7 +12,7 @@
 #include "log.h"
 
 static int create_pool_file(size_t size, char **name) {
-	static const char template[] = "/sway-client-XXXXXX";
+	static const char template[] = "sway-client-XXXXXX";
 	const char *path = getenv("XDG_RUNTIME_DIR");
 		if (!path) {
 		return -1;
@@ -23,7 +23,7 @@ static int create_pool_file(size_t size, char **name) {
 	*name = malloc(
 		strlen(template) +
 		strlen(path) +
-		(ts ? 1 : 0) + 1);
+		(ts ? 0 : 1) + 1);
 	sprintf(*name, "%s%s%s", path, ts ? "" : "/", template);
 
 	int fd = mkstemp(*name);
