@@ -574,7 +574,7 @@ struct bar_config *default_bar_config(void) {
 	strcpy(bar->colors.focused_workspace_border, "#4c7899ff");
 	strcpy(bar->colors.focused_workspace_bg, "#285577ff");
 	strcpy(bar->colors.focused_workspace_text, "#ffffffff");
-	strcpy(bar->colors.active_workspace_border, "333333ff");
+	strcpy(bar->colors.active_workspace_border, "#333333ff");
 	strcpy(bar->colors.active_workspace_bg, "#5f676aff");
 	strcpy(bar->colors.active_workspace_text, "#ffffffff");
 	strcpy(bar->colors.inactive_workspace_border, "#333333ff");
