@@ -419,7 +419,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			}
 			json_object_object_add(json, "status_command", json_object_new_string(bar->status_command));
 			json_object_object_add(json, "font", json_object_new_string(bar->font));
-			json_object_object_add(json, "bar_height", json_object_new_int(bar->bar_height));
+			json_object_object_add(json, "bar_height", json_object_new_int(bar->height));
 			json_object_object_add(json, "workspace_buttons", json_object_new_boolean(bar->workspace_buttons));
 			json_object_object_add(json, "strip_workspace_numbers", json_object_new_boolean(bar->strip_workspace_numbers));
 			json_object_object_add(json, "binding_mode_indicator", json_object_new_boolean(bar->binding_mode_indicator));

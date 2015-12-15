@@ -69,6 +69,7 @@ static sway_cmd bar_cmd_bindsym;
 static sway_cmd bar_cmd_colors;
 static sway_cmd bar_cmd_mode;
 static sway_cmd bar_cmd_modifier;
+static sway_cmd bar_cmd_height;
 static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
@@ -1592,6 +1593,23 @@ static struct cmd_results *bar_cmd_colors(int argc, char **argv) {
 	return cmd_results_new(CMD_BLOCK_BAR_COLORS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_height(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "height", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	int height = atoi(argv[0]);
+	if (height < 0) {
+		return cmd_results_new(CMD_INVALID, "height",
+				"Invalid height value: %s", argv[0]);
+	}
+
+	config->current_bar->height = height;
+	sway_log(L_DEBUG, "Setting bar height to %d on bar: %s", height, config->current_bar->id);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "hidden_state", EXPECTED_EQUAL_TO, 1))) {
@@ -1831,6 +1849,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", bar_cmd_colors },
 	{ "font", NULL },
+	{ "height", bar_cmd_height },
 	{ "hidden_state", bar_cmd_hidden_state },
 	{ "id", bar_cmd_id },
 	{ "mode", bar_cmd_mode },
