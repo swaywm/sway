@@ -48,6 +48,11 @@ static void free_bar(struct bar_config *bar) {
 		free_sway_mouse_binding(bar->bindings->items[i]);
 	}
 	free(bar->bindings);
+
+	for (i = 0; i < bar->outputs->length; ++i) {
+		free(bar->outputs->items[i]);
+	}
+	list_free(bar->outputs);
 	free(bar);
 }
 
@@ -558,6 +563,7 @@ struct bar_config *default_bar_config(void) {
 	bar->mode = strdup("dock");
 	bar->hidden_state = strdup("hide");
 	bar->modifier = 0;
+	bar->outputs = create_list();
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	bar->bindings = create_list();
 	bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done");

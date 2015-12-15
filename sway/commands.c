@@ -69,6 +69,7 @@ static sway_cmd bar_cmd_bindsym;
 static sway_cmd bar_cmd_colors;
 static sway_cmd bar_cmd_mode;
 static sway_cmd bar_cmd_modifier;
+static sway_cmd bar_cmd_output;
 static sway_cmd bar_cmd_height;
 static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
@@ -1724,6 +1725,47 @@ static struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_output(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "output", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "output", "No bar defined.");
+	}
+
+	const char *output = argv[0];
+	list_t *outputs = config->current_bar->outputs;
+
+	int i;
+	int add_output = 1;
+	if (strcmp("*", output) == 0) {
+		// remove all previous defined outputs and replace with '*'
+		for (i = 0; i < outputs->length; ++i) {
+			free(outputs->items[i]);
+			list_del(outputs, i);
+		}
+	} else {
+		// only add output if not already defined with either the same
+		// name or as '*'
+		for (i = 0; i < outputs->length; ++i) {
+			const char *find = outputs->items[i];
+			if (strcmp("*", find) == 0 || strcmp(output, find) == 0) {
+				add_output = 0;
+				break;
+			}
+		}
+	}
+
+	if (add_output) {
+		list_add(outputs, strdup(output));
+		sway_log(L_DEBUG, "Adding bar: '%s' to output '%s'", config->current_bar->id, output);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_position(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "position", EXPECTED_EQUAL_TO, 1))) {
@@ -1854,7 +1896,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "id", bar_cmd_id },
 	{ "mode", bar_cmd_mode },
 	{ "modifier", bar_cmd_modifier },
-	{ "output", NULL },
+	{ "output", bar_cmd_output },
 	{ "position", bar_cmd_position },
 	{ "seperator_symbol", NULL },
 	{ "status_command", bar_cmd_status_command },
