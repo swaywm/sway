@@ -92,7 +92,7 @@ struct bar_config {
 	list_t *bindings;
 	char *status_command;
 	char *font;
-	int bar_height;
+	int height; // -1 not defined
 	int tray_padding;
 	bool workspace_buttons;
 	bool strip_workspace_numbers;
