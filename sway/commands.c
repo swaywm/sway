@@ -67,6 +67,7 @@ static sway_cmd cmd_ws_auto_back_and_forth;
 
 static sway_cmd bar_cmd_bindsym;
 static sway_cmd bar_cmd_colors;
+static sway_cmd bar_cmd_font;
 static sway_cmd bar_cmd_mode;
 static sway_cmd bar_cmd_modifier;
 static sway_cmd bar_cmd_output;
@@ -1594,6 +1595,28 @@ static struct cmd_results *bar_cmd_colors(int argc, char **argv) {
 	return cmd_results_new(CMD_BLOCK_BAR_COLORS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_font(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "font", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "font", "No bar defined.");
+	}
+
+	char *font = join_args(argv, argc);
+	if (strlen(font) > 6 && strncmp("pango:", font, 6) == 0) {
+		free(config->current_bar->font);
+		config->current_bar->font = font;
+		sway_log(L_DEBUG, "Settings font '%s' for bar: %s", config->current_bar->font, config->current_bar->id);
+	} else {
+		sway_log(L_ERROR, "warning: non-pango font '%s' not supported.", font);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_height(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "height", EXPECTED_EQUAL_TO, 1))) {
@@ -1890,7 +1913,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "binding_mode_indicator", NULL },
 	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", bar_cmd_colors },
-	{ "font", NULL },
+	{ "font", bar_cmd_font },
 	{ "height", bar_cmd_height },
 	{ "hidden_state", bar_cmd_hidden_state },
 	{ "id", bar_cmd_id },
