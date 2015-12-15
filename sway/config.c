@@ -568,24 +568,24 @@ struct bar_config *default_bar_config(void) {
 	bar->binding_mode_indicator = true;
 	bar->tray_padding = 2;
 	// set default colors
-	strcpy(bar->colors.background, "#000000");
-	strcpy(bar->colors.statusline, "#ffffff");
-	strcpy(bar->colors.separator, "#666666");
-	strcpy(bar->colors.focused_workspace_border, "#4c7899");
-	strcpy(bar->colors.focused_workspace_bg, "#285577");
-	strcpy(bar->colors.focused_workspace_text, "#ffffff");
-	strcpy(bar->colors.active_workspace_border, "333333");
-	strcpy(bar->colors.active_workspace_bg, "#5f676a");
-	strcpy(bar->colors.active_workspace_text, "#ffffff");
-	strcpy(bar->colors.inactive_workspace_border, "#333333");
-	strcpy(bar->colors.inactive_workspace_bg,"#222222");
-	strcpy(bar->colors.inactive_workspace_text, "#888888");
-	strcpy(bar->colors.urgent_workspace_border, "#2f343a");
-	strcpy(bar->colors.urgent_workspace_bg,"#900000");
-	strcpy(bar->colors.urgent_workspace_text, "#ffffff");
-	strcpy(bar->colors.binding_mode_border, "#2f343a");
-	strcpy(bar->colors.binding_mode_bg,"#900000");
-	strcpy(bar->colors.binding_mode_text, "#ffffff");
+	strcpy(bar->colors.background, "#000000ff");
+	strcpy(bar->colors.statusline, "#ffffffff");
+	strcpy(bar->colors.separator, "#666666ff");
+	strcpy(bar->colors.focused_workspace_border, "#4c7899ff");
+	strcpy(bar->colors.focused_workspace_bg, "#285577ff");
+	strcpy(bar->colors.focused_workspace_text, "#ffffffff");
+	strcpy(bar->colors.active_workspace_border, "333333ff");
+	strcpy(bar->colors.active_workspace_bg, "#5f676aff");
+	strcpy(bar->colors.active_workspace_text, "#ffffffff");
+	strcpy(bar->colors.inactive_workspace_border, "#333333ff");
+	strcpy(bar->colors.inactive_workspace_bg,"#222222ff");
+	strcpy(bar->colors.inactive_workspace_text, "#888888ff");
+	strcpy(bar->colors.urgent_workspace_border, "#2f343aff");
+	strcpy(bar->colors.urgent_workspace_bg,"#900000ff");
+	strcpy(bar->colors.urgent_workspace_text, "#ffffffff");
+	strcpy(bar->colors.binding_mode_border, "#2f343aff");
+	strcpy(bar->colors.binding_mode_bg,"#900000ff");
+	strcpy(bar->colors.binding_mode_text, "#ffffffff");
 
 	list_add(config->bars, bar);
 

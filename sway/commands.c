@@ -1851,7 +1851,8 @@ static struct cmd_handler bar_handlers[] = {
  * return error object, or NULL if color is valid.
  */
 static struct cmd_results *add_color(const char *name, char *buffer, const char *color) {
-	if (strlen(color) != 7) {
+	int len = strlen(color);
+	if (len != 7 && len != 9 ) {
 		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
 	}
 
@@ -1860,15 +1861,20 @@ static struct cmd_results *add_color(const char *name, char *buffer, const char 
 	}
 
 	int i;
-	for (i = 1; i < 7; ++i) {
+	for (i = 1; i < len; ++i) {
 		if (!isxdigit(color[i])) {
 			return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
 		}
 	}
 
 	// copy color to buffer
-	strncpy(buffer, color, 7);
-	sway_log(L_DEBUG, "Setting %s color %s for bar: %s", name, color, config->current_bar->id);
+	strncpy(buffer, color, len);
+	// add default alpha channel if color was defined without it
+	if (len == 7) {
+		buffer[7] = 'f';
+		buffer[8] = 'f';
+	}
+	sway_log(L_DEBUG, "Setting %s color %s for bar: %s", name, buffer, config->current_bar->id);
 
 	return NULL;
 }
