@@ -493,6 +493,10 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 }
 
 json_object *ipc_json_describe_workspace(swayc_t *workspace) {
+	if (!sway_assert(workspace, "Workspace must not be NULL")) {
+		return NULL;
+	}
+
 	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
 	json_object *object = json_object_new_object();
 	json_object *rect = json_object_new_object();
