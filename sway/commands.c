@@ -67,6 +67,7 @@ static sway_cmd cmd_ws_auto_back_and_forth;
 
 static sway_cmd bar_cmd_bindsym;
 static sway_cmd bar_cmd_mode;
+static sway_cmd bar_cmd_modifier;
 static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
@@ -1658,6 +1659,41 @@ static struct cmd_results *bar_cmd_id(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "modifier", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "modifier", "No bar defined.");
+	}
+
+	uint32_t mod = 0;
+
+	list_t *split = split_string(argv[0], "+");
+	for (int i = 0; i < split->length; ++i) {
+		int j;
+		bool is_mod = false;
+		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
+			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
+				mod |= modifiers[j].mod;
+				is_mod = true;
+				break;
+			}
+		}
+		if (!is_mod) {
+			free_flat_list(split);
+			return cmd_results_new(CMD_INVALID, "modifier", "Unknown modifier '%s'", split->items[i]);
+		}
+	}
+	free_flat_list(split);	
+
+	config->current_bar->modifier = mod;
+	sway_log(L_DEBUG, "Show/Hide the bar when pressing '%s' in hide mode.", argv[0]);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_position(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "position", EXPECTED_EQUAL_TO, 1))) {
@@ -1769,7 +1805,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "hidden_state", bar_cmd_hidden_state },
 	{ "id", bar_cmd_id },
 	{ "mode", bar_cmd_mode },
-	{ "modifier", NULL },
+	{ "modifier", bar_cmd_modifier },
 	{ "output", NULL },
 	{ "position", bar_cmd_position },
 	{ "seperator_symbol", NULL },
