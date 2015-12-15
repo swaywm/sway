@@ -43,6 +43,11 @@ static void free_bar(struct bar_config *bar) {
 	free(bar->hidden_state);
 	free(bar->status_command);
 	free(bar->font);
+	int i;
+	for (i = 0; i < bar->bindings->length; ++i) {
+		free_sway_mouse_binding(bar->bindings->items[i]);
+	}
+	free(bar->bindings);
 	free(bar);
 }
 
