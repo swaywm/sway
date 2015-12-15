@@ -1674,7 +1674,7 @@ static struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "modifier", "Unknown modifier '%s'", split->items[i]);
 		}
 	}
-	free_flat_list(split);	
+	free_flat_list(split);
 
 	config->current_bar->modifier = mod;
 	sway_log(L_DEBUG, "Show/Hide the bar when pressing '%s' in hide mode.", argv[0]);
@@ -1717,7 +1717,7 @@ static struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
 	if (!config->current_bar) {
 		return cmd_results_new(CMD_FAILURE, "status_command", "No bar defined.");
 	}
-	
+
 	free(config->current_bar->status_command);
 	config->current_bar->status_command = join_args(argv, argc);
 	sway_log(L_DEBUG, "Feeding bar with status command: %s", config->current_bar->status_command);
