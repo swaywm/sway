@@ -132,19 +132,6 @@ static void config_defaults(struct sway_config *config) {
 	config->edge_gaps = true;
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
-
-	// Bar
-	config->bar.mode = "dock";
-	config->bar.hidden_state = "hide";
-	config->bar.modifier = 0;
-	config->bar.position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
-	config->bar.status_command = "while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done";
-	config->bar.font = "monospace 10";
-	config->bar.bar_height = -1;
-	config->bar.workspace_buttons = true;
-	config->bar.strip_workspace_numbers = false;
-	config->bar.binding_mode_indicator = true;
-	config->bar.tray_padding = 2;
 }
 
 static char *get_config_path(void) {
@@ -545,4 +532,24 @@ void free_sway_mouse_binding(struct sway_mouse_binding *binding) {
 		free(binding->command);
 	}
 	free(binding);
+}
+
+struct bar_config *default_bar_config(void) {
+	struct bar_config *bar = NULL;
+	bar = malloc(sizeof(struct bar_config));
+	bar->mode = strdup("dock");
+	bar->hidden_state = strdup("hide");
+	bar->modifier = 0;
+	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
+	bar->bindings = create_list();
+	bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done");
+	bar->font = strdup("monospace 10");
+	bar->bar_height = -1;
+	bar->workspace_buttons = true;
+	bar->strip_workspace_numbers = false;
+	bar->binding_mode_indicator = true;
+	bar->tray_padding = 2;
+	list_add(config->bars, bar);
+
+	return bar;
 }

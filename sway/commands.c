@@ -1126,22 +1126,8 @@ static struct cmd_results *cmd_bar(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "bar", "Can only be used in config file.");
 	}
 
-	// Create new bar from default bar config
-	struct bar_config *bar = NULL;
-	bar = malloc(sizeof*bar);
-	bar->mode = strdup(config->bar.mode);
-	bar->hidden_state = strdup(config->bar.hidden_state);
-	bar->modifier = config->bar.modifier;
-	bar->position = config->bar.position;
-	bar->bindings = create_list();
-	bar->status_command = strdup(config->bar.status_command);
-	bar->font = strdup(config->bar.font);
-	bar->bar_height = config->bar.bar_height;
-	bar->workspace_buttons = config->bar.workspace_buttons;
-	bar->strip_workspace_numbers = config->bar.strip_workspace_numbers;
-	bar->binding_mode_indicator = config->bar.binding_mode_indicator;
-	bar->tray_padding = config->bar.tray_padding;
-	list_add(config->bars, bar);
+	// Create new bar with default values
+	struct bar_config *bar = default_bar_config();
 
 	// set bar id
 	int i;
