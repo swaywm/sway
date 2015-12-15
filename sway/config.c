@@ -47,7 +47,7 @@ static void free_bar(struct bar_config *bar) {
 	for (i = 0; i < bar->bindings->length; ++i) {
 		free_sway_mouse_binding(bar->bindings->items[i]);
 	}
-	free(bar->bindings);
+	list_free(bar->bindings);
 
 	for (i = 0; i < bar->outputs->length; ++i) {
 		free(bar->outputs->items[i]);
