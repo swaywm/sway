@@ -65,6 +65,7 @@ static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
 static sway_cmd cmd_ws_auto_back_and_forth;
 
+static sway_cmd bar_cmd_binding_mode_indicator;
 static sway_cmd bar_cmd_bindsym;
 static sway_cmd bar_cmd_colors;
 static sway_cmd bar_cmd_mode;
@@ -1542,6 +1543,29 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
+static struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "binding_mode_indicator", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "binding_mode_indicator", "No bar defined.");
+	}
+
+	if (strcasecmp("yes", argv[0]) == 0) {
+		config->current_bar->binding_mode_indicator = true;
+		sway_log(L_DEBUG, "Enabling binding mode indicator on bar: %s", config->current_bar->id);
+	} else if (strcasecmp("no", argv[0]) == 0) {
+		config->current_bar->binding_mode_indicator = false;
+		sway_log(L_DEBUG, "Disabling binding mode indicator on bar: %s", config->current_bar->id);
+	} else {
+		error = cmd_results_new(CMD_INVALID, "binding_mode_indicator", "Invalid value %s", argv[0]);
+		return error;
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
@@ -1887,7 +1911,7 @@ static struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 }
 
 static struct cmd_handler bar_handlers[] = {
-	{ "binding_mode_indicator", NULL },
+	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
 	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", bar_cmd_colors },
 	{ "font", NULL },
