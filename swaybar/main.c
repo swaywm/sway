@@ -8,6 +8,7 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <getopt.h>
 #include "ipc-client.h"
 #include "readline.h"
 #include "client/registry.h"
@@ -236,6 +237,44 @@ void render() {
 
 int main(int argc, char **argv) {
 	init_log(L_INFO);
+
+	char *socket_path = NULL;
+	char *bar_id = NULL;
+
+	static struct option long_options[] = {
+		{"version", no_argument, NULL, 'v'},
+		{"socket", required_argument, NULL, 's'},
+		{"bar_id", required_argument, NULL, 'b'},
+		{0, 0, 0, 0}
+	};
+
+	int c;
+	while (1) {
+		int option_index = 0;
+		c = getopt_long(argc, argv, "vs:b:", long_options, &option_index);
+		if (c == -1) {
+			break;
+		}
+		switch (c) {
+		case 's': // Socket
+			socket_path = strdup(optarg);
+			break;
+		case 'b': // Type
+			bar_id = strdup(optarg);
+			break;
+		case 'v':
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+			fprintf(stdout, "sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
+#else
+			fprintf(stdout, "version not detected\n");
+#endif
+			exit(EXIT_SUCCESS);
+			break;
+		default:
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	registry = registry_poll();
 
 	if (!registry->desktop_shell) {
@@ -261,9 +300,11 @@ int main(int argc, char **argv) {
 	line = malloc(1024);
 	line[0] = '\0';
 
-	char *socket_path = get_socketpath();
 	if (!socket_path) {
-		sway_abort("Unable to retrieve socket path");
+		char *socket_path = get_socketpath();
+		if (!socket_path) {
+			sway_abort("Unable to retrieve socket path");
+		}
 	}
 	socketfd = ipc_open_socket(socket_path);
 	bar_ipc_init(desired_output);
