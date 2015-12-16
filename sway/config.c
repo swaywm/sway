@@ -49,10 +49,7 @@ static void free_bar(struct bar_config *bar) {
 	}
 	list_free(bar->bindings);
 
-	for (i = 0; i < bar->outputs->length; ++i) {
-		free(bar->outputs->items[i]);
-	}
-	list_free(bar->outputs);
+	free_flat_list(bar->outputs);
 	free(bar);
 }
 
