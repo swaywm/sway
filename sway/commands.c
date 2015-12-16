@@ -76,6 +76,7 @@ static sway_cmd bar_cmd_height;
 static sway_cmd bar_cmd_hidden_state;
 static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
+static sway_cmd bar_cmd_separator_symbol;
 static sway_cmd bar_cmd_status_command;
 static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_tray_output;
@@ -1840,6 +1841,23 @@ static struct cmd_results *bar_cmd_position(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_separator_symbol(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "separator_symbol", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "separator_symbol", "No bar defined.");
+	}
+
+	free(config->current_bar->separator_symbol);
+	config->current_bar->separator_symbol = strdup(argv[0]);
+	sway_log(L_DEBUG, "Settings separator_symbol '%s' for bar: %s", config->current_bar->separator_symbol, config->current_bar->id);
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "status_command", EXPECTED_AT_LEAST, 1))) {
@@ -1945,7 +1963,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "modifier", bar_cmd_modifier },
 	{ "output", bar_cmd_output },
 	{ "position", bar_cmd_position },
-	{ "seperator_symbol", NULL },
+	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
 	{ "tray_output", bar_cmd_tray_output },
