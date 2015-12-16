@@ -48,7 +48,7 @@ struct workspace {
 list_t *workspaces = NULL;
 int socketfd;
 FILE *command;
-char *line, *output;
+char *line, *output, *status_command;
 struct registry *registry;
 struct window *window;
 
@@ -143,7 +143,7 @@ void ipc_update_workspaces() {
 	free(res);
 }
 
-void bar_ipc_init(int outputi) {
+void bar_ipc_init(int outputi, const char *bar_id) {
 	uint32_t len = 0;
 	char *res = ipc_single_command(socketfd, IPC_GET_OUTPUTS, NULL, &len);
 	json_object *outputs = json_tokener_parse(res);
@@ -154,6 +154,29 @@ void bar_ipc_init(int outputi) {
 	free(res);
 	json_object_put(outputs);
 	sway_log(L_INFO, "Running on output %s", output);
+
+	len = strlen(bar_id);
+	res = ipc_single_command(socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
+
+	json_object *bar_config = json_tokener_parse(res);
+	json_object *tray_output, *mode, *hidden_state, *position, *_status_command;
+	json_object *font, *bar_height, *workspace_buttons, *strip_workspace_numbers;
+	json_object *binding_mode_indicator, *verbose, *colors;
+	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
+	json_object_object_get_ex(bar_config, "mode", &mode);
+	json_object_object_get_ex(bar_config, "hidden_state", &hidden_state);
+	json_object_object_get_ex(bar_config, "position", &position);
+	json_object_object_get_ex(bar_config, "status_command", &_status_command);
+	json_object_object_get_ex(bar_config, "font", &font);
+	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
+	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
+	json_object_object_get_ex(bar_config, "strip_workspace_numbers", &strip_workspace_numbers);
+	json_object_object_get_ex(bar_config, "binding_mode_indicator", &binding_mode_indicator);
+	json_object_object_get_ex(bar_config, "verbose", &verbose);
+	json_object_object_get_ex(bar_config, "colors", &colors);
+	if (_status_command) status_command = strdup(json_object_get_string(_status_command));
+	json_object_put(bar_config);
+	free(res);
 
 	const char *subscribe_json = "[ \"workspace\" ]";
 	len = strlen(subscribe_json);
@@ -281,10 +304,24 @@ int main(int argc, char **argv) {
 		sway_abort("swaybar requires the compositor to support the desktop-shell extension.");
 	}
 
-	int desired_output = atoi(argv[1]);
-	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
+	if (!socket_path) {
+		socket_path = get_socketpath();
+		if (!socket_path) {
+			sway_abort("Unable to retrieve socket path");
+		}
+	}
+	socketfd = ipc_open_socket(socket_path);
 
+	int desired_output = atoi(argv[optind]);
+	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	struct output_state *output = registry->outputs->items[desired_output];
+
+	bar_ipc_init(desired_output, bar_id);
+
+	command = popen(status_command, "r");
+	line = malloc(1024);
+	line[0] = '\0';
+
 	window = window_setup(registry, output->width, 30, false);
 	if (!window) {
 		sway_abort("Failed to create window.");
@@ -295,19 +332,6 @@ int main(int argc, char **argv) {
 	int width, height;
 	get_text_size(window, &width, &height, "Test string for measuring purposes");
 	window->height = height + MARGIN * 2;
-
-	command = popen(argv[2], "r");
-	line = malloc(1024);
-	line[0] = '\0';
-
-	if (!socket_path) {
-		char *socket_path = get_socketpath();
-		if (!socket_path) {
-			sway_abort("Unable to retrieve socket path");
-		}
-	}
-	socketfd = ipc_open_socket(socket_path);
-	bar_ipc_init(desired_output);
 
 	do {
 		if (window_prerender(window) && window->cairo) {

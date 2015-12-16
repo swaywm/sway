@@ -455,6 +455,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			const char *json_string = json_object_to_json_string(json);
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 			json_object_put(json); // free
+			break;
 		}
 	}
 	default:
