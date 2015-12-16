@@ -28,7 +28,7 @@ struct box_colors {
 struct colors {
 	uint32_t background;
 	uint32_t statusline;
-	uint32_t seperator;
+	uint32_t separator;
 
 	struct box_colors focused_workspace;
 	struct box_colors active_workspace;
@@ -55,7 +55,7 @@ struct window *window;
 struct colors colors = {
 	.background = 0x000000FF,
 	.statusline = 0xFFFFFFFF,
-	.seperator = 0x666666FF,
+	.separator = 0x666666FF,
 
 	.focused_workspace = {
 		.border = 0x4C7899FF,
@@ -220,7 +220,7 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 		json_object_object_get_ex(_colors, "binding_mode_text", &binding_mode_text);
 		if (background) colors.background = parse_color(json_object_get_string(background));
 		if (statusline) colors.statusline = parse_color(json_object_get_string(statusline));
-		if (separator) colors.seperator = parse_color(json_object_get_string(separator));
+		if (separator) colors.separator = parse_color(json_object_get_string(separator));
 		if (focused_workspace_border) {
 			colors.focused_workspace.border = parse_color(json_object_get_string(focused_workspace_border));
 		}
