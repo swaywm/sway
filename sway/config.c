@@ -43,6 +43,7 @@ static void free_bar(struct bar_config *bar) {
 	free(bar->hidden_state);
 	free(bar->status_command);
 	free(bar->font);
+	free(bar->separator_symbol);
 	int i;
 	for (i = 0; i < bar->bindings->length; ++i) {
 		free_sway_mouse_binding(bar->bindings->items[i]);
@@ -567,6 +568,7 @@ struct bar_config *default_bar_config(void) {
 	bar->font = strdup("monospace 10");
 	bar->height = -1;
 	bar->workspace_buttons = true;
+	bar->separator_symbol = NULL;
 	bar->strip_workspace_numbers = false;
 	bar->binding_mode_indicator = true;
 	bar->tray_padding = 2;
