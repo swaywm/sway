@@ -189,7 +189,9 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 	// TODO: More of these options
 	// TODO: Refactor swaybar into several files, create a bar config struct (shared with compositor?)
-	if (_status_command) status_command = strdup(json_object_get_string(_status_command));
+	if (_status_command) {
+		status_command = strdup(json_object_get_string(_status_command));
+	}
 
 	if (_colors) {
 		json_object *background, *statusline, *separator;
@@ -219,30 +221,42 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 		if (background) colors.background = parse_color(json_object_get_string(background));
 		if (statusline) colors.statusline = parse_color(json_object_get_string(statusline));
 		if (separator) colors.seperator = parse_color(json_object_get_string(separator));
-		if (focused_workspace_border)
+		if (focused_workspace_border) {
 			colors.focused_workspace.border = parse_color(json_object_get_string(focused_workspace_border));
-		if (focused_workspace_bg)
+		}
+		if (focused_workspace_bg) {
 			colors.focused_workspace.background = parse_color(json_object_get_string(focused_workspace_bg));
-		if (focused_workspace_text)
+		}
+		if (focused_workspace_text) {
 			colors.focused_workspace.text = parse_color(json_object_get_string(focused_workspace_text));
-		if (active_workspace_border)
+		}
+		if (active_workspace_border) {
 			colors.active_workspace.border = parse_color(json_object_get_string(active_workspace_border));
-		if (active_workspace_bg)
+		}
+		if (active_workspace_bg) {
 			colors.active_workspace.background = parse_color(json_object_get_string(active_workspace_bg));
-		if (active_workspace_text)
+		}
+		if (active_workspace_text) {
 			colors.active_workspace.text = parse_color(json_object_get_string(active_workspace_text));
-		if (inactive_workspace_border)
+		}
+		if (inactive_workspace_border) {
 			colors.inactive_workspace.border = parse_color(json_object_get_string(inactive_workspace_border));
-		if (inactive_workspace_bg)
+		}
+		if (inactive_workspace_bg) {
 			colors.inactive_workspace.background = parse_color(json_object_get_string(inactive_workspace_bg));
-		if (inactive_workspace_text)
+		}
+		if (inactive_workspace_text) {
 			colors.inactive_workspace.text = parse_color(json_object_get_string(inactive_workspace_text));
-		if (binding_mode_border)
+		}
+		if (binding_mode_border) {
 			colors.binding_mode.border = parse_color(json_object_get_string(binding_mode_border));
-		if (binding_mode_bg)
+		}
+		if (binding_mode_bg) {
 			colors.binding_mode.background = parse_color(json_object_get_string(binding_mode_bg));
-		if (binding_mode_text)
+		}
+		if (binding_mode_text) {
 			colors.binding_mode.text = parse_color(json_object_get_string(binding_mode_text));
+		}
 	}
 
 	json_object_put(bar_config);
@@ -258,12 +272,15 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 void update() {
 	int pending;
-	if (ioctl(fileno(command), FIONREAD, &pending) != -1 && pending > 0) {
-		free(line);
-		line = read_line(command);
-		int l = strlen(line) - 1;
-		if (line[l] == '\n') {
-			line[l] = '\0';
+	// If no command is set, we don't have to update anything
+	if (status_command) {
+		if (ioctl(fileno(command), FIONREAD, &pending) != -1 && pending > 0) {
+			free(line);
+			line = read_line(command);
+			int l = strlen(line) - 1;
+			if (line[l] == '\n') {
+				line[l] = '\0';
+			}
 		}
 	}
 	if (ioctl(socketfd, FIONREAD, &pending) != -1 && pending > 0) {
@@ -368,6 +385,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (!bar_id) {
+		sway_abort("No bar_id passed. Provide --bar_id or let sway start swaybar");
+	}
+
 	registry = registry_poll();
 
 	if (!registry->desktop_shell) {
@@ -382,15 +403,21 @@ int main(int argc, char **argv) {
 	}
 	socketfd = ipc_open_socket(socket_path);
 
+	if (argc == optind) {
+		sway_abort("No output index provided");
+	}
+
 	int desired_output = atoi(argv[optind]);
 	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	struct output_state *output = registry->outputs->items[desired_output];
 
 	bar_ipc_init(desired_output, bar_id);
 
-	command = popen(status_command, "r");
-	line = malloc(1024);
-	line[0] = '\0';
+	if (status_command) {
+		command = popen(status_command, "r");
+		line = malloc(1024);
+		line[0] = '\0';
+	}
 
 	window = window_setup(registry, output->width, 30, false);
 	if (!window) {
