@@ -91,7 +91,7 @@ void sway_terminate(void) {
 }
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
-	cairo_set_source_rgba(cairo, 
+	cairo_set_source_rgba(cairo,
 			((color & 0xFF000000) >> 24) / 256.0,
 			((color & 0xFF0000) >> 16) / 256.0,
 			((color & 0xFF00) >> 8) / 256.0,
