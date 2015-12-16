@@ -368,6 +368,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (!bar_id) {
+		sway_abort("No bar_id passed. Provide --bar_id or let sway start swaybar");
+	}
+
 	registry = registry_poll();
 
 	if (!registry->desktop_shell) {
@@ -381,6 +385,10 @@ int main(int argc, char **argv) {
 		}
 	}
 	socketfd = ipc_open_socket(socket_path);
+
+	if (argc == optind) {
+		sway_abort("No output index provided");
+	}
 
 	int desired_output = atoi(argv[optind]);
 	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
