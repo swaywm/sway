@@ -98,6 +98,19 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 			(color & 0xFF) / 256.0);
 }
 
+int workspace_cmp(const void *left, const void *right) {
+	const struct workspace *a = left, *b = right;
+	if (a->num > b->num) {
+		return 1;
+	}
+
+	if (a->num < b->num) {
+		return -1;
+	}
+
+	return 0;
+}
+
 void ipc_update_workspaces() {
 	if (workspaces) {
 		free_flat_list(workspaces);
@@ -137,6 +150,9 @@ void ipc_update_workspaces() {
 		json_object_put(urgent);
 		json_object_put(ws_json);
 	}
+
+	// sort by num
+	list_sort(workspaces, workspace_cmp);
 
 	json_object_put(results);
 	free(res);
