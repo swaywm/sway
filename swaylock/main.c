@@ -1,4 +1,5 @@
 #include "wayland-swaylock-client-protocol.h"
+#include <security/pam_appl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +28,39 @@ void sway_terminate(void) {
 	list_free(surfaces);
 	registry_teardown(registry);
 	exit(EXIT_FAILURE);
+}
+
+struct pam_response *pam_reply;
+
+int function_conversation(int num_msg, const struct pam_message **msg,
+		struct pam_response **resp, void *appdata_ptr) {  
+	*resp = pam_reply;
+	return PAM_SUCCESS;  
+}  
+
+/**
+ * password will be zeroed out.
+ */
+bool verify_password(const char *username, char *password) {
+	const struct pam_conv local_conversation = { function_conversation, NULL };
+	pam_handle_t *local_auth_handle = NULL;
+	int pam_err;
+	if ((pam_err = pam_start("swaylock", username, &local_conversation, &local_auth_handle)) != PAM_SUCCESS) {
+		sway_abort("PAM returned %d\n", pam_err);
+	}
+	pam_reply = (struct pam_response *)malloc(sizeof(struct pam_response));
+	pam_reply[0].resp = password;
+	pam_reply[0].resp_retcode = 0;
+	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
+		memset(password, 0, strlen(password));
+		return false;
+	}
+	if ((pam_err = pam_end(local_auth_handle, pam_err)) != PAM_SUCCESS) {
+		memset(password, 0, strlen(password));
+		return false;
+	}
+	memset(password, 0, strlen(password));
+	return true;
 }
 
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {

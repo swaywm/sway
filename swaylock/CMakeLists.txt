@@ -4,6 +4,7 @@ include_directories(
 	${CAIRO_INCLUDE_DIRS}
 	${GDK_PIXBUF_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
+	${PAM_INCLUDE_DIRS}
 )
 
 add_executable(swaylock
@@ -18,6 +19,7 @@ target_link_libraries(swaylock
 	${CAIRO_LIBRARIES}
 	${GDK_PIXBUF_LIBRARIES}
 	${PANGO_LIBRARIES}
+	${PAM_LIBRARIES}
 	m
 )
 
