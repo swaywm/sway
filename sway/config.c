@@ -424,6 +424,50 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 			execvp(cmd[0], cmd);
 		}
 	}
+
+	// Check for a bar
+	struct bar_config *bar = NULL;
+	int i;
+	for (i = 0; i < config->bars->length; ++i) {
+		bar = config->bars->items[i];
+		bool apply = false;
+		if (bar->outputs) {
+			int j;
+			for (j = 0; j < bar->outputs->length; ++j) {
+				char *o = bar->outputs->items[j];
+				if (strcmp(o, "*") || strcasecmp(o, output->name)) {
+					apply = true;
+					break;
+				}
+			}
+		} else {
+			apply = true;
+		}
+		if (apply) {
+			break;
+		} else {
+			bar = NULL;
+		}
+	}
+	if (bar) {
+		sway_log(L_DEBUG, "Invoking swaybar for output %s and bar %s", output->name, bar->id);
+
+		size_t bufsize = 4;
+		char output_id[bufsize];
+		snprintf(output_id, bufsize, "%d", i);
+		output_id[bufsize-1] = 0;
+
+		char *const cmd[] = {
+			"./bin/swaybar",
+			"-b",
+			bar->id,
+			output_id,
+			NULL,
+		};
+		if (fork() == 0) {
+			execvp(cmd[0], cmd);
+		}
+	}
 }
 
 char *do_var_replacement(char *str) {
@@ -561,7 +605,7 @@ struct bar_config *default_bar_config(void) {
 	bar->mode = strdup("dock");
 	bar->hidden_state = strdup("hide");
 	bar->modifier = 0;
-	bar->outputs = create_list();
+	bar->outputs = NULL;
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	bar->bindings = create_list();
 	bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done");

@@ -1785,6 +1785,10 @@ static struct cmd_results *bar_cmd_output(int argc, char **argv) {
 
 	const char *output = argv[0];
 	list_t *outputs = config->current_bar->outputs;
+	if (!outputs) {
+		outputs = create_list();
+		config->current_bar->outputs = outputs;
+	}
 
 	int i;
 	int add_output = 1;
