@@ -12,9 +12,9 @@ swaygrab - Grab image data from the current sway session.
 
 Synopsis
 --------
-'swaygrab' [options] [output] [file]
+'swaygrab' [options] [file]
 
-Grabs pixels from _output_ and writes them to _file_. The image will be passed to
+Grabs pixels from an output and writes them to _file_. The image will be passed to
 ImageMagick convert for processing.
 
 Options
@@ -26,6 +26,10 @@ Options
 *-c, \--capture*::
 	Captures multiple frames as video and passes them into ffmpeg. Continues until
 	you send SIGTERM (ctrl+c) to swaygrab.
+
+*-o, \--output* <output>::
+	Use the specified _output_. If no output is defined the currently focused
+	output in sway will be used.
 
 *-v, \--version*::
 	Print the version (of swaymsg) and quit.
@@ -44,10 +48,10 @@ Options
 Examples
 --------
 
-swaygrab HDMI-A-1 output.png::
-	Grab the contents of HDMI-A-1 and write to output.png.
+swaygrab output.png::
+	Grab the contents of currently focused output and write to output.png.
 
-swaygrab -c HDMI-A-1 output.webm::
+swaygrab -c -o HDMI-A-1 output.webm::
 	Capture a webm of HDMI-A-1.
 
 Authors
