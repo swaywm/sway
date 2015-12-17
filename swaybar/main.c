@@ -51,6 +51,7 @@ FILE *command;
 char *line, *output, *status_command;
 struct registry *registry;
 struct window *window;
+bool dirty = true;
 
 struct colors colors = {
 	.background = 0x000000FF,
@@ -278,6 +279,7 @@ void update() {
 			if (line[l] == '\n') {
 				line[l] = '\0';
 			}
+			dirty = true;
 		}
 	}
 	if (ioctl(socketfd, FIONREAD, &pending) != -1 && pending > 0) {
@@ -285,6 +287,7 @@ void update() {
 		char *buf = ipc_recv_response(socketfd, &len);
 		free(buf);
 		ipc_update_workspaces();
+		dirty = true;
 	}
 }
 
@@ -425,8 +428,8 @@ int main(int argc, char **argv) {
 	window->height = height + MARGIN * 2;
 
 	do {
-		if (window_prerender(window) && window->cairo) {
-			update();
+		update();
+		if (dirty && window_prerender(window) && window->cairo) {
 			render();
 			window_render(window);
 		}
