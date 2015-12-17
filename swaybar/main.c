@@ -127,7 +127,6 @@ void ipc_update_workspaces() {
 			ws->focused = json_object_get_boolean(focused);
 			ws->urgent = json_object_get_boolean(urgent);
 			list_add(workspaces, ws);
-			sway_log(L_INFO, "Handling workspace %s", ws->name);
 		}
 
 		json_object_put(num);
@@ -165,7 +164,6 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	output = strdup(json_object_get_string(name));
 	free(res);
 	json_object_put(outputs);
-	sway_log(L_INFO, "Running on output %s", output);
 
 	len = strlen(bar_id);
 	res = ipc_single_command(socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
@@ -265,7 +263,6 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	const char *subscribe_json = "[ \"workspace\" ]";
 	len = strlen(subscribe_json);
 	res = ipc_single_command(socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
-	sway_log(L_INFO, "%s", res);
 
 	ipc_update_workspaces();
 }
@@ -284,10 +281,8 @@ void update() {
 		}
 	}
 	if (ioctl(socketfd, FIONREAD, &pending) != -1 && pending > 0) {
-		sway_log(L_INFO, "data available");
 		uint32_t len;
 		char *buf = ipc_recv_response(socketfd, &len);
-		sway_log(L_INFO, "%s", buf);
 		free(buf);
 		ipc_update_workspaces();
 	}
@@ -408,7 +403,6 @@ int main(int argc, char **argv) {
 	}
 
 	int desired_output = atoi(argv[optind]);
-	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	struct output_state *output = registry->outputs->items[desired_output];
 
 	bar_ipc_init(desired_output, bar_id);
