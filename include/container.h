@@ -88,6 +88,10 @@ struct sway_container {
 	 * Children of this container that are floated.
 	 */
 	list_t *floating;
+	/**
+	 * Unmanaged view handles in this container.
+	 */
+	list_t *unmanaged;
 
 	/**
 	 * The parent of this container. NULL for the root container.

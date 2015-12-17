@@ -220,6 +220,12 @@ static bool handle_view_created(wlc_handle handle) {
 			// refocus in-between command lists
 			set_focused_container(newview);
 		}
+	} else {
+		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
+		wlc_handle *h = malloc(sizeof(wlc_handle));
+		*h = handle;
+		sway_log(L_DEBUG, "Adding unmanaged window %p to %p", h, output->unmanaged);
+		list_add(output->unmanaged, h);
 	}
 	return true;
 }
@@ -249,6 +255,21 @@ static void handle_view_destroyed(wlc_handle handle) {
 		swayc_t *parent = destroy_view(view);
 		remove_view_from_scratchpad(view);
 		arrange_windows(parent, -1, -1);
+	} else {
+		// Is it unmanaged?
+		int i;
+		for (i = 0; i < root_container.children->length; ++i) {
+			swayc_t *output = root_container.children->items[i];
+			int j;
+			for (j = 0; j < output->unmanaged->length; ++j) {
+				wlc_handle *_handle = output->unmanaged->items[j];
+				if (*_handle == handle) {
+					list_del(output->unmanaged, j);
+					free(_handle);
+					break;
+				}
+			}
+		}
 	}
 	set_focused_container(get_focused_view(&root_container));
 }

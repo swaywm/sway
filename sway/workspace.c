@@ -247,6 +247,7 @@ bool workspace_switch(swayc_t *workspace) {
 	if (!set_focused_container(get_focused_view(workspace))) {
 		return false;
 	}
-	arrange_windows(workspace, -1, -1);
+	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
+	arrange_windows(output, -1, -1);
 	return true;
 }

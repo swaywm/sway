@@ -38,6 +38,9 @@ static void free_swayc(swayc_t *cont) {
 		}
 		list_free(cont->children);
 	}
+	if (cont->unmanaged) {
+		list_free(cont->unmanaged);
+	}
 	if (cont->floating) {
 		while (cont->floating->length) {
 			free_swayc(cont->floating->items[0]);
@@ -104,6 +107,7 @@ swayc_t *new_output(wlc_handle handle) {
 	output->name = name ? strdup(name) : NULL;
 	output->width = size->w;
 	output->height = size->h;
+	output->unmanaged = create_list();
 
 	apply_output_config(oc, output);
 	add_child(&root_container, output);

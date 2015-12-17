@@ -465,6 +465,12 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
 				arrange_windows_r(child, -1, -1);
 			}
+
+			// Bring all unmanaged views to the front
+			for (i = 0; i < container->unmanaged->length; ++i) {
+				wlc_handle *handle = container->unmanaged->items[i];
+				wlc_view_bring_to_front(*handle);
+			}
 		}
 		return;
 	case C_VIEW:
