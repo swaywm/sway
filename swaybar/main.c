@@ -87,7 +87,9 @@ struct colors colors = {
 
 void sway_terminate(void) {
 	window_teardown(window);
-	registry_teardown(registry);
+	if (registry) {
+		registry_teardown(registry);
+	}
 	exit(EXIT_FAILURE);
 }
 
