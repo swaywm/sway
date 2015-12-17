@@ -398,19 +398,20 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 	}
 
-	if (oc && oc->background) {
-		int i;
-		for (i = 0; i < root_container.children->length; ++i) {
-			if (root_container.children->items[i] == output) {
-				break;
-			}
+	int output_i;
+	for (output_i = 0; output_i < root_container.children->length; ++output_i) {
+		if (root_container.children->items[output_i] == output) {
+			break;
 		}
+	}
 
-		sway_log(L_DEBUG, "Setting background for output %d to %s", i, oc->background);
+	if (oc && oc->background) {
+
+		sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
 
 		size_t bufsize = 4;
 		char output_id[bufsize];
-		snprintf(output_id, bufsize, "%d", i);
+		snprintf(output_id, bufsize, "%d", output_i);
 		output_id[bufsize-1] = 0;
 
 		char *const cmd[] = {
@@ -450,11 +451,11 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 	}
 	if (bar) {
-		sway_log(L_DEBUG, "Invoking swaybar for output %s and bar %s", output->name, bar->id);
+		sway_log(L_DEBUG, "Invoking swaybar for output %s[%d] and bar %s", output->name, i, bar->id);
 
 		size_t bufsize = 4;
 		char output_id[bufsize];
-		snprintf(output_id, bufsize, "%d", i);
+		snprintf(output_id, bufsize, "%d", output_i);
 		output_id[bufsize-1] = 0;
 
 		char *const cmd[] = {
