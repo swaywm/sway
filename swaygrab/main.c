@@ -135,6 +135,19 @@ char *get_focused_output(int socketfd) {
 	return output;
 }
 
+char *default_filename(const char *extension) {
+	int ext_len = strlen(extension);
+	int len = 28 + ext_len; // format: "2015-12-17-180040_swaygrab.ext"
+	char *filename = malloc(len * sizeof(char));
+	time_t t = time(NULL);
+
+	struct tm *lt = localtime(&t);
+	strftime(filename, len, "%Y-%m-%d-%H%M%S_swaygrab.", lt);
+	strncat(filename, extension, ext_len);
+
+	return filename;
+}
+
 int main(int argc, char **argv) {
 	static int capture = 0, raw = 0;
 	char *socket_path = NULL;
@@ -214,10 +227,7 @@ int main(int argc, char **argv) {
 		if (optind >= argc + 1) {
 			sway_abort("Invalid usage. See `man swaygrab` %d %d", argc, optind);
 		}
-	} else {
-		if (optind >= argc) {
-			sway_abort("Invalid usage. See `man swaygrab`");
-		}
+	} else if (optind < argc) {
 		file = argv[optind];
 	}
 
@@ -228,6 +238,14 @@ int main(int argc, char **argv) {
 		output = get_focused_output(socketfd);
 	}
 
+	if (!file) {
+		if (!capture) {
+			file = default_filename("png");
+		} else {
+			file = default_filename("webm");
+		}
+	}
+
 	if (!capture) {
 		grab_and_apply_magick(file, output, socketfd, raw);
 	} else {
@@ -235,6 +253,7 @@ int main(int argc, char **argv) {
 	}
 
 	free(output);
+	free(file);
 	close(socketfd);
 	return 0;
 }
