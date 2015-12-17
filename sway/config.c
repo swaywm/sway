@@ -458,7 +458,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output_id[bufsize-1] = 0;
 
 		char *const cmd[] = {
-			"./bin/swaybar",
+			"swaybar",
 			"-b",
 			bar->id,
 			output_id,
