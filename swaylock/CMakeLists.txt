@@ -27,3 +27,9 @@ install(
 	DESTINATION bin
 	COMPONENT runtime
 )
+
+install(
+	FILES ${CMAKE_CURRENT_SOURCE_DIR}/pam/swaylock
+	DESTINATION /etc/pam.d/
+	COMPONENT data
+)
