@@ -6,7 +6,7 @@ Read the [FAQ](https://github.com/SirCmpwn/sway/wiki). Join the
 [IRC channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-![](https://sr.ht/i4Cu.png)
+![](https://sr.ht/6vVe.png)
 
 ## Rationale
 
