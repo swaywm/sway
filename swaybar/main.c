@@ -110,6 +110,10 @@ void ipc_update_workspaces() {
 	uint32_t len = 0;
 	char *res = ipc_single_command(socketfd, IPC_GET_WORKSPACES, NULL, &len);
 	json_object *results = json_tokener_parse(res);
+	if (!results) {
+		free(res);
+		return;
+	}
 
 	int i;
 	for (i = 0; i < json_object_array_length(results); ++i) {
