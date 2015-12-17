@@ -1,8 +1,12 @@
 #include "wayland-swaylock-client-protocol.h"
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-names.h>
 #include <security/pam_appl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <pwd.h>
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
@@ -30,6 +34,7 @@ void sway_terminate(void) {
 	exit(EXIT_FAILURE);
 }
 
+char *password;
 struct pam_response *pam_reply;
 
 int function_conversation(int num_msg, const struct pam_message **msg,
@@ -41,7 +46,10 @@ int function_conversation(int num_msg, const struct pam_message **msg,
 /**
  * password will be zeroed out.
  */
-bool verify_password(const char *username, char *password) {
+bool verify_password(char *password) {
+	struct passwd *passwd = getpwuid(getuid());
+	char *username = passwd->pw_name;
+
 	const struct pam_conv local_conversation = { function_conversation, NULL };
 	pam_handle_t *local_auth_handle = NULL;
 	int pam_err;
@@ -65,10 +73,29 @@ bool verify_password(const char *username, char *password) {
 
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
 	sway_log(L_INFO, "notified of key %c", (char)codepoint);
+	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		switch (sym) {
+		case XKB_KEY_Return:
+			if (verify_password(password)) {
+				exit(0);
+			}
+			break;
+		default:
+		{
+			int i = strlen(password);
+			password[i] = (char)codepoint;
+			password[i + 1] = '\0';
+			sway_log(L_INFO, "pw: %s", password);
+			break;
+		}
+		}
+	}
 }
 
 int main(int argc, char **argv) {
 	init_log(L_INFO);
+	password = malloc(1024); // TODO: Let this grow
+	password[0] = '\0';
 	surfaces = create_list();
 	registry = registry_poll();
 
