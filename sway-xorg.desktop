@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=Sway (Xorg)
-Comment=SirCmpwn's Wayland window manager
-Exec=sway
-Type=Application

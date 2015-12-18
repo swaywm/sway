@@ -71,8 +71,3 @@ install(
 	DESTINATION share/wayland-sessions
 	COMPONENT data
 )
-install(
-	FILES ${CMAKE_CURRENT_SOURCE_DIR}/sway-xorg.desktop
-	DESTINATION share/xsessions
-	COMPONENT data
-)
