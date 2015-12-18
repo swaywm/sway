@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <stropts.h>
 #include <json-c/json.h>
 #include <sys/un.h>
@@ -47,6 +48,8 @@ struct workspace {
 
 list_t *workspaces = NULL;
 int socketfd;
+pid_t pid;
+int pipefd[2];
 FILE *command;
 char *line, *output, *status_command;
 struct registry *registry;
@@ -90,6 +93,21 @@ void sway_terminate(void) {
 	if (registry) {
 		registry_teardown(registry);
 	}
+
+	if (command) {
+		fclose(command);
+	}
+
+	if (pid) {
+		// terminate status_command process
+		kill(pid, SIGTERM);
+	}
+
+	if (pipefd[0]) {
+		close(pipefd[0]);
+	}
+
+	free(line);
 	exit(EXIT_FAILURE);
 }
 
@@ -417,7 +435,24 @@ int main(int argc, char **argv) {
 	bar_ipc_init(desired_output, bar_id);
 
 	if (status_command) {
-		command = popen(status_command, "r");
+		pipe(pipefd);
+		pid = fork();
+		if (pid == 0) {
+			close(pipefd[0]);
+			dup2(pipefd[1], STDOUT_FILENO);
+			close(pipefd[1]);
+			char *const cmd[] = {
+				"sh",
+				"-c",
+				status_command,
+				NULL,
+			};
+			execvp(cmd[0], cmd);
+			return 0;
+		}
+
+		close(pipefd[1]);
+		command = fdopen(pipefd[0], "r");
 		line = malloc(1024);
 		line[0] = '\0';
 	}
@@ -443,6 +478,11 @@ int main(int argc, char **argv) {
 
 	window_teardown(window);
 	registry_teardown(registry);
+	fclose(command);
+	// terminate status_command process
+	kill(pid, SIGTERM);
+	close(pipefd[0]);
+	free(line);
 
 	return 0;
 }
