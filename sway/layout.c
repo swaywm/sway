@@ -432,9 +432,29 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		{
 			struct wlc_size resolution = *wlc_output_get_resolution(container->handle);
 			width = resolution.w; height = resolution.h;
+			// output must have correct size due to e.g. seamless mouse,
+			// but a workspace might be smaller depending on panels.
+			container->width = width;
+			container->height = height;
+		}
+		// arrange all workspaces:
+		for (i = 0; i < container->children->length; ++i) {
+			swayc_t *child = container->children->items[i];
+			arrange_windows_r(child, -1, -1);
+		}
+		// Bring all unmanaged views to the front
+		for (i = 0; i < container->unmanaged->length; ++i) {
+			wlc_handle *handle = container->unmanaged->items[i];
+			wlc_view_bring_to_front(*handle);
+		}
+		return;
+	case C_WORKSPACE:
+		{
+			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+			int width = output->width, height = output->height;
 			for (i = 0; i < desktop_shell.panels->length; ++i) {
 				struct panel_config *config = desktop_shell.panels->items[i];
-				if (config->output == container->handle) {
+				if (config->output == output->handle) {
 					struct wlc_size size = *wlc_surface_get_size(config->surface);
 					switch (desktop_shell.panel_position) {
 					case DESKTOP_SHELL_PANEL_POSITION_TOP:
@@ -452,27 +472,16 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 					}
 				}
 			}
+			int gap = swayc_gap(container);
+			container->x = gap;
+			container->y = gap;
+			container->width = width - gap * 2;
+			container->height = height - gap * 2;
+			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, container->x, container->y);
 
-			container->width = width;
-			container->height = height;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				int gap = swayc_gap(child);
-				child->x = x + gap;
-				child->y = y + gap;
-				child->width = width - gap * 2;
-				child->height = height - gap * 2;
-				sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, child->x, child->y);
-				arrange_windows_r(child, -1, -1);
-			}
-
-			// Bring all unmanaged views to the front
-			for (i = 0; i < container->unmanaged->length; ++i) {
-				wlc_handle *handle = container->unmanaged->items[i];
-				wlc_view_bring_to_front(*handle);
-			}
 		}
-		return;
+		 // children are properly handled below
+		break;
 	case C_VIEW:
 		{
 			container->width = width;
