@@ -167,6 +167,8 @@ static struct cmd_results *checkarg(int argc, const char *name, enum expected_ar
 	return error;
 }
 
+int binding_order = 0;
+
 static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
@@ -215,6 +217,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		free_sway_binding(dup);
 		list_del(mode->bindings, i);
 	}
+	binding->order = binding_order++;
 	list_add(mode->bindings, binding);
 	list_sort(mode->bindings, sway_binding_cmp);
 

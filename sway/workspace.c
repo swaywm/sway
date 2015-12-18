@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <limits.h>
+#include <ctype.h>
 #include <wlc/wlc.h>
 #include <string.h>
 #include <strings.h>
@@ -31,6 +33,8 @@ char *workspace_next_name(void) {
 	// if none are found/available then default to a number
 	struct sway_mode *mode = config->current_mode;
 
+	int order = INT_MAX;
+	char *target = NULL;
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
 		char *cmdlist = strdup(binding->command);
@@ -45,34 +49,39 @@ char *workspace_next_name(void) {
 
 		if (strcmp("workspace", cmd) == 0 && name) {
 			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
-			char* target = strdup(name);
-			while (*target == ' ' || *target == '\t')
-				target++;
+			char *_target = strdup(name);
+			while (isspace(*_target))
+				_target++;
 
 			// Make sure that the command references an actual workspace
 			// not a command about workspaces
-			if (strcmp(target, "next") == 0 ||
-				strcmp(target, "prev") == 0 ||
-				strcmp(target, "next_on_output") == 0 ||
-				strcmp(target, "prev_on_output") == 0 ||
-				strcmp(target, "number") == 0 ||
-				strcmp(target, "back_and_forth") == 0 ||
-				strcmp(target, "current") == 0)
+			if (strcmp(_target, "next") == 0 ||
+				strcmp(_target, "prev") == 0 ||
+				strcmp(_target, "next_on_output") == 0 ||
+				strcmp(_target, "prev_on_output") == 0 ||
+				strcmp(_target, "number") == 0 ||
+				strcmp(_target, "back_and_forth") == 0 ||
+				strcmp(_target, "current") == 0)
 			{
-				free(target);
+				free(_target);
 				continue;
 			}
 
 			// Make sure that the workspace doesn't already exist
-			if (workspace_by_name(target)) {
-				free(target);
+			if (workspace_by_name(_target)) {
+				free(_target);
 				continue;
 			}
-			free(dup);
-			sway_log(L_DEBUG, "Workspace: Found free name %s", target);
-			return target;
+			if (binding->order < order) {
+				order = binding->order;
+				target = _target;
+				sway_log(L_DEBUG, "Workspace: Found free name %s", _target);
+			}
 		}
 		free(dup);
+	}
+	if (target != NULL) {
+		return target;
 	}
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name

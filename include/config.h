@@ -21,6 +21,7 @@ struct sway_variable {
  * A key binding and an associated command.
  */
 struct sway_binding {
+	int order;
 	list_t *keys;
 	uint32_t modifiers;
 	char *command;
