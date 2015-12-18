@@ -72,7 +72,6 @@ bool verify_password(char *password) {
 }
 
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
-	sway_log(L_INFO, "notified of key %c", (char)codepoint);
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
 		case XKB_KEY_Return:
@@ -81,13 +80,12 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			}
 			break;
 		default:
-		{
-			int i = strlen(password);
-			password[i] = (char)codepoint;
-			password[i + 1] = '\0';
-			sway_log(L_INFO, "pw: %s", password);
-			break;
-		}
+			{
+				int i = strlen(password);
+				password[i] = (char)codepoint;
+				password[i + 1] = '\0';
+				break;
+			}
 		}
 	}
 }

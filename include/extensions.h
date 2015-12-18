@@ -21,6 +21,8 @@ struct panel_config {
 struct desktop_shell_state {
         list_t *backgrounds;
         list_t *panels;
+        list_t *lock_surfaces;
+        bool is_locked;
         enum desktop_shell_panel_position panel_position;
         struct wlc_size panel_size;
 };
