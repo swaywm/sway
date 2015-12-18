@@ -610,6 +610,7 @@ struct bar_config *default_bar_config(void) {
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	bar->bindings = create_list();
 	bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done");
+	bar->swaybar_command = NULL;
 	bar->font = strdup("monospace 10");
 	bar->height = -1;
 	bar->workspace_buttons = true;
