@@ -162,5 +162,5 @@ void register_extensions(void) {
 	desktop_shell.panel_position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	desktop_shell.lock_surfaces = create_list();
 	desktop_shell.is_locked = false;
-	wl_global_create(wlc_get_wl_display(), &lock_interface, 3, NULL, swaylock_bind);
+	wl_global_create(wlc_get_wl_display(), &lock_interface, 1, NULL, swaylock_bind);
 }

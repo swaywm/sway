@@ -97,9 +97,9 @@ int main(int argc, char **argv) {
 	surfaces = create_list();
 	registry = registry_poll();
 
-	/*if (!registry->swaylock) {
+	if (!registry->swaylock) {
 		sway_abort("swaylock requires the compositor to support the swaylock extension.");
-	}*/
+	}
 
 	int i;
 	for (i = 0; i < registry->outputs->length; ++i) {
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 		if (!window) {
 			sway_abort("Failed to create surfaces.");
 		}
-		//lock_set_lock_surface(registry->swaylock, output->output, window->surface);
+		lock_set_lock_surface(registry->swaylock, output->output, window->surface);
 		list_add(surfaces, window);
 	}
 
