@@ -61,7 +61,11 @@ static void free_swayc(swayc_t *cont) {
 		free(cont->app_id);
 	}
 	if (cont->bar_pids) {
+		terminate_swaybars(cont->bar_pids);
 		free_flat_list(cont->bar_pids);
+	}
+	if (cont->bg_pid != 0) {
+		terminate_swaybg(cont->bg_pid);
 	}
 	free(cont);
 }

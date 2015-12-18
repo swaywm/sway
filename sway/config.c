@@ -389,7 +389,7 @@ static void invoke_swaybar(swayc_t *output, struct bar_config *bar, int output_i
 	list_add(output->bar_pids, pid);
 }
 
-static void terminate_swaybars(list_t *pids) {
+void terminate_swaybars(list_t *pids) {
 	int i, ret;
 	pid_t *pid;
 	for (i = 0; i < pids->length; ++i) {
@@ -408,6 +408,16 @@ static void terminate_swaybars(list_t *pids) {
 		pid = pids->items[i];
 		list_del(pids, i);
 		free(pid);
+	}
+}
+
+void terminate_swaybg(pid_t pid) {
+	int ret = kill(pid, SIGTERM);
+	if (ret != 0) {
+		sway_log(L_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
 	}
 }
 
@@ -496,13 +506,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->background) {
 
 		if (output->bg_pid != 0) {
-			int ret = kill(output->bg_pid, SIGTERM);
-			if (ret != 0) {
-				sway_log(L_ERROR, "Unable to terminate swaybg [pid: %d]", output->bg_pid);
-			} else {
-				int status;
-				waitpid(output->bg_pid, &status, 0);
-			}
+			terminate_swaybg(output->bg_pid);
 		}
 
 		sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);

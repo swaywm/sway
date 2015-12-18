@@ -185,6 +185,8 @@ int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
 void free_sway_mouse_binding(struct sway_mouse_binding *smb);
 
 void load_swaybars(swayc_t *output, int output_idx);
+void terminate_swaybars(list_t *pids);
+void terminate_swaybg(pid_t pid);
 
 /**
  * Allocate and initialize default bar configuration.
