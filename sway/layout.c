@@ -450,7 +450,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	case C_WORKSPACE:
 		{
 			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
-			int width = output->width, height = output->height;
+			width = output->width, height = output->height;
 			for (i = 0; i < desktop_shell.panels->length; ++i) {
 				struct panel_config *config = desktop_shell.panels->items[i];
 				if (config->output == output->handle) {
@@ -473,10 +473,10 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				}
 			}
 			int gap = swayc_gap(container);
-			container->x = gap;
-			container->y = gap;
-			container->width = width - gap * 2;
-			container->height = height - gap * 2;
+			container->x = x + gap;
+			container->y = y + gap;
+			width = container->width = width - gap * 2;
+			height = container->height = height - gap * 2;
 			sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", container->name, container->x, container->y);
 		}
 		 // children are properly handled below
