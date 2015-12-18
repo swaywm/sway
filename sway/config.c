@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <wordexp.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "readline.h"
 #include "stringop.h"
@@ -360,6 +363,101 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 }
 
+static void invoke_swaybar(swayc_t *output, struct bar_config *bar, int output_i) {
+	sway_log(L_DEBUG, "Invoking swaybar for output %s[%d] and bar %s", output->name, output_i, bar->id);
+
+	size_t bufsize = 4;
+	char output_id[bufsize];
+	snprintf(output_id, bufsize, "%d", output_i);
+	output_id[bufsize-1] = 0;
+
+	char *const cmd[] = {
+		"swaybar",
+		"-b",
+		bar->id,
+		output_id,
+		NULL,
+	};
+
+	pid_t *pid = malloc(sizeof(pid_t));
+	*pid = fork();
+	if (*pid == 0) {
+		execvp(cmd[0], cmd);
+	}
+
+	// add swaybar pid to output
+	list_add(output->bar_pids, pid);
+}
+
+void terminate_swaybars(list_t *pids) {
+	int i, ret;
+	pid_t *pid;
+	for (i = 0; i < pids->length; ++i) {
+		pid = pids->items[i];
+		ret = kill(*pid, SIGTERM);
+		if (ret != 0) {
+			sway_log(L_ERROR, "Unable to terminate swaybar [pid: %d]", *pid);
+		} else {
+			int status;
+			waitpid(*pid, &status, 0);
+		}
+	}
+
+	// empty pids list
+	for (i = 0; i < pids->length; ++i) {
+		pid = pids->items[i];
+		list_del(pids, i);
+		free(pid);
+	}
+}
+
+void terminate_swaybg(pid_t pid) {
+	int ret = kill(pid, SIGTERM);
+	if (ret != 0) {
+		sway_log(L_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
+	}
+}
+
+void load_swaybars(swayc_t *output, int output_idx) {
+	// Check for bars
+	list_t *bars = create_list();
+	struct bar_config *bar = NULL;
+	int i;
+	for (i = 0; i < config->bars->length; ++i) {
+		bar = config->bars->items[i];
+		bool apply = false;
+		if (bar->outputs) {
+			int j;
+			for (j = 0; j < bar->outputs->length; ++j) {
+				char *o = bar->outputs->items[j];
+				if (strcmp(o, "*") || strcasecmp(o, output->name)) {
+					apply = true;
+					break;
+				}
+			}
+		} else {
+			apply = true;
+		}
+		if (apply) {
+			list_add(bars, bar);
+		}
+	}
+
+	// terminate swaybar processes previously spawned for this
+	// output.
+	terminate_swaybars(output->bar_pids);
+
+	for (i = 0; i < bars->length; ++i) {
+		bar = bars->items[i];
+		invoke_swaybar(output, bar, output_idx);
+	}
+
+	list_free(bars);
+}
+
 void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->width > 0 && oc->height > 0) {
 		output->width = oc->width;
@@ -407,6 +505,10 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 
 	if (oc && oc->background) {
 
+		if (output->bg_pid != 0) {
+			terminate_swaybg(output->bg_pid);
+		}
+
 		sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
 
 		size_t bufsize = 4;
@@ -421,54 +523,15 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 			oc->background_option,
 			NULL,
 		};
-		if (fork() == 0) {
+
+		output->bg_pid = fork();
+		if (output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
 		}
 	}
 
-	// Check for a bar
-	struct bar_config *bar = NULL;
-	int i;
-	for (i = 0; i < config->bars->length; ++i) {
-		bar = config->bars->items[i];
-		bool apply = false;
-		if (bar->outputs) {
-			int j;
-			for (j = 0; j < bar->outputs->length; ++j) {
-				char *o = bar->outputs->items[j];
-				if (strcmp(o, "*") || strcasecmp(o, output->name)) {
-					apply = true;
-					break;
-				}
-			}
-		} else {
-			apply = true;
-		}
-		if (apply) {
-			break;
-		} else {
-			bar = NULL;
-		}
-	}
-	if (bar) {
-		sway_log(L_DEBUG, "Invoking swaybar for output %s[%d] and bar %s", output->name, i, bar->id);
-
-		size_t bufsize = 4;
-		char output_id[bufsize];
-		snprintf(output_id, bufsize, "%d", output_i);
-		output_id[bufsize-1] = 0;
-
-		char *const cmd[] = {
-			"swaybar",
-			"-b",
-			bar->id,
-			output_id,
-			NULL,
-		};
-		if (fork() == 0) {
-			execvp(cmd[0], cmd);
-		}
-	}
+	// load swaybars for output
+	load_swaybars(output, output_i);
 }
 
 char *do_var_replacement(char *str) {
