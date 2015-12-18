@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <stropts.h>
 #include <json-c/json.h>
 #include <sys/un.h>
 #include <sys/socket.h>
