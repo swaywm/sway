@@ -96,7 +96,10 @@ bool set_focused_container(swayc_t *c) {
 		return false;
 	}
 	swayc_t *active_ws = swayc_active_workspace();
-	int active_ws_child_count = active_ws->children->length + active_ws->floating->length;
+	int active_ws_child_count = 0;
+	if (active_ws) {
+		active_ws_child_count = active_ws->children->length + active_ws->floating->length;
+	}
 
 	swayc_log(L_DEBUG, c, "Setting focus to %p:%ld", c, c->handle);
 
