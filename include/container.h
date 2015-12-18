@@ -1,5 +1,6 @@
 #ifndef _SWAY_CONTAINER_H
 #define _SWAY_CONTAINER_H
+#include <sys/types.h>
 #include <wlc/wlc.h>
 typedef struct sway_container swayc_t;
 
@@ -80,6 +81,11 @@ struct sway_container {
 	char *name;
 	char *class;
 	char *app_id;
+
+	// Used by output containers to keep track of swaybar/swaybg child
+	// processes.
+	list_t *bar_pids;
+	pid_t bg_pid;
 
 	int gaps;
 

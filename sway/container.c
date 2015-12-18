@@ -60,6 +60,9 @@ static void free_swayc(swayc_t *cont) {
 	if (cont->app_id) {
 		free(cont->app_id);
 	}
+	if (cont->bar_pids) {
+		free_flat_list(cont->bar_pids);
+	}
 	free(cont);
 }
 
@@ -109,6 +112,8 @@ swayc_t *new_output(wlc_handle handle) {
 	output->width = size->w;
 	output->height = size->h;
 	output->unmanaged = create_list();
+	output->bar_pids = create_list();
+	output->bg_pid = 0;
 
 	apply_output_config(oc, output);
 	add_child(&root_container, output);
