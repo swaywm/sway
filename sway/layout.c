@@ -422,10 +422,9 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	switch (container->type) {
 	case C_ROOT:
 		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
-			sway_log(L_DEBUG, "Arranging output at %d", x);
-			arrange_windows_r(child, -1, -1);
-			x += child->width;
+			swayc_t *output = container->children->items[i];
+			sway_log(L_DEBUG, "Arranging output '%s' at %f,%f", output->name, output->x, output->y);
+			arrange_windows_r(output, -1, -1);
 		}
 		return;
 	case C_OUTPUT:
@@ -456,6 +455,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				struct panel_config *config = desktop_shell.panels->items[i];
 				if (config->output == output->handle) {
 					struct wlc_size size = *wlc_surface_get_size(config->surface);
+					sway_log(L_DEBUG, "-> Found panel for this workspace: %ux%u, position: %u", size.w, size.h, desktop_shell.panel_position);
 					switch (desktop_shell.panel_position) {
 					case DESKTOP_SHELL_PANEL_POSITION_TOP:
 						y += size.h; height -= size.h;
@@ -477,8 +477,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			container->y = gap;
 			container->width = width - gap * 2;
 			container->height = height - gap * 2;
-			sway_log(L_DEBUG, "Arranging workspace #%d at %f, %f", i, container->x, container->y);
-
+			sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", container->name, container->x, container->y);
 		}
 		 // children are properly handled below
 		break;
