@@ -135,10 +135,6 @@ void ipc_update_workspaces() {
 	int i;
 	for (i = 0; i < json_object_array_length(results); ++i) {
 		json_object *ws_json = json_object_array_get_idx(results, i);
-		if (!ws_json) {
-			// wat
-			continue;
-		}
 		json_object *num, *name, *visible, *focused, *out, *urgent;
 		json_object_object_get_ex(ws_json, "num", &num);
 		json_object_object_get_ex(ws_json, "name", &name);
@@ -156,14 +152,6 @@ void ipc_update_workspaces() {
 			ws->urgent = json_object_get_boolean(urgent);
 			list_add(workspaces, ws);
 		}
-
-		json_object_put(num);
-		json_object_put(name);
-		json_object_put(visible);
-		json_object_put(focused);
-		json_object_put(out);
-		json_object_put(urgent);
-		json_object_put(ws_json);
 	}
 
 	json_object_put(results);
