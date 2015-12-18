@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <strings.h>
@@ -168,7 +169,24 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	workspace->visible = false;
 	workspace->floating = create_list();
 
-	add_child(output, workspace);
+	if (isdigit(workspace->name[0])) {
+		// find position for numbered workspace
+		// order: ascending numbers, insert before same number
+		//        numbers before unnumbered
+		int num = strtol(workspace->name, NULL, 10);
+		int i;
+		for (i = 0; i < output->children->length; ++i) {
+			char *name = ((swayc_t *)output->children->items[i])->name;
+			if (!isdigit(name[0]) || num <= strtol(name, NULL, 10)) {
+				break;
+			}
+		}
+		insert_child(output, workspace, i);
+
+	} else {
+		// append new unnumbered to the end
+		add_child(output, workspace);
+	}
 	return workspace;
 }
 
