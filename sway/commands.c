@@ -649,12 +649,15 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			}
 
 			const char *ws_name = argv[3];
-			if (argc == 5) {
+			swayc_t *ws;
+			if (argc == 5 && strcasecmp(ws_name, "number") == 0) {
 				// move "container to workspace number x"
 				ws_name = argv[4];
+				ws = workspace_by_number(ws_name);
+			} else {
+				ws = workspace_by_name(ws_name);
 			}
 
-			swayc_t *ws = workspace_by_name(ws_name);
 			if (ws == NULL) {
 				ws = workspace_create(ws_name);
 			}
@@ -1435,13 +1438,17 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 	if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	if (argc == 1) {
+	if (argc == 1 || (argc == 2 && strcasecmp(argv[0], "number") == 0) ) {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
 		}
 		// Handle workspace next/prev
 		swayc_t *ws = NULL;
-		if (strcasecmp(argv[0], "next") == 0) {
+		if (argc == 2) {
+			if (!(ws=workspace_by_number(argv[1]))) {
+				ws = workspace_create(argv[1]);
+			}
+		}else if (strcasecmp(argv[0], "next") == 0) {
 			ws = workspace_next();
 		} else if (strcasecmp(argv[0], "prev") == 0) {
 			ws = workspace_prev();

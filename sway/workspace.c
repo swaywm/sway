@@ -17,6 +17,11 @@
 #include "ipc.h"
 
 char *prev_workspace_name = NULL;
+struct workspace_by_number_data {
+	int len;
+	const char *cset;
+	const char *name;
+};
 
 char *workspace_next_name(void) {
 	sway_log(L_DEBUG, "Workspace: Generating new name");
@@ -131,6 +136,23 @@ swayc_t *workspace_by_name(const char* name) {
 	else {
 		return swayc_by_test(&root_container, _workspace_by_name, (void *) name);
 	}
+}
+
+static bool _workspace_by_number(swayc_t *view, void *data) {
+	if (view->type != C_WORKSPACE) {
+		return false;
+	}
+	struct workspace_by_number_data *wbnd = data;
+	int a = strspn(view->name, wbnd->cset);
+	return a == wbnd->len && strncmp(view->name, wbnd->name, a) == 0;
+}
+swayc_t *workspace_by_number(const char* name) {
+	struct workspace_by_number_data wbnd = {0, "1234567890", name};
+	wbnd.len = strspn(name, wbnd.cset);
+	if (wbnd.len <= 0) {
+		return NULL;
+	}
+	return swayc_by_test(&root_container, _workspace_by_number, (void *) &wbnd);
 }
 
 /**

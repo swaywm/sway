@@ -10,6 +10,7 @@ extern char *prev_workspace_name;
 char *workspace_next_name(void);
 swayc_t *workspace_create(const char*);
 swayc_t *workspace_by_name(const char*);
+swayc_t *workspace_by_number(const char*);
 bool workspace_switch(swayc_t*);
 swayc_t *workspace_output_next();
 swayc_t *workspace_next();
