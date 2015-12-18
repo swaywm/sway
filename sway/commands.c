@@ -79,6 +79,7 @@ static sway_cmd bar_cmd_position;
 static sway_cmd bar_cmd_separator_symbol;
 static sway_cmd bar_cmd_status_command;
 static sway_cmd bar_cmd_strip_workspace_numbers;
+static sway_cmd bar_cmd_swaybar_command;
 static sway_cmd bar_cmd_tray_output;
 static sway_cmd bar_cmd_tray_padding;
 static sway_cmd bar_cmd_workspace_buttons;
@@ -1918,6 +1919,23 @@ static struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_cmd_swaybar_command(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "swaybar_command", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (!config->current_bar) {
+		return cmd_results_new(CMD_FAILURE, "swaybar_command", "No bar defined.");
+	}
+
+	free(config->current_bar->swaybar_command);
+	config->current_bar->swaybar_command = join_args(argv, argc);
+	sway_log(L_DEBUG, "Using custom swaybar command: %s", config->current_bar->swaybar_command);
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 	sway_log(L_ERROR, "warning: tray_output is not supported on wayland");
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -1986,6 +2004,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
+	{ "swaybar_command", bar_cmd_swaybar_command },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
