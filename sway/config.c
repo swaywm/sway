@@ -371,18 +371,35 @@ static void invoke_swaybar(swayc_t *output, struct bar_config *bar, int output_i
 	snprintf(output_id, bufsize, "%d", output_i);
 	output_id[bufsize-1] = 0;
 
-	char *const cmd[] = {
-		"swaybar",
-		"-b",
-		bar->id,
-		output_id,
-		NULL,
-	};
-
 	pid_t *pid = malloc(sizeof(pid_t));
 	*pid = fork();
 	if (*pid == 0) {
-		execvp(cmd[0], cmd);
+		if (!bar->swaybar_command) {
+			char *const cmd[] = {
+				"swaybar",
+				"-b",
+				bar->id,
+				output_id,
+				NULL,
+			};
+
+			execvp(cmd[0], cmd);
+		} else {
+			// run custom swaybar
+			int len = strlen(bar->swaybar_command) + strlen(bar->id) + strlen(output_id) + 6;
+			char *command = malloc(len * sizeof(char));
+			snprintf(command, len, "%s -b %s %s", bar->swaybar_command, bar->id, output_id);
+
+			char *const cmd[] = {
+				"sh",
+				"-c",
+				command,
+				NULL,
+			};
+
+			execvp(cmd[0], cmd);
+			free(command);
+		}
 	}
 
 	// add swaybar pid to output
