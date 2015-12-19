@@ -44,6 +44,7 @@ Install dependencies:
 * pango
 * cairo
 * gdk-pixbuf2
+* pam
 
 Run these commands:
 
