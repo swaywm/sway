@@ -4,13 +4,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/select.h>
+#include <errno.h>
 #include <json-c/json.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <getopt.h>
 #include "ipc-client.h"
-#include "readline.h"
 #include "client/registry.h"
 #include "client/window.h"
 #include "client/pango.h"
@@ -50,7 +51,8 @@ int socketfd;
 pid_t pid;
 int pipefd[2];
 FILE *command;
-char *line, *output, *status_command;
+char line[1024];
+char *output, *status_command;
 struct registry *registry;
 struct window *window;
 bool dirty = true;
@@ -106,7 +108,6 @@ void sway_terminate(void) {
 		close(pipefd[0]);
 	}
 
-	free(line);
 	exit(EXIT_FAILURE);
 }
 
@@ -304,29 +305,6 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	ipc_update_workspaces();
 }
 
-void update() {
-	int pending;
-	// If no command is set, we don't have to update anything
-	if (status_command) {
-		if (ioctl(fileno(command), FIONREAD, &pending) != -1 && pending > 0) {
-			free(line);
-			line = read_line(command);
-			int l = strlen(line) - 1;
-			if (line[l] == '\n') {
-				line[l] = '\0';
-			}
-			dirty = true;
-		}
-	}
-	if (ioctl(socketfd, FIONREAD, &pending) != -1 && pending > 0) {
-		uint32_t len;
-		char *buf = ipc_recv_response(socketfd, &len);
-		free(buf);
-		ipc_update_workspaces();
-		dirty = true;
-	}
-}
-
 void render() {
 	// Clear
 	cairo_save(window->cairo);
@@ -376,6 +354,51 @@ void render() {
 		pango_printf(window, "%s", ws->name);
 
 		x += width + MARGIN * 2 + MARGIN;
+	}
+}
+
+void poll_for_update() {
+	fd_set readfds;
+	int activity;
+
+	while (1) {
+		if (dirty && window_prerender(window) && window->cairo) {
+			render();
+			window_render(window);
+		}
+
+		if (wl_display_dispatch(registry->display) == -1) {
+			break;
+		}
+
+		dirty = false;
+		FD_ZERO(&readfds);
+		FD_SET(socketfd, &readfds);
+		FD_SET(pipefd[0], &readfds);
+
+		activity = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
+		if (activity < 0) {
+			sway_log(L_ERROR, "polling failed: %d", errno);
+		}
+
+		if (FD_ISSET(socketfd, &readfds)) {
+			sway_log(L_DEBUG, "Got workspace update.");
+			uint32_t len;
+			char *buf = ipc_recv_response(socketfd, &len);
+			free(buf);
+			ipc_update_workspaces();
+			dirty = true;
+		}
+
+		if (status_command && FD_ISSET(pipefd[0], &readfds)) {
+			sway_log(L_DEBUG, "Got update from status command.");
+			fgets(line, sizeof(line), command);
+			int l = strlen(line) - 1;
+			if (line[l] == '\n') {
+				line[l] = '\0';
+			}
+			dirty = true;
+		}
 	}
 }
 
@@ -465,7 +488,6 @@ int main(int argc, char **argv) {
 
 		close(pipefd[1]);
 		command = fdopen(pipefd[0], "r");
-		line = malloc(1024);
 		line[0] = '\0';
 	}
 
@@ -479,13 +501,7 @@ int main(int argc, char **argv) {
 	get_text_size(window, &width, &height, "Test string for measuring purposes");
 	window->height = height + MARGIN * 2;
 
-	do {
-		update();
-		if (dirty && window_prerender(window) && window->cairo) {
-			render();
-			window_render(window);
-		}
-	} while (wl_display_dispatch(registry->display) != -1);
+	poll_for_update();
 
 	window_teardown(window);
 	registry_teardown(registry);
@@ -493,7 +509,6 @@ int main(int argc, char **argv) {
 	// terminate status_command process
 	kill(pid, SIGTERM);
 	close(pipefd[0]);
-	free(line);
 
 	return 0;
 }
