@@ -173,6 +173,20 @@ uint32_t parse_color(const char *color) {
 	return res;
 }
 
+uint32_t parse_position(const char *position) {
+	if (strcmp("top", position) == 0) {
+		return DESKTOP_SHELL_PANEL_POSITION_TOP;
+	} else if (strcmp("bottom", position) == 0) {
+		return DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
+	} else if (strcmp("left", position) == 0) {
+		return DESKTOP_SHELL_PANEL_POSITION_LEFT;
+	} else if (strcmp("right", position) == 0) {
+		return DESKTOP_SHELL_PANEL_POSITION_RIGHT;
+	} else {
+		return DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
+	}
+}
+
 void bar_ipc_init(int outputi, const char *bar_id) {
 	uint32_t len = 0;
 	char *res = ipc_single_command(socketfd, IPC_GET_OUTPUTS, NULL, &len);
@@ -208,6 +222,10 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	// TODO: Refactor swaybar into several files, create a bar config struct (shared with compositor?)
 	if (_status_command) {
 		status_command = strdup(json_object_get_string(_status_command));
+	}
+
+	if (position) {
+		desktop_shell_set_panel_position(registry->desktop_shell, parse_position(json_object_get_string(position)));
 	}
 
 	if (_colors) {
@@ -456,7 +474,6 @@ int main(int argc, char **argv) {
 		sway_abort("Failed to create window.");
 	}
 	desktop_shell_set_panel(registry->desktop_shell, output->output, window->surface);
-	desktop_shell_set_panel_position(registry->desktop_shell, DESKTOP_SHELL_PANEL_POSITION_BOTTOM);
 
 	int width, height;
 	get_text_size(window, &width, &height, "Test string for measuring purposes");
