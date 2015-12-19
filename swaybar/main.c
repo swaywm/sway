@@ -137,7 +137,7 @@ void ipc_update_workspaces() {
 		json_object *ws_json = json_object_array_get_idx(results, i);
 		json_object *num, *name, *visible, *focused, *out, *urgent;
 		if (!ws_json) {
-			continue;
+			return;
 		}
 		json_object_object_get_ex(ws_json, "num", &num);
 		json_object_object_get_ex(ws_json, "name", &name);
