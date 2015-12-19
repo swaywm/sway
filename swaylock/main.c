@@ -108,7 +108,6 @@ int main(int argc, char **argv) {
 		if (!window) {
 			sway_abort("Failed to create surfaces.");
 		}
-		lock_set_lock_surface(registry->swaylock, output->output, window->surface);
 		list_add(surfaces, window);
 	}
 
@@ -217,7 +216,17 @@ int main(int argc, char **argv) {
 
 	cairo_surface_destroy(image);
 
-	while (wl_display_dispatch(registry->display) != -1);
+	bool locked = false;
+	while (wl_display_dispatch(registry->display) != -1) {
+		if (!locked) {
+			for (i = 0; i < registry->outputs->length; ++i) {
+				struct output_state *output = registry->outputs->items[i];
+				struct window *window = surfaces->items[i];
+				lock_set_lock_surface(registry->swaylock, output->output, window->surface);
+			}
+			locked = true;
+		}
+	}
 
 	for (i = 0; i < surfaces->length; ++i) {
 		struct window *window = surfaces->items[i];

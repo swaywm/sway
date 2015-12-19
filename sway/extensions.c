@@ -89,12 +89,27 @@ static void desktop_unlock(struct wl_client *client, struct wl_resource *resourc
 }
 
 static void set_lock_surface(struct wl_client *client, struct wl_resource *resource,
-		struct wl_resource *output, struct wl_resource *surface) {
-	sway_log(L_ERROR, "set_lock_surface is not currently supported");
+		struct wl_resource *_output, struct wl_resource *surface) {
+	swayc_t *output = swayc_by_handle(wlc_handle_from_wl_output_resource(_output));
+	swayc_t *view = swayc_by_handle(wlc_handle_from_wl_surface_resource(surface));
+	if (view && output) {
+		swayc_t *workspace = output->focused;
+		if (!swayc_is_child_of(view, workspace)) {
+			move_container_to(view, workspace);
+		}
+		wlc_view_set_state(view->handle, WLC_BIT_FULLSCREEN, true);
+		workspace->fullscreen = view;
+		desktop_shell.is_locked = true;
+		set_focused_container(view);
+		arrange_windows(view, -1, -1);
+	} else {
+		sway_log(L_ERROR, "Attempted to set lock surface to non-view");
+	}
 }
 
 static void unlock(struct wl_client *client, struct wl_resource *resource) {
 	sway_log(L_ERROR, "unlock is not currently supported");
+	// This isn't really necessary, we just unlock when the client exits.
 }
 
 static void set_grab_surface(struct wl_client *client, struct wl_resource *resource, struct wl_resource *surface) {

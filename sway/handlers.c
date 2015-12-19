@@ -331,6 +331,10 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t key, enum wlc_key_state state) {
 
+	if (desktop_shell.is_locked) {
+		return EVENT_PASSTHROUGH;
+	}
+
 	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return EVENT_PASSTHROUGH;
 	}
@@ -383,6 +387,10 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 }
 
 static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_point *origin) {
+	if (desktop_shell.is_locked) {
+		return EVENT_PASSTHROUGH;
+	}
+
 	struct wlc_point new_origin = *origin;
 	// Switch to adjacent output if touching output edge.
 	//
