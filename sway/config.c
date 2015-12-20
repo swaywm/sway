@@ -53,7 +53,9 @@ static void free_bar(struct bar_config *bar) {
 	}
 	list_free(bar->bindings);
 
-	free_flat_list(bar->outputs);
+	if (bar->outputs) {
+		free_flat_list(bar->outputs);
+	}
 	free(bar);
 }
 
