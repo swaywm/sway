@@ -398,10 +398,10 @@ void update_geometry(swayc_t *container) {
 			geometry.size.h = container->height - gap/2;
 		}
 		if (container->x + container->width + gap >= ws->x + ws->width) {
-			geometry.size.w = ws->width - geometry.origin.x;
+			geometry.size.w = ws->x + ws->width - geometry.origin.x;
 		}
 		if (container->y + container->height + gap >= ws->y + ws->height) {
-			geometry.size.h = ws->height - geometry.origin.y;
+			geometry.size.h = ws->y + ws->height - geometry.origin.y;
 		}
 	}
 	wlc_view_set_geometry(container->handle, 0, &geometry);
