@@ -9,13 +9,15 @@
 struct background_config {
         wlc_handle output;
         wlc_resource surface;
-        struct wl_resource *resource;
+        // we need the wl_resource of the surface in the destructor
+        struct wl_resource *wl_surface_res;
 };
 
 struct panel_config {
         wlc_handle output;
         wlc_resource surface;
-        struct wl_resource *resource;
+        // we need the wl_resource of the surface in the destructor
+        struct wl_resource *wl_surface_res;
 };
 
 struct desktop_shell_state {
