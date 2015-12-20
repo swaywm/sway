@@ -450,7 +450,7 @@ void load_swaybars(swayc_t *output, int output_idx) {
 			int j;
 			for (j = 0; j < bar->outputs->length; ++j) {
 				char *o = bar->outputs->items[j];
-				if (strcmp(o, "*") || strcasecmp(o, output->name)) {
+				if (!strcmp(o, "*") || !strcasecmp(o, output->name)) {
 					apply = true;
 					break;
 				}
