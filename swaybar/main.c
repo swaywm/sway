@@ -186,6 +186,15 @@ uint32_t parse_position(const char *position) {
 	}
 }
 
+char *parse_font(const char *font) {
+	char *new_font = NULL;
+	if (strncmp("pango:", font, 6) == 0) {
+		new_font = strdup(font + 6);
+	}
+
+	return new_font;
+}
+
 static int margin = 3;
 static const int ws_hor_padding = 5;
 static double ws_ver_padding = 1.5;
@@ -230,6 +239,10 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 	if (position) {
 		desktop_shell_set_panel_position(registry->desktop_shell, parse_position(json_object_get_string(position)));
+	}
+
+	if (font) {
+		window->font = parse_font(json_object_get_string(font));
 	}
 
 	if (bar_height) {
