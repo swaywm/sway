@@ -229,6 +229,17 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 		desktop_shell_set_panel_position(registry->desktop_shell, parse_position(json_object_get_string(position)));
 	}
 
+	if (bar_height) {
+		if (json_object_get_int(bar_height) == -1) {
+			int width, height;
+			get_text_size(window, &width, &height, "Test string for measuring purposes");
+			window->height = height + MARGIN * 2;
+		}
+		else {
+			window->height = json_object_get_int(bar_height) + MARGIN * 2;
+		}
+	}
+
 	if (_colors) {
 		json_object *background, *statusline, *separator;
 		json_object *focused_workspace_border, *focused_workspace_bg, *focused_workspace_text;
@@ -321,7 +332,7 @@ void render() {
 	int width, height;
 	get_text_size(window, &width, &height, "%s", line);
 
-	cairo_move_to(window->cairo, window->width - MARGIN - width, MARGIN);
+	cairo_move_to(window->cairo, window->width - MARGIN - width, (window->height - height) / 2 );
 	pango_printf(window, "%s", line);
 
 	// Workspaces
@@ -350,7 +361,7 @@ void render() {
 		cairo_stroke(window->cairo);
 
 		cairo_set_source_u32(window->cairo, box_colors.text);
-		cairo_move_to(window->cairo, x + MARGIN, MARGIN);
+		cairo_move_to(window->cairo, x + MARGIN, (window->height - height) / 2 );
 		pango_printf(window, "%s", ws->name);
 
 		x += width + MARGIN * 2 + MARGIN;
@@ -466,6 +477,12 @@ int main(int argc, char **argv) {
 
 	int desired_output = atoi(argv[optind]);
 	struct output_state *output = registry->outputs->items[desired_output];
+	
+	window = window_setup(registry, output->width, 30, false);
+	if (!window) {
+		sway_abort("Failed to create window.");
+	}
+	desktop_shell_set_panel(registry->desktop_shell, output->output, window->surface);
 
 	bar_ipc_init(desired_output, bar_id);
 
@@ -491,15 +508,6 @@ int main(int argc, char **argv) {
 		line[0] = '\0';
 	}
 
-	window = window_setup(registry, output->width, 30, false);
-	if (!window) {
-		sway_abort("Failed to create window.");
-	}
-	desktop_shell_set_panel(registry->desktop_shell, output->output, window->surface);
-
-	int width, height;
-	get_text_size(window, &width, &height, "Test string for measuring purposes");
-	window->height = height + MARGIN * 2;
 
 	poll_for_update();
 
