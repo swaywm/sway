@@ -18,8 +18,6 @@
 #include "stringop.h"
 #include "log.h"
 
-#define MARGIN 5
-
 struct box_colors {
 	uint32_t border;
 	uint32_t background;
@@ -188,6 +186,11 @@ uint32_t parse_position(const char *position) {
 	}
 }
 
+static int margin = 3;
+static const int ws_hor_padding = 5;
+static double ws_ver_padding = 1.5;
+static const int ws_spacing = 1;
+
 void bar_ipc_init(int outputi, const char *bar_id) {
 	uint32_t len = 0;
 	char *res = ipc_single_command(socketfd, IPC_GET_OUTPUTS, NULL, &len);
@@ -230,14 +233,14 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	}
 
 	if (bar_height) {
-		if (json_object_get_int(bar_height) == -1) {
-			int width, height;
-			get_text_size(window, &width, &height, "Test string for measuring purposes");
-			window->height = height + MARGIN * 2;
+		int width, height;
+		get_text_size(window, &width, &height, "Test string for measuring purposes");
+		int bar_height_value = json_object_get_int(bar_height);
+		if (bar_height_value > 0) {
+			margin = (bar_height_value - height) / 2;
+			ws_ver_padding = margin - 1.5;
 		}
-		else {
-			window->height = json_object_get_int(bar_height) + MARGIN * 2;
-		}
+		window->height = height + margin * 2;
 	}
 
 	if (_colors) {
@@ -332,12 +335,12 @@ void render() {
 	int width, height;
 	get_text_size(window, &width, &height, "%s", line);
 
-	cairo_move_to(window->cairo, window->width - MARGIN - width, (window->height - height) / 2 );
+	cairo_move_to(window->cairo, window->width - margin - width, margin);
 	pango_printf(window, "%s", line);
 
 	// Workspaces
-	cairo_set_line_width(window->cairo, 2.0);
-	int x = 1;
+	cairo_set_line_width(window->cairo, 1.0);
+	double x = 0.5;
 	int i;
 	for (i = 0; i < workspaces->length; ++i) {
 		struct workspace *ws = workspaces->items[i];
@@ -352,19 +355,20 @@ void render() {
 		} else {
 			box_colors = colors.inactive_workspace;
 		}
+
 		cairo_set_source_u32(window->cairo, box_colors.background);
-		cairo_rectangle(window->cairo, x, 0, width + MARGIN * 2, window->height);
+		cairo_rectangle(window->cairo, x, 1.5, width + ws_hor_padding * 2 - 1, height + ws_ver_padding * 2);
 		cairo_fill(window->cairo);
 
 		cairo_set_source_u32(window->cairo, box_colors.border);
-		cairo_rectangle(window->cairo, x, 2, width + MARGIN * 2, window->height - 4);
+		cairo_rectangle(window->cairo, x, 1.5, width + ws_hor_padding * 2 - 1, height + ws_ver_padding * 2);
 		cairo_stroke(window->cairo);
 
 		cairo_set_source_u32(window->cairo, box_colors.text);
-		cairo_move_to(window->cairo, x + MARGIN, (window->height - height) / 2 );
+		cairo_move_to(window->cairo, (int)x + ws_hor_padding, margin);
 		pango_printf(window, "%s", ws->name);
 
-		x += width + MARGIN * 2 + MARGIN;
+		x += width + ws_hor_padding * 2 + ws_spacing;
 	}
 }
 
@@ -477,7 +481,7 @@ int main(int argc, char **argv) {
 
 	int desired_output = atoi(argv[optind]);
 	struct output_state *output = registry->outputs->items[desired_output];
-	
+
 	window = window_setup(registry, output->width, 30, false);
 	if (!window) {
 		sway_abort("Failed to create window.");
@@ -507,7 +511,6 @@ int main(int argc, char **argv) {
 		command = fdopen(pipefd[0], "r");
 		line[0] = '\0';
 	}
-
 
 	poll_for_update();
 
