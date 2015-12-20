@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
 
 	registry->input->notify = notify_key;
 
+#ifdef WITH_GDK_PIXBUF
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[1], &err); // TODO: Parse i3lock arguments
 	if (!pixbuf) {
@@ -120,6 +121,9 @@ int main(int argc, char **argv) {
 	}
 	cairo_surface_t *image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
 	g_object_unref(pixbuf);
+#else
+  cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
+#endif //WITH_GDK_PIXBUF
 	if (!image) {
 		sway_abort("Failed to read background image.");
 	}

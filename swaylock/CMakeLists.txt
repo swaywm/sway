@@ -2,7 +2,6 @@ include_directories(
 	${PROTOCOLS_INCLUDE_DIRS}
 	${WAYLAND_CLIENT_INCLUDE_DIR}
 	${CAIRO_INCLUDE_DIRS}
-	${GDK_PIXBUF_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
 	${PAM_INCLUDE_DIRS}
 )
@@ -17,11 +16,19 @@ target_link_libraries(swaylock
 	${WAYLAND_CLIENT_LIBRARIES}
 	${WAYLAND_CURSOR_LIBRARIES}
 	${CAIRO_LIBRARIES}
-	${GDK_PIXBUF_LIBRARIES}
 	${PANGO_LIBRARIES}
 	${PAM_LIBRARIES}
 	m
 )
+
+if (WITH_GDK_PIXBUF)
+  include_directories(
+	  ${GDK_PIXBUF_INCLUDE_DIRS}
+  )
+  target_link_libraries(swaylock
+	  ${GDK_PIXBUF_LIBRARIES}
+  )
+endif()
 
 install(
 	TARGETS swaylock

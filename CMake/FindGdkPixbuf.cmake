@@ -29,6 +29,7 @@ IF(NOT GDK_PIXBUF_FOUND AND NOT PKG_CONFIG_FOUND)
         # Report results
         IF(GDK_PIXBUF_LIBRARIES AND GDK_PIXBUF_INCLUDE_DIRS)
                 SET(GDK_PIXBUF_FOUND 1)
+                SET(GdkPixbuf_FOUND 1)
                 IF(NOT GdkPixbuf_FIND_QUIETLY)
                         MESSAGE(STATUS "Found GdkPixbuf: ${GDK_PIXBUF_LIBRARIES}")
                 ENDIF(NOT GdkPixbuf_FIND_QUIETLY)
@@ -41,6 +42,8 @@ IF(NOT GDK_PIXBUF_FOUND AND NOT PKG_CONFIG_FOUND)
                         ENDIF(NOT GdkPixbuf_FIND_QUIETLY)
                 ENDIF(GdkPixbuf_FIND_REQUIRED)
         ENDIF(GDK_PIXBUF_LIBRARIES AND GDK_PIXBUF_INCLUDE_DIRS)
+ELSE(NOT GDK_PIXBUF_FOUND AND NOT PKG_CONFIG_FOUND)
+        SET(GdkPixbuf_FOUND 1)
 ENDIF(NOT GDK_PIXBUF_FOUND AND NOT PKG_CONFIG_FOUND)
 
 # Hide advanced variables from CMake GUIs

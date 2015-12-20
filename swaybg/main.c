@@ -56,6 +56,7 @@ int main(int argc, const char **argv) {
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
 	list_add(surfaces, window);
 
+#ifdef WITH_GDK_PIXBUF
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[2], &err);
 	if (!pixbuf) {
@@ -63,6 +64,9 @@ int main(int argc, const char **argv) {
 	}
 	cairo_surface_t *image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
 	g_object_unref(pixbuf);
+#else
+	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[2]);
+#endif //WITH_GDK_PIXBUF
 	if (!image) {
 		sway_abort("Failed to read background image.");
 	}

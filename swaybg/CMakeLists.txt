@@ -3,7 +3,6 @@ include_directories(
 	${WAYLAND_CLIENT_INCLUDE_DIR}
 	${CAIRO_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
-	${GDK_PIXBUF_INCLUDE_DIRS}
 )
 
 add_executable(swaybg
@@ -17,9 +16,17 @@ target_link_libraries(swaybg
 	${WAYLAND_CURSOR_LIBRARIES}
 	${CAIRO_LIBRARIES}
 	${PANGO_LIBRARIES}
-	${GDK_PIXBUF_LIBRARIES}
 	m
 )
+
+if (WITH_GDK_PIXBUF)
+  include_directories(
+	  ${GDK_PIXBUF_INCLUDE_DIRS}
+  )
+  target_link_libraries(swaybg
+	  ${GDK_PIXBUF_LIBRARIES}
+  )
+endif()
 
 install(
 	TARGETS swaybg
