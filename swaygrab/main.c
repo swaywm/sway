@@ -72,7 +72,7 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 		"-video_size %dx%d -pixel_format argb "
 		"-i pipe:0 -r %d -vf vflip %s";
 	char *cmd = malloc(strlen(fmt) - 8 /*args*/
-			+ numlen(width) + numlen(height) + numlen(framerate) * 2 
+			+ numlen(width) + numlen(height) + numlen(framerate) * 2
 			+ strlen(file) + 1);
 	sprintf(cmd, fmt, framerate, width, height, framerate, file);
 
@@ -151,6 +151,7 @@ char *default_filename(const char *extension) {
 int main(int argc, char **argv) {
 	static int capture = 0, raw = 0;
 	char *socket_path = NULL;
+	char *filetype = NULL;
 	char *output = NULL;
 	int framerate = 30;
 
@@ -162,6 +163,7 @@ int main(int argc, char **argv) {
 		{"output", required_argument, NULL, 'o'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
+		{"type", required_argument, NULL, 't'},
 		{"raw", no_argument, NULL, 'r'},
 		{"rate", required_argument, NULL, 'R'},
 		{0, 0, 0, 0}
@@ -175,19 +177,23 @@ int main(int argc, char **argv) {
 		"  -o, --output <output>  Output source.\n"
 		"  -v, --version          Show the version number and quit.\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
+		"  -t, --type <filetype>  Specify image/video filetype.\n"
 		"  -R, --rate <rate>      Specify framerate (default: 30)\n"
 		"  -r, --raw              Write raw rgba data to stdout.\n";
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hco:vs:r", long_options, &option_index);
+		c = getopt_long(argc, argv, "hco:vs:t:r", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 's': // Socket
 			socket_path = strdup(optarg);
+			break;
+		case 't': // Filetype
+			filetype = strdup(optarg);
 			break;
 		case 'r':
 			raw = 1;
@@ -240,9 +246,15 @@ int main(int argc, char **argv) {
 
 	if (!file) {
 		if (!capture) {
-			file = default_filename("png");
+			if (!filetype) {
+				filetype = strdup("png");
+			}
+			file = default_filename(filetype);
 		} else {
-			file = default_filename("webm");
+			if (!filetype) {
+				filetype = strdup("webm");
+			}
+			file = default_filename(filetype);
 		}
 	}
 
@@ -254,6 +266,7 @@ int main(int argc, char **argv) {
 
 	free(output);
 	free(file);
+	free(filetype);
 	close(socketfd);
 	return 0;
 }

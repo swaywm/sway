@@ -38,6 +38,11 @@ Options
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
 	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
 
+*-t, --type* <filetype>::
+	Specify the image/video filetype to produce. If no type is defined it will
+	default to png for images and webm for videos. If _file_ is specified this
+	option will not take effect.
+
 *-r, --rate* <rate>::
 	Specify a framerate (in frames per second). Used in combination with -c.
 	Default is 30. Must be an integer.
