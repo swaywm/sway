@@ -671,7 +671,16 @@ int swayc_gap(swayc_t *container) {
 	if (container->type == C_VIEW) {
 		return container->gaps >= 0 ? container->gaps : config->gaps_inner;
 	} else if (container->type == C_WORKSPACE) {
-		return container->gaps >= 0 ? container->gaps : config->gaps_outer;
+		int base = container->gaps >= 0 ? container->gaps : config->gaps_outer;
+		if (config->edge_gaps) {
+			// the inner gap is created via a margin around each window which
+			// is half the gap size, so the workspace also needs half a gap
+			// size to make the outermost gap the same size (excluding the
+			// actual "outer gap" size which is handled independently)
+			return base + config->gaps_inner / 2;
+		} else {
+			return base;
+		}
 	} else {
 		return 0;
 	}
