@@ -41,10 +41,14 @@ Install dependencies:
 * asciidoc
 * pcre
 * json-c
-* pango
-* cairo
-* gdk-pixbuf2
-* pam
+* pango *
+* cairo *
+* gdk-pixbuf2 *
+* pam **
+
+_\*Only required for swaybar, swaybg, and swaylock_
+
+_\*\*Only required for swaylock_
 
 Run these commands:
 
