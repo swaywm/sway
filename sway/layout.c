@@ -455,8 +455,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				struct panel_config *config = desktop_shell.panels->items[i];
 				if (config->output == output->handle) {
 					struct wlc_size size = *wlc_surface_get_size(config->surface);
-					sway_log(L_DEBUG, "-> Found panel for this workspace: %ux%u, position: %u", size.w, size.h, desktop_shell.panel_position);
-					switch (desktop_shell.panel_position) {
+					sway_log(L_DEBUG, "-> Found panel for this workspace: %ux%u, position: %u", size.w, size.h, config->panel_position);
+					switch (config->panel_position) {
 					case DESKTOP_SHELL_PANEL_POSITION_TOP:
 						y += size.h; height -= size.h;
 						break;

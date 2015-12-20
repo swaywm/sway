@@ -90,7 +90,7 @@ static void handle_output_pre_render(wlc_handle output) {
 			struct wlc_geometry geo = {
 				.size = size
 			};
-			switch (desktop_shell.panel_position) {
+			switch (config->panel_position) {
 			case DESKTOP_SHELL_PANEL_POSITION_TOP:
 				geo.origin = (struct wlc_point){ 0, 0 };
 				break;
