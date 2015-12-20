@@ -1,6 +1,8 @@
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <cairo/cairo.h>
 #include "client/cairo.h"
+
+#ifdef WITH_GDK_PIXBUF
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 #ifndef GDK_PIXBUF_CHECK_VERSION
 #define GDK_PIXBUF_CHECK_VERSION(major,minor,micro) \
@@ -103,3 +105,4 @@ cairo_surface_t* gdk_cairo_image_surface_create_from_pixbuf(const GdkPixbuf *gdk
 	cairo_surface_mark_dirty(cs);
 	return cs;
 }
+#endif //WITH_GDK_PIXBUF
