@@ -9,6 +9,21 @@
 
 struct desktop_shell_state desktop_shell;
 
+static struct panel_config *find_or_create_panel_config(struct wl_resource *resource) {
+	for (int i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *conf = desktop_shell.panels->items[i];
+		if (conf->wl_resource == resource) {
+			sway_log(L_DEBUG, "Found existing panel config for resource %p", resource);
+			return conf;
+		}
+	}
+	sway_log(L_DEBUG, "Creating panel config for resource %p", resource);
+	struct panel_config *config = calloc(1, sizeof(struct panel_config));
+	list_add(desktop_shell.panels, config);
+	config->wl_resource = resource;
+	return config;
+}
+
 void background_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Background surface killed");
 	int i;
@@ -69,12 +84,11 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	if (!output) {
 		return;
 	}
-	sway_log(L_DEBUG, "Setting surface %p as panel for output %d", surface, (int)output);
-	struct panel_config *config = malloc(sizeof(struct panel_config));
+	sway_log(L_DEBUG, "Setting surface %p as panel for output %d (wl_resource: %p)", surface, (int)output, resource);
+	struct panel_config *config = find_or_create_panel_config(resource);
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
-	list_add(desktop_shell.panels, config);
 	wl_resource_set_destructor(surface, panel_surface_destructor);
 	desktop_shell.panel_size = *wlc_surface_get_size(config->surface);
 	arrange_windows(&root_container, -1, -1);
@@ -121,7 +135,9 @@ static void desktop_ready(struct wl_client *client, struct wl_resource *resource
 }
 
 static void set_panel_position(struct wl_client *client, struct wl_resource *resource, uint32_t position) {
-	desktop_shell.panel_position = position;
+	struct panel_config *config = find_or_create_panel_config(resource);
+	sway_log(L_DEBUG, "Panel position for wl_resource %p changed %d => %d", resource, config->panel_position, position);
+	config->panel_position = position;
 	arrange_windows(&root_container, -1, -1);
 }
 
@@ -174,7 +190,6 @@ void register_extensions(void) {
 	wl_global_create(wlc_get_wl_display(), &desktop_shell_interface, 3, NULL, desktop_shell_bind);
 	desktop_shell.backgrounds = create_list();
 	desktop_shell.panels = create_list();
-	desktop_shell.panel_position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	desktop_shell.lock_surfaces = create_list();
 	desktop_shell.is_locked = false;
 	wl_global_create(wlc_get_wl_display(), &lock_interface, 1, NULL, swaylock_bind);

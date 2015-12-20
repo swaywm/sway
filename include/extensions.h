@@ -14,10 +14,13 @@ struct background_config {
 };
 
 struct panel_config {
+        // wayland resource used in callbacks, is used to track this panel
+        struct wl_resource *wl_resource;
         wlc_handle output;
         wlc_resource surface;
         // we need the wl_resource of the surface in the destructor
         struct wl_resource *wl_surface_res;
+        enum desktop_shell_panel_position panel_position;
 };
 
 struct desktop_shell_state {
@@ -25,7 +28,6 @@ struct desktop_shell_state {
         list_t *panels;
         list_t *lock_surfaces;
         bool is_locked;
-        enum desktop_shell_panel_position panel_position;
         struct wlc_size panel_size;
 };
 
