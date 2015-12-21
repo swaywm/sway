@@ -50,14 +50,8 @@ void list_cat(list_t *list, list_t *source) {
 	}
 }
 
-// pass the pointer of the object we care about to the comparison function
-static int list_cmp(const void *l, const void *r, void *_cmp) {
-	int (*cmp)(const void *, const void *) = _cmp;
-	return cmp(*(void**)l, *(void**)r);
-}
-
-void list_sort(list_t *list, int compare(const void *left, const void *right)) {
-	qsort_r(list->items, list->length, sizeof(void *), list_cmp, compare);
+void list_qsort(list_t* list, int compare(const void *left, const void *right)) {
+	qsort(list->items, list->length, sizeof(void *), compare);
 }
 
 int list_seq_find(list_t *list, int compare(const void *item, const void *data), const void *data) {

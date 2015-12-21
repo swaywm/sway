@@ -642,6 +642,10 @@ int sway_binding_cmp(const void *a, const void *b) {
 	return lenient_strcmp(binda->command, bindb->command);
 }
 
+int sway_binding_cmp_qsort(const void *a, const void *b) {
+	return sway_binding_cmp(*(void **)a, *(void **)b);
+}
+
 void free_sway_binding(struct sway_binding *binding) {
 	if (binding->keys) {
 		for (int i = 0; i < binding->keys->length; i++) {
@@ -673,6 +677,10 @@ int sway_mouse_binding_cmp(const void *a, const void *b) {
 	}
 	const struct sway_mouse_binding *binda = a, *bindb = b;
 	return lenient_strcmp(binda->command, bindb->command);
+}
+
+int sway_mouse_binding_cmp_qsort(const void *a, const void *b) {
+	return sway_mouse_binding_cmp(*(void **)a, *(void **)b);
 }
 
 void free_sway_mouse_binding(struct sway_mouse_binding *binding) {
