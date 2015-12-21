@@ -575,7 +575,9 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new) {
 
 	for (int i = 0; i < ipc_client_list->length; i++) {
 		struct ipc_client *client = ipc_client_list->items[i];
-		if ((client->subscribed_events & IPC_GET_WORKSPACES) == 0) break;
+		if ((client->subscribed_events & IPC_GET_WORKSPACES) == 0) {
+			continue;
+		}
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 	}
 
