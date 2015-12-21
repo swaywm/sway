@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <json-c/json.h>
 #include <sys/un.h>
@@ -87,7 +88,7 @@ struct colors colors = {
 	},
 };
 
-void sway_terminate(void) {
+void swaybar_teardown() {
 	window_teardown(window);
 	if (registry) {
 		registry_teardown(registry);
@@ -99,14 +100,29 @@ void sway_terminate(void) {
 
 	if (pid) {
 		// terminate status_command process
-		kill(pid, SIGTERM);
+		int ret = kill(pid, SIGTERM);
+		if (ret != 0) {
+			sway_log(L_ERROR, "Unable to terminate status_command [pid: %d]", pid);
+		} else {
+			int status;
+			waitpid(pid, &status, 0);
+		}
 	}
 
 	if (pipefd[0]) {
 		close(pipefd[0]);
 	}
+}
 
+
+void sway_terminate(void) {
+	swaybar_teardown();
 	exit(EXIT_FAILURE);
+}
+
+void sig_handler(int signal) {
+	swaybar_teardown();
+	exit(0);
 }
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
@@ -525,14 +541,12 @@ int main(int argc, char **argv) {
 		line[0] = '\0';
 	}
 
+	signal(SIGTERM, sig_handler);
+
 	poll_for_update();
 
-	window_teardown(window);
-	registry_teardown(registry);
-	fclose(command);
-	// terminate status_command process
-	kill(pid, SIGTERM);
-	close(pipefd[0]);
+	// gracefully shutdown swaybar and status_command
+	swaybar_teardown();
 
 	return 0;
 }
