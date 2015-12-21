@@ -10,6 +10,7 @@
 #include "workspace.h"
 #include "focus.h"
 #include "output.h"
+#include "ipc-server.h"
 
 swayc_t root_container;
 list_t *scratchpad;
@@ -312,6 +313,12 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 		// reset container geometry
 		container->width = container->height = 0;
 		add_child(destination, container);
+
+		// If the workspace only has one child after adding one, it
+		// means that the workspace was just initialized.
+		if (destination->children->length + destination->floating->length == 1) {
+			ipc_event_workspace(NULL, destination, "init");
+		}
 	} else {
 		// reset container geometry
 		container->width = container->height = 0;
