@@ -1,5 +1,4 @@
 add_library(sway-common
-	${SWAY_Backtrace_HEADER}
 	ipc-client.c
 	list.c
 	log.c
@@ -7,3 +6,10 @@ add_library(sway-common
 	readline.c
 	stringop.c
 	)
+
+if(Backtrace_FOUND)
+	set_target_properties(sway-common
+		PROPERTIES
+		COMPILE_FLAGS "-include ${Backtrace_HEADER}"
+		)
+endif()
