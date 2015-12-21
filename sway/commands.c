@@ -1147,16 +1147,26 @@ static struct cmd_results *cmd_resize(int argc, char **argv) {
 
 static struct cmd_results *cmd_bar(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bar", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "bar", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 
-	if (strcmp("{", argv[0]) != 0) {
+	if (config->reading && strcmp("{", argv[0]) != 0) {
 		return cmd_results_new(CMD_INVALID, "bar",
 				"Expected '{' at start of bar config definition.");
 	}
 
 	if (!config->reading) {
+		if (argc > 1) {
+			if (strcasecmp("mode", argv[0]) == 0) {
+				return bar_cmd_mode(argc-1, argv + 1);
+			}
+
+			if (strcasecmp("hidden_state", argv[0]) == 0) {
+				return bar_cmd_hidden_state(argc-1, argv + 1);
+			}
+		}
+
 		return cmd_results_new(CMD_FAILURE, "bar", "Can only be used in config file.");
 	}
 
@@ -1679,53 +1689,144 @@ static struct cmd_results *bar_cmd_height(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *bar_set_hidden_state(struct bar_config *bar, const char *hidden_state) {
+	char *old_state = bar->hidden_state;
+	if (strcasecmp("toggle", hidden_state) == 0 && !config->reading) {
+		if (strcasecmp("hide", bar->hidden_state) == 0) {
+			bar->hidden_state = strdup("show");
+		} else if (strcasecmp("show", bar->hidden_state) == 0) {
+			bar->hidden_state = strdup("hide");
+		}
+	} else if (strcasecmp("hide", hidden_state) == 0) {
+		bar->hidden_state = strdup("hide");
+	} else if (strcasecmp("show", hidden_state) == 0) {
+		bar->hidden_state = strdup("show");
+	} else {
+		return cmd_results_new(CMD_INVALID, "hidden_state", "Invalid value %s", hidden_state);
+	}
+
+	if (strcmp(old_state, bar->hidden_state) != 0) {
+		if (!config->reading) {
+			// TODO: IPC event
+		}
+		sway_log(L_DEBUG, "Setting hidden_state: '%s' for bar: %s", bar->hidden_state, bar->id);
+	}
+
+	// free old mode
+	free(old_state);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+
 static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "hidden_state", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "hidden_state", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if ((error = checkarg(argc, "hidden_state", EXPECTED_LESS_THAN, 3))) {
 		return error;
 	}
 
-	const char *state = argv[0];
-	char *old_state = config->current_bar->hidden_state;
-
-	if (strcasecmp("hide", state) == 0) {
-		config->current_bar->hidden_state = strdup(state);
-	} else if(strcmp("show", state) == 0) {
-		config->current_bar->hidden_state = strdup(state);
-	} else {
-		return cmd_results_new(CMD_INVALID, "hidden_state", "Invalid value %s", state);
+	if (config->reading && argc > 1) {
+		return cmd_results_new(CMD_INVALID, "hidden_state", "Unexpected value %s in config mode", argv[1]);
 	}
 
-	sway_log(L_DEBUG, "Setting hidden_state: '%s' for bar: %s", state, config->current_bar->id);
+	const char *state = argv[0];
 
-	// free old state
-	free(old_state);
+	if (config->reading) {
+		return bar_set_hidden_state(config->current_bar, state);
+	}
+
+	const char *id;
+	if (argc == 2) {
+		id = argv[1];
+	}
+
+	int i;
+	struct bar_config *bar;
+	for (i = 0; i < config->bars->length; ++i) {
+		bar = config->bars->items[i];
+		if (id && strcmp(id, bar->id) == 0) {
+			return bar_set_hidden_state(bar, state);
+		}
+
+		error = bar_set_hidden_state(bar, state);
+		if (error) {
+			return error;
+		}
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode) {
+	char *old_mode = bar->mode;
+	if (strcasecmp("toggle", mode) == 0 && !config->reading) {
+		if (strcasecmp("dock", bar->mode) == 0) {
+			bar->mode = strdup("hide");
+		} else if (strcasecmp("hide", bar->mode) == 0) {
+			bar->mode = strdup("dock");
+		}
+	} else if (strcasecmp("dock", mode) == 0) {
+		bar->mode = strdup("dock");
+	} else if (strcasecmp("hide", mode) == 0) {
+		bar->mode = strdup("hide");
+	} else if (strcasecmp("invisible", mode) == 0) {
+		bar->mode = strdup("invisible");
+	} else {
+		return cmd_results_new(CMD_INVALID, "mode", "Invalid value %s", mode);
+	}
+
+	if (strcmp(old_mode, bar->mode) != 0) {
+		if (!config->reading) {
+			// TODO: IPC event
+		}
+		sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
+	}
+
+	// free old mode
+	free(old_mode);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "mode", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "mode", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if ((error = checkarg(argc, "mode", EXPECTED_LESS_THAN, 3))) {
 		return error;
 	}
 
-	const char *mode = argv[0];
-	char *old_mode = config->current_bar->mode;
-
-	if (strcasecmp("dock", mode) == 0) {
-		config->current_bar->mode = strdup(mode);
-	} else if(strcmp("hide", mode) == 0) {
-		config->current_bar->mode = strdup(mode);
-	} else if(strcmp("invisible", mode) == 0) {
-		config->current_bar->mode = strdup(mode);
-	} else {
-		return cmd_results_new(CMD_INVALID, "mode", "Invalid value %s", mode);
+	if (config->reading && argc > 1) {
+		return cmd_results_new(CMD_INVALID, "mode", "Unexpected value %s in config mode", argv[1]);
 	}
 
-	sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", mode, config->current_bar->id);
+	const char *mode = argv[0];
 
-	// free old mode
-	free(old_mode);
+	if (config->reading) {
+		return bar_set_mode(config->current_bar, mode);
+	}
+
+	const char *id;
+	if (argc == 2) {
+		id = argv[1];
+	}
+
+	int i;
+	struct bar_config *bar;
+	for (i = 0; i < config->bars->length; ++i) {
+		bar = config->bars->items[i];
+		if (id && strcmp(id, bar->id) == 0) {
+			return bar_set_mode(bar, mode);
+		}
+
+		error = bar_set_mode(bar, mode);
+		if (error) {
+			return error;
+		}
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
