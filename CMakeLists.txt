@@ -58,6 +58,14 @@ find_package(Pango)
 find_package(GdkPixbuf)
 find_package(PAM)
 
+find_package(Backtrace)
+if(Backtrace_FOUND)
+  include_directories(${Backtrace_INCLUDE_DIRS})
+  target_link_libraries(${Backtrace_LIBRARIES})
+  add_definitions(-DSWAY_Backtrace_FOUND=1)
+  set(SWAY_Backtrace_HEADER "${Backtrace_HEADER}")
+endif()
+
 include(FeatureSummary)
 include(Manpage)
 

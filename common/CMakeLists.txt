@@ -1,4 +1,5 @@
 add_library(sway-common
+	${SWAY_Backtrace_HEADER}
 	ipc-client.c
 	list.c
 	log.c
