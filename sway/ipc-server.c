@@ -43,6 +43,7 @@ void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
+json_object *ipc_json_describe_bar_config(struct bar_config *bar);
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -290,8 +291,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
 			if (strcmp(event_type, "workspace") == 0) {
 				client->subscribed_events |= IPC_GET_WORKSPACES;
-			}
-			else {
+			} else if (strcmp(event_type, "barconfig_update") == 0) {
+				client->subscribed_events |= IPC_GET_BAR_CONFIG;
+			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				ipc_client_disconnect(client);
 				json_object_put(request);
@@ -397,64 +399,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				ipc_send_reply(client, error, (uint32_t)strlen(error));
 				break;
 			}
-			json_object *json = json_object_new_object();
-			json_object_object_add(json, "id", json_object_new_string(bar->id));
-			json_object_object_add(json, "tray_output", NULL);
-			json_object_object_add(json, "mode", json_object_new_string(bar->mode));
-			json_object_object_add(json, "hidden_state", json_object_new_string(bar->hidden_state));
-			//json_object_object_add(json, "modifier", json_object_new_string(bar->modifier)); // TODO: Fix modifier
-			switch (bar->position) {
-			case DESKTOP_SHELL_PANEL_POSITION_TOP:
-				json_object_object_add(json, "position", json_object_new_string("top"));
-				break;
-			case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
-				json_object_object_add(json, "position", json_object_new_string("bottom"));
-				break;
-			case DESKTOP_SHELL_PANEL_POSITION_LEFT:
-				json_object_object_add(json, "position", json_object_new_string("left"));
-				break;
-			case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
-				json_object_object_add(json, "position", json_object_new_string("right"));
-				break;
-			}
-			json_object_object_add(json, "status_command", json_object_new_string(bar->status_command));
-			json_object_object_add(json, "font", json_object_new_string(bar->font));
-			if (bar->separator_symbol) {
-				json_object_object_add(json, "separator_symbol", json_object_new_string(bar->separator_symbol));
-			}
-			json_object_object_add(json, "bar_height", json_object_new_int(bar->height));
-			json_object_object_add(json, "workspace_buttons", json_object_new_boolean(bar->workspace_buttons));
-			json_object_object_add(json, "strip_workspace_numbers", json_object_new_boolean(bar->strip_workspace_numbers));
-			json_object_object_add(json, "binding_mode_indicator", json_object_new_boolean(bar->binding_mode_indicator));
-			json_object_object_add(json, "verbose", json_object_new_boolean(bar->verbose));
-
-			json_object *colors = json_object_new_object();
-			json_object_object_add(colors, "background", json_object_new_string(bar->colors.background));
-			json_object_object_add(colors, "statusline", json_object_new_string(bar->colors.statusline));
-			json_object_object_add(colors, "separator", json_object_new_string(bar->colors.separator));
-
-			json_object_object_add(colors, "focused_workspace_border", json_object_new_string(bar->colors.focused_workspace_border));
-			json_object_object_add(colors, "focused_workspace_bg", json_object_new_string(bar->colors.focused_workspace_bg));
-			json_object_object_add(colors, "focused_workspace_text", json_object_new_string(bar->colors.focused_workspace_text));
-
-			json_object_object_add(colors, "inactive_workspace_border", json_object_new_string(bar->colors.inactive_workspace_border));
-			json_object_object_add(colors, "inactive_workspace_bg", json_object_new_string(bar->colors.inactive_workspace_bg));
-			json_object_object_add(colors, "inactive_workspace_text", json_object_new_string(bar->colors.inactive_workspace_text));
-
-			json_object_object_add(colors, "active_workspace_border", json_object_new_string(bar->colors.active_workspace_border));
-			json_object_object_add(colors, "active_workspace_bg", json_object_new_string(bar->colors.active_workspace_bg));
-			json_object_object_add(colors, "active_workspace_text", json_object_new_string(bar->colors.active_workspace_text));
-
-			json_object_object_add(colors, "urgent_workspace_border", json_object_new_string(bar->colors.urgent_workspace_border));
-			json_object_object_add(colors, "urgent_workspace_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
-			json_object_object_add(colors, "urgent_workspace_text", json_object_new_string(bar->colors.urgent_workspace_text));
-
-			json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.binding_mode_border));
-			json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.binding_mode_bg));
-			json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.binding_mode_text));
-
-			json_object_object_add(json, "colors", colors);
-
+			json_object *json = ipc_json_describe_bar_config(bar);
 			const char *json_string = json_object_to_json_string(json);
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 			json_object_put(json); // free
@@ -551,6 +496,72 @@ void ipc_get_outputs_callback(swayc_t *container, void *data) {
 	}
 }
 
+json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
+	if (!sway_assert(bar, "Bar must not be NULL")) {
+		return NULL;
+	}
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "id", json_object_new_string(bar->id));
+	json_object_object_add(json, "tray_output", NULL);
+	json_object_object_add(json, "mode", json_object_new_string(bar->mode));
+	json_object_object_add(json, "hidden_state", json_object_new_string(bar->hidden_state));
+	//json_object_object_add(json, "modifier", json_object_new_string(bar->modifier)); // TODO: Fix modifier
+	switch (bar->position) {
+	case DESKTOP_SHELL_PANEL_POSITION_TOP:
+		json_object_object_add(json, "position", json_object_new_string("top"));
+		break;
+	case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
+		json_object_object_add(json, "position", json_object_new_string("bottom"));
+		break;
+	case DESKTOP_SHELL_PANEL_POSITION_LEFT:
+		json_object_object_add(json, "position", json_object_new_string("left"));
+		break;
+	case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
+		json_object_object_add(json, "position", json_object_new_string("right"));
+		break;
+	}
+	json_object_object_add(json, "status_command", json_object_new_string(bar->status_command));
+	json_object_object_add(json, "font", json_object_new_string(bar->font));
+	if (bar->separator_symbol) {
+		json_object_object_add(json, "separator_symbol", json_object_new_string(bar->separator_symbol));
+	}
+	json_object_object_add(json, "bar_height", json_object_new_int(bar->height));
+	json_object_object_add(json, "workspace_buttons", json_object_new_boolean(bar->workspace_buttons));
+	json_object_object_add(json, "strip_workspace_numbers", json_object_new_boolean(bar->strip_workspace_numbers));
+	json_object_object_add(json, "binding_mode_indicator", json_object_new_boolean(bar->binding_mode_indicator));
+	json_object_object_add(json, "verbose", json_object_new_boolean(bar->verbose));
+
+	json_object *colors = json_object_new_object();
+	json_object_object_add(colors, "background", json_object_new_string(bar->colors.background));
+	json_object_object_add(colors, "statusline", json_object_new_string(bar->colors.statusline));
+	json_object_object_add(colors, "separator", json_object_new_string(bar->colors.separator));
+
+	json_object_object_add(colors, "focused_workspace_border", json_object_new_string(bar->colors.focused_workspace_border));
+	json_object_object_add(colors, "focused_workspace_bg", json_object_new_string(bar->colors.focused_workspace_bg));
+	json_object_object_add(colors, "focused_workspace_text", json_object_new_string(bar->colors.focused_workspace_text));
+
+	json_object_object_add(colors, "inactive_workspace_border", json_object_new_string(bar->colors.inactive_workspace_border));
+	json_object_object_add(colors, "inactive_workspace_bg", json_object_new_string(bar->colors.inactive_workspace_bg));
+	json_object_object_add(colors, "inactive_workspace_text", json_object_new_string(bar->colors.inactive_workspace_text));
+
+	json_object_object_add(colors, "active_workspace_border", json_object_new_string(bar->colors.active_workspace_border));
+	json_object_object_add(colors, "active_workspace_bg", json_object_new_string(bar->colors.active_workspace_bg));
+	json_object_object_add(colors, "active_workspace_text", json_object_new_string(bar->colors.active_workspace_text));
+
+	json_object_object_add(colors, "urgent_workspace_border", json_object_new_string(bar->colors.urgent_workspace_border));
+	json_object_object_add(colors, "urgent_workspace_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
+	json_object_object_add(colors, "urgent_workspace_text", json_object_new_string(bar->colors.urgent_workspace_text));
+
+	json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.binding_mode_border));
+	json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.binding_mode_bg));
+	json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.binding_mode_text));
+
+	json_object_object_add(json, "colors", colors);
+
+	return json;
+}
+
 void ipc_event_workspace(swayc_t *old, swayc_t *new) {
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("focus"));
@@ -569,4 +580,20 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new) {
 	}
 
 	json_object_put(obj); // free
+}
+
+void ipc_event_barconfig_update(struct bar_config *bar) {
+	json_object *json = ipc_json_describe_bar_config(bar);
+	const char *json_string = json_object_to_json_string(json);
+	int i;
+	struct ipc_client *client;
+	for (i = 0; i < ipc_client_list->length; ++i) {
+		client = ipc_client_list->items[i];
+		if ((client->subscribed_events & IPC_GET_BAR_CONFIG) == 0) {
+			continue;
+		}
+		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+	}
+
+	json_object_put(json); // free
 }
