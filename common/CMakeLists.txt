@@ -6,3 +6,10 @@ add_library(sway-common
 	readline.c
 	stringop.c
 	)
+
+if(Backtrace_FOUND)
+	set_target_properties(sway-common
+		PROPERTIES
+		COMPILE_FLAGS "-include ${Backtrace_HEADER}"
+		)
+endif()

@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <string.h>
 #include <stringop.h>
-#include <execinfo.h>
 #include "workspace.h"
 
 extern log_importance_t v;

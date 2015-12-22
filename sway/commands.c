@@ -220,7 +220,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	}
 	binding->order = binding_order++;
 	list_add(mode->bindings, binding);
-	list_sort(mode->bindings, sway_binding_cmp);
+	list_qsort(mode->bindings, sway_binding_cmp_qsort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -1266,9 +1266,9 @@ static struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 }
 
 // sort in order of longest->shortest
-static int compare_set(const void *_l, const void *_r) {
-	struct sway_variable const *l = _l;
-	struct sway_variable const *r = _r;
+static int compare_set_qsort(const void *_l, const void *_r) {
+	struct sway_variable const *l = *(void **)_l;
+	struct sway_variable const *r = *(void **)_r;
 	return strlen(r->name) - strlen(l->name);
 }
 
@@ -1295,7 +1295,7 @@ static struct cmd_results *cmd_set(int argc, char **argv) {
 		var = malloc(sizeof(struct sway_variable));
 		var->name = strdup(argv[0]);
 		list_add(config->symbols, var);
-		list_sort(config->symbols, compare_set);
+		list_qsort(config->symbols, compare_set_qsort);
 	}
 	var->value = join_args(argv + 1, argc - 1);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -1631,7 +1631,7 @@ static struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 		list_del(bar->bindings, i);
 	}
 	list_add(bar->bindings, binding);
-	list_sort(bar->bindings, sway_mouse_binding_cmp);
+	list_qsort(bar->bindings, sway_mouse_binding_cmp_qsort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s when clicking swaybar", argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

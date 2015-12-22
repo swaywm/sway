@@ -9,6 +9,7 @@ add_definitions(-DFALLBACK_CONFIG_DIR=\"${FALLBACK_CONFIG_DIR}\")
 set(CMAKE_C_FLAGS "-g")
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 add_definitions(
     -D_GNU_SOURCE
@@ -57,6 +58,14 @@ find_package(Cairo)
 find_package(Pango)
 find_package(GdkPixbuf)
 find_package(PAM)
+
+find_package(Backtrace)
+if(Backtrace_FOUND)
+  include_directories("${Backtrace_INCLUDE_DIRS}")
+  add_definitions(-DSWAY_Backtrace_FOUND=1)
+  set(LINK_LIBRARIES, "${LINK_LIBRARIES} ${Backtrace_LIBRARIES}")
+  set(SWAY_Backtrace_HEADER "${Backtrace_HEADER}")
+endif()
 
 include(FeatureSummary)
 include(Manpage)

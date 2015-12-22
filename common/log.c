@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <string.h>
 #include <stringop.h>
-#include <execinfo.h>
 
 int colored = 1;
 log_importance_t loglevel_default = L_ERROR;
@@ -137,6 +136,7 @@ bool _sway_assert(bool condition, const char* format, ...) {
 }
 
 void error_handler(int sig) {
+#if SWAY_Backtrace_FOUND
 	int i;
 	int max_lines = 20;
 	void *array[max_lines];
@@ -155,5 +155,8 @@ void error_handler(int sig) {
 	for (i = 0; (size_t)i < bt_len; i++) {
 		sway_log(L_ERROR, "Backtrace: %s", bt[i]);
 	}
+#else
+	sway_log(L_ERROR, "Error: Signal %d.", sig);
+#endif
 	exit(1);
 }
