@@ -395,16 +395,29 @@ void render() {
 		cairo_move_to(window->cairo, window->width - margin - width, margin);
 		pango_printf(window, "%s", line);
 	} else if (protocol == I3BAR && status_line) {
-		int i;
+		int i, blockpos;
 		int moved = 0;
+		bool corner = true;
 		for (i = status_line->length - 1; i >= 0; --i) {
 			struct status_block *block = status_line->items[i];
-			if (block->full_text) {
+			if (block->full_text && block->full_text[0]) {
 				get_text_size(window, &width, &height, "%s", block->full_text);
 				moved += width + block->separator_block_width;
-				cairo_move_to(window->cairo, window->width - margin - moved, margin);
+				blockpos = window->width - margin - moved;
+				cairo_move_to(window->cairo, blockpos, margin);
 				cairo_set_source_u32(window->cairo, block->color);
 				pango_printf(window, "%s", block->full_text);
+				if (corner) {
+					corner = false;
+				} else if (block->separator) {
+					cairo_set_source_u32(window->cairo, colors.separator);
+					cairo_set_line_width(window->cairo, 1);
+					cairo_move_to(window->cairo, blockpos + width
+						    + block->separator_block_width/2, margin);
+					cairo_line_to(window->cairo, blockpos + width
+						    + block->separator_block_width/2, window->height - margin);
+					cairo_stroke(window->cairo);
+				}
 			}
 		}
 	}
@@ -512,7 +525,7 @@ void parse_json(const char *text) {
 			new->color = parse_color(json_object_get_string(color));
 		}
 		else {
-			new->color = 0xFFFFFFFF;
+			new->color = colors.statusline;
 		}
 
 		if (min_width) {
