@@ -562,15 +562,23 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	return json;
 }
 
-void ipc_event_workspace(swayc_t *old, swayc_t *new) {
+void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 	json_object *obj = json_object_new_object();
-	json_object_object_add(obj, "change", json_object_new_string("focus"));
-	if (old) {
-		json_object_object_add(obj, "old", ipc_json_describe_workspace(old));
-	} else {
-		json_object_object_add(obj, "old", NULL);
+	json_object_object_add(obj, "change", json_object_new_string(change));
+	if (strcmp("focus", change) == 0) {
+		if (old) {
+			json_object_object_add(obj, "old", ipc_json_describe_workspace(old));
+		} else {
+			json_object_object_add(obj, "old", NULL);
+		}
 	}
-	json_object_object_add(obj, "current", ipc_json_describe_workspace(new));
+
+	if (new) {
+		json_object_object_add(obj, "current", ipc_json_describe_workspace(new));
+	} else {
+		json_object_object_add(obj, "current", NULL);
+	}
+
 	const char *json_string = json_object_to_json_string(obj);
 
 	for (int i = 0; i < ipc_client_list->length; i++) {

@@ -34,7 +34,7 @@ static void update_focus(swayc_t *c) {
 		// Case where workspace changes
 		case C_WORKSPACE:
 			if (prev) {
-				ipc_event_workspace(prev, c);
+				ipc_event_workspace(prev, c, "focus");
 				// update visibility of old workspace
 				update_visibility(prev);
 
@@ -122,11 +122,6 @@ bool set_focused_container(swayc_t *c) {
 		p = p->parent;
 		p->is_focused = false;
 	}
-	// active_ws might have been destroyed by now
-	// (focus swap away from empty ws = destroy ws)
-	if (active_ws_child_count == 0) {
-		active_ws = NULL;
-	}
 
 	// get new focused view and set focus to it.
 	p = get_focused_view(c);
@@ -146,7 +141,13 @@ bool set_focused_container(swayc_t *c) {
 	}
 
 	if (active_ws != workspace) {
-		ipc_event_workspace(active_ws, workspace);
+		// active_ws might have been destroyed by now
+		// (focus swap away from empty ws = destroy ws)
+		if (active_ws_child_count == 0) {
+			active_ws = NULL;
+		}
+
+		ipc_event_workspace(active_ws, workspace, "focus");
 	}
 	return true;
 }
