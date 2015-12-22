@@ -1738,7 +1738,7 @@ static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 		return bar_set_hidden_state(config->current_bar, state);
 	}
 
-	const char *id;
+	const char *id = NULL;
 	if (argc == 2) {
 		id = argv[1];
 	}
