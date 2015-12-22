@@ -1809,7 +1809,7 @@ static struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 		return bar_set_mode(config->current_bar, mode);
 	}
 
-	const char *id;
+	const char *id = NULL;
 	if (argc == 2) {
 		id = argv[1];
 	}
