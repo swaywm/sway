@@ -45,6 +45,18 @@ struct workspace {
 	bool urgent;
 };
 
+struct status_block {
+    char *full_text, *short_text, *align;
+    bool urgent;
+    uint32_t color;
+    int min_width;
+	char *name, *instance;
+    bool separator;
+    int separator_block_width;
+};
+
+list_t *status_line = NULL;
+
 list_t *workspaces = NULL;
 int socketfd;
 pid_t pid;
@@ -362,11 +374,22 @@ void render() {
 	// Command output
 	cairo_set_source_u32(window->cairo, colors.statusline);
 	int width, height;
-	get_text_size(window, &width, &height, "%s", line);
 
-	cairo_move_to(window->cairo, window->width - margin - width, margin);
-	pango_printf(window, "%s", line);
-
+    if (status_line) {
+        int i;
+        int moved = 0;
+        for ( i = status_line->length - 1; i >= 0; --i ) {
+            struct status_block *block = status_line->items[i];
+            if (block->full_text) {
+                get_text_size(window, &width, &height, "%s", block->full_text);
+                moved += width + block->separator_block_width;
+                cairo_move_to(window->cairo, window->width - margin - moved, margin);
+		        cairo_set_source_u32(window->cairo, block->color);
+                pango_printf(window, "%s", block->full_text);
+            }
+        }
+    }
+    
 	// Workspaces
 	cairo_set_line_width(window->cairo, 1.0);
 	double x = 0.5;
@@ -399,6 +422,116 @@ void render() {
 
 		x += width + ws_hor_padding * 2 + ws_spacing;
 	}
+}
+
+void parse_json(const char *text) {
+
+/*
+ * {
+ "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
+ "short_text": "10.0.0.1",
+ "color": "#00ff00",
+ "min_width": 300,
+ "align": "right",
+ "urgent": false,
+ "name": "ethernet",
+ "instance": "eth0",
+ "separator": true,
+ "separator_block_width": 9
+}
+ *
+ *
+ *
+ * */
+	
+	json_object *result = json_tokener_parse(text);
+    if (!result) {
+        sway_log(L_DEBUG, "xxx Failed to parse json");
+        return;
+    }
+
+    if (json_object_array_length(result) < 1) {
+        return;
+    }
+
+    if (status_line) {
+		free_flat_list(status_line);
+	}
+
+	status_line = create_list();
+
+    
+    int i;
+    for (i = 0; i < json_object_array_length(result); ++i) {
+	    json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
+	    json_object *name, *instance, *separator, *separator_block_width;
+
+        json_object *json = json_object_array_get_idx(result, i);
+        if (!json) {
+            continue;
+        }
+
+        json_object_object_get_ex(json, "full_text", &full_text);
+        json_object_object_get_ex(json, "short_text", &short_text);
+        json_object_object_get_ex(json, "color", &color);
+        json_object_object_get_ex(json, "min_width", &min_width);
+        json_object_object_get_ex(json, "align", &align);
+        json_object_object_get_ex(json, "urgent", &urgent);
+        json_object_object_get_ex(json, "name", &name);
+        json_object_object_get_ex(json, "instance", &instance);
+        json_object_object_get_ex(json, "separator", &separator);
+        json_object_object_get_ex(json, "separator_block_width", &separator_block_width);
+        
+        struct status_block *new = malloc(sizeof(struct status_block));
+        memset(new, 0, sizeof(struct status_block));
+
+        if (full_text) {
+            new->full_text = strdup(json_object_get_string(full_text));
+        }
+
+        if (short_text) {
+            new->short_text = strdup(json_object_get_string(short_text));
+        }
+        
+        if (color) {
+            new->color = parse_color(json_object_get_string(color));
+        }
+        else {
+            new->color = 0xFFFFFFFF;
+        }
+        
+        if (min_width) {
+            new->min_width = json_object_get_int(min_width);
+        }
+        if (align) {
+            new->align = strdup(json_object_get_string(align));
+        }
+        if (urgent) {
+            new->urgent = json_object_get_int(urgent);
+        }
+        if (name) {
+            new->name = strdup(json_object_get_string(name));
+        }
+        if (instance) {
+            new->instance = strdup(json_object_get_string(instance));
+        }
+        if (separator) {
+            new->separator = json_object_get_int(separator);
+        }
+        else {
+            new->separator = true; // i3bar spec
+        }
+        if (separator_block_width) {
+            new->separator_block_width = json_object_get_int(separator_block_width);
+        }
+        else {
+            new->separator_block_width = 9; // i3bar spec
+        }
+		list_add(status_line, new);
+        
+    }
+
+
 }
 
 void poll_for_update() {
@@ -437,17 +570,22 @@ void poll_for_update() {
 		if (status_command && FD_ISSET(pipefd[0], &readfds)) {
 			sway_log(L_DEBUG, "Got update from status command.");
 			fgets(line, sizeof(line), command);
+            sway_log(L_DEBUG, "zzz %s", line);
 			int l = strlen(line) - 1;
 			if (line[l] == '\n') {
 				line[l] = '\0';
 			}
+            if (line[0] == ',') {
+                line[0] = ' ';
+            }
 			dirty = true;
+            parse_json(line);
 		}
 	}
 }
 
 int main(int argc, char **argv) {
-	init_log(L_INFO);
+	init_log(L_DEBUG);
 
 	char *socket_path = NULL;
 	char *bar_id = NULL;
