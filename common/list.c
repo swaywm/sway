@@ -26,6 +26,15 @@ void list_free(list_t *list) {
 	free(list);
 }
 
+void list_foreach(list_t *list, void (*callback)(void *item)) {
+	if (list == NULL || callback == NULL) {
+		return;
+	}
+	for (int i = 0; i < list->length; i++) {
+		callback(list->items[i]);
+	}
+}
+
 void list_add(list_t *list, void *item) {
 	list_resize(list);
 	list->items[list->length++] = item;

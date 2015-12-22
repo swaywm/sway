@@ -160,9 +160,21 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 			(color & 0xFF) / 256.0);
 }
 
+void free_workspace(void *item) {
+	if (!item) {
+		return;
+	}
+	struct workspace *ws = (struct workspace *)item;
+	if (ws->name) {
+		free(ws->name);
+	}
+	free(ws);
+}
+
 void ipc_update_workspaces() {
 	if (workspaces) {
-		free_flat_list(workspaces);
+		list_foreach(workspaces, free_workspace);
+		list_free(workspaces);
 	}
 	workspaces = create_list();
 
@@ -456,6 +468,29 @@ void render() {
 	}
 }
 
+void free_status_block(void *item) {
+	if (!item) {
+		return;
+	}
+	struct status_block *sb = (struct status_block*)item;
+	if (sb->full_text) { 
+		free(sb->full_text);
+	}
+	if (sb->short_text) {
+		free(sb->short_text);
+	}
+	if (sb->align) {
+		free(sb->align);
+	}
+	if (sb->name) {
+		free(sb->name);
+	}
+	if (sb->instance) {
+		free(sb->instance);
+	}
+	free(sb);
+}
+
 void parse_json(const char *text) {
 /* the array of objects looks like this:
  * [ {
@@ -484,7 +519,8 @@ void parse_json(const char *text) {
 	}
 
 	if (status_line) {
-		free_flat_list(status_line);
+		list_foreach(status_line, free_status_block);
+		list_free(status_line);
 	}
 
 	status_line = create_list();
