@@ -67,6 +67,8 @@ char *output, *status_command;
 struct registry *registry;
 struct window *window;
 bool dirty = true;
+typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
+command_protocol protocol = UNDEF;
 
 struct colors colors = {
 	.background = 0x000000FF,
@@ -100,6 +102,20 @@ struct colors colors = {
 	},
 };
 
+#define I3JSON_MAXDEPTH 4
+#define I3JSON_UNKNOWN 0
+#define I3JSON_ARRAY 1
+#define I3JSON_STRING 2
+struct {
+	int bufsize;
+	char *buffer;
+	char *line_start;
+	bool escape;
+	int depth;
+	int state[I3JSON_MAXDEPTH+1];
+} i3json_state = { 0, NULL, NULL, false, 0, { I3JSON_UNKNOWN } };
+
+
 void swaybar_teardown() {
 	window_teardown(window);
 	if (registry) {
@@ -125,7 +141,6 @@ void swaybar_teardown() {
 		close(pipefd[0]);
 	}
 }
-
 
 void sway_terminate(void) {
 	swaybar_teardown();
@@ -375,10 +390,14 @@ void render() {
 	cairo_set_source_u32(window->cairo, colors.statusline);
 	int width, height;
 
-	if (status_line) {
+	if (protocol == TEXT) {
+		get_text_size(window, &width, &height, "%s", line);
+		cairo_move_to(window->cairo, window->width - margin - width, margin);
+		pango_printf(window, "%s", line);
+	} else if (protocol == I3BAR && status_line) {
 		int i;
 		int moved = 0;
-		for ( i = status_line->length - 1; i >= 0; --i ) {
+		for (i = status_line->length - 1; i >= 0; --i) {
 			struct status_block *block = status_line->items[i];
 			if (block->full_text) {
 				get_text_size(window, &width, &height, "%s", block->full_text);
@@ -539,6 +558,81 @@ void parse_json(const char *text) {
 	json_object_put(results);
 }
 
+int i3json_handle(FILE *file) {
+	char *c;
+	int handled = 0;
+	// handle partially buffered data
+	// make sure 1023+1 bytes at the end are free
+	if (i3json_state.line_start) {
+		int len = strlen(i3json_state.line_start);
+		memmove(i3json_state.buffer, i3json_state.line_start, len+1);
+		if (i3json_state.bufsize < len+1024) {
+			i3json_state.bufsize += 1024;
+			i3json_state.buffer = realloc(i3json_state.buffer, i3json_state.bufsize);
+		}
+		c = i3json_state.buffer+len;
+		i3json_state.line_start = i3json_state.buffer;
+	} else if (!i3json_state.buffer) {
+		i3json_state.buffer = malloc(1024);
+		i3json_state.bufsize = 1024;
+		c = i3json_state.buffer;
+	} else {
+		c = i3json_state.buffer;
+	}
+	if (!i3json_state.buffer) {
+		sway_abort("Could not allocate buffer.");
+	}
+	// get fresh data at the end of the buffer
+	if (!fgets(c, 1023, file)) return -1;
+	c[1023] = '\0';
+
+	while (*c) {
+		if (i3json_state.state[i3json_state.depth] == I3JSON_STRING) {
+			if (!i3json_state.escape && *c == '"') {
+				--i3json_state.depth;
+			}
+			i3json_state.escape = !i3json_state.escape && *c == '\\';
+		} else {
+			switch (*c) {
+			case '[':
+				++i3json_state.depth;
+				if (i3json_state.depth > I3JSON_MAXDEPTH) {
+					sway_abort("JSON too deep");
+				}
+				i3json_state.state[i3json_state.depth] = I3JSON_ARRAY;
+				if (i3json_state.depth == 2) {
+					i3json_state.line_start = c;
+				}
+				break;
+			case ']':
+				if (i3json_state.state[i3json_state.depth] != I3JSON_ARRAY) {
+					sway_abort("JSON malformed");
+				}
+				--i3json_state.depth;
+				if (i3json_state.depth == 1) {
+					ssize_t len = c-i3json_state.line_start+1;
+					char p = c[len];
+					c[len] = '\0';
+					parse_json(i3json_state.line_start);
+					c[len] = p;
+					++handled;
+					i3json_state.line_start = c+1;
+				}
+				break;
+			case '"':
+				++i3json_state.depth;
+				if (i3json_state.depth > I3JSON_MAXDEPTH) {
+					sway_abort("JSON too deep");
+				}
+				i3json_state.state[i3json_state.depth] = I3JSON_STRING;
+				break;
+			}
+		}
+		++c;
+	}
+	return handled;
+}
+
 void poll_for_update() {
 	fd_set readfds;
 	int activity;
@@ -574,17 +668,43 @@ void poll_for_update() {
 
 		if (status_command && FD_ISSET(pipefd[0], &readfds)) {
 			sway_log(L_DEBUG, "Got update from status command.");
-			fgets(line, sizeof(line), command);
-			sway_log(L_DEBUG, "zzz %s", line);
-			int l = strlen(line) - 1;
-			if (line[l] == '\n') {
-				line[l] = '\0';
+			int linelen;
+			switch (protocol) {
+			case I3BAR:
+				sway_log(L_DEBUG, "Got i3bar protocol.");
+				if (i3json_handle(command) > 0) {
+					dirty = true;
+				}
+				break;
+			case TEXT:
+			case UNDEF:
+				sway_log(L_DEBUG, "Got text protocol.");
+				fgets(line, sizeof(line), command);
+				linelen = strlen(line) - 1;
+				if (line[linelen] == '\n') {
+					line[linelen] = '\0';
+				}
+				dirty = true;
+				if (protocol == UNDEF) {
+					protocol = TEXT;
+					if (line[0] == '{') {
+						// detect i3bar json protocol
+						json_object *proto = json_tokener_parse(line);
+						json_object *version;
+						if (proto) {
+							if (json_object_object_get_ex(proto, "version", &version)
+										&& json_object_get_int(version) == 1
+							) {
+								sway_log(L_DEBUG, "Switched to i3bar protocol.");
+								protocol = I3BAR;
+								line[0] = '\0';
+							}
+							json_object_put(proto);
+						}
+					}
+				}
+				break;
 			}
-			if (line[0] == ',') {
-				line[0] = ' ';
-			}
-			dirty = true;
-			parse_json(line);
 		}
 	}
 }
@@ -681,6 +801,7 @@ int main(int argc, char **argv) {
 
 		close(pipefd[1]);
 		command = fdopen(pipefd[0], "r");
+		setbuf(command, NULL);
 		line[0] = '\0';
 	}
 
