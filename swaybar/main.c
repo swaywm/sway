@@ -45,6 +45,18 @@ struct workspace {
 	bool urgent;
 };
 
+struct status_block {
+	char *full_text, *short_text, *align;
+	bool urgent;
+	uint32_t color;
+	int min_width;
+	char *name, *instance;
+	bool separator;
+	int separator_block_width;
+};
+
+list_t *status_line = NULL;
+
 list_t *workspaces = NULL;
 int socketfd;
 pid_t pid;
@@ -55,6 +67,8 @@ char *output, *status_command;
 struct registry *registry;
 struct window *window;
 bool dirty = true;
+typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
+command_protocol protocol = UNDEF;
 
 struct colors colors = {
 	.background = 0x000000FF,
@@ -88,6 +102,20 @@ struct colors colors = {
 	},
 };
 
+#define I3JSON_MAXDEPTH 4
+#define I3JSON_UNKNOWN 0
+#define I3JSON_ARRAY 1
+#define I3JSON_STRING 2
+struct {
+	int bufsize;
+	char *buffer;
+	char *line_start;
+	bool escape;
+	int depth;
+	int state[I3JSON_MAXDEPTH+1];
+} i3json_state = { 0, NULL, NULL, false, 0, { I3JSON_UNKNOWN } };
+
+
 void swaybar_teardown() {
 	window_teardown(window);
 	if (registry) {
@@ -114,7 +142,6 @@ void swaybar_teardown() {
 	}
 }
 
-
 void sway_terminate(void) {
 	swaybar_teardown();
 	exit(EXIT_FAILURE);
@@ -133,9 +160,21 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 			(color & 0xFF) / 256.0);
 }
 
+void free_workspace(void *item) {
+	if (!item) {
+		return;
+	}
+	struct workspace *ws = (struct workspace *)item;
+	if (ws->name) {
+		free(ws->name);
+	}
+	free(ws);
+}
+
 void ipc_update_workspaces() {
 	if (workspaces) {
-		free_flat_list(workspaces);
+		list_foreach(workspaces, free_workspace);
+		list_free(workspaces);
 	}
 	workspaces = create_list();
 
@@ -362,10 +401,38 @@ void render() {
 	// Command output
 	cairo_set_source_u32(window->cairo, colors.statusline);
 	int width, height;
-	get_text_size(window, &width, &height, "%s", line);
 
-	cairo_move_to(window->cairo, window->width - margin - width, margin);
-	pango_printf(window, "%s", line);
+	if (protocol == TEXT) {
+		get_text_size(window, &width, &height, "%s", line);
+		cairo_move_to(window->cairo, window->width - margin - width, margin);
+		pango_printf(window, "%s", line);
+	} else if (protocol == I3BAR && status_line) {
+		int i, blockpos;
+		int moved = 0;
+		bool corner = true;
+		for (i = status_line->length - 1; i >= 0; --i) {
+			struct status_block *block = status_line->items[i];
+			if (block->full_text && block->full_text[0]) {
+				get_text_size(window, &width, &height, "%s", block->full_text);
+				moved += width + block->separator_block_width;
+				blockpos = window->width - margin - moved;
+				cairo_move_to(window->cairo, blockpos, margin);
+				cairo_set_source_u32(window->cairo, block->color);
+				pango_printf(window, "%s", block->full_text);
+				if (corner) {
+					corner = false;
+				} else if (block->separator) {
+					cairo_set_source_u32(window->cairo, colors.separator);
+					cairo_set_line_width(window->cairo, 1);
+					cairo_move_to(window->cairo, blockpos + width
+						    + block->separator_block_width/2, margin);
+					cairo_line_to(window->cairo, blockpos + width
+						    + block->separator_block_width/2, window->height - margin);
+					cairo_stroke(window->cairo);
+				}
+			}
+		}
+	}
 
 	// Workspaces
 	cairo_set_line_width(window->cairo, 1.0);
@@ -399,6 +466,220 @@ void render() {
 
 		x += width + ws_hor_padding * 2 + ws_spacing;
 	}
+}
+
+void free_status_block(void *item) {
+	if (!item) {
+		return;
+	}
+	struct status_block *sb = (struct status_block*)item;
+	if (sb->full_text) { 
+		free(sb->full_text);
+	}
+	if (sb->short_text) {
+		free(sb->short_text);
+	}
+	if (sb->align) {
+		free(sb->align);
+	}
+	if (sb->name) {
+		free(sb->name);
+	}
+	if (sb->instance) {
+		free(sb->instance);
+	}
+	free(sb);
+}
+
+void parse_json(const char *text) {
+/* the array of objects looks like this:
+ * [ {
+ *     "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
+ *     "short_text": "10.0.0.1",
+ *     "color": "#00ff00",
+ *     "min_width": 300,
+ *     "align": "right",
+ *     "urgent": false,
+ *     "name": "ethernet",
+ *     "instance": "eth0",
+ *     "separator": true,
+ *     "separator_block_width": 9
+ *   },
+ *   { ... }, ...
+ * ]
+ */
+	json_object *results = json_tokener_parse(text);
+	if (!results) {
+		sway_log(L_DEBUG, "xxx Failed to parse json");
+		return;
+	}
+
+	if (json_object_array_length(results) < 1) {
+		return;
+	}
+
+	if (status_line) {
+		list_foreach(status_line, free_status_block);
+		list_free(status_line);
+	}
+
+	status_line = create_list();
+
+	int i;
+	for (i = 0; i < json_object_array_length(results); ++i) {
+		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
+		json_object *name, *instance, *separator, *separator_block_width;
+
+		json_object *json = json_object_array_get_idx(results, i);
+		if (!json) {
+			continue;
+		}
+
+		json_object_object_get_ex(json, "full_text", &full_text);
+		json_object_object_get_ex(json, "short_text", &short_text);
+		json_object_object_get_ex(json, "color", &color);
+		json_object_object_get_ex(json, "min_width", &min_width);
+		json_object_object_get_ex(json, "align", &align);
+		json_object_object_get_ex(json, "urgent", &urgent);
+		json_object_object_get_ex(json, "name", &name);
+		json_object_object_get_ex(json, "instance", &instance);
+		json_object_object_get_ex(json, "separator", &separator);
+		json_object_object_get_ex(json, "separator_block_width", &separator_block_width);
+
+		struct status_block *new = malloc(sizeof(struct status_block));
+		memset(new, 0, sizeof(struct status_block));
+
+		if (full_text) {
+			new->full_text = strdup(json_object_get_string(full_text));
+		}
+
+		if (short_text) {
+			new->short_text = strdup(json_object_get_string(short_text));
+		}
+
+		if (color) {
+			new->color = parse_color(json_object_get_string(color));
+		}
+		else {
+			new->color = colors.statusline;
+		}
+
+		if (min_width) {
+			new->min_width = json_object_get_int(min_width);
+		}
+
+		if (align) {
+			new->align = strdup(json_object_get_string(align));
+		}
+		else {
+			new->align = strdup("left");
+		}
+
+		if (urgent) {
+			new->urgent = json_object_get_int(urgent);
+		}
+
+		if (name) {
+			new->name = strdup(json_object_get_string(name));
+		}
+
+		if (instance) {
+			new->instance = strdup(json_object_get_string(instance));
+		}
+
+		if (separator) {
+			new->separator = json_object_get_int(separator);
+		}
+		else {
+			new->separator = true; // i3bar spec
+		}
+
+		if (separator_block_width) {
+			new->separator_block_width = json_object_get_int(separator_block_width);
+		}
+		else {
+			new->separator_block_width = 9; // i3bar spec
+		}
+
+		list_add(status_line, new);
+	}
+
+	json_object_put(results);
+}
+
+int i3json_handle(FILE *file) {
+	char *c;
+	int handled = 0;
+	// handle partially buffered data
+	// make sure 1023+1 bytes at the end are free
+	if (i3json_state.line_start) {
+		int len = strlen(i3json_state.line_start);
+		memmove(i3json_state.buffer, i3json_state.line_start, len+1);
+		if (i3json_state.bufsize < len+1024) {
+			i3json_state.bufsize += 1024;
+			i3json_state.buffer = realloc(i3json_state.buffer, i3json_state.bufsize);
+		}
+		c = i3json_state.buffer+len;
+		i3json_state.line_start = i3json_state.buffer;
+	} else if (!i3json_state.buffer) {
+		i3json_state.buffer = malloc(1024);
+		i3json_state.bufsize = 1024;
+		c = i3json_state.buffer;
+	} else {
+		c = i3json_state.buffer;
+	}
+	if (!i3json_state.buffer) {
+		sway_abort("Could not allocate buffer.");
+	}
+	// get fresh data at the end of the buffer
+	if (!fgets(c, 1023, file)) return -1;
+	c[1023] = '\0';
+
+	while (*c) {
+		if (i3json_state.state[i3json_state.depth] == I3JSON_STRING) {
+			if (!i3json_state.escape && *c == '"') {
+				--i3json_state.depth;
+			}
+			i3json_state.escape = !i3json_state.escape && *c == '\\';
+		} else {
+			switch (*c) {
+			case '[':
+				++i3json_state.depth;
+				if (i3json_state.depth > I3JSON_MAXDEPTH) {
+					sway_abort("JSON too deep");
+				}
+				i3json_state.state[i3json_state.depth] = I3JSON_ARRAY;
+				if (i3json_state.depth == 2) {
+					i3json_state.line_start = c;
+				}
+				break;
+			case ']':
+				if (i3json_state.state[i3json_state.depth] != I3JSON_ARRAY) {
+					sway_abort("JSON malformed");
+				}
+				--i3json_state.depth;
+				if (i3json_state.depth == 1) {
+					ssize_t len = c-i3json_state.line_start+1;
+					char p = c[len];
+					c[len] = '\0';
+					parse_json(i3json_state.line_start);
+					c[len] = p;
+					++handled;
+					i3json_state.line_start = c+1;
+				}
+				break;
+			case '"':
+				++i3json_state.depth;
+				if (i3json_state.depth > I3JSON_MAXDEPTH) {
+					sway_abort("JSON too deep");
+				}
+				i3json_state.state[i3json_state.depth] = I3JSON_STRING;
+				break;
+			}
+		}
+		++c;
+	}
+	return handled;
 }
 
 void poll_for_update() {
@@ -436,18 +717,49 @@ void poll_for_update() {
 
 		if (status_command && FD_ISSET(pipefd[0], &readfds)) {
 			sway_log(L_DEBUG, "Got update from status command.");
-			fgets(line, sizeof(line), command);
-			int l = strlen(line) - 1;
-			if (line[l] == '\n') {
-				line[l] = '\0';
+			int linelen;
+			switch (protocol) {
+			case I3BAR:
+				sway_log(L_DEBUG, "Got i3bar protocol.");
+				if (i3json_handle(command) > 0) {
+					dirty = true;
+				}
+				break;
+			case TEXT:
+			case UNDEF:
+				sway_log(L_DEBUG, "Got text protocol.");
+				fgets(line, sizeof(line), command);
+				linelen = strlen(line) - 1;
+				if (line[linelen] == '\n') {
+					line[linelen] = '\0';
+				}
+				dirty = true;
+				if (protocol == UNDEF) {
+					protocol = TEXT;
+					if (line[0] == '{') {
+						// detect i3bar json protocol
+						json_object *proto = json_tokener_parse(line);
+						json_object *version;
+						if (proto) {
+							if (json_object_object_get_ex(proto, "version", &version)
+										&& json_object_get_int(version) == 1
+							) {
+								sway_log(L_DEBUG, "Switched to i3bar protocol.");
+								protocol = I3BAR;
+								line[0] = '\0';
+							}
+							json_object_put(proto);
+						}
+					}
+				}
+				break;
 			}
-			dirty = true;
 		}
 	}
 }
 
 int main(int argc, char **argv) {
-	init_log(L_INFO);
+	init_log(L_DEBUG);
 
 	char *socket_path = NULL;
 	char *bar_id = NULL;
@@ -538,6 +850,7 @@ int main(int argc, char **argv) {
 
 		close(pipefd[1]);
 		command = fdopen(pipefd[0], "r");
+		setbuf(command, NULL);
 		line[0] = '\0';
 	}
 
