@@ -690,10 +690,9 @@ void poll_for_update() {
 		if (dirty && window_prerender(window) && window->cairo) {
 			render();
 			window_render(window);
-		}
-
-		if (wl_display_dispatch(registry->display) == -1) {
-			break;
+			if (wl_display_dispatch(registry->display) == -1) {
+				break;
+			}
 		}
 
 		dirty = false;
