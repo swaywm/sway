@@ -444,13 +444,13 @@ void parse_json(const char *text) {
  *
  * */
 	
-	json_object *result = json_tokener_parse(text);
-    if (!result) {
+	json_object *results = json_tokener_parse(text);
+    if (!results) {
         sway_log(L_DEBUG, "xxx Failed to parse json");
         return;
     }
 
-    if (json_object_array_length(result) < 1) {
+    if (json_object_array_length(results) < 1) {
         return;
     }
 
@@ -459,14 +459,14 @@ void parse_json(const char *text) {
 	}
 
 	status_line = create_list();
-
     
     int i;
-    for (i = 0; i < json_object_array_length(result); ++i) {
+    for (i = 0; i < json_object_array_length(results); ++i) {
 	    json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 	    json_object *name, *instance, *separator, *separator_block_width;
 
-        json_object *json = json_object_array_get_idx(result, i);
+        json_object *json = json_object_array_get_idx(results, i);
+
         if (!json) {
             continue;
         }
@@ -503,34 +503,45 @@ void parse_json(const char *text) {
         if (min_width) {
             new->min_width = json_object_get_int(min_width);
         }
+
         if (align) {
             new->align = strdup(json_object_get_string(align));
         }
+        else {
+            new->align = strdup("left");
+        }
+
         if (urgent) {
             new->urgent = json_object_get_int(urgent);
         }
+
         if (name) {
             new->name = strdup(json_object_get_string(name));
         }
+
         if (instance) {
             new->instance = strdup(json_object_get_string(instance));
         }
+
         if (separator) {
             new->separator = json_object_get_int(separator);
         }
         else {
             new->separator = true; // i3bar spec
         }
+
         if (separator_block_width) {
             new->separator_block_width = json_object_get_int(separator_block_width);
         }
         else {
             new->separator_block_width = 9; // i3bar spec
         }
+
 		list_add(status_line, new);
         
     }
 
+	json_object_put(results);
 
 }
 
