@@ -32,6 +32,7 @@ target_link_libraries(sway
 	${PCRE_LIBRARIES}
 	${JSONC_LIBRARIES}
 	${WAYLAND_SERVER_LIBRARIES}
+	m
 )
 
 install(
