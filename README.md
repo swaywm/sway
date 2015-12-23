@@ -66,9 +66,8 @@ On systems without logind, you need to suid the sway binary:
 
 If you already use i3, then copy your i3 config to `~/.config/sway/config` and
 it'll work out of the box. Otherwise, copy the sample configuration file to
-`~/.config/sway/config`. It is located at `/etc/sway/config`, unless the 
-`DFALLBACK_CONFIG_DIR` flag has been set. Run `man 5 sway` for information on
-the configuration.
+`~/.config/sway/config`. It is usually located at `/etc/sway/config`.
+Run `man 5 sway` for information on the configuration.
 
 ## Running
 

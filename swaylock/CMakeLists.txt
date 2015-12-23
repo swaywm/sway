@@ -39,6 +39,6 @@ install(
 
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/pam/swaylock
-	DESTINATION /etc/pam.d/
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/pam.d/
 	COMPONENT data
 )
