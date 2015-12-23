@@ -94,6 +94,7 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 
 		fwrite(pixels, 1, len, f);
 
+		free(pixels - 9);
 		clock_gettime(CLOCK_MONOTONIC, &finish);
 		ts.tv_nsec = ns;
 		double fts = (double)finish.tv_sec + 1.0e-9*finish.tv_nsec;
