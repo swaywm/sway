@@ -65,6 +65,7 @@ endif()
 
 include(FeatureSummary)
 include(Manpage)
+include(GNUInstallDirs)
 
 if (enable-gdk-pixbuf)
   if (GDK_PIXBUF_FOUND)
