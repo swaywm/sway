@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,9 +61,9 @@ list_t *status_line = NULL;
 list_t *workspaces = NULL;
 int socketfd;
 pid_t pid;
-int pipefd[2];
-FILE *command;
+int status_read_fd;
 char line[1024];
+char line_rest[1024];
 char *output, *status_command;
 struct registry *registry;
 struct window *window;
@@ -110,10 +111,11 @@ struct {
 	int bufsize;
 	char *buffer;
 	char *line_start;
+	char *parserpos;
 	bool escape;
 	int depth;
 	int state[I3JSON_MAXDEPTH+1];
-} i3json_state = { 0, NULL, NULL, false, 0, { I3JSON_UNKNOWN } };
+} i3json_state = { 0, NULL, NULL, NULL, false, 0, { I3JSON_UNKNOWN } };
 
 
 void swaybar_teardown() {
@@ -122,8 +124,8 @@ void swaybar_teardown() {
 		registry_teardown(registry);
 	}
 
-	if (command) {
-		fclose(command);
+	if (status_read_fd) {
+		close(status_read_fd);
 	}
 
 	if (pid) {
@@ -137,8 +139,8 @@ void swaybar_teardown() {
 		}
 	}
 
-	if (pipefd[0]) {
-		close(pipefd[0]);
+	if (status_read_fd) {
+		close(status_read_fd);
 	}
 }
 
@@ -425,9 +427,9 @@ void render() {
 					cairo_set_source_u32(window->cairo, colors.separator);
 					cairo_set_line_width(window->cairo, 1);
 					cairo_move_to(window->cairo, blockpos + width
-						    + block->separator_block_width/2, margin);
+								+ block->separator_block_width/2, margin);
 					cairo_line_to(window->cairo, blockpos + width
-						    + block->separator_block_width/2, window->height - margin);
+								+ block->separator_block_width/2, window->height - margin);
 					cairo_stroke(window->cairo);
 				}
 			}
@@ -607,34 +609,124 @@ void parse_json(const char *text) {
 	json_object_put(results);
 }
 
-int i3json_handle(FILE *file) {
-	char *c;
-	int handled = 0;
-	// handle partially buffered data
-	// make sure 1023+1 bytes at the end are free
-	if (i3json_state.line_start) {
-		int len = strlen(i3json_state.line_start);
-		memmove(i3json_state.buffer, i3json_state.line_start, len+1);
-		if (i3json_state.bufsize < len+1024) {
-			i3json_state.bufsize += 1024;
-			i3json_state.buffer = realloc(i3json_state.buffer, i3json_state.bufsize);
+// Read line from file descriptor, only show the line tail if it is too long.
+// In non-blocking mode treat "no more data" as a linebreak.
+// If data after a line break has been read, return it in rest.
+// If rest is non-empty, then use that as the start of the next line.
+int read_line_tail(int fd, char *buf, int nbyte, char *rest) {
+	if (fd < 0 || !buf || !nbyte) {
+		return -1;
+	}
+	int l;
+	char *buffer = malloc(nbyte*2+1);
+	char *readpos = buffer;
+	char *lf;
+	// prepend old data to new line if necessary
+	if (rest) {
+		l = strlen(rest);
+		if (l > nbyte) {
+			strcpy(buffer, rest + l - nbyte);
+			readpos += nbyte;
+		} else if (l) {
+			strcpy(buffer, rest);
+			readpos += l;
 		}
-		c = i3json_state.buffer+len;
-		i3json_state.line_start = i3json_state.buffer;
-	} else if (!i3json_state.buffer) {
-		i3json_state.buffer = malloc(1024);
-		i3json_state.bufsize = 1024;
-		c = i3json_state.buffer;
+	}
+	// read until a linefeed is found or no more data is available
+	while ((l = read(fd, readpos, nbyte)) > 0) {
+		readpos[l] = '\0';
+		lf = strchr(readpos, '\n');
+		if (lf) {
+			// linefeed found, replace with \0
+			*lf = '\0';
+			// give data from the end of the line, try to fill the buffer
+			if (lf-buffer > nbyte) {
+				strcpy(buf, lf - nbyte + 1);
+			} else {
+				strcpy(buf, buffer);
+			}
+			// we may have read data from the next line, save it to rest
+			if (rest) {
+				rest[0] = '\0';
+				strcpy(rest, lf + 1);
+			}
+			free(buffer);
+			return strlen(buf);
+		} else {
+			// no linefeed found, slide data back.
+			int overflow = readpos - buffer + l - nbyte;
+			if (overflow > 0) {
+				memmove(buffer, buffer + overflow , nbyte + 1);
+			}
+		}
+	}
+	if (l < 0) {
+		free(buffer);
+		return l;
+	}
+	readpos[l]='\0';
+	if (rest) {
+		rest[0] = '\0';
+	}
+	if (nbyte < readpos - buffer + l - 1) {
+		memcpy(buf, readpos - nbyte + l + 1, nbyte);
 	} else {
-		c = i3json_state.buffer;
+		strncpy(buf, buffer, nbyte);
+	}
+	buf[nbyte-1] = '\0';
+	free(buffer);
+	return strlen(buf);
+}
+
+// make sure that enough buffer space is available starting from parserpos
+void i3json_ensure_free(int min_free) {
+	int _step = 10240;
+	int r = min_free % _step;
+	if (r) {
+		min_free += _step - r;
+	}
+	if (!i3json_state.buffer) {
+		i3json_state.buffer = malloc(min_free);
+		i3json_state.bufsize = min_free;
+		i3json_state.parserpos = i3json_state.buffer;
+	} else {
+		int len = 0;
+		int pos = 0;
+		if (i3json_state.line_start) {
+			len = strlen(i3json_state.line_start);
+			pos = i3json_state.parserpos - i3json_state.line_start;
+			if (i3json_state.line_start != i3json_state.buffer) {
+				memmove(i3json_state.buffer, i3json_state.line_start, len+1);
+			}
+		} else {
+			len = strlen(i3json_state.buffer);
+		}
+		if (i3json_state.bufsize < len+min_free) {
+		 	i3json_state.bufsize += min_free;
+			if (i3json_state.bufsize > 1024000) {
+				sway_abort("Status line json too long or malformed.");
+			}
+			i3json_state.buffer = realloc(i3json_state.buffer, i3json_state.bufsize);
+			if (!i3json_state.buffer) {
+				sway_abort("Could not allocate json buffer");
+			}
+		}
+		if (i3json_state.line_start) {
+			i3json_state.line_start = i3json_state.buffer;
+			i3json_state.parserpos = i3json_state.buffer + pos;
+		} else {
+			i3json_state.parserpos = i3json_state.buffer;
+		}
 	}
 	if (!i3json_state.buffer) {
 		sway_abort("Could not allocate buffer.");
 	}
-	// get fresh data at the end of the buffer
-	if (!fgets(c, 1023, file)) return -1;
-	c[1023] = '\0';
+}
 
+// continue parsing from last parserpos
+int i3json_parse() {
+	char *c = i3json_state.parserpos;
+	int handled = 0;
 	while (*c) {
 		if (i3json_state.state[i3json_state.depth] == I3JSON_STRING) {
 			if (!i3json_state.escape && *c == '"') {
@@ -659,11 +751,11 @@ int i3json_handle(FILE *file) {
 				}
 				--i3json_state.depth;
 				if (i3json_state.depth == 1) {
-					ssize_t len = c-i3json_state.line_start+1;
-					char p = c[len];
-					c[len] = '\0';
+					// c[1] is valid since c[0] != '\0'
+					char p = c[1];
+					c[1] = '\0';
 					parse_json(i3json_state.line_start);
-					c[len] = p;
+					c[1] = p;
 					++handled;
 					i3json_state.line_start = c+1;
 				}
@@ -679,7 +771,28 @@ int i3json_handle(FILE *file) {
 		}
 		++c;
 	}
+	i3json_state.parserpos = c;
 	return handled;
+}
+
+// append data and parse it.
+int i3json_handle_data(char *data) {
+	int len = strlen(data);
+	i3json_ensure_free(len);
+	strcpy(i3json_state.parserpos, data);
+	return i3json_parse();
+}
+
+// read data from fd and parse it.
+int i3json_handle_fd(int fd) {
+	i3json_ensure_free(10240);
+	// get fresh data at the end of the buffer
+	int readlen = read(fd, i3json_state.parserpos, 10239);
+	if (readlen < 0) {
+		return readlen;
+	}
+	i3json_state.parserpos[readlen] = '\0';
+	return i3json_parse();
 }
 
 void poll_for_update() {
@@ -698,7 +811,7 @@ void poll_for_update() {
 		dirty = false;
 		FD_ZERO(&readfds);
 		FD_SET(socketfd, &readfds);
-		FD_SET(pipefd[0], &readfds);
+		FD_SET(status_read_fd, &readfds);
 
 		activity = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
 		if (activity < 0) {
@@ -714,41 +827,40 @@ void poll_for_update() {
 			dirty = true;
 		}
 
-		if (status_command && FD_ISSET(pipefd[0], &readfds)) {
+		if (status_command && FD_ISSET(status_read_fd, &readfds)) {
 			sway_log(L_DEBUG, "Got update from status command.");
-			int linelen;
 			switch (protocol) {
 			case I3BAR:
 				sway_log(L_DEBUG, "Got i3bar protocol.");
-				if (i3json_handle(command) > 0) {
+				if (i3json_handle_fd(status_read_fd) > 0) {
 					dirty = true;
 				}
 				break;
 			case TEXT:
-			case UNDEF:
 				sway_log(L_DEBUG, "Got text protocol.");
-				fgets(line, sizeof(line), command);
-				linelen = strlen(line) - 1;
-				if (line[linelen] == '\n') {
-					line[linelen] = '\0';
+				read_line_tail(status_read_fd, line, sizeof(line), line_rest);
+				dirty = true;
+				break;
+			case UNDEF:
+				sway_log(L_DEBUG, "Detecting protocol...");
+				if (read_line_tail(status_read_fd, line, sizeof(line), line_rest) < 0) {
+					break;
 				}
 				dirty = true;
-				if (protocol == UNDEF) {
-					protocol = TEXT;
-					if (line[0] == '{') {
-						// detect i3bar json protocol
-						json_object *proto = json_tokener_parse(line);
-						json_object *version;
-						if (proto) {
-							if (json_object_object_get_ex(proto, "version", &version)
-										&& json_object_get_int(version) == 1
-							) {
-								sway_log(L_DEBUG, "Switched to i3bar protocol.");
-								protocol = I3BAR;
-								line[0] = '\0';
-							}
-							json_object_put(proto);
+				protocol = TEXT;
+				if (line[0] == '{') {
+					// detect i3bar json protocol
+					json_object *proto = json_tokener_parse(line);
+					json_object *version;
+					if (proto) {
+						if (json_object_object_get_ex(proto, "version", &version)
+									&& json_object_get_int(version) == 1
+						) {
+							sway_log(L_DEBUG, "Switched to i3bar protocol.");
+							protocol = I3BAR;
+							i3json_handle_data(line_rest);
 						}
+						json_object_put(proto);
 					}
 				}
 				break;
@@ -831,6 +943,7 @@ int main(int argc, char **argv) {
 	bar_ipc_init(desired_output, bar_id);
 
 	if (status_command) {
+		int pipefd[2];
 		pipe(pipefd);
 		pid = fork();
 		if (pid == 0) {
@@ -848,8 +961,8 @@ int main(int argc, char **argv) {
 		}
 
 		close(pipefd[1]);
-		command = fdopen(pipefd[0], "r");
-		setbuf(command, NULL);
+		status_read_fd = pipefd[0];
+		fcntl(status_read_fd, F_SETFL, O_NONBLOCK);
 		line[0] = '\0';
 	}
 
