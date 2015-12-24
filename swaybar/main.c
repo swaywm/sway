@@ -416,9 +416,29 @@ void render() {
 			struct status_block *block = status_line->items[i];
 			if (block->full_text && block->full_text[0]) {
 				get_text_size(window, &width, &height, "%s", block->full_text);
+
+				int textwidth = width;
+				
+				if (width < block->min_width) {
+					width = block->min_width;
+				}
+
 				moved += width + block->separator_block_width;
 				blockpos = window->width - margin - moved;
-				cairo_move_to(window->cairo, blockpos, margin);
+				
+				int offset = 0;
+
+				if (strncmp(block->align, "left", 5) == 0) {
+					offset = blockpos;
+				}
+				else if (strncmp(block->align, "right", 5) == 0) {
+					offset = blockpos + width - textwidth;
+				}
+				else if (strncmp(block->align, "center", 6) == 0) {
+					offset = blockpos + (width - textwidth) / 2;
+				}
+
+				cairo_move_to(window->cairo, offset, margin);
 				cairo_set_source_u32(window->cairo, block->color);
 				pango_printf(window, "%s", block->full_text);
 				if (corner) {
@@ -494,22 +514,6 @@ void free_status_block(void *item) {
 }
 
 void parse_json(const char *text) {
-/* the array of objects looks like this:
- * [ {
- *     "full_text": "E: 10.0.0.1 (1000 Mbit/s)",
- *     "short_text": "10.0.0.1",
- *     "color": "#00ff00",
- *     "min_width": 300,
- *     "align": "right",
- *     "urgent": false,
- *     "name": "ethernet",
- *     "instance": "eth0",
- *     "separator": true,
- *     "separator_block_width": 9
- *   },
- *   { ... }, ...
- * ]
- */
 	json_object *results = json_tokener_parse(text);
 	if (!results) {
 		sway_log(L_DEBUG, "xxx Failed to parse json");
@@ -567,7 +571,15 @@ void parse_json(const char *text) {
 		}
 
 		if (min_width) {
-			new->min_width = json_object_get_int(min_width);
+			json_type type = json_object_get_type(min_width);
+			if (type == json_type_int) {
+				new->min_width = json_object_get_int(min_width);
+			}
+			else if (type == json_type_string) {
+				int width, height;
+				get_text_size(window, &width, &height, "%s", json_object_get_string(min_width));
+				new->min_width = width;
+			}
 		}
 
 		if (align) {
