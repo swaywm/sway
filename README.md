@@ -15,7 +15,10 @@ zero lines of source code after two years.
 
 ## Status
 
-[See "i3 feature support"](https://github.com/SirCmpwn/sway/issues/2)
+- [i3 feature support](https://github.com/SirCmpwn/sway/issues/2)
+- [IPC feature support](https://github.com/SirCmpwn/sway/issues/98)
+- [i3bar feature support](https://github.com/SirCmpwn/sway/issues/343)
+- [i3-gaps feature support](https://github.com/SirCmpwn/sway/issues/307)
 
 ## Installation
 
