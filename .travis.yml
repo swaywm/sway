@@ -1,5 +1,11 @@
 sudo: required
 
+language: c
+
+compiler:
+  - gcc
+  - clang
+
 arch:
   packages:
     - cmake
