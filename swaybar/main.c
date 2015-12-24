@@ -425,9 +425,9 @@ void render() {
 					cairo_set_source_u32(window->cairo, colors.separator);
 					cairo_set_line_width(window->cairo, 1);
 					cairo_move_to(window->cairo, blockpos + width
-						    + block->separator_block_width/2, margin);
+								+ block->separator_block_width/2, margin);
 					cairo_line_to(window->cairo, blockpos + width
-						    + block->separator_block_width/2, window->height - margin);
+								+ block->separator_block_width/2, window->height - margin);
 					cairo_stroke(window->cairo);
 				}
 			}
@@ -659,11 +659,11 @@ int i3json_handle(FILE *file) {
 				}
 				--i3json_state.depth;
 				if (i3json_state.depth == 1) {
-					ssize_t len = c-i3json_state.line_start+1;
-					char p = c[len];
-					c[len] = '\0';
+					// c[1] is valid since c[0] != '\0'
+					char p = c[1];
+					c[1] = '\0';
 					parse_json(i3json_state.line_start);
-					c[len] = p;
+					c[1] = p;
 					++handled;
 					i3json_state.line_start = c+1;
 				}
