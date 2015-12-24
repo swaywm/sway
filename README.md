@@ -30,6 +30,7 @@ available for you to install:
 * [Arch Linux](https://aur.archlinux.org/packages/sway-git/)
 * [Gentoo Linux](https://github.com/zetok/zetok-overlay/)
 * [openSUSE](https://build.opensuse.org/project/show/X11:Wayland)
+* [Void Linux](https://wiki.voidlinux.eu/sway)
 
 For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-on-other-distros).
 
