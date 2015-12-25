@@ -99,6 +99,8 @@ swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
 		list_insert(parent->children, i + 1, active);
 	}
 	active->parent = parent;
+	// focus new child
+	parent->focused = active;
 	return active->parent;
 }
 
