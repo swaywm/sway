@@ -308,7 +308,14 @@ void move_container_to(swayc_t* container, swayc_t* destination) {
 	swayc_t *parent = remove_child(container);
 	// Send to new destination
 	if (container->is_floating) {
-		add_floating(swayc_active_workspace_for(destination), container);
+		swayc_t *ws = swayc_active_workspace_for(destination);
+		add_floating(ws, container);
+
+		// If the workspace only has one child after adding one, it
+		// means that the workspace was just initialized.
+		if (ws->children->length + ws->floating->length == 1) {
+			ipc_event_workspace(NULL, ws, "init");
+		}
 	} else if (destination->type == C_WORKSPACE) {
 		// reset container geometry
 		container->width = container->height = 0;
