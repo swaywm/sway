@@ -426,14 +426,14 @@ void render() {
 				get_text_size(window, &width, &height, "%s", block->full_text);
 
 				int textwidth = width;
-				
+
 				if (width < block->min_width) {
 					width = block->min_width;
 				}
 
 				moved += width + block->separator_block_width;
 				blockpos = window->width - margin - moved;
-				
+
 				int offset = 0;
 
 				if (strncmp(block->align, "left", 5) == 0) {
@@ -503,7 +503,7 @@ void free_status_block(void *item) {
 		return;
 	}
 	struct status_block *sb = (struct status_block*)item;
-	if (sb->full_text) { 
+	if (sb->full_text) {
 		free(sb->full_text);
 	}
 	if (sb->short_text) {
@@ -722,7 +722,7 @@ void i3json_ensure_free(int min_free) {
 			len = strlen(i3json_state.buffer);
 		}
 		if (i3json_state.bufsize < len+min_free) {
-		 	i3json_state.bufsize += min_free;
+			i3json_state.bufsize += min_free;
 			if (i3json_state.bufsize > 1024000) {
 				sway_abort("Status line json too long or malformed.");
 			}
