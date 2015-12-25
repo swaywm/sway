@@ -59,7 +59,7 @@ struct status_block {
 list_t *status_line = NULL;
 
 list_t *workspaces = NULL;
-int socketfd;
+int ipc_socketfd, ipc_listen_socketfd;
 pid_t pid;
 int status_read_fd;
 char line[1024];
@@ -142,6 +142,14 @@ void swaybar_teardown() {
 	if (status_read_fd) {
 		close(status_read_fd);
 	}
+
+	if (ipc_socketfd) {
+		close(ipc_socketfd);
+	}
+
+	if (ipc_listen_socketfd) {
+		close(ipc_listen_socketfd);
+	}
 }
 
 void sway_terminate(void) {
@@ -181,7 +189,7 @@ void ipc_update_workspaces() {
 	workspaces = create_list();
 
 	uint32_t len = 0;
-	char *res = ipc_single_command(socketfd, IPC_GET_WORKSPACES, NULL, &len);
+	char *res = ipc_single_command(ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
 	json_object *results = json_tokener_parse(res);
 	if (!results) {
 		free(res);
@@ -189,12 +197,12 @@ void ipc_update_workspaces() {
 	}
 
 	int i;
-	for (i = 0; i < json_object_array_length(results); ++i) {
-		json_object *ws_json = json_object_array_get_idx(results, i);
-		json_object *num, *name, *visible, *focused, *out, *urgent;
-		if (!ws_json) {
-			return;
-		}
+	int length = json_object_array_length(results);
+	json_object *ws_json;
+	json_object *num, *name, *visible, *focused, *out, *urgent;
+	for (i = 0; i < length; ++i) {
+		ws_json = json_object_array_get_idx(results, i);
+
 		json_object_object_get_ex(ws_json, "num", &num);
 		json_object_object_get_ex(ws_json, "name", &name);
 		json_object_object_get_ex(ws_json, "visible", &visible);
@@ -259,7 +267,7 @@ static const int ws_spacing = 1;
 
 void bar_ipc_init(int outputi, const char *bar_id) {
 	uint32_t len = 0;
-	char *res = ipc_single_command(socketfd, IPC_GET_OUTPUTS, NULL, &len);
+	char *res = ipc_single_command(ipc_socketfd, IPC_GET_OUTPUTS, NULL, &len);
 	json_object *outputs = json_tokener_parse(res);
 	json_object *info = json_object_array_get_idx(outputs, outputi);
 	json_object *name;
@@ -269,7 +277,7 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	json_object_put(outputs);
 
 	len = strlen(bar_id);
-	res = ipc_single_command(socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
+	res = ipc_single_command(ipc_socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
 
 	json_object *bar_config = json_tokener_parse(res);
 	json_object *tray_output, *mode, *hidden_state, *position, *_status_command;
@@ -384,7 +392,7 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 	const char *subscribe_json = "[ \"workspace\" ]";
 	len = strlen(subscribe_json);
-	res = ipc_single_command(socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	res = ipc_single_command(ipc_listen_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 
 	ipc_update_workspaces();
 }
@@ -418,14 +426,14 @@ void render() {
 				get_text_size(window, &width, &height, "%s", block->full_text);
 
 				int textwidth = width;
-				
+
 				if (width < block->min_width) {
 					width = block->min_width;
 				}
 
 				moved += width + block->separator_block_width;
 				blockpos = window->width - margin - moved;
-				
+
 				int offset = 0;
 
 				if (strncmp(block->align, "left", 5) == 0) {
@@ -495,7 +503,7 @@ void free_status_block(void *item) {
 		return;
 	}
 	struct status_block *sb = (struct status_block*)item;
-	if (sb->full_text) { 
+	if (sb->full_text) {
 		free(sb->full_text);
 	}
 	if (sb->short_text) {
@@ -714,7 +722,7 @@ void i3json_ensure_free(int min_free) {
 			len = strlen(i3json_state.buffer);
 		}
 		if (i3json_state.bufsize < len+min_free) {
-		 	i3json_state.bufsize += min_free;
+			i3json_state.bufsize += min_free;
 			if (i3json_state.bufsize > 1024000) {
 				sway_abort("Status line json too long or malformed.");
 			}
@@ -822,7 +830,7 @@ void poll_for_update() {
 
 		dirty = false;
 		FD_ZERO(&readfds);
-		FD_SET(socketfd, &readfds);
+		FD_SET(ipc_listen_socketfd, &readfds);
 		FD_SET(status_read_fd, &readfds);
 
 		activity = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
@@ -830,10 +838,10 @@ void poll_for_update() {
 			sway_log(L_ERROR, "polling failed: %d", errno);
 		}
 
-		if (FD_ISSET(socketfd, &readfds)) {
+		if (FD_ISSET(ipc_listen_socketfd, &readfds)) {
 			sway_log(L_DEBUG, "Got workspace update.");
 			uint32_t len;
-			char *buf = ipc_recv_response(socketfd, &len);
+			char *buf = ipc_recv_response(ipc_listen_socketfd, &len);
 			free(buf);
 			ipc_update_workspaces();
 			dirty = true;
@@ -937,7 +945,9 @@ int main(int argc, char **argv) {
 			sway_abort("Unable to retrieve socket path");
 		}
 	}
-	socketfd = ipc_open_socket(socket_path);
+	ipc_socketfd = ipc_open_socket(socket_path);
+	ipc_listen_socketfd = ipc_open_socket(socket_path);
+
 
 	if (argc == optind) {
 		sway_abort("No output index provided");
