@@ -54,6 +54,13 @@ struct status_block {
 	char *name, *instance;
 	bool separator;
 	int separator_block_width;
+	// Airblader features
+	uint32_t background;
+	uint32_t border;
+	int border_top;
+	int border_bottom;
+	int border_left;
+	int border_right;
 };
 
 list_t *status_line = NULL;
@@ -398,7 +405,185 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	ipc_update_workspaces();
 }
 
+/**
+ * Renders a sharp line of any width and height.
+ *
+ * The line is drawn from (x,y) to (x+width,y+height) where width/height is 0
+ * if the line has a width/height of one pixel, respectively.
+ */
+void render_sharp_line(cairo_t *cairo, uint32_t color, double x, double y, double width, double height) {
+	cairo_set_source_u32(cairo, color);
+
+	if (width > 1 && height > 1) {
+		cairo_rectangle(cairo, x, y, width, height);
+		cairo_fill(cairo);
+	} else {
+		if (width == 1) {
+			x += 0.5;
+			height += y;
+			width = x;
+		}
+
+		if (height == 1) {
+			y += 0.5;
+			width += x;
+			height = y;
+		}
+
+		cairo_move_to(cairo, x, y);
+		cairo_set_line_width(cairo, 1.0);
+		cairo_line_to(cairo, width, height);
+		cairo_stroke(cairo);
+	}
+}
+
+void render_block(struct status_block *block, double *x, bool edge) {
+	int width, height;
+	get_text_size(window, &width, &height, "%s", block->full_text);
+
+	int textwidth = width;
+	double block_width = width;
+
+	if (width < block->min_width) {
+		width = block->min_width;
+	}
+
+	*x -= width;
+
+	if (block->border != 0 && block->border_left > 0) {
+		*x -= (block->border_left + margin);
+		block_width += block->border_left + margin;
+	}
+
+	if (block->border != 0 && block->border_right > 0) {
+		*x -= (block->border_right + margin);
+		block_width += block->border_right + margin;
+	}
+
+	// Add separator
+	if (!edge) {
+		*x -= block->separator_block_width;
+	} else {
+		*x -= margin;
+	}
+
+	double pos = *x;
+
+	// render background
+	if (block->background != 0x0) {
+		cairo_set_source_u32(window->cairo, block->background);
+		cairo_rectangle(window->cairo, pos - 0.5, 1, block_width, window->height - 2);
+		cairo_fill(window->cairo);
+	}
+
+	// render top border
+	if (block->border != 0 && block->border_top > 0) {
+		render_sharp_line(window->cairo, block->border,
+				pos - 0.5,
+				1,
+				block_width,
+				block->border_top);
+	}
+
+	// render bottom border
+	if (block->border != 0 && block->border_bottom > 0) {
+		render_sharp_line(window->cairo, block->border,
+				pos - 0.5,
+				window->height - 1 - block->border_bottom,
+				block_width,
+				block->border_bottom);
+	}
+
+	// render left border
+	if (block->border != 0 && block->border_left > 0) {
+		render_sharp_line(window->cairo, block->border,
+				pos - 0.5,
+				1,
+				block->border_left,
+				window->height - 2);
+
+		pos += block->border_left + margin;
+	}
+
+	// render text
+	double offset = 0;
+
+	if (strncmp(block->align, "left", 5) == 0) {
+		offset = pos;
+	} else if (strncmp(block->align, "right", 5) == 0) {
+		offset = pos + width - textwidth;
+	} else if (strncmp(block->align, "center", 6) == 0) {
+		offset = pos + (width - textwidth) / 2;
+	}
+
+	cairo_move_to(window->cairo, offset, margin);
+	cairo_set_source_u32(window->cairo, block->color);
+	pango_printf(window, "%s", block->full_text);
+
+	pos += width;
+
+	// render right border
+	if (block->border != 0 && block->border_right > 0) {
+		pos += margin;
+
+		render_sharp_line(window->cairo, block->border,
+				pos - 0.5,
+				1,
+				block->border_right,
+				window->height - 2);
+
+		pos += block->border_right;
+	}
+
+	// render separator
+	// TODO: Handle custom separator
+	if (!edge && block->separator) {
+		cairo_set_source_u32(window->cairo, colors.separator);
+		cairo_set_line_width(window->cairo, 1);
+		cairo_move_to(window->cairo, pos + block->separator_block_width/2, margin);
+		cairo_line_to(window->cairo, pos + block->separator_block_width/2, window->height - margin);
+		cairo_stroke(window->cairo);
+	}
+
+}
+
+void render_workspace_button(struct workspace *ws, double *x) {
+	int width, height;
+	get_text_size(window, &width, &height, "%s", ws->name);
+	struct box_colors box_colors;
+	if (ws->urgent) {
+		box_colors = colors.urgent_workspace;
+	} else if (ws->focused) {
+		box_colors = colors.focused_workspace;
+	} else if (ws->visible) {
+		box_colors = colors.active_workspace;
+	} else {
+		box_colors = colors.inactive_workspace;
+	}
+
+	// background
+	cairo_set_source_u32(window->cairo, box_colors.background);
+	cairo_rectangle(window->cairo, *x, 1.5, width + ws_hor_padding * 2 - 1,
+			height + ws_ver_padding * 2);
+	cairo_fill(window->cairo);
+
+	// border
+	cairo_set_source_u32(window->cairo, box_colors.border);
+	cairo_rectangle(window->cairo, *x, 1.5, width + ws_hor_padding * 2 - 1,
+			height + ws_ver_padding * 2);
+	cairo_stroke(window->cairo);
+
+	// text
+	cairo_set_source_u32(window->cairo, box_colors.text);
+	cairo_move_to(window->cairo, (int)*x + ws_hor_padding, margin);
+	pango_printf(window, "%s", ws->name);
+
+	*x += width + ws_hor_padding * 2 + ws_spacing;
+}
+
 void render() {
+	int i;
+
 	// Clear
 	cairo_save(window->cairo);
 	cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
@@ -418,49 +603,13 @@ void render() {
 		cairo_move_to(window->cairo, window->width - margin - width, margin);
 		pango_printf(window, "%s", line);
 	} else if (protocol == I3BAR && status_line) {
-		int i, blockpos;
-		int moved = 0;
-		bool corner = true;
+		double pos = window->width - 0.5;
+		bool edge = true;
 		for (i = status_line->length - 1; i >= 0; --i) {
 			struct status_block *block = status_line->items[i];
 			if (block->full_text && block->full_text[0]) {
-				get_text_size(window, &width, &height, "%s", block->full_text);
-
-				int textwidth = width;
-
-				if (width < block->min_width) {
-					width = block->min_width;
-				}
-
-				moved += width + block->separator_block_width;
-				blockpos = window->width - margin - moved;
-
-				int offset = 0;
-
-				if (strncmp(block->align, "left", 5) == 0) {
-					offset = blockpos;
-				}
-				else if (strncmp(block->align, "right", 5) == 0) {
-					offset = blockpos + width - textwidth;
-				}
-				else if (strncmp(block->align, "center", 6) == 0) {
-					offset = blockpos + (width - textwidth) / 2;
-				}
-
-				cairo_move_to(window->cairo, offset, margin);
-				cairo_set_source_u32(window->cairo, block->color);
-				pango_printf(window, "%s", block->full_text);
-				if (corner) {
-					corner = false;
-				} else if (block->separator) {
-					cairo_set_source_u32(window->cairo, colors.separator);
-					cairo_set_line_width(window->cairo, 1);
-					cairo_move_to(window->cairo, blockpos + width
-								+ block->separator_block_width/2, margin);
-					cairo_line_to(window->cairo, blockpos + width
-								+ block->separator_block_width/2, window->height - margin);
-					cairo_stroke(window->cairo);
-				}
+				render_block(block, &pos, edge);
+				edge = false;
 			}
 		}
 	}
@@ -468,34 +617,9 @@ void render() {
 	// Workspaces
 	cairo_set_line_width(window->cairo, 1.0);
 	double x = 0.5;
-	int i;
 	for (i = 0; i < workspaces->length; ++i) {
 		struct workspace *ws = workspaces->items[i];
-		get_text_size(window, &width, &height, "%s", ws->name);
-		struct box_colors box_colors;
-		if (ws->urgent) {
-			box_colors = colors.urgent_workspace;
-		} else if (ws->focused) {
-			box_colors = colors.focused_workspace;
-		} else if (ws->visible) {
-			box_colors = colors.active_workspace;
-		} else {
-			box_colors = colors.inactive_workspace;
-		}
-
-		cairo_set_source_u32(window->cairo, box_colors.background);
-		cairo_rectangle(window->cairo, x, 1.5, width + ws_hor_padding * 2 - 1, height + ws_ver_padding * 2);
-		cairo_fill(window->cairo);
-
-		cairo_set_source_u32(window->cairo, box_colors.border);
-		cairo_rectangle(window->cairo, x, 1.5, width + ws_hor_padding * 2 - 1, height + ws_ver_padding * 2);
-		cairo_stroke(window->cairo);
-
-		cairo_set_source_u32(window->cairo, box_colors.text);
-		cairo_move_to(window->cairo, (int)x + ws_hor_padding, margin);
-		pango_printf(window, "%s", ws->name);
-
-		x += width + ws_hor_padding * 2 + ws_spacing;
+		render_workspace_button(ws, &x);
 	}
 }
 
@@ -544,6 +668,8 @@ void parse_json(const char *text) {
 	for (i = 0; i < json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
+		json_object *background, *border, *border_top, *border_bottom;
+		json_object *border_left, *border_right;
 
 		json_object *json = json_object_array_get_idx(results, i);
 		if (!json) {
@@ -560,6 +686,12 @@ void parse_json(const char *text) {
 		json_object_object_get_ex(json, "instance", &instance);
 		json_object_object_get_ex(json, "separator", &separator);
 		json_object_object_get_ex(json, "separator_block_width", &separator_block_width);
+		json_object_object_get_ex(json, "background", &background);
+		json_object_object_get_ex(json, "border", &border);
+		json_object_object_get_ex(json, "border_top", &border_top);
+		json_object_object_get_ex(json, "border_bottom", &border_bottom);
+		json_object_object_get_ex(json, "border_left", &border_left);
+		json_object_object_get_ex(json, "border_right", &border_right);
 
 		struct status_block *new = malloc(sizeof(struct status_block));
 		memset(new, 0, sizeof(struct status_block));
@@ -574,8 +706,7 @@ void parse_json(const char *text) {
 
 		if (color) {
 			new->color = parse_color(json_object_get_string(color));
-		}
-		else {
+		} else {
 			new->color = colors.statusline;
 		}
 
@@ -583,8 +714,7 @@ void parse_json(const char *text) {
 			json_type type = json_object_get_type(min_width);
 			if (type == json_type_int) {
 				new->min_width = json_object_get_int(min_width);
-			}
-			else if (type == json_type_string) {
+			} else if (type == json_type_string) {
 				int width, height;
 				get_text_size(window, &width, &height, "%s", json_object_get_string(min_width));
 				new->min_width = width;
@@ -593,8 +723,7 @@ void parse_json(const char *text) {
 
 		if (align) {
 			new->align = strdup(json_object_get_string(align));
-		}
-		else {
+		} else {
 			new->align = strdup("left");
 		}
 
@@ -612,16 +741,51 @@ void parse_json(const char *text) {
 
 		if (separator) {
 			new->separator = json_object_get_int(separator);
-		}
-		else {
+		} else {
 			new->separator = true; // i3bar spec
 		}
 
 		if (separator_block_width) {
 			new->separator_block_width = json_object_get_int(separator_block_width);
-		}
-		else {
+		} else {
 			new->separator_block_width = 9; // i3bar spec
+		}
+
+		// Airblader features
+		if (background) {
+			new->background = parse_color(json_object_get_string(background));
+		} else {
+			new->background = 0x0; // transparent
+		}
+
+		if (border) {
+			new->border = parse_color(json_object_get_string(border));
+		} else {
+			new->border = 0x0; // transparent
+		}
+
+		if (border_top) {
+			new->border_top = json_object_get_int(border_top);
+		} else {
+			new->border_top = 1;
+		}
+
+		if (border_bottom) {
+			new->border_bottom = json_object_get_int(border_bottom);
+		} else {
+			new->border_bottom = 1;
+		}
+
+		if (border_left) {
+			new->border_left = json_object_get_int(border_left);
+		} else {
+			new->border_left = 1;
+		}
+
+		if (border_right) {
+			new->border_right = json_object_get_int(border_right);
+		} else {
+			new->border_right = 1;
 		}
 
 		list_add(status_line, new);
