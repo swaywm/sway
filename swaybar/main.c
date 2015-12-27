@@ -393,6 +393,7 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	const char *subscribe_json = "[ \"workspace\" ]";
 	len = strlen(subscribe_json);
 	res = ipc_single_command(ipc_listen_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	free(res);
 
 	ipc_update_workspaces();
 }
