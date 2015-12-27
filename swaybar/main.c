@@ -705,8 +705,7 @@ void parse_json(const char *text) {
 
 		if (color) {
 			new->color = parse_color(json_object_get_string(color));
-		}
-		else {
+		} else {
 			new->color = colors.statusline;
 		}
 
@@ -714,8 +713,7 @@ void parse_json(const char *text) {
 			json_type type = json_object_get_type(min_width);
 			if (type == json_type_int) {
 				new->min_width = json_object_get_int(min_width);
-			}
-			else if (type == json_type_string) {
+			} else if (type == json_type_string) {
 				int width, height;
 				get_text_size(window, &width, &height, "%s", json_object_get_string(min_width));
 				new->min_width = width;
@@ -724,8 +722,7 @@ void parse_json(const char *text) {
 
 		if (align) {
 			new->align = strdup(json_object_get_string(align));
-		}
-		else {
+		} else {
 			new->align = strdup("left");
 		}
 
@@ -743,15 +740,13 @@ void parse_json(const char *text) {
 
 		if (separator) {
 			new->separator = json_object_get_int(separator);
-		}
-		else {
+		} else {
 			new->separator = true; // i3bar spec
 		}
 
 		if (separator_block_width) {
 			new->separator_block_width = json_object_get_int(separator_block_width);
-		}
-		else {
+		} else {
 			new->separator_block_width = 9; // i3bar spec
 		}
 
