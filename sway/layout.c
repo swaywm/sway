@@ -434,7 +434,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
 		container->name, container->width, container->height, container->x, container->y);
 
-	int x = 0, y = 0;
+	double x = 0, y = 0;
 	switch (container->type) {
 	case C_ROOT:
 		for (i = 0; i < container->children->length; ++i) {
@@ -489,8 +489,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				}
 			}
 			int gap = swayc_gap(container);
-			container->x = x + gap;
-			container->y = y + gap;
+			x = container->x = x + gap;
+			y = container->y = y + gap;
 			width = container->width = width - gap * 2;
 			height = container->height = height - gap * 2;
 			sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", container->name, container->x, container->y);
@@ -509,10 +509,11 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	default:
 		container->width = width;
 		container->height = height;
+		x = container->x;
+		y = container->y;
 		break;
 	}
 
-	x = y = 0;
 	double scale = 0;
 	switch (container->layout) {
 	case L_HORIZ:
@@ -536,8 +537,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
-				child->x = x + container->x;
-				child->y = y + container->y;
+				child->x = x;
+				child->y = y;
 				arrange_windows_r(child, child->width * scale, height);
 				x += child->width;
 			}
@@ -563,8 +564,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
-				child->x = x + container->x;
-				child->y = y + container->y;
+				child->x = x;
+				child->y = y;
 				arrange_windows_r(child, width, child->height * scale);
 				y += child->height;
 			}
