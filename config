@@ -139,3 +139,15 @@ output * bg /usr/share/sway/wallpaper.jpg fill
     # Show the next scratchpad window or hide the focused scratchpad window.
     # If there are multiple scratchpad windows, this command cycles through them.
     bindsym $mod+minus scratchpad show
+
+#
+# Status Bar:
+#
+bar {
+        position top
+        colors {
+            statusline #ffffff
+            background #323232
+            inactive_workspace #32323200 #32323200 #5c5c5c
+        }
+}
