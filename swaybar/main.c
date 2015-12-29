@@ -548,8 +548,6 @@ void render_block(struct status_block *block, double *x, bool edge) {
 		pos += block->border_right;
 	}
 
-	sway_log(L_DEBUG, "%s", separator_symbol);
-
 	// render separator
 	if (!edge && block->separator) {
 		cairo_set_source_u32(window->cairo, colors.separator);
