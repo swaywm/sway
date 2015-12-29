@@ -252,8 +252,12 @@ static void handle_view_destroyed(wlc_handle handle) {
 	}
 
 	if (view) {
-		swayc_t *parent = destroy_view(view);
+		bool fullscreen = swayc_is_fullscreen(view);
 		remove_view_from_scratchpad(view);
+		swayc_t *parent = destroy_view(view);
+		if (fullscreen) {
+			parent->fullscreen = NULL;
+		}
 		arrange_windows(parent, -1, -1);
 	} else {
 		// Is it unmanaged?
