@@ -16,6 +16,15 @@ set $term urxvt
 # Your preferred application launcher
 set $menu dmenu_run
 
+### Output configuration
+#
+# Default wallpaper - CC-BY-NC from Netzlemming http://netzlemming.deviantart.com/art/Field-of-Barley-05240017-307176737
+output * bg /usr/share/sway/wallpaper.jpg fill
+#
+# Example output configuration:
+#
+#   output HDMI-A-1 resolution 1920x1080 position 1920,0
+
 ### Key bindings
 #
 # Basics:

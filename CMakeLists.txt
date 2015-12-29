@@ -119,4 +119,10 @@ install(
 	COMPONENT data
 )
 
+install(
+	FILES ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.jpg
+	DESTINATION share/sway
+	COMPONENT data
+)
+
 feature_summary(WHAT ALL)
