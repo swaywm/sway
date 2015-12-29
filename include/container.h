@@ -260,4 +260,9 @@ void add_gaps(swayc_t *view, void *amount);
  */
 void update_visibility(swayc_t *container);
 
+/**
+ * Close all child views of container
+ */
+void close_views(swayc_t *container);
+
 #endif
