@@ -796,3 +796,13 @@ void add_gaps(swayc_t *view, void *_data) {
 		}
 	}
 }
+
+static void close_view(swayc_t *container, void *data) {
+	if (container->type == C_VIEW) {
+		wlc_view_close(container->handle);
+	}
+}
+
+void close_views(swayc_t *container) {
+	container_map(container, close_view, NULL);
+}

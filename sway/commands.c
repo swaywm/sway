@@ -318,12 +318,6 @@ static struct cmd_results *cmd_exec(int argc, char **argv) {
 	return cmd_exec_always(argc, argv);
 }
 
-static void kill_views(swayc_t *container, void *data) {
-	if (container->type == C_VIEW) {
-		wlc_view_close(container->handle);
-	}
-}
-
 static struct cmd_results *cmd_exit(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "exit", "Can't be used in config file.");
@@ -331,7 +325,7 @@ static struct cmd_results *cmd_exit(int argc, char **argv) {
 		return error;
 	}
 	// Close all views
-	container_map(&root_container, kill_views, NULL);
+	close_views(&root_container);
 	sway_terminate();
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

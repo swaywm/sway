@@ -26,6 +26,11 @@ void sway_terminate(void) {
 	wlc_terminate();
 }
 
+void sig_handler(int signal) {
+	close_views(&root_container);
+	sway_terminate();
+}
+
 static void wlc_log_handler(enum wlc_log_type type, const char *str) {
 	if (type == WLC_LOG_ERROR) {
 		sway_log(L_ERROR, "[wlc] %s", str);
@@ -175,6 +180,9 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	register_extensions();
+
+	// handle SIGTERM signals
+	signal(SIGTERM, sig_handler);
 
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
