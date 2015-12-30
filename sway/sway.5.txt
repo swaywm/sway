@@ -163,14 +163,18 @@ Commands
 	Creates a substitution for _value_ that can be used with $_name_ in other
 	commands.
 
-**split** <vertical|v|horizontal|h>::
-	Splits the current container, vertically or horizontally.
+**split** <vertical|v|horizontal|h|toggle|t>::
+	Splits the current container, vertically or horizontally. If toggled then the
+	current container is split opposite to the parent container.
 
 **splith**::
 	Equivalent to **split horizontal**.
 
 **splitv**::
 	Equivalent to **split vertical**.
+
+**splitt**::
+	Equivalent to **split toggle**.
 
 **sticky** <enable|disable|toggle>::
 	If enabled and the windows is floating it will always be present on the active
