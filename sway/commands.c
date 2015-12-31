@@ -61,6 +61,7 @@ static sway_cmd cmd_scratchpad;
 static sway_cmd cmd_set;
 static sway_cmd cmd_split;
 static sway_cmd cmd_splith;
+static sway_cmd cmd_splitt;
 static sway_cmd cmd_splitv;
 static sway_cmd cmd_sticky;
 static sway_cmd cmd_workspace;
@@ -1340,6 +1341,13 @@ static struct cmd_results *cmd_split(int argc, char **argv) {
 		_do_split(argc - 1, argv + 1, L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
 		_do_split(argc - 1, argv + 1, L_HORIZ);
+	} else if (strcasecmp(argv[0], "t") == 0 || strcasecmp(argv[0], "toggle") == 0) {
+		swayc_t *focused = get_focused_container(&root_container);
+		if (focused->parent->layout == L_VERT) {
+			_do_split(argc - 1, argv + 1, L_HORIZ);
+		} else {
+			_do_split(argc - 1, argv + 1, L_VERT);
+		}
 	} else {
 		error = cmd_results_new(CMD_FAILURE, "split",
 			"Invalid split command (expected either horiziontal or vertical).");
@@ -1354,6 +1362,15 @@ static struct cmd_results *cmd_splitv(int argc, char **argv) {
 
 static struct cmd_results *cmd_splith(int argc, char **argv) {
 	return _do_split(argc, argv, L_HORIZ);
+}
+
+static struct cmd_results *cmd_splitt(int argc, char **argv) {
+	swayc_t *focused = get_focused_container(&root_container);
+	if (focused->parent->layout == L_VERT) {
+		return _do_split(argc, argv, L_HORIZ);
+	} else {
+		return _do_split(argc, argv, L_VERT);
+	}
 }
 
 static struct cmd_results *cmd_sticky(int argc, char **argv) {
@@ -1567,6 +1584,7 @@ static struct cmd_handler handlers[] = {
 	{ "set", cmd_set },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
+	{ "splitt", cmd_splitt },
 	{ "splitv", cmd_splitv },
 	{ "sticky", cmd_sticky },
 	{ "workspace", cmd_workspace },
