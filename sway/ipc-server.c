@@ -290,9 +290,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		for (int i = 0; i < json_object_array_length(request); i++) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
 			if (strcmp(event_type, "workspace") == 0) {
-				client->subscribed_events |= IPC_GET_WORKSPACES;
+				client->subscribed_events |= IPC_EVENT_WORKSPACE;
 			} else if (strcmp(event_type, "barconfig_update") == 0) {
-				client->subscribed_events |= IPC_GET_BAR_CONFIG;
+				client->subscribed_events |= IPC_EVENT_BARCONFIG_UPDATE;
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				ipc_client_disconnect(client);
@@ -562,6 +562,19 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	return json;
 }
 
+void ipc_send_event(const char *json_string, enum ipc_command_type event) {
+	int i;
+	struct ipc_client *client;
+	for (i = 0; i < ipc_client_list->length; i++) {
+		client = ipc_client_list->items[i];
+		if ((client->subscribed_events & event) == 0) {
+			continue;
+		}
+		client->current_command = event;
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+	}
+}
+
 void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -580,14 +593,7 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 	}
 
 	const char *json_string = json_object_to_json_string(obj);
-
-	for (int i = 0; i < ipc_client_list->length; i++) {
-		struct ipc_client *client = ipc_client_list->items[i];
-		if ((client->subscribed_events & IPC_GET_WORKSPACES) == 0) {
-			continue;
-		}
-		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
-	}
+	ipc_send_event(json_string, IPC_EVENT_WORKSPACE);
 
 	json_object_put(obj); // free
 }
@@ -595,15 +601,7 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 void ipc_event_barconfig_update(struct bar_config *bar) {
 	json_object *json = ipc_json_describe_bar_config(bar);
 	const char *json_string = json_object_to_json_string(json);
-	int i;
-	struct ipc_client *client;
-	for (i = 0; i < ipc_client_list->length; ++i) {
-		client = ipc_client_list->items[i];
-		if ((client->subscribed_events & IPC_GET_BAR_CONFIG) == 0) {
-			continue;
-		}
-		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
-	}
+	ipc_send_event(json_string, IPC_EVENT_BARCONFIG_UPDATE);
 
 	json_object_put(json); // free
 }

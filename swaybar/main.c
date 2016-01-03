@@ -66,7 +66,7 @@ struct status_block {
 list_t *status_line = NULL;
 
 list_t *workspaces = NULL;
-int ipc_socketfd, ipc_listen_socketfd;
+int ipc_socketfd, ipc_event_socketfd;
 pid_t pid;
 int status_read_fd;
 char line[1024];
@@ -156,8 +156,8 @@ void swaybar_teardown() {
 		close(ipc_socketfd);
 	}
 
-	if (ipc_listen_socketfd) {
-		close(ipc_listen_socketfd);
+	if (ipc_event_socketfd) {
+		close(ipc_event_socketfd);
 	}
 }
 
@@ -408,9 +408,9 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	json_object_put(bar_config);
 	free(res);
 
-	const char *subscribe_json = "[ \"workspace\" ]";
+	const char *subscribe_json = "[ \"workspace\", \"mode\" ]";
 	len = strlen(subscribe_json);
-	res = ipc_single_command(ipc_listen_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	res = ipc_single_command(ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
 
 	ipc_update_workspaces();
@@ -1049,7 +1049,7 @@ void poll_for_update() {
 
 		dirty = false;
 		FD_ZERO(&readfds);
-		FD_SET(ipc_listen_socketfd, &readfds);
+		FD_SET(ipc_event_socketfd, &readfds);
 		FD_SET(status_read_fd, &readfds);
 
 		activity = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
@@ -1057,11 +1057,10 @@ void poll_for_update() {
 			sway_log(L_ERROR, "polling failed: %d", errno);
 		}
 
-		if (FD_ISSET(ipc_listen_socketfd, &readfds)) {
+		if (FD_ISSET(ipc_event_socketfd, &readfds)) {
 			sway_log(L_DEBUG, "Got workspace update.");
-			uint32_t len;
-			char *buf = ipc_recv_response(ipc_listen_socketfd, &len);
-			free(buf);
+			struct ipc_response *resp = ipc_recv_response(ipc_event_socketfd);
+			free_ipc_response(resp);
 			ipc_update_workspaces();
 			dirty = true;
 		}
@@ -1165,7 +1164,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	ipc_socketfd = ipc_open_socket(socket_path);
-	ipc_listen_socketfd = ipc_open_socket(socket_path);
+	ipc_event_socketfd = ipc_open_socket(socket_path);
 
 
 	if (argc == optind) {
