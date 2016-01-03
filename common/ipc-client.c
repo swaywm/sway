@@ -10,6 +10,7 @@
 #include "stringop.h"
 #include "ipc.h"
 #include "readline.h"
+#include "ipc-client.h"
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 static const size_t ipc_header_size = sizeof(ipc_magic)+8;
@@ -39,7 +40,7 @@ int ipc_open_socket(const char *socket_path) {
 	return socketfd;
 }
 
-char *ipc_recv_response(int socketfd, uint32_t *len) {
+struct ipc_response *ipc_recv_response(int socketfd) {
 	char data[ipc_header_size];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 
@@ -52,19 +53,27 @@ char *ipc_recv_response(int socketfd, uint32_t *len) {
 		total += received;
 	}
 
+	struct ipc_response *response = malloc(sizeof(struct ipc_response));
 	total = 0;
-	*len = data32[0];
-	char *response = malloc(*len + 1);
-	while (total < *len) {
-		ssize_t received = recv(socketfd, response + total, *len - total, 0);
+	response->size = data32[0];
+	response->type = data32[1];
+	char *payload = malloc(response->size + 1);
+	while (total < response->size) {
+		ssize_t received = recv(socketfd, payload + total, response->size - total, 0);
 		if (received < 0) {
 			sway_abort("Unable to receive IPC response");
 		}
 		total += received;
 	}
-	response[*len] = '\0';
+	payload[response->size] = '\0';
+	response->payload = payload;
 
 	return response;
+}
+
+void free_ipc_response(struct ipc_response *response) {
+	free(response->payload);
+	free(response);
 }
 
 char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
@@ -82,5 +91,10 @@ char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint3
 		sway_abort("Unable to send IPC payload");
 	}
 
-	return ipc_recv_response(socketfd, len);
+	struct ipc_response *resp = ipc_recv_response(socketfd);
+	char *response = resp->payload;
+	*len = resp->size;
+	free(resp);
+
+	return response;
 }

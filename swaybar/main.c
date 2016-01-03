@@ -1025,9 +1025,8 @@ void poll_for_update() {
 
 		if (FD_ISSET(ipc_event_socketfd, &readfds)) {
 			sway_log(L_DEBUG, "Got workspace update.");
-			uint32_t len;
-			char *buf = ipc_recv_response(ipc_event_socketfd, &len);
-			free(buf);
+			struct ipc_response *resp = ipc_recv_response(ipc_event_socketfd);
+			free_ipc_response(resp);
 			ipc_update_workspaces();
 			dirty = true;
 		}
