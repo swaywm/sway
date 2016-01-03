@@ -79,6 +79,7 @@ char *separator_symbol = NULL;
 char *mode = NULL;
 bool binding_mode_indicator = true;
 bool strip_workspace_numbers = false;
+bool workspace_buttons = true;
 typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
 command_protocol protocol = UNDEF;
 
@@ -292,7 +293,7 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 	json_object *bar_config = json_tokener_parse(res);
 	json_object *tray_output, *mode, *hidden_state, *position, *_status_command;
-	json_object *font, *bar_height, *workspace_buttons, *_strip_workspace_numbers;
+	json_object *font, *bar_height, *_workspace_buttons, *_strip_workspace_numbers;
 	json_object *_binding_mode_indicator, *verbose, *_colors, *sep_symbol;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
 	json_object_object_get_ex(bar_config, "mode", &mode);
@@ -301,7 +302,7 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	json_object_object_get_ex(bar_config, "status_command", &_status_command);
 	json_object_object_get_ex(bar_config, "font", &font);
 	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
-	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
+	json_object_object_get_ex(bar_config, "workspace_buttons", &_workspace_buttons);
 	json_object_object_get_ex(bar_config, "strip_workspace_numbers", &_strip_workspace_numbers);
 	json_object_object_get_ex(bar_config, "binding_mode_indicator", &_binding_mode_indicator);
 	json_object_object_get_ex(bar_config, "verbose", &verbose);
@@ -332,6 +333,10 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 	if (_binding_mode_indicator) {
 		binding_mode_indicator = json_object_get_boolean(_binding_mode_indicator);
+	}
+
+	if (_workspace_buttons) {
+		workspace_buttons = json_object_get_boolean(_workspace_buttons);
 	}
 
 	if (bar_height) {
@@ -696,12 +701,15 @@ void render() {
 		}
 	}
 
-	// Workspaces
 	cairo_set_line_width(window->cairo, 1.0);
 	double x = 0.5;
-	for (i = 0; i < workspaces->length; ++i) {
-		struct workspace *ws = workspaces->items[i];
-		render_workspace_button(ws, &x);
+
+	// Workspaces
+	if (workspace_buttons) {
+		for (i = 0; i < workspaces->length; ++i) {
+			struct workspace *ws = workspaces->items[i];
+			render_workspace_button(ws, &x);
+		}
 	}
 
 	// binding mode indicator
