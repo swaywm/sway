@@ -293,6 +293,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= IPC_EVENT_WORKSPACE;
 			} else if (strcmp(event_type, "barconfig_update") == 0) {
 				client->subscribed_events |= IPC_EVENT_BARCONFIG_UPDATE;
+			} else if (strcmp(event_type, "mode") == 0) {
+				client->subscribed_events |= IPC_EVENT_MODE;
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				ipc_client_disconnect(client);
@@ -604,4 +606,14 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 	ipc_send_event(json_string, IPC_EVENT_BARCONFIG_UPDATE);
 
 	json_object_put(json); // free
+}
+
+void ipc_event_mode(const char *mode) {
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string(mode));
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_MODE);
+
+	json_object_put(obj); // free
 }

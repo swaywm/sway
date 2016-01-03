@@ -11,6 +11,10 @@ struct sockaddr_un *ipc_user_sockaddr(void);
 
 void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change);
 void ipc_event_barconfig_update(struct bar_config *bar);
+/**
+ * Send IPC mode event to all listening clients
+ */
+void ipc_event_mode(const char *mode);
 const char *swayc_type_string(enum swayc_types type);
 
 #endif

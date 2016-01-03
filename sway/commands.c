@@ -602,6 +602,10 @@ static struct cmd_results *cmd_mode(int argc, char **argv) {
 	free(mode_name);
 	// Set current mode
 	config->current_mode = mode;
+	if (!mode_make) {
+		// trigger IPC mode event
+		ipc_event_mode(config->current_mode->name);
+	}
 	return cmd_results_new(mode_make ? CMD_BLOCK_MODE : CMD_SUCCESS, NULL, NULL);
 }
 
