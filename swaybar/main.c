@@ -580,7 +580,7 @@ char *handle_workspace_number(bool strip_num, const char *ws_name) {
 		int len = strlen(ws_name);
 		for (i = 0; i < len; ++i) {
 			if (!('0' <= ws_name[i] && ws_name[i] <= '9')) {
-				if (':' == ws_name[i] && i < len-1) {
+				if (':' == ws_name[i] && i < len-1 && i > 0) {
 					strip = true;
 					++i;
 				}
