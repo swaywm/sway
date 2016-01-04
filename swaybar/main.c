@@ -744,7 +744,7 @@ void free_status_block(void *item) {
 void parse_json(const char *text) {
 	json_object *results = json_tokener_parse(text);
 	if (!results) {
-		sway_log(L_DEBUG, "xxx Failed to parse json");
+		sway_log(L_DEBUG, "Failed to parse json");
 		return;
 	}
 
@@ -1185,22 +1185,23 @@ void poll_for_update() {
 }
 
 int main(int argc, char **argv) {
-	init_log(L_DEBUG);
 
 	char *socket_path = NULL;
 	char *bar_id = NULL;
+	bool debug = false;
 
 	static struct option long_options[] = {
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
 		{"bar_id", required_argument, NULL, 'b'},
+		{"debug", required_argument, NULL, 'd'},
 		{0, 0, 0, 0}
 	};
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "vs:b:", long_options, &option_index);
+		c = getopt_long(argc, argv, "vs:b:d", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -1219,6 +1220,9 @@ int main(int argc, char **argv) {
 #endif
 			exit(EXIT_SUCCESS);
 			break;
+		case 'd': // Debug
+			debug = true;
+			break;
 		default:
 			exit(EXIT_FAILURE);
 		}
@@ -1226,6 +1230,12 @@ int main(int argc, char **argv) {
 
 	if (!bar_id) {
 		sway_abort("No bar_id passed. Provide --bar_id or let sway start swaybar");
+	}
+	
+	if (debug) {
+		init_log(L_DEBUG);
+	} else {
+		init_log(L_ERROR);
 	}
 
 	registry = registry_poll();
