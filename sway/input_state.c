@@ -36,8 +36,8 @@ static uint8_t find_key(uint32_t key_sym, uint32_t key_code, bool update) {
 		if (0 == key_sym && 0 == key_code && key_state_array[i].key_sym == 0) {
 			break;
 		}
-		if (key_state_array[i].key_sym == key_sym
-			|| key_state_array[i].alt_sym == key_sym) {
+		if (key_sym != 0 && (key_state_array[i].key_sym == key_sym
+			|| key_state_array[i].alt_sym == key_sym)) {
 			break;
 		}
 		if (update && key_state_array[i].key_code == key_code) {
