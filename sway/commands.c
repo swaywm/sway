@@ -1464,7 +1464,7 @@ static struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
 	// Resize workspace if going from  fullscreen -> notfullscreen
 	// otherwise just resize container
-	if (current) {
+	if (!current) {
 		arrange_windows(workspace, -1, -1);
 		workspace->fullscreen = container;
 	} else {

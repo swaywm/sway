@@ -220,6 +220,10 @@ static bool handle_view_created(wlc_handle handle) {
 			// refocus in-between command lists
 			set_focused_container(newview);
 		}
+		swayc_t *workspace = swayc_parent_by_type(focused, C_WORKSPACE);
+		if (workspace && workspace->fullscreen) {
+			set_focused_container(workspace->fullscreen);
+		}
 	} else {
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
 		wlc_handle *h = malloc(sizeof(wlc_handle));
