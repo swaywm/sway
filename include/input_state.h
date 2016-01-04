@@ -60,6 +60,12 @@ extern struct pointer_state {
 	int mode;
 } pointer_state;
 
+enum modifier_state {
+	MOD_STATE_UNCHANGED = 0,
+	MOD_STATE_PRESSED = 1,
+	MOD_STATE_RELEASED = 2
+};
+
 void pointer_position_set(struct wlc_origin *new_origin, bool force_focus);
 void center_pointer_on(swayc_t *view);
 
@@ -74,6 +80,20 @@ void pointer_mode_update(void);
 void pointer_mode_reset(void);
 
 void input_init(void);
+
+/**
+ * Check if state of mod changed from current state to new_state.
+ *
+ * Returns MOD_STATE_UNCHANGED if the state didn't change, MOD_STATE_PRESSED if
+ * the state changed to pressed and MOD_STATE_RELEASED if the state changed to
+ * released.
+ */
+uint32_t modifier_state_changed(uint32_t new_state, uint32_t mod);
+
+/**
+ * Update the current modifiers state to new_state.
+ */
+void modifiers_state_update(uint32_t new_state);
 
 #endif
 

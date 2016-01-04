@@ -387,6 +387,22 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 			}
 		}
 	}
+
+	// handle bar modifiers pressed/released
+	struct bar_config *bar;
+	for (i = 0; i < config->bars->length; ++i) {
+		bar = config->bars->items[i];
+		switch (modifier_state_changed(modifiers->mods, bar->modifier)) {
+		case MOD_STATE_PRESSED:
+			sway_log(L_INFO, "pressed!!!");
+			break;
+		case MOD_STATE_RELEASED:
+			sway_log(L_INFO, "released!!!");
+			break;
+		}
+	}
+	// update modifiers state
+	modifiers_state_update(modifiers->mods);
 	return EVENT_PASSTHROUGH;
 }
 

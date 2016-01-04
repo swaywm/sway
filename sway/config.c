@@ -695,7 +695,7 @@ struct bar_config *default_bar_config(void) {
 	bar = malloc(sizeof(struct bar_config));
 	bar->mode = strdup("dock");
 	bar->hidden_state = strdup("hide");
-	bar->modifier = 0;
+	bar->modifier = WLC_BIT_MOD_LOGO;
 	bar->outputs = NULL;
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	bar->bindings = create_list();
