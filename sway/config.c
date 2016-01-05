@@ -174,11 +174,9 @@ static char *get_config_path(void) {
 		if (wordexp(config_paths[i], &p, 0) == 0) {
 			path = p.we_wordv[0];
 			if (file_exists(path)) {
-				wordfree(&p);
 				return path;
 			}
 		}
-		wordfree(&p);
 	}
 
 	return NULL; // Not reached
