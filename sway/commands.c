@@ -1751,6 +1751,9 @@ static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 		}
 	}
 
+	// active bar modifiers might have changed.
+	update_active_bar_modifiers();
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1775,6 +1778,9 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 	if (strcmp(old_mode, bar->mode) != 0) {
 		if (!config->reading) {
 			ipc_event_barconfig_update(bar);
+
+			// active bar modifiers might have changed.
+			update_active_bar_modifiers();
 		}
 		sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
 	}

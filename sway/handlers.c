@@ -390,18 +390,17 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 
 	// handle bar modifiers pressed/released
-	struct bar_config *bar;
-	for (i = 0; i < config->bars->length; ++i) {
-		bar = config->bars->items[i];
-		if (strcmp(bar->mode, "hide") == 0 && strcmp(bar->hidden_state, "hide") == 0) {
-			switch (modifier_state_changed(modifiers->mods, bar->modifier)) {
-			case MOD_STATE_PRESSED:
-				ipc_event_modifier(bar->modifier, "pressed");
-				break;
-			case MOD_STATE_RELEASED:
-				ipc_event_modifier(bar->modifier, "released");
-				break;
-			}
+	uint32_t modifier;
+	for (i = 0; i < config->active_bar_modifiers->length; ++i) {
+		modifier = *(uint32_t *)config->active_bar_modifiers->items[i];
+
+		switch (modifier_state_changed(modifiers->mods, modifier)) {
+		case MOD_STATE_PRESSED:
+			ipc_event_modifier(modifier, "pressed");
+			break;
+		case MOD_STATE_RELEASED:
+			ipc_event_modifier(modifier, "released");
+			break;
 		}
 	}
 	// update modifiers state
