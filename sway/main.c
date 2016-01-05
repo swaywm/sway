@@ -188,12 +188,12 @@ int main(int argc, char **argv) {
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #endif
 
+	init_layout();
+
 	if (validate) {
 		bool valid = load_config(config_path);
 		return valid ? 0 : 1;
 	}
-
-	init_layout();
 
 	if (!load_config(config_path)) {
 		sway_log(L_ERROR, "Error(s) loading config!");
