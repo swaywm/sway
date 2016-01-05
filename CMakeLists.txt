@@ -8,28 +8,28 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 add_definitions(
-    -D_GNU_SOURCE
-)
+	-D_GNU_SOURCE
+	)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter")
 
 list(INSERT CMAKE_MODULE_PATH 0
 	${CMAKE_CURRENT_SOURCE_DIR}/CMake
-)
+	)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 	execute_process(
 		COMMAND git describe --always
 		OUTPUT_VARIABLE GIT_COMMIT_HASH
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	)
+		)
 	execute_process(
 		COMMAND git rev-parse --abbrev-ref HEAD
 		OUTPUT_VARIABLE GIT_BRANCH
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	)
+		)
 endif()
 
 add_definitions(-DSWAY_GIT_VERSION=\"${GIT_COMMIT_HASH}\")
@@ -57,10 +57,10 @@ find_package(PAM)
 
 find_package(Backtrace)
 if(Backtrace_FOUND)
-  include_directories("${Backtrace_INCLUDE_DIRS}")
-  add_definitions(-DSWAY_Backtrace_FOUND=1)
-  set(LINK_LIBRARIES, "${LINK_LIBRARIES} ${Backtrace_LIBRARIES}")
-  set(SWAY_Backtrace_HEADER "${Backtrace_HEADER}")
+	include_directories("${Backtrace_INCLUDE_DIRS}")
+	add_definitions(-DSWAY_Backtrace_FOUND=1)
+	set(LINK_LIBRARIES, "${LINK_LIBRARIES} ${Backtrace_LIBRARIES}")
+	set(SWAY_Backtrace_HEADER "${Backtrace_HEADER}")
 endif()
 
 include(FeatureSummary)
@@ -68,14 +68,14 @@ include(Manpage)
 include(GNUInstallDirs)
 
 if (enable-gdk-pixbuf)
-  if (GDK_PIXBUF_FOUND)
-    set(WITH_GDK_PIXBUF YES)
-    add_definitions(-DWITH_GDK_PIXBUF)
-  else()
-    message(WARNING "gdk-pixbuf required but not found, only png images supported.")
-  endif()
+	if (GDK_PIXBUF_FOUND)
+		set(WITH_GDK_PIXBUF YES)
+		add_definitions(-DWITH_GDK_PIXBUF)
+	else()
+		message(WARNING "gdk-pixbuf required but not found, only png images supported.")
+	endif()
 else()
-  message(STATUS "Building without gdk-pixbuf, only png images supported.")
+	message(STATUS "Building without gdk-pixbuf, only png images supported.")
 endif()
 
 include_directories(include)
@@ -86,43 +86,43 @@ add_subdirectory(wayland)
 
 add_subdirectory(sway)
 if(enable-swaybg)
-  if(CAIRO_FOUND AND PANGO_FOUND)
-    add_subdirectory(swaybg)
-  else()
-    message(WARNING "Not building swaybg - cairo, and pango are required.")
-  endif()
+	if(CAIRO_FOUND AND PANGO_FOUND)
+		add_subdirectory(swaybg)
+	else()
+		message(WARNING "Not building swaybg - cairo, and pango are required.")
+	endif()
 endif()
 if(enable-swaymsg)
-  add_subdirectory(swaymsg)
+	add_subdirectory(swaymsg)
 endif()
 if(enable-swaygrab)
-  add_subdirectory(swaygrab)
+	add_subdirectory(swaygrab)
 endif()
 if(enable-swaybar)
-  if(CAIRO_FOUND AND PANGO_FOUND)
-    add_subdirectory(swaybar)
-  else()
-    message(WARNING "Not building swaybar - cairo, and pango  are required.")
-  endif()
+	if(CAIRO_FOUND AND PANGO_FOUND)
+		add_subdirectory(swaybar)
+	else()
+		message(WARNING "Not building swaybar - cairo, and pango  are required.")
+	endif()
 endif()
 if(enable-swaylock)
-  if(CAIRO_FOUND AND PANGO_FOUND AND PAM_FOUND)
-    add_subdirectory(swaylock)
-  else()
-    message(WARNING "Not building swaylock - cairo, pango, and PAM are required.")
-  endif()
+	if(CAIRO_FOUND AND PANGO_FOUND AND PAM_FOUND)
+		add_subdirectory(swaylock)
+	else()
+		message(WARNING "Not building swaylock - cairo, pango, and PAM are required.")
+	endif()
 endif()
 
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop
 	DESTINATION share/wayland-sessions
 	COMPONENT data
-)
+	)
 
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.jpg
 	DESTINATION share/sway
 	COMPONENT data
-)
+	)
 
 feature_summary(WHAT ALL)
