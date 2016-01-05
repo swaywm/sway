@@ -1897,7 +1897,7 @@ static struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 		bool is_mod = false;
 		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
 			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
-				mod |= modifiers[j].mod;
+				mod = modifiers[j].mod;
 				is_mod = true;
 				break;
 			}

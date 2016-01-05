@@ -20,6 +20,7 @@
 #include "resize.h"
 #include "extensions.h"
 #include "criteria.h"
+#include "ipc-server.h"
 
 // Event should be sent to client
 #define EVENT_PASSTHROUGH false
@@ -392,13 +393,15 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	struct bar_config *bar;
 	for (i = 0; i < config->bars->length; ++i) {
 		bar = config->bars->items[i];
-		switch (modifier_state_changed(modifiers->mods, bar->modifier)) {
-		case MOD_STATE_PRESSED:
-			sway_log(L_INFO, "pressed!!!");
-			break;
-		case MOD_STATE_RELEASED:
-			sway_log(L_INFO, "released!!!");
-			break;
+		if (strcmp(bar->mode, "hide") == 0 && strcmp(bar->hidden_state, "hide") == 0) {
+			switch (modifier_state_changed(modifiers->mods, bar->modifier)) {
+			case MOD_STATE_PRESSED:
+				ipc_event_modifier(bar->modifier, "pressed");
+				break;
+			case MOD_STATE_RELEASED:
+				ipc_event_modifier(bar->modifier, "released");
+				break;
+			}
 		}
 	}
 	// update modifiers state

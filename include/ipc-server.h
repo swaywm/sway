@@ -15,6 +15,12 @@ void ipc_event_barconfig_update(struct bar_config *bar);
  * Send IPC mode event to all listening clients
  */
 void ipc_event_mode(const char *mode);
+/**
+ * Sends an IPC modifier event to all listening clients.  The modifier event
+ * includes a key 'change' with the value of state and a key 'modifier' with
+ * the name of that modifier.
+ */
+void ipc_event_modifier(uint32_t modifier, const char *state);
 const char *swayc_type_string(enum swayc_types type);
 
 #endif
