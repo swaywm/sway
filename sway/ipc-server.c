@@ -19,6 +19,7 @@
 #include "commands.h"
 #include "list.h"
 #include "stringop.h"
+#include "util.h"
 
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;
@@ -33,22 +34,6 @@ struct ipc_client {
 	uint32_t payload_length;
 	enum ipc_command_type current_command;
 	enum ipc_command_type subscribed_events;
-};
-
-static struct modifier_key {
-	char *name;
-	uint32_t mod;
-} modifiers[] = {
-	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
-	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
-	{ XKB_MOD_NAME_CTRL, WLC_BIT_MOD_CTRL },
-	{ "Ctrl", WLC_BIT_MOD_CTRL },
-	{ XKB_MOD_NAME_ALT, WLC_BIT_MOD_ALT },
-	{ "Alt", WLC_BIT_MOD_ALT },
-	{ XKB_MOD_NAME_NUM, WLC_BIT_MOD_MOD2 },
-	{ "Mod3", WLC_BIT_MOD_MOD3 },
-	{ XKB_MOD_NAME_LOGO, WLC_BIT_MOD_LOGO },
-	{ "Mod5", WLC_BIT_MOD_MOD5 },
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -640,15 +625,7 @@ void ipc_event_modifier(uint32_t modifier, const char *state) {
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(state));
 
-	const char *modifier_name = NULL;
-	int i;
-	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
-		if (modifiers[i].mod == modifier) {
-			modifier_name = modifiers[i].name;
-			break;
-		}
-	}
-
+	const char *modifier_name = get_modifier_name_by_mask(modifier);
 	json_object_object_add(obj, "modifier", json_object_new_string(modifier_name));
 
 	const char *json_string = json_object_to_json_string(obj);
