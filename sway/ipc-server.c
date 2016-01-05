@@ -511,7 +511,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(json, "tray_output", NULL);
 	json_object_object_add(json, "mode", json_object_new_string(bar->mode));
 	json_object_object_add(json, "hidden_state", json_object_new_string(bar->hidden_state));
-	//json_object_object_add(json, "modifier", json_object_new_string(bar->modifier)); // TODO: Fix modifier
+	json_object_object_add(json, "modifier", json_object_new_string(get_modifier_name_by_mask(bar->modifier)));
 	switch (bar->position) {
 	case DESKTOP_SHELL_PANEL_POSITION_TOP:
 		json_object_object_add(json, "position", json_object_new_string("top"));
