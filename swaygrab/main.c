@@ -72,7 +72,7 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 		"-video_size %dx%d -pixel_format argb "
 		"-i pipe:0 -r %d -vf vflip %s";
 	char *cmd = malloc(strlen(fmt) - 8 /*args*/
-			+ numlen(width) + numlen(height) + numlen(framerate) * 2 
+			+ numlen(width) + numlen(height) + numlen(framerate) * 2
 			+ strlen(file) + 1);
 	sprintf(cmd, fmt, framerate, width, height, framerate, file);
 

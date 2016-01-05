@@ -38,10 +38,10 @@ char *password;
 struct pam_response *pam_reply;
 
 int function_conversation(int num_msg, const struct pam_message **msg,
-		struct pam_response **resp, void *appdata_ptr) {  
+		struct pam_response **resp, void *appdata_ptr) {
 	*resp = pam_reply;
-	return PAM_SUCCESS;  
-}  
+	return PAM_SUCCESS;
+}
 
 /**
  * password will be zeroed out.
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 	cairo_surface_t *image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
 	g_object_unref(pixbuf);
 #else
-  cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
+	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
 #endif //WITH_GDK_PIXBUF
 	if (!image) {
 		sway_abort("Failed to read background image.");

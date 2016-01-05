@@ -22,12 +22,12 @@ target_link_libraries(swaylock
 )
 
 if (WITH_GDK_PIXBUF)
-  include_directories(
-	  ${GDK_PIXBUF_INCLUDE_DIRS}
-  )
-  target_link_libraries(swaylock
-	  ${GDK_PIXBUF_LIBRARIES}
-  )
+	include_directories(
+		${GDK_PIXBUF_INCLUDE_DIRS}
+	)
+	target_link_libraries(swaylock
+		${GDK_PIXBUF_LIBRARIES}
+	)
 endif()
 
 install(

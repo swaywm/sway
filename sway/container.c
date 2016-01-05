@@ -149,7 +149,7 @@ swayc_t *new_output(wlc_handle handle) {
 	ws->is_focused = true;
 
 	free(ws_name);
-	
+
 	return output;
 }
 
@@ -354,7 +354,7 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 	if (!ASSERT_NONNULL(workspace)) {
 		return NULL;
 	}
-	
+
 	// Do not destroy this if it's the last workspace on this output
 	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
 	if (output && output->children->length == 1) {

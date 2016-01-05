@@ -1231,7 +1231,7 @@ int main(int argc, char **argv) {
 	if (!bar_id) {
 		sway_abort("No bar_id passed. Provide --bar_id or let sway start swaybar");
 	}
-	
+
 	if (debug) {
 		init_log(L_DEBUG);
 	} else {

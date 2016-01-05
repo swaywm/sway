@@ -20,12 +20,12 @@ target_link_libraries(swaybg
 )
 
 if (WITH_GDK_PIXBUF)
-  include_directories(
-	  ${GDK_PIXBUF_INCLUDE_DIRS}
-  )
-  target_link_libraries(swaybg
-	  ${GDK_PIXBUF_LIBRARIES}
-  )
+	include_directories(
+		${GDK_PIXBUF_INCLUDE_DIRS}
+	)
+	target_link_libraries(swaybg
+		${GDK_PIXBUF_LIBRARIES}
+	)
 endif()
 
 install(
