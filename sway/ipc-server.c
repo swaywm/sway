@@ -19,6 +19,7 @@
 #include "commands.h"
 #include "list.h"
 #include "stringop.h"
+#include "util.h"
 
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;
@@ -295,6 +296,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= IPC_EVENT_BARCONFIG_UPDATE;
 			} else if (strcmp(event_type, "mode") == 0) {
 				client->subscribed_events |= IPC_EVENT_MODE;
+			} else if (strcmp(event_type, "modifier") == 0) {
+				client->subscribed_events |= IPC_EVENT_MODIFIER;
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				ipc_client_disconnect(client);
@@ -508,7 +511,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(json, "tray_output", NULL);
 	json_object_object_add(json, "mode", json_object_new_string(bar->mode));
 	json_object_object_add(json, "hidden_state", json_object_new_string(bar->hidden_state));
-	//json_object_object_add(json, "modifier", json_object_new_string(bar->modifier)); // TODO: Fix modifier
+	json_object_object_add(json, "modifier", json_object_new_string(get_modifier_name_by_mask(bar->modifier)));
 	switch (bar->position) {
 	case DESKTOP_SHELL_PANEL_POSITION_TOP:
 		json_object_object_add(json, "position", json_object_new_string("top"));
@@ -614,6 +617,19 @@ void ipc_event_mode(const char *mode) {
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_MODE);
+
+	json_object_put(obj); // free
+}
+
+void ipc_event_modifier(uint32_t modifier, const char *state) {
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string(state));
+
+	const char *modifier_name = get_modifier_name_by_mask(modifier);
+	json_object_object_add(obj, "modifier", json_object_new_string(modifier_name));
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_MODIFIER);
 
 	json_object_put(obj); // free
 }

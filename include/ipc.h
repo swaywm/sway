@@ -17,6 +17,7 @@ enum ipc_command_type {
 	IPC_EVENT_WINDOW = (1 << 31 | 3),
 	IPC_EVENT_BARCONFIG_UPDATE = (1 << 31 | 4),
 	IPC_EVENT_BINDING = (1 << 31 | 5),
+	IPC_EVENT_MODIFIER = (1 << 31 | 6),
 	IPC_SWAY_GET_PIXELS = 0x81
 };
 

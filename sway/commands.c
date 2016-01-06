@@ -99,22 +99,6 @@ static sway_cmd bar_colors_cmd_urgent_workspace;
 swayc_t *sp_view;
 int sp_index = 0;
 
-static struct modifier_key {
-	char *name;
-	uint32_t mod;
-} modifiers[] = {
-	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
-	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
-	{ XKB_MOD_NAME_CTRL, WLC_BIT_MOD_CTRL },
-	{ "Ctrl", WLC_BIT_MOD_CTRL },
-	{ XKB_MOD_NAME_ALT, WLC_BIT_MOD_ALT },
-	{ "Alt", WLC_BIT_MOD_ALT },
-	{ XKB_MOD_NAME_NUM, WLC_BIT_MOD_MOD2 },
-	{ "Mod3", WLC_BIT_MOD_MOD3 },
-	{ XKB_MOD_NAME_LOGO, WLC_BIT_MOD_LOGO },
-	{ "Mod5", WLC_BIT_MOD_MOD5 },
-};
-
 static char *bg_options[] = {
 	"stretch",
 	"center",
@@ -187,16 +171,11 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
 		// Check for a modifier key
-		int j;
-		bool is_mod = false;
-		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
-			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
-				binding->modifiers |= modifiers[j].mod;
-				is_mod = true;
-				break;
-			}
+		uint32_t mod;
+		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {
+			binding->modifiers |= mod;
+			continue;
 		}
-		if (is_mod) continue;
 		// Check for xkb key
 		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i], XKB_KEYSYM_CASE_INSENSITIVE);
 		if (!sym) {
@@ -408,17 +387,13 @@ static struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating_modifier", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	int i, j;
+	int i;
 	list_t *split = split_string(argv[0], "+");
 	config->floating_mod = 0;
 
 	// set modifier keys
 	for (i = 0; i < split->length; ++i) {
-		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
-			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
-				config->floating_mod |= modifiers[j].mod;
-			}
-		}
+		config->floating_mod |= get_modifier_mask_by_name(split->items[i]);
 	}
 	free_flat_list(split);
 	if (!config->floating_mod) {
@@ -1776,6 +1751,9 @@ static struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 		}
 	}
 
+	// active bar modifiers might have changed.
+	update_active_bar_modifiers();
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1800,6 +1778,9 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 	if (strcmp(old_mode, bar->mode) != 0) {
 		if (!config->reading) {
 			ipc_event_barconfig_update(bar);
+
+			// active bar modifiers might have changed.
+			update_active_bar_modifiers();
 		}
 		sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
 	}
@@ -1893,16 +1874,11 @@ static struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
-		int j;
-		bool is_mod = false;
-		for (j = 0; j < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++j) {
-			if (strcasecmp(modifiers[j].name, split->items[i]) == 0) {
-				mod |= modifiers[j].mod;
-				is_mod = true;
-				break;
-			}
-		}
-		if (!is_mod) {
+		uint32_t tmp_mod;
+		if ((tmp_mod = get_modifier_mask_by_name(split->items[i])) > 0) {
+			mod |= tmp_mod;
+			continue;
+		} else {
 			free_flat_list(split);
 			return cmd_results_new(CMD_INVALID, "modifier", "Unknown modifier '%s'", split->items[i]);
 		}
