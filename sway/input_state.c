@@ -22,6 +22,8 @@ struct key_state {
 
 static struct key_state key_state_array[KEY_STATE_MAX_LENGTH];
 
+static struct key_state last_released;
+
 static uint32_t modifiers_state;
 
 void input_init(void) {
@@ -30,6 +32,9 @@ void input_init(void) {
 		struct key_state none = { 0, 0, 0 };
 		key_state_array[i] = none;
 	}
+
+	struct key_state none = { 0, 0, 0 };
+	last_released = none;
 
 	modifiers_state = 0;
 }
@@ -76,6 +81,12 @@ bool check_key(uint32_t key_sym, uint32_t key_code) {
 	return find_key(key_sym, key_code, false) < KEY_STATE_MAX_LENGTH;
 }
 
+bool check_released_key(uint32_t key_sym) {
+	return (key_sym != 0
+		&& (last_released.key_sym == key_sym
+		|| last_released.alt_sym == key_sym));
+}
+
 void press_key(uint32_t key_sym, uint32_t key_code) {
 	if (key_code == 0) {
 		return;
@@ -94,6 +105,9 @@ void press_key(uint32_t key_sym, uint32_t key_code) {
 void release_key(uint32_t key_sym, uint32_t key_code) {
 	uint8_t index = find_key(key_sym, key_code, true);
 	if (index < KEY_STATE_MAX_LENGTH) {
+		last_released.key_sym = key_state_array[index].key_sym;
+		last_released.alt_sym = key_state_array[index].alt_sym;
+		last_released.key_code = key_state_array[index].key_code;
 		struct key_state none = { 0, 0, 0 };
 		key_state_array[index] = none;
 	}

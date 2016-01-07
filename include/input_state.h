@@ -9,6 +9,9 @@
 // returns true if key has been pressed, otherwise false
 bool check_key(uint32_t key_sym, uint32_t key_code);
 
+// returns true if key_sym matches latest released key.
+bool check_released_key(uint32_t key_sym);
+
 // sets a key as pressed
 void press_key(uint32_t key_sym, uint32_t key_code);
 

@@ -336,6 +336,43 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 	return;
 }
 
+static bool handle_bindsym(struct sway_binding *binding) {
+	bool match = false;
+	int i;
+	for (i = 0; i < binding->keys->length; ++i) {
+		xkb_keysym_t *key = binding->keys->items[i];
+		if ((match = check_key(*key, 0)) == false) {
+			break;
+		}
+	}
+
+	if (match) {
+		struct cmd_results *res = handle_command(binding->command);
+		if (res->status != CMD_SUCCESS) {
+			sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+		}
+		free_cmd_results(res);
+		return true;
+	}
+
+	return false;
+}
+
+static bool handle_bindsym_release(struct sway_binding *binding) {
+	if (binding->keys->length == 1) {
+		xkb_keysym_t *key = binding->keys->items[0];
+		if (check_released_key(*key)) {
+			struct cmd_results *res = handle_command(binding->command);
+			if (res->status != CMD_SUCCESS) {
+				sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+			}
+			free_cmd_results(res);
+			return true;
+		}
+	}
+
+	return false;
+}
 
 static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifiers *modifiers,
 		uint32_t key, enum wlc_key_state state) {
@@ -366,33 +403,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		release_key(sym, key);
 	}
 
-	for (i = 0; i < mode->bindings->length; ++i) {
-		struct sway_binding *binding = mode->bindings->items[i];
-
-		if ((modifiers->mods ^ binding->modifiers) == 0) {
-			bool match = false;
-			int j;
-			for (j = 0; j < binding->keys->length; ++j) {
-				xkb_keysym_t *key = binding->keys->items[j];
-				if ((match = check_key(*key, 0)) == false) {
-					break;
-				}
-			}
-			if (match) {
-				if (state == WLC_KEY_STATE_PRESSED) {
-					struct cmd_results *res = handle_command(binding->command);
-					if (res->status != CMD_SUCCESS) {
-						sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
-					}
-					free_cmd_results(res);
-					return EVENT_HANDLED;
-				} else if (state == WLC_KEY_STATE_RELEASED) {
-					// TODO: --released
-				}
-			}
-		}
-	}
-
 	// handle bar modifiers pressed/released
 	uint32_t modifier;
 	for (i = 0; i < config->active_bar_modifiers->length; ++i) {
@@ -409,6 +419,27 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 	// update modifiers state
 	modifiers_state_update(modifiers->mods);
+
+	// handle bindings
+	for (i = 0; i < mode->bindings->length; ++i) {
+		struct sway_binding *binding = mode->bindings->items[i];
+		if ((modifiers->mods ^ binding->modifiers) == 0) {
+			switch (state) {
+			case WLC_KEY_STATE_PRESSED: {
+				if (!binding->release && handle_bindsym(binding)) {
+					return EVENT_HANDLED;
+				}
+				break;
+			}
+			case WLC_KEY_STATE_RELEASED:
+				if (binding->release && handle_bindsym_release(binding)) {
+					return EVENT_HANDLED;
+				}
+				break;
+			}
+		}
+	}
+
 	return EVENT_PASSTHROUGH;
 }
 
