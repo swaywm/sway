@@ -163,9 +163,25 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "bindsym", "Can only be used in config file.");
 	}
 
+
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();
 	binding->modifiers = 0;
+	binding->release = false;
+
+	// Handle --release
+	if (strcmp("--release", argv[0]) == 0) {
+		if (argc >= 3) {
+			binding->release = true;
+			argv++;
+			argc--;
+		} else {
+			return cmd_results_new(CMD_FAILURE, "bindsym",
+				"Invalid bindsym command"
+				"(expected more than 2 arguments, got %d)", argc);
+		}
+	}
+
 	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], "+");
