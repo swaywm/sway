@@ -66,7 +66,7 @@ struct status_block {
 list_t *status_line = NULL;
 
 list_t *workspaces = NULL;
-int ipc_socketfd, ipc_event_socketfd;
+int ipc_socketfd;
 pid_t pid;
 int status_read_fd;
 char line[1024];
@@ -158,10 +158,6 @@ void swaybar_teardown() {
 	if (ipc_socketfd) {
 		close(ipc_socketfd);
 	}
-
-	if (ipc_event_socketfd) {
-		close(ipc_event_socketfd);
-	}
 }
 
 void sway_terminate(void) {
@@ -193,18 +189,15 @@ void free_workspace(void *item) {
 	free(ws);
 }
 
-void ipc_update_workspaces() {
+void ipc_update_workspaces(char *payload) {
 	if (workspaces) {
 		list_foreach(workspaces, free_workspace);
 		list_free(workspaces);
 	}
 	workspaces = create_list();
 
-	uint32_t len = 0;
-	char *res = ipc_single_command(ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
-	json_object *results = json_tokener_parse(res);
+	json_object *results = json_tokener_parse(payload);
 	if (!results) {
-		free(res);
 		return;
 	}
 
@@ -234,7 +227,6 @@ void ipc_update_workspaces() {
 	}
 
 	json_object_put(results);
-	free(res);
 }
 
 uint32_t parse_color(const char *color) {
@@ -421,10 +413,10 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 
 	const char *subscribe_json = "[ \"workspace\", \"mode\" ]";
 	len = strlen(subscribe_json);
-	res = ipc_single_command(ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	res = ipc_single_command(ipc_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
 
-	ipc_update_workspaces();
+	ipc_send_command(ipc_socketfd, IPC_GET_WORKSPACES, NULL, 0);
 }
 
 /**
@@ -705,7 +697,7 @@ void render() {
 	double x = 0.5;
 
 	// Workspaces
-	if (workspace_buttons) {
+	if (workspace_buttons && workspaces) {
 		for (i = 0; i < workspaces->length; ++i) {
 			struct workspace *ws = workspaces->items[i];
 			render_workspace_button(ws, &x);
@@ -1076,10 +1068,13 @@ int i3json_handle_fd(int fd) {
 }
 
 bool handle_ipc_event() {
-	struct ipc_response *resp = ipc_recv_response(ipc_event_socketfd);
+	struct ipc_response *resp = ipc_recv_response(ipc_socketfd);
 	switch (resp->type) {
+	case IPC_GET_WORKSPACES:
+		ipc_update_workspaces(resp->payload);
+		break;
 	case IPC_EVENT_WORKSPACE:
-		ipc_update_workspaces();
+		ipc_send_command(ipc_socketfd, IPC_GET_WORKSPACES, NULL, 0);
 		break;
 	case IPC_EVENT_MODE: {
 		json_object *result = json_tokener_parse(resp->payload);
@@ -1129,7 +1124,7 @@ void poll_for_update() {
 
 		dirty = false;
 		FD_ZERO(&readfds);
-		FD_SET(ipc_event_socketfd, &readfds);
+		FD_SET(ipc_socketfd, &readfds);
 		FD_SET(status_read_fd, &readfds);
 
 		activity = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
@@ -1137,7 +1132,7 @@ void poll_for_update() {
 			sway_log(L_ERROR, "polling failed: %d", errno);
 		}
 
-		if (FD_ISSET(ipc_event_socketfd, &readfds)) {
+		if (FD_ISSET(ipc_socketfd, &readfds)) {
 			sway_log(L_DEBUG, "Got IPC event.");
 			dirty = handle_ipc_event();
 		}
@@ -1300,7 +1295,6 @@ int main(int argc, char **argv) {
 		}
 	}
 	ipc_socketfd = ipc_open_socket(socket_path);
-	ipc_event_socketfd = ipc_open_socket(socket_path);
 
 
 	if (argc == optind) {
