@@ -76,20 +76,26 @@ void free_ipc_response(struct ipc_response *response) {
 	free(response);
 }
 
-char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
+void ipc_send_command(int socketfd, uint32_t type, const char *payload, uint32_t len) {
+
 	char data[ipc_header_size];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	data32[0] = *len;
+	data32[0] = len;
 	data32[1] = type;
 
 	if (write(socketfd, data, ipc_header_size) == -1) {
 		sway_abort("Unable to send IPC header");
 	}
 
-	if (write(socketfd, payload, *len) == -1) {
+	if (write(socketfd, payload, len) == -1) {
 		sway_abort("Unable to send IPC payload");
 	}
+}
+
+char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint32_t *len) {
+
+	ipc_send_command(socketfd, type, payload, *len);
 
 	struct ipc_response *resp = ipc_recv_response(socketfd);
 	char *response = resp->payload;
