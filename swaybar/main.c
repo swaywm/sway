@@ -1184,6 +1184,55 @@ void poll_for_update() {
 	}
 }
 
+/*
+ * spawn_sh_cmd forks and executes the specified shell command.
+ * If infd is set, it receives the fd for the shell's stdin.
+ * If outfd is set, it recieves the fd for the shell's stdout.
+ */
+int spawn_sh_cmd(char *command, int *infd, int *outfd) {
+	int pipeout[2];
+	int pipein[2];
+	pid_t pid;
+	if (infd) {
+		pipe(pipein);
+	}
+	if (outfd) {
+		pipe(pipeout);
+	}
+	pid = fork();
+	if (pid == 0) {
+		if (outfd) {
+			close(pipeout[0]);
+			dup2(pipeout[1], STDOUT_FILENO);
+			close(pipeout[1]);
+		}
+		if (infd) {
+			close(pipeout[1]);
+			dup2(pipeout[0], STDIN_FILENO);
+			close(pipeout[0]);
+		}
+		char *const cmd[] = {
+			"sh",
+			"-c",
+			command,
+			NULL,
+		};
+		execvp(cmd[0], cmd);
+		return 0;
+	}
+
+	close(pipeout[1]);
+	close(pipein[0]);
+	if (outfd) {
+		*outfd = pipeout[0];
+	}
+	if (infd) {
+		*infd = pipein[1];
+	}
+	return pid;
+
+}
+
 int main(int argc, char **argv) {
 
 	char *socket_path = NULL;
@@ -1270,27 +1319,11 @@ int main(int argc, char **argv) {
 	bar_ipc_init(desired_output, bar_id);
 
 	if (status_command) {
-		int pipefd[2];
-		pipe(pipefd);
-		pid = fork();
-		if (pid == 0) {
-			close(pipefd[0]);
-			dup2(pipefd[1], STDOUT_FILENO);
-			close(pipefd[1]);
-			char *const cmd[] = {
-				"sh",
-				"-c",
-				status_command,
-				NULL,
-			};
-			execvp(cmd[0], cmd);
-			return 0;
+		pid = spawn_sh_cmd(status_command, NULL, &status_read_fd);
+		if (pid > 0) {
+			fcntl(status_read_fd, F_SETFL, O_NONBLOCK);
+			line[0] = '\0';
 		}
-
-		close(pipefd[1]);
-		status_read_fd = pipefd[0];
-		fcntl(status_read_fd, F_SETFL, O_NONBLOCK);
-		line[0] = '\0';
 	}
 
 	signal(SIGTERM, sig_handler);
