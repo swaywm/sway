@@ -336,6 +336,17 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 	return;
 }
 
+static void handle_binding_command(struct sway_binding *binding) {
+		struct sway_binding *binding_copy = sway_binding_dup(binding);
+		struct cmd_results *res = handle_command(binding->command);
+		if (res->status != CMD_SUCCESS) {
+			sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+		}
+		ipc_event_binding_keyboard(binding_copy);
+		free_cmd_results(res);
+		free_sway_binding(binding_copy);
+}
+
 static bool handle_bindsym(struct sway_binding *binding) {
 	bool match = false;
 	int i;
@@ -347,14 +358,7 @@ static bool handle_bindsym(struct sway_binding *binding) {
 	}
 
 	if (match) {
-		struct sway_binding *binding_copy = sway_binding_dup(binding);
-		struct cmd_results *res = handle_command(binding->command);
-		if (res->status != CMD_SUCCESS) {
-			sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
-		}
-		ipc_event_binding_keyboard(binding_copy);
-		free_cmd_results(res);
-		free_sway_binding(binding_copy);
+		handle_binding_command(binding);
 		return true;
 	}
 
@@ -365,14 +369,7 @@ static bool handle_bindsym_release(struct sway_binding *binding) {
 	if (binding->keys->length == 1) {
 		xkb_keysym_t *key = binding->keys->items[0];
 		if (check_released_key(*key)) {
-			struct sway_binding *binding_copy = sway_binding_dup(binding);
-			struct cmd_results *res = handle_command(binding->command);
-			if (res->status != CMD_SUCCESS) {
-				sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
-			}
-			ipc_event_binding_keyboard(binding_copy);
-			free_cmd_results(res);
-			free_sway_binding(binding_copy);
+			handle_binding_command(binding);
 			return true;
 		}
 	}
