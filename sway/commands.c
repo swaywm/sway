@@ -2462,6 +2462,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	// Var replacement, for all but first argument of set
 	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 		argv[i] = do_var_replacement(argv[i]);
+		unescape_string(argv[i]);
 	}
 	/* Strip quotes for first argument.
 	 * TODO This part needs to be handled much better */
