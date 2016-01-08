@@ -721,6 +721,24 @@ void free_sway_mouse_binding(struct sway_mouse_binding *binding) {
 	free(binding);
 }
 
+struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
+	struct sway_binding *new_sb = malloc(sizeof(struct sway_binding));
+
+	new_sb->order = sb->order;
+	new_sb->modifiers = sb->modifiers;
+	new_sb->command = strdup(sb->command);
+
+	new_sb->keys = create_list();
+	int i;
+	for (i = 0; i < sb->keys->length; ++i) {
+		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
+		*key = *(xkb_keysym_t *)sb->keys->items[i];
+		list_add(new_sb->keys, key);
+	}
+
+	return new_sb;
+}
+
 struct bar_config *default_bar_config(void) {
 	struct bar_config *bar = NULL;
 	bar = malloc(sizeof(struct bar_config));

@@ -298,6 +298,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= IPC_EVENT_MODE;
 			} else if (strcmp(event_type, "modifier") == 0) {
 				client->subscribed_events |= IPC_EVENT_MODIFIER;
+#if SWAY_BINDING_EVENT
+			} else if (strcmp(event_type, "binding") == 0) {
+				client->subscribed_events |= IPC_EVENT_BINDING;
+#endif
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				ipc_client_disconnect(client);
@@ -632,4 +636,53 @@ void ipc_event_modifier(uint32_t modifier, const char *state) {
 	ipc_send_event(json_string, IPC_EVENT_MODIFIER);
 
 	json_object_put(obj); // free
+}
+
+#if SWAY_BINDING_EVENT
+static void ipc_event_binding(json_object *sb_obj) {
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string("run"));
+	json_object_object_add(obj, "binding", sb_obj);
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_BINDING);
+
+	json_object_put(obj); // free
+}
+#endif
+
+void ipc_event_binding_keyboard(struct sway_binding *sb) {
+#if SWAY_BINDING_EVENT
+	json_object *sb_obj = json_object_new_object();
+	json_object_object_add(sb_obj, "command", json_object_new_string(sb->command));
+
+	const char *names[10];
+
+	int len = get_modifier_names(names, sb->modifiers);
+	int i;
+	json_object *modifiers = json_object_new_array();
+	for (i = 0; i < len; ++i) {
+		json_object_array_add(modifiers, json_object_new_string(names[i]));
+	}
+
+	json_object_object_add(sb_obj, "event_state_mask", modifiers);
+
+	// TODO: implement bindcode
+	json_object_object_add(sb_obj, "input_code", json_object_new_int(0));
+
+	json_object *symbols = json_object_new_array();
+	uint32_t keysym;
+	char buffer[64];
+	for (i = 0; i < sb->keys->length; ++i) {
+		keysym = *(uint32_t *)sb->keys->items[i];
+		if (xkb_keysym_get_name(keysym, buffer, 64) > 0) {
+			json_object_array_add(symbols, json_object_new_string(buffer));
+		}
+	}
+
+	json_object_object_add(sb_obj, "symbols", symbols);
+	json_object_object_add(sb_obj, "input_type", json_object_new_string("keyboard"));
+
+	ipc_event_binding(sb_obj);
+#endif
 }

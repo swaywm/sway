@@ -21,6 +21,10 @@ void ipc_event_mode(const char *mode);
  * the name of that modifier.
  */
 void ipc_event_modifier(uint32_t modifier, const char *state);
+/**
+ * Send IPC keyboard binding event.
+ */
+void ipc_event_binding_keyboard(struct sway_binding *sb);
 const char *swayc_type_string(enum swayc_types type);
 
 #endif

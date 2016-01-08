@@ -44,6 +44,7 @@ option(enable-swaybar "Enables the swaybar utility" YES)
 option(enable-swaygrab "Enables the swaygrab utility" YES)
 option(enable-swaymsg "Enables the swaymsg utility" YES)
 option(enable-gdk-pixbuf "Use Pixbuf to support more image formats" YES)
+option(enable-binding-event "Enables binding event subscription" YES)
 
 find_package(JsonC REQUIRED)
 find_package(PCRE REQUIRED)
@@ -111,6 +112,9 @@ if(enable-swaylock)
 	else()
 		message(WARNING "Not building swaylock - cairo, pango, and PAM are required.")
 	endif()
+endif()
+if(enable-binding-event)
+	add_definitions(-DSWAY_BINDING_EVENT=1)
 endif()
 
 install(
