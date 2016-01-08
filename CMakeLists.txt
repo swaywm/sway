@@ -45,6 +45,7 @@ option(enable-swaygrab "Enables the swaygrab utility" YES)
 option(enable-swaymsg "Enables the swaymsg utility" YES)
 option(enable-gdk-pixbuf "Use Pixbuf to support more image formats" YES)
 option(enable-binding-event "Enables binding event subscription" YES)
+option(default-wallpaper "Installs the default wallpaper" YES)
 
 find_package(JsonC REQUIRED)
 find_package(PCRE REQUIRED)
@@ -123,10 +124,12 @@ install(
 	COMPONENT data
 	)
 
-install(
-	FILES ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.jpg
-	DESTINATION share/sway
-	COMPONENT data
-	)
+if(default-wallpaper)
+	install(
+		FILES ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.jpg
+		DESTINATION share/sway
+		COMPONENT data
+		)
+endif()
 
 feature_summary(WHAT ALL)
