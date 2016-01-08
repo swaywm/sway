@@ -337,14 +337,26 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 }
 
 static void handle_binding_command(struct sway_binding *binding) {
-		struct sway_binding *binding_copy = sway_binding_dup(binding);
-		struct cmd_results *res = handle_command(binding->command);
-		if (res->status != CMD_SUCCESS) {
-			sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
-		}
-		ipc_event_binding_keyboard(binding_copy);
-		free_cmd_results(res);
+	struct sway_binding *binding_copy = binding;
+	bool reload = false;
+	// if this is a reload command we need to make a duplicate of the
+	// binding since it will be gone after the reload has completed.
+	if (strcasecmp(binding->command, "reload") == 0) {
+		binding_copy = sway_binding_dup(binding);
+		reload = true;
+	}
+
+	struct cmd_results *res = handle_command(binding->command);
+	if (res->status != CMD_SUCCESS) {
+		sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+	}
+	ipc_event_binding_keyboard(binding_copy);
+
+	if (reload) { // free the binding if we made a copy
 		free_sway_binding(binding_copy);
+	}
+
+	free_cmd_results(res);
 }
 
 static bool handle_bindsym(struct sway_binding *binding) {
