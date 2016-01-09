@@ -79,6 +79,9 @@ if (enable-gdk-pixbuf)
 else()
 	message(STATUS "Building without gdk-pixbuf, only png images supported.")
 endif()
+if(enable-binding-event)
+	add_definitions(-DSWAY_BINDING_EVENT=1)
+endif()
 
 include_directories(include)
 
@@ -113,9 +116,6 @@ if(enable-swaylock)
 	else()
 		message(WARNING "Not building swaylock - cairo, pango, and PAM are required.")
 	endif()
-endif()
-if(enable-binding-event)
-	add_definitions(-DSWAY_BINDING_EVENT=1)
 endif()
 
 install(
