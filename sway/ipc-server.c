@@ -667,19 +667,27 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 
 	json_object_object_add(sb_obj, "event_state_mask", modifiers);
 
-	// TODO: implement bindcode
-	json_object_object_add(sb_obj, "input_code", json_object_new_int(0));
-
+	json_object *input_codes = json_object_new_array();
 	json_object *symbols = json_object_new_array();
-	uint32_t keysym;
-	char buffer[64];
-	for (i = 0; i < sb->keys->length; ++i) {
-		keysym = *(uint32_t *)sb->keys->items[i];
-		if (xkb_keysym_get_name(keysym, buffer, 64) > 0) {
-			json_object_array_add(symbols, json_object_new_string(buffer));
+
+	if (sb->bindcode) { // bindcode: populate input_codes
+		uint32_t keycode;
+		for (i = 0; i < sb->keys->length; ++i) {
+			keycode = *(uint32_t *)sb->keys->items[i];
+			json_object_array_add(input_codes, json_object_new_int(keycode));
+		}
+	} else { // bindsym: populate symbols
+		uint32_t keysym;
+		char buffer[64];
+		for (i = 0; i < sb->keys->length; ++i) {
+			keysym = *(uint32_t *)sb->keys->items[i];
+			if (xkb_keysym_get_name(keysym, buffer, 64) > 0) {
+				json_object_array_add(symbols, json_object_new_string(buffer));
+			}
 		}
 	}
 
+	json_object_object_add(sb_obj, "input_codes", input_codes);
 	json_object_object_add(sb_obj, "symbols", symbols);
 	json_object_object_add(sb_obj, "input_type", json_object_new_string("keyboard"));
 
