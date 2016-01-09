@@ -73,6 +73,9 @@ static uint8_t find_key(uint32_t key_sym, uint32_t key_code, bool update) {
 			key_state_array[i].alt_sym = key_sym;
 			break;
 		}
+		if (key_sym == 0 && key_code != 0 && key_state_array[i].key_code == key_code) {
+			break;
+		}
 	}
 	return i;
 }

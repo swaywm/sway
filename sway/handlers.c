@@ -363,9 +363,16 @@ static bool handle_bindsym(struct sway_binding *binding) {
 	bool match = false;
 	int i;
 	for (i = 0; i < binding->keys->length; ++i) {
-		xkb_keysym_t *key = binding->keys->items[i];
-		if ((match = check_key(*key, 0)) == false) {
-			break;
+		if (binding->bindcode) {
+			xkb_keycode_t *key = binding->keys->items[i];
+			if ((match = check_key(0, *key)) == false) {
+				break;
+			}
+		} else {
+			xkb_keysym_t *key = binding->keys->items[i];
+			if ((match = check_key(*key, 0)) == false) {
+				break;
+			}
 		}
 	}
 
