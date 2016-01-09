@@ -23,6 +23,7 @@ struct sway_variable {
 struct sway_binding {
 	int order;
 	bool release;
+	bool bindcode;
 	list_t *keys;
 	uint32_t modifiers;
 	char *command;

@@ -35,6 +35,7 @@ struct cmd_handler {
 };
 
 static sway_cmd cmd_bar;
+static sway_cmd cmd_bindcode;
 static sway_cmd cmd_bindsym;
 static sway_cmd cmd_debuglog;
 static sway_cmd cmd_exec;
@@ -168,6 +169,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->release = false;
+	binding->bindcode = false;
 
 	// Handle --release
 	if (strcmp("--release", argv[0]) == 0) {
@@ -219,6 +221,78 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	list_qsort(mode->bindings, sway_binding_cmp_qsort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_bindcode(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "bindcode", EXPECTED_MORE_THAN, 1))) {
+		return error;
+	} else if (!config->reading) {
+		return cmd_results_new(CMD_FAILURE, "bindcode", "Can only be used in config file.");
+	}
+
+
+	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
+	binding->keys = create_list();
+	binding->modifiers = 0;
+	binding->release = false;
+	binding->bindcode = true;
+
+	// Handle --release
+	if (strcmp("--release", argv[0]) == 0) {
+		if (argc >= 3) {
+			binding->release = true;
+			argv++;
+			argc--;
+		} else {
+			return cmd_results_new(CMD_FAILURE, "bindcode",
+				"Invalid bindcode command"
+				"(expected more than 2 arguments, got %d)", argc);
+		}
+	}
+
+	binding->command = join_args(argv + 1, argc - 1);
+
+	list_t *split = split_string(argv[0], "+");
+	for (int i = 0; i < split->length; ++i) {
+		// Check for a modifier key
+		uint32_t mod;
+		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {
+			binding->modifiers |= mod;
+			continue;
+		}
+		// parse keycode
+		int keycode = (int)strtol(split->items[i], NULL, 10);
+		if (!xkb_keycode_is_legal_x11(keycode)) {
+			error = cmd_results_new(CMD_INVALID, "bindcode", "Invalid keycode '%s'", (char *)split->items[i]);
+			free_sway_binding(binding);
+			list_free(split);
+			return error;
+		}
+		xkb_keycode_t *key = malloc(sizeof(xkb_keycode_t));
+		*key = keycode;
+		list_add(binding->keys, key);
+	}
+	free_flat_list(split);
+
+	struct sway_mode *mode = config->current_mode;
+	int i = list_seq_find(mode->bindings, sway_binding_cmp_keys, binding);
+	if (i > -1) {
+		struct sway_binding *dup = mode->bindings->items[i];
+		if (dup->bindcode) {
+			sway_log(L_DEBUG, "bindcode - '%s' already exists, overwriting", argv[0]);
+		} else {
+			sway_log(L_DEBUG, "bindcode - '%s' already exists as bindsym, overwriting", argv[0]);
+		}
+		free_sway_binding(dup);
+		list_del(mode->bindings, i);
+	}
+	binding->order = binding_order++;
+	list_add(mode->bindings, binding);
+	list_qsort(mode->bindings, sway_binding_cmp_qsort);
+
+	sway_log(L_DEBUG, "bindcode - Bound %s to command %s", argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -1552,6 +1626,7 @@ static struct cmd_results *cmd_ws_auto_back_and_forth(int argc, char **argv) {
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
 	{ "bar", cmd_bar },
+	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
 	{ "debuglog", cmd_debuglog },
 	{ "default_orientation", cmd_orientation },

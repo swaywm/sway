@@ -652,15 +652,27 @@ int sway_binding_cmp_keys(const void *a, const void *b) {
 	} else if (binda->modifiers < bindb->modifiers) {
 		return -1;
 	}
+	struct wlc_modifiers no_mods = { 0, 0 };
 	for (int i = 0; i < binda->keys->length; i++) {
-		xkb_keysym_t *ka = binda->keys->items[i],
-				*kb = bindb->keys->items[i];
-		if (*ka > *kb) {
+		xkb_keysym_t ka = *(xkb_keysym_t *)binda->keys->items[i],
+			kb = *(xkb_keysym_t *)bindb->keys->items[i];
+		if (binda->bindcode) {
+			uint32_t *keycode = binda->keys->items[i];
+			ka = wlc_keyboard_get_keysym_for_key(*keycode, &no_mods);
+		}
+
+		if (bindb->bindcode) {
+			uint32_t *keycode = bindb->keys->items[i];
+			kb = wlc_keyboard_get_keysym_for_key(*keycode, &no_mods);
+		}
+
+		if (ka > kb) {
 			return 1;
-		} else if (*ka < *kb) {
+		} else if (ka < kb) {
 			return -1;
 		}
 	}
+
 	return 0;
 }
 
