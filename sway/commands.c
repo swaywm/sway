@@ -2476,8 +2476,11 @@ struct cmd_results *handle_command(char *_exec) {
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
-			if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
-				strip_quotes(argv[1]);
+			int i;
+			for (i = 1; i < argc; ++i) {
+				if (*argv[i] == '\"' || *argv[i] == '\'') {
+					strip_quotes(argv[i]);
+				}
 			}
 			struct cmd_handler *handler = find_handler(argv[0], CMD_BLOCK_END);
 			if (!handler) {
