@@ -50,6 +50,7 @@ char *workspace_next_name(void) {
 		if (strcmp("workspace", cmd) == 0 && name) {
 			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
 			char *_target = strdup(name);
+			strip_quotes(_target);
 			while (isspace(*_target))
 				_target++;
 

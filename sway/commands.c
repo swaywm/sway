@@ -717,11 +717,14 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
 			}
 
-			const char *ws_name = argv[3];
+			char *ws_name = strdup(argv[3]);
+			strip_quotes(ws_name);
 			swayc_t *ws;
 			if (argc == 5 && strcasecmp(ws_name, "number") == 0) {
 				// move "container to workspace number x"
-				ws_name = argv[4];
+				free(ws_name);
+				ws_name = strdup(argv[4]);
+				strip_quotes(ws_name);
 				ws = workspace_by_number(ws_name);
 			} else {
 				ws = workspace_by_name(ws_name);
@@ -730,6 +733,7 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			if (ws == NULL) {
 				ws = workspace_create(ws_name);
 			}
+			free(ws_name);
 			move_container_to(view, get_focused_container(ws));
 		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "output") == 0) {
 			// move container to output x
