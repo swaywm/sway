@@ -34,6 +34,7 @@ struct cmd_handler {
 	sway_cmd *handle;
 };
 
+static sway_cmd cmd_assign;
 static sway_cmd cmd_bar;
 static sway_cmd cmd_bindcode;
 static sway_cmd cmd_bindsym;
@@ -152,6 +153,47 @@ static struct cmd_results *checkarg(int argc, const char *name, enum expected_ar
 		break;
 	}
 	return error;
+}
+
+static struct cmd_results *cmd_assign(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "assign", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+
+	char *criteria = *argv++;
+
+	if (strncmp(*argv, "→", 1) == 0) {
+		argv++;
+	}
+
+	char *movecmd = "move container to workspace ";
+	int arglen = strlen(*argv);
+	char *cmdlist = calloc(1, sizeof(movecmd) + arglen);
+
+	sprintf(cmdlist, "%s%s", movecmd, *argv);
+
+	struct criteria *crit = malloc(sizeof(struct criteria));
+	crit->crit_raw = strdup(criteria);
+	crit->cmdlist = cmdlist;
+	crit->tokens = create_list();
+	char *err_str = extract_crit_tokens(crit->tokens, crit->crit_raw);
+
+	if (err_str) {
+		error = cmd_results_new(CMD_INVALID, "assign", err_str);
+		free(err_str);
+		free_criteria(crit);
+	} else if (crit->tokens->length == 0) {
+		error = cmd_results_new(CMD_INVALID, "assign", "Found no name/value pairs in criteria");
+		free_criteria(crit);
+	} else if (list_seq_find(config->criteria, criteria_cmp, crit) != -1) {
+		sway_log(L_DEBUG, "assign: Duplicate, skipping.");
+		free_criteria(crit);
+	} else {
+		sway_log(L_DEBUG, "assign: '%s' -> '%s' added", crit->crit_raw, crit->cmdlist);
+		list_add(config->criteria, crit);
+	}
+	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 int binding_order = 0;
@@ -1625,6 +1667,7 @@ static struct cmd_results *cmd_ws_auto_back_and_forth(int argc, char **argv) {
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
+	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
