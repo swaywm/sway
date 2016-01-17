@@ -1,7 +1,9 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
 
+#include <libinput.h>
 #include <stdint.h>
+#include <wlc/geometry.h>
 #include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon.h>
 #include "wayland-desktop-shell-server-protocol.h"
@@ -43,6 +45,25 @@ struct sway_mouse_binding {
 struct sway_mode {
 	char *name;
 	list_t *bindings;
+};
+
+/**
+ * libinput options for input devices
+ */
+struct input_config {
+	char *identifier;
+	int click_method;
+	int drag_lock;
+	int dwt;
+	int middle_emulation;
+	int natural_scroll;
+	float pointer_accel;
+	int scroll_method;
+	int send_events;
+	int tap;
+
+	bool capturable;
+	struct wlc_geometry region;
 };
 
 /**
@@ -136,6 +157,7 @@ struct sway_config {
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
 	list_t *output_configs;
+	list_t *input_configs;
 	list_t *criteria;
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
@@ -172,6 +194,12 @@ bool read_config(FILE *file, bool is_active);
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
 char *do_var_replacement(char *str);
+
+int input_identifier_cmp(const void *item, const void *data);
+void merge_input_config(struct input_config *dst, struct input_config *src);
+void apply_input_config(struct input_config *ic, struct libinput_device *dev);
+void free_input_config(struct input_config *ic);
+
 int output_name_cmp(const void *item, const void *data);
 void merge_output_config(struct output_config *dst, struct output_config *src);
 /** Sets up a WLC output handle based on a given output_config.

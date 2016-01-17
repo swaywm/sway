@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <json-c/json.h>
 #include <list.h>
+#include <libinput.h>
 #include "ipc-server.h"
 #include "log.h"
 #include "config.h"
@@ -20,6 +21,7 @@
 #include "list.h"
 #include "stringop.h"
 #include "util.h"
+#include "input.h"
 
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;
@@ -323,6 +325,24 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(workspaces);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(workspaces); // free
+		break;
+	}
+	case IPC_GET_INPUTS:
+	{
+		json_object *inputs = json_object_new_array();
+		if (input_devices) {
+			for(int i=0; i<input_devices->length; i++) {
+				struct libinput_device *device = input_devices->items[i];
+				char* identifier = libinput_dev_unique_id(device);
+				json_object *device_object = json_object_new_object();
+				json_object_object_add(device_object, "identifier", json_object_new_string(identifier));
+				json_object_array_add(inputs, device_object);
+				free(identifier);
+			}
+		}
+		const char *json_string = json_object_to_json_string(inputs);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(inputs);
 		break;
 	}
 	case IPC_GET_OUTPUTS:

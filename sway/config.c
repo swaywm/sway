@@ -6,6 +6,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <libinput.h>
+#include <limits.h>
+#include <float.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "readline.h"
 #include "stringop.h"
@@ -16,6 +19,7 @@
 #include "layout.h"
 #include "input_state.h"
 #include "criteria.h"
+#include "input.h"
 
 struct sway_config *config = NULL;
 
@@ -59,6 +63,11 @@ static void free_bar(struct bar_config *bar) {
 	free(bar);
 }
 
+void free_input_config(struct input_config *ic) {
+	free(ic->identifier);
+	free(ic);
+}
+
 void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc);
@@ -99,6 +108,11 @@ static void free_config(struct sway_config *config) {
 	}
 	list_free(config->criteria);
 
+	for (i = 0; i < config->input_configs->length; ++i) {
+		free_input_config(config->input_configs->items[i]);
+	}
+	list_free(config->input_configs);
+
 	for (i = 0; i < config->output_configs->length; ++i) {
 		free_output_config(config->output_configs->items[i]);
 	}
@@ -119,6 +133,7 @@ static void config_defaults(struct sway_config *config) {
 	config->bars = create_list();
 	config->workspace_outputs = create_list();
 	config->criteria = create_list();
+	config->input_configs = create_list();
 	config->output_configs = create_list();
 
 	config->cmd_queue = create_list();
@@ -294,6 +309,14 @@ bool read_config(FILE *file, bool is_active) {
 			}
 			break;
 
+		case CMD_BLOCK_INPUT:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_INPUT;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
 		case CMD_BLOCK_BAR:
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_BAR;
@@ -315,6 +338,12 @@ bool read_config(FILE *file, bool is_active) {
 			case CMD_BLOCK_MODE:
 				sway_log(L_DEBUG, "End of mode block");
 				config->current_mode = config->modes->items[0];
+				block = CMD_BLOCK_END;
+				break;
+
+			case CMD_BLOCK_INPUT:
+				sway_log(L_DEBUG, "End of input block");
+				current_input_config = NULL;
 				block = CMD_BLOCK_END;
 				break;
 
@@ -353,11 +382,53 @@ bool read_config(FILE *file, bool is_active) {
 	return success;
 }
 
+int input_identifier_cmp(const void *item, const void *data) {
+	const struct input_config *ic = item;
+	const char *identifier = data;
+	return strcmp(ic->identifier, identifier);
+}
+
 int output_name_cmp(const void *item, const void *data) {
 	const struct output_config *output = item;
 	const char *name = data;
 
 	return strcmp(output->name, name);
+}
+
+void merge_input_config(struct input_config *dst, struct input_config *src) {
+	if (src->identifier) {
+		if (dst->identifier) {
+			free(dst->identifier);
+		}
+		dst->identifier = strdup(src->identifier);
+	}
+	if (src->click_method != INT_MIN) {
+		dst->click_method = src->click_method;
+	}
+	if (src->drag_lock != INT_MIN) {
+		dst->drag_lock = src->drag_lock;
+	}
+	if (src->dwt != INT_MIN) {
+		dst->dwt = src->dwt;
+	}
+	if (src->middle_emulation != INT_MIN) {
+		dst->middle_emulation = src->middle_emulation;
+	}
+	if (src->natural_scroll != INT_MIN) {
+		dst->natural_scroll = src->natural_scroll;
+	}
+	if (src->pointer_accel != FLT_MIN) {
+		dst->pointer_accel = src->pointer_accel;
+	}
+	if (src->scroll_method != INT_MIN) {
+		dst->scroll_method = src->scroll_method;
+	}
+	if (src->send_events != INT_MIN) {
+		dst->send_events = src->send_events;
+	}
+	if (src->tap != INT_MIN) {
+		dst->tap = src->tap;
+	}
 }
 
 void merge_output_config(struct output_config *dst, struct output_config *src) {
@@ -506,6 +577,51 @@ void load_swaybars(swayc_t *output, int output_idx) {
 	}
 
 	list_free(bars);
+}
+
+void apply_input_config(struct input_config *ic, struct libinput_device *dev) {
+	if (ic) {
+		sway_log(L_DEBUG,
+			"apply_input_config(%s)",
+			ic->identifier);
+	}
+
+	if (ic && ic->click_method != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) click_set_method(%d)", ic->identifier, ic->click_method);
+		libinput_device_config_click_set_method(dev, ic->click_method);
+	}
+	if (ic && ic->drag_lock != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) tap_set_drag_lock_enabled(%d)", ic->identifier, ic->click_method);
+		libinput_device_config_tap_set_drag_lock_enabled(dev, ic->drag_lock);
+	}
+	if (ic && ic->dwt != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) dwt_set_enabled(%d)", ic->identifier, ic->dwt);
+		libinput_device_config_dwt_set_enabled(dev, ic->dwt);
+	}
+	if (ic && ic->middle_emulation != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) middle_emulation_set_enabled(%d)", ic->identifier, ic->middle_emulation);
+		libinput_device_config_middle_emulation_set_enabled(dev, ic->middle_emulation);
+	}
+	if (ic && ic->natural_scroll != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) natural_scroll_set_enabled(%d)", ic->identifier, ic->natural_scroll);
+		libinput_device_config_scroll_set_natural_scroll_enabled(dev, ic->natural_scroll);
+	}
+	if (ic && ic->pointer_accel != FLT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) accel_set_speed(%f)", ic->identifier, ic->pointer_accel);
+		libinput_device_config_accel_set_speed(dev, ic->pointer_accel);
+	}
+	if (ic && ic->scroll_method != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) scroll_set_method(%d)", ic->identifier, ic->scroll_method);
+		libinput_device_config_scroll_set_method(dev, ic->scroll_method);
+	}
+	if (ic && ic->send_events != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) send_events_set_mode(%d)", ic->identifier, ic->send_events);
+		libinput_device_config_send_events_set_mode(dev, ic->send_events);
+	}
+	if (ic && ic->tap != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) tap_set_enabled(%d)", ic->identifier, ic->tap);
+		libinput_device_config_tap_set_enabled(dev, ic->tap);
+	}
 }
 
 void apply_output_config(struct output_config *oc, swayc_t *output) {
