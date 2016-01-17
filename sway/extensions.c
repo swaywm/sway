@@ -58,8 +58,6 @@ void arrange_background_view(swayc_t *view, double width, double height) {
 		struct background_config *config = desktop_shell.backgrounds->items[i];
 		if (config->handle == view->handle) {
 			struct wlc_size resolution = *wlc_output_get_resolution(config->output);
-			resolution.w = 100;
-			resolution.h = 100;
 			wlc_view_set_geometry(view->handle, WLC_RESIZE_EDGE_NONE, &(struct wlc_geometry){ wlc_origin_zero, resolution });
 			wlc_view_send_to_back(view->handle);
 		}

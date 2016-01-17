@@ -74,7 +74,6 @@ static void handle_output_destroyed(wlc_handle output) {
 
 static void handle_output_post_render(wlc_handle output) {
 	struct wlc_size resolution = *wlc_output_get_resolution(output);
-	swayc_t *swayc = swayc_by_handle(output);
 
 	int i;
 	for (i = 0; i < desktop_shell.panels->length; ++i) {
