@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
 			sway_abort("Invalid usage. See `man swaygrab` %d %d", argc, optind);
 		}
 	} else if (optind < argc) {
-		file = argv[optind];
+		file = strdup(argv[optind]);
 	}
 
 	int socketfd = ipc_open_socket(socket_path);
