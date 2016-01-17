@@ -16,4 +16,6 @@ void get_absolute_position(swayc_t *container, struct wlc_point *point);
 // given wlc_point.
 void get_absolute_center_position(swayc_t *container, struct wlc_point *point);
 
+struct output_config *config_for_output(wlc_handle output);
+
 #endif

@@ -11,6 +11,7 @@
 #include "layout.h"
 #include "input_state.h"
 #include "log.h"
+#include "output.h"
 
 #define ASSERT_NONNULL(PTR) \
 	sway_assert (PTR, #PTR "must be non-null")
@@ -90,21 +91,7 @@ swayc_t *new_output(wlc_handle handle) {
 
 	sway_log(L_DEBUG, "New output %lu:%s", handle, name);
 
-	struct output_config *oc = NULL;
-	int i;
-	for (i = 0; i < config->output_configs->length; ++i) {
-		struct output_config *cur = config->output_configs->items[i];
-		if (strcasecmp(name, cur->name) == 0) {
-			sway_log(L_DEBUG, "Matched output config for %s", name);
-			oc = cur;
-			break;
-		}
-		if (strcasecmp("*", cur->name) == 0) {
-			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
-			oc = cur;
-			break;
-		}
-	}
+	struct output_config *oc = config_for_output(handle);
 
 	if (oc && !oc->enabled) {
 		return NULL;
@@ -125,6 +112,7 @@ swayc_t *new_output(wlc_handle handle) {
 	// Create workspace
 	char *ws_name = NULL;
 	if (name) {
+		int i;
 		for (i = 0; i < config->workspace_outputs->length; ++i) {
 			struct workspace_output *wso = config->workspace_outputs->items[i];
 			if (strcasecmp(wso->output, name) == 0) {

@@ -1,4 +1,5 @@
 #include <strings.h>
+#include "config.h"
 #include "output.h"
 #include "log.h"
 
@@ -20,6 +21,26 @@ swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
 		}
 	}
 	return NULL;
+}
+
+struct output_config *config_for_output(wlc_handle output) {
+	const char *name = wlc_output_get_name(output);
+	struct output_config *oc = NULL;
+	int i;
+	for (i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *cur = config->output_configs->items[i];
+		if (strcasecmp(name, cur->name) == 0) {
+			sway_log(L_DEBUG, "Matched output config for %s", name);
+			oc = cur;
+			break;
+		}
+		if (strcasecmp("*", cur->name) == 0) {
+			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			oc = cur;
+			break;
+		}
+	}
+	return oc;
 }
 
 // Position is where on the edge (as absolute position) the adjacent output should be searched for.
