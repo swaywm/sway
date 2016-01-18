@@ -1,0 +1,28 @@
+#compdef sway
+#------------
+# Description
+# -----------
+#
+# Completion script for the sway window manager (http://swaywm.org)
+#
+# ---------------------------------------------
+# Author
+# -------
+#
+# * Seth Barberee <seth.barberee@gmail.com>
+#
+# -------------------------------
+
+_sway() {
+	local -a options
+	options=('--version:shows version'
+		'--help:shows help message'
+		'--config:Specify a config file different than $HOME/.config/sway/config'
+		'--validate:Check validity of the config file, then exit'
+		'--debug:Enables full logging, including debug information'
+		'--verbose:Enables more verbose logging'
+		'--get-socketpath:Gets the IPC socket path and prints it, then exits'
+		)
+	_describe 'values' options
+	}
+_sway "$@"
