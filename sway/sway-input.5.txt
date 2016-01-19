@@ -1,0 +1,46 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+sway (5)
+========
+
+Name
+----
+sway - input configuration file and commands
+
+Description
+-----------
+
+Sway allows for configuration of libinput dveices.
+
+
+Commands
+--------
+
+**input** <identifier> click_method <none|button_areas|clickfinger>:
+	Changes the click method for the specified device.
+
+**input** <identifier> drag_lock <enabled|disabled>:
+	Enables or disables drag lock for specified input device.
+
+**input** <identifier> dwt <enabled|disabled>:
+	Enables or disables disable-while-typing for the specified input device.
+
+**input** <identifier> events <enable|disabled>:
+	Enables or disables send_events for specified input device.
+	(Disabling  send_events disables the input device)
+
+**input** <identifier> middle_emulation <enabled|disabled>:
+	Enables or disables middle click emulation.
+
+**input** <identifier> natural_scroll <enabled|disabled>:
+	Enables or disables natural scrolling for the specified input device.
+
+**input** <identifier> pointer_accel <[-1,1]>:
+	Changes the pointer acceleration for the specified input device.
+
+**input** <identifier> scroll_method <none|two_finger|edge|on_button_down>:
+	Changes the scroll method for the specified input device.
+
+**input** <identifier> tap <enabled|disabled>:
+	Enables or disables tap for specified input device.

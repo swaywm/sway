@@ -11,6 +11,9 @@
 #include <wordexp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <limits.h>
+#include <float.h>
+#include <libinput.h>
 #include "stringop.h"
 #include "layout.h"
 #include "focus.h"
@@ -26,6 +29,8 @@
 #include "input_state.h"
 #include "criteria.h"
 #include "ipc-server.h"
+#include "list.h"
+#include "input.h"
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
@@ -49,6 +54,7 @@ static sway_cmd cmd_focus_follows_mouse;
 static sway_cmd cmd_for_window;
 static sway_cmd cmd_fullscreen;
 static sway_cmd cmd_gaps;
+static sway_cmd cmd_input;
 static sway_cmd cmd_kill;
 static sway_cmd cmd_layout;
 static sway_cmd cmd_log_colors;
@@ -864,6 +870,293 @@ static struct cmd_results *cmd_orientation(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "orientation", "Expected 'orientation <horizontal|vertical|auto>'");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static void input_cmd_apply(struct input_config *input) {
+	int i;
+	i = list_seq_find(config->input_configs, input_identifier_cmp, input->identifier);
+	if (i >= 0) {
+		// merge existing config
+		struct input_config *ic = config->input_configs->items[i];
+		merge_input_config(ic, input);
+		free_input_config(input);
+		input = ic;
+	} else {
+		list_add(config->input_configs, input);
+	}
+
+	current_input_config = input;
+
+	if (input->identifier) {
+		// Try to find the input device and apply configuration now. If
+		// this is during startup then there will be no container and config
+		// will be applied during normal "new input" event from wlc.
+		struct libinput_device *device = NULL;
+		for (int i = 0; i < input_devices->length; ++i) {
+			device = input_devices->items[i];
+			char* dev_identifier = libinput_dev_unique_id(device);
+			int match = dev_identifier && strcmp(dev_identifier, input->identifier) == 0;
+			free(dev_identifier);
+			if (match) {
+				apply_input_config(input, device);
+				break;
+			}
+		}
+	}
+}
+
+static struct cmd_results *input_cmd_click_method(int argc, char **argv) {
+	sway_log(L_DEBUG, "click_method for device:  %d %s", current_input_config==NULL, current_input_config->identifier);
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "click_method", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "click_method", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		new_config->click_method = LIBINPUT_CONFIG_CLICK_METHOD_NONE;
+	} else if (strcasecmp(argv[0], "button_areas") == 0) {
+		new_config->click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+	} else if (strcasecmp(argv[0], "clickfinger") == 0) {
+		new_config->click_method = LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
+	} else {
+		return cmd_results_new(CMD_INVALID, "click_method", "Expected 'click_method <none|button_areas|clickfinger'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "drag_lock", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "drag_lock", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "enabled") == 0) {
+		new_config->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED;
+	} else if (strcasecmp(argv[0], "disabled") == 0) {
+		new_config->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
+	} else {
+		return cmd_results_new(CMD_INVALID, "drag_lock", "Expected 'drag_lock <enabled|disabled>'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_dwt(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "dwt", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "dwt", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "enabled") == 0) {
+		new_config->dwt = LIBINPUT_CONFIG_DWT_ENABLED;
+	} else if (strcasecmp(argv[0], "disabled") == 0) {
+		new_config->dwt = LIBINPUT_CONFIG_DWT_DISABLED;
+	} else {
+		return cmd_results_new(CMD_INVALID, "dwt", "Expected 'dwt <enabled|disabled>'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_events(int argc, char **argv) {
+	sway_log(L_DEBUG, "events for device: %s", current_input_config->identifier);
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "events", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "events", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "enabled") == 0) {
+		new_config->send_events = LIBINPUT_CONFIG_SEND_EVENTS_ENABLED;
+	} else if (strcasecmp(argv[0], "disabled") == 0) {
+		new_config->send_events = LIBINPUT_CONFIG_SEND_EVENTS_DISABLED;
+	} else if (strcasecmp(argv[0], "disabled_on_external_mouse") == 0) {
+		new_config->send_events = LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
+	} else {
+		return cmd_results_new(CMD_INVALID, "events", "Expected 'events <enabled|disabled|disabled_on_external_mouse>'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_middle_emulation(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "middle_emulation", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "middle_emulation", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "enabled") == 0) {
+		new_config->middle_emulation = LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED;
+	} else if (strcasecmp(argv[0], "disabled") == 0) {
+		new_config->middle_emulation = LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+	} else {
+		return cmd_results_new(CMD_INVALID, "middle_emulation", "Expected 'middle_emulation <enabled|disabled>'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_natural_scroll(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "natural_scroll", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "natural_scoll", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "enabled") == 0) {
+		new_config->natural_scroll = 1;
+	} else if (strcasecmp(argv[0], "disabled") == 0) {
+		new_config->natural_scroll = 0;
+	} else {
+		return cmd_results_new(CMD_INVALID, "natural_scroll", "Expected 'natural_scroll <enabled|disabled>'");
+	}
+	
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_pointer_accel(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "pointer_accel", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "pointer_accel", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	float pointer_accel = atof(argv[0]);
+	if (pointer_accel < -1 || pointer_accel > 1) {
+		return cmd_results_new(CMD_INVALID, "pointer_accel", "Input out of range [-1, 1]");
+	}
+	new_config->pointer_accel = pointer_accel;
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_scroll_method(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "scroll_method", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "scroll_method", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		new_config->scroll_method = LIBINPUT_CONFIG_SCROLL_NO_SCROLL;
+	} else if (strcasecmp(argv[0], "two_finger") == 0) {
+		new_config->scroll_method = LIBINPUT_CONFIG_SCROLL_2FG;
+	} else if (strcasecmp(argv[0], "edge") == 0) {
+		new_config->scroll_method = LIBINPUT_CONFIG_SCROLL_EDGE;
+	} else if (strcasecmp(argv[0], "on_button_down") == 0) {
+		new_config->scroll_method = LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
+	} else {
+		return cmd_results_new(CMD_INVALID, "scroll_method", "Expected 'scroll_method <none|two_finger|edge|on_button_down>'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *input_cmd_tap(int argc, char **argv) {
+	sway_log(L_DEBUG, "tap for device: %s", current_input_config->identifier);
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "tap", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "tap", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "enabled") == 0) {
+		new_config->tap = LIBINPUT_CONFIG_TAP_ENABLED;
+	} else if (strcasecmp(argv[0], "disabled") == 0) {
+		new_config->tap = LIBINPUT_CONFIG_TAP_DISABLED;
+	} else {
+		return cmd_results_new(CMD_INVALID, "tap", "Expected 'tap <enabled|disabled>'");
+	}
+
+	sway_log(L_DEBUG, "apply-tap for device: %s", current_input_config->identifier);
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_input(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+
+	if (config->reading && strcmp("{", argv[1]) == 0) {
+		current_input_config = new_input_config(argv[0]);
+		sway_log(L_DEBUG, "entering input block: %s", current_input_config->identifier);
+		return cmd_results_new(CMD_BLOCK_INPUT, NULL, NULL);
+	}
+
+	if (argc > 2) {
+		int argc_new = argc-2;
+		char **argv_new = argv+2;
+
+		struct cmd_results *res;
+		current_input_config = new_input_config(argv[0]);
+		if (strcasecmp("click_method", argv[1]) == 0) {
+			res = input_cmd_click_method(argc_new, argv_new);
+		} else if (strcasecmp("drag_lock", argv[1]) == 0) {
+			res = input_cmd_drag_lock(argc_new, argv_new);
+		} else if (strcasecmp("dwt", argv[1]) == 0) {
+			res = input_cmd_dwt(argc_new, argv_new);
+		} else if (strcasecmp("events", argv[1]) == 0) {
+			res = input_cmd_events(argc_new, argv_new);
+		} else if (strcasecmp("middle_emulation", argv[1]) == 0) {
+			res = input_cmd_middle_emulation(argc_new, argv_new);
+		} else if (strcasecmp("natural_scroll", argv[1]) == 0) {
+			res = input_cmd_natural_scroll(argc_new, argv_new);
+		} else if (strcasecmp("pointer_accel", argv[1]) == 0) {
+			res = input_cmd_pointer_accel(argc_new, argv_new);
+		} else if (strcasecmp("scroll_method", argv[1]) == 0) {
+			res = input_cmd_scroll_method(argc_new, argv_new);
+		} else if (strcasecmp("tap", argv[1]) == 0) {
+			res = input_cmd_tap(argc_new, argv_new);
+		} else {
+			res = cmd_results_new(CMD_INVALID, "input <device>", "Unknonwn command %s", argv[1]);
+		}
+		current_input_config = NULL;
+		return res;
+	}
+
+	return cmd_results_new(CMD_BLOCK_INPUT, NULL, NULL);
 }
 
 static struct cmd_results *cmd_output(int argc, char **argv) {
@@ -1683,6 +1976,7 @@ static struct cmd_handler handlers[] = {
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
+	{ "input", cmd_input },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
@@ -2422,6 +2716,18 @@ static struct cmd_results *bar_colors_cmd_urgent_workspace(int argc, char **argv
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_handler input_handlers[] = {
+	{ "click_method", input_cmd_click_method },
+	{ "drag_lock", input_cmd_drag_lock },
+	{ "dwt", input_cmd_dwt },
+	{ "events", input_cmd_events },
+	{ "middle_emulation", input_cmd_middle_emulation },
+	{ "natural_scroll", input_cmd_natural_scroll },
+	{ "pointer_accel", input_cmd_pointer_accel },
+	{ "scroll_method", input_cmd_scroll_method },
+	{ "tap", input_cmd_tap },
+};
+
 static struct cmd_handler bar_colors_handlers[] = {
 	{ "active_workspace", bar_colors_cmd_active_workspace },
 	{ "background", bar_colors_cmd_background },
@@ -2442,6 +2748,7 @@ static int handler_compare(const void *_a, const void *_b) {
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
+	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_INPUT);
 	if (block == CMD_BLOCK_BAR) {
 		res = bsearch(&d, bar_handlers,
 			sizeof(bar_handlers) / sizeof(struct cmd_handler),
@@ -2449,6 +2756,11 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	} else if (block == CMD_BLOCK_BAR_COLORS){
 		res = bsearch(&d, bar_colors_handlers,
 			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_INPUT) {
+		sway_log(L_DEBUG, "lookng at input handlers");
+		res = bsearch(&d, input_handlers,
+			sizeof(input_handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	} else {
 		res = bsearch(&d, handlers,

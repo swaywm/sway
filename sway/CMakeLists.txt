@@ -4,6 +4,7 @@ include_directories(
 	${PCRE_INCLUDE_DIRS}
 	${JSONC_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
+	${LIBINPUT_LIBRARIES}
 )
 
 add_executable(sway
@@ -15,6 +16,7 @@ add_executable(sway
 	extensions.c
 	focus.c
 	handlers.c
+	input.c
 	input_state.c
 	ipc-server.c
 	layout.c
@@ -32,6 +34,7 @@ target_link_libraries(sway
 	${PCRE_LIBRARIES}
 	${JSONC_LIBRARIES}
 	${WAYLAND_SERVER_LIBRARIES}
+	${LIBINPUT_LIBRARIES}
 	m
 )
 

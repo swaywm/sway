@@ -1,6 +1,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <libinput.h>
 #include <math.h>
 #include <wlc/wlc.h>
 #include <wlc/wlc-wayland.h>
@@ -21,6 +22,8 @@
 #include "extensions.h"
 #include "criteria.h"
 #include "ipc-server.h"
+#include "list.h"
+#include "input.h"
 
 // Event should be sent to client
 #define EVENT_PASSTHROUGH false
@@ -29,6 +32,37 @@
 #define EVENT_HANDLED true
 
 /* Handles */
+
+static bool handle_input_created(struct libinput_device *device) {
+	const char *identifier = libinput_dev_unique_id(device);
+	sway_log(L_INFO, "Found input device (%s)", identifier);
+
+	list_add(input_devices, device);
+
+	struct input_config *ic = NULL;
+	int i;
+	for (i = 0; i < config->input_configs->length; ++i) {
+		struct input_config *cur = config->input_configs->items[i];
+		if (strcasecmp(identifier, cur->identifier) == 0) {
+			ic = cur;
+			break;
+		}
+	}
+
+	apply_input_config(ic, device);
+	return true;
+}
+
+static void handle_input_destroyed(struct libinput_device *device) {
+	int i;
+	list_t *list = input_devices;
+	for (i = 0; i < list->length; ++i) {
+		if(((struct libinput_device *)list->items[i]) == device) {
+			list_del(list, i);
+			break;
+		}
+	}
+}
 
 static bool handle_output_created(wlc_handle output) {
 	swayc_t *op = new_output(output);
@@ -660,5 +694,9 @@ struct wlc_interface interface = {
 	},
 	.compositor = {
 		.ready = handle_wlc_ready
+	},
+	.input = {
+		.created = handle_input_created,
+		.destroyed = handle_input_destroyed
 	}
 };

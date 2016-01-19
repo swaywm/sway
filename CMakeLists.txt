@@ -57,6 +57,9 @@ find_package(Pango)
 find_package(GdkPixbuf)
 find_package(PAM)
 
+find_package(LibInput REQUIRED)
+include_directories(${LIBINPUT_INClUDE_DIRS})
+
 find_package(Backtrace)
 if(Backtrace_FOUND)
 	include_directories("${Backtrace_INCLUDE_DIRS}")
