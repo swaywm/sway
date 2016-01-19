@@ -1,0 +1,26 @@
+#compdef swaymsg
+#-----------------
+# Description
+# -----------
+#
+# Completion script for swaymsg in sway wm (http://swaywm.org)
+#
+# ------------------------------------------------------
+# Author
+# --------
+#
+#  * Seth Barberee <seth.barberee@gmail.com>
+#
+#  -------------------------------------------
+
+_swaymsg() {
+	local -a options
+	options=('--version:shows version'
+		'--help:shows help message'
+		'--quiet:sends the IPC message but does not print the response from sway'
+		'--socket:Use the specified socket path. Otherwise, swaymsg uses $SWAYSOCK then $I3SOCK'
+		'--type:Specify the type of IPC message. Tab completion still coming so use the man page instead'
+		)
+	_describe 'values' options
+	}
+_swaymsg "$@"

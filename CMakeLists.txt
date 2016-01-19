@@ -45,6 +45,7 @@ option(enable-swaygrab "Enables the swaygrab utility" YES)
 option(enable-swaymsg "Enables the swaymsg utility" YES)
 option(enable-gdk-pixbuf "Use Pixbuf to support more image formats" YES)
 option(enable-binding-event "Enables binding event subscription" YES)
+option(zsh-completions "Zsh shell completions" YES)
 option(default-wallpaper "Installs the default wallpaper" YES)
 
 find_package(JsonC REQUIRED)
@@ -120,7 +121,9 @@ if(enable-swaylock)
 		message(WARNING "Not building swaylock - cairo, pango, and PAM are required.")
 	endif()
 endif()
-
+if(zsh-completions)
+	add_subdirectory(completions/zsh)
+endif()
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop
 	DESTINATION share/wayland-sessions

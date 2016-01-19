@@ -1,0 +1,28 @@
+#compdef swaygrab
+#-----------------
+# Description
+# -----------
+# 
+# Completion script for swaygrab in the sway wm (http://swaywm.org)
+#
+# -----------------------------------------------------
+# Author
+# ------
+#
+# * Seth Barberee <seth.barberee@gmail.com>
+#
+# ------------------------------------------
+
+_swaygrab() {
+	local -a options
+	options=('--version:shows version'
+		'--help:shows help message'
+		'--capture:Captures multiple frames as video as passes into ffmpeg until SIGTERM (ctrl+c) is sent to swaygrab'
+		'--output:Use the specified output. If no output is defined, the currently focused output in sway is used'
+		'--socket:Use the specified socket path. Otherwise, swayuses $SWAYSOCK then $I3SOCK'
+		'--rate:Specify a framerate (in fps). Used in combination with -c. Default is 30 and must be an integer'
+		'--raw:Instead of ImageMagick or ffmpeg, dump raw rgba data to stdout'
+		)
+	_describe 'values' options
+	}
+_swaygrab "$@"
