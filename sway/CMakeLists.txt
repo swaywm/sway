@@ -26,6 +26,10 @@ add_executable(sway
 	workspace.c
 )
 
+add_definitions(
+	-DSYSCONFDIR="${CMAKE_INSTALL_FULL_SYSCONFDIR}"
+)
+
 target_link_libraries(sway
 	sway-common
 	sway-protocols
