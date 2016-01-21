@@ -197,8 +197,8 @@ static char *get_config_path(void) {
 		"$XDG_CONFIG_HOME/sway/config",
 		"$HOME/.i3/config",
 		"$XDG_CONFIG_HOME/i3/config",
-		"${CMAKE_INSTALL_FULL_SYSCONFDIR}/sway/config",
-		"${CMAKE_INSTALL_FULL_SYSCONFDIR}/i3/config",
+		SYSCONFDIR "/sway/config",
+		SYSCONFDIR "/i3/config",
 	};
 
 	if (!getenv("XDG_CONFIG_HOME")) {
