@@ -35,12 +35,13 @@ static void update_focus(swayc_t *c) {
 		case C_WORKSPACE:
 			if (prev) {
 				ipc_event_workspace(prev, c, "focus");
-				// update visibility of old workspace
-				update_visibility(prev);
 
 				// if the old workspace has no children, destroy it
 				if(prev->children->length == 0 && prev->floating->length == 0){
 					destroy_workspace(prev);
+				} else {
+					// update visibility of old workspace
+					update_visibility(prev);
 				}
 			}
 			// Update visibility of newly focused workspace
