@@ -285,6 +285,7 @@ bool read_config(FILE *file, bool is_active) {
 		line_number++;
 		line = strip_whitespace(line);
 		if (line[0] == '#') {
+			free(line);
 			continue;
 		}
 		struct cmd_results *res = config_command(line, block);
