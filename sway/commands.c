@@ -1038,7 +1038,7 @@ static struct cmd_results *input_cmd_natural_scroll(int argc, char **argv) {
 	} else {
 		return cmd_results_new(CMD_INVALID, "natural_scroll", "Expected 'natural_scroll <enabled|disabled>'");
 	}
-	
+
 	input_cmd_apply(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
