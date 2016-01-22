@@ -2,8 +2,8 @@
 #-----------------
 # Description
 # -----------
-# 
-# Completion script for swaygrab in the sway wm (http://swaywm.org)
+#
+# Completion script for swaygrab in sway wm (http://swaywm.org)
 #
 # -----------------------------------------------------
 # Author
@@ -13,16 +13,11 @@
 #
 # ------------------------------------------
 
-_swaygrab() {
-	local -a options
-	options=('--version:shows version'
-		'--help:shows help message'
-		'--capture:Captures multiple frames as video as passes into ffmpeg until SIGTERM (ctrl+c) is sent to swaygrab'
-		'--output:Use the specified output. If no output is defined, the currently focused output in sway is used'
-		'--socket:Use the specified socket path. Otherwise, swayuses $SWAYSOCK then $I3SOCK'
-		'--rate:Specify a framerate (in fps). Used in combination with -c. Default is 30 and must be an integer'
-		'--raw:Instead of ImageMagick or ffmpeg, dump raw rgba data to stdout'
-		)
-	_describe 'values' options
-	}
-_swaygrab "$@"
+_arguments -s \
+	'(-h --help)'{-h,--help}'[Shows help message]' \
+	'(-c --capture)'{-c,--capture}'[Captures multiple frames as video and passes them to ffmpeg]' \
+	'(-o --output)'{-o,--output}'[Use the specified output. If not specified then current focused output will be used]' \
+	'(-v --version)'{-v,--version}'[Print the version (of swaymsg) and quit]' \
+	'(-s --socket)'{-s,--socket}'[Use the specified socket path. Otherwise, sway uses $SWAYSOCK then $I3SOCK]' \
+	'(-r --rate)'{-r,--rate}'[Specify a framerate (in fps). Used in combination with -c. Default is 30 and must be an integer]' \
+	'(--raw)--raw[Instead of ImageMagick or ffmpeg, dump raw rgba data to stdout]'
