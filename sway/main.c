@@ -187,6 +187,9 @@ int main(int argc, char **argv) {
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
 
+	// prevent ipc from crashing sway
+	signal(SIGPIPE, SIG_IGN);
+
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #endif
