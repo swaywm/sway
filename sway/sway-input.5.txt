@@ -1,12 +1,12 @@
 /////
 vim:set ts=4 sw=4 tw=82 noet:
 /////
-sway (5)
-========
+sway-input (5)
+==============
 
 Name
 ----
-sway - input configuration file and commands
+sway-input - input configuration file and commands
 
 Description
 -----------

@@ -56,3 +56,4 @@ install(
 
 add_manpage(sway 1)
 add_manpage(sway 5)
+add_manpage(sway-input 5)
