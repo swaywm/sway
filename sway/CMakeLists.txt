@@ -4,7 +4,7 @@ include_directories(
 	${PCRE_INCLUDE_DIRS}
 	${JSONC_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
-	${LIBINPUT_LIBRARIES}
+	${LIBINPUT_INCLUDE_DIRS}
 )
 
 add_executable(sway
