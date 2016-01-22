@@ -224,3 +224,8 @@ Currently supported attributes:
 	Compare against the workspace name for this view. Can be a regular expression.
 	If value is _focused_ then all the views on the currently focused workspace
 	matches.
+
+See Also
+--------
+
+**sway**(1) **sway-input**(5)

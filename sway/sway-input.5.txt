@@ -44,3 +44,8 @@ Commands
 
 **input** <identifier> tap <enabled|disabled>:
 	Enables or disables tap for specified input device.
+
+See Also
+--------
+
+**sway**(5)
