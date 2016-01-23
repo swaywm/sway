@@ -266,6 +266,7 @@ static bool handle_view_created(wlc_handle handle) {
 		sway_log(L_DEBUG, "Adding unmanaged window %p to %p", h, output->unmanaged);
 		list_add(output->unmanaged, h);
 	}
+	wlc_view_set_mask(handle, VISIBLE);
 	return true;
 }
 
