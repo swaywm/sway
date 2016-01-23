@@ -75,7 +75,7 @@ int function_conversation(int num_msg, const struct pam_message **msg,
 /**
  * password will be zeroed out.
  */
-bool verify_password(char *password) {
+bool verify_password() {
 	struct passwd *passwd = getpwuid(getuid());
 	char *username = passwd->pw_name;
 
@@ -86,14 +86,11 @@ bool verify_password(char *password) {
 		sway_abort("PAM returned %d\n", pam_err);
 	}
 	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
-		memset(password, 0, strlen(password));
 		return false;
 	}
 	if ((pam_err = pam_end(local_auth_handle, pam_err)) != PAM_SUCCESS) {
-		memset(password, 0, strlen(password));
 		return false;
 	}
-	memset(password, 0, strlen(password));
 	return true;
 }
 
@@ -101,9 +98,11 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
 		case XKB_KEY_Return:
-			if (verify_password(password)) {
+			if (verify_password()) {
 				exit(0);
 			}
+			password = malloc(1024); // TODO: Let this grow
+			password[0] = '\0';
 			break;
 		default:
 			{
