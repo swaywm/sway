@@ -19,24 +19,7 @@
 #include "client/pango.h"
 #include "stringop.h"
 #include "log.h"
-
-struct box_colors {
-	uint32_t border;
-	uint32_t background;
-	uint32_t text;
-};
-
-struct colors {
-	uint32_t background;
-	uint32_t statusline;
-	uint32_t separator;
-
-	struct box_colors focused_workspace;
-	struct box_colors active_workspace;
-	struct box_colors inactive_workspace;
-	struct box_colors urgent_workspace;
-	struct box_colors binding_mode;
-};
+#include "config.h"
 
 struct workspace {
 	int num;
@@ -71,49 +54,13 @@ pid_t pid;
 int status_read_fd;
 char line[1024];
 char line_rest[1024];
-char *output, *status_command;
+char *output;
 struct registry *registry;
 struct window *window;
 bool dirty = true;
-char *separator_symbol = NULL;
-char *mode = NULL;
-bool binding_mode_indicator = true;
-bool strip_workspace_numbers = false;
-bool workspace_buttons = true;
+struct swaybar_config *config;
 typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
 command_protocol protocol = UNDEF;
-
-struct colors colors = {
-	.background = 0x000000FF,
-	.statusline = 0xFFFFFFFF,
-	.separator = 0x666666FF,
-
-	.focused_workspace = {
-		.border = 0x4C7899FF,
-		.background = 0x285577FF,
-		.text = 0xFFFFFFFF
-	},
-	.active_workspace = {
-		.border = 0x333333FF,
-		.background = 0x5F676AFF,
-		.text = 0xFFFFFFFF
-	},
-	.inactive_workspace = {
-		.border = 0x333333FF,
-		.background = 0x222222FF,
-		.text = 0x888888FF
-	},
-	.urgent_workspace = {
-		.border = 0x2F343AFF,
-		.background = 0x900000FF,
-		.text = 0xFFFFFFFF
-	},
-	.binding_mode = {
-		.border = 0x2F343AFF,
-		.background = 0x900000FF,
-		.text = 0xFFFFFFFF
-	},
-};
 
 #define I3JSON_MAXDEPTH 4
 #define I3JSON_UNKNOWN 0
@@ -237,46 +184,6 @@ void ipc_update_workspaces() {
 	free(res);
 }
 
-uint32_t parse_color(const char *color) {
-	if (color[0] != '#') {
-		sway_abort("Invalid color %s", color);
-	}
-	char *end;
-	uint32_t res = (uint32_t)strtol(color + 1, &end, 16);
-	if (strlen(color) == 7) {
-		res = (res << 8) | 0xFF;
-	}
-	return res;
-}
-
-uint32_t parse_position(const char *position) {
-	if (strcmp("top", position) == 0) {
-		return DESKTOP_SHELL_PANEL_POSITION_TOP;
-	} else if (strcmp("bottom", position) == 0) {
-		return DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
-	} else if (strcmp("left", position) == 0) {
-		return DESKTOP_SHELL_PANEL_POSITION_LEFT;
-	} else if (strcmp("right", position) == 0) {
-		return DESKTOP_SHELL_PANEL_POSITION_RIGHT;
-	} else {
-		return DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
-	}
-}
-
-char *parse_font(const char *font) {
-	char *new_font = NULL;
-	if (strncmp("pango:", font, 6) == 0) {
-		new_font = strdup(font + 6);
-	}
-
-	return new_font;
-}
-
-static int margin = 3;
-static const int ws_hor_padding = 5;
-static double ws_ver_padding = 1.5;
-static const int ws_spacing = 1;
-
 void bar_ipc_init(int outputi, const char *bar_id) {
 	uint32_t len = 0;
 	char *res = ipc_single_command(ipc_socketfd, IPC_GET_OUTPUTS, NULL, &len);
@@ -312,11 +219,13 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	// TODO: More of these options
 	// TODO: Refactor swaybar into several files, create a bar config struct (shared with compositor?)
 	if (_status_command) {
-		status_command = strdup(json_object_get_string(_status_command));
+		free(config->status_command);
+		config->status_command = strdup(json_object_get_string(_status_command));
 	}
 
 	if (position) {
-		desktop_shell_set_panel_position(registry->desktop_shell, parse_position(json_object_get_string(position)));
+		config->position = parse_position(json_object_get_string(position));
+		desktop_shell_set_panel_position(registry->desktop_shell, config->position);
 	}
 
 	if (font) {
@@ -324,19 +233,20 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 	}
 
 	if (sep_symbol) {
-		separator_symbol = strdup(json_object_get_string(sep_symbol));
+		free(config->sep_symbol);
+		config->sep_symbol = strdup(json_object_get_string(sep_symbol));
 	}
 
 	if (_strip_workspace_numbers) {
-		strip_workspace_numbers = json_object_get_boolean(_strip_workspace_numbers);
+		config->strip_workspace_numbers = json_object_get_boolean(_strip_workspace_numbers);
 	}
 
 	if (_binding_mode_indicator) {
-		binding_mode_indicator = json_object_get_boolean(_binding_mode_indicator);
+		config->binding_mode_indicator = json_object_get_boolean(_binding_mode_indicator);
 	}
 
 	if (_workspace_buttons) {
-		workspace_buttons = json_object_get_boolean(_workspace_buttons);
+		config->workspace_buttons = json_object_get_boolean(_workspace_buttons);
 	}
 
 	if (bar_height) {
@@ -344,10 +254,10 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 		get_text_size(window, &width, &height, "Test string for measuring purposes");
 		int bar_height_value = json_object_get_int(bar_height);
 		if (bar_height_value > 0) {
-			margin = (bar_height_value - height) / 2;
-			ws_ver_padding = margin - 1.5;
+			config->margin = (bar_height_value - height) / 2;
+			config->ws_vertical_padding = config->margin - 1.5;
 		}
-		window->height = height + margin * 2;
+		window->height = height + config->margin * 2;
 	}
 
 	if (_colors) {
@@ -375,44 +285,50 @@ void bar_ipc_init(int outputi, const char *bar_id) {
 		json_object_object_get_ex(_colors, "binding_mode_border", &binding_mode_border);
 		json_object_object_get_ex(_colors, "binding_mode_bg", &binding_mode_bg);
 		json_object_object_get_ex(_colors, "binding_mode_text", &binding_mode_text);
-		if (background) colors.background = parse_color(json_object_get_string(background));
-		if (statusline) colors.statusline = parse_color(json_object_get_string(statusline));
-		if (separator) colors.separator = parse_color(json_object_get_string(separator));
+		if (background) {
+			config->colors.background = parse_color(json_object_get_string(background));
+		}
+		if (statusline) {
+			config->colors.statusline = parse_color(json_object_get_string(statusline));
+		}
+		if (separator) {
+			config->colors.separator = parse_color(json_object_get_string(separator));
+		}
 		if (focused_workspace_border) {
-			colors.focused_workspace.border = parse_color(json_object_get_string(focused_workspace_border));
+			config->colors.focused_workspace.border = parse_color(json_object_get_string(focused_workspace_border));
 		}
 		if (focused_workspace_bg) {
-			colors.focused_workspace.background = parse_color(json_object_get_string(focused_workspace_bg));
+			config->colors.focused_workspace.background = parse_color(json_object_get_string(focused_workspace_bg));
 		}
 		if (focused_workspace_text) {
-			colors.focused_workspace.text = parse_color(json_object_get_string(focused_workspace_text));
+			config->colors.focused_workspace.text = parse_color(json_object_get_string(focused_workspace_text));
 		}
 		if (active_workspace_border) {
-			colors.active_workspace.border = parse_color(json_object_get_string(active_workspace_border));
+			config->colors.active_workspace.border = parse_color(json_object_get_string(active_workspace_border));
 		}
 		if (active_workspace_bg) {
-			colors.active_workspace.background = parse_color(json_object_get_string(active_workspace_bg));
+			config->colors.active_workspace.background = parse_color(json_object_get_string(active_workspace_bg));
 		}
 		if (active_workspace_text) {
-			colors.active_workspace.text = parse_color(json_object_get_string(active_workspace_text));
+			config->colors.active_workspace.text = parse_color(json_object_get_string(active_workspace_text));
 		}
 		if (inactive_workspace_border) {
-			colors.inactive_workspace.border = parse_color(json_object_get_string(inactive_workspace_border));
+			config->colors.inactive_workspace.border = parse_color(json_object_get_string(inactive_workspace_border));
 		}
 		if (inactive_workspace_bg) {
-			colors.inactive_workspace.background = parse_color(json_object_get_string(inactive_workspace_bg));
+			config->colors.inactive_workspace.background = parse_color(json_object_get_string(inactive_workspace_bg));
 		}
 		if (inactive_workspace_text) {
-			colors.inactive_workspace.text = parse_color(json_object_get_string(inactive_workspace_text));
+			config->colors.inactive_workspace.text = parse_color(json_object_get_string(inactive_workspace_text));
 		}
 		if (binding_mode_border) {
-			colors.binding_mode.border = parse_color(json_object_get_string(binding_mode_border));
+			config->colors.binding_mode.border = parse_color(json_object_get_string(binding_mode_border));
 		}
 		if (binding_mode_bg) {
-			colors.binding_mode.background = parse_color(json_object_get_string(binding_mode_bg));
+			config->colors.binding_mode.background = parse_color(json_object_get_string(binding_mode_bg));
 		}
 		if (binding_mode_text) {
-			colors.binding_mode.text = parse_color(json_object_get_string(binding_mode_text));
+			config->colors.binding_mode.text = parse_color(json_object_get_string(binding_mode_text));
 		}
 	}
 
@@ -473,27 +389,27 @@ void render_block(struct status_block *block, double *x, bool edge) {
 	*x -= width;
 
 	if (block->border != 0 && block->border_left > 0) {
-		*x -= (block->border_left + margin);
-		block_width += block->border_left + margin;
+		*x -= (block->border_left + config->margin);
+		block_width += block->border_left + config->margin;
 	}
 
 	if (block->border != 0 && block->border_right > 0) {
-		*x -= (block->border_right + margin);
-		block_width += block->border_right + margin;
+		*x -= (block->border_right + config->margin);
+		block_width += block->border_right + config->margin;
 	}
 
 	// Add separator
 	if (!edge) {
-		if (separator_symbol) {
-			get_text_size(window, &sep_width, &height, "%s", separator_symbol);
+		if (config->sep_symbol) {
+			get_text_size(window, &sep_width, &height, "%s", config->sep_symbol);
 			if (sep_width > block->separator_block_width) {
-				block->separator_block_width = sep_width + margin * 2;
+				block->separator_block_width = sep_width + config->margin * 2;
 			}
 		}
 
 		*x -= block->separator_block_width;
 	} else {
-		*x -= margin;
+		*x -= config->margin;
 	}
 
 	double pos = *x;
@@ -531,7 +447,7 @@ void render_block(struct status_block *block, double *x, bool edge) {
 				block->border_left,
 				window->height - 2);
 
-		pos += block->border_left + margin;
+		pos += block->border_left + config->margin;
 	}
 
 	// render text
@@ -545,7 +461,7 @@ void render_block(struct status_block *block, double *x, bool edge) {
 		offset = pos + (width - textwidth) / 2;
 	}
 
-	cairo_move_to(window->cairo, offset, margin);
+	cairo_move_to(window->cairo, offset, config->margin);
 	cairo_set_source_u32(window->cairo, block->color);
 	pango_printf(window, "%s", block->full_text);
 
@@ -553,7 +469,7 @@ void render_block(struct status_block *block, double *x, bool edge) {
 
 	// render right border
 	if (block->border != 0 && block->border_right > 0) {
-		pos += margin;
+		pos += config->margin;
 
 		render_sharp_line(window->cairo, block->border,
 				pos - 0.5,
@@ -566,17 +482,17 @@ void render_block(struct status_block *block, double *x, bool edge) {
 
 	// render separator
 	if (!edge && block->separator) {
-		cairo_set_source_u32(window->cairo, colors.separator);
-		if (separator_symbol) {
+		cairo_set_source_u32(window->cairo, config->colors.separator);
+		if (config->sep_symbol) {
 			offset = pos + (block->separator_block_width - sep_width) / 2;
-			cairo_move_to(window->cairo, offset, margin);
-			pango_printf(window, "%s", separator_symbol);
+			cairo_move_to(window->cairo, offset, config->margin);
+			pango_printf(window, "%s", config->sep_symbol);
 		} else {
 			cairo_set_line_width(window->cairo, 1);
 			cairo_move_to(window->cairo, pos + block->separator_block_width/2,
-					margin);
+					config->margin);
 			cairo_line_to(window->cairo, pos + block->separator_block_width/2,
-					window->height - margin);
+					window->height - config->margin);
 			cairo_stroke(window->cairo);
 		}
 	}
@@ -609,63 +525,63 @@ char *handle_workspace_number(bool strip_num, const char *ws_name) {
 
 void render_workspace_button(struct workspace *ws, double *x) {
 	// strip workspace numbers if required
-	char *name = handle_workspace_number(strip_workspace_numbers, ws->name);
+	char *name = handle_workspace_number(config->strip_workspace_numbers, ws->name);
 
 	int width, height;
 	get_text_size(window, &width, &height, "%s", name);
 	struct box_colors box_colors;
 	if (ws->urgent) {
-		box_colors = colors.urgent_workspace;
+		box_colors = config->colors.urgent_workspace;
 	} else if (ws->focused) {
-		box_colors = colors.focused_workspace;
+		box_colors = config->colors.focused_workspace;
 	} else if (ws->visible) {
-		box_colors = colors.active_workspace;
+		box_colors = config->colors.active_workspace;
 	} else {
-		box_colors = colors.inactive_workspace;
+		box_colors = config->colors.inactive_workspace;
 	}
 
 	// background
 	cairo_set_source_u32(window->cairo, box_colors.background);
-	cairo_rectangle(window->cairo, *x, 1.5, width + ws_hor_padding * 2 - 1,
-			height + ws_ver_padding * 2);
+	cairo_rectangle(window->cairo, *x, 1.5, width + config->ws_horizontal_padding * 2 - 1,
+			height + config->ws_vertical_padding * 2);
 	cairo_fill(window->cairo);
 
 	// border
 	cairo_set_source_u32(window->cairo, box_colors.border);
-	cairo_rectangle(window->cairo, *x, 1.5, width + ws_hor_padding * 2 - 1,
-			height + ws_ver_padding * 2);
+	cairo_rectangle(window->cairo, *x, 1.5, width + config->ws_horizontal_padding * 2 - 1,
+			height + config->ws_vertical_padding * 2);
 	cairo_stroke(window->cairo);
 
 	// text
 	cairo_set_source_u32(window->cairo, box_colors.text);
-	cairo_move_to(window->cairo, (int)*x + ws_hor_padding, margin);
+	cairo_move_to(window->cairo, (int)*x + config->ws_horizontal_padding, config->margin);
 	pango_printf(window, "%s", name);
 
-	*x += width + ws_hor_padding * 2 + ws_spacing;
+	*x += width + config->ws_horizontal_padding * 2 + config->ws_spacing;
 
 	free(name);
 }
 
 void render_binding_mode_indicator(double pos) {
 	int width, height;
-	get_text_size(window, &width, &height, "%s", mode);
+	get_text_size(window, &width, &height, "%s", config->mode);
 
 	// background
-	cairo_set_source_u32(window->cairo, colors.binding_mode.background);
-	cairo_rectangle(window->cairo, pos, 1.5, width + ws_hor_padding * 2 - 1,
-			height + ws_ver_padding * 2);
+	cairo_set_source_u32(window->cairo, config->colors.binding_mode.background);
+	cairo_rectangle(window->cairo, pos, 1.5, width + config->ws_horizontal_padding * 2 - 1,
+			height + config->ws_vertical_padding * 2);
 	cairo_fill(window->cairo);
 
 	// border
-	cairo_set_source_u32(window->cairo, colors.binding_mode.border);
-	cairo_rectangle(window->cairo, pos, 1.5, width + ws_hor_padding * 2 - 1,
-			height + ws_ver_padding * 2);
+	cairo_set_source_u32(window->cairo, config->colors.binding_mode.border);
+	cairo_rectangle(window->cairo, pos, 1.5, width + config->ws_horizontal_padding * 2 - 1,
+			height + config->ws_vertical_padding * 2);
 	cairo_stroke(window->cairo);
 
 	// text
-	cairo_set_source_u32(window->cairo, colors.binding_mode.text);
-	cairo_move_to(window->cairo, (int)pos + ws_hor_padding, margin);
-	pango_printf(window, "%s", mode);
+	cairo_set_source_u32(window->cairo, config->colors.binding_mode.text);
+	cairo_move_to(window->cairo, (int)pos + config->ws_horizontal_padding, config->margin);
+	pango_printf(window, "%s", config->mode);
 }
 
 void render() {
@@ -678,16 +594,16 @@ void render() {
 	cairo_restore(window->cairo);
 
 	// Background
-	cairo_set_source_u32(window->cairo, colors.background);
+	cairo_set_source_u32(window->cairo, config->colors.background);
 	cairo_paint(window->cairo);
 
 	// Command output
-	cairo_set_source_u32(window->cairo, colors.statusline);
+	cairo_set_source_u32(window->cairo, config->colors.statusline);
 	int width, height;
 
 	if (protocol == TEXT) {
 		get_text_size(window, &width, &height, "%s", line);
-		cairo_move_to(window->cairo, window->width - margin - width, margin);
+		cairo_move_to(window->cairo, window->width - config->margin - width, config->margin);
 		pango_printf(window, "%s", line);
 	} else if (protocol == I3BAR && status_line) {
 		double pos = window->width - 0.5;
@@ -705,7 +621,7 @@ void render() {
 	double x = 0.5;
 
 	// Workspaces
-	if (workspace_buttons) {
+	if (config->workspace_buttons) {
 		for (i = 0; i < workspaces->length; ++i) {
 			struct workspace *ws = workspaces->items[i];
 			render_workspace_button(ws, &x);
@@ -713,7 +629,7 @@ void render() {
 	}
 
 	// binding mode indicator
-	if (mode && binding_mode_indicator) {
+	if (config->mode && config->binding_mode_indicator) {
 		render_binding_mode_indicator(x);
 	}
 }
@@ -802,7 +718,7 @@ void parse_json(const char *text) {
 		if (color) {
 			new->color = parse_color(json_object_get_string(color));
 		} else {
-			new->color = colors.statusline;
+			new->color = config->colors.statusline;
 		}
 
 		if (min_width) {
@@ -1092,11 +1008,11 @@ bool handle_ipc_event() {
 		if (json_object_object_get_ex(result, "change", &json_change)) {
 			const char *change = json_object_get_string(json_change);
 
-			free(mode);
+			free(config->mode);
 			if (strcmp(change, "default") == 0) {
-				mode = NULL;
+				config->mode = NULL;
 			} else {
-				mode = strdup(change);
+				config->mode = strdup(change);
 			}
 		} else {
 			sway_log(L_ERROR, "failed to parse response");
@@ -1142,7 +1058,7 @@ void poll_for_update() {
 			dirty = handle_ipc_event();
 		}
 
-		if (status_command && FD_ISSET(status_read_fd, &readfds)) {
+		if (config->status_command && FD_ISSET(status_read_fd, &readfds)) {
 			sway_log(L_DEBUG, "Got update from status command.");
 			switch (protocol) {
 			case I3BAR:
@@ -1185,10 +1101,10 @@ void poll_for_update() {
 }
 
 int main(int argc, char **argv) {
-
 	char *socket_path = NULL;
 	char *bar_id = NULL;
 	bool debug = false;
+	config = init_config();
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -1284,7 +1200,7 @@ int main(int argc, char **argv) {
 
 	bar_ipc_init(desired_output, bar_id);
 
-	if (status_command) {
+	if (config->status_command) {
 		int pipefd[2];
 		pipe(pipefd);
 		pid = fork();
@@ -1295,7 +1211,7 @@ int main(int argc, char **argv) {
 			char *const cmd[] = {
 				"sh",
 				"-c",
-				status_command,
+				config->status_command,
 				NULL,
 			};
 			execvp(cmd[0], cmd);

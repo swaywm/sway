@@ -8,6 +8,7 @@ include_directories(
 
 add_executable(swaybar
 	main.c
+	config.c
 )
 
 target_link_libraries(swaybar
