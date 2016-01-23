@@ -17,7 +17,6 @@ arch:
     - pango
     - cairo
     - gdk-pixbuf2
-    - xcb-util-wm
     - wlc-git
   script:
     - "cmake ."
