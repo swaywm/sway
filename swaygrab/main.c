@@ -39,7 +39,7 @@ void grab_and_apply_magick(const char *file, const char *output,
 
 	const char *fmt = "convert -depth 8 -size %dx%d+0 rgba:- -flip %s";
 	char *cmd = malloc(strlen(fmt) - 6 /*args*/
-			+ log10(width) + 1 + log10(height) + 1 + strlen(file) + 1);
+			+ numlen(width) + numlen(height) + strlen(file) + 1);
 	sprintf(cmd, fmt, width, height, file);
 
 	FILE *f = popen(cmd, "w");
@@ -72,7 +72,7 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 		"-video_size %dx%d -pixel_format argb "
 		"-i pipe:0 -r %d -vf vflip %s";
 	char *cmd = malloc(strlen(fmt) - 8 /*args*/
-			+ log10(width) + 1 + log10(height) + 1 + log10(framerate) + 1 * 2
+			+ numlen(width) + numlen(height) + numlen(framerate) * 2
 			+ strlen(file) + 1);
 	sprintf(cmd, fmt, framerate, width, height, framerate, file);
 

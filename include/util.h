@@ -11,6 +11,11 @@
 int wrap(int i, int max);
 
 /**
+ * Count number of digits in int
+ */
+int numlen(int n);
+
+/**
  * Get modifier mask from modifier name.
  *
  * Returns the modifer mask or 0 if the name isn't found.

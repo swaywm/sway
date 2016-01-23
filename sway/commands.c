@@ -14,7 +14,6 @@
 #include <limits.h>
 #include <float.h>
 #include <libinput.h>
-#include <math.h>
 #include "stringop.h"
 #include "layout.h"
 #include "focus.h"
@@ -1581,7 +1580,7 @@ static struct cmd_results *cmd_bar(int argc, char **argv) {
 	int i;
 	for (i = 0; i < config->bars->length; ++i) {
 		if (bar == config->bars->items[i]) {
-			const int len = 5 + log10(i) + 1; // "bar-" + i + \0
+			const int len = 5 + numlen(i); // "bar-" + i + \0
 			bar->id = malloc(len * sizeof(char));
 			snprintf(bar->id, len, "bar-%d", i);
 			break;
