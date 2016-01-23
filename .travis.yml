@@ -25,6 +25,7 @@ arch:
     - pango
     - cairo
     - gdk-pixbuf2
+    - xcb-util-wm
   script:
     - "bash .ci/build.sh"
 
