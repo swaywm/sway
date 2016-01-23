@@ -1194,7 +1194,7 @@ int main(int argc, char **argv) {
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 's'},
 		{"bar_id", required_argument, NULL, 'b'},
-		{"debug", required_argument, NULL, 'd'},
+		{"debug", no_argument, NULL, 'd'},
 		{0, 0, 0, 0}
 	};
 
