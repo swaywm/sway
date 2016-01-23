@@ -169,7 +169,10 @@ static struct cmd_results *cmd_assign(int argc, char **argv) {
 
 	char *criteria = *argv++;
 
-	if (strncmp(*argv, "→", 1) == 0) {
+	if (strncmp(*argv, "→", strlen("→")) == 0) {
+		if (argc < 3) {
+			return cmd_results_new(CMD_INVALID, "assign", "Missing workspace");
+		}
 		argv++;
 	}
 
