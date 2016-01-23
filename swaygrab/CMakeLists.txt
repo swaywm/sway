@@ -10,6 +10,7 @@ target_link_libraries(swaygrab
 	sway-common
 	${JSONC_LIBRARIES}
 	rt
+    m
 )
 
 install(
