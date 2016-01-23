@@ -11,7 +11,7 @@ sway-input - input configuration file and commands
 Description
 -----------
 
-Sway allows for configuration of libinput dveices.
+Sway allows for configuration of libinput devices.
 
 
 Commands
