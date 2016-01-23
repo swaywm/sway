@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <getopt.h>
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
@@ -91,7 +92,66 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 }
 
 int main(int argc, char **argv) {
+	char *image_path = NULL;
+	char *scaling_mode_str = "fit";
+
 	init_log(L_INFO);
+
+	static struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
+		{"image", required_argument, NULL, 'i'},
+		{"scaling", required_argument, NULL, 's'},
+		{"tiling", no_argument, NULL, 't'},
+		{"version", no_argument, NULL, 'v'},
+		{0, 0, 0, 0}
+	};
+
+	const char *usage =
+		"Usage: swaylock [options...]\n"
+		"\n"
+		"  -h, --help             Show help message and quit.\n"
+		"  -s, --scaling          Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling           Same as --scaling=tile.\n"
+		"  -v, --version          Show the version number and quit.\n"
+		"  -i, --image <path>     Display the given image.\n";
+
+	int c;
+	while (1) {
+		int option_index = 0;
+		c = getopt_long(argc, argv, "hi:s:tv", long_options, &option_index);
+		if (c == -1) {
+			break;
+		}
+		switch (c) {
+		case 'i':
+			image_path = optarg;
+			break;
+		case 's':
+			scaling_mode_str = optarg;
+			break;
+		case 't':
+			scaling_mode_str = "tile";
+			break;
+		case 'v':
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
+#else
+			fprintf(stdout, "version not detected\n");
+#endif
+			exit(EXIT_SUCCESS);
+			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	// TODO: support locking without image
+	if (!image_path) {
+			fprintf(stderr, "No image specified!\n");
+			exit(EXIT_FAILURE);
+	}
+
 	password = malloc(1024); // TODO: Let this grow
 	password[0] = '\0';
 	surfaces = create_list();
@@ -115,7 +175,7 @@ int main(int argc, char **argv) {
 
 #ifdef WITH_GDK_PIXBUF
 	GError *err = NULL;
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[1], &err); // TODO: Parse i3lock arguments
+	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
 	if (!pixbuf) {
 		sway_abort("Failed to load background image.");
 	}
@@ -130,7 +190,6 @@ int main(int argc, char **argv) {
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
 
-	const char *scaling_mode_str = argv[2];
 	enum scaling_mode scaling_mode = SCALING_MODE_STRETCH;
 	if (strcmp(scaling_mode_str, "stretch") == 0) {
 		scaling_mode = SCALING_MODE_STRETCH;
