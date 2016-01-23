@@ -20,6 +20,7 @@ struct output {
 	struct window *window;
 	struct registry *registry;
 	list_t *workspaces;
+	char *name;
 };
 
 struct workspace {

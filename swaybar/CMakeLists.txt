@@ -12,6 +12,7 @@ add_executable(swaybar
 	render.c
 	state.c
 	status_line.c
+	ipc.c
 )
 
 target_link_libraries(swaybar

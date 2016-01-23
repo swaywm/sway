@@ -48,7 +48,7 @@ static void free_status_block(void *item) {
 	free(sb);
 }
 
-static void parse_json(struct swaybar_state *st, const char *text) {
+static void parse_json(struct swaybar_state *state, const char *text) {
 	json_object *results = json_tokener_parse(text);
 	if (!results) {
 		sway_log(L_DEBUG, "Failed to parse json");
@@ -59,12 +59,12 @@ static void parse_json(struct swaybar_state *st, const char *text) {
 		return;
 	}
 
-	if (st->status->block_line) {
-		list_foreach(st->status->block_line, free_status_block);
-		list_free(st->status->block_line);
+	if (state->status->block_line) {
+		list_foreach(state->status->block_line, free_status_block);
+		list_free(state->status->block_line);
 	}
 
-	st->status->block_line = create_list();
+	state->status->block_line = create_list();
 
 	int i;
 	for (i = 0; i < json_object_array_length(results); ++i) {
@@ -108,7 +108,7 @@ static void parse_json(struct swaybar_state *st, const char *text) {
 		if (color) {
 			new->color = parse_color(json_object_get_string(color));
 		} else {
-			new->color = st->config->colors.statusline;
+			new->color = state->config->colors.statusline;
 		}
 
 		if (min_width) {
@@ -188,7 +188,7 @@ static void parse_json(struct swaybar_state *st, const char *text) {
 			new->border_right = 1;
 		}
 
-		list_add(st->status->block_line, new);
+		list_add(state->status->block_line, new);
 	}
 
 	json_object_put(results);
@@ -369,41 +369,41 @@ static int i3json_handle_data(struct swaybar_state *st, char *data) {
 }
 
 // read data from fd and parse it.
-static int i3json_handle_fd(struct swaybar_state *st) {
+static int i3json_handle_fd(struct swaybar_state *state) {
 	i3json_ensure_free(10240);
 	// get fresh data at the end of the buffer
-	int readlen = read(st->status_read_fd, i3json_state.parserpos, 10239);
+	int readlen = read(state->status_read_fd, i3json_state.parserpos, 10239);
 	if (readlen < 0) {
 		return readlen;
 	}
 	i3json_state.parserpos[readlen] = '\0';
-	return i3json_parse(st);
+	return i3json_parse(state);
 }
 
-bool handle_status_line(struct swaybar_state *st) {
+bool handle_status_line(struct swaybar_state *state) {
 	bool dirty = false;
 
-	switch (st->status->protocol) {
+	switch (state->status->protocol) {
 	case I3BAR:
 		sway_log(L_DEBUG, "Got i3bar protocol.");
-		if (i3json_handle_fd(st) > 0) {
+		if (i3json_handle_fd(state) > 0) {
 			dirty = true;
 		}
 		break;
 	case TEXT:
 		sway_log(L_DEBUG, "Got text protocol.");
-		read_line_tail(st->status_read_fd, line, sizeof(line), line_rest);
+		read_line_tail(state->status_read_fd, line, sizeof(line), line_rest);
 		dirty = true;
-		st->status->text_line = line;
+		state->status->text_line = line;
 		break;
 	case UNDEF:
 		sway_log(L_DEBUG, "Detecting protocol...");
-		if (read_line_tail(st->status_read_fd, line, sizeof(line), line_rest) < 0) {
+		if (read_line_tail(state->status_read_fd, line, sizeof(line), line_rest) < 0) {
 			break;
 		}
 		dirty = true;
-		st->status->text_line = line;
-		st->status->protocol = TEXT;
+		state->status->text_line = line;
+		state->status->protocol = TEXT;
 		if (line[0] == '{') {
 			// detect i3bar json protocol
 			json_object *proto = json_tokener_parse(line);
@@ -413,8 +413,8 @@ bool handle_status_line(struct swaybar_state *st) {
 							&& json_object_get_int(version) == 1
 				) {
 					sway_log(L_DEBUG, "Switched to i3bar protocol.");
-					st->status->protocol = I3BAR;
-					i3json_handle_data(st, line_rest);
+					state->status->protocol = I3BAR;
+					i3json_handle_data(state, line_rest);
 				}
 				json_object_put(proto);
 			}

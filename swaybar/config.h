@@ -26,11 +26,7 @@ struct swaybar_config {
 	bool binding_mode_indicator;
 	bool workspace_buttons;
 
-	int margin;
-	int ws_horizontal_padding;
-	double ws_vertical_padding;
-	int ws_spacing;
-	int text_height;
+	int height;
 
 	struct {
 		uint32_t background;

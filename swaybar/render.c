@@ -8,6 +8,13 @@
 #include "status_line.h"
 #include "render.h"
 
+
+/* internal spacing */
+static int margin = 3;
+static int ws_horizontal_padding = 5;
+static double ws_vertical_padding = 1.5;
+static int ws_spacing = 1;
+
 static void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 	cairo_set_source_rgba(cairo,
 			((color & 0xFF000000) >> 24) / 256.0,
@@ -62,13 +69,13 @@ static void render_block(struct window *window, struct swaybar_config *config, s
 	*x -= width;
 
 	if (block->border != 0 && block->border_left > 0) {
-		*x -= (block->border_left + config->margin);
-		block_width += block->border_left + config->margin;
+		*x -= (block->border_left + margin);
+		block_width += block->border_left + margin;
 	}
 
 	if (block->border != 0 && block->border_right > 0) {
-		*x -= (block->border_right + config->margin);
-		block_width += block->border_right + config->margin;
+		*x -= (block->border_right + margin);
+		block_width += block->border_right + margin;
 	}
 
 	// Add separator
@@ -76,13 +83,13 @@ static void render_block(struct window *window, struct swaybar_config *config, s
 		if (config->sep_symbol) {
 			get_text_size(window, &sep_width, &height, "%s", config->sep_symbol);
 			if (sep_width > block->separator_block_width) {
-				block->separator_block_width = sep_width + config->margin * 2;
+				block->separator_block_width = sep_width + margin * 2;
 			}
 		}
 
 		*x -= block->separator_block_width;
 	} else {
-		*x -= config->margin;
+		*x -= margin;
 	}
 
 	double pos = *x;
@@ -120,7 +127,7 @@ static void render_block(struct window *window, struct swaybar_config *config, s
 				block->border_left,
 				window->height - 2);
 
-		pos += block->border_left + config->margin;
+		pos += block->border_left + margin;
 	}
 
 	// render text
@@ -134,7 +141,7 @@ static void render_block(struct window *window, struct swaybar_config *config, s
 		offset = pos + (width - textwidth) / 2;
 	}
 
-	cairo_move_to(window->cairo, offset, config->margin);
+	cairo_move_to(window->cairo, offset, margin);
 	cairo_set_source_u32(window->cairo, block->color);
 	pango_printf(window, "%s", block->full_text);
 
@@ -142,7 +149,7 @@ static void render_block(struct window *window, struct swaybar_config *config, s
 
 	// render right border
 	if (block->border != 0 && block->border_right > 0) {
-		pos += config->margin;
+		pos += margin;
 
 		render_sharp_line(window->cairo, block->border,
 				pos - 0.5,
@@ -158,14 +165,14 @@ static void render_block(struct window *window, struct swaybar_config *config, s
 		cairo_set_source_u32(window->cairo, config->colors.separator);
 		if (config->sep_symbol) {
 			offset = pos + (block->separator_block_width - sep_width) / 2;
-			cairo_move_to(window->cairo, offset, config->margin);
+			cairo_move_to(window->cairo, offset, margin);
 			pango_printf(window, "%s", config->sep_symbol);
 		} else {
 			cairo_set_line_width(window->cairo, 1);
 			cairo_move_to(window->cairo, pos + block->separator_block_width/2,
-					config->margin);
+					margin);
 			cairo_line_to(window->cairo, pos + block->separator_block_width/2,
-					window->height - config->margin);
+					window->height - margin);
 			cairo_stroke(window->cairo);
 		}
 	}
@@ -215,22 +222,22 @@ static void render_workspace_button(struct window *window, struct swaybar_config
 
 	// background
 	cairo_set_source_u32(window->cairo, box_colors.background);
-	cairo_rectangle(window->cairo, *x, 1.5, width + config->ws_horizontal_padding * 2 - 1,
-			height + config->ws_vertical_padding * 2);
+	cairo_rectangle(window->cairo, *x, 1.5, width + ws_horizontal_padding * 2 - 1,
+			height + ws_vertical_padding * 2);
 	cairo_fill(window->cairo);
 
 	// border
 	cairo_set_source_u32(window->cairo, box_colors.border);
-	cairo_rectangle(window->cairo, *x, 1.5, width + config->ws_horizontal_padding * 2 - 1,
-			height + config->ws_vertical_padding * 2);
+	cairo_rectangle(window->cairo, *x, 1.5, width + ws_horizontal_padding * 2 - 1,
+			height + ws_vertical_padding * 2);
 	cairo_stroke(window->cairo);
 
 	// text
 	cairo_set_source_u32(window->cairo, box_colors.text);
-	cairo_move_to(window->cairo, (int)*x + config->ws_horizontal_padding, config->margin);
+	cairo_move_to(window->cairo, (int)*x + ws_horizontal_padding, margin);
 	pango_printf(window, "%s", name);
 
-	*x += width + config->ws_horizontal_padding * 2 + config->ws_spacing;
+	*x += width + ws_horizontal_padding * 2 + ws_spacing;
 
 	free(name);
 }
@@ -241,19 +248,19 @@ static void render_binding_mode_indicator(struct window *window, struct swaybar_
 
 	// background
 	cairo_set_source_u32(window->cairo, config->colors.binding_mode.background);
-	cairo_rectangle(window->cairo, pos, 1.5, width + config->ws_horizontal_padding * 2 - 1,
-			height + config->ws_vertical_padding * 2);
+	cairo_rectangle(window->cairo, pos, 1.5, width + ws_horizontal_padding * 2 - 1,
+			height + ws_vertical_padding * 2);
 	cairo_fill(window->cairo);
 
 	// border
 	cairo_set_source_u32(window->cairo, config->colors.binding_mode.border);
-	cairo_rectangle(window->cairo, pos, 1.5, width + config->ws_horizontal_padding * 2 - 1,
-			height + config->ws_vertical_padding * 2);
+	cairo_rectangle(window->cairo, pos, 1.5, width + ws_horizontal_padding * 2 - 1,
+			height + ws_vertical_padding * 2);
 	cairo_stroke(window->cairo);
 
 	// text
 	cairo_set_source_u32(window->cairo, config->colors.binding_mode.text);
-	cairo_move_to(window->cairo, (int)pos + config->ws_horizontal_padding, config->margin);
+	cairo_move_to(window->cairo, (int)pos + ws_horizontal_padding, margin);
 	pango_printf(window, "%s", config->mode);
 }
 
@@ -279,7 +286,7 @@ void render(struct output *output, struct swaybar_config *config, struct status_
 
 	if (line->protocol == TEXT) {
 		get_text_size(window, &width, &height, "%s", line->text_line);
-		cairo_move_to(cairo, window->width - config->margin - width, config->margin);
+		cairo_move_to(cairo, window->width - margin - width, margin);
 		pango_printf(window, "%s", line);
 	} else if (line->protocol == I3BAR && line->block_line) {
 		double pos = window->width - 0.5;
@@ -308,4 +315,14 @@ void render(struct output *output, struct swaybar_config *config, struct status_
 	if (config->mode && config->binding_mode_indicator) {
 		render_binding_mode_indicator(window, config, x);
 	}
+}
+
+void set_window_height(struct window *window, int height) {
+		int text_width, text_height;
+		get_text_size(window, &text_width, &text_height, "Test string for measuring purposes");
+		if (height > 0) {
+			margin = (height - text_height) / 2;
+			ws_vertical_padding = margin - 1.5;
+		}
+		window->height = text_height + margin * 2;
 }

@@ -45,19 +45,15 @@ struct swaybar_config *init_config() {
 	struct swaybar_config *config = calloc(1, sizeof(struct swaybar_config));
 	config->status_command = NULL;
 	config->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
-	config->font = NULL;
+	config->font = strdup("monospace 10");
 	config->mode = NULL;
 	config->sep_symbol = NULL;
 	config->strip_workspace_numbers = false;
 	config->binding_mode_indicator = true;
 	config->workspace_buttons = true;
 
-	/* layout */
-	config->margin = 3;
-	config->ws_horizontal_padding = 5;
-	config->ws_vertical_padding = 1.5;
-	config->ws_spacing = 1;
-	config->text_height = 30;
+	/* height */
+	config->height = 0;
 
 	/* colors */
 	config->colors.background = 0x000000FF;

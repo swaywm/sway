@@ -13,6 +13,7 @@ struct swaybar_state *init_state() {
 	state->output->window = NULL;
 	state->output->registry = NULL;
 	state->output->workspaces = create_list();
+	state->output->name = NULL;
 
 	return state;
 }
