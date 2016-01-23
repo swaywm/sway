@@ -9,6 +9,9 @@ include_directories(
 add_executable(swaybar
 	main.c
 	config.c
+	render.c
+	state.c
+	status_line.c
 )
 
 target_link_libraries(swaybar
