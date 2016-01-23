@@ -11,23 +11,17 @@ arch:
     - cmake
     - xorg-server-xwayland
     - asciidoc
-    - pcre
     - json-c
-    - pixman
     - wayland
-    - libxkbcommon
-    - libinput
-    - libx11
-    - libxcb
     - xcb-util-image
-    - libgl
-    - mesa
     - pango
     - cairo
     - gdk-pixbuf2
     - xcb-util-wm
+    - wlc-git
   script:
-    - "bash .ci/build.sh"
+    - "cmake ."
+    - "make"
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
