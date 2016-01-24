@@ -48,16 +48,26 @@ int function_conversation(int num_msg, const struct pam_message **msg,
 		"PAM_TEXT_INFO",
 	};
 
+	/* PAM expects an array of responses, one for each message */
+	struct pam_response *pam_reply = calloc(num_msg, sizeof(struct pam_response));
+	*resp = pam_reply;
+
 	for(int i=0; i<num_msg; ++i) {
 		sway_log(L_DEBUG, "msg[%d]: (%s) %s", i,
 				msg_style_names[msg[i]->msg_style],
 				msg[i]->msg);
-	}
 
-	struct pam_response *pam_reply = malloc(sizeof(struct pam_response));
-	pam_reply[0].resp = password;
-	pam_reply[0].resp_retcode = 0;
-	*resp = pam_reply;
+		switch (msg[i]->msg_style) {
+		case PAM_PROMPT_ECHO_OFF:
+		case PAM_PROMPT_ECHO_ON:
+			pam_reply[i].resp = password;
+			break;
+
+		case PAM_ERROR_MSG:
+		case PAM_TEXT_INFO:
+			break;
+		}
+	}
 
 	return PAM_SUCCESS;
 }
