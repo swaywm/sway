@@ -41,8 +41,8 @@ char *parse_font(const char *font) {
 	return new_font;
 }
 
-struct swaybar_config *init_config() {
-	struct swaybar_config *config = calloc(1, sizeof(struct swaybar_config));
+struct config *init_config() {
+	struct config *config = calloc(1, sizeof(struct config));
 	config->status_command = NULL;
 	config->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	config->font = strdup("monospace 10");
@@ -83,7 +83,7 @@ struct swaybar_config *init_config() {
 	return config;
 }
 
-void free_config(struct swaybar_config *config) {
+void free_config(struct config *config) {
 	free(config->status_command);
 	free(config->font);
 	free(config->mode);

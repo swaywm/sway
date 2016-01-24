@@ -55,7 +55,7 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color, double x, double y
 	}
 }
 
-static void render_block(struct window *window, struct swaybar_config *config, struct status_block *block, double *x, bool edge) {
+static void render_block(struct window *window, struct config *config, struct status_block *block, double *x, bool edge) {
 	int width, height, sep_width;
 	get_text_size(window, &width, &height, "%s", block->full_text);
 
@@ -203,7 +203,7 @@ static char *handle_workspace_number(bool strip_num, const char *ws_name) {
 	return strdup(ws_name);
 }
 
-static void render_workspace_button(struct window *window, struct swaybar_config *config, struct workspace *ws, double *x) {
+static void render_workspace_button(struct window *window, struct config *config, struct workspace *ws, double *x) {
 	// strip workspace numbers if required
 	char *name = handle_workspace_number(config->strip_workspace_numbers, ws->name);
 
@@ -242,7 +242,7 @@ static void render_workspace_button(struct window *window, struct swaybar_config
 	free(name);
 }
 
-static void render_binding_mode_indicator(struct window *window, struct swaybar_config *config, double pos) {
+static void render_binding_mode_indicator(struct window *window, struct config *config, double pos) {
 	int width, height;
 	get_text_size(window, &width, &height, "%s", config->mode);
 
@@ -264,7 +264,7 @@ static void render_binding_mode_indicator(struct window *window, struct swaybar_
 	pango_printf(window, "%s", config->mode);
 }
 
-void render(struct output *output, struct swaybar_config *config, struct status_line *line) {
+void render(struct output *output, struct config *config, struct status_line *line) {
 	int i;
 
 	struct window *window = output->window;

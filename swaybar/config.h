@@ -16,7 +16,7 @@ struct box_colors {
 /**
  * Swaybar config.
  */
-struct swaybar_config {
+struct config {
 	char *status_command;
 	uint32_t position;
 	char *font;
@@ -59,11 +59,11 @@ char *parse_font(const char *font);
 /**
  * Initialize default sway config.
  */
-struct swaybar_config *init_config();
+struct config *init_config();
 
 /**
  * Free config struct.
  */
-void free_config(struct swaybar_config *config);
+void free_config(struct config *config);
 
 #endif /* _SWAYBAR_CONFIG_H */

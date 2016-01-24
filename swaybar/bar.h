@@ -1,12 +1,12 @@
-#ifndef _SWAYBAR_STATE_H
-#define _SWAYBAR_STATE_H
+#ifndef _SWAYBAR_BAR_H
+#define _SWAYBAR_BAR_H
 
 #include "client/registry.h"
 #include "client/window.h"
 #include "list.h"
 
-struct swaybar_state {
-	struct swaybar_config *config;
+struct bar {
+	struct config *config;
 	struct status_line *status;
 	struct output *output;
 	/* list_t *outputs; */
@@ -33,14 +33,14 @@ struct workspace {
 };
 
 /**
- * Setup state.
+ * Setup bar.
  */
-void state_setup(struct swaybar_state *state, const char *socket_path, const char *bar_id, int desired_output);
+void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id, int desired_output);
 
 /**
- * State mainloop.
+ * Bar mainloop.
  */
-void state_run(struct swaybar_state *state);
+void bar_run(struct bar *bar);
 
 /**
  * free workspace list.
@@ -48,8 +48,8 @@ void state_run(struct swaybar_state *state);
 void free_workspaces(list_t *workspaces);
 
 /**
- * Teardown state.
+ * Teardown bar.
  */
-void state_teardown(struct swaybar_state *state);
+void bar_teardown(struct bar *bar);
 
-#endif /* _SWAYBAR_STATE_H */
+#endif /* _SWAYBAR_BAR_H */

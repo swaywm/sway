@@ -7,14 +7,14 @@
 #include "config.h"
 #include "ipc.h"
 
-static void ipc_parse_config(struct swaybar_config *config, const char *payload) {
+static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
-	json_object *tray_output, *mode, *hidden_state, *position, *status_command;
+	json_object *tray_output, *mode, *hidden_bar, *position, *status_command;
 	json_object *font, *bar_height, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
 	json_object_object_get_ex(bar_config, "mode", &mode);
-	json_object_object_get_ex(bar_config, "hidden_state", &hidden_state);
+	json_object_object_get_ex(bar_config, "hidden_bar", &hidden_bar);
 	json_object_object_get_ex(bar_config, "position", &position);
 	json_object_object_get_ex(bar_config, "status_command", &status_command);
 	json_object_object_get_ex(bar_config, "font", &font);
@@ -150,14 +150,14 @@ static void ipc_parse_config(struct swaybar_config *config, const char *payload)
 	json_object_put(bar_config);
 }
 
-static void ipc_update_workspaces(struct swaybar_state *state) {
-	if (state->output->workspaces) {
-		free_workspaces(state->output->workspaces);
+static void ipc_update_workspaces(struct bar *bar) {
+	if (bar->output->workspaces) {
+		free_workspaces(bar->output->workspaces);
 	}
-	state->output->workspaces = create_list();
+	bar->output->workspaces = create_list();
 
 	uint32_t len = 0;
-	char *res = ipc_single_command(state->ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
+	char *res = ipc_single_command(bar->ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
 	json_object *results = json_tokener_parse(res);
 	if (!results) {
 		free(res);
@@ -178,14 +178,14 @@ static void ipc_update_workspaces(struct swaybar_state *state) {
 		json_object_object_get_ex(ws_json, "output", &out);
 		json_object_object_get_ex(ws_json, "urgent", &urgent);
 
-		if (strcmp(json_object_get_string(out), state->output->name) == 0) {
+		if (strcmp(json_object_get_string(out), bar->output->name) == 0) {
 			struct workspace *ws = malloc(sizeof(struct workspace));
 			ws->num = json_object_get_int(num);
 			ws->name = strdup(json_object_get_string(name));
 			ws->visible = json_object_get_boolean(visible);
 			ws->focused = json_object_get_boolean(focused);
 			ws->urgent = json_object_get_boolean(urgent);
-			list_add(state->output->workspaces, ws);
+			list_add(bar->output->workspaces, ws);
 		}
 	}
 
@@ -193,36 +193,36 @@ static void ipc_update_workspaces(struct swaybar_state *state) {
 	free(res);
 }
 
-void ipc_bar_init(struct swaybar_state *state, int outputi, const char *bar_id) {
+void ipc_bar_init(struct bar *bar, int outputi, const char *bar_id) {
 	uint32_t len = 0;
-	char *res = ipc_single_command(state->ipc_socketfd, IPC_GET_OUTPUTS, NULL, &len);
+	char *res = ipc_single_command(bar->ipc_socketfd, IPC_GET_OUTPUTS, NULL, &len);
 	json_object *outputs = json_tokener_parse(res);
 	json_object *info = json_object_array_get_idx(outputs, outputi);
 	json_object *name;
 	json_object_object_get_ex(info, "name", &name);
-	state->output->name = strdup(json_object_get_string(name));
+	bar->output->name = strdup(json_object_get_string(name));
 	free(res);
 	json_object_put(outputs);
 
 	len = strlen(bar_id);
-	res = ipc_single_command(state->ipc_socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
+	res = ipc_single_command(bar->ipc_socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
 
-	ipc_parse_config(state->config, res);
+	ipc_parse_config(bar->config, res);
 	free(res);
 
 	const char *subscribe_json = "[ \"workspace\", \"mode\" ]";
 	len = strlen(subscribe_json);
-	res = ipc_single_command(state->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
 
-	ipc_update_workspaces(state);
+	ipc_update_workspaces(bar);
 }
 
-bool handle_ipc_event(struct swaybar_state *state) {
-	struct ipc_response *resp = ipc_recv_response(state->ipc_event_socketfd);
+bool handle_ipc_event(struct bar *bar) {
+	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
-		ipc_update_workspaces(state);
+		ipc_update_workspaces(bar);
 		break;
 	case IPC_EVENT_MODE: {
 		json_object *result = json_tokener_parse(resp->payload);
@@ -235,11 +235,11 @@ bool handle_ipc_event(struct swaybar_state *state) {
 		if (json_object_object_get_ex(result, "change", &json_change)) {
 			const char *change = json_object_get_string(json_change);
 
-			free(state->config->mode);
+			free(bar->config->mode);
 			if (strcmp(change, "default") == 0) {
-				state->config->mode = NULL;
+				bar->config->mode = NULL;
 			} else {
-				state->config->mode = strdup(change);
+				bar->config->mode = strdup(change);
 			}
 		} else {
 			sway_log(L_ERROR, "failed to parse response");

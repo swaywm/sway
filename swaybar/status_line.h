@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #include "list.h"
-#include "state.h"
+#include "bar.h"
 
 typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
 
@@ -40,7 +40,7 @@ struct status_line *init_status_line();
 /**
  * handle status line activity.
  */
-bool handle_status_line(struct swaybar_state *st);
+bool handle_status_line(struct bar *bar);
 
 /**
  * Free status line struct.

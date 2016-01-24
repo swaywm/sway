@@ -10,7 +10,7 @@ add_executable(swaybar
 	main.c
 	config.c
 	render.c
-	state.c
+	bar.c
 	status_line.c
 	ipc.c
 )

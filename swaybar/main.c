@@ -5,17 +5,18 @@
 #include <getopt.h>
 #include "ipc-client.h"
 #include "log.h"
-#include "state.h"
+#include "bar.h"
 
-struct swaybar_state state;
+/* global bar state */
+struct bar swaybar;
 
 void sway_terminate(void) {
-	state_teardown(&state);
+	bar_teardown(&swaybar);
 	exit(EXIT_FAILURE);
 }
 
 void sig_handler(int signal) {
-	state_teardown(&state);
+	bar_teardown(&swaybar);
 	exit(0);
 }
 
@@ -102,15 +103,15 @@ int main(int argc, char **argv) {
 
 	signal(SIGTERM, sig_handler);
 
-	state_setup(&state, socket_path, bar_id, desired_output);
+	bar_setup(&swaybar, socket_path, bar_id, desired_output);
 
 	free(socket_path);
 	free(bar_id);
 
-	state_run(&state);
+	bar_run(&swaybar);
 
 	// gracefully shutdown swaybar and status_command
-	state_teardown(&state);
+	bar_teardown(&swaybar);
 
 	return 0;
 }
