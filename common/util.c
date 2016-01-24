@@ -8,7 +8,7 @@ int wrap(int i, int max) {
 
 int numlen(int n) {
 	if (n == 0) {
-		return n;
+		return 1;
 	}
 	return log10(n) + 1;
 }
