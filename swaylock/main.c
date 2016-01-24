@@ -40,6 +40,20 @@ char *password;
 int function_conversation(int num_msg, const struct pam_message **msg,
 		struct pam_response **resp, void *appdata_ptr) {
 
+	const char* msg_style_names[] = {
+		NULL,
+		"PAM_PROMPT_ECHO_OFF",
+		"PAM_PROMPT_ECHO_ON",
+		"PAM_ERROR_MSG",
+		"PAM_TEXT_INFO",
+	};
+
+	for(int i=0; i<num_msg; ++i) {
+		sway_log(L_DEBUG, "msg[%d]: (%s) %s", i,
+				msg_style_names[msg[i]->msg_style],
+				msg[i]->msg);
+	}
+
 	struct pam_response *pam_reply = malloc(sizeof(struct pam_response));
 	pam_reply[0].resp = password;
 	pam_reply[0].resp_retcode = 0;
