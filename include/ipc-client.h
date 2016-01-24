@@ -1,6 +1,8 @@
 #ifndef _SWAY_IPC_CLIENT_H
 #define _SWAY_IPC_CLIENT_H
 
+#include <stdint.h>
+
 #include "ipc.h"
 
 /**

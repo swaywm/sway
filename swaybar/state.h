@@ -33,9 +33,14 @@ struct workspace {
 };
 
 /**
- * Initialize state.
+ * Setup state.
  */
-struct swaybar_state *init_state();
+void state_setup(struct swaybar_state *state, const char *socket_path, const char *bar_id, int desired_output);
+
+/**
+ * State mainloop.
+ */
+void state_run(struct swaybar_state *state);
 
 /**
  * free workspace list.
@@ -43,8 +48,8 @@ struct swaybar_state *init_state();
 void free_workspaces(list_t *workspaces);
 
 /**
- * Free state struct.
+ * Teardown state.
  */
-void free_state(struct swaybar_state *state);
+void state_teardown(struct swaybar_state *state);
 
 #endif /* _SWAYBAR_STATE_H */
