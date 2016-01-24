@@ -36,11 +36,15 @@ void sway_terminate(void) {
 }
 
 char *password;
-struct pam_response *pam_reply;
 
 int function_conversation(int num_msg, const struct pam_message **msg,
 		struct pam_response **resp, void *appdata_ptr) {
+
+	struct pam_response *pam_reply = malloc(sizeof(struct pam_response));
+	pam_reply[0].resp = password;
+	pam_reply[0].resp_retcode = 0;
 	*resp = pam_reply;
+
 	return PAM_SUCCESS;
 }
 
@@ -57,9 +61,6 @@ bool verify_password(char *password) {
 	if ((pam_err = pam_start("swaylock", username, &local_conversation, &local_auth_handle)) != PAM_SUCCESS) {
 		sway_abort("PAM returned %d\n", pam_err);
 	}
-	pam_reply = (struct pam_response *)malloc(sizeof(struct pam_response));
-	pam_reply[0].resp = password;
-	pam_reply[0].resp_retcode = 0;
 	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
 		memset(password, 0, strlen(password));
 		return false;
