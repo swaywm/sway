@@ -5,7 +5,7 @@
 #include <getopt.h>
 #include "ipc-client.h"
 #include "log.h"
-#include "bar.h"
+#include "bar/bar.h"
 
 /* global bar state */
 struct bar swaybar;

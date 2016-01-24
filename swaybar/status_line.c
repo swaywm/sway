@@ -4,8 +4,8 @@
 #include <json-c/json.h>
 
 #include "log.h"
-#include "config.h"
-#include "status_line.h"
+#include "bar/config.h"
+#include "bar/status_line.h"
 
 #define I3JSON_MAXDEPTH 4
 #define I3JSON_UNKNOWN 0

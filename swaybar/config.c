@@ -3,7 +3,7 @@
 
 #include "wayland-desktop-shell-client-protocol.h"
 #include "log.h"
-#include "config.h"
+#include "bar/config.h"
 
 uint32_t parse_color(const char *color) {
 	if (color[0] != '#') {

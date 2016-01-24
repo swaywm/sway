@@ -8,11 +8,11 @@
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
-#include "ipc.h"
-#include "render.h"
-#include "config.h"
-#include "status_line.h"
-#include "bar.h"
+#include "bar/ipc.h"
+#include "bar/render.h"
+#include "bar/config.h"
+#include "bar/status_line.h"
+#include "bar/bar.h"
 
 static void bar_init(struct bar *bar) {
 	bar->config = init_config();

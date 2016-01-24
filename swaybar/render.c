@@ -4,9 +4,9 @@
 
 #include "client/pango.h"
 #include "client/window.h"
-#include "config.h"
-#include "status_line.h"
-#include "render.h"
+#include "bar/config.h"
+#include "bar/status_line.h"
+#include "bar/render.h"
 
 
 /* internal spacing */

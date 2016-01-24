@@ -4,8 +4,8 @@
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
-#include "config.h"
-#include "ipc.h"
+#include "bar/config.h"
+#include "bar/ipc.h"
 
 static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
