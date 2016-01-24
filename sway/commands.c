@@ -361,8 +361,10 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 			return error;
 		}
 
+		add_quotes(argv + 1, argc - 1);
 		tmp = join_args(argv + 1, argc - 1);
 	} else {
+		add_quotes(argv, argc);
 		tmp = join_args(argv, argc);
 	}
 

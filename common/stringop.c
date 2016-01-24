@@ -273,6 +273,32 @@ char *join_args(char **argv, int argc) {
 	return res;
 }
 
+static bool has_whitespace(const char *str) {
+	while (*str) {
+		if (isspace(*str)) {
+			return true;
+		}
+		++str;
+	}
+	return false;
+}
+
+/**
+ * Add quotes around any argv with whitespaces.
+ */
+void add_quotes(char **argv, int argc) {
+	int i;
+	for (i = 0; i < argc; ++i) {
+		if (has_whitespace(argv[i])) {
+			int len = strlen(argv[i]) + 3;
+			char *tmp = argv[i];
+			argv[i] = malloc(len * sizeof(char));
+			snprintf(argv[i], len, "\"%s\"", tmp);
+			free(tmp);
+		}
+	}
+}
+
 /*
  * Join a list of strings, adding separator in between. Separator can be NULL.
  */
