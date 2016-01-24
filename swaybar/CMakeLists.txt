@@ -23,7 +23,6 @@ target_link_libraries(swaybar
 	${CAIRO_LIBRARIES}
 	${PANGO_LIBRARIES}
 	${JSONC_LIBRARIES}
-	m
 )
 
 install(
