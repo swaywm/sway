@@ -3,6 +3,7 @@
 
 #include "client/registry.h"
 #include "client/window.h"
+#include "list.h"
 
 struct swaybar_state {
 	struct swaybar_config *config;
@@ -37,8 +38,13 @@ struct workspace {
 struct swaybar_state *init_state();
 
 /**
- * free workspace struct.
+ * free workspace list.
  */
-void free_workspace(void *item);
+void free_workspaces(list_t *workspaces);
+
+/**
+ * Free state struct.
+ */
+void free_state(struct swaybar_state *state);
 
 #endif /* _SWAYBAR_STATE_H */

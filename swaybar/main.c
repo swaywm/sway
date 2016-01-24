@@ -27,47 +27,13 @@
 
 struct swaybar_state *state;
 
-void swaybar_teardown() {
-	window_teardown(state->output->window);
-	if (state->output->registry) {
-		registry_teardown(state->output->registry);
-	}
-
-	if (state->status_read_fd) {
-		close(state->status_read_fd);
-	}
-
-	if (state->status_command_pid) {
-		// terminate status_command process
-		int ret = kill(state->status_command_pid, SIGTERM);
-		if (ret != 0) {
-			sway_log(L_ERROR, "Unable to terminate status_command [pid: %d]", state->status_command_pid);
-		} else {
-			int status;
-			waitpid(state->status_command_pid, &status, 0);
-		}
-	}
-
-	if (state->status_read_fd) {
-		close(state->status_read_fd);
-	}
-
-	if (state->ipc_socketfd) {
-		close(state->ipc_socketfd);
-	}
-
-	if (state->ipc_event_socketfd) {
-		close(state->ipc_event_socketfd);
-	}
-}
-
 void sway_terminate(void) {
-	swaybar_teardown();
+	free_state(state);
 	exit(EXIT_FAILURE);
 }
 
 void sig_handler(int signal) {
-	swaybar_teardown();
+	free_state(state);
 	exit(0);
 }
 
@@ -244,7 +210,7 @@ int main(int argc, char **argv) {
 	poll_for_update();
 
 	// gracefully shutdown swaybar and status_command
-	swaybar_teardown();
+	free_state(state);
 
 	return 0;
 }

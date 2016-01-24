@@ -433,3 +433,10 @@ struct status_line *init_status_line() {
 
 	return line;
 }
+
+void free_status_line(struct status_line *line) {
+	if (line->block_line) {
+		list_foreach(line->block_line, free_status_block);
+		list_free(line->block_line);
+	}
+}

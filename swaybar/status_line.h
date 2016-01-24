@@ -11,7 +11,7 @@ typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
 
 struct status_line {
 	list_t *block_line;
-	char *text_line;
+	const char *text_line;
 	command_protocol protocol;
 };
 
@@ -41,5 +41,10 @@ struct status_line *init_status_line();
  * handle status line activity.
  */
 bool handle_status_line(struct swaybar_state *st);
+
+/**
+ * Free status line struct.
+ */
+void free_status_line(struct status_line *line);
 
 #endif /* _SWAYBAR_STATUS_LINE_H */

@@ -152,8 +152,7 @@ static void ipc_parse_config(struct swaybar_config *config, const char *payload)
 
 static void ipc_update_workspaces(struct swaybar_state *state) {
 	if (state->output->workspaces) {
-		list_foreach(state->output->workspaces, free_workspace);
-		list_free(state->output->workspaces);
+		free_workspaces(state->output->workspaces);
 	}
 	state->output->workspaces = create_list();
 
