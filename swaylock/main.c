@@ -115,6 +115,20 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 	}
 }
 
+static void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
+	cairo_set_source_rgba(cairo,
+			(color >> (3*8) & 0xFF) / 255.0,
+			(color >> (2*8) & 0xFF) / 255.0,
+			(color >> (1*8) & 0xFF) / 255.0,
+			(color >> (0*8) & 0xFF) / 255.0);
+}
+
+void render_color(struct window *window, uint32_t color) {
+	cairo_set_source_u32(window->cairo, color);
+	cairo_paint(window->cairo);
+	window_render(window);
+}
+
 void render_image(struct window *window, cairo_surface_t *image, enum scaling_mode scaling_mode) {
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
@@ -188,11 +202,13 @@ void render_image(struct window *window, cairo_surface_t *image, enum scaling_mo
 int main(int argc, char **argv) {
 	char *image_path = NULL;
 	char *scaling_mode_str = "fit";
+	uint32_t color = 0xFFFFFFFF;
 
 	init_log(L_INFO);
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
+		{"color", required_argument, NULL, 'c'},
 		{"image", required_argument, NULL, 'i'},
 		{"scaling", required_argument, NULL, 's'},
 		{"tiling", no_argument, NULL, 't'},
@@ -204,6 +220,7 @@ int main(int argc, char **argv) {
 		"Usage: swaylock [options...]\n"
 		"\n"
 		"  -h, --help             Show help message and quit.\n"
+		"  -c, --color <rrggbb>   Turn the screen into the given color instead of white.\n"
 		"  -s, --scaling          Scaling mode: stretch, fill, fit, center, tile.\n"
 		"  -t, --tiling           Same as --scaling=tile.\n"
 		"  -v, --version          Show the version number and quit.\n"
@@ -212,11 +229,21 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hi:s:tv", long_options, &option_index);
+		c = getopt_long(argc, argv, "hc:i:s:tv", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
+		case 'c':
+			if (strlen(optarg) < 6) {
+				fprintf(stderr, "color must be specified in 3 byte format, e.g. ff0000\n");
+				exit(EXIT_FAILURE);
+			}
+			color = strtol(optarg, NULL, 16);
+			color <<= 8;
+			color |= 0xFF;
+			sway_log(L_DEBUG, "color: 0x%x", color);
+			break;
 		case 'i':
 			image_path = optarg;
 			break;
@@ -238,12 +265,6 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
 		}
-	}
-
-	// TODO: support locking without image
-	if (!image_path) {
-			fprintf(stderr, "No image specified!\n");
-			exit(EXIT_FAILURE);
 	}
 
 	enum scaling_mode scaling_mode = SCALING_MODE_STRETCH;
@@ -283,19 +304,22 @@ int main(int argc, char **argv) {
 	registry->input->notify = notify_key;
 
 	cairo_surface_t *image = NULL;
+
+	if (image_path) {
 #ifdef WITH_GDK_PIXBUF
-	GError *err = NULL;
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
-	if (!pixbuf) {
-		sway_abort("Failed to load background image.");
-	}
-	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
-	g_object_unref(pixbuf);
+		GError *err = NULL;
+		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
+		if (!pixbuf) {
+			sway_abort("Failed to load background image.");
+		}
+		image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
+		g_object_unref(pixbuf);
 #else
-	cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
+		cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
 #endif //WITH_GDK_PIXBUF
-	if (!image) {
-		sway_abort("Failed to read background image.");
+		if (!image) {
+			sway_abort("Failed to read background image.");
+		}
 	}
 
 	for (i = 0; i < surfaces->length; ++i) {
@@ -305,10 +329,14 @@ int main(int argc, char **argv) {
 		}
 		if (image) {
 			render_image(window, image, scaling_mode);
+		} else {
+			render_color(window, color);
 		}
 	}
 
-	cairo_surface_destroy(image);
+	if (image) {
+		cairo_surface_destroy(image);
+	}
 
 	bool locked = false;
 	while (wl_display_dispatch(registry->display) != -1) {
