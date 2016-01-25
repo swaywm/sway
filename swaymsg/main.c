@@ -144,7 +144,6 @@ int main(int argc, char **argv) {
 		struct json_object *obj = json_tokener_parse(pb->buf);
 
 		const char *resp_json = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY);
-
 		// Temporary workaround until json-c has a new release
 		// at which point json_object_to_json_string_ext has a flag that
 		// prevents the need for the following line.
@@ -154,6 +153,10 @@ int main(int argc, char **argv) {
 		free((char*)resp_json);
 		printbuf_free(pb);
 	} else if (!quiet) {
+		// Temporary workaround until json-c has a new release
+		// at which point json_object_to_json_string_ext has a flag that
+		// prevents the need for the following line.
+		scrub_escaped_forward_slash(resp);
 		printf("%s\n", resp);
 	}
 	close(socketfd);
