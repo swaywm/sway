@@ -17,6 +17,21 @@ void sway_terminate(void) {
 	exit(EXIT_FAILURE);
 }
 
+void scrub_escaped_forward_slash(const char *line) {
+	char *sp;
+	const char *search = "\\/";
+	const char *replace = "/";
+	int search_len = strlen(search);
+	int replace_len = strlen(replace);
+
+	// this is only safe because replace_len < search_len
+	while ((sp = strstr(line, search)) != NULL) {
+		int tail_len = strlen(sp+search_len);
+		memmove(sp+replace_len, sp+search_len, tail_len+1);
+		memcpy(sp, replace, replace_len);
+	}
+};
+
 int main(int argc, char **argv) {
 	static int quiet = 0;
 	static int pretty = 0;
@@ -129,6 +144,12 @@ int main(int argc, char **argv) {
 		struct json_object *obj = json_tokener_parse(pb->buf);
 
 		const char *resp_json = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY);
+
+		// Temporary workaround until json-c has a new release
+		// at which point json_object_to_json_string_ext has a flag that
+		// prevents the need for the following line.
+		scrub_escaped_forward_slash(resp_json);
+
 		printf("%s\n", resp_json);
 		free((char*)resp_json);
 		printbuf_free(pb);
