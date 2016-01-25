@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "client/cairo.h"
 #include "client/pango.h"
 #include "client/window.h"
 #include "bar/config.h"
@@ -14,14 +15,6 @@ static int margin = 3;
 static int ws_horizontal_padding = 5;
 static double ws_vertical_padding = 1.5;
 static int ws_spacing = 1;
-
-static void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
-	cairo_set_source_rgba(cairo,
-			((color & 0xFF000000) >> 24) / 255.0,
-			((color & 0xFF0000) >> 16) / 255.0,
-			((color & 0xFF00) >> 8) / 255.0,
-			(color & 0xFF) / 255.0);
-}
 
 /**
  * Renders a sharp line of any width and height.
