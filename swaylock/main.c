@@ -36,18 +36,46 @@ void sway_terminate(void) {
 }
 
 char *password;
-struct pam_response *pam_reply;
 
 int function_conversation(int num_msg, const struct pam_message **msg,
 		struct pam_response **resp, void *appdata_ptr) {
+
+	const char* msg_style_names[] = {
+		NULL,
+		"PAM_PROMPT_ECHO_OFF",
+		"PAM_PROMPT_ECHO_ON",
+		"PAM_ERROR_MSG",
+		"PAM_TEXT_INFO",
+	};
+
+	/* PAM expects an array of responses, one for each message */
+	struct pam_response *pam_reply = calloc(num_msg, sizeof(struct pam_response));
 	*resp = pam_reply;
+
+	for(int i=0; i<num_msg; ++i) {
+		sway_log(L_DEBUG, "msg[%d]: (%s) %s", i,
+				msg_style_names[msg[i]->msg_style],
+				msg[i]->msg);
+
+		switch (msg[i]->msg_style) {
+		case PAM_PROMPT_ECHO_OFF:
+		case PAM_PROMPT_ECHO_ON:
+			pam_reply[i].resp = password;
+			break;
+
+		case PAM_ERROR_MSG:
+		case PAM_TEXT_INFO:
+			break;
+		}
+	}
+
 	return PAM_SUCCESS;
 }
 
 /**
  * password will be zeroed out.
  */
-bool verify_password(char *password) {
+bool verify_password() {
 	struct passwd *passwd = getpwuid(getuid());
 	char *username = passwd->pw_name;
 
@@ -57,18 +85,12 @@ bool verify_password(char *password) {
 	if ((pam_err = pam_start("swaylock", username, &local_conversation, &local_auth_handle)) != PAM_SUCCESS) {
 		sway_abort("PAM returned %d\n", pam_err);
 	}
-	pam_reply = (struct pam_response *)malloc(sizeof(struct pam_response));
-	pam_reply[0].resp = password;
-	pam_reply[0].resp_retcode = 0;
 	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
-		memset(password, 0, strlen(password));
 		return false;
 	}
 	if ((pam_err = pam_end(local_auth_handle, pam_err)) != PAM_SUCCESS) {
-		memset(password, 0, strlen(password));
 		return false;
 	}
-	memset(password, 0, strlen(password));
 	return true;
 }
 
@@ -76,9 +98,11 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
 		case XKB_KEY_Return:
-			if (verify_password(password)) {
+			if (verify_password()) {
 				exit(0);
 			}
+			password = malloc(1024); // TODO: Let this grow
+			password[0] = '\0';
 			break;
 		default:
 			{
