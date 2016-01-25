@@ -287,7 +287,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 	if (line->protocol == TEXT) {
 		get_text_size(window, &width, &height, "%s", line->text_line);
 		cairo_move_to(cairo, window->width - margin - width, margin);
-		pango_printf(window, "%s", line);
+		pango_printf(window, "%s", line->text_line);
 	} else if (line->protocol == I3BAR && line->block_line) {
 		double pos = window->width - 0.5;
 		bool edge = true;
