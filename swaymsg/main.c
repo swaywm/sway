@@ -6,6 +6,8 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <json-c/json.h>
+#include <json-c/printbuf.h>
 #include "stringop.h"
 #include "ipc-client.h"
 #include "readline.h"
@@ -15,8 +17,24 @@ void sway_terminate(void) {
 	exit(EXIT_FAILURE);
 }
 
+void scrub_escaped_forward_slash(const char *line) {
+	char *sp;
+	const char *search = "\\/";
+	const char *replace = "/";
+	int search_len = strlen(search);
+	int replace_len = strlen(replace);
+
+	// this is only safe because replace_len < search_len
+	while ((sp = strstr(line, search)) != NULL) {
+		int tail_len = strlen(sp+search_len);
+		memmove(sp+replace_len, sp+search_len, tail_len+1);
+		memcpy(sp, replace, replace_len);
+	}
+};
+
 int main(int argc, char **argv) {
 	static int quiet = 0;
+	static int pretty = 0;
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
@@ -35,6 +53,7 @@ int main(int argc, char **argv) {
 		"Usage: swaymsg [options] [message]\n"
 		"\n"
 		"  -h, --help             Show help message and quit.\n"
+		"  -p, --pretty           Decode the JSON response and format it.\n"
 		"  -q, --quiet            Be quiet.\n"
 		"  -v, --version          Show the version number and quit.\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
@@ -43,13 +62,16 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hqvs:t:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hpqvs:t:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 'q': // Quiet
 			quiet = 1;
+			break;
+		case 'p':
+			pretty = 1;
 			break;
 		case 's': // Socket
 			socket_path = strdup(optarg);
@@ -112,7 +134,29 @@ int main(int argc, char **argv) {
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len);
-	if (!quiet) {
+
+	if (pretty) {
+		struct printbuf *pb;
+		if(!(pb = printbuf_new())) {
+			return -1;
+		}
+    	printbuf_memappend(pb, resp, sizeof(char)*strlen(resp));
+		struct json_object *obj = json_tokener_parse(pb->buf);
+
+		const char *resp_json = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY);
+		// Temporary workaround until json-c has a new release
+		// at which point json_object_to_json_string_ext has a flag that
+		// prevents the need for the following line.
+		scrub_escaped_forward_slash(resp_json);
+
+		printf("%s\n", resp_json);
+		free((char*)resp_json);
+		printbuf_free(pb);
+	} else if (!quiet) {
+		// Temporary workaround until json-c has a new release
+		// at which point json_object_to_json_string_ext has a flag that
+		// prevents the need for the following line.
+		scrub_escaped_forward_slash(resp);
 		printf("%s\n", resp);
 	}
 	close(socketfd);

@@ -1,9 +1,14 @@
+include_directories(
+	${JSONC_INCLUDE_DIRS}
+)
+
 add_executable(swaymsg
 	main.c
 )
 
 target_link_libraries(swaymsg
 	sway-common
+	${JSONC_LIBRARIES}
 	)
 
 install(
