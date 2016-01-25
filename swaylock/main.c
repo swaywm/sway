@@ -115,14 +115,6 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 	}
 }
 
-static void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
-	cairo_set_source_rgba(cairo,
-			(color >> (3*8) & 0xFF) / 255.0,
-			(color >> (2*8) & 0xFF) / 255.0,
-			(color >> (1*8) & 0xFF) / 255.0,
-			(color >> (0*8) & 0xFF) / 255.0);
-}
-
 void render_color(struct window *window, uint32_t color) {
 	cairo_set_source_u32(window->cairo, color);
 	cairo_paint(window->cairo);

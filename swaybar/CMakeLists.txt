@@ -25,6 +25,12 @@ target_link_libraries(swaybar
 	${JSONC_LIBRARIES}
 )
 
+if (WITH_GDK_PIXBUF)
+	include_directories(
+		${GDK_PIXBUF_INCLUDE_DIRS}
+	)
+endif()
+
 install(
 	TARGETS swaybar
 	RUNTIME
