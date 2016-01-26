@@ -106,6 +106,7 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		struct wl_resource *_output, struct wl_resource *surface) {
 	swayc_t *output = swayc_by_handle(wlc_handle_from_wl_output_resource(_output));
 	swayc_t *view = swayc_by_handle(wlc_handle_from_wl_surface_resource(surface));
+	sway_log(L_DEBUG, "Setting lock surface to %p", view);
 	if (view && output) {
 		swayc_t *workspace = output->focused;
 		if (!swayc_is_child_of(view, workspace)) {
@@ -116,6 +117,8 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		desktop_shell.is_locked = true;
 		set_focused_container(view);
 		arrange_windows(view, -1, -1);
+		list_add(desktop_shell.lock_surfaces, surface);
+		wl_resource_set_destructor(surface, lock_surface_destructor);
 	} else {
 		sway_log(L_ERROR, "Attempted to set lock surface to non-view");
 	}
