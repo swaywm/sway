@@ -18,8 +18,10 @@
 static void pointer_handle_enter(void *data, struct wl_pointer *pointer,
 		     uint32_t serial, struct wl_surface *surface, wl_fixed_t sx_w, wl_fixed_t sy_w) {
 	struct window *window = data;
-	struct wl_cursor_image *image = window->cursor.cursor->images[0];
-	wl_pointer_set_cursor(pointer, serial, window->cursor.surface, image->hotspot_x, image->hotspot_y);
+	if (window->registry->pointer) {
+		struct wl_cursor_image *image = window->cursor.cursor->images[0];
+		wl_pointer_set_cursor(pointer, serial, window->cursor.surface, image->hotspot_x, image->hotspot_y);
+	}
 }
 
 static void pointer_handle_leave(void *data, struct wl_pointer *pointer,
@@ -77,15 +79,17 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 
 	get_next_buffer(window);
 
-	window->cursor.cursor_theme = wl_cursor_theme_load("default", 32, registry->shm); // TODO: let you customize this
-	window->cursor.cursor = wl_cursor_theme_get_cursor(window->cursor.cursor_theme, "left_ptr");
-	window->cursor.surface = wl_compositor_create_surface(registry->compositor);
+	if (registry->pointer) {
+		window->cursor.cursor_theme = wl_cursor_theme_load("default", 32, registry->shm); // TODO: let you customize this
+		window->cursor.cursor = wl_cursor_theme_get_cursor(window->cursor.cursor_theme, "left_ptr");
+		window->cursor.surface = wl_compositor_create_surface(registry->compositor);
 
-	struct wl_cursor_image *image = window->cursor.cursor->images[0];
-	struct wl_buffer *cursor_buf = wl_cursor_image_get_buffer(image);
-	wl_surface_attach(window->cursor.surface, cursor_buf, 0, 0);
-	wl_surface_damage(window->cursor.surface, 0, 0, image->width, image->height);
-	wl_surface_commit(window->cursor.surface);
+		struct wl_cursor_image *image = window->cursor.cursor->images[0];
+		struct wl_buffer *cursor_buf = wl_cursor_image_get_buffer(image);
+		wl_surface_attach(window->cursor.surface, cursor_buf, 0, 0);
+		wl_surface_damage(window->cursor.surface, 0, 0, image->width, image->height);
+		wl_surface_commit(window->cursor.surface);
+	}
 
 	return window;
 }

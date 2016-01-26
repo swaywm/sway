@@ -283,6 +283,12 @@ int main(int argc, char **argv) {
 		sway_abort("swaylock requires the compositor to support the swaylock extension.");
 	}
 
+	if (registry->pointer) {
+		// We don't want swaylock to have a pointer
+		wl_pointer_destroy(registry->pointer);
+		registry->pointer = NULL;
+	}
+
 	int i;
 	for (i = 0; i < registry->outputs->length; ++i) {
 		struct output_state *output = registry->outputs->items[i];
