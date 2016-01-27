@@ -551,7 +551,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 		break;
 	}
 	json_object_object_add(json, "status_command", json_object_new_string(bar->status_command));
-	json_object_object_add(json, "font", json_object_new_string(bar->font));
+	json_object_object_add(json, "font", json_object_new_string(bar->font ? bar->font : config->font));
 	if (bar->separator_symbol) {
 		json_object_object_add(json, "separator_symbol", json_object_new_string(bar->separator_symbol));
 	}

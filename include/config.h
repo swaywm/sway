@@ -167,6 +167,7 @@ struct sway_config {
 	uint32_t resizing_key;
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
+	char *font;
 
 	// Flags
 	bool focus_follows_mouse;
