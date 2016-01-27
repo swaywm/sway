@@ -119,6 +119,7 @@ static void free_config(struct sway_config *config) {
 	list_free(config->output_configs);
 
 	list_free(config->active_bar_modifiers);
+	free(config->font);
 	free(config);
 }
 
@@ -149,6 +150,8 @@ static void config_defaults(struct sway_config *config) {
 	config->resizing_key = M_RIGHT_CLICK;
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
+	config->font = strdup("pango:monospace 10");
+
 	// Flags
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;
@@ -879,7 +882,7 @@ struct bar_config *default_bar_config(void) {
 	bar->bindings = create_list();
 	bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done");
 	bar->swaybar_command = NULL;
-	bar->font = strdup("pango:monospace 10");
+	bar->font = NULL;
 	bar->height = -1;
 	bar->workspace_buttons = true;
 	bar->separator_symbol = NULL;

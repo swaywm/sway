@@ -51,6 +51,7 @@ static sway_cmd cmd_floating;
 static sway_cmd cmd_floating_mod;
 static sway_cmd cmd_focus;
 static sway_cmd cmd_focus_follows_mouse;
+static sway_cmd cmd_font;
 static sway_cmd cmd_for_window;
 static sway_cmd cmd_fullscreen;
 static sway_cmd cmd_gaps;
@@ -1822,6 +1823,26 @@ static struct cmd_results *cmd_log_colors(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *cmd_font(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "font", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	char *font = join_args(argv, argc);
+	if (strlen(font) > 6 && strncmp("pango:", font, 6) == 0) {
+		free(config->font);
+		config->font = font;
+		sway_log(L_DEBUG, "Settings font %s", config->font);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	} else {
+		free(font);
+		return cmd_results_new(CMD_FAILURE, "font", "non-pango font detected");
+	}
+
+}
+
+
 static struct cmd_results *cmd_for_window(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "for_window", EXPECTED_AT_LEAST, 2))) {
@@ -1978,6 +1999,7 @@ static struct cmd_handler handlers[] = {
 	{ "floating_modifier", cmd_floating_mod },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "font", cmd_font },
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
