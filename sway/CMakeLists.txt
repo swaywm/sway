@@ -5,6 +5,8 @@ include_directories(
 	${JSONC_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
 	${LIBINPUT_INCLUDE_DIRS}
+	${CAIRO_INCLUDE_DIRS}
+	${PANGO_INCLUDE_DIRS}
 )
 
 add_executable(sway
@@ -24,6 +26,7 @@ add_executable(sway
 	output.c
 	resize.c
 	workspace.c
+    render.c
 )
 
 add_definitions(
@@ -39,6 +42,8 @@ target_link_libraries(sway
 	${JSONC_LIBRARIES}
 	${WAYLAND_SERVER_LIBRARIES}
 	${LIBINPUT_LIBRARIES}
+	${PANGO_LIBRARIES}
+	${JSONC_LIBRARIES}
 	m
 )
 
