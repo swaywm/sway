@@ -211,12 +211,12 @@ int main(int argc, char **argv) {
 	const char *usage =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -h, --help             Show help message and quit.\n"
-		"  -c, --color <rrggbb>   Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling          Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling           Same as --scaling=tile.\n"
-		"  -v, --version          Show the version number and quit.\n"
-		"  -i, --image <path>     Display the given image.\n";
+		"  -h, --help                 Show help message and quit.\n"
+		"  -c, --color <rrggbb[aa]>   Turn the screen into the given color instead of white.\n"
+		"  -s, --scaling              Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling               Same as --scaling=tile.\n"
+		"  -v, --version              Show the version number and quit.\n"
+		"  -i, --image <path>         Display the given image.\n";
 
 	int c;
 	while (1) {
@@ -226,16 +226,22 @@ int main(int argc, char **argv) {
 			break;
 		}
 		switch (c) {
-		case 'c':
-			if (strlen(optarg) < 6) {
-				fprintf(stderr, "color must be specified in 3 byte format, e.g. ff0000\n");
+		case 'c': 
+		{
+			int colorlen = strlen(optarg);
+			if (colorlen < 6 || colorlen == 7 || colorlen > 8) {
+				fprintf(stderr, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff\n");
 				exit(EXIT_FAILURE);
 			}
 			color = strtol(optarg, NULL, 16);
-			color <<= 8;
-			color |= 0xFF;
+
+			if (colorlen == 6) {
+				color <<= 8;
+				color |= 0xFF;
+			}
 			sway_log(L_DEBUG, "color: 0x%x", color);
 			break;
+		}
 		case 'i':
 			image_path = optarg;
 			break;
