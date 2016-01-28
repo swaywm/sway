@@ -854,6 +854,27 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			focused = swayc_active_workspace();
 		}
 		set_focused_container(focused);
+	} else if (strcasecmp(argv[0], "position") == 0 && strcasecmp(argv[1], "mouse") == 0) {
+		if (view->is_floating) {
+			swayc_t *output = swayc_parent_by_type(view, C_OUTPUT);
+			const struct wlc_geometry *geometry = wlc_view_get_geometry(view->handle);
+			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
+			struct wlc_geometry g = *geometry;
+
+			struct wlc_point origin;
+			wlc_pointer_get_position(&origin);
+
+			int32_t x = origin.x - g.size.w / 2;
+			int32_t y = origin.y - g.size.h / 2;
+			
+			uint32_t w = size->w - g.size.w;
+			uint32_t h = size->h - g.size.h;
+
+			view->x = g.origin.x = MIN(w, MAX(x, 0));
+			view->y = g.origin.y = MIN(h, MAX(y, 0));
+
+			wlc_view_set_geometry(view->handle, 0, &g);
+		}
 	} else {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}
