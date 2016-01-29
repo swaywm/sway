@@ -28,4 +28,4 @@ _arguments -s \
 	'(-h --help)'{-h,--help}'[Shows help message]' \
 	'(-q --quiet)'{-q,--quiet}'[Sends the IPC message but does not print the response from sway]' \
 	'(-s --socket)'{-s,--socket}'[Use the specified socket path.]:files:_files' \
-    '(-t --type)'{-t,--type}'[Specify the type of IPC message.]:type:{_describe "type" types}'
+	'(-t --type)'{-t,--type}'[Specify the type of IPC message.]:type:{_describe "type" types}'
