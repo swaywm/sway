@@ -8,4 +8,4 @@ _arguments -s \
     '(-h --help)'{-h,--help}'[Show help message and quit]' \
     '(-c --color)'{-c,--color}'[Specify a color (rrggbb) instead of white]' \
     '(-i --image)'{-i,--image}'[Display an image]:files:_files' \
-    '(-s --scaling)'{-s,--scaling}'[Scaling mode: stretch, fill, fit, center, tile]'
+    '(-s --scaling)'{-s,--scaling}'[Scaling mode]:mode:(stretch fill fit center tile)'
