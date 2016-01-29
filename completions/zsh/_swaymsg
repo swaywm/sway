@@ -12,9 +12,20 @@
 #  * Seth Barberee <seth.barberee@gmail.com>
 #
 #  -------------------------------------------
+
+types=(
+'get_workspaces'
+'get_inputs'
+'get_outputs'
+'get_tree'
+'get_marks'
+'get_bar_config'
+'get_version'
+)
+
 _arguments -s \
 	'(-v --version)'{-v,--version}'[Print the version (of swaymsg) and quit]' \
 	'(-h --help)'{-h,--help}'[Shows help message]' \
 	'(-q --quiet)'{-q,--quiet}'[Sends the IPC message but does not print the response from sway]' \
-	'(-s --socket)'{-s,--socket}'[Use the specified socket path. Otherwise, swaymsg uses $SWAYSOCK then $I3SOCK]' \
-	'(-t --type)'{-t,--type}'[Specify the type of IPC message. Tab completion still coming so use the man page instead]' 
+	'(-s --socket)'{-s,--socket}'[Use the specified socket path.]:files:_files' \
+    '(-t --type)'{-t,--type}'[Specify the type of IPC message.]:type:{_describe "type" types}'
