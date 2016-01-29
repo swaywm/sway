@@ -1,6 +1,15 @@
 #include "render.h"
-#include <cairo.h>
+#include <wlc/wlc-render.h>
+#include <cairo/cairo.h>
 #include <stdlib.h>
+
+void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
+	cairo_set_source_rgba(cairo,
+			(color >> (3*8) & 0xFF) / 255.0,
+			(color >> (2*8) & 0xFF) / 255.0,
+			(color >> (1*8) & 0xFF) / 255.0,
+			(color >> (0*8) & 0xFF) / 255.0);
+}
 
 cairo_t *create_cairo_context(int width, int height, int channels,
 		cairo_surface_t **surf, unsigned char **buf) {
@@ -24,12 +33,18 @@ cairo_t *create_cairo_context(int width, int height, int channels,
 }
 
 void render_view_borders(wlc_handle view) {
+	const int bw = 2;
 	unsigned char *surf_data;
 	cairo_surface_t *surf;
-	int texture_id;
-	const struct wlc_geometry *geo = wlc_view_get_geometry(view);
-	cairo_t *cr = create_cairo_context(geo->size.w, geo->size.h, 4, &surf, &surf_data);
-	// TODO
+	struct wlc_geometry geo = *wlc_view_get_geometry(view);
+	cairo_t *cr = create_cairo_context(geo.size.w + bw * 2, geo.size.h + bw * 2, 4, &surf, &surf_data);
+	cairo_set_source_u32(cr, 0x0000FFFF);
+	cairo_paint(cr);
+	geo.origin.x -= bw;
+	geo.origin.y -= bw;
+	geo.size.w += bw * 2;
+	geo.size.h += bw * 2;
+	wlc_pixels_write(WLC_RGBA8888, &geo, surf_data);
 	cairo_destroy(cr);
 	free(surf_data);
 }
