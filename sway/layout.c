@@ -445,6 +445,12 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
 		container->name, container->width, container->height, container->x, container->y);
 
+	if (container->arrange) {
+		sway_log(L_DEBUG, "Invoking arrangement override handler for container %p", container);
+		container->arrange(container, width, height);
+		return;
+	}
+
 	double x = 0, y = 0;
 	switch (container->type) {
 	case C_ROOT:
@@ -524,6 +530,14 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		y = container->y;
 		break;
 	}
+	
+	int total_children = 0; // not including arrangement override containers
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		if (!child->arrange) {
+			total_children++;
+		}
+	}
 
 	double scale = 0;
 	switch (container->layout) {
@@ -531,10 +545,12 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	default:
 		// Calculate total width
 		for (i = 0; i < container->children->length; ++i) {
-			double *old_width = &((swayc_t *)container->children->items[i])->width;
+			swayc_t *child = container->children->items[i];
+			if (child->arrange) continue;
+			double *old_width = &child->width;
 			if (*old_width <= 0) {
-				if (container->children->length > 1) {
-					*old_width = width / (container->children->length - 1);
+				if (total_children > 1) {
+					*old_width = width / (total_children - 1);
 				} else {
 					*old_width = width;
 				}
@@ -547,6 +563,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			sway_log(L_DEBUG, "Arranging %p horizontally", container);
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
+				if (child->arrange) continue;
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
 				child->x = x;
 				child->y = y;
@@ -563,10 +580,12 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	case L_VERT:
 		// Calculate total height
 		for (i = 0; i < container->children->length; ++i) {
-			double *old_height = &((swayc_t *)container->children->items[i])->height;
+			swayc_t *child = container->children->items[i];
+			if (child->arrange) continue;
+			double *old_height = &child->height;
 			if (*old_height <= 0) {
-				if (container->children->length > 1) {
-					*old_height = height / (container->children->length - 1);
+				if (total_children > 1) {
+					*old_height = height / (total_children - 1);
 				} else {
 					*old_height = height;
 				}
@@ -579,6 +598,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			sway_log(L_DEBUG, "Arranging %p vertically", container);
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
+				if (child->arrange) continue;
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
 				child->x = x;
 				child->y = y;

@@ -46,10 +46,10 @@ int main(int argc, const char **argv) {
 	}
 
 	int desired_output = atoi(argv[1]);
-	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
-	int i;
 	struct output_state *output = registry->outputs->items[desired_output];
-	struct window *window = window_setup(registry, output->width, output->height, false);
+	sway_log(L_INFO, "Using output %d of %d (%dx%d)", desired_output, registry->outputs->length, output->width, output->height);
+	int i;
+	struct window *window = window_setup(registry, output->width, output->height, true);
 	if (!window) {
 		sway_abort("Failed to create surfaces.");
 	}

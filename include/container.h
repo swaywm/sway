@@ -77,6 +77,9 @@ struct sway_container {
 	bool is_focused;
 	bool sticky; // floating view always visible on its output
 
+	// Custom arrange function
+	void (*arrange)(struct sway_container *, double width, double height);
+
 	// Attributes that mostly views have.
 	char *name;
 	char *class;

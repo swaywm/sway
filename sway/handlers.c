@@ -106,18 +106,10 @@ static void handle_output_destroyed(wlc_handle output) {
 	}
 }
 
-static void handle_output_pre_render(wlc_handle output) {
+static void handle_output_post_render(wlc_handle output) {
 	struct wlc_size resolution = *wlc_output_get_resolution(output);
 
 	int i;
-	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
-		if (config->output == output) {
-			wlc_surface_render(config->surface, &(struct wlc_geometry){ wlc_origin_zero, resolution });
-			break;
-		}
-	}
-
 	for (i = 0; i < desktop_shell.panels->length; ++i) {
 		struct panel_config *config = desktop_shell.panels->items[i];
 		if (config->output == output) {
@@ -153,6 +145,10 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 	sway_log(L_DEBUG, "Output %u resolution changed to %d x %d", (unsigned int)output, to->w, to->h);
 	swayc_t *c = swayc_by_handle(output);
 	if (!c) return;
+	struct output_config *oc = config_for_output(output);
+	if (oc) {
+		apply_output_config(oc, c);
+	}
 	c->width = to->w;
 	c->height = to->h;
 	arrange_windows(&root_container, -1, -1);
@@ -237,12 +233,25 @@ static bool handle_view_created(wlc_handle handle) {
 	}
 
 	if (newview) {
+		int i;
 		set_focused_container(newview);
+
+		// Check if this view has a special role
+		wlc_resource resource = wlc_view_get_surface(handle);
+		for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
+			struct background_config *config = desktop_shell.backgrounds->items[i];
+			if (config->surface == resource) {
+				sway_log(L_DEBUG, "Setting view %p as background", newview);
+				newview->handle = handle;
+				newview->arrange = arrange_background_view;
+			}
+		}
+
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
 		// check if it matches for_window in config and execute if so
 		list_t *criteria = criteria_for(newview);
-		for (int i = 0; i < criteria->length; i++) {
+		for (i = 0; i < criteria->length; i++) {
 			struct criteria *crit = criteria->items[i];
 			sway_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
 					crit->crit_raw, newview, crit->cmdlist);
@@ -674,7 +683,7 @@ struct wlc_interface interface = {
 		.resolution = handle_output_resolution_change,
 		.focus = handle_output_focused,
 		.render = {
-			.pre = handle_output_pre_render
+			.post = handle_output_post_render
 		}
 	},
 	.view = {

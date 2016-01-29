@@ -24,18 +24,6 @@ static struct panel_config *find_or_create_panel_config(struct wl_resource *reso
 	return config;
 }
 
-void background_surface_destructor(struct wl_resource *resource) {
-	sway_log(L_DEBUG, "Background surface killed");
-	int i;
-	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
-		if (config->wl_surface_res == resource) {
-			list_del(desktop_shell.backgrounds, i);
-			break;
-		}
-	}
-}
-
 void panel_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Panel surface killed");
 	int i;
@@ -63,6 +51,19 @@ void lock_surface_destructor(struct wl_resource *resource) {
 	}
 }
 
+void arrange_background_view(swayc_t *view, double width, double height) {
+	sway_log(L_DEBUG, "Arranging background view %p", view);
+	int i;
+	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
+		struct background_config *config = desktop_shell.backgrounds->items[i];
+		if (config->handle == view->handle) {
+			struct wlc_size resolution = *wlc_output_get_resolution(config->output);
+			wlc_view_set_geometry(view->handle, WLC_RESIZE_EDGE_NONE, &(struct wlc_geometry){ wlc_origin_zero, resolution });
+			wlc_view_send_to_back(view->handle);
+		}
+	}
+}
+
 static void set_background(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
 	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
@@ -73,9 +74,14 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	struct background_config *config = malloc(sizeof(struct background_config));
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
+	config->handle = wlc_handle_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
 	list_add(desktop_shell.backgrounds, config);
-	wl_resource_set_destructor(surface, background_surface_destructor);
+
+	swayc_t *view = swayc_by_handle(config->handle);
+	if (view) {
+		view->arrange = arrange_background_view;
+	}
 }
 
 static void set_panel(struct wl_client *client, struct wl_resource *resource,

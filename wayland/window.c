@@ -69,7 +69,7 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 
 	window->surface = wl_compositor_create_surface(registry->compositor);
 	if (shell_surface) {
-		window->shell_surface = wl_shell_get_shell_surface(registry->shell, window->surface);
+		window->shell_surface = wl_shell_get_shell_surface(window->registry->shell, window->surface);
 		wl_shell_surface_add_listener(window->shell_surface, &surface_listener, window);
 		wl_shell_surface_set_toplevel(window->shell_surface);
 	}

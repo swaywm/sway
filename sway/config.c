@@ -686,6 +686,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		snprintf(output_id, bufsize, "%d", output_i);
 		output_id[bufsize-1] = 0;
 
+#ifdef NDEBUG
 		char *const cmd[] = {
 			"swaybg",
 			output_id,
@@ -693,6 +694,15 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 			oc->background_option,
 			NULL,
 		};
+#else
+		char *const cmd[] = {
+			"./bin/swaybg",
+			output_id,
+			oc->background,
+			oc->background_option,
+			NULL,
+		};
+#endif
 
 		output->bg_pid = fork();
 		if (output->bg_pid == 0) {
