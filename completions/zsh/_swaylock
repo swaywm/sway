@@ -1,0 +1,11 @@
+#compdef swaylock
+#
+# Completion script for swaylock
+#
+
+_arguments -s \
+    '(-v --version)'{-v,--version}'[Show the version number and quit]' \
+    '(-h --help)'{-h,--help}'[Show help message and quit]' \
+    '(-c --color)'{-c --color}'[Specify a color (rrggbb) instead of white]' \
+    '(-i --image)'{-i --image}'[Display an image]' \
+    '(-s --scaling)'{-s --scaling}'[Scaling mode: stretch, fill, fit, center, tile]'
