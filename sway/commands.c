@@ -866,7 +866,7 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 
 			int32_t x = origin.x - g.size.w / 2;
 			int32_t y = origin.y - g.size.h / 2;
-			
+
 			uint32_t w = size->w - g.size.w;
 			uint32_t h = size->h - g.size.h;
 
