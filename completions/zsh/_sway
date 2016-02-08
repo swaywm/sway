@@ -12,17 +12,11 @@
 # * Seth Barberee <seth.barberee@gmail.com>
 #
 # -------------------------------
-
-_sway() {
-	local -a options
-	options=('--version:shows version'
-		'--help:shows help message'
-		'--config:Specify a config file different than $HOME/.config/sway/config'
-		'--validate:Check validity of the config file, then exit'
-		'--debug:Enables full logging, including debug information'
-		'--verbose:Enables more verbose logging'
-		'--get-socketpath:Gets the IPC socket path and prints it, then exits'
-		)
-	_describe 'values' options
-	}
-_sway "$@"
+_arguments -s \
+	'(-v --version)'{-v,--version}'[shows version]' \
+	'(-h --help)'{-h,--help}'[shows help message]' \
+	'(-c --config)'{-c,--config}'[Specify a config file]:files:_files' \
+	'(-C --validate)'{-C,--validate}'[Check validity of the config file, then exit]' \
+	'(-d --debug)'{-d,--debug}'[Enables full logging, including debug information]' \
+	'(-v --verbose)'{-v,--verbose}'[Enables more verbose logging]' \
+	'(--get-socketpath)'--get-socketpath'[Gets the IPC socket path and prints it, then exits]'
