@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdbool.h>
-#include <wlc/wlc.h>
+#include <wlc/wlc-render.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -36,6 +36,13 @@ struct ipc_client {
 	uint32_t payload_length;
 	enum ipc_command_type current_command;
 	enum ipc_command_type subscribed_events;
+};
+
+static list_t *ipc_get_pixel_requests = NULL;
+
+struct get_pixels_request {
+	struct ipc_client *client;
+	wlc_handle output;
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -75,6 +82,7 @@ void ipc_init(void) {
 	setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
 
 	ipc_client_list = create_list();
+	ipc_get_pixel_requests = create_list();
 
 	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
 }
@@ -231,21 +239,49 @@ bool output_by_name_test(swayc_t *view, void *data) {
 	return !strcmp(name, view->name);
 }
 
-bool get_pixels_callback(const struct wlc_size *size, uint8_t *rgba, void *arg) {
-	struct ipc_client *client = (struct ipc_client *)arg;
-	char response_header[9];
-	memset(response_header, 0, sizeof(response_header));
-	response_header[0] = 1;
-	uint32_t *_size = (uint32_t *)(response_header + 1);
-	_size[0] = size->w;
-	_size[1] = size->h;
-	size_t len = sizeof(response_header) + (size->w * size->h * 4);
-	char *payload = malloc(len);
-	memcpy(payload, response_header, sizeof(response_header));
-	memcpy(payload + sizeof(response_header), rgba, len - sizeof(response_header));
-	ipc_send_reply(client, payload, len);
-	free(payload);
-	return false;
+void ipc_get_pixels(wlc_handle output) {
+	if (ipc_get_pixel_requests->length == 0) {
+		return;
+	}
+
+	list_t *unhandled = create_list();
+
+	struct get_pixels_request *req;
+	int i;
+	for (i = 0; i < ipc_get_pixel_requests->length; ++i) {
+		req = ipc_get_pixel_requests->items[i];
+		if (req->output != output) {
+			list_add(unhandled, req);
+			continue;
+		}
+
+		const struct wlc_size *size = wlc_output_get_resolution(req->output);
+		struct wlc_geometry g = {
+			.size = *size,
+			.origin = { 0, 0 },
+		};
+		struct wlc_geometry g_out;
+		char response_header[9];
+		memset(response_header, 0, sizeof(response_header));
+		char *data = malloc(sizeof(response_header) + size->w * size->h * 4);
+		wlc_pixels_read(WLC_RGBA8888, &g, &g_out, data + sizeof(response_header));
+
+		response_header[0] = 1;
+		uint32_t *_size = (uint32_t *)(response_header + 1);
+		_size[0] = g_out.size.w;
+		_size[1] = g_out.size.h;
+		size_t len = sizeof(response_header) + (g_out.size.w * g_out.size.h * 4);
+		memcpy(data, response_header, sizeof(response_header));
+		ipc_send_reply(req->client, data, len);
+		free(data);
+		// free the request since it has been handled
+		free(req);
+	}
+
+	// free old list of pixel requests and set new list to all unhandled
+	// requests (request for another output).
+	list_free(ipc_get_pixel_requests);
+	ipc_get_pixel_requests = unhandled;
 }
 
 void ipc_client_handle_command(struct ipc_client *client) {
@@ -394,7 +430,11 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			ipc_send_reply(client, response_header, sizeof(response_header));
 			break;
 		}
-		wlc_output_get_pixels(output->handle, get_pixels_callback, client);
+		struct get_pixels_request *req = malloc(sizeof(struct get_pixels_request));
+		req->client = client;
+		req->output = output->handle;
+		list_add(ipc_get_pixel_requests, req);
+		wlc_output_schedule_render(output->handle);
 		break;
 	}
 	case IPC_GET_BAR_CONFIG:
