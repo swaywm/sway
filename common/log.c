@@ -171,7 +171,7 @@ void error_handler(int sig) {
 				sway_log(L_ERROR, "Unable to allocate memory to show maps");
 				break;
 			}
-			sway_log(L_ERROR, m);
+			sway_log(L_ERROR, "%s", m);
 		}
 		fclose(maps);
 	}
