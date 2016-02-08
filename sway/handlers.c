@@ -150,6 +150,10 @@ static void handle_output_pre_render(wlc_handle output) {
 	}
 }
 
+static void handle_output_post_render(wlc_handle output) {
+	ipc_get_pixels(output);
+}
+
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
 	sway_log(L_DEBUG, "Output %u resolution changed to %d x %d", (unsigned int)output, to->w, to->h);
 	swayc_t *c = swayc_by_handle(output);
@@ -675,7 +679,8 @@ struct wlc_interface interface = {
 		.resolution = handle_output_resolution_change,
 		.focus = handle_output_focused,
 		.render = {
-			.pre = handle_output_pre_render
+			.pre = handle_output_pre_render,
+			.post = handle_output_post_render
 		}
 	},
 	.view = {
