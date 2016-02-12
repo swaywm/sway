@@ -90,20 +90,26 @@ swayc_t *new_output(wlc_handle handle) {
 
 	sway_log(L_DEBUG, "New output %lu:%s", handle, name);
 
-	struct output_config *oc = NULL;
+	struct output_config *oc = NULL, *all = NULL;
 	int i;
 	for (i = 0; i < config->output_configs->length; ++i) {
 		struct output_config *cur = config->output_configs->items[i];
 		if (strcasecmp(name, cur->name) == 0) {
 			sway_log(L_DEBUG, "Matched output config for %s", name);
 			oc = cur;
-			break;
 		}
 		if (strcasecmp("*", cur->name) == 0) {
 			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
-			oc = cur;
+			all = cur;
+		}
+
+		if (oc && all) {
 			break;
 		}
+	}
+
+	if (!oc) {
+		oc = all;
 	}
 
 	if (oc && !oc->enabled) {
