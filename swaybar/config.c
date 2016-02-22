@@ -51,6 +51,7 @@ struct config *init_config() {
 	config->strip_workspace_numbers = false;
 	config->binding_mode_indicator = true;
 	config->workspace_buttons = true;
+	config->outputs = create_list();
 
 	/* height */
 	config->height = 0;
