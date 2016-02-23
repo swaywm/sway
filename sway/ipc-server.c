@@ -628,6 +628,17 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 
 	json_object_object_add(json, "colors", colors);
 
+	// Add outputs if defined
+	if (bar->outputs && bar->outputs->length > 0) {
+		json_object *outputs = json_object_new_array();
+		int i;
+		for (i = 0; i < bar->outputs->length; ++i) {
+			const char *name = bar->outputs->items[i];
+			json_object_array_add(outputs, json_object_new_string(name));
+		}
+		json_object_object_add(json, "outputs", outputs);
+	}
+
 	return json;
 }
 
