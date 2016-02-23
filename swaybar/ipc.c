@@ -78,10 +78,13 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 			output = json_object_array_get_idx(outputs, i);
 			output_str = json_object_get_string(output);
 			if (strcmp("*", output_str) == 0) {
+				config->all_outputs = true;
 				break;
 			}
 			list_add(config->outputs, strdup(output_str));
 		}
+	} else {
+		config->all_outputs = true;
 	}
 
 	if (colors) {
@@ -251,7 +254,7 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 		}
 
 		bool use_output = false;
-		if (bar->config->outputs->length == 0) {
+		if (bar->config->all_outputs) {
 			use_output = true;
 		} else {
 			int j = 0;
