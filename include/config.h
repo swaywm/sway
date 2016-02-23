@@ -125,6 +125,7 @@ struct bar_config {
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
 	bool verbose;
+	pid_t pid;
 	struct {
 		char background[10];
 		char statusline[10];
@@ -226,8 +227,7 @@ int sway_mouse_binding_cmp_qsort(const void *a, const void *b);
 int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
 void free_sway_mouse_binding(struct sway_mouse_binding *smb);
 
-void load_swaybars(swayc_t *output, int output_idx);
-void terminate_swaybars(list_t *pids);
+void load_swaybars(swayc_t *output);
 void terminate_swaybg(pid_t pid);
 
 /**

@@ -1531,7 +1531,7 @@ static struct cmd_results *cmd_reload(int argc, char **argv) {
 	for (i = 0; i < root_container.children->length; ++i) {
 		cont = root_container.children->items[i];
 		if (cont->type == C_OUTPUT) {
-			load_swaybars(cont, i);
+			load_swaybars(cont);
 		}
 	}
 

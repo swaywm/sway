@@ -23,6 +23,8 @@
 
 struct sway_config *config = NULL;
 
+static void terminate_swaybar(pid_t pid);
+
 static void free_variable(struct sway_variable *var) {
 	free(var->name);
 	free(var->value);
@@ -60,6 +62,11 @@ static void free_bar(struct bar_config *bar) {
 	if (bar->outputs) {
 		free_flat_list(bar->outputs);
 	}
+
+	if (bar->pid != 0) {
+		terminate_swaybar(bar->pid);
+	}
+
 	free(bar);
 }
 
@@ -471,32 +478,23 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 }
 
-static void invoke_swaybar(swayc_t *output, struct bar_config *bar, int output_i) {
-	sway_log(L_DEBUG, "Invoking swaybar for output %s[%d] and bar %s", output->name, output_i, bar->id);
-
-	size_t bufsize = 4;
-	char output_id[bufsize];
-	snprintf(output_id, bufsize, "%d", output_i);
-	output_id[bufsize-1] = 0;
-
-	pid_t *pid = malloc(sizeof(pid_t));
-	*pid = fork();
-	if (*pid == 0) {
+static void invoke_swaybar(struct bar_config *bar) {
+	bar->pid = fork();
+	if (bar->pid == 0) {
 		if (!bar->swaybar_command) {
 			char *const cmd[] = {
 				"swaybar",
 				"-b",
 				bar->id,
-				output_id,
 				NULL,
 			};
 
 			execvp(cmd[0], cmd);
 		} else {
 			// run custom swaybar
-			int len = strlen(bar->swaybar_command) + strlen(bar->id) + strlen(output_id) + 6;
+			int len = strlen(bar->swaybar_command) + strlen(bar->id) + 5;
 			char *command = malloc(len * sizeof(char));
-			snprintf(command, len, "%s -b %s %s", bar->swaybar_command, bar->id, output_id);
+			snprintf(command, len, "%s -b %s", bar->swaybar_command, bar->id);
 
 			char *const cmd[] = {
 				"sh",
@@ -509,30 +507,15 @@ static void invoke_swaybar(swayc_t *output, struct bar_config *bar, int output_i
 			free(command);
 		}
 	}
-
-	// add swaybar pid to output
-	list_add(output->bar_pids, pid);
 }
 
-void terminate_swaybars(list_t *pids) {
-	int i, ret;
-	pid_t *pid;
-	for (i = 0; i < pids->length; ++i) {
-		pid = pids->items[i];
-		ret = kill(*pid, SIGTERM);
-		if (ret != 0) {
-			sway_log(L_ERROR, "Unable to terminate swaybar [pid: %d]", *pid);
-		} else {
-			int status;
-			waitpid(*pid, &status, 0);
-		}
-	}
-
-	// empty pids list
-	for (i = 0; i < pids->length; ++i) {
-		pid = pids->items[i];
-		list_del(pids, i);
-		free(pid);
+static void terminate_swaybar(pid_t pid) {
+	int ret = kill(pid, SIGTERM);
+	if (ret != 0) {
+		sway_log(L_ERROR, "Unable to terminate swaybar [pid: %d]", pid);
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
 	}
 }
 
@@ -546,7 +529,7 @@ void terminate_swaybg(pid_t pid) {
 	}
 }
 
-void load_swaybars(swayc_t *output, int output_idx) {
+void load_swaybars(swayc_t *output) {
 	// Check for bars
 	list_t *bars = create_list();
 	struct bar_config *bar = NULL;
@@ -571,13 +554,13 @@ void load_swaybars(swayc_t *output, int output_idx) {
 		}
 	}
 
-	// terminate swaybar processes previously spawned for this
-	// output.
-	terminate_swaybars(output->bar_pids);
-
 	for (i = 0; i < bars->length; ++i) {
 		bar = bars->items[i];
-		invoke_swaybar(output, bar, output_idx);
+		if (bar->pid != 0) {
+			terminate_swaybar(bar->pid);
+		}
+		sway_log(L_DEBUG, "Invoking swaybar for output %s and bar '%s'", output->name, bar->id);
+		invoke_swaybar(bar);
 	}
 
 	list_free(bars);
@@ -701,7 +684,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 
 	// load swaybars for output
-	load_swaybars(output, output_i);
+	load_swaybars(output);
 }
 
 char *do_var_replacement(char *str) {
@@ -889,6 +872,7 @@ struct bar_config *default_bar_config(void) {
 	bar->strip_workspace_numbers = false;
 	bar->binding_mode_indicator = true;
 	bar->tray_padding = 2;
+	bar->pid = 0;
 	// set default colors
 	strcpy(bar->colors.background, "#000000ff");
 	strcpy(bar->colors.statusline, "#ffffffff");
