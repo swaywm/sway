@@ -529,7 +529,20 @@ void terminate_swaybg(pid_t pid) {
 	}
 }
 
-void load_swaybars(swayc_t *output) {
+static bool active_output(const char *name) {
+	int i;
+	swayc_t *cont = NULL;
+	for (i = 0; i < root_container.children->length; ++i) {
+		cont = root_container.children->items[i];
+		if (cont->type == C_OUTPUT && strcasecmp(name, cont->name) == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void load_swaybars() {
 	// Check for bars
 	list_t *bars = create_list();
 	struct bar_config *bar = NULL;
@@ -541,7 +554,7 @@ void load_swaybars(swayc_t *output) {
 			int j;
 			for (j = 0; j < bar->outputs->length; ++j) {
 				char *o = bar->outputs->items[j];
-				if (!strcmp(o, "*") || !strcasecmp(o, output->name)) {
+				if (!strcmp(o, "*") || active_output(o)) {
 					apply = true;
 					break;
 				}
@@ -559,7 +572,7 @@ void load_swaybars(swayc_t *output) {
 		if (bar->pid != 0) {
 			terminate_swaybar(bar->pid);
 		}
-		sway_log(L_DEBUG, "Invoking swaybar for output %s and bar '%s'", output->name, bar->id);
+		sway_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
 		invoke_swaybar(bar);
 	}
 
@@ -683,8 +696,8 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 	}
 
-	// load swaybars for output
-	load_swaybars(output);
+	// reload swaybars
+	load_swaybars();
 }
 
 char *do_var_replacement(char *str) {

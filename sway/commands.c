@@ -1526,14 +1526,7 @@ static struct cmd_results *cmd_reload(int argc, char **argv) {
 	}
 	if (!load_config(NULL)) return cmd_results_new(CMD_FAILURE, "reload", "Error(s) reloading config.");
 
-	int i;
-	swayc_t *cont = NULL;
-	for (i = 0; i < root_container.children->length; ++i) {
-		cont = root_container.children->items[i];
-		if (cont->type == C_OUTPUT) {
-			load_swaybars(cont);
-		}
-	}
+	load_swaybars();
 
 	arrange_windows(&root_container, -1, -1);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
