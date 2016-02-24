@@ -3,8 +3,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <sys/wait.h>
+#include <poll.h>
 
 #include "ipc-client.h"
 #include "list.h"
@@ -95,9 +95,21 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 }
 
 void bar_run(struct bar *bar) {
-	fd_set readfds;
-	int activity;
+	int pfds = bar->outputs->length + 2;
+	struct pollfd *pfd = malloc(pfds * sizeof(struct pollfd));
 	bool dirty = true;
+
+	pfd[0].fd = bar->ipc_event_socketfd;
+	pfd[0].events = POLLIN;
+	pfd[1].fd = bar->status_read_fd;
+	pfd[1].events = POLLIN;
+
+	int i;
+	for (i = 0; i < bar->outputs->length; ++i) {
+		struct output *output = bar->outputs->items[i];
+		pfd[i+2].fd = wl_display_get_fd(output->registry->display);
+		pfd[i+2].events = POLLIN;
+	}
 
 	while (1) {
 		if (dirty) {
@@ -107,31 +119,35 @@ void bar_run(struct bar *bar) {
 				if (window_prerender(output->window) && output->window->cairo) {
 					render(output, bar->config, bar->status);
 					window_render(output->window);
-					if (wl_display_dispatch(output->registry->display) == -1) {
-						break;
-					}
+					wl_display_flush(output->registry->display);
 				}
 			}
 		}
 
 		dirty = false;
-		FD_ZERO(&readfds);
-		FD_SET(bar->ipc_event_socketfd, &readfds);
-		FD_SET(bar->status_read_fd, &readfds);
 
-		activity = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
-		if (activity < 0) {
-			sway_log(L_ERROR, "polling failed: %d", errno);
-		}
+		poll(pfd, pfds, -1);
 
-		if (FD_ISSET(bar->ipc_event_socketfd, &readfds)) {
+		if (pfd[0].revents & POLLIN) {
 			sway_log(L_DEBUG, "Got IPC event.");
 			dirty = handle_ipc_event(bar);
 		}
 
-		if (bar->config->status_command && FD_ISSET(bar->status_read_fd, &readfds)) {
+		if (bar->config->status_command && pfd[1].revents & POLLIN) {
 			sway_log(L_DEBUG, "Got update from status command.");
 			dirty = handle_status_line(bar);
+		}
+
+		// dispatch wl_display events
+		for (i = 0; i < bar->outputs->length; ++i) {
+			struct output *output = bar->outputs->items[i];
+			if (pfd[i+2].revents & POLLIN) {
+				if (wl_display_dispatch(output->registry->display) == -1) {
+					sway_log(L_ERROR, "failed to dispatch wl: %d", errno);
+				}
+			} else {
+				wl_display_dispatch_pending(output->registry->display);
+			}
 		}
 	}
 }
