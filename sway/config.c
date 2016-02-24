@@ -86,7 +86,7 @@ static void free_workspace_output(struct workspace_output *wo) {
 	free(wo);
 }
 
-static void free_config(struct sway_config *config) {
+void free_config(struct sway_config *config) {
 	int i;
 	for (i = 0; i < config->symbols->length; ++i) {
 		free_variable(config->symbols->items[i]);

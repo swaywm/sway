@@ -193,6 +193,10 @@ bool load_config(const char *file);
  */
 bool read_config(FILE *file, bool is_active);
 /**
+ * Free config struct
+ */
+void free_config(struct sway_config *config);
+/**
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
 char *do_var_replacement(char *str);

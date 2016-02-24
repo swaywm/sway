@@ -228,6 +228,10 @@ int main(int argc, char **argv) {
 
 	ipc_terminate();
 
+	if (config) {
+		free_config(config);
+	}
+
 	return exit_value;
 }
 
