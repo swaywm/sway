@@ -16,7 +16,7 @@ startup. These commands usually consist of setting your preferences and setting
 key bindings. An example config is likely present in /etc/sway/config for you to
 check out.
 
-All of these commands may be issued at runtime through **sway-msg**(1).
+All of these commands may be issued at runtime through **swaymsg**(1).
 
 Commands
 --------
