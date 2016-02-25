@@ -11,15 +11,21 @@ sway - configuration file and commands
 Description
 -----------
 
-A sway configuration file is a list of sway commands that are executed by sway on
-startup. These commands usually consist of setting your preferences and setting
-key bindings. An example config is likely present in /etc/sway/config for you to
-check out.
-
-All of these commands may be issued at runtime through **swaymsg**(1).
+A sway configuration file is a list of sway commands that are executed by sway
+on startup.  These commands usually consist of setting your preferences and
+setting key bindings. An example config is likely present in /etc/sway/config
+for you to check out.
+	
+Some of the commands can also or only be sent at runtime with **sway-msg**(1).
 
 Commands
 --------
+
+The following commands may only be used in the configuration file.
+
+**bar** <block of commands>::
+	Append _{_ to this command, the following lines will be commands that
+	configure **swaybar**, and _}_ on its own line to close the block.
 
 **bindsym** <key combo> <command>::
 	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
@@ -28,25 +34,18 @@ Commands
 	execute Firefox if the alt, shift, and F keys are pressed together. Any
 	valid sway command is eligible to be bound to a key combo.
 
-**exec** <shell command>::
-	Executes _shell command_ with sh.
+**set** <name> <value>::
+	Creates a substitution for _value_ that can be used with $_name_ in other
+	commands.
 
-**exec_always** <shell command>::
-	Like exec, but the shell command will be executed _again_ after *reload* or
-	*restart* is executed.
+The following commands cannot be used directly in the configuration file.
+They are expected to be used with **bindsym** or at runtime through **swaymsg**(1).
 
 **exit**::
 	Exit sway and end your Wayland session.
 
 **floating** <enable|disable|toggle>::
 	Make focused view floating, non-floating, or the opposite of what it is now.
-
-**floating_modifier** <modifier> [normal|inverse]::
-	When the _modifier_ key is held down, you may use left click to drag floating
-	windows, and right click to resize them. Unlike i3, this modifier may also be
-	used to resize and move windows that are tiled. With the _inverse_ mode
-	enabled, left click is used for resizing and right click for dragging. The
-	mode paramenter is optional and defaults to _normal_ if it isn't defined.
 
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
@@ -63,12 +62,72 @@ Commands
 **focus** mode_toggle::
 	Toggles focus between floating view and tiled view.
 
+**fullscreen**::
+	Toggles fullscreen status for the focused view.
+
+**layout** <mode>::
+	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
+	_splitv_, or _toggle split_.
+
+**move** <left|right|up|down>::
+	Moves the focused container _left_, _right_, _up_, or _down_.
+
+**move** <container|window> to workspace <name>::
+	Moves the focused container to the workspace identified by _name_.
+	_name_ may be a special workspace name. See **workspace**.
+
+**move** <container|window|workspace> to output <name|direction>::
+	Moves the focused container or workspace to the output identified by _name_ or
+	_direction_. _direction_ may be one of _up_, _down_, _left_, _right_.
+
+**reload**::
+	Reloads the sway config file without restarting sway.
+
+**resize** <shrink|grow> <width|height> <amount>::
+	Resizes the currently focused container or view by _amount_. _amount_ can be
+	specified as "n px" or "n ppt" or "n px or n ppt".
+
+**split** <vertical|v|horizontal|h|toggle|t>::
+	Splits the current container, vertically or horizontally. If toggled then the
+	current container is split opposite to the parent container.
+
+**splith**::
+	Equivalent to **split horizontal**.
+
+**splitv**::
+	Equivalent to **split vertical**.
+
+**splitt**::
+	Equivalent to **split toggle**.
+
+**sticky** <enable|disable|toggle>::
+	If enabled and the windows is floating it will always be present on the active
+	workspace on that output.
+
+The following commands may be used either in the configuration file
+or triggered at runtime.
+
+**debuglog** <on|off|toggle>::
+	Enables, disables or toggles logging for debug. The toggle argument cannot
+	be used in the configuration file.
+
+**exec** <shell command>::
+	Executes _shell command_ with sh.
+
+**exec_always** <shell command>::
+	Like exec, but the shell command will be executed _again_ after *reload* or
+	*restart* is executed.
+
+**floating_modifier** <modifier> [normal|inverse]::
+	When the _modifier_ key is held down, you may use left click to drag floating
+	windows, and right click to resize them. Unlike i3, this modifier may also be
+	used to resize and move windows that are tiled. With the _inverse_ mode
+	enabled, left click is used for resizing and right click for dragging. The
+	mode paramenter is optional and defaults to _normal_ if it isn't defined.
+
 **focus_follows_mouse** <yes|no>::
 	If set to _yes_, the currently focused view will change as you move your
 	mouse around the screen to the view that ends up underneath your mouse.
-
-**fullscreen**::
-	Toggles fullscreen status for the focused view.
 
 **for_window** <criteria> <command>::
 	Whenever a window that matches _criteria_ appears, run list of commands. See
@@ -77,7 +136,8 @@ Commands
 **gaps** edge_gaps <on|off|toggle>::
 	Whether or not to add gaps between views and workspace edges if amount of
 	inner gap is not zero. When _no_, no gap is added where the view is aligned to
-	the workspace edge, effectively creating gaps only between views.
+	the workspace edge, effectively creating gaps only between views. The toggle
+	argument cannot be used in the configuration file.
 
 **gaps** <amount>::
 	Sets default _amount_ pixels as the gap between each view, and around each
@@ -94,28 +154,10 @@ Commands
 	workspace (or current workspace), and _current_ changes gaps for the current
 	view or workspace.
 
-**kill**::
-	Closes the currently focused view.
-
-**layout** <mode>::
-	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, or _toggle split_.
-
 **mode** <mode_name>::
 	Switches to the given mode_name. the default mode is simply _default_. To
 	create a new mode in config append _{_ to this command, the following lines
 	will be keybinds for that mode, and _}_ on its own line to close the block.
-
-**move** <left|right|up|down>::
-	Moves the focused container _left_, _right_, _up_, or _down_.
-
-**move** <container|window> to workspace <name>::
-	Moves the focused container to the workspace identified by _name_.
-	_name_ may be a special workspace name. See **workspace**.
-
-**move** <container|window|workspace> to output <name|direction>::
-	Moves the focused container or workspace to the output identified by _name_ or
-	_direction_. _direction_ may be one of _up_, _down_, _left_, _right_.
 
 **mouse_warping** <output|none>::
 	When _output_: place mouse at center of newly focused window when changing
@@ -147,38 +189,10 @@ Commands
 	this output config after the others, or it will be matched instead of the
 	others.
 
-**reload**::
-	Reloads the sway config file without restarting sway.
-
-**resize** <shrink|grow> <width|height> <amount>::
-	Resizes the currently focused container or view by _amount_. _amount_ can be
-	specified as "n px" or "n ppt" or "n px or n ppt".
-
 **seamless_mouse** <on|off>::
 	Change output seamlessly when pointer touches edge of output. Outputs need to
 	be configured with perfectly aligned adjacent positions for this option to
 	have any effect.
-
-**set** <name> <value>::
-	Creates a substitution for _value_ that can be used with $_name_ in other
-	commands.
-
-**split** <vertical|v|horizontal|h|toggle|t>::
-	Splits the current container, vertically or horizontally. If toggled then the
-	current container is split opposite to the parent container.
-
-**splith**::
-	Equivalent to **split horizontal**.
-
-**splitv**::
-	Equivalent to **split vertical**.
-
-**splitt**::
-	Equivalent to **split toggle**.
-
-**sticky** <enable|disable|toggle>::
-	If enabled and the windows is floating it will always be present on the active
-	workspace on that output.
 
 **workspace** <name>::
 	Switches to the specified workspace.
