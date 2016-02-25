@@ -303,6 +303,16 @@ static void handle_view_destroyed(wlc_handle handle) {
 		if (fullscreen) {
 			parent->fullscreen = NULL;
 		}
+
+		// Destroy empty workspaces
+		if (parent->type == C_WORKSPACE &&
+			parent->children->length == 0 &&
+			parent->floating->length == 0 &&
+			swayc_active_workspace() != parent &&
+			!parent->visible) {
+			parent = destroy_workspace(parent);
+		}
+
 		arrange_windows(parent, -1, -1);
 	} else {
 		// Is it unmanaged?
