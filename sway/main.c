@@ -25,6 +25,7 @@ static bool terminate_request = false;
 void sway_terminate(void) {
 	terminate_request = true;
 	wlc_terminate();
+	exit(EXIT_FAILURE);
 }
 
 void sig_handler(int signal) {
