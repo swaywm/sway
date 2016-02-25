@@ -25,6 +25,7 @@ static bool terminate_request = false;
 void sway_terminate(void) {
 	terminate_request = true;
 	wlc_terminate();
+	exit(EXIT_FAILURE);
 }
 
 void sig_handler(int signal) {
@@ -103,7 +104,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdvVpc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdvVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -148,6 +149,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (optind < argc) { // Behave as IPC client
+		if(optind != 1) {
+			sway_abort("Don't use options with the IPC client");
+		}
 		if (getuid() != geteuid() || getgid() != getegid()) {
 			if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
 				sway_abort("Unable to drop root");
