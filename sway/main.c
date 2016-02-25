@@ -148,6 +148,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (optind < argc) { // Behave as IPC client
+		if(optind != 1) {
+			sway_abort("Don't use options with the IPC client");
+		}
 		if (getuid() != geteuid() || getgid() != getegid()) {
 			if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
 				sway_abort("Unable to drop root");
