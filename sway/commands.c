@@ -672,8 +672,9 @@ static void hide_view_in_scratchpad(swayc_t *sp_view) {
 	remove_child(sp_view);
 	if (swayc_active_workspace() != ws && ws->floating->length == 0 && ws->children->length == 0) {
 		destroy_workspace(ws);
+	} else {
+		arrange_windows(ws, -1, -1);
 	}
-	arrange_windows(ws, -1, -1);
 	set_focused_container(container_under_pointer());
 }
 
