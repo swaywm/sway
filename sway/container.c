@@ -11,6 +11,7 @@
 #include "layout.h"
 #include "input_state.h"
 #include "log.h"
+#include "ipc-server.h"
 
 #define ASSERT_NONNULL(PTR) \
 	sway_assert (PTR, #PTR "must be non-null")
@@ -371,6 +372,7 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 	// destroy the WS if there are no children
 	if (workspace->children->length == 0 && workspace->floating->length == 0) {
 		sway_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+		ipc_event_workspace(workspace, NULL, "empty");
 	} else {
 		// Move children to a different workspace on this output
 		swayc_t *new_workspace = NULL;
