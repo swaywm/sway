@@ -108,6 +108,16 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 	swayc_t *view = swayc_by_handle(wlc_handle_from_wl_surface_resource(surface));
 	sway_log(L_DEBUG, "Setting lock surface to %p", view);
 	if (view && output) {
+		// make the view floating so it doesn't rearrange other
+		// siblings.
+		if (!view->is_floating) {
+			// Remove view from its current location
+			destroy_container(remove_child(view));
+
+			// and move it into workspace floating
+			add_floating(swayc_active_workspace(), view);
+		}
+
 		swayc_t *workspace = output->focused;
 		if (!swayc_is_child_of(view, workspace)) {
 			move_container_to(view, workspace);
