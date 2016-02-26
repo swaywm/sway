@@ -21,16 +21,17 @@
 #include "sway.h"
 
 static bool terminate_request = false;
+static int exit_value = 0;
 
-void sway_terminate(void) {
+void sway_terminate(int exit_code) {
 	terminate_request = true;
+	exit_value = exit_code;
 	wlc_terminate();
-	exit(EXIT_FAILURE);
 }
 
 void sig_handler(int signal) {
 	close_views(&root_container);
-	sway_terminate();
+	sway_terminate(EXIT_SUCCESS);
 }
 
 static void wlc_log_handler(enum wlc_log_type type, const char *str) {
@@ -150,16 +151,19 @@ int main(int argc, char **argv) {
 
 	if (optind < argc) { // Behave as IPC client
 		if(optind != 1) {
-			sway_abort("Don't use options with the IPC client");
+			sway_log(L_ERROR, "Don't use options with the IPC client");
+			exit(EXIT_FAILURE);
 		}
 		if (getuid() != geteuid() || getgid() != getegid()) {
 			if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
-				sway_abort("Unable to drop root");
+				sway_log(L_ERROR, "Unable to drop root");
+				exit(EXIT_FAILURE);
 			}
 		}
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
-			sway_abort("Unable to retrieve socket path");
+			sway_log(L_ERROR, "Unable to retrieve socket path");
+			exit(EXIT_FAILURE);
 		}
 		char *command = join_args(argv + optind, argc - optind);
 		run_as_ipc_client(command, socket_path);
@@ -224,6 +228,6 @@ int main(int argc, char **argv) {
 
 	ipc_terminate();
 
-	return 0;
+	return exit_value;
 }
 

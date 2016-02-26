@@ -10,9 +10,9 @@
 /* global bar state */
 struct bar swaybar;
 
-void sway_terminate(void) {
+void sway_terminate(int exit_code) {
 	bar_teardown(&swaybar);
-	exit(EXIT_FAILURE);
+	exit(exit_code);
 }
 
 void sig_handler(int signal) {

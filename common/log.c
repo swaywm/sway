@@ -58,7 +58,7 @@ void sway_abort(const char *format, ...) {
 	vfprintf(stderr, format, args);
 	va_end(args);
 	fprintf(stderr, "\n");
-	sway_terminate();
+	sway_terminate(EXIT_FAILURE);
 }
 
 #ifndef NDEBUG

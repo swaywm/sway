@@ -24,7 +24,7 @@ enum scaling_mode {
 	SCALING_MODE_TILE,
 };
 
-void sway_terminate(void) {
+void sway_terminate(int exit_code) {
 	int i;
 	for (i = 0; i < surfaces->length; ++i) {
 		struct window *window = surfaces->items[i];
@@ -32,7 +32,7 @@ void sway_terminate(void) {
 	}
 	list_free(surfaces);
 	registry_teardown(registry);
-	exit(EXIT_FAILURE);
+	exit(exit_code);
 }
 
 char *password;

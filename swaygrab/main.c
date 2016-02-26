@@ -11,8 +11,8 @@
 #include "ipc-client.h"
 #include "util.h"
 
-void sway_terminate(void) {
-	exit(EXIT_FAILURE);
+void sway_terminate(int exit_code) {
+	exit(exit_code);
 }
 
 void grab_and_apply_magick(const char *file, const char *output,

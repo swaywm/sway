@@ -11,8 +11,8 @@
 #include "readline.h"
 #include "log.h"
 
-void sway_terminate(void) {
-	exit(EXIT_FAILURE);
+void sway_terminate(int exit_code) {
+	exit(exit_code);
 }
 
 int main(int argc, char **argv) {

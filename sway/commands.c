@@ -450,7 +450,7 @@ static struct cmd_results *cmd_exit(int argc, char **argv) {
 	}
 	// Close all views
 	close_views(&root_container);
-	sway_terminate();
+	sway_terminate(EXIT_SUCCESS);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
