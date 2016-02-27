@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "list.h"
+
 /**
  * Colors for a box with background, border and text colors.
  */
@@ -25,6 +27,8 @@ struct config {
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
 	bool workspace_buttons;
+	bool all_outputs;
+	list_t *outputs;
 
 	int height;
 

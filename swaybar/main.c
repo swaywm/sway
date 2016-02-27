@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 	};
 
 	const char *usage =
-		"Usage: swaybar [options...] <output>\n"
+		"Usage: swaybar [options...]\n"
 		"\n"
 		"  -h, --help             Show help message and quit.\n"
 		"  -v, --version          Show the version number and quit.\n"
@@ -95,15 +95,9 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (argc == optind) {
-		sway_abort("No output index provided");
-	}
-
-	int desired_output = atoi(argv[optind]);
-
 	signal(SIGTERM, sig_handler);
 
-	bar_setup(&swaybar, socket_path, bar_id, desired_output);
+	bar_setup(&swaybar, socket_path, bar_id);
 
 	free(socket_path);
 	free(bar_id);

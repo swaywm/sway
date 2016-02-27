@@ -8,8 +8,7 @@
 struct bar {
 	struct config *config;
 	struct status_line *status;
-	struct output *output;
-	/* list_t *outputs; */
+	list_t *outputs;
 
 	int ipc_event_socketfd;
 	int ipc_socketfd;
@@ -22,6 +21,7 @@ struct output {
 	struct registry *registry;
 	list_t *workspaces;
 	char *name;
+	int idx;
 };
 
 struct workspace {
@@ -35,7 +35,12 @@ struct workspace {
 /**
  * Setup bar.
  */
-void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id, int desired_output);
+void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id);
+
+/**
+ * Create new output struct from name.
+ */
+struct output *new_output(const char *name);
 
 /**
  * Bar mainloop.

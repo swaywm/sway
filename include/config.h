@@ -125,6 +125,7 @@ struct bar_config {
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
 	bool verbose;
+	pid_t pid;
 	struct {
 		char background[10];
 		char statusline[10];
@@ -192,6 +193,10 @@ bool load_config(const char *file);
  */
 bool read_config(FILE *file, bool is_active);
 /**
+ * Free config struct
+ */
+void free_config(struct sway_config *config);
+/**
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
 char *do_var_replacement(char *str);
@@ -226,8 +231,7 @@ int sway_mouse_binding_cmp_qsort(const void *a, const void *b);
 int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
 void free_sway_mouse_binding(struct sway_mouse_binding *smb);
 
-void load_swaybars(swayc_t *output, int output_idx);
-void terminate_swaybars(list_t *pids);
+void load_swaybars();
 void terminate_swaybg(pid_t pid);
 
 /**

@@ -6,7 +6,7 @@
 /**
  * Initialize ipc connection to sway and get sway state, outputs, bar_config.
  */
-void ipc_bar_init(struct bar *bar, int outputi, const char *bar_id);
+void ipc_bar_init(struct bar *bar, const char *bar_id);
 
 /**
  * Handle ipc event from sway.

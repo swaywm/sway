@@ -11,7 +11,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
 	json_object *tray_output, *mode, *hidden_bar, *position, *status_command;
 	json_object *font, *bar_height, *workspace_buttons, *strip_workspace_numbers;
-	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol;
+	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
 	json_object_object_get_ex(bar_config, "mode", &mode);
 	json_object_object_get_ex(bar_config, "hidden_bar", &hidden_bar);
@@ -25,6 +25,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object_object_get_ex(bar_config, "verbose", &verbose);
 	json_object_object_get_ex(bar_config, "separator_symbol", &sep_symbol);
 	json_object_object_get_ex(bar_config, "colors", &colors);
+	json_object_object_get_ex(bar_config, "outputs", &outputs);
 
 	if (status_command) {
 		free(config->status_command);
@@ -59,6 +60,31 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 	if (bar_height) {
 		config->height = json_object_get_int(bar_height);
+	}
+
+	// free previous outputs list
+	int i;
+	for (i = 0; i < config->outputs->length; ++i) {
+		free(config->outputs->items[i]);
+	}
+	list_free(config->outputs);
+	config->outputs = create_list();
+
+	if (outputs) {
+		int length = json_object_array_length(outputs);
+		json_object *output;
+		const char *output_str;
+		for (i = 0; i < length; ++i) {
+			output = json_object_array_get_idx(outputs, i);
+			output_str = json_object_get_string(output);
+			if (strcmp("*", output_str) == 0) {
+				config->all_outputs = true;
+				break;
+			}
+			list_add(config->outputs, strdup(output_str));
+		}
+	} else {
+		config->all_outputs = true;
 	}
 
 	if (colors) {
@@ -151,10 +177,14 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 }
 
 static void ipc_update_workspaces(struct bar *bar) {
-	if (bar->output->workspaces) {
-		free_workspaces(bar->output->workspaces);
+	int i;
+	for (i = 0; i < bar->outputs->length; ++i) {
+		struct output *output = bar->outputs->items[i];
+		if (output->workspaces) {
+			free_workspaces(output->workspaces);
+		}
+		output->workspaces = create_list();
 	}
-	bar->output->workspaces = create_list();
 
 	uint32_t len = 0;
 	char *res = ipc_single_command(bar->ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
@@ -164,7 +194,6 @@ static void ipc_update_workspaces(struct bar *bar) {
 		return;
 	}
 
-	int i;
 	int length = json_object_array_length(results);
 	json_object *ws_json;
 	json_object *num, *name, *visible, *focused, *out, *urgent;
@@ -178,14 +207,18 @@ static void ipc_update_workspaces(struct bar *bar) {
 		json_object_object_get_ex(ws_json, "output", &out);
 		json_object_object_get_ex(ws_json, "urgent", &urgent);
 
-		if (strcmp(json_object_get_string(out), bar->output->name) == 0) {
-			struct workspace *ws = malloc(sizeof(struct workspace));
-			ws->num = json_object_get_int(num);
-			ws->name = strdup(json_object_get_string(name));
-			ws->visible = json_object_get_boolean(visible);
-			ws->focused = json_object_get_boolean(focused);
-			ws->urgent = json_object_get_boolean(urgent);
-			list_add(bar->output->workspaces, ws);
+		int j;
+		for (j = 0; j < bar->outputs->length; ++j) {
+			struct output *output = bar->outputs->items[j];
+			if (strcmp(json_object_get_string(out), output->name) == 0) {
+				struct workspace *ws = malloc(sizeof(struct workspace));
+				ws->num = json_object_get_int(num);
+				ws->name = strdup(json_object_get_string(name));
+				ws->visible = json_object_get_boolean(visible);
+				ws->focused = json_object_get_boolean(focused);
+				ws->urgent = json_object_get_boolean(urgent);
+				list_add(output->workspaces, ws);
+			}
 		}
 	}
 
@@ -193,22 +226,58 @@ static void ipc_update_workspaces(struct bar *bar) {
 	free(res);
 }
 
-void ipc_bar_init(struct bar *bar, int outputi, const char *bar_id) {
-	uint32_t len = 0;
-	char *res = ipc_single_command(bar->ipc_socketfd, IPC_GET_OUTPUTS, NULL, &len);
-	json_object *outputs = json_tokener_parse(res);
-	json_object *info = json_object_array_get_idx(outputs, outputi);
-	json_object *name;
-	json_object_object_get_ex(info, "name", &name);
-	bar->output->name = strdup(json_object_get_string(name));
-	free(res);
-	json_object_put(outputs);
-
-	len = strlen(bar_id);
-	res = ipc_single_command(bar->ipc_socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
+void ipc_bar_init(struct bar *bar, const char *bar_id) {
+	// Get bar config
+	uint32_t len = strlen(bar_id);
+	char *res = ipc_single_command(bar->ipc_socketfd, IPC_GET_BAR_CONFIG, bar_id, &len);
 
 	ipc_parse_config(bar->config, res);
 	free(res);
+
+	// Get outputs
+	len = 0;
+	res = ipc_single_command(bar->ipc_socketfd, IPC_GET_OUTPUTS, NULL, &len);
+	json_object *outputs = json_tokener_parse(res);
+	int i;
+	int length = json_object_array_length(outputs);
+	json_object *output, *output_name, *output_active;
+	const char *name;
+	bool active;
+	for (i = 0; i < length; ++i) {
+		output = json_object_array_get_idx(outputs, i);
+		json_object_object_get_ex(output, "name", &output_name);
+		json_object_object_get_ex(output, "active", &output_active);
+		name = json_object_get_string(output_name);
+		active = json_object_get_boolean(output_active);
+		if (!active) {
+			continue;
+		}
+
+		bool use_output = false;
+		if (bar->config->all_outputs) {
+			use_output = true;
+		} else {
+			int j = 0;
+			for (j = 0; j < bar->config->outputs->length; ++j) {
+				const char *conf_name = bar->config->outputs->items[i];
+				if (strcasecmp(name, conf_name) == 0) {
+					use_output = true;
+					break;
+				}
+			}
+		}
+
+		if (!use_output) {
+			continue;
+		}
+
+		// add bar to the output
+		struct output *bar_output = new_output(name);
+		bar_output->idx = i;
+		list_add(bar->outputs, bar_output);
+	}
+	free(res);
+	json_object_put(outputs);
 
 	const char *subscribe_json = "[ \"workspace\", \"mode\" ]";
 	len = strlen(subscribe_json);
