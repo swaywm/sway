@@ -209,6 +209,8 @@ void pointer_position_set(struct wlc_point *new_origin, bool force_focus) {
 	pointer_state.delta.x = new_origin->x - origin.x;
 	pointer_state.delta.y = new_origin->y - origin.y;
 
+	wlc_pointer_set_position(new_origin);
+
 	// Update view under pointer
 	swayc_t *prev_view = pointer_state.view;
 	pointer_state.view = container_under_pointer();
@@ -222,8 +224,6 @@ void pointer_position_set(struct wlc_point *new_origin, bool force_focus) {
 			set_focused_container(pointer_state.view);
 		}
 	}
-
-	wlc_pointer_set_position(new_origin);
 }
 
 void center_pointer_on(swayc_t *view) {
