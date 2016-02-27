@@ -265,24 +265,32 @@
         0x0000 - 0x0FFF: xdg-shell core values, documented below.
         0x1000 - 0x1FFF: GNOME
       </description>
-      <entry name="maximized" value="1" summary="the surface is maximized">
+      <entry name="maximized" value="1">
+        <description summary="the surface is maximized">
         The surface is maximized. The window geometry specified in the configure
         event must be obeyed by the client.
+        </description>
       </entry>
-      <entry name="fullscreen" value="2" summary="the surface is fullscreen">
+      <entry name="fullscreen" value="2">
+        <description summary="the surface is fullscreen">
         The surface is fullscreen. The window geometry specified in the configure
         event must be obeyed by the client.
+        </description>
       </entry>
       <entry name="resizing" value="3">
+        <description summary="the surface is being resized">
         The surface is being resized. The window geometry specified in the
         configure event is a maximum; the client cannot resize beyond it.
         Clients that have aspect ratio or cell sizing configuration can use
         a smaller size, however.
+        </description>
       </entry>
       <entry name="activated" value="4">
+        <description summary="the client window is active">
         Client window decorations should be painted as if the window is
         active. Do not assume this means that the window actually has
         keyboard or pointer focus.
+        </description>
       </entry>
     </enum>
 

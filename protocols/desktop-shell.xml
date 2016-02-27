@@ -109,12 +109,12 @@
     </enum>
 
     <request name="set_panel_position" since="3">
-      <arg name="position" type="uint"/>
       <description summary="set panel position">
         Tell the shell which side of the screen the panel is
         located. This is so that new windows do not overlap the panel
         and maximized windows maximize properly.
       </description>
+      <arg name="position" type="uint"/>
     </request>
 
   </interface>
