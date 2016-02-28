@@ -124,7 +124,7 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		workspace->fullscreen = view;
 		desktop_shell.is_locked = true;
 		set_focused_container(view);
-		arrange_windows(view, -1, -1);
+		arrange_windows(workspace, -1, -1);
 		list_add(desktop_shell.lock_surfaces, surface);
 		wl_resource_set_destructor(surface, lock_surface_destructor);
 	} else {
