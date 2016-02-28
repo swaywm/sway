@@ -617,6 +617,50 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	layout_log(&root_container, 0);
 }
 
+/**
+ * Get swayc in the direction of newly entered output.
+ */
+static swayc_t *get_swayc_in_output_direction(swayc_t *output, enum movement_direction dir) {
+	if (!output) {
+		return NULL;
+	}
+
+	swayc_t *ws = swayc_focus_by_type(output, C_WORKSPACE);
+	if (ws && ws->children->length > 0) {
+		switch (dir) {
+		case MOVE_LEFT:
+			// get most right child of new output
+			return ws->children->items[ws->children->length-1];
+		case MOVE_RIGHT:
+			// get most left child of new output
+			return ws->children->items[0];
+		case MOVE_UP:
+		case MOVE_DOWN:
+			{
+				swayc_t *focused_view = swayc_focus_by_type(ws, C_VIEW);
+				if (focused_view && focused_view->parent) {
+					swayc_t *parent = focused_view->parent;
+					if (parent->layout == L_VERT) {
+						if (dir == MOVE_UP) {
+							// get child furthest down on new output
+							return parent->children->items[parent->children->length-1];
+						} else if (dir == MOVE_DOWN) {
+							// get child furthest up on new output
+							return parent->children->items[0];
+						}
+					}
+					return focused_view;
+				}
+				break;
+			}
+		default:
+			break;
+		}
+	}
+
+	return output;
+}
+
 swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit) {
 	swayc_t *parent = container->parent;
 	if (dir == MOVE_PARENT) {
@@ -635,7 +679,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 		sway_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
 		container = swayc_parent_by_type(container, C_OUTPUT);
 		get_absolute_center_position(container, &abs_pos);
-		return swayc_adjacent_output(container, dir, &abs_pos, true);
+		swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
+		return get_swayc_in_output_direction(output, dir);
 	}
 
 	if (container->type == C_WORKSPACE && container->fullscreen) {
@@ -649,7 +694,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 		int diff = 0;
 		if (parent->type == C_ROOT) {
 			sway_log(L_DEBUG, "Moving between outputs");
-			return swayc_adjacent_output(container, dir, &abs_pos, true);
+			swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
+			return get_swayc_in_output_direction(output, dir);
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ) {
