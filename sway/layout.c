@@ -269,13 +269,13 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 					if (child->type == C_CONTAINER) {
 						parent = child;
 						// Insert it in first/last if matching layout, otherwise
-						// inesrt it next to focused container
+						// insert it next to focused container
 						if (parent->layout == layout
 							|| (parent->layout == L_TABBED && layout == L_HORIZ)
 							|| (parent->layout == L_STACKED && layout == L_VERT)) {
 							desired = (diff < 0) * parent->children->length;
 						} else {
-							desired = index_child(child->focused);
+							desired = index_child(child->focused) + 1;
 						}
 						//reset geometry
 						container->width = container->height = 0;
@@ -284,7 +284,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				swayc_t *old_parent = remove_child(container);
 				insert_child(parent, container, desired);
 				destroy_container(old_parent);
-				sway_log(L_DEBUG,"Moving to %p %d",parent, desired);
+				sway_log(L_DEBUG,"Moving to %p %d", parent, desired);
 				break;
 			}
 		}
@@ -294,6 +294,41 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 			continue;
 		}
 		if (parent->type == C_WORKSPACE) {
+			// If moving to an adjacent output we need a starting position (since this
+			// output might border to multiple outputs).
+			struct wlc_point abs_pos;
+			get_absolute_center_position(container, &abs_pos);
+
+			swayc_t *output = swayc_adjacent_output(parent->parent, dir, &abs_pos, true);
+
+			if (output) {
+				sway_log(L_DEBUG, "Moving between outputs");
+				swayc_t *old_parent = remove_child(container);
+				destroy_container(old_parent);
+
+				swayc_t *dest = output->focused;
+				switch (dir) {
+				case MOVE_LEFT:
+				case MOVE_UP:
+					// reset container geometry
+					container->width = container->height = 0;
+					add_child(dest, container);
+					break;
+				case MOVE_RIGHT:
+				case MOVE_DOWN:
+					// reset container geometry
+					container->width = container->height = 0;
+					insert_child(dest, container, 0);
+					break;
+				default:
+					break;
+				}
+				// arrange new workspace
+				arrange_windows(dest, -1, -1);
+				set_focused_container(container);
+				break;
+			}
+
 			// We simply cannot move any further.
 			if (parent->layout == layout) {
 				break;
