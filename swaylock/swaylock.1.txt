@@ -1,0 +1,46 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+:quotes.~:
+
+swaylock (1)
+============
+
+Name
+----
+swaylock - Screen locker for sway
+
+Synopsis
+--------
+'swaylock' [options]
+
+Lock the current sway session.
+
+Options
+-------
+
+*-h, --help*::
+	Show help message and quit.
+
+*-c, \--color* <rrggbb[aa]>::
+	Turn the screen into the given color instead of white.
+
+*-i, \--image* <path>::
+	Display the given image.
+
+*-s, \--scaling*::
+	Scaling mode for images: stretch, fill, fit, center, or tile.
+
+*-t, --tiling*::
+	Same as --scaling=tile.
+
+*-v, \--version*::
+	Show the version number and quit.
+
+Authors
+-------
+
+Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
+source contributors. For more information about sway development, see
+<https://github.com/SirCmpwn/sway>.
+
