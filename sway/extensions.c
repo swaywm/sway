@@ -5,6 +5,7 @@
 #include "wayland-swaylock-server-protocol.h"
 #include "layout.h"
 #include "log.h"
+#include "input_state.h"
 #include "extensions.h"
 
 struct desktop_shell_state desktop_shell;
@@ -123,6 +124,8 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		wlc_view_set_state(view->handle, WLC_BIT_FULLSCREEN, true);
 		workspace->fullscreen = view;
 		desktop_shell.is_locked = true;
+		// reset input state
+		input_init();
 		set_focused_container(view);
 		arrange_windows(workspace, -1, -1);
 		list_add(desktop_shell.lock_surfaces, surface);
