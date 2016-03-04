@@ -25,8 +25,22 @@ struct workspace_by_number_data {
 	const char *name;
 };
 
-char *workspace_next_name(void) {
-	sway_log(L_DEBUG, "Workspace: Generating new name");
+static bool workspace_valid_on_output(const char *output_name, const char *ws_name) {
+	int i;
+	for (i = 0; i < config->workspace_outputs->length; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcasecmp(wso->workspace, ws_name) == 0) {
+			if (strcasecmp(wso->output, output_name) != 0) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+char *workspace_next_name(const char *output_name) {
+	sway_log(L_DEBUG, "Workspace: Generating new workspace name for output %s", output_name);
 	int i;
 	int l = 1;
 	// Scan all workspace bindings to find the next available workspace name,
@@ -73,6 +87,14 @@ char *workspace_next_name(void) {
 				free(_target);
 				continue;
 			}
+
+			// make sure that the workspace can appear on the given
+			// output
+			if (!workspace_valid_on_output(output_name, _target)) {
+				free(_target);
+				continue;
+			}
+
 			if (binding->order < order) {
 				order = binding->order;
 				target = _target;

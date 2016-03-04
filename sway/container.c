@@ -143,7 +143,7 @@ swayc_t *new_output(wlc_handle handle) {
 		}
 	}
 	if (!ws_name) {
-		ws_name = workspace_next_name();
+		ws_name = workspace_next_name(output->name);
 	}
 
 	// create and initilize default workspace
