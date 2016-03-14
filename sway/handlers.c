@@ -357,6 +357,7 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 			arrange_windows(view->parent, -1, -1);
 		}
 	}
+	update_view_border(view);
 }
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {

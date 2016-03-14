@@ -12,6 +12,7 @@
 #include "focus.h"
 #include "output.h"
 #include "ipc-server.h"
+#include "render.h"
 
 swayc_t root_container;
 list_t *scratchpad;

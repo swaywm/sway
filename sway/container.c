@@ -22,8 +22,11 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->gaps = -1;
 	c->layout = L_NONE;
 	c->type = type;
+	c->border_type = B_PIXEL; // TODO: Load default from config
+	c->border_thickness = 2;
 	if (type != C_VIEW) {
 		c->children = create_list();
+		c->border_type = B_NONE;
 	}
 	return c;
 }

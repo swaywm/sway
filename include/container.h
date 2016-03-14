@@ -36,6 +36,12 @@ enum swayc_layouts {
 	L_LAYOUTS,
 };
 
+enum swayc_border_types {
+    B_NONE,             /**< No border */
+    B_PIXEL,            /**< 1px border */
+    B_NORMAL            /**< Normal border with title bar */
+};
+
 /**
  * Stores information about a container.
  *
@@ -109,6 +115,15 @@ struct sway_container {
 	 * If this container's children include a fullscreen view, this is that view.
 	 */
 	struct sway_container *fullscreen;
+    /**
+     * If this container is a view, this may be set to the window's decoration
+     * buffer (or NULL).
+     */
+    unsigned char *border;
+    enum swayc_border_types border_type;
+	struct wlc_geometry border_geometry;
+	struct wlc_geometry presumed_geometry;
+    int border_thickness;
 };
 
 enum visibility_mask {
