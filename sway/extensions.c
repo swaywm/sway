@@ -129,7 +129,12 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		desktop_shell.is_locked = true;
 		// reset input state
 		input_init();
-		set_focused_container(view);
+		// set focus if the lockscreen is spawned on the currently
+		// active output
+		swayc_t *focus_output = swayc_active_output();
+		if (focus_output == output) {
+			set_focused_container(view);
+		}
 		arrange_windows(workspace, -1, -1);
 		list_add(desktop_shell.lock_surfaces, surface);
 		wl_resource_set_destructor(surface, lock_surface_destructor);
