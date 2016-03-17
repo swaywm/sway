@@ -48,4 +48,4 @@ Commands
 See Also
 --------
 
-**sway**(5)
+**sway**(5) **sway-bar**(5)
