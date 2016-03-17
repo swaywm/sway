@@ -141,10 +141,6 @@ static void handle_output_pre_render(wlc_handle output) {
 				break;
 			}
 			wlc_surface_render(config->surface, &geo);
-			if (size.w != desktop_shell.panel_size.w || size.h != desktop_shell.panel_size.h) {
-				desktop_shell.panel_size = size;
-				arrange_windows(&root_container, -1, -1);
-			}
 			break;
 		}
 	}

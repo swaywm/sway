@@ -93,7 +93,6 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
 	wl_resource_set_destructor(surface, panel_surface_destructor);
-	desktop_shell.panel_size = *wlc_surface_get_size(config->surface);
 	arrange_windows(&root_container, -1, -1);
 	wlc_output_schedule_render(config->output);
 }

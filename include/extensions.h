@@ -28,7 +28,6 @@ struct desktop_shell_state {
         list_t *panels;
         list_t *lock_surfaces;
         bool is_locked;
-        struct wlc_size panel_size;
 };
 
 struct swaylock_state {
