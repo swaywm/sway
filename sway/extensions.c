@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <wlc/wlc.h>
 #include <wlc/wlc-wayland.h>
+#include <wlc/wlc-render.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "wayland-swaylock-server-protocol.h"
 #include "layout.h"
@@ -77,6 +78,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	config->wl_surface_res = surface;
 	list_add(desktop_shell.backgrounds, config);
 	wl_resource_set_destructor(surface, background_surface_destructor);
+	wlc_output_schedule_render(config->output);
 }
 
 static void set_panel(struct wl_client *client, struct wl_resource *resource,
@@ -93,6 +95,7 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	wl_resource_set_destructor(surface, panel_surface_destructor);
 	desktop_shell.panel_size = *wlc_surface_get_size(config->surface);
 	arrange_windows(&root_container, -1, -1);
+	wlc_output_schedule_render(config->output);
 }
 
 static void desktop_set_lock_surface(struct wl_client *client, struct wl_resource *resource, struct wl_resource *surface) {

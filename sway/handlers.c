@@ -680,13 +680,6 @@ static void handle_wlc_ready(void) {
 		free(line);
 		list_del(config->cmd_queue, 0);
 	}
-
-	// render all outputs
-	int i;
-	for (i = 0; i < root_container.children->length; ++i) {
-		swayc_t *output = root_container.children->items[i];
-		wlc_output_schedule_render(output->handle);
-	}
 }
 
 struct wlc_interface interface = {
