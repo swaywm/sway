@@ -242,4 +242,4 @@ Currently supported attributes:
 See Also
 --------
 
-**sway**(1) **sway-input**(5)
+**sway**(1) **sway-input**(5) **sway-bar**(5)

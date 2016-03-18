@@ -364,7 +364,7 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
 
 	// make sure source output has a workspace
 	if (src_op->children->length == 0) {
-		char *ws_name = workspace_next_name();
+		char *ws_name = workspace_next_name(src_op->name);
 		swayc_t *ws = new_workspace(src_op, ws_name);
 		ws->is_focused = true;
 		free(ws_name);

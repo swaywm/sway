@@ -139,6 +139,11 @@ bool set_focused_container(swayc_t *c) {
 				wlc_view_focus(p->handle);
 			}
 		}
+	} else if (p->type == C_WORKSPACE) {
+		// remove previous focus if view_focus is unlocked
+		if (!locked_view_focus) {
+			wlc_view_focus(0);
+		}
 	}
 
 	if (active_ws != workspace) {

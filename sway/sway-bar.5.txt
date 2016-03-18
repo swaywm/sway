@@ -1,0 +1,112 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+sway-bar (5)
+============
+
+Name
+----
+sway-bar - bar configuration file and commands
+
+Description
+-----------
+
+Sway allows for configuration of swaybar within the sway configuation file.
+Swaybar commands must be used inside a _bar { }_ block in the config.
+
+
+Commands
+--------
+
+**status_command** <status command>::
+	Executes the bar _status command_ with _sh -c_.
+
+**id** <bar_id>::
+	Sets the ID of the bar.
+
+**position** <top|bottom|left|right>::
+	Sets position of the bar. Default is _bottom_.
+
+**output** <output>::
+	Restrict the bar to a certain output, can be specified multiple times. If the
+	output command is omitted, the bar will be displayed on all outputs.
+
+**swaybar_command** <command>::
+	Executes custom bar command, default is _swaybar_.
+
+**font** <font>::
+	Specifies the font to be used in the bar.
+
+**separator_symbol** <symbol>::
+	Specifies the separator symbol to separate blocks on the bar.
+
+**workspace_buttons** <yes|no>::
+	Enables or disables workspace buttons on the bar. Default is to enable
+	buttons.
+
+**strip_workspace_numbers** <yes|no>::
+	If set to _yes_, then workspace numbers will be omitted from the workspace
+	button and only the custom name will be shown.
+
+**binding_mode_indicator** <yes|no>::
+	Enable or disable binding mode indicator. It's enabled by default.
+
+**height** <height>::
+	Sets the height of the bar. Default height will match the font size.
+
+Colors
+------
+
+Colors are defined within a _colors { }_ block inside a _bar { }_ block. Colors
+must be defined in hex. E.g. _#fff000_ or _#fff000ff_ when including the alpha
+channel.
+
+**background** <color>::
+	Background color of the bar.
+
+**statusline** <color>::
+	Text color to be used for the statusline.
+
+**separator** <color>::
+	Text color to be used for the separator.
+
+**focused_background** <color>::
+	Background color of the bar on the currently focused monitor output. If not
+	used, the color will be taken from _background_.
+
+**focused_statusline** <color>::
+	Text color to be used for the statusline on the currently focused monitor
+	output. If not used, the color will be taken from _statusline_.
+
+**focused_separator** <color>::
+	Text color to be used for the separator on the currently focused monitor
+	output. If not used, the color will be taken from _separator_.
+
+**focused_workspace** <border> <background> <text>::
+	Border, background and text color for a workspace button when the workspace
+	has focus.
+
+**active_workspace** <border> <background> <text>::
+	Border, background and text color for a workspace button when the workspace is
+	active (visible) on some output, but the focus is on another one. You can only
+	tell this apart from the focused workspace when you are using multiple
+	monitors.
+
+**inactive_workspace** <border> <background> <text>::
+	Border, background and text color for a workspace button when the workspace
+	does not have focus and is not active (visible) on any output. This will be
+	the case for most workspaces.
+
+**urgent_workspace** <border> <background> <text>::
+	Border, background and text color for a workspace button when the workspace
+	contains a window with the urgency hint set.
+
+**binding_mode** <border> <background> <text>::
+	Border, background and text color for the binding mode indicator. If not used,
+	the colors will be taken from _urgent_workspace_.
+
+
+See Also
+--------
+
+**sway**(5) **sway-input**(5)

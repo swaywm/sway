@@ -7,7 +7,7 @@
 
 extern char *prev_workspace_name;
 
-char *workspace_next_name(void);
+char *workspace_next_name(const char *output_name);
 swayc_t *workspace_create(const char*);
 swayc_t *workspace_by_name(const char*);
 swayc_t *workspace_by_number(const char*);

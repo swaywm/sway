@@ -1,10 +1,12 @@
 #include <stdlib.h>
 #include <wlc/wlc.h>
 #include <wlc/wlc-wayland.h>
+#include <wlc/wlc-render.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "wayland-swaylock-server-protocol.h"
 #include "layout.h"
 #include "log.h"
+#include "input_state.h"
 #include "extensions.h"
 
 struct desktop_shell_state desktop_shell;
@@ -76,6 +78,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	config->wl_surface_res = surface;
 	list_add(desktop_shell.backgrounds, config);
 	wl_resource_set_destructor(surface, background_surface_destructor);
+	wlc_output_schedule_render(config->output);
 }
 
 static void set_panel(struct wl_client *client, struct wl_resource *resource,
@@ -90,8 +93,8 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
 	wl_resource_set_destructor(surface, panel_surface_destructor);
-	desktop_shell.panel_size = *wlc_surface_get_size(config->surface);
 	arrange_windows(&root_container, -1, -1);
+	wlc_output_schedule_render(config->output);
 }
 
 static void desktop_set_lock_surface(struct wl_client *client, struct wl_resource *resource, struct wl_resource *surface) {
@@ -123,7 +126,14 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		wlc_view_set_state(view->handle, WLC_BIT_FULLSCREEN, true);
 		workspace->fullscreen = view;
 		desktop_shell.is_locked = true;
-		set_focused_container(view);
+		// reset input state
+		input_init();
+		// set focus if the lockscreen is spawned on the currently
+		// active output
+		swayc_t *focus_output = swayc_active_output();
+		if (focus_output == output) {
+			set_focused_container(view);
+		}
 		arrange_windows(workspace, -1, -1);
 		list_add(desktop_shell.lock_surfaces, surface);
 		wl_resource_set_destructor(surface, lock_surface_destructor);
