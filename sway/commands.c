@@ -362,10 +362,8 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 			return error;
 		}
 
-		add_quotes(argv + 1, argc - 1);
 		tmp = join_args(argv + 1, argc - 1);
 	} else {
-		add_quotes(argv, argc);
 		tmp = join_args(argv, argc);
 	}
 
@@ -2869,10 +2867,12 @@ struct cmd_results *handle_command(char *_exec) {
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
-			int i;
-			for (i = 1; i < argc; ++i) {
-				if (*argv[i] == '\"' || *argv[i] == '\'') {
-					strip_quotes(argv[i]);
+			if (strcmp(argv[0], "exec") != 0) {
+				int i;
+				for (i = 1; i < argc; ++i) {
+					if (*argv[i] == '\"' || *argv[i] == '\'') {
+						strip_quotes(argv[i]);
+					}
 				}
 			}
 			struct cmd_handler *handler = find_handler(argv[0], CMD_BLOCK_END);
