@@ -42,3 +42,5 @@ install(
 	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/pam.d/
 	COMPONENT data
 )
+
+add_manpage(swaylock 1)
