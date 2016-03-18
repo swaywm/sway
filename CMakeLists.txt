@@ -131,9 +131,10 @@ install(
 
 if(default-wallpaper)
 	install(
-		FILES ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.jpg
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/
 		DESTINATION share/sway
 		COMPONENT data
+        FILES_MATCHING PATTERN "*Wallpaper*"
 		)
 endif()
 
