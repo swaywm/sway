@@ -317,7 +317,7 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 		}
 		// parse keycode
 		int keycode = (int)strtol(split->items[i], NULL, 10);
-		if (!xkb_keycode_is_legal_x11(keycode)) {
+		if (!xkb_keycode_is_legal_ext(keycode)) {
 			error = cmd_results_new(CMD_INVALID, "bindcode", "Invalid keycode '%s'", (char *)split->items[i]);
 			free_sway_binding(binding);
 			list_free(split);
