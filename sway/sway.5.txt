@@ -15,7 +15,7 @@ A sway configuration file is a list of sway commands that are executed by sway
 on startup.  These commands usually consist of setting your preferences and
 setting key bindings. An example config is likely present in /etc/sway/config
 for you to check out.
-	
+
 Some of the commands can also or only be sent at runtime with **sway-msg**(1).
 
 Commands
@@ -207,6 +207,9 @@ or triggered at runtime.
 **workspace** <name> output <output>::
 	Specifies that the workspace named _name_ should appear on the specified
 	_output_.
+
+**workspace_layout** <default|stacking|tabbed>::
+	Specifies the start layout for new workspaces.
 
 Criteria
 --------
