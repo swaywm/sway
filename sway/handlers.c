@@ -405,7 +405,28 @@ static void handle_binding_command(struct sway_binding *binding) {
 	free_cmd_results(res);
 }
 
-static bool handle_bindsym(struct sway_binding *binding) {
+static bool handle_bindsym(struct sway_binding *binding, uint32_t keysym, uint32_t keycode) {
+	int i;
+	for (i = 0; i < binding->keys->length; ++i) {
+		if (binding->bindcode) {
+			xkb_keycode_t *key = binding->keys->items[i];
+			if (keycode == *key) {
+				handle_binding_command(binding);
+				return true;
+			}
+		} else {
+			xkb_keysym_t *key = binding->keys->items[i];
+			if (keysym == *key) {
+				handle_binding_command(binding);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+static bool valid_bindsym(struct sway_binding *binding) {
 	bool match = false;
 	int i;
 	for (i = 0; i < binding->keys->length; ++i) {
@@ -422,12 +443,7 @@ static bool handle_bindsym(struct sway_binding *binding) {
 		}
 	}
 
-	if (match) {
-		handle_binding_command(binding);
-		return true;
-	}
-
-	return false;
+	return match;
 }
 
 static bool handle_bindsym_release(struct sway_binding *binding) {
@@ -489,18 +505,19 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	modifiers_state_update(modifiers->mods);
 
 	// handle bindings
+	list_t *candidates = create_list();
 	for (i = 0; i < mode->bindings->length; ++i) {
 		struct sway_binding *binding = mode->bindings->items[i];
 		if ((modifiers->mods ^ binding->modifiers) == 0) {
 			switch (state) {
 			case WLC_KEY_STATE_PRESSED: {
-				if (!binding->release && handle_bindsym(binding)) {
-					return EVENT_HANDLED;
+				if (!binding->release && valid_bindsym(binding)) {
+					list_add(candidates, binding);
 				}
-				break;
 			}
 			case WLC_KEY_STATE_RELEASED:
 				if (binding->release && handle_bindsym_release(binding)) {
+					list_free(candidates);
 					return EVENT_HANDLED;
 				}
 				break;
@@ -508,6 +525,17 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		}
 	}
 
+	for (i = 0; i < candidates->length; ++i) {
+		struct sway_binding *binding = candidates->items[i];
+		if (state == WLC_KEY_STATE_PRESSED) {
+			if (!binding->release && handle_bindsym(binding, sym, key)) {
+				list_free(candidates);
+				return EVENT_HANDLED;
+			}
+		}
+	}
+
+	list_free(candidates);
 	return EVENT_PASSTHROUGH;
 }
 
