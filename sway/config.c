@@ -170,6 +170,7 @@ static void config_defaults(struct sway_config *config) {
 	config->reading = false;
 
 	config->edge_gaps = true;
+	config->smart_gaps = false;
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
 

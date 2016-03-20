@@ -68,6 +68,7 @@ static sway_cmd cmd_reload;
 static sway_cmd cmd_resize;
 static sway_cmd cmd_scratchpad;
 static sway_cmd cmd_set;
+static sway_cmd cmd_smart_gaps;
 static sway_cmd cmd_split;
 static sway_cmd cmd_splith;
 static sway_cmd cmd_splitt;
@@ -1480,6 +1481,23 @@ static struct cmd_results *cmd_gaps(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "smart_gaps", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (strcasecmp(argv[0], "on") == 0) {
+		config->smart_gaps = true;
+	} else if (strcasecmp(argv[0], "off") == 0) {
+		config->smart_gaps = false;
+	} else {
+		return cmd_results_new(CMD_INVALID, "smart_gaps", "Expected 'smart_gaps <on|off>'");
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *cmd_kill(int argc, char **argv) {
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "kill", "Can't be used in config file.");
 	if (!config->active) return cmd_results_new(CMD_FAILURE, "kill", "Can only be used when sway is running.");
@@ -2048,6 +2066,7 @@ static struct cmd_handler handlers[] = {
 	{ "scratchpad", cmd_scratchpad },
 	{ "seamless_mouse", cmd_seamless_mouse },
 	{ "set", cmd_set },
+	{ "smart_gaps", cmd_smart_gaps },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitt", cmd_splitt },
