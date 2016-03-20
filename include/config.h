@@ -181,6 +181,7 @@ struct sway_config {
 	bool seamless_mouse;
 
 	bool edge_gaps;
+	bool smart_gaps;
 	int gaps_inner;
 	int gaps_outer;
 };

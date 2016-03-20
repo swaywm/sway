@@ -406,7 +406,7 @@ void update_geometry(swayc_t *container) {
 		if (op->focused == ws) {
 			wlc_view_bring_to_front(container->handle);
 		}
-	} else if (!config->edge_gaps && gap > 0) {
+	} else if ((!config->edge_gaps && gap > 0) || (config->smart_gaps && ws->children->length == 1)) {
 		// Remove gap against the workspace edges. Because a pixel is not
 		// divisable, depending on gap size and the number of siblings our view
 		// might be at the workspace edge without being exactly so (thus test

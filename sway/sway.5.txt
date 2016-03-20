@@ -154,6 +154,10 @@ or triggered at runtime.
 	workspace (or current workspace), and _current_ changes gaps for the current
 	view or workspace.
 
+**smart_gaps** <on|off>::
+	If smart_gaps are _on_ then gaps will only be enabled if a workspace has more
+	than one child container.
+
 **mode** <mode_name>::
 	Switches to the given mode_name. the default mode is simply _default_. To
 	create a new mode in config append _{_ to this command, the following lines
