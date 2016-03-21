@@ -36,6 +36,7 @@ void sway_terminate(int exit_code) {
 }
 
 char *password;
+int password_size;
 
 int function_conversation(int num_msg, const struct pam_message **msg,
 		struct pam_response **resp, void *appdata_ptr) {
@@ -101,12 +102,17 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			if (verify_password()) {
 				exit(0);
 			}
-			password = malloc(1024); // TODO: Let this grow
+			password_size = 1024;
+			password = malloc(password_size);
 			password[0] = '\0';
 			break;
 		default:
 			{
 				int i = strlen(password);
+				if (i + 1 == password_size) {
+					password_size += 1024;
+					password = realloc(password, password_size);
+				}
 				password[i] = (char)codepoint;
 				password[i + 1] = '\0';
 				break;
@@ -280,7 +286,8 @@ int main(int argc, char **argv) {
 		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
 	}
 
-	password = malloc(1024); // TODO: Let this grow
+	password_size = 1024;
+	password = malloc(password_size);
 	password[0] = '\0';
 	surfaces = create_list();
 	registry = registry_poll();
