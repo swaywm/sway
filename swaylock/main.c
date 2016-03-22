@@ -12,6 +12,7 @@
 #include "client/registry.h"
 #include "client/cairo.h"
 #include "log.h"
+#include "list.h"
 
 list_t *surfaces;
 struct registry *registry;
@@ -22,6 +23,17 @@ enum scaling_mode {
 	SCALING_MODE_FIT,
 	SCALING_MODE_CENTER,
 	SCALING_MODE_TILE,
+};
+
+enum none_one_list_choice {
+	NOL_NONE,
+	NOL_ONE,
+	NOL_LIST
+};
+
+struct none_one_list {
+	enum none_one_list_choice type;
+	void *a, *b;
 };
 
 void sway_terminate(int exit_code) {
@@ -124,7 +136,6 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 void render_color(struct window *window, uint32_t color) {
 	cairo_set_source_u32(window->cairo, color);
 	cairo_paint(window->cairo);
-	window_render(window);
 }
 
 void render_image(struct window *window, cairo_surface_t *image, enum scaling_mode scaling_mode) {
@@ -193,14 +204,35 @@ void render_image(struct window *window, cairo_surface_t *image, enum scaling_mo
 	}
 
 	cairo_paint(window->cairo);
+}
 
-	window_render(window);
+cairo_surface_t *load_image(char *image_path) {
+	cairo_surface_t *image = NULL;
+
+#ifdef WITH_GDK_PIXBUF
+	GError *err = NULL;
+	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
+	if (!pixbuf) {
+		fprintf(stderr, "GDK Error: %s\n", err->message);
+		sway_abort("Failed to load background image.");
+	}
+	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
+	g_object_unref(pixbuf);
+#else
+	image = cairo_image_surface_create_from_png(image_path);
+#endif //WITH_GDK_PIXBUF
+	if (!image) {
+		sway_abort("Failed to read background image.");
+	}
+
+	return image;
 }
 
 int main(int argc, char **argv) {
-	char *image_path = NULL;
+	struct none_one_list images = { NOL_NONE, NULL, NULL };
 	char *scaling_mode_str = "fit";
 	uint32_t color = 0xFFFFFFFF;
+	int i;
 
 	init_log(L_INFO);
 
@@ -211,18 +243,20 @@ int main(int argc, char **argv) {
 		{"scaling", required_argument, NULL, 's'},
 		{"tiling", no_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
+		{"window-image", required_argument, NULL, 'w'},
 		{0, 0, 0, 0}
 	};
 
 	const char *usage =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -h, --help                 Show help message and quit.\n"
-		"  -c, --color <rrggbb[aa]>   Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling              Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling               Same as --scaling=tile.\n"
-		"  -v, --version              Show the version number and quit.\n"
-		"  -i, --image <path>         Display the given image.\n";
+		"  -h, --help                       Show help message and quit.\n"
+		"  -c, --color <rrggbb[aa]>         Turn the screen into the given color instead of white.\n"
+		"  -s, --scaling                    Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling                     Same as --scaling=tile.\n"
+		"  -v, --version                    Show the version number and quit.\n"
+		"  -i, --image <path>               Display the given image.\n"
+		"  --window-image <window>:<path>   Display the given image on the given window.\n";
 
 	int c;
 	while (1) {
@@ -249,7 +283,36 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case 'i':
-			image_path = optarg;
+			if(images.type == NOL_NONE) {
+				images = (struct none_one_list) { NOL_ONE, optarg, NULL };
+			} else {
+				fprintf(stderr, "only one of --image/--window-image is allowed\n");
+				exit(EXIT_FAILURE);
+			}
+			break;
+		case 'w':
+			if(images.type == NOL_NONE) {
+				images = (struct none_one_list) { NOL_LIST, create_list(), create_list() };
+				for(i = 0; i <= ((list_t*) images.a)->capacity; ++i) {
+					// this isn't perfect - if you hav>e more than 10 monitors there's a small chance of
+					// a segfault from uninitialized data. I honestly don't think enough people have more than
+					// 10 monitors to care about that though.
+					((list_t*) images.a)->items[i] = NULL;
+					((list_t*) images.b)->items[i] = NULL;
+				}
+			} else if(images.type == NOL_ONE) {
+				fprintf(stderr, "only one of --image/--window-image is allowed\n");
+				exit(EXIT_FAILURE);
+			}
+
+			char *image_path;
+			int index = strtol(optarg, &image_path, 0);
+			if(*image_path != ':') {
+				fprintf(stderr, "--window-image should be in form '<window #>:<image path>'\n");
+				exit(EXIT_FAILURE);
+			} else image_path++;
+
+			list_arbitrary_insert(images.a, index, image_path);
 			break;
 		case 's':
 			scaling_mode_str = optarg;
@@ -302,7 +365,6 @@ int main(int argc, char **argv) {
 		registry->pointer = NULL;
 	}
 
-	int i;
 	for (i = 0; i < registry->outputs->length; ++i) {
 		struct output_state *output = registry->outputs->items[i];
 		struct window *window = window_setup(registry, output->width, output->height, true);
@@ -314,22 +376,13 @@ int main(int argc, char **argv) {
 
 	registry->input->notify = notify_key;
 
-	cairo_surface_t *image = NULL;
-
-	if (image_path) {
-#ifdef WITH_GDK_PIXBUF
-		GError *err = NULL;
-		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
-		if (!pixbuf) {
-			sway_abort("Failed to load background image.");
-		}
-		image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
-		g_object_unref(pixbuf);
-#else
-		cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
-#endif //WITH_GDK_PIXBUF
-		if (!image) {
-			sway_abort("Failed to read background image.");
+	if(images.type == NOL_ONE) {
+		images.b = load_image(images.a);
+	} else if(images.type == NOL_LIST) {
+		for(i = 0; i <= ((list_t*) images.a)->length; ++i) {
+			if(((list_t*) images.a)->items[i] != NULL) {
+				list_arbitrary_insert(images.b, i, load_image(((list_t*) images.a)->items[i]));
+			}
 		}
 	}
 
@@ -338,15 +391,28 @@ int main(int argc, char **argv) {
 		if (!window_prerender(window) || !window->cairo) {
 			continue;
 		}
-		if (image) {
-			render_image(window, image, scaling_mode);
-		} else {
-			render_color(window, color);
+		// always render the color in case the image doesn't fully cover the screen
+		render_color(window, color);
+
+		if (images.type == NOL_ONE) {
+			render_image(window, images.b, scaling_mode);
+		} else if(images.type == NOL_LIST) {
+			if(((list_t*) images.b)->items[i] != NULL) {
+				render_image(window, ((list_t*) images.b)->items[i], scaling_mode);
+			}
 		}
+
+		window_render(window);
 	}
 
-	if (image) {
-		cairo_surface_destroy(image);
+	if(images.type == NOL_ONE) {
+		cairo_surface_destroy(images.b);
+	} else if(images.type == NOL_LIST) {
+		for(i = 0; i <= ((list_t*) images.a)->length; ++i) {
+			cairo_surface_destroy(((list_t*) images.b)->items[i]);
+		}
+		list_free(images.a);
+		list_free(images.b);
 	}
 
 	bool locked = false;

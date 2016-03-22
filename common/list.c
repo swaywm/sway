@@ -47,6 +47,14 @@ void list_insert(list_t *list, int index, void *item) {
 	list->items[index] = item;
 }
 
+// Added because IDK if it's safe to remove that memmove
+void list_arbitrary_insert(list_t *list, int index, void *item) {
+	list_resize(list);
+  if(index > list->capacity) return;
+	if(list->length < index) list->length = index;
+	list->items[index] = item;
+}
+
 void list_del(list_t *list, int index) {
 	list->length--;
 	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->length - index));
