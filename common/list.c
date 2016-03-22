@@ -50,8 +50,12 @@ void list_insert(list_t *list, int index, void *item) {
 // Added because IDK if it's safe to remove that memmove
 void list_arbitrary_insert(list_t *list, int index, void *item) {
 	list_resize(list);
-  if(index > list->capacity) return;
-	if(list->length < index) list->length = index;
+	if(index > list->capacity) {
+		return;
+	}
+	if(list->length < index) {
+		list->length = index;
+	}
 	list->items[index] = item;
 }
 
