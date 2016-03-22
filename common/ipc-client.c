@@ -47,7 +47,7 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	size_t total = 0;
 	while (total < ipc_header_size) {
 		ssize_t received = recv(socketfd, data + total, ipc_header_size - total, 0);
-		if (received < 0) {
+		if (received <= 0) {
 			sway_abort("Unable to receive IPC response");
 		}
 		total += received;
