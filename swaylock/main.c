@@ -310,7 +310,9 @@ int main(int argc, char **argv) {
 			if(*image_path != ':') {
 				fprintf(stderr, "--window-image should be in form '<window #>:<image path>'\n");
 				exit(EXIT_FAILURE);
-			} else image_path++;
+			} else {
+				image_path++;
+			}
 
 			list_arbitrary_insert(images.a, index, image_path);
 			break;
