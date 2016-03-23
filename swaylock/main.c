@@ -31,7 +31,9 @@ void sway_terminate(int exit_code) {
 		window_teardown(window);
 	}
 	list_free(surfaces);
-	registry_teardown(registry);
+	if (registry) {
+		registry_teardown(registry);
+	}
 	exit(exit_code);
 }
 
@@ -291,6 +293,10 @@ int main(int argc, char **argv) {
 	password[0] = '\0';
 	surfaces = create_list();
 	registry = registry_poll();
+
+	if (!registry) {
+		sway_abort("Unable to connect to wayland compositor");
+	}
 
 	if (!registry->swaylock) {
 		sway_abort("swaylock requires the compositor to support the swaylock extension.");
