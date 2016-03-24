@@ -187,7 +187,8 @@ int main(int argc, char **argv) {
 	/* Changing code earlier than this point requires detailed review */
 	/* (That code runs as root on systems without logind, and wlc_init drops to
 	 * another user.) */
-	if (!wlc_init(&interface, argc, argv)) {
+	register_wlc_handlers();
+	if (!wlc_init2()) {
 		return 1;
 	}
 	register_extensions();
