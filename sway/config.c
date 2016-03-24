@@ -256,7 +256,7 @@ bool load_config(const char *file) {
 
 	FILE *f = fopen(path, "r");
 	if (!f) {
-		fprintf(stderr, "Unable to open %s for reading", path);
+		sway_log(L_ERROR, "Unable to open %s for reading", path);
 		free(path);
 		return false;
 	}
@@ -272,7 +272,11 @@ bool load_config(const char *file) {
 
 	update_active_bar_modifiers();
 
-	return config_load_success;
+	if (!config_load_success) {
+		sway_log(L_ERROR, "Error(s) loading config!");
+	}
+
+	return true;
 }
 
 bool read_config(FILE *file, bool is_active) {
