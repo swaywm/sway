@@ -108,6 +108,14 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			password = malloc(password_size);
 			password[0] = '\0';
 			break;
+		case XKB_KEY_BackSpace:
+			{
+				int i = strlen(password);
+				if (i > 0) {
+					password[i - 1] = '\0';
+				}
+				break;
+			}
 		default:
 			{
 				int i = strlen(password);
