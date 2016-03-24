@@ -2,6 +2,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <security/pam_appl.h>
+#include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,7 @@
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
+#include "ipc-client.h"
 #include "log.h"
 #include "list.h"
 
@@ -43,7 +45,9 @@ void sway_terminate(int exit_code) {
 		window_teardown(window);
 	}
 	list_free(surfaces);
-	registry_teardown(registry);
+	if (registry) {
+		registry_teardown(registry);
+	}
 	exit(exit_code);
 }
 
@@ -118,6 +122,14 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			password = malloc(password_size);
 			password[0] = '\0';
 			break;
+		case XKB_KEY_BackSpace:
+			{
+				int i = strlen(password);
+				if (i > 0) {
+					password[i - 1] = '\0';
+				}
+				break;
+			}
 		default:
 			{
 				int i = strlen(password);
@@ -229,10 +241,10 @@ cairo_surface_t *load_image(char *image_path) {
 }
 
 int main(int argc, char **argv) {
-	struct none_one_list images = { NOL_NONE, NULL, NULL };
-	char *scaling_mode_str = "fit";
+	char *scaling_mode_str = "fit", *socket_path = NULL;
+	int i, num_images = 0, color_set = 0;
 	uint32_t color = 0xFFFFFFFF;
-	int i;
+	void *images;
 
 	init_log(L_INFO);
 
@@ -243,20 +255,22 @@ int main(int argc, char **argv) {
 		{"scaling", required_argument, NULL, 's'},
 		{"tiling", no_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
-		{"window-image", required_argument, NULL, 'w'},
+		{"socket", required_argument, NULL, 'p'},
 		{0, 0, 0, 0}
 	};
 
 	const char *usage =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -h, --help                       Show help message and quit.\n"
-		"  -c, --color <rrggbb[aa]>         Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling                    Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling                     Same as --scaling=tile.\n"
-		"  -v, --version                    Show the version number and quit.\n"
-		"  -i, --image <path>               Display the given image.\n"
-		"  --window-image <window>:<path>   Display the given image on the given window.\n";
+		"  -h, --help                      Show help message and quit.\n"
+		"  -c, --color <rrggbb[aa]>        Turn the screen into the given color instead of white.\n"
+		"  -s, --scaling                   Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling                    Same as --scaling=tile.\n"
+		"  -v, --version                   Show the version number and quit.\n"
+		"  -i, --image [<display>:]<path>  Display the given image.\n"
+		"  --socket <socket>               Use the specified socket.\n";
+
+	registry = registry_poll();
 
 	int c;
 	while (1) {
@@ -274,6 +288,7 @@ int main(int argc, char **argv) {
 				exit(EXIT_FAILURE);
 			}
 			color = strtol(optarg, NULL, 16);
+			color_set = 1;
 
 			if (colorlen == 6) {
 				color <<= 8;
@@ -283,44 +298,38 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case 'i':
-			if(images.type == NOL_NONE) {
-				images = (struct none_one_list) { NOL_ONE, optarg, NULL };
-			} else {
-				fprintf(stderr, "only one of --image/--window-image is allowed\n");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		case 'w':
-			if(images.type == NOL_NONE) {
-				images = (struct none_one_list) { NOL_LIST, create_list(), create_list() };
-				for(i = 0; i <= ((list_t*) images.a)->capacity; ++i) {
-					// this isn't perfect - if you hav>e more than 10 monitors there's a small chance of
-					// a segfault from uninitialized data. I honestly don't think enough people have more than
-					// 10 monitors to care about that though.
-					((list_t*) images.a)->items[i] = NULL;
-					((list_t*) images.b)->items[i] = NULL;
+		{
+			char *image_path = strchr(optarg, ':');
+			if (image_path == NULL) {
+				if (num_images == 0) {
+					images = load_image(optarg);
+					num_images = -1;
+				} else {
+					fprintf(stderr, "display must be defined for all --images or no --images.\n");
+					exit(EXIT_FAILURE);
 				}
-			} else if(images.type == NOL_ONE) {
-				fprintf(stderr, "only one of --image/--window-image is allowed\n");
-				exit(EXIT_FAILURE);
-			}
-
-			char *image_path;
-			int index = strtol(optarg, &image_path, 0);
-			if(*image_path != ':') {
-				fprintf(stderr, "--window-image should be in form '<window #>:<image path>'\n");
-				exit(EXIT_FAILURE);
 			} else {
-				image_path++;
-			}
+				if (num_images == 0) {
+					images = calloc(registry->outputs->length, sizeof(char*) * 2);
+				} else if (num_images == -1) {
+					fprintf(stderr, "display must be defined for all --images or no --images.\n");
+					exit(EXIT_FAILURE);
+				}
 
-			list_arbitrary_insert(images.a, index, image_path);
+				image_path[0] = '\0';
+				((char**) images)[num_images * 2] = optarg;
+				((char**) images)[num_images++ * 2 + 1] = ++image_path;
+			}
 			break;
+		}
 		case 's':
 			scaling_mode_str = optarg;
 			break;
 		case 't':
 			scaling_mode_str = "tile";
+			break;
+		case 'p':
+			socket_path = optarg;
 			break;
 		case 'v':
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
@@ -355,7 +364,16 @@ int main(int argc, char **argv) {
 	password = malloc(password_size);
 	password[0] = '\0';
 	surfaces = create_list();
-	registry = registry_poll();
+	if (!socket_path) {
+		socket_path = get_socketpath();
+		if (!socket_path) {
+			sway_abort("Unable to retrieve socket path");
+		}
+	}
+
+	if (!registry) {
+		sway_abort("Unable to connect to wayland compositor");
+	}
 
 	if (!registry->swaylock) {
 		sway_abort("swaylock requires the compositor to support the swaylock extension.");
@@ -378,14 +396,38 @@ int main(int argc, char **argv) {
 
 	registry->input->notify = notify_key;
 
-	if(images.type == NOL_ONE) {
-		images.b = load_image(images.a);
-	} else if(images.type == NOL_LIST) {
-		for(i = 0; i <= ((list_t*) images.a)->length; ++i) {
-			if(((list_t*) images.a)->items[i] != NULL) {
-				list_arbitrary_insert(images.b, i, load_image(((list_t*) images.a)->items[i]));
+	if (num_images >= 1) {
+		char **displays_paths = images;
+		images = calloc(registry->outputs->length, sizeof(cairo_surface_t*));
+
+		int socketfd = ipc_open_socket(socket_path);
+		uint32_t len = 0;
+		char *outputs = ipc_single_command(socketfd, IPC_GET_OUTPUTS, "", &len);
+		struct json_object *json_outputs = json_tokener_parse(outputs);
+
+		for (i = 0; i < registry->outputs->length; ++i) {
+			if (displays_paths[i * 2] != NULL) {
+				for (int j = 0;; ++j) {
+					if (j >= json_object_array_length(json_outputs)) {
+						fprintf(stderr, "%s is not an extant display\n", displays_paths[i * 2]);
+						exit(EXIT_FAILURE);
+					}
+
+					struct json_object *dsp_name, *at_j = json_object_array_get_idx(json_outputs, j);
+					if (!json_object_object_get_ex(at_j, "name", &dsp_name)) {
+						sway_abort("display doesn't have a name field");
+					}
+					if (!strcmp(displays_paths[i * 2], json_object_get_string(dsp_name))) {
+						((cairo_surface_t**) images)[j] = load_image(displays_paths[i * 2 + 1]);
+						break;
+					}
+				}
 			}
 		}
+
+		json_object_put(json_outputs);
+		close(socketfd);
+		free(displays_paths);
 	}
 
 	for (i = 0; i < surfaces->length; ++i) {
@@ -393,28 +435,31 @@ int main(int argc, char **argv) {
 		if (!window_prerender(window) || !window->cairo) {
 			continue;
 		}
-		// always render the color in case the image doesn't fully cover the screen
-		render_color(window, color);
 
-		if (images.type == NOL_ONE) {
-			render_image(window, images.b, scaling_mode);
-		} else if(images.type == NOL_LIST) {
-			if(((list_t*) images.b)->items[i] != NULL) {
-				render_image(window, ((list_t*) images.b)->items[i], scaling_mode);
+		if (num_images == 0 || color_set) {
+			render_color(window, color);
+		}
+
+		if (num_images == -1) {
+			render_image(window, images, scaling_mode);
+		} else if (num_images >= 1) {
+			if (((cairo_surface_t**) images)[i] != NULL) {
+				render_image(window, ((cairo_surface_t**) images)[i], scaling_mode);
 			}
 		}
 
 		window_render(window);
 	}
 
-	if(images.type == NOL_ONE) {
-		cairo_surface_destroy(images.b);
-	} else if(images.type == NOL_LIST) {
-		for(i = 0; i <= ((list_t*) images.a)->length; ++i) {
-			cairo_surface_destroy(((list_t*) images.b)->items[i]);
+	if (num_images == -1) {
+		cairo_surface_destroy((cairo_surface_t*) images);
+	} else if (num_images >= 1) {
+		for (i = 0; i < registry->outputs->length; ++i) {
+			if (((cairo_surface_t**) images)[i] != NULL) {
+				cairo_surface_destroy(((cairo_surface_t**) images)[i]);
+			}
 		}
-		list_free(images.a);
-		list_free(images.b);
+		free(images);
 	}
 
 	bool locked = false;

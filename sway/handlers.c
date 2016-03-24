@@ -706,38 +706,22 @@ static void handle_wlc_ready(void) {
 	}
 }
 
-struct wlc_interface interface = {
-	.output = {
-		.created = handle_output_created,
-		.destroyed = handle_output_destroyed,
-		.resolution = handle_output_resolution_change,
-		.focus = handle_output_focused,
-		.render = {
-			.pre = handle_output_pre_render,
-			.post = handle_output_post_render
-		}
-	},
-	.view = {
-		.created = handle_view_created,
-		.destroyed = handle_view_destroyed,
-		.focus = handle_view_focus,
-		.request = {
-			.geometry = handle_view_geometry_request,
-			.state = handle_view_state_request
-		}
-	},
-	.keyboard = {
-		.key = handle_key
-	},
-	.pointer = {
-		.motion = handle_pointer_motion,
-		.button = handle_pointer_button
-	},
-	.compositor = {
-		.ready = handle_wlc_ready
-	},
-	.input = {
-		.created = handle_input_created,
-		.destroyed = handle_input_destroyed
-	}
-};
+void register_wlc_handlers() {
+	wlc_set_output_created_cb(handle_output_created);
+	wlc_set_output_destroyed_cb(handle_output_destroyed);
+	wlc_set_output_resolution_cb(handle_output_resolution_change);
+	wlc_set_output_focus_cb(handle_output_focused);
+	wlc_set_output_render_pre_cb(handle_output_pre_render);
+	wlc_set_output_render_post_cb(handle_output_post_render);
+	wlc_set_view_created_cb(handle_view_created);
+	wlc_set_view_destroyed_cb(handle_view_destroyed);
+	wlc_set_view_focus_cb(handle_view_focus);
+	wlc_set_view_request_geometry_cb(handle_view_geometry_request);
+	wlc_set_view_request_state_cb(handle_view_state_request);
+	wlc_set_keyboard_key_cb(handle_key);
+	wlc_set_pointer_motion_cb(handle_pointer_motion);
+	wlc_set_pointer_button_cb(handle_pointer_button);
+	wlc_set_compositor_ready_cb(handle_wlc_ready);
+	wlc_set_input_created_cb(handle_input_created);
+	wlc_set_input_destroyed_cb(handle_input_destroyed);
+}

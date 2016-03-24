@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <wlc/wlc.h>
 
-extern struct wlc_interface interface;
+void register_wlc_handlers();
+
 extern uint32_t keys_pressed[32];
 
 #endif

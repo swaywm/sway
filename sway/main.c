@@ -53,6 +53,7 @@ void detect_proprietary() {
 		char *line = read_line(f);
 		if (strstr(line, "nvidia")) {
 			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
+			fprintf(stderr, "\x1B[1;31mYes, they STILL don't work with the newly announced wayland \"support\".\x1B[0m\n");
 			free(line);
 			break;
 		}
@@ -178,7 +179,6 @@ int main(int argc, char **argv) {
 	} else {
 		init_log(L_ERROR);
 	}
-	setenv("WLC_DIM", "0", 0);
 	wlc_log_set_handler(wlc_log_handler);
 	detect_proprietary();
 
@@ -187,7 +187,8 @@ int main(int argc, char **argv) {
 	/* Changing code earlier than this point requires detailed review */
 	/* (That code runs as root on systems without logind, and wlc_init drops to
 	 * another user.) */
-	if (!wlc_init(&interface, argc, argv)) {
+	register_wlc_handlers();
+	if (!wlc_init2()) {
 		return 1;
 	}
 	register_extensions();
@@ -210,8 +211,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (!load_config(config_path)) {
-		sway_log(L_ERROR, "Error(s) loading config!");
+		sway_terminate(EXIT_FAILURE);
 	}
+
 	if (config_path) {
 		free(config_path);
 	}

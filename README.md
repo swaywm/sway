@@ -8,10 +8,10 @@ irc.freenode.net).
 
 ![](https://sr.ht/NCx_.png)
 
-## Rationale
+## Release Signatures
 
-I use i3 on xorg. Wayland is coming, and [i3way](http://i3way.org/) still has
-zero lines of source code after two years.
+Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?search=B22DA89A&op=index)
+and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 
 ## Status
 
