@@ -213,8 +213,7 @@ cairo_surface_t *load_image(char *image_path) {
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
 	if (!pixbuf) {
-		fprintf(stderr, "GDK Error: %s\n", err->message);
-		sway_abort("Failed to load background image.");
+		sway_abort("Failed to load background image: %s", err->message);
 	}
 	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
 	g_object_unref(pixbuf);
@@ -272,7 +271,7 @@ int main(int argc, char **argv) {
 		{
 			int colorlen = strlen(optarg);
 			if (colorlen < 6 || colorlen == 7 || colorlen > 8) {
-				fprintf(stderr, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff\n");
+				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff");
 				exit(EXIT_FAILURE);
 			}
 			color = strtol(optarg, NULL, 16);
@@ -293,14 +292,14 @@ int main(int argc, char **argv) {
 					images = load_image(optarg);
 					num_images = -1;
 				} else {
-					fprintf(stderr, "output must be defined for all --images or no --images.\n");
+					sway_log(L_ERROR, "output must be defined for all --images or no --images");
 					exit(EXIT_FAILURE);
 				}
 			} else {
 				if (num_images == 0) {
 					images = calloc(registry->outputs->length, sizeof(char*) * 2);
 				} else if (num_images == -1) {
-					fprintf(stderr, "output must be defined for all --images or no --images.\n");
+					sway_log(L_ERROR, "output must be defined for all --images or no --images");
 					exit(EXIT_FAILURE);
 				}
 
@@ -397,7 +396,7 @@ int main(int argc, char **argv) {
 			if (displays_paths[i * 2] != NULL) {
 				for (int j = 0;; ++j) {
 					if (j >= json_object_array_length(json_outputs)) {
-						fprintf(stderr, "%s is not an extant output\n", displays_paths[i * 2]);
+						sway_log(L_ERROR, "%s is not an extant output", displays_paths[i * 2]);
 						exit(EXIT_FAILURE);
 					}
 
