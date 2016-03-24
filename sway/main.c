@@ -178,7 +178,6 @@ int main(int argc, char **argv) {
 	} else {
 		init_log(L_ERROR);
 	}
-	setenv("WLC_DIM", "0", 0);
 	wlc_log_set_handler(wlc_log_handler);
 	detect_proprietary();
 
