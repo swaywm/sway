@@ -12,7 +12,6 @@ void list_free(list_t *list);
 void list_foreach(list_t *list, void (*callback)(void* item));
 void list_add(list_t *list, void *item);
 void list_insert(list_t *list, int index, void *item);
-void list_arbitrary_insert(list_t *list, int index, void *item);
 void list_del(list_t *list, int index);
 void list_cat(list_t *list, list_t *source);
 // See qsort. Remember to use *_qsort functions as compare functions,
