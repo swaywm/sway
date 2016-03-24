@@ -293,14 +293,14 @@ int main(int argc, char **argv) {
 					images = load_image(optarg);
 					num_images = -1;
 				} else {
-					fprintf(stderr, "display must be defined for all --images or no --images.\n");
+					fprintf(stderr, "output must be defined for all --images or no --images.\n");
 					exit(EXIT_FAILURE);
 				}
 			} else {
 				if (num_images == 0) {
 					images = calloc(registry->outputs->length, sizeof(char*) * 2);
 				} else if (num_images == -1) {
-					fprintf(stderr, "display must be defined for all --images or no --images.\n");
+					fprintf(stderr, "output must be defined for all --images or no --images.\n");
 					exit(EXIT_FAILURE);
 				}
 
@@ -397,13 +397,13 @@ int main(int argc, char **argv) {
 			if (displays_paths[i * 2] != NULL) {
 				for (int j = 0;; ++j) {
 					if (j >= json_object_array_length(json_outputs)) {
-						fprintf(stderr, "%s is not an extant display\n", displays_paths[i * 2]);
+						fprintf(stderr, "%s is not an extant output\n", displays_paths[i * 2]);
 						exit(EXIT_FAILURE);
 					}
 
 					struct json_object *dsp_name, *at_j = json_object_array_get_idx(json_outputs, j);
 					if (!json_object_object_get_ex(at_j, "name", &dsp_name)) {
-						sway_abort("display doesn't have a name field");
+						sway_abort("output doesn't have a name field");
 					}
 					if (!strcmp(displays_paths[i * 2], json_object_get_string(dsp_name))) {
 						((cairo_surface_t**) images)[j] = load_image(displays_paths[i * 2 + 1]);
