@@ -26,8 +26,8 @@ Options
 	Turn the screen into the given color instead of white. If an image is in use,
 	also enables color display.
 
-*-i, \--image* [<display>:]<path>::
-	Display the given image, optionally only on the given display.
+*-i, \--image* [<output>:]<path>::
+	Display the given image, optionally only on the given output.
 
 *-s, \--scaling*::
 	Scaling mode for images: stretch, fill, fit, center, or tile.

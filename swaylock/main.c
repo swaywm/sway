@@ -250,13 +250,13 @@ int main(int argc, char **argv) {
 	const char *usage =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -h, --help                      Show help message and quit.\n"
-		"  -c, --color <rrggbb[aa]>        Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling                   Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling                    Same as --scaling=tile.\n"
-		"  -v, --version                   Show the version number and quit.\n"
-		"  -i, --image [<display>:]<path>  Display the given image.\n"
-		"  --socket <socket>               Use the specified socket.\n";
+		"  -h, --help                     Show help message and quit.\n"
+		"  -c, --color <rrggbb[aa]>       Turn the screen into the given color instead of white.\n"
+		"  -s, --scaling                  Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling                   Same as --scaling=tile.\n"
+		"  -v, --version                  Show the version number and quit.\n"
+		"  -i, --image [<output>:]<path>  Display the given image.\n"
+		"  --socket <socket>              Use the specified socket.\n";
 
 	registry = registry_poll();
 
