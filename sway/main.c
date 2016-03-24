@@ -211,8 +211,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (!load_config(config_path)) {
-		sway_log(L_ERROR, "Error(s) loading config!");
+		sway_terminate(EXIT_FAILURE);
 	}
+
 	if (config_path) {
 		free(config_path);
 	}
