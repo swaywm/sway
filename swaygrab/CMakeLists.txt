@@ -1,5 +1,6 @@
 include_directories(
 	${JSONC_INCLUDE_DIRS}
+	${WLC_INCLUDE_DIRS}
 )
 
 add_executable(swaygrab

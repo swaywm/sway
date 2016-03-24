@@ -1,3 +1,7 @@
+include_directories(
+	${WLC_INCLUDE_DIRS}
+)
+
 add_library(sway-common
 	ipc-client.c
 	list.c
