@@ -53,6 +53,7 @@ void detect_proprietary() {
 		char *line = read_line(f);
 		if (strstr(line, "nvidia")) {
 			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
+			fprintf(stderr, "\x1B[1;31mYes, they STILL don't work with the newly announced wayland \"support\".\x1B[0m\n");
 			free(line);
 			break;
 		}
