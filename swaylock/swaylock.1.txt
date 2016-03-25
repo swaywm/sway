@@ -23,10 +23,11 @@ Options
 	Show help message and quit.
 
 *-c, \--color* <rrggbb[aa]>::
-	Turn the screen into the given color instead of white.
+	Turn the screen into the given color instead of white. If an image is in use,
+	also enables color display.
 
-*-i, \--image* <path>::
-	Display the given image.
+*-i, \--image* [<output>:]<path>::
+	Display the given image, optionally only on the given output.
 
 *-s, \--scaling*::
 	Scaling mode for images: stretch, fill, fit, center, or tile.
@@ -36,6 +37,11 @@ Options
 
 *-v, \--version*::
 	Show the version number and quit.
+
+*--socket <path>*::
+	Use the specified socket path. Otherwise, swaymsg will ask sway where the
+	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
+
 
 Authors
 -------

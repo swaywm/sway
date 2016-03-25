@@ -2,6 +2,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <security/pam_appl.h>
+#include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,7 @@
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
+#include "ipc-client.h"
 #include "log.h"
 
 list_t *surfaces;
@@ -134,7 +136,6 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 void render_color(struct window *window, uint32_t color) {
 	cairo_set_source_u32(window->cairo, color);
 	cairo_paint(window->cairo);
-	window_render(window);
 }
 
 void render_image(struct window *window, cairo_surface_t *image, enum scaling_mode scaling_mode) {
@@ -203,14 +204,34 @@ void render_image(struct window *window, cairo_surface_t *image, enum scaling_mo
 	}
 
 	cairo_paint(window->cairo);
+}
 
-	window_render(window);
+cairo_surface_t *load_image(char *image_path) {
+	cairo_surface_t *image = NULL;
+
+#ifdef WITH_GDK_PIXBUF
+	GError *err = NULL;
+	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
+	if (!pixbuf) {
+		sway_abort("Failed to load background image: %s", err->message);
+	}
+	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
+	g_object_unref(pixbuf);
+#else
+	image = cairo_image_surface_create_from_png(image_path);
+#endif //WITH_GDK_PIXBUF
+	if (!image) {
+		sway_abort("Failed to read background image.");
+	}
+
+	return image;
 }
 
 int main(int argc, char **argv) {
-	char *image_path = NULL;
-	char *scaling_mode_str = "fit";
+	char *scaling_mode_str = "fit", *socket_path = NULL;
+	int i, num_images = 0, color_set = 0;
 	uint32_t color = 0xFFFFFFFF;
+	void *images;
 
 	init_log(L_INFO);
 
@@ -221,18 +242,22 @@ int main(int argc, char **argv) {
 		{"scaling", required_argument, NULL, 's'},
 		{"tiling", no_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
+		{"socket", required_argument, NULL, 'p'},
 		{0, 0, 0, 0}
 	};
 
 	const char *usage =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -h, --help                 Show help message and quit.\n"
-		"  -c, --color <rrggbb[aa]>   Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling              Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling               Same as --scaling=tile.\n"
-		"  -v, --version              Show the version number and quit.\n"
-		"  -i, --image <path>         Display the given image.\n";
+		"  -h, --help                     Show help message and quit.\n"
+		"  -c, --color <rrggbb[aa]>       Turn the screen into the given color instead of white.\n"
+		"  -s, --scaling                  Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling                   Same as --scaling=tile.\n"
+		"  -v, --version                  Show the version number and quit.\n"
+		"  -i, --image [<output>:]<path>  Display the given image.\n"
+		"  --socket <socket>              Use the specified socket.\n";
+
+	registry = registry_poll();
 
 	int c;
 	while (1) {
@@ -246,10 +271,11 @@ int main(int argc, char **argv) {
 		{
 			int colorlen = strlen(optarg);
 			if (colorlen < 6 || colorlen == 7 || colorlen > 8) {
-				fprintf(stderr, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff\n");
+				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff");
 				exit(EXIT_FAILURE);
 			}
 			color = strtol(optarg, NULL, 16);
+			color_set = 1;
 
 			if (colorlen == 6) {
 				color <<= 8;
@@ -259,13 +285,38 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case 'i':
-			image_path = optarg;
+		{
+			char *image_path = strchr(optarg, ':');
+			if (image_path == NULL) {
+				if (num_images == 0) {
+					images = load_image(optarg);
+					num_images = -1;
+				} else {
+					sway_log(L_ERROR, "output must be defined for all --images or no --images");
+					exit(EXIT_FAILURE);
+				}
+			} else {
+				if (num_images == 0) {
+					images = calloc(registry->outputs->length, sizeof(char*) * 2);
+				} else if (num_images == -1) {
+					sway_log(L_ERROR, "output must be defined for all --images or no --images");
+					exit(EXIT_FAILURE);
+				}
+
+				image_path[0] = '\0';
+				((char**) images)[num_images * 2] = optarg;
+				((char**) images)[num_images++ * 2 + 1] = ++image_path;
+			}
 			break;
+		}
 		case 's':
 			scaling_mode_str = optarg;
 			break;
 		case 't':
 			scaling_mode_str = "tile";
+			break;
+		case 'p':
+			socket_path = optarg;
 			break;
 		case 'v':
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
@@ -300,7 +351,12 @@ int main(int argc, char **argv) {
 	password = malloc(password_size);
 	password[0] = '\0';
 	surfaces = create_list();
-	registry = registry_poll();
+	if (!socket_path) {
+		socket_path = get_socketpath();
+		if (!socket_path) {
+			sway_abort("Unable to retrieve socket path");
+		}
+	}
 
 	if (!registry) {
 		sway_abort("Unable to connect to wayland compositor");
@@ -316,7 +372,6 @@ int main(int argc, char **argv) {
 		registry->pointer = NULL;
 	}
 
-	int i;
 	for (i = 0; i < registry->outputs->length; ++i) {
 		struct output_state *output = registry->outputs->items[i];
 		struct window *window = window_setup(registry, output->width, output->height, true);
@@ -328,23 +383,38 @@ int main(int argc, char **argv) {
 
 	registry->input->notify = notify_key;
 
-	cairo_surface_t *image = NULL;
+	if (num_images >= 1) {
+		char **displays_paths = images;
+		images = calloc(registry->outputs->length, sizeof(cairo_surface_t*));
 
-	if (image_path) {
-#ifdef WITH_GDK_PIXBUF
-		GError *err = NULL;
-		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
-		if (!pixbuf) {
-			sway_abort("Failed to load background image.");
+		int socketfd = ipc_open_socket(socket_path);
+		uint32_t len = 0;
+		char *outputs = ipc_single_command(socketfd, IPC_GET_OUTPUTS, "", &len);
+		struct json_object *json_outputs = json_tokener_parse(outputs);
+
+		for (i = 0; i < registry->outputs->length; ++i) {
+			if (displays_paths[i * 2] != NULL) {
+				for (int j = 0;; ++j) {
+					if (j >= json_object_array_length(json_outputs)) {
+						sway_log(L_ERROR, "%s is not an extant output", displays_paths[i * 2]);
+						exit(EXIT_FAILURE);
+					}
+
+					struct json_object *dsp_name, *at_j = json_object_array_get_idx(json_outputs, j);
+					if (!json_object_object_get_ex(at_j, "name", &dsp_name)) {
+						sway_abort("output doesn't have a name field");
+					}
+					if (!strcmp(displays_paths[i * 2], json_object_get_string(dsp_name))) {
+						((cairo_surface_t**) images)[j] = load_image(displays_paths[i * 2 + 1]);
+						break;
+					}
+				}
+			}
 		}
-		image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
-		g_object_unref(pixbuf);
-#else
-		cairo_surface_t *image = cairo_image_surface_create_from_png(argv[1]);
-#endif //WITH_GDK_PIXBUF
-		if (!image) {
-			sway_abort("Failed to read background image.");
-		}
+
+		json_object_put(json_outputs);
+		close(socketfd);
+		free(displays_paths);
 	}
 
 	for (i = 0; i < surfaces->length; ++i) {
@@ -352,15 +422,31 @@ int main(int argc, char **argv) {
 		if (!window_prerender(window) || !window->cairo) {
 			continue;
 		}
-		if (image) {
-			render_image(window, image, scaling_mode);
-		} else {
+
+		if (num_images == 0 || color_set) {
 			render_color(window, color);
 		}
+
+		if (num_images == -1) {
+			render_image(window, images, scaling_mode);
+		} else if (num_images >= 1) {
+			if (((cairo_surface_t**) images)[i] != NULL) {
+				render_image(window, ((cairo_surface_t**) images)[i], scaling_mode);
+			}
+		}
+
+		window_render(window);
 	}
 
-	if (image) {
-		cairo_surface_destroy(image);
+	if (num_images == -1) {
+		cairo_surface_destroy((cairo_surface_t*) images);
+	} else if (num_images >= 1) {
+		for (i = 0; i < registry->outputs->length; ++i) {
+			if (((cairo_surface_t**) images)[i] != NULL) {
+				cairo_surface_destroy(((cairo_surface_t**) images)[i]);
+			}
+		}
+		free(images);
 	}
 
 	bool locked = false;
