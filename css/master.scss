@@ -2,10 +2,32 @@
 ---
 
 body {
-    background-color: #111;
+    background-color: #000;
     color: #fff;
+    margin-top: 1rem;
+    margin-bottom: 5rem;
 }
 
 video {
     max-width: 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+hr {
+    border-color: white;
+}
+
+.table-success {
+    background-color: green;
+}
+
+.table-danger {
+    background-color: darken(red, 10);
+}
+
+nav {
+    background: black;
 }
