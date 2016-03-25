@@ -9,30 +9,34 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <getopt.h>
+#include <signal.h>
+
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
 #include "ipc-client.h"
 #include "log.h"
+#include "lock/lock.h"
 
-list_t *surfaces;
 struct registry *registry;
+struct render_data render_data;
 
-enum scaling_mode {
-	SCALING_MODE_STRETCH,
-	SCALING_MODE_FILL,
-	SCALING_MODE_FIT,
-	SCALING_MODE_CENTER,
-	SCALING_MODE_TILE,
-};
+void sigalarm_handler(int sig) {
+	signal(SIGALRM, SIG_IGN);
+	// Hide typing indicator
+	render_data.auth_state = AUTH_STATE_IDLE;
+	render(&render_data);
+	wl_display_flush(registry->display);
+	signal(SIGALRM, sigalarm_handler);
+}
 
 void sway_terminate(int exit_code) {
 	int i;
-	for (i = 0; i < surfaces->length; ++i) {
-		struct window *window = surfaces->items[i];
+	for (i = 0; i < render_data.surfaces->length; ++i) {
+		struct window *window = render_data.surfaces->items[i];
 		window_teardown(window);
 	}
-	list_free(surfaces);
+	list_free(render_data.surfaces);
 	if (registry) {
 		registry_teardown(registry);
 	}
@@ -100,12 +104,29 @@ bool verify_password() {
 }
 
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
+	int i;
+	int redraw_screen = 0;
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
 		case XKB_KEY_Return:
+			render_data.auth_state = AUTH_STATE_VALIDATING;
+
+			render(&render_data);
+			// Make sure our render call will actually be displayed on the screen
+			wl_display_flush(registry->display);
+
+			// However, this is not how it should be done.
+			for (i = 0; i < registry->outputs->length; ++i) {
+				if (wl_display_dispatch(registry->display) == -1) {
+					exit(0);
+				}
+			}
 			if (verify_password()) {
 				exit(0);
 			}
+			render_data.auth_state = AUTH_STATE_INVALID;
+			redraw_screen = 1;
+
 			password_size = 1024;
 			password = malloc(password_size);
 			password[0] = '\0';
@@ -115,11 +136,15 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 				int i = strlen(password);
 				if (i > 0) {
 					password[i - 1] = '\0';
+					render_data.auth_state = AUTH_STATE_BACKSPACE;
+					redraw_screen = 1;
 				}
 				break;
 			}
 		default:
 			{
+				render_data.auth_state = AUTH_STATE_INPUT;
+				redraw_screen = 1;
 				int i = strlen(password);
 				if (i + 1 == password_size) {
 					password_size += 1024;
@@ -129,6 +154,11 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 				password[i + 1] = '\0';
 				break;
 			}
+		}
+		if (redraw_screen) {
+			render(&render_data);
+			// Hide the indicator after a couple of seconds
+			alarm(5);
 		}
 	}
 }
@@ -228,12 +258,18 @@ cairo_surface_t *load_image(char *image_path) {
 }
 
 int main(int argc, char **argv) {
-	char *scaling_mode_str = "fit", *socket_path = NULL;
-	int i, num_images = 0, color_set = 0;
-	uint32_t color = 0xFFFFFFFF;
+	const char *scaling_mode_str = "fit", *socket_path = NULL;
+	int i;
 	void *images;
 
+	render_data.num_images = 0;
+	render_data.color_set = 0;
+	render_data.color = 0xFFFFFFFF;
+	render_data.auth_state = AUTH_STATE_IDLE;
+
 	init_log(L_INFO);
+	// Install SIGALARM handler (for hiding the typing indicator)
+	signal(SIGALRM, sigalarm_handler);
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -274,38 +310,39 @@ int main(int argc, char **argv) {
 				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff");
 				exit(EXIT_FAILURE);
 			}
-			color = strtol(optarg, NULL, 16);
-			color_set = 1;
+			render_data.color = strtol(optarg, NULL, 16);
+			render_data.color_set = 1;
 
 			if (colorlen == 6) {
-				color <<= 8;
-				color |= 0xFF;
+				render_data.color <<= 8;
+				render_data.color |= 0xFF;
 			}
-			sway_log(L_DEBUG, "color: 0x%x", color);
 			break;
 		}
 		case 'i':
 		{
 			char *image_path = strchr(optarg, ':');
 			if (image_path == NULL) {
-				if (num_images == 0) {
-					images = load_image(optarg);
-					num_images = -1;
+				if (render_data.num_images == 0) {
+					// Provided image without output
+					render_data.image = load_image(optarg);
+					render_data.num_images = -1;
 				} else {
 					sway_log(L_ERROR, "output must be defined for all --images or no --images");
 					exit(EXIT_FAILURE);
 				}
 			} else {
-				if (num_images == 0) {
+				// Provided image for all outputs
+				if (render_data.num_images == 0) {
 					images = calloc(registry->outputs->length, sizeof(char*) * 2);
-				} else if (num_images == -1) {
+				} else if (render_data.num_images == -1) {
 					sway_log(L_ERROR, "output must be defined for all --images or no --images");
 					exit(EXIT_FAILURE);
 				}
 
 				image_path[0] = '\0';
-				((char**) images)[num_images * 2] = optarg;
-				((char**) images)[num_images++ * 2 + 1] = ++image_path;
+				((char**) images)[render_data.num_images * 2] = optarg;
+				((char**) images)[render_data.num_images++ * 2 + 1] = ++image_path;
 			}
 			break;
 		}
@@ -332,17 +369,17 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	enum scaling_mode scaling_mode = SCALING_MODE_STRETCH;
+	render_data.scaling_mode = SCALING_MODE_STRETCH;
 	if (strcmp(scaling_mode_str, "stretch") == 0) {
-		scaling_mode = SCALING_MODE_STRETCH;
+		render_data.scaling_mode = SCALING_MODE_STRETCH;
 	} else if (strcmp(scaling_mode_str, "fill") == 0) {
-		scaling_mode = SCALING_MODE_FILL;
+		render_data.scaling_mode = SCALING_MODE_FILL;
 	} else if (strcmp(scaling_mode_str, "fit") == 0) {
-		scaling_mode = SCALING_MODE_FIT;
+		render_data.scaling_mode = SCALING_MODE_FIT;
 	} else if (strcmp(scaling_mode_str, "center") == 0) {
-		scaling_mode = SCALING_MODE_CENTER;
+		render_data.scaling_mode = SCALING_MODE_CENTER;
 	} else if (strcmp(scaling_mode_str, "tile") == 0) {
-		scaling_mode = SCALING_MODE_TILE;
+		render_data.scaling_mode = SCALING_MODE_TILE;
 	} else {
 		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
 	}
@@ -350,7 +387,7 @@ int main(int argc, char **argv) {
 	password_size = 1024;
 	password = malloc(password_size);
 	password[0] = '\0';
-	surfaces = create_list();
+	render_data.surfaces = create_list();
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
@@ -378,14 +415,15 @@ int main(int argc, char **argv) {
 		if (!window) {
 			sway_abort("Failed to create surfaces.");
 		}
-		list_add(surfaces, window);
+		list_add(render_data.surfaces, window);
 	}
 
 	registry->input->notify = notify_key;
 
-	if (num_images >= 1) {
+	// Different background for the output
+	if (render_data.num_images >= 1) {
 		char **displays_paths = images;
-		images = calloc(registry->outputs->length, sizeof(cairo_surface_t*));
+		render_data.images = calloc(registry->outputs->length, sizeof(cairo_surface_t*));
 
 		int socketfd = ipc_open_socket(socket_path);
 		uint32_t len = 0;
@@ -405,7 +443,7 @@ int main(int argc, char **argv) {
 						sway_abort("output doesn't have a name field");
 					}
 					if (!strcmp(displays_paths[i * 2], json_object_get_string(dsp_name))) {
-						((cairo_surface_t**) images)[j] = load_image(displays_paths[i * 2 + 1]);
+						render_data.images[j] = load_image(displays_paths[i * 2 + 1]);
 						break;
 					}
 				}
@@ -417,56 +455,160 @@ int main(int argc, char **argv) {
 		free(displays_paths);
 	}
 
-	for (i = 0; i < surfaces->length; ++i) {
-		struct window *window = surfaces->items[i];
-		if (!window_prerender(window) || !window->cairo) {
-			continue;
-		}
-
-		if (num_images == 0 || color_set) {
-			render_color(window, color);
-		}
-
-		if (num_images == -1) {
-			render_image(window, images, scaling_mode);
-		} else if (num_images >= 1) {
-			if (((cairo_surface_t**) images)[i] != NULL) {
-				render_image(window, ((cairo_surface_t**) images)[i], scaling_mode);
-			}
-		}
-
-		window_render(window);
-	}
-
-	if (num_images == -1) {
-		cairo_surface_destroy((cairo_surface_t*) images);
-	} else if (num_images >= 1) {
-		for (i = 0; i < registry->outputs->length; ++i) {
-			if (((cairo_surface_t**) images)[i] != NULL) {
-				cairo_surface_destroy(((cairo_surface_t**) images)[i]);
-			}
-		}
-		free(images);
-	}
-
+	render(&render_data);
 	bool locked = false;
 	while (wl_display_dispatch(registry->display) != -1) {
 		if (!locked) {
 			for (i = 0; i < registry->outputs->length; ++i) {
 				struct output_state *output = registry->outputs->items[i];
-				struct window *window = surfaces->items[i];
+				struct window *window = render_data.surfaces->items[i];
 				lock_set_lock_surface(registry->swaylock, output->output, window->surface);
 			}
 			locked = true;
 		}
 	}
 
-	for (i = 0; i < surfaces->length; ++i) {
-		struct window *window = surfaces->items[i];
+	// Free surfaces
+	if (render_data.num_images == -1) {
+		cairo_surface_destroy(render_data.image);
+	} else if (render_data.num_images >= 1) {
+		for (i = 0; i < registry->outputs->length; ++i) {
+			if (render_data.images[i] != NULL) {
+				cairo_surface_destroy(render_data.images[i]);
+			}
+		}
+		free(render_data.images);
+	}
+
+	for (i = 0; i < render_data.surfaces->length; ++i) {
+		struct window *window = render_data.surfaces->items[i];
 		window_teardown(window);
 	}
-	list_free(surfaces);
+	list_free(render_data.surfaces);
 	registry_teardown(registry);
 
 	return 0;
+}
+
+void render(struct render_data *render_data) {
+	int i;
+	for (i = 0; i < render_data->surfaces->length; ++i) {
+		sway_log(L_DEBUG, "Render surface %d of %d", i, render_data->surfaces->length);
+		struct window *window = render_data->surfaces->items[i];
+		if (!window_prerender(window) || !window->cairo) {
+			continue;
+		}
+
+		// Reset the transformation matrix
+		cairo_identity_matrix(window->cairo);
+
+		if (render_data->num_images == 0 || render_data->color_set) {
+			render_color(window, render_data->color);
+		}
+
+		if (render_data->num_images == -1) {
+			// One background for all
+			render_image(window, render_data->image, render_data->scaling_mode);
+		} else if (render_data->num_images >= 1) {
+			// Different backgrounds
+			if (render_data->images[i] != NULL) {
+				render_image(window, render_data->images[i], render_data->scaling_mode);
+			}
+		}
+
+		// Reset the transformation matrix again
+		cairo_identity_matrix(window->cairo);
+
+		// Draw specific values (copied from i3)
+		const int ARC_RADIUS = 50;
+		const int ARC_THICKNESS = 10;
+		const float TYPE_INDICATOR_RANGE = M_PI / 3.0f;
+		const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
+
+		// Add visual indicator
+		if (render_data->auth_state != AUTH_STATE_IDLE) {
+			// Draw circle
+			cairo_set_line_width(window->cairo, ARC_THICKNESS);
+			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, 0, 2 * M_PI);
+			switch (render_data->auth_state) {
+			case AUTH_STATE_INPUT:
+			case AUTH_STATE_BACKSPACE: {
+				cairo_set_source_rgba(window->cairo, 0, 0, 0, 0.75);
+				cairo_fill_preserve(window->cairo);
+				cairo_set_source_rgb(window->cairo, 51.0 / 255, 125.0 / 255, 0);
+				cairo_stroke(window->cairo);
+			} break;
+			case AUTH_STATE_VALIDATING: {
+				cairo_set_source_rgba(window->cairo, 0, 114.0 / 255, 255.0 / 255, 0.75);
+				cairo_fill_preserve(window->cairo);
+				cairo_set_source_rgb(window->cairo, 51.0 / 255, 0, 250.0 / 255);
+				cairo_stroke(window->cairo);
+			} break;
+			case AUTH_STATE_INVALID: {
+				cairo_set_source_rgba(window->cairo, 250.0 / 255, 0, 0, 0.75);
+				cairo_fill_preserve(window->cairo);
+				cairo_set_source_rgb(window->cairo, 125.0 / 255, 51.0 / 255, 0);
+				cairo_stroke(window->cairo);
+			} break;
+			default: break;
+			}
+
+			// Draw a message
+			char *text = NULL;
+			cairo_set_source_rgb(window->cairo, 0, 0, 0);
+			cairo_set_font_size(window->cairo, ARC_RADIUS/3.0f);
+			switch (render_data->auth_state) {
+			case AUTH_STATE_VALIDATING:
+				text = "verifying";
+				break;
+			case AUTH_STATE_INVALID:
+				text = "wrong";
+				break;
+			default: break;
+			}
+
+			if (text) {
+				cairo_text_extents_t extents;
+				double x, y;
+
+				cairo_text_extents(window->cairo, text, &extents);
+				x = window->width/2 - ((extents.width/2) + extents.x_bearing);
+				y = window->height/2 - ((extents.height/2) + extents.y_bearing);
+
+				cairo_move_to(window->cairo, x, y);
+				cairo_show_text(window->cairo, text);
+				cairo_close_path(window->cairo);
+				cairo_new_sub_path(window->cairo);
+			}
+
+			// Typing indicator: Highlight random part on keypress
+			if (render_data->auth_state == AUTH_STATE_INPUT || render_data->auth_state == AUTH_STATE_BACKSPACE) {
+				double highlight_start = (rand() % (int)(2 * M_PI * 100)) / 100.0;
+				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
+				if (render_data->auth_state == AUTH_STATE_INPUT) {
+					cairo_set_source_rgb(window->cairo, 51.0 / 255, 219.0 / 255, 0);
+				} else {
+					cairo_set_source_rgb(window->cairo, 219.0 / 255, 51.0 / 255, 0);
+				}
+				cairo_stroke(window->cairo);
+
+				// Draw borders
+				cairo_set_source_rgb(window->cairo, 0, 0, 0);
+				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
+				cairo_stroke(window->cairo);
+
+				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start + TYPE_INDICATOR_RANGE, (highlight_start + TYPE_INDICATOR_RANGE) + TYPE_INDICATOR_BORDER_THICKNESS);
+				cairo_stroke(window->cairo);
+			}
+
+			// Draw inner + outer border of the circle
+			cairo_set_source_rgb(window->cairo, 0, 0, 0);
+			cairo_set_line_width(window->cairo, 2.0);
+			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS - ARC_THICKNESS/2, 0, 2*M_PI);
+			cairo_stroke(window->cairo);
+			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS + ARC_THICKNESS/2, 0, 2*M_PI);
+			cairo_stroke(window->cairo);
+		}
+		window_render(window);
+	}
 }
