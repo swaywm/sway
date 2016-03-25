@@ -10,7 +10,7 @@ irc.freenode.net).
 
 ## Release Signatures
 
-Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?search=B22DA89A&op=index)
+Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
 and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 
 ## Status
