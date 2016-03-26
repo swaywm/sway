@@ -215,6 +215,10 @@ or triggered at runtime.
 **workspace_layout** <default|stacking|tabbed>::
 	Specifies the start layout for new workspaces.
 
+**include** <path>::
+	Includes a sub config file by _path_. _path_ can be either a full path or a
+	path relative to the parent config.
+
 Criteria
 --------
 
