@@ -184,15 +184,27 @@ struct sway_config {
 	bool smart_gaps;
 	int gaps_inner;
 	int gaps_outer;
+
+	list_t *config_chain;
+	const char *current_config;
 };
 
 /**
- * Loads the config from the given path.
+ * Loads the main config from the given path. is_active should be true when
+ * reloading the config.
  */
-bool load_config(const char *file);
-/** Reads the config from the given FILE.
+bool load_main_config(const char *path, bool is_active);
+
+/**
+ * Loads an included config. Can only be used after load_main_config.
  */
-bool read_config(FILE *file, bool is_active);
+bool load_include_configs(const char *path, struct sway_config *config);
+
+/**
+ * Reads the config from the given FILE.
+ */
+bool read_config(FILE *file, struct sway_config *config);
+
 /**
  * Free config struct
  */
