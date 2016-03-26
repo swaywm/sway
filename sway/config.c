@@ -407,8 +407,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			sway_log(L_ERROR, "Error on line %i '%s': %s", line_number, line,
-				res->error);
+			sway_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number, line,
+				res->error, config->current_config);
 			success = false;
 			break;
 
