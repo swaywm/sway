@@ -6,6 +6,7 @@
 #include <wordexp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <libinput.h>
 #include <limits.h>
@@ -244,6 +245,11 @@ static char *get_config_path(void) {
 
 static bool load_config(const char *path, struct sway_config *config) {
 	sway_log(L_INFO, "Loading config from %s", path);
+
+	struct stat sb;
+	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+		return false;
+	}
 
 	if (path == NULL) {
 		sway_log(L_ERROR, "Unable to find a config file!");
