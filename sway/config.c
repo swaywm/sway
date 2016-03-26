@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <libgen.h>
 #include <wordexp.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -126,6 +127,7 @@ void free_config(struct sway_config *config) {
 	list_free(config->output_configs);
 
 	list_free(config->active_bar_modifiers);
+	free_flat_list(config->config_chain);
 	free(config->font);
 	free(config);
 }
@@ -175,6 +177,9 @@ static void config_defaults(struct sway_config *config) {
 	config->gaps_outer = 0;
 
 	config->active_bar_modifiers = create_list();
+
+	config->config_chain = create_list();
+	config->current_config = NULL;
 }
 
 static int compare_modifiers(const void *left, const void *right) {
@@ -237,16 +242,7 @@ static char *get_config_path(void) {
 	return NULL; // Not reached
 }
 
-bool load_config(const char *file) {
-	input_init();
-
-	char *path;
-	if (file != NULL) {
-		path = strdup(file);
-	} else {
-		path = get_config_path();
-	}
-
+static bool load_config(const char *path, struct sway_config *config) {
 	sway_log(L_INFO, "Loading config from %s", path);
 
 	if (path == NULL) {
@@ -257,20 +253,12 @@ bool load_config(const char *file) {
 	FILE *f = fopen(path, "r");
 	if (!f) {
 		sway_log(L_ERROR, "Unable to open %s for reading", path);
-		free(path);
 		return false;
 	}
-	free(path);
 
-	bool config_load_success;
-	if (config) {
-		config_load_success = read_config(f, true);
-	} else {
-		config_load_success = read_config(f, false);
-	}
+	bool config_load_success = read_config(f, config);
 	fclose(f);
 
-	update_active_bar_modifiers();
 
 	if (!config_load_success) {
 		sway_log(L_ERROR, "Error(s) loading config!");
@@ -279,17 +267,129 @@ bool load_config(const char *file) {
 	return true;
 }
 
-bool read_config(FILE *file, bool is_active) {
+bool load_main_config(const char *file, bool is_active) {
+	input_init();
+
+	char *path;
+	if (file != NULL) {
+		path = strdup(file);
+	} else {
+		path = get_config_path();
+	}
+
 	struct sway_config *old_config = config;
 	config = calloc(1, sizeof(struct sway_config));
 
 	config_defaults(config);
-	config->reading = true;
 	if (is_active) {
 		sway_log(L_DEBUG, "Performing configuration file reload");
 		config->reloading = true;
 		config->active = true;
 	}
+
+	config->current_config = path;
+	list_add(config->config_chain, path);
+
+	config->reading = true;
+	bool success = load_config(path, config);
+
+	if (is_active) {
+		config->reloading = false;
+	}
+
+	if (old_config) {
+		free_config(old_config);
+	}
+	config->reading = false;
+
+	if (success) {
+		update_active_bar_modifiers();
+	}
+
+	return success;
+}
+
+static bool load_include_config(const char *path, const char *parent_dir, struct sway_config *config) {
+	// save parent config
+	const char *parent_config = config->current_config;
+
+	char *full_path = strdup(path);
+	int len = strlen(path);
+	if (len >= 1 && path[0] != '/') {
+		len = len + strlen(parent_dir) + 2;
+		full_path = malloc(len * sizeof(char));
+		snprintf(full_path, len, "%s/%s", parent_dir, path);
+	}
+
+	char *real_path = realpath(full_path, NULL);
+	free(full_path);
+
+	// check if config has already been included
+	int j;
+	for (j = 0; j < config->config_chain->length; ++j) {
+		char *old_path = config->config_chain->items[j];
+		if (strcmp(real_path, old_path) == 0) {
+			sway_log(L_DEBUG, "%s already included once, won't be included again.", real_path);
+			free(real_path);
+			return false;
+		}
+	}
+
+	config->current_config = real_path;
+	list_add(config->config_chain, real_path);
+	int index = config->config_chain->length - 1;
+
+	if (!load_config(real_path, config)) {
+		free(real_path);
+		config->current_config = parent_config;
+		list_del(config->config_chain, index);
+		return false;
+	}
+
+	// restore current_config
+	config->current_config = parent_config;
+	return true;
+}
+
+bool load_include_configs(const char *path, struct sway_config *config) {
+	char *wd = getcwd(NULL, 0);
+	char *parent_path = strdup(config->current_config);
+	const char *parent_dir = dirname(parent_path);
+
+	if (chdir(parent_dir) < 0) {
+		free(parent_path);
+		free(wd);
+		return false;
+	}
+
+	wordexp_t p;
+
+	if (wordexp(path, &p, 0) < 0) {
+		free(parent_path);
+		free(wd);
+		return false;
+	}
+
+	char **w = p.we_wordv;
+	size_t i;
+	for (i = 0; i < p.we_wordc; ++i) {
+		load_include_config(w[i], parent_dir, config);
+	}
+	free(parent_path);
+	wordfree(&p);
+
+	// restore wd
+	if (chdir(wd) < 0) {
+		free(wd);
+		sway_log(L_ERROR, "failed to restore working directory");
+		return false;
+	}
+
+	free(wd);
+	return true;
+}
+
+bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;
 	enum cmd_status block = CMD_BLOCK_END;
 
@@ -307,8 +407,8 @@ bool read_config(FILE *file, bool is_active) {
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			sway_log(L_ERROR, "Error on line %i '%s': %s", line_number, line,
-				res->error);
+			sway_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number, line,
+				res->error, config->current_config);
 			success = false;
 			break;
 
@@ -386,15 +486,6 @@ bool read_config(FILE *file, bool is_active) {
 		free(res);
 	}
 
-	if (is_active) {
-		config->reloading = false;
-		arrange_windows(&root_container, -1, -1);
-	}
-	if (old_config) {
-		free_config(old_config);
-	}
-
-	config->reading = false;
 	return success;
 }
 

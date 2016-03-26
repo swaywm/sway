@@ -206,11 +206,11 @@ int main(int argc, char **argv) {
 	init_layout();
 
 	if (validate) {
-		bool valid = load_config(config_path);
+		bool valid = load_main_config(config_path, false);
 		return valid ? 0 : 1;
 	}
 
-	if (!load_config(config_path)) {
+	if (!load_main_config(config_path, false)) {
 		sway_terminate(EXIT_FAILURE);
 	}
 
