@@ -52,7 +52,7 @@ You may run sway from an ongoing x11 session to run it within x. Otherwise, you
 can run sway on a tty and it will use your outputs directly.
 
 *Important note for nvidia users*: The proprietary nvidia driver does _not_ have
-support for Wayland as of 2015-08-17. Use nouveau.
+support for Wayland as of 2016-03-27. Use nouveau.
 
 Commands
 --------
@@ -86,4 +86,4 @@ source contributors. For more information about sway development, see
 See Also
 --------
 
-**sway**(5) **swaymsg**(1) **swaygrab**(1)
+**sway**(5) **swaymsg**(1) **swaygrab**(1) **sway-input** (5) **sway-bar** (5)
