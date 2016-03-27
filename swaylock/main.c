@@ -260,7 +260,7 @@ cairo_surface_t *load_image(char *image_path) {
 int main(int argc, char **argv) {
 	const char *scaling_mode_str = "fit", *socket_path = NULL;
 	int i;
-	void *images;
+	void *images = NULL;
 
 	render_data.num_images = 0;
 	render_data.color_set = 0;
