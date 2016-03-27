@@ -16,7 +16,8 @@ on startup.  These commands usually consist of setting your preferences and
 setting key bindings. An example config is likely present in /etc/sway/config
 for you to check out.
 
-Some of the commands can also or only be sent at runtime with **sway-msg**(1).
+These commands can be executed in your config file, via **sway-msg**(1), or via
+the bindsym command.
 
 Commands
 --------
@@ -26,13 +27,14 @@ The following commands may only be used in the configuration file.
 **bar** <block of commands>::
 	Append _{_ to this command, the following lines will be commands that
 	configure **swaybar**, and _}_ on its own line to close the block.
+	+
+	See **sway-bar**(5) for details.
 
-**bindsym** <key combo> <command>::
-	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
-	names here (**xev**(1) is a good tool for discovering them). An example
-	bindsym command would be _bindsym Mod1+Shift+f exec firefox_, which would
-	execute Firefox if the alt, shift, and F keys are pressed together. Any
-	valid sway command is eligible to be bound to a key combo.
+**input** <input device> <block of commands>::
+	Append _{_ to this command, the following lines will be commands to configure
+	the named input device, and _}_ on its own line will close the block.
+	+
+	See **sway-input**(5) for details.
 
 **set** <name> <value>::
 	Creates a substitution for _value_ that can be used with $_name_ in other
@@ -106,6 +108,16 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 The following commands may be used either in the configuration file
 or triggered at runtime.
+
+**bindsym** <key combo> <command>::
+	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
+	names here (**xev**(1) is a good tool for discovering them). An example
+	bindsym command would be _bindsym Mod1+Shift+f exec firefox_, which would
+	execute Firefox if the alt, shift, and F keys are pressed together. Any
+	valid sway command is eligible to be bound to a key combo.
+	+
+	**bindcode** <code> <command> is also available for binding with key codes
+	instead of key names.
 
 **debuglog** <on|off|toggle>::
 	Enables, disables or toggles logging for debug. The toggle argument cannot

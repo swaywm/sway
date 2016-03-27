@@ -215,10 +215,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
 		return error;
-	} else if (!config->reading) {
-		return cmd_results_new(CMD_FAILURE, "bindsym", "Can only be used in config file.");
 	}
-
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();
@@ -283,10 +280,7 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bindcode", EXPECTED_MORE_THAN, 1))) {
 		return error;
-	} else if (!config->reading) {
-		return cmd_results_new(CMD_FAILURE, "bindcode", "Can only be used in config file.");
 	}
-
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
 	binding->keys = create_list();

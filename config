@@ -18,7 +18,7 @@ set $menu dmenu_run
 
 ### Output configuration
 #
-# Default wallpaper - CC-BY-NC from Netzlemming http://netzlemming.deviantart.com/art/Field-of-Barley-05240017-307176737
+# Default wallpaper (more resolutions are available in /usr/share/sway/)
 output * bg /usr/share/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
 # Example output configuration:
