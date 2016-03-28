@@ -1,12 +1,12 @@
 #ifndef _SWAY_CLIENT_PANGO_H
 #define _SWAY_CLIENT_PANGO_H
 
-#include "client/window.h"
-#include "client/buffer.h"
+#include <cairo/cairo.h>
+#include <pango/pangocairo.h>
 #include <stdarg.h>
 
-PangoLayout *get_pango_layout(struct window *window, struct buffer *buffer, const char *text);
-void get_text_size(struct window *window, int *width, int *height, const char *fmt, ...);
-void pango_printf(struct window *window, const char *fmt, ...);
+PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text);
+void get_text_size(cairo_t *cairo, const char *font, int *width, int *height, const char *fmt, ...);
+void pango_printf(cairo_t *cairo, const char *font, const char *fmt, ...);
 
 #endif
