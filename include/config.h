@@ -148,6 +148,14 @@ struct bar_config {
 	} colors;
 };
 
+struct border_colors {
+	uint32_t border;
+	uint32_t background;
+	uint32_t text;
+	uint32_t indicator;
+	uint32_t child_border;
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -187,6 +195,16 @@ struct sway_config {
 
 	list_t *config_chain;
 	const char *current_config;
+
+	// border colors
+	struct {
+		struct border_colors focused;
+		struct border_colors focused_inactive;
+		struct border_colors unfocused;
+		struct border_colors urgent;
+		struct border_colors placeholder;
+		uint32_t background;
+	} border_colors;
 };
 
 /**

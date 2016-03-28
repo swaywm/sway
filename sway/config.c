@@ -181,6 +181,39 @@ static void config_defaults(struct sway_config *config) {
 
 	config->config_chain = create_list();
 	config->current_config = NULL;
+
+	// border colors
+	config->border_colors.focused.border = 0x4C7899FF;
+	config->border_colors.focused.background = 0x285577FF;
+	config->border_colors.focused.text = 0xFFFFFFFF;
+	config->border_colors.focused.indicator = 0x2E9EF4FF;
+	config->border_colors.focused.child_border = 0x285577FF;
+
+	config->border_colors.focused_inactive.border = 0x333333FF;
+	config->border_colors.focused_inactive.background = 0x5F676AFF;
+	config->border_colors.focused_inactive.text = 0xFFFFFFFF;
+	config->border_colors.focused_inactive.indicator = 0x484E50FF;
+	config->border_colors.focused_inactive.child_border = 0x5F676AFF;
+
+	config->border_colors.unfocused.border = 0x333333FF;
+	config->border_colors.unfocused.background = 0x222222FF;
+	config->border_colors.unfocused.text = 0x888888FF;
+	config->border_colors.unfocused.indicator = 0x292D2EFF;
+	config->border_colors.unfocused.child_border = 0x222222FF;
+
+	config->border_colors.urgent.border = 0x2F343AFF;
+	config->border_colors.urgent.background = 0x900000FF;
+	config->border_colors.urgent.text = 0xFFFFFFFF;
+	config->border_colors.urgent.indicator = 0x900000FF;
+	config->border_colors.urgent.child_border = 0x900000FF;
+
+	config->border_colors.placeholder.border = 0x000000FF;
+	config->border_colors.placeholder.background = 0x0C0C0CFF;
+	config->border_colors.placeholder.text = 0xFFFFFFFF;
+	config->border_colors.placeholder.indicator = 0x000000FF;
+	config->border_colors.placeholder.child_border = 0x0C0C0CFF;
+
+	config->border_colors.background = 0xFFFFFFFF;
 }
 
 static int compare_modifiers(const void *left, const void *right) {
