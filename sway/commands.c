@@ -1872,16 +1872,16 @@ static struct cmd_results *cmd_font(int argc, char **argv) {
 	}
 
 	char *font = join_args(argv, argc);
+	free(config->font);
 	if (strlen(font) > 6 && strncmp("pango:", font, 6) == 0) {
-		free(config->font);
-		config->font = font;
-		sway_log(L_DEBUG, "Settings font %s", config->font);
-		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-	} else {
+		config->font = strdup(font + 6);
 		free(font);
-		return cmd_results_new(CMD_FAILURE, "font", "non-pango font detected");
+	} else {
+		config->font = font;
 	}
 
+	sway_log(L_DEBUG, "Settings font %s", config->font);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 

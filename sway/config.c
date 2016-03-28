@@ -160,7 +160,7 @@ static void config_defaults(struct sway_config *config) {
 	config->resizing_key = M_RIGHT_CLICK;
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
-	config->font = strdup("pango:monospace 10");
+	config->font = strdup("monospace 10");
 
 	// Flags
 	config->focus_follows_mouse = true;
