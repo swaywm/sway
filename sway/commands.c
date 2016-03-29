@@ -31,6 +31,7 @@
 #include "ipc-server.h"
 #include "list.h"
 #include "input.h"
+#include "border.h"
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
@@ -359,6 +360,14 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 	}
 
 	enum swayc_border_types border = config->border;
+	int thickness = config->border_thickness;
+
+	swayc_t *view = NULL;
+	if (config->active) {
+		view = get_focused_view(&root_container);
+		border = view->border_type;
+		thickness = view->border_thickness;
+	}
 
 	if (strcasecmp(argv[0], "none") == 0) {
 		border = B_NONE;
@@ -367,7 +376,7 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "pixel") == 0) {
 		border = B_PIXEL;
 	} else if (strcasecmp(argv[0], "toggle") == 0) {
-		switch (config->border) {
+		switch (border) {
 		case B_NONE:
 			border = B_PIXEL;
 			break;
@@ -383,16 +392,24 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 			"Expected 'border <normal|pixel|none|toggle>");
 	}
 
+
 	if (argc == 2 && (border == B_NORMAL || border == B_PIXEL)) {
-		int thickness = (int)strtol(argv[1], NULL, 10);
+		thickness = (int)strtol(argv[1], NULL, 10);
 		if (errno == ERANGE || thickness < 0) {
 			errno = 0;
 			return cmd_results_new(CMD_INVALID, "border", "Number is out out of range.");
 		}
+	}
+
+	if (config->active && view) {
+		view->border_type = border;
+		view->border_thickness = thickness;
+		update_geometry(view);
+	} else {
+		config->border = border;
 		config->border_thickness = thickness;
 	}
 
-	config->border = border;
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -904,9 +921,9 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "position") == 0 && strcasecmp(argv[1], "mouse") == 0) {
 		if (view->is_floating) {
 			swayc_t *output = swayc_parent_by_type(view, C_OUTPUT);
-			const struct wlc_geometry *geometry = wlc_view_get_geometry(view->handle);
+			struct wlc_geometry g;
+			wlc_view_get_visible_geometry(view->handle, &g);
 			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
-			struct wlc_geometry g = *geometry;
 
 			struct wlc_point origin;
 			wlc_pointer_get_position(&origin);
@@ -1953,6 +1970,8 @@ static struct cmd_results *cmd_font(int argc, char **argv) {
 	} else {
 		config->font = font;
 	}
+
+	config->font_height = get_font_text_height(config->font);
 
 	sway_log(L_DEBUG, "Settings font %s", config->font);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

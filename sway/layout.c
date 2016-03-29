@@ -12,7 +12,7 @@
 #include "focus.h"
 #include "output.h"
 #include "ipc-server.h"
-#include "render.h"
+#include "border.h"
 
 swayc_t root_container;
 list_t *scratchpad;
@@ -427,6 +427,80 @@ void update_geometry(swayc_t *container) {
 			geometry.size.h = ws->y + ws->height - geometry.origin.y;
 		}
 	}
+
+	if (swayc_is_fullscreen(container)) {
+		container->border_geometry = (const struct wlc_geometry){0};
+		container->title_bar_geometry = (const struct wlc_geometry){0};
+	} else {
+		// make room for border
+		container->border_geometry = geometry;
+
+		int border_top = container->border_thickness;
+		int border_bottom = container->border_thickness;
+		int border_left = container->border_thickness;
+		int border_right = container->border_thickness;
+
+		// handle hide_edge_borders
+		if (config->hide_edge_borders != E_NONE && gap <= 0) {
+			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
+
+			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
+				if (geometry.origin.x == 0) {
+					border_left = 0;
+				}
+
+				if (geometry.origin.x + geometry.size.w == size->w) {
+					border_right = 0;
+				}
+			}
+
+			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
+				if (geometry.origin.y == 0) {
+					border_top = 0;
+				}
+
+				if (geometry.origin.y + geometry.size.h == size->h) {
+					border_bottom = 0;
+				}
+			}
+		}
+
+		switch (container->border_type) {
+		case B_NONE:
+			break;
+		case B_PIXEL:
+			geometry.origin.x += border_left;
+			geometry.origin.y += border_top;
+			geometry.size.w -= (border_left + border_right);
+			geometry.size.h -= (border_top + border_bottom);
+			break;
+		case B_NORMAL:
+			{
+				struct wlc_geometry title_bar = {
+					.origin = {
+						.x = container->border_geometry.origin.x,
+						.y = container->border_geometry.origin.y
+					},
+					.size = {
+						.w = container->border_geometry.size.w,
+						.h = config->font_height + 4 // borders + padding
+					}
+				};
+				geometry.origin.x += border_left;
+				geometry.origin.y += title_bar.size.h;
+				geometry.size.w -= (border_left + border_right);
+				geometry.size.h -= (border_bottom + title_bar.size.h);
+				container->title_bar_geometry = title_bar;
+				break;
+			}
+		}
+
+		container->actual_geometry = geometry;
+
+		update_view_border(container);
+	}
+
 	wlc_view_set_geometry(container->handle, 0, &geometry);
 }
 

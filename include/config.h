@@ -184,6 +184,7 @@ struct sway_config {
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 	char *font;
+	int font_height;
 
 	// Flags
 	bool focus_follows_mouse;

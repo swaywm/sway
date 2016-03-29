@@ -26,7 +26,7 @@ add_executable(sway
 	output.c
 	resize.c
 	workspace.c
-    render.c
+	border.c
 )
 
 add_definitions(
@@ -36,6 +36,7 @@ add_definitions(
 target_link_libraries(sway
 	sway-common
 	sway-protocols
+	sway-wayland
 	${WLC_LIBRARIES}
 	${XKBCOMMON_LIBRARIES}
 	${PCRE_LIBRARIES}
