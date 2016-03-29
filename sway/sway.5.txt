@@ -67,6 +67,9 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **fullscreen**::
 	Toggles fullscreen status for the focused view.
 
+**hide_edge_borders** <none|vertical|horizontal|both>::
+	Hide window borders adjacent to the screen edges. Default is _none_.
+
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
 	_splitv_, or _toggle split_.

@@ -55,6 +55,7 @@ static sway_cmd cmd_font;
 static sway_cmd cmd_for_window;
 static sway_cmd cmd_fullscreen;
 static sway_cmd cmd_gaps;
+static sway_cmd cmd_hide_edge_borders;
 static sway_cmd cmd_include;
 static sway_cmd cmd_input;
 static sway_cmd cmd_kill;
@@ -1506,6 +1507,29 @@ static struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "hide_edge_borders", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		config->hide_edge_borders = E_NONE;
+	} else if (strcasecmp(argv[0], "vertical") == 0) {
+		config->hide_edge_borders = E_VERTICAL;
+	} else if (strcasecmp(argv[0], "horizontal") == 0) {
+		config->hide_edge_borders = E_HORIZONTAL;
+	} else if (strcasecmp(argv[0], "both") == 0) {
+		config->hide_edge_borders = E_BOTH;
+	} else {
+		return cmd_results_new(CMD_INVALID, "hide_edge_borders",
+				"Expected 'hide_edge_borders <none|vertical|horizontal|both>'");
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+
 static struct cmd_results *cmd_kill(int argc, char **argv) {
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "kill", "Can't be used in config file.");
 	if (!config->active) return cmd_results_new(CMD_FAILURE, "kill", "Can only be used when sway is running.");
@@ -2063,6 +2087,7 @@ static struct cmd_handler handlers[] = {
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
+	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
 	{ "kill", cmd_kill },

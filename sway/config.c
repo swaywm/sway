@@ -182,6 +182,8 @@ static void config_defaults(struct sway_config *config) {
 	config->config_chain = create_list();
 	config->current_config = NULL;
 
+	config->hide_edge_borders = E_NONE;
+
 	// border colors
 	config->border_colors.focused.border = 0x4C7899FF;
 	config->border_colors.focused.background = 0x285577FF;
