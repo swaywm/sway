@@ -35,8 +35,10 @@ uint32_t parse_position(const char *position) {
 char *parse_font(const char *font) {
 	char *new_font = NULL;
 	if (strncmp("pango:", font, 6) == 0) {
-		new_font = strdup(font + 6);
+		font += 6;
 	}
+
+	new_font = strdup(font);
 
 	return new_font;
 }
