@@ -38,7 +38,7 @@ Options
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
 	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
 
-*-r, --rate* <rate>::
+*-R, --rate* <rate>::
 	Specify a framerate (in frames per second). Used in combination with -c.
 	Default is 30. Must be an integer.
 
