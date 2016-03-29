@@ -157,11 +157,13 @@ static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colo
 	render_sharp_line(cr, colors->border, 0, 0, tb->size.w, 1);
 
 	// text
-	int width, height;
-	get_text_size(cr, config->font, &width, &height, "%s", view->name);
-	cairo_move_to(cr, view->border_thickness, 2);
-	cairo_set_source_u32(cr, colors->text);
-	pango_printf(cr, config->font, "%s", view->name);
+	if (view->name) {
+		int width, height;
+		get_text_size(cr, config->font, &width, &height, "%s", view->name);
+		cairo_move_to(cr, view->border_thickness, 2);
+		cairo_set_source_u32(cr, colors->text);
+		pango_printf(cr, config->font, "%s", view->name);
+	}
 
 	// header bottom line
 	render_sharp_line(cr, colors->border,
@@ -245,6 +247,17 @@ void render_view_borders(wlc_handle view) {
 
 	if (!c || c->border_type == B_NONE) {
 		return;
+	}
+
+	if (c->border_type == B_NORMAL) {
+		// update window title
+		const char *new_name = wlc_view_get_title(view);
+
+		if (new_name && strcmp(c->name, new_name) != 0) {
+			free(c->name);
+			c->name = strdup(new_name);
+			update_view_border(c);
+		}
 	}
 
 	if (c->border) {
