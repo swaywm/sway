@@ -170,6 +170,12 @@ static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colo
 			view->actual_geometry.size.w, 1);
 }
 
+void map_update_view_border(swayc_t *view, void *data) {
+	if (view->type == C_VIEW) {
+		update_view_border(view);
+	}
+}
+
 void update_view_border(swayc_t *view) {
 	cairo_t *cr = NULL;
 	cairo_surface_t *surface = NULL;

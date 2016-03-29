@@ -29,6 +29,8 @@ static void update_focus(swayc_t *c) {
 
 		// Case where output changes
 		case C_OUTPUT:
+			// update borders for views in prev
+			container_map(prev, map_update_view_border, NULL);
 			wlc_output_focus(c->handle);
 			break;
 

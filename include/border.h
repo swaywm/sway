@@ -5,6 +5,7 @@
 
 void render_view_borders(wlc_handle view);
 void update_view_border(swayc_t *view);
+void map_update_view_border(swayc_t *view, void *data);
 int get_font_text_height(const char *font);
 
 #endif
