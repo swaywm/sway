@@ -203,6 +203,8 @@ struct sway_config {
 	list_t *config_chain;
 	const char *current_config;
 
+	enum swayc_border_types border;
+	int border_thickness;
 	enum edge_border_types hide_edge_borders;
 
 	// border colors

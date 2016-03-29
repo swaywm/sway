@@ -8,7 +8,7 @@ typedef struct sway_container swayc_t;
 
 /**
  * Different kinds of containers.
- * 
+ *
  * This enum is in order. A container will never be inside of a container below
  * it on this list.
  */
@@ -37,9 +37,9 @@ enum swayc_layouts {
 };
 
 enum swayc_border_types {
-    B_NONE,             /**< No border */
-    B_PIXEL,            /**< 1px border */
-    B_NORMAL            /**< Normal border with title bar */
+	B_NONE,             /**< No border */
+	B_PIXEL,            /**< 1px border */
+	B_NORMAL            /**< Normal border with title bar */
 };
 
 /**
