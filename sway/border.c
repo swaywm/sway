@@ -10,13 +10,13 @@
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 	int endian = 1;
-	if (*(char *)&endian == 1) {
+	if (*(char *)&endian == 1) { // little endian
 		cairo_set_source_rgba(cairo,
 				(color >> (1*8) & 0xFF) / 255.0,
 				(color >> (2*8) & 0xFF) / 255.0,
 				(color >> (3*8) & 0xFF) / 255.0,
 				(color >> (0*8) & 0xFF) / 255.0);
-	} else {
+	} else { // big endian
 		cairo_set_source_rgba(cairo,
 				(color >> (0*8) & 0xFF) / 255.0,
 				(color >> (3*8) & 0xFF) / 255.0,
