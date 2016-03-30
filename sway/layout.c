@@ -374,6 +374,46 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
 	update_visibility(src_op);
 }
 
+static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geometry) {
+	struct wlc_geometry g = *geometry;
+	c->actual_geometry = g;
+
+	switch (c->border_type) {
+	case B_NONE:
+		break;
+	case B_PIXEL:
+		g.origin.x -= c->border_thickness;
+		g.origin.y -= c->border_thickness;
+		g.size.w += (c->border_thickness * 2);
+		g.size.h += (c->border_thickness * 2);
+		break;
+	case B_NORMAL:
+		g.origin.x -= c->border_thickness;
+		uint32_t title_bar_height = config->font_height + 4; // borders + padding
+		g.origin.y -= title_bar_height;
+		g.size.w += (c->border_thickness * 2);
+		g.size.h += (c->border_thickness + title_bar_height);
+
+		struct wlc_geometry title_bar = {
+			.origin = {
+				.x = g.origin.x,
+				.y = g.origin.y
+			},
+			.size = {
+				.w = g.size.w,
+				.h = title_bar_height
+			}
+		};
+		c->title_bar_geometry = title_bar;
+		break;
+	}
+
+	c->border_geometry = g;
+	*geometry = c->actual_geometry;
+
+	update_view_border(c);
+}
+
 void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW) {
 		return;
@@ -431,8 +471,9 @@ void update_geometry(swayc_t *container) {
 	if (swayc_is_fullscreen(container)) {
 		container->border_geometry = (const struct wlc_geometry){0};
 		container->title_bar_geometry = (const struct wlc_geometry){0};
-	} else {
-		// make room for border
+	} else if (container->is_floating) { // allocate border for floating window
+		update_border_geometry_floating(container, &geometry);
+	} else if (!container->is_floating) { // allocate border for titled window
 		container->border_geometry = geometry;
 
 		int border_top = container->border_thickness;

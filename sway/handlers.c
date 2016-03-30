@@ -349,13 +349,13 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 		view->desired_width = geometry->size.w;
 		view->desired_height = geometry->size.h;
 
-		/* if (view->is_floating) { */
-		/* 	view->width = view->desired_width; */
-		/* 	view->height = view->desired_height; */
-		/* 	view->x = geometry->origin.x; */
-		/* 	view->y = geometry->origin.y; */
-		/* /1* 	arrange_windows(view->parent, -1, -1); *1/ */
-		/* } */
+		if (view->is_floating) {
+			view->width = view->desired_width;
+			view->height = view->desired_height;
+			view->x = geometry->origin.x;
+			view->y = geometry->origin.y;
+			arrange_windows(view->parent, -1, -1);
+		}
 	}
 }
 
