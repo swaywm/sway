@@ -253,10 +253,12 @@ void render_view_borders(wlc_handle view) {
 		// update window title
 		const char *new_name = wlc_view_get_title(view);
 
-		if (new_name && strcmp(c->name, new_name) != 0) {
-			free(c->name);
-			c->name = strdup(new_name);
-			update_view_border(c);
+		if (new_name) {
+			if (!c->name || strcmp(c->name, new_name) != 0) {
+				free(c->name);
+				c->name = strdup(new_name);
+				update_view_border(c);
+			}
 		}
 	}
 
