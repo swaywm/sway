@@ -659,7 +659,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 					swayc_t *op = root_container.children->items[i];
 					for (j = 0; j < op->children->length; ++j) {
 						swayc_t *ws = op->children->items[j];
-						// TODO: adjust outer gaps ws->gaps = 0;
 						if (config->floating_scroll == FSB_GAPS_INNER) {
 							container_map(ws, add_gaps, &amount);
 						} else {
