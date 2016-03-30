@@ -50,7 +50,7 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color, double x, double y
 
 static void render_block(struct window *window, struct config *config, struct status_block *block, double *x, bool edge) {
 	int width, height, sep_width;
-	get_text_size(window, &width, &height, "%s", block->full_text);
+	get_text_size(window->cairo, window->font, &width, &height, "%s", block->full_text);
 
 	int textwidth = width;
 	double block_width = width;
@@ -74,7 +74,7 @@ static void render_block(struct window *window, struct config *config, struct st
 	// Add separator
 	if (!edge) {
 		if (config->sep_symbol) {
-			get_text_size(window, &sep_width, &height, "%s", config->sep_symbol);
+			get_text_size(window->cairo, window->font, &sep_width, &height, "%s", config->sep_symbol);
 			if (sep_width > block->separator_block_width) {
 				block->separator_block_width = sep_width + margin * 2;
 			}
@@ -136,7 +136,7 @@ static void render_block(struct window *window, struct config *config, struct st
 
 	cairo_move_to(window->cairo, offset, margin);
 	cairo_set_source_u32(window->cairo, block->color);
-	pango_printf(window, "%s", block->full_text);
+	pango_printf(window->cairo, window->font, "%s", block->full_text);
 
 	pos += width;
 
@@ -159,7 +159,7 @@ static void render_block(struct window *window, struct config *config, struct st
 		if (config->sep_symbol) {
 			offset = pos + (block->separator_block_width - sep_width) / 2;
 			cairo_move_to(window->cairo, offset, margin);
-			pango_printf(window, "%s", config->sep_symbol);
+			pango_printf(window->cairo, window->font, "%s", config->sep_symbol);
 		} else {
 			cairo_set_line_width(window->cairo, 1);
 			cairo_move_to(window->cairo, pos + block->separator_block_width/2,
@@ -201,7 +201,7 @@ static void render_workspace_button(struct window *window, struct config *config
 	char *name = handle_workspace_number(config->strip_workspace_numbers, ws->name);
 
 	int width, height;
-	get_text_size(window, &width, &height, "%s", name);
+	get_text_size(window->cairo, window->font, &width, &height, "%s", name);
 	struct box_colors box_colors;
 	if (ws->urgent) {
 		box_colors = config->colors.urgent_workspace;
@@ -228,7 +228,7 @@ static void render_workspace_button(struct window *window, struct config *config
 	// text
 	cairo_set_source_u32(window->cairo, box_colors.text);
 	cairo_move_to(window->cairo, (int)*x + ws_horizontal_padding, margin);
-	pango_printf(window, "%s", name);
+	pango_printf(window->cairo, window->font, "%s", name);
 
 	*x += width + ws_horizontal_padding * 2 + ws_spacing;
 
@@ -237,7 +237,7 @@ static void render_workspace_button(struct window *window, struct config *config
 
 static void render_binding_mode_indicator(struct window *window, struct config *config, double pos) {
 	int width, height;
-	get_text_size(window, &width, &height, "%s", config->mode);
+	get_text_size(window->cairo, window->font, &width, &height, "%s", config->mode);
 
 	// background
 	cairo_set_source_u32(window->cairo, config->colors.binding_mode.background);
@@ -254,7 +254,7 @@ static void render_binding_mode_indicator(struct window *window, struct config *
 	// text
 	cairo_set_source_u32(window->cairo, config->colors.binding_mode.text);
 	cairo_move_to(window->cairo, (int)pos + ws_horizontal_padding, margin);
-	pango_printf(window, "%s", config->mode);
+	pango_printf(window->cairo, window->font, "%s", config->mode);
 }
 
 void render(struct output *output, struct config *config, struct status_line *line) {
@@ -278,9 +278,9 @@ void render(struct output *output, struct config *config, struct status_line *li
 	int width, height;
 
 	if (line->protocol == TEXT) {
-		get_text_size(window, &width, &height, "%s", line->text_line);
+		get_text_size(window->cairo, window->font, &width, &height, "%s", line->text_line);
 		cairo_move_to(cairo, window->width - margin - width, margin);
-		pango_printf(window, "%s", line->text_line);
+		pango_printf(window->cairo, window->font, "%s", line->text_line);
 	} else if (line->protocol == I3BAR && line->block_line) {
 		double pos = window->width - 0.5;
 		bool edge = true;
@@ -312,7 +312,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 
 void set_window_height(struct window *window, int height) {
 		int text_width, text_height;
-		get_text_size(window, &text_width, &text_height, "Test string for measuring purposes");
+		get_text_size(window->cairo, window->font, &text_width, &text_height, "Test string for measuring purposes");
 		if (height > 0) {
 			margin = (height - text_height) / 2;
 			ws_vertical_padding = margin - 1.5;

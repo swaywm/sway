@@ -31,6 +31,7 @@
 #include "ipc-server.h"
 #include "list.h"
 #include "input.h"
+#include "border.h"
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
@@ -43,6 +44,7 @@ static sway_cmd cmd_assign;
 static sway_cmd cmd_bar;
 static sway_cmd cmd_bindcode;
 static sway_cmd cmd_bindsym;
+static sway_cmd cmd_border;
 static sway_cmd cmd_debuglog;
 static sway_cmd cmd_exec;
 static sway_cmd cmd_exec_always;
@@ -55,6 +57,7 @@ static sway_cmd cmd_font;
 static sway_cmd cmd_for_window;
 static sway_cmd cmd_fullscreen;
 static sway_cmd cmd_gaps;
+static sway_cmd cmd_hide_edge_borders;
 static sway_cmd cmd_include;
 static sway_cmd cmd_input;
 static sway_cmd cmd_kill;
@@ -342,6 +345,71 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	list_qsort(mode->bindings, sway_binding_cmp_qsort);
 
 	sway_log(L_DEBUG, "bindcode - Bound %s to command %s", argv[0], binding->command);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_border(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "border", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (argc > 2) {
+		return cmd_results_new(CMD_FAILURE, "border",
+			"Expected 'border <normal|pixel|none|toggle> [<n>]");
+	}
+
+	enum swayc_border_types border = config->border;
+	int thickness = config->border_thickness;
+
+	swayc_t *view = NULL;
+	if (config->active) {
+		view = get_focused_view(&root_container);
+		border = view->border_type;
+		thickness = view->border_thickness;
+	}
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		border = B_NONE;
+	} else if (strcasecmp(argv[0], "normal") == 0) {
+		border = B_NORMAL;
+	} else if (strcasecmp(argv[0], "pixel") == 0) {
+		border = B_PIXEL;
+	} else if (strcasecmp(argv[0], "toggle") == 0) {
+		switch (border) {
+		case B_NONE:
+			border = B_PIXEL;
+			break;
+		case B_NORMAL:
+			border = B_NONE;
+			break;
+		case B_PIXEL:
+			border = B_NORMAL;
+			break;
+		}
+	} else {
+		return cmd_results_new(CMD_FAILURE, "border",
+			"Expected 'border <normal|pixel|none|toggle>");
+	}
+
+
+	if (argc == 2 && (border == B_NORMAL || border == B_PIXEL)) {
+		thickness = (int)strtol(argv[1], NULL, 10);
+		if (errno == ERANGE || thickness < 0) {
+			errno = 0;
+			return cmd_results_new(CMD_INVALID, "border", "Number is out out of range.");
+		}
+	}
+
+	if (config->active && view) {
+		view->border_type = border;
+		view->border_thickness = thickness;
+		update_geometry(view);
+	} else {
+		config->border = border;
+		config->border_thickness = thickness;
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -847,9 +915,9 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "position") == 0 && strcasecmp(argv[1], "mouse") == 0) {
 		if (view->is_floating) {
 			swayc_t *output = swayc_parent_by_type(view, C_OUTPUT);
-			const struct wlc_geometry *geometry = wlc_view_get_geometry(view->handle);
+			struct wlc_geometry g;
+			wlc_view_get_visible_geometry(view->handle, &g);
 			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
-			struct wlc_geometry g = *geometry;
 
 			struct wlc_point origin;
 			wlc_pointer_get_position(&origin);
@@ -1500,6 +1568,29 @@ static struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "hide_edge_borders", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		config->hide_edge_borders = E_NONE;
+	} else if (strcasecmp(argv[0], "vertical") == 0) {
+		config->hide_edge_borders = E_VERTICAL;
+	} else if (strcasecmp(argv[0], "horizontal") == 0) {
+		config->hide_edge_borders = E_HORIZONTAL;
+	} else if (strcasecmp(argv[0], "both") == 0) {
+		config->hide_edge_borders = E_BOTH;
+	} else {
+		return cmd_results_new(CMD_INVALID, "hide_edge_borders",
+				"Expected 'hide_edge_borders <none|vertical|horizontal|both>'");
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+
 static struct cmd_results *cmd_kill(int argc, char **argv) {
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "kill", "Can't be used in config file.");
 	if (!config->active) return cmd_results_new(CMD_FAILURE, "kill", "Can only be used when sway is running.");
@@ -1866,16 +1957,18 @@ static struct cmd_results *cmd_font(int argc, char **argv) {
 	}
 
 	char *font = join_args(argv, argc);
+	free(config->font);
 	if (strlen(font) > 6 && strncmp("pango:", font, 6) == 0) {
-		free(config->font);
-		config->font = font;
-		sway_log(L_DEBUG, "Settings font %s", config->font);
-		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-	} else {
+		config->font = strdup(font + 6);
 		free(font);
-		return cmd_results_new(CMD_FAILURE, "font", "non-pango font detected");
+	} else {
+		config->font = font;
 	}
 
+	config->font_height = get_font_text_height(config->font);
+
+	sway_log(L_DEBUG, "Settings font %s", config->font);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 
@@ -2044,6 +2137,7 @@ static struct cmd_handler handlers[] = {
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
+	{ "border", cmd_border },
 	{ "debuglog", cmd_debuglog },
 	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
@@ -2057,6 +2151,7 @@ static struct cmd_handler handlers[] = {
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
+	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
 	{ "kill", cmd_kill },

@@ -12,6 +12,7 @@
 #include "focus.h"
 #include "output.h"
 #include "ipc-server.h"
+#include "border.h"
 
 swayc_t root_container;
 list_t *scratchpad;
@@ -373,6 +374,46 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
 	update_visibility(src_op);
 }
 
+static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geometry) {
+	struct wlc_geometry g = *geometry;
+	c->actual_geometry = g;
+
+	switch (c->border_type) {
+	case B_NONE:
+		break;
+	case B_PIXEL:
+		g.origin.x -= c->border_thickness;
+		g.origin.y -= c->border_thickness;
+		g.size.w += (c->border_thickness * 2);
+		g.size.h += (c->border_thickness * 2);
+		break;
+	case B_NORMAL:
+		g.origin.x -= c->border_thickness;
+		uint32_t title_bar_height = config->font_height + 4; // borders + padding
+		g.origin.y -= title_bar_height;
+		g.size.w += (c->border_thickness * 2);
+		g.size.h += (c->border_thickness + title_bar_height);
+
+		struct wlc_geometry title_bar = {
+			.origin = {
+				.x = g.origin.x,
+				.y = g.origin.y
+			},
+			.size = {
+				.w = g.size.w,
+				.h = title_bar_height
+			}
+		};
+		c->title_bar_geometry = title_bar;
+		break;
+	}
+
+	c->border_geometry = g;
+	*geometry = c->actual_geometry;
+
+	update_view_border(c);
+}
+
 void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW) {
 		return;
@@ -426,6 +467,81 @@ void update_geometry(swayc_t *container) {
 			geometry.size.h = ws->y + ws->height - geometry.origin.y;
 		}
 	}
+
+	if (swayc_is_fullscreen(container)) {
+		container->border_geometry = (const struct wlc_geometry){0};
+		container->title_bar_geometry = (const struct wlc_geometry){0};
+	} else if (container->is_floating) { // allocate border for floating window
+		update_border_geometry_floating(container, &geometry);
+	} else if (!container->is_floating) { // allocate border for titled window
+		container->border_geometry = geometry;
+
+		int border_top = container->border_thickness;
+		int border_bottom = container->border_thickness;
+		int border_left = container->border_thickness;
+		int border_right = container->border_thickness;
+
+		// handle hide_edge_borders
+		if (config->hide_edge_borders != E_NONE && gap <= 0) {
+			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
+
+			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
+				if (geometry.origin.x == 0) {
+					border_left = 0;
+				}
+
+				if (geometry.origin.x + geometry.size.w == size->w) {
+					border_right = 0;
+				}
+			}
+
+			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
+				if (geometry.origin.y == 0) {
+					border_top = 0;
+				}
+
+				if (geometry.origin.y + geometry.size.h == size->h) {
+					border_bottom = 0;
+				}
+			}
+		}
+
+		switch (container->border_type) {
+		case B_NONE:
+			break;
+		case B_PIXEL:
+			geometry.origin.x += border_left;
+			geometry.origin.y += border_top;
+			geometry.size.w -= (border_left + border_right);
+			geometry.size.h -= (border_top + border_bottom);
+			break;
+		case B_NORMAL:
+			{
+				struct wlc_geometry title_bar = {
+					.origin = {
+						.x = container->border_geometry.origin.x,
+						.y = container->border_geometry.origin.y
+					},
+					.size = {
+						.w = container->border_geometry.size.w,
+						.h = config->font_height + 4 // borders + padding
+					}
+				};
+				geometry.origin.x += border_left;
+				geometry.origin.y += title_bar.size.h;
+				geometry.size.w -= (border_left + border_right);
+				geometry.size.h -= (border_bottom + title_bar.size.h);
+				container->title_bar_geometry = title_bar;
+				break;
+			}
+		}
+
+		container->actual_geometry = geometry;
+
+		update_view_border(container);
+	}
+
 	wlc_view_set_geometry(container->handle, 0, &geometry);
 }
 

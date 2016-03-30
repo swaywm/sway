@@ -22,8 +22,11 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->gaps = -1;
 	c->layout = L_NONE;
 	c->type = type;
+	c->border_type = config->border;
+	c->border_thickness = config->border_thickness;
 	if (type != C_VIEW) {
 		c->children = create_list();
+		c->border_type = B_NONE;
 	}
 	return c;
 }
@@ -266,11 +269,12 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->is_focused = true;
 	view->sticky = false;
 	// Setup geometry
-	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
+	struct wlc_geometry geometry;
+	wlc_view_get_visible_geometry(handle, &geometry);
 	view->width = 0;
 	view->height = 0;
-	view->desired_width = geometry->size.w;
-	view->desired_height = geometry->size.h;
+	view->desired_width = geometry.size.w;
+	view->desired_height = geometry.size.h;
 
 	view->is_floating = false;
 
@@ -303,13 +307,14 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	view->sticky = false;
 
 	// Set the geometry of the floating view
-	const struct wlc_geometry* geometry = wlc_view_get_geometry(handle);
+	struct wlc_geometry geometry;
+	wlc_view_get_visible_geometry(handle, &geometry);
 
 	// give it requested geometry, but place in center
-	view->x = (swayc_active_workspace()->width - geometry->size.w) / 2;
-	view->y = (swayc_active_workspace()->height- geometry->size.h) / 2;
-	view->width = geometry->size.w;
-	view->height = geometry->size.h;
+	view->x = (swayc_active_workspace()->width - geometry.size.w) / 2;
+	view->y = (swayc_active_workspace()->height- geometry.size.h) / 2;
+	view->width = geometry.size.w;
+	view->height = geometry.size.h;
 
 	view->desired_width = view->width;
 	view->desired_height = view->height;

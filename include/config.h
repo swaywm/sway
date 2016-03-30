@@ -148,6 +148,21 @@ struct bar_config {
 	} colors;
 };
 
+struct border_colors {
+	uint32_t border;
+	uint32_t background;
+	uint32_t text;
+	uint32_t indicator;
+	uint32_t child_border;
+};
+
+enum edge_border_types {
+	E_NONE,         /**< Don't hide edge borders */
+	E_VERTICAL,     /**< hide vertical edge borders */
+	E_HORIZONTAL,   /**< hide horizontal edge borders */
+	E_BOTH		/**< hide vertical and horizontal edge borders */
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -169,6 +184,7 @@ struct sway_config {
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 	char *font;
+	int font_height;
 
 	// Flags
 	bool focus_follows_mouse;
@@ -187,6 +203,20 @@ struct sway_config {
 
 	list_t *config_chain;
 	const char *current_config;
+
+	enum swayc_border_types border;
+	int border_thickness;
+	enum edge_border_types hide_edge_borders;
+
+	// border colors
+	struct {
+		struct border_colors focused;
+		struct border_colors focused_inactive;
+		struct border_colors unfocused;
+		struct border_colors urgent;
+		struct border_colors placeholder;
+		uint32_t background;
+	} border_colors;
 };
 
 /**

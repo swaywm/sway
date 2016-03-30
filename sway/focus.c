@@ -7,6 +7,7 @@
 #include "config.h"
 #include "input_state.h"
 #include "ipc-server.h"
+#include "border.h"
 
 bool locked_container_focus = false;
 bool locked_view_focus = false;
@@ -28,6 +29,8 @@ static void update_focus(swayc_t *c) {
 
 		// Case where output changes
 		case C_OUTPUT:
+			// update borders for views in prev
+			container_map(prev, map_update_view_border, NULL);
 			wlc_output_focus(c->handle);
 			break;
 
@@ -130,6 +133,7 @@ bool set_focused_container(swayc_t *c) {
 		// unactivate previous focus
 		if (focused->type == C_VIEW) {
 			wlc_view_set_state(focused->handle, WLC_BIT_ACTIVATED, false);
+			update_view_border(focused);
 		}
 		// activate current focus
 		if (p->type == C_VIEW) {
@@ -137,6 +141,7 @@ bool set_focused_container(swayc_t *c) {
 			// set focus if view_focus is unlocked
 			if (!locked_view_focus) {
 				wlc_view_focus(p->handle);
+				update_view_border(p);
 			}
 		}
 	} else if (p->type == C_WORKSPACE) {
