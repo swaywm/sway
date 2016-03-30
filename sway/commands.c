@@ -2263,14 +2263,14 @@ static struct cmd_results *bar_cmd_font(int argc, char **argv) {
 	}
 
 	char *font = join_args(argv, argc);
+	free(config->current_bar->font);
 	if (strlen(font) > 6 && strncmp("pango:", font, 6) == 0) {
-		free(config->current_bar->font);
 		config->current_bar->font = font;
-		sway_log(L_DEBUG, "Settings font '%s' for bar: %s", config->current_bar->font, config->current_bar->id);
 	} else {
-		sway_log(L_ERROR, "warning: non-pango font '%s' not supported.", font);
+		config->current_bar->font = font;
 	}
 
+	sway_log(L_DEBUG, "Settings font '%s' for bar: %s", config->current_bar->font, config->current_bar->id);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
