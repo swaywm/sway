@@ -647,30 +647,6 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	case M_SCROLL_DOWN:
 		break;
 	}
-	if (!(modifiers->mods ^ config->floating_mod) &&
-			(button == M_SCROLL_UP || button == M_SCROLL_DOWN)) {
-		switch (config->floating_scroll) {
-		case FSB_GAPS_INNER:
-		case FSB_GAPS_OUTER:
-			{
-				int amount = button == M_SCROLL_UP ? -1 : 1;
-				int i,j;
-				for (i = 0; i < root_container.children->length; ++i) {
-					swayc_t *op = root_container.children->items[i];
-					for (j = 0; j < op->children->length; ++j) {
-						swayc_t *ws = op->children->items[j];
-						if (config->floating_scroll == FSB_GAPS_INNER) {
-							container_map(ws, add_gaps, &amount);
-						} else {
-							ws->gaps += amount;
-						}
-					}
-				}
-				arrange_windows(&root_container, -1, -1);
-				break;
-			}
-		}
-	}
 
 	// get focused window and check if to change focus on mouse click
 	swayc_t *focused = get_focused_container(&root_container);
@@ -719,6 +695,34 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	return EVENT_PASSTHROUGH;
 }
 
+bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modifiers* modifiers,
+		uint8_t axis_bits, double _amount[2]) {
+	if (!(modifiers->mods ^ config->floating_mod)) {
+		switch (config->floating_scroll) {
+		case FSB_GAPS_INNER:
+		case FSB_GAPS_OUTER:
+			{
+				int amount = (int)_amount[0];
+				int i,j;
+				for (i = 0; i < root_container.children->length; ++i) {
+					swayc_t *op = root_container.children->items[i];
+					for (j = 0; j < op->children->length; ++j) {
+						swayc_t *ws = op->children->items[j];
+						if (config->floating_scroll == FSB_GAPS_INNER) {
+							container_map(ws, add_gaps, &amount);
+						} else {
+							ws->gaps += amount;
+						}
+					}
+				}
+				arrange_windows(&root_container, -1, -1);
+				break;
+			}
+		}
+	}
+	return EVENT_PASSTHROUGH;
+}
+
 static void handle_wlc_ready(void) {
 	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
 	// Execute commands until there are none left
@@ -751,6 +755,7 @@ void register_wlc_handlers() {
 	wlc_set_keyboard_key_cb(handle_key);
 	wlc_set_pointer_motion_cb(handle_pointer_motion);
 	wlc_set_pointer_button_cb(handle_pointer_button);
+	wlc_set_pointer_scroll_cb(handle_pointer_scroll);
 	wlc_set_compositor_ready_cb(handle_wlc_ready);
 	wlc_set_input_created_cb(handle_input_created);
 	wlc_set_input_destroyed_cb(handle_input_destroyed);
