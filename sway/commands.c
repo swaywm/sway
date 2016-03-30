@@ -678,16 +678,12 @@ static struct cmd_results *cmd_mode(int argc, char **argv) {
 	if ((error = checkarg(argc, "mode", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	char *mode_name = join_args(argv, argc);
-	int mode_len = strlen(mode_name);
-	bool mode_make = mode_name[mode_len-1] == '{';
+
+	const char *mode_name = argv[0];
+	bool mode_make = (argc == 2 && strcmp(argv[1], "{") == 0);
 	if (mode_make) {
 		if (!config->reading)
 			return cmd_results_new(CMD_FAILURE, "mode", "Can only be used in config file.");
-		// Trim trailing spaces
-		do {
-			mode_name[--mode_len] = 0;
-		} while(isspace(mode_name[mode_len-1]));
 	}
 	struct sway_mode *mode = NULL;
 	// Find mode
@@ -708,13 +704,11 @@ static struct cmd_results *cmd_mode(int argc, char **argv) {
 	}
 	if (!mode) {
 		error = cmd_results_new(CMD_INVALID, "mode", "Unknown mode `%s'", mode_name);
-		free(mode_name);
 		return error;
 	}
 	if ((config->reading && mode_make) || (!config->reading && !mode_make)) {
 		sway_log(L_DEBUG, "Switching to mode `%s'",mode->name);
 	}
-	free(mode_name);
 	// Set current mode
 	config->current_mode = mode;
 	if (!mode_make) {
