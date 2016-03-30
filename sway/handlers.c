@@ -647,6 +647,31 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	case M_SCROLL_DOWN:
 		break;
 	}
+	if (!(modifiers->mods ^ config->floating_mod) &&
+			(button == M_SCROLL_UP || button == M_SCROLL_DOWN)) {
+		switch (config->floating_scroll) {
+		case FSB_GAPS_INNER:
+		case FSB_GAPS_OUTER:
+			{
+				int amount = button == M_SCROLL_UP ? -1 : 1;
+				int i,j;
+				for (i = 0; i < root_container.children->length; ++i) {
+					swayc_t *op = root_container.children->items[i];
+					for (j = 0; j < op->children->length; ++j) {
+						swayc_t *ws = op->children->items[j];
+						// TODO: adjust outer gaps ws->gaps = 0;
+						if (config->floating_scroll == FSB_GAPS_INNER) {
+							container_map(ws, add_gaps, &amount);
+						} else {
+							ws->gaps += amount;
+						}
+					}
+				}
+				arrange_windows(&root_container, -1, -1);
+				break;
+			}
+		}
+	}
 
 	// get focused window and check if to change focus on mouse click
 	swayc_t *focused = get_focused_container(&root_container);

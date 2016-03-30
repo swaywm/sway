@@ -163,6 +163,13 @@ enum edge_border_types {
 	E_BOTH		/**< hide vertical and horizontal edge borders */
 };
 
+enum floating_scroll_behavior {
+    FSB_GAPS_OUTER,     /**< Adjust outer gaps */
+    FSB_GAPS_INNER      /**< Adjust inner gaps */
+    // Note: in the future I expect to see more things you can do with the scroll
+    // wheel than maniuplating gaps
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -181,6 +188,7 @@ struct sway_config {
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
+    enum floating_scroll_behavior floating_scroll; // TODO: command to set this
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 	char *font;
