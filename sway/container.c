@@ -615,7 +615,7 @@ swayc_t *container_under_pointer(void) {
 	}
 	struct wlc_point origin;
 	wlc_pointer_get_position(&origin);
-	while (lookup->type != C_VIEW) {
+	while (lookup && lookup->type != C_VIEW) {
 		int i;
 		int len;
 		// if tabbed/stacked go directly to focused container, otherwise search
