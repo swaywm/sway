@@ -91,7 +91,7 @@ int get_font_text_height(const char *font) {
 	return height;
 }
 
-static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *colors) {
+static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *colors, bool top) {
 	struct wlc_geometry *b = &view->border_geometry;
 	struct wlc_geometry *v = &view->actual_geometry;
 
@@ -118,7 +118,7 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 
 	// top border
 	int top_border = v->origin.y - b->origin.y;
-	if (top_border > 0) {
+	if (top && top_border > 0) {
 		render_sharp_line(cr,
 				colors->child_border,
 				0, 0,
@@ -138,38 +138,69 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	}
 }
 
-static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colors *colors) {
+static void render_title_bar(swayc_t *view, cairo_t *cr, struct border_colors *colors) {
 	struct wlc_geometry *tb = &view->title_bar_geometry;
 	struct wlc_geometry *b = &view->border_geometry;
 	int title_y = MIN(view->actual_geometry.origin.y - (int)tb->size.h, 0);
 
 	// borders
-	render_borders(view, cr, colors);
+	/* render_borders(view, cr, colors); */
 
+	int x = tb->origin.x - b->origin.x;
+	int y = tb->origin.y - b->origin.y;
+
+	/* // title bar background */
+	/* cairo_set_source_u32(cr, colors->child_border); */
+	/* cairo_rectangle(cr, x, y, tb->size.w, tb->size.h); */
+	/* cairo_fill(cr); */
 	// title bar background
 	cairo_set_source_u32(cr, colors->background);
 	cairo_rectangle(cr, 0, title_y, tb->size.w, tb->size.h);
 	cairo_fill(cr);
 
 	// header top line
+	/* render_sharp_line(cr, colors->border, x, y, tb->size.w, 1); */
 	render_sharp_line(cr, colors->border, 0, title_y, tb->size.w, 1);
 
 	// text
 	if (view->name) {
 		int width, height;
 		get_text_size(cr, config->font, &width, &height, false, "%s", view->name);
-		int x = MIN(view->actual_geometry.origin.x, view->border_thickness);
-		int y = MIN(view->actual_geometry.origin.y - height - 2, 2);
-		cairo_move_to(cr, x, y);
+		int x_text = MIN(view->actual_geometry.origin.x, view->border_thickness);
+		int y_text = MIN(view->actual_geometry.origin.y - height - 2, 2);
+		cairo_move_to(cr, x_text, y_text);
 		cairo_set_source_u32(cr, colors->text);
 		pango_printf(cr, config->font, false, "%s", view->name);
 	}
 
-	// header bottom line
-	render_sharp_line(cr, colors->border,
-			view->actual_geometry.origin.x - b->origin.x,
-			title_y + tb->size.h - 1,
-			view->actual_geometry.size.w, 1);
+	// titlebars has a border all around for tabbed layouts
+	if (view->parent->layout == L_TABBED) {
+		// header bottom line
+		render_sharp_line(cr, colors->border, x, y + tb->size.h - 1,
+				tb->size.w, 1);
+
+		// left border
+		render_sharp_line(cr, colors->border, x, y, 1, tb->size.h);
+
+		// right border
+		render_sharp_line(cr, colors->border, x + tb->size.w - 1, y,
+				1, tb->size.h);
+
+		return;
+	}
+
+	if ((uint32_t)(view->actual_geometry.origin.y - tb->origin.y) == tb->size.h) {
+		// header bottom line
+		render_sharp_line(cr, colors->border,
+				x + view->actual_geometry.origin.x - b->origin.x,
+				y + tb->size.h - 1,
+				view->actual_geometry.size.w, 1);
+	} else {
+		// header bottom line
+		render_sharp_line(cr, colors->border, x,
+				title_y + tb->size.h - 1,
+				tb->size.w, 1);
+	}
 }
 
 void map_update_view_border(swayc_t *view, void *data) {
@@ -179,6 +210,10 @@ void map_update_view_border(swayc_t *view, void *data) {
 }
 
 void update_view_border(swayc_t *view) {
+	if (!view->visible) {
+		return;
+	}
+
 	cairo_t *cr = NULL;
 	cairo_surface_t *surface = NULL;
 
@@ -187,6 +222,7 @@ void update_view_border(swayc_t *view) {
 		view->border = NULL;
 	}
 
+	// get focused and focused_intactive views
 	swayc_t *focused = get_focused_view(&root_container);
 	swayc_t *container = swayc_parent_by_type(view, C_CONTAINER);
 	swayc_t *focused_inactive = NULL;
@@ -199,40 +235,70 @@ void update_view_border(swayc_t *view) {
 		}
 	}
 
-	switch (view->border_type) {
-	case B_NONE:
-		break;
-	case B_PIXEL:
+	swayc_t *p = view->parent;
+
+	if (p->layout == L_TABBED || p->layout == L_STACKED) {
 		cr = create_border_buffer(view, view->border_geometry, &surface);
-		if (!cr) {
+		if (focused == view) {
+			render_borders(view, cr, &config->border_colors.focused, false);
+		} else if (focused_inactive == view) {
+			render_borders(view, cr, &config->border_colors.focused_inactive, false);
+		} else {
+			render_borders(view, cr, &config->border_colors.unfocused, false);
+		}
+
+		int i;
+		for (i = 0; i < p->children->length; ++i) {
+			swayc_t *child = p->children->items[i];
+
+			if (focused == child) {
+				render_title_bar(child, cr, &config->border_colors.focused);
+			} else if (focused_inactive == child) {
+				render_title_bar(child, cr, &config->border_colors.focused_inactive);
+			} else {
+				render_title_bar(child, cr, &config->border_colors.unfocused);
+			}
+		}
+	} else {
+		switch (view->border_type) {
+		case B_NONE:
+			break;
+		case B_PIXEL:
+			cr = create_border_buffer(view, view->border_geometry, &surface);
+			if (!cr) {
+				break;
+			}
+
+			if (focused == view) {
+				render_borders(view, cr, &config->border_colors.focused, true);
+			} else if (focused_inactive == view) {
+				render_borders(view, cr, &config->border_colors.focused_inactive, true);
+			} else {
+				render_borders(view, cr, &config->border_colors.unfocused, true);
+			}
+
+			break;
+		case B_NORMAL:
+			cr = create_border_buffer(view, view->border_geometry, &surface);
+			if (!cr) {
+				break;
+			}
+
+			if (focused == view) {
+				render_borders(view, cr, &config->border_colors.focused, false);
+				render_title_bar(view, cr, &config->border_colors.focused);
+			} else if (focused_inactive == view) {
+				render_borders(view, cr, &config->border_colors.focused_inactive, false);
+				render_title_bar(view, cr, &config->border_colors.focused_inactive);
+			} else {
+				render_borders(view, cr, &config->border_colors.unfocused, false);
+				render_title_bar(view, cr, &config->border_colors.unfocused);
+			}
+
 			break;
 		}
-
-		if (focused == view) {
-			render_borders(view, cr, &config->border_colors.focused);
-		} else if (focused_inactive == view) {
-			render_borders(view, cr, &config->border_colors.focused_inactive);
-		} else {
-			render_borders(view, cr, &config->border_colors.unfocused);
-		}
-
-		break;
-	case B_NORMAL:
-		cr = create_border_buffer(view, view->border_geometry, &surface);
-		if (!cr) {
-			break;
-		}
-
-		if (focused == view) {
-			render_with_title_bar(view, cr, &config->border_colors.focused);
-		} else if (focused_inactive == view) {
-			render_with_title_bar(view, cr, &config->border_colors.focused_inactive);
-		} else {
-			render_with_title_bar(view, cr, &config->border_colors.unfocused);
-		}
-
-		break;
 	}
+
 	if (surface) {
 		cairo_surface_flush(surface);
 		cairo_surface_destroy(surface);

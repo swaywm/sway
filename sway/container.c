@@ -725,7 +725,7 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 	if (parent->type == C_OUTPUT
 			|| parent->layout == L_TABBED
 			|| parent->layout == L_STACKED) {
-		container->visible = parent->focused == container;
+		container->visible = parent->focused == container && parent->visible;
 	}
 	// Set visibility and output for view
 	if (container->type == C_VIEW) {

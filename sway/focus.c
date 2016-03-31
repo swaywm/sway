@@ -141,8 +141,16 @@ bool set_focused_container(swayc_t *c) {
 			// set focus if view_focus is unlocked
 			if (!locked_view_focus) {
 				wlc_view_focus(p->handle);
-				update_view_border(p);
+				if (p->parent->layout != L_TABBED
+					&& p->parent->layout != L_STACKED) {
+					update_view_border(p);
+				}
 			}
+		}
+
+		// rearrange if parent container is tabbed/stacked
+		if (p->parent->layout == L_TABBED || p->parent->layout == L_STACKED) {
+			arrange_windows(p->parent, -1, -1);
 		}
 	} else if (p->type == C_WORKSPACE) {
 		// remove previous focus if view_focus is unlocked

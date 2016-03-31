@@ -1759,7 +1759,15 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 		parent = parent->parent;
 	}
 
-	if (strcasecmp(argv[0], "splith") == 0) {
+	if (strcasecmp(argv[0], "default") == 0) {
+		// TODO: determine default from default_orientation and
+		// cmd_workspace_layout
+		parent->layout = L_HORIZ;
+	} else if (strcasecmp(argv[0], "tabbed") == 0) {
+		parent->layout = L_TABBED;
+	} else if (strcasecmp(argv[0], "stacking") == 0) {
+		parent->layout = L_STACKED;
+	} else if (strcasecmp(argv[0], "splith") == 0) {
 		parent->layout = L_HORIZ;
 	} else if (strcasecmp(argv[0], "splitv") == 0) {
 		parent->layout = L_VERT;
@@ -1770,6 +1778,7 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 			parent->layout = L_VERT;
 		}
 	}
+
 	arrange_windows(parent, parent->width, parent->height);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
