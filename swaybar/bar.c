@@ -199,9 +199,17 @@ static void terminate_status_command(pid_t pid) {
 }
 
 void bar_teardown(struct bar *bar) {
-	free_config(bar->config);
-	free_outputs(bar->outputs);
-	free_status_line(bar->status);
+	if (bar->config) {
+		free_config(bar->config);
+	}
+
+	if (bar->outputs) {
+		free_outputs(bar->outputs);
+	}
+
+	if (bar->status) {
+		free_status_line(bar->status);
+	}
 
 	/* close sockets/pipes */
 	if (bar->status_read_fd) {
