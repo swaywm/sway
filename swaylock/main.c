@@ -583,7 +583,8 @@ void render(struct render_data *render_data) {
 
 			// Typing indicator: Highlight random part on keypress
 			if (render_data->auth_state == AUTH_STATE_INPUT || render_data->auth_state == AUTH_STATE_BACKSPACE) {
-				double highlight_start = (rand() % (int)(2 * M_PI * 100)) / 100.0;
+				static double highlight_start = 0;
+				highlight_start += (rand() % (int)(M_PI * 100)) / 100.0 + M_PI * 0.5;
 				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
 				if (render_data->auth_state == AUTH_STATE_INPUT) {
 					cairo_set_source_rgb(window->cairo, 51.0 / 255, 219.0 / 255, 0);
