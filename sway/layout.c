@@ -469,8 +469,8 @@ void update_geometry(swayc_t *container) {
 	}
 
 	if (swayc_is_fullscreen(container)) {
-		container->border_geometry = (const struct wlc_geometry){0};
-		container->title_bar_geometry = (const struct wlc_geometry){0};
+		container->border_geometry = wlc_geometry_zero;
+		container->title_bar_geometry = wlc_geometry_zero;
 	} else if (container->is_floating) { // allocate border for floating window
 		update_border_geometry_floating(container, &geometry);
 	} else if (!container->is_floating) { // allocate border for titled window
