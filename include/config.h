@@ -213,7 +213,9 @@ struct sway_config {
 	const char *current_config;
 
 	enum swayc_border_types border;
+	enum swayc_border_types floating_border;
 	int border_thickness;
+	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
 
 	// border colors

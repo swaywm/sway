@@ -66,6 +66,8 @@ static sway_cmd cmd_log_colors;
 static sway_cmd cmd_mode;
 static sway_cmd cmd_mouse_warping;
 static sway_cmd cmd_move;
+static sway_cmd cmd_new_float;
+static sway_cmd cmd_new_window;
 static sway_cmd cmd_orientation;
 static sway_cmd cmd_output;
 static sway_cmd cmd_reload;
@@ -350,24 +352,21 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 
 static struct cmd_results *cmd_border(int argc, char **argv) {
 	struct cmd_results *error = NULL;
+	if (!config->active) {
+		return cmd_results_new(CMD_FAILURE, "border", "Can only be used when sway is running.");
+	}
 	if ((error = checkarg(argc, "border", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 
 	if (argc > 2) {
-		return cmd_results_new(CMD_FAILURE, "border",
+		return cmd_results_new(CMD_INVALID, "border",
 			"Expected 'border <normal|pixel|none|toggle> [<n>]");
 	}
 
-	enum swayc_border_types border = config->border;
-	int thickness = config->border_thickness;
-
-	swayc_t *view = NULL;
-	if (config->active) {
-		view = get_focused_view(&root_container);
-		border = view->border_type;
-		thickness = view->border_thickness;
-	}
+	swayc_t *view = get_focused_view(&root_container);
+	enum swayc_border_types border = view->border_type;
+	int thickness = view->border_thickness;
 
 	if (strcasecmp(argv[0], "none") == 0) {
 		border = B_NONE;
@@ -388,10 +387,9 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 			break;
 		}
 	} else {
-		return cmd_results_new(CMD_FAILURE, "border",
+		return cmd_results_new(CMD_INVALID, "border",
 			"Expected 'border <normal|pixel|none|toggle>");
 	}
-
 
 	if (argc == 2 && (border == B_NORMAL || border == B_PIXEL)) {
 		thickness = (int)strtol(argv[1], NULL, 10);
@@ -401,13 +399,10 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 		}
 	}
 
-	if (config->active && view) {
+	if (view) {
 		view->border_type = border;
 		view->border_thickness = thickness;
 		update_geometry(view);
-	} else {
-		config->border = border;
-		config->border_thickness = thickness;
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -936,6 +931,84 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	} else {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_new_float(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "new_float", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (argc > 2) {
+		return cmd_results_new(CMD_INVALID, "new_float",
+			"Expected 'new_float <normal|none|pixel> [<n>]");
+	}
+
+	enum swayc_border_types border = config->floating_border;
+	int thickness = config->floating_border_thickness;
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		border = B_NONE;
+	} else if (strcasecmp(argv[0], "normal") == 0) {
+		border = B_NORMAL;
+	} else if (strcasecmp(argv[0], "pixel") == 0) {
+		border = B_PIXEL;
+	} else {
+		return cmd_results_new(CMD_INVALID, "new_float",
+			"Expected 'border <normal|none|pixel>");
+	}
+
+	if (argc == 2 && (border == B_NORMAL || border == B_PIXEL)) {
+		thickness = (int)strtol(argv[1], NULL, 10);
+		if (errno == ERANGE || thickness < 0) {
+			errno = 0;
+			return cmd_results_new(CMD_INVALID, "new_float", "Number is out out of range.");
+		}
+	}
+
+	config->floating_border = border;
+	config->floating_border_thickness = thickness;
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_new_window(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "new_window", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	if (argc > 2) {
+		return cmd_results_new(CMD_INVALID, "new_window",
+			"Expected 'new_window <normal|none|pixel> [<n>]");
+	}
+
+	enum swayc_border_types border = config->border;
+	int thickness = config->border_thickness;
+
+	if (strcasecmp(argv[0], "none") == 0) {
+		border = B_NONE;
+	} else if (strcasecmp(argv[0], "normal") == 0) {
+		border = B_NORMAL;
+	} else if (strcasecmp(argv[0], "pixel") == 0) {
+		border = B_PIXEL;
+	} else {
+		return cmd_results_new(CMD_INVALID, "new_window",
+			"Expected 'border <normal|none|pixel>");
+	}
+
+	if (argc == 2 && (border == B_NORMAL || border == B_PIXEL)) {
+		thickness = (int)strtol(argv[1], NULL, 10);
+		if (errno == ERANGE || thickness < 0) {
+			errno = 0;
+			return cmd_results_new(CMD_INVALID, "new_window", "Number is out out of range.");
+		}
+	}
+
+	config->border = border;
+	config->border_thickness = thickness;
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -2160,6 +2233,8 @@ static struct cmd_handler handlers[] = {
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
 	{ "move", cmd_move },
+	{ "new_float", cmd_new_float },
+	{ "new_window", cmd_new_window },
 	{ "output", cmd_output },
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },

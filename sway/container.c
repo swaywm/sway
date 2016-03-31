@@ -22,11 +22,8 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->gaps = -1;
 	c->layout = L_NONE;
 	c->type = type;
-	c->border_type = config->border;
-	c->border_thickness = config->border_thickness;
 	if (type != C_VIEW) {
 		c->children = create_list();
-		c->border_type = B_NONE;
 	}
 	return c;
 }
@@ -275,6 +272,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->height = 0;
 	view->desired_width = geometry.size.w;
 	view->desired_height = geometry.size.h;
+	// setup border
+	view->border_type = config->border;
+	view->border_thickness = config->border_thickness;
 
 	view->is_floating = false;
 
@@ -318,6 +318,10 @@ swayc_t *new_floating_view(wlc_handle handle) {
 
 	view->desired_width = view->width;
 	view->desired_height = view->height;
+
+	// setup border
+	view->border_type = config->floating_border;
+	view->border_thickness = config->floating_border_thickness;
 
 	view->is_floating = true;
 
