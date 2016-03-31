@@ -44,13 +44,20 @@ The following commands cannot be used directly in the configuration file.
 They are expected to be used with **bindsym** or at runtime through **swaymsg**(1).
 
 **border** <normal|pixel> [<n>]::
-	Set border style for windows. _normal_ includes a border of thickness _n_ and
-	a title bar. _pixel_ is just the border without title bar. Default is _normal_
-	with border thickness 2.
+	Set border style for focused window. _normal_ includes a border of thickness
+	_n_ and a title bar. _pixel_ is just the border without title bar. Default is
+	_normal_ with border thickness 2.
 
 **border** <none|toggle>::
-	Set border style to _none_ or _toggle_ between the available border styles:
-	_normal_, _pixel_, _none_.
+	Set border style for focused window to _none_ or _toggle_ between the
+	available border styles: _normal_, _pixel_, _none_.
+
+**new_window** <normal|none|pixel> [<n>]::
+	Set default border style for new windows.
+
+**new_float** <normal|none|pixel> [<n>]::
+	Set default border style for new floating windows. This does only apply to
+	windows that are spawned in floating mode.
 
 **exit**::
 	Exit sway and end your Wayland session.

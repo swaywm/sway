@@ -187,7 +187,9 @@ static void config_defaults(struct sway_config *config) {
 
 	// borders
 	config->border = B_NORMAL;
+	config->floating_border = B_NORMAL;
 	config->border_thickness = 2;
+	config->floating_border_thickness = 2;
 	config->hide_edge_borders = E_NONE;
 
 	// border colors
