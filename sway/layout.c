@@ -458,7 +458,7 @@ void update_geometry(swayc_t *container) {
 
 	// use parent size if window is in a stacked/tabbed layout
 	swayc_t *parent = container->parent;
-	if (parent->layout == L_STACKED || parent->layout == L_TABBED) {
+	if (swayc_is_tabbed_stacked(container)) {
 		width = parent->width;
 		height = parent->height;
 	}
@@ -833,6 +833,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			swayc_t *view = container->floating->items[i];
 			if (view->type == C_VIEW) {
 				update_geometry(view);
+				sway_log(L_DEBUG, "Set floating view to %.f x %.f @ %.f, %.f", view->width,
+						view->height, view->x, view->y);
 				if (swayc_is_fullscreen(view)) {
 					wlc_view_bring_to_front(view->handle);
 				} else if (!container->focused

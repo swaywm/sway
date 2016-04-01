@@ -237,7 +237,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		add_child(workspace, cont);
 		// give them proper layouts
 		cont->layout = workspace->layout;
-		workspace->layout = layout;
+		/* TODO: might break shit in move_container!!! workspace->layout = layout; */
 		set_focused_container_for(workspace, get_focused_view(workspace));
 	} else { // Or is built around container
 		swayc_t *parent = replace_child(child, cont);
@@ -722,9 +722,7 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 	swayc_t *parent = container->parent;
 	container->visible = parent->visible;
 	// special cases where visibility depends on focus
-	if (parent->type == C_OUTPUT
-			|| parent->layout == L_TABBED
-			|| parent->layout == L_STACKED) {
+	if (parent->type == C_OUTPUT || swayc_is_tabbed_stacked(container)) {
 		container->visible = parent->focused == container && parent->visible;
 	}
 	// Set visibility and output for view
@@ -813,4 +811,9 @@ static void close_view(swayc_t *container, void *data) {
 
 void close_views(swayc_t *container) {
 	container_map(container, close_view, NULL);
+}
+
+bool swayc_is_tabbed_stacked(swayc_t *view) {
+	return (view->parent->layout == L_TABBED
+			|| view->parent->layout == L_STACKED);
 }

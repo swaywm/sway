@@ -149,7 +149,7 @@ bool set_focused_container(swayc_t *c) {
 		}
 
 		// rearrange if parent container is tabbed/stacked
-		if (p->parent->layout == L_TABBED || p->parent->layout == L_STACKED) {
+		if (swayc_is_tabbed_stacked(p)) {
 			arrange_windows(p->parent, -1, -1);
 		}
 	} else if (p->type == C_WORKSPACE) {

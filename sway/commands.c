@@ -1764,8 +1764,16 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 		// cmd_workspace_layout
 		parent->layout = L_HORIZ;
 	} else if (strcasecmp(argv[0], "tabbed") == 0) {
+		if (parent->type != C_CONTAINER) {
+			parent = new_container(parent, L_TABBED);
+		}
+
 		parent->layout = L_TABBED;
 	} else if (strcasecmp(argv[0], "stacking") == 0) {
+		if (parent->type != C_CONTAINER) {
+			parent = new_container(parent, L_STACKED);
+		}
+
 		parent->layout = L_STACKED;
 	} else if (strcasecmp(argv[0], "splith") == 0) {
 		parent->layout = L_HORIZ;

@@ -237,7 +237,7 @@ void update_view_border(swayc_t *view) {
 
 	swayc_t *p = view->parent;
 
-	if (p->layout == L_TABBED || p->layout == L_STACKED) {
+	if (swayc_is_tabbed_stacked(view)) {
 		cr = create_border_buffer(view, view->border_geometry, &surface);
 		if (focused == view) {
 			render_borders(view, cr, &config->border_colors.focused, false);

@@ -240,6 +240,12 @@ bool swayc_is_parent_of(swayc_t *parent, swayc_t *child);
  * Returns true if the child is a desecendant of the parent.
  */
 bool swayc_is_child_of(swayc_t *child, swayc_t *parent);
+
+/**
+ * Returns true if view is stacked or tabbed.
+ */
+bool swayc_is_tabbed_stacked(swayc_t *view);
+
 /**
  * Returns the gap (padding) of the container.
  *
