@@ -38,6 +38,7 @@ static void container_log(const swayc_t *c, int depth) {
 			c->layout == L_HORIZ ? "Horiz":
 			c->layout == L_VERT ? "Vert":
 			c->layout == L_STACKED  ? "Stack":
+			c->layout == L_TABBED  ? "Tab":
 			c->layout == L_FLOATING ? "Float":
 			"Unknown");
 	fprintf(stderr, "w:%4.f|h:%4.f|", c->width, c->height);

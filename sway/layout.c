@@ -244,7 +244,9 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 	while (true) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
-		if (parent->layout == layout) {
+		if (parent->layout == layout
+			|| (parent->layout == L_TABBED && layout == L_HORIZ)
+			|| (parent->layout == L_STACKED && layout == L_VERT)) {
 			int diff;
 			// If it has ascended (parent has moved up), no container is removed
 			// so insert it at index, or index+1.
@@ -264,9 +266,11 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 					// Move container into sibling container
 					if (child->type == C_CONTAINER) {
 						parent = child;
-						// Insert it in first/last if matching layout,otherwise
+						// Insert it in first/last if matching layout, otherwise
 						// inesrt it next to focused container
-						if (parent->layout == layout) {
+						if (parent->layout == layout
+							|| (parent->layout == L_TABBED && layout == L_HORIZ)
+							|| (parent->layout == L_STACKED && layout == L_VERT)) {
 							desired = (diff < 0) * parent->children->length;
 						} else {
 							desired = index_child(child->focused);
@@ -300,7 +304,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		parent = child->parent;
 	}
 	// Dirty hack to fix a certain case
-	arrange_windows(parent, -1, -1);
+	/* arrange_windows(parent, -1, -1); */
 	arrange_windows(parent->parent, -1, -1);
 	set_focused_container_for(parent->parent, container);
 }
