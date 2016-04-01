@@ -67,4 +67,9 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 void layout_log(const swayc_t *c, int depth);
 void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ...) __attribute__((format(printf,3,4)));
 
+/**
+ * Get default layout.
+ */
+enum swayc_layouts default_layout(swayc_t *output);
+
 #endif

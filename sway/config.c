@@ -160,7 +160,7 @@ static void config_defaults(struct sway_config *config) {
 	config->dragging_key = M_LEFT_CLICK;
 	config->resizing_key = M_RIGHT_CLICK;
 	config->floating_scroll = FSB_GAPS_INNER;
-	config->default_layout = L_HORIZ;
+	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	config->font = strdup("monospace 10");
 	config->font_height = get_font_text_height(config->font);

@@ -993,3 +993,15 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 		}
 	}
 }
+
+enum swayc_layouts default_layout(swayc_t *output) {
+	if (config->default_layout != L_NONE) {
+		return config->default_layout;
+	} else if (config->default_orientation != L_NONE) {
+		return config->default_orientation;
+	} else if (output->width >= output->height) {
+		return L_HORIZ;
+	} else {
+		return L_VERT;
+	}
+}

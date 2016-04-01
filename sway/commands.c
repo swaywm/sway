@@ -1760,9 +1760,8 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "default") == 0) {
-		// TODO: determine default from default_orientation and
-		// cmd_workspace_layout
-		parent->layout = L_HORIZ;
+		swayc_t *output = swayc_parent_by_type(parent, C_OUTPUT);
+		parent->layout = default_layout(output);
 	} else if (strcasecmp(argv[0], "tabbed") == 0) {
 		if (parent->type != C_CONTAINER) {
 			parent = new_container(parent, L_TABBED);
