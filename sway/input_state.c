@@ -96,7 +96,7 @@ void press_key(uint32_t key_sym, uint32_t key_code) {
 	}
 	// Check if key exists
 	if (!check_key(key_sym, key_code)) {
-		// Check that we dont exceed buffer length
+		// Check that we don't exceed buffer length
 		int insert = find_key(0, 0, true);
 		if (insert < KEY_STATE_MAX_LENGTH) {
 			key_state_array[insert].key_sym = key_sym;
@@ -249,7 +249,7 @@ static void pointer_mode_set_dragging(void) {
 		pointer_state.mode = M_DRAGGING | M_FLOATING;
 	} else {
 		pointer_state.mode = M_DRAGGING | M_TILING;
-		// unset mode if we cant drag tile
+		// unset mode if we can't drag tile
 		if (initial.ptr->parent->type == C_WORKSPACE &&
 				initial.ptr->parent->children->length == 1) {
 			pointer_state.mode = 0;
@@ -317,7 +317,7 @@ void pointer_mode_set(uint32_t button, bool condition) {
 		switch (button) {
 		// Start left-click mode
 		case M_LEFT_CLICK:
-			// if button release dont do anything
+			// if button release don't do anything
 			if (pointer_state.left.held) {
 				if (config->dragging_key == M_LEFT_CLICK) {
 					pointer_mode_set_dragging();
@@ -329,7 +329,7 @@ void pointer_mode_set(uint32_t button, bool condition) {
 
 		// Start right-click mode
 		case M_RIGHT_CLICK:
-			// if button release dont do anyhting
+			// if button release don't do anyhting
 			if (pointer_state.right.held) {
 				if (config->dragging_key == M_RIGHT_CLICK) {
 					pointer_mode_set_dragging();

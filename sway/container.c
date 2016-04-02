@@ -146,7 +146,7 @@ swayc_t *new_output(wlc_handle handle) {
 		ws_name = workspace_next_name(output->name);
 	}
 
-	// create and initilize default workspace
+	// create and initialize default workspace
 	swayc_t *ws = new_workspace(output, ws_name);
 	ws->is_focused = true;
 

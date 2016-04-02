@@ -204,7 +204,7 @@ void swap_container(swayc_t *a, swayc_t *b) {
 	if (a_parent->focused == a) {
 		a_parent->focused = b;
 	}
-	// dont want to double switch
+	// don't want to double switch
 	if (b_parent->focused == b && a_parent != b_parent) {
 		b_parent->focused = a;
 	}

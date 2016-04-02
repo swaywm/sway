@@ -342,7 +342,7 @@ char *cmdsep(char **stringp, const char *delim) {
 	char *head = *stringp + strspn(*stringp, delim);
 	// Find end token
 	char *tail = *stringp += strcspn(*stringp, delim);
-	// Set stringp to begining of next token
+	// Set stringp to beginning of next token
 	*stringp += strspn(*stringp, delim);
 	// Set stringp to null if last token
 	if (!**stringp) *stringp = NULL;

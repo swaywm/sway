@@ -24,7 +24,7 @@ static void update_focus(swayc_t *c) {
 		parent->focused = c;
 
 		switch (c->type) {
-		// Shouldnt happen
+		// Shouldn't happen
 		case C_ROOT: return;
 
 		// Case where output changes
