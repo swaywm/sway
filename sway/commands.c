@@ -758,7 +758,7 @@ static struct cmd_results *cmd_mode(int argc, char **argv) {
 			break;
 		}
 	}
-	// Create mode if it doesnt exist
+	// Create mode if it doesn't exist
 	if (!mode && mode_make) {
 		mode = malloc(sizeof*mode);
 		mode->name = strdup(mode_name);
@@ -1917,7 +1917,7 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 	}
 	swayc_t *focused = get_focused_container(&root_container);
 
-	// Case of floating window, dont split
+	// Case of floating window, don't split
 	if (focused->is_floating) {
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -2164,7 +2164,7 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 			sway_log(L_DEBUG, "Assigning workspace %s to output %s", argv[0], argv[2]);
 			list_add(config->workspace_outputs, wso);
 			if (!config->reading) {
-				// TODO: Move workspace to output. (dont do so when reloading)
+				// TODO: Move workspace to output. (don't do so when reloading)
 			}
 		}
 	}

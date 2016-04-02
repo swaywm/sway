@@ -11,7 +11,7 @@ enum ipc_command_type {
 	IPC_GET_BAR_CONFIG = 6,
 	IPC_GET_VERSION = 7,
 	IPC_GET_INPUTS = 8,
-	// Events send from sway to clients. Events have the higest bits set.
+	// Events send from sway to clients. Events have the highest bits set.
 	IPC_EVENT_WORKSPACE = (1 << (31 - 0)),
 	IPC_EVENT_OUTPUT = (1 << (31 - 1)),
 	IPC_EVENT_MODE = (1 << (31 - 2)),

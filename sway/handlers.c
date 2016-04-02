@@ -166,7 +166,7 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 
 static void handle_output_focused(wlc_handle output, bool focus) {
 	swayc_t *c = swayc_by_handle(output);
-	// if for some reason this output doesnt exist, create it.
+	// if for some reason this output doesn't exist, create it.
 	if (!c) {
 		handle_output_created(output);
 	}
@@ -217,7 +217,7 @@ static bool handle_view_created(wlc_handle handle) {
 		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		break;
 
-	// Dmenu keeps viewfocus, but others with this flag dont, for now simulate
+	// Dmenu keeps viewfocus, but others with this flag don't, for now simulate
 	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
 // 		locked_view_focus = true;
@@ -288,7 +288,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 	case WLC_BIT_POPUP:
 		break;
 	// DMENU has this flag, and takes view_focus, but other things with this
-	// flag dont
+	// flag don't
 	case WLC_BIT_OVERRIDE_REDIRECT:
 // 		locked_view_focus = false;
 		break;
@@ -651,7 +651,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	// get focused window and check if to change focus on mouse click
 	swayc_t *focused = get_focused_container(&root_container);
 
-	// dont change focus or mode if fullscreen
+	// don't change focus or mode if fullscreen
 	if (swayc_is_fullscreen(focused)) {
 		return EVENT_PASSTHROUGH;
 	}
