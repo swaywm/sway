@@ -163,6 +163,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
+	workspace->prev_layout = L_NONE;
 	workspace->layout = default_layout(output);
 
 	workspace->x = output->x;
@@ -203,6 +204,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 
 	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
 
+	cont->prev_layout = L_NONE;
 	cont->layout = layout;
 	cont->width = child->width;
 	cont->height = child->height;
@@ -229,6 +231,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		add_child(workspace, cont);
 		// give them proper layouts
 		cont->layout = workspace->layout;
+		cont->prev_layout = workspace->prev_layout;
 		/* TODO: might break shit in move_container!!! workspace->layout = layout; */
 		set_focused_container_for(workspace, get_focused_view(workspace));
 	} else { // Or is built around container

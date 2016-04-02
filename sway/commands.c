@@ -1760,29 +1760,38 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "default") == 0) {
-		swayc_t *output = swayc_parent_by_type(parent, C_OUTPUT);
-		parent->layout = default_layout(output);
-	} else if (strcasecmp(argv[0], "tabbed") == 0) {
-		if (parent->type != C_CONTAINER) {
-			parent = new_container(parent, L_TABBED);
+		parent->layout = parent->prev_layout;
+		if (parent->layout == L_NONE) {
+			swayc_t *output = swayc_parent_by_type(parent, C_OUTPUT);
+			parent->layout = default_layout(output);
+		}
+	} else {
+		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
+			parent->prev_layout = parent->layout;
 		}
 
-		parent->layout = L_TABBED;
-	} else if (strcasecmp(argv[0], "stacking") == 0) {
-		if (parent->type != C_CONTAINER) {
-			parent = new_container(parent, L_STACKED);
-		}
+		if (strcasecmp(argv[0], "tabbed") == 0) {
+			if (parent->type != C_CONTAINER) {
+				parent = new_container(parent, L_TABBED);
+			}
 
-		parent->layout = L_STACKED;
-	} else if (strcasecmp(argv[0], "splith") == 0) {
-		parent->layout = L_HORIZ;
-	} else if (strcasecmp(argv[0], "splitv") == 0) {
-		parent->layout = L_VERT;
-	} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
-		if (parent->layout == L_VERT) {
+			parent->layout = L_TABBED;
+		} else if (strcasecmp(argv[0], "stacking") == 0) {
+			if (parent->type != C_CONTAINER) {
+				parent = new_container(parent, L_STACKED);
+			}
+
+			parent->layout = L_STACKED;
+		} else if (strcasecmp(argv[0], "splith") == 0) {
 			parent->layout = L_HORIZ;
-		} else {
+		} else if (strcasecmp(argv[0], "splitv") == 0) {
 			parent->layout = L_VERT;
+		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
+			if (parent->layout == L_VERT) {
+				parent->layout = L_HORIZ;
+			} else {
+				parent->layout = L_VERT;
+			}
 		}
 	}
 

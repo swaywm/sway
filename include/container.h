@@ -56,6 +56,7 @@ struct sway_container {
 
 	enum swayc_types type;
 	enum swayc_layouts layout;
+	enum swayc_layouts prev_layout;
 
 	/**
 	 * Width and height of this container, without borders or gaps.
