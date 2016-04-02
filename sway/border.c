@@ -139,23 +139,26 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colors *colors) {
 	struct wlc_geometry *tb = &view->title_bar_geometry;
 	struct wlc_geometry *b = &view->border_geometry;
+	int title_y = MIN(view->actual_geometry.origin.y - (int)tb->size.h, 0);
 
 	// borders
 	render_borders(view, cr, colors);
 
 	// title bar background
 	cairo_set_source_u32(cr, colors->child_border);
-	cairo_rectangle(cr, 0, 0, tb->size.w, tb->size.h);
+	cairo_rectangle(cr, 0, title_y, tb->size.w, tb->size.h);
 	cairo_fill(cr);
 
 	// header top line
-	render_sharp_line(cr, colors->border, 0, 0, tb->size.w, 1);
+	render_sharp_line(cr, colors->border, 0, title_y, tb->size.w, 1);
 
 	// text
 	if (view->name) {
 		int width, height;
 		get_text_size(cr, config->font, &width, &height, "%s", view->name);
-		cairo_move_to(cr, view->border_thickness, 2);
+		int x = MIN(view->actual_geometry.origin.x, view->border_thickness);
+		int y = MIN(view->actual_geometry.origin.y - height - 2, 2);
+		cairo_move_to(cr, x, y);
 		cairo_set_source_u32(cr, colors->text);
 		pango_printf(cr, config->font, "%s", view->name);
 	}
@@ -163,7 +166,7 @@ static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colo
 	// header bottom line
 	render_sharp_line(cr, colors->border,
 			view->actual_geometry.origin.x - b->origin.x,
-			tb->size.h - 1,
+			title_y + tb->size.h - 1,
 			view->actual_geometry.size.w, 1);
 }
 
