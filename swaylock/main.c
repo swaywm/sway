@@ -21,6 +21,14 @@
 struct registry *registry;
 struct render_data render_data;
 
+void wl_dispatch_events() {
+	wl_display_flush(registry->display);
+	if (wl_display_dispatch(registry->display) == -1) {
+		sway_log(L_ERROR, "failed to run wl_display_dispatch");
+		exit(1);
+	}
+}
+
 void sigalarm_handler(int sig) {
 	signal(SIGALRM, SIG_IGN);
 	// Hide typing indicator
@@ -104,7 +112,6 @@ bool verify_password() {
 }
 
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
-	int i;
 	int redraw_screen = 0;
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
@@ -113,14 +120,8 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 
 			render(&render_data);
 			// Make sure our render call will actually be displayed on the screen
-			wl_display_flush(registry->display);
+			wl_dispatch_events();
 
-			// However, this is not how it should be done.
-			for (i = 0; i < registry->outputs->length; ++i) {
-				if (wl_display_dispatch(registry->display) == -1) {
-					exit(0);
-				}
-			}
 			if (verify_password()) {
 				exit(0);
 			}
@@ -157,6 +158,7 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 		}
 		if (redraw_screen) {
 			render(&render_data);
+			wl_dispatch_events();
 			// Hide the indicator after a couple of seconds
 			alarm(5);
 		}
