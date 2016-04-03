@@ -374,25 +374,50 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
 	update_visibility(src_op);
 }
 
+static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g, 
+	const struct wlc_size *res, int left, int right, int top, int bottom) {
+
+	g->size.w += left + right;
+	if (g->origin.x - left < 0) {
+		g->size.w += g->origin.x - left;
+	}
+	else if (g->origin.x + g->size.w - right > res->w) {
+		g->size.w = res->w - g->origin.x + right;
+	}
+	
+	g->size.h += top + bottom;
+	if (g->origin.y - top < 0) {
+		g->size.h += g->origin.y - top;
+	}
+	else if (g->origin.y + g->size.h - top > res->h) {
+		g->size.h = res->h - g->origin.y + top;
+	}
+
+	g->origin.x = MIN(MAX( g->origin.x - left, 0), res->w);
+	g->origin.y = MIN(MAX( g->origin.y - top, 0), res->h);
+
+}
+
 static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geometry) {
 	struct wlc_geometry g = *geometry;
 	c->actual_geometry = g;
+	
+	swayc_t *output = swayc_parent_by_type(c, C_OUTPUT);
+	const struct wlc_size *res = wlc_output_get_resolution(output->handle);
 
 	switch (c->border_type) {
 	case B_NONE:
 		break;
 	case B_PIXEL:
-		g.origin.x -= c->border_thickness;
-		g.origin.y -= c->border_thickness;
-		g.size.w += (c->border_thickness * 2);
-		g.size.h += (c->border_thickness * 2);
+		adjust_border_geometry(c, &g, res, c->border_thickness, 
+			c->border_thickness, c->border_thickness, c->border_thickness);
 		break;
 	case B_NORMAL:
-		g.origin.x -= c->border_thickness;
-		uint32_t title_bar_height = config->font_height + 4; // borders + padding
-		g.origin.y -= title_bar_height;
-		g.size.w += (c->border_thickness * 2);
-		g.size.h += (c->border_thickness + title_bar_height);
+	{
+		int title_bar_height = config->font_height + 4; // borders + padding
+
+		adjust_border_geometry(c, &g, res, c->border_thickness, 
+			c->border_thickness, title_bar_height, c->border_thickness);
 
 		struct wlc_geometry title_bar = {
 			.origin = {
@@ -406,6 +431,7 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 		};
 		c->title_bar_geometry = title_bar;
 		break;
+	}
 	}
 
 	c->border_geometry = g;
