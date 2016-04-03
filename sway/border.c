@@ -145,7 +145,7 @@ static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colo
 	render_borders(view, cr, colors);
 
 	// title bar background
-	cairo_set_source_u32(cr, colors->child_border);
+	cairo_set_source_u32(cr, colors->background);
 	cairo_rectangle(cr, 0, title_y, tb->size.w, tb->size.h);
 	cairo_fill(cr);
 
