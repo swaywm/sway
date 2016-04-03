@@ -384,16 +384,14 @@ static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g,
 	g->size.w += left + right;
 	if (g->origin.x - left < 0) {
 		g->size.w += g->origin.x - left;
-	}
-	else if (g->origin.x + g->size.w - right > res->w) {
+	} else if (g->origin.x + g->size.w - right > res->w) {
 		g->size.w = res->w - g->origin.x + right;
 	}
 
 	g->size.h += top + bottom;
 	if (g->origin.y - top < 0) {
 		g->size.h += g->origin.y - top;
-	}
-	else if (g->origin.y + g->size.h - top > res->h) {
+	} else if (g->origin.y + g->size.h - top > res->h) {
 		g->size.h = res->h - g->origin.y + top;
 	}
 
@@ -425,11 +423,11 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 
 		struct wlc_geometry title_bar = {
 			.origin = {
-				.x = g.origin.x,
-				.y = g.origin.y
+				.x = c->actual_geometry.origin.x - c->border_thickness,
+				.y = c->actual_geometry.origin.y - title_bar_height
 			},
 			.size = {
-				.w = g.size.w,
+				.w = c->actual_geometry.size.w + (2 * c->border_thickness),
 				.h = title_bar_height
 			}
 		};

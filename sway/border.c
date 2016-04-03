@@ -141,34 +141,22 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 static void render_title_bar(swayc_t *view, cairo_t *cr, struct border_colors *colors) {
 	struct wlc_geometry *tb = &view->title_bar_geometry;
 	struct wlc_geometry *b = &view->border_geometry;
-	int title_y = MIN(view->actual_geometry.origin.y - (int)tb->size.h, 0);
+	int x = MIN(tb->origin.x, tb->origin.x - b->origin.x);
+	int y = MIN(tb->origin.y, tb->origin.y - b->origin.y);
 
-	// borders
-	/* render_borders(view, cr, colors); */
-
-	int x = tb->origin.x - b->origin.x;
-	int y = tb->origin.y - b->origin.y;
-
-	/* // title bar background */
-	/* cairo_set_source_u32(cr, colors->child_border); */
-	/* cairo_rectangle(cr, x, y, tb->size.w, tb->size.h); */
-	/* cairo_fill(cr); */
 	// title bar background
 	cairo_set_source_u32(cr, colors->background);
-	cairo_rectangle(cr, 0, title_y, tb->size.w, tb->size.h);
+	cairo_rectangle(cr, x, y, tb->size.w, tb->size.h);
 	cairo_fill(cr);
 
 	// header top line
-	/* render_sharp_line(cr, colors->border, x, y, tb->size.w, 1); */
-	render_sharp_line(cr, colors->border, 0, title_y, tb->size.w, 1);
+	render_sharp_line(cr, colors->border, x, y, tb->size.w, 1);
 
 	// text
 	if (view->name) {
 		int width, height;
 		get_text_size(cr, config->font, &width, &height, false, "%s", view->name);
-		int x_text = MIN(view->actual_geometry.origin.x, view->border_thickness);
-		int y_text = MIN(view->actual_geometry.origin.y - height - 2, 2);
-		cairo_move_to(cr, x_text, y_text);
+		cairo_move_to(cr, x + 2, y + 2);
 		cairo_set_source_u32(cr, colors->text);
 		pango_printf(cr, config->font, false, "%s", view->name);
 	}
@@ -192,13 +180,13 @@ static void render_title_bar(swayc_t *view, cairo_t *cr, struct border_colors *c
 	if ((uint32_t)(view->actual_geometry.origin.y - tb->origin.y) == tb->size.h) {
 		// header bottom line
 		render_sharp_line(cr, colors->border,
-				x + view->actual_geometry.origin.x - b->origin.x,
+				x + view->actual_geometry.origin.x - tb->origin.x,
 				y + tb->size.h - 1,
 				view->actual_geometry.size.w, 1);
 	} else {
 		// header bottom line
 		render_sharp_line(cr, colors->border, x,
-				title_y + tb->size.h - 1,
+				y + tb->size.h - 1,
 				tb->size.w, 1);
 	}
 }
