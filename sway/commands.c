@@ -45,6 +45,12 @@ static sway_cmd cmd_bar;
 static sway_cmd cmd_bindcode;
 static sway_cmd cmd_bindsym;
 static sway_cmd cmd_border;
+static sway_cmd cmd_client_focused;
+static sway_cmd cmd_client_focused_inactive;
+static sway_cmd cmd_client_unfocused;
+static sway_cmd cmd_client_urgent;
+static sway_cmd cmd_client_placeholder;
+static sway_cmd cmd_client_background;
 static sway_cmd cmd_debuglog;
 static sway_cmd cmd_exec;
 static sway_cmd cmd_exec_always;
@@ -112,6 +118,8 @@ static sway_cmd bar_colors_cmd_inactive_workspace;
 static sway_cmd bar_colors_cmd_separator;
 static sway_cmd bar_colors_cmd_statusline;
 static sway_cmd bar_colors_cmd_urgent_workspace;
+
+static struct cmd_results *add_color(const char*, char*, const char*);
 
 swayc_t *sp_view;
 int sp_index = 0;
@@ -405,6 +413,71 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 		update_geometry(view);
 	}
 
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *parse_border_color(struct border_colors *border_colors, const char *cmd_name, int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if (argc != 5) {
+		return cmd_results_new(CMD_INVALID, cmd_name, "Requires exact 5 color values");
+	}
+
+	uint32_t colors[5];
+	int i;
+	for (i = 0; i < 5; i++) {
+		char buffer[10];
+		error = add_color(cmd_name, buffer, argv[i]);
+		if (error) {
+			return error;
+		}
+		colors[i] = strtoul(buffer+1, NULL, 16);
+	}
+
+	border_colors->border = colors[0];
+	border_colors->background = colors[1];
+	border_colors->text = colors[2];
+	border_colors->indicator = colors[3];
+	border_colors->child_border = colors[4];
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_client_focused(int argc, char **argv) {
+	return parse_border_color(&config->border_colors.focused, "client.focused", argc, argv);
+}
+
+static struct cmd_results *cmd_client_focused_inactive(int argc, char **argv) {
+	return parse_border_color(&config->border_colors.focused_inactive, "client.focused_inactive", argc, argv);
+}
+
+static struct cmd_results *cmd_client_unfocused(int argc, char **argv) {
+	return parse_border_color(&config->border_colors.unfocused, "client.unfocused", argc, argv);
+}
+
+static struct cmd_results *cmd_client_urgent(int argc, char **argv) {
+	return parse_border_color(&config->border_colors.urgent, "client.urgent", argc, argv);
+}
+
+static struct cmd_results *cmd_client_placeholder(int argc, char **argv) {
+	return parse_border_color(&config->border_colors.placeholder, "client.placeholder", argc, argv);
+}
+
+static struct cmd_results *cmd_client_background(int argc, char **argv) {
+	char buffer[10];
+	struct cmd_results *error = NULL;
+	uint32_t background;
+
+	if (argc != 1) {
+		return cmd_results_new(CMD_INVALID, "client.background", "Expect exact 1 value");
+	}
+
+	error = add_color("client.background", buffer, argv[0]);
+	if (error) {
+		return error;
+	}
+
+	background = strtoul(buffer+1, NULL, 16);
+	config->border_colors.background = background;
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -2211,6 +2284,12 @@ static struct cmd_handler handlers[] = {
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
 	{ "border", cmd_border },
+	{ "client.background", cmd_client_background },
+	{ "client.focused", cmd_client_focused },
+	{ "client.focused_inactive", cmd_client_focused_inactive },
+	{ "client.placeholder", cmd_client_placeholder },
+	{ "client.unfocused", cmd_client_unfocused },
+	{ "client.urgent", cmd_client_urgent },
 	{ "debuglog", cmd_debuglog },
 	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
@@ -2821,7 +2900,6 @@ static struct cmd_results *add_color(const char *name, char *buffer, const char 
 		buffer[7] = 'f';
 		buffer[8] = 'f';
 	}
-	sway_log(L_DEBUG, "Setting %s color %s for bar: %s", name, buffer, config->current_bar->id);
 
 	return NULL;
 }
