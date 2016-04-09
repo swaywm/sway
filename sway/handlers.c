@@ -354,7 +354,7 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 			view->height = view->desired_height;
 			view->x = geometry->origin.x;
 			view->y = geometry->origin.y;
-			arrange_windows(view->parent, -1, -1);
+			update_geometry(view);
 		}
 	}
 }
