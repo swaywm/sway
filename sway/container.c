@@ -265,13 +265,10 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->visible = true;
 	view->is_focused = true;
 	view->sticky = false;
-	// Setup geometry
-	struct wlc_geometry geometry;
-	wlc_view_get_visible_geometry(handle, &geometry);
 	view->width = 0;
 	view->height = 0;
-	view->desired_width = geometry.size.w;
-	view->desired_height = geometry.size.h;
+	view->desired_width = -1;
+	view->desired_height = -1;
 	// setup border
 	view->border_type = config->border;
 	view->border_thickness = config->border_thickness;
