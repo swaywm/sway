@@ -86,6 +86,8 @@ int get_font_text_height(const char *font) {
 	cairo_t *cr = cairo_create(surface);
 	int width, height;
 	get_text_size(cr, font, &width, &height, "Gg");
+	cairo_surface_destroy(surface);
+	cairo_destroy(cr);
 	return height;
 }
 

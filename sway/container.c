@@ -64,6 +64,7 @@ static void free_swayc(swayc_t *cont) {
 	if (cont->bg_pid != 0) {
 		terminate_swaybg(cont->bg_pid);
 	}
+	free(cont->border);
 	free(cont);
 }
 
