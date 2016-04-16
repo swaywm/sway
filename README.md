@@ -27,7 +27,7 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 Sway is not supported by many distributions yet. Here's a list of packages
 available for you to install:
 
-* [Arch Linux](https://aur.archlinux.org/packages/sway-git/)
+* [Arch Linux](https://www.archlinux.org/packages/?sort=&q=sway&maintainer=&flagged=)
 
 For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-on-other-distros).
 If you're interested in packaging Sway for your distribution, stop by the IRC
