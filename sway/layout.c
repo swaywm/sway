@@ -374,7 +374,7 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
 	update_visibility(src_op);
 }
 
-static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g, 
+static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g,
 	const struct wlc_size *res, int left, int right, int top, int bottom) {
 
 	g->size.w += left + right;
@@ -384,7 +384,7 @@ static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g,
 	else if (g->origin.x + g->size.w - right > res->w) {
 		g->size.w = res->w - g->origin.x + right;
 	}
-	
+
 	g->size.h += top + bottom;
 	if (g->origin.y - top < 0) {
 		g->size.h += g->origin.y - top;
@@ -393,15 +393,15 @@ static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g,
 		g->size.h = res->h - g->origin.y + top;
 	}
 
-	g->origin.x = MIN(MAX( g->origin.x - left, 0), res->w);
-	g->origin.y = MIN(MAX( g->origin.y - top, 0), res->h);
+	g->origin.x = MIN((uint32_t)MAX(g->origin.x - left, 0), res->w);
+	g->origin.y = MIN((uint32_t)MAX(g->origin.y - top, 0), res->h);
 
 }
 
 static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geometry) {
 	struct wlc_geometry g = *geometry;
 	c->actual_geometry = g;
-	
+
 	swayc_t *output = swayc_parent_by_type(c, C_OUTPUT);
 	const struct wlc_size *res = wlc_output_get_resolution(output->handle);
 
@@ -409,14 +409,14 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 	case B_NONE:
 		break;
 	case B_PIXEL:
-		adjust_border_geometry(c, &g, res, c->border_thickness, 
+		adjust_border_geometry(c, &g, res, c->border_thickness,
 			c->border_thickness, c->border_thickness, c->border_thickness);
 		break;
 	case B_NORMAL:
 	{
 		int title_bar_height = config->font_height + 4; // borders + padding
 
-		adjust_border_geometry(c, &g, res, c->border_thickness, 
+		adjust_border_geometry(c, &g, res, c->border_thickness,
 			c->border_thickness, title_bar_height, c->border_thickness);
 
 		struct wlc_geometry title_bar = {
