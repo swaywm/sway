@@ -8,7 +8,7 @@
 
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
-	pango_layout_set_text(layout, text, -1);
+	pango_layout_set_markup(layout, text, -1);
 	PangoFontDescription *desc = pango_font_description_from_string(font);
 	pango_layout_set_font_description(layout, desc);
 	pango_layout_set_single_paragraph_mode(layout, 1);
