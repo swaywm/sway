@@ -205,7 +205,7 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	client->payload_length = buf32[0];
 	client->current_command = (enum ipc_command_type)buf32[1];
 
-	if (read_available - received >= client->payload_length) {
+	if (read_available - received >= (long)client->payload_length) {
 		ipc_client_handle_command(client);
 	}
 

@@ -105,7 +105,7 @@ bool set_focused_container(swayc_t *c) {
 		active_ws_child_count = active_ws->children->length + active_ws->floating->length;
 	}
 
-	swayc_log(L_DEBUG, c, "Setting focus to %p:%ld", c, c->handle);
+	swayc_log(L_DEBUG, c, "Setting focus to %p:%" PRIuPTR, c, c->handle);
 
 	// Get workspace for c, get that workspaces current focused container.
 	swayc_t *workspace = swayc_active_workspace_for(c);
@@ -196,7 +196,7 @@ bool set_focused_container_for(swayc_t *a, swayc_t *c) {
 		return set_focused_container(c);
 	}
 
-	sway_log(L_DEBUG, "Setting focus for %p:%ld to %p:%ld",
+	sway_log(L_DEBUG, "Setting focus for %p:%" PRIuPTR " to %p:%" PRIuPTR,
 		a, a->handle, c, c->handle);
 
 	c->is_focused = true;

@@ -26,7 +26,7 @@ static void container_log(const swayc_t *c, int depth) {
 	fprintf(stderr,"|(%p)",c);
 	fprintf(stderr,"(p:%-8p)",c->parent);
 	fprintf(stderr,"(f:%-8p)",c->focused);
-	fprintf(stderr,"(h:%2ld)",c->handle);
+	fprintf(stderr,"(h:%2" PRIuPTR ")",c->handle);
 	fprintf(stderr,"Type:%-4s|",
 			c->type == C_ROOT   ? "root" :
 			c->type == C_OUTPUT ? "op" :

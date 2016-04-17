@@ -200,7 +200,7 @@ static bool handle_view_created(wlc_handle handle) {
 			}
 		}
 	}
-	sway_log(L_DEBUG, "handle:%ld type:%x state:%x parent:%ld "
+	sway_log(L_DEBUG, "handle:%" PRIuPTR " type:%x state:%x parent:%" PRIuPTR " "
 			"mask:%d (x:%d y:%d w:%d h:%d) title:%s "
 			"class:%s appid:%s",
 		handle, wlc_view_get_type(handle), wlc_view_get_state(handle), parent,
@@ -277,7 +277,7 @@ static bool handle_view_created(wlc_handle handle) {
 }
 
 static void handle_view_destroyed(wlc_handle handle) {
-	sway_log(L_DEBUG, "Destroying window %lu", handle);
+	sway_log(L_DEBUG, "Destroying window %" PRIuPTR, handle);
 	swayc_t *view = swayc_by_handle(handle);
 
 	// destroy views by type
@@ -339,7 +339,7 @@ static void handle_view_focus(wlc_handle view, bool focus) {
 }
 
 static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geometry *geometry) {
-	sway_log(L_DEBUG, "geometry request for %ld %dx%d @ %d,%d", handle,
+	sway_log(L_DEBUG, "geometry request for %" PRIuPTR " %dx%d @ %d,%d", handle,
 			geometry->size.w, geometry->size.h, geometry->origin.x, geometry->origin.y);
 	// If the view is floating, then apply the geometry.
 	// Otherwise save the desired width/height for the view.
@@ -366,7 +366,7 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 		// i3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
 		if (c) {
-			sway_log(L_DEBUG, "setting view %ld %s, fullscreen %d", view, c->name, toggle);
+			sway_log(L_DEBUG, "setting view %" PRIuPTR " %s, fullscreen %d", view, c->name, toggle);
 			arrange_windows(c->parent, -1, -1);
 			// Set it as focused window for that workspace if its going fullscreen
 			if (toggle) {
