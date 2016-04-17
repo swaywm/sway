@@ -85,7 +85,7 @@ int get_font_text_height(const char *font) {
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, 200);
 	cairo_t *cr = cairo_create(surface);
 	int width, height;
-	get_text_size(cr, font, &width, &height, "Gg");
+	get_text_size(cr, font, &width, &height, false, "Gg");
 	cairo_surface_destroy(surface);
 	cairo_destroy(cr);
 	return height;
@@ -162,7 +162,7 @@ static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colo
 		int y = MIN(view->actual_geometry.origin.y - height - 2, 2);
 		cairo_move_to(cr, x, y);
 		cairo_set_source_u32(cr, colors->text);
-		pango_printf(cr, config->font, "%s", view->name);
+		pango_printf(cr, config->font, false, "%s", view->name);
 	}
 
 	// header bottom line

@@ -71,7 +71,7 @@ static void parse_json(struct bar *bar, const char *text) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
 		json_object *background, *border, *border_top, *border_bottom;
-		json_object *border_left, *border_right;
+		json_object *border_left, *border_right, *markup;
 
 		json_object *json = json_object_array_get_idx(results, i);
 		if (!json) {
@@ -86,6 +86,7 @@ static void parse_json(struct bar *bar, const char *text) {
 		json_object_object_get_ex(json, "urgent", &urgent);
 		json_object_object_get_ex(json, "name", &name);
 		json_object_object_get_ex(json, "instance", &instance);
+		json_object_object_get_ex(json, "markup", &markup);
 		json_object_object_get_ex(json, "separator", &separator);
 		json_object_object_get_ex(json, "separator_block_width", &separator_block_width);
 		json_object_object_get_ex(json, "background", &background);
@@ -137,6 +138,10 @@ static void parse_json(struct bar *bar, const char *text) {
 
 		if (instance) {
 			new->instance = strdup(json_object_get_string(instance));
+		}
+
+		if (markup) {
+			new->markup = json_object_get_boolean(markup);
 		}
 
 		if (separator) {
