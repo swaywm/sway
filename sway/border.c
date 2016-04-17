@@ -11,13 +11,13 @@
 #include <arpa/inet.h>
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
-    color = htonl(color);
+	color = htonl(color);
 
-    cairo_set_source_rgba(cairo,
-            (color >> (2*8) & 0xFF) / 255.0,
-            (color >> (1*8) & 0xFF) / 255.0,
-            (color >> (0*8) & 0xFF) / 255.0,
-            (color >> (3*8) & 0xFF) / 255.0);
+	cairo_set_source_rgba(cairo,
+		(color >> (2*8) & 0xFF) / 255.0,
+		(color >> (1*8) & 0xFF) / 255.0,
+		(color >> (0*8) & 0xFF) / 255.0,
+		(color >> (3*8) & 0xFF) / 255.0);
 }
 
 static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry geo, cairo_surface_t **surface) {
