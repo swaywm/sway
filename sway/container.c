@@ -80,13 +80,13 @@ swayc_t *new_output(wlc_handle handle) {
 			swayc_t *op = root_container.children->items[i];
 			const char *op_name = op->name;
 			if (op_name && name && strcmp(op_name, name) == 0) {
-				sway_log(L_DEBUG, "restoring output %lu:%s", handle, op_name);
+				sway_log(L_DEBUG, "restoring output %" PRIuPTR ":%s", handle, op_name);
 				return op;
 			}
 		}
 	}
 
-	sway_log(L_DEBUG, "New output %lu:%s", handle, name);
+	sway_log(L_DEBUG, "New output %" PRIuPTR ":%s", handle, name);
 
 	struct output_config *oc = NULL, *all = NULL;
 	int i;
@@ -254,7 +254,7 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	}
 	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %lu:%s to container %p %d",
+	sway_log(L_DEBUG, "Adding new view %" PRIuPTR ":%s to container %p %d",
 		handle, title, sibling, sibling ? sibling->type : 0);
 	// Setup values
 	view->handle = handle;
@@ -292,7 +292,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	}
 	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %lu:%x:%s as a floating view",
+	sway_log(L_DEBUG, "Adding new view %" PRIuPTR ":%x:%s as a floating view",
 		handle, wlc_view_get_type(handle), title);
 	// Setup values
 	view->handle = handle;
@@ -354,7 +354,7 @@ swayc_t *destroy_output(swayc_t *output) {
 			arrange_windows(root_container.children->items[p], -1, -1);
 		}
 	}
-	sway_log(L_DEBUG, "OUTPUT: Destroying output '%lu'", output->handle);
+	sway_log(L_DEBUG, "OUTPUT: Destroying output '%" PRIuPTR "'", output->handle);
 	free_swayc(output);
 	return &root_container;
 }
