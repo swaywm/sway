@@ -23,7 +23,7 @@ struct status_block {
 	char *name, *instance;
 	bool separator;
 	int separator_block_width;
-    bool markup;
+	bool markup;
 	// Airblader features
 	uint32_t background;
 	uint32_t border;
