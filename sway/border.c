@@ -20,28 +20,31 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 		(color >> (3*8) & 0xFF) / 255.0);
 }
 
-static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry geo, cairo_surface_t **surface) {
+static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry g, cairo_surface_t **surface) {
+	if (view->border == NULL) {
+		view->border = malloc(sizeof(struct border));
+	}
 	cairo_t *cr;
-	view->border_geometry = geo;
-	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, geo.size.w);
-	view->border = calloc(stride * geo.size.h, sizeof(unsigned char));
-	if (!view->border) {
+	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, g.size.w);
+	view->border->buffer = calloc(stride * g.size.h, sizeof(unsigned char));
+	view->border->geometry = g;
+	if (!view->border->buffer) {
 		sway_log(L_DEBUG, "Unable to allocate buffer");
 		return NULL;
 	}
-	*surface = cairo_image_surface_create_for_data(view->border,
-			CAIRO_FORMAT_ARGB32, geo.size.w, geo.size.h, stride);
+	*surface = cairo_image_surface_create_for_data(view->border->buffer,
+			CAIRO_FORMAT_ARGB32, g.size.w, g.size.h, stride);
 	if (cairo_surface_status(*surface) != CAIRO_STATUS_SUCCESS) {
 		free(view->border);
-		view->border = NULL;
+		view->border->buffer = NULL;
 		sway_log(L_DEBUG, "Unable to allocate surface");
 		return NULL;
 	}
 	cr = cairo_create(*surface);
 	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
 		cairo_surface_destroy(*surface);
-		free(view->border);
-		view->border = NULL;
+		free(view->border->buffer);
+		view->border->buffer = NULL;
 		sway_log(L_DEBUG, "Unable to create cairo context");
 		return NULL;
 	}
@@ -92,15 +95,19 @@ int get_font_text_height(const char *font) {
 }
 
 static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *colors, bool top) {
+	struct wlc_geometry *g = &view->border->geometry;
 	struct wlc_geometry *b = &view->border_geometry;
 	struct wlc_geometry *v = &view->actual_geometry;
+
+	int x = b->origin.x - g->origin.x;
+	int y = b->origin.y - g->origin.y;
 
 	// left border
 	int left_border = v->origin.x - b->origin.x;
 	if (left_border > 0) {
 		render_sharp_line(cr,
 				colors->child_border,
-				0, 0,
+				x, y,
 				left_border,
 				b->size.h);
 	}
@@ -110,8 +117,8 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	if (right_border > 0) {
 		render_sharp_line(cr,
 				colors->child_border,
-				b->size.w - right_border,
-				0,
+				x + b->size.w - right_border,
+				y,
 				right_border,
 				b->size.h);
 	}
@@ -121,7 +128,7 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	if (top && top_border > 0) {
 		render_sharp_line(cr,
 				colors->child_border,
-				0, 0,
+				x, y,
 				b->size.w,
 				top_border);
 	}
@@ -131,16 +138,15 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	if (bottom_border > 0) {
 		render_sharp_line(cr,
 				colors->child_border,
-				0,
-				b->size.h - bottom_border,
+				x,
+				y + b->size.h - bottom_border,
 				b->size.w,
 				bottom_border);
 	}
 }
 
-static void render_title_bar(swayc_t *view, cairo_t *cr, struct border_colors *colors) {
+static void render_title_bar(swayc_t *view, cairo_t *cr, struct wlc_geometry *b, struct border_colors *colors) {
 	struct wlc_geometry *tb = &view->title_bar_geometry;
-	struct wlc_geometry *b = &view->border_geometry;
 	int x = MIN(tb->origin.x, tb->origin.x - b->origin.x);
 	int y = MIN(tb->origin.y, tb->origin.y - b->origin.y);
 
@@ -197,6 +203,34 @@ void map_update_view_border(swayc_t *view, void *data) {
 	}
 }
 
+void update_tabbed_stacked_titlebars(swayc_t *c, cairo_t *cr, struct wlc_geometry *g, swayc_t *focused, swayc_t *focused_inactive) {
+	if (c->type == C_CONTAINER) {
+		if (c->parent->focused == c) {
+			render_title_bar(c, cr, g, &config->border_colors.focused_inactive);
+		} else {
+			render_title_bar(c, cr, g, &config->border_colors.unfocused);
+		}
+
+		if (!c->visible) {
+			return;
+		}
+
+		int i;
+		for (i = 0; i < c->children->length; ++i) {
+			swayc_t *child = c->children->items[i];
+			update_tabbed_stacked_titlebars(child, cr, g, focused, focused_inactive);
+		}
+	} else {
+		if (focused == c) {
+			render_title_bar(c, cr, g, &config->border_colors.focused);
+		} else if (focused_inactive == c) {
+			render_title_bar(c, cr, g, &config->border_colors.focused_inactive);
+		} else {
+			render_title_bar(c, cr, g, &config->border_colors.unfocused);
+		}
+	}
+}
+
 void update_view_border(swayc_t *view) {
 	if (!view->visible) {
 		return;
@@ -205,12 +239,12 @@ void update_view_border(swayc_t *view) {
 	cairo_t *cr = NULL;
 	cairo_surface_t *surface = NULL;
 
-	if (view->border) {
-		free(view->border);
-		view->border = NULL;
+	if (view->border && view->border->buffer) {
+		free(view->border->buffer);
+		view->border->buffer = NULL;
 	}
 
-	// get focused and focused_intactive views
+	// get focused and focused_inactive views
 	swayc_t *focused = get_focused_view(&root_container);
 	swayc_t *container = swayc_parent_by_type(view, C_CONTAINER);
 	swayc_t *focused_inactive = NULL;
@@ -223,30 +257,27 @@ void update_view_border(swayc_t *view) {
 		}
 	}
 
-	swayc_t *p = view->parent;
-
-	if (swayc_is_tabbed_stacked(view)) {
-		cr = create_border_buffer(view, view->border_geometry, &surface);
-		if (focused == view) {
-			render_borders(view, cr, &config->border_colors.focused, false);
-		} else if (focused_inactive == view) {
-			render_borders(view, cr, &config->border_colors.focused_inactive, false);
-		} else {
-			render_borders(view, cr, &config->border_colors.unfocused, false);
-		}
-
-		int i;
-		for (i = 0; i < p->children->length; ++i) {
-			swayc_t *child = p->children->items[i];
-
-			if (focused == child) {
-				render_title_bar(child, cr, &config->border_colors.focused);
-			} else if (focused_inactive == child) {
-				render_title_bar(child, cr, &config->border_colors.focused_inactive);
-			} else {
-				render_title_bar(child, cr, &config->border_colors.unfocused);
+	// for tabbed/stacked layouts the focused view has to draw all the
+	// titlebars of the hidden views.
+	swayc_t *p = swayc_tabbed_stacked_parent(view);
+	if (p && view->parent->focused == view) {
+		struct wlc_geometry g = {
+			.origin = {
+				.x = p->x,
+				.y = p->y
+			},
+			.size = {
+				.w = p->width,
+				.h = p->height
 			}
+		};
+		cr = create_border_buffer(view, g, &surface);
+		if (view == focused) {
+			render_borders(view, cr, &config->border_colors.focused, false);
+		} else {
+			render_borders(view, cr, &config->border_colors.focused_inactive, false);
 		}
+		update_tabbed_stacked_titlebars(p, cr, &g, focused, focused_inactive);
 	} else {
 		switch (view->border_type) {
 		case B_NONE:
@@ -274,13 +305,16 @@ void update_view_border(swayc_t *view) {
 
 			if (focused == view) {
 				render_borders(view, cr, &config->border_colors.focused, false);
-				render_title_bar(view, cr, &config->border_colors.focused);
+				render_title_bar(view, cr, &view->border_geometry,
+					&config->border_colors.focused);
 			} else if (focused_inactive == view) {
 				render_borders(view, cr, &config->border_colors.focused_inactive, false);
-				render_title_bar(view, cr, &config->border_colors.focused_inactive);
+				render_title_bar(view, cr, &view->border_geometry,
+					&config->border_colors.focused_inactive);
 			} else {
 				render_borders(view, cr, &config->border_colors.unfocused, false);
-				render_title_bar(view, cr, &config->border_colors.unfocused);
+				render_title_bar(view, cr, &view->border_geometry,
+					&config->border_colors.unfocused);
 			}
 
 			break;
@@ -291,6 +325,7 @@ void update_view_border(swayc_t *view) {
 		cairo_surface_flush(surface);
 		cairo_surface_destroy(surface);
 	}
+
 	if (cr) {
 		cairo_destroy(cr);
 	}
@@ -316,7 +351,7 @@ void render_view_borders(wlc_handle view) {
 		}
 	}
 
-	if (c->border) {
-		wlc_pixels_write(WLC_RGBA8888, &c->border_geometry, c->border);
+	if (c->border && c->border->buffer) {
+		wlc_pixels_write(WLC_RGBA8888, &c->border->geometry, c->border->buffer);
 	}
 }

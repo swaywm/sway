@@ -8,6 +8,7 @@
 #include "container.h"
 #include "workspace.h"
 #include "focus.h"
+#include "border.h"
 #include "layout.h"
 #include "input_state.h"
 #include "log.h"
@@ -64,7 +65,12 @@ static void free_swayc(swayc_t *cont) {
 	if (cont->bg_pid != 0) {
 		terminate_swaybg(cont->bg_pid);
 	}
-	free(cont->border);
+	if (cont->border) {
+		if (cont->border->buffer) {
+			free(cont->border->buffer);
+		}
+		free(cont->border);
+	}
 	free(cont);
 }
 
@@ -211,6 +217,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	cont->x = child->x;
 	cont->y = child->y;
 	cont->visible = child->visible;
+	cont->cached_geometry = child->cached_geometry;
 
 	/* Container inherits all of workspaces children, layout and whatnot */
 	if (child->type == C_WORKSPACE) {
@@ -811,4 +818,19 @@ void close_views(swayc_t *container) {
 bool swayc_is_tabbed_stacked(swayc_t *view) {
 	return (view->parent->layout == L_TABBED
 			|| view->parent->layout == L_STACKED);
+}
+
+swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
+	swayc_t *parent = NULL;
+	if (!ASSERT_NONNULL(view)) {
+		return NULL;
+	}
+	do {
+		view = view->parent;
+		if (view->layout == L_TABBED || view->layout == L_STACKED) {
+			parent = view;
+		}
+	} while (view && view->type != C_WORKSPACE);
+
+	return parent;
 }

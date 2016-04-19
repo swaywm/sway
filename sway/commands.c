@@ -1759,6 +1759,8 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 		parent = parent->parent;
 	}
 
+	enum swayc_layouts old_layout = parent->layout;
+
 	if (strcasecmp(argv[0], "default") == 0) {
 		parent->layout = parent->prev_layout;
 		if (parent->layout == L_NONE) {
@@ -1794,6 +1796,8 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 			}
 		}
 	}
+
+	update_layout_geometry(parent, old_layout);
 
 	arrange_windows(parent, parent->width, parent->height);
 
@@ -2032,6 +2036,7 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 		/* regular case where new split container is build around focused container
 		 * or in case of workspace, container inherits its children */
 		sway_log(L_DEBUG, "Adding new container around current focused container");
+		sway_log(L_INFO, "FOCUSED SIZE: %.f %.f", focused->width, focused->height);
 		swayc_t *parent = new_container(focused, layout);
 		set_focused_container(focused);
 		arrange_windows(parent, -1, -1);

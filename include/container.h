@@ -2,9 +2,12 @@
 #define _SWAY_CONTAINER_H
 #include <sys/types.h>
 #include <wlc/wlc.h>
+
+#include "list.h"
+
 typedef struct sway_container swayc_t;
 
-#include "layout.h"
+extern swayc_t root_container;
 
 /**
  * Different kinds of containers.
@@ -76,6 +79,12 @@ struct sway_container {
 	double x, y;
 
 	/**
+	 * Cached geometry used to store view/container geometry when switching
+	 * between tabbed/stacked and horizontal/vertical layouts.
+	 */
+	struct wlc_geometry cached_geometry;
+
+	/**
 	 * False if this view is invisible. It could be in the scratchpad or on a
 	 * workspace that is not shown.
 	 */
@@ -120,7 +129,7 @@ struct sway_container {
 	 * If this container is a view, this may be set to the window's decoration
 	 * buffer (or NULL).
 	 */
-	unsigned char *border;
+	struct border *border;
 	enum swayc_border_types border_type;
 	struct wlc_geometry border_geometry;
 	struct wlc_geometry title_bar_geometry;
@@ -246,6 +255,12 @@ bool swayc_is_child_of(swayc_t *child, swayc_t *parent);
  * Returns true if view is stacked or tabbed.
  */
 bool swayc_is_tabbed_stacked(swayc_t *view);
+
+/**
+ * Returns the top most tabbed or stacked parent container. Returns NULL if
+ * view is not in a tabbed/stacked layout.
+ */
+swayc_t *swayc_tabbed_stacked_parent(swayc_t *view);
 
 /**
  * Returns the gap (padding) of the container.
