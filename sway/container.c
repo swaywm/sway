@@ -218,6 +218,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	cont->y = child->y;
 	cont->visible = child->visible;
 	cont->cached_geometry = child->cached_geometry;
+	cont->gaps = child->gaps;
 
 	/* Container inherits all of workspaces children, layout and whatnot */
 	if (child->type == C_WORKSPACE) {
@@ -680,7 +681,7 @@ bool swayc_is_child_of(swayc_t *child, swayc_t *parent) {
 }
 
 int swayc_gap(swayc_t *container) {
-	if (container->type == C_VIEW) {
+	if (container->type == C_VIEW || container->type == C_CONTAINER) {
 		return container->gaps >= 0 ? container->gaps : config->gaps_inner;
 	} else if (container->type == C_WORKSPACE) {
 		int base = container->gaps >= 0 ? container->gaps : config->gaps_outer;

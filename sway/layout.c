@@ -477,6 +477,45 @@ void update_layout_geometry(swayc_t *parent, enum swayc_layouts prev_layout) {
 	}
 }
 
+static int update_gap_geometry(swayc_t *container, struct wlc_geometry *g) {
+	swayc_t *ws = swayc_parent_by_type(container, C_WORKSPACE);
+	swayc_t *op = ws->parent;
+	int gap = container->is_floating ? 0 : swayc_gap(container);
+	if (gap % 2 != 0) {
+		// because gaps are implemented as "half sized margins" it's currently
+		// not possible to align views properly with odd sized gaps.
+		gap -= 1;
+	}
+
+	g->origin.x = container->x + gap/2 < op->width  ? container->x + gap/2 : op->width-1;
+	g->origin.y = container->y + gap/2 < op->height ? container->y + gap/2 : op->height-1;
+	g->size.w = container->width > gap ? container->width - gap : 1;
+	g->size.h = container->height > gap ? container->height - gap : 1;
+
+	if ((!config->edge_gaps && gap > 0) || (config->smart_gaps && ws->children->length == 1)) {
+		// Remove gap against the workspace edges. Because a pixel is not
+		// divisable, depending on gap size and the number of siblings our view
+		// might be at the workspace edge without being exactly so (thus test
+		// with gap, and align correctly).
+		if (container->x - gap <= ws->x) {
+			g->origin.x = ws->x;
+			g->size.w = container->width - gap/2;
+		}
+		if (container->y - gap <= ws->y) {
+			g->origin.y = ws->y;
+			g->size.h = container->height - gap/2;
+		}
+		if (container->x + container->width + gap >= ws->x + ws->width) {
+			g->size.w = ws->x + ws->width - g->origin.x;
+		}
+		if (container->y + container->height + gap >= ws->y + ws->height) {
+			g->size.h = ws->y + ws->height - g->origin.y;
+		}
+	}
+
+	return gap;
+}
+
 void update_geometry(swayc_t *container) {
 	if (container->type != C_VIEW && container->type != C_CONTAINER) {
 		return;
@@ -485,23 +524,26 @@ void update_geometry(swayc_t *container) {
 	swayc_t *ws = swayc_parent_by_type(container, C_WORKSPACE);
 	swayc_t *op = ws->parent;
 	swayc_t *parent = container->parent;
-	int gap = container->is_floating ? 0 : swayc_gap(container);
-	if (gap % 2 != 0) {
-		// because gaps are implemented as "half sized margins" it's currently
-		// not possible to align views properly with odd sized gaps.
-		gap -= 1;
-	}
 
 	struct wlc_geometry geometry = {
 		.origin = {
-			.x = container->x + gap/2 < op->width  ? container->x + gap/2 : op->width-1,
-			.y = container->y + gap/2 < op->height ? container->y + gap/2 : op->height-1
+			.x = container->x < op->width ? container->x : op->width-1,
+			.y = container->y < op->height ? container->y : op->height-1
 		},
 		.size = {
-			.w = container->width > gap ? container->width - gap : 1,
-			.h = container->height > gap ? container->height - gap : 1,
+			.w = container->width,
+			.h = container->height,
 		}
 	};
+
+	int gap = 0;
+
+	// apply inner gaps to non-tabbed/stacked containers
+	swayc_t *p = swayc_tabbed_stacked_parent(container);
+	if (p == NULL) {
+		gap = update_gap_geometry(container, &geometry);
+	}
+
 	if (swayc_is_fullscreen(container)) {
 		swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
 		const struct wlc_size *size = wlc_output_get_resolution(output->handle);
@@ -512,28 +554,7 @@ void update_geometry(swayc_t *container) {
 		if (op->focused == ws) {
 			wlc_view_bring_to_front(container->handle);
 		}
-	} else if ((!config->edge_gaps && gap > 0) || (config->smart_gaps && ws->children->length == 1)) {
-		// Remove gap against the workspace edges. Because a pixel is not
-		// divisable, depending on gap size and the number of siblings our view
-		// might be at the workspace edge without being exactly so (thus test
-		// with gap, and align correctly).
-		if (container->x - gap <= ws->x) {
-			geometry.origin.x = ws->x;
-			geometry.size.w = container->width - gap/2;
-		}
-		if (container->y - gap <= ws->y) {
-			geometry.origin.y = ws->y;
-			geometry.size.h = container->height - gap/2;
-		}
-		if (container->x + container->width + gap >= ws->x + ws->width) {
-			geometry.size.w = ws->x + ws->width - geometry.origin.x;
-		}
-		if (container->y + container->height + gap >= ws->y + ws->height) {
-			geometry.size.h = ws->y + ws->height - geometry.origin.y;
-		}
-	}
 
-	if (swayc_is_fullscreen(container)) {
 		container->border_geometry = wlc_geometry_zero;
 		container->title_bar_geometry = wlc_geometry_zero;
 	} else if (container->is_floating) { // allocate border for floating window
@@ -768,14 +789,23 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		x = container->x;
 		y = container->y;
 
+		// add gaps to top level tapped/stacked container
+		if (container->layout == L_TABBED || container->layout == L_STACKED) {
+			update_geometry(container);
+			width = container->border_geometry.size.w;
+			height = container->border_geometry.size.h;
+			x = container->border_geometry.origin.x;
+			y = container->border_geometry.origin.y;
+		}
+
 		// update container size if it's a child in a tabbed/stacked layout
 		if (swayc_is_tabbed_stacked(container)) {
-			// Use parent geometry as a base for calculating
+			// Use parent border_geometry as a base for calculating
 			// container geometry
-			container->width = container->parent->width;
-			container->height = container->parent->height;
-			container->x = container->parent->x;
-			container->y = container->parent->y;
+			container->width = container->parent->border_geometry.size.w;
+			container->height = container->parent->border_geometry.size.h;
+			container->x = container->parent->border_geometry.origin.x;
+			container->y = container->parent->border_geometry.origin.y;
 			update_geometry(container);
 			width = container->width = container->actual_geometry.size.w;
 			height = container->height = container->actual_geometry.size.h;
