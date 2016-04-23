@@ -790,7 +790,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		y = container->y;
 
 		// add gaps to top level tapped/stacked container
-		if (container->layout == L_TABBED || container->layout == L_STACKED) {
+		if (container->parent->type == C_WORKSPACE &&
+			(container->layout == L_TABBED || container->layout == L_STACKED)) {
 			update_geometry(container);
 			width = container->border_geometry.size.w;
 			height = container->border_geometry.size.h;
@@ -799,13 +800,14 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		}
 
 		// update container size if it's a child in a tabbed/stacked layout
-		if (swayc_is_tabbed_stacked(container)) {
-			// Use parent border_geometry as a base for calculating
+		if (swayc_tabbed_stacked_parent(container) != NULL) {
+			// Use parent actual_geometry as a base for calculating
 			// container geometry
-			container->width = container->parent->border_geometry.size.w;
-			container->height = container->parent->border_geometry.size.h;
-			container->x = container->parent->border_geometry.origin.x;
-			container->y = container->parent->border_geometry.origin.y;
+			container->width = container->parent->actual_geometry.size.w;
+			container->height = container->parent->actual_geometry.size.h;
+			container->x = container->parent->actual_geometry.origin.x;
+			container->y = container->parent->actual_geometry.origin.y;
+
 			update_geometry(container);
 			width = container->width = container->actual_geometry.size.w;
 			height = container->height = container->actual_geometry.size.h;
