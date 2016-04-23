@@ -1,6 +1,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <wlc/wlc.h>
+#include <wlc/wlc-render.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -2041,6 +2042,17 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 		set_focused_container(focused);
 		arrange_windows(parent, -1, -1);
 	}
+
+	// update container title if tabbed/stacked
+	if (swayc_tabbed_stacked_parent(focused)) {
+		update_view_border(focused);
+		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
+		// schedule render to make changes take effect right away,
+		// otherwise we would have to wait for the view to render,
+		// which is unpredictable.
+		wlc_output_schedule_render(output->handle);
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 

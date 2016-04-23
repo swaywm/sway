@@ -203,6 +203,62 @@ void map_update_view_border(swayc_t *view, void *data) {
 	}
 }
 
+/**
+ * Generate nested container title for tabbed/stacked layouts
+ */
+static char *generate_container_title(swayc_t *container) {
+	char layout = 'H';
+	char *name, *prev_name = NULL;
+	switch (container->layout) {
+	case L_TABBED:
+		layout = 'T';
+		break;
+	case L_STACKED:
+		layout = 'S';
+		break;
+	case L_VERT:
+		layout = 'V';
+		break;
+	default:
+		layout = 'H';
+	}
+	int len = 9;
+	name = malloc(len * sizeof(char));
+	snprintf(name, len, "sway: %c[", layout);
+
+	int i;
+	for (i = 0; i < container->children->length; ++i) {
+		prev_name = name;
+		swayc_t* child = container->children->items[i];
+		const char *title = child->name;
+		if (child->type == C_CONTAINER) {
+			title = generate_container_title(child);
+		}
+
+		len = strlen(name) + strlen(title) + 1;
+		if (i < container->children->length-1) {
+			len++;
+		}
+
+		name = malloc(len * sizeof(char));
+		if (i < container->children->length-1) {
+			snprintf(name, len, "%s%s ", prev_name, title);
+		} else {
+			snprintf(name, len, "%s%s", prev_name, title);
+		}
+		free(prev_name);
+	}
+
+	prev_name = name;
+	len = strlen(name) + 2;
+	name = malloc(len * sizeof(char));
+	snprintf(name, len, "%s]", prev_name);
+	free(prev_name);
+	free(container->name);
+	container->name = name;
+	return container->name + 6; // don't include "sway: "
+}
+
 void update_tabbed_stacked_titlebars(swayc_t *c, cairo_t *cr, struct wlc_geometry *g, swayc_t *focused, swayc_t *focused_inactive) {
 	if (c->type == C_CONTAINER) {
 		if (c->parent->focused == c) {
@@ -277,6 +333,16 @@ void update_view_border(swayc_t *view) {
 		} else {
 			render_borders(view, cr, &config->border_colors.focused_inactive, false);
 		}
+
+		// generate container titles
+		int i;
+		for (i = 0; i < p->children->length; ++i) {
+			swayc_t *child = p->children->items[i];
+			if (child->type == C_CONTAINER) {
+				generate_container_title(child);
+			}
+		}
+
 		update_tabbed_stacked_titlebars(p, cr, &g, focused, focused_inactive);
 	} else {
 		switch (view->border_type) {
