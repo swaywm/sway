@@ -107,9 +107,9 @@ output * bg /usr/share/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 # Layout stuff:
 #
     # You can "split" the current object of your focus with
-    # $mod+s or $mod+v, for horizontal and vertical splits
+    # $mod+b or $mod+v, for horizontal and vertical splits
     # respectively.
-    bindsym $mod+s splith
+    bindsym $mod+b splith
     bindsym $mod+v splitv
 
     # Switch the current container between different layout styles
