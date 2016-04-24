@@ -103,7 +103,7 @@ static sway_cmd bar_cmd_id;
 static sway_cmd bar_cmd_position;
 static sway_cmd bar_cmd_separator_symbol;
 static sway_cmd bar_cmd_status_command;
-static sway_cmd bar_cmd_plaintext_markup;
+static sway_cmd bar_cmd_pango_markup;
 static sway_cmd bar_cmd_strip_workspace_numbers;
 static sway_cmd bar_cmd_swaybar_command;
 static sway_cmd bar_cmd_tray_output;
@@ -2758,24 +2758,24 @@ static struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
-static struct cmd_results *bar_cmd_plaintext_markup(int argc, char **argv) {
+static struct cmd_results *bar_cmd_pango_markup(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "plaintext_markup", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "pango_markup", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 
 	if (!config->current_bar) {
-		return cmd_results_new(CMD_FAILURE, "plaintext_markup", "No bar defined.");
+		return cmd_results_new(CMD_FAILURE, "pango_markup", "No bar defined.");
 	}
 
 	if (strcasecmp("pango", argv[0]) == 0) {
-		config->current_bar->plaintext_markup = true;
+		config->current_bar->pango_markup = true;
 		sway_log(L_DEBUG, "Enabling pango markup for bar: %s", config->current_bar->id);
 	} else if (strcasecmp("none", argv[0]) == 0) {
-		config->current_bar->plaintext_markup = false;
+		config->current_bar->pango_markup = false;
 		sway_log(L_DEBUG, "Disabling pango markup for bar: %s", config->current_bar->id);
 	} else {
-		error = cmd_results_new(CMD_INVALID, "plaintext_markup", "Invalid value %s", argv[0]);
+		error = cmd_results_new(CMD_INVALID, "pango_markup", "Invalid value %s", argv[0]);
 		return error;
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -2885,7 +2885,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "mode", bar_cmd_mode },
 	{ "modifier", bar_cmd_modifier },
 	{ "output", bar_cmd_output },
-	{ "plaintext_markup", bar_cmd_plaintext_markup },
+	{ "pango_markup", bar_cmd_pango_markup },
 	{ "position", bar_cmd_position },
 	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },

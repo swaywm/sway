@@ -27,7 +27,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object_object_get_ex(bar_config, "separator_symbol", &sep_symbol);
 	json_object_object_get_ex(bar_config, "colors", &colors);
 	json_object_object_get_ex(bar_config, "outputs", &outputs);
-	json_object_object_get_ex(bar_config, "plaintext_markup", &markup);
+	json_object_object_get_ex(bar_config, "pango_markup", &markup);
 
 	if (status_command) {
 		free(config->status_command);
@@ -65,7 +65,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	}
 
 	if (markup) {
-		config->plaintext_markup = json_object_get_boolean(markup);
+		config->pango_markup = json_object_get_boolean(markup);
 	}
 
 	// free previous outputs list
