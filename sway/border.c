@@ -157,7 +157,7 @@ static void render_with_title_bar(swayc_t *view, cairo_t *cr, struct border_colo
 	// text
 	if (view->name) {
 		int width, height;
-		get_text_size(cr, config->font, &width, &height, "%s", view->name);
+		get_text_size(cr, config->font, &width, &height, false, "%s", view->name);
 		int x = MIN(view->actual_geometry.origin.x, view->border_thickness);
 		int y = MIN(view->actual_geometry.origin.y - height - 2, 2);
 		cairo_move_to(cr, x, y);

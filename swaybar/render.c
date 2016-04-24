@@ -50,7 +50,7 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color, double x, double y
 
 static void render_block(struct window *window, struct config *config, struct status_block *block, double *x, bool edge) {
 	int width, height, sep_width;
-	get_text_size(window->cairo, window->font, &width, &height, "%s", block->full_text);
+	get_text_size(window->cairo, window->font, &width, &height, block->markup, "%s", block->full_text);
 
 	int textwidth = width;
 	double block_width = width;
@@ -74,7 +74,7 @@ static void render_block(struct window *window, struct config *config, struct st
 	// Add separator
 	if (!edge) {
 		if (config->sep_symbol) {
-			get_text_size(window->cairo, window->font, &sep_width, &height, "%s", config->sep_symbol);
+			get_text_size(window->cairo, window->font, &sep_width, &height, false, "%s", config->sep_symbol);
 			if (sep_width > block->separator_block_width) {
 				block->separator_block_width = sep_width + margin * 2;
 			}
@@ -201,7 +201,7 @@ static void render_workspace_button(struct window *window, struct config *config
 	char *name = handle_workspace_number(config->strip_workspace_numbers, ws->name);
 
 	int width, height;
-	get_text_size(window->cairo, window->font, &width, &height, "%s", name);
+	get_text_size(window->cairo, window->font, &width, &height, false, "%s", name);
 	struct box_colors box_colors;
 	if (ws->urgent) {
 		box_colors = config->colors.urgent_workspace;
@@ -237,7 +237,7 @@ static void render_workspace_button(struct window *window, struct config *config
 
 static void render_binding_mode_indicator(struct window *window, struct config *config, double pos) {
 	int width, height;
-	get_text_size(window->cairo, window->font, &width, &height, "%s", config->mode);
+	get_text_size(window->cairo, window->font, &width, &height, false, "%s", config->mode);
 
 	// background
 	cairo_set_source_u32(window->cairo, config->colors.binding_mode.background);
@@ -278,7 +278,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 	int width, height;
 
 	if (line->protocol == TEXT) {
-		get_text_size(window->cairo, window->font, &width, &height, "%s", line->text_line);
+		get_text_size(window->cairo, window->font, &width, &height, true, "%s", line->text_line);
 		cairo_move_to(cairo, window->width - margin - width, margin);
 		pango_printf(window->cairo, window->font, true, "%s", line->text_line);
 	} else if (line->protocol == I3BAR && line->block_line) {
