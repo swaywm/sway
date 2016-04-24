@@ -141,7 +141,11 @@ static void parse_json(struct bar *bar, const char *text) {
 		}
 
 		if (markup) {
-			new->markup = json_object_get_boolean(markup);
+			new->markup = false;
+			const char *markup_str = json_object_get_string(markup);
+			if (strcmp(markup_str, "pango") == 0) {
+				new->markup = true;
+			}
 		}
 
 		if (separator) {
