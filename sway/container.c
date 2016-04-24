@@ -732,9 +732,6 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 	if (container->type == C_VIEW) {
 		wlc_view_set_output(container->handle, output);
 		wlc_view_set_mask(container->handle, container->visible ? VISIBLE : 0);
-		if (!container->visible) {
-			wlc_view_send_to_back(container->handle);
-		}
 	}
 	// Update visibility for children
 	else {
