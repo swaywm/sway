@@ -21,7 +21,7 @@ Commands
 **status_command** <status command>::
 	Executes the bar _status command_ with _sh -c_.
 
-**pango_markup** <pango|none>::
+**pango_markup** <enabled|disabled>::
 	Enables or disables pango markup for plaintext statuslines.
 
 **id** <bar_id>::
