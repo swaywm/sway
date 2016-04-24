@@ -600,6 +600,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(json, "strip_workspace_numbers", json_object_new_boolean(bar->strip_workspace_numbers));
 	json_object_object_add(json, "binding_mode_indicator", json_object_new_boolean(bar->binding_mode_indicator));
 	json_object_object_add(json, "verbose", json_object_new_boolean(bar->verbose));
+	json_object_object_add(json, "pango_markup", json_object_new_boolean(bar->pango_markup));
 
 	json_object *colors = json_object_new_object();
 	json_object_object_add(colors, "background", json_object_new_string(bar->colors.background));

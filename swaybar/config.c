@@ -46,6 +46,7 @@ char *parse_font(const char *font) {
 struct config *init_config() {
 	struct config *config = calloc(1, sizeof(struct config));
 	config->status_command = NULL;
+	config->pango_markup = true;
 	config->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	config->font = strdup("monospace 10");
 	config->mode = NULL;

@@ -12,6 +12,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *tray_output, *mode, *hidden_bar, *position, *status_command;
 	json_object *font, *bar_height, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
+	json_object *markup;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
 	json_object_object_get_ex(bar_config, "mode", &mode);
 	json_object_object_get_ex(bar_config, "hidden_bar", &hidden_bar);
@@ -26,6 +27,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object_object_get_ex(bar_config, "separator_symbol", &sep_symbol);
 	json_object_object_get_ex(bar_config, "colors", &colors);
 	json_object_object_get_ex(bar_config, "outputs", &outputs);
+	json_object_object_get_ex(bar_config, "pango_markup", &markup);
 
 	if (status_command) {
 		free(config->status_command);
@@ -60,6 +62,10 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 	if (bar_height) {
 		config->height = json_object_get_int(bar_height);
+	}
+
+	if (markup) {
+		config->pango_markup = json_object_get_boolean(markup);
 	}
 
 	// free previous outputs list
