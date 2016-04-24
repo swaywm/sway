@@ -252,11 +252,6 @@ bool swayc_is_parent_of(swayc_t *parent, swayc_t *child);
 bool swayc_is_child_of(swayc_t *child, swayc_t *parent);
 
 /**
- * Returns true if view is stacked or tabbed.
- */
-bool swayc_is_tabbed_stacked(swayc_t *view);
-
-/**
  * Returns the top most tabbed or stacked parent container. Returns NULL if
  * view is not in a tabbed/stacked layout.
  */

@@ -725,7 +725,8 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 	swayc_t *parent = container->parent;
 	container->visible = parent->visible;
 	// special cases where visibility depends on focus
-	if (parent->type == C_OUTPUT || swayc_is_tabbed_stacked(container)) {
+	if (parent->type == C_OUTPUT || parent->layout == L_TABBED ||
+			parent->layout == L_STACKED) {
 		container->visible = parent->focused == container && parent->visible;
 	}
 	// Set visibility and output for view
@@ -811,11 +812,6 @@ static void close_view(swayc_t *container, void *data) {
 
 void close_views(swayc_t *container) {
 	container_map(container, close_view, NULL);
-}
-
-bool swayc_is_tabbed_stacked(swayc_t *view) {
-	return (view->parent->layout == L_TABBED
-			|| view->parent->layout == L_STACKED);
 }
 
 swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
