@@ -116,6 +116,7 @@ struct bar_config {
 	enum desktop_shell_panel_position position;
 	list_t *bindings;
 	char *status_command;
+	bool plaintext_markup;
 	char *swaybar_command;
 	char *font;
 	int height; // -1 not defined

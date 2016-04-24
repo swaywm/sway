@@ -20,6 +20,7 @@ struct box_colors {
  */
 struct config {
 	char *status_command;
+	bool plaintext_markup;
 	uint32_t position;
 	char *font;
 	char *sep_symbol;
