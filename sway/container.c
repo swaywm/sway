@@ -8,6 +8,7 @@
 #include "container.h"
 #include "workspace.h"
 #include "focus.h"
+#include "border.h"
 #include "layout.h"
 #include "input_state.h"
 #include "log.h"
@@ -64,7 +65,12 @@ static void free_swayc(swayc_t *cont) {
 	if (cont->bg_pid != 0) {
 		terminate_swaybg(cont->bg_pid);
 	}
-	free(cont->border);
+	if (cont->border) {
+		if (cont->border->buffer) {
+			free(cont->border->buffer);
+		}
+		free(cont->border);
+	}
 	free(cont);
 }
 
@@ -163,16 +169,9 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	sway_log(L_DEBUG, "Added workspace %s for output %u", name, (unsigned int)output->handle);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
-	// TODO: default_layout
-	if (config->default_layout != L_NONE) {
-		workspace->layout = config->default_layout;
-	} else if (config->default_orientation != L_NONE) {
-		workspace->layout = config->default_orientation;
-	} else if (output->width >= output->height) {
-		workspace->layout = L_HORIZ;
-	} else {
-		workspace->layout = L_VERT;
-	}
+	workspace->prev_layout = L_NONE;
+	workspace->layout = default_layout(output);
+
 	workspace->x = output->x;
 	workspace->y = output->y;
 	workspace->width = output->width;
@@ -211,12 +210,15 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 
 	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
 
+	cont->prev_layout = L_NONE;
 	cont->layout = layout;
 	cont->width = child->width;
 	cont->height = child->height;
 	cont->x = child->x;
 	cont->y = child->y;
 	cont->visible = child->visible;
+	cont->cached_geometry = child->cached_geometry;
+	cont->gaps = child->gaps;
 
 	/* Container inherits all of workspaces children, layout and whatnot */
 	if (child->type == C_WORKSPACE) {
@@ -237,7 +239,8 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		add_child(workspace, cont);
 		// give them proper layouts
 		cont->layout = workspace->layout;
-		workspace->layout = layout;
+		cont->prev_layout = workspace->prev_layout;
+		/* TODO: might break shit in move_container!!! workspace->layout = layout; */
 		set_focused_container_for(workspace, get_focused_view(workspace));
 	} else { // Or is built around container
 		swayc_t *parent = replace_child(child, cont);
@@ -678,7 +681,7 @@ bool swayc_is_child_of(swayc_t *child, swayc_t *parent) {
 }
 
 int swayc_gap(swayc_t *container) {
-	if (container->type == C_VIEW) {
+	if (container->type == C_VIEW || container->type == C_CONTAINER) {
 		return container->gaps >= 0 ? container->gaps : config->gaps_inner;
 	} else if (container->type == C_WORKSPACE) {
 		int base = container->gaps >= 0 ? container->gaps : config->gaps_outer;
@@ -722,18 +725,14 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 	swayc_t *parent = container->parent;
 	container->visible = parent->visible;
 	// special cases where visibility depends on focus
-	if (parent->type == C_OUTPUT
-			|| parent->layout == L_TABBED
-			|| parent->layout == L_STACKED) {
-		container->visible = parent->focused == container;
+	if (parent->type == C_OUTPUT || parent->layout == L_TABBED ||
+			parent->layout == L_STACKED) {
+		container->visible = parent->focused == container && parent->visible;
 	}
 	// Set visibility and output for view
 	if (container->type == C_VIEW) {
 		wlc_view_set_output(container->handle, output);
 		wlc_view_set_mask(container->handle, container->visible ? VISIBLE : 0);
-		if (!container->visible) {
-			wlc_view_send_to_back(container->handle);
-		}
 	}
 	// Update visibility for children
 	else {
@@ -813,4 +812,19 @@ static void close_view(swayc_t *container, void *data) {
 
 void close_views(swayc_t *container) {
 	container_map(container, close_view, NULL);
+}
+
+swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
+	swayc_t *parent = NULL;
+	if (!ASSERT_NONNULL(view)) {
+		return NULL;
+	}
+	do {
+		view = view->parent;
+		if (view->layout == L_TABBED || view->layout == L_STACKED) {
+			parent = view;
+		}
+	} while (view && view->type != C_WORKSPACE);
+
+	return parent;
 }

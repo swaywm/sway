@@ -3,7 +3,6 @@
 #include <math.h>
 #include <wlc/wlc.h>
 #include "extensions.h"
-#include "layout.h"
 #include "log.h"
 #include "list.h"
 #include "config.h"
@@ -13,6 +12,7 @@
 #include "output.h"
 #include "ipc-server.h"
 #include "border.h"
+#include "layout.h"
 
 swayc_t root_container;
 list_t *scratchpad;
@@ -244,7 +244,9 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 	while (true) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
-		if (parent->layout == layout) {
+		if (parent->layout == layout
+			|| (parent->layout == L_TABBED && layout == L_HORIZ)
+			|| (parent->layout == L_STACKED && layout == L_VERT)) {
 			int diff;
 			// If it has ascended (parent has moved up), no container is removed
 			// so insert it at index, or index+1.
@@ -264,9 +266,11 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 					// Move container into sibling container
 					if (child->type == C_CONTAINER) {
 						parent = child;
-						// Insert it in first/last if matching layout,otherwise
+						// Insert it in first/last if matching layout, otherwise
 						// inesrt it next to focused container
-						if (parent->layout == layout) {
+						if (parent->layout == layout
+							|| (parent->layout == L_TABBED && layout == L_HORIZ)
+							|| (parent->layout == L_STACKED && layout == L_VERT)) {
 							desired = (diff < 0) * parent->children->length;
 						} else {
 							desired = index_child(child->focused);
@@ -299,8 +303,6 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		child = parent;
 		parent = child->parent;
 	}
-	// Dirty hack to fix a certain case
-	arrange_windows(parent, -1, -1);
 	arrange_windows(parent->parent, -1, -1);
 	set_focused_container_for(parent->parent, container);
 }
@@ -380,16 +382,14 @@ static void adjust_border_geometry(swayc_t *c, struct wlc_geometry *g,
 	g->size.w += left + right;
 	if (g->origin.x - left < 0) {
 		g->size.w += g->origin.x - left;
-	}
-	else if (g->origin.x + g->size.w - right > res->w) {
+	} else if (g->origin.x + g->size.w - right > res->w) {
 		g->size.w = res->w - g->origin.x + right;
 	}
 
 	g->size.h += top + bottom;
 	if (g->origin.y - top < 0) {
 		g->size.h += g->origin.y - top;
-	}
-	else if (g->origin.y + g->size.h - top > res->h) {
+	} else if (g->origin.y + g->size.h - top > res->h) {
 		g->size.h = res->h - g->origin.y + top;
 	}
 
@@ -421,11 +421,11 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 
 		struct wlc_geometry title_bar = {
 			.origin = {
-				.x = g.origin.x,
-				.y = g.origin.y
+				.x = c->actual_geometry.origin.x - c->border_thickness,
+				.y = c->actual_geometry.origin.y - title_bar_height
 			},
 			.size = {
-				.w = g.size.w,
+				.w = c->actual_geometry.size.w + (2 * c->border_thickness),
 				.h = title_bar_height
 			}
 		};
@@ -440,10 +440,42 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 	update_view_border(c);
 }
 
-void update_geometry(swayc_t *container) {
-	if (container->type != C_VIEW) {
-		return;
+void update_layout_geometry(swayc_t *parent, enum swayc_layouts prev_layout) {
+	switch (parent->layout) {
+	case L_TABBED:
+	case L_STACKED:
+		if (prev_layout != L_TABBED && prev_layout != L_STACKED) {
+			// cache current geometry for all non-float children
+			int i;
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *child = parent->children->items[i];
+				child->cached_geometry.origin.x = child->x;
+				child->cached_geometry.origin.y = child->y;
+				child->cached_geometry.size.w = child->width;
+				child->cached_geometry.size.h = child->height;
+			}
+		}
+		break;
+	default:
+		if (prev_layout == L_TABBED || prev_layout == L_STACKED) {
+			// recover cached geometry for all non-float children
+			int i;
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *child = parent->children->items[i];
+				// only recoverer cached geometry if non-zero
+				if (!wlc_geometry_equals(&child->cached_geometry, &wlc_geometry_zero)) {
+					child->x = child->cached_geometry.origin.x;
+					child->y = child->cached_geometry.origin.y;
+					child->width = child->cached_geometry.size.w;
+					child->height = child->cached_geometry.size.h;
+				}
+			}
+		}
+		break;
 	}
+}
+
+static int update_gap_geometry(swayc_t *container, struct wlc_geometry *g) {
 	swayc_t *ws = swayc_parent_by_type(container, C_WORKSPACE);
 	swayc_t *op = ws->parent;
 	int gap = container->is_floating ? 0 : swayc_gap(container);
@@ -453,16 +485,63 @@ void update_geometry(swayc_t *container) {
 		gap -= 1;
 	}
 
+	g->origin.x = container->x + gap/2 < op->width  ? container->x + gap/2 : op->width-1;
+	g->origin.y = container->y + gap/2 < op->height ? container->y + gap/2 : op->height-1;
+	g->size.w = container->width > gap ? container->width - gap : 1;
+	g->size.h = container->height > gap ? container->height - gap : 1;
+
+	if ((!config->edge_gaps && gap > 0) || (config->smart_gaps && ws->children->length == 1)) {
+		// Remove gap against the workspace edges. Because a pixel is not
+		// divisable, depending on gap size and the number of siblings our view
+		// might be at the workspace edge without being exactly so (thus test
+		// with gap, and align correctly).
+		if (container->x - gap <= ws->x) {
+			g->origin.x = ws->x;
+			g->size.w = container->width - gap/2;
+		}
+		if (container->y - gap <= ws->y) {
+			g->origin.y = ws->y;
+			g->size.h = container->height - gap/2;
+		}
+		if (container->x + container->width + gap >= ws->x + ws->width) {
+			g->size.w = ws->x + ws->width - g->origin.x;
+		}
+		if (container->y + container->height + gap >= ws->y + ws->height) {
+			g->size.h = ws->y + ws->height - g->origin.y;
+		}
+	}
+
+	return gap;
+}
+
+void update_geometry(swayc_t *container) {
+	if (container->type != C_VIEW && container->type != C_CONTAINER) {
+		return;
+	}
+
+	swayc_t *ws = swayc_parent_by_type(container, C_WORKSPACE);
+	swayc_t *op = ws->parent;
+	swayc_t *parent = container->parent;
+
 	struct wlc_geometry geometry = {
 		.origin = {
-			.x = container->x + gap/2 < op->width  ? container->x + gap/2 : op->width-1,
-			.y = container->y + gap/2 < op->height ? container->y + gap/2 : op->height-1
+			.x = container->x < op->width ? container->x : op->width-1,
+			.y = container->y < op->height ? container->y : op->height-1
 		},
 		.size = {
-			.w = container->width > gap ? container->width - gap : 1,
-			.h = container->height > gap ? container->height - gap : 1,
+			.w = container->width,
+			.h = container->height,
 		}
 	};
+
+	int gap = 0;
+
+	// apply inner gaps to non-tabbed/stacked containers
+	swayc_t *p = swayc_tabbed_stacked_parent(container);
+	if (p == NULL) {
+		gap = update_gap_geometry(container, &geometry);
+	}
+
 	if (swayc_is_fullscreen(container)) {
 		swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
 		const struct wlc_size *size = wlc_output_get_resolution(output->handle);
@@ -473,28 +552,7 @@ void update_geometry(swayc_t *container) {
 		if (op->focused == ws) {
 			wlc_view_bring_to_front(container->handle);
 		}
-	} else if ((!config->edge_gaps && gap > 0) || (config->smart_gaps && ws->children->length == 1)) {
-		// Remove gap against the workspace edges. Because a pixel is not
-		// divisable, depending on gap size and the number of siblings our view
-		// might be at the workspace edge without being exactly so (thus test
-		// with gap, and align correctly).
-		if (container->x - gap <= ws->x) {
-			geometry.origin.x = ws->x;
-			geometry.size.w = container->width - gap/2;
-		}
-		if (container->y - gap <= ws->y) {
-			geometry.origin.y = ws->y;
-			geometry.size.h = container->height - gap/2;
-		}
-		if (container->x + container->width + gap >= ws->x + ws->width) {
-			geometry.size.w = ws->x + ws->width - geometry.origin.x;
-		}
-		if (container->y + container->height + gap >= ws->y + ws->height) {
-			geometry.size.h = ws->y + ws->height - geometry.origin.y;
-		}
-	}
 
-	if (swayc_is_fullscreen(container)) {
 		container->border_geometry = wlc_geometry_zero;
 		container->title_bar_geometry = wlc_geometry_zero;
 	} else if (container->is_floating) { // allocate border for floating window
@@ -533,42 +591,106 @@ void update_geometry(swayc_t *container) {
 			}
 		}
 
-		switch (container->border_type) {
-		case B_NONE:
-			break;
-		case B_PIXEL:
-			geometry.origin.x += border_left;
-			geometry.origin.y += border_top;
-			geometry.size.w -= (border_left + border_right);
-			geometry.size.h -= (border_top + border_bottom);
-			break;
-		case B_NORMAL:
-			{
-				struct wlc_geometry title_bar = {
-					.origin = {
-						.x = container->border_geometry.origin.x,
-						.y = container->border_geometry.origin.y
-					},
-					.size = {
-						.w = container->border_geometry.size.w,
-						.h = config->font_height + 4 // borders + padding
+		int title_bar_height = config->font_height + 4; //borders + padding
+
+		if (parent->layout == L_TABBED) {
+			int i, x = 0, w, l, r;
+			l = parent->children->length;
+			w = geometry.size.w / l;
+			r = geometry.size.w % l;
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *view = parent->children->items[i];
+				if (view == container) {
+					x = w * i;
+					if (i == l - 1) {
+						w += r;
 					}
-				};
-				geometry.origin.x += border_left;
-				geometry.origin.y += title_bar.size.h;
-				geometry.size.w -= (border_left + border_right);
-				geometry.size.h -= (border_bottom + title_bar.size.h);
-				container->title_bar_geometry = title_bar;
+					break;
+				}
+			}
+
+			struct wlc_geometry title_bar = {
+				.origin = {
+					.x = container->border_geometry.origin.x + x,
+					.y = container->border_geometry.origin.y
+				},
+				.size = {
+					.w = w,
+					.h = title_bar_height
+				}
+			};
+			geometry.origin.x += border_left;
+			geometry.origin.y += title_bar.size.h;
+			geometry.size.w -= (border_left + border_right);
+			geometry.size.h -= (border_bottom + title_bar.size.h);
+			container->title_bar_geometry = title_bar;
+		} else if (parent->layout == L_STACKED) {
+			int i, y;
+			for (i = 0; i < parent->children->length; ++i) {
+				swayc_t *view = parent->children->items[i];
+				if (view == container) {
+					y = title_bar_height * i;
+				}
+			}
+
+			struct wlc_geometry title_bar = {
+				.origin = {
+					.x = container->border_geometry.origin.x,
+					.y = container->border_geometry.origin.y + y
+				},
+				.size = {
+					.w = container->border_geometry.size.w,
+					.h = title_bar_height
+				}
+			};
+			title_bar_height = title_bar_height * parent->children->length;
+			geometry.origin.x += border_left;
+			geometry.origin.y += title_bar_height;
+			geometry.size.w -= (border_left + border_right);
+			geometry.size.h -= (border_bottom + title_bar_height);
+			container->title_bar_geometry = title_bar;
+		} else {
+			switch (container->border_type) {
+			case B_NONE:
 				break;
+			case B_PIXEL:
+				geometry.origin.x += border_left;
+				geometry.origin.y += border_top;
+				geometry.size.w -= (border_left + border_right);
+				geometry.size.h -= (border_top + border_bottom);
+				break;
+			case B_NORMAL:
+				{
+					struct wlc_geometry title_bar = {
+						.origin = {
+							.x = container->border_geometry.origin.x,
+							.y = container->border_geometry.origin.y
+						},
+						.size = {
+							.w = container->border_geometry.size.w,
+							.h = title_bar_height
+						}
+					};
+					geometry.origin.x += border_left;
+					geometry.origin.y += title_bar.size.h;
+					geometry.size.w -= (border_left + border_right);
+					geometry.size.h -= (border_bottom + title_bar.size.h);
+					container->title_bar_geometry = title_bar;
+					break;
+				}
 			}
 		}
 
 		container->actual_geometry = geometry;
 
-		update_view_border(container);
+		if (container->type == C_VIEW) {
+			update_view_border(container);
+		}
 	}
 
-	wlc_view_set_geometry(container->handle, 0, &geometry);
+	if (container->type == C_VIEW) {
+		wlc_view_set_geometry(container->handle, 0, &geometry);
+	}
 }
 
 static void arrange_windows_r(swayc_t *container, double width, double height) {
@@ -648,7 +770,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			height = container->height = height - gap * 2;
 			sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", container->name, container->x, container->y);
 		}
-		 // children are properly handled below
+		// children are properly handled below
 		break;
 	case C_VIEW:
 		{
@@ -664,6 +786,33 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		container->height = height;
 		x = container->x;
 		y = container->y;
+
+		// add gaps to top level tapped/stacked container
+		if (container->parent->type == C_WORKSPACE &&
+			(container->layout == L_TABBED || container->layout == L_STACKED)) {
+			update_geometry(container);
+			width = container->border_geometry.size.w;
+			height = container->border_geometry.size.h;
+			x = container->border_geometry.origin.x;
+			y = container->border_geometry.origin.y;
+		}
+
+		// update container size if it's a child in a tabbed/stacked layout
+		if (swayc_tabbed_stacked_parent(container) != NULL) {
+			// Use parent actual_geometry as a base for calculating
+			// container geometry
+			container->width = container->parent->actual_geometry.size.w;
+			container->height = container->parent->actual_geometry.size.h;
+			container->x = container->parent->actual_geometry.origin.x;
+			container->y = container->parent->actual_geometry.origin.y;
+
+			update_geometry(container);
+			width = container->width = container->actual_geometry.size.w;
+			height = container->height = container->actual_geometry.size.h;
+			x = container->x = container->actual_geometry.origin.x;
+			y = container->y = container->actual_geometry.origin.y;
+		}
+
 		break;
 	}
 
@@ -683,15 +832,22 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			}
 			scale += *old_width;
 		}
+
 		// Resize windows
 		if (scale > 0.1) {
 			scale = width / scale;
 			sway_log(L_DEBUG, "Arranging %p horizontally", container);
+			swayc_t *focused = NULL;
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
 				child->x = x;
 				child->y = y;
+
+				if (child == container->focused) {
+					focused = child;
+				}
+
 				if (i == container->children->length - 1) {
 					double remaining_width = container->x + width - x;
 					arrange_windows_r(child, remaining_width, height);
@@ -699,6 +855,12 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 					arrange_windows_r(child, child->width * scale, height);
 				}
 				x += child->width;
+			}
+
+			// update focused view border last because it may
+			// depend on the title bar geometry of its siblings.
+			if (focused && container->children->length > 1) {
+				update_view_border(focused);
 			}
 		}
 		break;
@@ -719,11 +881,17 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		if (scale > 0.1) {
 			scale = height / scale;
 			sway_log(L_DEBUG, "Arranging %p vertically", container);
+			swayc_t *focused = NULL;
 			for (i = 0; i < container->children->length; ++i) {
 				swayc_t *child = container->children->items[i];
 				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
 				child->x = x;
 				child->y = y;
+
+				if (child == container->focused) {
+					focused = child;
+				}
+
 				if (i == container->children->length - 1) {
 					double remaining_height = container->y + height - y;
 					arrange_windows_r(child, width, remaining_height);
@@ -732,8 +900,34 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				}
 				y += child->height;
 			}
+
+			// update focused view border last because it may
+			// depend on the title bar geometry of its siblings.
+			if (focused && container->children->length > 1) {
+				update_view_border(focused);
+			}
 		}
 		break;
+	case L_TABBED:
+	case L_STACKED:
+		{
+			swayc_t *focused = NULL;
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				child->x = x;
+				child->y = y;
+				if (child == container->focused) {
+					focused = child;
+				} else {
+					arrange_windows_r(child, width, height);
+				}
+			}
+
+			if (focused) {
+				arrange_windows_r(focused, width, height);
+			}
+			break;
+		}
 	}
 
 	// Arrage floating layouts for workspaces last
@@ -742,6 +936,8 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			swayc_t *view = container->floating->items[i];
 			if (view->type == C_VIEW) {
 				update_geometry(view);
+				sway_log(L_DEBUG, "Set floating view to %.f x %.f @ %.f, %.f", view->width,
+						view->height, view->x, view->y);
 				if (swayc_is_fullscreen(view)) {
 					wlc_view_bring_to_front(view->handle);
 				} else if (!container->focused
@@ -840,12 +1036,12 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			return get_swayc_in_output_direction(output, dir);
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
-				if (parent->layout == L_HORIZ) {
+				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
 					can_move = true;
 					diff = dir == MOVE_LEFT ? -1 : 1;
 				}
 			} else {
-				if (parent->layout == L_VERT) {
+				if (parent->layout == L_VERT || parent->layout == L_STACKED) {
 					can_move = true;
 					diff = dir == MOVE_UP ? -1 : 1;
 				}
@@ -898,5 +1094,17 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 		for (i = 0; i < container->children->length; i++) {
 			recursive_resize(container->children->items[i], amount, edge);
 		}
+	}
+}
+
+enum swayc_layouts default_layout(swayc_t *output) {
+	if (config->default_layout != L_NONE) {
+		return config->default_layout;
+	} else if (config->default_orientation != L_NONE) {
+		return config->default_orientation;
+	} else if (output->width >= output->height) {
+		return L_HORIZ;
+	} else {
+		return L_VERT;
 	}
 }

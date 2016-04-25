@@ -1,6 +1,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <wlc/wlc.h>
+#include <wlc/wlc-render.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -1759,17 +1760,46 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 		parent = parent->parent;
 	}
 
-	if (strcasecmp(argv[0], "splith") == 0) {
-		parent->layout = L_HORIZ;
-	} else if (strcasecmp(argv[0], "splitv") == 0) {
-		parent->layout = L_VERT;
-	} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
-		if (parent->layout == L_VERT) {
+	enum swayc_layouts old_layout = parent->layout;
+
+	if (strcasecmp(argv[0], "default") == 0) {
+		parent->layout = parent->prev_layout;
+		if (parent->layout == L_NONE) {
+			swayc_t *output = swayc_parent_by_type(parent, C_OUTPUT);
+			parent->layout = default_layout(output);
+		}
+	} else {
+		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
+			parent->prev_layout = parent->layout;
+		}
+
+		if (strcasecmp(argv[0], "tabbed") == 0) {
+			if (parent->type != C_CONTAINER) {
+				parent = new_container(parent, L_TABBED);
+			}
+
+			parent->layout = L_TABBED;
+		} else if (strcasecmp(argv[0], "stacking") == 0) {
+			if (parent->type != C_CONTAINER) {
+				parent = new_container(parent, L_STACKED);
+			}
+
+			parent->layout = L_STACKED;
+		} else if (strcasecmp(argv[0], "splith") == 0) {
 			parent->layout = L_HORIZ;
-		} else {
+		} else if (strcasecmp(argv[0], "splitv") == 0) {
 			parent->layout = L_VERT;
+		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
+			if (parent->layout == L_VERT) {
+				parent->layout = L_HORIZ;
+			} else {
+				parent->layout = L_VERT;
+			}
 		}
 	}
+
+	update_layout_geometry(parent, old_layout);
+
 	arrange_windows(parent, parent->width, parent->height);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -2007,10 +2037,22 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 		/* regular case where new split container is build around focused container
 		 * or in case of workspace, container inherits its children */
 		sway_log(L_DEBUG, "Adding new container around current focused container");
+		sway_log(L_INFO, "FOCUSED SIZE: %.f %.f", focused->width, focused->height);
 		swayc_t *parent = new_container(focused, layout);
 		set_focused_container(focused);
 		arrange_windows(parent, -1, -1);
 	}
+
+	// update container title if tabbed/stacked
+	if (swayc_tabbed_stacked_parent(focused)) {
+		update_view_border(focused);
+		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
+		// schedule render to make changes take effect right away,
+		// otherwise we would have to wait for the view to render,
+		// which is unpredictable.
+		wlc_output_schedule_render(output->handle);
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 

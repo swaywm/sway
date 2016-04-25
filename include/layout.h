@@ -7,8 +7,6 @@
 #include "container.h"
 #include "focus.h"
 
-extern swayc_t root_container;
-
 extern list_t *scratchpad;
 
 extern int min_sane_w;
@@ -55,6 +53,10 @@ void move_container_to(swayc_t* container, swayc_t* destination);
 void move_workspace_to(swayc_t* workspace, swayc_t* destination);
 
 // Layout
+/**
+ * Update child container geometries when switching between layouts.
+ */
+void update_layout_geometry(swayc_t *parent, enum swayc_layouts prev_layout);
 void update_geometry(swayc_t *view);
 void arrange_windows(swayc_t *container, double width, double height);
 
@@ -66,5 +68,10 @@ void recursive_resize(swayc_t *container, double amount, enum wlc_resize_edge ed
 
 void layout_log(const swayc_t *c, int depth);
 void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ...) __attribute__((format(printf,3,4)));
+
+/**
+ * Get default layout.
+ */
+enum swayc_layouts default_layout(swayc_t *output);
 
 #endif
