@@ -315,8 +315,8 @@ void update_view_border(swayc_t *view) {
 
 	// for tabbed/stacked layouts the focused view has to draw all the
 	// titlebars of the hidden views.
-	swayc_t *p = swayc_tabbed_stacked_parent(view);
-	if (p && view->parent->focused == view) {
+	swayc_t *p = NULL;
+	if (view->parent->focused == view && (p = swayc_tabbed_stacked_parent(view))) {
 		struct wlc_geometry g = {
 			.origin = {
 				.x = p->x,
