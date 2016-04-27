@@ -4,11 +4,10 @@
 #include <pango/pangocairo.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 #include "container.h"
 #include "config.h"
 #include "client/pango.h"
-
-#include <arpa/inet.h>
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 	color = htonl(color);
@@ -18,6 +17,13 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 		(color >> (1*8) & 0xFF) / 255.0,
 		(color >> (0*8) & 0xFF) / 255.0,
 		(color >> (3*8) & 0xFF) / 255.0);
+}
+
+void border_clear(struct border *border) {
+	if (border && border->buffer) {
+		free(border->buffer);
+		border->buffer = NULL;
+	}
 }
 
 static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry g, cairo_surface_t **surface) {
@@ -35,16 +41,14 @@ static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry g, cairo
 	*surface = cairo_image_surface_create_for_data(view->border->buffer,
 			CAIRO_FORMAT_ARGB32, g.size.w, g.size.h, stride);
 	if (cairo_surface_status(*surface) != CAIRO_STATUS_SUCCESS) {
-		free(view->border);
-		view->border->buffer = NULL;
+		border_clear(view->border);
 		sway_log(L_DEBUG, "Unable to allocate surface");
 		return NULL;
 	}
 	cr = cairo_create(*surface);
 	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
 		cairo_surface_destroy(*surface);
-		free(view->border->buffer);
-		view->border->buffer = NULL;
+		border_clear(view->border);
 		sway_log(L_DEBUG, "Unable to create cairo context");
 		return NULL;
 	}
@@ -295,10 +299,8 @@ void update_view_border(swayc_t *view) {
 	cairo_t *cr = NULL;
 	cairo_surface_t *surface = NULL;
 
-	if (view->border && view->border->buffer) {
-		free(view->border->buffer);
-		view->border->buffer = NULL;
-	}
+	// clear previous border buffer.
+	border_clear(view->border);
 
 	// get focused and focused_inactive views
 	swayc_t *focused = get_focused_view(&root_container);
