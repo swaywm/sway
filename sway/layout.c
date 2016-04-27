@@ -555,6 +555,7 @@ void update_geometry(swayc_t *container) {
 
 		container->border_geometry = wlc_geometry_zero;
 		container->title_bar_geometry = wlc_geometry_zero;
+		border_clear(container->border);
 	} else if (container->is_floating) { // allocate border for floating window
 		update_border_geometry_floating(container, &geometry);
 	} else if (!container->is_floating) { // allocate border for titled window
