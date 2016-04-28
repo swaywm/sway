@@ -2,6 +2,7 @@ include_directories(
 	${PROTOCOLS_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
+	${WAYLAND_INCLUDE_DIR}
 )
 
 add_library(sway-wayland

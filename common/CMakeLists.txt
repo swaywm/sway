@@ -1,5 +1,6 @@
 include_directories(
 	${WLC_INCLUDE_DIRS}
+	${XKBCOMMON_INCLUDE_DIRS}
 )
 
 add_library(sway-common
