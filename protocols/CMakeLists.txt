@@ -22,7 +22,7 @@ WAYLAND_ADD_PROTOCOL_SERVER(proto-server-swaylock
 	swaylock
 )
 
-add_library(sway-protocols
+add_library(sway-protocols STATIC
 	${proto-client-xdg-shell}
 	${proto-client-desktop-shell}
 	${proto-server-desktop-shell}
@@ -31,3 +31,4 @@ add_library(sway-protocols
 	)
 
 set(PROTOCOLS_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/protocols PARENT_SCOPE)
+INCLUDE_DIRECTORIES(${WAYLAND_INCLUDE_DIR} ${XKBCOMMON_INCLUDE_DIRS})

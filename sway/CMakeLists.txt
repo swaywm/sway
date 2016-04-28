@@ -7,6 +7,7 @@ include_directories(
 	${LIBINPUT_INCLUDE_DIRS}
 	${CAIRO_INCLUDE_DIRS}
 	${PANGO_INCLUDE_DIRS}
+	${WAYLAND_INCLUDE_DIR}
 )
 
 add_executable(sway

@@ -1,8 +1,9 @@
 include_directories(
 	${WLC_INCLUDE_DIRS}
+	${XKBCOMMON_INCLUDE_DIRS}
 )
 
-add_library(sway-common
+add_library(sway-common STATIC
 	ipc-client.c
 	list.c
 	log.c
