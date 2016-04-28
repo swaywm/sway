@@ -25,7 +25,7 @@ output * bg /usr/share/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
 #   output HDMI-A-1 resolution 1920x1080 position 1920,0
 #
-# You can get the names of your outputs by running sway-msg -t get_outputs
+# You can get the names of your outputs by running swaymsg -t get_outputs
 
 ### Key bindings
 #
