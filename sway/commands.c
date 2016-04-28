@@ -335,7 +335,7 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 			return error;
 		}
 		xkb_keycode_t *key = malloc(sizeof(xkb_keycode_t));
-		*key = keycode;
+		*key = keycode - 8;
 		list_add(binding->keys, key);
 	}
 	free_flat_list(split);
