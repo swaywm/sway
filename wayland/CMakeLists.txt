@@ -5,7 +5,7 @@ include_directories(
 	${WAYLAND_INCLUDE_DIR}
 )
 
-add_library(sway-wayland
+add_library(sway-wayland STATIC
 	buffers.c
 	pango.c
 	registry.c

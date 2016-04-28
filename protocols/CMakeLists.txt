@@ -22,7 +22,7 @@ WAYLAND_ADD_PROTOCOL_SERVER(proto-server-swaylock
 	swaylock
 )
 
-add_library(sway-protocols
+add_library(sway-protocols STATIC
 	${proto-client-xdg-shell}
 	${proto-client-desktop-shell}
 	${proto-server-desktop-shell}
