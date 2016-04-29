@@ -526,7 +526,7 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		close(fd[0]);
 		ssize_t s = 0;
 		while ((size_t)s < sizeof(pid_t)) {
-			s += write(fd[1], ((uint8_t *)child) + s, sizeof(pid_t));
+			s += write(fd[1], ((uint8_t *)child) + s, sizeof(pid_t) - s);
 		}
 		close(fd[1]);
 		_exit(0); // Close child process
@@ -536,7 +536,7 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	close(fd[1]); // close write
 	ssize_t s = 0;
 	while ((size_t)s < sizeof(pid_t)) {
-		s += read(fd[0], ((uint8_t *)child) + s, sizeof(pid_t));
+		s += read(fd[0], ((uint8_t *)child) + s, sizeof(pid_t) - s);
 	}
 	close(fd[0]);
 	// cleanup child process
