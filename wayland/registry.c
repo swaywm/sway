@@ -258,4 +258,5 @@ void registry_teardown(struct registry *registry) {
 	if (registry->outputs) {
 		free_flat_list(registry->outputs);
 	}
+	free(registry);
 }
