@@ -267,8 +267,8 @@ static char *get_config_path(void) {
 		strcpy(config_home, home);
 		strcat(config_home, "/.config");
 		setenv("XDG_CONFIG_HOME", config_home, 1);
-		free(config_home);
 		sway_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+		free(config_home);
 	}
 
 	wordexp_t p;
