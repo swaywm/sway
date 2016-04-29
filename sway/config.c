@@ -534,6 +534,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 		default:;
 		}
 		free(line);
+		free(res->input);
 		free(res);
 	}
 
