@@ -24,7 +24,10 @@ static void bar_init(struct bar *bar) {
 static void spawn_status_cmd_proc(struct bar *bar) {
 	if (bar->config->status_command) {
 		int pipefd[2];
-		pipe(pipefd);
+		if (pipe(pipefd) != 0) {
+			sway_log(L_ERROR, "Unable to create pipe for status_command fork");
+			return;
+		}
 		bar->status_command_pid = fork();
 		if (bar->status_command_pid == 0) {
 			close(pipefd[0]);
