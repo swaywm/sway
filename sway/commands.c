@@ -509,7 +509,9 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	sway_log(L_DEBUG, "Executing %s", cmd);
 
 	int fd[2];
-	pipe(fd);
+	if (pipe(fd) != 0) {
+		sway_log(L_ERROR, "Unable to create pipe for fork");
+	}
 
 	pid_t pid;
 	pid_t *child = malloc(sizeof(pid_t)); // malloc'd so that Linux can avoid copying the process space
@@ -522,14 +524,20 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 			/* Not reached */
 		}
 		close(fd[0]);
-		write(fd[1], child, sizeof(pid_t));
+		ssize_t s = 0;
+		while ((size_t)s < sizeof(pid_t)) {
+			s += write(fd[1], ((uint8_t *)child) + s, sizeof(pid_t));
+		}
 		close(fd[1]);
 		_exit(0); // Close child process
 	} else if (pid < 0) {
 		return cmd_results_new(CMD_FAILURE, "exec_always", "Command failed (sway could not fork).");
 	}
 	close(fd[1]); // close write
-	read(fd[0], child, sizeof(pid_t));
+	ssize_t s = 0;
+	while ((size_t)s < sizeof(pid_t)) {
+		s += read(fd[0], ((uint8_t *)child) + s, sizeof(pid_t));
+	}
 	close(fd[0]);
 	// cleanup child process
 	wait(0);
