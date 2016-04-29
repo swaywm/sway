@@ -79,12 +79,14 @@ char *workspace_next_name(const char *output_name) {
 				strcmp(_target, "current") == 0)
 			{
 				free(_target);
+				free(dup);
 				continue;
 			}
 
 			// Make sure that the workspace doesn't already exist
 			if (workspace_by_name(_target)) {
 				free(_target);
+				free(dup);
 				continue;
 			}
 
@@ -92,6 +94,7 @@ char *workspace_next_name(const char *output_name) {
 			// output
 			if (!workspace_valid_on_output(output_name, _target)) {
 				free(_target);
+				free(dup);
 				continue;
 			}
 
@@ -99,6 +102,8 @@ char *workspace_next_name(const char *output_name) {
 				order = binding->order;
 				target = _target;
 				sway_log(L_DEBUG, "Workspace: Found free name %s", _target);
+				free(dup);
+				break;
 			}
 		}
 		free(dup);
