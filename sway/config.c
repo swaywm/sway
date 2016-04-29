@@ -268,6 +268,7 @@ static char *get_config_path(void) {
 		strcat(config_home, "/.config");
 		setenv("XDG_CONFIG_HOME", config_home, 1);
 		sway_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+		free(config_home);
 	}
 
 	wordexp_t p;
@@ -276,7 +277,8 @@ static char *get_config_path(void) {
 	int i;
 	for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
 		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = p.we_wordv[0];
+			path = strdup(p.we_wordv[0]);
+			wordfree(&p);
 			if (file_exists(path)) {
 				return path;
 			}
@@ -354,6 +356,8 @@ bool load_main_config(const char *file, bool is_active) {
 	if (success) {
 		update_active_bar_modifiers();
 	}
+
+	free(path);
 
 	return success;
 }
@@ -532,7 +536,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 		default:;
 		}
 		free(line);
-		free(res);
+		free_cmd_results(res);
 	}
 
 	return success;
