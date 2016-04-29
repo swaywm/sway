@@ -277,8 +277,9 @@ static char *get_config_path(void) {
 	int i;
 	for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
 		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = p.we_wordv[0];
+			path = strdup(p.we_wordv[0]);
 			if (file_exists(path)) {
+				wordfree(&p);
 				return path;
 			}
 		}
