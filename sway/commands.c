@@ -245,6 +245,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 			argv++;
 			argc--;
 		} else {
+			free_sway_binding(binding);
 			return cmd_results_new(CMD_FAILURE, "bindsym",
 				"Invalid bindsym command"
 				"(expected more than 2 arguments, got %d)", argc);
@@ -310,6 +311,7 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 			argv++;
 			argc--;
 		} else {
+			free_sway_binding(binding);
 			return cmd_results_new(CMD_FAILURE, "bindcode",
 				"Invalid bindcode command"
 				"(expected more than 2 arguments, got %d)", argc);
@@ -531,6 +533,7 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		close(fd[1]);
 		_exit(0); // Close child process
 	} else if (pid < 0) {
+		free(child);
 		return cmd_results_new(CMD_FAILURE, "exec_always", "Command failed (sway could not fork).");
 	}
 	close(fd[1]); // close write
