@@ -626,7 +626,7 @@ void update_geometry(swayc_t *container) {
 			geometry.size.h -= (border_bottom + title_bar.size.h);
 			container->title_bar_geometry = title_bar;
 		} else if (parent->layout == L_STACKED) {
-			int i, y;
+			int i, y = 0;
 			for (i = 0; i < parent->children->length; ++i) {
 				swayc_t *view = parent->children->items[i];
 				if (view == container) {
