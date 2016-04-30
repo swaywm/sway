@@ -125,7 +125,6 @@ struct bar_config {
 	char *separator_symbol;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
-	bool verbose;
 	pid_t pid;
 	struct {
 		char background[10];

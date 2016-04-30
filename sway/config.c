@@ -1035,7 +1035,6 @@ struct bar_config *default_bar_config(void) {
 	bar->strip_workspace_numbers = false;
 	bar->binding_mode_indicator = true;
 	bar->tray_padding = 2;
-	bar->verbose = false;
 	bar->pid = 0;
 	// set default colors
 	strcpy(bar->colors.background, "#000000ff");
