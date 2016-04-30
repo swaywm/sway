@@ -100,10 +100,9 @@ char *workspace_next_name(const char *output_name) {
 
 			if (binding->order < order) {
 				order = binding->order;
+				free(target);
 				target = _target;
 				sway_log(L_DEBUG, "Workspace: Found free name %s", _target);
-				free(dup);
-				break;
 			}
 		}
 		free(dup);
