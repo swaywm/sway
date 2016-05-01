@@ -562,6 +562,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		}
 		dst->identifier = strdup(src->identifier);
 	}
+	if (src->accel_profile != INT_MIN) {
+		dst->accel_profile = src->accel_profile;
+	}
 	if (src->click_method != INT_MIN) {
 		dst->click_method = src->click_method;
 	}
@@ -735,6 +738,10 @@ void apply_input_config(struct input_config *ic, struct libinput_device *dev) {
 			ic->identifier);
 	}
 
+	if (ic && ic->accel_profile != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) accel_set_profile(%d)", ic->identifier, ic->accel_profile);
+		libinput_device_config_accel_set_profile(dev, ic->accel_profile);
+	}
 	if (ic && ic->click_method != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) click_set_method(%d)", ic->identifier, ic->click_method);
 		libinput_device_config_click_set_method(dev, ic->click_method);

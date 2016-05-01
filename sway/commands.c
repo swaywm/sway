@@ -1149,6 +1149,29 @@ static void input_cmd_apply(struct input_config *input) {
 	}
 }
 
+static struct cmd_results *input_cmd_accel_profile(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "accel_profile", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, "accel_profile", "No input device defined.");
+	}
+	struct input_config *new_config = new_input_config(current_input_config->identifier);
+
+	if (strcasecmp(argv[0], "adaptive") == 0) {
+		new_config->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+	} else if (strcasecmp(argv[0], "flat") == 0) {
+		new_config->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
+	} else {
+		return cmd_results_new(CMD_INVALID, "accel_profile",
+				"Expected 'accel_profile <adaptive|flat>'");
+	}
+
+	input_cmd_apply(new_config);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *input_cmd_click_method(int argc, char **argv) {
 	sway_log(L_DEBUG, "click_method for device:  %d %s", current_input_config==NULL, current_input_config->identifier);
 	struct cmd_results *error = NULL;
@@ -1388,7 +1411,9 @@ static struct cmd_results *cmd_input(int argc, char **argv) {
 
 		struct cmd_results *res;
 		current_input_config = new_input_config(argv[0]);
-		if (strcasecmp("click_method", argv[1]) == 0) {
+		if (strcasecmp("accel_profile", argv[1]) == 0) {
+			res = input_cmd_accel_profile(argc_new, argv_new);
+		} else if (strcasecmp("click_method", argv[1]) == 0) {
 			res = input_cmd_click_method(argc_new, argv_new);
 		} else if (strcasecmp("drag_lock", argv[1]) == 0) {
 			res = input_cmd_drag_lock(argc_new, argv_new);
@@ -1407,7 +1432,7 @@ static struct cmd_results *cmd_input(int argc, char **argv) {
 		} else if (strcasecmp("tap", argv[1]) == 0) {
 			res = input_cmd_tap(argc_new, argv_new);
 		} else {
-			res = cmd_results_new(CMD_INVALID, "input <device>", "Unknonwn command %s", argv[1]);
+			res = cmd_results_new(CMD_INVALID, "input <device>", "Unknown command %s", argv[1]);
 		}
 		current_input_config = NULL;
 		return res;
@@ -3127,6 +3152,7 @@ static struct cmd_results *bar_colors_cmd_urgent_workspace(int argc, char **argv
 }
 
 static struct cmd_handler input_handlers[] = {
+	{ "accel_profile", input_cmd_accel_profile },
 	{ "click_method", input_cmd_click_method },
 	{ "drag_lock", input_cmd_drag_lock },
 	{ "dwt", input_cmd_dwt },
