@@ -387,6 +387,31 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 	return;
 }
 
+static void handle_view_properties_updated(wlc_handle view, uint32_t mask) {
+	if (mask == WLC_BIT_PROPERTY_TITLE) {
+		swayc_t *c = swayc_by_handle(view);
+		if (!c) {
+			return;
+		}
+
+		// update window title
+		const char *new_name = wlc_view_get_title(view);
+
+		if (new_name) {
+			if (!c->name || strcmp(c->name, new_name) != 0) {
+				free(c->name);
+				c->name = strdup(new_name);
+				swayc_t *p = swayc_tabbed_stacked_parent(c);
+				if (p) {
+					update_view_border(get_focused_view(p));
+				} else if (c->border_type == B_NORMAL) {
+					update_view_border(c);
+				}
+			}
+		}
+	}
+}
+
 static void handle_binding_command(struct sway_binding *binding) {
 	struct sway_binding *binding_copy = binding;
 	bool reload = false;
@@ -752,6 +777,7 @@ void register_wlc_handlers() {
 	wlc_set_view_render_pre_cb(handle_view_pre_render);
 	wlc_set_view_request_geometry_cb(handle_view_geometry_request);
 	wlc_set_view_request_state_cb(handle_view_state_request);
+	wlc_set_view_properties_updated_cb(handle_view_properties_updated);
 	wlc_set_keyboard_key_cb(handle_key);
 	wlc_set_pointer_motion_cb(handle_pointer_motion);
 	wlc_set_pointer_button_cb(handle_pointer_button);
