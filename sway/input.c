@@ -21,6 +21,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->click_method = INT_MIN;
 	input->middle_emulation = INT_MIN;
 	input->natural_scroll = INT_MIN;
+	input->accel_profile = INT_MIN;
 	input->pointer_accel = FLT_MIN;
 	input->scroll_method = INT_MIN;
 

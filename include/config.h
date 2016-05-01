@@ -52,6 +52,8 @@ struct sway_mode {
  */
 struct input_config {
 	char *identifier;
+
+	int accel_profile;
 	int click_method;
 	int drag_lock;
 	int dwt;
