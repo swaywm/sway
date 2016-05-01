@@ -406,19 +406,6 @@ void render_view_borders(wlc_handle view) {
 		return;
 	}
 
-	if (c->border_type == B_NORMAL) {
-		// update window title
-		const char *new_name = wlc_view_get_title(view);
-
-		if (new_name) {
-			if (!c->name || strcmp(c->name, new_name) != 0) {
-				free(c->name);
-				c->name = strdup(new_name);
-				update_view_border(c);
-			}
-		}
-	}
-
 	if (c->border && c->border->buffer) {
 		wlc_pixels_write(WLC_RGBA8888, &c->border->geometry, c->border->buffer);
 	}
