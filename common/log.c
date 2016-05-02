@@ -68,7 +68,7 @@ void _sway_log(log_importance_t verbosity, const char* format, ...) {
 #endif
 	if (verbosity <= v) {
 		unsigned int c = verbosity;
-		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
+		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
@@ -96,7 +96,7 @@ void _sway_log(log_importance_t verbosity, const char* format, ...) {
 void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 	if (verbosity <= v) {
 		unsigned int c = verbosity;
-		if (c > sizeof(verbosity_colors) / sizeof(char *)) {
+		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
 		}
 
