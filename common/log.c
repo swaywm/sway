@@ -61,11 +61,7 @@ void sway_abort(const char *format, ...) {
 	sway_terminate(EXIT_FAILURE);
 }
 
-#ifndef NDEBUG
 void _sway_log(const char *filename, int line, log_importance_t verbosity, const char* format, ...) {
-#else
-void _sway_log(log_importance_t verbosity, const char* format, ...) {
-#endif
 	if (verbosity <= v) {
 		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
@@ -76,13 +72,14 @@ void _sway_log(log_importance_t verbosity, const char* format, ...) {
 			fprintf(stderr, "%s", verbosity_colors[c]);
 		}
 
+		if (filename && line) {
+			char *file = strdup(filename);
+			fprintf(stderr, "[%s:%d] ", basename(file), line);
+			free(file);
+		}
+
 		va_list args;
 		va_start(args, format);
-#ifndef NDEBUG
-		char *file = strdup(filename);
-		fprintf(stderr, "[%s:%d] ", basename(file), line);
-		free(file);
-#endif
 		vfprintf(stderr, format, args);
 		va_end(args);
 
