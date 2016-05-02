@@ -145,7 +145,6 @@ void error_handler(int sig) {
 	size_t bt_len;
 	char maps_file[256];
 	char maps_buffer[1024];
-	FILE *maps;
 
 	sway_log(L_ERROR, "Error: Signal %d. Printing backtrace", sig);
 	bt_len = backtrace(array, max_lines);
@@ -163,11 +162,10 @@ void error_handler(int sig) {
 	sway_log(L_ERROR, "Maps:");
 	pid_t pid = getpid();
 	if (snprintf(maps_file, 255, "/proc/%zd/maps", (size_t)pid) < 255) {
-		maps = fopen(maps_file, "r");
+		FILE *maps = fopen(maps_file, "r");
 		while (!feof(maps)) {
 			char *m = read_line_buffer(maps, maps_buffer, 1024);
 			if (!m) {
-				fclose(maps);
 				sway_log(L_ERROR, "Unable to allocate memory to show maps");
 				break;
 			}
