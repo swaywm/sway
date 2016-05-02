@@ -2113,7 +2113,7 @@ static struct cmd_results *cmd_split(int argc, char **argv) {
 		}
 	} else {
 		error = cmd_results_new(CMD_FAILURE, "split",
-			"Invalid split command (expected either horiziontal or vertical).");
+			"Invalid split command (expected either horizontal or vertical).");
 		return error;
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
