@@ -29,6 +29,7 @@ available for you to install:
 
 * [Arch Linux](https://www.archlinux.org/packages/?q=sway)
 * [Gentoo](https://packages.gentoo.org/packages/dev-libs/sway)
+* [openSUSE Tumbleweed](https://software.opensuse.org/package/sway)
 
 For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-on-other-distros).
 If you're interested in packaging Sway for your distribution, stop by the IRC
