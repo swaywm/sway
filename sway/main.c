@@ -224,9 +224,7 @@ int main(int argc, char **argv) {
 		wlc_run();
 	}
 
-	if (input_devices) {
-		free(input_devices);
-	}
+	list_free(input_devices);
 
 	ipc_terminate();
 
