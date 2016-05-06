@@ -357,8 +357,6 @@ bool load_main_config(const char *file, bool is_active) {
 		update_active_bar_modifiers();
 	}
 
-	free(path);
-
 	return success;
 }
 
