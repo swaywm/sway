@@ -86,6 +86,10 @@ static bool handle_output_created(wlc_handle output) {
 	wlc_handle prev = wlc_get_focused_output();
 	wlc_output_focus(output);
 	wlc_output_focus(prev);
+
+	if (wlc_notification_area_get_output(notification_area) == 0)
+		wlc_notification_area_set_output(notification_area, output);
+
 	return true;
 }
 
@@ -108,6 +112,11 @@ static void handle_output_destroyed(wlc_handle output) {
 		swayc_t *c = (swayc_t *)list->items[0];
 		// switch to other outputs active workspace
 		workspace_switch(c->focused);
+		if (wlc_notification_area_get_output(notification_area) == output)
+			wlc_notification_area_set_output(notification_area, c->handle);
+	} else {
+		if (wlc_notification_area_get_output(notification_area) == output)
+			wlc_notification_area_set_output(notification_area, 0);
 	}
 }
 
@@ -165,6 +174,9 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 	c->width = to->w;
 	c->height = to->h;
 	arrange_windows(&root_container, -1, -1);
+
+	if (wlc_notification_area_get_output(notification_area) == output)
+		wlc_notification_area_set_output(notification_area, output);
 }
 
 static void handle_output_focused(wlc_handle output, bool focus) {

@@ -24,6 +24,7 @@ add_executable(sway
 	ipc-server.c
 	layout.c
 	main.c
+	notification-area.c
 	output.c
 	resize.c
 	workspace.c

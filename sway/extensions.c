@@ -10,6 +10,7 @@
 #include "extensions.h"
 
 struct desktop_shell_state desktop_shell;
+struct wlc_notification_area *notification_area;
 
 static struct panel_config *find_or_create_panel_config(struct wl_resource *resource) {
 	for (int i = 0; i < desktop_shell.panels->length; i++) {
@@ -214,4 +215,5 @@ void register_extensions(void) {
 	desktop_shell.lock_surfaces = create_list();
 	desktop_shell.is_locked = false;
 	wl_global_create(wlc_get_wl_display(), &lock_interface, 1, NULL, swaylock_bind);
+	notification_area = wlc_notification_area_init();
 }
