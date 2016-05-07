@@ -131,6 +131,8 @@ void free_config(struct sway_config *config) {
 	list_free(config->active_bar_modifiers);
 	free_flat_list(config->config_chain);
 	free(config->font);
+	free(config->fsb_up);
+	free(config->fsb_down);
 	free(config);
 }
 
@@ -160,6 +162,8 @@ static void config_defaults(struct sway_config *config) {
 	config->dragging_key = M_LEFT_CLICK;
 	config->resizing_key = M_RIGHT_CLICK;
 	config->floating_scroll = FSB_GAPS_INNER;
+	config->fsb_up = strdup("");
+	config->fsb_down = strdup("");
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	config->font = strdup("monospace 10");

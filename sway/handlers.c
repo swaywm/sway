@@ -743,6 +743,16 @@ bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modi
 				arrange_windows(&root_container, -1, -1);
 				break;
 			}
+		case FSB_CUSTOM:
+			{
+				int amount = (int)_amount[0];
+				if (amount > 0) {
+					handle_command(config->fsb_up);
+				} else if (amount < 0) {
+					handle_command(config->fsb_down);
+				}
+				break;
+			}
 		}
 	}
 	return EVENT_PASSTHROUGH;

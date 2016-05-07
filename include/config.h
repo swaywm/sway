@@ -167,10 +167,9 @@ enum edge_border_types {
 };
 
 enum floating_scroll_behavior {
-    FSB_GAPS_OUTER,     /**< Adjust outer gaps */
-    FSB_GAPS_INNER      /**< Adjust inner gaps */
-    // Note: in the future I expect to see more things you can do with the scroll
-    // wheel than maniuplating gaps
+	FSB_GAPS_OUTER,     /**< Adjust outer gaps */
+	FSB_GAPS_INNER,     /**< Adjust inner gaps */
+	FSB_CUSTOM          /**< Perform a user-defined action */
 };
 
 /**
@@ -191,7 +190,9 @@ struct sway_config {
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
-    enum floating_scroll_behavior floating_scroll; // TODO: command to set this
+	enum floating_scroll_behavior floating_scroll;
+    	char *fsb_up;
+	char *fsb_down;
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 	char *font;
