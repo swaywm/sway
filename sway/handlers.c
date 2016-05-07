@@ -97,14 +97,17 @@ static void handle_output_destroyed(wlc_handle output) {
 			break;
 		}
 	}
-	if (i < list->length) {
-		destroy_output(list->items[i]);
-	} else {
+	if (i == list->length) {
+		// No container for this output, we're done
 		return;
 	}
+
+	destroy_output(list->items[i]);
+
 	if (list->length > 0) {
+		swayc_t *c = (swayc_t *)list->items[0];
 		// switch to other outputs active workspace
-		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
+		workspace_switch(c->focused);
 	}
 }
 
