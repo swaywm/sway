@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <wordexp.h>
+#include <libgen.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <limits.h>
@@ -1551,6 +1552,13 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
 			}
 			src = p.we_wordv[0];
+			if (config->reading && *src != '/') {
+				char *conf = strdup(config->current_config);
+				char *conf_path = dirname(conf);
+				src = malloc(strlen(conf_path) + strlen(src) + 2);
+				sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
+				free(conf);
+			}
 			if (access(src, F_OK) == -1) {
 				return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
 			}
@@ -1569,6 +1577,9 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			output->background = strdup(src);
 			output->background_option = strdup(mode);
+			if (src != p.we_wordv[0]) {
+				free(src);
+			}
 			wordfree(&p);
 		}
 	}
