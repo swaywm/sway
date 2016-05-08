@@ -711,34 +711,19 @@ static struct cmd_results *cmd_floating_scroll(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating_scroll", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	if (!strcasecmp("behavior", argv[0])) {
+	if (!strcasecmp("up", argv[0])) {
+		free(config->floating_scroll_up_cmd);
 		if (argc < 2) {
-			error = cmd_results_new(CMD_INVALID, "floating_scroll", "Insufficient parameters given");
-			return error;
-		}
-		if (!strcasecmp("gaps_inner", argv[1])) {
-			config->floating_scroll = FSB_GAPS_INNER;
-		} else if (!strcasecmp("gaps_outer", argv[1])) {
-			config->floating_scroll = FSB_GAPS_OUTER;
-		} else if (!strcasecmp("custom", argv[1])) {
-			config->floating_scroll = FSB_CUSTOM;
+			config->floating_scroll_up_cmd = strdup("");
 		} else {
-			error = cmd_results_new(CMD_INVALID, "floating_scroll", "Unknown behavior: '%s'", argv[1]);
-			return error;
-		}
-	} else if (!strcasecmp("up", argv[0])) {
-		free(config->fsb_up);
-		if (argc < 2) {
-			config->fsb_up = strdup("");
-		} else {
-			config->fsb_up = join_args(argv + 1, argc - 1);
+			config->floating_scroll_up_cmd = join_args(argv + 1, argc - 1);
 		}
 	} else if (!strcasecmp("down", argv[0])) {
-		free(config->fsb_down);
+		free(config->floating_scroll_down_cmd);
 		if (argc < 2) {
-			config->fsb_down = strdup("");
+			config->floating_scroll_down_cmd = strdup("");
 		} else {
-			config->fsb_down = join_args(argv + 1, argc - 1);
+			config->floating_scroll_down_cmd = join_args(argv + 1, argc - 1);
 		}
 	} else {
 		error = cmd_results_new(CMD_INVALID, "floating_scroll", "Unknown command: '%s'", argv[0]);

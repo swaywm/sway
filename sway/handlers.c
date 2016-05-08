@@ -723,36 +723,11 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modifiers* modifiers,
 		uint8_t axis_bits, double _amount[2]) {
 	if (!(modifiers->mods ^ config->floating_mod)) {
-		switch (config->floating_scroll) {
-		case FSB_GAPS_INNER:
-		case FSB_GAPS_OUTER:
-			{
-				int amount = (int)_amount[0];
-				int i,j;
-				for (i = 0; i < root_container.children->length; ++i) {
-					swayc_t *op = root_container.children->items[i];
-					for (j = 0; j < op->children->length; ++j) {
-						swayc_t *ws = op->children->items[j];
-						if (config->floating_scroll == FSB_GAPS_INNER) {
-							container_map(ws, add_gaps, &amount);
-						} else {
-							ws->gaps += amount;
-						}
-					}
-				}
-				arrange_windows(&root_container, -1, -1);
-				break;
-			}
-		case FSB_CUSTOM:
-			{
-				int amount = (int)_amount[0];
-				if (amount > 0) {
-					handle_command(config->fsb_up);
-				} else if (amount < 0) {
-					handle_command(config->fsb_down);
-				}
-				break;
-			}
+		int amount = (int)_amount[0];
+		if (amount > 0) {
+			handle_command(config->floating_scroll_up_cmd);
+		} else if (amount < 0) {
+			handle_command(config->floating_scroll_down_cmd);
 		}
 	}
 	return EVENT_PASSTHROUGH;

@@ -156,17 +156,10 @@ or triggered at runtime.
 	enabled, left click is used for resizing and right click for dragging. The
 	mode paramenter is optional and defaults to _normal_ if it isn't defined.
 
-**floating_scroll** behavior <gaps_inner|gaps_outer|custom>::
-	If set to _gaps_inner_, adjusts inner gaps of the windows on scrolling
-	while holding the floating modifier. If set to _gaps_outer_, adjusts
-	outer gaps. If set to _custom_, performs user-defined commands,
-	specified in *floating_scroll up|down*.
-
 **floating_scroll** <up|down> [command]::
 	Sets the command to be executed on scrolling up and down
-	(respectively) while holding the floating modifier, when
-	*floating_scroll behavior* is set to _custom_. Resets the command,
-	when given none.
+	(respectively) while holding the floating modifier. Resets the
+	command, when given no arguments.
 
 **focus_follows_mouse** <yes|no>::
 	If set to _yes_, the currently focused view will change as you move your
