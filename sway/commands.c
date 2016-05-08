@@ -58,6 +58,7 @@ static sway_cmd cmd_exec_always;
 static sway_cmd cmd_exit;
 static sway_cmd cmd_floating;
 static sway_cmd cmd_floating_mod;
+static sway_cmd cmd_floating_scroll;
 static sway_cmd cmd_focus;
 static sway_cmd cmd_focus_follows_mouse;
 static sway_cmd cmd_font;
@@ -701,6 +702,32 @@ static struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 			error = cmd_results_new(CMD_INVALID, "floating_modifier", "Invalid definition %s", argv[1]);
 			return error;
 		}
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_floating_scroll(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "floating_scroll", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	if (!strcasecmp("up", argv[0])) {
+		free(config->floating_scroll_up_cmd);
+		if (argc < 2) {
+			config->floating_scroll_up_cmd = strdup("");
+		} else {
+			config->floating_scroll_up_cmd = join_args(argv + 1, argc - 1);
+		}
+	} else if (!strcasecmp("down", argv[0])) {
+		free(config->floating_scroll_down_cmd);
+		if (argc < 2) {
+			config->floating_scroll_down_cmd = strdup("");
+		} else {
+			config->floating_scroll_down_cmd = join_args(argv + 1, argc - 1);
+		}
+	} else {
+		error = cmd_results_new(CMD_INVALID, "floating_scroll", "Unknown command: '%s'", argv[0]);
+		return error;
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
@@ -2377,6 +2404,7 @@ static struct cmd_handler handlers[] = {
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
 	{ "floating_modifier", cmd_floating_mod },
+	{ "floating_scroll", cmd_floating_scroll },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "font", cmd_font },

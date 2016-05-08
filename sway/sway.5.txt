@@ -156,6 +156,11 @@ or triggered at runtime.
 	enabled, left click is used for resizing and right click for dragging. The
 	mode paramenter is optional and defaults to _normal_ if it isn't defined.
 
+**floating_scroll** <up|down> [command]::
+	Sets the command to be executed on scrolling up and down
+	(respectively) while holding the floating modifier. Resets the
+	command, when given no arguments.
+
 **focus_follows_mouse** <yes|no>::
 	If set to _yes_, the currently focused view will change as you move your
 	mouse around the screen to the view that ends up underneath your mouse.
