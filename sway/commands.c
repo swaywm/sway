@@ -1831,6 +1831,10 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 		return error;
 	}
 	swayc_t *parent = get_focused_container(&root_container);
+	if (parent->is_floating) {
+		return cmd_results_new(CMD_FAILURE, "layout", "Unable to change layout of floating windows");
+	}
+
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
 	}
