@@ -723,11 +723,17 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modifiers* modifiers,
 		uint8_t axis_bits, double _amount[2]) {
 	if (!(modifiers->mods ^ config->floating_mod)) {
-		int amount = (int)_amount[0];
-		if (amount > 0) {
+		int x_amount = (int)_amount[0];
+		int y_amount = (int)_amount[1];
+		if (x_amount > 0) {
 			handle_command(config->floating_scroll_up_cmd);
-		} else if (amount < 0) {
+		} else if (x_amount < 0) {
 			handle_command(config->floating_scroll_down_cmd);
+		}
+		if (y_amount > 0) {
+			handle_command(config->floating_scroll_right_cmd);
+		} else if (y_amount < 0) {
+			handle_command(config->floating_scroll_left_cmd);
 		}
 	}
 	return EVENT_PASSTHROUGH;
