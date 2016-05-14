@@ -820,10 +820,10 @@ swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
 		return NULL;
 	}
 	do {
+		view = view->parent;
 		if (view->layout == L_TABBED || view->layout == L_STACKED) {
 			parent = view;
 		}
-		view = view->parent;
 	} while (view && view->type != C_WORKSPACE);
 
 	return parent;
