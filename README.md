@@ -45,8 +45,8 @@ Install dependencies:
 * asciidoc
 * pcre
 * json-c
-* pango *
-* cairo *
+* pango
+* cairo
 * gdk-pixbuf2 *
 * pam **
 * imagemagick (required for image capture with swaygrab)
