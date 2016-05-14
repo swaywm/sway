@@ -46,7 +46,7 @@ option(enable-swaygrab "Enables the swaygrab utility" YES)
 option(enable-swaymsg "Enables the swaymsg utility" YES)
 option(enable-gdk-pixbuf "Use Pixbuf to support more image formats" YES)
 option(enable-binding-event "Enables binding event subscription" YES)
-option(zsh-completions "Zsh shell completions" YES)
+option(zsh-completions "Zsh shell completions" NO)
 option(default-wallpaper "Installs the default wallpaper" YES)
 
 find_package(JsonC REQUIRED)
