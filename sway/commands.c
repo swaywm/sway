@@ -726,6 +726,20 @@ static struct cmd_results *cmd_floating_scroll(int argc, char **argv) {
 		} else {
 			config->floating_scroll_down_cmd = join_args(argv + 1, argc - 1);
 		}
+	} else if (!strcasecmp("left", argv[0])) {
+		free(config->floating_scroll_left_cmd);
+		if (argc < 2) {
+			config->floating_scroll_left_cmd = strdup("");
+		} else {
+			config->floating_scroll_left_cmd = join_args(argv + 1, argc - 1);
+		}
+	} else if (!strcasecmp("right", argv[0])) {
+		free(config->floating_scroll_right_cmd);
+		if (argc < 2) {
+			config->floating_scroll_right_cmd = strdup("");
+		} else {
+			config->floating_scroll_right_cmd = join_args(argv + 1, argc - 1);
+		}
 	} else {
 		error = cmd_results_new(CMD_INVALID, "floating_scroll", "Unknown command: '%s'", argv[0]);
 		return error;

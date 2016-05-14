@@ -186,6 +186,8 @@ struct sway_config {
 	uint32_t resizing_key;
     	char *floating_scroll_up_cmd;
 	char *floating_scroll_down_cmd;
+	char *floating_scroll_left_cmd;
+	char *floating_scroll_right_cmd;
 	enum swayc_layouts default_orientation;
 	enum swayc_layouts default_layout;
 	char *font;
