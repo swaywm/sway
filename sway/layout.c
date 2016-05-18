@@ -594,7 +594,7 @@ void update_geometry(swayc_t *container) {
 
 		int title_bar_height = config->font_height + 4; //borders + padding
 
-		if (parent->layout == L_TABBED) {
+		if (parent->layout == L_TABBED && parent->children->length > 1) {
 			int i, x = 0, w, l, r;
 			l = parent->children->length;
 			w = geometry.size.w / l;
@@ -625,7 +625,7 @@ void update_geometry(swayc_t *container) {
 			geometry.size.w -= (border_left + border_right);
 			geometry.size.h -= (border_bottom + title_bar.size.h);
 			container->title_bar_geometry = title_bar;
-		} else if (parent->layout == L_STACKED) {
+		} else if (parent->layout == L_STACKED && parent->children->length > 1) {
 			int i, y = 0;
 			for (i = 0; i < parent->children->length; ++i) {
 				swayc_t *view = parent->children->items[i];

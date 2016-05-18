@@ -402,7 +402,13 @@ void update_view_border(swayc_t *view) {
 void render_view_borders(wlc_handle view) {
 	swayc_t *c = swayc_by_handle(view);
 
-	if (!c || c->border_type == B_NONE) {
+
+	// emulate i3 behavior for drawing borders for tabbed and stacked layouts:
+	// if we are not the only child in the container, always draw borders,
+	// regardless of the border setting on the individual view
+	if (!c || (c->border_type == B_NONE
+			&& !((c->parent->layout == L_TABBED || c->parent->layout == L_STACKED)
+				&& c->parent->children->length > 1))) {
 		return;
 	}
 
