@@ -83,7 +83,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 }
 
 static void set_panel(struct wl_client *client, struct wl_resource *resource,
-			  struct wl_resource *_output, struct wl_resource *surface) {
+		struct wl_resource *_output, struct wl_resource *surface) {
 	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
 	if (!output) {
 		return;
