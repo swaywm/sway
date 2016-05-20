@@ -78,6 +78,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	config->wl_surface_res = surface;
 	list_add(desktop_shell.backgrounds, config);
 	wl_resource_set_destructor(surface, background_surface_destructor);
+	arrange_windows(swayc_by_handle(output), -1, -1);
 	wlc_output_schedule_render(config->output);
 }
 
