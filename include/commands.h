@@ -59,6 +59,6 @@ void free_cmd_results(struct cmd_results *results);
  */
 const char *cmd_results_to_json(struct cmd_results *results);
 
-void remove_view_from_scratchpad();
+void remove_view_from_scratchpad(swayc_t *);
 
 #endif
