@@ -1557,14 +1557,15 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			if (++i >= argc) {
 				return cmd_results_new(CMD_INVALID, "output", "Missing background file.");
 			}
-			char *src = argv[i];
-			if (++i >= argc) {
+			if (i + 1 >= argc) {
 				return cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode.");
 			}
-			char *mode = argv[i];
+			char *src = join_args(argv + i, argc - i - 1);
+			char *mode = argv[argc - 1];
 			if (wordexp(src, &p, 0) != 0) {
 				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
 			}
+			free(src);
 			src = p.we_wordv[0];
 			if (config->reading && *src != '/') {
 				char *conf = strdup(config->current_config);
