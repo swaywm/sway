@@ -88,7 +88,7 @@ swayc_t *get_focused_container(swayc_t *parent) {
 	if (!parent) {
 		return swayc_active_workspace();
 	}
-	// get focusde container
+	// get focused container
 	while (!parent->is_focused && parent->focused) {
 		parent = parent->focused;
 	}
@@ -112,7 +112,9 @@ bool set_focused_container(swayc_t *c) {
 	swayc_t *focused = get_focused_view(workspace);
 	// if the workspace we are changing focus to has a fullscreen view return
 	if (swayc_is_fullscreen(focused) && focused != c) {
-		return false;
+		// if switching to a workspace with a fullscreen view,
+		// focus on the fullscreen view
+		c = focused;
 	}
 
 	// update container focus from here to root, making necessary changes along
@@ -192,7 +194,7 @@ bool set_focused_container_for(swayc_t *a, swayc_t *c) {
 		return false;
 	}
 
-	// Check if we changing a parent container that will see chnage
+	// Check if we are changing a parent container that will see change
 	bool effective = true;
 	while (find != &root_container) {
 		if (find->parent->focused != find) {
