@@ -144,6 +144,40 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 				}
 				break;
 			}
+		case XKB_KEY_Control_L: // fallthrough
+		case XKB_KEY_Control_R: // fallthrough
+		case XKB_KEY_Shift_L: // fallthrough
+		case XKB_KEY_Shift_R: // fallthrough
+		case XKB_KEY_Caps_Lock: // fallthrough
+		case XKB_KEY_Shift_Lock: // fallthrough
+		case XKB_KEY_Meta_L: // fallthrough
+		case XKB_KEY_Meta_R: // fallthrough
+		case XKB_KEY_Alt_L: // fallthrough
+		case XKB_KEY_Alt_R: // fallthrough
+		case XKB_KEY_Super_L: // fallthrough
+		case XKB_KEY_Super_R: // fallthrough
+		case XKB_KEY_Hyper_L: // fallthrough
+		case XKB_KEY_Hyper_R: // fallthrough
+			{
+				// don't draw screen on modifier keys
+				break;
+			}
+		case XKB_KEY_u: // fallthrough
+		case XKB_KEY_U:
+			{
+				// clear password buffer on ctrl-u
+				if (xkb_state_mod_name_is_active(registry->input->xkb.state,
+						XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0) {
+					render_data.auth_state = AUTH_STATE_BACKSPACE;
+					redraw_screen = 1;
+
+					password_size = 1024;
+					free(password);
+					password = malloc(password_size);
+					password[0] = '\0';
+					break;
+				}
+			}
 		default:
 			{
 				render_data.auth_state = AUTH_STATE_INPUT;
