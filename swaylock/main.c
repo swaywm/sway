@@ -162,11 +162,12 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 				// don't draw screen on modifier keys
 				break;
 			}
+		case XKB_KEY_Escape: // fallthrough
 		case XKB_KEY_u: // fallthrough
 		case XKB_KEY_U:
 			{
-				// clear password buffer on ctrl-u
-				if (xkb_state_mod_name_is_active(registry->input->xkb.state,
+				// clear password buffer on ctrl-u (or escape for i3lock compatibility)
+				if (sym == XKB_KEY_Escape || xkb_state_mod_name_is_active(registry->input->xkb.state,
 						XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0) {
 					render_data.auth_state = AUTH_STATE_BACKSPACE;
 					redraw_screen = 1;
