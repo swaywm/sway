@@ -10,6 +10,7 @@
 #include <pwd.h>
 #include <getopt.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #include "client/window.h"
 #include "client/registry.h"
@@ -20,6 +21,7 @@
 
 struct registry *registry;
 struct render_data render_data;
+bool show_indicator = true;
 
 void wl_dispatch_events() {
 	wl_display_flush(registry->display);
@@ -328,6 +330,7 @@ int main(int argc, char **argv) {
 		{"tiling", no_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 'p'},
+		{"no-unlock-indicator", no_argument, NULL, 'u'},
 		{0, 0, 0, 0}
 	};
 
@@ -340,6 +343,7 @@ int main(int argc, char **argv) {
 		"  -t, --tiling                   Same as --scaling=tile.\n"
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
+		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
 		"  --socket <socket>              Use the specified socket.\n";
 
 	registry = registry_poll();
@@ -347,7 +351,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hc:i:s:tv", long_options, &option_index);
+		c = getopt_long(argc, argv, "hc:i:s:tvu", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -411,6 +415,9 @@ int main(int argc, char **argv) {
 			fprintf(stdout, "version not detected\n");
 #endif
 			exit(EXIT_SUCCESS);
+			break;
+		case 'u':
+			show_indicator = false;
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
@@ -575,7 +582,7 @@ void render(struct render_data *render_data) {
 		const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
 
 		// Add visual indicator
-		if (render_data->auth_state != AUTH_STATE_IDLE) {
+		if (show_indicator && render_data->auth_state != AUTH_STATE_IDLE) {
 			// Draw circle
 			cairo_set_line_width(window->cairo, ARC_THICKNESS);
 			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, 0, 2 * M_PI);

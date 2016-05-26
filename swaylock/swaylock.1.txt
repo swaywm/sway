@@ -35,6 +35,9 @@ Options
 *-t, --tiling*::
 	Same as --scaling=tile.
 
+*-u, --no-unlock-indicator*::
+	Disable the unlock indicator.
+
 *-v, \--version*::
 	Show the version number and quit.
 
