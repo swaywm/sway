@@ -2325,7 +2325,7 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 		// Handle workspace next/prev
 		swayc_t *ws = NULL;
 		if (argc == 2) {
-			if (!(ws=workspace_by_number(argv[1]))) {
+			if (!(ws = workspace_by_number(argv[1]))) {
 				ws = workspace_create(argv[1]);
 			}
 		} else if (strcasecmp(argv[0], "next") == 0) {

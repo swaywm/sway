@@ -110,7 +110,7 @@ bool set_focused_container(swayc_t *c) {
 	// Get workspace for c, get that workspaces current focused container.
 	swayc_t *workspace = swayc_active_workspace_for(c);
 	swayc_t *focused = get_focused_view(workspace);
-	// if the workspace we are changing focus to has a fullscreen view return
+
 	if (swayc_is_fullscreen(focused) && focused != c) {
 		// if switching to a workspace with a fullscreen view,
 		// focus on the fullscreen view

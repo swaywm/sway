@@ -134,32 +134,39 @@ swayc_t *new_output(wlc_handle handle) {
 
 	// Create workspace
 	char *ws_name = NULL;
+	swayc_t *ws = NULL;
+
 	if (name) {
 		for (i = 0; i < config->workspace_outputs->length; ++i) {
 			struct workspace_output *wso = config->workspace_outputs->items[i];
 			if (strcasecmp(wso->output, name) == 0) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
 				// Check if any other workspaces are using this name
-				if (workspace_by_name(wso->workspace)) {
-					sway_log(L_DEBUG, "But it's already taken");
-					break;
+				if ((ws = workspace_by_name(wso->workspace))) {
+					// if yes, move those to this output, because they should be here
+					move_workspace_to(ws, output);
+				} else if (!ws_name) {
+					// set a workspace name in case we need to create a default one
+					ws_name = strdup(wso->workspace);
 				}
-				sway_log(L_DEBUG, "So we're going to use it");
-				ws_name = strdup(wso->workspace);
-				break;
 			}
 		}
 	}
-	if (!ws_name) {
-		ws_name = workspace_next_name(output->name);
+
+	if (output->children->length == 0) {
+		if (!ws_name) {
+			ws_name = workspace_next_name(output->name);
+		}
+		// create and initialize default workspace
+		sway_log(L_DEBUG, "Creating default workspace %s", ws_name);
+		ws = new_workspace(output, ws_name);
+		ws->is_focused = true;
+	} else {
+		sort_workspaces(output);
+		set_focused_container(output->children->items[0]);
 	}
 
-	// create and initialize default workspace
-	swayc_t *ws = new_workspace(output, ws_name);
-	ws->is_focused = true;
-
 	free(ws_name);
-
 	return output;
 }
 
