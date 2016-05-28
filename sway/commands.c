@@ -2328,7 +2328,7 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 			if (!(ws=workspace_by_number(argv[1]))) {
 				ws = workspace_create(argv[1]);
 			}
-		}else if (strcasecmp(argv[0], "next") == 0) {
+		} else if (strcasecmp(argv[0], "next") == 0) {
 			ws = workspace_next();
 		} else if (strcasecmp(argv[0], "prev") == 0) {
 			ws = workspace_prev();
@@ -2343,7 +2343,7 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 				}
 			}
 		} else {
-			if (!(ws= workspace_by_name(argv[0]))) {
+			if (!(ws = workspace_by_name(argv[0]))) {
 				ws = workspace_create(argv[0]);
 			}
 		}

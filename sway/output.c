@@ -193,8 +193,6 @@ int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 		retval = -1;
 	} else if (isdigit(b->name[0])) {
 		retval = 1;
-	} else {
-		retval = strcmp(a->name, b->name);
 	}
 
 	return retval;
