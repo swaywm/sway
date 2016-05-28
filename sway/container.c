@@ -13,6 +13,7 @@
 #include "input_state.h"
 #include "log.h"
 #include "ipc-server.h"
+#include "output.h"
 
 #define ASSERT_NONNULL(PTR) \
 	sway_assert (PTR, #PTR "must be non-null")
@@ -180,24 +181,9 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	workspace->visible = false;
 	workspace->floating = create_list();
 
-	if (isdigit(workspace->name[0])) {
-		// find position for numbered workspace
-		// order: ascending numbers, insert before same number
-		//        numbers before unnumbered
-		int num = strtol(workspace->name, NULL, 10);
-		int i;
-		for (i = 0; i < output->children->length; ++i) {
-			char *name = ((swayc_t *)output->children->items[i])->name;
-			if (!isdigit(name[0]) || num <= strtol(name, NULL, 10)) {
-				break;
-			}
-		}
-		insert_child(output, workspace, i);
+	add_child(output, workspace);
+	sort_workspaces(output);
 
-	} else {
-		// append new unnumbered to the end
-		add_child(output, workspace);
-	}
 	return workspace;
 }
 
@@ -353,6 +339,7 @@ swayc_t *destroy_output(swayc_t *output) {
 				remove_child(child);
 				add_child(root_container.children->items[p], child);
 			}
+			sort_workspaces(root_container.children->items[p]);
 			update_visibility(root_container.children->items[p]);
 			arrange_windows(root_container.children->items[p], -1, -1);
 		}

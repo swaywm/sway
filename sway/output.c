@@ -1,4 +1,6 @@
 #include <strings.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include "output.h"
 #include "log.h"
 
@@ -176,4 +178,26 @@ void get_absolute_center_position(swayc_t *container, struct wlc_point *point) {
 	get_absolute_position(container, point);
 	point->x += container->width/2;
 	point->y += container->height/2;
+}
+
+int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
+	swayc_t *a = *(void **)_a;
+	swayc_t *b = *(void **)_b;
+	int retval = 0;
+
+	if (isdigit(a->name[0]) && isdigit(b->name[0])) {
+		int a_num = strtol(a->name, NULL, 10);
+		int b_num = strtol(b->name, NULL, 10);
+		retval = (a_num < b_num) ? -1 : (a_num > b_num);
+	} else if (isdigit(a->name[0])) {
+		retval = -1;
+	} else if (isdigit(b->name[0])) {
+		retval = 1;
+	}
+
+	return retval;
+}
+
+void sort_workspaces(swayc_t *output) {
+	list_qsort(output->children, sort_workspace_cmp_qsort);
 }

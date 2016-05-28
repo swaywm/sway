@@ -16,4 +16,7 @@ void get_absolute_position(swayc_t *container, struct wlc_point *point);
 // given wlc_point.
 void get_absolute_center_position(swayc_t *container, struct wlc_point *point);
 
+int sort_workspace_cmp_qsort(const void *a, const void *b);
+void sort_workspaces(swayc_t *output);
+
 #endif
