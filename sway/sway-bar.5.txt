@@ -27,7 +27,7 @@ Commands
 **id** <bar_id>::
 	Sets the ID of the bar.
 
-**position** <top|bottom|left|right>::
+**position** <top|bottom>::
 	Sets position of the bar. Default is _bottom_.
 
 **output** <output>::
