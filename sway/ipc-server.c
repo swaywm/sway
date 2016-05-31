@@ -138,6 +138,7 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	int flags;
 	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
 		sway_log_errno(L_INFO, "Unable to set CLOEXEC on IPC client socket");
+		close(client_fd);
 		return 0;
 	}
 
@@ -291,6 +292,11 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 
 	char *buf = malloc(client->payload_length + 1);
+	if (!buf) {
+		sway_log_errno(L_INFO, "Out of memory");
+		ipc_client_disconnect(client);
+		return;
+	}
 	if (client->payload_length > 0)
 	{
 		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
@@ -302,28 +308,27 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			return;
 		}
 	}
+	buf[client->payload_length] = '\0';
 
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
-		buf[client->payload_length] = '\0';
 		struct cmd_results *results = handle_command(buf);
 		const char *json = cmd_results_to_json(results);
 		char reply[256];
 		int length = snprintf(reply, sizeof(reply), "%s", json);
 		ipc_send_reply(client, reply, (uint32_t) length);
 		free_cmd_results(results);
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_SUBSCRIBE:
 	{
-		buf[client->payload_length] = '\0';
 		struct json_object *request = json_tokener_parse(buf);
 		if (request == NULL) {
 			ipc_send_reply(client, "{\"success\": false}", 18);
-			ipc_client_disconnect(client);
-			free(buf);
-			return;
+			sway_log_errno(L_INFO, "Failed to read request");
+			goto exit_cleanup;
 		}
 
 		// parse requested event types
@@ -343,18 +348,18 @@ void ipc_client_handle_command(struct ipc_client *client) {
 #endif
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
-				ipc_client_disconnect(client);
 				json_object_put(request);
-				free(buf);
-				return;
+				sway_log_errno(L_INFO, "Failed to parse request");
+				goto exit_cleanup;
 			}
 		}
 
 		json_object_put(request);
 
 		ipc_send_reply(client, "{\"success\": true}", 17);
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_GET_WORKSPACES:
 	{
 		json_object *workspaces = json_object_new_array();
@@ -362,8 +367,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(workspaces);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(workspaces); // free
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_GET_INPUTS:
 	{
 		json_object *inputs = json_object_new_array();
@@ -380,8 +386,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(inputs);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(inputs);
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_GET_OUTPUTS:
 	{
 		json_object *outputs = json_object_new_array();
@@ -389,8 +396,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(outputs);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(outputs); // free
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_GET_VERSION:
 	{
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
@@ -418,29 +426,29 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(json); // free
 		free(full_version);
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_SWAY_GET_PIXELS:
 	{
 		char response_header[9];
 		memset(response_header, 0, sizeof(response_header));
-		buf[client->payload_length] = '\0';
 		swayc_t *output = swayc_by_test(&root_container, output_by_name_test, buf);
 		if (!output) {
 			sway_log(L_ERROR, "IPC GET_PIXELS request with unknown output name");
 			ipc_send_reply(client, response_header, sizeof(response_header));
-			break;
+			goto exit_cleanup;
 		}
 		struct get_pixels_request *req = malloc(sizeof(struct get_pixels_request));
 		req->client = client;
 		req->output = output->handle;
 		list_add(ipc_get_pixel_requests, req);
 		wlc_output_schedule_render(output->handle);
-		break;
+		goto exit_cleanup;
 	}
+
 	case IPC_GET_BAR_CONFIG:
 	{
-		buf[client->payload_length] = '\0';
 		if (!buf[0]) {
 			// Send list of configured bar IDs
 			json_object *bars = json_object_new_array();
@@ -454,7 +462,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_put(bars); // free
 		} else {
 			// Send particular bar's details
-			buf[client->payload_length] = '\0';
 			struct bar_config *bar = NULL;
 			int i;
 			for (i = 0; i < config->bars->length; ++i) {
@@ -467,23 +474,24 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			if (!bar) {
 				const char *error = "{ \"success\": false, \"error\": \"No bar with that ID\" }";
 				ipc_send_reply(client, error, (uint32_t)strlen(error));
-				break;
+				goto exit_cleanup;
 			}
 			json_object *json = ipc_json_describe_bar_config(bar);
 			const char *json_string = json_object_to_json_string(json);
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 			json_object_put(json); // free
-			break;
 		}
-	}
-	default:
-		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
-		ipc_client_disconnect(client);
-		return;
+		goto exit_cleanup;
 	}
 
-	client->payload_length = 0;
+	default:
+		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
+		goto exit_cleanup;
+	}
+
+exit_cleanup:
 	free(buf);
+	return;
 }
 
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length) {
@@ -498,13 +506,11 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 
 	if (write(client->fd, data, ipc_header_size) == -1) {
 		sway_log_errno(L_INFO, "Unable to send header to IPC client");
-		ipc_client_disconnect(client);
 		return false;
 	}
 
 	if (write(client->fd, payload, payload_length) == -1) {
 		sway_log_errno(L_INFO, "Unable to send payload to IPC client");
-		ipc_client_disconnect(client);
 		return false;
 	}
 
@@ -653,7 +659,10 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 			continue;
 		}
 		client->current_command = event;
-		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		if (!ipc_send_reply(client, json_string, (uint32_t) strlen(json_string))) {
+			sway_log_errno(L_INFO, "Unable to send reply to IPC client");
+			ipc_client_disconnect(client);
+		}
 	}
 }
 
