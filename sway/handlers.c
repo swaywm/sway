@@ -350,6 +350,7 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 		view->desired_height = geometry->size.h;
 
 		if (view->is_floating) {
+			floating_view_sane_size(view);
 			view->width = view->desired_width;
 			view->height = view->desired_height;
 			view->x = geometry->origin.x;

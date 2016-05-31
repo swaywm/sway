@@ -168,6 +168,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle);
  */
 swayc_t *new_floating_view(wlc_handle handle);
 
+void floating_view_sane_size(swayc_t *view);
+
 /**
  * Frees an output's container.
  */
