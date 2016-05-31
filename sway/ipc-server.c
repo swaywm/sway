@@ -490,6 +490,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 
 exit_cleanup:
+	client->payload_length = 0;
 	free(buf);
 	return;
 }
