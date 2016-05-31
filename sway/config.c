@@ -172,6 +172,12 @@ static void config_defaults(struct sway_config *config) {
 	config->font = strdup("monospace 10");
 	config->font_height = get_font_text_height(config->font);
 
+	// floating view
+	config->floating_maximum_width = -1;
+	config->floating_maximum_height = -1;
+	config->floating_minimum_width = 75;
+	config->floating_minimum_height = 50;
+
 	// Flags
 	config->focus_follows_mouse = true;
 	config->mouse_warping = true;

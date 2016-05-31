@@ -328,6 +328,31 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	return view;
 }
 
+void floating_view_sane_size(swayc_t *view) {
+	if (config->floating_minimum_height != -1 &&
+		view->desired_height < config->floating_minimum_height) {
+		view->desired_height = config->floating_minimum_height;
+	}
+	if (config->floating_minimum_width != -1 &&
+		view->desired_width < config->floating_minimum_width) {
+		view->desired_width = config->floating_minimum_width;
+	}
+
+	if (config->floating_maximum_height != -1 &&
+		view->desired_height > config->floating_maximum_height) {
+		view->desired_height = config->floating_maximum_height;
+	}
+	if (config->floating_maximum_width != -1 &&
+		view->desired_width > config->floating_maximum_width) {
+		view->desired_width = config->floating_maximum_width;
+	}
+	sway_log(L_DEBUG, "Sane values for view to %d x %d @ %.f, %.f", 
+		view->desired_width, view->desired_height, view->x, view->y);
+
+	return;
+}
+
+
 // Destroy container
 
 swayc_t *destroy_output(swayc_t *output) {
