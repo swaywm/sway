@@ -232,7 +232,6 @@ struct sway_config {
 	int32_t floating_maximum_height;
 	int32_t floating_minimum_width;
 	int32_t floating_minimum_height;
-	char *floating_minimum_size;
 };
 
 /**
