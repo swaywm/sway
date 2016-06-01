@@ -58,6 +58,7 @@ static sway_cmd cmd_exec;
 static sway_cmd cmd_exec_always;
 static sway_cmd cmd_exit;
 static sway_cmd cmd_floating;
+static sway_cmd cmd_floating_minimum_size;
 static sway_cmd cmd_floating_mod;
 static sway_cmd cmd_floating_scroll;
 static sway_cmd cmd_focus;
@@ -670,6 +671,40 @@ static struct cmd_results *cmd_floating(int argc, char **argv) {
 		remove_view_from_scratchpad(view);
 	}
 	set_focused_container(view);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_floating_minimum_size(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	int32_t width;
+	int32_t height;
+	char *ptr;
+
+	if ((error = checkarg(argc, "floating_minimum_size", EXPECTED_EQUAL_TO, 3))) {
+		return error;
+	}
+	width = strtol(argv[0], &ptr, 10);
+	height = strtol(argv[2], &ptr, 10);
+
+	if (width <= 0) {
+		sway_log(L_DEBUG, "floating_minimum_size invalid width value: '%s'", argv[0]);
+
+	} else {
+		config->floating_minimum_width = width;
+
+	}
+
+	if (height <= 0) {
+		sway_log(L_DEBUG, "floating_minimum_size invalid height value: '%s'", argv[2]);
+	}
+	else {
+		config->floating_minimum_height = height;
+
+	}
+
+	sway_log(L_DEBUG, "New floating_minimum_size: '%d' x '%d'", config->floating_minimum_width, 
+		config->floating_minimum_height);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -2433,6 +2468,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
+	{ "floating_minimum_size", cmd_floating_minimum_size },
 	{ "floating_modifier", cmd_floating_mod },
 	{ "floating_scroll", cmd_floating_scroll },
 	{ "focus", cmd_focus },

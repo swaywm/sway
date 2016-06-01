@@ -65,6 +65,11 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **floating** <enable|disable|toggle>::
 	Make focused view floating, non-floating, or the opposite of what it is now.
 
+**floating_minimum_size** <width> x <height>::
+	Specifies the minimum dimensions of floating windows.
+	Default parameters are 75 x 50.
+	-1 and 0 are invalid parameters, default will be used instead.
+
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
 	directional focus commands will move the focus in that direction. The parent
