@@ -227,11 +227,12 @@ struct sway_config {
 		uint32_t background;
 	} border_colors;
 
-	// floating view minimum
+	// floating view
 	int32_t floating_maximum_width;
 	int32_t floating_maximum_height;
 	int32_t floating_minimum_width;
 	int32_t floating_minimum_height;
+	char *floating_minimum_size;
 };
 
 /**
