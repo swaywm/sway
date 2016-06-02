@@ -329,6 +329,9 @@ swayc_t *new_floating_view(wlc_handle handle) {
 }
 
 void floating_view_sane_size(swayc_t *view) {
+	// floating_minimum is used as sane value.
+	// floating_maximum has priority in case of conflict
+	// TODO: implement total_outputs_dimensions()
 	if (config->floating_minimum_height != -1 &&
 		view->desired_height < config->floating_minimum_height) {
 		view->desired_height = config->floating_minimum_height;
@@ -338,14 +341,26 @@ void floating_view_sane_size(swayc_t *view) {
 		view->desired_width = config->floating_minimum_width;
 	}
 
-	if (config->floating_maximum_height != -1 &&
-		view->desired_height > config->floating_maximum_height) {
-		view->desired_height = config->floating_maximum_height;
-	}
-	if (config->floating_maximum_width != -1 &&
+	// if 0 do not resize, only enforce max value
+	if (config->floating_maximum_height == 0) {
+		// Missing total_outputs_dimensions() using swayc_active_workspace()
+		config->floating_maximum_height = swayc_active_workspace()->height;
+
+	} else if (config->floating_maximum_height != -1 &&
+                view->desired_height > config->floating_maximum_height) {
+                view->desired_height = config->floating_maximum_height;
+        }
+
+	// if 0 do not resize, only enforce max value
+	if (config->floating_maximum_width == 0) {
+		// Missing total_outputs_dimensions() using swayc_active_workspace()
+		config->floating_maximum_width = swayc_active_workspace()->width;
+
+	} else 	if (config->floating_maximum_width != -1 &&
 		view->desired_width > config->floating_maximum_width) {
 		view->desired_width = config->floating_maximum_width;
 	}
+
 	sway_log(L_DEBUG, "Sane values for view to %d x %d @ %.f, %.f", 
 		view->desired_width, view->desired_height, view->x, view->y);
 

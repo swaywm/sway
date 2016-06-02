@@ -65,6 +65,13 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **floating** <enable|disable|toggle>::
 	Make focused view floating, non-floating, or the opposite of what it is now.
 
+**floating_maximum_size** <width> x <height>::
+	Specifies the maximum dimensions of floating windows.
+	Uses the container dimensions as default.
+	-1 x -1 will remove any restriction on dimentions.
+	0 x 0 has the same behavior as not setting any value.
+	If in conflict this option has precedence over floating_minimum_size.
+
 **floating_minimum_size** <width> x <height>::
 	Specifies the minimum dimensions of floating windows.
 	Default parameters are 75 x 50.
