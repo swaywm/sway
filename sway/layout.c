@@ -567,7 +567,8 @@ void update_geometry(swayc_t *container) {
 		int border_right = container->border_thickness;
 
 		// handle hide_edge_borders
-		if (config->hide_edge_borders != E_NONE && gap <= 0) {
+		// include smart_gap check because gap number will not be correct for this application
+		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && ws->children->length == 1))) {
 			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
 			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
 
@@ -582,7 +583,8 @@ void update_geometry(swayc_t *container) {
 			}
 
 			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.y == 0) {
+				if (geometry.origin.y == 0 || geometry.origin.y == container->y) {
+					// this works for swaybar at top
 					border_top = 0;
 				}
 
