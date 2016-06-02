@@ -2152,6 +2152,10 @@ static struct cmd_results *cmd_set(int argc, char **argv) {
 		return error;
 	}
 
+    if (argv[0][0] != '$') {
+        return cmd_results_new(CMD_FAILURE, "set", "Malformed variable assignment, name has to start with $");
+    }
+
 	struct sway_variable *var = NULL;
 	// Find old variable if it exists
 	int i;
