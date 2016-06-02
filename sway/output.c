@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "output.h"
 #include "log.h"
+#include "list.h"
 
 swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
 	if (strcasecmp(name, "left") == 0) {
@@ -180,7 +181,7 @@ void get_absolute_center_position(swayc_t *container, struct wlc_point *point) {
 	point->y += container->height/2;
 }
 
-int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
+static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	swayc_t *a = *(void **)_a;
 	swayc_t *b = *(void **)_b;
 	int retval = 0;
@@ -199,5 +200,5 @@ int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 }
 
 void sort_workspaces(swayc_t *output) {
-	list_qsort(output->children, sort_workspace_cmp_qsort);
+	list_stable_sort(output->children, sort_workspace_cmp_qsort);
 }
