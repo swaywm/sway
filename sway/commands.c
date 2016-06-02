@@ -1632,7 +1632,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			char *src = join_args(argv + i, argc - i - 1);
 			char *mode = argv[argc - 1];
-			if (wordexp(src, &p, 0) != 0) {
+			if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
 				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
 			}
 			free(src);
