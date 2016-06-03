@@ -3047,7 +3047,7 @@ static struct cmd_results *bar_cmd_swaybar_command(int argc, char **argv) {
 }
 
 static struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
-	sway_log(L_ERROR, "warning: tray_output is not supported on wayland");
+	sway_log(L_ERROR, "Warning: tray_output is not supported on wayland");
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
