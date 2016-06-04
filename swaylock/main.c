@@ -360,7 +360,7 @@ int main(int argc, char **argv) {
 		{
 			int colorlen = strlen(optarg);
 			if (colorlen < 6 || colorlen == 7 || colorlen > 8) {
-				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff");
+				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, e.g. rrggbb or rrggbbaa");
 				exit(EXIT_FAILURE);
 			}
 			render_data.color = strtol(optarg, NULL, 16);

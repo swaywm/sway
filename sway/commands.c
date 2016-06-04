@@ -427,7 +427,7 @@ static struct cmd_results *cmd_border(int argc, char **argv) {
 static struct cmd_results *parse_border_color(struct border_colors *border_colors, const char *cmd_name, int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (argc != 5) {
-		return cmd_results_new(CMD_INVALID, cmd_name, "Requires exact 5 color values");
+		return cmd_results_new(CMD_INVALID, cmd_name, "Requires exactly five color values");
 	}
 
 	uint32_t colors[5];
@@ -476,7 +476,7 @@ static struct cmd_results *cmd_client_background(int argc, char **argv) {
 	uint32_t background;
 
 	if (argc != 1) {
-		return cmd_results_new(CMD_INVALID, "client.background", "Expect exact 1 value");
+		return cmd_results_new(CMD_INVALID, "client.background", "Requires exactly one color value");
 	}
 
 	error = add_color("client.background", buffer, argv[0]);
@@ -737,7 +737,7 @@ static struct cmd_results *cmd_floating_minimum_size(int argc, char **argv) {
 
 	}
 
-	sway_log(L_DEBUG, "New floating_minimum_size: '%d' x '%d'", config->floating_minimum_width, 
+	sway_log(L_DEBUG, "New floating_minimum_size: '%d' x '%d'", config->floating_minimum_width,
 		config->floating_minimum_height);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
