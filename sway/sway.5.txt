@@ -100,7 +100,7 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, or _toggle split_.
+	_splitv_, _toggle split_, _stacking_ or _tabbed_.
 
 **move** <left|right|up|down>::
 	Moves the focused container _left_, _right_, _up_, or _down_.
@@ -149,6 +149,54 @@ or triggered at runtime.
 	+
 	**bindcode** <code> <command> is also available for binding with key codes
 	instead of key names.
+
+**client**.<color_class> <border> <background> <text> <indicator> <child_border>::
+	The client commands control the colors of the view borders and title bars. All
+	of the client commands _require_ five color values. (The one exception is
+	**client.background** which _requires_ one color value.) If you only want to
+	specify a subset, supply default colors for all the others. Colors must be
+	defined in hex. i.e. _#rrggbb_ or _#rrggbbaa_ when including the alpha
+	channel.
+	+
+	The command tokens are:
+		**color_class**::: Specifies the view to which the colors apply.
+			**client.background**:::: The color a view will be painted, underneath the
+			client itself. This will only be visible if a client does not fully
+			cover its allocated view space. This command only requires one color. _Note_:
+			This is not currently implemented.
+			**client.focused**:::: The view that has focus.
+			**client.focused_inactive**:::: A view that has focus within its
+			container, but the container is not focused.
+			**client.placeholder**:::: Used when drawing placeholder view contents.
+			Only background and text colors are used. _Note_: This is not
+			currently implemented.
+			**client.unfocused**:::: A view that does not have focus.
+			**client.urgent**:::: A view with an urgency hint. _Note_: This is not
+			currently implemented.
+		**border**::: The border around the title bar.
+		**background**::: The background of the title bar.
+		**text**::: The text color of the title bar.
+		**indicator**::: The color used to indicate where a new view will open. In a
+		tiled container, this would paint the right border of the current view if
+		a new view would be opened to the right. _Note_: This is not currently
+		implemented.
+		**child_border**::: The border around the view itself.
+
++
+The default colors are:
++
+--
+[options="header"]
+|===========================================================================
+|color_class      |border    |background |text      |indicator |child_border
+|background       |n/a       |#ffffffff  |n/a       |n/a       |n/a
+|focused          |#4c7899ff |#285577ff  |#ffffffff |#2e9ef4ff |#285577ff
+|focused_inactive |#333333ff |#5f676aff  |#ffffffff |#484e50ff |#5f676aff
+|unfocused        |#333333ff |#222222ff  |#888888ff |#292d2eff |#222222ff
+|urgent           |#2f343aff |#900000ff  |#ffffffff |#900000ff |#900000ff
+|placeholder      |#000000ff |#0c0c0cff  |#ffffffff |#000000ff |#0c0c0cff
+|===========================================================================
+--
 
 **debuglog** <on|off|toggle>::
 	Enables, disables or toggles logging for debug. The toggle argument cannot
