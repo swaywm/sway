@@ -5,17 +5,24 @@
 char *read_line(FILE *file) {
 	size_t length = 0, size = 128;
 	char *string = malloc(size);
+	char lastChar = '\0';
 	if (!string) {
 		return NULL;
 	}
 	while (1) {
 		int c = getc(file);
+		if (c == '\n' && lastChar == '\\'){
+			--length; // Ignore last character.
+			lastChar = '\0';
+			continue;
+		}
 		if (c == EOF || c == '\n' || c == '\0') {
 			break;
 		}
 		if (c == '\r') {
 			continue;
 		}
+		lastChar = c;
 		if (length == size) {
 			char *new_string = realloc(string, size *= 2);
 			if (!new_string) {

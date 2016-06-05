@@ -455,11 +455,10 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 
 bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;
-	bool multiline = false;
 	enum cmd_status block = CMD_BLOCK_END;
 
 	int line_number = 0;
-	char *line, *mlinebuf = NULL;
+	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
 		line_number++;
@@ -468,45 +467,6 @@ bool read_config(FILE *file, struct sway_config *config) {
 			free(line);
 			continue;
 		}
-		size_t length = strlen(line);
-		if (line[length-1] == '\\') {
-			// Start of multiline
-			if (feof(file)){
-				sway_log(L_ERROR, "Error on line %i '%s': Unexpected EOF on "\
-						"multiline command", line_number, line);
-				free(line);
-				continue;
-			}
-			line[length-1] = '\0';
-			multiline = true;
-		} else
-			multiline = false;
-
-		if (multiline || mlinebuf){
-			size_t mlinebuf_length;
-			if (mlinebuf)
-				mlinebuf_length = strlen(mlinebuf);
-			else
-				mlinebuf_length = 0;
-
-			char *tmp = malloc(mlinebuf_length+length+1); // + '\0'
-			tmp[0]='\0'; // if mlinebuf_length==0 strncpy won't do anything. Make a null string.
-			strncpy(tmp, mlinebuf, mlinebuf_length);
-			tmp[mlinebuf_length]='\0'; // strncpy won't add '\0' at the end...
-			strcat(tmp, line);
-			if (mlinebuf)
-				free(mlinebuf);
-			free(line);
-			mlinebuf = tmp;
-			if (multiline) // The following line is part of a multi line config.
-				continue;
-			else {         // This is the last line of a multi line config.
-				line = mlinebuf;
-				sway_log(L_INFO, "Processing parsed multiline command '%s'", line);
-				mlinebuf = NULL;
-			}
-		}
-
 		struct cmd_results *res = config_command(line, block);
 		switch(res->status) {
 		case CMD_FAILURE:
