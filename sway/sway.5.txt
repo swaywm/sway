@@ -140,6 +140,12 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 The following commands may be used either in the configuration file
 or triggered at runtime.
 
+**assign** <criteria> [→] <workspace>::
+	Assigns views matching _criteria_ (see **Criteria** section below) to
+	_workspace_. The → (U+2192) is optional and purely for aesthetics. This
+	command is exactly equivalent to "for_window <criteria> move container to
+	workspace <workspace>".
+
 **bindsym** <key combo> <command>::
 	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
 	names here (**xev**(1) is a good tool for discovering them). An example
