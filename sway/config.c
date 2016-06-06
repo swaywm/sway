@@ -388,6 +388,11 @@ static bool load_include_config(const char *path, const char *parent_dir, struct
 	char *real_path = realpath(full_path, NULL);
 	free(full_path);
 
+	if (real_path == NULL) {
+		sway_log(L_DEBUG, "%s not found.", path);
+		return false;
+	}
+
 	// check if config has already been included
 	int j;
 	for (j = 0; j < config->config_chain->length; ++j) {
