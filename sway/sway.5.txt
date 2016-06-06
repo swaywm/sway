@@ -16,6 +16,12 @@ on startup.  These commands usually consist of setting your preferences and
 setting key bindings. An example config is likely present in /etc/sway/config
 for you to check out.
 
+Lines in the configuration file might be extended through multiple lines by
+adding a '\' character at the end of line. e.g.:
+
+	bindsym Shift+XF86AudioRaiseVolume exec pactl set-sink-volume \
+		$(pactl list sinks | grep -B 1 RUNNING | sed '1q;d' | sed 's/[^0-9]\+//g') +5%
+
 These commands can be executed in your config file, via **sway-msg**(1), or via
 the bindsym command.
 
@@ -100,7 +106,7 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, or _toggle split_.
+	_splitv_, _toggle split_, _stacking_ or _tabbed_.
 
 **move** <left|right|up|down>::
 	Moves the focused container _left_, _right_, _up_, or _down_.
@@ -140,6 +146,12 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 The following commands may be used either in the configuration file
 or triggered at runtime.
 
+**assign** <criteria> [→] <workspace>::
+	Assigns views matching _criteria_ (see **Criteria** section below) to
+	_workspace_. The → (U+2192) is optional and purely for aesthetics. This
+	command is exactly equivalent to "for_window <criteria> move container to
+	workspace <workspace>".
+
 **bindsym** <key combo> <command>::
 	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
 	names here (**xev**(1) is a good tool for discovering them). An example
@@ -149,6 +161,54 @@ or triggered at runtime.
 	+
 	**bindcode** <code> <command> is also available for binding with key codes
 	instead of key names.
+
+**client**.<color_class> <border> <background> <text> <indicator> <child_border>::
+	The client commands control the colors of the view borders and title bars. All
+	of the client commands _require_ five color values. (The one exception is
+	**client.background** which _requires_ one color value.) If you only want to
+	specify a subset, supply default colors for all the others. Colors must be
+	defined in hex. i.e. _#rrggbb_ or _#rrggbbaa_ when including the alpha
+	channel.
+	+
+	The command tokens are:
+		**color_class**::: Specifies the view to which the colors apply.
+			**client.background**:::: The color a view will be painted, underneath the
+			client itself. This will only be visible if a client does not fully
+			cover its allocated view space. This command only requires one color. _Note_:
+			This is not currently implemented.
+			**client.focused**:::: The view that has focus.
+			**client.focused_inactive**:::: A view that has focus within its
+			container, but the container is not focused.
+			**client.placeholder**:::: Used when drawing placeholder view contents.
+			Only background and text colors are used. _Note_: This is not
+			currently implemented.
+			**client.unfocused**:::: A view that does not have focus.
+			**client.urgent**:::: A view with an urgency hint. _Note_: This is not
+			currently implemented.
+		**border**::: The border around the title bar.
+		**background**::: The background of the title bar.
+		**text**::: The text color of the title bar.
+		**indicator**::: The color used to indicate where a new view will open. In a
+		tiled container, this would paint the right border of the current view if
+		a new view would be opened to the right. _Note_: This is not currently
+		implemented.
+		**child_border**::: The border around the view itself.
+
++
+The default colors are:
++
+--
+[options="header"]
+|===========================================================================
+|color_class      |border    |background |text      |indicator |child_border
+|background       |n/a       |#ffffffff  |n/a       |n/a       |n/a
+|focused          |#4c7899ff |#285577ff  |#ffffffff |#2e9ef4ff |#285577ff
+|focused_inactive |#333333ff |#5f676aff  |#ffffffff |#484e50ff |#5f676aff
+|unfocused        |#333333ff |#222222ff  |#888888ff |#292d2eff |#222222ff
+|urgent           |#2f343aff |#900000ff  |#ffffffff |#900000ff |#900000ff
+|placeholder      |#000000ff |#0c0c0cff  |#ffffffff |#000000ff |#0c0c0cff
+|===========================================================================
+--
 
 **debuglog** <on|off|toggle>::
 	Enables, disables or toggles logging for debug. The toggle argument cannot

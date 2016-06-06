@@ -119,6 +119,7 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
+		case XKB_KEY_KP_Enter: // fallthrough
 		case XKB_KEY_Return:
 			render_data.auth_state = AUTH_STATE_VALIDATING;
 
@@ -159,7 +160,7 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 		case XKB_KEY_Super_L: // fallthrough
 		case XKB_KEY_Super_R: // fallthrough
 		case XKB_KEY_Hyper_L: // fallthrough
-		case XKB_KEY_Hyper_R: // fallthrough
+		case XKB_KEY_Hyper_R:
 			{
 				// don't draw screen on modifier keys
 				break;
@@ -360,7 +361,7 @@ int main(int argc, char **argv) {
 		{
 			int colorlen = strlen(optarg);
 			if (colorlen < 6 || colorlen == 7 || colorlen > 8) {
-				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, e.g. ff0000 or ff0000ff");
+				sway_log(L_ERROR, "color must be specified in 3 or 4 byte format, i.e. rrggbb or rrggbbaa");
 				exit(EXIT_FAILURE);
 			}
 			render_data.color = strtol(optarg, NULL, 16);

@@ -61,7 +61,7 @@ Colors
 ------
 
 Colors are defined within a _colors { }_ block inside a _bar { }_ block. Colors
-must be defined in hex. E.g. _#fff000_ or _#fff000ff_ when including the alpha
+must be defined in hex. i.e. _#rrggbb_ or _#rrggbbaa_ when including the alpha
 channel.
 
 **background** <color>::
