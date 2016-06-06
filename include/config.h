@@ -92,6 +92,13 @@ struct workspace_output {
 	char *workspace;
 };
 
+struct pid_workspace {
+	pid_t *pid;
+	char *workspace;
+};
+
+void free_pid_workspace(struct pid_workspace *pw);
+
 struct bar_config {
 	/**
 	 * One of "dock", "hide", "invisible"
@@ -175,6 +182,7 @@ struct sway_config {
 	list_t *bars;
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
+	list_t *pid_workspaces;
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *criteria;

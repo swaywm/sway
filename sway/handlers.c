@@ -185,6 +185,63 @@ static bool handle_view_created(wlc_handle handle) {
 	if (parent) {
 		focused = swayc_by_handle(parent);
 	}
+
+	// TODO: test with wayland apps (gnome terminal or corebird)
+
+	// try to match this up to a pid_workspace
+	struct wl_client *client = wlc_view_get_wl_client(handle);
+	pid_t pid;
+	struct pid_workspace *pw = NULL;
+
+	sway_log(L_DEBUG, "checking pid workspaces, handle is %lu", handle);
+
+	if (client) {
+		sway_log(L_DEBUG, "found client");
+		wl_client_get_credentials(client, &pid, NULL, NULL);
+	}
+
+	sway_log(L_DEBUG, "all pid_workspaces");
+	for (int k = 0; k < config->pid_workspaces->length; k++) {
+		pw = config->pid_workspaces->items[k];
+		sway_log(L_DEBUG, "pid %d workspace %s", *pw->pid, pw->workspace);
+	}
+
+	if (pid) {
+		sway_log(L_DEBUG, "found pid %d for client", pid);
+		int i;
+		for (i = 0; i < config->pid_workspaces->length; i++) {
+			pw = config->pid_workspaces->items[i];
+			pid_t *pw_pid = pw->pid;
+			sway_log(L_DEBUG, "checking pid %d against pid %d, i is %d", pid, *pw_pid, i);
+			if (pid == *pw_pid) {
+				sway_log(L_DEBUG, "found pid_workspace for pid, %d %s", pid, pw->workspace);
+				break;
+			}
+			pw = NULL;
+		}
+
+		swayc_t *ws = NULL;
+
+		if (pw) {
+			ws = workspace_by_name(pw->workspace);
+
+			if (!ws) {
+				sway_log(L_DEBUG, "creating workspace %s because it disappeared", pw->workspace);
+				ws = workspace_create(pw->workspace);
+			}
+
+			if (ws) {
+				sway_log(L_DEBUG, "workspace exists, name is %s", ws->name);
+				focused = ws;
+			}
+
+			list_del(config->pid_workspaces, i);
+		}
+	}
+
+	free_pid_workspace(pw);
+	// free(&pid);
+
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
 		// Move focus from floating view
@@ -220,7 +277,7 @@ static bool handle_view_created(wlc_handle handle) {
 	// Dmenu keeps viewfocus, but others with this flag don't, for now simulate
 	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
-// 		locked_view_focus = true;
+	// locked_view_focus = true;
 		wlc_view_focus(handle);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);

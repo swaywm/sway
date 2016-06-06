@@ -89,6 +89,15 @@ static void free_workspace_output(struct workspace_output *wo) {
 	free(wo);
 }
 
+void free_pid_workspace(struct pid_workspace *pw) {
+	if (!pw) {
+		return;
+	}
+	free(pw->pid);
+	free(pw->workspace);
+	free(pw);
+}
+
 void free_config(struct sway_config *config) {
 	int i;
 	for (i = 0; i < config->symbols->length; ++i) {
@@ -112,6 +121,11 @@ void free_config(struct sway_config *config) {
 		free_workspace_output(config->workspace_outputs->items[i]);
 	}
 	list_free(config->workspace_outputs);
+
+	for (i = 0; i < config->pid_workspaces->length; ++i) {
+		free_pid_workspace(config->pid_workspaces->items[i]);
+	}
+	list_free(config->pid_workspaces);
 
 	for (i = 0; i < config->criteria->length; ++i) {
 		free_criteria(config->criteria->items[i]);
@@ -148,6 +162,7 @@ static void config_defaults(struct sway_config *config) {
 	config->modes = create_list();
 	config->bars = create_list();
 	config->workspace_outputs = create_list();
+	config->pid_workspaces = create_list();
 	config->criteria = create_list();
 	config->input_configs = create_list();
 	config->output_configs = create_list();
