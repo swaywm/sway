@@ -16,6 +16,12 @@ on startup.  These commands usually consist of setting your preferences and
 setting key bindings. An example config is likely present in /etc/sway/config
 for you to check out.
 
+Lines in the configuration file might be extended through multiple lines by
+adding a '\' character at the end of line. e.g.:
+
+	bindsym Shift+XF86AudioRaiseVolume exec pactl set-sink-volume \
+		$(pactl list sinks | grep -B 1 RUNNING | sed '1q;d' | sed 's/[^0-9]\+//g') +5%
+
 These commands can be executed in your config file, via **sway-msg**(1), or via
 the bindsym command.
 
@@ -139,6 +145,12 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 The following commands may be used either in the configuration file
 or triggered at runtime.
+
+**assign** <criteria> [→] <workspace>::
+	Assigns views matching _criteria_ (see **Criteria** section below) to
+	_workspace_. The → (U+2192) is optional and purely for aesthetics. This
+	command is exactly equivalent to "for_window <criteria> move container to
+	workspace <workspace>".
 
 **bindsym** <key combo> <command>::
 	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
