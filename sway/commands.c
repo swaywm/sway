@@ -85,6 +85,7 @@ static sway_cmd cmd_reload;
 static sway_cmd cmd_resize;
 static sway_cmd cmd_scratchpad;
 static sway_cmd cmd_set;
+static sway_cmd cmd_setenv;
 static sway_cmd cmd_smart_gaps;
 static sway_cmd cmd_split;
 static sway_cmd cmd_splith;
@@ -2188,6 +2189,29 @@ static struct cmd_results *cmd_set(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+/**
+* Set environment variables for sway session
+**/
+static struct cmd_results *cmd_setenv(int argc, char **argv) {
+	int env;
+	struct cmd_results *error = NULL;
+
+	if ((error = checkarg(argc, "setenv", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+
+	if (argv[0][0] == '$') {
+		memmove(argv[0], argv[0]+1, strlen(argv[0]));
+	}
+
+	env = setenv(argv[0], argv[1], 1);
+	if (env == -1) {
+		return cmd_results_new(CMD_FAILURE, "setenv", "Variable name contains '=' or has size 0.");
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 	char *name = layout == L_VERT  ? "splitv" :
 		layout == L_HORIZ ? "splith" : "split";
@@ -2544,6 +2568,7 @@ static struct cmd_handler handlers[] = {
 	{ "scratchpad", cmd_scratchpad },
 	{ "seamless_mouse", cmd_seamless_mouse },
 	{ "set", cmd_set },
+	{ "setenv", cmd_setenv },
 	{ "smart_gaps", cmd_smart_gaps },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
