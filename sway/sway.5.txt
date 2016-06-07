@@ -46,6 +46,9 @@ The following commands may only be used in the configuration file.
 	Creates a substitution for _value_ that can be used with $_name_ in other
 	commands.
 
+**setenv** <name> <value>::
+	Creates an environment variable that can be used during sway session.
+
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with **bindsym** or at runtime through **swaymsg**(1).
 
