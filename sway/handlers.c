@@ -7,7 +7,9 @@
 #include <wlc/wlc-render.h>
 #include <wlc/wlc-wayland.h>
 #include <ctype.h>
+#include <unistd.h>
 
+#include "util.h"
 #include "handlers.h"
 #include "border.h"
 #include "log.h"
@@ -180,6 +182,12 @@ static bool handle_view_created(wlc_handle handle) {
 	wlc_handle parent = wlc_view_get_parent(handle);
 	swayc_t *focused = NULL;
 	swayc_t *newview = NULL;
+	swayc_t *current_ws = swayc_active_workspace();
+	bool return_to_workspace = false;
+
+	if (current_ws) {
+		sway_log(L_DEBUG, "current workspace is %s", current_ws->name);
+	}
 
 	// Get parent container, to add view in
 	if (parent) {
@@ -209,16 +217,22 @@ static bool handle_view_created(wlc_handle handle) {
 	if (pid) {
 		sway_log(L_DEBUG, "found pid %d for client", pid);
 		int i;
-		for (i = 0; i < config->pid_workspaces->length; i++) {
-			pw = config->pid_workspaces->items[i];
-			pid_t *pw_pid = pw->pid;
-			sway_log(L_DEBUG, "checking pid %d against pid %d, i is %d", pid, *pw_pid, i);
-			if (pid == *pw_pid) {
-				sway_log(L_DEBUG, "found pid_workspace for pid, %d %s", pid, pw->workspace);
-				break;
+		do {
+			for (i = 0; i < config->pid_workspaces->length; i++) {
+				pw = config->pid_workspaces->items[i];
+				pid_t *pw_pid = pw->pid;
+				sway_log(L_DEBUG, "checking pid %d against pid %d, i is %d", pid, *pw_pid, i);
+				if (pid == *pw_pid) {
+					sway_log(L_DEBUG, "found pid_workspace for pid, %d %s", pid, pw->workspace);
+					break; // out of for loop
+				}
+				pw = NULL;
 			}
-			pw = NULL;
-		}
+			if (pw) {
+				break; // out of do-while loop
+			}
+			pid = get_parent_pid(pid);
+		} while (pid > -1 && pid != getpid());
 
 		swayc_t *ws = NULL;
 
@@ -233,6 +247,10 @@ static bool handle_view_created(wlc_handle handle) {
 			if (ws) {
 				sway_log(L_DEBUG, "workspace exists, name is %s", ws->name);
 				focused = ws;
+
+				if (current_ws && (strcmp(current_ws->name, ws->name) != 0)) {
+					return_to_workspace = true;
+				}
 			}
 
 			list_del(config->pid_workspaces, i);
@@ -240,7 +258,6 @@ static bool handle_view_created(wlc_handle handle) {
 	}
 
 	free_pid_workspace(pw);
-	// free(&pid);
 
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
@@ -330,6 +347,12 @@ static bool handle_view_created(wlc_handle handle) {
 		list_add(output->unmanaged, h);
 	}
 	wlc_view_set_mask(handle, VISIBLE);
+
+	if (return_to_workspace && current_ws) {
+		sway_log(L_DEBUG, "return_to_workspace && current_ws");
+		workspace_switch(current_ws);
+		set_focused_container(current_ws->focused);
+	}
 	return true;
 }
 

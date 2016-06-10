@@ -2,6 +2,7 @@
 #define _SWAY_UTIL_H
 
 #include <stdint.h>
+#include <unistd.h>
 #include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon.h>
 
@@ -35,5 +36,12 @@ const char *get_modifier_name_by_mask(uint32_t modifier);
  * Populates the names array and return the number of names added.
  */
 int get_modifier_names(const char **names, uint32_t modifier_masks);
+
+/**
+ * Get the pid of a parent process given the pid of a child process.
+ *
+ * Returns the parent pid or NULL if the parent pid cannot be determined.
+ */
+pid_t get_parent_pid(pid_t pid);
 
 #endif
