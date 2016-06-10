@@ -52,7 +52,7 @@ You may run sway from an ongoing x11 session to run it within x. Otherwise, you
 can run sway on a tty and it will use your outputs directly.
 
 *Important note for nvidia users*: The proprietary nvidia driver does _not_ have
-support for Wayland as of 2016-03-27. Use nouveau.
+support for Wayland as of 2016-06-10. Use nouveau.
 
 Commands
 --------
@@ -60,7 +60,7 @@ Commands
 If sway is currently running, you may run _sway [command]_ to send _command_ to
 the running instance of sway. The same commands you would use in the config file
 are valid here (see **sway**(5)). For compatibility reasons, you may also issue
-commands with **sway-msg**(1) or **i3-msg**(1) (or even with **i3**(1), probably).
+commands with **swaymsg**(1) or **i3-msg**(1) (or even with **i3**(1), probably).
 
 Configuration
 -------------
@@ -69,10 +69,13 @@ If _-c_ is not specified, sway will look in several locations for your config
 file. The suggested location for your config file is ~/.config/sway/config.
 ~/.sway/config will also work, and the rest of the usual XDG config locations
 are supported.  If no sway config is found, sway will attempt to load an i3
-config from all the config locations i3 supports.  At last, sway looks for a
-config file in a fallback directory, which is /etc/sway/ by default. A standard
+config from all the config locations i3 supports. Sway looks for a config file in
+a fallback directory as a last resort, which is /etc/sway/ by default. A standard
 configuration file is installed at this location.  If still nothing is found,
 you will receive an error.
+
+To write your own config, it's suggested that you copy the default config file to
+the location of your choosing and start there.
 
 For information on the config file format, see **sway**(5).
 
@@ -86,4 +89,4 @@ source contributors. For more information about sway development, see
 See Also
 --------
 
-**sway**(5) **swaymsg**(1) **swaygrab**(1) **sway-input** (5) **sway-bar** (5)
+**sway**(5) **swaymsg**(1) **swaygrab**(1) **sway-input**(5) **sway-bar**(5)

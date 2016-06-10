@@ -22,7 +22,7 @@ adding a '\' character at the end of line. e.g.:
 	bindsym Shift+XF86AudioRaiseVolume exec pactl set-sink-volume \
 		$(pactl list sinks | grep -B 1 RUNNING | sed '1q;d' | sed 's/[^0-9]\+//g') +5%
 
-These commands can be executed in your config file, via **sway-msg**(1), or via
+These commands can be executed in your config file, via **swaymsg**(1), or via
 the bindsym command.
 
 Commands
@@ -36,52 +36,27 @@ The following commands may only be used in the configuration file.
 	+
 	See **sway-bar**(5) for details.
 
-**input** <input device> <block of commands>::
-	Append _{_ to this command, the following lines will be commands to configure
-	the named input device, and _}_ on its own line will close the block.
-	+
-	See **sway-input**(5) for details.
-
 **set** <name> <value>::
-	Creates a substitution for _value_ that can be used with $_name_ in other
-	commands.
+	Sets variable $name to _value_. You can use the new variable in the arguments
+	of future commands.
 
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with **bindsym** or at runtime through **swaymsg**(1).
 
 **border** <normal|pixel> [<n>]::
 	Set border style for focused window. _normal_ includes a border of thickness
-	_n_ and a title bar. _pixel_ is just the border without title bar. Default is
-	_normal_ with border thickness 2.
+	_n_ and a title bar. _pixel_ is a border without title bar _n_ pixels thick.
+	Default is _normal_ with border thickness 2.
 
 **border** <none|toggle>::
 	Set border style for focused window to _none_ or _toggle_ between the
 	available border styles: _normal_, _pixel_, _none_.
-
-**new_window** <normal|none|pixel> [<n>]::
-	Set default border style for new windows.
-
-**new_float** <normal|none|pixel> [<n>]::
-	Set default border style for new floating windows. This does only apply to
-	windows that are spawned in floating mode.
 
 **exit**::
 	Exit sway and end your Wayland session.
 
 **floating** <enable|disable|toggle>::
 	Make focused view floating, non-floating, or the opposite of what it is now.
-
-**floating_maximum_size** <width> x <height>::
-	Specifies the maximum dimensions of floating windows.
-	Uses the container dimensions as default.
-	-1 x -1 will remove any restriction on dimentions.
-	0 x 0 has the same behavior as not setting any value.
-	If in conflict this option has precedence over floating_minimum_size.
-
-**floating_minimum_size** <width> x <height>::
-	Specifies the minimum dimensions of floating windows.
-	Default parameters are 75 x 50.
-	-1 and 0 are invalid parameters, default will be used instead.
 
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, or _parent_. The
@@ -100,9 +75,6 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **fullscreen**::
 	Toggles fullscreen status for the focused view.
-
-**hide_edge_borders** <none|vertical|horizontal|both>::
-	Hide window borders adjacent to the screen edges. Default is _none_.
 
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
@@ -140,8 +112,8 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Equivalent to **split toggle**.
 
 **sticky** <enable|disable|toggle>::
-	If enabled and the windows is floating it will always be present on the active
-	workspace on that output.
+	"Sticks" a floating window to the current output so that it shows up on all
+	workspaces.
 
 The following commands may be used either in the configuration file
 or triggered at runtime.
@@ -155,7 +127,7 @@ or triggered at runtime.
 **bindsym** <key combo> <command>::
 	Binds _key combo_ to execute _command_ when pressed. You may use XKB key
 	names here (**xev**(1) is a good tool for discovering them). An example
-	bindsym command would be _bindsym Mod1+Shift+f exec firefox_, which would
+	bindsym command would be **bindsym Mod1+Shift+f exec firefox**, which would
 	execute Firefox if the alt, shift, and F keys are pressed together. Any
 	valid sway command is eligible to be bound to a key combo.
 	+
@@ -201,18 +173,18 @@ The default colors are:
 [options="header"]
 |===========================================================================
 |color_class      |border    |background |text      |indicator |child_border
-|background       |n/a       |#ffffffff  |n/a       |n/a       |n/a
-|focused          |#4c7899ff |#285577ff  |#ffffffff |#2e9ef4ff |#285577ff
-|focused_inactive |#333333ff |#5f676aff  |#ffffffff |#484e50ff |#5f676aff
-|unfocused        |#333333ff |#222222ff  |#888888ff |#292d2eff |#222222ff
-|urgent           |#2f343aff |#900000ff  |#ffffffff |#900000ff |#900000ff
-|placeholder      |#000000ff |#0c0c0cff  |#ffffffff |#000000ff |#0c0c0cff
+|background       |n/a       |#ffffff  |n/a       |n/a       |n/a
+|focused          |#4c7899 |#285577  |#ffffff |#2e9ef4 |#285577
+|focused_inactive |#333333 |#5f676a  |#ffffff |#484e50 |#5f676a
+|unfocused        |#333333 |#222222  |#888888 |#292d2e |#222222
+|urgent           |#2f343a |#900000  |#ffffff |#900000 |#900000
+|placeholder      |#000000 |#0c0c0c  |#ffffff |#000000 |#0c0c0c
 |===========================================================================
 --
 
 **debuglog** <on|off|toggle>::
-	Enables, disables or toggles logging for debug. The toggle argument cannot
-	be used in the configuration file.
+	Enables, disables or toggles debug logging. The toggle argument cannot be used
+	in the configuration file.
 
 **exec** <shell command>::
 	Executes _shell command_ with sh.
@@ -221,21 +193,32 @@ The default colors are:
 	Like exec, but the shell command will be executed _again_ after *reload* or
 	*restart* is executed.
 
+**floating_maximum_size** <width> x <height>::
+	Specifies the maximum dimensions of floating windows.
+	Uses the container dimensions as default.
+	-1 x -1 will remove any restriction on dimentions.
+	0 x 0 has the same behavior as not setting any value.
+	If in conflict this option has precedence over floating_minimum_size.
+
+**floating_minimum_size** <width> x <height>::
+	Specifies the minimum dimensions of floating windows.
+	Default parameters are 75 x 50.
+	-1 and 0 are invalid parameters, default will be used instead.
+
 **floating_modifier** <modifier> [normal|inverse]::
-	When the _modifier_ key is held down, you may use left click to drag floating
+	When the _modifier_ key is held down, you may hold left click to move floating
 	windows, and right click to resize them. Unlike i3, this modifier may also be
 	used to resize and move windows that are tiled. With the _inverse_ mode
 	enabled, left click is used for resizing and right click for dragging. The
 	mode paramenter is optional and defaults to _normal_ if it isn't defined.
 
 **floating_scroll** <up|down|left|right> [command]::
-	Sets the command to be executed on scrolling in the specified
-	direction while holding the floating modifier. Resets the
-	command, when given no arguments.
+	Sets a command to be executed when the mouse wheel is scrolled in the
+	specified direction while holding the floating modifier. Resets the command,
+	when given no arguments.
 
 **focus_follows_mouse** <yes|no>::
-	If set to _yes_, the currently focused view will change as you move your
-	mouse around the screen to the view that ends up underneath your mouse.
+	If set to _yes_, moving your mouse over a window will focus that window.
 
 **for_window** <criteria> <command>::
 	Whenever a window that matches _criteria_ appears, run list of commands. See
@@ -262,6 +245,15 @@ The default colors are:
 	workspace (or current workspace), and _current_ changes gaps for the current
 	view or workspace.
 
+**hide_edge_borders** <none|vertical|horizontal|both>::
+	Hide window borders adjacent to the screen edges. Default is _none_.
+
+**input** <input device> <block of commands>::
+	Append _{_ to this command, the following lines will be commands to configure
+	the named input device, and _}_ on its own line will close the block.
+	+
+	See **sway-input**(5) for details.
+
 **smart_gaps** <on|off>::
 	If smart_gaps are _on_ then gaps will only be enabled if a workspace has more
 	than one child container.
@@ -275,8 +267,20 @@ The default colors are:
 	When _output_: place mouse at center of newly focused window when changing
 	output. When _none_: don't move mouse.
 
+**new_window** <normal|none|pixel> [<n>]::
+	Set default border style for new windows.
+
+**new_float** <normal|none|pixel> [<n>]::
+	Set default border style for new floating windows. This only applies to
+	windows that are spawned in floating mode, not windows that become floating
+	after the fact.
+
 **output** <name> <resolution|res> <WIDTHxHEIGHT>::
 	Configures the specified output to use the given resolution.
+	+
+	_Note_: sway does not currently support modesetting. Your output's native
+	resolution will be used and the screen will be scaled from the resolution
+	specified to your native resolution.
 
 **output** <name> <position|pos> <X,Y>::
 	Configures the specified output to be arranged at the given position.

@@ -19,10 +19,15 @@ Commands
 --------
 
 **status_command** <status command>::
-	Executes the bar _status command_ with _sh -c_.
+	Executes the bar _status command_ with _sh -c_. Each line of text printed to
+	stdout from this command will be displayed in the status area of the bar. You
+	can also use the i3bar JSON protocol:
+	+
+	https://i3wm.org/docs/i3bar-protocol.html
 
 **pango_markup** <enabled|disabled>::
-	Enables or disables pango markup for plaintext statuslines.
+	Enables or disables pango markup for status lines. This has no effect on
+	status lines using the i3bar JSON protocol.
 
 **id** <bar_id>::
 	Sets the ID of the bar.
@@ -112,4 +117,4 @@ channel.
 See Also
 --------
 
-**sway**(5) **sway-input**(5)
+**sway**(5)
