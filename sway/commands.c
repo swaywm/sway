@@ -1692,9 +1692,13 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		swayc_t *cont = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
 			cont = root_container.children->items[i];
-			if (cont->name && strcmp(cont->name, output->name) == 0) {
+			if (cont->name && ((strcmp(cont->name, output->name) == 0) || (strcmp(output->name, "*") == 0))) {
 				apply_output_config(output, cont);
-				break;
+
+				if (strcmp(output->name, "*") != 0) {
+					// stop looking if the output config isn't applicable to all outputs
+					break;
+				}
 			}
 		}
 	}
