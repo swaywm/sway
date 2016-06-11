@@ -5,6 +5,20 @@
 #include "log.h"
 #include "input_state.h"
 #include "handlers.h"
+#include "resize.h"
+
+bool set_size_tiled(int amount, bool use_width) {
+	int desired;
+	swayc_t *focused = get_focused_view(swayc_active_workspace());
+
+	if (use_width) {
+		desired = amount - focused->width;
+	} else {
+		desired = amount - focused->height;
+	}
+
+	return resize_tiled(desired, use_width);
+}
 
 bool resize_tiled(int amount, bool use_width) {
 	swayc_t *parent = get_focused_view(swayc_active_workspace());
