@@ -2,6 +2,7 @@
 #define _SWAY_WORKSPACE_H
 
 #include <wlc/wlc.h>
+#include <unistd.h>
 #include "list.h"
 #include "layout.h"
 
@@ -16,5 +17,6 @@ swayc_t *workspace_output_next();
 swayc_t *workspace_next();
 swayc_t *workspace_output_prev();
 swayc_t *workspace_prev();
+swayc_t *workspace_for_pid(pid_t pid);
 
 #endif

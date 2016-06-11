@@ -7,9 +7,7 @@
 #include <wlc/wlc-render.h>
 #include <wlc/wlc-wayland.h>
 #include <ctype.h>
-#include <unistd.h>
 
-#include "util.h"
 #include "handlers.h"
 #include "border.h"
 #include "log.h"
@@ -184,80 +182,29 @@ static bool handle_view_created(wlc_handle handle) {
 	swayc_t *newview = NULL;
 	swayc_t *current_ws = swayc_active_workspace();
 	bool return_to_workspace = false;
-
-	if (current_ws) {
-		sway_log(L_DEBUG, "current workspace is %s", current_ws->name);
-	}
+	struct wl_client *client = wlc_view_get_wl_client(handle);
+	pid_t pid;
 
 	// Get parent container, to add view in
 	if (parent) {
 		focused = swayc_by_handle(parent);
 	}
 
-	// TODO: test with wayland apps (gnome terminal or corebird)
-
-	// try to match this up to a pid_workspace
-	struct wl_client *client = wlc_view_get_wl_client(handle);
-	pid_t pid;
-	struct pid_workspace *pw = NULL;
-
-	sway_log(L_DEBUG, "checking pid workspaces, handle is %lu", handle);
-
 	if (client) {
-		sway_log(L_DEBUG, "found client");
+		// below only works on wayland windows. need a wlc
+		// api that will work for both wayland and x.
 		wl_client_get_credentials(client, &pid, NULL, NULL);
-	}
 
-	sway_log(L_DEBUG, "all pid_workspaces");
-	for (int k = 0; k < config->pid_workspaces->length; k++) {
-		pw = config->pid_workspaces->items[k];
-		sway_log(L_DEBUG, "pid %d workspace %s", *pw->pid, pw->workspace);
-	}
-
-	if (pid) {
-		sway_log(L_DEBUG, "found pid %d for client", pid);
-		int i;
-		do {
-			for (i = 0; i < config->pid_workspaces->length; i++) {
-				pw = config->pid_workspaces->items[i];
-				pid_t *pw_pid = pw->pid;
-				sway_log(L_DEBUG, "checking pid %d against pid %d, i is %d", pid, *pw_pid, i);
-				if (pid == *pw_pid) {
-					sway_log(L_DEBUG, "found pid_workspace for pid, %d %s", pid, pw->workspace);
-					break; // out of for loop
-				}
-				pw = NULL;
+		if (pid) {
+			// using newview as a temp storage location here,
+			// rather than adding yet another workspace var
+			if ((newview = workspace_for_pid(pid))) {
+				focused = newview;
+				newview = NULL;
+				return_to_workspace = true;
 			}
-			if (pw) {
-				break; // out of do-while loop
-			}
-			pid = get_parent_pid(pid);
-		} while (pid > -1 && pid != getpid());
-
-		swayc_t *ws = NULL;
-
-		if (pw) {
-			ws = workspace_by_name(pw->workspace);
-
-			if (!ws) {
-				sway_log(L_DEBUG, "creating workspace %s because it disappeared", pw->workspace);
-				ws = workspace_create(pw->workspace);
-			}
-
-			if (ws) {
-				sway_log(L_DEBUG, "workspace exists, name is %s", ws->name);
-				focused = ws;
-
-				if (current_ws && (strcmp(current_ws->name, ws->name) != 0)) {
-					return_to_workspace = true;
-				}
-			}
-
-			list_del(config->pid_workspaces, i);
 		}
 	}
-
-	free_pid_workspace(pw);
 
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
@@ -349,7 +296,8 @@ static bool handle_view_created(wlc_handle handle) {
 	wlc_view_set_mask(handle, VISIBLE);
 
 	if (return_to_workspace && current_ws) {
-		sway_log(L_DEBUG, "return_to_workspace && current_ws");
+		// we were on one workspace, switched to another to add this view,
+		// now let's return to where we were
 		workspace_switch(current_ws);
 		set_focused_container(current_ws->focused);
 	}
