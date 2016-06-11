@@ -549,12 +549,19 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	close(fd[0]);
 	// cleanup child process
 	wait(0);
-	if (*child > 0) {
-		sway_log(L_DEBUG, "Child process created with pid %d", *child);
+	swayc_t *ws = swayc_active_workspace();
+	if (*child > 0 && ws) {
+		sway_log(L_DEBUG, "Child process created with pid %d for workspace %s", *child, ws->name);
+		struct pid_workspace *pw = malloc(sizeof(struct pid_workspace));
+		pw->pid = child;
+		pw->workspace = strdup(ws->name);
+		pid_workspace_add(pw);
 		// TODO: keep track of this pid and open the corresponding view on the current workspace
 		// blocked pending feature in wlc
+	} else {
+		free(child);
 	}
-	free(child);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 

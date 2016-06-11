@@ -180,11 +180,32 @@ static bool handle_view_created(wlc_handle handle) {
 	wlc_handle parent = wlc_view_get_parent(handle);
 	swayc_t *focused = NULL;
 	swayc_t *newview = NULL;
+	swayc_t *current_ws = swayc_active_workspace();
+	bool return_to_workspace = false;
+	struct wl_client *client = wlc_view_get_wl_client(handle);
+	pid_t pid;
 
 	// Get parent container, to add view in
 	if (parent) {
 		focused = swayc_by_handle(parent);
 	}
+
+	if (client) {
+		// below only works on wayland windows. need a wlc
+		// api that will work for both wayland and x.
+		wl_client_get_credentials(client, &pid, NULL, NULL);
+
+		if (pid) {
+			// using newview as a temp storage location here,
+			// rather than adding yet another workspace var
+			if ((newview = workspace_for_pid(pid))) {
+				focused = newview;
+				newview = NULL;
+				return_to_workspace = true;
+			}
+		}
+	}
+
 	if (!focused || focused->type == C_OUTPUT) {
 		focused = get_focused_container(&root_container);
 		// Move focus from floating view
@@ -220,7 +241,7 @@ static bool handle_view_created(wlc_handle handle) {
 	// Dmenu keeps viewfocus, but others with this flag don't, for now simulate
 	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
-// 		locked_view_focus = true;
+	// locked_view_focus = true;
 		wlc_view_focus(handle);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);
@@ -273,6 +294,13 @@ static bool handle_view_created(wlc_handle handle) {
 		list_add(output->unmanaged, h);
 	}
 	wlc_view_set_mask(handle, VISIBLE);
+
+	if (return_to_workspace && current_ws) {
+		// we were on one workspace, switched to another to add this view,
+		// now let's return to where we were
+		workspace_switch(current_ws);
+		set_focused_container(current_ws->focused);
+	}
 	return true;
 }
 

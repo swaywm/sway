@@ -1,6 +1,10 @@
 #include <math.h>
-
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "readline.h"
 #include "util.h"
+#include "log.h"
 
 int wrap(int i, int max) {
 	return ((i % max) + max) % max;
@@ -63,4 +67,29 @@ int get_modifier_names(const char **names, uint32_t modifier_masks) {
 	}
 
 	return length;
+}
+
+pid_t get_parent_pid(pid_t child) {
+	pid_t parent;
+	char file_name[100];
+	char *buffer = NULL;
+	char *token = NULL;
+	const char *sep = " ";
+	FILE *stat = NULL;
+
+	sprintf(file_name, "/proc/%d/stat", child);
+
+	if ((stat = fopen(file_name, "r")) && (buffer = read_line(stat))) {
+		fclose(stat);
+
+		token = strtok(buffer, sep); // pid
+		token = strtok(NULL, sep);   // executable name
+		token = strtok(NULL, sep);   // state
+		token = strtok(NULL, sep);   // parent pid
+
+		parent = strtol(token, NULL, 10);
+		return (parent == child) ? -1 : parent;
+	}
+
+	return -1;
 }

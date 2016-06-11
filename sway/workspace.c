@@ -5,6 +5,7 @@
 #include <wlc/wlc.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/types.h>
 #include "ipc-server.h"
 #include "workspace.h"
 #include "layout.h"
@@ -308,4 +309,55 @@ bool workspace_switch(swayc_t *workspace) {
 	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
 	arrange_windows(output, -1, -1);
 	return true;
+}
+
+swayc_t *workspace_for_pid(pid_t pid) {
+	int i;
+	swayc_t *ws = NULL;
+	struct pid_workspace *pw = NULL;
+
+	sway_log(L_DEBUG, "looking for workspace for pid %d", pid);
+
+	// leaving this here as it's useful for debugging
+	// sway_log(L_DEBUG, "all pid_workspaces");
+	// for (int k = 0; k < config->pid_workspaces->length; k++) {
+	// 	pw = config->pid_workspaces->items[k];
+	// 	sway_log(L_DEBUG, "pid %d workspace %s time_added %li", *pw->pid, pw->workspace, *pw->time_added);
+	// }
+
+	do {
+		for (i = 0; i < config->pid_workspaces->length; i++) {
+			pw = config->pid_workspaces->items[i];
+			pid_t *pw_pid = pw->pid;
+
+			if (pid == *pw_pid) {
+				sway_log(L_DEBUG, "found pid_workspace for pid %d, workspace %s", pid, pw->workspace);
+				break; // out of for loop
+			}
+
+			pw = NULL;
+		}
+
+		if (pw) {
+			break; // out of do-while loop
+		}
+
+		pid = get_parent_pid(pid);
+		// no sense in looking for matches for pid 0.
+		// also, if pid == getpid(), that is the compositor's
+		// pid, which definitely isn't helpful
+	} while (pid > 0 && pid != getpid());
+
+	if (pw) {
+		ws = workspace_by_name(pw->workspace);
+
+		if (!ws) {
+			sway_log(L_DEBUG, "Creating workspace %s for pid %d because it disappeared", pw->workspace, pid);
+			ws = workspace_create(pw->workspace);
+		}
+
+		list_del(config->pid_workspaces, i);
+	}
+
+	return ws;
 }
