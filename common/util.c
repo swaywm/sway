@@ -70,7 +70,7 @@ int get_modifier_names(const char **names, uint32_t modifier_masks) {
 }
 
 pid_t get_parent_pid(pid_t child) {
-	pid_t parent;
+	pid_t parent = -1;
 	char file_name[100];
 	char *buffer = NULL;
 	char *token = NULL;
@@ -79,15 +79,19 @@ pid_t get_parent_pid(pid_t child) {
 
 	sprintf(file_name, "/proc/%d/stat", child);
 
-	if ((stat = fopen(file_name, "r")) && (buffer = read_line(stat))) {
+	if ((stat = fopen(file_name, "r"))) {
+		if ((buffer = read_line(stat))) {
+			token = strtok(buffer, sep); // pid
+			token = strtok(NULL, sep);   // executable name
+			token = strtok(NULL, sep);   // state
+			token = strtok(NULL, sep);   // parent pid
+			parent = strtol(token, NULL, 10);
+		}
+
 		fclose(stat);
+	}
 
-		token = strtok(buffer, sep); // pid
-		token = strtok(NULL, sep);   // executable name
-		token = strtok(NULL, sep);   // state
-		token = strtok(NULL, sep);   // parent pid
-
-		parent = strtol(token, NULL, 10);
+	if (parent) {
 		return (parent == child) ? -1 : parent;
 	}
 
