@@ -1639,7 +1639,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			char *src = join_args(argv + i, argc - i - 1);
 			char *mode = argv[argc - 1];
-			if (wordexp(src, &p, 0) != 0) {
+			if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
 				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
 			}
 			free(src);
@@ -1699,9 +1699,13 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		swayc_t *cont = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
 			cont = root_container.children->items[i];
-			if (cont->name && strcmp(cont->name, output->name) == 0) {
+			if (cont->name && ((strcmp(cont->name, output->name) == 0) || (strcmp(output->name, "*") == 0))) {
 				apply_output_config(output, cont);
-				break;
+
+				if (strcmp(output->name, "*") != 0) {
+					// stop looking if the output config isn't applicable to all outputs
+					break;
+				}
 			}
 		}
 	}
@@ -2153,10 +2157,24 @@ static int compare_set_qsort(const void *_l, const void *_r) {
 }
 
 static struct cmd_results *cmd_set(int argc, char **argv) {
+	char *tmp;
+	int size;
 	struct cmd_results *error = NULL;
 	if (!config->reading) return cmd_results_new(CMD_FAILURE, "set", "Can only be used in config file.");
 	if ((error = checkarg(argc, "set", EXPECTED_AT_LEAST, 2))) {
 		return error;
+	}
+
+	if (argv[0][0] != '$') {
+		sway_log(L_INFO, "Warning: variable '%s' doesn't start with $", argv[0]);
+
+		size = asprintf(&tmp, "%s%s", "$", argv[0]);
+		if (size == -1) {
+			return cmd_results_new(CMD_FAILURE, "set", "Not possible to create variable $'%s'", argv[0]);
+		}
+
+		argv[0] = strdup(tmp);
+		free(tmp);
 	}
 
 	struct sway_variable *var = NULL;
@@ -3040,7 +3058,7 @@ static struct cmd_results *bar_cmd_swaybar_command(int argc, char **argv) {
 }
 
 static struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
-	sway_log(L_ERROR, "warning: tray_output is not supported on wayland");
+	sway_log(L_ERROR, "Warning: tray_output is not supported on wayland");
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 

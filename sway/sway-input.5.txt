@@ -37,7 +37,8 @@ Commands
 	Enables or disables middle click emulation.
 
 **input** <identifier> natural_scroll <enabled|disabled>::
-	Enables or disables natural scrolling for the specified input device.
+	Enables or disables natural (inverted) scrolling for the specified input
+	device.
 
 **input** <identifier> pointer_accel <[-1,1]>::
 	Changes the pointer acceleration for the specified input device.
@@ -51,4 +52,4 @@ Commands
 See Also
 --------
 
-**sway**(5) **sway-bar**(5)
+**sway**(5)
