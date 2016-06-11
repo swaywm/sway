@@ -1,11 +1,14 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
 
+#define PID_WORKSPACE_TIMEOUT 60
+
 #include <libinput.h>
 #include <stdint.h>
 #include <wlc/geometry.h>
 #include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon.h>
+#include <time.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "list.h"
 #include "layout.h"
@@ -95,8 +98,10 @@ struct workspace_output {
 struct pid_workspace {
 	pid_t *pid;
 	char *workspace;
+	time_t *time_added;
 };
 
+void pid_workspace_add(struct pid_workspace *pw);
 void free_pid_workspace(struct pid_workspace *pw);
 
 struct bar_config {

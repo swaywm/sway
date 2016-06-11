@@ -89,12 +89,57 @@ static void free_workspace_output(struct workspace_output *wo) {
 	free(wo);
 }
 
+static void pid_workspace_cleanup() {
+	struct timespec ts;
+	struct pid_workspace *pw = NULL;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+
+	// work backwards through list and remove any entries
+	// older than PID_WORKSPACE_TIMEOUT
+	for (int i = config->pid_workspaces->length - 1; i > -1; i--) {
+		pw = config->pid_workspaces->items[i];
+
+		if (difftime(ts.tv_sec, *pw->time_added) >= PID_WORKSPACE_TIMEOUT) {
+			list_del(config->pid_workspaces, i);
+		}
+	}
+}
+
+// de-dupe pid_workspaces to ensure pid uniqueness
+void pid_workspace_add(struct pid_workspace *pw) {
+	struct pid_workspace *list_pw = NULL;
+	struct timespec ts;
+	time_t *now = malloc(sizeof(time_t));
+
+	pid_workspace_cleanup();
+
+	// add current time to pw
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	*now = ts.tv_sec;
+
+	pw->time_added = now;
+
+	// work backwards through list and delete any entries that
+	// have the same pid as that in our new pid_workspace
+	for (int i = config->pid_workspaces->length - 1; i > -1; i--) {
+		list_pw = config->pid_workspaces->items[i];
+
+		if (pw->pid == list_pw->pid) {
+			list_del(config->pid_workspaces, i);
+		}
+	}
+
+	list_add(config->pid_workspaces, pw);
+}
+
 void free_pid_workspace(struct pid_workspace *pw) {
 	if (!pw) {
 		return;
 	}
 	free(pw->pid);
 	free(pw->workspace);
+	free(pw->time_added);
 	free(pw);
 }
 

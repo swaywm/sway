@@ -322,7 +322,7 @@ swayc_t *workspace_for_pid(pid_t pid) {
 	// sway_log(L_DEBUG, "all pid_workspaces");
 	// for (int k = 0; k < config->pid_workspaces->length; k++) {
 	// 	pw = config->pid_workspaces->items[k];
-	// 	sway_log(L_DEBUG, "pid %d workspace %s", *pw->pid, pw->workspace);
+	// 	sway_log(L_DEBUG, "pid %d workspace %s time_added %li", *pw->pid, pw->workspace, *pw->time_added);
 	// }
 
 	do {
@@ -352,13 +352,12 @@ swayc_t *workspace_for_pid(pid_t pid) {
 		ws = workspace_by_name(pw->workspace);
 
 		if (!ws) {
-			sway_log(L_DEBUG, "creating workspace %s because it disappeared", pw->workspace);
+			sway_log(L_DEBUG, "Creating workspace %s for pid %d because it disappeared", pw->workspace, pid);
 			ws = workspace_create(pw->workspace);
 		}
 
 		list_del(config->pid_workspaces, i);
 	}
 
-	free_pid_workspace(pw);
 	return ws;
 }

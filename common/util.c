@@ -74,30 +74,22 @@ pid_t get_parent_pid(pid_t child) {
 	char file_name[100];
 	char *buffer = NULL;
 	char *token = NULL;
-	const char sep[2] = " ";
+	const char *sep = " ";
 	FILE *stat = NULL;
-
-	sway_log(L_DEBUG, "trying to get parent pid for child pid %d", child);
 
 	sprintf(file_name, "/proc/%d/stat", child);
 
-	if (!(stat = fopen(file_name, "r")) || !(buffer = read_line(stat))) {
-		return -1;
+	if ((stat = fopen(file_name, "r")) && (buffer = read_line(stat))) {
+		fclose(stat);
+
+		token = strtok(buffer, sep); // pid
+		token = strtok(NULL, sep);   // executable name
+		token = strtok(NULL, sep);   // state
+		token = strtok(NULL, sep);   // parent pid
+
+		parent = strtol(token, NULL, 10);
+		return (parent == child) ? -1 : parent;
 	}
 
-	fclose(stat);
-
-	sway_log(L_DEBUG, "buffer string is %s", buffer);
-
-	token = strtok(buffer, sep);
-
-	for (int i = 0; i < 3; i++) {
-		token = strtok(NULL, sep);
-	}
-
-	parent = strtol(token, NULL, 10);
-
-	sway_log(L_DEBUG, "found parent pid %d for child pid %d", parent, child);
-
-	return (parent == child) ? -1 : parent;
+	return -1;
 }

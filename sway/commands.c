@@ -555,7 +555,7 @@ static struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		struct pid_workspace *pw = malloc(sizeof(struct pid_workspace));
 		pw->pid = child;
 		pw->workspace = strdup(ws->name);
-		list_add(config->pid_workspaces, pw);
+		pid_workspace_add(pw);
 		// TODO: keep track of this pid and open the corresponding view on the current workspace
 		// blocked pending feature in wlc
 	} else {
