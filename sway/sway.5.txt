@@ -98,6 +98,10 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Resizes the currently focused container or view by _amount_. _amount_ can be
 	specified as "n px" or "n ppt" or "n px or n ppt".
 
+**resize** <width|height> <amount>::
+	Sets the _width_ or _height_ of the currently focused container to _amount_.
+	_amount_ can be specified as "n px" or "n ppt" or "n px or n ppt".
+
 **split** <vertical|v|horizontal|h|toggle|t>::
 	Splits the current container, vertically or horizontally. If toggled then the
 	current container is split opposite to the parent container.

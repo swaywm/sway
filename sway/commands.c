@@ -2000,33 +2000,38 @@ static struct cmd_results *cmd_resize(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "resize", "Can't be used in config file.");
 	if (!config->active) return cmd_results_new(CMD_FAILURE, "resize", "Can only be used when sway is running.");
-	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 3))) {
+	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
-	char *end;
-	int amount = (int)strtol(argv[2], &end, 10);
+
+	int amount = (int)strtol(argv[argc - 1], NULL, 10);
 	if (errno == ERANGE || amount == 0) {
 		errno = 0;
 		return cmd_results_new(CMD_INVALID, "resize", "Number is out of range.");
 	}
 
-	if (strcmp(argv[0], "shrink") != 0 && strcmp(argv[0], "grow") != 0) {
-		return cmd_results_new(CMD_INVALID, "resize",
-			"Expected 'resize <shrink|grow> <width|height> <amount>'");
-	}
+	if (strcmp(argv[0], "shrink") == 0 || strcmp(argv[0], "grow") == 0) {
+		if (strcmp(argv[0], "shrink") == 0) {
+			amount *= -1;
+		}
 
-	if (strcmp(argv[0], "shrink") == 0) {
-		amount *= -1;
-	}
-
-	if (strcmp(argv[1], "width") == 0) {
-		resize_tiled(amount, true);
-	} else if (strcmp(argv[1], "height") == 0) {
-		resize_tiled(amount, false);
+		if (strcmp(argv[1], "width") == 0) {
+			resize_tiled(amount, true);
+		} else if (strcmp(argv[1], "height") == 0) {
+			resize_tiled(amount, false);
+		} else {
+			return cmd_results_new(CMD_INVALID, "resize",
+				"Expected 'resize <shrink|grow> <width|height> <amount>' or 'resize <width|height> <amount>'");
+		}
+	} else if (strcmp(argv[0], "width") == 0) {
+		set_size_tiled(amount, true);
+	} else if (strcmp(argv[0], "height") == 0) {
+		set_size_tiled(amount, false);
 	} else {
 		return cmd_results_new(CMD_INVALID, "resize",
-			"Expected 'resize <shrink|grow> <width|height> <amount>'");
+			"Expected 'resize <shrink|grow> <width|height> <amount>' or 'resize <width|height> <amount>'");
 	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
