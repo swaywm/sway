@@ -101,6 +101,7 @@ static void pid_workspace_cleanup() {
 		pw = config->pid_workspaces->items[i];
 
 		if (difftime(ts.tv_sec, *pw->time_added) >= PID_WORKSPACE_TIMEOUT) {
+			free_pid_workspace(config->pid_workspaces->items[i]);
 			list_del(config->pid_workspaces, i);
 		}
 	}
@@ -126,6 +127,7 @@ void pid_workspace_add(struct pid_workspace *pw) {
 		list_pw = config->pid_workspaces->items[i];
 
 		if (pw->pid == list_pw->pid) {
+			free_pid_workspace(config->pid_workspaces->items[i]);
 			list_del(config->pid_workspaces, i);
 		}
 	}
