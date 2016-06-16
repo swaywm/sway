@@ -72,6 +72,7 @@ endif()
 
 include(FeatureSummary)
 include(Manpage)
+include(Test)
 include(GNUInstallDirs)
 
 if (enable-gdk-pixbuf)
