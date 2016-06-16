@@ -48,18 +48,19 @@ option(enable-gdk-pixbuf "Use Pixbuf to support more image formats" YES)
 option(enable-binding-event "Enables binding event subscription" YES)
 option(zsh-completions "Zsh shell completions" NO)
 option(default-wallpaper "Installs the default wallpaper" YES)
+option(enable-tests "Enables test suite" YES)
 
 find_package(JsonC REQUIRED)
 find_package(PCRE REQUIRED)
 find_package(WLC REQUIRED)
 find_package(Wayland REQUIRED)
 find_package(XKBCommon REQUIRED)
+find_package(LibInput REQUIRED)
 find_package(Cairo REQUIRED)
 find_package(Pango REQUIRED)
 find_package(GdkPixbuf)
 find_package(PAM)
-
-find_package(LibInput REQUIRED)
+find_package(CMocka)
 
 find_package(Backtrace)
 if(Backtrace_FOUND)
@@ -129,6 +130,14 @@ install(
 	DESTINATION share/wayland-sessions
 	COMPONENT data
 	)
+
+if(enable-tests)
+    if (CMOCKA_FOUND)
+        add_subdirectory(test)
+    else()
+        message(WARNING "Not buliding tests - cmocka is required.")
+    endif()
+endif()
 
 if(default-wallpaper)
 	install(
