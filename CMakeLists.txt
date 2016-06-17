@@ -49,6 +49,7 @@ option(enable-binding-event "Enables binding event subscription" YES)
 option(zsh-completions "Zsh shell completions" NO)
 option(default-wallpaper "Installs the default wallpaper" YES)
 option(enable-tests "Enables test suite" YES)
+option(enable-coverage "Enables test coverage" NO)
 
 find_package(JsonC REQUIRED)
 find_package(PCRE REQUIRED)
@@ -134,6 +135,9 @@ install(
 
 if(enable-tests)
     if (CMOCKA_FOUND)
+        if(enable-coverage)
+            include(CodeCoverage)
+        endif()
         add_subdirectory(test)
     else()
         message(WARNING "Not buliding tests - cmocka is required.")

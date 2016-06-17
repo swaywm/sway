@@ -24,6 +24,10 @@ function(configure_test)
 
     list(APPEND CONFIGURE_TEST_WRAPPERS "malloc" "calloc" "realloc" "free")
 
+    if (enable-coverage)
+        add_compile_options(-g -O0 --coverage -fprofile-arcs -ftest-coverage)
+    endif()
+
     list(LENGTH CONFIGURE_TEST_WRAPPERS WRAPPED_COUNT)
 
     if(NOT ${WRAPPED_COUNT} STREQUAL "0")
@@ -45,5 +49,12 @@ function(configure_test)
 
     target_link_libraries(${CONFIGURE_TEST_NAME}_test ${CMOCKA_LIBRARIES} ${CONFIGURE_TEST_LIBRARIES})
 
-    set(test_targets ${test_targets} ${CONFIGURE_TEST_NAME}_test PARENT_SCOPE)
+    if (enable-coverage)
+        target_link_libraries(${CONFIGURE_TEST_NAME}_test gcov)
+        setup_target_for_coverage(
+            ${CONFIGURE_TEST_NAME}_cov
+            ${CONFIGURE_TEST_NAME}_test
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/coverage
+        )
+    endif()
 endfunction()
