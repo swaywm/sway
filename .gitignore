@@ -7,7 +7,6 @@ install_manifest.txt
 *.o
 *.a
 bin/
-test/
 build/
 .lvimrc
 config-debug
