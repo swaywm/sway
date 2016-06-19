@@ -5,15 +5,16 @@
 #include "tests.h"
 #include "list.h"
 
-static void test_test(void **state) {
+static void test_create_list(void **state) {
+	memory_behavior(WRAPPER_INVOKE_CMOCKA);
 	list_t *list = create_list();
-	free(list);
-	assert_true(true);
+	assert_int_equal(list->length, 0);
+	list_free(list);
 }
 
-int main() {
+int main(int argc, char **argv) {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test(test_test),
+		cmocka_unit_test(test_create_list),
 	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
+	return cmocka_run_group_tests(tests, reset_mem_wrappers, NULL);
 }

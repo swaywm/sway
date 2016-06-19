@@ -69,6 +69,11 @@ On systems without logind, you need to suid the sway binary:
 
     sudo chmod a+s /usr/local/bin/sway
 
+## Tests
+
+Run `make && make check` from the build directory to run tests. The exit code
+will be the number of failed tests (0 for success).
+
 ## Configuration
 
 If you already use i3, then copy your i3 config to `~/.config/sway/config` and

@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+tests=$(find . -type f -name "*_test")
+ret=0
+for test in $tests
+do
+    printf 'Running %s\n' $(basename $test)
+    $test
+    ret+=$?
+done
+
+exit $ret

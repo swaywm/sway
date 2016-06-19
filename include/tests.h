@@ -6,4 +6,13 @@
 #include <stdarg.h>
 #include <cmocka.h>
 
+enum wrapper_behavior {
+    WRAPPER_INVOKE_REAL,
+    WRAPPER_INVOKE_CMOCKA,
+    WRAPPER_DO_ASSERTIONS,
+};
+
+int reset_mem_wrappers(void **state);
+void memory_behavior(enum wrapper_behavior behavior);
+
 #endif
