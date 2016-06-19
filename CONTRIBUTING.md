@@ -24,6 +24,39 @@ branch. Instead, when you start working on a feature, do this:
 4. git push -u origin add-so-and-so-feature
 5. Make pull request from your feature branch
 
+## Writing Tests
+
+Tests are driven by [CMocka](https://cmocka.org/). When testing a given
+function, we can "mock" out the functions it relies on to program their behavior
+explicitly and test the function in isolation. The directory layout of `test/`
+is identical to the global directory layout, but each C file in the parent tree
+has its own directory in the test tree, with its own CMakeLists.txt that wires
+things up. To add a test, make the appropriate directory in `test/` and add a
+CMakeLists.txt that looks something like this made-up example:
+
+```cmake
+configure_test(
+    SUBPROJECT swaymsg
+    NAME main
+    SOURCES
+        ${PROJECT_SOURCE_DIR}/swaymsg/main.c
+        swaymsg.c
+    WRAPPERS
+        ipc_open_socket
+    LIBRARIES
+        ${WLC_LIBRARIES}
+    INCLUDES
+        ${WLC_INCLUDES}
+)
+```
+
+This defines a test suite in the swaymsg subproject that tests main. This file
+would live at `test/swaymsg/main/CMakeLists.txt`. It specifies that it requires
+`swaymsg/main.c` and `test/swaymsg/main/swaymsg.c`, the former being the actual
+swaymsg source and the latter being the test suite. It mocks ipc_open_socket and
+links against openssl. See the cmocka documentation or read existing tests to
+learn more about how mocks work.
+
 ## Coding Style
 
 Sway is written in C. The style guidelines is [kernel

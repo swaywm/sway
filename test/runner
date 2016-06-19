@@ -1,0 +1,27 @@
+#!/usr/bin/bash
+tests=$(find . -type f -name "*_test")
+ret=0
+for test in $tests
+do
+    printf 'Running %s\n' $(basename $test)
+    $test
+    ret+=$?
+done
+
+if (( $ret == 0 ))
+then
+    if grep 'enable-coverage:BOOL=YES' "$1/CMakeCache.txt" > /dev/null
+    then
+        echo "Generating coverage reports"
+        rm -rf "$1/coverage"
+        mkdir "$1/coverage"
+        lcov --directory "$1" \
+            --capture \
+            --output-file "$1/coverage/lcov.info" > /dev/null
+        lcov --remove "$1/coverage/lcov.info" 'test/*' '/usr/*' \
+            --output-file "$1/coverage/lcov.info.clean" > /dev/null
+        genhtml -o "$1/coverage/" "$1/coverage/lcov.info.clean"
+    fi
+fi
+
+exit $ret

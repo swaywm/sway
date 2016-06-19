@@ -10,7 +10,7 @@ char *read_line(FILE *file) {
 		return NULL;
 	}
 	while (1) {
-		int c = getc(file);
+		int c = fgetc(file);
 		if (c == '\n' && lastChar == '\\'){
 			--length; // Ignore last character.
 			lastChar = '\0';
@@ -51,7 +51,7 @@ char *read_line_buffer(FILE *file, char *string, size_t string_len) {
 		return NULL;
 	}
 	while (1) {
-		int c = getc(file);
+		int c = fgetc(file);
 		if (c == EOF || c == '\n' || c == '\0') {
 			break;
 		}
