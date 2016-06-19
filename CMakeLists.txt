@@ -137,7 +137,7 @@ if(enable-tests)
     if (CMOCKA_FOUND)
         add_subdirectory(test)
     else()
-        message(WARNING "Not buliding tests - cmocka is required.")
+        message(WARNING "Not building tests - cmocka is required.")
     endif()
 endif()
 
