@@ -10,16 +10,16 @@ done
 
 if (( $ret == 0 ))
 then
-    if grep 'enable-coverage:BOOL=YES' "$1/CMakeCache.txt"
+    if grep 'enable-coverage:BOOL=YES' "$1/CMakeCache.txt" > /dev/null
     then
         echo "Generating coverage reports"
         rm -rf "$1/coverage"
         mkdir "$1/coverage"
         lcov --directory "$1" \
             --capture \
-            --output-file "$1/coverage/lcov.info"
+            --output-file "$1/coverage/lcov.info" > /dev/null
         lcov --remove "$1/coverage/lcov.info" 'test/*' '/usr/*' \
-            --output-file "$1/coverage/lcov.info.clean"
+            --output-file "$1/coverage/lcov.info.clean" > /dev/null
         genhtml -o "$1/coverage/" "$1/coverage/lcov.info.clean"
     fi
 fi
