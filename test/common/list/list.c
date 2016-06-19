@@ -1,6 +1,4 @@
 #define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include "tests.h"
 #include "list.h"
