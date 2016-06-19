@@ -14,5 +14,10 @@ enum wrapper_behavior {
 
 int reset_mem_wrappers(void **state);
 void memory_behavior(enum wrapper_behavior behavior);
+int malloc_calls();
+int free_calls();
+int calloc_calls();
+int realloc_calls();
+int alloc_calls();
 
 #endif
