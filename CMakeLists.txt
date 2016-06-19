@@ -135,9 +135,6 @@ install(
 
 if(enable-tests)
     if (CMOCKA_FOUND)
-        if(enable-coverage)
-            include(CodeCoverage)
-        endif()
         add_subdirectory(test)
     else()
         message(WARNING "Not buliding tests - cmocka is required.")
