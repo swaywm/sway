@@ -198,11 +198,12 @@ static bool handle_view_created(wlc_handle handle) {
 		if (pid) {
 			// using newview as a temp storage location here,
 			// rather than adding yet another workspace var
-			if ((newview = workspace_for_pid(pid))) {
+			newview = workspace_for_pid(pid);
+			if (newview && newview != current_ws) {
 				focused = newview;
-				newview = NULL;
 				return_to_workspace = true;
 			}
+			newview = NULL;
 		}
 	}
 
