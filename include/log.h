@@ -1,6 +1,8 @@
 #ifndef _SWAY_LOG_H
 #define _SWAY_LOG_H
 #include <stdbool.h>
+#include <errno.h>
+#include <string.h>
 
 typedef enum {
 	L_SILENT = 0,
@@ -15,7 +17,6 @@ void reset_log_level(void);
 // returns whether debug logging is on after switching.
 bool toggle_debug_logging(void);
 void sway_log_colors(int mode);
-void sway_log_errno(log_importance_t verbosity, char* format, ...) __attribute__((format(printf,2,3)));
 void sway_abort(const char* format, ...) __attribute__((format(printf,1,2)));
 
 bool _sway_assert(bool condition, const char* format, ...) __attribute__((format(printf,2,3)));
@@ -31,6 +32,9 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 #define sway_log(VERBOSITY, FMT, ...) \
 	_sway_log(NULL, 0, VERBOSITY, FMT, ##__VA_ARGS__)
 #endif
+
+#define sway_log_errno(VERBOSITY, FMT, ...) \
+        _sway_log(NULL, 0, VERBOSITY, FMT ": %s", ##__VA_ARGS__, strerror(errno))
 
 void error_handler(int sig);
 
