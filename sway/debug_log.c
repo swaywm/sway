@@ -12,8 +12,6 @@
 #include <stringop.h>
 #include "workspace.h"
 
-extern log_importance_t v;
-
 /* XXX:DEBUG:XXX */
 static void container_log(const swayc_t *c, int depth) {
 	fprintf(stderr, "focus:%c",
@@ -49,7 +47,7 @@ static void container_log(const swayc_t *c, int depth) {
 	fprintf(stderr, "name:%.16s\n", c->name);
 }
 void layout_log(const swayc_t *c, int depth) {
-	if (L_DEBUG > v) return;
+	if (L_DEBUG > get_log_level()) return;
 	int i, d;
 	int e = c->children ? c->children->length : 0;
 	container_log(c, depth);
