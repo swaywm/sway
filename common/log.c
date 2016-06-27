@@ -8,13 +8,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
-#include <errno.h>
-#include <string.h>
 #include <stringop.h>
 
-int colored = 1;
-log_importance_t loglevel_default = L_ERROR;
-log_importance_t v = L_SILENT;
+static int colored = 1;
+static log_importance_t loglevel_default = L_ERROR;
+static log_importance_t v = L_SILENT;
 
 static const char *verbosity_colors[] = {
 	[L_SILENT] = "",
@@ -36,6 +34,10 @@ void init_log(log_importance_t verbosity) {
 
 void set_log_level(log_importance_t verbosity) {
 	v = verbosity;
+}
+
+log_importance_t get_log_level(void) {
+        return v;
 }
 
 void reset_log_level(void) {
@@ -82,32 +84,6 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 		va_start(args, format);
 		vfprintf(stderr, format, args);
 		va_end(args);
-
-		if (colored && isatty(STDERR_FILENO)) {
-			fprintf(stderr, "\x1B[0m");
-		}
-		fprintf(stderr, "\n");
-	}
-}
-
-void sway_log_errno(log_importance_t verbosity, char* format, ...) {
-	if (verbosity <= v) {
-		unsigned int c = verbosity;
-		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
-			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
-		}
-
-		if (colored && isatty(STDERR_FILENO)) {
-			fprintf(stderr, "%s", verbosity_colors[c]);
-		}
-
-		va_list args;
-		va_start(args, format);
-		vfprintf(stderr, format, args);
-		va_end(args);
-
-		fprintf(stderr, ": ");
-		fprintf(stderr, "%s", strerror(errno));
 
 		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "\x1B[0m");
