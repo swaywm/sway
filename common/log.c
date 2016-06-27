@@ -10,9 +10,9 @@
 #include <signal.h>
 #include <stringop.h>
 
-int colored = 1;
-log_importance_t loglevel_default = L_ERROR;
-log_importance_t v = L_SILENT;
+static int colored = 1;
+static log_importance_t loglevel_default = L_ERROR;
+static log_importance_t v = L_SILENT;
 
 static const char *verbosity_colors[] = {
 	[L_SILENT] = "",
@@ -34,6 +34,10 @@ void init_log(log_importance_t verbosity) {
 
 void set_log_level(log_importance_t verbosity) {
 	v = verbosity;
+}
+
+log_importance_t get_log_level(void) {
+        return v;
 }
 
 void reset_log_level(void) {
