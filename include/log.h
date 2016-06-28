@@ -11,6 +11,7 @@ typedef enum {
 
 void init_log(log_importance_t verbosity);
 void set_log_level(log_importance_t verbosity);
+log_importance_t get_log_level(void);
 void reset_log_level(void);
 // returns whether debug logging is on after switching.
 bool toggle_debug_logging(void);
