@@ -235,8 +235,12 @@ static bool handle_view_created(wlc_handle handle) {
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
 	case 0:
-		newview = new_view(focused, handle);
-		wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
+		if (parent) {
+			newview = new_floating_view(handle);
+		} else {
+			newview = new_view(focused, handle);
+			wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
+		}
 		break;
 
 	// Dmenu keeps viewfocus, but others with this flag don't, for now simulate
