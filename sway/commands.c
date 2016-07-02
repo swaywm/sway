@@ -251,7 +251,7 @@ static struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		} else {
 			free_sway_binding(binding);
 			return cmd_results_new(CMD_FAILURE, "bindsym",
-				"Invalid bindsym command"
+				"Invalid bindsym command "
 				"(expected more than 2 arguments, got %d)", argc);
 		}
 	}
@@ -317,7 +317,7 @@ static struct cmd_results *cmd_bindcode(int argc, char **argv) {
 		} else {
 			free_sway_binding(binding);
 			return cmd_results_new(CMD_FAILURE, "bindcode",
-				"Invalid bindcode command"
+				"Invalid bindcode command "
 				"(expected more than 2 arguments, got %d)", argc);
 		}
 	}
