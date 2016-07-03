@@ -243,3 +243,22 @@ swayc_t *get_focused_float(swayc_t *ws) {
 	}
 	return NULL;
 }
+
+swayc_t *get_focused_view_include_floating(swayc_t *parent) {
+	swayc_t *c = parent;
+	swayc_t *f = NULL;
+
+	while (c && c->type != C_VIEW) {
+		if (c->type == C_WORKSPACE && c->focused == NULL) {
+			return ((f = get_focused_float(c))) ? f : c;
+		}
+
+		c = c->focused;
+	}
+
+	if (c == NULL) {
+		c = swayc_active_workspace_for(parent);
+	}
+
+	return c;
+}

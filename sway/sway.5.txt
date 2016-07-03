@@ -94,13 +94,24 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **reload**::
 	Reloads the sway config file without restarting sway.
 
-**resize** <shrink|grow> <width|height> <amount>::
-	Resizes the currently focused container or view by _amount_. _amount_ can be
-	specified as "n px" or "n ppt" or "n px or n ppt".
+**resize** <shrink|grow> <width|height> [<amount>] [px|ppt]::
+	Resizes the currently focused container or view by _amount_. _amount_ is
+	optional: the default value is 10 (either px or ppt depending on the view
+	type). The [px|ppt] parameter is optional. _px_ specifies that _amount_ refers
+	to pixels; _ppt_ specifies that _amount_ refers to percentage points of the
+	current dimension. Floating views use px dimensions by default (but can use
+	ppt if specified); tiled views use ppt dimensions by default (but can use px
+	if specified).
 
-**resize** <width|height> <amount>::
-	Sets the _width_ or _height_ of the currently focused container to _amount_.
-	_amount_ can be specified as "n px" or "n ppt" or "n px or n ppt".
+**resize set** <width> [px] <height> [px]::
+	Sets the width and height of the currently focused container to _width_ pixels
+	and _height_ pixels. The [px] parameters are optional and have no effect. This
+	command only accepts pixel dimensions.
+
+**resize set** <width|height> <amount> [px] [<width|height> <amount> [px]]::
+	Sets the _width_ and/or _height_ of the currently focused container to
+	_amount_. The [px] parameters are optional and have no effect. This command
+	only accepts pixel dimensions.
 
 **split** <vertical|v|horizontal|h|toggle|t>::
 	Splits the current container, vertically or horizontally. If toggled then the
@@ -200,7 +211,7 @@ The default colors are:
 **floating_maximum_size** <width> x <height>::
 	Specifies the maximum dimensions of floating windows.
 	Uses the container dimensions as default.
-	-1 x -1 will remove any restriction on dimentions.
+	-1 x -1 will remove any restriction on dimensions.
 	0 x 0 has the same behavior as not setting any value.
 	If in conflict this option has precedence over floating_minimum_size.
 
@@ -214,7 +225,7 @@ The default colors are:
 	windows, and right click to resize them. Unlike i3, this modifier may also be
 	used to resize and move windows that are tiled. With the _inverse_ mode
 	enabled, left click is used for resizing and right click for dragging. The
-	mode paramenter is optional and defaults to _normal_ if it isn't defined.
+	mode parameter is optional and defaults to _normal_ if it isn't defined.
 
 **floating_scroll** <up|down|left|right> [command]::
 	Sets a command to be executed when the mouse wheel is scrolled in the
@@ -263,7 +274,7 @@ The default colors are:
 	than one child container.
 
 **mode** <mode_name>::
-	Switches to the given mode_name. the default mode is simply _default_. To
+	Switches to the given mode_name. The default mode is simply _default_. To
 	create a new mode in config append _{_ to this command, the following lines
 	will be keybinds for that mode, and _}_ on its own line to close the block.
 

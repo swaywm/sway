@@ -7,20 +7,52 @@
 #include "handlers.h"
 #include "resize.h"
 
-bool set_size_tiled(int amount, bool use_width) {
-	int desired;
-	swayc_t *focused = get_focused_view(swayc_active_workspace());
+static bool set_size_floating(int new_dimension, bool use_width) {
+	swayc_t *view = get_focused_float(swayc_active_workspace());
+	if (view) {
+		if (use_width) {
+			int current_width = view->width;
+			view->desired_width = new_dimension;
+			floating_view_sane_size(view);
 
-	if (use_width) {
-		desired = amount - focused->width;
-	} else {
-		desired = amount - focused->height;
+			int new_x = view->x + (int)(((view->desired_width - current_width) / 2) * -1);
+			view->width = view->desired_width;
+			view->x = new_x;
+
+			update_geometry(view);
+		} else {
+			int current_height = view->height;
+			view->desired_height = new_dimension;
+			floating_view_sane_size(view);
+
+			int new_y = view->y + (int)(((view->desired_height - current_height) / 2) * -1);
+			view->height = view->desired_height;
+			view->y = new_y;
+
+			update_geometry(view);
+		}
+
+		return true;
 	}
 
-	return resize_tiled(desired, use_width);
+	return false;
 }
 
-bool resize_tiled(int amount, bool use_width) {
+static bool resize_floating(int amount, bool use_width) {
+	swayc_t *view = get_focused_float(swayc_active_workspace());
+
+	if (view) {
+		if (use_width) {
+			return set_size_floating(view->width + amount, true);
+		} else {
+			return set_size_floating(view->height + amount, false);
+		}
+	}
+
+	return false;
+}
+
+static bool resize_tiled(int amount, bool use_width) {
 	swayc_t *parent = get_focused_view(swayc_active_workspace());
 	swayc_t *focused = parent;
 	swayc_t *sibling;
@@ -241,4 +273,66 @@ bool resize_tiled(int amount, bool use_width) {
 		return true;
 	}
 	return true;
+}
+
+static bool set_size_tiled(int amount, bool use_width) {
+	int desired;
+	swayc_t *focused = get_focused_view(swayc_active_workspace());
+
+	if (use_width) {
+		desired = amount - focused->width;
+	} else {
+		desired = amount - focused->height;
+	}
+
+	return resize_tiled(desired, use_width);
+}
+
+bool set_size(int dimension, bool use_width) {
+	swayc_t *focused = get_focused_view_include_floating(swayc_active_workspace());
+
+	if (focused) {
+		if (focused->is_floating) {
+			return set_size_floating(dimension, use_width);
+		} else {
+			return set_size_tiled(dimension, use_width);
+		}
+	}
+
+	return false;
+}
+
+bool resize(int dimension, bool use_width, enum resize_dim_types dim_type) {
+	swayc_t *focused = get_focused_view_include_floating(swayc_active_workspace());
+
+	// translate "10 ppt" (10%) to appropriate # of pixels in case we need it
+	float ppt_dim = (float)dimension / 100;
+
+	if (use_width) {
+		ppt_dim = focused->width * ppt_dim;
+	} else {
+		ppt_dim = focused->height * ppt_dim;
+	}
+
+	if (focused) {
+		if (focused->is_floating) {
+			// floating view resize dimensions should default to px, so only
+			// use ppt if specified
+			if (dim_type == RESIZE_DIM_PPT) {
+				dimension = (int)ppt_dim;
+			}
+
+			return resize_floating(dimension, use_width);
+		} else {
+			// tiled view resize dimensions should default to ppt, so only use
+			// px if specified
+			if (dim_type != RESIZE_DIM_PX) {
+				dimension = (int)ppt_dim;
+			}
+
+			return resize_tiled(dimension, use_width);
+		}
+	}
+
+	return false;
 }

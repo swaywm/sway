@@ -21,6 +21,10 @@ swayc_t *get_focused_container(swayc_t *parent);
 swayc_t *get_focused_view(swayc_t *parent);
 swayc_t *get_focused_float(swayc_t *ws);
 
+// a special-case function to get the floating view, regardless
+// of whether it's tiled or floating
+swayc_t *get_focused_view_include_floating(swayc_t *parent);
+
 bool set_focused_container(swayc_t *container);
 bool set_focused_container_for(swayc_t *ancestor, swayc_t *container);
 
