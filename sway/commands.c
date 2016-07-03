@@ -83,6 +83,7 @@ static sway_cmd cmd_orientation;
 static sway_cmd cmd_output;
 static sway_cmd cmd_reload;
 static sway_cmd cmd_resize;
+static sway_cmd cmd_resize_set;
 static sway_cmd cmd_scratchpad;
 static sway_cmd cmd_set;
 static sway_cmd cmd_smart_gaps;
@@ -2000,6 +2001,11 @@ static struct cmd_results *cmd_resize(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "resize", "Can't be used in config file.");
 	if (!config->active) return cmd_results_new(CMD_FAILURE, "resize", "Can only be used when sway is running.");
+
+	if (strcasecmp(argv[0], "set") == 0) {
+		return cmd_resize_set(argc - 1, &argv[1]);
+	}
+
 	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
@@ -2010,26 +2016,54 @@ static struct cmd_results *cmd_resize(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "resize", "Number is out of range.");
 	}
 
-	if (strcmp(argv[0], "shrink") == 0 || strcmp(argv[0], "grow") == 0) {
-		if (strcmp(argv[0], "shrink") == 0) {
+
+	if (strcasecmp(argv[0], "shrink") == 0 || strcmp(argv[0], "grow") == 0) {
+		if (strcasecmp(argv[0], "shrink") == 0) {
 			amount *= -1;
 		}
 
-		if (strcmp(argv[1], "width") == 0) {
+		if (strcasecmp(argv[1], "width") == 0) {
 			resize_tiled(amount, true);
 		} else if (strcmp(argv[1], "height") == 0) {
 			resize_tiled(amount, false);
 		} else {
 			return cmd_results_new(CMD_INVALID, "resize",
-				"Expected 'resize <shrink|grow> <width|height> <amount>' or 'resize <width|height> <amount>'");
+				"Expected 'resize <shrink|grow> <width|height> <amount>'");
 		}
-	} else if (strcmp(argv[0], "width") == 0) {
-		set_size_tiled(amount, true);
-	} else if (strcmp(argv[0], "height") == 0) {
-		set_size_tiled(amount, false);
 	} else {
 		return cmd_results_new(CMD_INVALID, "resize",
-			"Expected 'resize <shrink|grow> <width|height> <amount>' or 'resize <width|height> <amount>'");
+			"Expected 'resize <shrink|grow> <width|height> <amount>'");
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_resize_set(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "resize set", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+
+	int cmd_num = 0;
+	int amount;
+
+	while (cmd_num < argc) {
+		amount = (int)strtol(argv[cmd_num + 1], NULL, 10);
+		if (errno == ERANGE || amount == 0) {
+			errno = 0;
+			return cmd_results_new(CMD_INVALID, "resize set", "Number is out of range.");
+		}
+
+		if (strcasecmp(argv[cmd_num], "width") == 0) {
+			set_size_tiled(amount, true);
+		} else if (strcasecmp(argv[cmd_num], "height") == 0) {
+			set_size_tiled(amount, false);
+		} else {
+			return cmd_results_new(CMD_INVALID, "resize",
+				"Expected 'resize set <width|height> <amount> [<width|height> <amount>]'");
+		}
+
+		cmd_num += 2;
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
