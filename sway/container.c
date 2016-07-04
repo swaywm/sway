@@ -75,6 +75,30 @@ static void free_swayc(swayc_t *cont) {
 	free(cont);
 }
 
+static void update_root_geometry() {
+	int width = 0;
+	int height = 0;
+	swayc_t *child;
+	int child_width;
+	int child_height;
+
+	for (int i = 0; i < root_container.children->length; ++i) {
+		child = root_container.children->items[i];
+		child_width = child->width + child->x;
+		child_height = child->height + child->y;
+		if (child_width > width) {
+			width = child_width;
+		}
+
+		if (child_height > height) {
+			height = child_height;
+		}
+	}
+
+	root_container.width = width;
+	root_container.height = height;
+}
+
 // New containers
 
 swayc_t *new_output(wlc_handle handle) {
@@ -167,6 +191,7 @@ swayc_t *new_output(wlc_handle handle) {
 	}
 
 	free(ws_name);
+	update_root_geometry();
 	return output;
 }
 
@@ -361,7 +386,7 @@ void floating_view_sane_size(swayc_t *view) {
 		view->desired_width = config->floating_maximum_width;
 	}
 
-	sway_log(L_DEBUG, "Sane values for view to %d x %d @ %.f, %.f", 
+	sway_log(L_DEBUG, "Sane values for view to %d x %d @ %.f, %.f",
 		view->desired_width, view->desired_height, view->x, view->y);
 
 	return;
@@ -393,6 +418,7 @@ swayc_t *destroy_output(swayc_t *output) {
 	}
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%" PRIuPTR "'", output->handle);
 	free_swayc(output);
+	update_root_geometry();
 	return &root_container;
 }
 

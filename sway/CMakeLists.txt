@@ -21,6 +21,7 @@ add_executable(sway
 	handlers.c
 	input.c
 	input_state.c
+	ipc-json.c
 	ipc-server.c
 	layout.c
 	main.c

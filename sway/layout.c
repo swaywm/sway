@@ -23,6 +23,7 @@ int min_sane_w = 100;
 void init_layout(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
+	root_container.name = strdup("root");
 	root_container.children = create_list();
 	root_container.handle = -1;
 	root_container.visible = true;

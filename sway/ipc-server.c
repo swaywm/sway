@@ -10,10 +10,10 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <ctype.h>
 #include <json-c/json.h>
 #include <list.h>
 #include <libinput.h>
+#include "ipc-json.h"
 #include "ipc-server.h"
 #include "log.h"
 #include "config.h"
@@ -53,7 +53,6 @@ void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
-json_object *ipc_json_describe_bar_config(struct bar_config *bar);
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -399,33 +398,21 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_TREE:
+	{
+		json_object *tree = ipc_json_describe_container_recursive(&root_container);
+		const char *json_string = json_object_to_json_string(tree);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(tree);
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_VERSION:
 	{
-#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
-		char *full_version = calloc(strlen(SWAY_GIT_VERSION) + strlen(SWAY_GIT_BRANCH) + strlen(SWAY_VERSION_DATE) + 20, 1);
-		strcat(full_version, SWAY_GIT_VERSION);
-		strcat(full_version, " (");
-		strcat(full_version, SWAY_VERSION_DATE);
-		strcat(full_version, ", branch \"");
-		strcat(full_version, SWAY_GIT_BRANCH);
-		strcat(full_version, "\")");
-		json_object *json = json_object_new_object();
-		json_object_object_add(json, "human_readable", json_object_new_string(full_version));
-		json_object_object_add(json, "variant", json_object_new_string("sway"));
-		// Todo once we actually release a version
-		json_object_object_add(json, "major", json_object_new_int(0));
-		json_object_object_add(json, "minor", json_object_new_int(0));
-		json_object_object_add(json, "patch", json_object_new_int(1));
-#else
-		json_object_object_add(json, "human_readable", json_object_new_string("version not found"));
-		json_object_object_add(json, "major", json_object_new_int(0));
-		json_object_object_add(json, "minor", json_object_new_int(0));
-		json_object_object_add(json, "patch", json_object_new_int(0));
-#endif
-		const char *json_string = json_object_to_json_string(json);
+		json_object *version = ipc_json_get_version();
+		const char *json_string = json_object_to_json_string(version);
 		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
-		json_object_put(json); // free
-		free(full_version);
+		json_object_put(version); // free
 		goto exit_cleanup;
 	}
 
@@ -518,137 +505,16 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	return true;
 }
 
-json_object *ipc_json_describe_workspace(swayc_t *workspace) {
-	if (!sway_assert(workspace, "Workspace must not be NULL")) {
-		return NULL;
-	}
-
-	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
-	json_object *object = json_object_new_object();
-	json_object *rect = json_object_new_object();
-	json_object_object_add(rect, "x", json_object_new_int((int32_t) workspace->x));
-	json_object_object_add(rect, "y", json_object_new_int((int32_t) workspace->y));
-	json_object_object_add(rect, "width", json_object_new_int((int32_t) workspace->width));
-	json_object_object_add(rect, "height", json_object_new_int((int32_t) workspace->height));
-
-	json_object_object_add(object, "num", json_object_new_int(num));
-	json_object_object_add(object, "name", json_object_new_string(workspace->name));
-	json_object_object_add(object, "visible", json_object_new_boolean(workspace->visible));
-	bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
-	json_object_object_add(object, "focused", json_object_new_boolean(focused));
-	json_object_object_add(object, "rect", rect);
-	json_object_object_add(object, "output", json_object_new_string(workspace->parent ? workspace->parent->name : "null"));
-	json_object_object_add(object, "urgent", json_object_new_boolean(false));
-
-	return object;
-}
-
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
 	if (workspace->type == C_WORKSPACE) {
-		json_object_array_add((json_object *)data, ipc_json_describe_workspace(workspace));
+		json_object_array_add((json_object *)data, ipc_json_describe_container(workspace));
 	}
-}
-
-json_object *ipc_json_describe_output(swayc_t *output) {
-	json_object *object = json_object_new_object();
-	json_object *rect = json_object_new_object();
-	json_object_object_add(rect, "x", json_object_new_int((int32_t) output->x));
-	json_object_object_add(rect, "y", json_object_new_int((int32_t) output->y));
-	json_object_object_add(rect, "width", json_object_new_int((int32_t) output->width));
-	json_object_object_add(rect, "height", json_object_new_int((int32_t) output->height));
-
-	json_object_object_add(object, "name", json_object_new_string(output->name));
-	json_object_object_add(object, "active", json_object_new_boolean(true));
-	json_object_object_add(object, "primary", json_object_new_boolean(false));
-	json_object_object_add(object, "rect", rect);
-	json_object_object_add(object, "current_workspace",
-		output->focused ? json_object_new_string(output->focused->name) : NULL);
-
-	return object;
 }
 
 void ipc_get_outputs_callback(swayc_t *container, void *data) {
 	if (container->type == C_OUTPUT) {
-		json_object_array_add((json_object *)data, ipc_json_describe_output(container));
+		json_object_array_add((json_object *)data, ipc_json_describe_container(container));
 	}
-}
-
-json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
-	if (!sway_assert(bar, "Bar must not be NULL")) {
-		return NULL;
-	}
-
-	json_object *json = json_object_new_object();
-	json_object_object_add(json, "id", json_object_new_string(bar->id));
-	json_object_object_add(json, "tray_output", NULL);
-	json_object_object_add(json, "mode", json_object_new_string(bar->mode));
-	json_object_object_add(json, "hidden_state", json_object_new_string(bar->hidden_state));
-	json_object_object_add(json, "modifier", json_object_new_string(get_modifier_name_by_mask(bar->modifier)));
-	switch (bar->position) {
-	case DESKTOP_SHELL_PANEL_POSITION_TOP:
-		json_object_object_add(json, "position", json_object_new_string("top"));
-		break;
-	case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
-		json_object_object_add(json, "position", json_object_new_string("bottom"));
-		break;
-	case DESKTOP_SHELL_PANEL_POSITION_LEFT:
-		json_object_object_add(json, "position", json_object_new_string("left"));
-		break;
-	case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
-		json_object_object_add(json, "position", json_object_new_string("right"));
-		break;
-	}
-	json_object_object_add(json, "status_command", json_object_new_string(bar->status_command));
-	json_object_object_add(json, "font", json_object_new_string(bar->font ? bar->font : config->font));
-	if (bar->separator_symbol) {
-		json_object_object_add(json, "separator_symbol", json_object_new_string(bar->separator_symbol));
-	}
-	json_object_object_add(json, "bar_height", json_object_new_int(bar->height));
-	json_object_object_add(json, "workspace_buttons", json_object_new_boolean(bar->workspace_buttons));
-	json_object_object_add(json, "strip_workspace_numbers", json_object_new_boolean(bar->strip_workspace_numbers));
-	json_object_object_add(json, "binding_mode_indicator", json_object_new_boolean(bar->binding_mode_indicator));
-	json_object_object_add(json, "verbose", json_object_new_boolean(bar->verbose));
-	json_object_object_add(json, "pango_markup", json_object_new_boolean(bar->pango_markup));
-
-	json_object *colors = json_object_new_object();
-	json_object_object_add(colors, "background", json_object_new_string(bar->colors.background));
-	json_object_object_add(colors, "statusline", json_object_new_string(bar->colors.statusline));
-	json_object_object_add(colors, "separator", json_object_new_string(bar->colors.separator));
-
-	json_object_object_add(colors, "focused_workspace_border", json_object_new_string(bar->colors.focused_workspace_border));
-	json_object_object_add(colors, "focused_workspace_bg", json_object_new_string(bar->colors.focused_workspace_bg));
-	json_object_object_add(colors, "focused_workspace_text", json_object_new_string(bar->colors.focused_workspace_text));
-
-	json_object_object_add(colors, "inactive_workspace_border", json_object_new_string(bar->colors.inactive_workspace_border));
-	json_object_object_add(colors, "inactive_workspace_bg", json_object_new_string(bar->colors.inactive_workspace_bg));
-	json_object_object_add(colors, "inactive_workspace_text", json_object_new_string(bar->colors.inactive_workspace_text));
-
-	json_object_object_add(colors, "active_workspace_border", json_object_new_string(bar->colors.active_workspace_border));
-	json_object_object_add(colors, "active_workspace_bg", json_object_new_string(bar->colors.active_workspace_bg));
-	json_object_object_add(colors, "active_workspace_text", json_object_new_string(bar->colors.active_workspace_text));
-
-	json_object_object_add(colors, "urgent_workspace_border", json_object_new_string(bar->colors.urgent_workspace_border));
-	json_object_object_add(colors, "urgent_workspace_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
-	json_object_object_add(colors, "urgent_workspace_text", json_object_new_string(bar->colors.urgent_workspace_text));
-
-	json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.binding_mode_border));
-	json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.binding_mode_bg));
-	json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.binding_mode_text));
-
-	json_object_object_add(json, "colors", colors);
-
-	// Add outputs if defined
-	if (bar->outputs && bar->outputs->length > 0) {
-		json_object *outputs = json_object_new_array();
-		int i;
-		for (i = 0; i < bar->outputs->length; ++i) {
-			const char *name = bar->outputs->items[i];
-			json_object_array_add(outputs, json_object_new_string(name));
-		}
-		json_object_object_add(json, "outputs", outputs);
-	}
-
-	return json;
 }
 
 void ipc_send_event(const char *json_string, enum ipc_command_type event) {
@@ -672,14 +538,14 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (strcmp("focus", change) == 0) {
 		if (old) {
-			json_object_object_add(obj, "old", ipc_json_describe_workspace(old));
+			json_object_object_add(obj, "old", ipc_json_describe_container(old));
 		} else {
 			json_object_object_add(obj, "old", NULL);
 		}
 	}
 
 	if (new) {
-		json_object_object_add(obj, "current", ipc_json_describe_workspace(new));
+		json_object_object_add(obj, "current", ipc_json_describe_container(new));
 	} else {
 		json_object_object_add(obj, "current", NULL);
 	}
