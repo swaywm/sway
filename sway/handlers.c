@@ -175,6 +175,30 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 	}
 }
 
+static bool client_is_background(struct wl_client *client)
+{
+        int i;
+	for (i = 0; i < desktop_shell.backgrounds->length; i++) {
+		struct background_config *config = desktop_shell.backgrounds->items[i];
+                if (config->client == client) {
+                        return true;
+                }
+        }
+        return false;
+}
+
+static bool client_is_panel(struct wl_client *client)
+{
+        int i;
+	for (i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *config = desktop_shell.panels->items[i];
+                if (config->client == client) {
+                        return true;
+                }
+        }
+        return false;
+}
+
 static bool handle_view_created(wlc_handle handle) {
 	// if view is child of another view, the use that as focused container
 	wlc_handle parent = wlc_view_get_parent(handle);
@@ -184,6 +208,10 @@ static bool handle_view_created(wlc_handle handle) {
 	bool return_to_workspace = false;
 	struct wl_client *client = wlc_view_get_wl_client(handle);
 	pid_t pid;
+
+        if (client_is_background(client) || client_is_panel(client)) {
+                return true;
+        }
 
 	// Get parent container, to add view in
 	if (parent) {
