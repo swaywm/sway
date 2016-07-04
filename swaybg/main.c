@@ -54,6 +54,7 @@ int main(int argc, const char **argv) {
 		sway_abort("Failed to create surfaces.");
 	}
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
+	window_make_shell(window);
 	list_add(surfaces, window);
 
 #ifdef WITH_GDK_PIXBUF
