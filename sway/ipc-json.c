@@ -319,7 +319,7 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 				json_object_array_add(scratchpad_json, ipc_json_describe_container_recursive(scratchpad->items[i]));
 			}
 		}
-		json_object_object_add(object, "scratchpad", unmanaged);
+		json_object_object_add(object, "scratchpad", scratchpad_json);
 	}
 
 	return object;
