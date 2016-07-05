@@ -110,27 +110,28 @@ static void ipc_json_describe_output(swayc_t *output, json_object *object) {
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {
 	int num = (isdigit(workspace->name[0])) ? atoi(workspace->name) : -1;
 	bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
+	const char *layout = ipc_json_layout_description(workspace);
 
 	json_object_object_add(object, "num", json_object_new_int(num));
-	json_object_object_add(object, "visible", json_object_new_boolean(workspace->visible));
 	json_object_object_add(object, "focused", json_object_new_boolean(focused));
-	json_object_object_add(object, "output", json_object_new_string((workspace->parent) ? workspace->parent->name : "null"));
+	json_object_object_add(object, "output", (workspace->parent) ? json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
-	json_object_object_add(object, "layout", json_object_new_string(ipc_json_layout_description(workspace)));
+	json_object_object_add(object, "layout", (strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
 }
 
 static void ipc_json_describe_view(swayc_t *view, json_object *object) {
 	float percent = ipc_json_child_percentage(view);
+	const char *layout = ipc_json_layout_description(view);
 
 	json_object_object_add(object, "border", json_object_new_string(ipc_json_border_description(view)));
 	json_object_object_add(object, "current_border_width", json_object_new_int(view->border_thickness));
-	json_object_object_add(object, "percent", (percent > 0) ? json_object_new_double(percent) : json_object_new_string("null"));
+	json_object_object_add(object, "percent", (percent > 0) ? json_object_new_double(percent) : NULL);
 	// TODO: make urgency actually work once Sway supports it
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
 	json_object_object_add(object, "focused", json_object_new_boolean(view->is_focused));
 	json_object_object_add(object, "type", json_object_new_string((view->is_floating) ? "floating_con" : "con"));
-	json_object_object_add(object, "layout", json_object_new_string(ipc_json_layout_description(view)));
+	json_object_object_add(object, "layout", (strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
 
 	if (view->class) {
 		json_object_object_add(object, "class", json_object_new_string(view->class));
@@ -149,8 +150,9 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 	json_object *object = json_object_new_object();
 
 	json_object_object_add(object, "id", json_object_new_int((int64_t)&c));
-	json_object_object_add(object, "name", json_object_new_string(c->name));
+	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
+	json_object_object_add(object, "visible", json_object_new_boolean(c->visible));
 
 	switch (c->type) {
 	case C_ROOT:
@@ -288,29 +290,31 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 	json_object *object = ipc_json_describe_container(c);
 	int i;
 
-	json_object *floating = json_object_new_array();
-	if (c->floating && c->floating->length > 0) {
-		for (i = 0; i < c->floating->length; ++i) {
-			json_object_array_add(floating, ipc_json_describe_container_recursive(c->floating->items[i]));
+	if (c->type != C_VIEW) {
+		json_object *floating = json_object_new_array();
+		if (c->floating && c->floating->length > 0) {
+			for (i = 0; i < c->floating->length; ++i) {
+				json_object_array_add(floating, ipc_json_describe_container_recursive(c->floating->items[i]));
+			}
 		}
-	}
-	json_object_object_add(object, "floating_nodes", floating);
+		json_object_object_add(object, "floating_nodes", floating);
 
-	json_object *children = json_object_new_array();
-	if (c->children && c->children->length > 0) {
-		for (i = 0; i < c->children->length; ++i) {
-			json_object_array_add(children, ipc_json_describe_container_recursive(c->children->items[i]));
+		json_object *children = json_object_new_array();
+		if (c->children && c->children->length > 0) {
+			for (i = 0; i < c->children->length; ++i) {
+				json_object_array_add(children, ipc_json_describe_container_recursive(c->children->items[i]));
+			}
 		}
-	}
-	json_object_object_add(object, "nodes", children);
+		json_object_object_add(object, "nodes", children);
 
-	json_object *unmanaged = json_object_new_array();
-	if (c->unmanaged && c->unmanaged->length > 0) {
-		for (i = 0; i < c->unmanaged->length; ++i) {
-			json_object_array_add(unmanaged, ipc_json_describe_container_recursive(c->unmanaged->items[i]));
+		json_object *unmanaged = json_object_new_array();
+		if (c->unmanaged && c->unmanaged->length > 0) {
+			for (i = 0; i < c->unmanaged->length; ++i) {
+				json_object_array_add(unmanaged, ipc_json_describe_container_recursive(c->unmanaged->items[i]));
+			}
 		}
+		json_object_object_add(object, "unmanaged_nodes", unmanaged);
 	}
-	json_object_object_add(object, "unmanaged_nodes", unmanaged);
 
 	if (c->type == C_ROOT) {
 		json_object *scratchpad_json = json_object_new_array();
