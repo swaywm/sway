@@ -73,6 +73,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	}
 	sway_log(L_DEBUG, "Setting surface %p as background for output %d", surface, (int)output);
 	struct background_config *config = malloc(sizeof(struct background_config));
+	config->client = client;
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
@@ -91,6 +92,7 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	sway_log(L_DEBUG, "Setting surface %p as panel for output %d (wl_resource: %p)", surface, (int)output, resource);
 	struct panel_config *config = find_or_create_panel_config(resource);
 	config->output = output;
+	config->client = client;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
 	wl_resource_set_destructor(surface, panel_surface_destructor);
