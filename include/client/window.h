@@ -42,5 +42,6 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 void window_teardown(struct window *state);
 int window_prerender(struct window *state);
 int window_render(struct window *state);
+void window_make_shell(struct window *window);
 
 #endif

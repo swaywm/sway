@@ -11,6 +11,8 @@ struct background_config {
         wlc_resource surface;
         // we need the wl_resource of the surface in the destructor
         struct wl_resource *wl_surface_res;
+        // used to determine if client is a background
+        struct wl_client *client;
 };
 
 struct panel_config {
@@ -21,6 +23,8 @@ struct panel_config {
         // we need the wl_resource of the surface in the destructor
         struct wl_resource *wl_surface_res;
         enum desktop_shell_panel_position panel_position;
+        // used to determine if client is a panel
+        struct wl_client *client;
 };
 
 struct desktop_shell_state {
