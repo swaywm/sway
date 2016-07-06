@@ -30,10 +30,20 @@ static void pointer_handle_leave(void *data, struct wl_pointer *pointer,
 
 static void pointer_handle_motion(void *data, struct wl_pointer *pointer,
 		      uint32_t time, wl_fixed_t sx_w, wl_fixed_t sy_w) {
+	struct window *window = data;
+
+	window->pointer_input.last_x = sx_w;
+	window->pointer_input.last_y = sy_w;
 }
 
 static void pointer_handle_button(void *data, struct wl_pointer *pointer, uint32_t serial,
 		      uint32_t time, uint32_t button, uint32_t state_w) {
+	struct window *window = data;
+	struct pointer_input *input = &window->pointer_input;
+
+	if (window->pointer_input.notify) {
+		window->pointer_input.notify(window, input->last_x, input->last_y, button);
+	}
 }
 
 static void pointer_handle_axis(void *data, struct wl_pointer *pointer,

@@ -174,6 +174,35 @@ static const struct wl_keyboard_listener keyboard_listener = {
 	.repeat_info = keyboard_handle_repeat_info
 };
 
+static void seat_handle_capabilities(void *data, struct wl_seat *seat,
+		enum wl_seat_capability caps) {
+	struct registry *reg = data;
+
+	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !reg->pointer) {
+		reg->pointer = wl_seat_get_pointer(reg->seat);
+	} else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && reg->pointer) {
+		wl_pointer_destroy(reg->pointer);
+		reg->pointer = NULL;
+	}
+
+	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !reg->keyboard) {
+		reg->keyboard = wl_seat_get_keyboard(reg->seat);
+		wl_keyboard_add_listener(reg->keyboard, &keyboard_listener, reg);
+	} else if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && reg->keyboard) {
+		wl_keyboard_destroy(reg->keyboard);
+		reg->keyboard = NULL;
+	}
+}
+
+static void seat_handle_name(void *data, struct wl_seat *seat, const char *name) {
+	// this space intentionally left blank
+}
+
+static const struct wl_seat_listener seat_listener = {
+	.capabilities = seat_handle_capabilities,
+	.name = seat_handle_name,
+};
+
 static void registry_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	struct registry *reg = data;
@@ -186,11 +215,7 @@ static void registry_global(void *data, struct wl_registry *registry,
 		reg->shell = wl_registry_bind(registry, name, &wl_shell_interface, version);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		reg->seat = wl_registry_bind(registry, name, &wl_seat_interface, version);
-		reg->pointer = wl_seat_get_pointer(reg->seat);
-		reg->keyboard = wl_seat_get_keyboard(reg->seat);
-		if (reg->keyboard) {
-			wl_keyboard_add_listener(reg->keyboard, &keyboard_listener, reg);
-		}
+		wl_seat_add_listener(reg->seat, &seat_listener, reg);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
 		struct wl_output *output = wl_registry_bind(registry, name, &wl_output_interface, version);
 		struct output_state *ostate = malloc(sizeof(struct output_state));
