@@ -12,19 +12,19 @@
 struct window;
 
 struct buffer {
-        struct wl_buffer *buffer;
-        cairo_surface_t *surface;
-        cairo_t *cairo;
-        PangoContext *pango;
-        uint32_t width, height;
-        bool busy;
+	struct wl_buffer *buffer;
+	cairo_surface_t *surface;
+	cairo_t *cairo;
+	PangoContext *pango;
+	uint32_t width, height;
+	bool busy;
 };
 
 struct cursor {
-        struct wl_surface *surface;
-        struct wl_cursor_theme *cursor_theme;
-        struct wl_cursor *cursor;
-        struct wl_poitner *pointer;
+	struct wl_surface *surface;
+	struct wl_cursor_theme *cursor_theme;
+	struct wl_cursor *cursor;
+	struct wl_poitner *pointer;
 };
 
 struct pointer_input {
@@ -35,16 +35,16 @@ struct pointer_input {
 };
 
 struct window {
-        struct registry *registry;
-        struct buffer buffers[2];
-        struct buffer *buffer;
-        struct wl_surface *surface;
-        struct wl_shell_surface *shell_surface;
-        struct wl_callback *frame_cb;
-        struct cursor cursor;
-        uint32_t width, height;
-        char *font;
-        cairo_t *cairo;
+	struct registry *registry;
+	struct buffer buffers[2];
+	struct buffer *buffer;
+	struct wl_surface *surface;
+	struct wl_shell_surface *shell_surface;
+	struct wl_callback *frame_cb;
+	struct cursor cursor;
+	uint32_t width, height;
+	char *font;
+	cairo_t *cairo;
 	struct pointer_input pointer_input;
 };
 
