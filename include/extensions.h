@@ -23,6 +23,8 @@ struct panel_config {
 	enum desktop_shell_panel_position panel_position;
 	// used to determine if client is a panel
 	struct wl_client *client;
+	// wlc handle for this panel's surface, not set until panel is created
+	wlc_handle handle;
 };
 
 struct desktop_shell_state {
