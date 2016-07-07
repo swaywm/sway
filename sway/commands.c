@@ -1950,13 +1950,13 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 		}
 
 		if (strcasecmp(argv[0], "tabbed") == 0) {
-			if (parent->type != C_CONTAINER) {
+			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
 				parent = new_container(parent, L_TABBED);
 			}
 
 			parent->layout = L_TABBED;
 		} else if (strcasecmp(argv[0], "stacking") == 0) {
-			if (parent->type != C_CONTAINER) {
+			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)) {
 				parent = new_container(parent, L_STACKED);
 			}
 
