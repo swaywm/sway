@@ -740,6 +740,10 @@ bool swayc_is_child_of(swayc_t *child, swayc_t *parent) {
 	return swayc_is_parent_of(parent, child);
 }
 
+bool swayc_is_empty_workspace(swayc_t *container) {
+	return container->type == C_WORKSPACE && container->children->length == 0;
+}
+
 int swayc_gap(swayc_t *container) {
 	if (container->type == C_VIEW || container->type == C_CONTAINER) {
 		return container->gaps >= 0 ? container->gaps : config->gaps_inner;
@@ -879,7 +883,7 @@ swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
 	if (!ASSERT_NONNULL(view)) {
 		return NULL;
 	}
-	while (view->type != C_WORKSPACE && view->parent) {
+	while (view->type != C_WORKSPACE && view->parent && view->parent->type != C_WORKSPACE) {
 		view = view->parent;
 		if (view->layout == L_TABBED || view->layout == L_STACKED) {
 			parent = view;
