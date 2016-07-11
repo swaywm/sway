@@ -28,10 +28,10 @@ struct cursor {
 };
 
 struct pointer_input {
-	wl_fixed_t last_x;
-	wl_fixed_t last_y;
+	int last_x;
+	int last_y;
 
-	void (*notify)(struct window *window, wl_fixed_t x, wl_fixed_t y, uint32_t button);
+	void (*notify)(struct window *window, int x, int y, uint32_t button);
 };
 
 struct window {

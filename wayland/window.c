@@ -32,8 +32,8 @@ static void pointer_handle_motion(void *data, struct wl_pointer *pointer,
 		      uint32_t time, wl_fixed_t sx_w, wl_fixed_t sy_w) {
 	struct window *window = data;
 
-	window->pointer_input.last_x = sx_w;
-	window->pointer_input.last_y = sy_w;
+	window->pointer_input.last_x = wl_fixed_to_int(sx_w);
+	window->pointer_input.last_y = wl_fixed_to_int(sy_w);
 }
 
 static void pointer_handle_button(void *data, struct wl_pointer *pointer, uint32_t serial,
