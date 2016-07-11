@@ -32,6 +32,9 @@ struct workspace {
 	bool urgent;
 };
 
+/** Global bar state */
+extern struct bar swaybar;
+
 /**
  * Setup bar.
  */
