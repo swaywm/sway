@@ -58,8 +58,35 @@ struct output *new_output(const char *name) {
 	return output;
 }
 
-static void mouse_button_notify(struct window *window, wl_fixed_t x, wl_fixed_t y, uint32_t button) {
+static void mouse_button_notify(struct window *window, int x, int y, uint32_t button) {
 	sway_log(L_DEBUG, "Mouse button %d clicked at %d %d\n", button, x, y);
+
+	struct output *clicked_output = NULL;
+	for (int i = 0; i < swaybar.outputs->length; i++) {
+		struct output *output = swaybar.outputs->items[i];
+		if (window == output->window) {
+			clicked_output = output;
+			break;
+		}
+	}
+
+	if (!sway_assert(clicked_output != NULL, "Got pointer event for non-existing output")) {
+		return;
+	}
+
+	double button_x = 0.5;
+	for (int i = 0; i < clicked_output->workspaces->length; i++) {
+		struct workspace *workspace = clicked_output->workspaces->items[i];
+		int button_width, button_height;
+
+		workspace_button_size(window, workspace->name, &button_width, &button_height);
+
+		button_x += button_width;
+		if (x <= button_x) {
+			ipc_send_workspace_command(workspace->name);
+			break;
+		}
+	}
 }
 
 void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
