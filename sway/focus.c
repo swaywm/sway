@@ -11,6 +11,7 @@
 
 bool locked_container_focus = false;
 bool locked_view_focus = false;
+bool suspend_workspace_cleanup = false;
 
 // switches parent focus to c. will switch it accordingly
 static void update_focus(swayc_t *c) {
@@ -40,7 +41,7 @@ static void update_focus(swayc_t *c) {
 				ipc_event_workspace(prev, c, "focus");
 
 				// if the old workspace has no children, destroy it
-				if(prev->children->length == 0 && prev->floating->length == 0){
+				if(prev->children->length == 0 && prev->floating->length == 0 && !suspend_workspace_cleanup) {
 					destroy_workspace(prev);
 				} else {
 					// update visibility of old workspace
