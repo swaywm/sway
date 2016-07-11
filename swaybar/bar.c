@@ -58,6 +58,10 @@ struct output *new_output(const char *name) {
 	return output;
 }
 
+static void mouse_button_notify(struct window *window, wl_fixed_t x, wl_fixed_t y, uint32_t button) {
+	sway_log(L_DEBUG, "Mouse button %d clicked at %d %d\n", button, x, y);
+}
+
 void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 	/* initialize bar with default values */
 	bar_init(bar);
@@ -91,6 +95,9 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 		/* set font */
 		bar_output->window->font = bar->config->font;
+
+		/* set font */
+		bar_output->window->pointer_input.notify = mouse_button_notify;
 
 		/* set window height */
 		set_window_height(bar_output->window, bar->config->height);
