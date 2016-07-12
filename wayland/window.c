@@ -47,7 +47,26 @@ static void pointer_handle_button(void *data, struct wl_pointer *pointer, uint32
 }
 
 static void pointer_handle_axis(void *data, struct wl_pointer *pointer,
-		    uint32_t time, uint32_t axis, wl_fixed_t value) {
+				uint32_t time, uint32_t axis, wl_fixed_t value) {
+	struct window *window = data;
+	enum scroll_direction direction;
+
+	switch (axis) {
+	case 0:
+		direction = wl_fixed_to_double(value) < 0 ? SCROLL_UP : SCROLL_DOWN;
+		break;
+	case 1:
+		direction = wl_fixed_to_double(value) < 0 ? SCROLL_LEFT : SCROLL_RIGHT;
+		break;
+	default:
+		if (!sway_assert(false, "Unexpected axis value")) {
+			return;
+		}
+	}
+
+	if (window->pointer_input.notify_scroll) {
+		window->pointer_input.notify_scroll(window, direction);
+	}
 }
 
 static const struct wl_pointer_listener pointer_listener = {
