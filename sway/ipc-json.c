@@ -1,6 +1,7 @@
 #include <json-c/json.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdint.h>
 #include "container.h"
 #include "util.h"
 #include "ipc-json.h"
@@ -149,7 +150,7 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 
 	json_object *object = json_object_new_object();
 
-	json_object_object_add(object, "id", json_object_new_int((int64_t)&c));
+	json_object_object_add(object, "id", json_object_new_int((intptr_t)&c));
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
 	json_object_object_add(object, "visible", json_object_new_boolean(c->visible));
