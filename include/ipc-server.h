@@ -18,6 +18,10 @@ void ipc_event_barconfig_update(struct bar_config *bar);
  */
 void ipc_event_mode(const char *mode);
 /**
+ * Send IPC window change event
+ */
+void ipc_event_window(swayc_t *window, const char *change);
+/**
  * Sends an IPC modifier event to all listening clients.  The modifier event
  * includes a key 'change' with the value of state and a key 'modifier' with
  * the name of that modifier.

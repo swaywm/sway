@@ -339,6 +339,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= IPC_EVENT_BARCONFIG_UPDATE;
 			} else if (strcmp(event_type, "mode") == 0) {
 				client->subscribed_events |= IPC_EVENT_MODE;
+			} else if (strcmp(event_type, "window") == 0) {
+				client->subscribed_events |= IPC_EVENT_WINDOW;
 			} else if (strcmp(event_type, "modifier") == 0) {
 				client->subscribed_events |= IPC_EVENT_MODIFIER;
 #if SWAY_BINDING_EVENT
@@ -552,6 +554,21 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_WORKSPACE);
+
+	json_object_put(obj); // free
+}
+
+void ipc_event_window(swayc_t *window, const char *change) {
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string(change));
+	if (strcmp(change, "close") == 0 || !window) {
+		json_object_object_add(obj, "container", NULL);
+	} else {
+		json_object_object_add(obj, "container", ipc_json_describe_container(window));
+	}
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_WINDOW);
 
 	json_object_put(obj); // free
 }

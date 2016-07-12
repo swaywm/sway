@@ -91,6 +91,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	if (!ws->focused) {
 		ws->focused = child;
 	}
+	ipc_event_window(child, "floating");
 }
 
 swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
@@ -305,6 +306,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		parent = child->parent;
 	}
 	arrange_windows(parent->parent, -1, -1);
+	ipc_event_window(container, "move");
 	set_focused_container_for(parent->parent, container);
 }
 
