@@ -124,7 +124,7 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 		bar_output->window->font = bar->config->font;
 
 		/* set font */
-		bar_output->window->pointer_input.notify = mouse_button_notify;
+		bar_output->window->pointer_input.notify_button = mouse_button_notify;
 
 		/* set window height */
 		set_window_height(bar_output->window, bar->config->height);

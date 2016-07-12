@@ -31,7 +31,7 @@ struct pointer_input {
 	int last_x;
 	int last_y;
 
-	void (*notify)(struct window *window, int x, int y, uint32_t button);
+	void (*notify_button)(struct window *window, int x, int y, uint32_t button);
 };
 
 struct window {
