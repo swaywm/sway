@@ -89,6 +89,13 @@ static void mouse_button_notify(struct window *window, int x, int y, uint32_t bu
 	}
 }
 
+static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
+	sway_log(L_DEBUG, "Mouse wheel scrolled %s", direction == SCROLL_UP ? "up" : "down");
+
+	const char *workspace_name = direction == SCROLL_UP ? "prev_on_output" : "next_on_output";
+	ipc_send_workspace_command(workspace_name);
+}
+
 void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 	/* initialize bar with default values */
 	bar_init(bar);
@@ -123,8 +130,9 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 		/* set font */
 		bar_output->window->font = bar->config->font;
 
-		/* set font */
+		/* set mouse event callbacks */
 		bar_output->window->pointer_input.notify_button = mouse_button_notify;
+		bar_output->window->pointer_input.notify_scroll = mouse_scroll_notify;
 
 		/* set window height */
 		set_window_height(bar_output->window, bar->config->height);
