@@ -198,6 +198,27 @@ static bool client_is_panel(struct wl_client *client) {
 	return false;
 }
 
+static void ws_cleanup() {
+	swayc_t *op, *ws;
+	int i = 0, j;
+	if (!root_container.children)
+		return;
+	while (i < root_container.children->length) {
+		op = root_container.children->items[i++];
+		if (!op->children)
+			continue;
+		j = 0;
+		while (j < op->children->length) {
+			ws = op->children->items[j++];
+			if (ws->children->length == 0 && ws->floating->length == 0 && ws != op->focused) {
+				if (destroy_workspace(ws)) {
+					j--;
+				}
+			}
+		}
+	}
+}
+
 static bool handle_view_created(wlc_handle handle) {
 	// if view is child of another view, the use that as focused container
 	wlc_handle parent = wlc_view_get_parent(handle);
@@ -226,8 +247,8 @@ static bool handle_view_created(wlc_handle handle) {
 			// using newview as a temp storage location here,
 			// rather than adding yet another workspace var
 			newview = workspace_for_pid(pid);
-			if (newview && newview != current_ws) {
-				focused = newview;
+			if (newview) {
+				focused = get_focused_container(newview);
 				return_to_workspace = true;
 			}
 			newview = NULL;
@@ -295,6 +316,9 @@ static bool handle_view_created(wlc_handle handle) {
 		break;
 	}
 
+	// Prevent current ws from being destroyed, if empty
+	suspend_workspace_cleanup = true;
+
 	if (newview) {
 		set_focused_container(newview);
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
@@ -343,6 +367,9 @@ static bool handle_view_created(wlc_handle handle) {
 		workspace_switch(current_ws);
 		set_focused_container(current_ws->focused);
 	}
+
+	suspend_workspace_cleanup = false;
+	ws_cleanup();
 	return true;
 }
 
