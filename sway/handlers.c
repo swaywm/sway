@@ -33,6 +33,66 @@
 // Event handled by sway and should not be sent to client
 #define EVENT_HANDLED true
 
+static struct panel_config *if_panel_find_config(struct wl_client *client) {
+	int i;
+	for (i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *config = desktop_shell.panels->items[i];
+		if (config->client == client) {
+			return config;
+		}
+	}
+	return NULL;
+}
+
+static struct wlc_geometry compute_panel_geometry(struct panel_config *config) {
+	const struct wlc_size resolution = *wlc_output_get_resolution(config->output);
+	const struct wlc_geometry *old = wlc_view_get_geometry(config->handle);
+	struct wlc_geometry new;
+
+	switch (config->panel_position) {
+	case DESKTOP_SHELL_PANEL_POSITION_TOP:
+		new.origin.x = 0;
+		new.origin.y = 0;
+		new.size.w = resolution.w;
+		new.size.h = old->size.h;
+		break;
+	case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
+		new.origin.x = 0;
+		new.origin.y = resolution.h - old->size.h;
+		new.size.w = resolution.w;
+		new.size.h = old->size.h;
+		break;
+	case DESKTOP_SHELL_PANEL_POSITION_LEFT:
+		new.origin.x = 0;
+		new.origin.y = 0;
+		new.size.w = old->size.w;
+		new.size.h = resolution.h;
+		break;
+	case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
+		new.origin.x = resolution.w - old->size.w;
+		new.origin.y = 0;
+		new.size.w = old->size.w;
+		new.size.h = resolution.h;
+		break;
+	}
+
+	return new;
+}
+
+static void update_panel_geometry(struct panel_config *config) {
+	struct wlc_geometry geometry = compute_panel_geometry(config);
+	wlc_view_set_geometry(config->handle, 0, &geometry);
+}
+
+static void update_panel_geometries(wlc_handle output) {
+	for (int i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *config = desktop_shell.panels->items[i];
+		if (config->output == output) {
+			update_panel_geometry(config);
+		}
+	}
+}
+
 /* Handles */
 
 static bool handle_input_created(struct libinput_device *device) {
@@ -119,32 +179,6 @@ static void handle_output_pre_render(wlc_handle output) {
 			break;
 		}
 	}
-
-	for (i = 0; i < desktop_shell.panels->length; ++i) {
-		struct panel_config *config = desktop_shell.panels->items[i];
-		if (config->output == output) {
-			struct wlc_size size = *wlc_surface_get_size(config->surface);
-			struct wlc_geometry geo = {
-				.size = size
-			};
-			switch (config->panel_position) {
-			case DESKTOP_SHELL_PANEL_POSITION_TOP:
-				geo.origin = (struct wlc_point){ 0, 0 };
-				break;
-			case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
-				geo.origin = (struct wlc_point){ 0, resolution.h - size.h };
-				break;
-			case DESKTOP_SHELL_PANEL_POSITION_LEFT:
-				geo.origin = (struct wlc_point){ 0, 0 };
-				break;
-			case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
-				geo.origin = (struct wlc_point){ resolution.w - size.w, 0 };
-				break;
-			}
-			wlc_surface_render(config->surface, &geo);
-			break;
-		}
-	}
 }
 
 static void handle_output_post_render(wlc_handle output) {
@@ -158,10 +192,16 @@ static void handle_view_pre_render(wlc_handle view) {
 
 static void handle_output_resolution_change(wlc_handle output, const struct wlc_size *from, const struct wlc_size *to) {
 	sway_log(L_DEBUG, "Output %u resolution changed to %d x %d", (unsigned int)output, to->w, to->h);
+
 	swayc_t *c = swayc_by_handle(output);
-	if (!c) return;
+	if (!c) {
+		return;
+	}
 	c->width = to->w;
 	c->height = to->h;
+
+	update_panel_geometries(output);
+
 	arrange_windows(&root_container, -1, -1);
 }
 
@@ -174,28 +214,6 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 	if (focus) {
 		set_focused_container(c);
 	}
-}
-
-static bool client_is_background(struct wl_client *client) {
-	int i;
-	for (i = 0; i < desktop_shell.backgrounds->length; i++) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
-		if (config->client == client) {
-			return true;
-		}
-	}
-	return false;
-}
-
-static bool client_is_panel(struct wl_client *client) {
-	int i;
-	for (i = 0; i < desktop_shell.panels->length; i++) {
-		struct panel_config *config = desktop_shell.panels->items[i];
-		if (config->client == client) {
-			return true;
-		}
-	}
-	return false;
 }
 
 static void ws_cleanup() {
@@ -228,8 +246,14 @@ static bool handle_view_created(wlc_handle handle) {
 	bool return_to_workspace = false;
 	struct wl_client *client = wlc_view_get_wl_client(handle);
 	pid_t pid;
+	struct panel_config *panel_config = NULL;
 
-	if (client_is_background(client) || client_is_panel(client)) {
+	panel_config = if_panel_find_config(client);
+	if (panel_config) {
+		panel_config->handle = handle;
+		update_panel_geometry(panel_config);
+		wlc_view_set_mask(handle, VISIBLE);
+		wlc_view_set_output(handle, panel_config->output);
 		return true;
 	}
 

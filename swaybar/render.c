@@ -172,7 +172,7 @@ static void render_block(struct window *window, struct config *config, struct st
 
 }
 
-static char *handle_workspace_number(bool strip_num, const char *ws_name) {
+static const char *strip_workspace_name(bool strip_num, const char *ws_name) {
 	bool strip = false;
 	int i;
 
@@ -190,18 +190,23 @@ static char *handle_workspace_number(bool strip_num, const char *ws_name) {
 	}
 
 	if (strip) {
-		return strdup(ws_name + i);
+		return ws_name + i;
 	}
 
-	return strdup(ws_name);
+	return ws_name;
+}
+
+void workspace_button_size(struct window *window, const char *workspace_name, int *width, int *height) {
+	const char *stripped_name = strip_workspace_name(swaybar.config->strip_workspace_numbers, workspace_name);
+
+	get_text_size(window->cairo, window->font, width, height, false, "%s", stripped_name);
+	*width += 2 * ws_horizontal_padding;
+	*height += 2 * ws_vertical_padding;
 }
 
 static void render_workspace_button(struct window *window, struct config *config, struct workspace *ws, double *x) {
-	// strip workspace numbers if required
-	char *name = handle_workspace_number(config->strip_workspace_numbers, ws->name);
+	const char *stripped_name = strip_workspace_name(config->strip_workspace_numbers, ws->name);
 
-	int width, height;
-	get_text_size(window->cairo, window->font, &width, &height, false, "%s", name);
 	struct box_colors box_colors;
 	if (ws->urgent) {
 		box_colors = config->colors.urgent_workspace;
@@ -213,26 +218,25 @@ static void render_workspace_button(struct window *window, struct config *config
 		box_colors = config->colors.inactive_workspace;
 	}
 
+	int width, height;
+	workspace_button_size(window, stripped_name, &width, &height);
+
 	// background
 	cairo_set_source_u32(window->cairo, box_colors.background);
-	cairo_rectangle(window->cairo, *x, 1.5, width + ws_horizontal_padding * 2 - 1,
-			height + ws_vertical_padding * 2);
+	cairo_rectangle(window->cairo, *x, 1.5, width - 1, height);
 	cairo_fill(window->cairo);
 
 	// border
 	cairo_set_source_u32(window->cairo, box_colors.border);
-	cairo_rectangle(window->cairo, *x, 1.5, width + ws_horizontal_padding * 2 - 1,
-			height + ws_vertical_padding * 2);
+	cairo_rectangle(window->cairo, *x, 1.5, width - 1, height);
 	cairo_stroke(window->cairo);
 
 	// text
 	cairo_set_source_u32(window->cairo, box_colors.text);
 	cairo_move_to(window->cairo, (int)*x + ws_horizontal_padding, margin);
-	pango_printf(window->cairo, window->font, false, "%s", name);
+	pango_printf(window->cairo, window->font, false, "%s", stripped_name);
 
-	*x += width + ws_horizontal_padding * 2 + ws_spacing;
-
-	free(name);
+	*x += width + ws_spacing;
 }
 
 static void render_binding_mode_indicator(struct window *window, struct config *config, double pos) {
