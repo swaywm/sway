@@ -333,6 +333,7 @@ int main(int argc, char **argv) {
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 'p'},
 		{"no-unlock-indicator", no_argument, NULL, 'u'},
+		{"daemonize", no_argument, NULL, 'f'},
 		{0, 0, 0, 0}
 	};
 
@@ -346,14 +347,16 @@ int main(int argc, char **argv) {
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
+		"  -f, --daemonize                Detach from the controlling terminal.\n" 
 		"  --socket <socket>              Use the specified socket.\n";
+
 
 	registry = registry_poll();
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hc:i:s:tvu", long_options, &option_index);
+		c = getopt_long(argc, argv, "hc:i:s:tvuf", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -420,6 +423,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'u':
 			show_indicator = false;
+			break;
+		case 'f':
+			daemon(0, 0);
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
