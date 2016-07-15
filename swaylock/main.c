@@ -425,7 +425,10 @@ int main(int argc, char **argv) {
 			show_indicator = false;
 			break;
 		case 'f':
-			daemon(0, 0);
+			if (daemon(0, 0) != 0) {
+				sway_log(L_ERROR, "daemon call failed");
+				exit(EXIT_FAILURE);
+			}
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
