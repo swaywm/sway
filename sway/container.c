@@ -878,7 +878,7 @@ void close_views(swayc_t *container) {
 	container_map(container, close_view, NULL);
 }
 
-swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
+swayc_t *swayc_tabbed_stacked_ancestor(swayc_t *view) {
 	swayc_t *parent = NULL;
 	if (!ASSERT_NONNULL(view)) {
 		return NULL;
@@ -891,4 +891,14 @@ swayc_t *swayc_tabbed_stacked_parent(swayc_t *view) {
 	}
 
 	return parent;
+}
+
+swayc_t *swayc_tabbed_stacked_parent(swayc_t *con) {
+	if (!ASSERT_NONNULL(con)) {
+		return NULL;
+	}
+	if (con->parent && (con->parent->layout == L_TABBED || con->parent->layout == L_STACKED)) {
+		return con->parent;
+	}
+	return NULL;
 }
