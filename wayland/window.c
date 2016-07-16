@@ -59,9 +59,8 @@ static void pointer_handle_axis(void *data, struct wl_pointer *pointer,
 		direction = wl_fixed_to_double(value) < 0 ? SCROLL_LEFT : SCROLL_RIGHT;
 		break;
 	default:
-		if (!sway_assert(false, "Unexpected axis value")) {
-			return;
-		}
+		sway_log(L_DEBUG, "Unexpected axis value on mouse scroll");
+		return;
 	}
 
 	if (window->pointer_input.notify_scroll) {
