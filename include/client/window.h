@@ -27,11 +27,20 @@ struct cursor {
 	struct wl_poitner *pointer;
 };
 
+enum scroll_direction {
+	SCROLL_UP,
+	SCROLL_DOWN,
+	SCROLL_LEFT,
+	SCROLL_RIGHT,
+};
+
 struct pointer_input {
 	int last_x;
 	int last_y;
 
-	void (*notify)(struct window *window, int x, int y, uint32_t button);
+	void (*notify_button)(struct window *window, int x, int y, uint32_t button);
+
+	void (*notify_scroll)(struct window *window, enum scroll_direction direction);
 };
 
 struct window {
