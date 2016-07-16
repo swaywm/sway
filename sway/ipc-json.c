@@ -199,6 +199,7 @@ json_object *ipc_json_get_version() {
 	json_object_object_add(version, "major", json_object_new_int(0));
 	json_object_object_add(version, "minor", json_object_new_int(0));
 	json_object_object_add(version, "patch", json_object_new_int(1));
+	free(full_version);
 #else
 	json_object_object_add(version, "human_readable", json_object_new_string("version not found"));
 	json_object_object_add(version, "major", json_object_new_int(0));
