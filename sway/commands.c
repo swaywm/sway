@@ -1585,6 +1585,7 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 	output->x = output->y = output->width = output->height = -1;
 	output->name = strdup(name);
 	output->enabled = -1;
+	output->scale = 1;
 
 	// TODO: atoi doesn't handle invalid numbers
 
@@ -1642,6 +1643,11 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 			}
 			output->x = x;
 			output->y = y;
+		} else if (strcasecmp(command, "scale") == 0) {
+			if (++i >= argc) {
+				return cmd_results_new(CMD_INVALID, "output", "Missing scale parameter.");
+			}
+			output->scale = atoi(argv[i]);
 		} else if (strcasecmp(command, "background") == 0 || strcasecmp(command, "bg") == 0) {
 			wordexp_t p;
 			if (++i >= argc) {

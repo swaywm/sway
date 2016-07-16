@@ -102,7 +102,8 @@ static void update_root_geometry() {
 // New containers
 
 swayc_t *new_output(wlc_handle handle) {
-	const struct wlc_size *size = wlc_output_get_resolution(handle);
+	struct wlc_size size;
+	wlc_output_get_scaled_size(handle, &size);
 	const char *name = wlc_output_get_name(handle);
 	// Find current outputs to see if this already exists
 	{
@@ -148,8 +149,8 @@ swayc_t *new_output(wlc_handle handle) {
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->handle = handle;
 	output->name = name ? strdup(name) : NULL;
-	output->width = size->w;
-	output->height = size->h;
+	output->width = size.w;
+	output->height = size.h;
 	output->unmanaged = create_list();
 	output->bg_pid = 0;
 

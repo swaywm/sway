@@ -867,6 +867,9 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
 		wlc_output_set_resolution(output->handle, &new_size);
 	}
+	if (oc && oc->scale != 1) {
+		wlc_output_set_scale(output->handle, (int32_t)oc->scale);
+	}
 
 	// Find position for it
 	if (oc && oc->x != -1 && oc->y != -1) {
