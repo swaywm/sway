@@ -42,7 +42,7 @@ static void pointer_handle_button(void *data, struct wl_pointer *pointer, uint32
 	struct pointer_input *input = &window->pointer_input;
 
 	if (window->pointer_input.notify_button) {
-		window->pointer_input.notify_button(window, input->last_x, input->last_y, button);
+		window->pointer_input.notify_button(window, input->last_x, input->last_y, button, state_w);
 	}
 }
 

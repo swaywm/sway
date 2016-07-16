@@ -58,8 +58,12 @@ struct output *new_output(const char *name) {
 	return output;
 }
 
-static void mouse_button_notify(struct window *window, int x, int y, uint32_t button) {
-	sway_log(L_DEBUG, "Mouse button %d clicked at %d %d\n", button, x, y);
+static void mouse_button_notify(struct window *window, int x, int y,
+		uint32_t button, uint32_t state_w) {
+	sway_log(L_DEBUG, "Mouse button %d clicked at %d %d %d\n", button, x, y, state_w);
+	if (!state_w) {
+		return;
+	}
 
 	struct output *clicked_output = NULL;
 	for (int i = 0; i < swaybar.outputs->length; i++) {
