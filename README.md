@@ -29,6 +29,7 @@ available for you to install:
 
 * [Arch Linux](https://www.archlinux.org/packages/?q=sway)
 * [Gentoo](https://packages.gentoo.org/packages/dev-libs/sway)
+* [NixOS](https://github.com/NixOS/nixpkgs/tree/b4bae44f13ba9598209ae9e6a0bb5d4194bf79aa/pkgs/applications/window-managers/sway)
 * [openSUSE Tumbleweed](https://software.opensuse.org/package/sway)
 
 For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-on-other-distros).
