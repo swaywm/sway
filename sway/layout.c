@@ -538,7 +538,7 @@ void update_geometry(swayc_t *container) {
 	int gap = 0;
 
 	// apply inner gaps to non-tabbed/stacked containers
-	swayc_t *p = swayc_tabbed_stacked_parent(container);
+	swayc_t *p = swayc_tabbed_stacked_ancestor(container);
 	if (p == NULL) {
 		gap = update_gap_geometry(container, &geometry);
 	}
@@ -803,7 +803,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			y = container->border_geometry.origin.y;
 		}
 
-		// update container size if it's a child in a tabbed/stacked layout
+		// update container size if it's a direct child in a tabbed/stacked layout
 		if (swayc_tabbed_stacked_parent(container) != NULL) {
 			// Use parent actual_geometry as a base for calculating
 			// container geometry

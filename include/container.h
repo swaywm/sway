@@ -262,6 +262,12 @@ bool swayc_is_empty_workspace(swayc_t *container);
  * Returns the top most tabbed or stacked parent container. Returns NULL if
  * view is not in a tabbed/stacked layout.
  */
+swayc_t *swayc_tabbed_stacked_ancestor(swayc_t *view);
+
+/**
+ * Returns the immediate tabbed or stacked parent container. Returns NULL if
+ * view is not directly in a tabbed/stacked layout.
+ */
 swayc_t *swayc_tabbed_stacked_parent(swayc_t *view);
 
 /**
