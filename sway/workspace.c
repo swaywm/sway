@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <sys/types.h>
 #include "ipc-server.h"
+#include "extensions.h"
 #include "workspace.h"
 #include "layout.h"
 #include "list.h"
@@ -308,6 +309,10 @@ bool workspace_switch(swayc_t *workspace) {
 	}
 	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
 	arrange_windows(output, -1, -1);
+	for (int i = 0; i < desktop_shell.backgrounds->length; ++i) {
+		struct background_config *bg = desktop_shell.backgrounds->items[i];
+		wlc_view_send_to_back(bg->handle);
+	}
 	return true;
 }
 
