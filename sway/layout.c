@@ -226,6 +226,15 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 	b->height = h;
 }
 
+void move_floating_container(swayc_t *container, int dx, int dy) {
+	if (!sway_assert(container->is_floating, "Container has to be floating")) {
+		return;
+	}
+	container->x += dx;
+	container->y += dy;
+	update_geometry(container);
+}
+
 void move_container(swayc_t *container, enum movement_direction dir) {
 	enum swayc_layouts layout;
 	if (container->is_floating
