@@ -79,6 +79,44 @@ the location of your choosing and start there.
 
 For information on the config file format, see **sway**(5).
 
+Environment
+-----------
+
+The following environment variables have an effect on sway:
+
+*SWAY_CURSOR_THEME*::
+	Specifies the name of the cursor theme to use.
+
+*SWAY_CURSOR_SIZE*::
+	Specifies the size of the cursor to use.
+
+*SWAYSOCK*::
+	Specifies the path to the sway IPC socket.
+
+*WLC_DRM_DEVICE*::
+	Specifies the device to use in DRM mode.
+
+*WLC_SHM*::
+	Set 1 to force EGL clients to use shared memory.
+
+*WLC_OUTPUTS*::
+	Number of fake outputs to use when running in X11 mode.
+
+*WLC_XWAYLAND*::
+	Set to 0 to disable Xwayland support.
+
+*WLC_LIBINPUT*::
+	Set to 1 to force libinput (even in X11 mode).
+
+*WLC_REPEAT_DELAY*::
+	Configures the keyboard repeat delay.
+
+*WLC_REPEAT_RATE*::
+	Configures the keyboard repeat rate.
+
+*XKB_DEFAULT_LAYOUT*, *XKB_DEFAULT_VARIANT*, *XKB_DEFAULT_OPTIONS*::
+	Configures the xkb keyboard settings. See xkeyboard-config(7).
+
 Authors
 -------
 

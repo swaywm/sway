@@ -112,7 +112,17 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 	get_next_buffer(window);
 
 	if (registry->pointer) {
-		window->cursor.cursor_theme = wl_cursor_theme_load("default", 32, registry->shm); // TODO: let you customize this
+		char *cursor_theme = getenv("SWAY_CURSOR_THEME");
+		if (!cursor_theme) {
+			cursor_theme = "default";
+		}
+		char *cursor_size = getenv("SWAY_CURSOR_SIZE");
+		if (!cursor_size) {
+			cursor_size = "16";
+		}
+
+		window->cursor.cursor_theme = wl_cursor_theme_load(cursor_theme,
+				atoi(cursor_size), registry->shm);
 		window->cursor.cursor = wl_cursor_theme_get_cursor(window->cursor.cursor_theme, "left_ptr");
 		window->cursor.surface = wl_compositor_create_surface(registry->compositor);
 
