@@ -1009,19 +1009,35 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	const char* expected_syntax = "Expected 'move <left|right|up|down>' or "
+	const char* expected_syntax = "Expected 'move <left|right|up|down> [<px> px]' or "
 		"'move <container|window> to workspace <name>' or "
 		"'move <container|window|workspace> to output <name|direction>'";
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view, MOVE_LEFT);
+		if (argc == 3 && !strcasecmp(argv[2], "px")) {
+			move_floating_container(view, -1 * atoi(argv[1]), 0);
+		} else {
+			move_container(view, MOVE_LEFT);
+		}
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view, MOVE_RIGHT);
+		if (argc == 3 && !strcasecmp(argv[2], "px")) {
+			move_floating_container(view, atoi(argv[1]), 0);
+		} else {
+			move_container(view, MOVE_RIGHT);
+		}
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view, MOVE_UP);
+		if (argc == 3 && !strcasecmp(argv[2], "px")) {
+			move_floating_container(view, 0, -1 * atoi(argv[1]));
+		} else {
+			move_container(view, MOVE_UP);
+		}
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view, MOVE_DOWN);
+		if (argc == 3 && !strcasecmp(argv[2], "px")) {
+			move_floating_container(view, 0, atoi(argv[1]));
+		} else {
+			move_container(view, MOVE_DOWN);
+		}
 	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
 		// "move container ...
 		if ((error = checkarg(argc, "move container/window", EXPECTED_AT_LEAST, 4))) {
