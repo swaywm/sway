@@ -30,8 +30,6 @@ void init_log(log_importance_t verbosity) {
 		loglevel_default = verbosity;
 	}
 	v = verbosity;
-	signal(SIGSEGV, error_handler);
-	signal(SIGABRT, error_handler);
 }
 
 void set_log_level(log_importance_t verbosity) {
@@ -39,7 +37,7 @@ void set_log_level(log_importance_t verbosity) {
 }
 
 log_importance_t get_log_level(void) {
-        return v;
+	return v;
 }
 
 void reset_log_level(void) {
@@ -135,47 +133,4 @@ bool _sway_assert(bool condition, const char* format, ...) {
 #endif
 
 	return false;
-}
-
-void error_handler(int sig) {
-#if SWAY_Backtrace_FOUND
-	int i;
-	int max_lines = 20;
-	void *array[max_lines];
-	char **bt;
-	size_t bt_len;
-	char maps_file[256];
-	char maps_buffer[1024];
-
-	sway_log(L_ERROR, "Error: Signal %d. Printing backtrace", sig);
-	bt_len = backtrace(array, max_lines);
-	bt = backtrace_symbols(array, bt_len);
-	if (!bt) {
-		sway_log(L_ERROR, "Could not allocate sufficient memory for backtrace_symbols(), falling back to stderr");
-		backtrace_symbols_fd(array, bt_len, STDERR_FILENO);
-		exit(1);
-	}
-
-	for (i = 0; (size_t)i < bt_len; i++) {
-		sway_log(L_ERROR, "Backtrace: %s", bt[i]);
-	}
-
-	sway_log(L_ERROR, "Maps:");
-	pid_t pid = getpid();
-	if (snprintf(maps_file, 255, "/proc/%zd/maps", (size_t)pid) < 255) {
-		FILE *maps = fopen(maps_file, "r");
-		while (!feof(maps)) {
-			char *m = read_line_buffer(maps, maps_buffer, 1024);
-			if (!m) {
-				sway_log(L_ERROR, "Unable to allocate memory to show maps");
-				break;
-			}
-			sway_log(L_ERROR, "%s", m);
-		}
-		fclose(maps);
-	}
-#else
-	sway_log(L_ERROR, "Error: Signal %d.", sig);
-#endif
-	exit(1);
 }
