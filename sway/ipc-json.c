@@ -241,6 +241,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 		json_object_object_add(json, "separator_symbol", json_object_new_string(bar->separator_symbol));
 	}
 	json_object_object_add(json, "bar_height", json_object_new_int(bar->height));
+	json_object_object_add(json, "wrap_scroll", json_object_new_boolean(bar->wrap_scroll));
 	json_object_object_add(json, "workspace_buttons", json_object_new_boolean(bar->workspace_buttons));
 	json_object_object_add(json, "strip_workspace_numbers", json_object_new_boolean(bar->strip_workspace_numbers));
 	json_object_object_add(json, "binding_mode_indicator", json_object_new_boolean(bar->binding_mode_indicator));

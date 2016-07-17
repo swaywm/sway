@@ -21,7 +21,7 @@ Commands
 **status_command** <status command>::
 	Executes the bar _status command_ with _sh -c_. Each line of text printed to
 	stdout from this command will be displayed in the status area of the bar. You
-	can also use the i3bar JSON protocol:
+	may also use the i3bar JSON protocol:
 	+
 	https://i3wm.org/docs/i3bar-protocol.html
 
@@ -48,9 +48,12 @@ Commands
 **separator_symbol** <symbol>::
 	Specifies the separator symbol to separate blocks on the bar.
 
+**wrap_scroll** <yes|no>::
+	Enables or disables wrapping when scrolling through workspaces with the
+	scroll wheel. Default is no.
+
 **workspace_buttons** <yes|no>::
-	Enables or disables workspace buttons on the bar. Default is to enable
-	buttons.
+	Enables or disables workspace buttons on the bar. Default is yes.
 
 **strip_workspace_numbers** <yes|no>::
 	If set to _yes_, then workspace numbers will be omitted from the workspace

@@ -27,6 +27,7 @@ struct config {
 	char *mode;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
+	bool wrap_scroll;
 	bool workspace_buttons;
 	bool all_outputs;
 	list_t *outputs;

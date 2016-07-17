@@ -96,6 +96,37 @@ static void mouse_button_notify(struct window *window, int x, int y,
 static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
 	sway_log(L_DEBUG, "Mouse wheel scrolled %s", direction == SCROLL_UP ? "up" : "down");
 
+	if (!swaybar.config->wrap_scroll) {
+		// Find output this window lives on
+		int i;
+		struct output *output;
+		for (i = 0; i < swaybar.outputs->length; ++i) {
+			output = swaybar.outputs->items[i];
+			if (output->window == window) {
+				break;
+			}
+		}
+		if (!sway_assert(i != swaybar.outputs->length, "Unknown window in scroll event")) {
+			return;
+		}
+		int focused = -1;
+		for (i = 0; i < output->workspaces->length; ++i) {
+			struct workspace *ws = output->workspaces->items[i];
+			if (ws->focused) {
+				focused = i;
+				break;
+			}
+		}
+		if (!sway_assert(focused != -1, "Scroll wheel event received on inactive output")) {
+			return;
+		}
+		if ((focused == 0 && direction == SCROLL_UP) ||
+				(focused == output->workspaces->length - 1 && direction == SCROLL_DOWN)) {
+			// Do not wrap
+			return;
+		}
+	}
+
 	const char *workspace_name = direction == SCROLL_UP ? "prev_on_output" : "next_on_output";
 	ipc_send_workspace_command(workspace_name);
 }

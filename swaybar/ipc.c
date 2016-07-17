@@ -19,7 +19,7 @@ void ipc_send_workspace_command(const char *workspace_name) {
 static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
 	json_object *tray_output, *mode, *hidden_bar, *position, *status_command;
-	json_object *font, *bar_height, *workspace_buttons, *strip_workspace_numbers;
+	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
 	json_object *markup;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
@@ -29,6 +29,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object_object_get_ex(bar_config, "status_command", &status_command);
 	json_object_object_get_ex(bar_config, "font", &font);
 	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
+	json_object_object_get_ex(bar_config, "wrap_scroll", &wrap_scroll);
 	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
 	json_object_object_get_ex(bar_config, "strip_workspace_numbers", &strip_workspace_numbers);
 	json_object_object_get_ex(bar_config, "binding_mode_indicator", &binding_mode_indicator);
@@ -63,6 +64,10 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 	if (binding_mode_indicator) {
 		config->binding_mode_indicator = json_object_get_boolean(binding_mode_indicator);
+	}
+
+	if (wrap_scroll) {
+		config->wrap_scroll = json_object_get_boolean(wrap_scroll);
 	}
 
 	if (workspace_buttons) {
