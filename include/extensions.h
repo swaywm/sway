@@ -11,6 +11,8 @@ struct background_config {
 	wlc_resource surface;
 	// we need the wl_resource of the surface in the destructor
 	struct wl_resource *wl_surface_res;
+	struct wl_client *client;
+    wlc_handle handle;
 };
 
 struct panel_config {

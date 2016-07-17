@@ -44,6 +44,17 @@ static struct panel_config *if_panel_find_config(struct wl_client *client) {
 	return NULL;
 }
 
+static struct background_config *if_background_find_config(struct wl_client *client) {
+	int i;
+	for (i = 0; i < desktop_shell.backgrounds->length; i++) {
+		struct background_config *config = desktop_shell.backgrounds->items[i];
+		if (config->client == client) {
+			return config;
+		}
+	}
+	return NULL;
+}
+
 static struct wlc_geometry compute_panel_geometry(struct panel_config *config) {
 	const struct wlc_size resolution = *wlc_output_get_resolution(config->output);
 	const struct wlc_geometry *old = wlc_view_get_geometry(config->handle);
@@ -89,6 +100,21 @@ static void update_panel_geometries(wlc_handle output) {
 		struct panel_config *config = desktop_shell.panels->items[i];
 		if (config->output == output) {
 			update_panel_geometry(config);
+		}
+	}
+}
+
+static void update_background_geometry(struct background_config *config) {
+	struct wlc_geometry geometry = { 0 };
+	geometry.size = *wlc_output_get_resolution(config->output);
+	wlc_view_set_geometry(config->handle, 0, &geometry);
+}
+
+static void update_background_geometries(wlc_handle output) {
+	for (int i = 0; i < desktop_shell.backgrounds->length; i++) {
+		struct background_config *config = desktop_shell.backgrounds->items[i];
+		if (config->output == output) {
+			update_background_geometry(config);
 		}
 	}
 }
@@ -168,19 +194,6 @@ static void handle_output_destroyed(wlc_handle output) {
 	}
 }
 
-static void handle_output_pre_render(wlc_handle output) {
-	struct wlc_size resolution = *wlc_output_get_resolution(output);
-
-	int i;
-	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
-		if (config->output == output) {
-			wlc_surface_render(config->surface, &(struct wlc_geometry){ wlc_origin_zero, resolution });
-			break;
-		}
-	}
-}
-
 static void handle_output_post_render(wlc_handle output) {
 	ipc_get_pixels(output);
 	arrange_windows(swayc_by_handle(output), -1, -1);
@@ -201,6 +214,7 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 	c->height = to->h;
 
 	update_panel_geometries(output);
+	update_background_geometries(output);
 
 	arrange_windows(&root_container, -1, -1);
 }
@@ -247,6 +261,7 @@ static bool handle_view_created(wlc_handle handle) {
 	struct wl_client *client = wlc_view_get_wl_client(handle);
 	pid_t pid;
 	struct panel_config *panel_config = NULL;
+	struct background_config *background_config = NULL;
 
 	panel_config = if_panel_find_config(client);
 	if (panel_config) {
@@ -254,6 +269,17 @@ static bool handle_view_created(wlc_handle handle) {
 		update_panel_geometry(panel_config);
 		wlc_view_set_mask(handle, VISIBLE);
 		wlc_view_set_output(handle, panel_config->output);
+		wlc_view_bring_to_front(handle);
+		return true;
+	}
+
+	background_config = if_background_find_config(client);
+	if (background_config) {
+		background_config->handle = handle;
+		update_background_geometry(background_config);
+		wlc_view_set_mask(handle, VISIBLE);
+		wlc_view_set_output(handle, background_config->output);
+		wlc_view_send_to_back(handle);
 		return true;
 	}
 
@@ -883,7 +909,6 @@ void register_wlc_handlers() {
 	wlc_set_output_destroyed_cb(handle_output_destroyed);
 	wlc_set_output_resolution_cb(handle_output_resolution_change);
 	wlc_set_output_focus_cb(handle_output_focused);
-	wlc_set_output_render_pre_cb(handle_output_pre_render);
 	wlc_set_output_render_post_cb(handle_output_post_render);
 	wlc_set_view_created_cb(handle_view_created);
 	wlc_set_view_destroyed_cb(handle_view_destroyed);

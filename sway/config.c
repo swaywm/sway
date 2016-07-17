@@ -904,7 +904,6 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 
 	if (oc && oc->background) {
-
 		if (output->bg_pid != 0) {
 			terminate_swaybg(output->bg_pid);
 		}
