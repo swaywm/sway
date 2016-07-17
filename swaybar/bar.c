@@ -99,7 +99,7 @@ static void mouse_scroll_notify(struct window *window, enum scroll_direction dir
 	if (!swaybar.config->wrap_scroll) {
 		// Find output this window lives on
 		int i;
-		struct output *output;
+		struct output *output = NULL;
 		for (i = 0; i < swaybar.outputs->length; ++i) {
 			output = swaybar.outputs->items[i];
 			if (output->window == window) {
