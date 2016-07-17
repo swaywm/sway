@@ -810,49 +810,49 @@ void load_swaybars() {
 }
 
 void apply_input_config(struct input_config *ic, struct libinput_device *dev) {
-	if (ic) {
-		sway_log(L_DEBUG,
-			"apply_input_config(%s)",
-			ic->identifier);
+	if (!ic) {
+		return;
 	}
 
-	if (ic && ic->accel_profile != INT_MIN) {
+	sway_log(L_DEBUG, "apply_input_config(%s)", ic->identifier);
+
+	if (ic->accel_profile != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) accel_set_profile(%d)", ic->identifier, ic->accel_profile);
 		libinput_device_config_accel_set_profile(dev, ic->accel_profile);
 	}
-	if (ic && ic->click_method != INT_MIN) {
+	if (ic->click_method != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) click_set_method(%d)", ic->identifier, ic->click_method);
 		libinput_device_config_click_set_method(dev, ic->click_method);
 	}
-	if (ic && ic->drag_lock != INT_MIN) {
+	if (ic->drag_lock != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) tap_set_drag_lock_enabled(%d)", ic->identifier, ic->click_method);
 		libinput_device_config_tap_set_drag_lock_enabled(dev, ic->drag_lock);
 	}
-	if (ic && ic->dwt != INT_MIN) {
+	if (ic->dwt != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) dwt_set_enabled(%d)", ic->identifier, ic->dwt);
 		libinput_device_config_dwt_set_enabled(dev, ic->dwt);
 	}
-	if (ic && ic->middle_emulation != INT_MIN) {
+	if (ic->middle_emulation != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) middle_emulation_set_enabled(%d)", ic->identifier, ic->middle_emulation);
 		libinput_device_config_middle_emulation_set_enabled(dev, ic->middle_emulation);
 	}
-	if (ic && ic->natural_scroll != INT_MIN) {
+	if (ic->natural_scroll != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) natural_scroll_set_enabled(%d)", ic->identifier, ic->natural_scroll);
 		libinput_device_config_scroll_set_natural_scroll_enabled(dev, ic->natural_scroll);
 	}
-	if (ic && ic->pointer_accel != FLT_MIN) {
+	if (ic->pointer_accel != FLT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) accel_set_speed(%f)", ic->identifier, ic->pointer_accel);
 		libinput_device_config_accel_set_speed(dev, ic->pointer_accel);
 	}
-	if (ic && ic->scroll_method != INT_MIN) {
+	if (ic->scroll_method != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) scroll_set_method(%d)", ic->identifier, ic->scroll_method);
 		libinput_device_config_scroll_set_method(dev, ic->scroll_method);
 	}
-	if (ic && ic->send_events != INT_MIN) {
+	if (ic->send_events != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) send_events_set_mode(%d)", ic->identifier, ic->send_events);
 		libinput_device_config_send_events_set_mode(dev, ic->send_events);
 	}
-	if (ic && ic->tap != INT_MIN) {
+	if (ic->tap != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) tap_set_enabled(%d)", ic->identifier, ic->tap);
 		libinput_device_config_tap_set_enabled(dev, ic->tap);
 	}
