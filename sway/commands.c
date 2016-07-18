@@ -3456,28 +3456,28 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
+static struct cmd_handler *__find_handler(char *line, const struct cmd_handler *handlers, size_t handlers_size) {
+	struct cmd_handler d = {.command = line};
+	return bsearch(&d, handlers, handlers_size, sizeof(struct cmd_handler), handler_compare);
+}
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
-	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_INPUT);
+
+	sway_log(L_DEBUG, "find_handler(%s) %d", line, block);
+
 	if (block == CMD_BLOCK_BAR) {
-		res = bsearch(&d, bar_handlers,
-			sizeof(bar_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_BAR_COLORS){
-		res = bsearch(&d, bar_colors_handlers,
-			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
+		res = __find_handler(line, bar_handlers, ARRAY_SIZE(bar_handlers));
+	} else if (block == CMD_BLOCK_BAR_COLORS) {
+		res = __find_handler(line, bar_colors_handlers, ARRAY_SIZE(bar_colors_handlers));
 	} else if (block == CMD_BLOCK_INPUT) {
-		sway_log(L_DEBUG, "lookng at input handlers");
-		res = bsearch(&d, input_handlers,
-			sizeof(input_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
+		res = __find_handler(line, input_handlers, ARRAY_SIZE(input_handlers));
 	} else {
-		res = bsearch(&d, handlers,
-			sizeof(handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
+		res = __find_handler(line, handlers, ARRAY_SIZE(handlers));
 	}
+
 	return res;
 }
 
