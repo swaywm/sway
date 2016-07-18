@@ -27,12 +27,12 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 Sway is not supported by many distributions yet. Here's a list of packages
 available for you to install:
 
-* [Arch Linux](https://www.archlinux.org/packages/?q=sway)
-* [Gentoo](https://packages.gentoo.org/packages/dev-libs/sway)
-* [NixOS](https://github.com/NixOS/nixpkgs/tree/b4bae44f13ba9598209ae9e6a0bb5d4194bf79aa/pkgs/applications/window-managers/sway)
-* [openSUSE Tumbleweed](https://software.opensuse.org/package/sway)
+* [Arch Linux](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#arch)
+* [Gentoo](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#gentoo)
+* [NixOS](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#nixos)
+* [openSUSE Tumbleweed](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#opensuse)
 
-For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-on-other-distros).
+For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#unofficial-packages).
 If you're interested in packaging Sway for your distribution, stop by the IRC
 channel or shoot an email to sir@cmpwn.com for advice.
 
