@@ -1011,7 +1011,8 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	}
 	const char* expected_syntax = "Expected 'move <left|right|up|down>' or "
 		"'move <container|window> to workspace <name>' or "
-		"'move <container|window|workspace> to output <name|direction>'";
+		"'move <container|window|workspace> to output <name|direction>' or "
+                "'move position mouse'";
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
