@@ -1011,7 +1011,8 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 	}
 	const char* expected_syntax = "Expected 'move <left|right|up|down>' or "
 		"'move <container|window> to workspace <name>' or "
-		"'move <container|window|workspace> to output <name|direction>'";
+		"'move <container|window|workspace> to output <name|direction>' or "
+                "'move position mouse'";
 	swayc_t *view = get_focused_container(&root_container);
 
 	if (strcasecmp(argv[0], "left") == 0) {
@@ -1115,7 +1116,14 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			focused = swayc_active_workspace();
 		}
 		set_focused_container(focused);
-	} else if (strcasecmp(argv[0], "position") == 0 && strcasecmp(argv[1], "mouse") == 0) {
+	} else if (strcasecmp(argv[0], "position") == 0) {
+		if ((error = checkarg(argc, "move workspace", EXPECTED_EQUAL_TO, 2))) {
+			return error;
+		}
+		if (strcasecmp(argv[1], "mouse")) {
+			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+		}
+
 		if (view->is_floating) {
 			swayc_t *output = swayc_parent_by_type(view, C_OUTPUT);
 			struct wlc_geometry g;
