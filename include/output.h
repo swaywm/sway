@@ -19,4 +19,6 @@ void get_absolute_center_position(swayc_t *container, struct wlc_point *point);
 // stable sort workspaces on this output
 void sort_workspaces(swayc_t *output);
 
+void output_get_scaled_size(wlc_handle handle, struct wlc_size *size);
+
 #endif

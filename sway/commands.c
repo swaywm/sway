@@ -1706,10 +1706,10 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		list_add(config->output_configs, output);
 	}
 
-	sway_log(L_DEBUG, "Config stored for output %s (enabled:%d) (%d x %d @ %d, %d) (bg %s %s)",
+	sway_log(L_DEBUG, "Config stored for output %s (enabled:%d) (%d x %d @ %d, %d scale %d) (bg %s %s)",
 			output->name, output->enabled, output->width,
-			output->height, output->x, output->y, output->background,
-			output->background_option);
+			output->height, output->x, output->y, output->scale,
+			output->background, output->background_option);
 
 	if (output->name) {
 		// Try to find the output container and apply configuration now. If

@@ -103,7 +103,7 @@ static void update_root_geometry() {
 
 swayc_t *new_output(wlc_handle handle) {
 	struct wlc_size size;
-	wlc_output_get_scaled_size(handle, &size);
+	output_get_scaled_size(handle, &size);
 	const char *name = wlc_output_get_name(handle);
 	// Find current outputs to see if this already exists
 	{

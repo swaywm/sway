@@ -407,7 +407,7 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 
 	swayc_t *output = swayc_parent_by_type(c, C_OUTPUT);
 	struct wlc_size res;
-	wlc_output_get_scaled_size(output->handle, &res);
+	output_get_scaled_size(output->handle, &res);
 
 	switch (c->border_type) {
 	case B_NONE:
@@ -548,7 +548,7 @@ void update_geometry(swayc_t *container) {
 
 	swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
 	struct wlc_size size;
-	wlc_output_get_scaled_size(output->handle, &size);
+	output_get_scaled_size(output->handle, &size);
 
 	if (swayc_is_fullscreen(container)) {
 		geometry.origin.x = 0;
@@ -729,7 +729,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	case C_OUTPUT:
 		{
 			struct wlc_size resolution;
-			wlc_output_get_scaled_size(container->handle, &resolution);
+			output_get_scaled_size(container->handle, &resolution);
 			width = resolution.w; height = resolution.h;
 			// output must have correct size due to e.g. seamless mouse,
 			// but a workspace might be smaller depending on panels.

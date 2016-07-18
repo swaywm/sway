@@ -57,7 +57,7 @@ static struct background_config *if_background_find_config(struct wl_client *cli
 
 static struct wlc_geometry compute_panel_geometry(struct panel_config *config) {
 	struct wlc_size resolution;
-	wlc_output_get_scaled_size(config->output, &resolution);
+	output_get_scaled_size(config->output, &resolution);
 	const struct wlc_geometry *old = wlc_view_get_geometry(config->handle);
 	struct wlc_geometry new;
 

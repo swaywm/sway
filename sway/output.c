@@ -5,6 +5,13 @@
 #include "log.h"
 #include "list.h"
 
+void output_get_scaled_size(wlc_handle handle, struct wlc_size *size) {
+	*size = *wlc_output_get_resolution(handle);
+	uint32_t scale = wlc_output_get_scale(handle);
+	size->w /= scale;
+	size->h /= scale;
+}
+
 swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
 	if (strcasecmp(name, "left") == 0) {
 		return swayc_adjacent_output(NULL, MOVE_LEFT, abs_pos, true);
