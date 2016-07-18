@@ -234,7 +234,7 @@ static char *generate_container_title(swayc_t *container) {
 	for (i = 0; i < container->children->length; ++i) {
 		prev_name = name;
 		swayc_t* child = container->children->items[i];
-		const char *title = child->name;
+		const char *title = child->app_id;
 		if (child->type == C_CONTAINER) {
 			title = generate_container_title(child);
 		}
