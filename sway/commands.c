@@ -1207,37 +1207,28 @@ static struct cmd_results *cmd_move_position(int argc, char **argv) {
 }
 
 static struct cmd_results *cmd_move(int argc, char **argv) {
-	struct cmd_results *result;
-
 	if (config->reading) {
-            return cmd_results_new(CMD_FAILURE, "move", "Can't be used in config file.");
-        }
+		return cmd_results_new(CMD_FAILURE, "move", "Can't be used in config file.");
+	}
+
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 
-	if (strcasecmp(argv[0], "left") == 0) {
-		result = cmd_move_left(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "right") == 0) {
-		result = cmd_move_right(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "up") == 0) {
-		result = cmd_move_up(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "down") == 0) {
-		result = cmd_move_down(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
-		result = cmd_move_container(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "workspace") == 0) {
-		result = cmd_move_workspace(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
-		result = cmd_move_scratchpad(argc - 1, argv + 1);
-	} else if (strcasecmp(argv[0], "position") == 0 && strcasecmp(argv[1], "mouse") == 0) {
-		result = cmd_move_position(argc - 1, argv + 1);
-	} else {
-		result = cmd_results_new(CMD_INVALID, "move", cmd_move_expected_syntax);
-	}
+	static const struct cmd_handler handlers[] = {
+		{"container", cmd_move_container},
+		{"down", cmd_move_down},
+		{"left", cmd_move_left},
+		{"position", cmd_move_position},
+		{"right", cmd_move_right},
+		{"scratchpad", cmd_move_scratchpad},
+		{"up", cmd_move_up},
+		{"window", cmd_move_container},
+		{"workspace", cmd_move_workspace},
+	};
 
-	return result;
+	return find_and_execute_handler(argc, argv, handlers, ARRAY_SIZE(handlers), cmd_move_expected_syntax);
 }
 
 static struct cmd_results *cmd_new_float(int argc, char **argv) {
