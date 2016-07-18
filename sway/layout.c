@@ -959,6 +959,11 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	update_visibility(container);
 	arrange_windows_r(container, width, height);
 	layout_log(&root_container, 0);
+
+	for (int i = 0; i < desktop_shell.backgrounds->length; ++i) {
+		struct background_config *bg = desktop_shell.backgrounds->items[i];
+		wlc_view_send_to_back(bg->handle);
+	}
 }
 
 /**
