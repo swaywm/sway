@@ -3463,6 +3463,18 @@ static struct cmd_handler *__find_handler(char *line, const struct cmd_handler *
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
+static struct cmd_results *find_and_execute_handler(int argc, char **argv,
+						    const struct cmd_handler *handlers,
+                                                    size_t handlers_size,
+                                                    const char *expected_syntax) {
+	char *command = argv[0];
+	struct cmd_handler *handler = __find_handler(command, handlers, handlers_size);
+	if (!handler) {
+		return cmd_results_new(CMD_INVALID, command, expected_syntax);
+	}
+	return handler->handle(argc - 1, argv + 1);
+}
+
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler *res = NULL;
 
