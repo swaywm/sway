@@ -35,8 +35,6 @@
 #include "input.h"
 #include "border.h"
 
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
-
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
 struct cmd_handler {
@@ -1112,7 +1110,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		{"workspace", cmd_move_container_to_workspace},
 	};
 
-	return find_and_execute_handler(argc, argv, handlers, ARRAY_SIZE(handlers), cmd_move_expected_syntax);
+	return find_and_execute_handler(argc, argv, handlers, sizeof(handlers) / sizeof(handlers[0]), cmd_move_expected_syntax);
 }
 
 static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
@@ -1228,7 +1226,7 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 		{"workspace", cmd_move_workspace},
 	};
 
-	return find_and_execute_handler(argc, argv, handlers, ARRAY_SIZE(handlers), cmd_move_expected_syntax);
+	return find_and_execute_handler(argc, argv, handlers, sizeof(handlers) / sizeof(handlers[0]), cmd_move_expected_syntax);
 }
 
 static struct cmd_results *cmd_new_float(int argc, char **argv) {
@@ -3559,13 +3557,13 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	sway_log(L_DEBUG, "find_handler(%s) %d", line, block);
 
 	if (block == CMD_BLOCK_BAR) {
-		res = __find_handler(line, bar_handlers, ARRAY_SIZE(bar_handlers));
+		res = __find_handler(line, bar_handlers, sizeof(bar_handlers) / sizeof(bar_handlers[0]));
 	} else if (block == CMD_BLOCK_BAR_COLORS) {
-		res = __find_handler(line, bar_colors_handlers, ARRAY_SIZE(bar_colors_handlers));
+		res = __find_handler(line, bar_colors_handlers, sizeof(bar_colors_handlers) / sizeof(bar_colors_handlers[0]));
 	} else if (block == CMD_BLOCK_INPUT) {
-		res = __find_handler(line, input_handlers, ARRAY_SIZE(input_handlers));
+		res = __find_handler(line, input_handlers, sizeof(input_handlers) / sizeof(input_handlers[0]));
 	} else {
-		res = __find_handler(line, handlers, ARRAY_SIZE(handlers));
+		res = __find_handler(line, handlers, sizeof(handlers) / sizeof(handlers[0]));
 	}
 
 	return res;
