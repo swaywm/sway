@@ -54,6 +54,8 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
 
+#define event_mask(ev) (1 << (ev & 0x7F))
+
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (ipc_socket == -1) {
@@ -334,18 +336,18 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		for (int i = 0; i < json_object_array_length(request); i++) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
 			if (strcmp(event_type, "workspace") == 0) {
-				client->subscribed_events |= IPC_EVENT_WORKSPACE;
+				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
 			} else if (strcmp(event_type, "barconfig_update") == 0) {
-				client->subscribed_events |= IPC_EVENT_BARCONFIG_UPDATE;
+				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
 			} else if (strcmp(event_type, "mode") == 0) {
-				client->subscribed_events |= IPC_EVENT_MODE;
+				client->subscribed_events |= event_mask(IPC_EVENT_MODE);
 			} else if (strcmp(event_type, "window") == 0) {
-				client->subscribed_events |= IPC_EVENT_WINDOW;
+				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
 			} else if (strcmp(event_type, "modifier") == 0) {
-				client->subscribed_events |= IPC_EVENT_MODIFIER;
+				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
 #if SWAY_BINDING_EVENT
 			} else if (strcmp(event_type, "binding") == 0) {
-				client->subscribed_events |= IPC_EVENT_BINDING;
+				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
 #endif
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
@@ -524,7 +526,7 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 	struct ipc_client *client;
 	for (i = 0; i < ipc_client_list->length; i++) {
 		client = ipc_client_list->items[i];
-		if ((client->subscribed_events & event) == 0) {
+		if ((client->subscribed_events & event_mask(event)) == 0) {
 			continue;
 		}
 		client->current_command = event;
