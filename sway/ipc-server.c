@@ -566,7 +566,7 @@ void ipc_event_window(swayc_t *window, const char *change) {
 	if (strcmp(change, "close") == 0 || !window) {
 		json_object_object_add(obj, "container", NULL);
 	} else {
-		json_object_object_add(obj, "container", ipc_json_describe_window(window));
+		json_object_object_add(obj, "container", ipc_json_describe_container(window));
 	}
 
 	const char *json_string = json_object_to_json_string(obj);
