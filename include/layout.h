@@ -59,6 +59,7 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination);
 void update_layout_geometry(swayc_t *parent, enum swayc_layouts prev_layout);
 void update_geometry(swayc_t *view);
 void arrange_windows(swayc_t *container, double width, double height);
+void arrange_backgrounds(void);
 
 swayc_t *get_focused_container(swayc_t *parent);
 swayc_t *get_swayc_in_direction(swayc_t *container, enum movement_direction dir);

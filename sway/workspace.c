@@ -308,6 +308,7 @@ bool workspace_switch(swayc_t *workspace) {
 		return false;
 	}
 	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
+	arrange_backgrounds();
 	arrange_windows(output, -1, -1);
 	return true;
 }
