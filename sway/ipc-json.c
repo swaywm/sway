@@ -17,6 +17,17 @@ static json_object *ipc_json_create_rect(swayc_t *c) {
 	return rect;
 }
 
+static json_object *ipc_json_create_rect_from_geometry(struct wlc_geometry g) {
+	json_object *rect = json_object_new_object();
+
+	json_object_object_add(rect, "x", json_object_new_int(g.origin.x));
+	json_object_object_add(rect, "y", json_object_new_int(g.origin.y));
+	json_object_object_add(rect, "width", json_object_new_int(g.size.w));
+	json_object_object_add(rect, "height", json_object_new_int(g.size.h));
+
+	return rect;
+}
+
 static const char *ipc_json_border_description(swayc_t *c) {
 	const char *border;
 
@@ -38,10 +49,10 @@ static const char *ipc_json_border_description(swayc_t *c) {
 	return border;
 }
 
-static const char *ipc_json_layout_description(swayc_t *c) {
+static const char *ipc_json_layout_description(enum swayc_layouts l) {
 	const char *layout;
 
-	switch (c->layout) {
+	switch (l) {
 	case L_VERT:
 		layout = "splitv";
 		break;
@@ -111,7 +122,7 @@ static void ipc_json_describe_output(swayc_t *output, json_object *object) {
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {
 	int num = (isdigit(workspace->name[0])) ? atoi(workspace->name) : -1;
 	bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
-	const char *layout = ipc_json_layout_description(workspace);
+	const char *layout = ipc_json_layout_description(workspace->layout);
 
 	json_object_object_add(object, "num", json_object_new_int(num));
 	json_object_object_add(object, "focused", json_object_new_boolean(focused));
@@ -121,26 +132,68 @@ static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object)
 	json_object_object_add(object, "layout", (strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
 }
 
-static void ipc_json_describe_view(swayc_t *view, json_object *object) {
-	float percent = ipc_json_child_percentage(view);
-	const char *layout = ipc_json_layout_description(view);
+// window is in the scratchpad ? changed : none
+static const char *ipc_json_get_scratchpad_state(swayc_t *c) {
+	int i;
+	for (i = 0; i < scratchpad->length; i++) {
+		if (scratchpad->items[i] == c) {
+			return "changed";
+		}
+	}
+	return "none"; // we ignore the fresh value
+}
 
-	json_object_object_add(object, "border", json_object_new_string(ipc_json_border_description(view)));
-	json_object_object_add(object, "current_border_width", json_object_new_int(view->border_thickness));
+static void ipc_json_describe_view(swayc_t *c, json_object *object) {
+	json_object *props = json_object_new_object();
+	float percent = ipc_json_child_percentage(c);
+	const char *layout = (c->parent->type == C_CONTAINER) ?
+		ipc_json_layout_description(c->parent->layout) : "none";
+	const char *last_layout = (c->parent->type == C_CONTAINER) ?
+		ipc_json_layout_description(c->parent->prev_layout) : "none";
+	wlc_handle parent = wlc_view_get_parent(c->handle);
+
+	json_object_object_add(object, "id", json_object_new_int(c->handle));
+	json_object_object_add(object, "type", json_object_new_string((c->is_floating) ? "floating_con" : "con"));
+
+	json_object_object_add(object, "scratchpad_state",
+		json_object_new_string(ipc_json_get_scratchpad_state(c)));
 	json_object_object_add(object, "percent", (percent > 0) ? json_object_new_double(percent) : NULL);
 	// TODO: make urgency actually work once Sway supports it
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
-	json_object_object_add(object, "focused", json_object_new_boolean(view->is_focused));
-	json_object_object_add(object, "type", json_object_new_string((view->is_floating) ? "floating_con" : "con"));
-	json_object_object_add(object, "layout", (strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
+	json_object_object_add(object, "focused", json_object_new_boolean(c->is_focused));
 
-	if (view->class) {
-		json_object_object_add(object, "class", json_object_new_string(view->class));
-	}
+	json_object_object_add(object, "layout",
+		(strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
+	json_object_object_add(object, "last_split_layout",
+		(strcmp(last_layout, "null") == 0) ? NULL : json_object_new_string(last_layout));
+	json_object_object_add(object, "workspace_layout",
+		json_object_new_string(ipc_json_layout_description(swayc_parent_by_type(c, C_WORKSPACE)->layout)));
 
-	if (view->app_id) {
-		json_object_object_add(object, "app_id", json_object_new_string(view->app_id));
-	}
+	json_object_object_add(object, "border", json_object_new_string(ipc_json_border_description(c)));
+	json_object_object_add(object, "current_border_width", json_object_new_int(c->border_thickness));
+
+	json_object_object_add(object, "rect", ipc_json_create_rect(c));
+	json_object_object_add(object, "deco_rect", ipc_json_create_rect_from_geometry(c->title_bar_geometry));
+	json_object_object_add(object, "geometry", ipc_json_create_rect_from_geometry(c->cached_geometry));
+	json_object_object_add(object, "window_rect", ipc_json_create_rect_from_geometry(c->actual_geometry));
+
+	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
+
+	json_object_object_add(object, "window", json_object_new_int(c->handle)); // for the sake of i3 compat
+	json_object_object_add(props, "class", c->class ? json_object_new_string(c->class) :
+		c->app_id ? json_object_new_string(c->app_id) : NULL);
+	json_object_object_add(props, "title", (c->name) ? json_object_new_string(c->name) : NULL);
+	json_object_object_add(props, "transient_for", parent ? json_object_new_int(parent) : NULL);
+	json_object_object_add(object, "window_properties", props);
+
+	json_object_object_add(object, "fullscreen_mode",
+		json_object_new_int(swayc_is_fullscreen(c) ? 1 : 0));
+	json_object_object_add(object, "sticky", json_object_new_boolean(c->sticky));
+	json_object_object_add(object, "floating", json_object_new_string(
+		c->is_floating ? "auto_on" : "auto_off")); // we can't state the cause
+
+	json_object_object_add(object, "app_id", c->app_id ? json_object_new_string(c->app_id) : NULL);
+	// we do not include children, floating, unmanaged etc. as views have none
 }
 
 json_object *ipc_json_describe_container(swayc_t *c) {

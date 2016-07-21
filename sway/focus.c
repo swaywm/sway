@@ -118,6 +118,10 @@ bool set_focused_container(swayc_t *c) {
 		c = focused;
 	}
 
+	if (c->type == C_VIEW) {
+		// dispatch a window event
+		ipc_event_window(c, "focus");
+	}
 	// update container focus from here to root, making necessary changes along
 	// the way
 	swayc_t *p = c;
