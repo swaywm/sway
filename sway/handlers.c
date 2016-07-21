@@ -196,7 +196,6 @@ static void handle_output_destroyed(wlc_handle output) {
 
 static void handle_output_post_render(wlc_handle output) {
 	ipc_get_pixels(output);
-	arrange_windows(swayc_by_handle(output), -1, -1);
 }
 
 static void handle_view_pre_render(wlc_handle view) {
