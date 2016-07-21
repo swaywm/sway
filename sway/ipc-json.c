@@ -150,6 +150,7 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 		ipc_json_layout_description(c->parent->layout) : "none";
 	const char *last_layout = (c->parent->type == C_CONTAINER) ?
 		ipc_json_layout_description(c->parent->prev_layout) : "none";
+	wlc_handle parent = wlc_view_get_parent(c->handle);
 
 	json_object_object_add(object, "id", json_object_new_int(c->handle));
 	json_object_object_add(object, "type", json_object_new_string((c->is_floating) ? "floating_con" : "con"));
@@ -174,7 +175,7 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
 	json_object_object_add(object, "deco_rect", ipc_json_create_rect_from_geometry(c->title_bar_geometry));
 	json_object_object_add(object, "geometry", ipc_json_create_rect_from_geometry(c->cached_geometry));
-	json_object_object_add(object, "window_rect", ipc_json_create_rect_from_geometry(c->actual_geometry)); //?
+	json_object_object_add(object, "window_rect", ipc_json_create_rect_from_geometry(c->actual_geometry));
 
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 
@@ -182,17 +183,17 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object_object_add(props, "class", c->class ? json_object_new_string(c->class) :
 		c->app_id ? json_object_new_string(c->app_id) : NULL);
 	json_object_object_add(props, "title", (c->name) ? json_object_new_string(c->name) : NULL);
-	json_object_object_add(props, "transient_for", NULL); // unless sway keeps track of child views
+	json_object_object_add(props, "transient_for", parent ? json_object_new_int(parent) : NULL);
 	json_object_object_add(object, "window_properties", props);
 
 	json_object_object_add(object, "fullscreen_mode",
 		json_object_new_int(swayc_is_fullscreen(c) ? 1 : 0));
 	json_object_object_add(object, "sticky", json_object_new_boolean(c->sticky));
 	json_object_object_add(object, "floating", json_object_new_string(
-		c->is_floating ? "auto_on" : "auto_off")); // unless relevant info is saved
+		c->is_floating ? "auto_on" : "auto_off")); // we can't state the cause
 
 	json_object_object_add(object, "app_id", c->app_id ? json_object_new_string(c->app_id) : NULL);
-	// we do not include children, floating, unmanaged etc. as views seem to have none
+	// we do not include children, floating, unmanaged etc. as views have none
 }
 
 json_object *ipc_json_describe_container(swayc_t *c) {
