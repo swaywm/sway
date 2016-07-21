@@ -522,8 +522,8 @@ void update_geometry(swayc_t *container) {
 		return;
 	}
 
-	swayc_t *ws = swayc_parent_by_type(container, C_WORKSPACE);
-	swayc_t *op = ws->parent;
+	swayc_t *workspace = swayc_parent_by_type(container, C_WORKSPACE);
+	swayc_t *op = workspace->parent;
 	swayc_t *parent = container->parent;
 
 	struct wlc_geometry geometry = {
@@ -552,7 +552,7 @@ void update_geometry(swayc_t *container) {
 		geometry.origin.y = 0;
 		geometry.size.w = size->w;
 		geometry.size.h = size->h;
-		if (op->focused == ws) {
+		if (op->focused == workspace) {
 			wlc_view_bring_to_front(container->handle);
 		}
 
@@ -570,23 +570,23 @@ void update_geometry(swayc_t *container) {
 		int border_right = container->border_thickness;
 
 		// handle hide_edge_borders
-		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && ws->children->length == 1))) {
+		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && workspace->children->length == 1))) {
 			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.x == ws->x) {
+				if (geometry.origin.x == workspace->x) {
 					border_left = 0;
 				}
 
-				if (geometry.origin.x + geometry.size.w == ws->width) {
+				if (geometry.origin.x + geometry.size.w == workspace->width) {
 					border_right = 0;
 				}
 			}
 
 			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.y == ws->y) {
+				if (geometry.origin.y == workspace->y) {
 					border_top = 0;
 				}
 
-				if (geometry.origin.y + geometry.size.h == ws->height) {
+				if (geometry.origin.y + geometry.size.h == workspace->height) {
 					border_bottom = 0;
 				}
 			}
