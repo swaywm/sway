@@ -118,6 +118,10 @@ bool set_focused_container(swayc_t *c) {
 		c = focused;
 	}
 
+	if (c->type == C_VIEW) {
+		// dispatch a window event
+		ipc_event_window(c, "focus");
+	}
 	// update container focus from here to root, making necessary changes along
 	// the way
 	swayc_t *p = c;
@@ -154,6 +158,7 @@ bool set_focused_container(swayc_t *c) {
 		// rearrange if parent container is tabbed/stacked
 		swayc_t *parent = swayc_tabbed_stacked_ancestor(p);
 		if (parent != NULL) {
+			arrange_backgrounds();
 			arrange_windows(parent, -1, -1);
 		}
 	} else if (p->type == C_WORKSPACE) {

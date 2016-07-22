@@ -369,6 +369,7 @@ static bool handle_view_created(wlc_handle handle) {
 	suspend_workspace_cleanup = true;
 
 	if (newview) {
+		ipc_event_window(newview, "new");
 		set_focused_container(newview);
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
@@ -461,6 +462,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 		}
 
 		arrange_windows(parent, -1, -1);
+		ipc_event_window(parent, "close");
 	} else {
 		// Is it unmanaged?
 		int i;
@@ -555,6 +557,7 @@ static void handle_view_properties_updated(wlc_handle view, uint32_t mask) {
 				} else if (c->border_type == B_NORMAL) {
 					update_view_border(c);
 				}
+				ipc_event_window(c, "title");
 			}
 		}
 	}

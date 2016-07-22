@@ -679,6 +679,7 @@ static struct cmd_results *cmd_floating(int argc, char **argv) {
 		view->width = view->height = 0;
 		arrange_windows(swayc_active_workspace(), -1, -1);
 		remove_view_from_scratchpad(view);
+		ipc_event_window(view, "floating");
 	}
 	set_focused_container(view);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -2495,6 +2496,7 @@ static struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 		arrange_windows(container, -1, -1);
 		workspace->fullscreen = NULL;
 	}
+	ipc_event_window(container, "fullscreen_mode");
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

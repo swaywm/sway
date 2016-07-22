@@ -91,6 +91,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	if (!ws->focused) {
 		ws->focused = child;
 	}
+	ipc_event_window(child, "floating");
 }
 
 swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
@@ -305,6 +306,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		parent = child->parent;
 	}
 	arrange_windows(parent->parent, -1, -1);
+	ipc_event_window(container, "move");
 	set_focused_container_for(parent->parent, container);
 }
 
@@ -520,8 +522,8 @@ void update_geometry(swayc_t *container) {
 		return;
 	}
 
-	swayc_t *ws = swayc_parent_by_type(container, C_WORKSPACE);
-	swayc_t *op = ws->parent;
+	swayc_t *workspace = swayc_parent_by_type(container, C_WORKSPACE);
+	swayc_t *op = workspace->parent;
 	swayc_t *parent = container->parent;
 
 	struct wlc_geometry geometry = {
@@ -550,7 +552,7 @@ void update_geometry(swayc_t *container) {
 		geometry.origin.y = 0;
 		geometry.size.w = size->w;
 		geometry.size.h = size->h;
-		if (op->focused == ws) {
+		if (op->focused == workspace) {
 			wlc_view_bring_to_front(container->handle);
 		}
 
@@ -568,30 +570,23 @@ void update_geometry(swayc_t *container) {
 		int border_right = container->border_thickness;
 
 		// handle hide_edge_borders
-		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && ws->children->length == 1))) {
-			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
-			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
-
+		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && workspace->children->length == 1))) {
 			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.x == 0 || geometry.origin.x == container->x) {
-					// should work for swaybar at left
+				if (geometry.origin.x == workspace->x) {
 					border_left = 0;
 				}
 
-				if (geometry.origin.x + geometry.size.w == size->w || geometry.size.w == container->width) {
-					// should work for swaybar at right
+				if (geometry.origin.x + geometry.size.w == workspace->width) {
 					border_right = 0;
 				}
 			}
 
 			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.y == 0 || geometry.origin.y == container->y) {
-					// this works for swaybar at top
+				if (geometry.origin.y == workspace->y) {
 					border_top = 0;
 				}
 
-				if (geometry.origin.y + geometry.size.h == size->h || geometry.size.h == container->height) {
-					// this works for swaybar at bottom
+				if (geometry.origin.y + geometry.size.h == workspace->height) {
 					border_bottom = 0;
 				}
 			}
@@ -959,9 +954,12 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	update_visibility(container);
 	arrange_windows_r(container, width, height);
 	layout_log(&root_container, 0);
+}
 
+void arrange_backgrounds(void) {
+	struct background_config *bg;
 	for (int i = 0; i < desktop_shell.backgrounds->length; ++i) {
-		struct background_config *bg = desktop_shell.backgrounds->items[i];
+		bg = desktop_shell.backgrounds->items[i];
 		wlc_view_send_to_back(bg->handle);
 	}
 }
