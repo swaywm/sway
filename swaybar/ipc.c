@@ -8,14 +8,9 @@
 #include "bar/ipc.h"
 
 void ipc_send_arrange_command() {
-	sway_log(L_DEBUG, "sending arrange command");
-	sway_log(L_DEBUG, "socketfd is -> %d", swaybar.ipc_socketfd);
-	sway_log(L_DEBUG, "command is -> %d", IPC_ARRANGE_LAYOUT);
-
 	char *cmd = strdup("");
 	uint32_t len = strlen(cmd);
-	char *r = ipc_single_command(swaybar.ipc_socketfd, IPC_ARRANGE_LAYOUT, cmd, &len);
-	sway_log(L_DEBUG, "arrange command response is -> %s", r);
+	ipc_single_command(swaybar.ipc_socketfd, IPC_ARRANGE_LAYOUT, cmd, &len);
 }
 
 void ipc_send_workspace_command(const char *workspace_name) {

@@ -477,7 +477,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_ARRANGE_LAYOUT:
 	{
-		sway_log(L_DEBUG, "received arrange command");
 		arrange_windows(&root_container, -1, -1);
 		ipc_send_reply(client, "{\"success\": true}", 17);
 		goto exit_cleanup;
