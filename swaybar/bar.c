@@ -202,6 +202,8 @@ void bar_run(struct bar *bar) {
 					render(output, bar->config, bar->status);
 					window_render(output->window);
 					wl_display_flush(output->registry->display);
+					sway_log(L_DEBUG, "sending arrange command");
+					ipc_send_arrange_command();
 				}
 			}
 		}

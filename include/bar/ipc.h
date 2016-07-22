@@ -13,6 +13,10 @@ void ipc_bar_init(struct bar *bar, const char *bar_id);
  */
 bool handle_ipc_event(struct bar *bar);
 
+/**
+ * Tell Sway to rearrange layout (after Swaybar has rendered itself).
+ */
+void ipc_send_arrange_command();
 
 /**
  * Send workspace command to sway
@@ -20,4 +24,3 @@ bool handle_ipc_event(struct bar *bar);
 void ipc_send_workspace_command(const char *workspace_name);
 
 #endif /* _SWAYBAR_IPC_H */
-

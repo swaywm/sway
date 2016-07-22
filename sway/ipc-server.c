@@ -471,6 +471,14 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_ARRANGE_LAYOUT:
+	{
+		sway_log(L_DEBUG, "received arrange command");
+		arrange_windows(&root_container, -1, -1);
+		ipc_send_reply(client, "{\"success\": true}", 17);
+		goto exit_cleanup;
+	}
+
 	default:
 		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
 		goto exit_cleanup;
