@@ -576,7 +576,7 @@ void update_geometry(swayc_t *container) {
 					border_left = 0;
 				}
 
-				if (geometry.size.w == workspace->width) {
+				if (geometry.origin.x + geometry.size.w == workspace->x + workspace->width) {
 					border_right = 0;
 				}
 			}
@@ -586,7 +586,7 @@ void update_geometry(swayc_t *container) {
 					border_top = 0;
 				}
 
-				if (geometry.size.h == workspace->height) {
+				if (geometry.origin.y + geometry.size.h == workspace->y + workspace->height) {
 					border_bottom = 0;
 				}
 			}
