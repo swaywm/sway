@@ -876,15 +876,21 @@ bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modi
 	if (!(modifiers->mods ^ config->floating_mod)) {
 		int x_amount = (int)_amount[0];
 		int y_amount = (int)_amount[1];
-		if (x_amount > 0) {
+
+		if (x_amount > 0 && strcmp(config->floating_scroll_up_cmd, "")) {
 			handle_command(config->floating_scroll_up_cmd);
-		} else if (x_amount < 0) {
+			return EVENT_HANDLED;
+		} else if (x_amount < 0 && strcmp(config->floating_scroll_down_cmd, "")) {
 			handle_command(config->floating_scroll_down_cmd);
+			return EVENT_HANDLED;
 		}
-		if (y_amount > 0) {
+
+		if (y_amount > 0 && strcmp(config->floating_scroll_right_cmd, "")) {
 			handle_command(config->floating_scroll_right_cmd);
-		} else if (y_amount < 0) {
+			return EVENT_HANDLED;
+		} else if (y_amount < 0 && strcmp(config->floating_scroll_left_cmd, "")) {
 			handle_command(config->floating_scroll_left_cmd);
+			return EVENT_HANDLED;
 		}
 	}
 	return EVENT_PASSTHROUGH;
