@@ -755,6 +755,8 @@ int swayc_gap(swayc_t *container) {
 			// size to make the outermost gap the same size (excluding the
 			// actual "outer gap" size which is handled independently)
 			return base + config->gaps_inner / 2;
+		} else if (config->smart_gaps && container->children->length == 1) {
+			return 0;
 		} else {
 			return base;
 		}
