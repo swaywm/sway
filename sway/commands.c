@@ -3657,6 +3657,7 @@ void free_cmd_results(struct cmd_results *results) {
 }
 
 const char *cmd_results_to_json(struct cmd_results *results) {
+	json_object *result_array = json_object_new_array();
 	json_object *root = json_object_new_object();
 	json_object_object_add(root, "success", json_object_new_boolean(results->status == CMD_SUCCESS));
 	if (results->input) {
@@ -3665,7 +3666,9 @@ const char *cmd_results_to_json(struct cmd_results *results) {
 	if (results->error) {
 		json_object_object_add(root, "error", json_object_new_string(results->error));
 	}
-	const char *json = json_object_to_json_string(root);
+	json_object_array_add(result_array, root);
+	const char *json = json_object_to_json_string(result_array);
+	free(result_array);
 	free(root);
 	return json;
 }
