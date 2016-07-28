@@ -67,6 +67,9 @@ bool move_focus(enum movement_direction direction) {
 	swayc_t *new_view = get_swayc_in_direction(old_view, direction);
 	if (!new_view) {
 		return false;
+	} else if (new_view->type == C_ROOT || new_view->type == C_OUTPUT) {
+		sway_log(L_DEBUG, "Not setting focus above the workspace level");
+		return false;
 	} else if (direction == MOVE_PARENT) {
 		return set_focused_container(new_view);
 	} else if (config->mouse_warping) {
