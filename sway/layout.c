@@ -799,7 +799,9 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		}
 
 		// update container size if it's a direct child in a tabbed/stacked layout
-		if (swayc_tabbed_stacked_parent(container) != NULL) {
+		// if parent is a workspace, its actual_geometry won't be initialized
+		if (swayc_tabbed_stacked_parent(container) != NULL &&
+			container->parent->type != C_WORKSPACE) {
 			// Use parent actual_geometry as a base for calculating
 			// container geometry
 			container->width = container->parent->actual_geometry.size.w;
