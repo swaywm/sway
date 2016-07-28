@@ -24,6 +24,29 @@ branch. Instead, when you start working on a feature, do this:
 4. git push -u origin add-so-and-so-feature
 5. Make pull request from your feature branch
 
+## Commit Messages
+
+Please strive to write good commit messages. Here's some guidelines to follow:
+
+The first line should be limited to 50 characters and should be a sentence that
+completes the thought [When applied, this commit will...] "Implement cmd_move"
+or "Fix #742" or "Improve performance of arrange_windows on ARM" or similar.
+
+The subsequent lines should be seperated from the subject line by a single
+blank line, and include optional details. In this you can give justification
+for the change, [reference Github
+issues](https://help.github.com/articles/closing-issues-via-commit-messages/),
+or explain some of the subtler details of your patch. This is important because
+when someone finds a line of code they don't understand later, they can use the
+`git blame` command to find out what the author was thinking when they wrote
+it. It's also easier to review your pull requests if they're seperated into
+logical commits that have good commit messages and justify themselves in the
+extended commit description.
+
+As a good rule of thumb, anything you might put into the pull request
+description on Github is probably fair game for going into the extended commit
+message as well.
+
 ## Coding Style
 
 Sway is written in C. The style guidelines is [kernel
