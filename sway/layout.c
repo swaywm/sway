@@ -1009,6 +1009,10 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output, enum movement_dir
 }
 
 swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_direction dir, swayc_t *limit) {
+	if (dir == MOVE_CHILD) {
+		return container->focused;
+	}
+
 	swayc_t *parent = container->parent;
 	if (dir == MOVE_PARENT) {
 		if (parent->type == C_OUTPUT) {

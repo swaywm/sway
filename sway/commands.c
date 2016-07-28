@@ -864,6 +864,8 @@ static struct cmd_results *cmd_focus(int argc, char **argv) {
 		move_focus(MOVE_DOWN);
 	} else if (strcasecmp(argv[0], "parent") == 0) {
 		move_focus(MOVE_PARENT);
+	} else if (strcasecmp(argv[0], "child") == 0) {
+		move_focus(MOVE_CHILD);
 	} else if (strcasecmp(argv[0], "mode_toggle") == 0) {
 		int i;
 		swayc_t *workspace = swayc_active_workspace();
@@ -903,7 +905,7 @@ static struct cmd_results *cmd_focus(int argc, char **argv) {
 		}
 	} else {
 		return cmd_results_new(CMD_INVALID, "focus",
-				"Expected 'focus <direction|parent|mode_toggle>' or 'focus output <direction|name>'");
+				"Expected 'focus <direction|parent|child|mode_toggle>' or 'focus output <direction|name>'");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
