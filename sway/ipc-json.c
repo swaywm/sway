@@ -11,8 +11,17 @@ static json_object *ipc_json_create_rect(swayc_t *c) {
 
 	json_object_object_add(rect, "x", json_object_new_int((int32_t)c->x));
 	json_object_object_add(rect, "y", json_object_new_int((int32_t)c->y));
-	json_object_object_add(rect, "width", json_object_new_int((int32_t)c->width));
-	json_object_object_add(rect, "height", json_object_new_int((int32_t)c->height));
+
+	struct wlc_size size;
+	if (c->type == C_OUTPUT) {
+		size = *wlc_output_get_resolution(c->handle);
+	} else {
+		size.w = c->width;
+		size.h = c->height;
+	}
+
+	json_object_object_add(rect, "width", json_object_new_int((int32_t)size.w));
+	json_object_object_add(rect, "height", json_object_new_int((int32_t)size.h));
 
 	return rect;
 }
@@ -111,12 +120,14 @@ static float ipc_json_child_percentage(swayc_t *c) {
 }
 
 static void ipc_json_describe_output(swayc_t *output, json_object *object) {
+	uint32_t scale = wlc_output_get_scale(output->handle);
 	json_object_object_add(object, "active", json_object_new_boolean(true));
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "layout", json_object_new_string("output"));
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "current_workspace",
 		(output->focused) ? json_object_new_string(output->focused->name) : NULL);
+	json_object_object_add(object, "scale", json_object_new_int(scale));
 }
 
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {
