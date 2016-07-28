@@ -281,7 +281,9 @@ void update_tabbed_stacked_titlebars(swayc_t *c, cairo_t *cr, struct wlc_geometr
 			update_tabbed_stacked_titlebars(child, cr, g, focused, focused_inactive);
 		}
 	} else {
-		if (focused == c) {
+		bool is_child_of_focused = swayc_is_child_of(c, get_focused_container(&root_container));
+
+		if (focused == c || is_child_of_focused) {
 			render_title_bar(c, cr, g, &config->border_colors.focused);
 		} else if (focused_inactive == c) {
 			render_title_bar(c, cr, g, &config->border_colors.focused_inactive);
