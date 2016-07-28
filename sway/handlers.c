@@ -269,6 +269,7 @@ static bool handle_view_created(wlc_handle handle) {
 		wlc_view_set_mask(handle, VISIBLE);
 		wlc_view_set_output(handle, panel_config->output);
 		wlc_view_bring_to_front(handle);
+		arrange_windows(&root_container, -1, -1);
 		return true;
 	}
 
