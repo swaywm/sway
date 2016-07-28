@@ -146,6 +146,7 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	struct ipc_client* client = malloc(sizeof(struct ipc_client));
 	client->payload_length = 0;
 	client->fd = client_fd;
+	client->subscribed_events = 0;
 	client->event_source = wlc_event_loop_add_fd(client_fd, WLC_EVENT_READABLE, ipc_client_handle_readable, client);
 
 	list_add(ipc_client_list, client);
