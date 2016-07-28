@@ -72,7 +72,7 @@ bool move_focus(enum movement_direction direction) {
 		return false;
 	} else if (new_view->type == C_OUTPUT) {
 		return set_focused_container(swayc_active_workspace_for(new_view));
-	} else if (direction == MOVE_PARENT) {
+	} else if (direction == MOVE_PARENT || direction == MOVE_CHILD) {
 		return set_focused_container(new_view);
 	} else if (config->mouse_warping) {
 		swayc_t *old_op = old_view->type == C_OUTPUT ?

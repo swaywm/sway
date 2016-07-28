@@ -5,7 +5,8 @@ enum movement_direction {
 	MOVE_RIGHT,
 	MOVE_UP,
 	MOVE_DOWN,
-	MOVE_PARENT
+	MOVE_PARENT,
+	MOVE_CHILD
 };
 
 #include "container.h"
