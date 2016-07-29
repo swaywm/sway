@@ -863,9 +863,12 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output->width = oc->width;
 		output->height = oc->height;
 
-		sway_log(L_DEBUG, "Set %s size to %ix%i", oc->name, oc->width, oc->height);
+		sway_log(L_DEBUG, "Set %s size to %ix%i (%d)", oc->name, oc->width, oc->height, oc->scale);
 		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
-		wlc_output_set_resolution(output->handle, &new_size);
+		wlc_output_set_resolution(output->handle, &new_size, (uint32_t)oc->scale);
+	} else if (oc && oc->scale != 1) {
+		const struct wlc_size *new_size = wlc_output_get_resolution(output->handle);
+		wlc_output_set_resolution(output->handle, new_size, (uint32_t)oc->scale);
 	}
 
 	// Find position for it
