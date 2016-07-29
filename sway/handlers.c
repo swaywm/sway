@@ -107,7 +107,7 @@ static void update_panel_geometries(wlc_handle output) {
 
 static void update_background_geometry(struct background_config *config) {
 	struct wlc_geometry geometry = wlc_geometry_zero;
-	geometry.size = *wlc_output_get_resolution(config->output);
+	output_get_scaled_size(config->output, &geometry.size);
 	wlc_view_set_geometry(config->handle, 0, &geometry);
 }
 
