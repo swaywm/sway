@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
 #include <errno.h>
 #include <string.h>
 #include <stringop.h>
@@ -65,6 +66,20 @@ void sway_abort(const char *format, ...) {
 
 void _sway_log(const char *filename, int line, log_importance_t verbosity, const char* format, ...) {
 	if (verbosity <= v) {
+		// prefix the time to the log message
+		static struct tm result;
+		static time_t t;
+		static struct tm *tm_info;
+		char buffer[26];
+
+		// get current time
+		t = time(NULL);
+		// convert time to local time (determined by the locale)
+		tm_info = localtime_r(&t, &result);
+		// generate time prefix
+		strftime(buffer, sizeof(buffer), "%x %X - ", tm_info);
+		fprintf(stderr, "%s", buffer);
+
 		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
 			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
