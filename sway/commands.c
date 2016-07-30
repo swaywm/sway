@@ -1651,47 +1651,52 @@ static struct cmd_results *cmd_output(int argc, char **argv) {
 		} else if (strcasecmp(command, "background") == 0 || strcasecmp(command, "bg") == 0) {
 			wordexp_t p;
 			if (++i >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing background file.");
+				return cmd_results_new(CMD_INVALID, "output", "Missing background file or color specification.");
 			}
 			if (i + 1 >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode.");
+				return cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode or `solid_color`.");
 			}
-			char *src = join_args(argv + i, argc - i - 1);
-			char *mode = argv[argc - 1];
-			if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-				return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
-			}
-			free(src);
-			src = p.we_wordv[0];
-			if (config->reading && *src != '/') {
-				char *conf = strdup(config->current_config);
-				char *conf_path = dirname(conf);
-				src = malloc(strlen(conf_path) + strlen(src) + 2);
-				sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
-				free(conf);
-			}
-			if (access(src, F_OK) == -1) {
-				return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
-			}
-			for (char *m = mode; *m; ++m) *m = tolower(*m);
-			// Check mode
-			bool valid = false;
-			size_t j;
-			for (j = 0; j < sizeof(bg_options) / sizeof(char *); ++j) {
-				if (strcasecmp(mode, bg_options[j]) == 0) {
-					valid = true;
-					break;
+			if (strcasecmp(argv[argc - 1], "solid_color") == 0) {
+				output->background = strdup(argv[argc - 2]);
+				output->background_option = strdup("solid_color");
+			} else {
+				char *src = join_args(argv + i, argc - i - 1);
+				char *mode = argv[argc - 1];
+				if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
+					return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
 				}
-			}
-			if (!valid) {
-				return cmd_results_new(CMD_INVALID, "output", "Invalid background scaling mode.");
-			}
-			output->background = strdup(src);
-			output->background_option = strdup(mode);
-			if (src != p.we_wordv[0]) {
 				free(src);
+				src = p.we_wordv[0];
+				if (config->reading && *src != '/') {
+					char *conf = strdup(config->current_config);
+					char *conf_path = dirname(conf);
+					src = malloc(strlen(conf_path) + strlen(src) + 2);
+					sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
+					free(conf);
+				}
+				if (access(src, F_OK) == -1) {
+					return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
+				}
+				for (char *m = mode; *m; ++m) *m = tolower(*m);
+				// Check mode
+				bool valid = false;
+				size_t j;
+				for (j = 0; j < sizeof(bg_options) / sizeof(char *); ++j) {
+					if (strcasecmp(mode, bg_options[j]) == 0) {
+						valid = true;
+						break;
+					}
+				}
+				if (!valid) {
+					return cmd_results_new(CMD_INVALID, "output", "Invalid background scaling mode.");
+				}
+				output->background = strdup(src);
+				output->background_option = strdup(mode);
+				if (src != p.we_wordv[0]) {
+					free(src);
+				}
+				wordfree(&p);
 			}
-			wordfree(&p);
 		}
 	}
 

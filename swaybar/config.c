@@ -5,19 +5,6 @@
 #include "log.h"
 #include "bar/config.h"
 
-uint32_t parse_color(const char *color) {
-	if (color[0] != '#') {
-		sway_log(L_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
-		return 0xFFFFFFFF;
-	}
-	char *end;
-	uint32_t res = (uint32_t)strtol(color + 1, &end, 16);
-	if (strlen(color) == 7) {
-		res = (res << 8) | 0xFF;
-	}
-	return res;
-}
-
 uint32_t parse_position(const char *position) {
 	if (strcmp("top", position) == 0) {
 		return DESKTOP_SHELL_PANEL_POSITION_TOP;
