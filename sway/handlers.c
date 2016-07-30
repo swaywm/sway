@@ -290,9 +290,7 @@ static bool handle_view_created(wlc_handle handle) {
 	}
 
 	if (client) {
-		// below only works on wayland windows. need a wlc
-		// api that will work for both wayland and x.
-		wl_client_get_credentials(client, &pid, NULL, NULL);
+		pid = wlc_view_get_pid(handle);
 
 		if (pid) {
 			// using newview as a temp storage location here,
