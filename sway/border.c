@@ -332,10 +332,12 @@ void update_view_border(swayc_t *view) {
 			}
 		};
 		cr = create_border_buffer(view, g, &surface);
+
+		bool render_top = !should_hide_top_border(view, view->y);
 		if (view == focused) {
-			render_borders(view, cr, &config->border_colors.focused, false);
+			render_borders(view, cr, &config->border_colors.focused, render_top);
 		} else {
-			render_borders(view, cr, &config->border_colors.focused_inactive, false);
+			render_borders(view, cr, &config->border_colors.focused_inactive, render_top);
 		}
 
 		// generate container titles
@@ -417,4 +419,18 @@ void render_view_borders(wlc_handle view) {
 	if (c->border && c->border->buffer) {
 		wlc_pixels_write(WLC_RGBA8888, &c->border->geometry, c->border->buffer);
 	}
+}
+
+bool should_hide_top_border(swayc_t *con, double y) {
+	// returns true if container is child of tabbed/stacked layout and is
+	// sharing top border with tabbed titlebar
+	swayc_t *par = con->parent;
+	while (par->type != C_WORKSPACE) {
+		if (par->layout == L_TABBED || par->layout == L_STACKED) {
+			return con->y == y;
+		}
+		con = par;
+		par = par->parent;
+	}
+	return false;
 }
