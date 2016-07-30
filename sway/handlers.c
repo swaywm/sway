@@ -290,8 +290,6 @@ static bool handle_view_created(wlc_handle handle) {
 	}
 
 	if (client) {
-		// below only works on wayland windows. need a wlc
-		// api that will work for both wayland and x.
 		pid = wlc_view_get_pid(handle);
 
 		if (pid) {
