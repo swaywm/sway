@@ -579,21 +579,17 @@ void update_geometry(swayc_t *container) {
 					border_left = 0;
 				}
 
-				if (geometry.origin.x + geometry.size.w == size.w ||
-						geometry.size.w == container->x + container->width) {
-					// should work for swaybar at right
+				if (geometry.origin.x + geometry.size.w == workspace->x + workspace->width) {
 					border_right = 0;
 				}
 			}
 
 			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.y == workspace->y) {
+				if (geometry.origin.y == workspace->y || should_hide_top_border(container, geometry.origin.y)) {
 					border_top = 0;
 				}
 
-				if (geometry.origin.y + geometry.size.h == size.h ||
-						geometry.size.h == container->y + container->height) {
-					// this works for swaybar at bottom
+				if (geometry.origin.y + geometry.size.h == workspace->y + workspace->height) {
 					border_bottom = 0;
 				}
 			}
