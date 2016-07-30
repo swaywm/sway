@@ -587,7 +587,7 @@ void update_geometry(swayc_t *container) {
 			}
 
 			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
-				if (geometry.origin.y == workspace->y) {
+				if (geometry.origin.y == workspace->y || should_hide_top_border(container, geometry.origin.y)) {
 					border_top = 0;
 				}
 
