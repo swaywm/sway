@@ -1998,6 +1998,7 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 	}
 
 	update_layout_geometry(parent, old_layout);
+	update_geometry(parent);
 
 	arrange_windows(parent, parent->width, parent->height);
 
