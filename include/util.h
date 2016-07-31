@@ -44,4 +44,10 @@ int get_modifier_names(const char **names, uint32_t modifier_masks);
  */
 pid_t get_parent_pid(pid_t pid);
 
+/**
+ * Given a string that represents an RGB(A) color, return a uint32_t
+ * version of the color.
+ */
+uint32_t parse_color(const char *color);
+
 #endif

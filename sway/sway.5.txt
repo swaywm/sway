@@ -308,6 +308,10 @@ The default colors are:
 	Sets the wallpaper for the given output to the specified file, using the given
 	scaling mode (one of "stretch", "fill", "fit", "center", "tile").
 
+**output** <name> <background|bg> <color> solid_color::
+	Sets the background of the given output to the specified color. _color_ should
+	be specified as an _#rrggbb_ (no alpha) color.
+
 **output** <name> disable::
 	Disables the specified output.
 

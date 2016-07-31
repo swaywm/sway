@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "list.h"
+#include "util.h"
 
 /**
  * Colors for a box with background, border and text colors.
@@ -46,11 +47,6 @@ struct config {
 		struct box_colors binding_mode;
 	} colors;
 };
-
-/**
- * Parse colors defined as hex string to uint32_t.
- */
-uint32_t parse_color(const char *color);
 
 /**
  * Parse position top|bottom|left|right.

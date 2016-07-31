@@ -81,7 +81,7 @@ struct output_config {
 	int enabled;
 	int width, height;
 	int x, y;
-    int scale;
+	int scale;
 	char *background;
 	char *background_option;
 };

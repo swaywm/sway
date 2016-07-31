@@ -12,6 +12,8 @@ add_library(sway-common STATIC
 	stringop.c
 	)
 
+target_link_libraries(sway-common m)
+
 if(Backtrace_FOUND)
 	set_target_properties(sway-common
 		PROPERTIES

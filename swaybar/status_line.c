@@ -6,6 +6,7 @@
 #include "log.h"
 #include "bar/config.h"
 #include "bar/status_line.h"
+#include "util.h"
 
 #define I3JSON_MAXDEPTH 4
 #define I3JSON_UNKNOWN 0

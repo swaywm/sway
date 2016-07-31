@@ -97,3 +97,16 @@ pid_t get_parent_pid(pid_t child) {
 
 	return -1;
 }
+
+uint32_t parse_color(const char *color) {
+	int len = strlen(color);
+	if (color[0] != '#' || (len != 7 && len != 9)) {
+		sway_log(L_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
+		return 0xFFFFFFFF;
+	}
+	uint32_t res = (uint32_t)strtol(color + 1, NULL, 16);
+	if (strlen(color) == 7) {
+		res = (res << 8) | 0xFF;
+	}
+	return res;
+}
