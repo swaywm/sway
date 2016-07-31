@@ -4,7 +4,8 @@ add_executable(swaymsg
 
 target_link_libraries(swaymsg
 	sway-common
-	)
+	${JSONC_LIBRARIES}
+)
 
 install(
 	TARGETS swaymsg
