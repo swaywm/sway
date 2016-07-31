@@ -269,6 +269,9 @@ The default colors are:
 	+
 	See **sway-input**(5) for details.
 
+**kill**::
+	Kills (force-closes) the currently-focused container and all of its children.
+
 **smart_gaps** <on|off>::
 	If smart_gaps are _on_ then gaps will only be enabled if a workspace has more
 	than one child container.
