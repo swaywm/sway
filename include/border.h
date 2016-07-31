@@ -16,6 +16,11 @@ struct border {
  */
 void border_clear(struct border *border);
 
+/**
+ * Recursively update all of the borders within a container.
+ */
+void update_container_border(swayc_t *container);
+
 void render_view_borders(wlc_handle view);
 void update_view_border(swayc_t *view);
 void map_update_view_border(swayc_t *view, void *data);
