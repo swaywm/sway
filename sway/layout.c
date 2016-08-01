@@ -441,7 +441,7 @@ static void update_border_geometry_floating(swayc_t *c, struct wlc_geometry *geo
 	c->border_geometry = g;
 	*geometry = c->actual_geometry;
 
-	update_view_border(c);
+	update_container_border(c);
 }
 
 void update_layout_geometry(swayc_t *parent, enum swayc_layouts prev_layout) {
@@ -688,7 +688,7 @@ void update_geometry(swayc_t *container) {
 		container->actual_geometry = geometry;
 
 		if (container->type == C_VIEW) {
-			update_view_border(container);
+			update_container_border(container);
 		}
 	}
 
@@ -867,7 +867,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			// update focused view border last because it may
 			// depend on the title bar geometry of its siblings.
 			if (focused && container->children->length > 1) {
-				update_view_border(focused);
+				update_container_border(focused);
 			}
 		}
 		break;
@@ -911,7 +911,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 			// update focused view border last because it may
 			// depend on the title bar geometry of its siblings.
 			if (focused && container->children->length > 1) {
-				update_view_border(focused);
+				update_container_border(focused);
 			}
 		}
 		break;
