@@ -415,7 +415,7 @@ static bool handle_view_created(wlc_handle handle) {
 		// we were on one workspace, switched to another to add this view,
 		// now let's return to where we were
 		workspace_switch(current_ws);
-		set_focused_container(current_ws->focused);
+		set_focused_container(get_focused_container(current_ws));
 	}
 
 	suspend_workspace_cleanup = false;
