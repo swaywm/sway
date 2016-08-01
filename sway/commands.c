@@ -2340,7 +2340,7 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 
 	// update container title if tabbed/stacked
 	if (swayc_tabbed_stacked_ancestor(focused)) {
-		update_view_border(focused);
+		update_container_border(focused);
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
 		// schedule render to make changes take effect right away,
 		// otherwise we would have to wait for the view to render,

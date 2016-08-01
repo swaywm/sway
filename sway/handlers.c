@@ -415,7 +415,7 @@ static bool handle_view_created(wlc_handle handle) {
 		// we were on one workspace, switched to another to add this view,
 		// now let's return to where we were
 		workspace_switch(current_ws);
-		set_focused_container(current_ws->focused);
+		set_focused_container(get_focused_container(current_ws));
 	}
 
 	suspend_workspace_cleanup = false;
@@ -553,9 +553,9 @@ static void handle_view_properties_updated(wlc_handle view, uint32_t mask) {
 				swayc_t *p = swayc_tabbed_stacked_ancestor(c);
 				if (p) {
 					// TODO: we only got the topmost tabbed/stacked container, update borders of all containers on the path
-					update_view_border(get_focused_view(p));
+					update_container_border(get_focused_view(p));
 				} else if (c->border_type == B_NORMAL) {
-					update_view_border(c);
+					update_container_border(c);
 				}
 				ipc_event_window(c, "title");
 			}

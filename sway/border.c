@@ -201,12 +201,6 @@ static void render_title_bar(swayc_t *view, cairo_t *cr, struct wlc_geometry *b,
 	}
 }
 
-void map_update_view_border(swayc_t *view, void *data) {
-	if (view->type == C_VIEW) {
-		update_view_border(view);
-	}
-}
-
 /**
  * Generate nested container title for tabbed/stacked layouts
  */
@@ -293,7 +287,7 @@ void update_tabbed_stacked_titlebars(swayc_t *c, cairo_t *cr, struct wlc_geometr
 	}
 }
 
-void update_view_border(swayc_t *view) {
+static void update_view_border(swayc_t *view) {
 	if (!view->visible) {
 		return;
 	}
@@ -308,6 +302,9 @@ void update_view_border(swayc_t *view) {
 	swayc_t *focused = get_focused_view(&root_container);
 	swayc_t *container = swayc_parent_by_type(view, C_CONTAINER);
 	swayc_t *focused_inactive = NULL;
+
+	bool is_child_of_focused = swayc_is_parent_of(get_focused_container(&root_container), view);
+
 	if (container) {
 		focused_inactive = swayc_focus_by_type(container, C_VIEW);
 	} else {
@@ -334,7 +331,7 @@ void update_view_border(swayc_t *view) {
 		cr = create_border_buffer(view, g, &surface);
 
 		bool render_top = !should_hide_top_border(view, view->y);
-		if (view == focused) {
+		if (view == focused || is_child_of_focused) {
 			render_borders(view, cr, &config->border_colors.focused, render_top);
 		} else {
 			render_borders(view, cr, &config->border_colors.focused_inactive, render_top);
@@ -360,7 +357,7 @@ void update_view_border(swayc_t *view) {
 				break;
 			}
 
-			if (focused == view) {
+			if (focused == view || is_child_of_focused) {
 				render_borders(view, cr, &config->border_colors.focused, true);
 			} else if (focused_inactive == view) {
 				render_borders(view, cr, &config->border_colors.focused_inactive, true);
@@ -375,7 +372,7 @@ void update_view_border(swayc_t *view) {
 				break;
 			}
 
-			if (focused == view) {
+			if (focused == view || is_child_of_focused) {
 				render_borders(view, cr, &config->border_colors.focused, false);
 				render_title_bar(view, cr, &view->border_geometry,
 					&config->border_colors.focused);
@@ -400,6 +397,23 @@ void update_view_border(swayc_t *view) {
 
 	if (cr) {
 		cairo_destroy(cr);
+	}
+}
+
+void update_container_border(swayc_t *container) {
+	if (container->type == C_VIEW) {
+		update_view_border(container);
+		return;
+	} else {
+		for (int i = 0; i < container->children->length; ++i) {
+			update_container_border(container->children->items[i]);
+		}
+	}
+}
+
+void map_update_view_border(swayc_t *view, void *data) {
+	if (view->type == C_VIEW) {
+		update_view_border(view);
 	}
 }
 
