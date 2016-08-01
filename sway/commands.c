@@ -2501,6 +2501,30 @@ static struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	swayc_t *workspace = swayc_parent_by_type(container, C_WORKSPACE);
 	bool current = swayc_is_fullscreen(container);
 	wlc_view_set_state(container->handle, WLC_BIT_FULLSCREEN, !current);
+
+	if (container->is_floating) {
+		if (current) {
+			// set dimensions back to what they were before we fullscreened this
+			container->x = container->cached_geometry.origin.x;
+			container->y = container->cached_geometry.origin.y;
+			container->width = container->cached_geometry.size.w;
+			container->height = container->cached_geometry.size.h;
+		} else {
+			// cache dimensions so we can reset them after we "unfullscreen" this
+			struct wlc_geometry geo = {
+				.origin = {
+					.x = container->x,
+					.y = container->y
+				},
+				.size = {
+					.w = container->width,
+					.h = container->height
+				}
+			};
+			container->cached_geometry = geo;
+		}
+	}
+
 	// Resize workspace if going from  fullscreen -> notfullscreen
 	// otherwise just resize container
 	if (!current) {
