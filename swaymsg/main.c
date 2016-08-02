@@ -6,6 +6,7 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <json-c/json.h>
 #include "stringop.h"
 #include "ipc-client.h"
 #include "readline.h"
@@ -109,16 +110,27 @@ int main(int argc, char **argv) {
 		command = join_args(argv + optind, argc - optind);
 	}
 
+	int ret = 0;
 	int socketfd = ipc_open_socket(socket_path);
 	uint32_t len = strlen(command);
 	char *resp = ipc_single_command(socketfd, type, command, &len);
 	if (!quiet) {
-		printf("%s\n", resp);
+		// pretty print the json
+		json_object *obj = json_tokener_parse(resp);
+
+		if (obj == NULL) {
+			fprintf(stderr, "ERROR: Could not parse json response from ipc. This is a bug in sway.");
+			printf("%s\n", resp);
+			ret = 1;
+		} else {
+			printf("%s\n", json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+			free(obj);
+		}
 	}
 	close(socketfd);
 
 	free(command);
 	free(resp);
 	free(socket_path);
-	return 0;
+	return ret;
 }
