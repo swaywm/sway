@@ -226,7 +226,7 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 		handle_output_created(output);
 	}
 	if (focus) {
-		set_focused_container(c);
+		set_focused_container(get_focused_container(c));
 	}
 }
 
