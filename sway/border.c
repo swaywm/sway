@@ -233,6 +233,10 @@ static char *generate_container_title(swayc_t *container) {
 			title = generate_container_title(child);
 		}
 
+		if (!title) {
+			title = "(null)";
+		}
+
 		len = strlen(name) + strlen(title) + 1;
 		if (i < container->children->length-1) {
 			len++;
