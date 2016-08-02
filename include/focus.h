@@ -33,7 +33,6 @@ bool set_focused_container_for(swayc_t *ancestor, swayc_t *container);
 // and unlocked when they are destroyed
 
 extern bool locked_container_focus;
-extern bool locked_view_focus;
 
 // Prevents wss from being destroyed on focus switch
 extern bool suspend_workspace_cleanup;

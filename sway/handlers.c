@@ -343,7 +343,6 @@ static bool handle_view_created(wlc_handle handle) {
 	// Dmenu keeps viewfocus, but others with this flag don't, for now simulate
 	// dmenu
 	case WLC_BIT_OVERRIDE_REDIRECT:
-	// locked_view_focus = true;
 		wlc_view_focus(handle);
 		wlc_view_set_state(handle, WLC_BIT_ACTIVATED, true);
 		wlc_view_bring_to_front(handle);
@@ -437,7 +436,6 @@ static void handle_view_destroyed(wlc_handle handle) {
 	// DMENU has this flag, and takes view_focus, but other things with this
 	// flag don't
 	case WLC_BIT_OVERRIDE_REDIRECT:
-// 		locked_view_focus = false;
 		break;
 	case WLC_BIT_OVERRIDE_REDIRECT|WLC_BIT_UNMANAGED:
 		locked_container_focus = false;
@@ -643,10 +641,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		uint32_t key, enum wlc_key_state state) {
 
 	if (desktop_shell.is_locked) {
-		return EVENT_PASSTHROUGH;
-	}
-
-	if (locked_view_focus && state == WLC_KEY_STATE_PRESSED) {
 		return EVENT_PASSTHROUGH;
 	}
 

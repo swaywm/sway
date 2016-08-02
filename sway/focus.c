@@ -10,7 +10,6 @@
 #include "border.h"
 
 bool locked_container_focus = false;
-bool locked_view_focus = false;
 bool suspend_workspace_cleanup = false;
 
 // switches parent focus to c. will switch it accordingly
@@ -151,12 +150,9 @@ bool set_focused_container(swayc_t *c) {
 			wlc_view_set_state(c->handle, WLC_BIT_ACTIVATED, true);
 		}
 		// set focus if view_focus is unlocked
-		if (!locked_view_focus) {
-			wlc_view_focus(c->handle);
-			if (c->parent->layout != L_TABBED
-					&& c->parent->layout != L_STACKED) {
-				update_container_border(c);
-			}
+		wlc_view_focus(c->handle);
+		if (c->parent->layout != L_TABBED && c->parent->layout != L_STACKED) {
+			update_container_border(c);
 		}
 
 		// rearrange if parent container is tabbed/stacked
@@ -167,10 +163,8 @@ bool set_focused_container(swayc_t *c) {
 		}
 	} else if (c->type == C_WORKSPACE) {
 		// remove previous focus if view_focus is unlocked
-		if (!locked_view_focus) {
-			update_container_border(c);
-			wlc_view_focus(0);
-		}
+		update_container_border(c);
+		wlc_view_focus(0);
 	}
 
 	if (active_ws != workspace) {
