@@ -204,7 +204,7 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 		c->is_floating ? "auto_on" : "auto_off")); // we can't state the cause
 
 	json_object_object_add(object, "app_id", c->app_id ? json_object_new_string(c->app_id) : NULL);
-	// we do not include children, floating, unmanaged etc. as views have none
+	// we do not include children, floating etc. as views have none
 }
 
 json_object *ipc_json_describe_container(swayc_t *c) {
@@ -373,14 +373,6 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 			}
 		}
 		json_object_object_add(object, "nodes", children);
-
-		json_object *unmanaged = json_object_new_array();
-		if (c->unmanaged && c->unmanaged->length > 0) {
-			for (i = 0; i < c->unmanaged->length; ++i) {
-				json_object_array_add(unmanaged, ipc_json_describe_container_recursive(c->unmanaged->items[i]));
-			}
-		}
-		json_object_object_add(object, "unmanaged_nodes", unmanaged);
 	}
 
 	if (c->type == C_ROOT) {
