@@ -99,6 +99,14 @@ static void update_root_geometry() {
 	root_container.height = height;
 }
 
+bool swayc_is_tabbed_or_stacked(swayc_t *container) {
+	if (!ASSERT_NONNULL(container)) {
+		return false;
+	}
+
+	return container->layout == L_STACKED || container->layout == L_TABBED;
+}
+
 // New containers
 
 swayc_t *new_output(wlc_handle handle) {
@@ -682,7 +690,7 @@ swayc_t *container_under_pointer(void) {
 		int len;
 		// if tabbed/stacked go directly to focused container, otherwise search
 		// children
-		if (lookup->layout == L_TABBED || lookup->layout == L_STACKED) {
+		if (swayc_is_tabbed_or_stacked(lookup)) {
 			lookup = lookup->focused;
 			continue;
 		}
@@ -888,7 +896,7 @@ swayc_t *swayc_tabbed_stacked_ancestor(swayc_t *view) {
 	}
 	while (view->type != C_WORKSPACE && view->parent && view->parent->type != C_WORKSPACE) {
 		view = view->parent;
-		if (view->layout == L_TABBED || view->layout == L_STACKED) {
+		if (swayc_is_tabbed_or_stacked(view)) {
 			parent = view;
 		}
 	}
@@ -900,7 +908,7 @@ swayc_t *swayc_tabbed_stacked_parent(swayc_t *con) {
 	if (!ASSERT_NONNULL(con)) {
 		return NULL;
 	}
-	if (con->parent && (con->parent->layout == L_TABBED || con->parent->layout == L_STACKED)) {
+	if (con->parent && swayc_is_tabbed_or_stacked(con->parent)) {
 		return con->parent;
 	}
 	return NULL;

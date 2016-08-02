@@ -151,7 +151,7 @@ bool set_focused_container(swayc_t *c) {
 		}
 		// set focus if view_focus is unlocked
 		wlc_view_focus(c->handle);
-		if (c->parent->layout != L_TABBED && c->parent->layout != L_STACKED) {
+		if (!swayc_is_tabbed_or_stacked(c->parent)) {
 			update_container_border(c);
 		}
 

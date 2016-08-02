@@ -425,7 +425,7 @@ void render_view_borders(wlc_handle view) {
 	// if we are not the only child in the container, always draw borders,
 	// regardless of the border setting on the individual view
 	if (!c || (c->border_type == B_NONE
-			&& !((c->parent->layout == L_TABBED || c->parent->layout == L_STACKED)
+			&& !(swayc_is_tabbed_or_stacked(c->parent)
 				&& c->parent->children->length > 1))) {
 		return;
 	}
@@ -440,7 +440,7 @@ bool should_hide_top_border(swayc_t *con, double y) {
 	// sharing top border with tabbed titlebar
 	swayc_t *par = con->parent;
 	while (par->type != C_WORKSPACE) {
-		if (par->layout == L_TABBED || par->layout == L_STACKED) {
+		if (swayc_is_tabbed_or_stacked(par)) {
 			return con->y == y;
 		}
 		con = par;
