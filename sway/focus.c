@@ -29,8 +29,6 @@ static void update_focus(swayc_t *c) {
 
 		// Case where output changes
 		case C_OUTPUT:
-			// update borders for views in prev
-			container_map(prev, map_update_view_border, NULL);
 			wlc_output_focus(c->handle);
 			break;
 
@@ -54,8 +52,6 @@ static void update_focus(swayc_t *c) {
 		default:
 		case C_VIEW:
 		case C_CONTAINER:
-			// TODO whatever to do when container changes
-			// for example, stacked and tabbing change stuff.
 			break;
 		}
 	}
@@ -110,17 +106,16 @@ bool set_focused_container(swayc_t *c) {
 		active_ws_child_count = active_ws->children->length + active_ws->floating->length;
 	}
 
-	swayc_log(L_DEBUG, c, "Setting focus to %p:%" PRIuPTR, c, c->handle);
-
-	// Get workspace for c, get that workspaces current focused container.
 	swayc_t *workspace = swayc_active_workspace_for(c);
-	swayc_t *focused = get_focused_container(workspace);
+	swayc_t *focused = get_focused_container(&root_container);
 
-	if (swayc_is_fullscreen(focused) && focused != c) {
+	if (swayc_is_fullscreen(get_focused_container(workspace))) {
 		// if switching to a workspace with a fullscreen view,
 		// focus on the fullscreen view
-		c = focused;
+		c = get_focused_container(workspace);
 	}
+
+	swayc_log(L_DEBUG, c, "Setting focus to %p:%" PRIuPTR, c, c->handle);
 
 	if (c->type == C_VIEW) {
 		// dispatch a window event
@@ -139,7 +134,7 @@ bool set_focused_container(swayc_t *c) {
 	}
 
 	// get new focused view and set focus to it.
-	if (c->type == C_CONTAINER || (c->type == C_VIEW && !(wlc_view_get_type(p->handle) & WLC_BIT_POPUP))) {
+	if (!(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
 		// unactivate previous focus
 		if (focused->type == C_VIEW) {
 			wlc_view_set_state(focused->handle, WLC_BIT_ACTIVATED, false);
@@ -149,7 +144,7 @@ bool set_focused_container(swayc_t *c) {
 		if (c->type == C_VIEW) {
 			wlc_view_set_state(c->handle, WLC_BIT_ACTIVATED, true);
 		}
-		// set focus if view_focus is unlocked
+		// set focus
 		wlc_view_focus(c->handle);
 		if (c->parent->layout != L_TABBED && c->parent->layout != L_STACKED) {
 			update_container_border(c);
@@ -161,10 +156,6 @@ bool set_focused_container(swayc_t *c) {
 			arrange_backgrounds();
 			arrange_windows(parent, -1, -1);
 		}
-	} else if (c->type == C_WORKSPACE) {
-		// remove previous focus if view_focus is unlocked
-		update_container_border(c);
-		wlc_view_focus(0);
 	}
 
 	if (active_ws != workspace) {

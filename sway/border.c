@@ -415,12 +415,6 @@ void update_container_border(swayc_t *container) {
 	}
 }
 
-void map_update_view_border(swayc_t *view, void *data) {
-	if (view->type == C_VIEW) {
-		update_view_border(view);
-	}
-}
-
 void render_view_borders(wlc_handle view) {
 	swayc_t *c = swayc_by_handle(view);
 
