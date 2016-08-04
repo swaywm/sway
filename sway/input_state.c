@@ -424,6 +424,8 @@ void pointer_mode_update(void) {
 			update_geometry(initial.ptr);
 			// Set focus back to initial view
 			set_focused_container(initial.ptr);
+			// Arrange the windows
+			arrange_windows(&root_container, -1, -1);
 		}
 		break;
 
