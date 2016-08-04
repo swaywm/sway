@@ -2563,10 +2563,13 @@ static struct cmd_results *cmd_workspace(int argc, char **argv) {
 		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
 			ws = workspace_output_prev();
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
-			if (prev_workspace_name) {
-				if (!(ws = workspace_by_name(prev_workspace_name))) {
-					ws = workspace_create(prev_workspace_name);
-				}
+			// if auto_back_and_forth is enabled, workspace_switch will swap
+			// the workspaces. If we created prev_workspace here, workspace_switch
+			// would put us back on original workspace.
+			if (config->auto_back_and_forth) {
+				ws = swayc_active_workspace();
+			} else if (prev_workspace_name && !(ws = workspace_by_name(prev_workspace_name))) {
+				ws = workspace_create(prev_workspace_name);
 			}
 		} else {
 			if (!(ws = workspace_by_name(argv[0]))) {
