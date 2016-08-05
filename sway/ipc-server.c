@@ -543,14 +543,14 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (strcmp("focus", change) == 0) {
 		if (old) {
-			json_object_object_add(obj, "old", ipc_json_describe_container(old));
+			json_object_object_add(obj, "old", ipc_json_describe_container_recursive(old));
 		} else {
 			json_object_object_add(obj, "old", NULL);
 		}
 	}
 
 	if (new) {
-		json_object_object_add(obj, "current", ipc_json_describe_container(new));
+		json_object_object_add(obj, "current", ipc_json_describe_container_recursive(new));
 	} else {
 		json_object_object_add(obj, "current", NULL);
 	}
