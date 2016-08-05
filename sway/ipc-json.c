@@ -204,7 +204,8 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 		c->is_floating ? "auto_on" : "auto_off")); // we can't state the cause
 
 	json_object_object_add(object, "app_id", c->app_id ? json_object_new_string(c->app_id) : NULL);
-	// we do not include children, floating etc. as views have none
+	json_object_object_add(object, "nodes", json_object_new_array());
+	json_object_object_add(object, "floating_nodes", json_object_new_array());
 }
 
 json_object *ipc_json_describe_container(swayc_t *c) {
