@@ -539,6 +539,7 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 }
 
 void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
+	sway_log(L_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (strcmp("focus", change) == 0) {
@@ -562,6 +563,7 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 }
 
 void ipc_event_window(swayc_t *window, const char *change) {
+	sway_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (strcmp(change, "close") == 0 || !window) {
@@ -577,6 +579,7 @@ void ipc_event_window(swayc_t *window, const char *change) {
 }
 
 void ipc_event_barconfig_update(struct bar_config *bar) {
+	sway_log(L_DEBUG, "Sending barconfig_update event");
 	json_object *json = ipc_json_describe_bar_config(bar);
 	const char *json_string = json_object_to_json_string(json);
 	ipc_send_event(json_string, IPC_EVENT_BARCONFIG_UPDATE);
@@ -585,6 +588,7 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 }
 
 void ipc_event_mode(const char *mode) {
+	sway_log(L_DEBUG, "Sending mode::%s event", mode);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(mode));
 
@@ -595,6 +599,7 @@ void ipc_event_mode(const char *mode) {
 }
 
 void ipc_event_modifier(uint32_t modifier, const char *state) {
+	sway_log(L_DEBUG, "Sending modifier::%s event", state);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(state));
 
@@ -609,6 +614,7 @@ void ipc_event_modifier(uint32_t modifier, const char *state) {
 
 #if SWAY_BINDING_EVENT
 static void ipc_event_binding(json_object *sb_obj) {
+	sway_log(L_DEBUG, "Sending binding::run event");
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("run"));
 	json_object_object_add(obj, "binding", sb_obj);
