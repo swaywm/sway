@@ -12,7 +12,8 @@ Description
 -----------
 
 Sway allows for configuration of libinput devices through _input { }_ blocks in
-your config file.
+your config file. To obtain a list of available devices, run **swaymsg -t
+get_inputs**.
 
 Commands
 --------
