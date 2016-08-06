@@ -142,6 +142,11 @@ enum visibility_mask {
 } visible;
 
 /**
+ * Whether this con is tabbed or stacked
+ */
+bool swayc_is_tabbed_or_stacked(swayc_t *container);
+
+/**
  * Allocates a new output container.
  */
 swayc_t *new_output(wlc_handle handle);

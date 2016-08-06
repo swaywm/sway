@@ -396,7 +396,7 @@ static bool handle_view_created(wlc_handle handle) {
 		// layout is tabbed/stacked, add a container around newview
 		swayc_t *parent_container = newview->parent;
 		if (parent_container->type == C_WORKSPACE && parent_container->children->length == 1 &&
-				(parent_container->layout == L_TABBED || parent_container->layout == L_STACKED)) {
+				swayc_is_tabbed_or_stacked(parent_container)) {
 			swayc_t *container = new_container(newview, parent_container->layout);
 			set_focused_container(newview);
 			arrange_windows(container, -1, -1);

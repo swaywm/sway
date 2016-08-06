@@ -1968,7 +1968,7 @@ static struct cmd_results *cmd_layout(int argc, char **argv) {
 			parent->layout = default_layout(output);
 		}
 	} else {
-		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
+		if (!swayc_is_tabbed_or_stacked(parent)) {
 			parent->prev_layout = parent->layout;
 		}
 
