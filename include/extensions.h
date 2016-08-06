@@ -3,6 +3,7 @@
 
 #include <wayland-server.h>
 #include <wlc/wlc-wayland.h>
+#include "notification-area.h"
 #include "wayland-desktop-shell-server-protocol.h"
 #include "list.h"
 
@@ -43,6 +44,7 @@ struct swaylock_state {
 };
 
 extern struct desktop_shell_state desktop_shell;
+extern struct wlc_notification_area *notification_area;
 
 void register_extensions(void);
 

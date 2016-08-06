@@ -173,6 +173,10 @@ static bool handle_output_created(wlc_handle output) {
 	wlc_handle prev = wlc_get_focused_output();
 	wlc_output_focus(output);
 	wlc_output_focus(prev);
+
+	if (wlc_notification_area_get_output(notification_area) == 0)
+		wlc_notification_area_set_output(notification_area, output);
+
 	return true;
 }
 
@@ -184,14 +188,22 @@ static void handle_output_destroyed(wlc_handle output) {
 			break;
 		}
 	}
-	if (i < list->length) {
-		destroy_output(list->items[i]);
-	} else {
+	if (i == list->length) {
+		// No container for this output, we're done
 		return;
 	}
+
+	destroy_output(list->items[i]);
+
 	if (list->length > 0) {
+		swayc_t *c = (swayc_t *)list->items[0];
 		// switch to other outputs active workspace
-		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
+		workspace_switch(c->focused);
+		if (wlc_notification_area_get_output(notification_area) == output)
+			wlc_notification_area_set_output(notification_area, c->handle);
+	} else {
+		if (wlc_notification_area_get_output(notification_area) == output)
+			wlc_notification_area_set_output(notification_area, 0);
 	}
 }
 
@@ -217,6 +229,9 @@ static void handle_output_resolution_change(wlc_handle output, const struct wlc_
 	update_background_geometries(output);
 
 	arrange_windows(&root_container, -1, -1);
+
+	if (wlc_notification_area_get_output(notification_area) == output)
+		wlc_notification_area_set_output(notification_area, output);
 }
 
 static void handle_output_focused(wlc_handle output, bool focus) {
