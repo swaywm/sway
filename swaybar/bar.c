@@ -202,6 +202,7 @@ void bar_run(struct bar *bar) {
 					render(output, bar->config, bar->status);
 					window_render(output->window);
 					wl_display_flush(output->registry->display);
+					ipc_send_arrange_command();
 				}
 			}
 		}

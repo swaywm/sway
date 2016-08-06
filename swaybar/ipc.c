@@ -7,6 +7,12 @@
 #include "bar/config.h"
 #include "bar/ipc.h"
 
+void ipc_send_arrange_command() {
+	char *cmd = strdup("");
+	uint32_t len = strlen(cmd);
+	ipc_single_command(swaybar.ipc_socketfd, IPC_ARRANGE_LAYOUT, cmd, &len);
+}
+
 void ipc_send_workspace_command(const char *workspace_name) {
 	uint32_t size = strlen("workspace ") + strlen(workspace_name) + 1;
 
