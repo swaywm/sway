@@ -363,6 +363,7 @@ void move_workspace_to(swayc_t* workspace, swayc_t* destination) {
 	// reset container geometry
 	workspace->width = workspace->height = 0;
 	add_child(destination, workspace);
+	sort_workspaces(destination);
 	// Refocus destination (change to new workspace)
 	set_focused_container(get_focused_view(workspace));
 	arrange_windows(destination, -1, -1);
