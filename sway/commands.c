@@ -1032,7 +1032,9 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			return error;
 		} else if ( strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "workspace") == 0) {
 			// move container to workspace x
-			if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			if (view->type == C_WORKSPACE) {
+				view = new_container(view, view->layout);
+			} if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
 			}
 
@@ -1055,18 +1057,20 @@ static struct cmd_results *cmd_move(int argc, char **argv) {
 			swayc_t *output = NULL;
 			struct wlc_point abs_pos;
 			get_absolute_center_position(view, &abs_pos);
-			if (view->type != C_CONTAINER && view->type != C_VIEW) {
+			if (view->type == C_WORKSPACE) {
+				view = new_container(view, view->layout);
+			} else if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
 			} else if (!(output = output_by_name(argv[3], &abs_pos))) {
 				return cmd_results_new(CMD_FAILURE, "move",
 					"Can't find output with name/direction '%s' @ (%i,%i)", argv[3], abs_pos.x, abs_pos.y);
+			}
+
+			swayc_t *container = get_focused_container(output);
+			if (container->is_floating) {
+				move_container_to(view, container->parent);
 			} else {
-				swayc_t *container = get_focused_container(output);
-				if (container->is_floating) {
-					move_container_to(view, container->parent);
-				} else {
-					move_container_to(view, container);
-				}
+				move_container_to(view, container);
 			}
 		} else {
 			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
