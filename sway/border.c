@@ -228,13 +228,11 @@ static char *generate_container_title(swayc_t *container) {
 	for (i = 0; i < container->children->length; ++i) {
 		prev_name = name;
 		swayc_t* child = container->children->items[i];
-		const char *title = child->app_id;
-		if (child->type == C_CONTAINER) {
+		const char *title = NULL;
+		if (child->type == C_VIEW) {
+			title = child->app_id ? child->app_id : (child->class ? child->class : "(null)");
+		} else { //child->type == C_CONTAINER
 			title = generate_container_title(child);
-		}
-
-		if (!title) {
-			title = "(null)";
 		}
 
 		len = strlen(name) + strlen(title) + 1;
