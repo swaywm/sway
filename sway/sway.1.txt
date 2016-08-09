@@ -114,7 +114,7 @@ The following environment variables have an effect on sway:
 *WLC_REPEAT_RATE*::
 	Configures the keyboard repeat rate.
 
-*XKB_DEFAULT_LAYOUT*, *XKB_DEFAULT_VARIANT*, *XKB_DEFAULT_OPTIONS*::
+*XKB_DEFAULT_RULES*, *XKB_DEFAULT_MODEL*, *XKB_DEFAULT_LAYOUT*, *XKB_DEFAULT_VARIANT*, *XKB_DEFAULT_OPTIONS*::
 	Configures the xkb keyboard settings. See xkeyboard-config(7).
 
 Authors
