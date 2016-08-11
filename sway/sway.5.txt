@@ -177,8 +177,7 @@ or triggered at runtime.
 		**text**::: The text color of the title bar.
 		**indicator**::: The color used to indicate where a new view will open. In a
 		tiled container, this would paint the right border of the current view if
-		a new view would be opened to the right. _Note_: This is not currently
-		implemented.
+		a new view would be opened to the right.
 		**child_border**::: The border around the view itself.
 
 +

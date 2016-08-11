@@ -102,6 +102,8 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	struct wlc_geometry *g = &view->border->geometry;
 	struct wlc_geometry *b = &view->border_geometry;
 	struct wlc_geometry *v = &view->actual_geometry;
+	enum swayc_layouts layout = view->parent->layout;
+	uint32_t color;
 
 	int x = b->origin.x - g->origin.x;
 	int y = b->origin.y - g->origin.y;
@@ -119,8 +121,13 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	// right border
 	int right_border = b->size.w - v->size.w - left_border;
 	if (right_border > 0) {
+		if (layout == L_HORIZ) {
+			color = colors->indicator;
+		} else {
+			color = colors->child_border;
+		}
 		render_sharp_line(cr,
-				colors->child_border,
+				color,
 				x + b->size.w - right_border,
 				y,
 				right_border,
@@ -140,8 +147,13 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	// bottom border
 	int bottom_border = b->size.h - (top_border + v->size.h);
 	if (bottom_border > 0) {
+		if (layout == L_VERT) {
+			color = colors->indicator;
+		} else {
+			color = colors->child_border;
+		}
 		render_sharp_line(cr,
-				colors->child_border,
+				color,
 				x,
 				y + b->size.h - bottom_border,
 				b->size.w,
