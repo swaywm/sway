@@ -2342,15 +2342,15 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 		arrange_windows(parent, -1, -1);
 	}
 
-	// update container title if tabbed/stacked
-	if (swayc_tabbed_stacked_ancestor(focused)) {
-		update_container_border(focused);
-		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
-		// schedule render to make changes take effect right away,
-		// otherwise we would have to wait for the view to render,
-		// which is unpredictable.
-		wlc_output_schedule_render(output->handle);
-	}
+	// update container every time
+	// if it is tabbed/stacked then the title must change
+	// if the indicator color is different then the border must change
+	update_container_border(focused);
+	swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
+	// schedule render to make changes take effect right away,
+	// otherwise we would have to wait for the view to render,
+	// which is unpredictable.
+	wlc_output_schedule_render(output->handle);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
