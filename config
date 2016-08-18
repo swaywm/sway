@@ -23,11 +23,26 @@ set $menu dmenu_run
 # Default wallpaper (more resolutions are available in /usr/share/sway/)
 output * bg /usr/share/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
-# Example output configuration:
+# Example configuration:
 #
 #   output HDMI-A-1 resolution 1920x1080 position 1920,0
 #
-# You can get the names of your outputs by running swaymsg -t get_outputs
+# You can get the names of your outputs by running: swaymsg -t get_outputs
+
+### Input configuration
+#
+# Example configuration:
+#
+#   input "2:14:SynPS/2_Synaptics_TouchPad" {
+#       dwt enabled
+#       tap enabled
+#       natural_scroll enabled
+#       middle_emulation enabled
+#   }
+#
+# You can get the names of your inputs by running: swaymsg -t get_inputs
+# The escape symbol "\" has to be removed.
+# Read `man 5 sway-input` for more information about this section.
 
 ### Key bindings
 #
@@ -170,6 +185,7 @@ bindsym $mod+r mode "resize"
 #
 # Status Bar:
 #
+# Read `man 5 sway-bar` for more information about this section.
 bar {
     position top
     colors {
@@ -178,7 +194,6 @@ bar {
         inactive_workspace #32323200 #32323200 #5c5c5c
     }
 }
-# Read sway-bar(5) for more information about this section.
 
 # You may want this:
 #
