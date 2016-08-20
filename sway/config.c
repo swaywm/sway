@@ -196,6 +196,8 @@ void free_config(struct sway_config *config) {
 	free(config->floating_scroll_down_cmd);
 	free(config->floating_scroll_left_cmd);
 	free(config->floating_scroll_right_cmd);
+	free(config->default_background);
+	free(config->default_background_option);
 	free(config);
 }
 
@@ -299,6 +301,9 @@ static void config_defaults(struct sway_config *config) {
 	config->border_colors.placeholder.child_border = 0x0C0C0CFF;
 
 	config->border_colors.background = 0xFFFFFFFF;
+
+	config->default_background = strdup("#000000");
+	config->default_background_option = strdup("solid_color");
 }
 
 static int compare_modifiers(const void *left, const void *right) {
@@ -911,30 +916,31 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 	}
 
-	if (oc && oc->background) {
-		if (output->bg_pid != 0) {
-			terminate_swaybg(output->bg_pid);
-		}
+	char *bg = oc && oc->background ? oc->background : config->default_background;
+	char *bg_option = oc && oc->background_option ? oc->background_option : config->default_background_option;
 
-		sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
+	if (output->bg_pid != 0) {
+		terminate_swaybg(output->bg_pid);
+	}
 
-		size_t bufsize = 4;
-		char output_id[bufsize];
-		snprintf(output_id, bufsize, "%d", output_i);
-		output_id[bufsize-1] = 0;
+	sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, bg);
 
-		char *const cmd[] = {
-			"swaybg",
-			output_id,
-			oc->background,
-			oc->background_option,
-			NULL,
-		};
+	size_t bufsize = 4;
+	char output_id[bufsize];
+	snprintf(output_id, bufsize, "%d", output_i);
+	output_id[bufsize-1] = 0;
 
-		output->bg_pid = fork();
-		if (output->bg_pid == 0) {
-			execvp(cmd[0], cmd);
-		}
+	char *const cmd[] = {
+		"swaybg",
+		output_id,
+		bg,
+		bg_option,
+		NULL,
+	};
+
+	output->bg_pid = fork();
+	if (output->bg_pid == 0) {
+		execvp(cmd[0], cmd);
 	}
 
 	// reload swaybars
