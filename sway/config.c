@@ -859,7 +859,7 @@ void apply_input_config(struct input_config *ic, struct libinput_device *dev) {
 }
 
 void apply_output_config(struct output_config *oc, swayc_t *output) {
-	if (oc->enabled == 0) {
+	if (oc && oc->enabled == 0) {
 		destroy_output(output);
 		return;
 	}
