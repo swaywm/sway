@@ -115,7 +115,7 @@ bool set_focused_container(swayc_t *c) {
 		c = get_focused_container(workspace);
 	}
 
-	swayc_log(L_DEBUG, c, "Setting focus to %p:%" PRIuPTR, c, c->handle);
+	swayc_log(L_DEBUG, c, "Setting focus to %p:%lu" PRIuPTR, c, c->handle);
 
 	if (c->type == C_VIEW) {
 		// dispatch a window event
