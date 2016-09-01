@@ -28,6 +28,7 @@ Sway is not supported by many distributions yet. Here's a list of packages
 available for you to install:
 
 * [Arch Linux](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#arch)
+* [Fedora](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#fedora)
 * [Gentoo](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#gentoo)
 * [NixOS](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#nixos)
 * [openSUSE Tumbleweed](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#opensuse)
