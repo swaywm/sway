@@ -575,7 +575,7 @@ void update_geometry(swayc_t *container) {
 
 		// handle hide_edge_borders
 		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && workspace->children->length == 1))) {
-			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
+			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
 				if (geometry.origin.x == workspace->x) {
 					border_left = 0;
 				}
@@ -585,7 +585,7 @@ void update_geometry(swayc_t *container) {
 				}
 			}
 
-			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
+			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
 				if (geometry.origin.y == workspace->y || should_hide_top_border(container, geometry.origin.y)) {
 					border_top = 0;
 				}
