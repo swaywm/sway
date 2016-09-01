@@ -1,16 +1,13 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-#include <stdint.h>
-#include <sys/un.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
-#include "log.h"
-#include "stringop.h"
-#include "ipc.h"
-#include "readline.h"
 #include "ipc-client.h"
+#include "readline.h"
+#include "log.h"
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 static const size_t ipc_header_size = sizeof(ipc_magic)+8;

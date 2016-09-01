@@ -4,11 +4,11 @@
 #include <wlc/wlc-render.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "wayland-swaylock-server-protocol.h"
-#include "layout.h"
+#include "sway/layout.h"
+#include "sway/input_state.h"
+#include "sway/extensions.h"
+#include "sway/ipc-server.h"
 #include "log.h"
-#include "input_state.h"
-#include "extensions.h"
-#include "ipc-server.h"
 
 struct desktop_shell_state desktop_shell;
 

@@ -3,7 +3,7 @@
 
 #include "wayland-desktop-shell-client-protocol.h"
 #include "log.h"
-#include "bar/config.h"
+#include "swaybar/config.h"
 
 uint32_t parse_position(const char *position) {
 	if (strcmp("top", position) == 0) {

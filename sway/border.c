@@ -1,12 +1,12 @@
-#include "border.h"
 #include <wlc/wlc-render.h>
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <arpa/inet.h>
-#include "container.h"
-#include "config.h"
+#include "sway/border.h"
+#include "sway/container.h"
+#include "sway/config.h"
 #include "client/pango.h"
 
 void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {

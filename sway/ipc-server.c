@@ -13,15 +13,15 @@
 #include <json-c/json.h>
 #include <list.h>
 #include <libinput.h>
-#include "ipc-json.h"
-#include "ipc-server.h"
-#include "log.h"
-#include "config.h"
-#include "commands.h"
-#include "list.h"
+#include "sway/ipc-json.h"
+#include "sway/ipc-server.h"
+#include "sway/config.h"
+#include "sway/commands.h"
+#include "sway/input.h"
 #include "stringop.h"
+#include "log.h"
+#include "list.h"
 #include "util.h"
-#include "input.h"
 
 static int ipc_socket = -1;
 static struct wlc_event_source *ipc_event_source =  NULL;

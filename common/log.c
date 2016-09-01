@@ -1,17 +1,15 @@
-#include "log.h"
-#include "sway.h"
-#include "readline.h"
+#include <errno.h>
+#include <libgen.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <libgen.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <signal.h>
-#include <time.h>
-#include <errno.h>
 #include <string.h>
-#include <stringop.h>
+#include <time.h>
+#include "log.h"
+#include "sway.h"
+#include "readline.h"
 
 static int colored = 1;
 static log_importance_t loglevel_default = L_ERROR;

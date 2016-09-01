@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stringop.h>
-#include "workspace.h"
+#include "sway/workspace.h"
 
 /* XXX:DEBUG:XXX */
 static void container_log(const swayc_t *c, int depth) {

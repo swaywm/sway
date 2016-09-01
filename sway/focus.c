@@ -1,13 +1,12 @@
 #include <wlc/wlc.h>
-
-#include "focus.h"
+#include "sway/focus.h"
+#include "sway/workspace.h"
+#include "sway/layout.h"
+#include "sway/config.h"
+#include "sway/input_state.h"
+#include "sway/ipc-server.h"
+#include "sway/border.h"
 #include "log.h"
-#include "workspace.h"
-#include "layout.h"
-#include "config.h"
-#include "input_state.h"
-#include "ipc-server.h"
-#include "border.h"
 
 bool locked_container_focus = false;
 bool suspend_workspace_cleanup = false;

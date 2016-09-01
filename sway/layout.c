@@ -2,17 +2,17 @@
 #include <stdbool.h>
 #include <math.h>
 #include <wlc/wlc.h>
-#include "extensions.h"
-#include "log.h"
+#include "sway/extensions.h"
+#include "sway/config.h"
+#include "sway/container.h"
+#include "sway/workspace.h"
+#include "sway/focus.h"
+#include "sway/output.h"
+#include "sway/ipc-server.h"
+#include "sway/border.h"
+#include "sway/layout.h"
 #include "list.h"
-#include "config.h"
-#include "container.h"
-#include "workspace.h"
-#include "focus.h"
-#include "output.h"
-#include "ipc-server.h"
-#include "border.h"
-#include "layout.h"
+#include "log.h"
 
 swayc_t root_container;
 list_t *scratchpad;

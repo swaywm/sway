@@ -1,11 +1,10 @@
 #include <string.h>
 #include <json-c/json.h>
-
+#include "swaybar/config.h"
+#include "swaybar/ipc.h"
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
-#include "bar/config.h"
-#include "bar/ipc.h"
 
 void ipc_send_workspace_command(const char *workspace_name) {
 	uint32_t size = strlen("workspace ") + strlen(workspace_name) + 1;

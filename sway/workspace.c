@@ -6,18 +6,18 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h>
-#include "ipc-server.h"
-#include "extensions.h"
-#include "workspace.h"
-#include "layout.h"
+#include "sway/ipc-server.h"
+#include "sway/extensions.h"
+#include "sway/workspace.h"
+#include "sway/layout.h"
+#include "sway/container.h"
+#include "sway/handlers.h"
+#include "sway/config.h"
+#include "sway/focus.h"
+#include "stringop.h"
+#include "util.h"
 #include "list.h"
 #include "log.h"
-#include "container.h"
-#include "handlers.h"
-#include "config.h"
-#include "stringop.h"
-#include "focus.h"
-#include "util.h"
 #include "ipc.h"
 
 char *prev_workspace_name = NULL;

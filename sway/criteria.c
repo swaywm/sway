@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <regex.h>
-#include "criteria.h"
+#include "sway/criteria.h"
+#include "sway/container.h"
+#include "sway/config.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
-#include "container.h"
-#include "config.h"
 
 enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_CLASS,

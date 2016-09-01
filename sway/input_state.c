@@ -1,10 +1,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "sway/input_state.h"
+#include "sway/config.h"
 #include "log.h"
-#include "config.h"
-
-#include "input_state.h"
 
 #define KEY_STATE_MAX_LENGTH 64
 

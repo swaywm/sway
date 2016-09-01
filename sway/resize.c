@@ -1,11 +1,11 @@
 #include <wlc/wlc.h>
 #include <math.h>
-#include "layout.h"
-#include "focus.h"
+#include "sway/layout.h"
+#include "sway/focus.h"
+#include "sway/input_state.h"
+#include "sway/handlers.h"
+#include "sway/resize.h"
 #include "log.h"
-#include "input_state.h"
-#include "handlers.h"
-#include "resize.h"
 
 static bool set_size_floating(int new_dimension, bool use_width) {
 	swayc_t *view = get_focused_float(swayc_active_workspace());
