@@ -119,27 +119,21 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		if (!swayc_is_child_of(view, workspace)) {
 			move_container_to(view, workspace);
 		}
-		// make the view floating so it doesn't rearrange other
-		// siblings.
+		// make the view floating so it doesn't rearrange other siblings.
 		if (!view->is_floating) {
-			// Remove view from its current location
 			destroy_container(remove_child(view));
-			// and move it into workspace floating
 			add_floating(workspace, view);
 		}
 		wlc_view_set_state(view->handle, WLC_BIT_FULLSCREEN, true);
-		workspace->fullscreen = view;
-		ipc_event_window(view, "fullscreen_mode");
+		wlc_view_bring_to_front(view->handle);
+		wlc_view_focus(view->handle);
 		desktop_shell.is_locked = true;
-		// reset input state
 		input_init();
-		// set focus if the lockscreen is spawned on the currently
-		// active output
+		arrange_windows(workspace, -1, -1);
 		swayc_t *focus_output = swayc_active_output();
 		if (focus_output == output) {
 			set_focused_container(view);
 		}
-		arrange_windows(workspace, -1, -1);
 		list_add(desktop_shell.lock_surfaces, surface);
 		wl_resource_set_destructor(surface, lock_surface_destructor);
 	} else {
