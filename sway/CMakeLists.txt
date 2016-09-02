@@ -10,8 +10,15 @@ include_directories(
 	${WAYLAND_INCLUDE_DIR}
 )
 
+file(GLOB cmds
+	"commands/*.c"
+	"commands/bar/*.c"
+	"commands/input/*.c"
+)
+
 add_executable(sway
 	commands.c
+	${cmds}
 	config.c
 	container.c
 	criteria.c
