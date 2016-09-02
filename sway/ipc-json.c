@@ -2,9 +2,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
-#include "container.h"
+#include "sway/container.h"
+#include "sway/ipc-json.h"
 #include "util.h"
-#include "ipc-json.h"
 
 static json_object *ipc_json_create_rect(swayc_t *c) {
 	json_object *rect = json_object_new_object();

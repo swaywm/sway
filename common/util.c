@@ -1,10 +1,13 @@
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <wlc/wlc.h>
+#include <xkbcommon/xkbcommon-names.h>
+#include "log.h"
 #include "readline.h"
 #include "util.h"
-#include "log.h"
 
 int wrap(int i, int max) {
 	return ((i % max) + max) % max;

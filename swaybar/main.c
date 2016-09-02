@@ -3,9 +3,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include "swaybar/bar.h"
 #include "ipc-client.h"
 #include "log.h"
-#include "bar/bar.h"
 
 /* global bar state */
 struct bar swaybar;

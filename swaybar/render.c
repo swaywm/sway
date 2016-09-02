@@ -5,9 +5,9 @@
 #include "client/cairo.h"
 #include "client/pango.h"
 #include "client/window.h"
-#include "bar/config.h"
-#include "bar/status_line.h"
-#include "bar/render.h"
+#include "swaybar/config.h"
+#include "swaybar/status_line.h"
+#include "swaybar/render.h"
 
 
 /* internal spacing */

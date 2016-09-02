@@ -12,17 +12,17 @@
 #include <limits.h>
 #include <float.h>
 #include "wayland-desktop-shell-server-protocol.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/layout.h"
+#include "sway/input_state.h"
+#include "sway/criteria.h"
+#include "sway/input.h"
+#include "sway/border.h"
 #include "readline.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
-#include "commands.h"
-#include "config.h"
-#include "layout.h"
-#include "input_state.h"
-#include "criteria.h"
-#include "input.h"
-#include "border.h"
 
 struct sway_config *config = NULL;
 

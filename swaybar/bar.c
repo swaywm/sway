@@ -5,15 +5,14 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <poll.h>
-
+#include "swaybar/ipc.h"
+#include "swaybar/render.h"
+#include "swaybar/config.h"
+#include "swaybar/status_line.h"
+#include "swaybar/bar.h"
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
-#include "bar/ipc.h"
-#include "bar/render.h"
-#include "bar/config.h"
-#include "bar/status_line.h"
-#include "bar/bar.h"
 
 static void bar_init(struct bar *bar) {
 	bar->config = init_config();

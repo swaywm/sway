@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <libinput.h>
-#include "config.h"
-#include "input.h"
+#include "sway/config.h"
+#include "sway/input.h"
 #include "list.h"
 #include "log.h"
 

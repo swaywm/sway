@@ -3,9 +3,9 @@
 #include <unistd.h>
 #include <json-c/json.h>
 
+#include "swaybar/config.h"
+#include "swaybar/status_line.h"
 #include "log.h"
-#include "bar/config.h"
-#include "bar/status_line.h"
 #include "util.h"
 
 #define I3JSON_MAXDEPTH 4

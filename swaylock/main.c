@@ -12,13 +12,12 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <unistd.h>
-
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
+#include "swaylock/swaylock.h"
 #include "ipc-client.h"
 #include "log.h"
-#include "lock/lock.h"
 
 struct registry *registry;
 struct render_data render_data;

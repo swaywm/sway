@@ -1,13 +1,13 @@
 #include <wlc/wlc.h>
-
-#include "focus.h"
+#include "sway/focus.h"
+#include "sway/workspace.h"
+#include "sway/layout.h"
+#include "sway/config.h"
+#include "sway/extensions.h"
+#include "sway/input_state.h"
+#include "sway/ipc-server.h"
+#include "sway/border.h"
 #include "log.h"
-#include "workspace.h"
-#include "layout.h"
-#include "config.h"
-#include "input_state.h"
-#include "ipc-server.h"
-#include "border.h"
 
 bool locked_container_focus = false;
 bool suspend_workspace_cleanup = false;
@@ -89,7 +89,6 @@ swayc_t *get_focused_container(swayc_t *parent) {
 	if (!parent) {
 		return swayc_active_workspace();
 	}
-	// get focused container
 	while (!parent->is_focused && parent->focused) {
 		parent = parent->focused;
 	}
@@ -133,24 +132,24 @@ bool set_focused_container(swayc_t *c) {
 		p->is_focused = false;
 	}
 
-	// get new focused view and set focus to it.
 	if (!(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
-		// unactivate previous focus
 		if (focused->type == C_VIEW) {
 			wlc_view_set_state(focused->handle, WLC_BIT_ACTIVATED, false);
 		}
 		update_container_border(focused);
-		// activate current focus
 		if (c->type == C_VIEW) {
 			wlc_view_set_state(c->handle, WLC_BIT_ACTIVATED, true);
 		}
-		// set focus
-		wlc_view_focus(c->handle);
+		if (!desktop_shell.is_locked) {
+			// If the system is locked, we do everything _but_ actually setting
+			// focus. This includes making our internals think that this view is
+			// focused.
+			wlc_view_focus(c->handle);
+		}
 		if (c->parent->layout != L_TABBED && c->parent->layout != L_STACKED) {
 			update_container_border(c);
 		}
 
-		// rearrange if parent container is tabbed/stacked
 		swayc_t *parent = swayc_tabbed_stacked_ancestor(c);
 		if (parent != NULL) {
 			arrange_backgrounds();
@@ -175,7 +174,6 @@ bool set_focused_container_for(swayc_t *a, swayc_t *c) {
 		return false;
 	}
 	swayc_t *find = c;
-	// Ensure that a is an ancestor of c
 	while (find != a && (find = find->parent)) {
 		if (find == &root_container) {
 			return false;

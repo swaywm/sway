@@ -8,17 +8,17 @@
 #include <signal.h>
 #include <unistd.h>
 #include <getopt.h>
-#include "extensions.h"
-#include "layout.h"
-#include "stringop.h"
-#include "config.h"
-#include "log.h"
-#include "readline.h"
-#include "handlers.h"
+#include "sway/extensions.h"
+#include "sway/layout.h"
+#include "sway/config.h"
+#include "sway/handlers.h"
+#include "sway/input.h"
+#include "sway/ipc-server.h"
 #include "ipc-client.h"
-#include "ipc-server.h"
-#include "input.h"
+#include "readline.h"
+#include "stringop.h"
 #include "sway.h"
+#include "log.h"
 
 static bool terminate_request = false;
 static int exit_value = 0;

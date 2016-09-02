@@ -1,7 +1,7 @@
 #include <strings.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include "output.h"
+#include "sway/output.h"
 #include "log.h"
 #include "list.h"
 

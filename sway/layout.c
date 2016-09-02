@@ -2,17 +2,17 @@
 #include <stdbool.h>
 #include <math.h>
 #include <wlc/wlc.h>
-#include "extensions.h"
-#include "log.h"
+#include "sway/extensions.h"
+#include "sway/config.h"
+#include "sway/container.h"
+#include "sway/workspace.h"
+#include "sway/focus.h"
+#include "sway/output.h"
+#include "sway/ipc-server.h"
+#include "sway/border.h"
+#include "sway/layout.h"
 #include "list.h"
-#include "config.h"
-#include "container.h"
-#include "workspace.h"
-#include "focus.h"
-#include "output.h"
-#include "ipc-server.h"
-#include "border.h"
-#include "layout.h"
+#include "log.h"
 
 swayc_t root_container;
 list_t *scratchpad;
@@ -575,7 +575,7 @@ void update_geometry(swayc_t *container) {
 
 		// handle hide_edge_borders
 		if (config->hide_edge_borders != E_NONE && (gap <= 0 || (config->smart_gaps && workspace->children->length == 1))) {
-			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
+			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
 				if (geometry.origin.x == workspace->x) {
 					border_left = 0;
 				}
@@ -585,7 +585,7 @@ void update_geometry(swayc_t *container) {
 				}
 			}
 
-			if (config->hide_edge_borders == E_VERTICAL || config->hide_edge_borders == E_BOTH) {
+			if (config->hide_edge_borders == E_HORIZONTAL || config->hide_edge_borders == E_BOTH) {
 				if (geometry.origin.y == workspace->y || should_hide_top_border(container, geometry.origin.y)) {
 					border_top = 0;
 				}

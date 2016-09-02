@@ -7,25 +7,24 @@
 #include <wlc/wlc-render.h>
 #include <wlc/wlc-wayland.h>
 #include <ctype.h>
-
-#include "handlers.h"
-#include "border.h"
-#include "log.h"
-#include "layout.h"
-#include "config.h"
-#include "commands.h"
-#include "stringop.h"
-#include "workspace.h"
-#include "container.h"
-#include "output.h"
-#include "focus.h"
-#include "input_state.h"
-#include "resize.h"
-#include "extensions.h"
-#include "criteria.h"
-#include "ipc-server.h"
+#include "sway/handlers.h"
+#include "sway/border.h"
+#include "sway/layout.h"
+#include "sway/config.h"
+#include "sway/commands.h"
+#include "sway/workspace.h"
+#include "sway/container.h"
+#include "sway/output.h"
+#include "sway/focus.h"
+#include "sway/input_state.h"
+#include "sway/resize.h"
+#include "sway/extensions.h"
+#include "sway/criteria.h"
+#include "sway/ipc-server.h"
+#include "sway/input.h"
 #include "list.h"
-#include "input.h"
+#include "stringop.h"
+#include "log.h"
 
 // Event should be sent to client
 #define EVENT_PASSTHROUGH false
