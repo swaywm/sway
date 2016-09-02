@@ -1,9 +1,9 @@
 #include <string.h>
 #include <wlc/wlc.h>
-#include "commands.h"
-#include "container.h"
-#include "focus.h"
-#include "layout.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/focus.h"
+#include "sway/layout.h"
 
 static swayc_t *fetch_view_from_scratchpad() {
 	if (sp_index >= scratchpad->length) {

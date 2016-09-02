@@ -1,6 +1,6 @@
 #include <string.h>
-#include "commands.h"
-#include "focus.h"
+#include "sway/commands.h"
+#include "sway/focus.h"
 
 struct cmd_results *cmd_sticky(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -1,5 +1,5 @@
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
 
 struct cmd_results *bar_cmd_colors(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -1,5 +1,5 @@
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
 
 struct cmd_results *cmd_focus_follows_mouse(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include "commands.h"
-#include "config.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"

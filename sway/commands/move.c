@@ -1,11 +1,11 @@
 #include <string.h>
 #include <wlc/wlc.h>
-#include "commands.h"
-#include "container.h"
-#include "layout.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/layout.h"
+#include "sway/output.h"
+#include "sway/workspace.h"
 #include "list.h"
-#include "output.h"
-#include "workspace.h"
 
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;

@@ -1,5 +1,5 @@
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
 #include "list.h"
 #include "log.h"
 

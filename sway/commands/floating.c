@@ -1,8 +1,8 @@
 #include <string.h>
-#include "commands.h"
-#include "container.h"
-#include "ipc-server.h"
-#include "layout.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/ipc-server.h"
+#include "sway/layout.h"
 #include "list.h"
 #include "log.h"
 

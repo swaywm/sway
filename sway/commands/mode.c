@@ -1,8 +1,8 @@
 #include <stdbool.h>
 #include <string.h>
-#include "commands.h"
-#include "config.h"
-#include "ipc-server.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
 

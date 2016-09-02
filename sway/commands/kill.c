@@ -1,6 +1,6 @@
-#include "commands.h"
-#include "container.h"
-#include "focus.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/focus.h"
 
 struct cmd_results *cmd_kill(int argc, char **argv) {
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "kill", "Can't be used in config file.");

@@ -1,5 +1,5 @@
-#include "commands.h"
-#include "container.h"
+#include "sway/commands.h"
+#include "sway/container.h"
 
 void sway_terminate(int exit_code);
 

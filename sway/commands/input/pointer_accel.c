@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include "commands.h"
-#include "input.h"
+#include "sway/commands.h"
+#include "sway/input.h"
 
 struct cmd_results *input_cmd_pointer_accel(int argc, char **argv) {
 	struct cmd_results *error = NULL;

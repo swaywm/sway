@@ -1,6 +1,6 @@
 #include <string.h>
-#include "border.h"
-#include "commands.h"
+#include "sway/border.h"
+#include "sway/commands.h"
 #include "log.h"
 #include "stringop.h"
 

@@ -1,5 +1,5 @@
-#include "commands.h"
-#include "config.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 
 struct cmd_results *cmd_include(int argc, char **argv) {
 	struct cmd_results *error = NULL;

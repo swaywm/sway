@@ -1,4 +1,4 @@
-#include "commands.h"
+#include "sway/commands.h"
 #include "log.h"
 
 struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {

@@ -1,5 +1,5 @@
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
 #include "log.h"
 
 struct cmd_results *cmd_debuglog(int argc, char **argv) {

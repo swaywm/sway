@@ -1,7 +1,7 @@
 #include <string.h>
-#include "commands.h"
-#include "container.h"
-#include "layout.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/layout.h"
 
 struct cmd_results *cmd_layout(int argc, char **argv) {
 	struct cmd_results *error = NULL;

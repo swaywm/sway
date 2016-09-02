@@ -1,9 +1,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include "commands.h"
-#include "container.h"
-#include "focus.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/focus.h"
 
 struct cmd_results *cmd_border(int argc, char **argv) {
 	struct cmd_results *error = NULL;

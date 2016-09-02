@@ -1,11 +1,11 @@
 #include <string.h>
 #include <wlc/wlc.h>
-#include "commands.h"
-#include "container.h"
-#include "focus.h"
-#include "input_state.h"
-#include "output.h"
-#include "workspace.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/focus.h"
+#include "sway/input_state.h"
+#include "sway/output.h"
+#include "sway/workspace.h"
 
 struct cmd_results *cmd_focus(int argc, char **argv) {
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "focus", "Can't be used in config file.");

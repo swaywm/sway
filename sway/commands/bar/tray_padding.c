@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
 #include "log.h"
 
 struct cmd_results *bar_cmd_tray_padding(int argc, char **argv) {

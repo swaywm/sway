@@ -1,11 +1,11 @@
 #include <stdbool.h>
 #include <string.h>
 #include <wlc/wlc.h>
-#include "commands.h"
-#include "container.h"
-#include "focus.h"
-#include "ipc-server.h"
-#include "layout.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/focus.h"
+#include "sway/ipc-server.h"
+#include "sway/layout.h"
 
 struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	struct cmd_results *error = NULL;

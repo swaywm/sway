@@ -1,10 +1,10 @@
 #include <string.h>
 #include <wlc/wlc-render.h>
-#include "border.h"
-#include "commands.h"
-#include "container.h"
-#include "focus.h"
-#include "layout.h"
+#include "sway/border.h"
+#include "sway/commands.h"
+#include "sway/container.h"
+#include "sway/focus.h"
+#include "sway/layout.h"
 #include "log.h"
 
 static struct cmd_results *_do_split(int argc, char **argv, int layout) {

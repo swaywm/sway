@@ -1,8 +1,8 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "commands.h"
-#include "config.h"
+#include "sway/commands.h"
+#include "sway/config.h"
 #include "log.h"
 #include "stringop.h"
 

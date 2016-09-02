@@ -1,6 +1,6 @@
 #include <string.h>
-#include "commands.h"
-#include "input_state.h"
+#include "sway/commands.h"
+#include "sway/input_state.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"

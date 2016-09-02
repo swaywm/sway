@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
 
 static struct cmd_results *parse_border_color(struct border_colors *border_colors, const char *cmd_name, int argc, char **argv) {
 	struct cmd_results *error = NULL;

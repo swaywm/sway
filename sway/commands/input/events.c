@@ -1,6 +1,6 @@
 #include <string.h>
-#include "commands.h"
-#include "input.h"
+#include "sway/commands.h"
+#include "sway/input.h"
 #include "log.h"
 
 struct cmd_results *input_cmd_events(int argc, char **argv) {

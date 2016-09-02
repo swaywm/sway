@@ -2,9 +2,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "commands.h"
+#include "sway/commands.h"
+#include "sway/resize.h"
 #include "log.h"
-#include "resize.h"
 
 static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 	struct cmd_results *error = NULL;

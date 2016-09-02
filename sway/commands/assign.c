@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "commands.h"
-#include "criteria.h"
+#include "sway/commands.h"
+#include "sway/criteria.h"
 #include "list.h"
 #include "log.h"
 
