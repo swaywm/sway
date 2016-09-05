@@ -269,6 +269,8 @@ The default colors are:
 	Append _{_ to this command, the following lines will be commands to configure
 	the named input device, and _}_ on its own line will close the block.
 	+
+	**input * <block of commands>** may be used to match all input devices.
+	+
 	See **sway-input**(5) for details.
 
 **kill**::

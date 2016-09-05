@@ -132,6 +132,14 @@ static bool handle_input_created(struct libinput_device *device) {
 	for (i = 0; i < config->input_configs->length; ++i) {
 		struct input_config *cur = config->input_configs->items[i];
 		if (strcasecmp(identifier, cur->identifier) == 0) {
+			sway_log(L_DEBUG, "Matched input config for %s",
+					identifier);
+			ic = cur;
+			break;
+		}
+		if (strcasecmp("*", cur->identifier) == 0) {
+			sway_log(L_DEBUG, "Matched wildcard input config for %s",
+					identifier);
 			ic = cur;
 			break;
 		}
