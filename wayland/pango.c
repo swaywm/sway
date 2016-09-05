@@ -7,10 +7,12 @@
 #include <stdbool.h>
 #include "log.h"
 
-PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text, bool markup) {
+PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text,
+		int32_t scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs = pango_attr_list_new();
-	pango_attr_list_insert(attrs, pango_attr_scale_new(2));
+	sway_log(L_DEBUG, "Font scale: %d", scale);
+	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	if (markup) {
 		pango_layout_set_markup(layout, text, -1);
 	} else {
@@ -26,7 +28,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text
 }
 
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
-		bool markup, const char *fmt, ...) {
+		int32_t scale, bool markup, const char *fmt, ...) {
 	char *buf = malloc(2048);
 
 	va_list args;
@@ -36,7 +38,7 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	}
 	va_end(args);
 
-	PangoLayout *layout = get_pango_layout(cairo, font, buf, markup);
+	PangoLayout *layout = get_pango_layout(cairo, font, buf, scale, markup);
 	pango_cairo_update_layout(cairo, layout);
 
 	pango_layout_get_pixel_size(layout, width, height);
@@ -46,7 +48,7 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	free(buf);
 }
 
-void pango_printf(cairo_t *cairo, const char *font, bool markup, const char *fmt, ...) {
+void pango_printf(cairo_t *cairo, const char *font, int32_t scale, bool markup, const char *fmt, ...) {
 	char *buf = malloc(2048);
 
 	va_list args;
@@ -56,7 +58,7 @@ void pango_printf(cairo_t *cairo, const char *font, bool markup, const char *fmt
 	}
 	va_end(args);
 
-	PangoLayout *layout = get_pango_layout(cairo, font, buf, markup);
+	PangoLayout *layout = get_pango_layout(cairo, font, buf, scale, markup);
 	pango_cairo_update_layout(cairo, layout);
 
 	pango_cairo_show_layout(cairo, layout);

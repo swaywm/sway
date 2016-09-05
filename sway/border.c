@@ -92,7 +92,7 @@ int get_font_text_height(const char *font) {
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, 200);
 	cairo_t *cr = cairo_create(surface);
 	int width, height;
-	get_text_size(cr, font, &width, &height, false, "Gg");
+	get_text_size(cr, font, &width, &height, 1, false, "Gg");
 	cairo_surface_destroy(surface);
 	cairo_destroy(cr);
 	return height;
@@ -180,7 +180,7 @@ static void render_title_bar(swayc_t *view, cairo_t *cr, struct wlc_geometry *b,
 		get_text_size(cr, config->font, &width, &height, false, "%s", view->name);
 		cairo_move_to(cr, x + 2, y + 2);
 		cairo_set_source_u32(cr, colors->text);
-		pango_printf(cr, config->font, false, "%s", view->name);
+		pango_printf(cr, config->font, 1, false, "%s", view->name);
 	}
 
 	// titlebars has a border all around for tabbed layouts
