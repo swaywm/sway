@@ -75,6 +75,7 @@ static struct buffer *create_buffer(struct window *window, struct buffer *buf,
 	buf->surface = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
 	buf->cairo = cairo_create(buf->surface);
 	buf->pango = pango_cairo_create_context(buf->cairo);
+	pango_cairo_context_set_resolution(buf->pango, 96 * 2);
 
 	wl_buffer_add_listener(buf->buffer, &buffer_listener, buf);
 	return buf;

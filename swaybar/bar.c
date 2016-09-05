@@ -152,7 +152,7 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 		struct output_state *output = bar_output->registry->outputs->items[bar_output->idx];
 
-		bar_output->window = window_setup(bar_output->registry, output->width, 30, false);
+		bar_output->window = window_setup(bar_output->registry, output->width * output->scale, 30 * output->scale, false);
 		if (!bar_output->window) {
 			sway_abort("Failed to create window.");
 		}

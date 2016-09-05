@@ -34,6 +34,7 @@ struct output_state {
         struct wl_output *output;
         uint32_t flags;
         uint32_t width, height;
+		uint32_t scale;
 };
 
 struct xkb {

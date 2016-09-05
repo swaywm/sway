@@ -32,7 +32,8 @@ static void display_handle_done(void *data, struct wl_output *wl_output) {
 }
 
 static void display_handle_scale(void *data, struct wl_output *wl_output, int32_t factor) {
-	// this space intentionally left blank
+	struct output_state *state = data;
+	state->scale = factor;
 }
 
 static const struct wl_output_listener output_listener = {
@@ -220,6 +221,7 @@ static void registry_global(void *data, struct wl_registry *registry,
 		struct wl_output *output = wl_registry_bind(registry, name, &wl_output_interface, version);
 		struct output_state *ostate = malloc(sizeof(struct output_state));
 		ostate->output = output;
+		ostate->scale = 1;
 		wl_output_add_listener(output, &output_listener, ostate);
 		list_add(reg->outputs, ostate);
 	} else if (strcmp(interface, desktop_shell_interface.name) == 0) {
