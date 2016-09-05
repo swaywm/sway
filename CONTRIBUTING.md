@@ -5,6 +5,28 @@ successful with your contribution if you visit the [IRC
 channel](http://webchat.freenode.net/?channels=sway&uio=d4) upfront and discuss
 your plans.
 
+## Release Cycle
+
+There are three stages of a sway release. Say the current stable version is
+0.7. The master branch of sway is working towards becoming the 0.8 release. 0.8
+will go through each of these three stages:
+
+**In development**: during this time 0.8 lives in the master branch and is
+considered unstable. All pull requests merged during this time will land in sway
+0.8.
+
+**Release candidate**: at some point (usually when development is fairly quiet),
+@SirCmpwn will announce an upcoming release candidate (often 2 weeks in
+advance). When the two weeks are up, a branch is cut (i.e. 0.8-rc1) and from
+that point only bugfix pull requests land in this branch. Each morning, if
+bugfixes landed in 0.8 during the previous day, a new RC is cut. During the RC
+phase, more adventurous users are encouraged to upgrade and start looking for
+and reporting bugs (especially in new features).
+
+**Stable release**: when no substantial changes are merged into an RC for 1
+week, it's released as a new stable version of Sway. At this point, all users
+are encouraged to upgrade.
+
 ## Pull Requests
 
 If you already have your own pull request habits, feel free to use them. If you
