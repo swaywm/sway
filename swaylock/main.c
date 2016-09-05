@@ -223,58 +223,60 @@ void render_color(struct window *window, uint32_t color) {
 void render_image(struct window *window, cairo_surface_t *image, enum scaling_mode scaling_mode) {
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
+	int wwidth = window->width * window->scale;
+	int wheight = window->height * window->scale;
 
 	switch (scaling_mode) {
 	case SCALING_MODE_STRETCH:
 		cairo_scale(window->cairo,
-				(double) window->width / width,
-				(double) window->height / height);
+				(double) wwidth / width,
+				(double) wheight / height);
 		cairo_set_source_surface(window->cairo, image, 0, 0);
 		break;
 	case SCALING_MODE_FILL:
 	{
-		double window_ratio = (double) window->width / window->height;
-		double bg_ratio = width / height;
+		double window_ratio = (double) wwidth / wheight;
+		double bg_ratio = wheight;
 
 		if (window_ratio > bg_ratio) {
-			double scale = (double) window->width / width;
+			double scale = (double) wwidth / width;
 			cairo_scale(window->cairo, scale, scale);
 			cairo_set_source_surface(window->cairo, image,
 					0,
-					(double) window->height/2 / scale - height/2);
+					(double) wheight/2 / scale - height/2);
 		} else {
-			double scale = (double) window->height / height;
+			double scale = (double) wheight / height;
 			cairo_scale(window->cairo, scale, scale);
 			cairo_set_source_surface(window->cairo, image,
-					(double) window->width/2 / scale - width/2,
+					(double) wwidth/2 / scale - width/2,
 					0);
 		}
 		break;
 	}
 	case SCALING_MODE_FIT:
 	{
-		double window_ratio = (double) window->width / window->height;
+		double window_ratio = (double) wwidth / wheight;
 		double bg_ratio = width / height;
 
 		if (window_ratio > bg_ratio) {
-			double scale = (double) window->height / height;
+			double scale = (double) wheight / height;
 			cairo_scale(window->cairo, scale, scale);
 			cairo_set_source_surface(window->cairo, image,
-					(double) window->width/2 / scale - width/2,
+					(double) wwidth/2 / scale - width/2,
 					0);
 		} else {
-			double scale = (double) window->width / width;
+			double scale = (double) wwidth / width;
 			cairo_scale(window->cairo, scale, scale);
 			cairo_set_source_surface(window->cairo, image,
 					0,
-					(double) window->height/2 / scale - height/2);
+					(double) wheight/2 / scale - height/2);
 		}
 		break;
 	}
 	case SCALING_MODE_CENTER:
 		cairo_set_source_surface(window->cairo, image,
-				(double) window->width/2 - width/2,
-				(double) window->height/2 - height/2);
+				(double) wwidth/2 - width/2,
+				(double) wheight/2 - height/2);
 		break;
 	case SCALING_MODE_TILE:
 	{
@@ -477,7 +479,8 @@ int main(int argc, char **argv) {
 
 	for (i = 0; i < registry->outputs->length; ++i) {
 		struct output_state *output = registry->outputs->items[i];
-		struct window *window = window_setup(registry, output->width, output->height, true);
+		struct window *window = window_setup(registry,
+				output->width, output->height, output->scale, true);
 		if (!window) {
 			sway_abort("Failed to create surfaces.");
 		}
@@ -564,6 +567,8 @@ void render(struct render_data *render_data) {
 		if (!window_prerender(window) || !window->cairo) {
 			continue;
 		}
+		int wwidth = window->width * window->scale;
+		int wheight = window->height * window->scale;
 
 		// Reset the transformation matrix
 		cairo_identity_matrix(window->cairo);
@@ -595,7 +600,7 @@ void render(struct render_data *render_data) {
 		if (show_indicator && render_data->auth_state != AUTH_STATE_IDLE) {
 			// Draw circle
 			cairo_set_line_width(window->cairo, ARC_THICKNESS);
-			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, 0, 2 * M_PI);
+			cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, 0, 2 * M_PI);
 			switch (render_data->auth_state) {
 			case AUTH_STATE_INPUT:
 			case AUTH_STATE_BACKSPACE: {
@@ -638,8 +643,8 @@ void render(struct render_data *render_data) {
 				double x, y;
 
 				cairo_text_extents(window->cairo, text, &extents);
-				x = window->width/2 - ((extents.width/2) + extents.x_bearing);
-				y = window->height/2 - ((extents.height/2) + extents.y_bearing);
+				x = wwidth/2 - ((extents.width/2) + extents.x_bearing);
+				y = wheight/2 - ((extents.height/2) + extents.y_bearing);
 
 				cairo_move_to(window->cairo, x, y);
 				cairo_show_text(window->cairo, text);
@@ -651,7 +656,7 @@ void render(struct render_data *render_data) {
 			if (render_data->auth_state == AUTH_STATE_INPUT || render_data->auth_state == AUTH_STATE_BACKSPACE) {
 				static double highlight_start = 0;
 				highlight_start += (rand() % (int)(M_PI * 100)) / 100.0 + M_PI * 0.5;
-				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
+				cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
 				if (render_data->auth_state == AUTH_STATE_INPUT) {
 					cairo_set_source_rgb(window->cairo, 51.0 / 255, 219.0 / 255, 0);
 				} else {
@@ -661,19 +666,19 @@ void render(struct render_data *render_data) {
 
 				// Draw borders
 				cairo_set_source_rgb(window->cairo, 0, 0, 0);
-				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
+				cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
 				cairo_stroke(window->cairo);
 
-				cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS, highlight_start + TYPE_INDICATOR_RANGE, (highlight_start + TYPE_INDICATOR_RANGE) + TYPE_INDICATOR_BORDER_THICKNESS);
+				cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, highlight_start + TYPE_INDICATOR_RANGE, (highlight_start + TYPE_INDICATOR_RANGE) + TYPE_INDICATOR_BORDER_THICKNESS);
 				cairo_stroke(window->cairo);
 			}
 
 			// Draw inner + outer border of the circle
 			cairo_set_source_rgb(window->cairo, 0, 0, 0);
 			cairo_set_line_width(window->cairo, 2.0);
-			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS - ARC_THICKNESS/2, 0, 2*M_PI);
+			cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS - ARC_THICKNESS/2, 0, 2*M_PI);
 			cairo_stroke(window->cairo);
-			cairo_arc(window->cairo, window->width/2, window->height/2, ARC_RADIUS + ARC_THICKNESS/2, 0, 2*M_PI);
+			cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS + ARC_THICKNESS/2, 0, 2*M_PI);
 			cairo_stroke(window->cairo);
 		}
 		window_render(window);

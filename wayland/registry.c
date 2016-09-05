@@ -18,6 +18,8 @@ static void display_handle_mode(void *data, struct wl_output *wl_output,
 		state->flags = flags;
 		state->width = width;
 		state->height = height;
+		sway_log(L_DEBUG, "Got mode %dx%x:0x%X for output %p",
+				width, height, flags, data);
 	}
 }
 
@@ -34,6 +36,7 @@ static void display_handle_done(void *data, struct wl_output *wl_output) {
 static void display_handle_scale(void *data, struct wl_output *wl_output, int32_t factor) {
 	struct output_state *state = data;
 	state->scale = factor;
+	sway_log(L_DEBUG, "Got scale factor %d for output %p", factor, data);
 }
 
 static const struct wl_output_listener output_listener = {

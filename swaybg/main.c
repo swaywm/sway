@@ -69,7 +69,8 @@ int main(int argc, const char **argv) {
 	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	int i;
 	struct output_state *output = registry->outputs->items[desired_output];
-	struct window *window = window_setup(registry, output->width, output->height, false);
+	struct window *window = window_setup(registry,
+			output->width, output->height, output->scale, false);
 	if (!window) {
 		sway_abort("Failed to create surfaces.");
 	}
@@ -115,60 +116,63 @@ int main(int argc, const char **argv) {
 			sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
 		}
 
+		int wwidth = window->width * window->scale;
+		int wheight = window->height * window->scale;
+
 		for (i = 0; i < surfaces->length; ++i) {
 			struct window *window = surfaces->items[i];
 			if (window_prerender(window) && window->cairo) {
 				switch (scaling_mode) {
 				case SCALING_MODE_STRETCH:
 					cairo_scale(window->cairo,
-							(double) window->width / width,
-							(double) window->height / height);
+							(double) wwidth / width,
+							(double) wheight / height);
 					cairo_set_source_surface(window->cairo, image, 0, 0);
 					break;
 				case SCALING_MODE_FILL:
 				{
-					double window_ratio = (double) window->width / window->height;
+					double window_ratio = (double) wwidth / wheight;
 					double bg_ratio = width / height;
 
 					if (window_ratio > bg_ratio) {
-						double scale = (double) window->width / width;
+						double scale = (double) wwidth / width;
 						cairo_scale(window->cairo, scale, scale);
 						cairo_set_source_surface(window->cairo, image,
 								0,
-								(double) window->height/2 / scale - height/2);
+								(double) wheight/2 / scale - height/2);
 					} else {
-						double scale = (double) window->height / height;
+						double scale = (double) wheight / height;
 						cairo_scale(window->cairo, scale, scale);
 						cairo_set_source_surface(window->cairo, image,
-								(double) window->width/2 / scale - width/2,
+								(double) wwidth/2 / scale - width/2,
 								0);
 					}
 					break;
 				}
 				case SCALING_MODE_FIT:
 				{
-					double window_ratio = (double) window->width / window->height;
+					double window_ratio = (double) wwidth / wheight;
 					double bg_ratio = width / height;
 
 					if (window_ratio > bg_ratio) {
-						double scale = (double) window->height / height;
+						double scale = (double) wheight / height;
 						cairo_scale(window->cairo, scale, scale);
 						cairo_set_source_surface(window->cairo, image,
-								(double) window->width/2 / scale - width/2,
+								(double) wwidth/2 / scale - width/2,
 								0);
 					} else {
-						double scale = (double) window->width / width;
+						double scale = (double) wwidth / width;
 						cairo_scale(window->cairo, scale, scale);
 						cairo_set_source_surface(window->cairo, image,
 								0,
-								(double) window->height/2 / scale - height/2);
+								(double) wheight/2 / scale - height/2);
 					}
 					break;
 				}
 				case SCALING_MODE_CENTER:
 					cairo_set_source_surface(window->cairo, image,
-							(double) window->width/2 - width/2,
-							(double) window->height/2 - height/2);
+							(double) wwidth/2 - width/2,
+							(double) wheight/2 - height/2);
 					break;
 				case SCALING_MODE_TILE:
 				{

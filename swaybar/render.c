@@ -8,6 +8,7 @@
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 #include "swaybar/render.h"
+#include "log.h"
 
 
 /* internal spacing */
@@ -283,7 +284,8 @@ void render(struct output *output, struct config *config, struct status_line *li
 
 	if (line->protocol == TEXT) {
 		get_text_size(window->cairo, window->font, &width, &height, config->pango_markup, "%s", line->text_line);
-		cairo_move_to(cairo, window->width - margin - width, margin);
+		cairo_move_to(cairo, (window->width * window->scale)
+				- margin - width, margin);
 		pango_printf(window->cairo, window->font, config->pango_markup, "%s", line->text_line);
 	} else if (line->protocol == I3BAR && line->block_line) {
 		double pos = window->width - 0.5;
@@ -315,12 +317,13 @@ void render(struct output *output, struct config *config, struct status_line *li
 }
 
 void set_window_height(struct window *window, int height) {
-		int text_width, text_height;
-		get_text_size(window->cairo, window->font, &text_width, &text_height, false,
-				"Test string for measuring purposes");
-		if (height > 0) {
-			margin = (height - text_height) / 2;
-			ws_vertical_padding = margin - 1.5;
-		}
-		window->height = text_height + margin * 2;
+	int text_width, text_height;
+	get_text_size(window->cairo, window->font,
+			&text_width, &text_height, false,
+			"Test string for measuring purposes");
+	if (height > 0) {
+		margin = (height - text_height) / 2;
+		ws_vertical_padding = margin - 1.5;
+	}
+	window->height = (text_height + margin * 2) / window->scale;
 }

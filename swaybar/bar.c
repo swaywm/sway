@@ -152,12 +152,15 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 		struct output_state *output = bar_output->registry->outputs->items[bar_output->idx];
 
-		bar_output->window = window_setup(bar_output->registry, output->width * output->scale, 30 * output->scale, false);
+		bar_output->window = window_setup(bar_output->registry,
+				output->width / output->scale, 30, output->scale, false);
 		if (!bar_output->window) {
 			sway_abort("Failed to create window.");
 		}
-		desktop_shell_set_panel(bar_output->registry->desktop_shell, output->output, bar_output->window->surface);
-		desktop_shell_set_panel_position(bar_output->registry->desktop_shell, bar->config->position);
+		desktop_shell_set_panel(bar_output->registry->desktop_shell,
+				output->output, bar_output->window->surface);
+		desktop_shell_set_panel_position(bar_output->registry->desktop_shell,
+				bar->config->position);
 
 		window_make_shell(bar_output->window);
 

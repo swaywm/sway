@@ -51,12 +51,14 @@ struct window {
 	struct wl_callback *frame_cb;
 	struct cursor cursor;
 	uint32_t width, height;
+	int32_t scale;
 	char *font;
 	cairo_t *cairo;
 	struct pointer_input pointer_input;
 };
 
-struct window *window_setup(struct registry *registry, uint32_t width, uint32_t height, bool shell_surface);
+struct window *window_setup(struct registry *registry, uint32_t width, uint32_t height,
+		int32_t scale, bool shell_surface);
 void window_teardown(struct window *state);
 int window_prerender(struct window *state);
 int window_render(struct window *state);

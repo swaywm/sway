@@ -93,11 +93,13 @@ void window_make_shell(struct window *window) {
 	wl_shell_surface_set_toplevel(window->shell_surface);
 }
 
-struct window *window_setup(struct registry *registry, uint32_t width, uint32_t height, bool shell_surface) {
+struct window *window_setup(struct registry *registry, uint32_t width, uint32_t height,
+		int32_t scale, bool shell_surface) {
 	struct window *window = malloc(sizeof(struct window));
 	memset(window, 0, sizeof(struct window));
 	window->width = width;
 	window->height = height;
+	window->scale = scale;
 	window->registry = registry;
 	window->font = "monospace 10";
 
@@ -121,15 +123,18 @@ struct window *window_setup(struct registry *registry, uint32_t width, uint32_t 
 			cursor_size = "16";
 		}
 
+		sway_log(L_DEBUG, "Cursor scale: %d", scale);
 		window->cursor.cursor_theme = wl_cursor_theme_load(cursor_theme,
-				atoi(cursor_size), registry->shm);
+				atoi(cursor_size) * scale, registry->shm);
 		window->cursor.cursor = wl_cursor_theme_get_cursor(window->cursor.cursor_theme, "left_ptr");
 		window->cursor.surface = wl_compositor_create_surface(registry->compositor);
 
 		struct wl_cursor_image *image = window->cursor.cursor->images[0];
 		struct wl_buffer *cursor_buf = wl_cursor_image_get_buffer(image);
 		wl_surface_attach(window->cursor.surface, cursor_buf, 0, 0);
-		wl_surface_damage(window->cursor.surface, 0, 0, image->width, image->height);
+		wl_surface_set_buffer_scale(window->cursor.surface, scale);
+		wl_surface_damage(window->cursor.surface, 0, 0,
+				image->width, image->height);
 		wl_surface_commit(window->cursor.surface);
 	}
 
@@ -159,8 +164,9 @@ int window_render(struct window *window) {
 	window->frame_cb = wl_surface_frame(window->surface);
 	wl_callback_add_listener(window->frame_cb, &listener, window);
 
-	wl_surface_damage(window->surface, 0, 0, window->buffer->width, window->buffer->height);
 	wl_surface_attach(window->surface, window->buffer->buffer, 0, 0);
+	wl_surface_set_buffer_scale(window->surface, window->scale);
+	wl_surface_damage(window->surface, 0, 0, window->width, window->height);
 	wl_surface_commit(window->surface);
 
 	return 1;

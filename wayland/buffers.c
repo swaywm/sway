@@ -50,8 +50,10 @@ static const struct wl_buffer_listener buffer_listener = {
 };
 
 static struct buffer *create_buffer(struct window *window, struct buffer *buf,
-		int32_t width, int32_t height, uint32_t format) {
+		int32_t width, int32_t height, int32_t scale, uint32_t format) {
 
+	width *= scale;
+	height *= scale;
 	uint32_t stride = width * 4;
 	uint32_t size = stride * height;
 
@@ -63,7 +65,8 @@ static struct buffer *create_buffer(struct window *window, struct buffer *buf,
 	}
 	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	struct wl_shm_pool *pool = wl_shm_create_pool(window->registry->shm, fd, size);
-	buf->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, stride, format);
+	buf->buffer = wl_shm_pool_create_buffer(pool, 0,
+			width, height, stride, format);
 	wl_shm_pool_destroy(pool);
 	close(fd);
 	unlink(name);
@@ -72,10 +75,10 @@ static struct buffer *create_buffer(struct window *window, struct buffer *buf,
 
 	buf->width = width;
 	buf->height = height;
-	buf->surface = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
+	buf->surface = cairo_image_surface_create_for_data(data,
+			CAIRO_FORMAT_ARGB32, width, height, stride);
 	buf->cairo = cairo_create(buf->surface);
 	buf->pango = pango_cairo_create_context(buf->cairo);
-	pango_cairo_context_set_resolution(buf->pango, 96 * 2);
 
 	wl_buffer_add_listener(buf->buffer, &buffer_listener, buf);
 	return buf;
@@ -114,7 +117,9 @@ struct buffer *get_next_buffer(struct window *window) {
 	}
 
 	if (!buffer->buffer) {
-		if (!create_buffer(window, buffer, window->width, window->height, WL_SHM_FORMAT_ARGB8888)) {
+		if (!create_buffer(window, buffer,
+					window->width, window->height, window->scale,
+					WL_SHM_FORMAT_ARGB8888)) {
 			return NULL;
 		}
 	}
