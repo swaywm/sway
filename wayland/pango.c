@@ -11,7 +11,6 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text
 		int32_t scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs = pango_attr_list_new();
-	sway_log(L_DEBUG, "Font scale: %d", scale);
 	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	if (markup) {
 		pango_layout_set_markup(layout, text, -1);
