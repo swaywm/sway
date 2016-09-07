@@ -17,7 +17,6 @@
 #include "sway/output.h"
 #include "sway/focus.h"
 #include "sway/input_state.h"
-#include "sway/resize.h"
 #include "sway/extensions.h"
 #include "sway/criteria.h"
 #include "sway/ipc-server.h"
