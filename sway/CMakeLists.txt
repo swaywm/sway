@@ -33,7 +33,6 @@ add_executable(sway
 	layout.c
 	main.c
 	output.c
-	resize.c
 	workspace.c
 	border.c
 )

@@ -23,7 +23,6 @@
 #include "sway/container.h"
 #include "sway/output.h"
 #include "sway/handlers.h"
-#include "sway/resize.h"
 #include "sway/input_state.h"
 #include "sway/criteria.h"
 #include "sway/ipc-server.h"
