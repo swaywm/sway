@@ -11,12 +11,13 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text
 		int32_t scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs = pango_attr_list_new();
-	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	if (markup) {
+		pango_parse_markup(text, -1, 0, &attrs, NULL, NULL, NULL);
 		pango_layout_set_markup(layout, text, -1);
 	} else {
 		pango_layout_set_text(layout, text, -1);
 	}
+	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	PangoFontDescription *desc = pango_font_description_from_string(font);
 	pango_layout_set_font_description(layout, desc);
 	pango_layout_set_single_paragraph_mode(layout, 1);
