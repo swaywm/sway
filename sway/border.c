@@ -108,6 +108,9 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	int x = b->origin.x - g->origin.x;
 	int y = b->origin.y - g->origin.y;
 
+	// draw vertical/horizontal indicator if container is the only child of its parent container
+	bool is_only_child = view->parent && view->parent->children && view->parent->children->length == 1;
+
 	// left border
 	int left_border = v->origin.x - b->origin.x;
 	if (left_border > 0) {
@@ -121,7 +124,7 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	// right border
 	int right_border = b->size.w - v->size.w - left_border;
 	if (right_border > 0) {
-		if (layout == L_HORIZ) {
+		if (is_only_child &&  layout == L_HORIZ) {
 			color = colors->indicator;
 		} else {
 			color = colors->child_border;
@@ -147,7 +150,7 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	// bottom border
 	int bottom_border = b->size.h - (top_border + v->size.h);
 	if (bottom_border > 0) {
-		if (layout == L_VERT) {
+		if (is_only_child && layout == L_VERT) {
 			color = colors->indicator;
 		} else {
 			color = colors->child_border;
