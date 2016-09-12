@@ -7,10 +7,10 @@
 #include "log.h"
 
 void ipc_send_workspace_command(const char *workspace_name) {
-	uint32_t size = strlen("workspace ") + strlen(workspace_name) + 1;
+	uint32_t size = strlen("workspace \"\"") + strlen(workspace_name) + 1;
 
 	char command[size];
-	sprintf(command, "workspace %s", workspace_name);
+	sprintf(command, "workspace \"%s\"", workspace_name);
 
 	ipc_single_command(swaybar.ipc_socketfd, IPC_COMMAND, command, &size);
 }
