@@ -936,9 +936,6 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 			execvp(cmd[0], cmd);
 		}
 	}
-
-	// reload swaybars
-	load_swaybars();
 }
 
 char *do_var_replacement(char *str) {

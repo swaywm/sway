@@ -278,7 +278,7 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 		} else {
 			int j = 0;
 			for (j = 0; j < bar->config->outputs->length; ++j) {
-				const char *conf_name = bar->config->outputs->items[i];
+				const char *conf_name = bar->config->outputs->items[j];
 				if (strcasecmp(name, conf_name) == 0) {
 					use_output = true;
 					break;
