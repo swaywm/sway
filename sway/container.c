@@ -156,6 +156,7 @@ swayc_t *new_output(wlc_handle handle) {
 
 	apply_output_config(oc, output);
 	add_child(&root_container, output);
+	load_swaybars();
 
 	// Create workspace
 	char *ws_name = NULL;
