@@ -354,6 +354,12 @@ The default colors are:
 	Specifies that the workspace named _name_ should appear on the specified
 	_output_.
 
+**workspace_auto_back_and_forth** <yes|no>::
+	When _yes_, repeating a workspace switch command will switch back to the
+	prior workspace. For example, if you are currently on workspace 1,
+	switch to workspace 2, then invoke the "workspace 2" command again, you
+	will be returned to workspace 1. Defaults to _no_.
+
 **workspace_layout** <default|stacking|tabbed>::
 	Specifies the start layout for new workspaces.
 
