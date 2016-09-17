@@ -15,6 +15,7 @@
 #include "log.h"
 
 swayc_t root_container;
+swayc_t *current_focus;
 list_t *scratchpad;
 
 int min_sane_h = 60;
@@ -27,6 +28,7 @@ void init_layout(void) {
 	root_container.children = create_list();
 	root_container.handle = -1;
 	root_container.visible = true;
+	current_focus = &root_container;
 	scratchpad = create_list();
 }
 

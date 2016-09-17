@@ -120,6 +120,10 @@ bool set_focused_container(swayc_t *c) {
 		// dispatch a window event
 		ipc_event_window(c, "focus");
 	}
+
+	// update the global pointer
+	current_focus = c;
+
 	// update container focus from here to root, making necessary changes along
 	// the way
 	swayc_t *p = c;
