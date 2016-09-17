@@ -8,6 +8,7 @@
 typedef struct sway_container swayc_t;
 
 extern swayc_t root_container;
+extern swayc_t *current_focus;
 
 /**
  * Different kinds of containers.
@@ -16,11 +17,11 @@ extern swayc_t root_container;
  * it on this list.
  */
 enum swayc_types {
-	C_ROOT,				/**< The root container. Only one of these ever exists. */
-	C_OUTPUT,			/**< An output (aka monitor, head, etc). */
-	C_WORKSPACE,		/**< A workspace. */
-	C_CONTAINER,		/**< A manually created container. */
-	C_VIEW,				/**< A view (aka window). */
+	C_ROOT,		/**< The root container. Only one of these ever exists. */
+	C_OUTPUT,	/**< An output (aka monitor, head, etc). */
+	C_WORKSPACE,	/**< A workspace. */
+	C_CONTAINER,	/**< A manually created container. */
+	C_VIEW,		/**< A view (aka window). */
 	// Keep last
 	C_TYPES,
 };
@@ -29,20 +30,20 @@ enum swayc_types {
  * Different ways to arrange a container.
  */
 enum swayc_layouts {
-	L_NONE, 			/**< Used for containers that have no layout (views, root) */
+	L_NONE,		/**< Used for containers that have no layout (views, root) */
 	L_HORIZ,
 	L_VERT,
 	L_STACKED,
 	L_TABBED,
-	L_FLOATING,			/**< A psuedo-container, removed from the tree, to hold floating windows */
+	L_FLOATING,	/**< A psuedo-container, removed from the tree, to hold floating windows */
 	// Keep last
 	L_LAYOUTS,
 };
 
 enum swayc_border_types {
-	B_NONE,             /**< No border */
-	B_PIXEL,            /**< 1px border */
-	B_NORMAL            /**< Normal border with title bar */
+	B_NONE,		/**< No border */
+	B_PIXEL,	/**< 1px border */
+	B_NORMAL	/**< Normal border with title bar */
 };
 
 /**
