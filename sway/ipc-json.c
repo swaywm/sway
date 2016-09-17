@@ -132,11 +132,9 @@ static void ipc_json_describe_output(swayc_t *output, json_object *object) {
 
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {
 	int num = (isdigit(workspace->name[0])) ? atoi(workspace->name) : -1;
-	bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
 	const char *layout = ipc_json_layout_description(workspace->layout);
 
 	json_object_object_add(object, "num", json_object_new_int(num));
-	json_object_object_add(object, "focused", json_object_new_boolean(focused));
 	json_object_object_add(object, "output", (workspace->parent) ? json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
@@ -171,7 +169,6 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object_object_add(object, "percent", (percent > 0) ? json_object_new_double(percent) : NULL);
 	// TODO: make urgency actually work once Sway supports it
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
-	json_object_object_add(object, "focused", json_object_new_boolean(c->is_focused));
 
 	json_object_object_add(object, "layout",
 		(strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
@@ -219,6 +216,7 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
 	json_object_object_add(object, "visible", json_object_new_boolean(c->visible));
+	json_object_object_add(object, "focused", json_object_new_boolean(c == current_focus));
 
 	switch (c->type) {
 	case C_ROOT:
