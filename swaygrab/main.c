@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
@@ -10,16 +11,17 @@
 #include "log.h"
 #include "ipc-client.h"
 #include "util.h"
+#include "swaygrab/json.h"
 
 void sway_terminate(int exit_code) {
 	exit(exit_code);
 }
 
-void grab_and_apply_magick(const char *file, const char *output,
+void grab_and_apply_magick(const char *file, const char *payload,
 		int socketfd, int raw) {
-	uint32_t len = strlen(output);
+	uint32_t len = strlen(payload);
 	char *pixels = ipc_single_command(socketfd,
-			IPC_SWAY_GET_PIXELS, output, &len);
+			IPC_SWAY_GET_PIXELS, payload, &len);
 	uint32_t *u32pixels = (uint32_t *)(pixels + 1);
 	uint32_t width = u32pixels[0];
 	uint32_t height = u32pixels[1];
@@ -27,7 +29,13 @@ void grab_and_apply_magick(const char *file, const char *output,
 	pixels += 9;
 
 	if (width == 0 || height == 0) {
-		sway_abort("Unknown output %s.", output);
+		// indicates geometry was clamped by WLC because it was outside of the output's area
+		json_object *obj = json_tokener_parse(payload);
+		json_object *output;
+		json_object_object_get_ex(obj, "output", &output);
+		const char *name = json_object_get_string(output);
+		json_object_put(obj);
+		sway_abort("Unknown output %s.", name);
 	}
 
 	if (raw) {
@@ -50,22 +58,28 @@ void grab_and_apply_magick(const char *file, const char *output,
 	free(cmd);
 }
 
-void grab_and_apply_movie_magic(const char *file, const char *output,
+void grab_and_apply_movie_magic(const char *file, const char *payload,
 		int socketfd, int raw, int framerate) {
 	if (raw) {
 		sway_log(L_ERROR, "Raw capture data is not yet supported. Proceeding with ffmpeg normally.");
 	}
 
-	uint32_t len = strlen(output);
+	uint32_t len = strlen(payload);
 	char *pixels = ipc_single_command(socketfd,
-			IPC_SWAY_GET_PIXELS, output, &len);
+			IPC_SWAY_GET_PIXELS, payload, &len);
 	uint32_t *u32pixels = (uint32_t *)(pixels + 1);
 	uint32_t width = u32pixels[0];
 	uint32_t height = u32pixels[1];
 	pixels += 9;
 
 	if (width == 0 || height == 0) {
-		sway_abort("Unknown output %s.", output);
+		// indicates geometry was clamped by WLC because it was outside of the output's area
+		json_object *obj = json_tokener_parse(payload);
+		json_object *output;
+		json_object_object_get_ex(obj, "output", &output);
+		const char *name = json_object_get_string(output);
+		json_object_put(obj);
+		sway_abort("Unknown output %s.", name);
 	}
 
 	const char *fmt = "ffmpeg -f rawvideo -framerate %d "
@@ -86,9 +100,9 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 	int sleep = 0;
 	while (sleep != -1) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
-		len = strlen(output);
+		len = strlen(payload);
 		pixels = ipc_single_command(socketfd,
-				IPC_SWAY_GET_PIXELS, output, &len);
+				IPC_SWAY_GET_PIXELS, payload, &len);
 		pixels += 9;
 		len -= 9;
 
@@ -112,30 +126,6 @@ void grab_and_apply_movie_magic(const char *file, const char *output,
 	free(cmd);
 }
 
-char *get_focused_output(int socketfd) {
-	uint32_t len = 0;
-	char *res = ipc_single_command(socketfd, IPC_GET_WORKSPACES, NULL, &len);
-	json_object *workspaces = json_tokener_parse(res);
-
-	int length = json_object_array_length(workspaces);
-	json_object *workspace, *focused, *json_output;
-	char *output = NULL;
-	int i;
-	for (i = 0; i < length; ++i) {
-		workspace = json_object_array_get_idx(workspaces, i);
-		json_object_object_get_ex(workspace, "focused", &focused);
-		if (json_object_get_boolean(focused) == TRUE) {
-			json_object_object_get_ex(workspace, "output", &json_output);
-			output = strdup(json_object_get_string(json_output));
-			break;
-		}
-	}
-
-	json_object_put(workspaces);
-	free(res);
-	return output;
-}
-
 char *default_filename(const char *extension) {
 	int ext_len = strlen(extension);
 	int len = 28 + ext_len; // format: "2015-12-17-180040_swaygrab.ext"
@@ -154,6 +144,7 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	char *output = NULL;
 	int framerate = 30;
+	bool grab_focused = false;
 
 	init_log(L_INFO);
 
@@ -165,6 +156,7 @@ int main(int argc, char **argv) {
 		{"socket", required_argument, NULL, 's'},
 		{"raw", no_argument, NULL, 'r'},
 		{"rate", required_argument, NULL, 'R'},
+		{"focused", no_argument, NULL, 'f'},
 		{0, 0, 0, 0}
 	};
 
@@ -177,16 +169,20 @@ int main(int argc, char **argv) {
 		"  -v, --version          Show the version number and quit.\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
 		"  -R, --rate <rate>      Specify framerate (default: 30)\n"
-		"  -r, --raw              Write raw rgba data to stdout.\n";
+		"  -r, --raw              Write raw rgba data to stdout.\n"
+		"  -f, --focused          Grab the focused container.\n";
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hco:vs:R:r", long_options, &option_index);
+		c = getopt_long(argc, argv, "hco:vs:R:rf", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
+		case 'f':
+			grab_focused = true;
+			break;
 		case 's': // Socket
 			socket_path = strdup(optarg);
 			break;
@@ -235,9 +231,31 @@ int main(int argc, char **argv) {
 	int socketfd = ipc_open_socket(socket_path);
 	free(socket_path);
 
-	if (!output) {
-		output = get_focused_output(socketfd);
+	init_json_tree(socketfd);
+
+	struct wlc_geometry *geo;
+
+	if (grab_focused) {
+		output = get_focused_output();
+		json_object *con = get_focused_container();
+		json_object *name;
+		json_object_object_get_ex(con, "name", &name);
+		geo = get_container_geometry(con);
+		free(con);
+	} else {
+		if (!output) {
+			output = get_focused_output();
+		}
+		geo = get_container_geometry(get_output_container(output));
+		// the geometry of the output in the get_tree response is relative to a global (0, 0).
+		// we need it to be relative to itself, so set origin to (0, 0) always.
+		geo->origin.x = 0;
+		geo->origin.y = 0;
 	}
+
+	const char *payload = create_payload(output, geo);
+
+	free(geo);
 
 	if (!file) {
 		if (!capture) {
@@ -248,11 +266,12 @@ int main(int argc, char **argv) {
 	}
 
 	if (!capture) {
-		grab_and_apply_magick(file, output, socketfd, raw);
+		grab_and_apply_magick(file, payload, socketfd, raw);
 	} else {
-		grab_and_apply_movie_magic(file, output, socketfd, raw, framerate);
+		grab_and_apply_movie_magic(file, payload, socketfd, raw, framerate);
 	}
 
+	free_json_tree();
 	free(output);
 	free(file);
 	close(socketfd);

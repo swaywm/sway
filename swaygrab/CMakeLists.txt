@@ -6,6 +6,7 @@ include_directories(
 
 add_executable(swaygrab
 	main.c
+	json.c
 )
 
 target_link_libraries(swaygrab
