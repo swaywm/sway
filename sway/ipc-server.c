@@ -512,7 +512,13 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
 	if (workspace->type == C_WORKSPACE) {
-		json_object_array_add((json_object *)data, ipc_json_describe_container(workspace));
+		json_object *workspace_json = ipc_json_describe_container(workspace);
+		// override the default focused indicator because
+		// it's set differently for the get_workspaces reply
+		bool focused = root_container.focused == workspace->parent && workspace->parent->focused == workspace;
+		json_object_object_del(workspace_json, "focused");
+		json_object_object_add(workspace_json, "focused", json_object_new_boolean(focused));
+		json_object_array_add((json_object *)data, workspace_json);
 	}
 }
 
