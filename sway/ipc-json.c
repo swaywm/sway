@@ -169,7 +169,6 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object_object_add(object, "percent", (percent > 0) ? json_object_new_double(percent) : NULL);
 	// TODO: make urgency actually work once Sway supports it
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
-
 	json_object_object_add(object, "layout",
 		(strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
 	json_object_object_add(object, "last_split_layout",

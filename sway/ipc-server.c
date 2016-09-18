@@ -43,6 +43,7 @@ static list_t *ipc_get_pixel_requests = NULL;
 struct get_pixels_request {
 	struct ipc_client *client;
 	wlc_handle output;
+	struct wlc_geometry geo;
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -259,16 +260,12 @@ void ipc_get_pixels(wlc_handle output) {
 			continue;
 		}
 
-		const struct wlc_size *size = wlc_output_get_resolution(req->output);
-		struct wlc_geometry g = {
-			.size = *size,
-			.origin = { 0, 0 },
-		};
+		const struct wlc_size *size = &req->geo.size;
 		struct wlc_geometry g_out;
 		char response_header[9];
 		memset(response_header, 0, sizeof(response_header));
 		char *data = malloc(sizeof(response_header) + size->w * size->h * 4);
-		wlc_pixels_read(WLC_RGBA8888, &g, &g_out, data + sizeof(response_header));
+		wlc_pixels_read(WLC_RGBA8888, &req->geo, &g_out, data + sizeof(response_header));
 
 		response_header[0] = 1;
 		uint32_t *_size = (uint32_t *)(response_header + 1);
@@ -425,7 +422,30 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		char response_header[9];
 		memset(response_header, 0, sizeof(response_header));
-		swayc_t *output = swayc_by_test(&root_container, output_by_name_test, buf);
+
+		json_object *obj = json_tokener_parse(buf);
+		json_object *o, *x, *y, *w, *h;
+
+		json_object_object_get_ex(obj, "output", &o);
+		json_object_object_get_ex(obj, "x", &x);
+		json_object_object_get_ex(obj, "y", &y);
+		json_object_object_get_ex(obj, "w", &w);
+		json_object_object_get_ex(obj, "h", &h);
+
+		struct wlc_geometry g = {
+			.origin = {
+				.x = json_object_get_int(x),
+				.y = json_object_get_int(y)
+			},
+			.size = {
+				.w = json_object_get_int(w),
+				.h = json_object_get_int(h)
+			}
+		};
+
+		swayc_t *output = swayc_by_test(&root_container, output_by_name_test, (void *)json_object_get_string(o));
+		json_object_put(obj);
+
 		if (!output) {
 			sway_log(L_ERROR, "IPC GET_PIXELS request with unknown output name");
 			ipc_send_reply(client, response_header, sizeof(response_header));
@@ -434,6 +454,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		struct get_pixels_request *req = malloc(sizeof(struct get_pixels_request));
 		req->client = client;
 		req->output = output->handle;
+		req->geo = g;
 		list_add(ipc_get_pixel_requests, req);
 		wlc_output_schedule_render(output->handle);
 		goto exit_cleanup;
