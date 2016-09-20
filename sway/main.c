@@ -156,10 +156,18 @@ int main(int argc, char **argv) {
 			exit(EXIT_FAILURE);
 		}
 		if (getuid() != geteuid() || getgid() != getegid()) {
-			if (setgid(getgid()) != 0 || setuid(getuid()) != 0) {
+			if (setgid(getgid()) != 0) {
 				sway_log(L_ERROR, "Unable to drop root");
 				exit(EXIT_FAILURE);
 			}
+			if (setuid(getuid()) != 0) {
+				sway_log(L_ERROR, "Unable to drop root");
+				exit(EXIT_FAILURE);
+			}
+		}
+		if (setuid(0) != -1) {
+			sway_log(L_ERROR, "Root privileges can be restored.");
+			exit(EXIT_FAILURE);
 		}
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
