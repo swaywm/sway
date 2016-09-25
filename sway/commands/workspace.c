@@ -5,21 +5,23 @@
 #include "sway/workspace.h"
 #include "list.h"
 #include "log.h"
+#include "stringop.h"
 
 struct cmd_results *cmd_workspace(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	if (argc == 1 || (argc == 2 && strcasecmp(argv[0], "number") == 0) ) {
+	if (argc == 1 || (argc >= 2 && strcasecmp(argv[0], "number") == 0) ) {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
 		}
-		// Handle workspace next/prev
 		swayc_t *ws = NULL;
-		if (argc == 2) {
+		if (argc >= 2) {
 			if (!(ws = workspace_by_number(argv[1]))) {
-				ws = workspace_create(argv[1]);
+				char *name = join_args(argv + 1, argc - 1);
+				ws = workspace_create(name);
+				free(name);
 			}
 		} else if (strcasecmp(argv[0], "next") == 0) {
 			ws = workspace_next();
