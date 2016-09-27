@@ -2,6 +2,7 @@
 #define _SWAY_CONTAINER_H
 #include <sys/types.h>
 #include <wlc/wlc.h>
+#include <stdint.h>
 
 #include "list.h"
 
@@ -57,6 +58,12 @@ struct sway_container {
 	 * handle. Otherwise, NULL.
 	 */
 	wlc_handle handle;
+
+	/**
+	 * A unique ID to identify this container. Primarily used in the
+	 * get_tree JSON output.
+	 */
+	size_t id;
 
 	enum swayc_types type;
 	enum swayc_layouts layout;

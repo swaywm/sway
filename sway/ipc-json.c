@@ -161,7 +161,6 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 		ipc_json_layout_description(c->parent->prev_layout) : "none";
 	wlc_handle parent = wlc_view_get_parent(c->handle);
 
-	json_object_object_add(object, "id", json_object_new_int(c->handle));
 	json_object_object_add(object, "type", json_object_new_string((c->is_floating) ? "floating_con" : "con"));
 
 	json_object_object_add(object, "scratchpad_state",
@@ -211,7 +210,7 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 
 	json_object *object = json_object_new_object();
 
-	json_object_object_add(object, "id", json_object_new_int((uintptr_t)&c));
+	json_object_object_add(object, "id", json_object_new_int((int)c->id));
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
 	json_object_object_add(object, "visible", json_object_new_boolean(c->visible));
