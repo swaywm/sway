@@ -93,7 +93,7 @@ static void render_block(struct window *window, struct config *config, struct st
 	// render background
 	if (block->background != 0x0) {
 		cairo_set_source_u32(window->cairo, block->background);
-		cairo_rectangle(window->cairo, pos - 0.5, 1, block_width, window->height - 2);
+		cairo_rectangle(window->cairo, pos - 0.5, 1, block_width, (window->height * window->scale) - 2);
 		cairo_fill(window->cairo);
 	}
 
@@ -110,7 +110,7 @@ static void render_block(struct window *window, struct config *config, struct st
 	if (block->border != 0 && block->border_bottom > 0) {
 		render_sharp_line(window->cairo, block->border,
 				pos - 0.5,
-				window->height - 1 - block->border_bottom,
+				(window->height * window->scale) - 1 - block->border_bottom,
 				block_width,
 				block->border_bottom);
 	}
@@ -121,7 +121,7 @@ static void render_block(struct window *window, struct config *config, struct st
 				pos - 0.5,
 				1,
 				block->border_left,
-				window->height - 2);
+				(window->height * window->scale) - 2);
 
 		pos += block->border_left + margin;
 	}
@@ -152,7 +152,7 @@ static void render_block(struct window *window, struct config *config, struct st
 				pos - 0.5,
 				1,
 				block->border_right,
-				window->height - 2);
+				(window->height * window->scale) - 2);
 
 		pos += block->border_right;
 	}
@@ -170,7 +170,7 @@ static void render_block(struct window *window, struct config *config, struct st
 			cairo_move_to(window->cairo, pos + block->separator_block_width/2,
 					margin);
 			cairo_line_to(window->cairo, pos + block->separator_block_width/2,
-					window->height - margin);
+					(window->height * window->scale) - margin);
 			cairo_stroke(window->cairo);
 		}
 	}
@@ -298,7 +298,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 		pango_printf(window->cairo, window->font, window->scale,
 				config->pango_markup, "%s", line->text_line);
 	} else if (line->protocol == I3BAR && line->block_line) {
-		double pos = window->width - 0.5;
+		double pos = (window->width * window->scale) - 0.5;
 		bool edge = true;
 		for (i = line->block_line->length - 1; i >= 0; --i) {
 			struct status_block *block = line->block_line->items[i];
