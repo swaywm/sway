@@ -213,6 +213,8 @@ int main(int argc, char **argv) {
 
 	init_layout();
 
+	ipc_init();
+
 	if (validate) {
 		bool valid = load_main_config(config_path, false);
 		return valid ? 0 : 1;
@@ -225,8 +227,6 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		free(config_path);
 	}
-
-	ipc_init();
 
 	if (!terminate_request) {
 		wlc_run();
