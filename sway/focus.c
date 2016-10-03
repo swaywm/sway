@@ -1,3 +1,4 @@
+#include "stdbool.h"
 #include <wlc/wlc.h>
 #include "sway/focus.h"
 #include "sway/workspace.h"
@@ -99,14 +100,24 @@ bool set_focused_container(swayc_t *c) {
 	if (locked_container_focus || !c || !c->parent) {
 		return false;
 	}
-	swayc_t *active_ws = swayc_active_workspace();
-	int active_ws_child_count = 0;
-	if (active_ws) {
-		active_ws_child_count = active_ws->children->length + active_ws->floating->length;
+
+	// current ("old") workspace for sending workspace change event later
+	swayc_t *old_ws = swayc_active_workspace();
+	// keep track of child count so we can determine if it gets destroyed
+	int old_ws_child_count = 0;
+	if (old_ws) {
+		old_ws_child_count = old_ws->children->length + old_ws->floating->length;
 	}
 
+	// current ("old") focused container
+	swayc_t *old_focus = get_focused_container(&root_container);
+	// if old_focus is a workspace, then it's the same workspace as
+	// old_ws, and we'll need to null its pointer too, since it will
+	// be destroyed in the update_focus() call
+	bool old_focus_was_ws = (old_focus->type == C_WORKSPACE);
+
+	// workspace of new focused container
 	swayc_t *workspace = swayc_active_workspace_for(c);
-	swayc_t *focused = get_focused_container(&root_container);
 
 	if (swayc_is_fullscreen(get_focused_container(workspace))) {
 		// if switching to a workspace with a fullscreen view,
@@ -136,11 +147,19 @@ bool set_focused_container(swayc_t *c) {
 		p->is_focused = false;
 	}
 
+	if (old_focus_was_ws && old_ws_child_count == 0) {
+		// this workspace was destroyed in update_focus(), so null the pointers
+		old_focus = NULL;
+		old_ws = NULL;
+	}
+
 	if (!(wlc_view_get_type(p->handle) & WLC_BIT_POPUP)) {
-		if (focused->type == C_VIEW) {
-			wlc_view_set_state(focused->handle, WLC_BIT_ACTIVATED, false);
+		if (old_focus) {
+			if (old_focus->type == C_VIEW) {
+				wlc_view_set_state(old_focus->handle, WLC_BIT_ACTIVATED, false);
+			}
+			update_container_border(old_focus);
 		}
-		update_container_border(focused);
 		if (c->type == C_VIEW) {
 			wlc_view_set_state(c->handle, WLC_BIT_ACTIVATED, true);
 		}
@@ -161,15 +180,11 @@ bool set_focused_container(swayc_t *c) {
 		}
 	}
 
-	if (active_ws != workspace) {
-		// active_ws might have been destroyed by now
-		// (focus swap away from empty ws = destroy ws)
-		if (active_ws_child_count == 0) {
-			active_ws = NULL;
-		}
-
-		ipc_event_workspace(active_ws, workspace, "focus");
+	if (old_ws != workspace) {
+		// old_ws might be NULL here but that's ok
+		ipc_event_workspace(old_ws, workspace, "focus");
 	}
+
 	return true;
 }
 
