@@ -17,10 +17,10 @@ the release. Only developers are encouraged to run this version.
 **Release candidate**: at some point (usually when development is fairly quiet),
 SirCmpwn will announce an upcoming release candidate, often 2 weeks in
 advance. When the two weeks are up, a branch is cut (i.e. 0.8-rc1) and from
-that point only bugfixes land in this branch. Each morning, if bugfixes landed
-during the previous day, a new RC is cut. During the RC phase, more adventurous
-users are encouraged to upgrade and start looking for and reporting bugs
-(especially in new features).
+that point only bugfixes land in this branch. Each week, if bugfixes landed
+during the week, a new RC is cut. During the RC phase, more adventurous users
+are encouraged to upgrade and start looking for and reporting bugs (especially
+in new features).
 
 **Stable release**: when no substantial changes are merged into an RC for one
 week, it's released as a new stable version of sway. At this point, all users
