@@ -627,6 +627,7 @@ void render(struct render_data *render_data) {
 			// Draw a message
 			char *text = NULL;
 			cairo_set_source_rgb(window->cairo, 0, 0, 0);
+			cairo_select_font_face(window->cairo, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 			cairo_set_font_size(window->cairo, ARC_RADIUS/3.0f);
 			switch (render_data->auth_state) {
 			case AUTH_STATE_VALIDATING:
