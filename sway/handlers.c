@@ -776,10 +776,13 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	return EVENT_PASSTHROUGH;
 }
 
-bool swayc_border_check(swayc_t *c, const void *_origin) {
+static bool swayc_border_check(swayc_t *c, const void *_origin) {
 	const struct wlc_point *origin = _origin;
-	if (origin->x >= c->title_bar_geometry.origin.x && origin->y >= c->title_bar_geometry.origin.y
-		&& origin->x < (c->title_bar_geometry.origin.x + (int)c->title_bar_geometry.size.w) && origin->y < (c->title_bar_geometry.origin.y + (int)c->title_bar_geometry.size.h)) {
+	const struct wlc_geometry title_bar = c->title_bar_geometry;
+
+	if (origin->x >= title_bar.origin.x && origin->y >= title_bar.origin.y
+		&& origin->x < title_bar.origin.x + (int32_t)title_bar.size.w
+		&& origin->y < title_bar.origin.y + (int32_t)title_bar.size.h) {
 		return true;
 	}
 	return false;
@@ -849,10 +852,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	swayc_t *pointer = pointer_state.view;
 	if (pointer) {
 		swayc_t *ws = swayc_parent_by_type(focused, C_WORKSPACE);
-		swayc_t *find = container_find(ws, &swayc_border_check, origin);
-		if (find != NULL) {
-			set_focused_container(find);
-			return EVENT_HANDLED;
+		if (ws != NULL) {
+				swayc_t *find = container_find(ws, &swayc_border_check, origin);
+				if (find != NULL) {
+					set_focused_container(find);
+					return EVENT_HANDLED;
+				}
 		}
 
 		if (focused != pointer) {
