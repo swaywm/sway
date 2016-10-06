@@ -243,6 +243,10 @@ swayc_t *swayc_active_workspace_for(swayc_t *view);
  * Finds the container currently underneath the pointer.
  */
 swayc_t *container_under_pointer(void);
+/**
+ * Finds the first container following a callback.
+ */
+swayc_t *container_find(swayc_t *container, bool (*f)(swayc_t *, const void *), const void *data);
 
 /**
  * Returns true if a container is fullscreen.

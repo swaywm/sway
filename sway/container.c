@@ -722,6 +722,25 @@ swayc_t *container_under_pointer(void) {
 	return lookup;
 }
 
+swayc_t *container_find(swayc_t *container, bool (*f)(swayc_t *, const void *), const void *data) {
+	if (container->children == NULL || container->children->length == 0) {
+		return NULL;
+	}
+
+	for (int i = 0; i < container->children->length; ++i) {
+		if (f(container->children->items[i], data)) {
+			return container->children->items[i];
+		}
+
+		swayc_t *find = container_find(container->children->items[i], f, data);
+		if (find != NULL) {
+			return find;
+		}
+	}
+
+	return NULL;
+}
+
 // Container information
 
 bool swayc_is_fullscreen(swayc_t *view) {
