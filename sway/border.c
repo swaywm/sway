@@ -180,7 +180,7 @@ static void render_title_bar(swayc_t *view, cairo_t *cr, struct wlc_geometry *b,
 	// text
 	if (view->name) {
 		int width, height;
-		get_text_size(cr, config->font, &width, &height, false, "%s", view->name);
+		get_text_size(cr, config->font, &width, &height, 1, false, "%s", view->name);
 		cairo_move_to(cr, x + 2, y + 2);
 		cairo_set_source_u32(cr, colors->text);
 		pango_printf(cr, config->font, 1, false, "%s", view->name);
