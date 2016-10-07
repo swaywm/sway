@@ -1123,6 +1123,9 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 					} else {
 						wrap_candidate = parent->children->items[0];
 					}
+					if (config->force_focus_wrapping) {
+						return wrap_candidate;
+					}
 				}
 			} else {
 				return parent->children->items[desired];
