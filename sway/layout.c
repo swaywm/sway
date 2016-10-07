@@ -1113,7 +1113,17 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 		if (can_move) {
 			int desired = index_child(container) + diff;
 			if (container->is_floating) {
-				can_move = false;
+				if (desired < 0) {
+					wrap_candidate = parent->floating->items[parent->floating->length-1];
+				} else if (desired >= parent->floating->length){
+					wrap_candidate = parent->floating->items[0];
+				} else {
+					wrap_candidate = parent->floating->items[desired];
+				}
+				if (wrap_candidate) {
+					wlc_view_bring_to_front(wrap_candidate->handle);
+				}
+				return wrap_candidate;
 			} else if (desired < 0 || desired >= parent->children->length) {
 				can_move = false;
 				int len = parent->children->length;
