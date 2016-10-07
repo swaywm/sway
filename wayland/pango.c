@@ -11,9 +11,10 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text
 		int32_t scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs = pango_attr_list_new();
+	char *buf = malloc(2048);
 	if (markup) {
-		pango_parse_markup(text, -1, 0, &attrs, NULL, NULL, NULL);
-		pango_layout_set_markup(layout, text, -1);
+		pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, NULL);
+		pango_layout_set_markup(layout, buf, -1);
 	} else {
 		pango_layout_set_text(layout, text, -1);
 	}
@@ -24,6 +25,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text
 	pango_layout_set_attributes(layout, attrs);
 	pango_attr_list_unref(attrs);
 	pango_font_description_free(desc);
+	free(buf);
 	return layout;
 }
 

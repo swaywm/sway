@@ -205,7 +205,7 @@ void workspace_button_size(struct window *window, const char *workspace_name, in
 	const char *stripped_name = strip_workspace_name(swaybar.config->strip_workspace_numbers, workspace_name);
 
 	get_text_size(window->cairo, window->font, width, height,
-			window->scale, false, "%s", stripped_name);
+			window->scale, true, "%s", stripped_name);
 	*width += 2 * ws_horizontal_padding;
 	*height += 2 * ws_vertical_padding;
 }
@@ -241,7 +241,7 @@ static void render_workspace_button(struct window *window, struct config *config
 	cairo_set_source_u32(window->cairo, box_colors.text);
 	cairo_move_to(window->cairo, (int)*x + ws_horizontal_padding, margin);
 	pango_printf(window->cairo, window->font, window->scale,
-			false, "%s", stripped_name);
+			true, "%s", stripped_name);
 
 	*x += width + ws_spacing;
 }
