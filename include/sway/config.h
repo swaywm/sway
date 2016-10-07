@@ -211,6 +211,7 @@ struct sway_config {
 	// Flags
 	bool focus_follows_mouse;
 	bool mouse_warping;
+	bool force_focus_wrapping;
 	bool active;
 	bool failed;
 	bool reloading;

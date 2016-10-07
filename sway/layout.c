@@ -1084,13 +1084,17 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 		return container->fullscreen;
 	}
 
+	swayc_t *wrap_candidate = NULL;
 	while (true) {
 		// Test if we can even make a difference here
 		bool can_move = false;
 		int diff = 0;
 		if (parent->type == C_ROOT) {
-			sway_log(L_DEBUG, "Moving between outputs");
 			swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
+			if (!output || output == container) {
+				return wrap_candidate;
+			}
+			sway_log(L_DEBUG, "Moving between outputs");
 			return get_swayc_in_output_direction(output, dir);
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
@@ -1108,8 +1112,31 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 
 		if (can_move) {
 			int desired = index_child(container) + diff;
-			if (container->is_floating || desired < 0 || desired >= parent->children->length) {
+			if (container->is_floating) {
+				if (desired < 0) {
+					wrap_candidate = parent->floating->items[parent->floating->length-1];
+				} else if (desired >= parent->floating->length){
+					wrap_candidate = parent->floating->items[0];
+				} else {
+					wrap_candidate = parent->floating->items[desired];
+				}
+				if (wrap_candidate) {
+					wlc_view_bring_to_front(wrap_candidate->handle);
+				}
+				return wrap_candidate;
+			} else if (desired < 0 || desired >= parent->children->length) {
 				can_move = false;
+				int len = parent->children->length;
+				if (!wrap_candidate && len > 1) {
+					if (desired < 0) {
+						wrap_candidate = parent->children->items[len-1];
+					} else {
+						wrap_candidate = parent->children->items[0];
+					}
+					if (config->force_focus_wrapping) {
+						return wrap_candidate;
+					}
+				}
 			} else {
 				return parent->children->items[desired];
 			}
@@ -1118,8 +1145,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			container = parent;
 			parent = parent->parent;
 			if (!parent || container == limit) {
-				// Nothing we can do
-				return NULL;
+				// wrapping is the last chance
+				return wrap_candidate;
 			}
 		}
 	}
