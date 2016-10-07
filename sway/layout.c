@@ -99,11 +99,20 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 
 swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
 	swayc_t *parent = fixed->parent;
-	int i = index_child(fixed);
 	if (fixed->is_floating) {
-		list_insert(parent->floating, i + 1, active);
+		if (active->is_floating) {
+			int i = index_child(fixed);
+			list_insert(parent->floating, i + 1, active);
+		} else {
+			list_add(parent->children, active);
+		}
 	} else {
-		list_insert(parent->children, i + 1, active);
+		if (active->is_floating) {
+			list_add(parent->floating, active);
+		} else {
+			int i = index_child(fixed);
+			list_insert(parent->children, i + 1, active);
+		}
 	}
 	active->parent = parent;
 	// focus new child
