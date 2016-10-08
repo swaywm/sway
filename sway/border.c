@@ -124,7 +124,7 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	// right border
 	int right_border = b->size.w - v->size.w - left_border;
 	if (right_border > 0) {
-		if (is_only_child &&  layout == L_HORIZ) {
+		if (is_only_child &&  layout == L_HORIZ && !view->is_floating) {
 			color = colors->indicator;
 		} else {
 			color = colors->child_border;
@@ -150,7 +150,7 @@ static void render_borders(swayc_t *view, cairo_t *cr, struct border_colors *col
 	// bottom border
 	int bottom_border = b->size.h - (top_border + v->size.h);
 	if (bottom_border > 0) {
-		if (is_only_child && layout == L_VERT) {
+		if (is_only_child && layout == L_VERT && !view->is_floating) {
 			color = colors->indicator;
 		} else {
 			color = colors->child_border;
