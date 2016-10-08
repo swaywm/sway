@@ -171,8 +171,8 @@ static struct cmd_handler handlers[] = {
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "font", cmd_font },
-	{ "force_focus_wrapping", cmd_force_focus_wrapping },
 	{ "for_window", cmd_for_window },
+	{ "force_focus_wrapping", cmd_force_focus_wrapping },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
 	{ "hide_edge_borders", cmd_hide_edge_borders },
@@ -222,8 +222,8 @@ static struct cmd_handler bar_handlers[] = {
 	{ "swaybar_command", bar_cmd_swaybar_command },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
-	{ "wrap_scroll", bar_cmd_wrap_scroll },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
+	{ "wrap_scroll", bar_cmd_wrap_scroll },
 };
 
 /**
