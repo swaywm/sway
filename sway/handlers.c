@@ -376,6 +376,7 @@ static bool handle_view_created(wlc_handle handle) {
 	if (newview) {
 		ipc_event_window(newview, "new");
 		set_focused_container(newview);
+		wlc_view_set_mask(handle, VISIBLE);
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
 		// check if it matches for_window in config and execute if so
@@ -401,8 +402,9 @@ static bool handle_view_created(wlc_handle handle) {
 		// if parent container is a workspace, newview its only child and
 		// layout is tabbed/stacked, add a container around newview
 		swayc_t *parent_container = newview->parent;
-		if (parent_container->type == C_WORKSPACE && parent_container->children->length == 1 &&
-				(parent_container->layout == L_TABBED || parent_container->layout == L_STACKED)) {
+		if (parent_container && parent_container->type == C_WORKSPACE &&
+			parent_container->children && parent_container->children->length == 1 &&
+			(parent_container->layout == L_TABBED || parent_container->layout == L_STACKED)) {
 			swayc_t *container = new_container(newview, parent_container->layout);
 			set_focused_container(newview);
 			arrange_windows(container, -1, -1);
@@ -413,8 +415,8 @@ static bool handle_view_created(wlc_handle handle) {
 		*h = handle;
 		sway_log(L_DEBUG, "Adding unmanaged window %p to %p", h, output->unmanaged);
 		list_add(output->unmanaged, h);
+		wlc_view_set_mask(handle, VISIBLE);
 	}
-	wlc_view_set_mask(handle, VISIBLE);
 
 	if (return_to_workspace && current_ws != swayc_active_workspace()) {
 		// we were on one workspace, switched to another to add this view,
