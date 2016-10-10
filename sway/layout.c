@@ -302,6 +302,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		}
 		// Change parent layout if we need to
 		if (parent->children->length == 1 && parent->layout != layout) {
+			/* swayc_change_layout(parent, layout); */
 			parent->layout = layout;
 			continue;
 		}
