@@ -334,6 +334,7 @@ static bool handle_view_created(wlc_handle handle) {
 		wlc_view_get_geometry(handle)->size.h, wlc_view_get_title(handle),
 		wlc_view_get_class(handle), wlc_view_get_app_id(handle));
 
+	bool encapsulate_view = false;
 	// TODO properly figure out how each window should be handled.
 	switch (wlc_view_get_type(handle)) {
 	// regular view created regularly
@@ -341,6 +342,12 @@ static bool handle_view_created(wlc_handle handle) {
 		if (parent) {
 			newview = new_floating_view(handle);
 		} else {
+			if (focused->type == C_WORKSPACE &&
+				/* focused->children->length == 0 && */
+				(focused->layout == L_TABBED || focused->layout == L_STACKED)) {
+				// will wrap the view in a container later on
+				encapsulate_view = true;
+			}
 			newview = new_view(focused, handle);
 			wlc_view_set_state(handle, WLC_BIT_MAXIMIZED, true);
 		}
@@ -374,6 +381,10 @@ static bool handle_view_created(wlc_handle handle) {
 	suspend_workspace_cleanup = true;
 
 	if (newview) {
+		// first view on tabbed/stacked workspace was created, wrap it in a container
+		if (encapsulate_view && newview->parent) {
+			new_container(newview, newview->parent->workspace_layout);
+		}
 		ipc_event_window(newview, "new");
 		set_focused_container(newview);
 		wlc_view_set_mask(handle, VISIBLE);
@@ -397,17 +408,6 @@ static bool handle_view_created(wlc_handle handle) {
 		swayc_t *workspace = swayc_parent_by_type(focused, C_WORKSPACE);
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
-		}
-
-		// if parent container is a workspace, newview its only child and
-		// layout is tabbed/stacked, add a container around newview
-		swayc_t *parent_container = newview->parent;
-		if (parent_container && parent_container->type == C_WORKSPACE &&
-			parent_container->children && parent_container->children->length == 1 &&
-			(parent_container->layout == L_TABBED || parent_container->layout == L_STACKED)) {
-			swayc_t *container = new_container(newview, parent_container->layout);
-			set_focused_container(newview);
-			arrange_windows(container, -1, -1);
 		}
 	} else {
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
