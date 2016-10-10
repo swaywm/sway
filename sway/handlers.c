@@ -344,7 +344,7 @@ static bool handle_view_created(wlc_handle handle) {
 		} else {
 			if (focused->type == C_WORKSPACE &&
 				/* focused->children->length == 0 && */
-				(focused->layout == L_TABBED || focused->layout == L_STACKED)) {
+				(focused->workspace_layout == L_TABBED || focused->workspace_layout == L_STACKED)) {
 				// will wrap the view in a container later on
 				encapsulate_view = true;
 			}

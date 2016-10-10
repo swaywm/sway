@@ -27,6 +27,7 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->handle = -1;
 	c->gaps = -1;
 	c->layout = L_NONE;
+	c->workspace_layout = L_NONE;
 	c->type = type;
 	if (type != C_VIEW) {
 		c->children = create_list();
@@ -209,7 +210,8 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
 	workspace->prev_layout = L_NONE;
-	workspace->layout = default_layout(output);
+	workspace->layout = L_HORIZ;
+	workspace->workspace_layout = default_layout(output);
 
 	workspace->x = output->x;
 	workspace->y = output->y;
@@ -262,7 +264,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		// add container to workspace chidren
 		add_child(workspace, cont);
 		// give them proper layouts
-		cont->layout = workspace->layout;
+		cont->layout = workspace->workspace_layout;
 		cont->prev_layout = workspace->prev_layout;
 		/* TODO: might break shit in move_container!!! workspace->layout = layout; */
 		set_focused_container_for(workspace, get_focused_view(workspace));
@@ -928,4 +930,13 @@ swayc_t *swayc_tabbed_stacked_parent(swayc_t *con) {
 		return con->parent;
 	}
 	return NULL;
+}
+
+swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
+	if (container->type == C_WORKSPACE) {
+		container->workspace_layout = layout;
+	} else {
+		container->layout = layout;
+	}
+	return container;
 }

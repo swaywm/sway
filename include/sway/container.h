@@ -68,6 +68,7 @@ struct sway_container {
 	enum swayc_types type;
 	enum swayc_layouts layout;
 	enum swayc_layouts prev_layout;
+	enum swayc_layouts workspace_layout;
 
 	/**
 	 * Width and height of this container, without borders or gaps.
@@ -320,5 +321,11 @@ void update_visibility(swayc_t *container);
  * Close all child views of container
  */
 void close_views(swayc_t *container);
+
+/**
+ * Assign layout to a container. Needed due to workspace container specifics.
+ * Workspace always needs L_HORIZ layout.
+ */
+swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout);
 
 #endif
