@@ -34,6 +34,9 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "workspace") == 0) {
 			// move container to workspace x
 			if (view->type == C_WORKSPACE) {
+				if (!view->children || view->children->length == 0) {
+					return cmd_results_new(CMD_FAILURE, "move", "Cannot move an empty workspace");
+				}
 				view = new_container(view, view->layout);
 			} if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
@@ -59,6 +62,9 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 			struct wlc_point abs_pos;
 			get_absolute_center_position(view, &abs_pos);
 			if (view->type == C_WORKSPACE) {
+				if (!view->children || view->children->length == 0) {
+					return cmd_results_new(CMD_FAILURE, "move", "Cannot move an empty workspace");
+				}
 				view = new_container(view, view->layout);
 			} else if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
