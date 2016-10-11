@@ -66,6 +66,11 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	if (!parent->focused) {
 		parent->focused = child;
 	}
+
+	// wrap view into a container
+	if (parent->type == C_WORKSPACE && child->type == C_VIEW) {
+		new_container(child, parent->workspace_layout);
+	}
 }
 
 void insert_child(swayc_t *parent, swayc_t *child, int index) {
@@ -79,6 +84,11 @@ void insert_child(swayc_t *parent, swayc_t *child, int index) {
 	child->parent = parent;
 	if (!parent->focused) {
 		parent->focused = child;
+	}
+
+	// wrap view into a container
+	if (parent->type == C_WORKSPACE && child->type == C_VIEW) {
+		new_container(child, parent->workspace_layout);
 	}
 }
 
