@@ -25,11 +25,11 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 	/* Case that focus is on an workspace with 0/1 children.change its layout */
 	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
 		sway_log(L_DEBUG, "changing workspace layout");
-		swayc_change_layout(focused, layout);
+		focused->layout = layout;
 	} else if (focused->type != C_WORKSPACE && focused->parent->children->length == 1) {
 		/* Case of no siblings. change parent layout */
 		sway_log(L_DEBUG, "changing container layout");
-		swayc_change_layout(focused->parent, layout);
+		focused->parent->layout = layout;
 	} else {
 		/* regular case where new split container is build around focused container
 		 * or in case of workspace, container inherits its children */

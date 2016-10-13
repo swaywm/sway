@@ -37,7 +37,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 				if (!view->children || view->children->length == 0) {
 					return cmd_results_new(CMD_FAILURE, "move", "Cannot move an empty workspace");
 				}
-				view = new_container(view, view->workspace_layout);
+				view = new_container(view, view->layout);
 			} if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
 			}
@@ -65,7 +65,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 				if (!view->children || view->children->length == 0) {
 					return cmd_results_new(CMD_FAILURE, "move", "Cannot move an empty workspace");
 				}
-				view = new_container(view, view->workspace_layout);
+				view = new_container(view, view->layout);
 			} else if (view->type != C_CONTAINER && view->type != C_VIEW) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
 			} else if (!(output = output_by_name(argv[3], &abs_pos))) {
