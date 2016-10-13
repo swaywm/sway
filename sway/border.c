@@ -46,6 +46,7 @@ static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry g, cairo
 		return NULL;
 	}
 	cr = cairo_create(*surface);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
 		cairo_surface_destroy(*surface);
 		border_clear(view->border);
