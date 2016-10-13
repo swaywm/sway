@@ -727,14 +727,29 @@ swayc_t *container_find(swayc_t *container, bool (*f)(swayc_t *, const void *), 
 		return NULL;
 	}
 
+	swayc_t *con;
+	if (container->type == C_WORKSPACE) {
+		for (int i = 0; i < container->floating->length; ++i) {
+			con = container->floating->items[i];
+			if (f(con, data)) {
+				return con;
+			}
+			con = container_find(con, f, data);
+			if (con != NULL) {
+				return con;
+			}
+		}
+	}
+
 	for (int i = 0; i < container->children->length; ++i) {
-		if (f(container->children->items[i], data)) {
-			return container->children->items[i];
+		con = container->children->items[i];
+		if (f(con, data)) {
+			return con;
 		}
 
-		swayc_t *find = container_find(container->children->items[i], f, data);
-		if (find != NULL) {
-			return find;
+		con = container_find(con, f, data);
+		if (con != NULL) {
+			return con;
 		}
 	}
 
