@@ -8,6 +8,8 @@ irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
+[More screenshots](https://github.com/SirCmpwn/sway/wiki/Screenshots-of-Sway)
+
 ## Release Signatures
 
 Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
