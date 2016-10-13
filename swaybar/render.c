@@ -282,6 +282,8 @@ void render(struct output *output, struct config *config, struct status_line *li
 	cairo_paint(cairo);
 	cairo_restore(cairo);
 
+	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
+
 	// Background
 	cairo_set_source_u32(cairo, config->colors.background);
 	cairo_paint(cairo);
