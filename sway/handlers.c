@@ -398,6 +398,17 @@ static bool handle_view_created(wlc_handle handle) {
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
 		}
+
+		// if parent container is a workspace, newview its only child and
+		// layout is tabbed/stacked, add a container around newview
+		swayc_t *parent_container = newview->parent;
+		if (parent_container && parent_container->type == C_WORKSPACE &&
+			parent_container->children && parent_container->children->length == 1 &&
+			(parent_container->layout == L_TABBED || parent_container->layout == L_STACKED)) {
+			swayc_t *container = new_container(newview, parent_container->layout);
+			set_focused_container(newview);
+			arrange_windows(container, -1, -1);
+		}
 	} else {
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
 		wlc_handle *h = malloc(sizeof(wlc_handle));
