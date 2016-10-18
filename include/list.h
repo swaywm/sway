@@ -1,6 +1,8 @@
 #ifndef _SWAY_LIST_H
 #define _SWAY_LIST_H
 
+#include <stddef.h>
+
 typedef struct {
 	int capacity;
 	int length;
@@ -22,4 +24,9 @@ void list_qsort(list_t *list, int compare(const void *left, const void *right));
 int list_seq_find(list_t *list, int compare(const void *item, const void *cmp_to), const void *cmp_to);
 // stable sort since qsort is not guaranteed to be stable
 void list_stable_sort(list_t *list, int compare(const void *a, const void *b));
+// binary search
+void *list_bsearch(list_t *list, int compare(const void *a, const void *data), const void *data);
+// Return index for an item that returns 0 for given compare
+// function or -1 if none matches.
+int list_binary_find(list_t *list, int compare(const void *item, const void *data), const void *data, size_t size);
 #endif
