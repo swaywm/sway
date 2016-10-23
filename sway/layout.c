@@ -66,6 +66,9 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	if (!parent->focused) {
 		parent->focused = child;
 	}
+	if (parent->type == C_WORKSPACE && child->type == C_VIEW && (parent->workspace_layout == L_TABBED || parent->workspace_layout == L_STACKED)) {
+		child = new_container(child, parent->workspace_layout);
+	}
 }
 
 void insert_child(swayc_t *parent, swayc_t *child, int index) {
@@ -80,6 +83,10 @@ void insert_child(swayc_t *parent, swayc_t *child, int index) {
 	if (!parent->focused) {
 		parent->focused = child;
 	}
+	if (parent->type == C_WORKSPACE && child->type == C_VIEW && (parent->workspace_layout == L_TABBED || parent->workspace_layout == L_STACKED)) {
+		child = new_container(child, parent->workspace_layout);
+	}
+
 }
 
 void add_floating(swayc_t *ws, swayc_t *child) {
@@ -255,6 +262,19 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 	swayc_t *parent = container->parent;
 	swayc_t *child = container;
 	bool ascended = false;
+
+	// View is wrapped in intermediate container which is needed for displaying
+	// the titlebar. Moving only the view outside of its parent container would just
+	// wrap it again under worspace. There would effectively be no movement,
+	// just a change of wrapping container.
+	if (child->type == C_VIEW &&
+		parent->type == C_CONTAINER &&
+		parent->children->length == 1 &&
+		parent->parent->type == C_WORKSPACE) {
+		child = parent;
+		parent = parent->parent;
+	}
+
 	while (true) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
@@ -348,6 +368,9 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 			}
 			// Create container around workspace to insert child into
 			parent = new_container(parent, layout);
+			// Previous line set the resulting container's layout to
+			// workspace_layout. It should have been just layout.
+			parent->layout = parent->parent->layout;
 		}
 		ascended = true;
 		child = parent;
