@@ -265,6 +265,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "drag_lock", input_cmd_drag_lock },
 	{ "dwt", input_cmd_dwt },
 	{ "events", input_cmd_events },
+	{ "left_handed", input_cmd_left_handed },
 	{ "middle_emulation", input_cmd_middle_emulation },
 	{ "natural_scroll", input_cmd_natural_scroll },
 	{ "pointer_accel", input_cmd_pointer_accel },

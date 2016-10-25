@@ -60,6 +60,7 @@ struct input_config {
 	int click_method;
 	int drag_lock;
 	int dwt;
+	int left_handed;
 	int middle_emulation;
 	int natural_scroll;
 	float pointer_accel;
