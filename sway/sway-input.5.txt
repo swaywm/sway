@@ -34,6 +34,9 @@ Commands
 	Enables or disables send_events for specified input device.
 	(Disabling  send_events disables the input device)
 
+**input** <identifier> left_handed <enabled|disabled>::
+	Enables or disables left handed mode for specified input device.
+
 **input** <identifier> middle_emulation <enabled|disabled>::
 	Enables or disables middle click emulation.
 

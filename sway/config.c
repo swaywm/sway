@@ -832,6 +832,10 @@ void apply_input_config(struct input_config *ic, struct libinput_device *dev) {
 		sway_log(L_DEBUG, "apply_input_config(%s) dwt_set_enabled(%d)", ic->identifier, ic->dwt);
 		libinput_device_config_dwt_set_enabled(dev, ic->dwt);
 	}
+	if (ic->left_handed != INT_MIN) {
+		sway_log(L_DEBUG, "apply_input_config(%s) left_handed_set_enabled(%d)", ic->identifier, ic->left_handed);
+		libinput_device_config_left_handed_set(dev, ic->left_handed);
+	}
 	if (ic->middle_emulation != INT_MIN) {
 		sway_log(L_DEBUG, "apply_input_config(%s) middle_emulation_set_enabled(%d)", ic->identifier, ic->middle_emulation);
 		libinput_device_config_middle_emulation_set_enabled(dev, ic->middle_emulation);

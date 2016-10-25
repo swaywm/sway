@@ -31,6 +31,8 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			res = input_cmd_dwt(argc_new, argv_new);
 		} else if (strcasecmp("events", argv[1]) == 0) {
 			res = input_cmd_events(argc_new, argv_new);
+		} else if (strcasecmp("left_handed", argv[1]) == 0) {
+			res = input_cmd_left_handed(argc_new, argv_new);
 		} else if (strcasecmp("middle_emulation", argv[1]) == 0) {
 			res = input_cmd_middle_emulation(argc_new, argv_new);
 		} else if (strcasecmp("natural_scroll", argv[1]) == 0) {
