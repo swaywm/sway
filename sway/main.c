@@ -75,6 +75,32 @@ void run_as_ipc_client(char *command, char *socket_path) {
 	close(socketfd);
 }
 
+static void log_env() {
+	const char *log_vars[] = {
+		"PATH",
+		"LD_LOAD_PATH",
+		"LD_PRELOAD_PATH",
+		"SWAY_CURSOR_THEME",
+		"SWAY_CURSOR_SIZE",
+		"SWAYSOCK",
+		"WLC_DRM_DEVICE",
+		"WLC_SHM",
+		"WLC_OUTPUTS",
+		"WLC_XWAYLAND",
+		"WLC_LIBINPUT",
+		"WLC_REPEAT_DELAY",
+		"WLC_REPEAT_RATE",
+		"XKB_DEFAULT_RULES",
+		"XKB_DEFAULT_MODEL",
+		"XKB_DEFAULT_LAYOUT",
+		"XKB_DEFAULT_VARIANT",
+		"XKB_DEFAULT_OPTIONS",
+	};
+	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
+		sway_log(L_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
+	}
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -210,6 +236,7 @@ int main(int argc, char **argv) {
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #endif
+	log_env();
 
 	init_layout();
 
