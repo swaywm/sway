@@ -80,6 +80,7 @@ static void log_env() {
 		"PATH",
 		"LD_LOAD_PATH",
 		"LD_PRELOAD_PATH",
+		"LD_LIBRARY_PATH",
 		"SWAY_CURSOR_THEME",
 		"SWAY_CURSOR_SIZE",
 		"SWAYSOCK",
