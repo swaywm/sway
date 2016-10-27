@@ -107,7 +107,6 @@ static void log_distro() {
 		"/etc/os-release",
 		"/etc/debian_version",
 		"/etc/redhat-release",
-		"/etc/redhat-release",
 		"/etc/gentoo-release",
 	};
 	for (size_t i = 0; i < sizeof(paths) / sizeof(char *); ++i) {
