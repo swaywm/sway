@@ -126,6 +126,22 @@ static void log_distro() {
 	}
 }
 
+static void log_kernel() {
+	FILE *f = popen("uname -a", "r");
+	if (!f) {
+		sway_log(L_INFO, "Unable to determine kernel version");
+		return;
+	}
+	while (!feof(f)) {
+		char *line = read_line(f);
+		if (*line) {
+			sway_log(L_INFO, "%s", line);
+		}
+		free(line);
+	}
+	fclose(f);
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -261,8 +277,9 @@ int main(int argc, char **argv) {
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #endif
-	log_env();
+	log_kernel();
 	log_distro();
+	log_env();
 
 	init_layout();
 
