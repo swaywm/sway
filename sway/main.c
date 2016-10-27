@@ -101,6 +101,31 @@ static void log_env() {
 	}
 }
 
+static void log_distro() {
+	const char *paths[] = {
+		"/etc/lsb-release",
+		"/etc/os-release",
+		"/etc/debian_version",
+		"/etc/redhat-release",
+		"/etc/redhat-release",
+		"/etc/gentoo-release",
+	};
+	for (size_t i = 0; i < sizeof(paths) / sizeof(char *); ++i) {
+		FILE *f = fopen(paths[i], "r");
+		if (f) {
+			sway_log(L_INFO, "Contents of %s:", paths[i]);
+			while (!feof(f)) {
+				char *line = read_line(f);
+				if (*line) {
+					sway_log(L_INFO, "%s", line);
+				}
+				free(line);
+			}
+			fclose(f);
+		}
+	}
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -237,6 +262,7 @@ int main(int argc, char **argv) {
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #endif
 	log_env();
+	log_distro();
 
 	init_layout();
 
