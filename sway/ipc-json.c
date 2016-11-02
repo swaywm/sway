@@ -312,19 +312,19 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(colors, "statusline", json_object_new_string(bar->colors.statusline));
 	json_object_object_add(colors, "separator", json_object_new_string(bar->colors.separator));
 
-	if (bar->colors.has_focused_background) {
+	if (bar->colors.focused_background) {
 		json_object_object_add(colors, "focused_background", json_object_new_string(bar->colors.focused_background));
 	} else {
 		json_object_object_add(colors, "focused_background", json_object_new_string(bar->colors.background));
 	}
 
-	if (bar->colors.has_focused_statusline) {
+	if (bar->colors.focused_statusline) {
 		json_object_object_add(colors, "focused_statusline", json_object_new_string(bar->colors.focused_statusline));
 	} else {
 		json_object_object_add(colors, "focused_statusline", json_object_new_string(bar->colors.statusline));
 	}
 
-	if (bar->colors.has_focused_separator) {
+	if (bar->colors.focused_separator) {
 		json_object_object_add(colors, "focused_separator", json_object_new_string(bar->colors.focused_separator));
 	} else {
 		json_object_object_add(colors, "focused_separator", json_object_new_string(bar->colors.separator));
@@ -346,19 +346,19 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(colors, "urgent_workspace_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
 	json_object_object_add(colors, "urgent_workspace_text", json_object_new_string(bar->colors.urgent_workspace_text));
 
-	if (bar->colors.has_binding_mode_border) {
+	if (bar->colors.binding_mode_border) {
 		json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.binding_mode_border));
 	} else {
 		json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.urgent_workspace_border));
 	}
 
-	if (bar->colors.has_binding_mode_bg) {
+	if (bar->colors.binding_mode_bg) {
 		json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.binding_mode_bg));
 	} else {
 		json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
 	}
 
-	if (bar->colors.has_binding_mode_text) {
+	if (bar->colors.binding_mode_text) {
 		json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.binding_mode_text));
 	} else {
 		json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.urgent_workspace_text));

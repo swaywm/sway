@@ -255,6 +255,7 @@ struct cmd_results *add_color(const char *name, char *buffer, const char *color)
 		buffer[7] = 'f';
 		buffer[8] = 'f';
 	}
+	buffer[9] = '\0';
 
 	return NULL;
 }

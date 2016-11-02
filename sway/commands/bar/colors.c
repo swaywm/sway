@@ -1,6 +1,44 @@
 #include <string.h>
 #include "sway/commands.h"
 
+static struct cmd_results *parse_single_color(char **color, const char *cmd_name, int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, cmd_name, EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if (!*color) {
+		*color = malloc(10);
+	}
+
+	error = add_color(cmd_name, *color, argv[0]);
+	if (error) {
+		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *parse_three_colors(char ***colors, const char *cmd_name, int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if (argc != 3) {
+		return cmd_results_new(CMD_INVALID, cmd_name, "Requires exactly three color values");
+	}
+
+	int i;
+	for (i = 0; i < 3; i++) {
+		if (!*colors[i]) {
+			*(colors[i]) = malloc(10);
+		}
+		error = add_color(cmd_name, *(colors[i]), argv[i]);
+		if (error) {
+			return error;
+		}
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *bar_cmd_colors(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "colors", EXPECTED_EQUAL_TO, 1))) {
@@ -16,196 +54,70 @@ struct cmd_results *bar_cmd_colors(int argc, char **argv) {
 }
 
 struct cmd_results *bar_colors_cmd_active_workspace(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "active_workspace", EXPECTED_EQUAL_TO, 3))) {
-		return error;
-	}
-
-	if ((error = add_color("active_workspace_border", config->current_bar->colors.active_workspace_border, argv[0]))) {
-		return error;
-	}
-
-	if ((error = add_color("active_workspace_bg", config->current_bar->colors.active_workspace_bg, argv[1]))) {
-		return error;
-	}
-
-	if ((error = add_color("active_workspace_text", config->current_bar->colors.active_workspace_text, argv[2]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	char **colors[3] = {
+		&(config->current_bar->colors.active_workspace_border),
+		&(config->current_bar->colors.active_workspace_bg),
+		&(config->current_bar->colors.active_workspace_text)
+	};
+	return parse_three_colors(colors, "active_workspace", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_background(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "background", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-
-	if ((error = add_color("background", config->current_bar->colors.background, argv[0]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return parse_single_color(&(config->current_bar->colors.background), "background", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_focused_background(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "focused_background", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-
-	if ((error = add_color("focused_background", config->current_bar->colors.focused_background, argv[0]))) {
-		return error;
-	}else {
-		config->current_bar->colors.has_focused_background = true;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return parse_single_color(&(config->current_bar->colors.focused_background), "focused_background", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_binding_mode(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "binding_mode", EXPECTED_EQUAL_TO, 3))) {
-		return error;
-	}
-
-	if ((error = add_color("binding_mode_border", config->current_bar->colors.binding_mode_border, argv[0]))) {
-		return error;
-	} else {
-		config->current_bar->colors.has_binding_mode_border = true;
-	}
-
-	if ((error = add_color("binding_mode_bg", config->current_bar->colors.binding_mode_bg, argv[1]))) {
-		return error;
-	} else {
-		config->current_bar->colors.has_binding_mode_bg = true;
-	}
-
-	if ((error = add_color("binding_mode_text", config->current_bar->colors.binding_mode_text, argv[2]))) {
-		return error;
-	} else {
-		config->current_bar->colors.has_binding_mode_text = true;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	char **colors[3] = {
+		&(config->current_bar->colors.binding_mode_border),
+		&(config->current_bar->colors.binding_mode_bg),
+		&(config->current_bar->colors.binding_mode_text)
+	};
+	return parse_three_colors(colors, "binding_mode", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_focused_workspace(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "focused_workspace", EXPECTED_EQUAL_TO, 3))) {
-		return error;
-	}
-
-	if ((error = add_color("focused_workspace_border", config->current_bar->colors.focused_workspace_border, argv[0]))) {
-		return error;
-	}
-
-	if ((error = add_color("focused_workspace_bg", config->current_bar->colors.focused_workspace_bg, argv[1]))) {
-		return error;
-	}
-
-	if ((error = add_color("focused_workspace_text", config->current_bar->colors.focused_workspace_text, argv[2]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	char **colors[3] = {
+		&(config->current_bar->colors.focused_workspace_border),
+		&(config->current_bar->colors.focused_workspace_bg),
+		&(config->current_bar->colors.focused_workspace_text)
+	};
+	return parse_three_colors(colors, "focused_workspace", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_inactive_workspace(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "inactive_workspace", EXPECTED_EQUAL_TO, 3))) {
-		return error;
-	}
-
-	if ((error = add_color("inactive_workspace_border", config->current_bar->colors.inactive_workspace_border, argv[0]))) {
-		return error;
-	}
-
-	if ((error = add_color("inactive_workspace_bg", config->current_bar->colors.inactive_workspace_bg, argv[1]))) {
-		return error;
-	}
-
-	if ((error = add_color("inactive_workspace_text", config->current_bar->colors.inactive_workspace_text, argv[2]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	char **colors[3] = {
+		&(config->current_bar->colors.inactive_workspace_border),
+		&(config->current_bar->colors.inactive_workspace_bg),
+		&(config->current_bar->colors.inactive_workspace_text)
+	};
+	return parse_three_colors(colors, "inactive_workspace", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_separator(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "separator", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-
-	if ((error = add_color("separator", config->current_bar->colors.separator, argv[0]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return parse_single_color(&(config->current_bar->colors.separator), "separator", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_focused_separator(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "focused_separator", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-
-	if ((error = add_color("focused_separator", config->current_bar->colors.focused_separator, argv[0]))) {
-		return error;
-	} else {
-		config->current_bar->colors.has_focused_separator = true;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return parse_single_color(&(config->current_bar->colors.focused_separator), "focused_separator", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_statusline(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "statusline", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-
-	if ((error = add_color("statusline", config->current_bar->colors.statusline, argv[0]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return parse_single_color(&(config->current_bar->colors.statusline), "statusline", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_focused_statusline(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "focused_statusline", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-
-	if ((error = add_color("focused_statusline", config->current_bar->colors.focused_statusline, argv[0]))) {
-		return error;
-	} else {
-		config->current_bar->colors.has_focused_statusline = true;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return parse_single_color(&(config->current_bar->colors.focused_separator), "focused_separator", argc, argv);
 }
 
 struct cmd_results *bar_colors_cmd_urgent_workspace(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "urgent_workspace", EXPECTED_EQUAL_TO, 3))) {
-		return error;
-	}
-
-	if ((error = add_color("urgent_workspace_border", config->current_bar->colors.urgent_workspace_border, argv[0]))) {
-		return error;
-	}
-
-	if ((error = add_color("urgent_workspace_bg", config->current_bar->colors.urgent_workspace_bg, argv[1]))) {
-		return error;
-	}
-
-	if ((error = add_color("urgent_workspace_text", config->current_bar->colors.urgent_workspace_text, argv[2]))) {
-		return error;
-	}
-
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	char **colors[3] = {
+		&(config->current_bar->colors.urgent_workspace_border),
+		&(config->current_bar->colors.urgent_workspace_bg),
+		&(config->current_bar->colors.urgent_workspace_text)
+	};
+	return parse_three_colors(colors, "urgent_workspace", argc, argv);
 }
