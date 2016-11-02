@@ -40,6 +40,10 @@ struct config {
 		uint32_t statusline;
 		uint32_t separator;
 
+		uint32_t focused_background;
+		uint32_t focused_statusline;
+		uint32_t focused_separator;
+
 		struct box_colors focused_workspace;
 		struct box_colors active_workspace;
 		struct box_colors inactive_workspace;

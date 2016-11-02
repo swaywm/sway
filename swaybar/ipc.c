@@ -108,6 +108,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 	if (colors) {
 		json_object *background, *statusline, *separator;
+		json_object *focused_background, *focused_statusline, *focused_separator;
 		json_object *focused_workspace_border, *focused_workspace_bg, *focused_workspace_text;
 		json_object *inactive_workspace_border, *inactive_workspace_bg, *inactive_workspace_text;
 		json_object *active_workspace_border, *active_workspace_bg, *active_workspace_text;
@@ -116,6 +117,9 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 		json_object_object_get_ex(colors, "background", &background);
 		json_object_object_get_ex(colors, "statusline", &statusline);
 		json_object_object_get_ex(colors, "separator", &separator);
+		json_object_object_get_ex(colors, "focused_background", &focused_background);
+		json_object_object_get_ex(colors, "focused_statusline", &focused_statusline);
+		json_object_object_get_ex(colors, "focused_separator", &focused_separator);
 		json_object_object_get_ex(colors, "focused_workspace_border", &focused_workspace_border);
 		json_object_object_get_ex(colors, "focused_workspace_bg", &focused_workspace_bg);
 		json_object_object_get_ex(colors, "focused_workspace_text", &focused_workspace_text);
@@ -141,6 +145,18 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 		if (separator) {
 			config->colors.separator = parse_color(json_object_get_string(separator));
+		}
+
+		if (focused_background) {
+			config->colors.focused_background = parse_color(json_object_get_string(focused_background));
+		}
+
+		if (focused_statusline) {
+			config->colors.focused_statusline = parse_color(json_object_get_string(focused_statusline));
+		}
+
+		if (focused_separator) {
+			config->colors.focused_separator = parse_color(json_object_get_string(focused_separator));
 		}
 
 		if (focused_workspace_border) {
@@ -235,6 +251,13 @@ static void ipc_update_workspaces(struct bar *bar) {
 				ws->name = strdup(json_object_get_string(name));
 				ws->visible = json_object_get_boolean(visible);
 				ws->focused = json_object_get_boolean(focused);
+				if (ws->focused) {
+					if (bar->focused_output) {
+						bar->focused_output->focused = false;
+					}
+					bar->focused_output = output;
+					output->focused = true;
+				}
 				ws->urgent = json_object_get_boolean(urgent);
 				list_add(output->workspaces, ws);
 			}

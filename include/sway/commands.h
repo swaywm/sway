@@ -160,12 +160,14 @@ sway_cmd bar_cmd_workspace_buttons;
 
 sway_cmd bar_colors_cmd_active_workspace;
 sway_cmd bar_colors_cmd_background;
-sway_cmd bar_colors_cmd_background;
+sway_cmd bar_colors_cmd_focused_background;
 sway_cmd bar_colors_cmd_binding_mode;
 sway_cmd bar_colors_cmd_focused_workspace;
 sway_cmd bar_colors_cmd_inactive_workspace;
 sway_cmd bar_colors_cmd_separator;
+sway_cmd bar_colors_cmd_focused_separator;
 sway_cmd bar_colors_cmd_statusline;
+sway_cmd bar_colors_cmd_focused_statusline;
 sway_cmd bar_colors_cmd_urgent_workspace;
 
 sway_cmd input_cmd_accel_profile;

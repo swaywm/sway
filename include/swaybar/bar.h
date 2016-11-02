@@ -9,6 +9,7 @@ struct bar {
 	struct config *config;
 	struct status_line *status;
 	list_t *outputs;
+	struct output *focused_output;
 
 	int ipc_event_socketfd;
 	int ipc_socketfd;
@@ -22,6 +23,7 @@ struct output {
 	list_t *workspaces;
 	char *name;
 	int idx;
+	bool focused;
 };
 
 struct workspace {

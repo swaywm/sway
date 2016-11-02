@@ -148,6 +148,9 @@ struct bar_config {
 		char background[10];
 		char statusline[10];
 		char separator[10];
+		char focused_background[10];
+		char focused_statusline[10];
+		char focused_separator[10];
 		char focused_workspace_border[10];
 		char focused_workspace_bg[10];
 		char focused_workspace_text[10];
@@ -163,6 +166,10 @@ struct bar_config {
 		char binding_mode_border[10];
 		char binding_mode_bg[10];
 		char binding_mode_text[10];
+
+		bool has_focused_background;
+		bool has_focused_statusline;
+		bool has_focused_separator;
 
 		bool has_binding_mode_border;
 		bool has_binding_mode_bg;

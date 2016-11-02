@@ -49,6 +49,21 @@ struct cmd_results *bar_colors_cmd_background(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+struct cmd_results *bar_colors_cmd_focused_background(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "focused_background", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if ((error = add_color("focused_background", config->current_bar->colors.focused_background, argv[0]))) {
+		return error;
+	}else {
+		config->current_bar->colors.has_focused_background = true;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *bar_colors_cmd_binding_mode(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "binding_mode", EXPECTED_EQUAL_TO, 3))) {
@@ -131,6 +146,21 @@ struct cmd_results *bar_colors_cmd_separator(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+struct cmd_results *bar_colors_cmd_focused_separator(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "focused_separator", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if ((error = add_color("focused_separator", config->current_bar->colors.focused_separator, argv[0]))) {
+		return error;
+	} else {
+		config->current_bar->colors.has_focused_separator = true;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *bar_colors_cmd_statusline(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "statusline", EXPECTED_EQUAL_TO, 1))) {
@@ -139,6 +169,21 @@ struct cmd_results *bar_colors_cmd_statusline(int argc, char **argv) {
 
 	if ((error = add_color("statusline", config->current_bar->colors.statusline, argv[0]))) {
 		return error;
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+struct cmd_results *bar_colors_cmd_focused_statusline(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "focused_statusline", EXPECTED_EQUAL_TO, 1))) {
+		return error;
+	}
+
+	if ((error = add_color("focused_statusline", config->current_bar->colors.focused_statusline, argv[0]))) {
+		return error;
+	} else {
+		config->current_bar->colors.has_focused_statusline = true;
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

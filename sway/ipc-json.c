@@ -312,6 +312,24 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(colors, "statusline", json_object_new_string(bar->colors.statusline));
 	json_object_object_add(colors, "separator", json_object_new_string(bar->colors.separator));
 
+	if (bar->colors.has_focused_background) {
+		json_object_object_add(colors, "focused_background", json_object_new_string(bar->colors.focused_background));
+	} else {
+		json_object_object_add(colors, "focused_background", json_object_new_string(bar->colors.background));
+	}
+
+	if (bar->colors.has_focused_statusline) {
+		json_object_object_add(colors, "focused_statusline", json_object_new_string(bar->colors.focused_statusline));
+	} else {
+		json_object_object_add(colors, "focused_statusline", json_object_new_string(bar->colors.statusline));
+	}
+
+	if (bar->colors.has_focused_separator) {
+		json_object_object_add(colors, "focused_separator", json_object_new_string(bar->colors.focused_separator));
+	} else {
+		json_object_object_add(colors, "focused_separator", json_object_new_string(bar->colors.separator));
+	}
+
 	json_object_object_add(colors, "focused_workspace_border", json_object_new_string(bar->colors.focused_workspace_border));
 	json_object_object_add(colors, "focused_workspace_bg", json_object_new_string(bar->colors.focused_workspace_bg));
 	json_object_object_add(colors, "focused_workspace_text", json_object_new_string(bar->colors.focused_workspace_text));
