@@ -57,14 +57,20 @@ struct cmd_results *bar_colors_cmd_binding_mode(int argc, char **argv) {
 
 	if ((error = add_color("binding_mode_border", config->current_bar->colors.binding_mode_border, argv[0]))) {
 		return error;
+	} else {
+		config->current_bar->colors.has_binding_mode_border = true;
 	}
 
 	if ((error = add_color("binding_mode_bg", config->current_bar->colors.binding_mode_bg, argv[1]))) {
 		return error;
+	} else {
+		config->current_bar->colors.has_binding_mode_bg = true;
 	}
 
 	if ((error = add_color("binding_mode_text", config->current_bar->colors.binding_mode_text, argv[2]))) {
 		return error;
+	} else {
+		config->current_bar->colors.has_binding_mode_text = true;
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

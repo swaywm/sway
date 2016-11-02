@@ -328,9 +328,23 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	json_object_object_add(colors, "urgent_workspace_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
 	json_object_object_add(colors, "urgent_workspace_text", json_object_new_string(bar->colors.urgent_workspace_text));
 
-	json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.binding_mode_border));
-	json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.binding_mode_bg));
-	json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.binding_mode_text));
+	if (bar->colors.has_binding_mode_border) {
+		json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.binding_mode_border));
+	} else {
+		json_object_object_add(colors, "binding_mode_border", json_object_new_string(bar->colors.urgent_workspace_border));
+	}
+
+	if (bar->colors.has_binding_mode_bg) {
+		json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.binding_mode_bg));
+	} else {
+		json_object_object_add(colors, "binding_mode_bg", json_object_new_string(bar->colors.urgent_workspace_bg));
+	}
+
+	if (bar->colors.has_binding_mode_text) {
+		json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.binding_mode_text));
+	} else {
+		json_object_object_add(colors, "binding_mode_text", json_object_new_string(bar->colors.urgent_workspace_text));
+	}
 
 	json_object_object_add(json, "colors", colors);
 

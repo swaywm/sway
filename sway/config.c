@@ -1147,9 +1147,9 @@ struct bar_config *default_bar_config(void) {
 	strcpy(bar->colors.urgent_workspace_border, "#2f343aff");
 	strcpy(bar->colors.urgent_workspace_bg,"#900000ff");
 	strcpy(bar->colors.urgent_workspace_text, "#ffffffff");
-	strcpy(bar->colors.binding_mode_border, "#2f343aff");
-	strcpy(bar->colors.binding_mode_bg,"#900000ff");
-	strcpy(bar->colors.binding_mode_text, "#ffffffff");
+	bar->colors.has_binding_mode_border = false;
+	bar->colors.has_binding_mode_bg = false;
+	bar->colors.has_binding_mode_text = false;
 
 	list_add(config->bars, bar);
 

@@ -163,6 +163,10 @@ struct bar_config {
 		char binding_mode_border[10];
 		char binding_mode_bg[10];
 		char binding_mode_text[10];
+
+		bool has_binding_mode_border;
+		bool has_binding_mode_bg;
+		bool has_binding_mode_text;
 	} colors;
 };
 
