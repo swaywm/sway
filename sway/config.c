@@ -1131,12 +1131,6 @@ struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
 	return new_sb;
 }
 
-static void set_bar_color(char **name, char *value) {
-	// every color has 9 characters plus \0
-	*name = malloc(10);
-	strcpy(*name, value);
-}
-
 struct bar_config *default_bar_config(void) {
 	struct bar_config *bar = NULL;
 	bar = malloc(sizeof(struct bar_config));
@@ -1160,22 +1154,23 @@ struct bar_config *default_bar_config(void) {
 	bar->verbose = false;
 	bar->pid = 0;
 	// set default colors
-	set_bar_color(&(bar->colors.background), "#000000ff");
-	set_bar_color(&(bar->colors.statusline), "#ffffffff");
-	set_bar_color(&(bar->colors.separator), "#666666ff");
-	set_bar_color(&(bar->colors.focused_workspace_border), "#4c7899ff");
-	set_bar_color(&(bar->colors.focused_workspace_bg), "#285577ff");
-	set_bar_color(&(bar->colors.focused_workspace_text), "#ffffffff");
-	set_bar_color(&(bar->colors.active_workspace_border), "#333333ff");
-	set_bar_color(&(bar->colors.active_workspace_bg), "#5f676aff");
-	set_bar_color(&(bar->colors.active_workspace_text), "#ffffffff");
-	set_bar_color(&(bar->colors.inactive_workspace_border), "#333333ff");
-	set_bar_color(&(bar->colors.inactive_workspace_bg),"#222222ff");
-	set_bar_color(&(bar->colors.inactive_workspace_text), "#888888ff");
-	set_bar_color(&(bar->colors.urgent_workspace_border), "#2f343aff");
-	set_bar_color(&(bar->colors.urgent_workspace_bg),"#900000ff");
-	set_bar_color(&(bar->colors.urgent_workspace_text), "#ffffffff");
-
+	bar->colors.background = strndup("#000000ff", 9);
+	bar->colors.statusline = strndup("#ffffffff", 9);
+	bar->colors.separator = strndup("#666666ff", 9);
+	bar->colors.focused_workspace_border = strndup("#4c7899ff", 9);
+	bar->colors.focused_workspace_bg = strndup("#285577ff", 9);
+	bar->colors.focused_workspace_text = strndup("#ffffffff", 9);
+	bar->colors.active_workspace_border = strndup("#333333ff", 9);
+	bar->colors.active_workspace_bg = strndup("#5f676aff", 9);
+	bar->colors.active_workspace_text = strndup("#ffffffff", 9);
+	bar->colors.inactive_workspace_border = strndup("#333333ff", 9);
+	bar->colors.inactive_workspace_bg = strndup("#222222ff", 9);
+	bar->colors.inactive_workspace_text = strndup("#888888ff", 9);
+	bar->colors.urgent_workspace_border = strndup("#2f343aff", 9);
+	bar->colors.urgent_workspace_bg = strndup("#900000ff", 9);
+	bar->colors.urgent_workspace_text = strndup("#ffffffff", 9);
+	// if the following colors stay undefined, they fall back to background,
+	// statusline, separator and urgent_workspace_*.
 	bar->colors.focused_background = NULL;
 	bar->colors.focused_statusline = NULL;
 	bar->colors.focused_separator = NULL;
