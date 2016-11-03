@@ -70,6 +70,28 @@ static void free_bar(struct bar_config *bar) {
 		terminate_swaybar(bar->pid);
 	}
 
+	free(bar->colors.background);
+	free(bar->colors.statusline);
+	free(bar->colors.separator);
+	free(bar->colors.focused_background);
+	free(bar->colors.focused_statusline);
+	free(bar->colors.focused_separator);
+	free(bar->colors.focused_workspace_border);
+	free(bar->colors.focused_workspace_bg);
+	free(bar->colors.focused_workspace_text);
+	free(bar->colors.active_workspace_border);
+	free(bar->colors.active_workspace_bg);
+	free(bar->colors.active_workspace_text);
+	free(bar->colors.inactive_workspace_border);
+	free(bar->colors.inactive_workspace_bg);
+	free(bar->colors.inactive_workspace_text);
+	free(bar->colors.urgent_workspace_border);
+	free(bar->colors.urgent_workspace_bg);
+	free(bar->colors.urgent_workspace_text);
+	free(bar->colors.binding_mode_border);
+	free(bar->colors.binding_mode_bg);
+	free(bar->colors.binding_mode_text);
+
 	free(bar);
 }
 
@@ -1132,24 +1154,29 @@ struct bar_config *default_bar_config(void) {
 	bar->verbose = false;
 	bar->pid = 0;
 	// set default colors
-	strcpy(bar->colors.background, "#000000ff");
-	strcpy(bar->colors.statusline, "#ffffffff");
-	strcpy(bar->colors.separator, "#666666ff");
-	strcpy(bar->colors.focused_workspace_border, "#4c7899ff");
-	strcpy(bar->colors.focused_workspace_bg, "#285577ff");
-	strcpy(bar->colors.focused_workspace_text, "#ffffffff");
-	strcpy(bar->colors.active_workspace_border, "#333333ff");
-	strcpy(bar->colors.active_workspace_bg, "#5f676aff");
-	strcpy(bar->colors.active_workspace_text, "#ffffffff");
-	strcpy(bar->colors.inactive_workspace_border, "#333333ff");
-	strcpy(bar->colors.inactive_workspace_bg,"#222222ff");
-	strcpy(bar->colors.inactive_workspace_text, "#888888ff");
-	strcpy(bar->colors.urgent_workspace_border, "#2f343aff");
-	strcpy(bar->colors.urgent_workspace_bg,"#900000ff");
-	strcpy(bar->colors.urgent_workspace_text, "#ffffffff");
-	strcpy(bar->colors.binding_mode_border, "#2f343aff");
-	strcpy(bar->colors.binding_mode_bg,"#900000ff");
-	strcpy(bar->colors.binding_mode_text, "#ffffffff");
+	bar->colors.background = strndup("#000000ff", 9);
+	bar->colors.statusline = strndup("#ffffffff", 9);
+	bar->colors.separator = strndup("#666666ff", 9);
+	bar->colors.focused_workspace_border = strndup("#4c7899ff", 9);
+	bar->colors.focused_workspace_bg = strndup("#285577ff", 9);
+	bar->colors.focused_workspace_text = strndup("#ffffffff", 9);
+	bar->colors.active_workspace_border = strndup("#333333ff", 9);
+	bar->colors.active_workspace_bg = strndup("#5f676aff", 9);
+	bar->colors.active_workspace_text = strndup("#ffffffff", 9);
+	bar->colors.inactive_workspace_border = strndup("#333333ff", 9);
+	bar->colors.inactive_workspace_bg = strndup("#222222ff", 9);
+	bar->colors.inactive_workspace_text = strndup("#888888ff", 9);
+	bar->colors.urgent_workspace_border = strndup("#2f343aff", 9);
+	bar->colors.urgent_workspace_bg = strndup("#900000ff", 9);
+	bar->colors.urgent_workspace_text = strndup("#ffffffff", 9);
+	// if the following colors stay undefined, they fall back to background,
+	// statusline, separator and urgent_workspace_*.
+	bar->colors.focused_background = NULL;
+	bar->colors.focused_statusline = NULL;
+	bar->colors.focused_separator = NULL;
+	bar->colors.binding_mode_border = NULL;
+	bar->colors.binding_mode_bg = NULL;
+	bar->colors.binding_mode_text = NULL;
 
 	list_add(config->bars, bar);
 

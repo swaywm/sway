@@ -255,6 +255,7 @@ struct cmd_results *add_color(const char *name, char *buffer, const char *color)
 		buffer[7] = 'f';
 		buffer[8] = 'f';
 	}
+	buffer[9] = '\0';
 
 	return NULL;
 }
@@ -277,6 +278,9 @@ static struct cmd_handler bar_colors_handlers[] = {
 	{ "active_workspace", bar_colors_cmd_active_workspace },
 	{ "background", bar_colors_cmd_background },
 	{ "binding_mode", bar_colors_cmd_binding_mode },
+	{ "focused_background", bar_colors_cmd_focused_background },
+	{ "focused_separator", bar_colors_cmd_focused_separator },
+	{ "focused_statusline", bar_colors_cmd_focused_statusline },
 	{ "focused_workspace", bar_colors_cmd_focused_workspace },
 	{ "inactive_workspace", bar_colors_cmd_inactive_workspace },
 	{ "separator", bar_colors_cmd_separator },

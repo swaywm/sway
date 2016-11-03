@@ -49,7 +49,7 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color, double x, double y
 	}
 }
 
-static void render_block(struct window *window, struct config *config, struct status_block *block, double *x, bool edge) {
+static void render_block(struct window *window, struct config *config, struct status_block *block, double *x, bool edge, bool is_focused) {
 	int width, height, sep_width;
 	get_text_size(window->cairo, window->font, &width, &height,
 			window->scale, block->markup, "%s", block->full_text);
@@ -159,7 +159,11 @@ static void render_block(struct window *window, struct config *config, struct st
 
 	// render separator
 	if (!edge && block->separator) {
-		cairo_set_source_u32(window->cairo, config->colors.separator);
+		if (is_focused) {
+			cairo_set_source_u32(window->cairo, config->colors.focused_separator);
+		} else {
+			cairo_set_source_u32(window->cairo, config->colors.separator);
+		}
 		if (config->sep_symbol) {
 			offset = pos + (block->separator_block_width - sep_width) / 2;
 			cairo_move_to(window->cairo, offset, margin);
@@ -275,6 +279,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 
 	struct window *window = output->window;
 	cairo_t *cairo = window->cairo;
+	bool is_focused = output->focused;
 
 	// Clear
 	cairo_save(cairo);
@@ -285,11 +290,20 @@ void render(struct output *output, struct config *config, struct status_line *li
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 
 	// Background
-	cairo_set_source_u32(cairo, config->colors.background);
+	if (is_focused) {
+		cairo_set_source_u32(cairo, config->colors.focused_background);
+	} else {
+		cairo_set_source_u32(cairo, config->colors.background);
+	}
 	cairo_paint(cairo);
 
 	// Command output
-	cairo_set_source_u32(cairo, config->colors.statusline);
+	if (is_focused) {
+		cairo_set_source_u32(cairo, config->colors.focused_statusline);
+	} else {
+		cairo_set_source_u32(cairo, config->colors.statusline);
+	}
+
 	int width, height;
 
 	if (line->protocol == TEXT) {
@@ -305,7 +319,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 		for (i = line->block_line->length - 1; i >= 0; --i) {
 			struct status_block *block = line->block_line->items[i];
 			if (block->full_text && block->full_text[0]) {
-				render_block(window, config, block, &pos, edge);
+				render_block(window, config, block, &pos, edge, is_focused);
 				edge = false;
 			}
 		}
