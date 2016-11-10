@@ -1,7 +1,7 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-"**S**irCmpwn's **Way**land window manager" is a **work in progress**
-i3-compatible window manager for [Wayland](http://wayland.freedesktop.org/).
+"**S**irCmpwn's **Way**land compositor" is a **work in progress**
+i3-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
 Read the [FAQ](https://github.com/SirCmpwn/sway/wiki). Join the
 [IRC channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
@@ -25,9 +25,6 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 ## Installation
 
 ### From Packages
-
-Sway is not supported by many distributions yet. Here's a list of packages
-available for you to install:
 
 * [Arch Linux](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#arch)
 * [Fedora](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#fedora)
