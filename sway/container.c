@@ -950,6 +950,9 @@ swayc_t *swayc_tabbed_stacked_parent(swayc_t *con) {
 swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
 	if (container->type == C_WORKSPACE) {
 		container->workspace_layout = layout;
+    if (layout == L_HORIZ || layout == L_VERT) {
+      container->layout = layout;
+    }
 	} else {
 		container->layout = layout;
 	}

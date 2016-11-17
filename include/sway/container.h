@@ -324,7 +324,7 @@ void close_views(swayc_t *container);
 
 /**
  * Assign layout to a container. Needed due to workspace container specifics.
- * Workspace always needs L_HORIZ layout.
+ * Workspace should always have either L_VERT or L_HORIZ layout.
  */
 swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout);
 
