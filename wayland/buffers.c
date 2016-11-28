@@ -94,6 +94,9 @@ static void destroy_buffer(struct buffer *buffer) {
 	if (buffer->surface) {
 		cairo_surface_destroy(buffer->surface);
 	}
+	if (buffer->pango) {
+		g_object_unref(buffer->pango);
+	}
 	memset(buffer, 0, sizeof(struct buffer));
 }
 

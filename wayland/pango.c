@@ -10,12 +10,14 @@
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text,
 		int32_t scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
-	PangoAttrList *attrs = pango_attr_list_new();
-	char *buf = malloc(2048);
+	PangoAttrList *attrs;
 	if (markup) {
+		char *buf;
 		pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, NULL);
 		pango_layout_set_markup(layout, buf, -1);
+		free(buf);
 	} else {
+		attrs = pango_attr_list_new();
 		pango_layout_set_text(layout, text, -1);
 	}
 	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
@@ -25,7 +27,6 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text
 	pango_layout_set_attributes(layout, attrs);
 	pango_attr_list_unref(attrs);
 	pango_font_description_free(desc);
-	free(buf);
 	return layout;
 }
 
