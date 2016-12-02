@@ -62,13 +62,13 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 		char *name;
 		enum ipc_command_type type;
 	} types[] = {
-		{ "command", IPC_COMMAND },
-		{ "workspaces", IPC_GET_WORKSPACES },
-		{ "outputs", IPC_GET_OUTPUTS },
-		{ "tree", IPC_GET_TREE },
-		{ "marks", IPC_GET_MARKS },
-		{ "bar-config", IPC_GET_BAR_CONFIG },
-		{ "inputs", IPC_GET_INPUTS },
+		{ "command", IPC_FEATURE_COMMAND },
+		{ "workspaces", IPC_FEATURE_GET_WORKSPACES },
+		{ "outputs", IPC_FEATURE_GET_OUTPUTS },
+		{ "tree", IPC_FEATURE_GET_TREE },
+		{ "marks", IPC_FEATURE_GET_MARKS },
+		{ "bar-config", IPC_FEATURE_GET_BAR_CONFIG },
+		{ "inputs", IPC_FEATURE_GET_INPUTS },
 	};
 
 	uint32_t type = 0;
@@ -111,12 +111,12 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 		char *name;
 		enum ipc_command_type type;
 	} types[] = {
-		{ "workspace", event_mask(IPC_EVENT_WORKSPACE) },
-		{ "output", event_mask(IPC_EVENT_OUTPUT) },
-		{ "mode", event_mask(IPC_EVENT_MODE) },
-		{ "window", event_mask(IPC_EVENT_WINDOW) },
-		{ "binding", event_mask(IPC_EVENT_BINDING) },
-		{ "input", event_mask(IPC_EVENT_INPUT) },
+		{ "workspace", IPC_FEATURE_EVENT_WORKSPACE },
+		{ "output", IPC_FEATURE_EVENT_OUTPUT },
+		{ "mode", IPC_FEATURE_EVENT_MODE },
+		{ "window", IPC_FEATURE_EVENT_WINDOW },
+		{ "binding", IPC_FEATURE_EVENT_BINDING },
+		{ "input", IPC_FEATURE_EVENT_INPUT },
 	};
 
 	uint32_t type = 0;
