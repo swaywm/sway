@@ -64,3 +64,20 @@ enum command_context get_command_policy(const char *cmd) {
 
 	return default_policy;
 }
+
+const char *command_policy_str(enum command_context context) {
+	switch (context) {
+		case CONTEXT_ALL:
+			return "all";
+		case CONTEXT_CONFIG:
+			return "config";
+		case CONTEXT_BINDING:
+			return "binding";
+		case CONTEXT_IPC:
+			return "IPC";
+		case CONTEXT_CRITERIA:
+			return "criteria";
+		default:
+			return "unknown";
+	}
+}

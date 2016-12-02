@@ -312,7 +312,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
-		struct cmd_results *results = handle_command(buf);
+		struct cmd_results *results = handle_command(buf, CONTEXT_IPC);
 		const char *json = cmd_results_to_json(results);
 		char reply[256];
 		int length = snprintf(reply, sizeof(reply), "%s", json);

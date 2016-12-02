@@ -386,7 +386,7 @@ static bool handle_view_created(wlc_handle handle) {
 			struct criteria *crit = criteria->items[i];
 			sway_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
 					crit->crit_raw, newview, crit->cmdlist);
-			struct cmd_results *res = handle_command(crit->cmdlist);
+			struct cmd_results *res = handle_command(crit->cmdlist, CONTEXT_CRITERIA);
 			if (res->status != CMD_SUCCESS) {
 				sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
 			}
@@ -585,7 +585,7 @@ static void handle_binding_command(struct sway_binding *binding) {
 		reload = true;
 	}
 
-	struct cmd_results *res = handle_command(binding->command);
+	struct cmd_results *res = handle_command(binding->command, CONTEXT_BINDING);
 	if (res->status != CMD_SUCCESS) {
 		sway_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
 	}
@@ -936,18 +936,18 @@ bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modi
 		int y_amount = (int)_amount[1];
 
 		if (x_amount > 0 && strcmp(config->floating_scroll_up_cmd, "")) {
-			handle_command(config->floating_scroll_up_cmd);
+			handle_command(config->floating_scroll_up_cmd, CONTEXT_BINDING);
 			return EVENT_HANDLED;
 		} else if (x_amount < 0 && strcmp(config->floating_scroll_down_cmd, "")) {
-			handle_command(config->floating_scroll_down_cmd);
+			handle_command(config->floating_scroll_down_cmd, CONTEXT_BINDING);
 			return EVENT_HANDLED;
 		}
 
 		if (y_amount > 0 && strcmp(config->floating_scroll_right_cmd, "")) {
-			handle_command(config->floating_scroll_right_cmd);
+			handle_command(config->floating_scroll_right_cmd, CONTEXT_BINDING);
 			return EVENT_HANDLED;
 		} else if (y_amount < 0 && strcmp(config->floating_scroll_left_cmd, "")) {
-			handle_command(config->floating_scroll_left_cmd);
+			handle_command(config->floating_scroll_left_cmd, CONTEXT_BINDING);
 			return EVENT_HANDLED;
 		}
 	}
@@ -960,7 +960,7 @@ static void handle_wlc_ready(void) {
 	config->active = true;
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
-		struct cmd_results *res = handle_command(line);
+		struct cmd_results *res = handle_command(line, CONTEXT_CONFIG);
 		if (res->status != CMD_SUCCESS) {
 			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
 		}

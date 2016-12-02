@@ -54,7 +54,7 @@ int sp_index;
 /**
  * Parse and handles a command.
  */
-struct cmd_results *handle_command(char *command);
+struct cmd_results *handle_command(char *command, enum command_context context);
 /**
  * Parse and handles a command during config file loading.
  *

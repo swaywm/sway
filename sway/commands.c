@@ -323,7 +323,7 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	return res;
 }
 
-struct cmd_results *handle_command(char *_exec) {
+struct cmd_results *handle_command(char *_exec, enum command_context context) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
 	// error string we could e.g. concatonate all errors there.)
@@ -394,6 +394,16 @@ struct cmd_results *handle_command(char *_exec) {
 					free_cmd_results(results);
 				}
 				results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
+				free_argv(argc, argv);
+				goto cleanup;
+			}
+			if (!(get_command_policy(argv[0]) & context)) {
+				if (results) {
+					free_cmd_results(results);
+				}
+				results = cmd_results_new(CMD_INVALID, cmd,
+						"Permission denied for %s via %s", cmd,
+						command_policy_str(context));
 				free_argv(argc, argv);
 				goto cleanup;
 			}
