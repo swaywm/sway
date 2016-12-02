@@ -55,6 +55,7 @@ target_link_libraries(sway
 	${PANGO_LIBRARIES}
 	${JSONC_LIBRARIES}
 	m
+    cap
 )
 
 install(

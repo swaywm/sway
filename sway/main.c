@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/capability.h>
 #include "sway/extensions.h"
 #include "sway/layout.h"
 #include "sway/config.h"
@@ -150,6 +151,15 @@ static void security_sanity_check() {
 	if (stat("/proc", &s)) {
 		sway_log(L_ERROR,
 			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
+	}
+	cap_flag_value_t v;
+	cap_t cap = cap_get_proc();
+	if (!cap || cap_get_flag(cap, CAP_SYS_PTRACE, CAP_PERMITTED, &v) != 0 || v != CAP_SET) {
+		sway_log(L_ERROR,
+			"!! DANGER !! Sway does not have CAP_SYS_PTRACE and cannot enforce security rules for processes running as other users.");
+	}
+	if (cap) {
+		cap_free(cap);
 	}
 	if (!stat(SYSCONFDIR "/sway", &s)) {
 		if (s.st_uid != 0 || s.st_gid != 0
