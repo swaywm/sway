@@ -62,6 +62,9 @@ compromised by LD_PRELOAD. It probably isn't, but you can be sure by setting
 permit LD_PRELOAD for it (and will also run it as root, which sway will shortly
 drop). You could also statically link sway itself.
 
+Note that LD_LIBRARY_PATH has all of the same problems, and all of the same
+solutions.
+
 Read your log
 -------------
 
