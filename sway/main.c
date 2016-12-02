@@ -12,6 +12,7 @@
 #include "sway/extensions.h"
 #include "sway/layout.h"
 #include "sway/config.h"
+#include "sway/security.h"
 #include "sway/handlers.h"
 #include "sway/input.h"
 #include "sway/ipc-server.h"
@@ -151,17 +152,44 @@ static void security_sanity_check() {
 			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
 	}
 	if (!stat(SYSCONFDIR "/sway", &s)) {
-		if (s.st_uid != 0 || s.st_gid != 0 || s.st_mode != 00755) {
+		if (s.st_uid != 0 || s.st_gid != 0
+				|| (s.st_mode & S_IWGRP) || (s.st_mode & S_IWOTH)) {
 			sway_log(L_ERROR,
-				"!! DANGER !! " SYSCONFDIR "/sway is not secure! It should be owned by root and set to 0755");
+				"!! DANGER !! " SYSCONFDIR "/sway is not secure! It should be owned by root and set to 0755 at the minimum");
 		}
 	}
-	// TODO: check that these command policies are set
-    // reload bindsym
-    // restart bindsym
-    // permit config
-    // reject config
-    // ipc config
+	struct {
+		char *command;
+		enum command_context context;
+		bool checked;
+	} expected[] = {
+		{ "reload", CONTEXT_BINDING, false },
+		{ "restart", CONTEXT_BINDING, false },
+		{ "permit", CONTEXT_CONFIG, false },
+		{ "reject", CONTEXT_CONFIG, false },
+		{ "ipc", CONTEXT_CONFIG, false },
+	};
+	int expected_len = 5;
+	for (int i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *policy = config->command_policies->items[i];
+		for (int j = 0; j < expected_len; ++j) {
+			if (strcmp(expected[j].command, policy->command) == 0) {
+				expected[j].checked = true;
+				if (expected[j].context != policy->context) {
+					sway_log(L_ERROR,
+						"!! DANGER !! Command security policy for %s should be set to %s",
+						expected[j].command, command_policy_str(expected[j].context));
+				}
+			}
+		}
+	}
+	for (int j = 0; j < expected_len; ++j) {
+		if (!expected[j].checked) {
+			sway_log(L_ERROR,
+				"!! DANGER !! Command security policy for %s should be set to %s",
+				expected[j].command, command_policy_str(expected[j].context));
+		}
+	}
 }
 
 int main(int argc, char **argv) {
@@ -278,7 +306,6 @@ int main(int argc, char **argv) {
 	}
 	wlc_log_set_handler(wlc_log_handler);
 	detect_proprietary();
-	security_sanity_check();
 
 	input_devices = create_list();
 
@@ -320,6 +347,8 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		free(config_path);
 	}
+
+	security_sanity_check();
 
 	if (!terminate_request) {
 		wlc_run();
