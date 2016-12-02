@@ -21,6 +21,7 @@
 #include "sway/criteria.h"
 #include "sway/ipc-server.h"
 #include "sway/input.h"
+#include "sway/security.h"
 #include "list.h"
 #include "stringop.h"
 #include "log.h"
@@ -516,8 +517,13 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 
 static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit state, bool toggle) {
 	swayc_t *c = swayc_by_handle(view);
+	pid_t pid = wlc_view_get_pid(view);
 	switch (state) {
 	case WLC_BIT_FULLSCREEN:
+		if (!(get_feature_policy(pid) & FEATURE_FULLSCREEN)) {
+			sway_log(L_INFO, "Denying fullscreen to %d (%s)", pid, c->name);
+			break;
+		}
 		// i3 just lets it become fullscreen
 		wlc_view_set_state(view, state, toggle);
 		if (c) {
