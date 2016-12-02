@@ -730,7 +730,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	if (focused->type == C_VIEW) {
 		pid_t pid = wlc_view_get_pid(focused->handle);
 		if (!(get_feature_policy(pid) & FEATURE_KEYBOARD)) {
-			sway_log(L_INFO, "Denying keypress to %d (%s)", pid, focused->name);
 			return EVENT_HANDLED;
 		}
 	}
@@ -790,6 +789,15 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	}
 
 	pointer_position_set(&new_origin, false);
+
+	swayc_t *focused = get_focused_container(&root_container);
+	if (focused->type == C_VIEW) {
+		pid_t pid = wlc_view_get_pid(focused->handle);
+		if (!(get_feature_policy(pid) & FEATURE_MOUSE)) {
+			return EVENT_HANDLED;
+		}
+	}
+
 	return EVENT_PASSTHROUGH;
 }
 
@@ -857,6 +865,12 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	// don't change focus or mode if fullscreen
 	if (swayc_is_fullscreen(focused)) {
+		if (focused->type == C_VIEW) {
+			pid_t pid = wlc_view_get_pid(focused->handle);
+			if (!(get_feature_policy(pid) & FEATURE_MOUSE)) {
+				return EVENT_HANDLED;
+			}
+		}
 		return EVENT_PASSTHROUGH;
 	}
 
@@ -897,6 +911,13 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	// Return if mode has been set
 	if (pointer_state.mode) {
 		return EVENT_HANDLED;
+	}
+
+	if (focused->type == C_VIEW) {
+		pid_t pid = wlc_view_get_pid(focused->handle);
+		if (!(get_feature_policy(pid) & FEATURE_MOUSE)) {
+			return EVENT_HANDLED;
+		}
 	}
 
 	// Always send mouse release
