@@ -35,6 +35,7 @@ add_executable(sway
 	output.c
 	workspace.c
 	border.c
+    security.c
 )
 
 add_definitions(

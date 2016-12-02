@@ -206,7 +206,6 @@ enum secure_feature {
 
 struct feature_policy {
 	char *program;
-	bool permit;
 	enum secure_feature features;
 };
 
