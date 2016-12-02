@@ -6,10 +6,10 @@
 # installation.
 
 # Configures which programs are allowed to use which sway features
-permit __PREFIX__/swaylock lock
-permit __PREFIX__/swaybar panel
-permit __PREFIX__/swaybg background
-permit __PREFIX__/swaygrab screenshot
+permit __PREFIX__/bin/swaylock lock
+permit __PREFIX__/bin/swaybar panel
+permit __PREFIX__/bin/swaybg background
+permit __PREFIX__/bin/swaygrab screenshot
 
 permit * fullscreen keyboard mouse
 

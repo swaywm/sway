@@ -195,4 +195,4 @@ bar {
     }
 }
 
-include __SYSCONFDIR__/etc/sway/config.d/*
+include __SYSCONFDIR__/sway/config.d/*
