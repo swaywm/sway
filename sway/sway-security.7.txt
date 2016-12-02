@@ -39,12 +39,9 @@ you choose to place it in other locations.
 Environment security
 --------------------
 
-LD_PRELOAD is a mechanism designed by GNU for the purpose of ruining the security
-of your system. One of the many ways LD_PRELOAD kills security is by making
-Wayland keyloggers possible.
-
-There are a number of strategies for dealing with this but they all suck a little.
-In order of most practical to least practical:
+LD_PRELOAD is a mechanism designed to ruin the security of your system. There are
+a number of strategies for dealing with this but they all suck a little. In order
+of most practical to least practical:
 
 1. Only run important programs via exec. Sway's exec command will ensure that
 	LD_PRELOAD is unset when running programs.
@@ -54,7 +51,7 @@ In order of most practical to least practical:
 	but this is the most effective solution.
 
 3. Use static linking for important programs. Of course statically linked programs
-	are unaffected by the security dumpster fire that is dynamic linking.
+	are unaffected by the dynamic linking security dumpster fire.
 
 Note that should you choose method 1, you MUST ensure that sway itself isn't
 compromised by LD_PRELOAD. It probably isn't, but you can be sure by setting
