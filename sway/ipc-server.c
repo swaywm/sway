@@ -343,10 +343,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
 			} else if (strcmp(event_type, "modifier") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
-#if SWAY_BINDING_EVENT
 			} else if (strcmp(event_type, "binding") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
-#endif
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				json_object_put(request);
@@ -639,7 +637,6 @@ void ipc_event_modifier(uint32_t modifier, const char *state) {
 	json_object_put(obj); // free
 }
 
-#if SWAY_BINDING_EVENT
 static void ipc_event_binding(json_object *sb_obj) {
 	sway_log(L_DEBUG, "Sending binding::run event");
 	json_object *obj = json_object_new_object();
@@ -651,10 +648,8 @@ static void ipc_event_binding(json_object *sb_obj) {
 
 	json_object_put(obj); // free
 }
-#endif
 
 void ipc_event_binding_keyboard(struct sway_binding *sb) {
-#if SWAY_BINDING_EVENT
 	json_object *sb_obj = json_object_new_object();
 	json_object_object_add(sb_obj, "command", json_object_new_string(sb->command));
 
@@ -705,5 +700,4 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 	json_object_object_add(sb_obj, "input_type", json_object_new_string("keyboard"));
 
 	ipc_event_binding(sb_obj);
-#endif
 }
