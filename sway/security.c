@@ -29,7 +29,6 @@ enum secure_feature get_feature_policy(pid_t pid) {
 		FEATURE_FULLSCREEN | FEATURE_KEYBOARD | FEATURE_MOUSE;
 
 	ssize_t len = readlink(path, link, sizeof(link));
-	free(path);
 	if (len < 0) {
 		sway_log(L_INFO,
 			"WARNING: unable to read %s for security check. Using default policy.",
@@ -38,6 +37,7 @@ enum secure_feature get_feature_policy(pid_t pid) {
 	} else {
 		link[len] = '\0';
 	}
+	free(path);
 
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *policy = config->feature_policies->items[i];
