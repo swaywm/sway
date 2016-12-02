@@ -82,7 +82,7 @@ policies. These features are:
 	fullscreen themselves with the fullscreen command.
 
 **keyboard**::
-	Permission to receive keyboard events.
+	Permission to receive keyboard events (only while they are focused).
 
 **lock**::
 	Permission for a program to act as a screen locker. This involves becoming
@@ -90,7 +90,7 @@ policies. These features are:
 	duration of the process.
 
 **mouse**::
-	Permission to receive mouse events.
+	Permission to receive mouse events (only while the mouse is over them).
 
 **panel**::
 	Permission for a program to stick its windows to the sides of the screen.
