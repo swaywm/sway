@@ -34,7 +34,7 @@ enum secure_feature get_feature_policy(pid_t pid) {
 
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *policy = config->feature_policies->items[i];
-		if (strcmp(policy->program, "*")) {
+		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 		}
 		if (strcmp(policy->program, link) == 0) {
@@ -50,7 +50,7 @@ enum command_context get_command_policy(const char *cmd) {
 
 	for (int i = 0; i < config->command_policies->length; ++i) {
 		struct command_policy *policy = config->command_policies->items[i];
-		if (strcmp(policy->command, "*")) {
+		if (strcmp(policy->command, "*") == 0) {
 			default_policy = policy->context;
 		}
 		if (strcmp(policy->command, cmd) == 0) {

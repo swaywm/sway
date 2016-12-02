@@ -7,6 +7,7 @@
 #include "sway/layout.h"
 #include "sway/input_state.h"
 #include "sway/extensions.h"
+#include "sway/security.h"
 #include "sway/ipc-server.h"
 #include "log.h"
 
@@ -68,6 +69,12 @@ void lock_surface_destructor(struct wl_resource *resource) {
 
 static void set_background(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
+	pid_t pid;
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	if (!(get_feature_policy(pid) & FEATURE_BACKGROUND)) {
+		sway_log(L_INFO, "Denying background feature to %d", pid);
+		return;
+	}
 	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
 	if (!output) {
 		return;
@@ -86,6 +93,12 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 
 static void set_panel(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
+	pid_t pid;
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	if (!(get_feature_policy(pid) & FEATURE_PANEL)) {
+		sway_log(L_INFO, "Denying panel feature to %d", pid);
+		return;
+	}
 	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
 	if (!output) {
 		return;
@@ -111,6 +124,12 @@ static void desktop_unlock(struct wl_client *client, struct wl_resource *resourc
 
 static void set_lock_surface(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
+	pid_t pid;
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	if (!(get_feature_policy(pid) & FEATURE_LOCK)) {
+		sway_log(L_INFO, "Denying lock feature to %d", pid);
+		return;
+	}
 	swayc_t *output = swayc_by_handle(wlc_handle_from_wl_output_resource(_output));
 	swayc_t *view = swayc_by_handle(wlc_handle_from_wl_surface_resource(surface));
 	sway_log(L_DEBUG, "Setting lock surface to %p", view);
@@ -155,6 +174,12 @@ static void desktop_ready(struct wl_client *client, struct wl_resource *resource
 }
 
 static void set_panel_position(struct wl_client *client, struct wl_resource *resource, uint32_t position) {
+	pid_t pid;
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	if (!(get_feature_policy(pid) & FEATURE_PANEL)) {
+		sway_log(L_INFO, "Denying panel feature to %d", pid);
+		return;
+	}
 	struct panel_config *config = find_or_create_panel_config(resource);
 	sway_log(L_DEBUG, "Panel position for wl_resource %p changed %d => %d", resource, config->panel_position, position);
 	config->panel_position = position;
