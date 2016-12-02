@@ -145,7 +145,7 @@ static void log_kernel() {
 
 static void security_sanity_check() {
 	// TODO: Notify users visually if this has issues
-	struct stat s = {0};
+	struct stat s;
 	if (stat("/proc", &s)) {
 		sway_log(L_ERROR,
 			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
