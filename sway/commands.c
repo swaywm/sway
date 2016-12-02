@@ -180,6 +180,7 @@ static struct cmd_handler handlers[] = {
 	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
+	{ "ipc", cmd_ipc },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
@@ -292,6 +293,26 @@ static struct cmd_handler bar_colors_handlers[] = {
 	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
 };
 
+static struct cmd_handler ipc_handlers[] = {
+	{ "bar-config", cmd_ipc_cmd },
+	{ "command", cmd_ipc_cmd },
+	{ "events", cmd_ipc_events },
+	{ "inputs", cmd_ipc_cmd },
+	{ "marks", cmd_ipc_cmd },
+	{ "outputs", cmd_ipc_cmd },
+	{ "tree", cmd_ipc_cmd },
+	{ "workspaces", cmd_ipc_cmd },
+};
+
+static struct cmd_handler ipc_event_handlers[] = {
+	{ "binding", cmd_ipc_event_cmd },
+	{ "input", cmd_ipc_event_cmd },
+	{ "mode", cmd_ipc_event_cmd },
+	{ "output", cmd_ipc_event_cmd },
+	{ "window", cmd_ipc_event_cmd },
+	{ "workspace", cmd_ipc_event_cmd },
+};
+
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
@@ -311,9 +332,16 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	} else if (block == CMD_BLOCK_INPUT) {
-		sway_log(L_DEBUG, "looking at input handlers");
 		res = bsearch(&d, input_handlers,
 			sizeof(input_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_IPC) {
+		res = bsearch(&d, ipc_handlers,
+			sizeof(ipc_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_IPC_EVENTS) {
+		res = bsearch(&d, ipc_event_handlers,
+			sizeof(ipc_event_handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	} else {
 		res = bsearch(&d, handlers,

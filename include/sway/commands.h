@@ -120,6 +120,7 @@ sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_input;
+sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
 sway_cmd cmd_log_colors;
@@ -191,5 +192,9 @@ sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+
+sway_cmd cmd_ipc_cmd;
+sway_cmd cmd_ipc_events;
+sway_cmd cmd_ipc_event_cmd;
 
 #endif
