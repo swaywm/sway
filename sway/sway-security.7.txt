@@ -86,8 +86,8 @@ policies. These features are:
 
 **lock**::
 	Permission for a program to act as a screen locker. This involves becoming
-	fullscreen (on all outputs) and accepting all keyboard and mouse input for the
-	duration of the process.
+	fullscreen (on all outputs) and receiving _all_ keyboard and mouse input for
+	the duration of the process.
 
 **mouse**::
 	Permission to receive mouse events (only while the mouse is over them).
