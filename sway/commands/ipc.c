@@ -60,7 +60,7 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 
 	struct {
 		char *name;
-		enum ipc_command_type type;
+		enum ipc_feature type;
 	} types[] = {
 		{ "command", IPC_FEATURE_COMMAND },
 		{ "workspaces", IPC_FEATURE_GET_WORKSPACES },
@@ -109,7 +109,7 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 
 	struct {
 		char *name;
-		enum ipc_command_type type;
+		enum ipc_feature type;
 	} types[] = {
 		{ "workspace", IPC_FEATURE_EVENT_WORKSPACE },
 		{ "output", IPC_FEATURE_EVENT_OUTPUT },
