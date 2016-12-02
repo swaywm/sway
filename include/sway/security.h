@@ -7,5 +7,6 @@ enum secure_feature get_feature_policy(pid_t pid);
 enum command_context get_command_policy(const char *cmd);
 
 struct feature_policy *alloc_feature_policy(const char *program);
+struct command_policy *alloc_command_policy(const char *command);
 
 #endif

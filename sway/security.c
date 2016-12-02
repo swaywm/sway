@@ -11,6 +11,13 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 	return policy;
 }
 
+struct command_policy *alloc_command_policy(const char *command) {
+	struct command_policy *policy = malloc(sizeof(struct command_policy));
+	policy->command = strdup(command);
+	policy->context = CONTEXT_ALL;
+	return policy;
+}
+
 enum secure_feature get_feature_policy(pid_t pid) {
 	const char *fmt = "/proc/%d/exe";
 	int pathlen = snprintf(NULL, 0, fmt, pid);
@@ -50,9 +57,6 @@ enum command_context get_command_policy(const char *cmd) {
 
 	for (int i = 0; i < config->command_policies->length; ++i) {
 		struct command_policy *policy = config->command_policies->items[i];
-		if (strcmp(policy->command, "*") == 0) {
-			default_policy = policy->context;
-		}
 		if (strcmp(policy->command, cmd) == 0) {
 			return policy->context;
 		}

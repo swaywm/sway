@@ -20,8 +20,7 @@ static enum secure_feature get_features(int argc, char **argv,
 		{ "keyboard", FEATURE_KEYBOARD },
 		{ "mouse", FEATURE_MOUSE },
 	};
-	size_t names_len = sizeof(feature_names) /
-		(sizeof(char *) + sizeof(enum secure_feature));
+	size_t names_len = 7;
 
 	for (int i = 1; i < argc; ++i) {
 		size_t j;

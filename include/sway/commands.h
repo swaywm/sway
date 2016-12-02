@@ -18,7 +18,10 @@ enum cmd_status {
 	CMD_BLOCK_MODE,
 	CMD_BLOCK_BAR,
 	CMD_BLOCK_BAR_COLORS,
-	CMD_BLOCK_INPUT
+	CMD_BLOCK_INPUT,
+	CMD_BLOCK_COMMANDS,
+	CMD_BLOCK_IPC,
+	CMD_BLOCK_IPC_EVENTS,
 };
 
 /**
@@ -58,6 +61,10 @@ struct cmd_results *handle_command(char *command);
  * Do not use this under normal conditions.
  */
 struct cmd_results *config_command(char *command, enum cmd_status block);
+/*
+ * Parses a command policy rule.
+ */
+struct cmd_results *config_commands_command(char *exec);
 
 /**
  * Allocates a cmd_results object.
@@ -93,6 +100,7 @@ sway_cmd cmd_client_unfocused;
 sway_cmd cmd_client_urgent;
 sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
+sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
 sway_cmd cmd_exec;
 sway_cmd cmd_exec_always;

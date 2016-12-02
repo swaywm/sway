@@ -26,6 +26,7 @@
 #include "sway/input_state.h"
 #include "sway/criteria.h"
 #include "sway/ipc-server.h"
+#include "sway/security.h"
 #include "sway/input.h"
 #include "sway/border.h"
 #include "stringop.h"
@@ -158,6 +159,7 @@ static struct cmd_handler handlers[] = {
 	{ "client.placeholder", cmd_client_placeholder },
 	{ "client.unfocused", cmd_client_unfocused },
 	{ "client.urgent", cmd_client_urgent },
+	{ "commands", cmd_commands },
 	{ "debuglog", cmd_debuglog },
 	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
@@ -460,7 +462,85 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	} else {
 		results = cmd_results_new(CMD_INVALID, argv[0], "This command is shimmed, but unimplemented");
 	}
-	cleanup:
+
+cleanup:
+	free_argv(argc, argv);
+	return results;
+}
+
+struct cmd_results *config_commands_command(char *exec) {
+	struct cmd_results *results = NULL;
+	int argc;
+	char **argv = split_args(exec, &argc);
+	if (!argc) {
+		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		goto cleanup;
+	}
+
+	// Find handler for the command this is setting a policy for
+	char *cmd = argv[0];
+
+	if (strcmp(cmd, "}") == 0) {
+		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
+		goto cleanup;
+	}
+
+	struct cmd_handler *handler = find_handler(cmd, CMD_BLOCK_END);
+	if (!handler) {
+		char *input = cmd ? cmd : "(empty)";
+		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		goto cleanup;
+	}
+
+	enum command_context context = 0;
+
+	struct {
+		char *name;
+		enum command_context context;
+	} context_names[] = {
+		{ "config", CONTEXT_CONFIG },
+		{ "binding", CONTEXT_BINDING },
+		{ "ipc", CONTEXT_IPC },
+		{ "criteria", CONTEXT_CRITERIA },
+		{ "all", CONTEXT_ALL },
+	};
+	size_t names_len = 5;
+
+	for (int i = 1; i < argc; ++i) {
+		size_t j;
+		for (j = 0; j < names_len; ++j) {
+			if (strcmp(context_names[j].name, argv[i]) == 0) {
+				break;
+			}
+		}
+		if (j == names_len) {
+			results = cmd_results_new(CMD_INVALID, cmd,
+					"Invalid command context %s", argv[i]);
+			goto cleanup;
+		}
+		context |= context_names[j].context;
+	}
+
+	struct command_policy *policy = NULL;
+	for (int i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *p = config->command_policies->items[i];
+		if (strcmp(p->command, cmd) == 0) {
+			policy = p;
+			break;
+		}
+	}
+	if (!policy) {
+		policy = alloc_command_policy(cmd);
+		list_add(config->command_policies, policy);
+	}
+	policy->context = context;
+
+	sway_log(L_INFO, "Set command policy for %s to %d",
+			policy->command, policy->context);
+
+	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+
+cleanup:
 	free_argv(argc, argv);
 	return results;
 }

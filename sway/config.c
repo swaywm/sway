@@ -580,7 +580,13 @@ bool read_config(FILE *file, struct sway_config *config) {
 			free(line);
 			continue;
 		}
-		struct cmd_results *res = config_command(line, block);
+		struct cmd_results *res;
+		if (block == CMD_BLOCK_COMMANDS) {
+			// Special case
+			res = config_commands_command(line);
+		} else {
+			res = config_command(line, block);
+		}
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
@@ -626,6 +632,14 @@ bool read_config(FILE *file, struct sway_config *config) {
 			}
 			break;
 
+		case CMD_BLOCK_COMMANDS:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_COMMANDS;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
 		case CMD_BLOCK_END:
 			switch(block) {
 			case CMD_BLOCK_MODE:
@@ -649,6 +663,11 @@ bool read_config(FILE *file, struct sway_config *config) {
 			case CMD_BLOCK_BAR_COLORS:
 				sway_log(L_DEBUG, "End of bar colors block");
 				block = CMD_BLOCK_BAR;
+				break;
+
+			case CMD_BLOCK_COMMANDS:
+				sway_log(L_DEBUG, "End of commands block");
+				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_END:
