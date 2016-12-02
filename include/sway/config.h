@@ -202,6 +202,7 @@ enum secure_feature {
 	FEATURE_FULLSCREEN = 16,
 	FEATURE_KEYBOARD = 32,
 	FEATURE_MOUSE = 64,
+	FEATURE_IPC = 128,
 };
 
 struct feature_policy {

@@ -15,6 +15,7 @@
 #include <libinput.h>
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
+#include "sway/security.h"
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input.h"
@@ -124,6 +125,17 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 	return ipc_sockaddr;
 }
 
+static pid_t get_client_pid(int client_fd) {
+	struct ucred ucred;
+	socklen_t len = sizeof(struct ucred);
+
+	if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &ucred, &len) == -1) {
+		return -1;
+	}
+
+	return ucred.pid;
+}
+
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	(void) fd; (void) data;
 	sway_log(L_DEBUG, "Event on IPC listening socket");
@@ -138,6 +150,15 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	int flags;
 	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
 		sway_log_errno(L_INFO, "Unable to set CLOEXEC on IPC client socket");
+		close(client_fd);
+		return 0;
+	}
+
+	pid_t pid = get_client_pid(client_fd);
+	if (!(get_feature_policy(pid) & FEATURE_IPC)) {
+		sway_log(L_INFO, "Permission to connect to IPC socket denied to %d", pid);
+		const char *error = "{\"success\": false, \"message\": \"Permission denied\"}";
+		write(client_fd, &error, sizeof(error));
 		close(client_fd);
 		return 0;
 	}

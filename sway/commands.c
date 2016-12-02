@@ -542,16 +542,15 @@ struct cmd_results *config_commands_command(char *exec) {
 		{ "criteria", CONTEXT_CRITERIA },
 		{ "all", CONTEXT_ALL },
 	};
-	size_t names_len = 5;
 
 	for (int i = 1; i < argc; ++i) {
 		size_t j;
-		for (j = 0; j < names_len; ++j) {
+		for (j = 0; j < sizeof(context_names) / sizeof(context_names[0]); ++j) {
 			if (strcmp(context_names[j].name, argv[i]) == 0) {
 				break;
 			}
 		}
-		if (j == names_len) {
+		if (j == sizeof(context_names) / sizeof(context_names[0])) {
 			results = cmd_results_new(CMD_INVALID, cmd,
 					"Invalid command context %s", argv[i]);
 			goto cleanup;

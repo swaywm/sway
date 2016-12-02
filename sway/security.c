@@ -7,7 +7,7 @@
 struct feature_policy *alloc_feature_policy(const char *program) {
 	struct feature_policy *policy = malloc(sizeof(struct feature_policy));
 	policy->program = strdup(program);
-	policy->features = FEATURE_FULLSCREEN | FEATURE_KEYBOARD | FEATURE_MOUSE;
+	policy->features = FEATURE_FULLSCREEN | FEATURE_KEYBOARD | FEATURE_MOUSE | FEATURE_IPC;
 	return policy;
 }
 

@@ -81,6 +81,9 @@ policies. These features are:
 	Permission to become fullscreen. Note that users can always make a window
 	fullscreen themselves with the fullscreen command.
 
+**ipc**::
+	Permission to connect to sway's IPC socket.
+
 **keyboard**::
 	Permission to receive keyboard events (only while they are focused).
 
@@ -98,9 +101,9 @@ policies. These features are:
 **screenshot**::
 	Permission to take screenshots or record the screen.
 
-By default, all programs are granted **fullscreen**, **keyboard**, and **mouse**
-permissions. You can use the following config commands to control a program's
-access:
+By default, all programs are granted **fullscreen**, **keyboard**, **mouse**, and
+**ipc** permissions. You can use the following config commands to control a
+program's access:
 
 **permit** <executable> <features...>::
 	Permits <executable> to use <features> (each feature seperated by a space).

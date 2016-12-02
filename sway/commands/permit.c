@@ -19,17 +19,17 @@ static enum secure_feature get_features(int argc, char **argv,
 		{ "fullscreen", FEATURE_FULLSCREEN },
 		{ "keyboard", FEATURE_KEYBOARD },
 		{ "mouse", FEATURE_MOUSE },
+		{ "ipc", FEATURE_IPC },
 	};
-	size_t names_len = 7;
 
 	for (int i = 1; i < argc; ++i) {
 		size_t j;
-		for (j = 0; j < names_len; ++j) {
+		for (j = 0; j < sizeof(feature_names) / sizeof(feature_names[0]); ++j) {
 			if (strcmp(feature_names[j].name, argv[i]) == 0) {
 				break;
 			}
 		}
-		if (j == names_len) {
+		if (j == sizeof(feature_names) / sizeof(feature_names[0])) {
 			*error = cmd_results_new(CMD_INVALID,
 					"permit", "Invalid feature grant %s", argv[i]);
 			return 0;
