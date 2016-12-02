@@ -104,11 +104,13 @@ access:
 
 **permit** <executable> <features...>::
 	Permits <executable> to use <features> (each feature seperated by a space).
-	<executable> may be * to affect the default policy.
+	<executable> may be * to affect the default policy, or the full path to the
+	executable file.
 
 **reject** <executable> <features...>::
 	Disallows <executable> from using <features> (each feature seperated by a space).
-	<executable> may be * to affect the default policy.
+	<executable> may be * to affect the default policy, or the full path to the
+	executable file.
 
 Note that policy enforcement requires procfs to be mounted at /proc and the sway
 process to be able to access _/proc/[pid]/exe_ (see **procfs(5)** for details on
