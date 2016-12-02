@@ -187,6 +187,8 @@ static struct cmd_handler handlers[] = {
 	{ "new_float", cmd_new_float },
 	{ "new_window", cmd_new_window },
 	{ "output", cmd_output },
+	{ "permit", cmd_permit },
+	{ "reject", cmd_reject },
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
 	{ "scratchpad", cmd_scratchpad },

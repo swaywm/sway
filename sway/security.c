@@ -4,6 +4,13 @@
 #include "sway/security.h"
 #include "log.h"
 
+struct feature_policy *alloc_feature_policy(const char *program) {
+	struct feature_policy *policy = malloc(sizeof(struct feature_policy));
+	policy->program = strdup(program);
+	policy->features = FEATURE_FULLSCREEN | FEATURE_KEYBOARD | FEATURE_MOUSE;
+	return policy;
+}
+
 enum secure_feature get_feature_policy(pid_t pid) {
 	const char *fmt = "/proc/%d/exe";
 	int pathlen = snprintf(NULL, 0, fmt, pid);

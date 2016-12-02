@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include "sway/config.h"
 
-const struct feature_permissions *get_permissions(pid_t pid);
-enum command_context get_command_context(const char *cmd);
+enum secure_feature get_feature_policy(pid_t pid);
+enum command_context get_command_policy(const char *cmd);
+
+struct feature_policy *alloc_feature_policy(const char *program);
 
 #endif
