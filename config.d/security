@@ -1,0 +1,52 @@
+# sway security rules
+#
+# Read sway-security(7) for details on how to secure your sway install.
+#
+# You MUST read this man page if you intend to attempt to secure your sway
+# installation.
+
+# Configures which programs are allowed to use which sway features
+permit $PREFIX/swaylock lock
+permit $PREFIX/swaybar panel
+permit $PREFIX/swaybg background
+permit $PREFIX/swaygrab screenshot
+
+permit * fullscreen keyboard mouse
+
+# Configures which IPC features are enabled
+ipc {
+    command enabled
+    outputs enabled
+    workspaces enabled
+    tree enabled
+    marks enabled
+    bar-config enabled
+    inputs enabled
+
+    events {
+        workspace enabled
+        output enabled
+        mode enabled
+        window enabled
+        bar-config enabled
+        binding enabled
+        modifier enabled
+        input enabled
+    }
+}
+
+# Limits the contexts from which certain commands are permitted
+commands {
+    fullscreen bindsym criteria
+    bindsym config
+    exit bindsym
+    kill bindsym
+
+    # You should not change these unless you know what you're doing - it could
+    # cripple your security
+    reload bindsym
+    restart bindsym
+    permit config
+    reject config
+    ipc config
+}

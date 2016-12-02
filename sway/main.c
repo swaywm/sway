@@ -4,6 +4,7 @@
 #include <wlc/wlc.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <signal.h>
 #include <unistd.h>
@@ -142,6 +143,27 @@ static void log_kernel() {
 	fclose(f);
 }
 
+static void security_sanity_check() {
+	// TODO: Notify users visually if this has issues
+	struct stat s = {0};
+	if (stat("/proc", &s)) {
+		sway_log(L_ERROR,
+			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
+	}
+	if (!stat(SYSCONFDIR "/sway", &s)) {
+		if (s.st_uid != 0 || s.st_gid != 0 || s.st_mode != 00755) {
+			sway_log(L_ERROR,
+				"!! DANGER !! " SYSCONFDIR "/sway is not secure! It should be owned by root and set to 0755");
+		}
+	}
+	// TODO: check that these command policies are set
+    // reload bindsym
+    // restart bindsym
+    // permit config
+    // reject config
+    // ipc config
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -256,6 +278,7 @@ int main(int argc, char **argv) {
 	}
 	wlc_log_set_handler(wlc_log_handler);
 	detect_proprietary();
+	security_sanity_check();
 
 	input_devices = create_list();
 
