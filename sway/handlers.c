@@ -725,6 +725,15 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	}
 
 	list_free(candidates);
+
+	swayc_t *focused = get_focused_container(&root_container);
+	if (focused->type == C_VIEW) {
+		pid_t pid = wlc_view_get_pid(focused->handle);
+		if (!(get_feature_policy(pid) & FEATURE_KEYBOARD)) {
+			sway_log(L_INFO, "Denying keypress to %d (%s)", pid, focused->name);
+			return EVENT_HANDLED;
+		}
+	}
 	return EVENT_PASSTHROUGH;
 }
 
