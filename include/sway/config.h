@@ -135,7 +135,7 @@ struct bar_config {
 	int height; // -1 not defined
 	int tray_padding;
 	bool workspace_buttons;
-    bool wrap_scroll;
+	bool wrap_scroll;
 	char *separator_symbol;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
@@ -191,7 +191,7 @@ enum command_context {
 
 struct command_policy {
 	char *command;
-	enum command_context context;
+	uint32_t context;
 };
 
 enum secure_feature {
@@ -206,7 +206,7 @@ enum secure_feature {
 
 struct feature_policy {
 	char *program;
-	enum secure_feature features;
+	uint32_t features;
 };
 
 /**
@@ -228,7 +228,7 @@ struct sway_config {
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
-    	char *floating_scroll_up_cmd;
+	char *floating_scroll_up_cmd;
 	char *floating_scroll_down_cmd;
 	char *floating_scroll_left_cmd;
 	char *floating_scroll_right_cmd;
@@ -281,6 +281,7 @@ struct sway_config {
 	// Security
 	list_t *command_policies;
 	list_t *feature_policies;
+	uint32_t ipc_policy;
 };
 
 void pid_workspace_add(struct pid_workspace *pw);

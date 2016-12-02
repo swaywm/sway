@@ -55,8 +55,6 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
 
-#define event_mask(ev) (1 << (ev & 0x7F))
-
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (ipc_socket == -1) {

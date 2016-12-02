@@ -345,6 +345,7 @@ static void config_defaults(struct sway_config *config) {
 	// Security
 	config->command_policies = create_list();
 	config->feature_policies = create_list();
+	config->ipc_policy = UINT32_MAX;
 }
 
 static int compare_modifiers(const void *left, const void *right) {
