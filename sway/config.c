@@ -167,6 +167,16 @@ void free_pid_workspace(struct pid_workspace *pw) {
 	free(pw);
 }
 
+void free_command_policy(struct command_policy *policy) {
+	free(policy->command);
+	free(policy);
+}
+
+void free_feature_policy(struct feature_policy *policy) {
+	free(policy->program);
+	free(policy);
+}
+
 void free_config(struct sway_config *config) {
 	int i;
 	for (i = 0; i < config->symbols->length; ++i) {
@@ -210,6 +220,16 @@ void free_config(struct sway_config *config) {
 		free_output_config(config->output_configs->items[i]);
 	}
 	list_free(config->output_configs);
+
+	for (i = 0; i < config->command_policies->length; ++i) {
+		free_command_policy(config->command_policies->items[i]);
+	}
+	list_free(config->command_policies);
+
+	for (i = 0; i < config->feature_policies->length; ++i) {
+		free_feature_policy(config->feature_policies->items[i]);
+	}
+	list_free(config->feature_policies);
 
 	list_free(config->active_bar_modifiers);
 	free_flat_list(config->config_chain);
@@ -321,6 +341,10 @@ static void config_defaults(struct sway_config *config) {
 	config->border_colors.placeholder.child_border = 0x0C0C0CFF;
 
 	config->border_colors.background = 0xFFFFFFFF;
+
+	// Security
+	config->command_policies = create_list();
+	config->feature_policies = create_list();
 }
 
 static int compare_modifiers(const void *left, const void *right) {

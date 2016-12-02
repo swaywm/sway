@@ -103,9 +103,6 @@ struct pid_workspace {
 	time_t *time_added;
 };
 
-void pid_workspace_add(struct pid_workspace *pw);
-void free_pid_workspace(struct pid_workspace *pw);
-
 struct bar_config {
 	/**
 	 * One of "dock", "hide", "invisible"
@@ -184,6 +181,35 @@ enum edge_border_types {
 	E_BOTH		/**< hide vertical and horizontal edge borders */
 };
 
+enum command_context {
+	CONTEXT_CONFIG = 1,
+	CONTEXT_BINDING = 2,
+	CONTEXT_IPC = 4,
+	CONTEXT_CRITERIA = 8,
+	CONTEXT_ALL = 0xFFFFFFFF,
+};
+
+struct command_policy {
+	char *command;
+	enum command_context context;
+};
+
+enum secure_feature {
+	FEATURE_LOCK = 1,
+	FEATURE_PANEL = 2,
+	FEATURE_BACKGROUND = 4,
+	FEATURE_SCREENSHOT = 8,
+	FEATURE_FULLSCREEN = 16,
+	FEATURE_KEYBOARD = 32,
+	FEATURE_MOUSE = 64,
+};
+
+struct feature_policy {
+	char *program;
+	bool permit;
+	enum secure_feature features;
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -252,7 +278,14 @@ struct sway_config {
 	int32_t floating_maximum_height;
 	int32_t floating_minimum_width;
 	int32_t floating_minimum_height;
+
+	// Security
+	list_t *command_policies;
+	list_t *feature_policies;
 };
+
+void pid_workspace_add(struct pid_workspace *pw);
+void free_pid_workspace(struct pid_workspace *pw);
 
 /**
  * Loads the main config from the given path. is_active should be true when

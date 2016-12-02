@@ -37,15 +37,15 @@ ipc {
 
 # Limits the contexts from which certain commands are permitted
 commands {
-    fullscreen bindsym criteria
+    fullscreen binding criteria
     bindsym config
-    exit bindsym
-    kill bindsym
+    exit binding
+    kill binding
 
     # You should not change these unless you know what you're doing - it could
     # cripple your security
-    reload bindsym
-    restart bindsym
+    reload binding
+    restart binding
     permit config
     reject config
     ipc config
