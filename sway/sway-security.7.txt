@@ -115,6 +115,13 @@ process to be able to access _/proc/[pid]/exe_ (see **procfs(5)** for details on
 this access - setcap cap_sys_ptrace=eip /usr/bin/sway should do the trick). If
 sway is unable to read _/proc/[pid]/exe_, it will apply the default policy.
 
+To work correctly, sway's own programs require the following permissions:
+
+- swaybg: background
+- swaylock: lock, keyboard
+- swaybar: panel, mouse
+- swaygrab: screenshot
+
 Command policies
 ----------------
 
