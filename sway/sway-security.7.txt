@@ -1,0 +1,229 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet:
+/////
+sway-security (7)
+=================
+
+Name
+----
+sway-security - Guidelines for securing your sway install
+
+Security Overview
+-----------------
+
+**Sway is NOT secure**. We are working on it but do not trust that we have it all
+figured out yet. The following man page is provisional.
+
+Securing sway requires careful configuration of your environment, the sort that's
+usually best suited to a distro maintainer who wants to ship a secure sway
+environment in their distro. Sway provides a number of means of securing it but
+you must make a few changes external to sway first.
+
+Configuration security
+----------------------
+
+Many of Sway's security features are configurable. It's important that a possibly
+untrusted program is not able to edit this. Security rules are kept in
+_/etc/sway/config.d/security_ (usually), which should only be writable by root.
+However, configuration of security rules is not limited to this file - any config
+file that sway loads (including i.e. _~/.config/sway/config_) should not be editable
+by the user you intend to run programs as. One simple strategy is to use
+/etc/sway/config instead of a config file in your home directory, but that doesn't
+work well for multi-user systems. A more robust strategy is to run untrusted
+programs as another user, or in a sandbox. Configuring this is up to you.
+
+Note that _/etc/sway/config.d/*_ must be included explicitly from your config file.
+This is done by default in /etc/sway/config but you must check your own config if
+you choose to place it in other locations.
+
+Environment security
+--------------------
+
+LD_PRELOAD is a mechanism designed by GNU for the purpose of ruining the security
+of your system. One of the many ways LD_PRELOAD kills security is by making
+Wayland keyloggers possible.
+
+There are a number of strategies for dealing with this but they all suck a little.
+In order of most practical to least practical:
+
+1. Only run important programs via exec. Sway's exec command will ensure that
+	LD_PRELOAD is unset when running programs.
+
+2. Remove LD_PRELOAD support from your dynamic loader (requires patching libc).
+	This may break programs that rely on LD_PRELOAD for legitimate functionality,
+	but this is the most effective solution.
+
+3. Use static linking for important programs. Of course statically linked programs
+	are unaffected by the security dumpster fire that is dynamic linking.
+
+Note that should you choose method 1, you MUST ensure that sway itself isn't
+compromised by LD_PRELOAD. It probably isn't, but you can be sure by setting
+/usr/bin/sway to a+s (setuid), which will instruct the dynamic linker not to
+permit LD_PRELOAD for it (and will also run it as root, which sway will shortly
+drop). You could also statically link sway itself.
+
+Read your log
+-------------
+
+Sway does sanity checks and prints big red warnings to stderr if they fail. Read
+them.
+
+Feature policies
+----------------
+
+Certain sway features are security sensitive and may be configured with security
+policies. These features are:
+
+**background**::
+	Permission for a program to become the background.
+
+**fullscreen**::
+	Permission to become fullscreen. Note that users can always make a window
+	fullscreen themselves with the fullscreen command.
+
+**keyboard**::
+	Permission to receive keyboard events.
+
+**lock**::
+	Permission for a program to act as a screen locker. This involves becoming
+	fullscreen (on all outputs) and accepting all keyboard and mouse input for the
+	duration of the process.
+
+**mouse**::
+	Permission to receive mouse events.
+
+**panel**::
+	Permission for a program to stick its windows to the sides of the screen.
+
+**screenshot**::
+	Permission to take screenshots or record the screen.
+
+By default, all programs are granted **fullscreen**, **keyboard**, and **mouse**
+permissions. You can use the following config commands to control a program's
+access:
+
+**permit** <executable> <features...>::
+	Permits <executable> to use <features> (each feature seperated by a space).
+	<executable> may be * to affect the default policy.
+
+**reject** <executable> <features...>::
+	Disallows <executable> from using <features> (each feature seperated by a space).
+	<executable> may be * to affect the default policy.
+
+Note that policy enforcement requires procfs to be mounted at /proc and the sway
+process to be able to access _/proc/[pid]/exe_ (see **procfs(5)** for details on
+this access - setcap cap_sys_ptrace=eip /usr/bin/sway should do the trick). If
+sway is unable to read _/proc/[pid]/exe_, it will apply the default policy.
+
+Command policies
+----------------
+
+You can also control the context from which a command may execute. The different
+contexts you can control are:
+
+**config**::
+	Can be run from your config file.
+
+**binding**::
+	Can be run from bindsym or bindcode commands.
+
+**ipc**::
+	Can be run by IPC clients.
+
+**criteria**::
+	Can be run when evaluating window criteria.
+
+By default a command is allowed to execute in any context. To configure this, open
+a commands block and fill it with policies:
+
+	commands {
+		<name> <contexts...>
+		...
+	}
+
+For example, you could do this to limit the use of the focus command to just
+binding and critiera:
+
+	commands {
+		focus binding criteria
+	}
+
+IPC policies
+------------
+
+By default all programs can connect to IPC for backwards compatability with i3.
+However, you can whitelist IPC access like so:
+
+	reject * ipc
+	permit /usr/bin/swaybar ipc
+	permit /usr/bin/swaygrab ipc
+	# etc
+
+Note that it's suggested you do not enable swaymsg to access IPC if you intend to
+secure your IPC socket, because any program could just run swaymsg itself instead
+of connecting to IPC directly.
+
+You can also configure which features of IPC are available with an IPC block:
+
+	ipc {
+		...
+	}
+
+The following commands are available within this block:
+
+**bar-config** <enabled|disabled>::
+	Controls GET_BAR_CONFIG (required for swaybar to work at all).
+
+**command** <enabled|disabled>::
+	Controls executing sway commands via IPC.
+
+**inputs** <enabled|disabled>::
+	Controls GET_INPUTS (input device information).
+
+**marks** <enabled|disabled>::
+	Controls GET_MARKS.
+
+**outputs** <enabled|disabled>::
+	Controls GET_OUTPUTS.
+
+**tree** <enabled|disabled>::
+	Controls GET_TREE.
+
+**workspaces** <enabled|disabled>::
+	Controls GET_WORKSPACES.
+
+You can also control which IPC events can be raised with an events block:
+
+	ipc {
+		events {
+			...
+		}
+	}
+
+The following commands are vaild within an ipc events block:
+
+**binding** <enabled|disabled>::
+	Controls keybinding notifications (disabled by default).
+
+**input** <enabled|disabled>::
+	Controls input device hotplugging notifications.
+
+**mode** <enabled|disabled>::
+	Controls output hotplugging notifications.
+
+**output** <enabled|disabled>::
+	Controls output hotplugging notifications.
+
+**window** <enabled|disabled>::
+	Controls window event notifications.
+
+**workspace** <enabled|disabled>::
+	Controls workspace notifications.
+
+Disabling some of these may cause swaybar to behave incorrectly.
+
+Authors
+-------
+Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
+source contributors. For more information about sway development, see
+<https://github.com/SirCmpwn/sway>.

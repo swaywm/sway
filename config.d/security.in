@@ -28,10 +28,9 @@ ipc {
         output enabled
         mode enabled
         window enabled
-        bar-config enabled
-        binding enabled
         modifier enabled
         input enabled
+        binding disabled
     }
 }
 
