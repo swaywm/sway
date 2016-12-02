@@ -220,6 +220,8 @@ int main(int argc, char **argv) {
 		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
 		"\n";
 
+	unsetenv("LD_PRELOAD"); // Security
+
 	int c;
 	while (1) {
 		int option_index = 0;
