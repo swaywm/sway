@@ -524,7 +524,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 
 	struct cmd_handler *handler = find_handler(cmd, CMD_BLOCK_END);
-	if (!handler) {
+	if (!handler && strcmp(cmd, "*") != 0) {
 		char *input = cmd ? cmd : "(empty)";
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
 		goto cleanup;

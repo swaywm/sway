@@ -6,12 +6,11 @@
 # installation.
 
 # Configures which programs are allowed to use which sway features
+permit * fullscreen keyboard mouse ipc
 permit __PREFIX__/bin/swaylock lock
 permit __PREFIX__/bin/swaybar panel
 permit __PREFIX__/bin/swaybg background
 permit __PREFIX__/bin/swaygrab screenshot
-
-permit * fullscreen keyboard mouse
 
 # Configures which IPC features are enabled
 ipc {
@@ -36,6 +35,8 @@ ipc {
 
 # Limits the contexts from which certain commands are permitted
 commands {
+    * all
+
     fullscreen binding criteria
     bindsym config
     exit binding

@@ -124,8 +124,14 @@ To work correctly, sway's own programs require the following permissions:
 
 - swaybg: background
 - swaylock: lock, keyboard
-- swaybar: panel, mouse
-- swaygrab: screenshot
+- swaybar: panel, mouse, ipc
+- swaygrab: screenshot, ipc
+
+When you first declare a policy for an executable, it will inherit the default
+policy. Further changes to the default policy will not retroactively affect which
+permissions an earlier policy inherits. You must explicitly reject any features
+from the default policy that you do not want an executable to receive permission
+for.
 
 Command policies
 ----------------
@@ -145,6 +151,9 @@ contexts you can control are:
 **criteria**::
 	Can be run when evaluating window criteria.
 
+**all**::
+	Shorthand for granting permission in all contexts.
+
 By default a command is allowed to execute in any context. To configure this, open
 a commands block and fill it with policies:
 
@@ -160,13 +169,13 @@ binding and critiera:
 		focus binding criteria
 	}
 
+Setting a command policy overwrites any previous policy that was in place.
+
 IPC policies
 ------------
 
-By default all programs can connect to IPC for backwards compatability with i3.
-However, you can whitelist IPC access like so:
+You may whitelist IPC access like so:
 
-	reject * ipc
 	permit /usr/bin/swaybar ipc
 	permit /usr/bin/swaygrab ipc
 	# etc

@@ -5,16 +5,25 @@
 #include "log.h"
 
 struct feature_policy *alloc_feature_policy(const char *program) {
+	uint32_t default_policy = 0;
+	for (int i = 0; i < config->feature_policies->length; ++i) {
+		struct feature_policy *policy = config->feature_policies->items[i];
+		if (strcmp(policy->program, "*") == 0) {
+			default_policy = policy->features;
+			break;
+		}
+	}
+
 	struct feature_policy *policy = malloc(sizeof(struct feature_policy));
 	policy->program = strdup(program);
-	policy->features = FEATURE_FULLSCREEN | FEATURE_KEYBOARD | FEATURE_MOUSE | FEATURE_IPC;
+	policy->features = default_policy;
 	return policy;
 }
 
 struct command_policy *alloc_command_policy(const char *command) {
 	struct command_policy *policy = malloc(sizeof(struct command_policy));
 	policy->command = strdup(command);
-	policy->context = CONTEXT_ALL;
+	policy->context = 0;
 	return policy;
 }
 
@@ -25,8 +34,7 @@ enum secure_feature get_feature_policy(pid_t pid) {
 	snprintf(path, pathlen + 1, fmt, pid);
 	static char link[2048];
 
-	enum secure_feature default_policy =
-		FEATURE_FULLSCREEN | FEATURE_KEYBOARD | FEATURE_MOUSE;
+	uint32_t default_policy = 0;
 
 	ssize_t len = readlink(path, link, sizeof(link));
 	if (len < 0) {
@@ -53,10 +61,13 @@ enum secure_feature get_feature_policy(pid_t pid) {
 }
 
 enum command_context get_command_policy(const char *cmd) {
-	enum command_context default_policy = CONTEXT_ALL;
+	uint32_t default_policy = 0;
 
 	for (int i = 0; i < config->command_policies->length; ++i) {
 		struct command_policy *policy = config->command_policies->items[i];
+		if (strcmp(policy->command, "*") == 0) {
+			default_policy = policy->context;
+		}
 		if (strcmp(policy->command, cmd) == 0) {
 			return policy->context;
 		}
