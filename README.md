@@ -66,6 +66,7 @@ Run these commands:
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
     make
     sudo make install
+    sudo setcap cap_sys_ptrace=eip /usr/local/bin/sway
 
 On systems without logind, you need to suid the sway binary:
 
