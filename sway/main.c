@@ -174,7 +174,6 @@ static void security_sanity_check() {
 		bool checked;
 	} expected[] = {
 		{ "reload", CONTEXT_BINDING, false },
-		{ "restart", CONTEXT_BINDING, false },
 		{ "permit", CONTEXT_CONFIG, false },
 		{ "reject", CONTEXT_CONFIG, false },
 		{ "ipc", CONTEXT_CONFIG, false },
