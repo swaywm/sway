@@ -178,7 +178,7 @@ static void security_sanity_check() {
 		{ "reject", CONTEXT_CONFIG, false },
 		{ "ipc", CONTEXT_CONFIG, false },
 	};
-	int expected_len = 5;
+	int expected_len = 4;
 	for (int i = 0; i < config->command_policies->length; ++i) {
 		struct command_policy *policy = config->command_policies->items[i];
 		for (int j = 0; j < expected_len; ++j) {
