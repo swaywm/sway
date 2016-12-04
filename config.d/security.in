@@ -27,7 +27,6 @@ ipc {
         output enabled
         mode enabled
         window enabled
-        modifier enabled
         input enabled
         binding disabled
     }
@@ -45,7 +44,6 @@ commands {
     # You should not change these unless you know what you're doing - it could
     # cripple your security
     reload binding
-    restart binding
     permit config
     reject config
     ipc config
