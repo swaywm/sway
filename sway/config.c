@@ -167,6 +167,16 @@ void free_pid_workspace(struct pid_workspace *pw) {
 	free(pw);
 }
 
+void free_command_policy(struct command_policy *policy) {
+	free(policy->command);
+	free(policy);
+}
+
+void free_feature_policy(struct feature_policy *policy) {
+	free(policy->program);
+	free(policy);
+}
+
 void free_config(struct sway_config *config) {
 	int i;
 	for (i = 0; i < config->symbols->length; ++i) {
@@ -210,6 +220,16 @@ void free_config(struct sway_config *config) {
 		free_output_config(config->output_configs->items[i]);
 	}
 	list_free(config->output_configs);
+
+	for (i = 0; i < config->command_policies->length; ++i) {
+		free_command_policy(config->command_policies->items[i]);
+	}
+	list_free(config->command_policies);
+
+	for (i = 0; i < config->feature_policies->length; ++i) {
+		free_feature_policy(config->feature_policies->items[i]);
+	}
+	list_free(config->feature_policies);
 
 	list_free(config->active_bar_modifiers);
 	free_flat_list(config->config_chain);
@@ -321,6 +341,11 @@ static void config_defaults(struct sway_config *config) {
 	config->border_colors.placeholder.child_border = 0x0C0C0CFF;
 
 	config->border_colors.background = 0xFFFFFFFF;
+
+	// Security
+	config->command_policies = create_list();
+	config->feature_policies = create_list();
+	config->ipc_policy = UINT32_MAX;
 }
 
 static int compare_modifiers(const void *left, const void *right) {
@@ -556,7 +581,13 @@ bool read_config(FILE *file, struct sway_config *config) {
 			free(line);
 			continue;
 		}
-		struct cmd_results *res = config_command(line, block);
+		struct cmd_results *res;
+		if (block == CMD_BLOCK_COMMANDS) {
+			// Special case
+			res = config_commands_command(line);
+		} else {
+			res = config_command(line, block);
+		}
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
@@ -602,6 +633,30 @@ bool read_config(FILE *file, struct sway_config *config) {
 			}
 			break;
 
+		case CMD_BLOCK_COMMANDS:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_COMMANDS;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
+		case CMD_BLOCK_IPC:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_IPC;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
+		case CMD_BLOCK_IPC_EVENTS:
+			if (block == CMD_BLOCK_IPC) {
+				block = CMD_BLOCK_IPC_EVENTS;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
 		case CMD_BLOCK_END:
 			switch(block) {
 			case CMD_BLOCK_MODE:
@@ -625,6 +680,21 @@ bool read_config(FILE *file, struct sway_config *config) {
 			case CMD_BLOCK_BAR_COLORS:
 				sway_log(L_DEBUG, "End of bar colors block");
 				block = CMD_BLOCK_BAR;
+				break;
+
+			case CMD_BLOCK_COMMANDS:
+				sway_log(L_DEBUG, "End of commands block");
+				block = CMD_BLOCK_END;
+				break;
+
+			case CMD_BLOCK_IPC:
+				sway_log(L_DEBUG, "End of IPC block");
+				block = CMD_BLOCK_END;
+				break;
+
+			case CMD_BLOCK_IPC_EVENTS:
+				sway_log(L_DEBUG, "End of IPC events block");
+				block = CMD_BLOCK_IPC;
 				break;
 
 			case CMD_BLOCK_END:

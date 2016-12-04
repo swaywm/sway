@@ -4,13 +4,16 @@
 #include <wlc/wlc.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <signal.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/capability.h>
 #include "sway/extensions.h"
 #include "sway/layout.h"
 #include "sway/config.h"
+#include "sway/security.h"
 #include "sway/handlers.h"
 #include "sway/input.h"
 #include "sway/ipc-server.h"
@@ -142,6 +145,63 @@ static void log_kernel() {
 	fclose(f);
 }
 
+static void security_sanity_check() {
+	// TODO: Notify users visually if this has issues
+	struct stat s;
+	if (stat("/proc", &s)) {
+		sway_log(L_ERROR,
+			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
+	}
+	cap_flag_value_t v;
+	cap_t cap = cap_get_proc();
+	if (!cap || cap_get_flag(cap, CAP_SYS_PTRACE, CAP_PERMITTED, &v) != 0 || v != CAP_SET) {
+		sway_log(L_ERROR,
+			"!! DANGER !! Sway does not have CAP_SYS_PTRACE and cannot enforce security rules for processes running as other users.");
+	}
+	if (cap) {
+		cap_free(cap);
+	}
+	if (!stat(SYSCONFDIR "/sway", &s)) {
+		if (s.st_uid != 0 || s.st_gid != 0
+				|| (s.st_mode & S_IWGRP) || (s.st_mode & S_IWOTH)) {
+			sway_log(L_ERROR,
+				"!! DANGER !! " SYSCONFDIR "/sway is not secure! It should be owned by root and set to 0755 at the minimum");
+		}
+	}
+	struct {
+		char *command;
+		enum command_context context;
+		bool checked;
+	} expected[] = {
+		{ "reload", CONTEXT_BINDING, false },
+		{ "restart", CONTEXT_BINDING, false },
+		{ "permit", CONTEXT_CONFIG, false },
+		{ "reject", CONTEXT_CONFIG, false },
+		{ "ipc", CONTEXT_CONFIG, false },
+	};
+	int expected_len = 5;
+	for (int i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *policy = config->command_policies->items[i];
+		for (int j = 0; j < expected_len; ++j) {
+			if (strcmp(expected[j].command, policy->command) == 0) {
+				expected[j].checked = true;
+				if (expected[j].context != policy->context) {
+					sway_log(L_ERROR,
+						"!! DANGER !! Command security policy for %s should be set to %s",
+						expected[j].command, command_policy_str(expected[j].context));
+				}
+			}
+		}
+	}
+	for (int j = 0; j < expected_len; ++j) {
+		if (!expected[j].checked) {
+			sway_log(L_ERROR,
+				"!! DANGER !! Command security policy for %s should be set to %s",
+				expected[j].command, command_policy_str(expected[j].context));
+		}
+	}
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -169,6 +229,10 @@ int main(int argc, char **argv) {
 		"  -V, --verbose          Enables more verbose logging.\n"
 		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
 		"\n";
+
+	// Security:
+	unsetenv("LD_PRELOAD");
+	setenv("LD_LIBRARY_PATH", _LD_LIBRARY_PATH, 1);
 
 	int c;
 	while (1) {
@@ -297,6 +361,8 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		free(config_path);
 	}
+
+	security_sanity_check();
 
 	if (!terminate_request) {
 		wlc_run();

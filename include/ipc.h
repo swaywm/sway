@@ -1,6 +1,8 @@
 #ifndef _SWAY_IPC_H
 #define _SWAY_IPC_H
 
+#define event_mask(ev) (1 << (ev & 0x7F))
+
 enum ipc_command_type {
 	IPC_COMMAND = 0,
 	IPC_GET_WORKSPACES = 1,

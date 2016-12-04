@@ -103,9 +103,6 @@ struct pid_workspace {
 	time_t *time_added;
 };
 
-void pid_workspace_add(struct pid_workspace *pw);
-void free_pid_workspace(struct pid_workspace *pw);
-
 struct bar_config {
 	/**
 	 * One of "dock", "hide", "invisible"
@@ -138,7 +135,7 @@ struct bar_config {
 	int height; // -1 not defined
 	int tray_padding;
 	bool workspace_buttons;
-    bool wrap_scroll;
+	bool wrap_scroll;
 	char *separator_symbol;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
@@ -184,6 +181,52 @@ enum edge_border_types {
 	E_BOTH		/**< hide vertical and horizontal edge borders */
 };
 
+enum command_context {
+	CONTEXT_CONFIG = 1,
+	CONTEXT_BINDING = 2,
+	CONTEXT_IPC = 4,
+	CONTEXT_CRITERIA = 8,
+	CONTEXT_ALL = 0xFFFFFFFF,
+};
+
+struct command_policy {
+	char *command;
+	uint32_t context;
+};
+
+enum secure_feature {
+	FEATURE_LOCK = 1,
+	FEATURE_PANEL = 2,
+	FEATURE_BACKGROUND = 4,
+	FEATURE_SCREENSHOT = 8,
+	FEATURE_FULLSCREEN = 16,
+	FEATURE_KEYBOARD = 32,
+	FEATURE_MOUSE = 64,
+	FEATURE_IPC = 128,
+};
+
+struct feature_policy {
+	char *program;
+	uint32_t features;
+};
+
+enum ipc_feature {
+	IPC_FEATURE_COMMAND = 1,
+	IPC_FEATURE_GET_WORKSPACES = 2,
+	IPC_FEATURE_GET_OUTPUTS = 4,
+	IPC_FEATURE_GET_TREE = 8,
+	IPC_FEATURE_GET_MARKS = 16,
+	IPC_FEATURE_GET_BAR_CONFIG = 32,
+	IPC_FEATURE_GET_VERSION = 64,
+	IPC_FEATURE_GET_INPUTS = 128,
+	IPC_FEATURE_EVENT_WORKSPACE = 256,
+	IPC_FEATURE_EVENT_OUTPUT = 512,
+	IPC_FEATURE_EVENT_MODE = 1024,
+	IPC_FEATURE_EVENT_WINDOW = 2048,
+	IPC_FEATURE_EVENT_BINDING = 4096,
+	IPC_FEATURE_EVENT_INPUT = 8192
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -203,7 +246,7 @@ struct sway_config {
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
-    	char *floating_scroll_up_cmd;
+	char *floating_scroll_up_cmd;
 	char *floating_scroll_down_cmd;
 	char *floating_scroll_left_cmd;
 	char *floating_scroll_right_cmd;
@@ -252,7 +295,15 @@ struct sway_config {
 	int32_t floating_maximum_height;
 	int32_t floating_minimum_width;
 	int32_t floating_minimum_height;
+
+	// Security
+	list_t *command_policies;
+	list_t *feature_policies;
+	uint32_t ipc_policy;
 };
+
+void pid_workspace_add(struct pid_workspace *pw);
+void free_pid_workspace(struct pid_workspace *pw);
 
 /**
  * Loads the main config from the given path. is_active should be true when

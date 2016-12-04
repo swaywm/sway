@@ -35,6 +35,7 @@ add_executable(sway
 	output.c
 	workspace.c
 	border.c
+    security.c
 )
 
 add_definitions(
@@ -54,6 +55,7 @@ target_link_libraries(sway
 	${PANGO_LIBRARIES}
 	${JSONC_LIBRARIES}
 	m
+    cap
 )
 
 install(
@@ -62,13 +64,34 @@ install(
 	DESTINATION bin
 	COMPONENT runtime
 )
-install(
-	FILES ${PROJECT_SOURCE_DIR}/config
-	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/sway/
-	COMPONENT configuration
-)
+
+add_custom_target(configs ALL)
+
+function(add_config name source destination)
+    add_custom_command(
+        OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}
+        COMMAND sed -r
+            's?__PREFIX__?${CMAKE_INSTALL_PREFIX}?g\; s?__SYSCONFDIR__?${CMAKE_INSTALL_FULL_SYSCONFDIR}?g'
+            ${PROJECT_SOURCE_DIR}/${source}.in > ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}
+        DEPENDS ${PROJECT_SOURCE_DIR}/${source}.in
+        COMMENT "Generating config file ${source}"
+    )
+
+    install(
+        FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}
+        DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/${destination}
+        COMPONENT configuration
+    )
+
+	add_custom_target(config-${name} DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name})
+    add_dependencies(configs config-${name})
+endfunction()
+
+add_config(config config sway)
+add_config(security config.d/security sway/config.d)
 
 add_manpage(sway 1)
 add_manpage(sway 5)
 add_manpage(sway-input 5)
 add_manpage(sway-bar 5)
+add_manpage(sway-security 7)

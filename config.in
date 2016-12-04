@@ -195,10 +195,4 @@ bar {
     }
 }
 
-# You may want this:
-#
-# include ~/.config/sway/conf.d/*
-#
-# Protip:
-#
-# include ~/.config/sway/`hostname`/*
+include __SYSCONFDIR__/sway/config.d/*

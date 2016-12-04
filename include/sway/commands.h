@@ -18,7 +18,10 @@ enum cmd_status {
 	CMD_BLOCK_MODE,
 	CMD_BLOCK_BAR,
 	CMD_BLOCK_BAR_COLORS,
-	CMD_BLOCK_INPUT
+	CMD_BLOCK_INPUT,
+	CMD_BLOCK_COMMANDS,
+	CMD_BLOCK_IPC,
+	CMD_BLOCK_IPC_EVENTS,
 };
 
 /**
@@ -51,13 +54,17 @@ int sp_index;
 /**
  * Parse and handles a command.
  */
-struct cmd_results *handle_command(char *command);
+struct cmd_results *handle_command(char *command, enum command_context context);
 /**
  * Parse and handles a command during config file loading.
  *
  * Do not use this under normal conditions.
  */
 struct cmd_results *config_command(char *command, enum cmd_status block);
+/*
+ * Parses a command policy rule.
+ */
+struct cmd_results *config_commands_command(char *exec);
 
 /**
  * Allocates a cmd_results object.
@@ -93,6 +100,7 @@ sway_cmd cmd_client_unfocused;
 sway_cmd cmd_client_urgent;
 sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
+sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
 sway_cmd cmd_exec;
 sway_cmd cmd_exec_always;
@@ -112,6 +120,7 @@ sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_input;
+sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
 sway_cmd cmd_log_colors;
@@ -122,6 +131,8 @@ sway_cmd cmd_new_float;
 sway_cmd cmd_new_window;
 sway_cmd cmd_orientation;
 sway_cmd cmd_output;
+sway_cmd cmd_permit;
+sway_cmd cmd_reject;
 sway_cmd cmd_reload;
 sway_cmd cmd_resize;
 sway_cmd cmd_scratchpad;
@@ -181,5 +192,9 @@ sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+
+sway_cmd cmd_ipc_cmd;
+sway_cmd cmd_ipc_events;
+sway_cmd cmd_ipc_event_cmd;
 
 #endif

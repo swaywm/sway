@@ -26,6 +26,7 @@
 #include "sway/input_state.h"
 #include "sway/criteria.h"
 #include "sway/ipc-server.h"
+#include "sway/security.h"
 #include "sway/input.h"
 #include "sway/border.h"
 #include "stringop.h"
@@ -158,6 +159,7 @@ static struct cmd_handler handlers[] = {
 	{ "client.placeholder", cmd_client_placeholder },
 	{ "client.unfocused", cmd_client_unfocused },
 	{ "client.urgent", cmd_client_urgent },
+	{ "commands", cmd_commands },
 	{ "debuglog", cmd_debuglog },
 	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
@@ -178,6 +180,7 @@ static struct cmd_handler handlers[] = {
 	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
+	{ "ipc", cmd_ipc },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "log_colors", cmd_log_colors },
@@ -187,6 +190,8 @@ static struct cmd_handler handlers[] = {
 	{ "new_float", cmd_new_float },
 	{ "new_window", cmd_new_window },
 	{ "output", cmd_output },
+	{ "permit", cmd_permit },
+	{ "reject", cmd_reject },
 	{ "reload", cmd_reload },
 	{ "resize", cmd_resize },
 	{ "scratchpad", cmd_scratchpad },
@@ -288,6 +293,26 @@ static struct cmd_handler bar_colors_handlers[] = {
 	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
 };
 
+static struct cmd_handler ipc_handlers[] = {
+	{ "bar-config", cmd_ipc_cmd },
+	{ "command", cmd_ipc_cmd },
+	{ "events", cmd_ipc_events },
+	{ "inputs", cmd_ipc_cmd },
+	{ "marks", cmd_ipc_cmd },
+	{ "outputs", cmd_ipc_cmd },
+	{ "tree", cmd_ipc_cmd },
+	{ "workspaces", cmd_ipc_cmd },
+};
+
+static struct cmd_handler ipc_event_handlers[] = {
+	{ "binding", cmd_ipc_event_cmd },
+	{ "input", cmd_ipc_event_cmd },
+	{ "mode", cmd_ipc_event_cmd },
+	{ "output", cmd_ipc_event_cmd },
+	{ "window", cmd_ipc_event_cmd },
+	{ "workspace", cmd_ipc_event_cmd },
+};
+
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
@@ -307,9 +332,16 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	} else if (block == CMD_BLOCK_INPUT) {
-		sway_log(L_DEBUG, "looking at input handlers");
 		res = bsearch(&d, input_handlers,
 			sizeof(input_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_IPC) {
+		res = bsearch(&d, ipc_handlers,
+			sizeof(ipc_handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_IPC_EVENTS) {
+		res = bsearch(&d, ipc_event_handlers,
+			sizeof(ipc_event_handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 	} else {
 		res = bsearch(&d, handlers,
@@ -319,7 +351,7 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	return res;
 }
 
-struct cmd_results *handle_command(char *_exec) {
+struct cmd_results *handle_command(char *_exec, enum command_context context) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
 	// error string we could e.g. concatonate all errors there.)
@@ -393,6 +425,16 @@ struct cmd_results *handle_command(char *_exec) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
+			if (!(get_command_policy(argv[0]) & context)) {
+				if (results) {
+					free_cmd_results(results);
+				}
+				results = cmd_results_new(CMD_INVALID, cmd,
+						"Permission denied for %s via %s", cmd,
+						command_policy_str(context));
+				free_argv(argc, argv);
+				goto cleanup;
+			}
 			struct cmd_results *res = handler->handle(argc-1, argv+1);
 			if (res->status != CMD_SUCCESS) {
 				free_argv(argc, argv);
@@ -458,7 +500,84 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	} else {
 		results = cmd_results_new(CMD_INVALID, argv[0], "This command is shimmed, but unimplemented");
 	}
-	cleanup:
+
+cleanup:
+	free_argv(argc, argv);
+	return results;
+}
+
+struct cmd_results *config_commands_command(char *exec) {
+	struct cmd_results *results = NULL;
+	int argc;
+	char **argv = split_args(exec, &argc);
+	if (!argc) {
+		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		goto cleanup;
+	}
+
+	// Find handler for the command this is setting a policy for
+	char *cmd = argv[0];
+
+	if (strcmp(cmd, "}") == 0) {
+		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
+		goto cleanup;
+	}
+
+	struct cmd_handler *handler = find_handler(cmd, CMD_BLOCK_END);
+	if (!handler && strcmp(cmd, "*") != 0) {
+		char *input = cmd ? cmd : "(empty)";
+		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		goto cleanup;
+	}
+
+	enum command_context context = 0;
+
+	struct {
+		char *name;
+		enum command_context context;
+	} context_names[] = {
+		{ "config", CONTEXT_CONFIG },
+		{ "binding", CONTEXT_BINDING },
+		{ "ipc", CONTEXT_IPC },
+		{ "criteria", CONTEXT_CRITERIA },
+		{ "all", CONTEXT_ALL },
+	};
+
+	for (int i = 1; i < argc; ++i) {
+		size_t j;
+		for (j = 0; j < sizeof(context_names) / sizeof(context_names[0]); ++j) {
+			if (strcmp(context_names[j].name, argv[i]) == 0) {
+				break;
+			}
+		}
+		if (j == sizeof(context_names) / sizeof(context_names[0])) {
+			results = cmd_results_new(CMD_INVALID, cmd,
+					"Invalid command context %s", argv[i]);
+			goto cleanup;
+		}
+		context |= context_names[j].context;
+	}
+
+	struct command_policy *policy = NULL;
+	for (int i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *p = config->command_policies->items[i];
+		if (strcmp(p->command, cmd) == 0) {
+			policy = p;
+			break;
+		}
+	}
+	if (!policy) {
+		policy = alloc_command_policy(cmd);
+		list_add(config->command_policies, policy);
+	}
+	policy->context = context;
+
+	sway_log(L_INFO, "Set command policy for %s to %d",
+			policy->command, policy->context);
+
+	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+
+cleanup:
 	free_argv(argc, argv);
 	return results;
 }

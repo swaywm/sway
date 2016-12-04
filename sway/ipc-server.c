@@ -15,6 +15,7 @@
 #include <libinput.h>
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
+#include "sway/security.h"
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input.h"
@@ -54,8 +55,6 @@ void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
-
-#define event_mask(ev) (1 << (ev & 0x7F))
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -126,6 +125,17 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 	return ipc_sockaddr;
 }
 
+static pid_t get_client_pid(int client_fd) {
+	struct ucred ucred;
+	socklen_t len = sizeof(struct ucred);
+
+	if (getsockopt(client_fd, SOL_SOCKET, SO_PEERCRED, &ucred, &len) == -1) {
+		return -1;
+	}
+
+	return ucred.pid;
+}
+
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	(void) fd; (void) data;
 	sway_log(L_DEBUG, "Event on IPC listening socket");
@@ -140,6 +150,15 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	int flags;
 	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
 		sway_log_errno(L_INFO, "Unable to set CLOEXEC on IPC client socket");
+		close(client_fd);
+		return 0;
+	}
+
+	pid_t pid = get_client_pid(client_fd);
+	if (!(get_feature_policy(pid) & FEATURE_IPC)) {
+		sway_log(L_INFO, "Permission to connect to IPC socket denied to %d", pid);
+		const char *error = "{\"success\": false, \"message\": \"Permission denied\"}";
+		write(client_fd, &error, sizeof(error));
 		close(client_fd);
 		return 0;
 	}
@@ -309,10 +328,15 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 	buf[client->payload_length] = '\0';
 
+	const char *error_denied = "{ \"success\": false, \"error\": \"Permission denied\" }";
+
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
-		struct cmd_results *results = handle_command(buf);
+		if (!(config->ipc_policy & IPC_FEATURE_COMMAND)) {
+			goto exit_denied;
+		}
+		struct cmd_results *results = handle_command(buf, CONTEXT_IPC);
 		const char *json = cmd_results_to_json(results);
 		char reply[256];
 		int length = snprintf(reply, sizeof(reply), "%s", json);
@@ -343,10 +367,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
 			} else if (strcmp(event_type, "modifier") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
-#if SWAY_BINDING_EVENT
 			} else if (strcmp(event_type, "binding") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
-#endif
 			} else {
 				ipc_send_reply(client, "{\"success\": false}", 18);
 				json_object_put(request);
@@ -363,6 +385,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_WORKSPACES:
 	{
+		if (!(config->ipc_policy & IPC_FEATURE_GET_WORKSPACES)) {
+			goto exit_denied;
+		}
 		json_object *workspaces = json_object_new_array();
 		container_map(&root_container, ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
@@ -373,6 +398,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_INPUTS:
 	{
+		if (!(config->ipc_policy & IPC_FEATURE_GET_INPUTS)) {
+			goto exit_denied;
+		}
 		json_object *inputs = json_object_new_array();
 		if (input_devices) {
 			for(int i=0; i<input_devices->length; i++) {
@@ -392,6 +420,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_OUTPUTS:
 	{
+		if (!(config->ipc_policy & IPC_FEATURE_GET_OUTPUTS)) {
+			goto exit_denied;
+		}
 		json_object *outputs = json_object_new_array();
 		container_map(&root_container, ipc_get_outputs_callback, outputs);
 		const char *json_string = json_object_to_json_string(outputs);
@@ -402,6 +433,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_TREE:
 	{
+		if (!(config->ipc_policy & IPC_FEATURE_GET_TREE)) {
+			goto exit_denied;
+		}
 		json_object *tree = ipc_json_describe_container_recursive(&root_container);
 		const char *json_string = json_object_to_json_string(tree);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
@@ -462,6 +496,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_BAR_CONFIG:
 	{
+		if (!(config->ipc_policy & IPC_FEATURE_GET_BAR_CONFIG)) {
+			goto exit_denied;
+		}
 		if (!buf[0]) {
 			// Send list of configured bar IDs
 			json_object *bars = json_object_new_array();
@@ -501,6 +538,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
 		goto exit_cleanup;
 	}
+
+exit_denied:
+	ipc_send_reply(client, error_denied, (uint32_t)strlen(error_denied));
 
 exit_cleanup:
 	client->payload_length = 0;
@@ -566,6 +606,9 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 }
 
 void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
+	if (!(config->ipc_policy & IPC_FEATURE_EVENT_WORKSPACE)) {
+		return;
+	}
 	sway_log(L_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -590,6 +633,9 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 }
 
 void ipc_event_window(swayc_t *window, const char *change) {
+	if (!(config->ipc_policy & IPC_FEATURE_EVENT_WINDOW)) {
+		return;
+	}
 	sway_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -615,6 +661,9 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 }
 
 void ipc_event_mode(const char *mode) {
+	if (!(config->ipc_policy & IPC_FEATURE_EVENT_MODE)) {
+		return;
+	}
 	sway_log(L_DEBUG, "Sending mode::%s event", mode);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(mode));
@@ -639,8 +688,10 @@ void ipc_event_modifier(uint32_t modifier, const char *state) {
 	json_object_put(obj); // free
 }
 
-#if SWAY_BINDING_EVENT
 static void ipc_event_binding(json_object *sb_obj) {
+	if (!(config->ipc_policy & IPC_FEATURE_EVENT_BINDING)) {
+		return;
+	}
 	sway_log(L_DEBUG, "Sending binding::run event");
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("run"));
@@ -651,10 +702,8 @@ static void ipc_event_binding(json_object *sb_obj) {
 
 	json_object_put(obj); // free
 }
-#endif
 
 void ipc_event_binding_keyboard(struct sway_binding *sb) {
-#if SWAY_BINDING_EVENT
 	json_object *sb_obj = json_object_new_object();
 	json_object_object_add(sb_obj, "command", json_object_new_string(sb->command));
 
@@ -705,5 +754,4 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 	json_object_object_add(sb_obj, "input_type", json_object_new_string("keyboard"));
 
 	ipc_event_binding(sb_obj);
-#endif
 }
