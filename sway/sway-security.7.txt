@@ -101,9 +101,9 @@ policies. These features are:
 **screenshot**::
 	Permission to take screenshots or record the screen.
 
-By default, all programs are granted **fullscreen**, **keyboard**, **mouse**, and
-**ipc** permissions. You can use the following config commands to control a
-program's access:
+By default, no permissions are granted (though saner defaults are provided in
+/etc/sway/config.d/security). You can use the following config commands to control
+a program's access:
 
 **permit** <executable> <features...>::
 	Permits <executable> to use <features> (each feature seperated by a space).
