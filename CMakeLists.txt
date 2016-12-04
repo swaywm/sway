@@ -47,9 +47,9 @@ option(enable-swaymsg "Enables the swaymsg utility" YES)
 option(enable-gdk-pixbuf "Use Pixbuf to support more image formats" YES)
 option(zsh-completions "Zsh shell completions" NO)
 option(default-wallpaper "Installs the default wallpaper" YES)
-option(ld-library-path "Configures sway's default LD_LIBRARY_PATH" "/usr/lib")
+option(LD_LIBRARY_PATH "Configures sway's default LD_LIBRARY_PATH" "/usr/lib")
 
-add_definitions(-D_LD_LIBRARY_PATH="${ld-library-path}")
+add_definitions(-D_LD_LIBRARY_PATH="${LD_LIBRARY_PATH}")
 
 find_package(JsonC REQUIRED)
 find_package(PCRE REQUIRED)
