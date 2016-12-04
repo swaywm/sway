@@ -21,6 +21,7 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 - [IPC feature support](https://github.com/SirCmpwn/sway/issues/98)
 - [i3bar feature support](https://github.com/SirCmpwn/sway/issues/343)
 - [i3-gaps feature support](https://github.com/SirCmpwn/sway/issues/307)
+- [security features](https://github.com/SirCmpwn/sway/issues/984)
 
 ## Installation
 
