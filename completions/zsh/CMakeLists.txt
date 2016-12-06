@@ -1,4 +1,4 @@
 install(
-	FILES _sway _swaymsg _swaygrab _swaylock
+	FILES _sway _swaybar _swaymsg _swaygrab _swaylock
 	DESTINATION share/zsh/site-functions/
 )

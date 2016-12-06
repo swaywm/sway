@@ -1,0 +1,20 @@
+#compdef swaybar
+#------------
+# Description
+# -----------
+#
+# Completion script for swaybar in the sway wm (http://swaywm.org)
+#
+# ---------------------------------------------
+# Author
+# -------
+#
+# * Seth Barberee <seth.barberee@gmail.com>
+#
+# -------------------------------
+_arguments -s \
+	'(-v --version)'{-v,--version}'[shows version]' \
+	'(-h --help)'{-h,--help}'[shows help message]' \
+	'(-d --debug)'{-d,--debug}'[Enable debugging]' \
+	'(-b --bar_id)'{-b,--bar_id}'[Bar ID for which to get the configuration]' \
+	'(-s --socket)'{-s,--socket}'[Connect to sway via socket]'
