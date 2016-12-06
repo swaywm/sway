@@ -158,7 +158,9 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	if (!(get_feature_policy(pid) & FEATURE_IPC)) {
 		sway_log(L_INFO, "Permission to connect to IPC socket denied to %d", pid);
 		const char *error = "{\"success\": false, \"message\": \"Permission denied\"}";
-		write(client_fd, &error, sizeof(error));
+		if (write(client_fd, &error, sizeof(error)) < (int)sizeof(error)) {
+			sway_log(L_DEBUG, "Failed to write entire error");
+		}
 		close(client_fd);
 		return 0;
 	}
