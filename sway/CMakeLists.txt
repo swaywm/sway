@@ -55,8 +55,11 @@ target_link_libraries(sway
 	${PANGO_LIBRARIES}
 	${JSONC_LIBRARIES}
 	m
-    cap
 )
+
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	target_link_libraries(sway cap)
+endif (CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 install(
 	TARGETS sway

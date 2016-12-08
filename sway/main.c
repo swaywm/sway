@@ -152,6 +152,7 @@ static void security_sanity_check() {
 		sway_log(L_ERROR,
 			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
 	}
+#ifdef __linux__
 	cap_flag_value_t v;
 	cap_t cap = cap_get_proc();
 	if (!cap || cap_get_flag(cap, CAP_SYS_PTRACE, CAP_PERMITTED, &v) != 0 || v != CAP_SET) {
@@ -161,6 +162,7 @@ static void security_sanity_check() {
 	if (cap) {
 		cap_free(cap);
 	}
+#endif
 	if (!stat(SYSCONFDIR "/sway", &s)) {
 		if (s.st_uid != 0 || s.st_gid != 0
 				|| (s.st_mode & S_IWGRP) || (s.st_mode & S_IWOTH)) {

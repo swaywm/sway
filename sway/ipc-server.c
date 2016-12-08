@@ -126,6 +126,8 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 }
 
 static pid_t get_client_pid(int client_fd) {
+// FreeBSD supports getting uid/gid, but not pid
+#ifdef __linux__
 	struct ucred ucred;
 	socklen_t len = sizeof(struct ucred);
 
@@ -134,6 +136,9 @@ static pid_t get_client_pid(int client_fd) {
 	}
 
 	return ucred.pid;
+#else
+	return -1;
+#endif
 }
 
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {

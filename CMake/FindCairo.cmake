@@ -8,40 +8,35 @@
 # Define CAIRO_MIN_VERSION for which version desired.
 #
 
-INCLUDE(FindPkgConfig)
+find_package(PkgConfig)
 
-IF(Cairo_FIND_REQUIRED)
-        SET(_pkgconfig_REQUIRED "REQUIRED")
-ELSE(Cairo_FIND_REQUIRED)
-        SET(_pkgconfig_REQUIRED "")
-ENDIF(Cairo_FIND_REQUIRED)
+if(Cairo_FIND_REQUIRED)
+	set(_pkgconfig_REQUIRED "REQUIRED")
+else(Cairo_FIND_REQUIRED)
+	set(_pkgconfig_REQUIRED "")
+endif(Cairo_FIND_REQUIRED)
 
-IF(CAIRO_MIN_VERSION)
-        PKG_SEARCH_MODULE(CAIRO ${_pkgconfig_REQUIRED} cairo>=${CAIRO_MIN_VERSION})
-ELSE(CAIRO_MIN_VERSION)
-        PKG_SEARCH_MODULE(CAIRO ${_pkgconfig_REQUIRED} cairo)
-ENDIF(CAIRO_MIN_VERSION)
+if(CAIRO_MIN_VERSION)
+	pkg_check_modules(CAIRO ${_pkgconfig_REQUIRED} cairo>=${CAIRO_MIN_VERSION})
+else(CAIRO_MIN_VERSION)
+	pkg_check_modules(CAIRO ${_pkgconfig_REQUIRED} cairo)
+endif(CAIRO_MIN_VERSION)
 
-IF(NOT CAIRO_FOUND AND NOT PKG_CONFIG_FOUND)
-        FIND_PATH(CAIRO_INCLUDE_DIRS cairo.h)
-        FIND_LIBRARY(CAIRO_LIBRARIES cairo)
+if(NOT CAIRO_FOUND AND NOT PKG_CONFIG_FOUND)
+	find_path(CAIRO_INCLUDE_DIRS cairo.h)
+	find_library(CAIRO_LIBRARIES cairo)
+else(NOT CAIRO_FOUND AND NOT PKG_CONFIG_FOUND)
+	# Make paths absolute https://stackoverflow.com/a/35476270
+	# Important on FreeBSD because /usr/local/lib is not on /usr/bin/ld's default path
+	set(CAIRO_LIBS_ABSOLUTE)
+	foreach(lib ${CAIRO_LIBRARIES})
+		set(var_name CAIRO_${lib}_ABS)
+		find_library(${var_name} ${lib} ${CAIRO_LIBRARY_DIRS})
+		list(APPEND CAIRO_LIBS_ABSOLUTE ${${var_name}})
+	endforeach()
+	set(CAIRO_LIBRARIES ${CAIRO_LIBS_ABSOLUTE})
+endif(NOT CAIRO_FOUND AND NOT PKG_CONFIG_FOUND)
 
-        # Report results
-        IF(CAIRO_LIBRARIES AND CAIRO_INCLUDE_DIRS)
-                SET(CAIRO_FOUND 1)
-                IF(NOT Cairo_FIND_QUIETLY)
-                        MESSAGE(STATUS "Found Cairo: ${CAIRO_LIBRARIES}")
-                ENDIF(NOT Cairo_FIND_QUIETLY)
-        ELSE(CAIRO_LIBRARIES AND CAIRO_INCLUDE_DIRS)
-                IF(Cairo_FIND_REQUIRED)
-                        MESSAGE(SEND_ERROR "Could not find Cairo")
-                ELSE(Cairo_FIND_REQUIRED)
-                        IF(NOT Cairo_FIND_QUIETLY)
-                                MESSAGE(STATUS "Could not find Cairo")
-                        ENDIF(NOT Cairo_FIND_QUIETLY)
-                ENDIF(Cairo_FIND_REQUIRED)
-        ENDIF(CAIRO_LIBRARIES AND CAIRO_INCLUDE_DIRS)
-ENDIF(NOT CAIRO_FOUND AND NOT PKG_CONFIG_FOUND)
-
-# Hide advanced variables from CMake GUIs
-MARK_AS_ADVANCED(CAIRO_LIBRARIES CAIRO_INCLUDE_DIRS)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(CAIRO DEFAULT_MSG CAIRO_LIBRARIES CAIRO_INCLUDE_DIRS)
+mark_as_advanced(CAIRO_LIBRARIES CAIRO_INCLUDE_DIRS)
