@@ -32,6 +32,8 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->layout = L_NONE;
 	c->workspace_layout = L_NONE;
 	c->type = type;
+	c->nb_master = 1;
+	c->nb_slave_groups = 1;
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}

@@ -81,7 +81,8 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, _toggle split_, _stacking_ or _tabbed_.
+	_splitv_, _toggle split_, _stacking_, _tabbed_, _auto_left_, _auto_right_,
+	_auto_top, _auto_bottom_.
 
 **move** <left|right|up|down>::
 	Moves the focused container _left_, _right_, _up_, or _down_.

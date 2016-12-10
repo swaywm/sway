@@ -54,6 +54,26 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			} else {
 				swayc_change_layout(parent, L_HORIZ);
 			}
+		} else if (strcasecmp(argv[0], "auto_left") == 0) {
+			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
+				parent = new_container(parent, L_AUTO_LEFT);
+			}
+			swayc_change_layout(parent, L_AUTO_LEFT);
+		} else if (strcasecmp(argv[0], "auto_right") == 0) {
+			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
+				parent = new_container(parent, L_AUTO_RIGHT);
+			}
+			swayc_change_layout(parent, L_AUTO_RIGHT);
+		} else if (strcasecmp(argv[0], "auto_top") == 0) {
+			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
+				parent = new_container(parent, L_AUTO_TOP);
+			}
+			swayc_change_layout(parent, L_AUTO_TOP);
+		} else if (strcasecmp(argv[0], "auto_bot") == 0) {
+			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
+				parent = new_container(parent, L_AUTO_BOTTOM);
+			}
+			swayc_change_layout(parent, L_AUTO_BOTTOM);
 		}
 	}
 

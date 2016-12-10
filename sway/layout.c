@@ -118,7 +118,11 @@ swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
 			list_add(parent->floating, active);
 		} else {
 			int i = index_child(fixed);
-			list_insert(parent->children, i + 1, active);
+			if (is_auto_layout(parent->layout)) {
+				list_add(parent->children, active);
+			} else {
+				list_insert(parent->children, i + 1, active);
+			}
 		}
 	}
 	active->parent = parent;
@@ -769,6 +773,26 @@ void update_geometry(swayc_t *container) {
 	}
 }
 
+/**
+ * Layout application prototypes
+ */
+static void apply_horiz_layout(swayc_t *container, const double x,
+			       const double y, const double width,
+			       const double height, const int start,
+			       const int end);
+static void apply_vert_layout(swayc_t *container, const double x,
+			      const double y, const double width,
+			      const double height, const int start,
+			      const int end);
+static void apply_tabbed_or_stacked_layout(swayc_t *container, double x,
+					   double y, double width,
+					   double height);
+
+static void apply_auto_layout(swayc_t *container, const double x, const double y,
+			      const double width, const double height,
+			      enum swayc_layouts group_layout,
+			      bool master_first);
+
 static void arrange_windows_r(swayc_t *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
@@ -776,14 +800,15 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		width = container->width;
 		height = container->height;
 	}
-	// pixels are indivisable. if we don't round the pixels, then the view
+	// pixels are indivisible. if we don't round the pixels, then the view
 	// calculations will be off (e.g. 50.5 + 50.5 = 101, but in reality it's
 	// 50 + 50 = 100). doing it here cascades properly to all width/height/x/y.
 	width = floor(width);
 	height = floor(height);
 
 	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
-		container->name, container->width, container->height, container->x, container->y);
+		 container->name, container->width, container->height, container->x,
+		 container->y);
 
 	double x = 0, y = 0;
 	switch (container->type) {
@@ -895,136 +920,323 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		break;
 	}
 
-	double scale = 0;
 	switch (container->layout) {
 	case L_HORIZ:
 	default:
-		// Calculate total width
-		for (i = 0; i < container->children->length; ++i) {
-			double *old_width = &((swayc_t *)container->children->items[i])->width;
-			if (*old_width <= 0) {
-				if (container->children->length > 1) {
-					*old_width = width / (container->children->length - 1);
-				} else {
-					*old_width = width;
-				}
-			}
-			scale += *old_width;
-		}
-
-		// Resize windows
-		if (scale > 0.1) {
-			scale = width / scale;
-			sway_log(L_DEBUG, "Arranging %p horizontally", container);
-			swayc_t *focused = NULL;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
-				child->x = x;
-				child->y = y;
-
-				if (child == container->focused) {
-					focused = child;
-				}
-
-				if (i == container->children->length - 1) {
-					double remaining_width = container->x + width - x;
-					arrange_windows_r(child, remaining_width, height);
-				} else {
-					arrange_windows_r(child, child->width * scale, height);
-				}
-				x += child->width;
-			}
-
-			// update focused view border last because it may
-			// depend on the title bar geometry of its siblings.
-			if (focused && container->children->length > 1) {
-				update_container_border(focused);
-			}
-		}
+		apply_horiz_layout(container, x, y, width, height, 0,
+				   container->children->length);
 		break;
 	case L_VERT:
-		// Calculate total height
-		for (i = 0; i < container->children->length; ++i) {
-			double *old_height = &((swayc_t *)container->children->items[i])->height;
-			if (*old_height <= 0) {
-				if (container->children->length > 1) {
-					*old_height = height / (container->children->length - 1);
-				} else {
-					*old_height = height;
-				}
-			}
-			scale += *old_height;
-		}
-		// Resize
-		if (scale > 0.1) {
-			scale = height / scale;
-			sway_log(L_DEBUG, "Arranging %p vertically", container);
-			swayc_t *focused = NULL;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
-				child->x = x;
-				child->y = y;
-
-				if (child == container->focused) {
-					focused = child;
-				}
-
-				if (i == container->children->length - 1) {
-					double remaining_height = container->y + height - y;
-					arrange_windows_r(child, width, remaining_height);
-				} else {
-					arrange_windows_r(child, width, child->height * scale);
-				}
-				y += child->height;
-			}
-
-			// update focused view border last because it may
-			// depend on the title bar geometry of its siblings.
-			if (focused && container->children->length > 1) {
-				update_container_border(focused);
-			}
-		}
+		apply_vert_layout(container, x, y, width, height, 0,
+				  container->children->length);
 		break;
 	case L_TABBED:
 	case L_STACKED:
-		{
-			swayc_t *focused = NULL;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				child->x = x;
-				child->y = y;
-				if (child == container->focused) {
-					focused = child;
-				} else {
-					arrange_windows_r(child, width, height);
-				}
-			}
-
-			if (focused) {
-				arrange_windows_r(focused, width, height);
-			}
-			break;
-		}
+		apply_tabbed_or_stacked_layout(container, x, y, width, height);
+		break;
+	case L_AUTO_LEFT:
+		apply_auto_layout(container, x, y, width, height, L_VERT, true);
+		break;
+	case L_AUTO_RIGHT:
+		apply_auto_layout(container, x, y, width, height, L_VERT, false);
+		break;
+	case L_AUTO_TOP:
+		apply_auto_layout(container, x, y, width, height, L_HORIZ, true);
+		break;
+	case L_AUTO_BOTTOM:
+		apply_auto_layout(container, x, y, width, height, L_HORIZ, false);
+		break;
 	}
 
 	// Arrage floating layouts for workspaces last
 	if (container->type == C_WORKSPACE) {
-		for (i = 0; i < container->floating->length; ++i) {
+		for (int i = 0; i < container->floating->length; ++i) {
 			swayc_t *view = container->floating->items[i];
 			if (view->type == C_VIEW) {
 				update_geometry(view);
-				sway_log(L_DEBUG, "Set floating view to %.f x %.f @ %.f, %.f", view->width,
-						view->height, view->x, view->y);
+				sway_log(L_DEBUG, "Set floating view to %.f x %.f @ %.f, %.f",
+					 view->width, view->height, view->x, view->y);
 				if (swayc_is_fullscreen(view)) {
 					wlc_view_bring_to_front(view->handle);
-				} else if (!container->focused
-						|| !swayc_is_fullscreen(container->focused)) {
+				} else if (!container->focused ||
+					   !swayc_is_fullscreen(container->focused)) {
 					wlc_view_bring_to_front(view->handle);
 				}
 			}
 		}
+	}
+}
+
+void apply_horiz_layout(swayc_t *container, const double x, const double y,
+			const double width, const double height,
+			const int start, const int end) {
+	double scale = 0;
+	// Calculate total width
+	for (int i = start; i < end; ++i) {
+		double *old_width = &((swayc_t *)container->children->items[i])->width;
+		if (*old_width <= 0) {
+			if (end - start > 1) {
+				*old_width = width / (end - start - 1);
+			} else {
+				*old_width = width;
+			}
+		}
+		scale += *old_width;
+	}
+
+	// Resize windows
+	double child_x = x;
+	if (scale > 0.1) {
+		scale = width / scale;
+		sway_log(L_DEBUG, "Arranging %p horizontally", container);
+		swayc_t *focused = NULL;
+		for (int i = start; i < end; ++i) {
+			swayc_t *child = container->children->items[i];
+			sway_log(L_DEBUG,
+				 "Calculating arrangement for %p:%d (will scale %f by %f)", child,
+				 child->type, width, scale);
+			child->x = child_x;
+			child->y = y;
+
+			if (child == container->focused) {
+				focused = child;
+			}
+
+			if (i == end - 1) {
+				double remaining_width = x + width - child_x;
+				arrange_windows_r(child, remaining_width, height);
+			} else {
+				arrange_windows_r(child, child->width * scale, height);
+			}
+			child_x += child->width;
+		}
+
+		// update focused view border last because it may
+		// depend on the title bar geometry of its siblings.
+		if (focused && container->children->length > 1) {
+			update_container_border(focused);
+		}
+	}
+}
+
+void apply_vert_layout(swayc_t *container, const double x, const double y,
+		       const double width, const double height, const int start,
+		       const int end) {
+	int i;
+	double scale = 0;
+	// Calculate total height
+	for (i = start; i < end; ++i) {
+		double *old_height = &((swayc_t *)container->children->items[i])->height;
+		if (*old_height <= 0) {
+			if (end - start > 1) {
+				*old_height = height / (end - start - 1);
+			} else {
+				*old_height = height;
+			}
+		}
+		scale += *old_height;
+	}
+	// Resize
+	double child_y = y;
+	if (scale > 0.1) {
+		scale = height / scale;
+		sway_log(L_DEBUG, "Arranging %p vertically", container);
+		swayc_t *focused = NULL;
+		for (i = start; i < end; ++i) {
+			swayc_t *child = container->children->items[i];
+			sway_log(L_DEBUG,
+				 "Calculating arrangement for %p:%d (will scale %f by %f)", child,
+				 child->type, height, scale);
+			child->x = x;
+			child->y = child_y;
+
+			if (child == container->focused) {
+				focused = child;
+			}
+
+			if (i == end - 1) {
+				double remaining_height = y + height - child_y;
+				arrange_windows_r(child, width, remaining_height);
+			} else {
+				arrange_windows_r(child, width, child->height * scale);
+			}
+			child_y += child->height;
+		}
+
+		// update focused view border last because it may
+		// depend on the title bar geometry of its siblings.
+		if (focused && container->children->length > 1) {
+			update_container_border(focused);
+		}
+	}
+}
+
+void apply_tabbed_or_stacked_layout(swayc_t *container, double x, double y,
+				    double width, double height) {
+	int i;
+	swayc_t *focused = NULL;
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		child->x = x;
+		child->y = y;
+		if (child == container->focused) {
+			focused = child;
+		} else {
+			arrange_windows_r(child, width, height);
+		}
+	}
+
+	if (focused) {
+		arrange_windows_r(focused, width, height);
+	}
+}
+
+void apply_auto_layout(swayc_t *container, const double x, const double y,
+		       const double width, const double height,
+		       enum swayc_layouts group_layout,
+		       bool master_first) {
+	// Auto layout "container" in width x height @ x, y
+	// using "group_layout" for each of the groups in the container.
+	// There is one "master" group, plus container->nb_slave_groups.
+	// Each group is layed out side by side following the "major" axis.
+	// The direction of the layout used for groups is the "minor" axis.
+	// Example:
+	//
+	//     ---- major axis -->
+	//   +---------+-----------+
+	//   |         |           |   |
+	//   | master  | slave 1   |   |
+	//   |         +-----------+   | minor axis (direction of group_layout)
+	//   |         |           |   |
+	//   |         | slave 2   |   V
+	//   +---------+-----------+
+	//
+	//  container with three children (one master and two slaves) and
+	//  a single slave group (containing slave 1 and 2). The master
+	//  group and slave group are layed out using L_VERT.
+
+	uint_fast32_t nb_slaves = container->children->length - container->nb_master;
+	uint_fast32_t nb_groups = (container->nb_master > 0 ? 1 : 0) +
+		MIN(container->nb_slave_groups, nb_slaves);
+
+	// the target dimension of the container along the "major" axis, each
+	// group in the container will be layed out using "group_layout" along
+	// the "minor" axis.
+	double dim_maj;
+	double pos_maj;
+
+	// x and y coords for the next group to be laid out.
+	const double *group_x, *group_y;
+
+	// pos of the next group to layout along the major axis
+	double pos;
+
+	// size of the next group along the major axis.
+	double group_dim;
+
+	// height and width of next group to be laid out.
+	const double *group_h, *group_w;
+
+	switch(group_layout) {
+	default:
+		sway_log(L_ERROR, "Unknown layout type (%d) used in %s()",
+			 group_layout, __func__);
+		/* fall through */
+	case L_VERT:
+		dim_maj = width;
+		pos_maj = x;
+
+		group_x = &pos;
+		group_y = &y;
+		group_w = &group_dim;
+		group_h = &height;
+		break;
+	case L_HORIZ:
+		dim_maj = height;
+		pos_maj = y;
+
+		group_x = &x;
+		group_y = &pos;
+		group_w = &width;
+		group_h = &group_dim;
+		break;
+	}
+
+	/* Determine the dimension of each of the groups in the layout.
+	 * Dimension will be width for a VERT layout and height for a HORIZ
+	 * layout. */
+	double old_group_dim[nb_groups];
+	double old_dim = 0;
+	uint_fast32_t group = 0;
+	for (int i = 0; i < container->children->length;) {
+		swayc_t *child = container->children->items[i];
+		double *dim = group_layout == L_HORIZ ? &child->height : &child->width;
+		if (*dim <= 0) {
+			// New child with uninitialized dimension
+			*dim = dim_maj;
+			if (nb_groups > 1) {
+				// child gets a dimension proportional to existing groups,
+				// it will be later scaled based on to the available size
+				// in the major axis.
+				*dim /= (nb_groups - 1);
+			}
+		}
+		if (i == 0 && container->nb_master > 0) {
+			i += container->nb_master;
+		} else {
+			i += (nb_slaves - i + container->nb_master) / (nb_groups - group);
+		}
+		old_dim += *dim;
+		old_group_dim[group++] = *dim;
+	}
+
+	double scale = dim_maj / old_dim;
+
+	/* Apply layout to each group */
+	pos = pos_maj;
+
+	// first child in the current group
+	int start;
+
+	// index immediately after the last child in the current group
+	int end = 0;
+
+	for (group = 0; group < nb_groups; ++group) {
+		// column to include next by increasing position.
+		uint_fast32_t layout_group = master_first ? group : (group + 1) % nb_groups;
+
+		// adjusted size of the group
+		group_dim = old_group_dim[layout_group] * scale;
+		if (container->nb_master > 0 && layout_group == 0) {
+			start = 0;
+			end = container->nb_master;
+		} else {
+			if (group == 0) {
+				start = container->nb_master;
+			} else {
+				start = end;
+			}
+			end = start +
+			      (nb_slaves - start + container->nb_master) / (nb_groups - layout_group);
+		}
+		if (group == nb_groups - 1) {
+			group_dim = pos_maj + dim_maj - pos; // remaining width
+		}
+		sway_log(L_DEBUG, "Arranging container %p column %" PRIuFAST32
+				  ", children [%d,%d[ (%fx%f+%f,%f)",
+			 container, group, start, end, *group_w, *group_h, *group_x, *group_y);
+		switch (group_layout) {
+		default:
+		case L_VERT:
+			apply_vert_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
+			break;
+		case L_HORIZ:
+			apply_horiz_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
+			break;
+		}
+
+		/* update position for next group */
+		pos += group_dim;
 	}
 }
 

@@ -37,6 +37,13 @@ enum swayc_layouts {
 	L_STACKED,
 	L_TABBED,
 	L_FLOATING,	/**< A psuedo-container, removed from the tree, to hold floating windows */
+
+	/* Awesome/Monad style auto layouts */
+	L_AUTO_LEFT,
+	L_AUTO_RIGHT,
+	L_AUTO_TOP,
+	L_AUTO_BOTTOM,
+
 	// Keep last
 	L_LAYOUTS,
 };
@@ -144,6 +151,16 @@ struct sway_container {
 	struct wlc_geometry title_bar_geometry;
 	struct wlc_geometry actual_geometry;
 	int border_thickness;
+
+	/**
+	 * Number of master views in auto layouts.
+	 */
+	uint32_t nb_master;
+
+	/**
+	 * Number of slave groups (e.g. columns) in auto layouts.
+	 */
+	uint32_t nb_slave_groups;
 };
 
 enum visibility_mask {
