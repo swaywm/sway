@@ -71,6 +71,10 @@ if(Backtrace_FOUND)
 	set(SWAY_Backtrace_HEADER "${Backtrace_HEADER}")
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+	find_package(EpollShim REQUIRED)
+endif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+
 include(FeatureSummary)
 include(Manpage)
 include(GNUInstallDirs)

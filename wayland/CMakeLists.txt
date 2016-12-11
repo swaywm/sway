@@ -3,6 +3,7 @@ include_directories(
 	${PANGO_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
 	${WAYLAND_INCLUDE_DIR}
+	${EPOLLSHIM_INCLUDE_DIRS}
 )
 
 add_library(sway-wayland STATIC
@@ -18,6 +19,7 @@ target_link_libraries(sway-wayland
 	sway-protocols
 	${PANGO_LIBRARIES}
 	${XKBCOMMON_LIBRARIES}
+	${EPOLLSHIM_LIBRARIES}
 	)
 
 if (WITH_GDK_PIXBUF)

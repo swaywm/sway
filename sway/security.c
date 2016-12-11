@@ -28,7 +28,11 @@ struct command_policy *alloc_command_policy(const char *command) {
 }
 
 enum secure_feature get_feature_policy(pid_t pid) {
+#ifdef __FreeBSD__
+	const char *fmt = "/proc/%d/file";
+#else
 	const char *fmt = "/proc/%d/exe";
+#endif
 	int pathlen = snprintf(NULL, 0, fmt, pid);
 	char *path = malloc(pathlen + 1);
 	snprintf(path, pathlen + 1, fmt, pid);
