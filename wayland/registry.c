@@ -182,7 +182,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *seat,
 		enum wl_seat_capability caps) {
 	struct registry *reg = data;
 
-	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !reg->pointer) {
+	if ((caps & WL_SEAT_CAPABILITY_POINTER) && !reg->pointer) {
 		reg->pointer = wl_seat_get_pointer(reg->seat);
 	} else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && reg->pointer) {
 		wl_pointer_destroy(reg->pointer);
