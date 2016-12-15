@@ -331,6 +331,9 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 
 bool handle_ipc_event(struct bar *bar) {
 	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
+	if (!resp) {
+		return false;
+	}
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
 		ipc_update_workspaces(bar);

@@ -88,9 +88,14 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 		}
 
 		if (filename && line) {
-			char *file = strdup(filename);
-			fprintf(stderr, "[%s:%d] ", basename(file), line);
-			free(file);
+			const char *file = filename + strlen(filename);
+			while (file != filename && *file != '/') {
+				--file;
+			}
+			if (*file == '/') {
+				++file;
+			}
+			fprintf(stderr, "[%s:%d] ", file, line);
 		}
 
 		va_list args;

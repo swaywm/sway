@@ -52,10 +52,18 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	}
 
 	struct ipc_response *response = malloc(sizeof(struct ipc_response));
+	if (!response) {
+		goto error_1;
+	}
+
 	total = 0;
 	response->size = data32[0];
 	response->type = data32[1];
 	char *payload = malloc(response->size + 1);
+	if (!payload) {
+		goto error_2;
+	}
+
 	while (total < response->size) {
 		ssize_t received = recv(socketfd, payload + total, response->size - total, 0);
 		if (received < 0) {
@@ -67,6 +75,11 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	response->payload = payload;
 
 	return response;
+error_2:
+	free(response);
+error_1:
+	sway_log(L_ERROR, "Unable to allocate memory for IPC response");
+	return NULL;
 }
 
 void free_ipc_response(struct ipc_response *response) {
