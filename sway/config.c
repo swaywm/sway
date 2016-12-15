@@ -575,6 +575,9 @@ bool read_config(FILE *file, struct sway_config *config) {
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
+		if (!line) {
+			continue;
+		}
 		line_number++;
 		line = strip_whitespace(line);
 		if (line[0] == '#') {
