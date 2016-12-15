@@ -217,7 +217,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	workspace->y = output->y;
 	workspace->width = output->width;
 	workspace->height = output->height;
-	workspace->name = strdup(name);
+	workspace->name = !name ? NULL : strdup(name);
 	workspace->visible = false;
 	workspace->floating = create_list();
 
