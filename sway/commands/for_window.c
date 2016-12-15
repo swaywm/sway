@@ -14,6 +14,9 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 	char *criteria = argv[0], *cmdlist = join_args(argv + 1, argc - 1);
 
 	struct criteria *crit = malloc(sizeof(struct criteria));
+	if (!crit) {
+		return cmd_results_new(CMD_FAILURE, "for_window", "Unable to allocate criteria");
+	}
 	crit->crit_raw = strdup(criteria);
 	crit->cmdlist = cmdlist;
 	crit->tokens = create_list();

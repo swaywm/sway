@@ -27,6 +27,9 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	snprintf(cmdlist, arglen, "%s%s", movecmd, *argv);
 
 	struct criteria *crit = malloc(sizeof(struct criteria));
+	if (!crit) {
+		return cmd_results_new(CMD_FAILURE, "assign", "Unable to allocate criteria");
+	}
 	crit->crit_raw = strdup(criteria);
 	crit->cmdlist = cmdlist;
 	crit->tokens = create_list();

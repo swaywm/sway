@@ -9,6 +9,9 @@ static struct cmd_results *parse_single_color(char **color, const char *cmd_name
 
 	if (!*color) {
 		*color = malloc(10);
+		if (!*color) {
+			return cmd_results_new(CMD_FAILURE, cmd_name, "Unable to allocate color");
+		}
 	}
 
 	error = add_color(cmd_name, *color, argv[0]);
@@ -29,6 +32,9 @@ static struct cmd_results *parse_three_colors(char ***colors, const char *cmd_na
 	for (i = 0; i < 3; i++) {
 		if (!*colors[i]) {
 			*(colors[i]) = malloc(10);
+		if (!*(colors[i])) {
+			return cmd_results_new(CMD_FAILURE, cmd_name, "Unable to allocate color");
+		}
 		}
 		error = add_color(cmd_name, *(colors[i]), argv[i]);
 		if (error) {

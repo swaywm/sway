@@ -47,6 +47,9 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 		free(var->value);
 	} else {
 		var = malloc(sizeof(struct sway_variable));
+		if (!var) {
+			return cmd_results_new(CMD_FAILURE, "set", "Unable to allocate variable");
+		}
 		var->name = strdup(argv[0]);
 		list_add(config->symbols, var);
 		list_qsort(config->symbols, compare_set_qsort);
