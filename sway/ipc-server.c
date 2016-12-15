@@ -298,7 +298,7 @@ void ipc_get_pixels(wlc_handle output) {
 		char *data = malloc(sizeof(response_header) + size->w * size->h * 4);
 		if (!data) {
 			sway_log(L_ERROR, "Unable to allocate pixels for get_pixels");
-			ipc_client_disconnect(client);
+			ipc_client_disconnect(req->client);
 			free(req);
 			continue;
 		}
