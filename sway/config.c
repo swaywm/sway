@@ -494,6 +494,9 @@ bool load_main_config(const char *file, bool is_active) {
 
 	struct sway_config *old_config = config;
 	config = calloc(1, sizeof(struct sway_config));
+	if (!config) {
+		sway_abort("Unable to allocate config");
+	}
 
 	config_defaults(config);
 	if (is_active) {

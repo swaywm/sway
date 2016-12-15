@@ -26,6 +26,9 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	const char *name = argv[0];
 
 	struct output_config *output = calloc(1, sizeof(struct output_config));
+	if (!output) {
+		return cmd_results_new(CMD_FAILURE, "output", "Unable to allocate output config");
+	}
 	output->x = output->y = output->width = output->height = -1;
 	output->name = strdup(name);
 	output->enabled = -1;

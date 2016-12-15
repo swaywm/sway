@@ -23,6 +23,9 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
 	swayc_t *c = calloc(1, sizeof(swayc_t));
+	if (!c) {
+		return NULL;
+	}
 	c->id = next_id++;
 	c->handle = -1;
 	c->gaps = -1;
