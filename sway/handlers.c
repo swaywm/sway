@@ -123,6 +123,11 @@ static void update_background_geometries(wlc_handle output) {
 
 static bool handle_input_created(struct libinput_device *device) {
 	const char *identifier = libinput_dev_unique_id(device);
+	if (!identifier) {
+		sway_log(L_ERROR, "Unable to allocate unique name for input device %p",
+				device);
+		return true;
+	}
 	sway_log(L_INFO, "Found input device (%s)", identifier);
 
 	list_add(input_devices, device);
@@ -402,6 +407,10 @@ static bool handle_view_created(wlc_handle handle) {
 	} else {
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
 		wlc_handle *h = malloc(sizeof(wlc_handle));
+		if (!h) {
+			sway_log(L_ERROR, "Unable to allocate window handle, view handler bailing out");
+			return true;
+		}
 		*h = handle;
 		sway_log(L_DEBUG, "Adding unmanaged window %p to %p", h, output->unmanaged);
 		list_add(output->unmanaged, h);

@@ -45,6 +45,10 @@ char *libinput_dev_unique_id(struct libinput_device *device) {
 
 	int len = strlen(name) + sizeof(char) * 6;
 	char *identifier = malloc(len);
+	if (!identifier) {
+		sway_log(L_ERROR, "Unable to allocate unique input device name");
+		return NULL;
+	}
 
 	const char *fmt = "%d:%d:%s";
 	snprintf(identifier, len, fmt, vendor, product, name); 

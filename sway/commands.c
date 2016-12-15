@@ -121,6 +121,9 @@ void input_cmd_apply(struct input_config *input) {
 		for (int i = 0; i < input_devices->length; ++i) {
 			device = input_devices->items[i];
 			char* dev_identifier = libinput_dev_unique_id(device);
+			if (!dev_identifier) {
+				break;
+			}
 			int match = dev_identifier && strcmp(dev_identifier, input->identifier) == 0;
 			free(dev_identifier);
 			if (match) {
