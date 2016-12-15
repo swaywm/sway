@@ -571,6 +571,10 @@ static void handle_binding_command(struct sway_binding *binding) {
 	// binding since it will be gone after the reload has completed.
 	if (strcasecmp(binding->command, "reload") == 0) {
 		binding_copy = sway_binding_dup(binding);
+		if (!binding_copy) {
+			sway_log(L_ERROR, "Unable to duplicate binding during reload");
+			return;
+		}
 		reload = true;
 	}
 
