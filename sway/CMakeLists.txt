@@ -74,7 +74,7 @@ function(add_config name source destination)
     add_custom_command(
         OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}
         COMMAND sed -r
-            's?__PREFIX__?${CMAKE_INSTALL_PREFIX}?g\; s?__SYSCONFDIR__?${CMAKE_INSTALL_FULL_SYSCONFDIR}?g'
+            's?__PREFIX__?${CMAKE_INSTALL_PREFIX}?g\; s?__SYSCONFDIR__?${CMAKE_INSTALL_FULL_SYSCONFDIR}?g\; s?__DATADIR__?${CMAKE_INSTALL_FULL_DATADIR}?g'
             ${PROJECT_SOURCE_DIR}/${source}.in > ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}
         DEPENDS ${PROJECT_SOURCE_DIR}/${source}.in
         COMMENT "Generating config file ${source}"
