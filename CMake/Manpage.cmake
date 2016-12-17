@@ -25,7 +25,7 @@ function(add_manpage name section)
 
 	install(
 		FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.${section}
-		DESTINATION share/man/man${section}
+		DESTINATION ${CMAKE_INSTALL_FULL_DATAROOTDIR}/man/man${section}
 		COMPONENT documentation
 	)
 endfunction()

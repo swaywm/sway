@@ -129,14 +129,14 @@ if(zsh-completions)
 endif()
 install(
 	FILES ${CMAKE_CURRENT_SOURCE_DIR}/sway.desktop
-	DESTINATION share/wayland-sessions
+	DESTINATION ${CMAKE_INSTALL_FULL_DATAROOTDIR}/wayland-sessions
 	COMPONENT data
 	)
 
 if(default-wallpaper)
 	install(
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/
-		DESTINATION share/sway
+		DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/sway
 		COMPONENT data
         FILES_MATCHING PATTERN "*Wallpaper*"
 		)
