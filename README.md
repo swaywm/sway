@@ -45,6 +45,7 @@ Install dependencies:
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
+* libcap
 * asciidoc
 * pcre
 * json-c
