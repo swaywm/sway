@@ -23,6 +23,10 @@ static struct panel_config *find_or_create_panel_config(struct wl_resource *reso
 	}
 	sway_log(L_DEBUG, "Creating panel config for resource %p", resource);
 	struct panel_config *config = calloc(1, sizeof(struct panel_config));
+	if (!config) {
+		sway_log(L_ERROR, "Unable to create panel config");
+		return NULL;
+	}
 	list_add(desktop_shell.panels, config);
 	config->wl_resource = resource;
 	return config;
@@ -81,6 +85,10 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	}
 	sway_log(L_DEBUG, "Setting surface %p as background for output %d", surface, (int)output);
 	struct background_config *config = malloc(sizeof(struct background_config));
+	if (!config) {
+		sway_log(L_ERROR, "Unable to allocate background config");
+		return;
+	}
 	config->client = client;
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);

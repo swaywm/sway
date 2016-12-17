@@ -1,4 +1,5 @@
 #include "readline.h"
+#include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -7,6 +8,7 @@ char *read_line(FILE *file) {
 	char *string = malloc(size);
 	char lastChar = '\0';
 	if (!string) {
+		sway_log(L_ERROR, "Unable to allocate memory for read_line");
 		return NULL;
 	}
 	while (1) {
@@ -27,6 +29,7 @@ char *read_line(FILE *file) {
 			char *new_string = realloc(string, size *= 2);
 			if (!new_string) {
 				free(string);
+				sway_log(L_ERROR, "Unable to allocate memory for read_line");
 				return NULL;
 			}
 			string = new_string;

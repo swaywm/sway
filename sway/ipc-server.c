@@ -106,7 +106,7 @@ void ipc_terminate(void) {
 struct sockaddr_un *ipc_user_sockaddr(void) {
 	struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
 	if (ipc_sockaddr == NULL) {
-		sway_abort("can't malloc ipc_sockaddr");
+		sway_abort("Can't allocate ipc_sockaddr");
 	}
 
 	ipc_sockaddr->sun_family = AF_UNIX;
@@ -119,7 +119,7 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 	}
 	if (path_size <= snprintf(ipc_sockaddr->sun_path, path_size,
 			"%s/sway-ipc.%i.%i.sock", dir, getuid(), getpid())) {
-		sway_abort("socket path won't fit into ipc_sockaddr->sun_path");
+		sway_abort("Socket path won't fit into ipc_sockaddr->sun_path");
 	}
 
 	return ipc_sockaddr;
@@ -148,13 +148,13 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 
 	int client_fd = accept(ipc_socket, NULL, NULL);
 	if (client_fd == -1) {
-		sway_log_errno(L_INFO, "Unable to accept IPC client connection");
+		sway_log_errno(L_ERROR, "Unable to accept IPC client connection");
 		return 0;
 	}
 
 	int flags;
 	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
-		sway_log_errno(L_INFO, "Unable to set CLOEXEC on IPC client socket");
+		sway_log_errno(L_ERROR, "Unable to set CLOEXEC on IPC client socket");
 		close(client_fd);
 		return 0;
 	}
@@ -171,6 +171,11 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	}
 
 	struct ipc_client* client = malloc(sizeof(struct ipc_client));
+	if (!client) {
+		sway_log(L_ERROR, "Unable to allocate ipc client");
+		close(client_fd);
+		return 0;
+	}
 	client->payload_length = 0;
 	client->fd = client_fd;
 	client->subscribed_events = 0;
@@ -187,7 +192,7 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
 	if (mask & WLC_EVENT_ERROR) {
-		sway_log(L_INFO, "IPC Client socket error, removing client");
+		sway_log(L_ERROR, "IPC Client socket error, removing client");
 		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
@@ -291,6 +296,12 @@ void ipc_get_pixels(wlc_handle output) {
 		char response_header[9];
 		memset(response_header, 0, sizeof(response_header));
 		char *data = malloc(sizeof(response_header) + size->w * size->h * 4);
+		if (!data) {
+			sway_log(L_ERROR, "Unable to allocate pixels for get_pixels");
+			ipc_client_disconnect(req->client);
+			free(req);
+			continue;
+		}
 		wlc_pixels_read(WLC_RGBA8888, &req->geo, &g_out, data + sizeof(response_header));
 
 		response_header[0] = 1;
@@ -318,7 +329,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	char *buf = malloc(client->payload_length + 1);
 	if (!buf) {
-		sway_log_errno(L_INFO, "Out of memory");
+		sway_log_errno(L_INFO, "Unable to allocate IPC payload");
 		ipc_client_disconnect(client);
 		return;
 	}
@@ -414,7 +425,11 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				struct libinput_device *device = input_devices->items[i];
 				char* identifier = libinput_dev_unique_id(device);
 				json_object *device_object = json_object_new_object();
-				json_object_object_add(device_object, "identifier", json_object_new_string(identifier));
+				if (!identifier) {
+					json_object_object_add(device_object, "identifier", NULL);
+				} else {
+					json_object_object_add(device_object, "identifier", json_object_new_string(identifier));
+				}
 				json_object_array_add(inputs, device_object);
 				free(identifier);
 			}
@@ -493,6 +508,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			goto exit_cleanup;
 		}
 		struct get_pixels_request *req = malloc(sizeof(struct get_pixels_request));
+		if (!req) {
+			sway_log(L_ERROR, "Unable to allocate get_pixels request");
+			goto exit_cleanup;
+		}
 		req->client = client;
 		req->output = output->handle;
 		req->geo = g;

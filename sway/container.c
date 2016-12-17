@@ -23,6 +23,9 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
 	swayc_t *c = calloc(1, sizeof(swayc_t));
+	if (!c) {
+		return NULL;
+	}
 	c->id = next_id++;
 	c->handle = -1;
 	c->gaps = -1;
@@ -217,7 +220,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	workspace->y = output->y;
 	workspace->width = output->width;
 	workspace->height = output->height;
-	workspace->name = strdup(name);
+	workspace->name = !name ? NULL : strdup(name);
 	workspace->visible = false;
 	workspace->floating = create_list();
 

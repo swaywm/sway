@@ -29,20 +29,24 @@ void border_clear(struct border *border) {
 static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry g, cairo_surface_t **surface) {
 	if (view->border == NULL) {
 		view->border = malloc(sizeof(struct border));
+		if (!view->border) {
+			sway_log(L_ERROR, "Unable to allocate window border information");
+			return NULL;
+		}
 	}
 	cairo_t *cr;
 	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, g.size.w);
 	view->border->buffer = calloc(stride * g.size.h, sizeof(unsigned char));
 	view->border->geometry = g;
 	if (!view->border->buffer) {
-		sway_log(L_DEBUG, "Unable to allocate buffer");
+		sway_log(L_ERROR, "Unable to allocate window border buffer");
 		return NULL;
 	}
 	*surface = cairo_image_surface_create_for_data(view->border->buffer,
 			CAIRO_FORMAT_ARGB32, g.size.w, g.size.h, stride);
 	if (cairo_surface_status(*surface) != CAIRO_STATUS_SUCCESS) {
 		border_clear(view->border);
-		sway_log(L_DEBUG, "Unable to allocate surface");
+		sway_log(L_ERROR, "Unable to allocate window border surface");
 		return NULL;
 	}
 	cr = cairo_create(*surface);
@@ -50,7 +54,7 @@ static cairo_t *create_border_buffer(swayc_t *view, struct wlc_geometry g, cairo
 	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
 		cairo_surface_destroy(*surface);
 		border_clear(view->border);
-		sway_log(L_DEBUG, "Unable to create cairo context");
+		sway_log(L_ERROR, "Unable to create cairo context");
 		return NULL;
 	}
 	return cr;
@@ -238,6 +242,10 @@ static char *generate_container_title(swayc_t *container) {
 	}
 	int len = 9;
 	name = malloc(len * sizeof(char));
+	if (!name) {
+		sway_log(L_ERROR, "Unable to allocate container title");
+		return NULL;
+	}
 	snprintf(name, len, "sway: %c[", layout);
 
 	int i;
@@ -257,6 +265,11 @@ static char *generate_container_title(swayc_t *container) {
 		}
 
 		name = malloc(len * sizeof(char));
+		if (!name) {
+			free(prev_name);
+			sway_log(L_ERROR, "Unable to allocate container title");
+			return NULL;
+		}
 		if (i < container->children->length-1) {
 			snprintf(name, len, "%s%s ", prev_name, title);
 		} else {
@@ -268,6 +281,11 @@ static char *generate_container_title(swayc_t *container) {
 	prev_name = name;
 	len = strlen(name) + 2;
 	name = malloc(len * sizeof(char));
+	if (!name) {
+		free(prev_name);
+		sway_log(L_ERROR, "Unable to allocate container title");
+		return NULL;
+	}
 	snprintf(name, len, "%s]", prev_name);
 	free(prev_name);
 	free(container->name);
@@ -347,6 +365,9 @@ static void update_view_border(swayc_t *view) {
 			}
 		};
 		cr = create_border_buffer(view, g, &surface);
+		if (!cr) {
+			goto cleanup;
+		}
 
 		bool render_top = !should_hide_top_border(view, view->y);
 		if (view == focused || is_child_of_focused) {
@@ -407,6 +428,8 @@ static void update_view_border(swayc_t *view) {
 			break;
 		}
 	}
+
+cleanup:
 
 	if (surface) {
 		cairo_surface_flush(surface);

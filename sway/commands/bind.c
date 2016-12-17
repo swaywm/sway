@@ -16,6 +16,10 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	}
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
+	if (!binding) {
+		return cmd_results_new(CMD_FAILURE, "bindsym",
+				"Unable to allocate binding");
+	}
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->release = false;
@@ -46,14 +50,21 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 			continue;
 		}
 		// Check for xkb key
-		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i], XKB_KEYSYM_CASE_INSENSITIVE);
+		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i],
+				XKB_KEYSYM_CASE_INSENSITIVE);
 		if (!sym) {
-			error = cmd_results_new(CMD_INVALID, "bindsym", "Unknown key '%s'", (char *)split->items[i]);
 			free_sway_binding(binding);
-			list_free(split);
-			return error;
+			free_flat_list(split);
+			return cmd_results_new(CMD_INVALID, "bindsym", "Unknown key '%s'",
+					(char *)split->items[i]);
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
+		if (!key) {
+			free_sway_binding(binding);
+			free_flat_list(split);
+			return cmd_results_new(CMD_FAILURE, "bindsym",
+					"Unable to allocate binding");
+		}
 		*key = sym;
 		list_add(binding->keys, key);
 	}
@@ -82,6 +93,10 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	}
 
 	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
+	if (!binding) {
+		return cmd_results_new(CMD_FAILURE, "bindsym",
+				"Unable to allocate binding");
+	}
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->release = false;

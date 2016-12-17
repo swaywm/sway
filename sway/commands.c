@@ -121,6 +121,9 @@ void input_cmd_apply(struct input_config *input) {
 		for (int i = 0; i < input_devices->length; ++i) {
 			device = input_devices->items[i];
 			char* dev_identifier = libinput_dev_unique_id(device);
+			if (!dev_identifier) {
+				break;
+			}
 			int match = dev_identifier && strcmp(dev_identifier, input->identifier) == 0;
 			free(dev_identifier);
 			if (match) {
@@ -386,7 +389,11 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 			if (!results) {
 				int len = strlen(criteria) + strlen(head) + 4;
 				char *tmp = malloc(len);
-				snprintf(tmp, len, "[%s] %s", criteria, head);
+				if (tmp) {
+					snprintf(tmp, len, "[%s] %s", criteria, head);
+				} else {
+					sway_log(L_DEBUG, "Unable to allocate criteria string for cmd result");
+				}
 				results = cmd_results_new(CMD_INVALID, tmp,
 					"Can't handle criteria string: Refusing to execute command");
 				free(tmp);
@@ -568,6 +575,9 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	if (!policy) {
 		policy = alloc_command_policy(cmd);
+		if (!policy) {
+			sway_abort("Unable to allocate security policy");
+		}
 		list_add(config->command_policies, policy);
 	}
 	policy->context = context;
@@ -584,6 +594,10 @@ cleanup:
 
 struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
+	if (!results) {
+		sway_log(L_ERROR, "Unable to allocate command results");
+		return NULL;
+	}
 	results->status = status;
 	if (input) {
 		results->input = strdup(input); // input is the command name
@@ -594,7 +608,9 @@ struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, c
 		char *error = malloc(256);
 		va_list args;
 		va_start(args, format);
-		vsnprintf(error, 256, format, args);
+		if (error) {
+			vsnprintf(error, 256, format, args);
+		}
 		va_end(args);
 		results->error = error;
 	} else {

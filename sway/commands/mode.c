@@ -30,7 +30,10 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 	}
 	// Create mode if it doesn't exist
 	if (!mode && mode_make) {
-		mode = malloc(sizeof*mode);
+		mode = malloc(sizeof(struct sway_mode));
+		if (!mode) {
+			return cmd_results_new(CMD_FAILURE, "mode", "Unable to allocate mode");
+		}
 		mode->name = strdup(mode_name);
 		mode->bindings = create_list();
 		list_add(config->modes, mode);

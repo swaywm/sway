@@ -26,6 +26,9 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	const char *name = argv[0];
 
 	struct output_config *output = calloc(1, sizeof(struct output_config));
+	if (!output) {
+		return cmd_results_new(CMD_FAILURE, "output", "Unable to allocate output config");
+	}
 	output->x = output->y = output->width = output->height = -1;
 	output->name = strdup(name);
 	output->enabled = -1;
@@ -113,12 +116,20 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				src = p.we_wordv[0];
 				if (config->reading && *src != '/') {
 					char *conf = strdup(config->current_config);
-					char *conf_path = dirname(conf);
-					src = malloc(strlen(conf_path) + strlen(src) + 2);
-					sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
-					free(conf);
+					if (conf) {
+						char *conf_path = dirname(conf);
+						src = malloc(strlen(conf_path) + strlen(src) + 2);
+						if (src) {
+							sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
+						} else {
+							sway_log(L_ERROR, "Unable to allocate background source");
+						}
+						free(conf);
+					} else {
+						sway_log(L_ERROR, "Unable to allocate background source");
+					}
 				}
-				if (access(src, F_OK) == -1) {
+				if (!src || access(src, F_OK) == -1) {
 					return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
 				}
 				for (char *m = mode; *m; ++m) *m = tolower(*m);

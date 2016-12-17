@@ -39,6 +39,9 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 
 	pid_t pid;
 	pid_t *child = malloc(sizeof(pid_t)); // malloc'd so that Linux can avoid copying the process space
+	if (!child) {
+		return cmd_results_new(CMD_FAILURE, "exec_always", "Unable to allocate child pid");
+	}
 	// Fork process
 	if ((pid = fork()) == 0) {
 		// Fork child process again
@@ -56,7 +59,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		_exit(0); // Close child process
 	} else if (pid < 0) {
 		free(child);
-		return cmd_results_new(CMD_FAILURE, "exec_always", "Command failed (sway could not fork).");
+		return cmd_results_new(CMD_FAILURE, "exec_always", "fork() failed");
 	}
 	close(fd[1]); // close write
 	ssize_t s = 0;
@@ -73,8 +76,6 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		pw->pid = child;
 		pw->workspace = strdup(ws->name);
 		pid_workspace_add(pw);
-		// TODO: keep track of this pid and open the corresponding view on the current workspace
-		// blocked pending feature in wlc
 	} else {
 		free(child);
 	}

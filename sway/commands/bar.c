@@ -32,6 +32,9 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 	// Create new bar with default values
 	struct bar_config *bar = default_bar_config();
+	if (!bar) {
+		return cmd_results_new(CMD_FAILURE, "bar", "Unable to allocate bar state");
+	}
 
 	// set bar id
 	int i;
@@ -39,7 +42,11 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		if (bar == config->bars->items[i]) {
 			const int len = 5 + numlen(i); // "bar-" + i + \0
 			bar->id = malloc(len * sizeof(char));
-			snprintf(bar->id, len, "bar-%d", i);
+			if (bar->id) {
+				snprintf(bar->id, len, "bar-%d", i);
+			} else {
+				return cmd_results_new(CMD_FAILURE, "bar", "Unable to allocate bar ID");
+			}
 			break;
 		}
 	}

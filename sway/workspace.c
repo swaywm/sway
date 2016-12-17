@@ -121,6 +121,10 @@ char *workspace_next_name(const char *output_name) {
 		l = 3;
 	}
 	char *name = malloc(l + 1);
+	if (!name) {
+		sway_log(L_ERROR, "Could not allocate workspace name");
+		return NULL;
+	}
 	sprintf(name, "%d", ws_num++);
 	return name;
 }
@@ -278,7 +282,11 @@ bool workspace_switch(swayc_t *workspace) {
 			|| (strcmp(prev_workspace_name, active_ws->name)
 				&& active_ws != workspace)) {
 		free(prev_workspace_name);
-		prev_workspace_name = malloc(strlen(active_ws->name)+1);
+		prev_workspace_name = malloc(strlen(active_ws->name) + 1);
+		if (!prev_workspace_name) {
+			sway_log(L_ERROR, "Unable to allocate previous workspace name");
+			return false;
+		}
 		strcpy(prev_workspace_name, active_ws->name);
 	}
 

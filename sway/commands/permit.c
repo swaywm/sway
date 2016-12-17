@@ -50,6 +50,9 @@ static struct feature_policy *get_policy(const char *name) {
 	}
 	if (!policy) {
 		policy = alloc_feature_policy(name);
+		if (!policy) {
+			sway_abort("Unable to allocate security policy");
+		}
 		list_add(config->feature_policies, policy);
 	}
 	return policy;

@@ -29,21 +29,30 @@ struct sway_config *config = NULL;
 static void terminate_swaybar(pid_t pid);
 
 static void free_variable(struct sway_variable *var) {
+	if (!var) {
+		return;
+	}
 	free(var->name);
 	free(var->value);
 	free(var);
 }
 
 static void free_binding(struct sway_binding *bind) {
+	if (!bind) {
+		return;
+	}
 	free_flat_list(bind->keys);
 	free(bind->command);
 	free(bind);
 }
 
 static void free_mode(struct sway_mode *mode) {
+	if (!mode) {
+		return;
+	}
 	free(mode->name);
 	int i;
-	for (i = 0; i < mode->bindings->length; ++i) {
+	for (i = 0; mode->bindings && i < mode->bindings->length; ++i) {
 		free_binding(mode->bindings->items[i]);
 	}
 	list_free(mode->bindings);
@@ -51,13 +60,16 @@ static void free_mode(struct sway_mode *mode) {
 }
 
 static void free_bar(struct bar_config *bar) {
+	if (!bar) {
+		return;
+	}
 	free(bar->mode);
 	free(bar->hidden_state);
 	free(bar->status_command);
 	free(bar->font);
 	free(bar->separator_symbol);
 	int i;
-	for (i = 0; i < bar->bindings->length; ++i) {
+	for (i = 0; bar->bindings && i < bar->bindings->length; ++i) {
 		free_sway_mouse_binding(bar->bindings->items[i]);
 	}
 	list_free(bar->bindings);
@@ -96,16 +108,25 @@ static void free_bar(struct bar_config *bar) {
 }
 
 void free_input_config(struct input_config *ic) {
+	if (!ic) {
+		return;
+	}
 	free(ic->identifier);
 	free(ic);
 }
 
 void free_output_config(struct output_config *oc) {
+	if (!oc) {
+		return;
+	}
 	free(oc->name);
 	free(oc);
 }
 
 static void free_workspace_output(struct workspace_output *wo) {
+	if (!wo) {
+		return;
+	}
 	free(wo->output);
 	free(wo->workspace);
 	free(wo);
@@ -134,6 +155,10 @@ void pid_workspace_add(struct pid_workspace *pw) {
 	struct pid_workspace *list_pw = NULL;
 	struct timespec ts;
 	time_t *now = malloc(sizeof(time_t));
+	if (!now) {
+		sway_log(L_ERROR, "Allocating time for pid_workspace failed");
+		return;
+	}
 
 	pid_workspace_cleanup();
 
@@ -168,65 +193,74 @@ void free_pid_workspace(struct pid_workspace *pw) {
 }
 
 void free_command_policy(struct command_policy *policy) {
+	if (!policy) {
+		return;
+	}
 	free(policy->command);
 	free(policy);
 }
 
 void free_feature_policy(struct feature_policy *policy) {
+	if (!policy) {
+		return;
+	}
 	free(policy->program);
 	free(policy);
 }
 
 void free_config(struct sway_config *config) {
+	if (!config) {
+		return;
+	}
 	int i;
-	for (i = 0; i < config->symbols->length; ++i) {
+	for (i = 0; config->symbols && i < config->symbols->length; ++i) {
 		free_variable(config->symbols->items[i]);
 	}
 	list_free(config->symbols);
 
-	for (i = 0; i < config->modes->length; ++i) {
+	for (i = 0; config->modes && i < config->modes->length; ++i) {
 		free_mode(config->modes->items[i]);
 	}
 	list_free(config->modes);
 
-	for (i = 0; i < config->bars->length; ++i) {
+	for (i = 0; config->bars && i < config->bars->length; ++i) {
 		free_bar(config->bars->items[i]);
 	}
 	list_free(config->bars);
 
 	free_flat_list(config->cmd_queue);
 
-	for (i = 0; i < config->workspace_outputs->length; ++i) {
+	for (i = 0; config->workspace_outputs && i < config->workspace_outputs->length; ++i) {
 		free_workspace_output(config->workspace_outputs->items[i]);
 	}
 	list_free(config->workspace_outputs);
 
-	for (i = 0; i < config->pid_workspaces->length; ++i) {
+	for (i = 0; config->pid_workspaces && i < config->pid_workspaces->length; ++i) {
 		free_pid_workspace(config->pid_workspaces->items[i]);
 	}
 	list_free(config->pid_workspaces);
 
-	for (i = 0; i < config->criteria->length; ++i) {
+	for (i = 0; config->criteria && i < config->criteria->length; ++i) {
 		free_criteria(config->criteria->items[i]);
 	}
 	list_free(config->criteria);
 
-	for (i = 0; i < config->input_configs->length; ++i) {
+	for (i = 0; config->input_configs && i < config->input_configs->length; ++i) {
 		free_input_config(config->input_configs->items[i]);
 	}
 	list_free(config->input_configs);
 
-	for (i = 0; i < config->output_configs->length; ++i) {
+	for (i = 0; config->output_configs && i < config->output_configs->length; ++i) {
 		free_output_config(config->output_configs->items[i]);
 	}
 	list_free(config->output_configs);
 
-	for (i = 0; i < config->command_policies->length; ++i) {
+	for (i = 0; config->command_policies && i < config->command_policies->length; ++i) {
 		free_command_policy(config->command_policies->items[i]);
 	}
 	list_free(config->command_policies);
 
-	for (i = 0; i < config->feature_policies->length; ++i) {
+	for (i = 0; config->feature_policies && i < config->feature_policies->length; ++i) {
 		free_feature_policy(config->feature_policies->items[i]);
 	}
 	list_free(config->feature_policies);
@@ -243,37 +277,37 @@ void free_config(struct sway_config *config) {
 
 
 static bool file_exists(const char *path) {
-	return access(path, R_OK) != -1;
+	return path && access(path, R_OK) != -1;
 }
 
 static void config_defaults(struct sway_config *config) {
-	config->symbols = create_list();
-	config->modes = create_list();
-	config->bars = create_list();
-	config->workspace_outputs = create_list();
-	config->pid_workspaces = create_list();
-	config->criteria = create_list();
-	config->input_configs = create_list();
-	config->output_configs = create_list();
+	if (!(config->symbols = create_list())) goto cleanup;
+	if (!(config->modes = create_list())) goto cleanup;
+	if (!(config->bars = create_list())) goto cleanup;
+	if (!(config->workspace_outputs = create_list())) goto cleanup;
+	if (!(config->pid_workspaces = create_list())) goto cleanup;
+	if (!(config->criteria = create_list())) goto cleanup;
+	if (!(config->input_configs = create_list())) goto cleanup;
+	if (!(config->output_configs = create_list())) goto cleanup;
 
-	config->cmd_queue = create_list();
+	if (!(config->cmd_queue = create_list())) goto cleanup;
 
-	config->current_mode = malloc(sizeof(struct sway_mode));
-	config->current_mode->name = malloc(sizeof("default"));
+	if (!(config->current_mode = malloc(sizeof(struct sway_mode)))) goto cleanup;
+	if (!(config->current_mode->name = malloc(sizeof("default")))) goto cleanup;
 	strcpy(config->current_mode->name, "default");
-	config->current_mode->bindings = create_list();
+	if (!(config->current_mode->bindings = create_list())) goto cleanup;
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;
 	config->dragging_key = M_LEFT_CLICK;
 	config->resizing_key = M_RIGHT_CLICK;
-	config->floating_scroll_up_cmd = strdup("");
-	config->floating_scroll_down_cmd = strdup("");
-	config->floating_scroll_left_cmd = strdup("");
-	config->floating_scroll_right_cmd = strdup("");
+	if (!(config->floating_scroll_up_cmd = strdup(""))) goto cleanup;
+	if (!(config->floating_scroll_down_cmd = strdup(""))) goto cleanup;
+	if (!(config->floating_scroll_left_cmd = strdup(""))) goto cleanup;
+	if (!(config->floating_scroll_right_cmd = strdup(""))) goto cleanup;
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
-	config->font = strdup("monospace 10");
+	if (!(config->font = strdup("monospace 10"))) goto cleanup;
 	config->font_height = get_font_text_height(config->font);
 
 	// floating view
@@ -297,9 +331,9 @@ static void config_defaults(struct sway_config *config) {
 	config->gaps_inner = 0;
 	config->gaps_outer = 0;
 
-	config->active_bar_modifiers = create_list();
+	if (!(config->active_bar_modifiers = create_list())) goto cleanup;
 
-	config->config_chain = create_list();
+	if (!(config->config_chain = create_list())) goto cleanup;
 	config->current_config = NULL;
 
 	// borders
@@ -343,9 +377,13 @@ static void config_defaults(struct sway_config *config) {
 	config->border_colors.background = 0xFFFFFFFF;
 
 	// Security
-	config->command_policies = create_list();
-	config->feature_policies = create_list();
+	if (!(config->command_policies = create_list())) goto cleanup;
+	if (!(config->feature_policies = create_list())) goto cleanup;
 	config->ipc_policy = UINT32_MAX;
+
+	return;
+cleanup:
+	sway_abort("Unable to allocate config structures");
 }
 
 static int compare_modifiers(const void *left, const void *right) {
@@ -386,11 +424,15 @@ static char *get_config_path(void) {
 	if (!getenv("XDG_CONFIG_HOME")) {
 		char *home = getenv("HOME");
 		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
-		strcpy(config_home, home);
-		strcat(config_home, "/.config");
-		setenv("XDG_CONFIG_HOME", config_home, 1);
-		sway_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
-		free(config_home);
+		if (!config_home) {
+			sway_log(L_ERROR, "Unable to allocate $HOME/.config");
+		} else {
+			strcpy(config_home, home);
+			strcat(config_home, "/.config");
+			setenv("XDG_CONFIG_HOME", config_home, 1);
+			sway_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+			free(config_home);
+		}
 	}
 
 	wordexp_t p;
@@ -452,6 +494,9 @@ bool load_main_config(const char *file, bool is_active) {
 
 	struct sway_config *old_config = config;
 	config = calloc(1, sizeof(struct sway_config));
+	if (!config) {
+		sway_abort("Unable to allocate config");
+	}
 
 	config_defaults(config);
 	if (is_active) {
@@ -491,6 +536,10 @@ static bool load_include_config(const char *path, const char *parent_dir, struct
 	if (len >= 1 && path[0] != '/') {
 		len = len + strlen(parent_dir) + 2;
 		full_path = malloc(len * sizeof(char));
+		if (!full_path) {
+			sway_log(L_ERROR, "Unable to allocate full path to included config");
+			return false;
+		}
 		snprintf(full_path, len, "%s/%s", parent_dir, path);
 	}
 
@@ -575,6 +624,9 @@ bool read_config(FILE *file, struct sway_config *config) {
 	char *line;
 	while (!feof(file)) {
 		line = read_line(file);
+		if (!line) {
+			continue;
+		}
 		line_number++;
 		line = strip_whitespace(line);
 		if (line[0] == '#') {
@@ -816,6 +868,10 @@ static void invoke_swaybar(struct bar_config *bar) {
 			// run custom swaybar
 			int len = strlen(bar->swaybar_command) + strlen(bar->id) + 5;
 			char *command = malloc(len * sizeof(char));
+			if (!command) {
+				sway_log(L_ERROR, "Unable to allocate swaybar command string");
+				return;
+			}
 			snprintf(command, len, "%s -b %s", bar->swaybar_command, bar->id);
 
 			char *const cmd[] = {
@@ -1052,6 +1108,11 @@ char *do_var_replacement(char *str) {
 			if (strncmp(find, var->name, vnlen) == 0) {
 				int vvlen = strlen(var->value);
 				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
+				if (!newstr) {
+					sway_log(L_ERROR,
+							"Unable to allocate replacement during variable expansion");
+					break;
+				}
 				char *newptr = newstr;
 				int offset = find - str;
 				strncpy(newptr, str, offset);
@@ -1185,6 +1246,9 @@ void free_sway_mouse_binding(struct sway_mouse_binding *binding) {
 
 struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
 	struct sway_binding *new_sb = malloc(sizeof(struct sway_binding));
+	if (!new_sb) {
+		return NULL;
+	}
 
 	new_sb->order = sb->order;
 	new_sb->modifiers = sb->modifiers;
@@ -1194,6 +1258,10 @@ struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
 	int i;
 	for (i = 0; i < sb->keys->length; ++i) {
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
+		if (!key) {
+			free_sway_binding(new_sb);
+			return NULL;
+		}
 		*key = *(xkb_keysym_t *)sb->keys->items[i];
 		list_add(new_sb->keys, key);
 	}
@@ -1204,13 +1272,16 @@ struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
 struct bar_config *default_bar_config(void) {
 	struct bar_config *bar = NULL;
 	bar = malloc(sizeof(struct bar_config));
-	bar->mode = strdup("dock");
-	bar->hidden_state = strdup("hide");
+	if (!bar) {
+		return NULL;
+	}
+	if (!(bar->mode = strdup("dock"))) goto cleanup;
+	if (!(bar->hidden_state = strdup("hide"))) goto cleanup;
 	bar->modifier = WLC_BIT_MOD_LOGO;
 	bar->outputs = NULL;
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
-	bar->bindings = create_list();
-	bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done");
+	if (!(bar->bindings = create_list())) goto cleanup;
+	if (!(bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done"))) goto cleanup;
 	bar->pango_markup = false;
 	bar->swaybar_command = NULL;
 	bar->font = NULL;
@@ -1224,21 +1295,21 @@ struct bar_config *default_bar_config(void) {
 	bar->verbose = false;
 	bar->pid = 0;
 	// set default colors
-	bar->colors.background = strndup("#000000ff", 9);
-	bar->colors.statusline = strndup("#ffffffff", 9);
-	bar->colors.separator = strndup("#666666ff", 9);
-	bar->colors.focused_workspace_border = strndup("#4c7899ff", 9);
-	bar->colors.focused_workspace_bg = strndup("#285577ff", 9);
-	bar->colors.focused_workspace_text = strndup("#ffffffff", 9);
-	bar->colors.active_workspace_border = strndup("#333333ff", 9);
-	bar->colors.active_workspace_bg = strndup("#5f676aff", 9);
-	bar->colors.active_workspace_text = strndup("#ffffffff", 9);
-	bar->colors.inactive_workspace_border = strndup("#333333ff", 9);
-	bar->colors.inactive_workspace_bg = strndup("#222222ff", 9);
-	bar->colors.inactive_workspace_text = strndup("#888888ff", 9);
-	bar->colors.urgent_workspace_border = strndup("#2f343aff", 9);
-	bar->colors.urgent_workspace_bg = strndup("#900000ff", 9);
-	bar->colors.urgent_workspace_text = strndup("#ffffffff", 9);
+	if (!(bar->colors.background = strndup("#000000ff", 9))) goto cleanup;
+	if (!(bar->colors.statusline = strndup("#ffffffff", 9))) goto cleanup;
+	if (!(bar->colors.separator = strndup("#666666ff", 9))) goto cleanup;
+	if (!(bar->colors.focused_workspace_border = strndup("#4c7899ff", 9))) goto cleanup;
+	if (!(bar->colors.focused_workspace_bg = strndup("#285577ff", 9))) goto cleanup;
+	if (!(bar->colors.focused_workspace_text = strndup("#ffffffff", 9))) goto cleanup;
+	if (!(bar->colors.active_workspace_border = strndup("#333333ff", 9))) goto cleanup;
+	if (!(bar->colors.active_workspace_bg = strndup("#5f676aff", 9))) goto cleanup;
+	if (!(bar->colors.active_workspace_text = strndup("#ffffffff", 9))) goto cleanup;
+	if (!(bar->colors.inactive_workspace_border = strndup("#333333ff", 9))) goto cleanup;
+	if (!(bar->colors.inactive_workspace_bg = strndup("#222222ff", 9))) goto cleanup;
+	if (!(bar->colors.inactive_workspace_text = strndup("#888888ff", 9))) goto cleanup;
+	if (!(bar->colors.urgent_workspace_border = strndup("#2f343aff", 9))) goto cleanup;
+	if (!(bar->colors.urgent_workspace_bg = strndup("#900000ff", 9))) goto cleanup;
+	if (!(bar->colors.urgent_workspace_text = strndup("#ffffffff", 9))) goto cleanup;
 	// if the following colors stay undefined, they fall back to background,
 	// statusline, separator and urgent_workspace_*.
 	bar->colors.focused_background = NULL;
@@ -1251,4 +1322,8 @@ struct bar_config *default_bar_config(void) {
 	list_add(config->bars, bar);
 
 	return bar;
+
+cleanup:
+	free_bar(bar);
+	return NULL;
 }

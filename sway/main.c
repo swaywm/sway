@@ -53,7 +53,10 @@ void detect_proprietary() {
 		return;
 	}
 	while (!feof(f)) {
-		char *line = read_line(f);
+		char *line;
+		if (!(line = read_line(f))) {
+			break;
+		}
 		if (strstr(line, "nvidia")) {
 			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
 			fprintf(stderr, "\x1B[1;31mYes, they STILL don't work with the newly announced wayland \"support\".\x1B[0m\n");
@@ -118,7 +121,10 @@ static void log_distro() {
 		if (f) {
 			sway_log(L_INFO, "Contents of %s:", paths[i]);
 			while (!feof(f)) {
-				char *line = read_line(f);
+				char *line;
+				if (!(line = read_line(f))) {
+					break;
+				}
 				if (*line) {
 					sway_log(L_INFO, "%s", line);
 				}
@@ -136,7 +142,10 @@ static void log_kernel() {
 		return;
 	}
 	while (!feof(f)) {
-		char *line = read_line(f);
+		char *line;
+		if (!(line = read_line(f))) {
+			break;
+		}
 		if (*line) {
 			sway_log(L_INFO, "%s", line);
 		}

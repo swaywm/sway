@@ -11,8 +11,16 @@
 
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
+	if (!input) {
+		sway_log(L_DEBUG, "Unable to allocate input config");
+		return NULL;
+	}
 	sway_log(L_DEBUG, "new_input_config(%s)", identifier);
-	input->identifier = strdup(identifier);
+	if (!(input->identifier = strdup(identifier))) {
+		free(input);
+		sway_log(L_DEBUG, "Unable to allocate input config");
+		return NULL;
+	}
 
 	input->tap = INT_MIN;
 	input->drag_lock = INT_MIN;
@@ -45,6 +53,10 @@ char *libinput_dev_unique_id(struct libinput_device *device) {
 
 	int len = strlen(name) + sizeof(char) * 6;
 	char *identifier = malloc(len);
+	if (!identifier) {
+		sway_log(L_ERROR, "Unable to allocate unique input device name");
+		return NULL;
+	}
 
 	const char *fmt = "%d:%d:%s";
 	snprintf(identifier, len, fmt, vendor, product, name); 

@@ -26,6 +26,9 @@ struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "bindsym", "Invalid mouse binding %s", argv[1]);
 	}
 	struct sway_mouse_binding *binding = malloc(sizeof(struct sway_mouse_binding));
+	if (!binding) {
+		return cmd_results_new(CMD_FAILURE, "bindsym", "Unable to allocate binding");
+	}
 	binding->button = numbutton;
 	binding->command = join_args(argv + 1, argc - 1);
 

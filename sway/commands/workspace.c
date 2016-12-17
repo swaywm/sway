@@ -61,6 +61,10 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				return error;
 			}
 			struct workspace_output *wso = calloc(1, sizeof(struct workspace_output));
+			if (!wso) {
+				return cmd_results_new(CMD_FAILURE, "workspace output",
+						"Unable to allocate workspace output");
+			}
 			wso->workspace = strdup(argv[0]);
 			wso->output = strdup(argv[2]);
 			int i = -1;

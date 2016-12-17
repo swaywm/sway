@@ -15,14 +15,28 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 	}
 
 	struct feature_policy *policy = malloc(sizeof(struct feature_policy));
+	if (!policy) {
+		return NULL;
+	}
 	policy->program = strdup(program);
+	if (!policy->program) {
+		free(policy);
+		return NULL;
+	}
 	policy->features = default_policy;
 	return policy;
 }
 
 struct command_policy *alloc_command_policy(const char *command) {
 	struct command_policy *policy = malloc(sizeof(struct command_policy));
+	if (!policy) {
+		return NULL;
+	}
 	policy->command = strdup(command);
+	if (!policy->command) {
+		free(policy);
+		return NULL;
+	}
 	policy->context = 0;
 	return policy;
 }
@@ -35,12 +49,14 @@ enum secure_feature get_feature_policy(pid_t pid) {
 #endif
 	int pathlen = snprintf(NULL, 0, fmt, pid);
 	char *path = malloc(pathlen + 1);
-	snprintf(path, pathlen + 1, fmt, pid);
+	if (path) {
+		snprintf(path, pathlen + 1, fmt, pid);
+	}
 	static char link[2048];
 
 	uint32_t default_policy = 0;
 
-	ssize_t len = readlink(path, link, sizeof(link));
+	ssize_t len = !path ? -1 : readlink(path, link, sizeof(link));
 	if (len < 0) {
 		sway_log(L_INFO,
 			"WARNING: unable to read %s for security check. Using default policy.",
