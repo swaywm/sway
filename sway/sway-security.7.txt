@@ -19,22 +19,8 @@ usually best suited to a distro maintainer who wants to ship a secure sway
 environment in their distro. Sway provides a number of means of securing it but
 you must make a few changes external to sway first.
 
-Configuration security
-----------------------
-
-Many of Sway's security features are configurable. It's important that a possibly
-untrusted program is not able to edit this. Security rules are kept in
-_/etc/sway/config.d/security_ (usually), which should only be writable by root.
-However, configuration of security rules is not limited to this file - any config
-file that sway loads (including i.e. _~/.config/sway/config_) should not be editable
-by the user you intend to run programs as. One simple strategy is to use
-/etc/sway/config instead of a config file in your home directory, but that doesn't
-work well for multi-user systems. A more robust strategy is to run untrusted
-programs as another user, or in a sandbox. Configuring this is up to you.
-
-Note that _/etc/sway/config.d/*_ must be included explicitly from your config file.
-This is done by default in /etc/sway/config but you must check your own config if
-you choose to place it in other locations.
+Security-related configuration is only valid in /etc/sway/config (or whatever path
+is appropriate for your system).
 
 Environment security
 --------------------

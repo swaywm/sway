@@ -452,8 +452,11 @@ static char *get_config_path(void) {
 	return NULL; // Not reached
 }
 
+const char *current_config_path;
+
 static bool load_config(const char *path, struct sway_config *config) {
 	sway_log(L_INFO, "Loading config from %s", path);
+	current_config_path = path;
 
 	struct stat sb;
 	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
@@ -474,11 +477,11 @@ static bool load_config(const char *path, struct sway_config *config) {
 	bool config_load_success = read_config(f, config);
 	fclose(f);
 
-
 	if (!config_load_success) {
 		sway_log(L_ERROR, "Error(s) loading config!");
 	}
 
+	current_config_path = NULL;
 	return true;
 }
 
@@ -509,7 +512,8 @@ bool load_main_config(const char *file, bool is_active) {
 	list_add(config->config_chain, path);
 
 	config->reading = true;
-	bool success = load_config(path, config);
+	bool success = load_config(SYSCONFDIR "/sway/security", config);
+	success = success && load_config(path, config);
 
 	if (is_active) {
 		config->reloading = false;

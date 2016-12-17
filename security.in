@@ -4,6 +4,9 @@
 #
 # You MUST read this man page if you intend to attempt to secure your sway
 # installation.
+#
+# This file should live at __SYSCONFDIR__/sway/security and will be
+# automatically read by sway.
 
 # Configures which programs are allowed to use which sway features
 permit * fullscreen keyboard mouse ipc
@@ -40,11 +43,4 @@ commands {
     bindsym config
     exit binding
     kill binding
-
-    # You should not change these unless you know what you're doing - it could
-    # cripple your security
-    reload binding
-    permit config
-    reject config
-    ipc config
 }

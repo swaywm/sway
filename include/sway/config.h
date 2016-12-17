@@ -373,4 +373,9 @@ struct bar_config *default_bar_config(void);
  */
 extern struct sway_config *config;
 
+/**
+ * Config file currently being read.
+ */
+extern const char *current_config_path;
+
 #endif

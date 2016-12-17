@@ -179,37 +179,6 @@ static void security_sanity_check() {
 				"!! DANGER !! " SYSCONFDIR "/sway is not secure! It should be owned by root and set to 0755 at the minimum");
 		}
 	}
-	struct {
-		char *command;
-		enum command_context context;
-		bool checked;
-	} expected[] = {
-		{ "reload", CONTEXT_BINDING, false },
-		{ "permit", CONTEXT_CONFIG, false },
-		{ "reject", CONTEXT_CONFIG, false },
-		{ "ipc", CONTEXT_CONFIG, false },
-	};
-	int expected_len = 4;
-	for (int i = 0; i < config->command_policies->length; ++i) {
-		struct command_policy *policy = config->command_policies->items[i];
-		for (int j = 0; j < expected_len; ++j) {
-			if (strcmp(expected[j].command, policy->command) == 0) {
-				expected[j].checked = true;
-				if (expected[j].context != policy->context) {
-					sway_log(L_ERROR,
-						"!! DANGER !! Command security policy for %s should be set to %s",
-						expected[j].command, command_policy_str(expected[j].context));
-				}
-			}
-		}
-	}
-	for (int j = 0; j < expected_len; ++j) {
-		if (!expected[j].checked) {
-			sway_log(L_ERROR,
-				"!! DANGER !! Command security policy for %s should be set to %s",
-				expected[j].command, command_policy_str(expected[j].context));
-		}
-	}
 }
 
 int main(int argc, char **argv) {

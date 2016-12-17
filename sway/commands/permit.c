@@ -64,6 +64,11 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 		return error;
 	}
 
+	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
+		return cmd_results_new(CMD_INVALID, "permit",
+				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
+	}
+
 	struct feature_policy *policy = get_policy(argv[0]);
 	policy->features |= get_features(argc, argv, &error);
 
@@ -81,6 +86,11 @@ struct cmd_results *cmd_reject(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "reject", EXPECTED_MORE_THAN, 1))) {
 		return error;
+	}
+
+	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
+		return cmd_results_new(CMD_INVALID, "permit",
+				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
 	}
 
 	struct feature_policy *policy = get_policy(argv[0]);

@@ -19,5 +19,10 @@ struct cmd_results *cmd_commands(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "commands", "Can only be used in config file.");
 	}
 
+	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
+		return cmd_results_new(CMD_INVALID, "permit",
+				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
+	}
+
 	return cmd_results_new(CMD_BLOCK_COMMANDS, NULL, NULL);
 }

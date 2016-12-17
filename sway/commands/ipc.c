@@ -21,6 +21,11 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "ipc", "Can only be used in config file.");
 	}
 
+	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
+		return cmd_results_new(CMD_INVALID, "permit",
+				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
+	}
+
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);
 }
 
