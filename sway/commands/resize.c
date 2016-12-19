@@ -62,225 +62,216 @@ static bool resize_floating(int amount, bool use_width) {
 	return false;
 }
 
+/**
+ * returns the index of the container's child that is first in a group.
+ * This index is > to the <after> argument.
+ * This makes the function usable to walk through the groups in a container.
+ */
+static int next_group_index(swayc_t *container, int after) {
+	if (after < 0) {
+		return 0;
+	} else if (is_auto_layout(container->layout)) {
+		if ((uint_fast32_t) after < container->nb_master) {
+			return container->nb_master;
+		} else {
+			uint_fast32_t grp_idx = 0;
+			for (int i = container->nb_master; i < container->children->length; ) {
+				uint_fast32_t grp_sz = (container->children->length - i) /
+					(container->nb_slave_groups - grp_idx);
+				if (after - i < (int) grp_sz) {
+					return i + grp_sz;
+				}
+				i += grp_sz;
+			}
+			return container->children->length;
+		}
+	} else {
+		//		return after + 1;
+		return container->children->length;
+	}
+}
+
+/**
+ * Return the number of children in the slave groups. This corresponds to the children
+ * that are not members of the master group.
+ */
+static inline uint_fast32_t slave_count(swayc_t *container) {
+	return container->children->length - container->nb_master;
+
+}
+
+/**
+ * given the index of a container's child, return the index of the first child of the group
+ * which index is a member of.
+ */
+static int group_start_index(swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout) || (uint_fast32_t) index < container->nb_master) {
+		return 0;
+	} else {
+		uint_fast32_t grp_sz = slave_count(container) / container->nb_slave_groups;
+		uint_fast32_t remainder = slave_count(container) % container->nb_slave_groups;
+		if ((index - container->nb_master) / grp_sz < container->nb_slave_groups - remainder) {
+			return ((index - container->nb_master) / grp_sz) * grp_sz + container->nb_master;
+		} else {
+			int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
+			return idx2 + ((idx2 - index) / (grp_sz + 1)) * (grp_sz + 1);
+		}
+	}
+}
+
+/**
+ * given the index of a container's child, return the index of the first child of the group
+ * that follows the one which index is a member of.
+ */
+static int group_end_index(swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout)) {
+		return container->children->length;
+	} else {
+		uint_fast32_t grp_sz = slave_count(container) / container->nb_slave_groups;
+		uint_fast32_t remainder = slave_count(container) % container->nb_slave_groups;
+		if ((index - container->nb_master) / grp_sz < container->nb_slave_groups - remainder) {
+			return ((index - container->nb_master) / grp_sz + 1) * grp_sz + container->nb_master;
+		} else {
+			int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
+			return idx2 + ((idx2 - index) / (grp_sz + 1) + 1) * (grp_sz + 1);
+		}
+	}
+}
+
+/**
+ * Return the combined number of master and slave groups in the container.
+ */
+static inline uint_fast32_t group_count(swayc_t *container) {
+	return MIN(container->nb_slave_groups, slave_count(container)) + (container->nb_master ? 1 : 0);
+}
+
+/**
+ * return the index of the Group containing <index>th child of <container>.
+ * The index is the order of the group along the container's major axis (starting at 0).
+ */
+static uint_fast32_t group_index(swayc_t *container, int index) {
+	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
+	int nb_slaves = slave_count(container);
+	if (index < (int) container->nb_master) {
+		if (master_first || nb_slaves <= 0) {
+			return 0;
+		} else {
+			return MIN(container->nb_slave_groups, nb_slaves);
+		}
+	} else {
+		uint_fast32_t grp_idx = 0;
+		for (int i = container->nb_master; i < container->children->length; ) {
+			uint_fast32_t grp_sz = (container->children->length - i) /
+				(container->nb_slave_groups - grp_idx);
+			if (index - i < (int) grp_sz) {
+				break;
+			}
+		}
+		return grp_idx + (master_first ? 1 : 0);
+	}
+}
+
 static bool resize_tiled(int amount, bool use_width) {
-	swayc_t *parent = get_focused_view(swayc_active_workspace());
-	swayc_t *focused = parent;
-	swayc_t *sibling;
-	if (!parent) {
+	swayc_t *container = get_focused_view(swayc_active_workspace());
+	swayc_t *parent = container->parent;
+	int idx_focused = 0;
+	bool use_major = false;
+	uint_fast32_t nb_before = 0;
+	uint_fast32_t nb_after = 0;
+
+	// 1. Identify a container ancestor that will allow the focused child to grow in the requested
+	//    direction.
+	while (container->parent) {
+		parent = container->parent;
+		if ((parent->children && parent->children->length > 1) &&
+		    (is_auto_layout(parent->layout) || (use_width ? parent->layout == L_HORIZ :
+							parent->layout == L_VERT))) {
+			// check if container has siblings that can provide/absorb the space needed for
+			// the resize operation.
+			use_major = use_width
+				? parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT
+				: parent->layout == L_AUTO_TOP || parent->layout == L_AUTO_BOTTOM;
+			// Note: use_major will be false for L_HORIZ and L_VERT
+
+			idx_focused = index_child(container);
+			if (idx_focused < 0) {
+				sway_log(L_ERROR, "Something weird is happening, child container not "
+					 "present in its parent's children list.");
+				continue;
+			}
+			if (use_major) {
+				nb_before = group_index(parent, idx_focused);
+				nb_after = group_count(parent) - nb_before - 1;
+			} else {
+				nb_before = idx_focused - group_start_index(parent, idx_focused);
+				nb_after = next_group_index(parent, idx_focused) - idx_focused - 1;
+			}
+			if (nb_before || nb_after) {
+				break;
+			}
+		}
+		container = parent; /* continue up the tree to the next ancestor */
+	}
+	if (parent == &root_container) {
 		return true;
 	}
-	// Find the closest parent container which has siblings of the proper layout.
-	// Then apply the resize to all of them.
-	int i;
-	if (use_width) {
-		int lnumber = 0;
-		int rnumber = 0;
-		while (parent->parent) {
-			if (parent->parent->layout == L_HORIZ && parent->parent->children) {
-				for (i = 0; i < parent->parent->children->length; i++) {
-					sibling = parent->parent->children->items[i];
-					if (sibling->x != focused->x) {
-						if (sibling->x < parent->x) {
-							lnumber++;
-						} else if (sibling->x > parent->x) {
-							rnumber++;
-						}
-					}
-				}
-				if (rnumber || lnumber) {
-					break;
-				}
+	sway_log(L_DEBUG, "Found the proper parent: %p. It has %" PRIuFAST32 " before conts, and %"
+		 PRIuFAST32 " after conts", parent, nb_before, nb_after);
+	// 2. Ensure that the resize operation will not make one of the resized containers drop
+	//    below the "sane" size threshold.
+	bool valid = true;
+	swayc_t *focused = parent->children->items[idx_focused];
+	int start = use_major ? 0 : group_start_index(parent, idx_focused);
+	int end = use_major ? parent->children->length : group_end_index(parent, idx_focused);
+	for (int i = start; i < end; ) {
+		swayc_t *sibling = parent->children->items[i];
+		double pixels = amount;
+		bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
+		bool is_after  = use_width ? sibling->x > focused->x : sibling->y > focused->y;
+		if (is_before || is_after) {
+			pixels = -pixels;
+			pixels /= is_before ? nb_before : nb_after;
+			if (nb_after != 0 && nb_before != 0) {
+				pixels /= 2;
 			}
-			parent = parent->parent;
 		}
-		if (parent == &root_container) {
-			return true;
+		if (use_width ?
+		    sibling->width + pixels < min_sane_w :
+		    sibling->height + pixels < min_sane_h) {
+			valid = false;
+			break;
 		}
-		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d l conts, and %d r conts", parent->parent, lnumber, rnumber);
-		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
-		bool valid = true;
-		for (i = 0; i < parent->parent->children->length; i++) {
-			sibling = parent->parent->children->items[i];
-			if (sibling->x != focused->x) {
-				if (sibling->x < parent->x) {
-					double pixels = -1 * amount;
-					pixels /= lnumber;
-					if (rnumber) {
-						if ((sibling->width + pixels/2) < min_sane_w) {
-							valid = false;
-							break;
-						}
-					} else {
-						if ((sibling->width + pixels) < min_sane_w) {
-							valid = false;
-							break;
-						}
-					}
-				} else if (sibling->x > parent->x) {
-					double pixels = -1 * amount;
-					pixels /= rnumber;
-					if (lnumber) {
-						if ((sibling->width + pixels/2) < min_sane_w) {
-							valid = false;
-							break;
-						}
-					} else {
-						if ((sibling->width + pixels) < min_sane_w) {
-							valid = false;
-							break;
-						}
-					}
+		i = use_major ? next_group_index(parent, i) : (i + 1);
+	}
+	// 3. Apply the size change
+	if (valid) {
+		for (int i = 0; i < parent->children->length; ++i) {
+			swayc_t *sibling = parent->children->items[i];
+			double pixels = amount;
+			bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
+			bool is_after  = use_width ? sibling->x > focused->x : sibling->y > focused->y;
+			if (is_before || is_after) {
+				pixels = -pixels;
+				pixels /= is_before ? nb_before : nb_after;
+				if (nb_after != 0 && nb_before != 0) {
+					pixels /= 2;
 				}
+				sway_log(L_DEBUG, "%p: %s", sibling, is_before ? "before" : "after");
+				recursive_resize(sibling, pixels,
+						 use_width ?
+						 (is_before ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_LEFT) :
+						 (is_before ? WLC_RESIZE_EDGE_BOTTOM : WLC_RESIZE_EDGE_TOP));
 			} else {
-				double pixels = amount;
-				if (parent->width + pixels < min_sane_w) {
-					valid = false;
-					break;
-				}
+				sway_log(L_DEBUG, "%p: same pos", sibling);
+				recursive_resize(sibling, pixels,
+						 use_width ? WLC_RESIZE_EDGE_LEFT : WLC_RESIZE_EDGE_TOP);
+				recursive_resize(sibling, pixels,
+						 use_width ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_BOTTOM);
 			}
 		}
-		if (valid) {
-			for (i = 0; i < parent->parent->children->length; i++) {
-				sibling = parent->parent->children->items[i];
-				if (sibling->x != focused->x) {
-					if (sibling->x < parent->x) {
-						double pixels = -1 * amount;
-						pixels /= lnumber;
-						if (rnumber) {
-							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_RIGHT);
-						} else {
-							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_RIGHT);
-						}
-					} else if (sibling->x > parent->x) {
-						double pixels = -1 * amount;
-						pixels /= rnumber;
-						if (lnumber) {
-							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_LEFT);
-						} else {
-							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_LEFT);
-						}
-					}
-				} else {
-					if (rnumber != 0 && lnumber != 0) {
-						double pixels = amount;
-						pixels /= 2;
-						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_LEFT);
-						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_RIGHT);
-					} else if (rnumber) {
-						recursive_resize(parent, amount, WLC_RESIZE_EDGE_RIGHT);
-					} else if (lnumber) {
-						recursive_resize(parent, amount, WLC_RESIZE_EDGE_LEFT);
-					}
-				}
-			}
-			// Recursive resize does not handle positions, let arrange_windows
-			// take care of that.
-			arrange_windows(swayc_active_workspace(), -1, -1);
-		}
-		return true;
-	} else {
-		int tnumber = 0;
-		int bnumber = 0;
-		while (parent->parent) {
-			if (parent->parent->layout == L_VERT) {
-				for (i = 0; i < parent->parent->children->length; i++) {
-					sibling = parent->parent->children->items[i];
-					if (sibling->y != focused->y) {
-						if (sibling->y < parent->y) {
-							bnumber++;
-						} else if (sibling->y > parent->y) {
-							tnumber++;
-						}
-					}
-				}
-				if (bnumber || tnumber) {
-					break;
-				}
-			}
-			parent = parent->parent;
-		}
-		if (parent->parent == NULL || parent->parent->children == NULL) {
-			return true;
-		}
-		sway_log(L_DEBUG, "Found the proper parent: %p. It has %d b conts, and %d t conts", parent->parent, bnumber, tnumber);
-		//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
-		bool valid = true;
-		for (i = 0; i < parent->parent->children->length; i++) {
-			sibling = parent->parent->children->items[i];
-			if (sibling->y != focused->y) {
-				if (sibling->y < parent->y) {
-					double pixels = -1 * amount;
-					pixels /= bnumber;
-					if (tnumber) {
-						if ((sibling->height + pixels/2) < min_sane_h) {
-							valid = false;
-							break;
-						}
-					} else {
-						if ((sibling->height + pixels) < min_sane_h) {
-							valid = false;
-							break;
-						}
-					}
-				} else if (sibling->y > parent->y) {
-					double pixels = -1 * amount;
-					pixels /= tnumber;
-					if (bnumber) {
-						if ((sibling->height + pixels/2) < min_sane_h) {
-							valid = false;
-							break;
-						}
-					} else {
-						if ((sibling->height + pixels) < min_sane_h) {
-							valid = false;
-							break;
-						}
-					}
-				}
-			} else {
-				double pixels = amount;
-				if (parent->height + pixels < min_sane_h) {
-					valid = false;
-					break;
-				}
-			}
-		}
-		if (valid) {
-			for (i = 0; i < parent->parent->children->length; i++) {
-				sibling = parent->parent->children->items[i];
-				if (sibling->y != focused->y) {
-					if (sibling->y < parent->y) {
-						double pixels = -1 * amount;
-						pixels /= bnumber;
-						if (tnumber) {
-							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_BOTTOM);
-						} else {
-							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_BOTTOM);
-						}
-					} else if (sibling->x > parent->x) {
-						double pixels = -1 * amount;
-						pixels /= tnumber;
-						if (bnumber) {
-							recursive_resize(sibling, pixels/2, WLC_RESIZE_EDGE_TOP);
-						} else {
-							recursive_resize(sibling, pixels, WLC_RESIZE_EDGE_TOP);
-						}
-					}
-				} else {
-					if (bnumber != 0 && tnumber != 0) {
-						double pixels = amount/2;
-						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_TOP);
-						recursive_resize(parent, pixels, WLC_RESIZE_EDGE_BOTTOM);
-					} else if (tnumber) {
-						recursive_resize(parent, amount, WLC_RESIZE_EDGE_TOP);
-					} else if (bnumber) {
-						recursive_resize(parent, amount, WLC_RESIZE_EDGE_BOTTOM);
-					}
-				}
-			}
-			arrange_windows(swayc_active_workspace(), -1, -1);
-		}
-		return true;
+		// Recursive resize does not handle positions, let arrange_windows
+		// take care of that.
+		arrange_windows(swayc_active_workspace(), -1, -1);
 	}
 	return true;
 }
