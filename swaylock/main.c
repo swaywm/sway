@@ -570,6 +570,11 @@ void render(struct render_data *render_data) {
 		int wwidth = window->width * window->scale;
 		int wheight = window->height * window->scale;
 
+		cairo_save(window->cairo);
+		cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
+		cairo_paint(window->cairo);
+		cairo_restore(window->cairo);
+
 		// Reset the transformation matrix
 		cairo_identity_matrix(window->cairo);
 
