@@ -1209,15 +1209,14 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 		group_dim = old_group_dim[layout_group] * scale;
 		if (container->nb_master > 0 && layout_group == 0) {
 			start = 0;
-			end = container->nb_master;
+			end = MIN(container->nb_master, container->children->length);
 		} else {
 			if (group == 0) {
 				start = container->nb_master;
 			} else {
 				start = end;
 			}
-			end = start +
-			      (nb_slaves - start + container->nb_master) / (nb_groups - layout_group);
+			end = start + (nb_slaves - start + container->nb_master) / (nb_groups - layout_group);
 		}
 		if (group == nb_groups - 1) {
 			group_dim = pos_maj + dim_maj - pos; // remaining width
