@@ -39,7 +39,7 @@ The following commands may only be used in the configuration file.
 **set** <name> <value>::
 	Sets variable $name to _value_. You can use the new variable in the arguments
 	of future commands.
-	
+
 **orientation** <horizontal|vertical|auto>::
 	Sets the default container layout for tiled containers.
 
@@ -62,11 +62,14 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Make focused view floating, non-floating, or the opposite of what it is now.
 
 **focus** <direction>::
-	Direction may be one of _up_, _down_, _left_, _right_, _parent_, or _child_.
-	The directional focus commands will move the focus in that direction. The parent
-	focus command will change the focus to the parent of the currently focused
-	container, which is useful, for example, to open a sibling of the parent
-	container, or to move the entire container around.
+	Direction may be one of _up_, _down_, _left_, _right_, _next_, _prev_,
+	_parent_, or _child_. The directional focus commands will move the focus
+	in that direction. The auto_next and auto_prev will focus the next,
+	respectively previous, element in the current container if it is using
+	one of the _auto_ layouts. The parent focus command will change the
+	focus to the parent of the currently focused container, which is useful,
+	for example, to open a sibling of the parent container, or to move the
+	entire container around.
 
 **focus** output <direction|name>::
 	Direction may be one of _up_, _down_, _left_, _right_. The directional focus
@@ -83,6 +86,11 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
 	_splitv_, _toggle split_, _stacking_, _tabbed_, _auto_left_, _auto_right_,
 	_auto_top, _auto_bottom_.
+
+**layout** <incnmaster|incncol> <n>::
+	Modify the number of master elements, respectively slave columns, in the
+	focused container. <n> can be a positive or negative integer. These commands
+	only have an effect if the focused container uses one of the "auto" layouts.
 
 **move** <left|right|up|down>::
 	Moves the focused container _left_, _right_, _up_, or _down_.

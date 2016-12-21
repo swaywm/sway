@@ -74,6 +74,36 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 				parent = new_container(parent, L_AUTO_BOTTOM);
 			}
 			swayc_change_layout(parent, L_AUTO_BOTTOM);
+		} else if (strcasecmp(argv[0], "incnmaster") == 0)  {
+			if ((error = checkarg(argc, "layout incnmaster",
+					      EXPECTED_EQUAL_TO, 2))) {
+				return error;
+			}
+			int inc = (int) strtol(argv[1], NULL, 10);
+			swayc_t *container = get_focused_view(swayc_active_workspace());
+			if (container && inc &&
+			    is_auto_layout(container->parent->layout) &&
+			    ((int)container->parent->nb_master + inc >= 0)) {
+				for (int i = container->parent->nb_master;
+				     i >= 0 && i < container->parent->children->length &&
+					     i != (int) container->parent->nb_master + inc;) {
+					((swayc_t *) container->parent->children->items[i])->height = -1;
+					((swayc_t *) container->parent->children->items[i])->width = -1;
+					i += inc > 0 ? 1 : -1;
+				}
+				container->parent->nb_master += inc;
+			}
+		} else if ((strcasecmp(argv[0], "incncol") == 0) && argc ==2) {
+			if ((error = checkarg(argc, "layout incncol",
+					      EXPECTED_EQUAL_TO, 2))) {
+				return error;
+			}
+			int inc = (int) strtol(argv[1], NULL, 10);
+			swayc_t *container = get_focused_view(swayc_active_workspace());
+			if (container && inc && is_auto_layout(container->parent->layout) &&
+			    ((int)container->parent->nb_slave_groups + inc >= 1)) {
+				container->parent->nb_slave_groups += inc;
+			}
 		}
 	}
 
