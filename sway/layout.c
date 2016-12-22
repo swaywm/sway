@@ -251,7 +251,7 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 }
 
 void move_container(swayc_t *container, enum movement_direction dir) {
-	enum swayc_layouts layout;
+	enum swayc_layouts layout = L_NONE;
 	if (container->is_floating
 			|| (container->type != C_VIEW && container->type != C_CONTAINER)) {
 		return;
@@ -260,7 +260,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		layout = L_VERT;
 	} else if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 		layout = L_HORIZ;
-	} else {
+	} else if (! (dir == MOVE_NEXT || dir == MOVE_PREV)) {
 		return;
 	}
 	swayc_t *parent = container->parent;
@@ -284,18 +284,51 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				container,parent,child);
 		if (parent->layout == layout
 			|| (parent->layout == L_TABBED && layout == L_HORIZ)
-			|| (parent->layout == L_STACKED && layout == L_VERT)) {
+			|| (parent->layout == L_STACKED && layout == L_VERT)
+			|| is_auto_layout(parent->layout)) {
 			int diff;
 			// If it has ascended (parent has moved up), no container is removed
 			// so insert it at index, or index+1.
 			// if it has not, the moved container is removed, so it needs to be
 			// inserted at index-1, or index+1
 			if (ascended) {
-				diff = dir == MOVE_LEFT || dir == MOVE_UP ? 0 : 1;
+				diff = dir == MOVE_LEFT || dir == MOVE_UP || dir == MOVE_PREV ? 0 : 1;
 			} else {
-				diff = dir == MOVE_LEFT || dir == MOVE_UP ? -1 : 1;
+				diff = dir == MOVE_LEFT || dir == MOVE_UP || dir == MOVE_PREV ? -1 : 1;
 			}
-			int desired = index_child(child) + diff;
+			int idx = index_child(child);
+			int desired = idx + diff;
+			if (dir == MOVE_NEXT || dir == MOVE_PREV) {
+				// Next/Prev always wrap.
+				if (desired < 0) {
+					desired += parent->children->length;
+				} else if (desired >= parent->children->length) {
+					desired = 0;
+				}
+				// if move command makes container change from master to slave
+				// (or the contrary), reset its geometry an the one of the replaced item.
+				if (parent->nb_master &&
+				    (uint_fast32_t) parent->children->length > parent->nb_master) {
+					swayc_t *swap_geom = NULL;
+					// if child is being promoted/demoted, it will swap geometry
+					// with the sibling being demoted/promoted.
+					if ((dir == MOVE_NEXT && desired == 0)
+					    || (dir == MOVE_PREV && (uint_fast32_t) desired == parent->nb_master - 1)) {
+						swap_geom = parent->children->items[parent->nb_master - 1];
+					} else if ((dir == MOVE_NEXT && (uint_fast32_t) desired == parent->nb_master)
+						   || (dir == MOVE_PREV && desired == parent->children->length - 1)) {
+						swap_geom = parent->children->items[parent->nb_master];
+					}
+					if (swap_geom) {
+						double h = child->height;
+						double w = child->width;
+						child->width = swap_geom->width;
+						child->height = swap_geom->height;
+						swap_geom->width = w;
+						swap_geom->height = h;
+					}
+				}
+			}
 			// when it has ascended, legal insertion position is 0:len
 			// when it has not, legal insertion position is 0:len-1
 			if (desired >= 0 && desired - ascended < parent->children->length) {
@@ -308,7 +341,8 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 						// insert it next to focused container
 						if (parent->layout == layout
 							|| (parent->layout == L_TABBED && layout == L_HORIZ)
-							|| (parent->layout == L_STACKED && layout == L_VERT)) {
+							|| (parent->layout == L_STACKED && layout == L_VERT)
+							|| is_auto_layout(parent->layout)) {
 							desired = (diff < 0) * parent->children->length;
 						} else {
 							desired = index_child(child->focused) + 1;
@@ -325,7 +359,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 			}
 		}
 		// Change parent layout if we need to
-		if (parent->children->length == 1 && parent->layout != layout) {
+		if (parent->children->length == 1 && parent->layout != layout && layout != L_NONE) {
 			/* swayc_change_layout(parent, layout); */
 			parent->layout = layout;
 			continue;
@@ -1310,6 +1344,21 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			return parent;
 		}
 	}
+
+	if (dir == MOVE_PREV || dir == MOVE_NEXT) {
+		int focused_idx = index_child(container);
+		if (focused_idx == -1) {
+			return NULL;
+		} else {
+			int desired = (focused_idx + (dir == MOVE_NEXT ? 1 : -1)) %
+				      parent->children->length;
+			if (desired < 0) {
+				desired += parent->children->length;
+			}
+			return parent->children->items[desired];
+		}
+	}
+
 	// If moving to an adjacent output we need a starting position (since this
 	// output might border to multiple outputs).
 	struct wlc_point abs_pos;

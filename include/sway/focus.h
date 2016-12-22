@@ -6,7 +6,9 @@ enum movement_direction {
 	MOVE_UP,
 	MOVE_DOWN,
 	MOVE_PARENT,
-	MOVE_CHILD
+	MOVE_CHILD,
+	MOVE_NEXT,
+	MOVE_PREV
 };
 
 #include "container.h"
@@ -40,4 +42,3 @@ extern bool suspend_workspace_cleanup;
 bool move_focus(enum movement_direction direction);
 
 #endif
-

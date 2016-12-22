@@ -49,7 +49,8 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		} else if (strcasecmp(argv[0], "splitv") == 0) {
 			swayc_change_layout(parent, L_VERT);
 		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
-			if (parent->layout == L_HORIZ && (parent->workspace_layout == L_NONE || parent->workspace_layout == L_HORIZ)) {
+			if (parent->layout == L_HORIZ && (parent->workspace_layout == L_NONE ||
+							  parent->workspace_layout == L_HORIZ)) {
 				swayc_change_layout(parent, L_VERT);
 			} else {
 				swayc_change_layout(parent, L_HORIZ);

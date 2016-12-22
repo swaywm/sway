@@ -13,7 +13,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	const char* expected_syntax = "Expected 'move <left|right|up|down>' or "
+	const char* expected_syntax = "Expected 'move <left|right|up|down|next|prev>' or "
 		"'move <container|window> to workspace <name>' or "
 		"'move <container|window|workspace> to output <name|direction>' or "
 		"'move position mouse'";
@@ -27,6 +27,10 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		move_container(view, MOVE_UP);
 	} else if (strcasecmp(argv[0], "down") == 0) {
 		move_container(view, MOVE_DOWN);
+	} else if (strcasecmp(argv[0], "next") == 0) {
+		move_container(view, MOVE_NEXT);
+	} else if (strcasecmp(argv[0], "prev") == 0) {
+		move_container(view, MOVE_PREV);
 	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
 		// "move container ...
 		if ((error = checkarg(argc, "move container/window", EXPECTED_AT_LEAST, 4))) {
