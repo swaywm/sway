@@ -283,6 +283,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
 		if (parent->layout == layout
+			|| layout == L_NONE /* accept any layout for next/prev direction */
 			|| (parent->layout == L_TABBED && layout == L_HORIZ)
 			|| (parent->layout == L_STACKED && layout == L_VERT)
 			|| is_auto_layout(parent->layout)) {
