@@ -1285,7 +1285,7 @@ struct bar_config *default_bar_config(void) {
 	bar->outputs = NULL;
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	if (!(bar->bindings = create_list())) goto cleanup;
-	if (!(bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p' && sleep 1; done"))) goto cleanup;
+	if (!(bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p'; sleep 1; done"))) goto cleanup;
 	bar->pango_markup = false;
 	bar->swaybar_command = NULL;
 	bar->font = NULL;
