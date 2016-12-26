@@ -69,7 +69,15 @@ void lock_surface_destructor(struct wl_resource *resource) {
 		}
 	}
 	if (desktop_shell.lock_surfaces->length == 0) {
+		sway_log(L_DEBUG, "Desktop shell unlocked");
 		desktop_shell.is_locked = false;
+
+		// We need to now give focus back to the focus which we internally
+		// track, since when we lock sway we don't actually change our internal
+		// focus tracking.
+		swayc_t *focus = get_focused_container(swayc_active_workspace());
+		set_focused_container(focus);
+		wlc_view_focus(focus->handle);
 	}
 }
 
@@ -159,10 +167,6 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		desktop_shell.is_locked = true;
 		input_init();
 		arrange_windows(workspace, -1, -1);
-		swayc_t *focus_output = swayc_active_output();
-		if (focus_output == output) {
-			set_focused_container(view);
-		}
 		list_add(desktop_shell.lock_surfaces, surface);
 		wl_resource_set_destructor(surface, lock_surface_destructor);
 	} else {
