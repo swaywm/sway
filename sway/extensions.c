@@ -65,9 +65,11 @@ void lock_surface_destructor(struct wl_resource *resource) {
 		if (surface == resource) {
 			list_del(desktop_shell.lock_surfaces, i);
 			arrange_windows(&root_container, -1, -1);
-			desktop_shell.is_locked = false;
 			break;
 		}
+	}
+	if (desktop_shell.lock_surfaces->length == 0) {
+		desktop_shell.is_locked = false;
 	}
 }
 
