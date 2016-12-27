@@ -23,6 +23,8 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 - [i3-gaps feature support](https://github.com/SirCmpwn/sway/issues/307)
 - [security features](https://github.com/SirCmpwn/sway/issues/984)
 
+[Bounties](https://github.com/SirCmpwn/sway/issues/986): sponsor features or get paid to write them
+
 ## Installation
 
 ### From Packages
