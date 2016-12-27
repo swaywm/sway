@@ -236,7 +236,7 @@ void render_image(struct window *window, cairo_surface_t *image, enum scaling_mo
 	case SCALING_MODE_FILL:
 	{
 		double window_ratio = (double) wwidth / wheight;
-		double bg_ratio = wheight;
+		double bg_ratio = width / height;
 
 		if (window_ratio > bg_ratio) {
 			double scale = (double) wwidth / width;
@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
-		"  -f, --daemonize                Detach from the controlling terminal.\n" 
+		"  -f, --daemonize                Detach from the controlling terminal.\n"
 		"  --socket <socket>              Use the specified socket.\n";
 
 
