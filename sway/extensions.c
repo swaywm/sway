@@ -4,6 +4,7 @@
 #include <wlc/wlc-render.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "wayland-swaylock-server-protocol.h"
+#include "wayland-gamma-control-server-protocol.h"
 #include "sway/layout.h"
 #include "sway/input_state.h"
 #include "sway/extensions.h"
@@ -140,6 +141,52 @@ static void desktop_unlock(struct wl_client *client, struct wl_resource *resourc
 	sway_log(L_ERROR, "desktop_unlock is not currently supported");
 }
 
+static void set_grab_surface(struct wl_client *client, struct wl_resource *resource, struct wl_resource *surface) {
+	sway_log(L_ERROR, "desktop_set_grab_surface is not currently supported");
+}
+
+static void desktop_ready(struct wl_client *client, struct wl_resource *resource) {
+	// nop
+}
+
+static void set_panel_position(struct wl_client *client, struct wl_resource *resource, uint32_t position) {
+	pid_t pid;
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+	if (!(get_feature_policy(pid) & FEATURE_PANEL)) {
+		sway_log(L_INFO, "Denying panel feature to %d", pid);
+		return;
+	}
+	struct panel_config *config = find_or_create_panel_config(resource);
+	sway_log(L_DEBUG, "Panel position for wl_resource %p changed %d => %d", resource, config->panel_position, position);
+	config->panel_position = position;
+	arrange_windows(&root_container, -1, -1);
+}
+
+static struct desktop_shell_interface desktop_shell_implementation = {
+	.set_background = set_background,
+	.set_panel = set_panel,
+	.set_lock_surface = desktop_set_lock_surface,
+	.unlock = desktop_unlock,
+	.set_grab_surface = set_grab_surface,
+	.desktop_ready = desktop_ready,
+	.set_panel_position = set_panel_position
+};
+
+static void desktop_shell_bind(struct wl_client *client, void *data,
+		unsigned int version, unsigned int id) {
+	if (version > 3) {
+		// Unsupported version
+		return;
+	}
+
+	struct wl_resource *resource = wl_resource_create(client, &desktop_shell_interface, version, id);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+	}
+
+	wl_resource_set_implementation(resource, &desktop_shell_implementation, NULL, NULL);
+}
+
 static void set_lock_surface(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
 	pid_t pid;
@@ -179,56 +226,10 @@ static void unlock(struct wl_client *client, struct wl_resource *resource) {
 	// This isn't really necessary, we just unlock when the client exits.
 }
 
-static void set_grab_surface(struct wl_client *client, struct wl_resource *resource, struct wl_resource *surface) {
-	sway_log(L_ERROR, "desktop_set_grab_surface is not currently supported");
-}
-
-static void desktop_ready(struct wl_client *client, struct wl_resource *resource) {
-	// nop
-}
-
-static void set_panel_position(struct wl_client *client, struct wl_resource *resource, uint32_t position) {
-	pid_t pid;
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-	if (!(get_feature_policy(pid) & FEATURE_PANEL)) {
-		sway_log(L_INFO, "Denying panel feature to %d", pid);
-		return;
-	}
-	struct panel_config *config = find_or_create_panel_config(resource);
-	sway_log(L_DEBUG, "Panel position for wl_resource %p changed %d => %d", resource, config->panel_position, position);
-	config->panel_position = position;
-	arrange_windows(&root_container, -1, -1);
-}
-
-static struct desktop_shell_interface desktop_shell_implementation = {
-	.set_background = set_background,
-	.set_panel = set_panel,
-	.set_lock_surface = desktop_set_lock_surface,
-	.unlock = desktop_unlock,
-	.set_grab_surface = set_grab_surface,
-	.desktop_ready = desktop_ready,
-	.set_panel_position = set_panel_position
-};
-
 static struct lock_interface swaylock_implementation = {
 	.set_lock_surface = set_lock_surface,
 	.unlock = unlock
 };
-
-static void desktop_shell_bind(struct wl_client *client, void *data,
-		unsigned int version, unsigned int id) {
-	if (version > 3) {
-		// Unsupported version
-		return;
-	}
-
-	struct wl_resource *resource = wl_resource_create(client, &desktop_shell_interface, version, id);
-	if (!resource) {
-		wl_client_post_no_memory(client);
-	}
-
-	wl_resource_set_implementation(resource, &desktop_shell_implementation, NULL, NULL);
-}
 
 static void swaylock_bind(struct wl_client *client, void *data,
 		unsigned int version, unsigned int id) {
@@ -245,6 +246,80 @@ static void swaylock_bind(struct wl_client *client, void *data,
 	wl_resource_set_implementation(resource, &swaylock_implementation, NULL, NULL);
 }
 
+static void gamma_control_destroy(struct wl_client *client, struct wl_resource *res) {
+	wl_resource_destroy(res);
+}
+
+static void gamma_control_set_gamma(struct wl_client *client,
+		struct wl_resource *res, struct wl_array *red,
+		struct wl_array *green, struct wl_array *blue) {
+	if (red->size != green->size || red->size != blue->size) {
+		wl_resource_post_error(res, GAMMA_CONTROL_ERROR_INVALID_GAMMA,
+				"The gamma ramps don't have the same size");
+		return;
+	}
+	uint16_t *r = (uint16_t *)red->data;
+	uint16_t *g = (uint16_t *)green->data;
+	uint16_t *b = (uint16_t *)blue->data;
+	wlc_handle output = wlc_handle_from_wl_output_resource(
+			wl_resource_get_user_data(res));
+	if (!output) {
+		return;
+	}
+	sway_log(L_DEBUG, "Setting gamma for output");
+	wlc_output_set_gamma(output, red->size / sizeof(uint16_t), r, g, b);
+}
+
+static void gamma_control_reset_gamma(struct wl_client *client,
+		struct wl_resource *resource) {
+	// This space intentionally left blank
+}
+
+static struct gamma_control_interface gamma_control_implementation = {
+	.destroy = gamma_control_destroy,
+	.set_gamma = gamma_control_set_gamma,
+	.reset_gamma = gamma_control_reset_gamma
+};
+
+static void gamma_control_manager_destroy(struct wl_client *client,
+		struct wl_resource *res) {
+	wl_resource_destroy(res);
+}
+
+static void gamma_control_manager_get(struct wl_client *client,
+		struct wl_resource *res, uint32_t id, struct wl_resource *_output) {
+	struct wl_resource *manager_res = wl_resource_create(client,
+			&gamma_control_interface, wl_resource_get_version(res), id);
+	wlc_handle output = wlc_handle_from_wl_output_resource(_output);
+	if (!output) {
+		return;
+	}
+	wl_resource_set_implementation(manager_res, &gamma_control_implementation,
+			_output, NULL);
+	gamma_control_send_gamma_size(manager_res, wlc_output_get_gamma_size(output));
+}
+
+static struct gamma_control_manager_interface gamma_manager_implementation = {
+	.destroy = gamma_control_manager_destroy,
+	.get_gamma_control = gamma_control_manager_get
+};
+
+static void gamma_control_manager_bind(struct wl_client *client, void *data,
+		unsigned int version, unsigned int fd) {
+	if (version > 1) {
+		// Unsupported version
+		return;
+	}
+
+	struct wl_resource *resource = wl_resource_create(client,
+			&gamma_control_manager_interface, version, fd);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+	}
+
+	wl_resource_set_implementation(resource, &gamma_manager_implementation, NULL, NULL);
+}
+
 void register_extensions(void) {
 	wl_global_create(wlc_get_wl_display(), &desktop_shell_interface, 3, NULL, desktop_shell_bind);
 	desktop_shell.backgrounds = create_list();
@@ -252,4 +327,6 @@ void register_extensions(void) {
 	desktop_shell.lock_surfaces = create_list();
 	desktop_shell.is_locked = false;
 	wl_global_create(wlc_get_wl_display(), &lock_interface, 1, NULL, swaylock_bind);
+	wl_global_create(wlc_get_wl_display(), &gamma_control_manager_interface, 1,
+			NULL, gamma_control_manager_bind);
 }
