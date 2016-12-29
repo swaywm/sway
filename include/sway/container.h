@@ -44,6 +44,9 @@ enum swayc_layouts {
 	L_AUTO_TOP,
 	L_AUTO_BOTTOM,
 
+	L_AUTO_FIRST = L_AUTO_LEFT,
+	L_AUTO_LAST = L_AUTO_BOTTOM,
+
 	// Keep last
 	L_LAYOUTS,
 };

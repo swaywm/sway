@@ -56,24 +56,12 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 				swayc_change_layout(parent, L_HORIZ);
 			}
 		} else if (strcasecmp(argv[0], "auto_left") == 0) {
-			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
-				parent = new_container(parent, L_AUTO_LEFT);
-			}
 			swayc_change_layout(parent, L_AUTO_LEFT);
 		} else if (strcasecmp(argv[0], "auto_right") == 0) {
-			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
-				parent = new_container(parent, L_AUTO_RIGHT);
-			}
 			swayc_change_layout(parent, L_AUTO_RIGHT);
 		} else if (strcasecmp(argv[0], "auto_top") == 0) {
-			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
-				parent = new_container(parent, L_AUTO_TOP);
-			}
 			swayc_change_layout(parent, L_AUTO_TOP);
 		} else if (strcasecmp(argv[0], "auto_bot") == 0) {
-			if (parent->type != C_CONTAINER && !swayc_is_empty_workspace(parent)){
-				parent = new_container(parent, L_AUTO_BOTTOM);
-			}
 			swayc_change_layout(parent, L_AUTO_BOTTOM);
 		} else if (strcasecmp(argv[0], "incnmaster") == 0)  {
 			if ((error = checkarg(argc, "layout incnmaster",
@@ -104,6 +92,42 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			if (container && inc && is_auto_layout(container->parent->layout) &&
 			    ((int)container->parent->nb_slave_groups + inc >= 1)) {
 				container->parent->nb_slave_groups += inc;
+			}
+		} else if (strcasecmp(argv[0], "auto") == 0) {
+			if ((error = checkarg(argc, "auto", EXPECTED_EQUAL_TO, 2))) {
+				return error;
+			}
+			swayc_t *container = get_focused_view(swayc_active_workspace());
+			swayc_t *parent = container->parent;
+			enum swayc_layouts layout;
+			if (strcasecmp(argv[1], "next") == 0) {
+				if (is_auto_layout(parent->layout) && parent->layout < L_AUTO_LAST) {
+					layout = parent->layout + 1;
+				} else {
+					layout = L_AUTO_FIRST;
+				}
+			} else if (strcasecmp(argv[1], "prev") == 0) {
+				if (is_auto_layout(parent->layout) && parent->layout > L_AUTO_FIRST) {
+					layout = parent->layout - 1;
+				} else {
+					layout = L_AUTO_FIRST;
+				}
+			} else {
+				return cmd_results_new(CMD_FAILURE, "layout auto",
+						       "Must be one of <prev|next>.");
+			}
+			swayc_change_layout(parent, layout);
+		} else if (strcasecmp(argv[0], "promote") == 0) {
+			// swap first child in auto layout with currently focused child
+			swayc_t *container = get_focused_view(swayc_active_workspace());
+			swayc_t *parent = container->parent;
+			if (is_auto_layout(parent->layout)) {
+				int focused_idx = index_child(container);
+				swayc_t *first = parent->children->items[0];
+				if (focused_idx > 0) {
+					list_swap(parent->children, 0, focused_idx);
+					swap_geometry(first, container);
+				}
 			}
 		}
 	}

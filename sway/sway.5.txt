@@ -371,7 +371,7 @@ The default colors are:
 	switch to workspace 2, then invoke the "workspace 2" command again, you
 	will be returned to workspace 1. Defaults to _no_.
 
-**workspace_layout** <default|stacking|tabbed>::
+**workspace_layout** <default|stacking|tabbed|auto_left|auto_right|auto_top|auto_bottom>::
 	Specifies the start layout for new workspaces.
 
 **include** <path>::
