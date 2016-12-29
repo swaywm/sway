@@ -22,4 +22,6 @@ void list_qsort(list_t *list, int compare(const void *left, const void *right));
 int list_seq_find(list_t *list, int compare(const void *item, const void *cmp_to), const void *cmp_to);
 // stable sort since qsort is not guaranteed to be stable
 void list_stable_sort(list_t *list, int compare(const void *a, const void *b));
+// swap two elements in a list
+void list_swap(list_t *list, int src, int dest);
 #endif

@@ -92,6 +92,9 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	focused container. <n> can be a positive or negative integer. These commands
 	only have an effect if the focused container uses one of the "auto" layouts.
 
+**layout** promote::
+	Swap the focused element with the first in the one of the auto layouts.
+
 **move** <left|right|up|down|next|prev>::
 	Moves the focused container _left_, _right_, _up_, or _down_. Moving
 	to _prev_ or _next_ swaps the container with its sibling in the same
