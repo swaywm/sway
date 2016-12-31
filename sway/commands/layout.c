@@ -110,7 +110,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 				if (is_auto_layout(parent->layout) && parent->layout > L_AUTO_FIRST) {
 					layout = parent->layout - 1;
 				} else {
-					layout = L_AUTO_FIRST;
+					layout = L_AUTO_LAST;
 				}
 			} else {
 				return cmd_results_new(CMD_FAILURE, "layout auto",
