@@ -1487,3 +1487,7 @@ enum swayc_layouts default_layout(swayc_t *output) {
 		return L_VERT;
 	}
 }
+
+bool is_auto_layout(enum swayc_layouts layout) {
+	return (layout >= L_AUTO_FIRST) && (layout <= L_AUTO_LAST);
+}
