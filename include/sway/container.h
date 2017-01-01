@@ -158,12 +158,12 @@ struct sway_container {
 	/**
 	 * Number of master views in auto layouts.
 	 */
-	uint32_t nb_master;
+	size_t nb_master;
 
 	/**
 	 * Number of slave groups (e.g. columns) in auto layouts.
 	 */
-	uint32_t nb_slave_groups;
+	size_t nb_slave_groups;
 };
 
 enum visibility_mask {

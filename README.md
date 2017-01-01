@@ -1,4 +1,3 @@
-
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
 "**S**irCmpwn's **Way**land compositor" is a **work in progress**
@@ -10,10 +9,6 @@ irc.freenode.net).
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 [More screenshots](https://github.com/SirCmpwn/sway/wiki/Screenshots-of-Sway)
-
-This fork attempts to add
-[Awesome](http://awesomewm.org)/[Monad](http://xmonad.org) style auto layouts
-to Sway. For us lazies that just want things to happen automatically!
 
 ## Release Signatures
 

@@ -253,8 +253,7 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 void move_container(swayc_t *container, enum movement_direction dir) {
 	enum swayc_layouts layout = L_NONE;
 	swayc_t *parent = container->parent;
-	if (container->is_floating
-			|| (container->type != C_VIEW && container->type != C_CONTAINER)) {
+	if (container->is_floating || (container->type != C_VIEW && container->type != C_CONTAINER)) {
 		return;
 	}
 	if (dir == MOVE_UP || dir == MOVE_DOWN) {
@@ -323,14 +322,14 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				// if move command makes container change from master to slave
 				// (or the contrary), reset its geometry an the one of the replaced item.
 				if (parent->nb_master &&
-				    (uint_fast32_t) parent->children->length > parent->nb_master) {
+				    (size_t) parent->children->length > parent->nb_master) {
 					swayc_t *swap_geom = NULL;
 					// if child is being promoted/demoted, it will swap geometry
 					// with the sibling being demoted/promoted.
 					if ((dir == MOVE_NEXT && desired == 0)
-					    || (dir == MOVE_PREV && (uint_fast32_t) desired == parent->nb_master - 1)) {
+					    || (dir == MOVE_PREV && (size_t) desired == parent->nb_master - 1)) {
 						swap_geom = parent->children->items[parent->nb_master - 1];
-					} else if ((dir == MOVE_NEXT && (uint_fast32_t) desired == parent->nb_master)
+					} else if ((dir == MOVE_NEXT && (size_t) desired == parent->nb_master)
 						   || (dir == MOVE_PREV && desired == parent->children->length - 1)) {
 						swap_geom = parent->children->items[parent->nb_master];
 					}
@@ -822,20 +821,24 @@ void update_geometry(swayc_t *container) {
 	}
 }
 
+bool is_auto_layout(enum swayc_layouts layout) {
+	return (layout >= L_AUTO_FIRST) && (layout <= L_AUTO_LAST);
+}
+
 /**
  * Layout application prototypes
  */
 static void apply_horiz_layout(swayc_t *container, const double x,
-			       const double y, const double width,
-			       const double height, const int start,
-			       const int end);
+				const double y, const double width,
+				const double height, const int start,
+				const int end);
 static void apply_vert_layout(swayc_t *container, const double x,
-			      const double y, const double width,
-			      const double height, const int start,
-			      const int end);
+				const double y, const double width,
+				const double height, const int start,
+				const int end);
 static void apply_tabbed_or_stacked_layout(swayc_t *container, double x,
-					   double y, double width,
-					   double height);
+				double y, double width,
+				double height);
 
 static void apply_auto_layout(swayc_t *container, const double x, const double y,
 			      const double width, const double height,
@@ -1164,8 +1167,8 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 	//  a single slave group (containing slave 1 and 2). The master
 	//  group and slave group are layed out using L_VERT.
 
-	uint_fast32_t nb_slaves = container->children->length - container->nb_master;
-	uint_fast32_t nb_groups = (container->nb_master > 0 ? 1 : 0) +
+	size_t nb_slaves = container->children->length - container->nb_master;
+	size_t nb_groups = (container->nb_master > 0 ? 1 : 0) +
 		MIN(container->nb_slave_groups, nb_slaves);
 
 	// the target dimension of the container along the "major" axis, each
@@ -1186,9 +1189,9 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 	// height and width of next group to be laid out.
 	const double *group_h, *group_w;
 
-	switch(group_layout) {
+	switch (group_layout) {
 	default:
-		sway_log(L_ERROR, "Unknown layout type (%d) used in %s()",
+		sway_log(L_DEBUG, "Unknown layout type (%d) used in %s()",
 			 group_layout, __func__);
 		/* fall through */
 	case L_VERT:
@@ -1216,7 +1219,7 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 	 * layout. */
 	double old_group_dim[nb_groups];
 	double old_dim = 0;
-	uint_fast32_t group = 0;
+	size_t group = 0;
 	for (int i = 0; i < container->children->length;) {
 		swayc_t *child = container->children->items[i];
 		double *dim = group_layout == L_HORIZ ? &child->height : &child->width;
@@ -1252,7 +1255,7 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 
 	for (group = 0; group < nb_groups; ++group) {
 		// column to include next by increasing position.
-		uint_fast32_t layout_group = master_first ? group : (group + 1) % nb_groups;
+		size_t layout_group = master_first ? group : (group + 1) % nb_groups;
 
 		// adjusted size of the group
 		group_dim = old_group_dim[layout_group] * scale;
@@ -1270,8 +1273,7 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 		if (group == nb_groups - 1) {
 			group_dim = pos_maj + dim_maj - pos; // remaining width
 		}
-		sway_log(L_DEBUG, "Arranging container %p column %" PRIuFAST32
-				  ", children [%d,%d[ (%fx%f+%f,%f)",
+		sway_log(L_DEBUG, "Arranging container %p column %zu, children [%d,%d[ (%fx%f+%f,%f)",
 			 container, group, start, end, *group_w, *group_h, *group_x, *group_y);
 		switch (group_layout) {
 		default:

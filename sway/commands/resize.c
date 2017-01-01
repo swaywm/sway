@@ -66,7 +66,7 @@ static bool resize_floating(int amount, bool use_width) {
  * Return the number of children in the slave groups. This corresponds to the children
  * that are not members of the master group.
  */
-static inline uint_fast32_t slave_count(swayc_t *container) {
+static inline size_t auto_slave_count(swayc_t *container) {
 	return container->children->length - container->nb_master;
 
 }
@@ -75,13 +75,13 @@ static inline uint_fast32_t slave_count(swayc_t *container) {
  * given the index of a container's child, return the index of the first child of the group
  * which index is a member of.
  */
-static int group_start_index(swayc_t *container, int index) {
-	if ((index < 0) || (! is_auto_layout(container->layout)) ||
-	    ((uint_fast32_t) index < container->nb_master)) {
+static int auto_group_start_index(swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout)
+		|| (size_t) index < container->nb_master) {
 		return 0;
 	} else {
-		uint_fast32_t grp_sz = slave_count(container) / container->nb_slave_groups;
-		uint_fast32_t remainder = slave_count(container) % container->nb_slave_groups;
+		size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
+		size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
 		int start_idx;
 		int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
 		if (index < idx2) {
@@ -98,16 +98,16 @@ static int group_start_index(swayc_t *container, int index) {
  * that follows the one which index is a member of.
  * This makes the function usable to walk through the groups in a container.
  */
-static int group_end_index(swayc_t *container, int index) {
+static int auto_group_end_index(swayc_t *container, int index) {
 	if (index < 0 || ! is_auto_layout(container->layout)) {
 		return container->children->length;
 	} else {
 		int nxt_idx;
-		if ((uint_fast32_t)index < container->nb_master) {
+		if ((size_t)index < container->nb_master) {
 			nxt_idx = container->nb_master;
 		} else {
-			uint_fast32_t grp_sz = slave_count(container) / container->nb_slave_groups;
-			uint_fast32_t remainder = slave_count(container) % container->nb_slave_groups;
+			size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
+			size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
 			int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
 			if (index < idx2) {
 				nxt_idx = ((index - container->nb_master) / grp_sz + 1) * grp_sz + container->nb_master;
@@ -122,30 +122,30 @@ static int group_end_index(swayc_t *container, int index) {
 /**
  * Return the combined number of master and slave groups in the container.
  */
-static inline uint_fast32_t group_count(swayc_t *container) {
-	return MIN(container->nb_slave_groups, slave_count(container)) + (container->nb_master ? 1 : 0);
+static inline size_t auto_group_count(swayc_t *container) {
+	return MIN(container->nb_slave_groups, auto_slave_count(container)) + (container->nb_master ? 1 : 0);
 }
 
 /**
  * return the index of the Group containing <index>th child of <container>.
  * The index is the order of the group along the container's major axis (starting at 0).
  */
-static uint_fast32_t group_index(swayc_t *container, int index) {
+static size_t auto_group_index(swayc_t *container, int index) {
 	if (index < 0) {
 		return 0;
 	}
 	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
-	int nb_slaves = slave_count(container);
-	if ((uint_fast32_t) index < container->nb_master) {
+	int nb_slaves = auto_slave_count(container);
+	if ((size_t) index < container->nb_master) {
 		if (master_first || nb_slaves <= 0) {
 			return 0;
 		} else {
 			return MIN(container->nb_slave_groups, nb_slaves);
 		}
 	} else {
-		uint_fast32_t grp_sz = slave_count(container) / container->nb_slave_groups;
-		uint_fast32_t remainder = slave_count(container) % container->nb_slave_groups;
-		uint_fast32_t grp_idx;
+		size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
+		size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
+		size_t grp_idx;
 		int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
 		if (index < idx2) {
 			grp_idx = (index - container->nb_master) / grp_sz;
@@ -161,16 +161,16 @@ static bool resize_tiled(int amount, bool use_width) {
 	swayc_t *parent = container->parent;
 	int idx_focused = 0;
 	bool use_major = false;
-	uint_fast32_t nb_before = 0;
-	uint_fast32_t nb_after = 0;
+	size_t nb_before = 0;
+	size_t nb_after = 0;
 
 	// 1. Identify a container ancestor that will allow the focused child to grow in the requested
 	//    direction.
 	while (container->parent) {
 		parent = container->parent;
-		if ((parent->children && parent->children->length > 1) &&
-		    (is_auto_layout(parent->layout) || (use_width ? parent->layout == L_HORIZ :
-							parent->layout == L_VERT))) {
+		if ((parent->children && parent->children->length > 1)
+			&& (is_auto_layout(parent->layout)
+				|| (use_width ? parent->layout == L_HORIZ : parent->layout == L_VERT))) {
 			// check if container has siblings that can provide/absorb the space needed for
 			// the resize operation.
 			use_major = use_width
@@ -185,15 +185,15 @@ static bool resize_tiled(int amount, bool use_width) {
 				continue;
 			}
 			if (use_major) {
-				nb_before = group_index(parent, idx_focused);
-				nb_after = group_count(parent) - nb_before - 1;
+				nb_before = auto_group_index(parent, idx_focused);
+				nb_after = auto_group_count(parent) - nb_before - 1;
 			} else {
-				nb_before = idx_focused - group_start_index(parent, idx_focused);
-				nb_after = group_end_index(parent, idx_focused) - idx_focused - 1;
+				nb_before = idx_focused - auto_group_start_index(parent, idx_focused);
+				nb_after = auto_group_end_index(parent, idx_focused) - idx_focused - 1;
 				sway_log(L_DEBUG, "+++ focused: %d, start: %d, end: %d, before: %d, after: %d",
 					 idx_focused,
-					 (int)group_start_index(parent, idx_focused),
-					 (int)group_end_index(parent, idx_focused),
+					 (int)auto_group_start_index(parent, idx_focused),
+					 (int)auto_group_end_index(parent, idx_focused),
 					 (int)nb_before, (int)nb_after);
 
 			}
@@ -206,14 +206,14 @@ static bool resize_tiled(int amount, bool use_width) {
 	if (parent == &root_container) {
 		return true;
 	}
-	sway_log(L_DEBUG, "Found the proper parent: %p. It has %" PRIuFAST32 " before conts, and %"
-		 PRIuFAST32 " after conts", parent, nb_before, nb_after);
+	sway_log(L_DEBUG, "Found the proper parent: %p. It has %zu before conts, "
+		 "and %zu after conts", parent, nb_before, nb_after);
 	// 2. Ensure that the resize operation will not make one of the resized containers drop
 	//    below the "sane" size threshold.
 	bool valid = true;
 	swayc_t *focused = parent->children->items[idx_focused];
-	int start = use_major ? 0 : group_start_index(parent, idx_focused);
-	int end = use_major ? parent->children->length : group_end_index(parent, idx_focused);
+	int start = use_major ? 0 : auto_group_start_index(parent, idx_focused);
+	int end = use_major ? parent->children->length : auto_group_end_index(parent, idx_focused);
 	sway_log(L_DEBUG, "Check children of container %p [%d,%d[", container, start, end);
 	for (int i = start; i < end; ) {
 		swayc_t *sibling = parent->children->items[i];
@@ -235,13 +235,13 @@ static bool resize_tiled(int amount, bool use_width) {
 			sway_log(L_DEBUG, "Container size no longer sane");
 			break;
 		}
-		i = use_major ? group_end_index(parent, i) : (i + 1);
+		i = use_major ? auto_group_end_index(parent, i) : (i + 1);
 		sway_log(L_DEBUG, "+++++ check %i", i);
 	}
 	// 3. Apply the size change
 	if (valid) {
 		for (int i = start; i < end; ) {
-			int next_i = use_major ? group_end_index(parent, i) : (i + 1);
+			int next_i = use_major ? auto_group_end_index(parent, i) : (i + 1);
 			swayc_t *sibling = parent->children->items[i];
 			double pixels = amount;
 			bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
