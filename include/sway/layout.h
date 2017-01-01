@@ -76,4 +76,5 @@ void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ..
 enum swayc_layouts default_layout(swayc_t *output);
 
 bool is_auto_layout(enum swayc_layouts layout);
+
 #endif

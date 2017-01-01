@@ -821,10 +821,6 @@ void update_geometry(swayc_t *container) {
 	}
 }
 
-bool is_auto_layout(enum swayc_layouts layout) {
-	return (layout >= L_AUTO_FIRST) && (layout <= L_AUTO_LAST);
-}
-
 /**
  * Layout application prototypes
  */
@@ -1502,4 +1498,8 @@ enum swayc_layouts default_layout(swayc_t *output) {
 	} else {
 		return L_VERT;
 	}
+}
+
+bool is_auto_layout(enum swayc_layouts layout) {
+	return (layout >= L_AUTO_FIRST) && (layout <= L_AUTO_LAST);
 }
