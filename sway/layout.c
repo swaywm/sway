@@ -252,6 +252,7 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 
 void move_container(swayc_t *container, enum movement_direction dir) {
 	enum swayc_layouts layout = L_NONE;
+	swayc_t *parent = container->parent;
 	if (container->is_floating
 			|| (container->type != C_VIEW && container->type != C_CONTAINER)) {
 		return;
@@ -260,10 +261,23 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		layout = L_VERT;
 	} else if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 		layout = L_HORIZ;
+	} else if (dir == MOVE_FIRST) {
+		// swap first child in auto layout with currently focused child
+		if (is_auto_layout(parent->layout)) {
+			int focused_idx = index_child(container);
+			swayc_t *first = parent->children->items[0];
+			if (focused_idx > 0) {
+				list_swap(parent->children, 0, focused_idx);
+				swap_geometry(first, container);
+			}
+			arrange_windows(parent->parent, -1, -1);
+			ipc_event_window(container, "move");
+			set_focused_container_for(parent->parent, container);
+		}
+		return;
 	} else if (! (dir == MOVE_NEXT || dir == MOVE_PREV)) {
 		return;
 	}
-	swayc_t *parent = container->parent;
 	swayc_t *child = container;
 	bool ascended = false;
 

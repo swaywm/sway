@@ -117,18 +117,6 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 						       "Must be one of <prev|next>.");
 			}
 			swayc_change_layout(parent, layout);
-		} else if (strcasecmp(argv[0], "promote") == 0) {
-			// swap first child in auto layout with currently focused child
-			swayc_t *container = get_focused_view(swayc_active_workspace());
-			swayc_t *parent = container->parent;
-			if (is_auto_layout(parent->layout)) {
-				int focused_idx = index_child(container);
-				swayc_t *first = parent->children->items[0];
-				if (focused_idx > 0) {
-					list_swap(parent->children, 0, focused_idx);
-					swap_geometry(first, container);
-				}
-			}
 		}
 	}
 

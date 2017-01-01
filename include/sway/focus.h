@@ -8,7 +8,8 @@ enum movement_direction {
 	MOVE_PARENT,
 	MOVE_CHILD,
 	MOVE_NEXT,
-	MOVE_PREV
+	MOVE_PREV,
+	MOVE_FIRST
 };
 
 #include "container.h"
