@@ -132,7 +132,7 @@ static void ipc_json_describe_output(swayc_t *output, json_object *object) {
 
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {
 	int num = (isdigit(workspace->name[0])) ? atoi(workspace->name) : -1;
-	const char *layout = ipc_json_layout_description(workspace->layout);
+	const char *layout = ipc_json_layout_description(workspace->workspace_layout);
 
 	json_object_object_add(object, "num", json_object_new_int(num));
 	json_object_object_add(object, "output", (workspace->parent) ? json_object_new_string(workspace->parent->name) : NULL);
@@ -173,7 +173,7 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object_object_add(object, "last_split_layout",
 		(strcmp(last_layout, "null") == 0) ? NULL : json_object_new_string(last_layout));
 	json_object_object_add(object, "workspace_layout",
-		json_object_new_string(ipc_json_layout_description(swayc_parent_by_type(c, C_WORKSPACE)->layout)));
+		json_object_new_string(ipc_json_layout_description(swayc_parent_by_type(c, C_WORKSPACE)->workspace_layout)));
 
 	json_object_object_add(object, "border", json_object_new_string(ipc_json_border_description(c)));
 	json_object_object_add(object, "current_border_width", json_object_new_int(c->border_thickness));
