@@ -71,7 +71,7 @@ message as well.
 ## Coding Style
 
 Sway is written in C. The style guidelines is [kernel
-style](https://www.kernel.org/doc/Documentation/CodingStyle), but all braces go
+style](https://www.kernel.org/doc/Documentation/process/coding-style.rst), but all braces go
 on the same line (*"but K&R says so!" is a silly way of justifying something*).
 Some points to note:
 
