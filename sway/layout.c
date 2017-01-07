@@ -1505,11 +1505,32 @@ bool is_auto_layout(enum swayc_layouts layout) {
 }
 
 /**
+ * Return the number of master elements in a container
+ */
+static inline size_t auto_master_count(swayc_t *container) {
+	return MIN(container->nb_master, container->children->length);
+}
+
+/**
  * Return the number of children in the slave groups. This corresponds to the children
  * that are not members of the master group.
  */
 static inline size_t auto_slave_count(swayc_t *container) {
-	return container->children->length - container->nb_master;
+	return container->children->length - auto_master_count(container);
+}
+
+/**
+ * Return the number of slave groups in the container.
+ */
+size_t auto_slave_group_count(swayc_t *container) {
+	return MIN(container->nb_slave_groups, auto_slave_count(container));
+}
+
+/**
+ * Return the combined number of master and slave groups in the container.
+ */
+size_t auto_group_count(swayc_t *container) {
+	return auto_slave_group_count(container) + (container->nb_master ? 1 : 0);
 }
 
 /**
@@ -1521,10 +1542,12 @@ int auto_group_start_index(swayc_t *container, int index) {
 		|| (size_t) index < container->nb_master) {
 		return 0;
 	} else {
-		size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
-		size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
+		size_t nb_slaves = auto_slave_count(container);
+		size_t nb_slave_grp = auto_slave_group_count(container);
+		size_t grp_sz = nb_slaves / nb_slave_grp;
+		size_t remainder = nb_slaves % nb_slave_grp;
+		int idx2 = (nb_slave_grp - remainder) * grp_sz + container->nb_master;
 		int start_idx;
-		int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
 		if (index < idx2) {
 			start_idx = ((index - container->nb_master) / grp_sz) * grp_sz + container->nb_master;
 		} else {
@@ -1545,11 +1568,13 @@ int auto_group_end_index(swayc_t *container, int index) {
 	} else {
 		int nxt_idx;
 		if ((size_t)index < container->nb_master) {
-			nxt_idx = container->nb_master;
+			nxt_idx = auto_master_count(container);
 		} else {
-			size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
-			size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
-			int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
+			size_t nb_slaves = auto_slave_count(container);
+			size_t nb_slave_grp = auto_slave_group_count(container);
+			size_t grp_sz = nb_slaves / nb_slave_grp;
+			size_t remainder = nb_slaves % nb_slave_grp;
+			int idx2 = (nb_slave_grp - remainder) * grp_sz + container->nb_master;
 			if (index < idx2) {
 				nxt_idx = ((index - container->nb_master) / grp_sz + 1) * grp_sz + container->nb_master;
 			} else {
@@ -1561,13 +1586,6 @@ int auto_group_end_index(swayc_t *container, int index) {
 }
 
 /**
- * Return the combined number of master and slave groups in the container.
- */
-size_t auto_group_count(swayc_t *container) {
-	return MIN(container->nb_slave_groups, auto_slave_count(container)) + (container->nb_master ? 1 : 0);
-}
-
-/**
  * return the index of the Group containing <index>th child of <container>.
  * The index is the order of the group along the container's major axis (starting at 0).
  */
@@ -1576,22 +1594,23 @@ size_t auto_group_index(swayc_t *container, int index) {
 		return 0;
 	}
 	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
-	int nb_slaves = auto_slave_count(container);
+	size_t nb_slaves = auto_slave_count(container);
 	if ((size_t) index < container->nb_master) {
 		if (master_first || nb_slaves <= 0) {
 			return 0;
 		} else {
-			return MIN(container->nb_slave_groups, nb_slaves);
+			return auto_slave_group_count(container);
 		}
 	} else {
-		size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
-		size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
+		size_t nb_slave_grp = auto_slave_group_count(container);
+		size_t grp_sz = nb_slaves / nb_slave_grp;
+		size_t remainder = nb_slaves % nb_slave_grp;
+		int idx2 = (nb_slave_grp - remainder) * grp_sz + container->nb_master;
 		size_t grp_idx;
-		int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
 		if (index < idx2) {
 			grp_idx = (index - container->nb_master) / grp_sz;
 		} else {
-			grp_idx = (container->nb_slave_groups - remainder) + (index - idx2) / (grp_sz + 1) ;
+			grp_idx = (nb_slave_grp - remainder) + (index - idx2) / (grp_sz + 1) ;
 		}
 		return grp_idx + (master_first ? 1 : 0);
 	}
