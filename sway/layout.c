@@ -1503,3 +1503,96 @@ enum swayc_layouts default_layout(swayc_t *output) {
 bool is_auto_layout(enum swayc_layouts layout) {
 	return (layout >= L_AUTO_FIRST) && (layout <= L_AUTO_LAST);
 }
+
+/**
+ * Return the number of children in the slave groups. This corresponds to the children
+ * that are not members of the master group.
+ */
+static inline size_t auto_slave_count(swayc_t *container) {
+	return container->children->length - container->nb_master;
+}
+
+/**
+ * given the index of a container's child, return the index of the first child of the group
+ * which index is a member of.
+ */
+int auto_group_start_index(swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout)
+		|| (size_t) index < container->nb_master) {
+		return 0;
+	} else {
+		size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
+		size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
+		int start_idx;
+		int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
+		if (index < idx2) {
+			start_idx = ((index - container->nb_master) / grp_sz) * grp_sz + container->nb_master;
+		} else {
+			start_idx = idx2 + ((index - idx2) / (grp_sz + 1)) * (grp_sz + 1);
+		}
+		return MIN(start_idx, container->children->length);
+	}
+}
+
+/**
+ * given the index of a container's child, return the index of the first child of the group
+ * that follows the one which index is a member of.
+ * This makes the function usable to walk through the groups in a container.
+ */
+int auto_group_end_index(swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout)) {
+		return container->children->length;
+	} else {
+		int nxt_idx;
+		if ((size_t)index < container->nb_master) {
+			nxt_idx = container->nb_master;
+		} else {
+			size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
+			size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
+			int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
+			if (index < idx2) {
+				nxt_idx = ((index - container->nb_master) / grp_sz + 1) * grp_sz + container->nb_master;
+			} else {
+				nxt_idx = idx2 + ((index - idx2) / (grp_sz + 1) + 1) * (grp_sz + 1);
+			}
+		}
+		return MIN(nxt_idx, container->children->length);
+	}
+}
+
+/**
+ * Return the combined number of master and slave groups in the container.
+ */
+size_t auto_group_count(swayc_t *container) {
+	return MIN(container->nb_slave_groups, auto_slave_count(container)) + (container->nb_master ? 1 : 0);
+}
+
+/**
+ * return the index of the Group containing <index>th child of <container>.
+ * The index is the order of the group along the container's major axis (starting at 0).
+ */
+size_t auto_group_index(swayc_t *container, int index) {
+	if (index < 0) {
+		return 0;
+	}
+	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
+	int nb_slaves = auto_slave_count(container);
+	if ((size_t) index < container->nb_master) {
+		if (master_first || nb_slaves <= 0) {
+			return 0;
+		} else {
+			return MIN(container->nb_slave_groups, nb_slaves);
+		}
+	} else {
+		size_t grp_sz = auto_slave_count(container) / container->nb_slave_groups;
+		size_t remainder = auto_slave_count(container) % container->nb_slave_groups;
+		size_t grp_idx;
+		int idx2 = (container->nb_slave_groups - remainder) * grp_sz + container->nb_master;
+		if (index < idx2) {
+			grp_idx = (index - container->nb_master) / grp_sz;
+		} else {
+			grp_idx = (container->nb_slave_groups - remainder) + (index - idx2) / (grp_sz + 1) ;
+		}
+		return grp_idx + (master_first ? 1 : 0);
+	}
+}
