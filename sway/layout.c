@@ -1164,9 +1164,7 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 	//  a single slave group (containing slave 1 and 2). The master
 	//  group and slave group are layed out using L_VERT.
 
-	size_t nb_slaves = container->children->length - container->nb_master;
-	size_t nb_groups = (container->nb_master > 0 ? 1 : 0) +
-		MIN(container->nb_slave_groups, nb_slaves);
+	size_t nb_groups = auto_group_count(container);
 
 	// the target dimension of the container along the "major" axis, each
 	// group in the container will be layed out using "group_layout" along
@@ -1216,74 +1214,53 @@ void apply_auto_layout(swayc_t *container, const double x, const double y,
 	 * layout. */
 	double old_group_dim[nb_groups];
 	double old_dim = 0;
-	size_t group = 0;
-	for (int i = 0; i < container->children->length;) {
-		swayc_t *child = container->children->items[i];
-		double *dim = group_layout == L_HORIZ ? &child->height : &child->width;
-		if (*dim <= 0) {
-			// New child with uninitialized dimension
-			*dim = dim_maj;
-			if (nb_groups > 1) {
-				// child gets a dimension proportional to existing groups,
-				// it will be later scaled based on to the available size
-				// in the major axis.
-				*dim /= (nb_groups - 1);
+	for (size_t group = 0; group < nb_groups; ++group) {
+		int idx;
+		if (auto_group_bounds(container, group, &idx, NULL)) {
+			swayc_t *child = container->children->items[idx];
+			double *dim = group_layout == L_HORIZ ? &child->height : &child->width;
+			if (*dim <= 0) {
+				// New child with uninitialized dimension
+				*dim = dim_maj;
+				if (nb_groups > 1) {
+					// child gets a dimension proportional to existing groups,
+					// it will be later scaled based on to the available size
+					// in the major axis.
+					*dim /= (nb_groups - 1);
+				}
 			}
+			old_dim += *dim;
+			old_group_dim[group] = *dim;
 		}
-		if (i == 0 && container->nb_master > 0) {
-			i += container->nb_master;
-		} else {
-			i += (nb_slaves - i + container->nb_master) / (nb_groups - group);
-		}
-		old_dim += *dim;
-		old_group_dim[group++] = *dim;
 	}
-
 	double scale = dim_maj / old_dim;
 
 	/* Apply layout to each group */
 	pos = pos_maj;
 
-	// first child in the current group
-	int start;
-
-	// index immediately after the last child in the current group
-	int end = 0;
-
-	for (group = 0; group < nb_groups; ++group) {
-		// column to include next by increasing position.
-		size_t layout_group = master_first ? group : (group + 1) % nb_groups;
-
-		// adjusted size of the group
-		group_dim = old_group_dim[layout_group] * scale;
-		if (container->nb_master > 0 && layout_group == 0) {
-			start = 0;
-			end = MIN(container->nb_master, container->children->length);
-		} else {
-			if (group == 0) {
-				start = container->nb_master;
-			} else {
-				start = end;
+	for (size_t group = 0; group < nb_groups; ++group) {
+		int start, end;	// index of first (inclusive) and last (exclusive) child in the group
+		if (auto_group_bounds(container, group, &start, &end)) {
+			// adjusted size of the group
+			group_dim = old_group_dim[group] * scale;
+			if (group == nb_groups - 1) {
+				group_dim = pos_maj + dim_maj - pos; // remaining width
 			}
-			end = start + (nb_slaves - start + container->nb_master) / (nb_groups - layout_group);
-		}
-		if (group == nb_groups - 1) {
-			group_dim = pos_maj + dim_maj - pos; // remaining width
-		}
-		sway_log(L_DEBUG, "Arranging container %p column %zu, children [%d,%d[ (%fx%f+%f,%f)",
-			 container, group, start, end, *group_w, *group_h, *group_x, *group_y);
-		switch (group_layout) {
-		default:
-		case L_VERT:
-			apply_vert_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
-			break;
-		case L_HORIZ:
-			apply_horiz_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
-			break;
-		}
+			sway_log(L_DEBUG, "Arranging container %p column %zu, children [%d,%d[ (%fx%f+%f,%f)",
+				 container, group, start, end, *group_w, *group_h, *group_x, *group_y);
+			switch (group_layout) {
+			default:
+			case L_VERT:
+				apply_vert_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
+				break;
+			case L_HORIZ:
+				apply_horiz_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
+				break;
+			}
 
-		/* update position for next group */
-		pos += group_dim;
+			/* update position for next group */
+			pos += group_dim;
+		}
 	}
 }
 
@@ -1508,7 +1485,7 @@ bool is_auto_layout(enum swayc_layouts layout) {
 /**
  * Return the number of master elements in a container
  */
-static inline size_t auto_master_count(swayc_t *container) {
+static inline size_t auto_master_count(const swayc_t *container) {
 	return MIN(container->nb_master, container->children->length);
 }
 
@@ -1516,21 +1493,21 @@ static inline size_t auto_master_count(swayc_t *container) {
  * Return the number of children in the slave groups. This corresponds to the children
  * that are not members of the master group.
  */
-static inline size_t auto_slave_count(swayc_t *container) {
+static inline size_t auto_slave_count(const swayc_t *container) {
 	return container->children->length - auto_master_count(container);
 }
 
 /**
  * Return the number of slave groups in the container.
  */
-size_t auto_slave_group_count(swayc_t *container) {
+size_t auto_slave_group_count(const swayc_t *container) {
 	return MIN(container->nb_slave_groups, auto_slave_count(container));
 }
 
 /**
  * Return the combined number of master and slave groups in the container.
  */
-size_t auto_group_count(swayc_t *container) {
+size_t auto_group_count(const swayc_t *container) {
 	return auto_slave_group_count(container) + (container->nb_master ? 1 : 0);
 }
 
@@ -1538,7 +1515,7 @@ size_t auto_group_count(swayc_t *container) {
  * given the index of a container's child, return the index of the first child of the group
  * which index is a member of.
  */
-int auto_group_start_index(swayc_t *container, int index) {
+int auto_group_start_index(const swayc_t *container, int index) {
 	if (index < 0 || ! is_auto_layout(container->layout)
 		|| (size_t) index < container->nb_master) {
 		return 0;
@@ -1563,7 +1540,7 @@ int auto_group_start_index(swayc_t *container, int index) {
  * that follows the one which index is a member of.
  * This makes the function usable to walk through the groups in a container.
  */
-int auto_group_end_index(swayc_t *container, int index) {
+int auto_group_end_index(const swayc_t *container, int index) {
 	if (index < 0 || ! is_auto_layout(container->layout)) {
 		return container->children->length;
 	} else {
@@ -1590,7 +1567,7 @@ int auto_group_end_index(swayc_t *container, int index) {
  * return the index of the Group containing <index>th child of <container>.
  * The index is the order of the group along the container's major axis (starting at 0).
  */
-size_t auto_group_index(swayc_t *container, int index) {
+size_t auto_group_index(const swayc_t *container, int index) {
 	if (index < 0) {
 		return 0;
 	}
@@ -1615,4 +1592,49 @@ size_t auto_group_index(swayc_t *container, int index) {
 		}
 		return grp_idx + (master_first ? 1 : 0);
 	}
+}
+
+/**
+ * Return the first index (inclusive) and last index (exclusive) of the elements of a group in
+ * an auto layout.
+ * If the bounds of the given group can be calculated, they are returned in the start/end
+ * parameters (int pointers) and the return value will be true.
+ * The indexes are passed by reference and can be NULL.
+ */
+bool auto_group_bounds(const swayc_t *container, size_t group_index, int *start, int *end) {
+	size_t nb_grp = auto_group_count(container);
+	if (group_index >= nb_grp) {
+		return false;
+	}
+	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
+	size_t nb_master = auto_master_count(container);
+	size_t nb_slave_grp = auto_slave_group_count(container);
+	int g_start, g_end;
+	if (nb_master && (master_first ? group_index == 0 : group_index == nb_grp - 1)) {
+		g_start = 0;
+		g_end = nb_master;
+	} else {
+		size_t nb_slaves = auto_slave_count(container);
+		size_t grp_sz = nb_slaves / nb_slave_grp;
+		size_t remainder = nb_slaves % nb_slave_grp;
+		size_t g0 = master_first && container->nb_master ? 1 : 0;
+		size_t g1 = g0 + nb_slave_grp - remainder;
+		if (group_index < g1) {
+			g_start = container->nb_master + (group_index - g0) * grp_sz;
+			g_end = g_start + grp_sz;
+		} else {
+			size_t g2 = group_index - g1;
+			g_start = container->nb_master
+				+ (nb_slave_grp - remainder) * grp_sz
+				+ g2 * (grp_sz + 1);
+			g_end = g_start + grp_sz + 1;
+		}
+	}
+	if (start) {
+		*start = g_start;
+	}
+	if (end) {
+		*end = g_end;
+	}
+	return true;
 }
