@@ -1031,11 +1031,11 @@ void apply_horiz_layout(swayc_t *container, const double x, const double y,
 		}
 		scale += *old_width;
 	}
+	scale = width / scale;
 
 	// Resize windows
 	double child_x = x;
 	if (scale > 0.1) {
-		scale = width / scale;
 		sway_log(L_DEBUG, "Arranging %p horizontally", container);
 		swayc_t *focused = NULL;
 		for (int i = start; i < end; ++i) {
@@ -1084,10 +1084,11 @@ void apply_vert_layout(swayc_t *container, const double x, const double y,
 		}
 		scale += *old_height;
 	}
+	scale = height / scale;
+
 	// Resize
 	double child_y = y;
 	if (scale > 0.1) {
-		scale = height / scale;
 		sway_log(L_DEBUG, "Arranging %p vertically", container);
 		swayc_t *focused = NULL;
 		for (i = start; i < end; ++i) {
