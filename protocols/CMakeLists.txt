@@ -22,12 +22,18 @@ WAYLAND_ADD_PROTOCOL_SERVER(proto-server-swaylock
 	swaylock
 )
 
+WAYLAND_ADD_PROTOCOL_SERVER(proto-server-gamma-control
+	gamma-control.xml
+	gamma-control
+)
+
 add_library(sway-protocols STATIC
 	${proto-client-xdg-shell}
 	${proto-client-desktop-shell}
 	${proto-server-desktop-shell}
 	${proto-client-swaylock}
 	${proto-server-swaylock}
+	${proto-server-gamma-control}
 	)
 
 set(PROTOCOLS_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/protocols PARENT_SCOPE)
