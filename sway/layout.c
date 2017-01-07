@@ -1372,7 +1372,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 	while (true) {
 		// Test if we can even make a difference here
 		bool can_move = false;
-		int diff = 0;
+		int desired;
+		int idx = index_child(container);
 		if (parent->type == C_ROOT) {
 			swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
 			if (!output || output == container) {
@@ -1381,21 +1382,36 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			sway_log(L_DEBUG, "Moving between outputs");
 			return get_swayc_in_output_direction(output, dir);
 		} else {
-			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
-				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
-					can_move = true;
-					diff = dir == MOVE_LEFT ? -1 : 1;
+			if (is_auto_layout(parent->layout)) {
+				bool is_major = parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT
+					? dir == MOVE_LEFT || dir == MOVE_RIGHT
+					: dir == MOVE_DOWN || dir == MOVE_UP;
+				size_t gidx = auto_group_index(parent, idx);
+				if (is_major) {
+					size_t desired_grp = gidx + (dir == MOVE_RIGHT || dir == MOVE_DOWN ? 1 : -1);
+					can_move = auto_group_bounds(parent, desired_grp, &desired, NULL);
+				} else {
+					desired = idx + (dir == MOVE_RIGHT || dir == MOVE_DOWN ? 1 : -1);
+					int start, end;
+					can_move = auto_group_bounds(parent, gidx, &start, &end)
+							&& desired >= start && desired < end;
 				}
 			} else {
-				if (parent->layout == L_VERT || parent->layout == L_STACKED) {
-					can_move = true;
-					diff = dir == MOVE_UP ? -1 : 1;
+				if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+					if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
+						can_move = true;
+						desired = idx + (dir == MOVE_LEFT ? -1 : 1);
+					}
+				} else {
+					if (parent->layout == L_VERT || parent->layout == L_STACKED) {
+						can_move = true;
+						desired = idx + (dir == MOVE_UP ? -1 : 1);
+					}
 				}
 			}
 		}
 
 		if (can_move) {
-			int desired = index_child(container) + diff;
 			if (container->is_floating) {
 				if (desired < 0) {
 					wrap_candidate = parent->floating->items[parent->floating->length-1];
@@ -1422,6 +1438,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 					}
 				}
 			} else {
+				sway_log(L_DEBUG, "%s cont %d-%p dir %i sibling %d: %p", __func__,
+					 idx, container, dir, desired, parent->children->items[desired]);
 				return parent->children->items[desired];
 			}
 		}
@@ -1590,7 +1608,7 @@ size_t auto_group_index(const swayc_t *container, int index) {
 		} else {
 			grp_idx = (nb_slave_grp - remainder) + (index - idx2) / (grp_sz + 1) ;
 		}
-		return grp_idx + (master_first ? 1 : 0);
+		return grp_idx + (master_first && container-> nb_master ? 1 : 0);
 	}
 }
 
