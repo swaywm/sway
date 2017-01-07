@@ -175,15 +175,15 @@ static bool resize_tiled(int amount, bool use_width) {
 			} else {
 				if (use_major) {
 					for (int j = i; j < next_i; ++j) {
-						recursive_resize(parent->children->items[j], pixels,
+						recursive_resize(parent->children->items[j], pixels / 2,
 								 use_width ? WLC_RESIZE_EDGE_LEFT : WLC_RESIZE_EDGE_TOP);
-						recursive_resize(parent->children->items[j], pixels,
+						recursive_resize(parent->children->items[j], pixels / 2,
 								 use_width ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_BOTTOM);
 					}
 				} else {
-					recursive_resize(sibling, pixels,
+					recursive_resize(sibling, pixels / 2,
 							 use_width ? WLC_RESIZE_EDGE_LEFT : WLC_RESIZE_EDGE_TOP);
-					recursive_resize(sibling, pixels,
+					recursive_resize(sibling, pixels / 2,
 							 use_width ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_BOTTOM);
 				}
 			}
