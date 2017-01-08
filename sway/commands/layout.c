@@ -49,8 +49,8 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		} else if (strcasecmp(argv[0], "splitv") == 0) {
 			swayc_change_layout(parent, L_VERT);
 		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
-			if (parent->layout == L_HORIZ && (parent->workspace_layout == L_NONE ||
-							  parent->workspace_layout == L_HORIZ)) {
+			if (parent->layout == L_HORIZ && (parent->workspace_layout == L_NONE
+					|| parent->workspace_layout == L_HORIZ)) {
 				swayc_change_layout(parent, L_VERT);
 			} else {
 				swayc_change_layout(parent, L_HORIZ);
@@ -66,23 +66,23 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		} else if (strcasecmp(argv[0], "incnmaster") == 0)  {
 			const char *name = "layout incnmaster";
 			if ((error = checkarg(argc, name,
-					      EXPECTED_EQUAL_TO, 2))) {
+					EXPECTED_EQUAL_TO, 2))) {
 				return error;
 			}
 			char *end;
 			int inc = (int) strtol(argv[1], &end, 10);
 			if (*end) {
 				return cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-						       "(argument must be an integer)", name);
+					"(argument must be an integer)", name);
 
 			}
 			swayc_t *container = get_focused_view(swayc_active_workspace());
 			if (container && inc &&
-			    is_auto_layout(container->parent->layout) &&
-			    ((int)container->parent->nb_master + inc >= 0)) {
+				is_auto_layout(container->parent->layout) &&
+				((int)container->parent->nb_master + inc >= 0)) {
 				for (int i = container->parent->nb_master;
-				     i >= 0 && i < container->parent->children->length &&
-					     i != (int) container->parent->nb_master + inc;) {
+					i >= 0 && i < container->parent->children->length
+						&& i != (int) container->parent->nb_master + inc;) {
 					((swayc_t *) container->parent->children->items[i])->height = -1;
 					((swayc_t *) container->parent->children->items[i])->width = -1;
 					i += inc > 0 ? 1 : -1;
@@ -92,19 +92,19 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		} else if ((strcasecmp(argv[0], "incncol") == 0) && argc ==2) {
 			const char *name = "layout incncol";
 			if ((error = checkarg(argc, name,
-					      EXPECTED_EQUAL_TO, 2))) {
+					EXPECTED_EQUAL_TO, 2))) {
 				return error;
 			}
 			char *end;
 			int inc = (int) strtol(argv[1], &end, 10);
 			if (*end) {
 				return cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-						       "(argument must be an integer)", name);
+					"(argument must be an integer)", name);
 
 			}
 			swayc_t *container = get_focused_view(swayc_active_workspace());
 			if (container && inc && is_auto_layout(container->parent->layout) &&
-			    ((int)container->parent->nb_slave_groups + inc >= 1)) {
+				((int)container->parent->nb_slave_groups + inc >= 1)) {
 				container->parent->nb_slave_groups += inc;
 			}
 		} else if (strcasecmp(argv[0], "auto") == 0) {
@@ -128,7 +128,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 				}
 			} else {
 				return cmd_results_new(CMD_FAILURE, "layout auto",
-						       "Must be one of <prev|next>.");
+						"Must be one of <prev|next>.");
 			}
 			swayc_change_layout(parent, layout);
 		}

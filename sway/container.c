@@ -965,10 +965,11 @@ swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
 	// if layout change modifies the auto layout's major axis, swap width and height
 	// to preserve current ratios.
 	if (is_auto_layout(layout) && is_auto_layout(container->layout)) {
-		enum swayc_layouts prev_major = (container->layout == L_AUTO_LEFT ||
-						 container->layout == L_AUTO_RIGHT)
+		enum swayc_layouts prev_major =
+			container->layout == L_AUTO_LEFT || container->layout == L_AUTO_RIGHT
 			? L_HORIZ : L_VERT;
-		enum swayc_layouts new_major = (layout == L_AUTO_LEFT || layout == L_AUTO_RIGHT)
+		enum swayc_layouts new_major =
+			layout == L_AUTO_LEFT || layout == L_AUTO_RIGHT
 			? L_HORIZ : L_VERT;
 		if (new_major != prev_major) {
 			for (int i = 0; i < container->children->length; ++i) {

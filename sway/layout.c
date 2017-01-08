@@ -296,7 +296,7 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
 		if (parent->layout == layout
-			|| layout == L_NONE /* accept any layout for next/prev direction */
+			|| (layout == L_NONE && parent->type == C_CONTAINER) /* accept any layout for next/prev direction */
 			|| (parent->layout == L_TABBED && layout == L_HORIZ)
 			|| (parent->layout == L_STACKED && layout == L_VERT)
 			|| is_auto_layout(parent->layout)) {
@@ -321,16 +321,16 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				}
 				// if move command makes container change from master to slave
 				// (or the contrary), reset its geometry an the one of the replaced item.
-				if (parent->nb_master &&
-				    (size_t) parent->children->length > parent->nb_master) {
+				if (parent->nb_master
+						&& (size_t) parent->children->length > parent->nb_master) {
 					swayc_t *swap_geom = NULL;
 					// if child is being promoted/demoted, it will swap geometry
 					// with the sibling being demoted/promoted.
 					if ((dir == MOVE_NEXT && desired == 0)
-					    || (dir == MOVE_PREV && (size_t) desired == parent->nb_master - 1)) {
+							|| (dir == MOVE_PREV && (size_t) desired == parent->nb_master - 1)) {
 						swap_geom = parent->children->items[parent->nb_master - 1];
 					} else if ((dir == MOVE_NEXT && (size_t) desired == parent->nb_master)
-						   || (dir == MOVE_PREV && desired == parent->children->length - 1)) {
+							|| (dir == MOVE_PREV && desired == parent->children->length - 1)) {
 						swap_geom = parent->children->items[parent->nb_master];
 					}
 					if (swap_geom) {
@@ -837,9 +837,9 @@ static void apply_tabbed_or_stacked_layout(swayc_t *container, double x,
 				double height);
 
 static void apply_auto_layout(swayc_t *container, const double x, const double y,
-			      const double width, const double height,
-			      enum swayc_layouts group_layout,
-			      bool master_first);
+				const double width, const double height,
+				enum swayc_layouts group_layout,
+				bool master_first);
 
 static void arrange_windows_r(swayc_t *container, double width, double height) {
 	int i;
@@ -972,11 +972,11 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 	case L_HORIZ:
 	default:
 		apply_horiz_layout(container, x, y, width, height, 0,
-				   container->children->length);
+			container->children->length);
 		break;
 	case L_VERT:
 		apply_vert_layout(container, x, y, width, height, 0,
-				  container->children->length);
+			container->children->length);
 		break;
 	case L_TABBED:
 	case L_STACKED:
@@ -1007,7 +1007,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				if (swayc_is_fullscreen(view)) {
 					wlc_view_bring_to_front(view->handle);
 				} else if (!container->focused ||
-					   !swayc_is_fullscreen(container->focused)) {
+						!swayc_is_fullscreen(container->focused)) {
 					wlc_view_bring_to_front(view->handle);
 				}
 			}
@@ -1068,8 +1068,8 @@ void apply_horiz_layout(swayc_t *container, const double x, const double y,
 }
 
 void apply_vert_layout(swayc_t *container, const double x, const double y,
-		       const double width, const double height, const int start,
-		       const int end) {
+			const double width, const double height, const int start,
+			const int end) {
 	int i;
 	double scale = 0;
 	// Calculate total height
@@ -1121,7 +1121,7 @@ void apply_vert_layout(swayc_t *container, const double x, const double y,
 }
 
 void apply_tabbed_or_stacked_layout(swayc_t *container, double x, double y,
-				    double width, double height) {
+					double width, double height) {
 	int i;
 	swayc_t *focused = NULL;
 	for (i = 0; i < container->children->length; ++i) {
@@ -1141,9 +1141,9 @@ void apply_tabbed_or_stacked_layout(swayc_t *container, double x, double y,
 }
 
 void apply_auto_layout(swayc_t *container, const double x, const double y,
-		       const double width, const double height,
-		       enum swayc_layouts group_layout,
-		       bool master_first) {
+			const double width, const double height,
+			enum swayc_layouts group_layout,
+			bool master_first) {
 	// Auto layout "container" in width x height @ x, y
 	// using "group_layout" for each of the groups in the container.
 	// There is one "master" group, plus container->nb_slave_groups.
@@ -1342,7 +1342,7 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			return NULL;
 		} else {
 			int desired = (focused_idx + (dir == MOVE_NEXT ? 1 : -1)) %
-				      parent->children->length;
+				parent->children->length;
 			if (desired < 0) {
 				desired += parent->children->length;
 			}
