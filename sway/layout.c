@@ -1504,7 +1504,9 @@ bool is_auto_layout(enum swayc_layouts layout) {
  * Return the number of master elements in a container
  */
 static inline size_t auto_master_count(const swayc_t *container) {
-	return MIN(container->nb_master, container->children->length);
+	sway_assert(container->children->length >= 0, "Container %p has (negative) children %d",
+			container, container->children->length);
+	return MIN(container->nb_master, (size_t)container->children->length);
 }
 
 /**
