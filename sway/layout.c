@@ -322,14 +322,14 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				// if move command makes container change from master to slave
 				// (or the contrary), reset its geometry an the one of the replaced item.
 				if (parent->nb_master
-						&& (size_t) parent->children->length > parent->nb_master) {
+						&& (size_t)parent->children->length > parent->nb_master) {
 					swayc_t *swap_geom = NULL;
 					// if child is being promoted/demoted, it will swap geometry
 					// with the sibling being demoted/promoted.
 					if ((dir == MOVE_NEXT && desired == 0)
-							|| (dir == MOVE_PREV && (size_t) desired == parent->nb_master - 1)) {
+							|| (dir == MOVE_PREV && (size_t)desired == parent->nb_master - 1)) {
 						swap_geom = parent->children->items[parent->nb_master - 1];
-					} else if ((dir == MOVE_NEXT && (size_t) desired == parent->nb_master)
+					} else if ((dir == MOVE_NEXT && (size_t)desired == parent->nb_master)
 							|| (dir == MOVE_PREV && desired == parent->children->length - 1)) {
 						swap_geom = parent->children->items[parent->nb_master];
 					}
@@ -1537,7 +1537,7 @@ size_t auto_group_count(const swayc_t *container) {
  */
 int auto_group_start_index(const swayc_t *container, int index) {
 	if (index < 0 || ! is_auto_layout(container->layout)
-		|| (size_t) index < container->nb_master) {
+		|| (size_t)index < container->nb_master) {
 		return 0;
 	} else {
 		size_t nb_slaves = auto_slave_count(container);
@@ -1593,7 +1593,7 @@ size_t auto_group_index(const swayc_t *container, int index) {
 	}
 	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
 	size_t nb_slaves = auto_slave_count(container);
-	if ((size_t) index < container->nb_master) {
+	if ((size_t)index < container->nb_master) {
 		if (master_first || nb_slaves <= 0) {
 			return 0;
 		} else {
