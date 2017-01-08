@@ -3,6 +3,11 @@
 #include "sway/container.h"
 #include "sway/layout.h"
 
+/**
+ * handle "layout auto" command group
+ */
+static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **argv);
+
 struct cmd_results *cmd_layout(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "layout", "Can't be used in config file.");
@@ -55,82 +60,8 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			} else {
 				swayc_change_layout(parent, L_HORIZ);
 			}
-		} else if (strcasecmp(argv[0], "auto_left") == 0) {
-			swayc_change_layout(parent, L_AUTO_LEFT);
-		} else if (strcasecmp(argv[0], "auto_right") == 0) {
-			swayc_change_layout(parent, L_AUTO_RIGHT);
-		} else if (strcasecmp(argv[0], "auto_top") == 0) {
-			swayc_change_layout(parent, L_AUTO_TOP);
-		} else if (strcasecmp(argv[0], "auto_bot") == 0) {
-			swayc_change_layout(parent, L_AUTO_BOTTOM);
-		} else if (strcasecmp(argv[0], "incnmaster") == 0)  {
-			const char *name = "layout incnmaster";
-			if ((error = checkarg(argc, name,
-					EXPECTED_EQUAL_TO, 2))) {
-				return error;
-			}
-			char *end;
-			int inc = (int) strtol(argv[1], &end, 10);
-			if (*end) {
-				return cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-					"(argument must be an integer)", name);
-
-			}
-			swayc_t *container = get_focused_view(swayc_active_workspace());
-			if (container && inc &&
-				is_auto_layout(container->parent->layout) &&
-				((int)container->parent->nb_master + inc >= 0)) {
-				for (int i = container->parent->nb_master;
-					i >= 0 && i < container->parent->children->length
-						&& i != (int) container->parent->nb_master + inc;) {
-					((swayc_t *) container->parent->children->items[i])->height = -1;
-					((swayc_t *) container->parent->children->items[i])->width = -1;
-					i += inc > 0 ? 1 : -1;
-				}
-				container->parent->nb_master += inc;
-			}
-		} else if ((strcasecmp(argv[0], "incncol") == 0) && argc ==2) {
-			const char *name = "layout incncol";
-			if ((error = checkarg(argc, name,
-					EXPECTED_EQUAL_TO, 2))) {
-				return error;
-			}
-			char *end;
-			int inc = (int) strtol(argv[1], &end, 10);
-			if (*end) {
-				return cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-					"(argument must be an integer)", name);
-
-			}
-			swayc_t *container = get_focused_view(swayc_active_workspace());
-			if (container && inc && is_auto_layout(container->parent->layout) &&
-				((int)container->parent->nb_slave_groups + inc >= 1)) {
-				container->parent->nb_slave_groups += inc;
-			}
 		} else if (strcasecmp(argv[0], "auto") == 0) {
-			if ((error = checkarg(argc, "auto", EXPECTED_EQUAL_TO, 2))) {
-				return error;
-			}
-			swayc_t *container = get_focused_view(swayc_active_workspace());
-			swayc_t *parent = container->parent;
-			enum swayc_layouts layout;
-			if (strcasecmp(argv[1], "next") == 0) {
-				if (is_auto_layout(parent->layout) && parent->layout < L_AUTO_LAST) {
-					layout = parent->layout + 1;
-				} else {
-					layout = L_AUTO_FIRST;
-				}
-			} else if (strcasecmp(argv[1], "prev") == 0) {
-				if (is_auto_layout(parent->layout) && parent->layout > L_AUTO_FIRST) {
-					layout = parent->layout - 1;
-				} else {
-					layout = L_AUTO_LAST;
-				}
-			} else {
-				return cmd_results_new(CMD_FAILURE, "layout auto",
-						"Must be one of <prev|next>.");
-			}
-			swayc_change_layout(parent, layout);
+			return cmd_layout_auto(parent, argc, argv);
 		}
 	}
 
@@ -139,5 +70,122 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 
 	arrange_windows(parent, parent->width, parent->height);
 
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **argv) {
+	// called after checking that argv[0] is auto, so just continue parsing from there
+	struct cmd_results *error = NULL;
+	const char *cmd_name = "layout auto";
+	const char *set_inc_cmd_name = "layout auto [master|ncol] [set|inc]";
+	const char *err_msg = "Allowed arguments are <right|left|top|bot|next|prev|master|ncol>";
+
+	bool need_layout_update = false;
+	enum swayc_layouts old_layout = container->layout;
+	enum swayc_layouts layout = old_layout;
+
+	if (strcasecmp(argv[1], "left") == 0) {
+		layout = L_AUTO_LEFT;
+	} else if (strcasecmp(argv[1], "right") == 0) {
+		layout = L_AUTO_RIGHT;
+	} else if (strcasecmp(argv[1], "top") == 0) {
+		layout = L_AUTO_TOP;
+	} else if (strcasecmp(argv[1], "bot") == 0) {
+		layout = L_AUTO_BOTTOM;
+	} else if (strcasecmp(argv[1], "next") == 0) {
+		if (is_auto_layout(container->layout) && container->layout < L_AUTO_LAST) {
+			layout = container->layout + 1;
+		} else {
+			layout = L_AUTO_FIRST;
+		}
+	} else if (strcasecmp(argv[1], "prev") == 0) {
+		if (is_auto_layout(container->layout) && container->layout > L_AUTO_FIRST) {
+			layout = container->layout - 1;
+		} else {
+			layout = L_AUTO_LAST;
+		}
+	} else {
+		bool is_nmaster;
+		bool is_set;
+		if (strcasecmp(argv[1], "master") == 0) {
+			is_nmaster = true;
+		} else if (strcasecmp(argv[1], "ncol") == 0) {
+			is_nmaster = false;
+		} else {
+			return cmd_results_new(CMD_INVALID, cmd_name, "Invalid %s command. %s",
+				cmd_name, err_msg);
+		}
+		if ((error = checkarg(argc, "auto <master|ncol>", EXPECTED_EQUAL_TO, 4))) {
+			return error;
+		}
+		if (strcasecmp(argv[2], "set") == 0) {
+			is_set = true;
+		} else if (strcasecmp(argv[2], "inc") == 0) {
+			is_set = false;
+		} else {
+			return cmd_results_new(CMD_INVALID, set_inc_cmd_name, "Invalid %s command. %s, "
+					       "Argument must be on of <set|inc>",
+					       set_inc_cmd_name);
+		}
+		char *end;
+		int n = (int)strtol(argv[3], &end, 10);
+		if (*end) {
+			return cmd_results_new(CMD_INVALID, set_inc_cmd_name, "Invalid %s command "
+					       "(argument must be an integer)", set_inc_cmd_name);
+		}
+		if (is_auto_layout(container->layout)) {
+			int inc = 0;	/* difference between current master/ncol and requested value */
+			if (is_nmaster) {
+				if (is_set) {
+					if (n < 0) {
+						return cmd_results_new(CMD_INVALID, set_inc_cmd_name, "Invalid %s command "
+								"(master must be >= 0)", set_inc_cmd_name);
+					}
+					inc = n - (int)container->nb_master;
+				} else {	/* inc command */
+					if ((int)container->nb_master + n >= 0) {
+						inc = n;
+					}
+				}
+				if (inc) {
+					for (int i = container->nb_master;
+					i >= 0 && i < container->children->length
+						&& i != (int)container->nb_master + inc;) {
+						((swayc_t *)container->children->items[i])->height = -1;
+						((swayc_t *)container->children->items[i])->width = -1;
+						i += inc > 0 ? 1 : -1;
+					}
+					container->nb_master += inc;
+					need_layout_update = true;
+				}
+			} else {	/* ncol modification */
+				if (is_set) {
+					if (n <= 0) {
+						return cmd_results_new(CMD_INVALID, set_inc_cmd_name, "Invalid %s command "
+								"(ncol must be > 0)", set_inc_cmd_name);
+					}
+					inc = n - (int)container->nb_slave_groups;
+				} else {	/* inc command */
+					if ((int)container->nb_slave_groups + n > 0) {
+						inc = n;
+					}
+				}
+				if (inc) {
+					container->nb_slave_groups += inc;
+					need_layout_update = true;
+				}
+			}
+		}
+	}
+
+	if (layout != old_layout) {
+		swayc_change_layout(container, layout);
+		update_layout_geometry(container, old_layout);
+		need_layout_update = true;
+	}
+	if (need_layout_update) {
+		update_geometry(container);
+		arrange_windows(container, container->width, container->height);
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

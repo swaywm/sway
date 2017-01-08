@@ -84,22 +84,22 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, _toggle split_, _stacking_, _tabbed_, _auto_left_, _auto_right_,
-	_auto_top, _auto_bottom_.
+	_splitv_, _toggle split_, _stacking_, _tabbed_.
+
+**layout** auto <mode>::
+	Sets layout to one of the auto modes, i.e. one of _left_, right_, _top_,
+	or _bot_.
 
 **layout** auto <next|prev>::
 	Cycles between available auto layouts.
 
-**layout** <incnmaster|incncol> <n>::
+**layout** auto [master|ncol] [inc|set] <n>::
 	Modify the number of master elements, respectively slave columns, in the
 	focused container. <n> can be a positive or negative integer. These commands
 	only have an effect if the focused container uses one of the "auto" layouts.
 
 **layout** toggle split::
 	Cycles between available split layouts.
-
-**layout** promote::
-	Swap the focused element with the first in the one of the auto layouts.
 
 **move** <left|right|up|down|next|prev|first>::
 	Moves the focused container _left_, _right_, _up_, or _down_. Moving to _prev_
