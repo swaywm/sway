@@ -1074,7 +1074,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 
 		sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
 
-		size_t bufsize = 4;
+		size_t bufsize = 12;
 		char output_id[bufsize];
 		snprintf(output_id, bufsize, "%d", output_i);
 		output_id[bufsize-1] = 0;
