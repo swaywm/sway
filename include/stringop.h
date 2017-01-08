@@ -10,7 +10,7 @@ extern int setenv(const char *, const char *, int);
 // array of whitespace characters to use for delims
 extern const char whitespace[];
 
-char *strip_whitespace(char *str);
+void strip_whitespace(char *str);
 char *strip_comments(char *str);
 void strip_quotes(char *str);
 

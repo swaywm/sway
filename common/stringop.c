@@ -10,22 +10,32 @@
 
 const char whitespace[] = " \f\n\r\t\v";
 
-char *strip_whitespace(char *_str) {
-	if (*_str == '\0')
-		return _str;
-	char *strold = _str;
-	while (*_str == ' ' || *_str == '\t') {
-		_str++;
+/**************************************************************************//**
+ *
+ * \brief		Strips the whitespace in front and rear of the string. If whitespace
+ *					is found in the middle of the string, all but one space is removed
+ *					between words.
+ *
+ * \param		str	Pointer to the char string that should be stripped. The string
+ *							is modified. If NULL is passed, no operation is performed.
+ *
+ ******************************************************************************/
+void strip_whitespace(char * restrict const str)
+{
+	if (NULL != str) {
+		unsigned int count = 0u;
+		for (unsigned int index = 0u; str[index]; ++index) {
+			if (' ' != str[index] && '\t' != str[index]) {
+				str[count++] = str[index];
+			} else if(0u < count && ' ' != str[count-1u] && '\t' != str[count-1u]) {
+				str[count++] = ' ';
+			}
+		}
+		str[count] = '\0';
+		if (0u < count && (' ' == str[count-1u] || '\t' == str[count-1u])) {
+			str[count-1u] = '\0';
+		}
 	}
-	char *str = strdup(_str);
-	free(strold);
-	int i;
-	for (i = 0; str[i] != '\0'; ++i);
-	do {
-		i--;
-	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
-	str[i + 1] = '\0';
-	return str;
 }
 
 void strip_quotes(char *str) {
