@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -620,18 +621,91 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	return true;
 }
 
+static inline char* handle_parentheses(FILE* const file, char* line,
+		unsigned int* const line_number) {
+	if (file && line) {
+		const size_t line_length = strlen(line);
+		if (1 < line_length && line[line_length-2u] != '{') {
+			char* next_line = NULL;
+			while (!feof(file) && !next_line) {
+				next_line = read_line(file);
+				if (line_number) {
+					++(*line_number);
+				}
+				if (next_line && is_empty(next_line)) {
+					free(next_line);
+					next_line = NULL;
+					continue;
+				}
+			}
+			if (next_line) {
+				if (next_line[0] == '{') {
+
+					if (!is_empty(next_line+1)) {
+						if (line_number) {
+							sway_log(L_ERROR, "Warning: Config (%u): Move additional commands to the "
+								"next line after '{'.", *line_number);
+						} else {
+							sway_log(L_ERROR, "Warning: Config: Move additional commands to the next "
+								"line after '{'.");
+						}
+					}
+
+					const size_t new_size = strlen(line) + strlen(next_line);
+					char* concat_line = malloc(new_size);
+					if (concat_line) {
+						line[strlen(line)-1] = '\0';
+						snprintf(concat_line, new_size, "%s %s", line, next_line);
+						free(line);
+						free(next_line);
+						line = concat_line;
+						next_line = NULL;
+					} else {
+						sway_log(L_ERROR, "Error: get_config_line(): Allocation of %zu bytes "
+							"was not successful.", new_size);
+					}
+				}
+			}
+		}
+	}
+	return line;
+}
+
+static inline char* get_config_line(FILE* const file, const enum cmd_status block,
+		unsigned int* const line_number) {
+	char* line = NULL;
+	if (file) {
+		line = read_line(file);
+		if (line_number) {
+			++(*line_number);
+		}
+		if (line) {
+			if (block == CMD_BLOCK_END) {
+				if (0 == strncmp(line, "mode", 4u)  ||
+						0 == strncmp(line, "bar", 3u)) {
+					line = handle_parentheses(file, line, line_number);
+				}
+			}else if (block == CMD_BLOCK_BAR) {
+				if (0 == strncmp(line, "colors", 5u)) {
+					line = handle_parentheses(file, line, line_number);
+				}
+			}
+		}
+	}
+	return line;
+}
+
 bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;
 	enum cmd_status block = CMD_BLOCK_END;
 
-	int line_number = 0;
+	unsigned int line_number = 0u;
 	char *line;
 	while (!feof(file)) {
-		line = read_line(file);
+		line = get_config_line(file, block, &line_number);
 		if (!line) {
 			continue;
 		}
-		line_number++;
 		struct cmd_results *res;
 		if (block == CMD_BLOCK_COMMANDS) {
 			// Special case

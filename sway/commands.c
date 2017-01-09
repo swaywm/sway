@@ -482,6 +482,9 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	sway_log(L_INFO, "handling config command '%s'", exec);
 	// Endblock
 	if (**argv == '}') {
+		if (1 != argc) {
+			sway_log(L_ERROR, "Note: Currently no other commands on lines with '}' are supported.");
+		}
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
 		goto cleanup;
 	}
