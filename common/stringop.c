@@ -10,24 +10,35 @@
 
 const char whitespace[] = " \f\n\r\t\v";
 
-/**************************************************************************//**
- *
- * \brief		Strips the whitespace in front and rear of the string. If whitespace
- *					is found in the middle of the string, all but one space is removed
- *					between words.
- *
- * \param		str	Pointer to the char string that should be stripped. The string
- *							is modified. If NULL is passed, no operation is performed.
- *
- ******************************************************************************/
-void strip_whitespace(char * restrict const str) {
+void strip_whitespace(char *str)
+{
 	if (str) {
 		size_t count = 0;
+		char quote = ' ';
 		for (size_t index = 0; str[index]; ++index) {
-			if (' ' != str[index] && '\t' != str[index]) {
+			if (quote != '\'' && quote != '\"') {
+				if (' ' != str[index] && '\t' != str[index]) {
+					str[count++] = str[index];
+					if (str[index] == '\'') {
+						quote = '\'';
+					} else if (str[index] == '\"') {
+						quote = '\"';
+					}
+				} else if(0 < count && ' ' != str[count - 1] && '\t' != str[count - 1]) {
+					str[count++] = ' ';
+				}
+			} else if (quote == '\'') {
 				str[count++] = str[index];
-			} else if(0 < count && ' ' != str[count - 1] && '\t' != str[count - 1]) {
-				str[count++] = ' ';
+				if (str[index] == '\'') {
+					quote = ' ';
+				}
+			} else if (quote == '\"') {
+				str[count++] = str[index];
+				if (str[index] == '\"') {
+					quote = ' ';
+				}
+			} else {
+				/* Unexpected value for quote. */
 			}
 		}
 		str[count] = '\0';
@@ -36,6 +47,7 @@ void strip_whitespace(char * restrict const str) {
 		}
 	}
 }
+
 
 void strip_quotes(char *str) {
 	bool in_str = false;
