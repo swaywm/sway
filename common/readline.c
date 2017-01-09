@@ -1,51 +1,45 @@
-#include "readline.h"
-#include "log.h"
-#include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-char *read_line(FILE *file) {
-	size_t length = 0, size = 128;
-	char *string = malloc(size);
-	char lastChar = '\0';
-	if (!string) {
-		sway_log(L_ERROR, "Unable to allocate memory for read_line");
-		return NULL;
-	}
-	while (1) {
-		int c = getc(file);
-		if (c == '\n' && lastChar == '\\'){
-			--length; // Ignore last character.
-			lastChar = '\0';
-			continue;
-		}
-		if (c == EOF || c == '\n' || c == '\0') {
-			break;
-		}
-		if (c == '\r') {
-			continue;
-		}
-		lastChar = c;
-		if (length == size) {
-			char *new_string = realloc(string, size *= 2);
-			if (!new_string) {
-				free(string);
-				sway_log(L_ERROR, "Unable to allocate memory for read_line");
-				return NULL;
+#include "log.h"
+#include "readline.h"
+#include "stringop.h"
+
+/***************************************************************************//**
+*
+* \brief			Read one line of the configuration file.
+*
+* \param			file	Pointer to the already open configuration file. If NULL is
+*										passed, no operation is performed.
+*
+* \return			String containing one single line from the configuration file.
+*							This string is not necessarily in the format how it is expected
+*							for further processing of configuration commands. NULL is
+*							returned in case of failure or if NULL is passed for 'file'.
+*
+******************************************************************************/
+inline char* read_line(FILE* restrict const file) {
+	char* line = NULL;
+	if (file) {
+		size_t line_length = 0u;
+		const ssize_t bytes_read = getline(&line, &line_length, file);
+		if (line) {
+			assert(line_length);
+			if (0 > bytes_read) {
+				free(line);
+				line = NULL;
+			} else {
+				strip_whitespace(line);
+				if (line[0] == '#') {
+					free(line);
+					line = NULL;
+				}
 			}
-			string = new_string;
 		}
-		string[length++] = c;
 	}
-	if (length + 1 == size) {
-		char *new_string = realloc(string, length + 1);
-		if (!new_string) {
-			free(string);
-			return NULL;
-		}
-		string = new_string;
-	}
-	string[length] = '\0';
-	return string;
+	return line;
 }
 
 char *read_line_buffer(FILE *file, char *string, size_t string_len) {

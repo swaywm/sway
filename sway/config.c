@@ -632,11 +632,6 @@ bool read_config(FILE *file, struct sway_config *config) {
 			continue;
 		}
 		line_number++;
-		strip_whitespace(line);
-		if (line[0] == '#') {
-			free(line);
-			continue;
-		}
 		struct cmd_results *res;
 		if (block == CMD_BLOCK_COMMANDS) {
 			// Special case
