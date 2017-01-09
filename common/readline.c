@@ -7,33 +7,16 @@
 #include "readline.h"
 #include "stringop.h"
 
-/***************************************************************************//**
-*
-*	\brief	Read one line of the file. Lines beginning with '#' are skipped.
-*		Whitespace is stripped.
-*
-*	\param[in]	file	Pointer to the already open configuration file. If NULL is
-*		passed, no operation is performed.
-*
-*	\return		String containing one single line from the file.
-*
-******************************************************************************/
 inline char* read_line(FILE* restrict const file) {
 	char* line = NULL;
 	if (file) {
 		size_t line_length = 0u;
 		const ssize_t bytes_read = getline(&line, &line_length, file);
-		if (line) {
-			assert(line_length);
+		if (line && line_length) {
 			if (0 > bytes_read) {
 				free(line);
 				line = NULL;
 			} else {
-				strip_whitespace(line);
-				if (line[0] == '#') {
-					free(line);
-					line = NULL;
-				}
 			}
 		}
 	}

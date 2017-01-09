@@ -20,20 +20,19 @@ const char whitespace[] = " \f\n\r\t\v";
  *							is modified. If NULL is passed, no operation is performed.
  *
  ******************************************************************************/
-void strip_whitespace(char * restrict const str)
-{
-	if (NULL != str) {
-		unsigned int count = 0u;
-		for (unsigned int index = 0u; str[index]; ++index) {
+void strip_whitespace(char * restrict const str) {
+	if (str) {
+		size_t count = 0;
+		for (size_t index = 0; str[index]; ++index) {
 			if (' ' != str[index] && '\t' != str[index]) {
 				str[count++] = str[index];
-			} else if(0u < count && ' ' != str[count-1u] && '\t' != str[count-1u]) {
+			} else if(0 < count && ' ' != str[count - 1] && '\t' != str[count - 1]) {
 				str[count++] = ' ';
 			}
 		}
 		str[count] = '\0';
-		if (0u < count && (' ' == str[count-1u] || '\t' == str[count-1u])) {
-			str[count-1u] = '\0';
+		if (0 < count && (' ' == str[count - 1] || '\t' == str[count - 1])) {
+			str[count - 1] = '\0';
 		}
 	}
 }
@@ -298,17 +297,16 @@ static bool has_whitespace(const char *str) {
  * Returns true if the string contains only whitespace and false otherwise.
  */
 bool is_empty(const char *str) {
-	bool ret = true;
-	if (str) {
-		while (*str != '\0') {
-			if (!isspace(*(const unsigned char*)str)) {
-				ret = false;
-				break;
-			}
-			str++;
-		}
+	if(!str) {
+		return true;
 	}
-	return ret;
+	while (*str != '\0') {
+		if (!isspace(*(unsigned char*)str)) {
+			return false;
+		}
+		str++;
+	}
+	return true;
 }
 
 /**

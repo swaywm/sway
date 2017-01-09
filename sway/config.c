@@ -621,19 +621,7 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	return true;
 }
 
-/***************************************************************************//**
-*
-*	\brief	This function corrects the given 'line' if the opening parentheses
-*	happens to be on the next line.
-*
-*	\param[in]	file The pointer to the already open file.
-* \param[in/out]	line The current line read from the configuration file.
-* \param[in]	line_number Counter for the line number. Optional.
-*
-*	\return	A string to the corrected 'line' is returned.
-*
-*******************************************************************************/
-static inline char* handle_parentheses(FILE* const file, char* line,
+static inline char* handle_braces(FILE* const file, char* line,
 		unsigned int* const line_number) {
 	if (file && line) {
 		const size_t line_length = strlen(line);
@@ -645,6 +633,11 @@ static inline char* handle_parentheses(FILE* const file, char* line,
 				/* Read the file. Skip empty lines. Comments are skipped in read_line()
 				 * already. */
 				next_line = read_line(file);
+				strip_whitespace(next_line);
+				if (next_line[0] == '#') {
+					free(next_line);
+					next_line = NULL;
+				}
 				if (line_number) {
 					++(*line_number);
 				}
@@ -691,23 +684,16 @@ static inline char* handle_parentheses(FILE* const file, char* line,
 	return line;
 }
 
-/***************************************************************************//**
-*
-*	\brief	Read one line from the configuration file.
-*
-*	\param[in]	file	The pointer to the already open file.
-*	\param[in]	block	Indication if we are in some special block currently.
-*	\param[out]	line_number The counter for the line number. Optional.
-*
-*	\return	String that contains the whitespace-stripped line from the
-*					configuration file.
-*
-*******************************************************************************/
 static inline char* get_config_line(FILE* const file, const enum cmd_status block,
 		unsigned int* const line_number) {
 	char* line = NULL;
 	if (file) {
 		line = read_line(file);
+		strip_whitespace(line);
+		if (line[0] == '#') {
+			free(line);
+			line = NULL;
+		}
 		if (line_number) {
 			++(*line_number);
 		}
@@ -717,13 +703,13 @@ static inline char* get_config_line(FILE* const file, const enum cmd_status bloc
 						0 == strncmp(line, "bar", 3u)) {
 					/* If we are in no block, we check the opening parentheses for modes
 					 * and the bar configuration. */
-					line = handle_parentheses(file, line, line_number);
+					line = handle_braces(file, line, line_number);
 				}
 			}else if (block == CMD_BLOCK_BAR) {
 				if (0 == strncmp(line, "colors", 5u)) {
 					/* If we are in the 'bar' block, we check the opening parentheses for
 					 * the 'colors' block. */
-					line = handle_parentheses(file, line, line_number);
+					line = handle_braces(file, line, line_number);
 				}
 			}
 		}
