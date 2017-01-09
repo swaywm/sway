@@ -621,13 +621,29 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	return true;
 }
 
+/***************************************************************************//**
+*
+*	\brief	This function corrects the given 'line' if the opening parentheses
+*	happens to be on the next line.
+*
+*	\param[in]	file The pointer to the already open file.
+* \param[in/out]	line The current line read from the configuration file.
+* \param[in]	line_number Counter for the line number. Optional.
+*
+*	\return	A string to the corrected 'line' is returned.
+*
+*******************************************************************************/
 static inline char* handle_parentheses(FILE* const file, char* line,
 		unsigned int* const line_number) {
 	if (file && line) {
 		const size_t line_length = strlen(line);
+		/* If the last character of the line is not '{', we have to look for it on
+		 * the next line. */
 		if (1 < line_length && line[line_length-2u] != '{') {
 			char* next_line = NULL;
 			while (!feof(file) && !next_line) {
+				/* Read the file. Skip empty lines. Comments are skipped in read_line()
+				 * already. */
 				next_line = read_line(file);
 				if (line_number) {
 					++(*line_number);
@@ -640,8 +656,10 @@ static inline char* handle_parentheses(FILE* const file, char* line,
 			}
 			if (next_line) {
 				if (next_line[0] == '{') {
-
 					if (!is_empty(next_line+1)) {
+						/* Currently we do not support something like 'mode "resize" {[…]}'
+						 * in one line but we should at least give the user an indication
+						 * what is wrong because that behavior is generally not expected. */
 						if (line_number) {
 							sway_log(L_ERROR, "Warning: Config (%u): Move additional commands to the "
 								"next line after '{'.", *line_number);
@@ -651,10 +669,12 @@ static inline char* handle_parentheses(FILE* const file, char* line,
 						}
 					}
 
+					/* If we find the opening parenthesis on the next line, we append it
+					 * to 'line'. */
 					const size_t new_size = strlen(line) + strlen(next_line);
 					char* concat_line = malloc(new_size);
 					if (concat_line) {
-						line[strlen(line)-1] = '\0';
+						line[strlen(line)-1] = '\0';  /* Override '\n' with '\0'. */
 						snprintf(concat_line, new_size, "%s %s", line, next_line);
 						free(line);
 						free(next_line);
@@ -671,6 +691,18 @@ static inline char* handle_parentheses(FILE* const file, char* line,
 	return line;
 }
 
+/***************************************************************************//**
+*
+*	\brief	Read one line from the configuration file.
+*
+*	\param[in]	file	The pointer to the already open file.
+*	\param[in]	block	Indication if we are in some special block currently.
+*	\param[out]	line_number The counter for the line number. Optional.
+*
+*	\return	String that contains the whitespace-stripped line from the
+*					configuration file.
+*
+*******************************************************************************/
 static inline char* get_config_line(FILE* const file, const enum cmd_status block,
 		unsigned int* const line_number) {
 	char* line = NULL;
@@ -683,10 +715,14 @@ static inline char* get_config_line(FILE* const file, const enum cmd_status bloc
 			if (block == CMD_BLOCK_END) {
 				if (0 == strncmp(line, "mode", 4u)  ||
 						0 == strncmp(line, "bar", 3u)) {
+					/* If we are in no block, we check the opening parentheses for modes
+					 * and the bar configuration. */
 					line = handle_parentheses(file, line, line_number);
 				}
 			}else if (block == CMD_BLOCK_BAR) {
 				if (0 == strncmp(line, "colors", 5u)) {
+					/* If we are in the 'bar' block, we check the opening parentheses for
+					 * the 'colors' block. */
 					line = handle_parentheses(file, line, line_number);
 				}
 			}

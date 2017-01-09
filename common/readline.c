@@ -9,15 +9,13 @@
 
 /***************************************************************************//**
 *
-* \brief			Read one line of the configuration file.
+*	\brief	Read one line of the file. Lines beginning with '#' are skipped.
+*		Whitespace is stripped.
 *
-* \param			file	Pointer to the already open configuration file. If NULL is
-*										passed, no operation is performed.
+*	\param[in]	file	Pointer to the already open configuration file. If NULL is
+*		passed, no operation is performed.
 *
-* \return			String containing one single line from the configuration file.
-*							This string is not necessarily in the format how it is expected
-*							for further processing of configuration commands. NULL is
-*							returned in case of failure or if NULL is passed for 'file'.
+*	\return		String containing one single line from the file.
 *
 ******************************************************************************/
 inline char* read_line(FILE* restrict const file) {
