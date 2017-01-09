@@ -1,5 +1,7 @@
 #ifndef _SWAY_STRINGOP_H
 #define _SWAY_STRINGOP_H
+
+#include <stdbool.h>
 #include "list.h"
 
 #if !HAVE_DECL_SETENV
@@ -13,6 +15,9 @@ extern const char whitespace[];
 void strip_whitespace(char *str);
 char *strip_comments(char *str);
 void strip_quotes(char *str);
+
+// Returns true if the string contains only whitespace.
+bool is_empty(const char *str);
 
 // strcmp that also handles null pointers.
 int lenient_strcmp(char *a, char *b);

@@ -293,6 +293,24 @@ static bool has_whitespace(const char *str) {
 	return false;
 }
 
+
+/*
+ * Returns true if the string contains only whitespace and false otherwise.
+ */
+bool is_empty(const char *str) {
+	bool ret = true;
+	if (str) {
+		while (*str != '\0') {
+			if (!isspace(*(const unsigned char*)str)) {
+				ret = false;
+				break;
+			}
+			str++;
+		}
+	}
+	return ret;
+}
+
 /**
  * Add quotes around any argv with whitespaces.
  */
