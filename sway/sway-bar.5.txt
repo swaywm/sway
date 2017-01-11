@@ -48,6 +48,10 @@ Commands
 **separator_symbol** <symbol>::
 	Specifies the separator symbol to separate blocks on the bar.
 
+**mouse_scroll_workspaces** <yes|no>::
+	Enables or disables workspace switching using the mouse scroll wheel.
+	Default is yes.
+
 **wrap_scroll** <yes|no>::
 	Enables or disables wrapping when scrolling through workspaces with the
 	scroll wheel. Default is no.

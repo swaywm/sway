@@ -40,6 +40,7 @@ struct config *init_config() {
 	config->sep_symbol = NULL;
 	config->strip_workspace_numbers = false;
 	config->binding_mode_indicator = true;
+	config->mouse_scroll_workspaces = true;
 	config->wrap_scroll = false;
 	config->workspace_buttons = true;
 	config->all_outputs = false;

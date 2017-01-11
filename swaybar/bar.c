@@ -95,6 +95,10 @@ static void mouse_button_notify(struct window *window, int x, int y,
 static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
 	sway_log(L_DEBUG, "Mouse wheel scrolled %s", direction == SCROLL_UP ? "up" : "down");
 
+	if (!swaybar.config->mouse_scroll_workspaces) {
+		return;
+	}
+
 	if (!swaybar.config->wrap_scroll) {
 		// Find output this window lives on
 		int i;
