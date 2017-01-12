@@ -665,6 +665,13 @@ void update_geometry(swayc_t *container) {
 					border_bottom = 0;
 				}
 			}
+
+			if (config->hide_edge_borders == E_SMART && workspace->children->length == 1) {
+				border_top = 0;
+				border_bottom = 0;
+				border_left = 0;
+				border_right = 0;
+			}
 		}
 
 		int title_bar_height = config->font_height + 4; //borders + padding
