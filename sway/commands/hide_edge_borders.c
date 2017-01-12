@@ -15,6 +15,8 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 		config->hide_edge_borders = E_HORIZONTAL;
 	} else if (strcasecmp(argv[0], "both") == 0) {
 		config->hide_edge_borders = E_BOTH;
+	} else if (strcasecmp(argv[0], "smart") == 0) {
+		config->hide_edge_borders = E_SMART;
 	} else {
 		return cmd_results_new(CMD_INVALID, "hide_edge_borders",
 				"Expected 'hide_edge_borders <none|vertical|horizontal|both>'");

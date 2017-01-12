@@ -178,7 +178,8 @@ enum edge_border_types {
 	E_NONE,         /**< Don't hide edge borders */
 	E_VERTICAL,     /**< hide vertical edge borders */
 	E_HORIZONTAL,   /**< hide horizontal edge borders */
-	E_BOTH		/**< hide vertical and horizontal edge borders */
+	E_BOTH,		/**< hide vertical and horizontal edge borders */
+	E_SMART		/**< hide both if precisely one window is present in workspace */
 };
 
 enum command_context {
