@@ -331,6 +331,7 @@ int main(int argc, char **argv) {
 		// Drop every cap except CAP_SYS_PTRACE
 		cap_t caps = cap_init();
 		cap_value_t keep = CAP_SYS_PTRACE;
+		sway_log(L_INFO, "Dropping extra capabilities");
 		if (cap_set_flag(caps, CAP_PERMITTED, 1, &keep, CAP_SET) ||
 			cap_set_flag(caps, CAP_EFFECTIVE, 1, &keep, CAP_SET) ||
 			cap_set_proc(caps)) {
