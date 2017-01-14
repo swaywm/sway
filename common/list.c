@@ -132,3 +132,18 @@ void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
 		list_inplace_sort(list, 0, list->length - 1, compare);
 	}
 }
+
+void *list_bsearch(list_t *list, int compare(const void *a, const void *b), const void *data) {
+	return bsearch(data, list->items, list->length, sizeof(void*), compare);
+}
+
+int list_binary_find(list_t *list, int compare(const void *item, const void *data), const void *data, size_t size) {
+	if (list->length == 0) {
+		return -1;
+	}
+	void **item = list_bsearch(list, compare, data);
+	if (item != NULL)
+		return (item-list->items) / size;
+	else
+		return -1;
+}

@@ -19,6 +19,47 @@
 	sway_assert (PTR, #PTR "must be non-null")
 
 
+struct containers_by_handle_element {
+	wlc_handle handle;
+	swayc_t *cont;
+};
+
+static int compare_wlc_handle_qsort(const void *handle1, const void *handle2) {
+	return (*(const struct containers_by_handle_element**)handle1)->handle - (*(const struct containers_by_handle_element**)handle2)->handle;
+}
+
+static int compare_wlc_handle_bsearch(const void *handle1, const void *handle2) {
+    return ((struct containers_by_handle_element*)handle1)->handle - (*(const struct containers_by_handle_element**)handle2)->handle;
+}
+
+static list_t *containers_by_handle_pointer() {
+	static list_t *containers = NULL;
+	if (containers == NULL) {
+		containers = create_list();
+	}
+	return containers;
+}
+
+static void containers_by_handle_add_container(wlc_handle handle, swayc_t *cont) {
+	list_t *containers = containers_by_handle_pointer();
+	struct containers_by_handle_element *elem = malloc(sizeof(struct containers_by_handle_element));
+	elem->handle = handle;
+	elem->cont = cont;
+	list_add(containers, elem);
+	list_qsort(containers, &compare_wlc_handle_qsort);
+}
+
+static void containers_by_handle_rm_container(wlc_handle handle) {
+	list_t *containers = containers_by_handle_pointer();
+	struct containers_by_handle_element elem;
+	elem.handle = handle;
+	int index = list_binary_find(containers, &compare_wlc_handle_bsearch, &elem, sizeof(struct containers_by_handle_element));
+	if (index != -1) {
+		free(containers->items[index]);
+		list_del(containers, index);
+	}
+}
+
 static swayc_t *new_swayc(enum swayc_types type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
@@ -162,6 +203,8 @@ swayc_t *new_output(wlc_handle handle) {
 	output->unmanaged = create_list();
 	output->bg_pid = 0;
 
+	containers_by_handle_add_container(handle, output);
+
 	apply_output_config(oc, output);
 	add_child(&root_container, output);
 	load_swaybars();
@@ -286,6 +329,9 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	}
 	const char *title = wlc_view_get_title(handle);
 	swayc_t *view = new_swayc(C_VIEW);
+
+	containers_by_handle_add_container(handle, view);
+
 	sway_log(L_DEBUG, "Adding new view %" PRIuPTR ":%s to container %p %d",
 		handle, title, sibling, sibling ? sibling->type : 0);
 	// Setup values
@@ -437,6 +483,7 @@ swayc_t *destroy_output(swayc_t *output) {
 		}
 	}
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%" PRIuPTR "'", output->handle);
+	containers_by_handle_rm_container(output->handle);
 	free_swayc(output);
 	update_root_geometry();
 	return &root_container;
@@ -504,6 +551,7 @@ swayc_t *destroy_view(swayc_t *view) {
 	}
 	sway_log(L_DEBUG, "Destroying view '%p'", view);
 	swayc_t *parent = view->parent;
+	containers_by_handle_rm_container(view->handle);
 	free_swayc(view);
 
 	// Destroy empty containers
@@ -607,40 +655,14 @@ swayc_t *swayc_focus_by_layout(swayc_t *container, enum swayc_layouts layout) {
 	return container;
 }
 
-
-static swayc_t *_swayc_by_handle_helper(wlc_handle handle, swayc_t *parent) {
-	if (!parent || !parent->children) {
-		return NULL;
-	}
-	int i, len;
-	swayc_t **child;
-	if (parent->type == C_WORKSPACE) {
-		len = parent->floating->length;
-		child = (swayc_t **)parent->floating->items;
-		for (i = 0; i < len; ++i, ++child) {
-			if ((*child)->handle == handle) {
-				return *child;
-			}
-		}
-	}
-
-	len = parent->children->length;
-	child = (swayc_t**)parent->children->items;
-	for (i = 0; i < len; ++i, ++child) {
-		if ((*child)->handle == handle) {
-			return *child;
-		} else {
-			swayc_t *res;
-			if ((res = _swayc_by_handle_helper(handle, *child))) {
-				return res;
-			}
-		}
-	}
-	return NULL;
-}
-
 swayc_t *swayc_by_handle(wlc_handle handle) {
-	return _swayc_by_handle_helper(handle, &root_container);
+	list_t *containers = containers_by_handle_pointer();
+	struct containers_by_handle_element elem;
+	elem.handle = handle;
+	struct containers_by_handle_element **cont = list_bsearch(containers, &compare_wlc_handle_bsearch, &elem);
+	if (cont != NULL)
+		return (*cont)->cont;
+	return NULL;
 }
 
 swayc_t *swayc_active_output(void) {
