@@ -78,7 +78,7 @@ static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **
 	struct cmd_results *error = NULL;
 	const char *cmd_name = "layout auto";
 	const char *set_inc_cmd_name = "layout auto [master|ncol] [set|inc]";
-	const char *err_msg = "Allowed arguments are <right|left|top|bot|next|prev|master|ncol>";
+	const char *err_msg = "Allowed arguments are <right|left|top|bottom|next|prev|master|ncol>";
 
 	bool need_layout_update = false;
 	enum swayc_layouts old_layout = container->layout;
@@ -90,7 +90,7 @@ static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **
 		layout = L_AUTO_RIGHT;
 	} else if (strcasecmp(argv[1], "top") == 0) {
 		layout = L_AUTO_TOP;
-	} else if (strcasecmp(argv[1], "bot") == 0) {
+	} else if (strcasecmp(argv[1], "bottom") == 0) {
 		layout = L_AUTO_BOTTOM;
 	} else if (strcasecmp(argv[1], "next") == 0) {
 		if (is_auto_layout(container->layout) && container->layout < L_AUTO_LAST) {

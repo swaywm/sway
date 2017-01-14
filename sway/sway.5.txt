@@ -64,12 +64,11 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **focus** <direction>::
 	Direction may be one of _up_, _down_, _left_, _right_, _next_, _prev_,
 	_parent_, or _child_. The directional focus commands will move the focus
-	in that direction. The auto_next and auto_prev will focus the next,
-	respectively previous, element in the current container if it is using
-	one of the _auto_ layouts. The parent focus command will change the
-	focus to the parent of the currently focused container, which is useful,
-	for example, to open a sibling of the parent container, or to move the
-	entire container around.
+	in that direction. The _next_ and _prev_ directions will focus the next,
+	respectively previous, element in the current container. The parent
+	focus command will change the focus to the parent of the currently
+	focused container, which is useful, for example, to open a sibling of
+	the parent container, or to move the entire container around.
 
 **focus** output <direction|name>::
 	Direction may be one of _up_, _down_, _left_, _right_. The directional focus
@@ -88,7 +87,7 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **layout** auto <mode>::
 	Sets layout to one of the auto modes, i.e. one of _left_, right_, _top_,
-	or _bot_.
+	or _bottom_.
 
 **layout** auto <next|prev>::
 	Cycles between available auto layouts.
@@ -381,8 +380,8 @@ The default colors are:
 	switch to workspace 2, then invoke the "workspace 2" command again, you
 	will be returned to workspace 1. Defaults to _no_.
 
-**workspace_layout** <default|stacking|tabbed|auto_left|auto_right|auto_top|auto_bottom>::
-	Specifies the start layout for new workspaces.
+**workspace_layout** <default|stacking|tabbed|auto|auto left|auto right|auto
+	top|auto bottom>:: Specifies the start layout for new workspaces.
 
 **include** <path>::
 	Includes a sub config file by _path_. _path_ can be either a full path or a
