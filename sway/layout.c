@@ -71,6 +71,14 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	}
 }
 
+static double *get_height(swayc_t *cont) {
+	return &cont->height;
+}
+
+static double *get_width(swayc_t *cont) {
+	return &cont->width;
+}
+
 void insert_child(swayc_t *parent, swayc_t *child, int index) {
 	if (index > parent->children->length) {
 		index = parent->children->length;
@@ -86,7 +94,44 @@ void insert_child(swayc_t *parent, swayc_t *child, int index) {
 	if (parent->type == C_WORKSPACE && child->type == C_VIEW && (parent->workspace_layout == L_TABBED || parent->workspace_layout == L_STACKED)) {
 		child = new_container(child, parent->workspace_layout);
 	}
-
+	if (is_auto_layout(parent->layout)) {
+		/* go through each group, adjust the size of the first child of each group */
+		double *(*get_maj_dim)(swayc_t *cont);
+		double *(*get_min_dim)(swayc_t *cont);
+		if (parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT) {
+			get_maj_dim = get_width;
+			get_min_dim = get_height;
+		} else {
+			get_maj_dim = get_height;
+			get_min_dim = get_width;
+		}
+		for (int i = index; i < parent->children->length;) {
+			int start = auto_group_start_index(parent, i);
+			int end = auto_group_end_index(parent, i);
+			swayc_t *first = parent->children->items[start];
+			if (start + 1 < parent->children->length) {
+				/* preserve the group's dimension along major axis */
+				*get_maj_dim(first) = *get_maj_dim(parent->children->items[start + 1]);
+			} else {
+				/* new group, let the apply_layout handle it */
+				first->height = first->width = 0;
+				break;
+			}
+			double remaining = *get_min_dim(parent);
+			for (int j = end - 1; j > start; --j) {
+				swayc_t *sibling = parent->children->items[j];
+				if (sibling == child) {
+					/* the inserted child won't yet have its minor
+					   dimension set */
+					remaining -= *get_min_dim(parent) / (end - start);
+				} else {
+					remaining -= *get_min_dim(sibling);
+				}
+			}
+			*get_min_dim(first) = remaining;
+			i = end;
+		}
+	}
 }
 
 void add_floating(swayc_t *ws, swayc_t *child) {
@@ -185,6 +230,42 @@ swayc_t *remove_child(swayc_t *child) {
 				break;
 			}
 		}
+		if (is_auto_layout(parent->layout) && parent->children->length) {
+			/* go through each group, adjust the size of the last child of each group */
+			double *(*get_maj_dim)(swayc_t *cont);
+			double *(*get_min_dim)(swayc_t *cont);
+			if (parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT) {
+				get_maj_dim = get_width;
+				get_min_dim = get_height;
+			} else {
+				get_maj_dim = get_height;
+				get_min_dim = get_width;
+			}
+			for (int j = parent->children->length - 1; j >= i;) {
+				int start = auto_group_start_index(parent, j);
+				int end = auto_group_end_index(parent, j);
+				swayc_t *first = parent->children->items[start];
+				if (i == start) {
+					/* removed element was first child in the current group,
+					   use its size along the major axis */
+					*get_maj_dim(first) = *get_maj_dim(child);
+				} else if (start > i) {
+					/* preserve the group's dimension along major axis */
+					*get_maj_dim(first) = *get_maj_dim(parent->children->items[start - 1]);
+				}
+				if (end != parent->children->length) {
+					double remaining = *get_min_dim(parent);
+					for (int k = start; k < end - 1; ++k) {
+						swayc_t *sibling = parent->children->items[k];
+						remaining -= *get_min_dim(sibling);
+					}
+					/* last element of the group gets remaining size, elements
+					   that don't change groups keep their ratio */
+					*get_min_dim((swayc_t *) parent->children->items[end - 1]) = remaining;
+				} /* else last group, let apply_layout handle it */
+				j = start - 1;
+			}
+		}
 	}
 	// Set focused to new container
 	if (parent->focused == child) {
@@ -248,6 +329,24 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 	b->y = y;
 	b->width = w;
 	b->height = h;
+}
+
+static void swap_children(swayc_t *container, int a, int b) {
+	if (a >= 0 && b >= 0 && a < container->children->length
+			&& b < container->children->length
+		&& a != b) {
+		swayc_t *pa = (swayc_t *)container->children->items[a];
+		swayc_t *pb = (swayc_t *)container->children->items[b];
+		container->children->items[a] = container->children->items[b];
+		container->children->items[b] = pa;
+		if (is_auto_layout(container->layout)) {
+			size_t ga = auto_group_index(container, a);
+			size_t gb = auto_group_index(container, b);
+			if (ga != gb) {
+				swap_geometry(pa, pb);
+			}
+		}
+	}
 }
 
 void move_container(swayc_t *container, enum movement_direction dir) {
@@ -319,29 +418,6 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 				} else if (desired >= parent->children->length) {
 					desired = 0;
 				}
-				// if move command makes container change from master to slave
-				// (or the contrary), reset its geometry an the one of the replaced item.
-				if (parent->nb_master
-						&& (size_t)parent->children->length > parent->nb_master) {
-					swayc_t *swap_geom = NULL;
-					// if child is being promoted/demoted, it will swap geometry
-					// with the sibling being demoted/promoted.
-					if ((dir == MOVE_NEXT && desired == 0)
-							|| (dir == MOVE_PREV && (size_t)desired == parent->nb_master - 1)) {
-						swap_geom = parent->children->items[parent->nb_master - 1];
-					} else if ((dir == MOVE_NEXT && (size_t)desired == parent->nb_master)
-							|| (dir == MOVE_PREV && desired == parent->children->length - 1)) {
-						swap_geom = parent->children->items[parent->nb_master];
-					}
-					if (swap_geom) {
-						double h = child->height;
-						double w = child->width;
-						child->width = swap_geom->width;
-						child->height = swap_geom->height;
-						swap_geom->width = w;
-						swap_geom->height = h;
-					}
-				}
 			}
 			// when it has ascended, legal insertion position is 0:len
 			// when it has not, legal insertion position is 0:len-1
@@ -365,10 +441,14 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 						container->width = container->height = 0;
 					}
 				}
-				swayc_t *old_parent = remove_child(container);
-				insert_child(parent, container, desired);
-				destroy_container(old_parent);
-				sway_log(L_DEBUG,"Moving to %p %d", parent, desired);
+				if (container->parent == parent) {
+					swap_children(parent, idx, desired);
+				} else {
+					swayc_t *old_parent = remove_child(container);
+					insert_child(parent, container, desired);
+					destroy_container(old_parent);
+					sway_log(L_DEBUG,"Moving to %p %d", parent, desired);
+				}
 				break;
 			}
 		}
