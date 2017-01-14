@@ -71,6 +71,14 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	}
 }
 
+static double *get_height(swayc_t *cont) {
+	return &cont->height;
+}
+
+static double *get_width(swayc_t *cont) {
+	return &cont->width;
+}
+
 void insert_child(swayc_t *parent, swayc_t *child, int index) {
 	if (index > parent->children->length) {
 		index = parent->children->length;
@@ -86,7 +94,44 @@ void insert_child(swayc_t *parent, swayc_t *child, int index) {
 	if (parent->type == C_WORKSPACE && child->type == C_VIEW && (parent->workspace_layout == L_TABBED || parent->workspace_layout == L_STACKED)) {
 		child = new_container(child, parent->workspace_layout);
 	}
-
+	if (is_auto_layout(parent->layout)) {
+		/* go through each group, adjust the size of the first child of each group */
+		double *(*get_maj_dim)(swayc_t *cont);
+		double *(*get_min_dim)(swayc_t *cont);
+		if (parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT) {
+			get_maj_dim = get_width;
+			get_min_dim = get_height;
+		} else {
+			get_maj_dim = get_height;
+			get_min_dim = get_width;
+		}
+		for (int i = index; i < parent->children->length;) {
+			int start = auto_group_start_index(parent, i);
+			int end = auto_group_end_index(parent, i);
+			swayc_t *first = parent->children->items[start];
+			if (start + 1 < parent->children->length) {
+				/* preserve the group's dimension along major axis */
+				*get_maj_dim(first) = *get_maj_dim(parent->children->items[start + 1]);
+			} else {
+				/* new group, let the apply_layout handle it */
+				first->height = first->width = 0;
+				break;
+			}
+			double remaining = *get_min_dim(parent);
+			for (int j = end - 1; j > start; --j) {
+				swayc_t *sibling = parent->children->items[j];
+				if (sibling == child) {
+					/* the inserted child won't yet have its minor
+					   dimension set */
+					remaining -= *get_min_dim(parent) / (end - start);
+				} else {
+					remaining -= *get_min_dim(sibling);
+				}
+			}
+			*get_min_dim(first) = remaining;
+			i = end;
+		}
+	}
 }
 
 void add_floating(swayc_t *ws, swayc_t *child) {
@@ -118,7 +163,11 @@ swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
 			list_add(parent->floating, active);
 		} else {
 			int i = index_child(fixed);
-			list_insert(parent->children, i + 1, active);
+			if (is_auto_layout(parent->layout)) {
+				list_add(parent->children, active);
+			} else {
+				list_insert(parent->children, i + 1, active);
+			}
 		}
 	}
 	active->parent = parent;
@@ -179,6 +228,42 @@ swayc_t *remove_child(swayc_t *child) {
 			if (parent->children->items[i] == child) {
 				list_del(parent->children, i);
 				break;
+			}
+		}
+		if (is_auto_layout(parent->layout) && parent->children->length) {
+			/* go through each group, adjust the size of the last child of each group */
+			double *(*get_maj_dim)(swayc_t *cont);
+			double *(*get_min_dim)(swayc_t *cont);
+			if (parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT) {
+				get_maj_dim = get_width;
+				get_min_dim = get_height;
+			} else {
+				get_maj_dim = get_height;
+				get_min_dim = get_width;
+			}
+			for (int j = parent->children->length - 1; j >= i;) {
+				int start = auto_group_start_index(parent, j);
+				int end = auto_group_end_index(parent, j);
+				swayc_t *first = parent->children->items[start];
+				if (i == start) {
+					/* removed element was first child in the current group,
+					   use its size along the major axis */
+					*get_maj_dim(first) = *get_maj_dim(child);
+				} else if (start > i) {
+					/* preserve the group's dimension along major axis */
+					*get_maj_dim(first) = *get_maj_dim(parent->children->items[start - 1]);
+				}
+				if (end != parent->children->length) {
+					double remaining = *get_min_dim(parent);
+					for (int k = start; k < end - 1; ++k) {
+						swayc_t *sibling = parent->children->items[k];
+						remaining -= *get_min_dim(sibling);
+					}
+					/* last element of the group gets remaining size, elements
+					   that don't change groups keep their ratio */
+					*get_min_dim((swayc_t *) parent->children->items[end - 1]) = remaining;
+				} /* else last group, let apply_layout handle it */
+				j = start - 1;
 			}
 		}
 	}
@@ -246,20 +331,51 @@ void swap_geometry(swayc_t *a, swayc_t *b) {
 	b->height = h;
 }
 
+static void swap_children(swayc_t *container, int a, int b) {
+	if (a >= 0 && b >= 0 && a < container->children->length
+			&& b < container->children->length
+		&& a != b) {
+		swayc_t *pa = (swayc_t *)container->children->items[a];
+		swayc_t *pb = (swayc_t *)container->children->items[b];
+		container->children->items[a] = container->children->items[b];
+		container->children->items[b] = pa;
+		if (is_auto_layout(container->layout)) {
+			size_t ga = auto_group_index(container, a);
+			size_t gb = auto_group_index(container, b);
+			if (ga != gb) {
+				swap_geometry(pa, pb);
+			}
+		}
+	}
+}
+
 void move_container(swayc_t *container, enum movement_direction dir) {
-	enum swayc_layouts layout;
-	if (container->is_floating
-			|| (container->type != C_VIEW && container->type != C_CONTAINER)) {
+	enum swayc_layouts layout = L_NONE;
+	swayc_t *parent = container->parent;
+	if (container->is_floating || (container->type != C_VIEW && container->type != C_CONTAINER)) {
 		return;
 	}
 	if (dir == MOVE_UP || dir == MOVE_DOWN) {
 		layout = L_VERT;
 	} else if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 		layout = L_HORIZ;
-	} else {
+	} else if (dir == MOVE_FIRST) {
+		// swap first child in auto layout with currently focused child
+		if (is_auto_layout(parent->layout)) {
+			int focused_idx = index_child(container);
+			swayc_t *first = parent->children->items[0];
+			if (focused_idx > 0) {
+				list_swap(parent->children, 0, focused_idx);
+				swap_geometry(first, container);
+			}
+			arrange_windows(parent->parent, -1, -1);
+			ipc_event_window(container, "move");
+			set_focused_container_for(parent->parent, container);
+		}
+		return;
+	} else if (! (dir == MOVE_NEXT || dir == MOVE_PREV)) {
 		return;
 	}
-	swayc_t *parent = container->parent;
 	swayc_t *child = container;
 	bool ascended = false;
 
@@ -279,19 +395,30 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 		sway_log(L_DEBUG, "container:%p, parent:%p, child %p,",
 				container,parent,child);
 		if (parent->layout == layout
+			|| (layout == L_NONE && parent->type == C_CONTAINER) /* accept any layout for next/prev direction */
 			|| (parent->layout == L_TABBED && layout == L_HORIZ)
-			|| (parent->layout == L_STACKED && layout == L_VERT)) {
+			|| (parent->layout == L_STACKED && layout == L_VERT)
+			|| is_auto_layout(parent->layout)) {
 			int diff;
 			// If it has ascended (parent has moved up), no container is removed
 			// so insert it at index, or index+1.
 			// if it has not, the moved container is removed, so it needs to be
 			// inserted at index-1, or index+1
 			if (ascended) {
-				diff = dir == MOVE_LEFT || dir == MOVE_UP ? 0 : 1;
+				diff = dir == MOVE_LEFT || dir == MOVE_UP || dir == MOVE_PREV ? 0 : 1;
 			} else {
-				diff = dir == MOVE_LEFT || dir == MOVE_UP ? -1 : 1;
+				diff = dir == MOVE_LEFT || dir == MOVE_UP || dir == MOVE_PREV ? -1 : 1;
 			}
-			int desired = index_child(child) + diff;
+			int idx = index_child(child);
+			int desired = idx + diff;
+			if (dir == MOVE_NEXT || dir == MOVE_PREV) {
+				// Next/Prev always wrap.
+				if (desired < 0) {
+					desired += parent->children->length;
+				} else if (desired >= parent->children->length) {
+					desired = 0;
+				}
+			}
 			// when it has ascended, legal insertion position is 0:len
 			// when it has not, legal insertion position is 0:len-1
 			if (desired >= 0 && desired - ascended < parent->children->length) {
@@ -304,7 +431,8 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 						// insert it next to focused container
 						if (parent->layout == layout
 							|| (parent->layout == L_TABBED && layout == L_HORIZ)
-							|| (parent->layout == L_STACKED && layout == L_VERT)) {
+							|| (parent->layout == L_STACKED && layout == L_VERT)
+							|| is_auto_layout(parent->layout)) {
 							desired = (diff < 0) * parent->children->length;
 						} else {
 							desired = index_child(child->focused) + 1;
@@ -313,15 +441,19 @@ void move_container(swayc_t *container, enum movement_direction dir) {
 						container->width = container->height = 0;
 					}
 				}
-				swayc_t *old_parent = remove_child(container);
-				insert_child(parent, container, desired);
-				destroy_container(old_parent);
-				sway_log(L_DEBUG,"Moving to %p %d", parent, desired);
+				if (container->parent == parent) {
+					swap_children(parent, idx, desired);
+				} else {
+					swayc_t *old_parent = remove_child(container);
+					insert_child(parent, container, desired);
+					destroy_container(old_parent);
+					sway_log(L_DEBUG,"Moving to %p %d", parent, desired);
+				}
 				break;
 			}
 		}
 		// Change parent layout if we need to
-		if (parent->children->length == 1 && parent->layout != layout) {
+		if (parent->children->length == 1 && parent->layout != layout && layout != L_NONE) {
 			/* swayc_change_layout(parent, layout); */
 			parent->layout = layout;
 			continue;
@@ -776,6 +908,26 @@ void update_geometry(swayc_t *container) {
 	}
 }
 
+/**
+ * Layout application prototypes
+ */
+static void apply_horiz_layout(swayc_t *container, const double x,
+				const double y, const double width,
+				const double height, const int start,
+				const int end);
+static void apply_vert_layout(swayc_t *container, const double x,
+				const double y, const double width,
+				const double height, const int start,
+				const int end);
+static void apply_tabbed_or_stacked_layout(swayc_t *container, double x,
+				double y, double width,
+				double height);
+
+static void apply_auto_layout(swayc_t *container, const double x, const double y,
+				const double width, const double height,
+				enum swayc_layouts group_layout,
+				bool master_first);
+
 static void arrange_windows_r(swayc_t *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
@@ -783,14 +935,15 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		width = container->width;
 		height = container->height;
 	}
-	// pixels are indivisable. if we don't round the pixels, then the view
+	// pixels are indivisible. if we don't round the pixels, then the view
 	// calculations will be off (e.g. 50.5 + 50.5 = 101, but in reality it's
 	// 50 + 50 = 100). doing it here cascades properly to all width/height/x/y.
 	width = floor(width);
 	height = floor(height);
 
 	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
-		container->name, container->width, container->height, container->x, container->y);
+		 container->name, container->width, container->height, container->x,
+		 container->y);
 
 	double x = 0, y = 0;
 	switch (container->type) {
@@ -902,135 +1055,298 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		break;
 	}
 
-	double scale = 0;
 	switch (container->layout) {
 	case L_HORIZ:
 	default:
-		// Calculate total width
-		for (i = 0; i < container->children->length; ++i) {
-			double *old_width = &((swayc_t *)container->children->items[i])->width;
-			if (*old_width <= 0) {
-				if (container->children->length > 1) {
-					*old_width = width / (container->children->length - 1);
-				} else {
-					*old_width = width;
-				}
-			}
-			scale += *old_width;
-		}
-
-		// Resize windows
-		if (scale > 0.1) {
-			scale = width / scale;
-			sway_log(L_DEBUG, "Arranging %p horizontally", container);
-			swayc_t *focused = NULL;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, width, scale);
-				child->x = x;
-				child->y = y;
-
-				if (child == container->focused) {
-					focused = child;
-				}
-
-				if (i == container->children->length - 1) {
-					double remaining_width = container->x + width - x;
-					arrange_windows_r(child, remaining_width, height);
-				} else {
-					arrange_windows_r(child, child->width * scale, height);
-				}
-				x += child->width;
-			}
-
-			// update focused view border last because it may
-			// depend on the title bar geometry of its siblings.
-			if (focused && container->children->length > 1) {
-				update_container_border(focused);
-			}
-		}
+		apply_horiz_layout(container, x, y, width, height, 0,
+			container->children->length);
 		break;
 	case L_VERT:
-		// Calculate total height
-		for (i = 0; i < container->children->length; ++i) {
-			double *old_height = &((swayc_t *)container->children->items[i])->height;
-			if (*old_height <= 0) {
-				if (container->children->length > 1) {
-					*old_height = height / (container->children->length - 1);
-				} else {
-					*old_height = height;
-				}
-			}
-			scale += *old_height;
-		}
-		// Resize
-		if (scale > 0.1) {
-			scale = height / scale;
-			sway_log(L_DEBUG, "Arranging %p vertically", container);
-			swayc_t *focused = NULL;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				sway_log(L_DEBUG, "Calculating arrangement for %p:%d (will scale %f by %f)", child, child->type, height, scale);
-				child->x = x;
-				child->y = y;
-
-				if (child == container->focused) {
-					focused = child;
-				}
-
-				if (i == container->children->length - 1) {
-					double remaining_height = container->y + height - y;
-					arrange_windows_r(child, width, remaining_height);
-				} else {
-					arrange_windows_r(child, width, child->height * scale);
-				}
-				y += child->height;
-			}
-
-			// update focused view border last because it may
-			// depend on the title bar geometry of its siblings.
-			if (focused && container->children->length > 1) {
-				update_container_border(focused);
-			}
-		}
+		apply_vert_layout(container, x, y, width, height, 0,
+			container->children->length);
 		break;
 	case L_TABBED:
 	case L_STACKED:
-		{
-			swayc_t *focused = NULL;
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				child->x = x;
-				child->y = y;
-				if (child == container->focused) {
-					focused = child;
-				} else {
-					arrange_windows_r(child, width, height);
-				}
-			}
-
-			if (focused) {
-				arrange_windows_r(focused, width, height);
-			}
-			break;
-		}
+		apply_tabbed_or_stacked_layout(container, x, y, width, height);
+		break;
+	case L_AUTO_LEFT:
+		apply_auto_layout(container, x, y, width, height, L_VERT, true);
+		break;
+	case L_AUTO_RIGHT:
+		apply_auto_layout(container, x, y, width, height, L_VERT, false);
+		break;
+	case L_AUTO_TOP:
+		apply_auto_layout(container, x, y, width, height, L_HORIZ, true);
+		break;
+	case L_AUTO_BOTTOM:
+		apply_auto_layout(container, x, y, width, height, L_HORIZ, false);
+		break;
 	}
 
 	// Arrage floating layouts for workspaces last
 	if (container->type == C_WORKSPACE) {
-		for (i = 0; i < container->floating->length; ++i) {
+		for (int i = 0; i < container->floating->length; ++i) {
 			swayc_t *view = container->floating->items[i];
 			if (view->type == C_VIEW) {
 				update_geometry(view);
-				sway_log(L_DEBUG, "Set floating view to %.f x %.f @ %.f, %.f", view->width,
-						view->height, view->x, view->y);
+				sway_log(L_DEBUG, "Set floating view to %.f x %.f @ %.f, %.f",
+					 view->width, view->height, view->x, view->y);
 				if (swayc_is_fullscreen(view)) {
 					wlc_view_bring_to_front(view->handle);
-				} else if (!container->focused
-						|| !swayc_is_fullscreen(container->focused)) {
+				} else if (!container->focused ||
+						!swayc_is_fullscreen(container->focused)) {
 					wlc_view_bring_to_front(view->handle);
 				}
 			}
+		}
+	}
+}
+
+void apply_horiz_layout(swayc_t *container, const double x, const double y,
+			const double width, const double height,
+			const int start, const int end) {
+	double scale = 0;
+	// Calculate total width
+	for (int i = start; i < end; ++i) {
+		double *old_width = &((swayc_t *)container->children->items[i])->width;
+		if (*old_width <= 0) {
+			if (end - start > 1) {
+				*old_width = width / (end - start - 1);
+			} else {
+				*old_width = width;
+			}
+		}
+		scale += *old_width;
+	}
+	scale = width / scale;
+
+	// Resize windows
+	double child_x = x;
+	if (scale > 0.1) {
+		sway_log(L_DEBUG, "Arranging %p horizontally", container);
+		swayc_t *focused = NULL;
+		for (int i = start; i < end; ++i) {
+			swayc_t *child = container->children->items[i];
+			sway_log(L_DEBUG,
+				 "Calculating arrangement for %p:%d (will scale %f by %f)", child,
+				 child->type, width, scale);
+			child->x = child_x;
+			child->y = y;
+
+			if (child == container->focused) {
+				focused = child;
+			}
+
+			if (i == end - 1) {
+				double remaining_width = x + width - child_x;
+				arrange_windows_r(child, remaining_width, height);
+			} else {
+				arrange_windows_r(child, child->width * scale, height);
+			}
+			child_x += child->width;
+		}
+
+		// update focused view border last because it may
+		// depend on the title bar geometry of its siblings.
+		if (focused && container->children->length > 1) {
+			update_container_border(focused);
+		}
+	}
+}
+
+void apply_vert_layout(swayc_t *container, const double x, const double y,
+			const double width, const double height, const int start,
+			const int end) {
+	int i;
+	double scale = 0;
+	// Calculate total height
+	for (i = start; i < end; ++i) {
+		double *old_height = &((swayc_t *)container->children->items[i])->height;
+		if (*old_height <= 0) {
+			if (end - start > 1) {
+				*old_height = height / (end - start - 1);
+			} else {
+				*old_height = height;
+			}
+		}
+		scale += *old_height;
+	}
+	scale = height / scale;
+
+	// Resize
+	double child_y = y;
+	if (scale > 0.1) {
+		sway_log(L_DEBUG, "Arranging %p vertically", container);
+		swayc_t *focused = NULL;
+		for (i = start; i < end; ++i) {
+			swayc_t *child = container->children->items[i];
+			sway_log(L_DEBUG,
+				 "Calculating arrangement for %p:%d (will scale %f by %f)", child,
+				 child->type, height, scale);
+			child->x = x;
+			child->y = child_y;
+
+			if (child == container->focused) {
+				focused = child;
+			}
+
+			if (i == end - 1) {
+				double remaining_height = y + height - child_y;
+				arrange_windows_r(child, width, remaining_height);
+			} else {
+				arrange_windows_r(child, width, child->height * scale);
+			}
+			child_y += child->height;
+		}
+
+		// update focused view border last because it may
+		// depend on the title bar geometry of its siblings.
+		if (focused && container->children->length > 1) {
+			update_container_border(focused);
+		}
+	}
+}
+
+void apply_tabbed_or_stacked_layout(swayc_t *container, double x, double y,
+					double width, double height) {
+	int i;
+	swayc_t *focused = NULL;
+	for (i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		child->x = x;
+		child->y = y;
+		if (child == container->focused) {
+			focused = child;
+		} else {
+			arrange_windows_r(child, width, height);
+		}
+	}
+
+	if (focused) {
+		arrange_windows_r(focused, width, height);
+	}
+}
+
+void apply_auto_layout(swayc_t *container, const double x, const double y,
+			const double width, const double height,
+			enum swayc_layouts group_layout,
+			bool master_first) {
+	// Auto layout "container" in width x height @ x, y
+	// using "group_layout" for each of the groups in the container.
+	// There is one "master" group, plus container->nb_slave_groups.
+	// Each group is layed out side by side following the "major" axis.
+	// The direction of the layout used for groups is the "minor" axis.
+	// Example:
+	//
+	//     ---- major axis -->
+	//   +---------+-----------+
+	//   |         |           |   |
+	//   | master  | slave 1   |   |
+	//   |         +-----------+   | minor axis (direction of group_layout)
+	//   |         |           |   |
+	//   |         | slave 2   |   V
+	//   +---------+-----------+
+	//
+	//  container with three children (one master and two slaves) and
+	//  a single slave group (containing slave 1 and 2). The master
+	//  group and slave group are layed out using L_VERT.
+
+	size_t nb_groups = auto_group_count(container);
+
+	// the target dimension of the container along the "major" axis, each
+	// group in the container will be layed out using "group_layout" along
+	// the "minor" axis.
+	double dim_maj;
+	double pos_maj;
+
+	// x and y coords for the next group to be laid out.
+	const double *group_x, *group_y;
+
+	// pos of the next group to layout along the major axis
+	double pos;
+
+	// size of the next group along the major axis.
+	double group_dim;
+
+	// height and width of next group to be laid out.
+	const double *group_h, *group_w;
+
+	switch (group_layout) {
+	default:
+		sway_log(L_DEBUG, "Unknown layout type (%d) used in %s()",
+			 group_layout, __func__);
+		/* fall through */
+	case L_VERT:
+		dim_maj = width;
+		pos_maj = x;
+
+		group_x = &pos;
+		group_y = &y;
+		group_w = &group_dim;
+		group_h = &height;
+		break;
+	case L_HORIZ:
+		dim_maj = height;
+		pos_maj = y;
+
+		group_x = &x;
+		group_y = &pos;
+		group_w = &width;
+		group_h = &group_dim;
+		break;
+	}
+
+	/* Determine the dimension of each of the groups in the layout.
+	 * Dimension will be width for a VERT layout and height for a HORIZ
+	 * layout. */
+	double old_group_dim[nb_groups];
+	double old_dim = 0;
+	for (size_t group = 0; group < nb_groups; ++group) {
+		int idx;
+		if (auto_group_bounds(container, group, &idx, NULL)) {
+			swayc_t *child = container->children->items[idx];
+			double *dim = group_layout == L_HORIZ ? &child->height : &child->width;
+			if (*dim <= 0) {
+				// New child with uninitialized dimension
+				*dim = dim_maj;
+				if (nb_groups > 1) {
+					// child gets a dimension proportional to existing groups,
+					// it will be later scaled based on to the available size
+					// in the major axis.
+					*dim /= (nb_groups - 1);
+				}
+			}
+			old_dim += *dim;
+			old_group_dim[group] = *dim;
+		}
+	}
+	double scale = dim_maj / old_dim;
+
+	/* Apply layout to each group */
+	pos = pos_maj;
+
+	for (size_t group = 0; group < nb_groups; ++group) {
+		int start, end;	// index of first (inclusive) and last (exclusive) child in the group
+		if (auto_group_bounds(container, group, &start, &end)) {
+			// adjusted size of the group
+			group_dim = old_group_dim[group] * scale;
+			if (group == nb_groups - 1) {
+				group_dim = pos_maj + dim_maj - pos; // remaining width
+			}
+			sway_log(L_DEBUG, "Arranging container %p column %zu, children [%d,%d[ (%fx%f+%f,%f)",
+				 container, group, start, end, *group_w, *group_h, *group_x, *group_y);
+			switch (group_layout) {
+			default:
+			case L_VERT:
+				apply_vert_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
+				break;
+			case L_HORIZ:
+				apply_horiz_layout(container, *group_x, *group_y, *group_w, *group_h, start, end);
+				break;
+			}
+
+			/* update position for next group */
+			pos += group_dim;
 		}
 	}
 }
@@ -1106,6 +1422,21 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			return parent;
 		}
 	}
+
+	if (dir == MOVE_PREV || dir == MOVE_NEXT) {
+		int focused_idx = index_child(container);
+		if (focused_idx == -1) {
+			return NULL;
+		} else {
+			int desired = (focused_idx + (dir == MOVE_NEXT ? 1 : -1)) %
+				parent->children->length;
+			if (desired < 0) {
+				desired += parent->children->length;
+			}
+			return parent->children->items[desired];
+		}
+	}
+
 	// If moving to an adjacent output we need a starting position (since this
 	// output might border to multiple outputs).
 	struct wlc_point abs_pos;
@@ -1128,7 +1459,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 	while (true) {
 		// Test if we can even make a difference here
 		bool can_move = false;
-		int diff = 0;
+		int desired;
+		int idx = index_child(container);
 		if (parent->type == C_ROOT) {
 			swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
 			if (!output || output == container) {
@@ -1137,21 +1469,36 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 			sway_log(L_DEBUG, "Moving between outputs");
 			return get_swayc_in_output_direction(output, dir);
 		} else {
-			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
-				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
-					can_move = true;
-					diff = dir == MOVE_LEFT ? -1 : 1;
+			if (is_auto_layout(parent->layout)) {
+				bool is_major = parent->layout == L_AUTO_LEFT || parent->layout == L_AUTO_RIGHT
+					? dir == MOVE_LEFT || dir == MOVE_RIGHT
+					: dir == MOVE_DOWN || dir == MOVE_UP;
+				size_t gidx = auto_group_index(parent, idx);
+				if (is_major) {
+					size_t desired_grp = gidx + (dir == MOVE_RIGHT || dir == MOVE_DOWN ? 1 : -1);
+					can_move = auto_group_bounds(parent, desired_grp, &desired, NULL);
+				} else {
+					desired = idx + (dir == MOVE_RIGHT || dir == MOVE_DOWN ? 1 : -1);
+					int start, end;
+					can_move = auto_group_bounds(parent, gidx, &start, &end)
+							&& desired >= start && desired < end;
 				}
 			} else {
-				if (parent->layout == L_VERT || parent->layout == L_STACKED) {
-					can_move = true;
-					diff = dir == MOVE_UP ? -1 : 1;
+				if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+					if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
+						can_move = true;
+						desired = idx + (dir == MOVE_LEFT ? -1 : 1);
+					}
+				} else {
+					if (parent->layout == L_VERT || parent->layout == L_STACKED) {
+						can_move = true;
+						desired = idx + (dir == MOVE_UP ? -1 : 1);
+					}
 				}
 			}
 		}
 
 		if (can_move) {
-			int desired = index_child(container) + diff;
 			if (container->is_floating) {
 				if (desired < 0) {
 					wrap_candidate = parent->floating->items[parent->floating->length-1];
@@ -1178,6 +1525,8 @@ swayc_t *get_swayc_in_direction_under(swayc_t *container, enum movement_directio
 					}
 				}
 			} else {
+				sway_log(L_DEBUG, "%s cont %d-%p dir %i sibling %d: %p", __func__,
+					 idx, container, dir, desired, parent->children->items[desired]);
 				return parent->children->items[desired];
 			}
 		}
@@ -1232,4 +1581,168 @@ enum swayc_layouts default_layout(swayc_t *output) {
 	} else {
 		return L_VERT;
 	}
+}
+
+bool is_auto_layout(enum swayc_layouts layout) {
+	return (layout >= L_AUTO_FIRST) && (layout <= L_AUTO_LAST);
+}
+
+/**
+ * Return the number of master elements in a container
+ */
+static inline size_t auto_master_count(const swayc_t *container) {
+	sway_assert(container->children->length >= 0, "Container %p has (negative) children %d",
+			container, container->children->length);
+	return MIN(container->nb_master, (size_t)container->children->length);
+}
+
+/**
+ * Return the number of children in the slave groups. This corresponds to the children
+ * that are not members of the master group.
+ */
+static inline size_t auto_slave_count(const swayc_t *container) {
+	return container->children->length - auto_master_count(container);
+}
+
+/**
+ * Return the number of slave groups in the container.
+ */
+size_t auto_slave_group_count(const swayc_t *container) {
+	return MIN(container->nb_slave_groups, auto_slave_count(container));
+}
+
+/**
+ * Return the combined number of master and slave groups in the container.
+ */
+size_t auto_group_count(const swayc_t *container) {
+	return auto_slave_group_count(container)
+		+ (container->children->length && container->nb_master ? 1 : 0);
+}
+
+/**
+ * given the index of a container's child, return the index of the first child of the group
+ * which index is a member of.
+ */
+int auto_group_start_index(const swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout)
+		|| (size_t)index < container->nb_master) {
+		return 0;
+	} else {
+		size_t nb_slaves = auto_slave_count(container);
+		size_t nb_slave_grp = auto_slave_group_count(container);
+		size_t grp_sz = nb_slaves / nb_slave_grp;
+		size_t remainder = nb_slaves % nb_slave_grp;
+		int idx2 = (nb_slave_grp - remainder) * grp_sz + container->nb_master;
+		int start_idx;
+		if (index < idx2) {
+			start_idx = ((index - container->nb_master) / grp_sz) * grp_sz + container->nb_master;
+		} else {
+			start_idx = idx2 + ((index - idx2) / (grp_sz + 1)) * (grp_sz + 1);
+		}
+		return MIN(start_idx, container->children->length);
+	}
+}
+
+/**
+ * given the index of a container's child, return the index of the first child of the group
+ * that follows the one which index is a member of.
+ * This makes the function usable to walk through the groups in a container.
+ */
+int auto_group_end_index(const swayc_t *container, int index) {
+	if (index < 0 || ! is_auto_layout(container->layout)) {
+		return container->children->length;
+	} else {
+		int nxt_idx;
+		if ((size_t)index < container->nb_master) {
+			nxt_idx = auto_master_count(container);
+		} else {
+			size_t nb_slaves = auto_slave_count(container);
+			size_t nb_slave_grp = auto_slave_group_count(container);
+			size_t grp_sz = nb_slaves / nb_slave_grp;
+			size_t remainder = nb_slaves % nb_slave_grp;
+			int idx2 = (nb_slave_grp - remainder) * grp_sz + container->nb_master;
+			if (index < idx2) {
+				nxt_idx = ((index - container->nb_master) / grp_sz + 1) * grp_sz + container->nb_master;
+			} else {
+				nxt_idx = idx2 + ((index - idx2) / (grp_sz + 1) + 1) * (grp_sz + 1);
+			}
+		}
+		return MIN(nxt_idx, container->children->length);
+	}
+}
+
+/**
+ * return the index of the Group containing <index>th child of <container>.
+ * The index is the order of the group along the container's major axis (starting at 0).
+ */
+size_t auto_group_index(const swayc_t *container, int index) {
+	if (index < 0) {
+		return 0;
+	}
+	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
+	size_t nb_slaves = auto_slave_count(container);
+	if ((size_t)index < container->nb_master) {
+		if (master_first || nb_slaves <= 0) {
+			return 0;
+		} else {
+			return auto_slave_group_count(container);
+		}
+	} else {
+		size_t nb_slave_grp = auto_slave_group_count(container);
+		size_t grp_sz = nb_slaves / nb_slave_grp;
+		size_t remainder = nb_slaves % nb_slave_grp;
+		int idx2 = (nb_slave_grp - remainder) * grp_sz + container->nb_master;
+		size_t grp_idx;
+		if (index < idx2) {
+			grp_idx = (index - container->nb_master) / grp_sz;
+		} else {
+			grp_idx = (nb_slave_grp - remainder) + (index - idx2) / (grp_sz + 1) ;
+		}
+		return grp_idx + (master_first && container-> nb_master ? 1 : 0);
+	}
+}
+
+/**
+ * Return the first index (inclusive) and last index (exclusive) of the elements of a group in
+ * an auto layout.
+ * If the bounds of the given group can be calculated, they are returned in the start/end
+ * parameters (int pointers) and the return value will be true.
+ * The indexes are passed by reference and can be NULL.
+ */
+bool auto_group_bounds(const swayc_t *container, size_t group_index, int *start, int *end) {
+	size_t nb_grp = auto_group_count(container);
+	if (group_index >= nb_grp) {
+		return false;
+	}
+	bool master_first = (container->layout == L_AUTO_LEFT || container->layout == L_AUTO_TOP);
+	size_t nb_master = auto_master_count(container);
+	size_t nb_slave_grp = auto_slave_group_count(container);
+	int g_start, g_end;
+	if (nb_master && (master_first ? group_index == 0 : group_index == nb_grp - 1)) {
+		g_start = 0;
+		g_end = nb_master;
+	} else {
+		size_t nb_slaves = auto_slave_count(container);
+		size_t grp_sz = nb_slaves / nb_slave_grp;
+		size_t remainder = nb_slaves % nb_slave_grp;
+		size_t g0 = master_first && container->nb_master ? 1 : 0;
+		size_t g1 = g0 + nb_slave_grp - remainder;
+		if (group_index < g1) {
+			g_start = container->nb_master + (group_index - g0) * grp_sz;
+			g_end = g_start + grp_sz;
+		} else {
+			size_t g2 = group_index - g1;
+			g_start = container->nb_master
+				+ (nb_slave_grp - remainder) * grp_sz
+				+ g2 * (grp_sz + 1);
+			g_end = g_start + grp_sz + 1;
+		}
+	}
+	if (start) {
+		*start = g_start;
+	}
+	if (end) {
+		*end = g_end;
+	}
+	return true;
 }

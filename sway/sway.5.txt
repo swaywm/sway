@@ -39,7 +39,7 @@ The following commands may only be used in the configuration file.
 **set** <name> <value>::
 	Sets variable $name to _value_. You can use the new variable in the arguments
 	of future commands.
-	
+
 **orientation** <horizontal|vertical|auto>::
 	Sets the default container layout for tiled containers.
 
@@ -62,11 +62,13 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Make focused view floating, non-floating, or the opposite of what it is now.
 
 **focus** <direction>::
-	Direction may be one of _up_, _down_, _left_, _right_, _parent_, or _child_.
-	The directional focus commands will move the focus in that direction. The parent
-	focus command will change the focus to the parent of the currently focused
-	container, which is useful, for example, to open a sibling of the parent
-	container, or to move the entire container around.
+	Direction may be one of _up_, _down_, _left_, _right_, _next_, _prev_,
+	_parent_, or _child_. The directional focus commands will move the focus
+	in that direction. The _next_ and _prev_ directions will focus the next,
+	respectively previous, element in the current container. The parent
+	focus command will change the focus to the parent of the currently
+	focused container, which is useful, for example, to open a sibling of
+	the parent container, or to move the entire container around.
 
 **focus** output <direction|name>::
 	Direction may be one of _up_, _down_, _left_, _right_. The directional focus
@@ -81,10 +83,28 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **layout** <mode>::
 	Sets the layout mode of the focused container. _mode_ can be one of _splith_,
-	_splitv_, _toggle split_, _stacking_ or _tabbed_.
+	_splitv_, _toggle split_, _stacking_, _tabbed_.
 
-**move** <left|right|up|down>::
-	Moves the focused container _left_, _right_, _up_, or _down_.
+**layout** auto <mode>::
+	Sets layout to one of the auto modes, i.e. one of _left_, right_, _top_,
+	or _bottom_.
+
+**layout** auto <next|prev>::
+	Cycles between available auto layouts.
+
+**layout** auto [master|ncol] [inc|set] <n>::
+	Modify the number of master elements, respectively slave columns, in the
+	focused container. <n> can be a positive or negative integer. These commands
+	only have an effect if the focused container uses one of the "auto" layouts.
+
+**layout** toggle split::
+	Cycles between available split layouts.
+
+**move** <left|right|up|down|next|prev|first>::
+	Moves the focused container _left_, _right_, _up_, or _down_. Moving to _prev_
+	or _next_ swaps the container with its sibling in the same container. Move
+	_first_ exchanges the focused element in an auto layout with the first
+	element, i.e. promotes  the focused element to master position.
 
 **move** <container|window> to workspace <name>::
 	Moves the focused container to the workspace identified by _name_.
@@ -360,8 +380,8 @@ The default colors are:
 	switch to workspace 2, then invoke the "workspace 2" command again, you
 	will be returned to workspace 1. Defaults to _no_.
 
-**workspace_layout** <default|stacking|tabbed>::
-	Specifies the start layout for new workspaces.
+**workspace_layout** <default|stacking|tabbed|auto|auto left|auto right|auto
+	top|auto bottom>:: Specifies the start layout for new workspaces.
 
 **include** <path>::
 	Includes a sub config file by _path_. _path_ can be either a full path or a

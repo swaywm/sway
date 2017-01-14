@@ -76,7 +76,7 @@ int list_seq_find(list_t *list, int compare(const void *item, const void *data),
 	return -1;
 }
 
-static void list_swap(list_t *list, int src, int dest) {
+void list_swap(list_t *list, int src, int dest) {
 	void *tmp = list->items[src];
 	list->items[src] = list->items[dest];
 	list->items[dest] = tmp;

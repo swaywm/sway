@@ -75,4 +75,11 @@ void swayc_log(log_importance_t verbosity, swayc_t *cont, const char* format, ..
  */
 enum swayc_layouts default_layout(swayc_t *output);
 
+bool is_auto_layout(enum swayc_layouts layout);
+int auto_group_start_index(const swayc_t *container, int index);
+int auto_group_end_index(const swayc_t *container, int index);
+size_t auto_group_count(const swayc_t *container);
+size_t auto_group_index(const swayc_t *container, int index);
+bool auto_group_bounds(const swayc_t *container, size_t group_index, int *start, int *end);
+
 #endif
