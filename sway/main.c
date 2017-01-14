@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <sys/capability.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 #include "sway/extensions.h"
 #include "sway/layout.h"
 #include "sway/config.h"
@@ -289,6 +292,18 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+#ifdef __linux__
+	bool suid = false;
+	if (getuid() != geteuid() || getgid() != getegid()) {
+		// Retain capabilities after setuid()
+		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0)) {
+			sway_log(L_ERROR, "Cannot keep caps after setuid()");
+			exit(EXIT_FAILURE);
+		}
+		suid = true;
+	}
+#endif
+
 	// we need to setup logging before wlc_init in case it fails.
 	if (debug) {
 		init_log(L_DEBUG);
@@ -311,6 +326,20 @@ int main(int argc, char **argv) {
 	}
 	register_extensions();
 
+#ifdef __linux__
+	if (suid) {
+		// Drop every cap except CAP_SYS_PTRACE
+		cap_t caps = cap_init();
+		cap_value_t keep = CAP_SYS_PTRACE;
+		sway_log(L_INFO, "Dropping extra capabilities");
+		if (cap_set_flag(caps, CAP_PERMITTED, 1, &keep, CAP_SET) ||
+			cap_set_flag(caps, CAP_EFFECTIVE, 1, &keep, CAP_SET) ||
+			cap_set_proc(caps)) {
+			sway_log(L_ERROR, "Failed to drop extra capabilities");
+			exit(EXIT_FAILURE);
+		}
+	}
+#endif
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
 

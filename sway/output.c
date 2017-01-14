@@ -13,14 +13,29 @@ void output_get_scaled_size(wlc_handle handle, struct wlc_size *size) {
 }
 
 swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
+	swayc_t *output = NULL;
+	// If there is no output directly next to the current one, use
+	// swayc_opposite_output to wrap.
 	if (strcasecmp(name, "left") == 0) {
-		return swayc_adjacent_output(NULL, MOVE_LEFT, abs_pos, true);
+		output = swayc_adjacent_output(NULL, MOVE_LEFT, abs_pos, true);
+		if (!output) {
+			output = swayc_opposite_output(MOVE_RIGHT, abs_pos);
+		}
 	} else if (strcasecmp(name, "right") == 0) {
-		return swayc_adjacent_output(NULL, MOVE_RIGHT, abs_pos, true);
+		output = swayc_adjacent_output(NULL, MOVE_RIGHT, abs_pos, true);
+		if (!output) {
+			output = swayc_opposite_output(MOVE_LEFT, abs_pos);
+		}
 	} else if (strcasecmp(name, "up") == 0) {
-		return swayc_adjacent_output(NULL, MOVE_UP, abs_pos, true);
+		output = swayc_adjacent_output(NULL, MOVE_UP, abs_pos, true);
+		if (!output) {
+			output = swayc_opposite_output(MOVE_DOWN, abs_pos);
+		}
 	} else if (strcasecmp(name, "down") == 0) {
-		return swayc_adjacent_output(NULL, MOVE_DOWN, abs_pos, true);
+		output = swayc_adjacent_output(NULL, MOVE_DOWN, abs_pos, true);
+		if (!output) {
+			output = swayc_opposite_output(MOVE_UP, abs_pos);
+		}
 	} else {
 		for(int i = 0; i < root_container.children->length; ++i) {
 			swayc_t *c = root_container.children->items[i];
@@ -29,7 +44,58 @@ swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
 			}
 		}
 	}
-	return NULL;
+	return output;
+}
+
+swayc_t *swayc_opposite_output(enum movement_direction dir,
+		const struct wlc_point *abs_pos) {
+
+	// Search through all the outputs and pick the output whose edge covers the
+	// given position, and is at leftmost/rightmost/upmost/downmost side of the
+	// screen (decided by the direction given).
+	swayc_t *opposite = NULL;
+	char *dir_text = NULL;
+	switch(dir) {
+		case MOVE_LEFT:
+		case MOVE_RIGHT: ;
+			for (int i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = root_container.children->items[i];
+				if (abs_pos->y >= c->y && abs_pos->y <= c->y + c->height) {
+					if (!opposite) {
+						opposite = c;
+					} else if ((dir == MOVE_LEFT && c->x < opposite->x)
+							|| (dir == MOVE_RIGHT && c->x > opposite->x)) {
+						opposite = c;
+					}
+				}
+			}
+			dir_text = dir == MOVE_LEFT ? "leftmost" : "rightmost";
+			break;
+		case MOVE_UP:
+		case MOVE_DOWN: ;
+			for (int i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = root_container.children->items[i];
+				if (abs_pos->x >= c->x && abs_pos->x <= c->x + c->width) {
+					if (!opposite) {
+						opposite = c;
+					} else if ((dir == MOVE_UP && c->y < opposite->y)
+							|| (dir == MOVE_DOWN && c->y > opposite->y)) {
+						opposite = c;
+					}
+				}
+			}
+			dir_text = dir == MOVE_UP ? "upmost" : "downmost";
+			break;
+		default:
+			sway_abort("Function called with invalid argument.");
+			break;
+	}
+	if (opposite) {
+		sway_log(L_DEBUG, "%s (%.0fx%.0f+%.0f+%.0f) is %s from y-position %i",
+				opposite->name, opposite->width, opposite->height, opposite->x, opposite->y,
+				dir_text, abs_pos->y);
+	}
+	return opposite;
 }
 
 // Position is where on the edge (as absolute position) the adjacent output should be searched for.
