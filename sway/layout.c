@@ -1615,7 +1615,8 @@ size_t auto_slave_group_count(const swayc_t *container) {
  * Return the combined number of master and slave groups in the container.
  */
 size_t auto_group_count(const swayc_t *container) {
-	return auto_slave_group_count(container) + (container->nb_master ? 1 : 0);
+	return auto_slave_group_count(container)
+		+ (container->children->length && container->nb_master ? 1 : 0);
 }
 
 /**
