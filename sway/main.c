@@ -214,7 +214,11 @@ int main(int argc, char **argv) {
 
 	// Security:
 	unsetenv("LD_PRELOAD");
+#ifdef _LD_LIBRARY_PATH
 	setenv("LD_LIBRARY_PATH", _LD_LIBRARY_PATH, 1);
+#else
+	unsetenv("LD_LIBRARY_PATH");
+#endif
 
 	int c;
 	while (1) {
