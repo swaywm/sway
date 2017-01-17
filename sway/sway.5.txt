@@ -282,7 +282,7 @@ The default colors are:
 	workspace (or current workspace), and _current_ changes gaps for the current
 	view or workspace.
 
-**hide_edge_borders** <none|vertical|horizontal|both>::
+**hide_edge_borders** <none|vertical|horizontal|both|smart>::
 	Hide window borders adjacent to the screen edges. Default is _none_.
 
 **input** <input device> <block of commands>::
