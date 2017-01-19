@@ -115,6 +115,7 @@ struct sway_container {
 	// Attributes that mostly views have.
 	char *name;
 	char *class;
+	char *instance;
 	char *app_id;
 
 	// Used by output containers to keep track of swaybg child processes.

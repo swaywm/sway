@@ -70,6 +70,9 @@ static void free_swayc(swayc_t *cont) {
 	if (cont->class) {
 		free(cont->class);
 	}
+	if (cont->instance) {
+		free(cont->instance);
+	}
 	if (cont->app_id) {
 		free(cont->app_id);
 	}
@@ -295,6 +298,8 @@ swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
 	view->name = title ? strdup(title) : NULL;
 	const char *class = wlc_view_get_class(handle);
 	view->class = class ? strdup(class) : NULL;
+	const char *instance = wlc_view_get_instance(handle);
+	view->instance = instance ? strdup(instance) : NULL;
 	const char *app_id = wlc_view_get_app_id(handle);
 	view->app_id = app_id ? strdup(app_id) : NULL;
 	view->visible = true;
@@ -333,6 +338,8 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	view->name = title ? strdup(title) : NULL;
 	const char *class = wlc_view_get_class(handle);
 	view->class = class ? strdup(class) : NULL;
+	const char *instance = wlc_view_get_instance(handle);
+	view->instance = instance ? strdup(instance) : NULL;
 	const char *app_id = wlc_view_get_app_id(handle);
 	view->app_id = app_id ? strdup(app_id) : NULL;
 	view->visible = true;
