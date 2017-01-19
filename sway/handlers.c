@@ -331,6 +331,24 @@ static bool handle_view_created(wlc_handle handle) {
 			}
 		}
 	}
+
+	const struct wlc_geometry *anchor = wlc_view_positioner_get_anchor_rect(handle);
+	if (anchor) {
+		struct wlc_geometry geo = *wlc_view_get_geometry(handle);
+		struct wlc_size sr = *wlc_view_positioner_get_size(handle);
+		if (sr.w <= 0 || sr.h <= 0)
+			sr = geo.size;
+		geo.origin = anchor->origin;
+		geo.size = sr;
+		wlc_handle parent = wlc_view_get_parent(handle);
+		if (parent) {
+			const struct wlc_geometry *pg = wlc_view_get_geometry(parent);
+			geo.origin.x += pg->origin.x;
+			geo.origin.y += pg->origin.y;
+		}
+		wlc_view_set_geometry(handle, 0, &geo);
+	}
+
 	sway_log(L_DEBUG, "handle:%" PRIuPTR " type:%x state:%x parent:%" PRIuPTR " "
 			"mask:%d (x:%d y:%d w:%d h:%d) title:%s "
 			"class:%s appid:%s",
