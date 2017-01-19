@@ -205,7 +205,12 @@ static char *generate_regex(regex_t **regex, char *value) {
 	return NULL;
 }
 
-// Pouplate list with crit_tokens extracted from criteria string, returns error
+// Test whether the criterion corresponds to the currently focused window
+static bool crit_is_focused(const char *value) {
+	return !strcmp(value, "focused") || !strcmp(value, "__focused__");
+}
+
+// Populate list with crit_tokens extracted from criteria string, returns error
 // string or NULL if successful.
 char *extract_crit_tokens(list_t *tokens, const char * const criteria) {
 	int argc;
@@ -221,7 +226,7 @@ char *extract_crit_tokens(list_t *tokens, const char * const criteria) {
 		if ((error = parse_criteria_name(&token->type, name))) {
 			free_crit_token(token);
 			goto ect_cleanup;
-		} else if (token->type == CRIT_URGENT || strcmp(value, "focused") == 0) {
+		} else if (token->type == CRIT_URGENT || crit_is_focused(value)) {
 			sway_log(L_DEBUG, "%s -> \"%s\"", name, value);
 			list_add(tokens, token);
 		} else if((error = generate_regex(&token->regex, value))) {
@@ -250,7 +255,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 		case CRIT_CLASS:
 			if (!cont->class) {
 				// ignore
-			} else if (strcmp(crit->raw, "focused") == 0) {
+			} else if (crit_is_focused(crit->raw)) {
 				swayc_t *focused = get_focused_view(&root_container);
 				if (focused->class && strcmp(cont->class, focused->class) == 0) {
 					matches++;
@@ -271,7 +276,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 		case CRIT_TITLE:
 			if (!cont->name) {
 				// ignore
-			} else if (strcmp(crit->raw, "focused") == 0) {
+			} else if (crit_is_focused(crit->raw)) {
 				swayc_t *focused = get_focused_view(&root_container);
 				if (focused->name && strcmp(cont->name, focused->name) == 0) {
 					matches++;
@@ -291,7 +296,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 			swayc_t *cont_ws = swayc_parent_by_type(cont, C_WORKSPACE);
 			if (!cont_ws || !cont_ws->name) {
 				// ignore
-			} else if (strcmp(crit->raw, "focused") == 0) {
+			} else if (crit_is_focused(crit->raw)) {
 				swayc_t *focused_ws = swayc_active_workspace();
 				if (focused_ws->name && strcmp(cont_ws->name, focused_ws->name) == 0) {
 					matches++;
