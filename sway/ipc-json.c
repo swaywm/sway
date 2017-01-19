@@ -188,6 +188,8 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object_object_add(object, "window", json_object_new_int(c->handle)); // for the sake of i3 compat
 	json_object_object_add(props, "class", c->class ? json_object_new_string(c->class) :
 		c->app_id ? json_object_new_string(c->app_id) : NULL);
+	json_object_object_add(props, "instance", c->instance ? json_object_new_string(c->instance) :
+		c->app_id ? json_object_new_string(c->app_id) : NULL);
 	json_object_object_add(props, "title", (c->name) ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(props, "transient_for", parent ? json_object_new_int(parent) : NULL);
 	json_object_object_add(object, "window_properties", props);

@@ -173,9 +173,8 @@ static char *parse_criteria_name(enum criteria_type *type, char *name) {
 		char *error = malloc(len);
 		snprintf(error, len, fmt, name);
 		return error;
-	} else if (*type == CRIT_INSTANCE || *type == CRIT_URGENT ||
-			*type == CRIT_WINDOW_ROLE || *type == CRIT_WINDOW_TYPE) {
-
+	} else if (*type == CRIT_URGENT || *type == CRIT_WINDOW_ROLE ||
+			*type == CRIT_WINDOW_TYPE) {
 		// (we're just being helpful here)
 		const char *fmt = "\"%s\" criteria currently unsupported, "
 			"no window will match this";
@@ -267,6 +266,16 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 			}
 			break;
 		case CRIT_INSTANCE:
+			if (!cont->instance) {
+				// ignore
+			} else if (strcmp(crit->raw, "focused") == 0) {
+				swayc_t *focused = get_focused_view(&root_container);
+				if (focused->instance && strcmp(cont->instance, focused->instance) == 0) {
+					matches++;
+				}
+			} else if (crit->regex && regexec(crit->regex, cont->instance, 0, NULL, 0) == 0) {
+				matches++;
+			}
 			break;
 		case CRIT_TITLE:
 			if (!cont->name) {
