@@ -263,6 +263,62 @@ static void ws_cleanup() {
 	}
 }
 
+static void positioner_place_window(wlc_handle handle) {
+	const struct wlc_geometry *anchor = wlc_view_positioner_get_anchor_rect(handle);
+	const struct wlc_size *sr = wlc_view_positioner_get_size(handle);
+	// a positioner is required to have a non-null anchor and a non-negative size
+	if (!anchor || !sr ||
+		sr->w <= 0 || sr->h <= 0 ||
+		anchor->size.w <= 0 || anchor->size.h <= 0) {
+		return;
+	}
+	const struct wlc_point offset = *wlc_view_positioner_get_offset(handle);
+	enum wlc_positioner_anchor_bit anchors = wlc_view_positioner_get_anchor(handle);
+	enum wlc_positioner_gravity_bit gravity = wlc_view_positioner_get_gravity(handle);
+	struct wlc_geometry geo = {
+		.origin = offset,
+		.size = *sr
+	};
+
+	if (anchors & WLC_BIT_ANCHOR_TOP) {
+		geo.origin.y += anchor->origin.y;
+	} else if (anchors & WLC_BIT_ANCHOR_BOTTOM) {
+		geo.origin.y += anchor->origin.y + anchor->size.h;
+	} else {
+		geo.origin.y += anchor->origin.y + anchor->size.h / 2;
+	}
+	if (anchors & WLC_BIT_ANCHOR_LEFT) {
+		geo.origin.x += anchor->origin.x;
+	} else if (anchors & WLC_BIT_ANCHOR_RIGHT) {
+		geo.origin.x += anchor->origin.x + anchor->size.w;
+	} else {
+		geo.origin.x += anchor->origin.x + anchor->size.w / 2;
+	}
+
+	if (gravity & WLC_BIT_GRAVITY_TOP) {
+		geo.origin.y -= geo.size.h;
+	} else if (gravity & WLC_BIT_GRAVITY_BOTTOM) {
+		/* default */
+	} else {
+		geo.origin.y -= geo.size.h / 2;
+	}
+	if (gravity & WLC_BIT_GRAVITY_LEFT) {
+		geo.origin.x -= geo.size.w;
+	} else if (gravity & WLC_BIT_GRAVITY_RIGHT) {
+		/* default */
+	} else {
+		geo.origin.x -= geo.size.w / 2;
+	} 
+
+	wlc_handle parent = wlc_view_get_parent(handle);
+	if (parent) {
+		const struct wlc_geometry *pg = wlc_view_get_geometry(parent);
+		geo.origin.x += pg->origin.x;
+		geo.origin.y += pg->origin.y;
+	}
+	wlc_view_set_geometry(handle, 0, &geo);
+}
+
 static bool handle_view_created(wlc_handle handle) {
 	// if view is child of another view, the use that as focused container
 	wlc_handle parent = wlc_view_get_parent(handle);
@@ -332,22 +388,7 @@ static bool handle_view_created(wlc_handle handle) {
 		}
 	}
 
-	const struct wlc_geometry *anchor = wlc_view_positioner_get_anchor_rect(handle);
-	if (anchor) {
-		struct wlc_geometry geo = *wlc_view_get_geometry(handle);
-		struct wlc_size sr = *wlc_view_positioner_get_size(handle);
-		if (sr.w <= 0 || sr.h <= 0)
-			sr = geo.size;
-		geo.origin = anchor->origin;
-		geo.size = sr;
-		wlc_handle parent = wlc_view_get_parent(handle);
-		if (parent) {
-			const struct wlc_geometry *pg = wlc_view_get_geometry(parent);
-			geo.origin.x += pg->origin.x;
-			geo.origin.y += pg->origin.y;
-		}
-		wlc_view_set_geometry(handle, 0, &geo);
-	}
+	positioner_place_window(handle);
 
 	sway_log(L_DEBUG, "handle:%" PRIuPTR " type:%x state:%x parent:%" PRIuPTR " "
 			"mask:%d (x:%d y:%d w:%d h:%d) title:%s "
