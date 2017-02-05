@@ -310,6 +310,22 @@ static void positioner_place_window(wlc_handle handle) {
 		geo.origin.x -= geo.size.w / 2;
 	} 
 
+	sway_log(L_DEBUG, "xdg-positioner: placing window %" PRIuPTR " "
+		"sized (%u,%u) offset by (%d,%d), "
+		"anchor rectangle sized (%u,%u) at (%d,%d), "
+		"anchor edges: %s %s, gravity: %s %s",
+		handle,
+		sr->w, sr->h, offset.x, offset.y,
+		anchor->size.w, anchor->size.h, anchor->origin.x, anchor->origin.y,
+		anchors & WLC_BIT_ANCHOR_TOP ? "top" :
+			(anchors & WLC_BIT_ANCHOR_BOTTOM ? "bottom" : "middle"),
+		anchors & WLC_BIT_ANCHOR_LEFT ? "left" :
+			(anchors & WLC_BIT_ANCHOR_RIGHT ? "right" : "center"),
+		gravity & WLC_BIT_GRAVITY_TOP ? "top" :
+			(gravity & WLC_BIT_GRAVITY_BOTTOM ? "bottom" : "middle"),
+		gravity & WLC_BIT_GRAVITY_LEFT ? "left" :
+			(gravity & WLC_BIT_GRAVITY_RIGHT ? "right" : "center"));
+
 	wlc_handle parent = wlc_view_get_parent(handle);
 	if (parent) {
 		const struct wlc_geometry *pg = wlc_view_get_geometry(parent);
