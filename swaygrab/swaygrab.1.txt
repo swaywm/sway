@@ -42,8 +42,11 @@ Options
 	Specify a framerate (in frames per second). Used in combination with -c.
 	Default is 30. Must be an integer.
 
-*--raw*::
+*-r, --raw*::
 	Instead of invoking ImageMagick or ffmpeg, dump raw rgba data to stdout.
+	
+*-f, --focused*::
+	Capture only the currently focused container.
 
 Examples
 --------
