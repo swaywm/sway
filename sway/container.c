@@ -346,23 +346,23 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	view->sticky = false;
 
 	// Set the geometry of the floating view
-	struct wlc_geometry geometry;
-	wlc_view_get_visible_geometry(handle, &geometry);
+	const struct wlc_geometry *geometry = wlc_view_get_geometry(handle);
 
 	// give it requested geometry, but place in center if possible
 	// in top left otherwise
-	if (geometry.size.w != 0) {
-		view->x = (swayc_active_workspace()->width - geometry.size.w) / 2;
+	if (geometry->size.w != 0) {
+		view->x = (swayc_active_workspace()->width - geometry->size.w) / 2;
 	} else {
 		view->x = 0;
 	}
-	if (geometry.size.h != 0) {
-		view->y = (swayc_active_workspace()->height - geometry.size.h) / 2;
+	if (geometry->size.h != 0) {
+		view->y = (swayc_active_workspace()->height - geometry->size.h) / 2;
 	} else {
 		view->y = 0;
 	}
-	view->width = geometry.size.w;
-	view->height = geometry.size.h;
+
+	view->width = geometry->size.w;
+	view->height = geometry->size.h;
 
 	view->desired_width = view->width;
 	view->desired_height = view->height;
