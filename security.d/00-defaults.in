@@ -8,31 +8,32 @@
 # This file should live at __SYSCONFDIR__/sway/security and will be
 # automatically read by sway.
 
-# Configures which programs are allowed to use which sway features
-permit * fullscreen keyboard mouse ipc
+# Configures enabled compositor features for specific programs
+permit * fullscreen keyboard mouse
 permit __PREFIX__/bin/swaylock lock
-permit __PREFIX__/bin/swaybar panel
 permit __PREFIX__/bin/swaybg background
 permit __PREFIX__/bin/swaygrab screenshot
+permit __PREFIX__/bin/swaybar panel
 
-# Configures which IPC features are enabled
-ipc {
-    command enabled
-    outputs enabled
-    workspaces enabled
-    tree enabled
-    marks enabled
-    bar-config enabled
-    inputs enabled
+# Configures enabled IPC features for specific programs
+ipc __PREFIX__/bin/swaymsg {
+    * enabled
 
     events {
-        workspace enabled
-        output enabled
-        mode enabled
-        window enabled
-        input enabled
-        binding disabled
+        * disabled
     }
+}
+
+ipc __PREFIX__/bin/swaybar {
+    bar-config enabled
+    outputs enabled
+    workspaces enabled
+    command enabled
+}
+
+ipc __PREFIX__/bin/swaygrab {
+    outputs enabled
+    tree enabled
 }
 
 # Limits the contexts from which certain commands are permitted

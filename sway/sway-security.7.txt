@@ -19,8 +19,13 @@ usually best suited to a distro maintainer who wants to ship a secure sway
 environment in their distro. Sway provides a number of means of securing it but
 you must make a few changes external to sway first.
 
-Security-related configuration is only valid in /etc/sway/config (or whatever path
-is appropriate for your system).
+Configuration of security features is limited to files in the security directory
+(this is likely /etc/sway/security.d/*, but depends on your installation prefix).
+Files in this directory must be owned by root:root and chmod 600. The default
+security configuration is installed to /etc/sway/security.d/00-defaults, and
+should not be modified - it will be updated with the latest recommended security
+defaults between releases. To override the defaults, you should add more files to
+this directory.
 
 Environment security
 --------------------
@@ -160,21 +165,19 @@ Setting a command policy overwrites any previous policy that was in place.
 IPC policies
 ------------
 
-You may whitelist IPC access like so:
+Disabling IPC access via swaymsg is encouraged if you intend to secure the IPC
+socket, because any program that can execute swaymsg could circumvent its own
+security policy by simply invoking swaymsg.
 
-	permit /usr/bin/swaybar ipc
-	permit /usr/bin/swaygrab ipc
-	# etc
+You can configure which features of IPC are available for particular clients:
 
-Note that it's suggested you do not enable swaymsg to access IPC if you intend to
-secure your IPC socket, because any program could just run swaymsg itself instead
-of connecting to IPC directly.
-
-You can also configure which features of IPC are available with an IPC block:
-
-	ipc {
+	ipc <executable> {
 		...
 	}
+
+You may use * for <executable> to configure the default policy for all clients.
+Configuring IPC policies for specific executables is not supported on FreeBSD, and
+the default policy will be applied to all IPC connections.
 
 The following commands are available within this block:
 
@@ -201,7 +204,7 @@ The following commands are available within this block:
 
 You can also control which IPC events can be raised with an events block:
 
-	ipc {
+	ipc <executable> {
 		events {
 			...
 		}
@@ -227,7 +230,8 @@ The following commands are vaild within an ipc events block:
 **workspace** <enabled|disabled>::
 	Controls workspace notifications.
 
-Disabling some of these may cause swaybar to behave incorrectly.
+In each of these blocks, you may use * (as in "* enabled" or "* disabled") to
+control access to every feature at once.
 
 Authors
 -------
