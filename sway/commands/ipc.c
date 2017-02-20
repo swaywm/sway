@@ -14,6 +14,9 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 	if ((error = checkarg(argc, "ipc", EXPECTED_EQUAL_TO, 2))) {
 		return error;
 	}
+	if ((error = check_security_config())) {
+		return error;
+	}
 
 	const char *program = argv[0];
 
@@ -24,11 +27,6 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 
 	if (!config->reading) {
 		return cmd_results_new(CMD_FAILURE, "ipc", "Can only be used in config file.");
-	}
-
-	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
-		return cmd_results_new(CMD_INVALID, "permit",
-				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
 	}
 
 	current_policy = alloc_ipc_policy(program);

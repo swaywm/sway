@@ -241,8 +241,7 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	return 0;
 }
 
-void ipc_client_disconnect(struct ipc_client *client)
-{
+void ipc_client_disconnect(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
 	}
@@ -326,8 +325,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		ipc_client_disconnect(client);
 		return;
 	}
-	if (client->payload_length > 0)
-	{
+	if (client->payload_length > 0) {
 		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
 		if (received == -1)
 		{
@@ -397,7 +395,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_WORKSPACES:
 	{
-		if (!(client->security_policy & IPC_FEATURE_GET_TREE)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_WORKSPACES)) {
 			goto exit_denied;
 		}
 		json_object *workspaces = json_object_new_array();
@@ -410,7 +408,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_INPUTS:
 	{
-		if (!(client->security_policy & IPC_FEATURE_GET_TREE)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_INPUTS)) {
 			goto exit_denied;
 		}
 		json_object *inputs = json_object_new_array();
@@ -436,7 +434,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_OUTPUTS:
 	{
-		if (!(client->security_policy & IPC_FEATURE_GET_TREE)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_OUTPUTS)) {
 			goto exit_denied;
 		}
 		json_object *outputs = json_object_new_array();
@@ -561,6 +559,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 exit_denied:
 	ipc_send_reply(client, error_denied, (uint32_t)strlen(error_denied));
+	sway_log(L_DEBUG, "Denied IPC client access to %i", client->current_command);
 
 exit_cleanup:
 	client->payload_length = 0;
@@ -587,6 +586,8 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 		sway_log_errno(L_INFO, "Unable to send payload to IPC client");
 		return false;
 	}
+
+	sway_log(L_DEBUG, "Send IPC reply: %s", payload);
 
 	return true;
 }

@@ -11,6 +11,7 @@
 #include <libinput.h>
 #include <limits.h>
 #include <float.h>
+#include <dirent.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -485,6 +486,10 @@ static bool load_config(const char *path, struct sway_config *config) {
 	return true;
 }
 
+static int qstrcmp(const void* a, const void* b) {
+    return strcmp(*((char**) a), *((char**) b));
+}
+
 bool load_main_config(const char *file, bool is_active) {
 	input_init();
 
@@ -512,7 +517,43 @@ bool load_main_config(const char *file, bool is_active) {
 	list_add(config->config_chain, path);
 
 	config->reading = true;
-	bool success = load_config(SYSCONFDIR "/sway/security", config);
+	
+	// Read security configs
+	bool success = true;
+	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
+	if (!dir) {
+		sway_log(L_ERROR, "%s does not exist, sway will have no security configuration"
+				" and will probably be broken", SYSCONFDIR "/sway/security.d");
+	} else {
+		list_t *secconfigs = create_list();
+		char *base = SYSCONFDIR "/sway/security.d/";
+		struct dirent *ent = readdir(dir);
+		while (ent != NULL) {
+			if (ent->d_type == DT_REG) {
+				char *_path = malloc(strlen(ent->d_name) + strlen(base) + 1);
+				strcpy(_path, base);
+				strcat(_path, ent->d_name);
+				list_add(secconfigs, _path);
+			}
+			ent = readdir(dir);
+		}
+		closedir(dir);
+
+		list_qsort(secconfigs, qstrcmp);
+		for (int i = 0; i < secconfigs->length; ++i) {
+			char *_path = secconfigs->items[i];
+			struct stat s;
+			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 || (s.st_mode & 0777) != 0644) {
+				sway_log(L_ERROR, "Refusing to load %s - it must be owned by root and mode 644", _path);
+				success = false;
+			} else {
+				success = success && load_config(_path, config);
+			}
+		}
+
+		free_flat_list(secconfigs);
+	}
+
 	success = success && load_config(path, config);
 
 	if (is_active) {
@@ -618,6 +659,15 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 
 	free(wd);
 	return true;
+}
+
+struct cmd_results *check_security_config() {
+	if (!current_config_path || strncmp(SYSCONFDIR "/sway/security.d/", current_config_path,
+				strlen(SYSCONFDIR "/sway/security.d/")) != 0) {
+		return cmd_results_new(CMD_INVALID, "permit",
+				"This command is only permitted to run from " SYSCONFDIR "/sway/security.d/*");
+	}
+	return NULL;
 }
 
 bool read_config(FILE *file, struct sway_config *config) {

@@ -29,6 +29,11 @@ ipc __PREFIX__/bin/swaybar {
     outputs enabled
     workspaces enabled
     command enabled
+
+    events {
+        workspace enabled
+        mode enabled
+    }
 }
 
 ipc __PREFIX__/bin/swaygrab {
