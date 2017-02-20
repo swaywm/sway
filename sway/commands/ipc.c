@@ -1,18 +1,23 @@
 #include <stdio.h>
 #include <string.h>
+#include "sway/security.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "ipc.h"
 #include "log.h"
 #include "util.h"
 
+static struct ipc_policy *current_policy = NULL;
+
 struct cmd_results *cmd_ipc(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "ipc", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "ipc", EXPECTED_EQUAL_TO, 2))) {
 		return error;
 	}
 
-	if (config->reading && strcmp("{", argv[0]) != 0) {
+	const char *program = argv[0];
+
+	if (config->reading && strcmp("{", argv[1]) != 0) {
 		return cmd_results_new(CMD_INVALID, "ipc",
 				"Expected '{' at start of IPC config definition.");
 	}
@@ -25,6 +30,8 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "permit",
 				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
 	}
+
+	current_policy = alloc_ipc_policy(program);
 
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);
 }
@@ -86,10 +93,10 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 	}
 
 	if (enabled) {
-		//config->ipc_policy |= type;
-		sway_log(L_DEBUG, "Enabled IPC %s feature %d", argv[-1], (int)type);
+		current_policy->features |= type;
+		sway_log(L_DEBUG, "Enabled IPC %s feature", argv[-1]);
 	} else {
-		//config->ipc_policy &= ~type;
+		current_policy->features &= ~type;
 		sway_log(L_DEBUG, "Disabled IPC %s feature", argv[-1]);
 	}
 
@@ -134,10 +141,10 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 	}
 
 	if (enabled) {
-		//config->ipc_policy |= type;
-		sway_log(L_DEBUG, "Enabled IPC %s event %d", argv[-1], (int)type);
+		current_policy->features |= type;
+		sway_log(L_DEBUG, "Enabled IPC %s event", argv[-1]);
 	} else {
-		//config->ipc_policy &= ~type;
+		current_policy->features &= ~type;
 		sway_log(L_DEBUG, "Disabled IPC %s event", argv[-1]);
 	}
 
