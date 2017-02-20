@@ -203,7 +203,6 @@ enum secure_feature {
 	FEATURE_FULLSCREEN = 16,
 	FEATURE_KEYBOARD = 32,
 	FEATURE_MOUSE = 64,
-	FEATURE_IPC = 128,
 };
 
 struct feature_policy {
@@ -226,6 +225,11 @@ enum ipc_feature {
 	IPC_FEATURE_EVENT_WINDOW = 2048,
 	IPC_FEATURE_EVENT_BINDING = 4096,
 	IPC_FEATURE_EVENT_INPUT = 8192
+};
+
+struct ipc_policy {
+	char *program;
+	uint32_t features;
 };
 
 /**
@@ -300,7 +304,7 @@ struct sway_config {
 	// Security
 	list_t *command_policies;
 	list_t *feature_policies;
-	uint32_t ipc_policy;
+	list_t *ipc_policies;
 };
 
 void pid_workspace_add(struct pid_workspace *pw);

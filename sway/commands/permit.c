@@ -19,7 +19,6 @@ static enum secure_feature get_features(int argc, char **argv,
 		{ "fullscreen", FEATURE_FULLSCREEN },
 		{ "keyboard", FEATURE_KEYBOARD },
 		{ "mouse", FEATURE_MOUSE },
-		{ "ipc", FEATURE_IPC },
 	};
 
 	for (int i = 1; i < argc; ++i) {

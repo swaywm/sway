@@ -86,10 +86,10 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 	}
 
 	if (enabled) {
-		config->ipc_policy |= type;
-		sway_log(L_DEBUG, "Enabled IPC %s feature", argv[-1]);
+		//config->ipc_policy |= type;
+		sway_log(L_DEBUG, "Enabled IPC %s feature %d", argv[-1], (int)type);
 	} else {
-		config->ipc_policy &= ~type;
+		//config->ipc_policy &= ~type;
 		sway_log(L_DEBUG, "Disabled IPC %s feature", argv[-1]);
 	}
 
@@ -134,10 +134,10 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 	}
 
 	if (enabled) {
-		config->ipc_policy |= type;
-		sway_log(L_DEBUG, "Enabled IPC %s event", argv[-1]);
+		//config->ipc_policy |= type;
+		sway_log(L_DEBUG, "Enabled IPC %s event %d", argv[-1], (int)type);
 	} else {
-		config->ipc_policy &= ~type;
+		//config->ipc_policy &= ~type;
 		sway_log(L_DEBUG, "Disabled IPC %s event", argv[-1]);
 	}
 

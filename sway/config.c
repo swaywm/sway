@@ -379,7 +379,7 @@ static void config_defaults(struct sway_config *config) {
 	// Security
 	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;
-	config->ipc_policy = UINT32_MAX;
+	if (!(config->ipc_policies = create_list())) goto cleanup;
 
 	return;
 cleanup:
