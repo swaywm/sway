@@ -32,6 +32,7 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 	}
 
 	current_policy = alloc_ipc_policy(program);
+	list_add(config->ipc_policies, current_policy);
 
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);
 }
@@ -74,6 +75,7 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 		char *name;
 		enum ipc_feature type;
 	} types[] = {
+		{ "*", IPC_FEATURE_ALL_COMMANDS },
 		{ "command", IPC_FEATURE_COMMAND },
 		{ "workspaces", IPC_FEATURE_GET_WORKSPACES },
 		{ "outputs", IPC_FEATURE_GET_OUTPUTS },
@@ -123,6 +125,7 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 		char *name;
 		enum ipc_feature type;
 	} types[] = {
+		{ "*", IPC_FEATURE_ALL_EVENTS },
 		{ "workspace", IPC_FEATURE_EVENT_WORKSPACE },
 		{ "output", IPC_FEATURE_EVENT_OUTPUT },
 		{ "mode", IPC_FEATURE_EVENT_MODE },
