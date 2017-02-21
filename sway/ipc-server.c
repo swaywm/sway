@@ -35,6 +35,7 @@ struct ipc_client {
 	struct wlc_event_source *event_source;
 	int fd;
 	uint32_t payload_length;
+	uint32_t security_policy;
 	enum ipc_command_type current_command;
 	enum ipc_command_type subscribed_events;
 };
@@ -159,17 +160,6 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	pid_t pid = get_client_pid(client_fd);
-	if (!(get_feature_policy(pid) & FEATURE_IPC)) {
-		sway_log(L_INFO, "Permission to connect to IPC socket denied to %d", pid);
-		const char *error = "{\"success\": false, \"message\": \"Permission denied\"}";
-		if (write(client_fd, &error, sizeof(error)) < (int)sizeof(error)) {
-			sway_log(L_DEBUG, "Failed to write entire error");
-		}
-		close(client_fd);
-		return 0;
-	}
-
 	struct ipc_client* client = malloc(sizeof(struct ipc_client));
 	if (!client) {
 		sway_log(L_ERROR, "Unable to allocate ipc client");
@@ -180,6 +170,9 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	client->fd = client_fd;
 	client->subscribed_events = 0;
 	client->event_source = wlc_event_loop_add_fd(client_fd, WLC_EVENT_READABLE, ipc_client_handle_readable, client);
+
+	pid_t pid = get_client_pid(client->fd);
+	client->security_policy = get_ipc_policy(pid);
 
 	list_add(ipc_client_list, client);
 
@@ -248,8 +241,7 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	return 0;
 }
 
-void ipc_client_disconnect(struct ipc_client *client)
-{
+void ipc_client_disconnect(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
 	}
@@ -333,8 +325,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		ipc_client_disconnect(client);
 		return;
 	}
-	if (client->payload_length > 0)
-	{
+	if (client->payload_length > 0) {
 		ssize_t received = recv(client->fd, buf, client->payload_length, 0);
 		if (received == -1)
 		{
@@ -351,7 +342,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
-		if (!(config->ipc_policy & IPC_FEATURE_COMMAND)) {
+		if (!(client->security_policy & IPC_FEATURE_COMMAND)) {
 			goto exit_denied;
 		}
 		struct cmd_results *results = handle_command(buf, CONTEXT_IPC);
@@ -365,6 +356,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_SUBSCRIBE:
 	{
+		// TODO: Check if they're permitted to use these events
 		struct json_object *request = json_tokener_parse(buf);
 		if (request == NULL) {
 			ipc_send_reply(client, "{\"success\": false}", 18);
@@ -403,7 +395,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_WORKSPACES:
 	{
-		if (!(config->ipc_policy & IPC_FEATURE_GET_WORKSPACES)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_WORKSPACES)) {
 			goto exit_denied;
 		}
 		json_object *workspaces = json_object_new_array();
@@ -416,7 +408,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_INPUTS:
 	{
-		if (!(config->ipc_policy & IPC_FEATURE_GET_INPUTS)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_INPUTS)) {
 			goto exit_denied;
 		}
 		json_object *inputs = json_object_new_array();
@@ -442,7 +434,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_OUTPUTS:
 	{
-		if (!(config->ipc_policy & IPC_FEATURE_GET_OUTPUTS)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_OUTPUTS)) {
 			goto exit_denied;
 		}
 		json_object *outputs = json_object_new_array();
@@ -455,7 +447,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_TREE:
 	{
-		if (!(config->ipc_policy & IPC_FEATURE_GET_TREE)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_TREE)) {
 			goto exit_denied;
 		}
 		json_object *tree = ipc_json_describe_container_recursive(&root_container);
@@ -522,7 +514,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_BAR_CONFIG:
 	{
-		if (!(config->ipc_policy & IPC_FEATURE_GET_BAR_CONFIG)) {
+		if (!(client->security_policy & IPC_FEATURE_GET_BAR_CONFIG)) {
 			goto exit_denied;
 		}
 		if (!buf[0]) {
@@ -567,6 +559,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 exit_denied:
 	ipc_send_reply(client, error_denied, (uint32_t)strlen(error_denied));
+	sway_log(L_DEBUG, "Denied IPC client access to %i", client->current_command);
 
 exit_cleanup:
 	client->payload_length = 0;
@@ -594,6 +587,8 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 		return false;
 	}
 
+	sway_log(L_DEBUG, "Send IPC reply: %s", payload);
+
 	return true;
 }
 
@@ -616,10 +611,33 @@ void ipc_get_outputs_callback(swayc_t *container, void *data) {
 }
 
 void ipc_send_event(const char *json_string, enum ipc_command_type event) {
+	static struct {
+		enum ipc_command_type event;
+		enum ipc_feature feature;
+	} security_mappings[] = {
+		{ IPC_EVENT_WORKSPACE, IPC_FEATURE_EVENT_WORKSPACE },
+		{ IPC_EVENT_OUTPUT, IPC_FEATURE_EVENT_OUTPUT },
+		{ IPC_EVENT_MODE, IPC_FEATURE_EVENT_MODE },
+		{ IPC_EVENT_WINDOW, IPC_FEATURE_EVENT_WINDOW },
+		{ IPC_EVENT_BINDING, IPC_FEATURE_EVENT_BINDING },
+		{ IPC_EVENT_INPUT, IPC_FEATURE_EVENT_INPUT }
+	};
+
+	uint32_t security_mask = 0;
+	for (size_t i = 0; i < sizeof(security_mappings) / sizeof(security_mappings[0]); ++i) {
+		if (security_mappings[i].event == event) {
+			security_mask = security_mappings[i].feature;
+			break;
+		}
+	}
+
 	int i;
 	struct ipc_client *client;
 	for (i = 0; i < ipc_client_list->length; i++) {
 		client = ipc_client_list->items[i];
+		if (!(client->security_policy & security_mask)) {
+			continue;
+		}
 		if ((client->subscribed_events & event_mask(event)) == 0) {
 			continue;
 		}
@@ -632,9 +650,6 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 }
 
 void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
-	if (!(config->ipc_policy & IPC_FEATURE_EVENT_WORKSPACE)) {
-		return;
-	}
 	sway_log(L_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -659,9 +674,6 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 }
 
 void ipc_event_window(swayc_t *window, const char *change) {
-	if (!(config->ipc_policy & IPC_FEATURE_EVENT_WINDOW)) {
-		return;
-	}
 	sway_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -687,9 +699,6 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 }
 
 void ipc_event_mode(const char *mode) {
-	if (!(config->ipc_policy & IPC_FEATURE_EVENT_MODE)) {
-		return;
-	}
 	sway_log(L_DEBUG, "Sending mode::%s event", mode);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(mode));
@@ -715,9 +724,6 @@ void ipc_event_modifier(uint32_t modifier, const char *state) {
 }
 
 static void ipc_event_binding(json_object *sb_obj) {
-	if (!(config->ipc_policy & IPC_FEATURE_EVENT_BINDING)) {
-		return;
-	}
 	sway_log(L_DEBUG, "Sending binding::run event");
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("run"));

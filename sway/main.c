@@ -175,13 +175,6 @@ static void security_sanity_check() {
 		cap_free(cap);
 	}
 #endif
-	if (!stat(SYSCONFDIR "/sway", &s)) {
-		if (s.st_uid != 0 || s.st_gid != 0
-				|| (s.st_mode & S_IWGRP) || (s.st_mode & S_IWOTH)) {
-			sway_log(L_ERROR,
-				"!! DANGER !! " SYSCONFDIR "/sway is not secure! It should be owned by root and set to 0755 at the minimum");
-		}
-	}
 }
 
 int main(int argc, char **argv) {

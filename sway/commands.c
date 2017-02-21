@@ -297,6 +297,7 @@ static struct cmd_handler bar_colors_handlers[] = {
 };
 
 static struct cmd_handler ipc_handlers[] = {
+	{ "*", cmd_ipc_cmd },
 	{ "bar-config", cmd_ipc_cmd },
 	{ "command", cmd_ipc_cmd },
 	{ "events", cmd_ipc_events },
@@ -308,6 +309,7 @@ static struct cmd_handler ipc_handlers[] = {
 };
 
 static struct cmd_handler ipc_event_handlers[] = {
+	{ "*", cmd_ipc_event_cmd },
 	{ "binding", cmd_ipc_event_cmd },
 	{ "input", cmd_ipc_event_cmd },
 	{ "mode", cmd_ipc_event_cmd },

@@ -203,7 +203,6 @@ enum secure_feature {
 	FEATURE_FULLSCREEN = 16,
 	FEATURE_KEYBOARD = 32,
 	FEATURE_MOUSE = 64,
-	FEATURE_IPC = 128,
 };
 
 struct feature_policy {
@@ -225,7 +224,17 @@ enum ipc_feature {
 	IPC_FEATURE_EVENT_MODE = 1024,
 	IPC_FEATURE_EVENT_WINDOW = 2048,
 	IPC_FEATURE_EVENT_BINDING = 4096,
-	IPC_FEATURE_EVENT_INPUT = 8192
+	IPC_FEATURE_EVENT_INPUT = 8192,
+
+	IPC_FEATURE_ALL_COMMANDS = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
+	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192,
+
+	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
+};
+
+struct ipc_policy {
+	char *program;
+	uint32_t features;
 };
 
 /**
@@ -300,7 +309,7 @@ struct sway_config {
 	// Security
 	list_t *command_policies;
 	list_t *feature_policies;
-	uint32_t ipc_policy;
+	list_t *ipc_policies;
 };
 
 void pid_workspace_add(struct pid_workspace *pw);
@@ -330,6 +339,8 @@ void free_config(struct sway_config *config);
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
 char *do_var_replacement(char *str);
+
+struct cmd_results *check_security_config();
 
 int input_identifier_cmp(const void *item, const void *data);
 void merge_input_config(struct input_config *dst, struct input_config *src);

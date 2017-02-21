@@ -91,7 +91,7 @@ function(add_config name source destination)
 endfunction()
 
 add_config(config config sway)
-add_config(security security sway)
+add_config(00-defaults security.d/00-defaults sway/security.d)
 
 add_manpage(sway 1)
 add_manpage(sway 5)

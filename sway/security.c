@@ -27,6 +27,29 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 	return policy;
 }
 
+struct ipc_policy *alloc_ipc_policy(const char *program) {
+	uint32_t default_policy = 0;
+	for (int i = 0; i < config->ipc_policies->length; ++i) {
+		struct ipc_policy *policy = config->ipc_policies->items[i];
+		if (strcmp(policy->program, "*") == 0) {
+			default_policy = policy->features;
+			break;
+		}
+	}
+
+	struct ipc_policy *policy = malloc(sizeof(struct ipc_policy));
+	if (!policy) {
+		return NULL;
+	}
+	policy->program = strdup(program);
+	if (!policy->program) {
+		free(policy);
+		return NULL;
+	}
+	policy->features = default_policy;
+	return policy;
+}
+
 struct command_policy *alloc_command_policy(const char *command) {
 	struct command_policy *policy = malloc(sizeof(struct command_policy));
 	if (!policy) {
@@ -41,7 +64,7 @@ struct command_policy *alloc_command_policy(const char *command) {
 	return policy;
 }
 
-enum secure_feature get_feature_policy(pid_t pid) {
+static const char *get_pid_exe(pid_t pid) {
 #ifdef __FreeBSD__
 	const char *fmt = "/proc/%d/file";
 #else
@@ -52,9 +75,8 @@ enum secure_feature get_feature_policy(pid_t pid) {
 	if (path) {
 		snprintf(path, pathlen + 1, fmt, pid);
 	}
-	static char link[2048];
 
-	uint32_t default_policy = 0;
+	static char link[2048];
 
 	ssize_t len = !path ? -1 : readlink(path, link, sizeof(link));
 	if (len < 0) {
@@ -66,6 +88,13 @@ enum secure_feature get_feature_policy(pid_t pid) {
 		link[len] = '\0';
 	}
 	free(path);
+
+	return link;
+}
+
+uint32_t get_feature_policy(pid_t pid) {
+	uint32_t default_policy = 0;
+	const char *link = get_pid_exe(pid);
 
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *policy = config->feature_policies->items[i];
@@ -80,7 +109,24 @@ enum secure_feature get_feature_policy(pid_t pid) {
 	return default_policy;
 }
 
-enum command_context get_command_policy(const char *cmd) {
+uint32_t get_ipc_policy(pid_t pid) {
+	uint32_t default_policy = 0;
+	const char *link = get_pid_exe(pid);
+
+	for (int i = 0; i < config->ipc_policies->length; ++i) {
+		struct ipc_policy *policy = config->ipc_policies->items[i];
+		if (strcmp(policy->program, "*") == 0) {
+			default_policy = policy->features;
+		}
+		if (strcmp(policy->program, link) == 0) {
+			return policy->features;
+		}
+	}
+
+	return default_policy;
+}
+
+uint32_t get_command_policy(const char *cmd) {
 	uint32_t default_policy = 0;
 
 	for (int i = 0; i < config->command_policies->length; ++i) {

@@ -19,7 +19,6 @@ static enum secure_feature get_features(int argc, char **argv,
 		{ "fullscreen", FEATURE_FULLSCREEN },
 		{ "keyboard", FEATURE_KEYBOARD },
 		{ "mouse", FEATURE_MOUSE },
-		{ "ipc", FEATURE_IPC },
 	};
 
 	for (int i = 1; i < argc; ++i) {
@@ -63,18 +62,12 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 	if ((error = checkarg(argc, "permit", EXPECTED_MORE_THAN, 1))) {
 		return error;
 	}
-
-	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
-		return cmd_results_new(CMD_INVALID, "permit",
-				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
+	if ((error = check_security_config())) {
+		return error;
 	}
 
 	struct feature_policy *policy = get_policy(argv[0]);
 	policy->features |= get_features(argc, argv, &error);
-
-	if (error) {
-		return error;
-	}
 
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
 			policy->program, policy->features);
@@ -87,18 +80,12 @@ struct cmd_results *cmd_reject(int argc, char **argv) {
 	if ((error = checkarg(argc, "reject", EXPECTED_MORE_THAN, 1))) {
 		return error;
 	}
-
-	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
-		return cmd_results_new(CMD_INVALID, "permit",
-				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
+	if ((error = check_security_config())) {
+		return error;
 	}
 
 	struct feature_policy *policy = get_policy(argv[0]);
 	policy->features &= ~get_features(argc, argv, &error);
-
-	if (error) {
-		return error;
-	}
 
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
 			policy->program, policy->features);

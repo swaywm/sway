@@ -1,18 +1,26 @@
 #include <stdio.h>
 #include <string.h>
+#include "sway/security.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "ipc.h"
 #include "log.h"
 #include "util.h"
 
+static struct ipc_policy *current_policy = NULL;
+
 struct cmd_results *cmd_ipc(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "ipc", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "ipc", EXPECTED_EQUAL_TO, 2))) {
+		return error;
+	}
+	if ((error = check_security_config())) {
 		return error;
 	}
 
-	if (config->reading && strcmp("{", argv[0]) != 0) {
+	const char *program = argv[0];
+
+	if (config->reading && strcmp("{", argv[1]) != 0) {
 		return cmd_results_new(CMD_INVALID, "ipc",
 				"Expected '{' at start of IPC config definition.");
 	}
@@ -21,10 +29,8 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "ipc", "Can only be used in config file.");
 	}
 
-	if (!current_config_path || strcmp(SYSCONFDIR "/sway/security", current_config_path) != 0) {
-		return cmd_results_new(CMD_INVALID, "permit",
-				"This command is only permitted to run from " SYSCONFDIR "/sway/security");
-	}
+	current_policy = alloc_ipc_policy(program);
+	list_add(config->ipc_policies, current_policy);
 
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);
 }
@@ -67,6 +73,7 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 		char *name;
 		enum ipc_feature type;
 	} types[] = {
+		{ "*", IPC_FEATURE_ALL_COMMANDS },
 		{ "command", IPC_FEATURE_COMMAND },
 		{ "workspaces", IPC_FEATURE_GET_WORKSPACES },
 		{ "outputs", IPC_FEATURE_GET_OUTPUTS },
@@ -86,10 +93,10 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 	}
 
 	if (enabled) {
-		config->ipc_policy |= type;
+		current_policy->features |= type;
 		sway_log(L_DEBUG, "Enabled IPC %s feature", argv[-1]);
 	} else {
-		config->ipc_policy &= ~type;
+		current_policy->features &= ~type;
 		sway_log(L_DEBUG, "Disabled IPC %s feature", argv[-1]);
 	}
 
@@ -116,6 +123,7 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 		char *name;
 		enum ipc_feature type;
 	} types[] = {
+		{ "*", IPC_FEATURE_ALL_EVENTS },
 		{ "workspace", IPC_FEATURE_EVENT_WORKSPACE },
 		{ "output", IPC_FEATURE_EVENT_OUTPUT },
 		{ "mode", IPC_FEATURE_EVENT_MODE },
@@ -134,10 +142,10 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 	}
 
 	if (enabled) {
-		config->ipc_policy |= type;
+		current_policy->features |= type;
 		sway_log(L_DEBUG, "Enabled IPC %s event", argv[-1]);
 	} else {
-		config->ipc_policy &= ~type;
+		current_policy->features &= ~type;
 		sway_log(L_DEBUG, "Disabled IPC %s event", argv[-1]);
 	}
 
