@@ -102,13 +102,17 @@ pid_t get_parent_pid(pid_t child) {
 }
 
 uint32_t parse_color(const char *color) {
+	if (color[0] == '#') {
+		++color;
+	}
+
 	int len = strlen(color);
-	if (color[0] != '#' || (len != 7 && len != 9)) {
+	if (len != 6 && len != 8) {
 		sway_log(L_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
 		return 0xFFFFFFFF;
 	}
-	uint32_t res = (uint32_t)strtoul(color + 1, NULL, 16);
-	if (strlen(color) == 7) {
+	uint32_t res = (uint32_t)strtoul(color, NULL, 16);
+	if (strlen(color) == 6) {
 		res = (res << 8) | 0xFF;
 	}
 	return res;

@@ -45,6 +45,43 @@ Options
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
 	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
 
+*--font* <font>::
+	Sets the font of the text inside the indicator.
+
+*--textcolor* <rrggbb[aa]>::
+	Sets the color of the text inside the indicator.
+
+*--insidevercolor* <rrggbb[aa]>::
+	Sets the color of the inside of the indicator when verifying.
+
+*--insidewrongcolor* <rrggbb[aa]>::
+	Sets the color of the inside of the indicator when invalid.
+
+*--insidecolor* <rrggbb[aa]>::
+	Sets the color of the inside of the indicator when typing or idle.
+
+*--ringvercolor* <rrggbb[aa]>::
+	Sets the color of the outside of the indicator when verifying.
+
+*--ringwrongcolor* <rrggbb[aa]>::
+	Sets the color of the outside of the indicator when invalid.
+
+*--ringcolor* <rrggbb[aa]>::
+	Sets the color of the outside of the indicator when typing or idle.
+
+*--linecolor* <rrggbb[aa]>::
+	Sets the color of the lines that separate the inside and outside of the
+	indicator.
+
+*--separatorcolor* <rrggbb[aa]>::
+	Sets the color of the lines that seperate highlight segments.
+
+*--keyhlcolor* <rrggbb[aa]>::
+	Sets the color of keypress highlight segments.
+
+*--bshlcolor* <rrggbb[aa]>::
+	Sets the color of backspace highlight segments.
+
 
 Authors
 -------
