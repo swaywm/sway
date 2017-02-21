@@ -5,8 +5,8 @@
 # You MUST read this man page if you intend to attempt to secure your sway
 # installation.
 #
-# This file should live at __SYSCONFDIR__/sway/security and will be
-# automatically read by sway.
+# DO NOT CHANGE THIS FILE. Override these defaults by writing new files in
+# __SYSCONFDIR__/sway/security.d/*
 
 # Configures enabled compositor features for specific programs
 permit * fullscreen keyboard mouse
