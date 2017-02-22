@@ -29,7 +29,7 @@ Options
 *-i, \--image* [<output>:]<path>::
 	Display the given image, optionally only on the given output.
 
-*-s, \--scaling*::
+*--scaling*::
 	Scaling mode for images: stretch, fill, fit, center, or tile.
 
 *-t, --tiling*::
@@ -45,6 +45,53 @@ Options
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
 	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
 
+Appearance
+----------
+
+*--bshlcolor* <rrggbb[aa]>::
+	Sets the color of backspace highlight segments.
+
+*--font* <font>::
+	Sets the font of the text inside the indicator.
+
+*--insidecolor* <rrggbb[aa]>::
+	Sets the color of the inside of the indicator when typing or idle.
+
+*--insidevercolor* <rrggbb[aa]>::
+	Sets the color of the inside of the indicator when verifying.
+
+*--insidewrongcolor* <rrggbb[aa]>::
+	Sets the color of the inside of the indicator when invalid.
+
+*--keyhlcolor* <rrggbb[aa]>::
+	Sets the color of keypress highlight segments.
+
+*--linecolor* <rrggbb[aa]>::
+	Sets the color of the lines that separate the inside and outside of the
+	indicator.
+
+*-s, \--line-uses-inside*::
+	Use the color of the inside of the indicator for the line separating the
+	inside and outside of the indicator.
+
+*-r, \--line-uses-ring*::
+	Use the outer ring's color for the line separating the inside and outside of
+	the indicator.
+
+*--ringcolor* <rrggbb[aa]>::
+	Sets the color of the outside of the indicator when typing or idle.
+
+*--ringvercolor* <rrggbb[aa]>::
+	Sets the color of the outside of the indicator when verifying.
+
+*--ringwrongcolor* <rrggbb[aa]>::
+	Sets the color of the outside of the indicator when invalid.
+
+*--separatorcolor* <rrggbb[aa]>::
+	Sets the color of the lines that seperate highlight segments.
+
+*--textcolor* <rrggbb[aa]>::
+	Sets the color of the text inside the indicator.
 
 Authors
 -------
