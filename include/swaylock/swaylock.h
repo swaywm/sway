@@ -19,6 +19,12 @@ enum auth_state {
 	AUTH_STATE_INVALID,
 };
 
+enum line_source {
+	LINE_SOURCE_DEFAULT,
+	LINE_SOURCE_RING,
+	LINE_SOURCE_INSIDE,
+};
+
 struct render_data {
 	list_t *surfaces;
 	// Output specific images

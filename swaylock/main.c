@@ -57,7 +57,7 @@ void sway_terminate(int exit_code) {
 
 char *password;
 int password_size;
-int line_source = 0;
+enum line_source line_source = LINE_SOURCE_DEFAULT;
 
 struct lock_config *init_config() {
 	struct lock_config *config = calloc(1, sizeof(struct lock_config));
@@ -362,15 +362,15 @@ int main(int argc, char **argv) {
 		{"help", no_argument, NULL, 'h'},
 		{"color", required_argument, NULL, 'c'},
 		{"image", required_argument, NULL, 'i'},
-		{"scaling", required_argument, NULL, 's'},
+		{"scaling", required_argument, NULL, 0},
 		{"tiling", no_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 'p'},
 		{"no-unlock-indicator", no_argument, NULL, 'u'},
 		{"daemonize", no_argument, NULL, 'f'},
 		{"font", required_argument, NULL, 0},
-		{"line-uses-ring", no_argument, NULL, 0},
-		{"line-uses-inside", no_argument, NULL, 0},
+		{"line-uses-ring", no_argument, NULL, 'r'},
+		{"line-uses-inside", no_argument, NULL, 's'},
 		{"textcolor", required_argument, NULL, 0},
 		{"insidevercolor", required_argument, NULL, 0},
 		{"insidewrongcolor", required_argument, NULL, 0},
@@ -388,27 +388,16 @@ int main(int argc, char **argv) {
 	const char *usage =
 		"Usage: swaylock [options...]\n"
 		"\n"
-		"  -h, --help                      Show help message and quit.\n"
-		"  -c, --color <rrggbb[aa]>        Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling                   Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling                    Same as --scaling=tile.\n"
-		"  -v, --version                   Show the version number and quit.\n"
-		"  -i, --image [<output>:]<path>   Display the given image.\n"
-		"  -u, --no-unlock-indicator       Disable the unlock indicator.\n"
-		"  -f, --daemonize                 Detach from the controlling terminal.\n"
-		"  --socket <socket>               Use the specified socket.\n"
-		"  --font <font>                   Use the specified font instead of sans-serif.\n"
-		"  --textcolor <rrggbb[aa]>        Sets the color of the text.\n"
-		"  --insidevercolor <rrggbb[aa]>   Sets the color of the verifying indicator circle.\n"
-		"  --insidewrongcolor <rrggbb[aa]> Sets the color of the invalid indicator circle.\n"
-		"  --insidecolor <rrggbb[aa]>      Sets the color of the typing or idle indicator circle.\n"
-		"  --ringvercolor <rrggbb[aa]>     Sets the color of the verifying indicator ring.\n"
-		"  --ringwrongcolor <rrggbb[aa]>   Sets the color of the invalid indicator ring.\n"
-		"  --ringcolor <rrggbb[aa]>        Sets the color of the typing or idle indicator ring.\n"
-		"  --linecolor <rrggbb[aa]>        Sets the color of the line that separates the indicator.\n"
-		"  --separatorcolor <rrggbb[aa]>   Sets the color of the line that separates highlight segments.\n"
-		"  --keyhlcolor <rrggbb[aa]>       Sets the color of keypress highlight segments.\n"
-		"  --bshlcolor <rrggbb[aa]>        Sets the color of keypress highlight segments.\n";
+		"  -h, --help                     Show help message and quit.\n"
+		"  -c, --color <rrggbb[aa]>       Turn the screen into the given color instead of white.\n"
+		"  --scaling                      Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -t, --tiling                   Same as --scaling=tile.\n"
+		"  -v, --version                  Show the version number and quit.\n"
+		"  -i, --image [<output>:]<path>  Display the given image.\n"
+		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
+		"  -f, --daemonize                Detach from the controlling terminal.\n"
+		"  --socket <socket>              Use the specified socket.\n"
+		"  For more information see `man swaylock`\n";
 
 
 	registry = registry_poll();
@@ -416,7 +405,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hc:i:s:tvuf", long_options, &option_index);
+		c = getopt_long(argc, argv, "hc:i:srtvuf", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -454,9 +443,6 @@ int main(int argc, char **argv) {
 			}
 			break;
 		}
-		case 's':
-			scaling_mode_str = optarg;
-			break;
 		case 't':
 			scaling_mode_str = "tile";
 			break;
@@ -480,56 +466,47 @@ int main(int argc, char **argv) {
 				exit(EXIT_FAILURE);
 			}
 			break;
+		case 'r':
+			if (line_source != LINE_SOURCE_DEFAULT) {
+				sway_log(L_ERROR, "line source options conflict");
+				exit(EXIT_FAILURE);
+			}
+			line_source = LINE_SOURCE_RING;
+			break;
+		case 's':
+			if (line_source != LINE_SOURCE_DEFAULT) {
+				sway_log(L_ERROR, "line source options conflict");
+				exit(EXIT_FAILURE);
+			}
+			line_source = LINE_SOURCE_INSIDE;
+			break;
 		case 0:
 			if (strcmp(long_options[option_index].name, "font") == 0) {
 				free(config->font);
 				config->font = strdup(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "line-uses-ring") == 0) {
-				if (line_source != 0) {
-					sway_log(L_ERROR, "Line source options conflict");
-					exit(EXIT_FAILURE);
-				}
-				line_source = 1;
-			}
-			else if (strcmp(long_options[option_index].name, "line-uses-inside") == 0) {
-				if (line_source != 0) {
-					sway_log(L_ERROR, "Line source options conflict");
-					exit(EXIT_FAILURE);
-				}
-				line_source = 2;
-			}
-			else if (strcmp(long_options[option_index].name, "textcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "scaling") == 0) {
+				scaling_mode_str = optarg;
+			} else if (strcmp(long_options[option_index].name, "textcolor") == 0) {
 				config->colors.text = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "insidevercolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "insidevercolor") == 0) {
 				config->colors.validating.inner_ring = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "insidewrongcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "insidewrongcolor") == 0) {
 				config->colors.invalid.inner_ring = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "insidecolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "insidecolor") == 0) {
 				config->colors.normal.inner_ring = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "ringvercolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "ringvercolor") == 0) {
 				config->colors.validating.outer_ring = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "ringwrongcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "ringwrongcolor") == 0) {
 				config->colors.invalid.outer_ring = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "ringcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "ringcolor") == 0) {
 				config->colors.normal.outer_ring = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "linecolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "linecolor") == 0) {
 				config->colors.line = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "separatorcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "separatorcolor") == 0) {
 				config->colors.separator = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "keyhlcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "keyhlcolor") == 0) {
 				config->colors.input_cursor = parse_color(optarg);
-			}
-			else if (strcmp(long_options[option_index].name, "bshlcolor") == 0) {
+			} else if (strcmp(long_options[option_index].name, "bshlcolor") == 0) {
 				config->colors.backspace_cursor = parse_color(optarg);
 			}
 			break;
@@ -783,39 +760,35 @@ void render(struct render_data *render_data, struct lock_config *config) {
 				cairo_stroke(window->cairo);
 			}
 
-			if (line_source == 1) {
+			switch(line_source) {
+			case LINE_SOURCE_RING:
 				switch(render_data->auth_state) {
-				case AUTH_STATE_VALIDATING: {
+				case AUTH_STATE_VALIDATING:
 					cairo_set_source_u32(window->cairo, config->colors.validating.outer_ring);
 					break;
-				}
-				case AUTH_STATE_INVALID: {
+				case AUTH_STATE_INVALID:
 					cairo_set_source_u32(window->cairo, config->colors.invalid.outer_ring);
 					break;
-				}
-				default: {
+				default:
 					cairo_set_source_u32(window->cairo, config->colors.normal.outer_ring);
 				}
-				}
-			}
-			else if (line_source == 2) {
+				break;
+			case LINE_SOURCE_INSIDE:
 				switch(render_data->auth_state) {
-				case AUTH_STATE_VALIDATING: {
+				case AUTH_STATE_VALIDATING:
 					cairo_set_source_u32(window->cairo, config->colors.validating.inner_ring);
 					break;
-				}
-				case AUTH_STATE_INVALID: {
+				case AUTH_STATE_INVALID:
 					cairo_set_source_u32(window->cairo, config->colors.invalid.inner_ring);
 					break;
-				}
-				default: {
+				default:
 					cairo_set_source_u32(window->cairo, config->colors.normal.inner_ring);
 					break;
 				}
-				}
-			}
-			else {
+				break;
+			default:
 				cairo_set_source_u32(window->cairo, config->colors.line);
+				break;
 			}
 			// Draw inner + outer border of the circle
 			cairo_set_line_width(window->cairo, 2.0);
