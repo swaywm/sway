@@ -310,6 +310,9 @@ int main(int argc, char **argv) {
 		init_log(L_ERROR);
 	}
 	wlc_log_set_handler(wlc_log_handler);
+	log_kernel();
+	log_distro();
+	log_env();
 	detect_proprietary();
 
 	input_devices = create_list();
@@ -346,9 +349,6 @@ int main(int argc, char **argv) {
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 	sway_log(L_INFO, "Starting sway version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
 #endif
-	log_kernel();
-	log_distro();
-	log_env();
 
 	init_layout();
 
