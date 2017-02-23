@@ -29,13 +29,10 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 
 ### From Packages
 
-* [Arch Linux](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#arch)
-* [Fedora](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#fedora)
-* [Gentoo](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#gentoo)
-* [NixOS](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#nixos)
-* [openSUSE Tumbleweed](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#opensuse)
+Sway is available in many distributions. Try installing the "sway" package for
+yours. If it's not available, check out [this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#unofficial-packages)
+for information on installation for your distributions.
 
-For other distros, [see this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#unofficial-packages).
 If you're interested in packaging Sway for your distribution, stop by the IRC
 channel or shoot an email to sir@cmpwn.com for advice.
 
