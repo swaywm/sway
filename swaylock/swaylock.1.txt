@@ -28,7 +28,7 @@ Options
 
 *-i, \--image* [<output>:]<path>::
 	Display the given image, optionally only on the given output. This option
-	and -i are mutually exclusive.
+	and -c are mutually exclusive.
 
 *--scaling*::
 	Scaling mode for images: stretch, fill, fit, center, or tile.
