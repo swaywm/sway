@@ -24,10 +24,11 @@ Options
 
 *-c, \--color* <rrggbb[aa]>::
 	Turn the screen into the given color instead of white. If an image is in use,
-	also enables color display.
+	also enables color display. This option and -i are mutually exclusive.
 
 *-i, \--image* [<output>:]<path>::
-	Display the given image, optionally only on the given output.
+	Display the given image, optionally only on the given output. This option
+	and -i are mutually exclusive.
 
 *--scaling*::
 	Scaling mode for images: stretch, fill, fit, center, or tile.
