@@ -41,6 +41,10 @@ ipc __PREFIX__/bin/swaygrab {
     tree enabled
 }
 
+ipc __PREFIX__/bin/swaylock {
+    outputs enabled
+}
+
 # Limits the contexts from which certain commands are permitted
 commands {
     * all
