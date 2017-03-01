@@ -364,8 +364,11 @@ The default colors are:
 	be configured with perfectly aligned adjacent positions for this option to
 	have any effect.
 
-**workspace** <name>::
-	Switches to the specified workspace.
+**workspace** [number] <name>::
+	Switches to the specified workspace. The string "number" is optional. The
+	worspace _name_, if unquoted, may not contain the string "output", as sway
+	will assume that the command is moving a worspace to an output, as described
+	below.
 
 **workspace** <prev|next>::
 	Switches to the next workspace on the current output or on the next output
