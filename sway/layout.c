@@ -349,10 +349,31 @@ static void swap_children(swayc_t *container, int a, int b) {
 	}
 }
 
-void move_container(swayc_t *container, enum movement_direction dir) {
+void move_container(swayc_t *container, enum movement_direction dir, int move_amt) {
 	enum swayc_layouts layout = L_NONE;
 	swayc_t *parent = container->parent;
-	if (container->is_floating || (container->type != C_VIEW && container->type != C_CONTAINER)) {
+	if (container->is_floating) {
+		swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+		switch(dir) {
+		case MOVE_LEFT:
+			container->x = MAX(0, container->x - move_amt);
+			break;
+		case MOVE_RIGHT:
+			container->x = MIN(output->width - container->width, container->x + move_amt);
+			break;
+		case MOVE_UP:
+			container->y = MAX(0, container->y - move_amt);
+			break;
+		case MOVE_DOWN:
+			container->y = MIN(output->height - container->height, container->y + move_amt);
+			break;
+		default:
+			break;
+		}
+		update_geometry(container);
+		return;
+	}
+	if (container->type != C_VIEW && container->type != C_CONTAINER) {
 		return;
 	}
 	if (dir == MOVE_UP || dir == MOVE_DOWN) {

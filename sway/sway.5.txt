@@ -100,11 +100,15 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **layout** toggle split::
 	Cycles between available split layouts.
 
-**move** <left|right|up|down|next|prev|first>::
-	Moves the focused container _left_, _right_, _up_, or _down_. Moving to _prev_
-	or _next_ swaps the container with its sibling in the same container. Move
-	_first_ exchanges the focused element in an auto layout with the first
-	element, i.e. promotes  the focused element to master position.
+**move** <left|right|up|down> <[px]>::
+	Moves the focused container _left_, _right_, _up_, or _down_. If the window
+	is floating it moves it _px_ in that direction, defaulting to 10. Tiled
+	containers are moved the same regardless of the _px_ argument.
+
+**move** <next|prev|first>::
+	Moving to _prev_ or _next_ swaps the container with its sibling in the same
+	container. Move _first_ exchanges the focused element in an auto layout with
+	the first element, i.e. promotes the focused element to master position.
 
 **move** <container|window> to workspace <name>::
 	Moves the focused container to the workspace identified by _name_.

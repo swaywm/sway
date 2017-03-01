@@ -48,7 +48,7 @@ void swap_container(swayc_t *a, swayc_t *b);
 // 2 Containers geometry are swapped, used with `swap_container`
 void swap_geometry(swayc_t *a, swayc_t *b);
 
-void move_container(swayc_t* container, enum movement_direction direction);
+void move_container(swayc_t* container, enum movement_direction direction, int move_amt);
 void move_container_to(swayc_t* container, swayc_t* destination);
 void move_workspace_to(swayc_t* workspace, swayc_t* destination);
 

@@ -9,30 +9,40 @@
 
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;
+	int move_amt = 10;
+
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "move", "Can't be used in config file.");
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	const char* expected_syntax = "Expected 'move <left|right|up|down|next|prev|first>' or "
+	const char* expected_syntax = "Expected 'move <left|right|up|down|next|prev|first> <[px] px>' or "
 		"'move <container|window> to workspace <name>' or "
 		"'move <container|window|workspace> to output <name|direction>' or "
 		"'move position mouse'";
 	swayc_t *view = get_focused_container(&root_container);
 
+	if (argc == 2 || (argc == 3 && strcasecmp(argv[2], "px") == 0 )) {
+		char *inv;
+		move_amt = (int)strtol(argv[1], &inv, 10);
+		if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
+			move_amt = 10;
+		}
+	}
+
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view, MOVE_LEFT);
+		move_container(view, MOVE_LEFT, move_amt);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view, MOVE_RIGHT);
+		move_container(view, MOVE_RIGHT, move_amt);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view, MOVE_UP);
+		move_container(view, MOVE_UP, move_amt);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view, MOVE_DOWN);
+		move_container(view, MOVE_DOWN, move_amt);
 	} else if (strcasecmp(argv[0], "next") == 0) {
-		move_container(view, MOVE_NEXT);
+		move_container(view, MOVE_NEXT, move_amt);
 	} else if (strcasecmp(argv[0], "prev") == 0) {
-		move_container(view, MOVE_PREV);
+		move_container(view, MOVE_PREV, move_amt);
 	} else if (strcasecmp(argv[0], "first") == 0) {
-		move_container(view, MOVE_FIRST);
+		move_container(view, MOVE_FIRST, move_amt);
 	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
 		// "move container ...
 		if ((error = checkarg(argc, "move container/window", EXPECTED_AT_LEAST, 4))) {
