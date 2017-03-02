@@ -30,7 +30,7 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 ### From Packages
 
 Sway is available in many distributions. Try installing the "sway" package for
-yours. If it's not available, check out [this wiki page](https://github.com/SirCmpwn/sway/wiki/Install-from-packages#unofficial-packages)
+yours. If it's not available, check out [this wiki page](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
 for information on installation for your distributions.
 
 If you're interested in packaging Sway for your distribution, stop by the IRC
