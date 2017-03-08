@@ -135,6 +135,7 @@ struct bar_config {
 	int height; // -1 not defined
 	int tray_padding;
 	bool workspace_buttons;
+	bool mouse_scroll_workspaces;
 	bool wrap_scroll;
 	char *separator_symbol;
 	bool strip_workspace_numbers;
