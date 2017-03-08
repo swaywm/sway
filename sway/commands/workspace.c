@@ -31,7 +31,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 					"Unable to allocate workspace output");
 		}
 		wso->workspace = join_args(argv, argc - 2);
-		wso->output = strdup(argv[output_location]);
+		wso->output = strdup(argv[output_location + 1]);
 		int i = -1;
 		if ((i = list_seq_find(config->workspace_outputs, workspace_output_cmp_workspace, wso)) != -1) {
 			struct workspace_output *old = config->workspace_outputs->items[i];
