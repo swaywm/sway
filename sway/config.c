@@ -487,7 +487,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 }
 
 static int qstrcmp(const void* a, const void* b) {
-    return strcmp(*((char**) a), *((char**) b));
+	return strcmp(*((char**) a), *((char**) b));
 }
 
 bool load_main_config(const char *file, bool is_active) {

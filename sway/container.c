@@ -401,9 +401,9 @@ void floating_view_sane_size(swayc_t *view) {
 		config->floating_maximum_height = swayc_active_workspace()->height;
 
 	} else if (config->floating_maximum_height != -1 &&
-                view->desired_height > config->floating_maximum_height) {
-                view->desired_height = config->floating_maximum_height;
-        }
+			view->desired_height > config->floating_maximum_height) {
+		view->desired_height = config->floating_maximum_height;
+	}
 
 	// if 0 do not resize, only enforce max value
 	if (config->floating_maximum_width == 0) {
