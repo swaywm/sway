@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>

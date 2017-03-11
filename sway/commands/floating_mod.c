@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/input_state.h"
 #include "list.h"

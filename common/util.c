@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include "log.h"

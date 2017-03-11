@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include "wayland-swaylock-client-protocol.h"
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
@@ -460,12 +461,16 @@ int main(int argc, char **argv) {
 		case 'u':
 			show_indicator = false;
 			break;
-		case 'f':
-			if (daemon(0, 0) != 0) {
+		case 'f': {
+			pid_t t = fork();
+			if (t == -1) {
 				sway_log(L_ERROR, "daemon call failed");
 				exit(EXIT_FAILURE);
+			} else if (t > 0) {
+				exit(0);
 			}
 			break;
+		}
 		case 'r':
 			if (line_source != LINE_SOURCE_DEFAULT) {
 				sway_log(L_ERROR, "line source options conflict");

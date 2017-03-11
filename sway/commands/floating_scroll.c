@@ -1,4 +1,6 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "log.h"
 #include "stringop.h"

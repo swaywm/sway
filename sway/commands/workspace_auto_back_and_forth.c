@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 
 struct cmd_results *cmd_ws_auto_back_and_forth(int argc, char **argv) {

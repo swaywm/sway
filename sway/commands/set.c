@@ -1,5 +1,7 @@
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "list.h"
@@ -14,7 +16,6 @@ static int compare_set_qsort(const void *_l, const void *_r) {
 
 struct cmd_results *cmd_set(int argc, char **argv) {
 	char *tmp;
-	int size;
 	struct cmd_results *error = NULL;
 	if (!config->reading) return cmd_results_new(CMD_FAILURE, "set", "Can only be used in config file.");
 	if ((error = checkarg(argc, "set", EXPECTED_AT_LEAST, 2))) {
@@ -24,13 +25,14 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 	if (argv[0][0] != '$') {
 		sway_log(L_INFO, "Warning: variable '%s' doesn't start with $", argv[0]);
 
-		size = asprintf(&tmp, "%s%s", "$", argv[0]);
-		if (size == -1) {
+		size_t size = snprintf(NULL, 0, "$%s", argv[0]);
+		tmp = malloc(size + 1);
+		if (!tmp) {
 			return cmd_results_new(CMD_FAILURE, "set", "Not possible to create variable $'%s'", argv[0]);
 		}
+		snprintf(tmp, size, "$%s", argv[0]);
 
-		argv[0] = strdup(tmp);
-		free(tmp);
+		argv[0] = tmp;
 	}
 
 	struct sway_variable *var = NULL;

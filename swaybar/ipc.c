@@ -1,4 +1,6 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
+#include <strings.h>
 #include <json-c/json.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"

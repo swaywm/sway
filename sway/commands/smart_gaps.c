@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 
 struct cmd_results *cmd_smart_gaps(int argc, char **argv) {

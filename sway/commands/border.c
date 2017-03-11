@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/container.h"
 #include "sway/focus.h"

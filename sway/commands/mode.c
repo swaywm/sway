@@ -1,5 +1,7 @@
+#define _XOPEN_SOURCE 500
 #include <stdbool.h>
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/ipc-server.h"
