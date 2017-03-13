@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include <wlc/wlc.h>
 #include "sway/commands.h"
 #include "sway/container.h"

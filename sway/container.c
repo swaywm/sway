@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -17,7 +18,6 @@
 
 #define ASSERT_NONNULL(PTR) \
 	sway_assert (PTR, #PTR "must be non-null")
-
 
 static swayc_t *new_swayc(enum swayc_types type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
@@ -401,9 +401,9 @@ void floating_view_sane_size(swayc_t *view) {
 		config->floating_maximum_height = swayc_active_workspace()->height;
 
 	} else if (config->floating_maximum_height != -1 &&
-                view->desired_height > config->floating_maximum_height) {
-                view->desired_height = config->floating_maximum_height;
-        }
+			view->desired_height > config->floating_maximum_height) {
+		view->desired_height = config->floating_maximum_height;
+	}
 
 	// if 0 do not resize, only enforce max value
 	if (config->floating_maximum_width == 0) {

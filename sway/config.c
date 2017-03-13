@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -12,6 +14,7 @@
 #include <limits.h>
 #include <float.h>
 #include <dirent.h>
+#include <strings.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -487,7 +490,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 }
 
 static int qstrcmp(const void* a, const void* b) {
-    return strcmp(*((char**) a), *((char**) b));
+	return strcmp(*((char**) a), *((char**) b));
 }
 
 bool load_main_config(const char *file, bool is_active) {
@@ -528,11 +531,13 @@ bool load_main_config(const char *file, bool is_active) {
 		list_t *secconfigs = create_list();
 		char *base = SYSCONFDIR "/sway/security.d/";
 		struct dirent *ent = readdir(dir);
+		struct stat s;
 		while (ent != NULL) {
-			if (ent->d_type == DT_REG) {
-				char *_path = malloc(strlen(ent->d_name) + strlen(base) + 1);
-				strcpy(_path, base);
-				strcat(_path, ent->d_name);
+			char *_path = malloc(strlen(ent->d_name) + strlen(base) + 1);
+			strcpy(_path, base);
+			strcat(_path, ent->d_name);
+			lstat(_path, &s);
+			if (S_ISREG(s.st_mode)) {
 				list_add(secconfigs, _path);
 			}
 			ent = readdir(dir);
@@ -542,7 +547,6 @@ bool load_main_config(const char *file, bool is_active) {
 		list_qsort(secconfigs, qstrcmp);
 		for (int i = 0; i < secconfigs->length; ++i) {
 			char *_path = secconfigs->items[i];
-			struct stat s;
 			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 || (s.st_mode & 0777) != 0644) {
 				sway_log(L_ERROR, "Refusing to load %s - it must be owned by root and mode 644", _path);
 				success = false;

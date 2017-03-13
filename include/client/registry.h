@@ -31,17 +31,17 @@ enum mask {
 };
 
 struct output_state {
-        struct wl_output *output;
-        uint32_t flags;
-        uint32_t width, height;
-		uint32_t scale;
+	struct wl_output *output;
+	uint32_t flags;
+	uint32_t width, height;
+	uint32_t scale;
 };
 
 struct xkb {
-        struct xkb_state *state;
-        struct xkb_context *context;
-        struct xkb_keymap *keymap;
-        xkb_mod_mask_t masks[MASK_LAST];
+	struct xkb_state *state;
+	struct xkb_context *context;
+	struct xkb_keymap *keymap;
+	xkb_mod_mask_t masks[MASK_LAST];
 };
 
 struct input {
@@ -56,17 +56,17 @@ struct input {
 };
 
 struct registry {
-        struct wl_compositor *compositor;
-        struct wl_display *display;
-        struct wl_pointer *pointer;
-        struct wl_keyboard *keyboard;
-        struct wl_seat *seat;
-        struct wl_shell *shell;
-        struct wl_shm *shm;
-        struct desktop_shell *desktop_shell;
-        struct lock *swaylock;
-        struct input *input;
-        list_t *outputs;
+	struct wl_compositor *compositor;
+	struct wl_display *display;
+	struct wl_pointer *pointer;
+	struct wl_keyboard *keyboard;
+	struct wl_seat *seat;
+	struct wl_shell *shell;
+	struct wl_shm *shm;
+	struct desktop_shell *desktop_shell;
+	struct lock *swaylock;
+	struct input *input;
+	list_t *outputs;
 };
 
 struct registry *registry_poll(void);

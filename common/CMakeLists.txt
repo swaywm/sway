@@ -13,10 +13,3 @@ add_library(sway-common STATIC
 	)
 
 target_link_libraries(sway-common m)
-
-if(Backtrace_FOUND)
-	set_target_properties(sway-common
-		PROPERTIES
-		COMPILE_FLAGS "-include ${Backtrace_HEADER}"
-		)
-endif()

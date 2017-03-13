@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <wlc/wlc.h>

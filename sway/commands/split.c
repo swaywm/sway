@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include <wlc/wlc-render.h>
 #include "sway/border.h"
 #include "sway/commands.h"

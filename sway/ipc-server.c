@@ -13,6 +13,13 @@
 #include <json-c/json.h>
 #include <list.h>
 #include <libinput.h>
+#ifdef __linux__
+struct ucred {
+	pid_t pid;
+	uid_t uid;
+	gid_t gid;
+};
+#endif
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/security.h"

@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
 #include "sway/border.h"
 #include "sway/commands.h"

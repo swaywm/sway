@@ -7,9 +7,6 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-add_definitions(
-	-D_GNU_SOURCE
-	)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter")
@@ -69,14 +66,6 @@ find_package(GdkPixbuf)
 find_package(PAM)
 
 find_package(LibInput REQUIRED)
-
-find_package(Backtrace)
-if(Backtrace_FOUND)
-	include_directories("${Backtrace_INCLUDE_DIRS}")
-	add_definitions(-DSWAY_Backtrace_FOUND=1)
-	set(LINK_LIBRARIES, "${LINK_LIBRARIES} ${Backtrace_LIBRARIES}")
-	set(SWAY_Backtrace_HEADER "${Backtrace_HEADER}")
-endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 	find_package(EpollShim REQUIRED)

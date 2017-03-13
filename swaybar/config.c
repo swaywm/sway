@@ -1,6 +1,6 @@
+#define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <string.h>
-
 #include "wayland-desktop-shell-client-protocol.h"
 #include "log.h"
 #include "swaybar/config.h"

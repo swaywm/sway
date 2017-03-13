@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <wayland-client.h>
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>

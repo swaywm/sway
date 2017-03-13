@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/types.h>
 #include <sys/timerfd.h>
 #include "wayland-desktop-shell-client-protocol.h"
 #include "wayland-swaylock-client-protocol.h"

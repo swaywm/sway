@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <ctype.h>
 #include <float.h>
 #include <limits.h>

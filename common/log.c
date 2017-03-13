@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 1
 #include <errno.h>
 #include <libgen.h>
 #include <signal.h>
