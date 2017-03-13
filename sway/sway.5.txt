@@ -86,7 +86,7 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	_splitv_, _toggle split_, _stacking_, _tabbed_.
 
 **layout** auto <mode>::
-	Sets layout to one of the auto modes, i.e. one of _left_, right_, _top_,
+	Sets layout to one of the auto modes, i.e. one of _left_, _right_, _top_,
 	or _bottom_.
 
 **layout** auto <next|prev>::
