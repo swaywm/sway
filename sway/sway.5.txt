@@ -227,6 +227,18 @@ The default colors are:
 	Enables, disables or toggles debug logging. The toggle argument cannot be used
 	in the configuration file.
 
+**default_border** <normal|none|pixel> [<n>]::
+	Set default border style for new windows. This command was previously called
+	**new_window**. While **new_window** still works, it is considered deprecated
+	and support for it will be removed in the future.
+
+**default_floating_border** <normal|none|pixel> [<n>]::
+	Set default border style for new floating windows. This only applies to
+	windows that are spawned in floating mode, not windows that become floating
+	after the fact. This command was previously called **new_float**. While
+	**new_float** still works, it is considered deprecated and support for it will
+	be removed in the future.
+
 **exec** <shell command>::
 	Executes _shell command_ with sh.
 
@@ -312,14 +324,6 @@ The default colors are:
 **mouse_warping** <output|none>::
 	When _output_: place mouse at center of newly focused window when changing
 	output. When _none_: don't move mouse.
-
-**new_window** <normal|none|pixel> [<n>]::
-	Set default border style for new windows.
-
-**new_float** <normal|none|pixel> [<n>]::
-	Set default border style for new floating windows. This only applies to
-	windows that are spawned in floating mode, not windows that become floating
-	after the fact.
 
 **output** <name> <resolution|res> <WIDTHxHEIGHT>::
 	Configures the specified output to use the given resolution.

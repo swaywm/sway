@@ -165,6 +165,8 @@ static struct cmd_handler handlers[] = {
 	{ "client.urgent", cmd_client_urgent },
 	{ "commands", cmd_commands },
 	{ "debuglog", cmd_debuglog },
+	{ "default_border", cmd_default_border },
+	{ "default_floating_border", cmd_default_floating_border },
 	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },

@@ -12,7 +12,7 @@ enum cmd_status {
 	CMD_SUCCESS, 		/**< The command was successful */
 	CMD_FAILURE,		/**< The command resulted in an error */
 	CMD_INVALID, 		/**< Unknown command or parser error */
-	CMD_DEFER,			/**< Command execution deferred */
+	CMD_DEFER,		/**< Command execution deferred */
 	// Config Blocks
 	CMD_BLOCK_END,
 	CMD_BLOCK_MODE,
@@ -102,6 +102,8 @@ sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
 sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
+sway_cmd cmd_default_border;
+sway_cmd cmd_default_floating_border;
 sway_cmd cmd_exec;
 sway_cmd cmd_exec_always;
 sway_cmd cmd_exit;
