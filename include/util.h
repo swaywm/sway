@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <unistd.h>
-#include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon.h>
 
 /**
