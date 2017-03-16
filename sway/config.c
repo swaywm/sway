@@ -543,8 +543,8 @@ bool load_main_config(const char *file, bool is_active) {
 		for (int i = 0; i < secconfigs->length; ++i) {
 			char *_path = secconfigs->items[i];
 			struct stat s;
-			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 || (s.st_mode & 0777) != 0644) {
-				sway_log(L_ERROR, "Refusing to load %s - it must be owned by root and mode 644", _path);
+			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 || (((s.st_mode & 0777) != 0644) && (s.st_mode & 0777) != 0444)) {
+				sway_log(L_ERROR, "Refusing to load %s - it must be owned by root and mode 644 or 444", _path);
 				success = false;
 			} else {
 				success = success && load_config(_path, config);
