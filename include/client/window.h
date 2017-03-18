@@ -24,7 +24,7 @@ struct cursor {
 	struct wl_surface *surface;
 	struct wl_cursor_theme *cursor_theme;
 	struct wl_cursor *cursor;
-	struct wl_poitner *pointer;
+	struct wl_pointer *pointer;
 };
 
 enum scroll_direction {
