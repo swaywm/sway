@@ -193,7 +193,7 @@ static void seat_handle_capabilities(void *data, struct wl_seat *seat,
 	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !reg->keyboard) {
 		reg->keyboard = wl_seat_get_keyboard(reg->seat);
 		wl_keyboard_add_listener(reg->keyboard, &keyboard_listener, reg);
-	} else if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && reg->keyboard) {
+	} else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && reg->keyboard) {
 		wl_keyboard_destroy(reg->keyboard);
 		reg->keyboard = NULL;
 	}
