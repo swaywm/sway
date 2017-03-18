@@ -310,7 +310,7 @@ static void positioner_place_window(wlc_handle handle) {
 		/* default */
 	} else {
 		geo.origin.x -= geo.size.w / 2;
-	} 
+	}
 
 	sway_log(L_DEBUG, "xdg-positioner: placing window %" PRIuPTR " "
 		"sized (%u,%u) offset by (%d,%d), "
@@ -605,10 +605,13 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 			sway_log(L_DEBUG, "setting view %" PRIuPTR " %s, fullscreen %d", view, c->name, toggle);
 			arrange_windows(c->parent, -1, -1);
 			// Set it as focused window for that workspace if its going fullscreen
+			swayc_t *ws = swayc_parent_by_type(c, C_WORKSPACE);
 			if (toggle) {
-				swayc_t *ws = swayc_parent_by_type(c, C_WORKSPACE);
 				// Set ws focus to c
 				set_focused_container_for(ws, c);
+				ws->fullscreen = c;
+			} else {
+				ws->fullscreen = NULL;
 			}
 		}
 		break;
