@@ -20,13 +20,13 @@ struct cmd_results *cmd_workspace_layout(int argc, char **argv) {
 			if ((error = checkarg(argc, "workspace_layout auto", EXPECTED_EQUAL_TO, 2))) {
 				return error;
 			}
-			if (strcasecmp(argv[0], "left") == 0) {
+			if (strcasecmp(argv[1], "left") == 0) {
 				config->default_layout = L_AUTO_LEFT;
-			} else if (strcasecmp(argv[0], "right") == 0) {
+			} else if (strcasecmp(argv[1], "right") == 0) {
 				config->default_layout = L_AUTO_RIGHT;
-			} else if (strcasecmp(argv[0], "top") == 0) {
+			} else if (strcasecmp(argv[1], "top") == 0) {
 				config->default_layout = L_AUTO_TOP;
-			} else if (strcasecmp(argv[0], "bottom") == 0) {
+			} else if (strcasecmp(argv[1], "bottom") == 0) {
 				config->default_layout = L_AUTO_BOTTOM;
 			} else {
 				return cmd_results_new(CMD_INVALID, "workspace_layout auto", "Expected 'workspace_layout auto <left|right|top|bottom>'");
