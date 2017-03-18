@@ -42,11 +42,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 		sway_log(L_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
 		list_add(config->workspace_outputs, wso);
-		if (!config->reading) {
-			// TODO: Move workspace to output. (don't do so when reloading)
-		}
-	}
-	else {
+	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
 		}
