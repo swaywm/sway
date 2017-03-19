@@ -218,7 +218,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
 	workspace->prev_layout = L_NONE;
-	workspace->layout = L_HORIZ;
+	workspace->layout = default_layout(output);
 	workspace->workspace_layout = default_layout(output);
 
 	workspace->x = output->x;
