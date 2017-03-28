@@ -66,6 +66,9 @@ Run these commands:
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
     make
     sudo make install
+
+On systems with logind, you need to set a few caps on the binary:
+
     sudo setcap cap_sys_ptrace=eip /usr/local/bin/sway
     sudo setcap cap_sys_tty_config=eip /usr/local/bin/sway
 
