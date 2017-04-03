@@ -420,17 +420,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 		json_object *inputs = json_object_new_array();
 		if (input_devices) {
-			for(int i=0; i<input_devices->length; i++) {
+			for(int i = 0; i<input_devices->length; i++) {
 				struct libinput_device *device = input_devices->items[i];
-				char* identifier = libinput_dev_unique_id(device);
-				json_object *device_object = json_object_new_object();
-				if (!identifier) {
-					json_object_object_add(device_object, "identifier", NULL);
-				} else {
-					json_object_object_add(device_object, "identifier", json_object_new_string(identifier));
-				}
-				json_object_array_add(inputs, device_object);
-				free(identifier);
+				json_object_array_add(inputs, ipc_json_describe_input(device));
 			}
 		}
 		const char *json_string = json_object_to_json_string(inputs);
