@@ -12,6 +12,7 @@
 
 enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_CLASS,
+	CRIT_CON_MARK,
 	CRIT_ID,
 	CRIT_INSTANCE,
 	CRIT_TITLE,
@@ -25,6 +26,7 @@ enum criteria_type { // *must* keep in sync with criteria_strings[]
 // this *must* match the ordering in criteria_type enum
 static const char * const criteria_strings[] = {
 	"class",
+	"con_mark",
 	"id",
 	"instance",
 	"title",
@@ -243,6 +245,10 @@ ect_cleanup:
 	return error;
 }
 
+int regex_cmp(const char *item, const regex_t *regex) {
+    return regexec(regex, item, 0, NULL, 0);
+}
+
 // test a single view if it matches list of criteria tokens (all of them).
 static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	if (cont->type != C_VIEW) {
@@ -262,6 +268,11 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				}
 			} else if (crit->regex && regexec(crit->regex, cont->class, 0, NULL, 0) == 0) {
 				matches++;
+			}
+			break;
+		case CRIT_CON_MARK:
+			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
+				++matches;
 			}
 			break;
 		case CRIT_ID:

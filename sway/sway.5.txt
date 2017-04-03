@@ -316,6 +316,14 @@ The default colors are:
 	If smart_gaps are _on_ then gaps will only be enabled if a workspace has more
 	than one child container.
 
+**mark** <--add|--replace> <--toggle> <identifier>::
+	Marks are arbitrary labels that can be used to identify certain windows and
+	then jump to them at a later time. By default, the **mark** command sets
+	_identifier_ as the only mark on a window. By specifying _--add_, mark will
+	add _identifier_ to the list of current marks. If _--toggle_ is specified mark
+	will remove _identifier_ if it is already a label. Marks may be found by using
+	a criteria. See the **Criteria** section below.
+
 **mode** <mode_name>::
 	Switches to the given mode_name. The default mode is simply _default_. To
 	create a new mode in config append _{_ to this command, the following lines
@@ -368,6 +376,15 @@ The default colors are:
 	be configured with perfectly aligned adjacent positions for this option to
 	have any effect.
 
+**show_marks** <on|off>::
+	If **show_marks** is on then marks will be showed in the window decoration.
+	However, any mark that starts with an underscore will not be drawn even if the
+	option is on. The default option is _on_.
+
+**unmark** <identifier>::
+	**Unmark** will remove _identifier_ from the list of current marks on a window. If
+	no _identifier_ is specified then **unmark** will remove all marks.
+
 **workspace** [number] <name>::
 	Switches to the specified workspace. The string "number" is optional. The
 	worspace _name_, if unquoted, may not contain the string "output", as sway
@@ -415,6 +432,9 @@ Currently supported attributes:
 	Compare value against the window class. Can be a regular expression. If value
 	is _focused_ then the window class must be the same as that of the currently
 	focused window.
+
+**con_mark**::
+	Compare against the window marks. Can be a regular expression.
 
 **id**::
 	Compare value against the app id. Can be a regular expression.
