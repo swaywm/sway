@@ -48,8 +48,8 @@ providing such a great piece of software, so good that your users would rather
 write an entirely new window manager from scratch that behaved _exactly_ like i3
 rather than switch to something else.
 
-You may run sway from an ongoing x11 session to run it within x. Otherwise, you
-can run sway on a tty and it will use your outputs directly.
+Launch sway directly from a tty or via your favorite Wayland-compatible login
+manager.
 
 *Important note for nvidia users*: The proprietary nvidia driver does _not_ have
 support for Wayland as of 2016-06-10. Use nouveau.
