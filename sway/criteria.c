@@ -245,7 +245,7 @@ ect_cleanup:
 	return error;
 }
 
-int regex_cmp(const char *item, const regex_t *regex) {
+static int regex_cmp(const char *item, const regex_t *regex) {
     return regexec(regex, item, 0, NULL, 0);
 }
 
@@ -272,7 +272,10 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 			break;
 		case CRIT_CON_MARK:
 			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
-				++matches;
+				// Make sure it isn't matching the NUL string
+				if ((strcmp(crit->raw, "") == 0) == (list_seq_find(cont->marks, (int (*)(const void *, const void *))strcmp, "") != -1)) {
+					++matches;
+				}
 			}
 			break;
 		case CRIT_ID:
@@ -285,7 +288,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 		case CRIT_INSTANCE:
 			if (!cont->instance) {
 				// ignore
-			} else if (strcmp(crit->raw, "focused") == 0) {
+			} else if (crit_is_focused(crit->raw)) {
 				swayc_t *focused = get_focused_view(&root_container);
 				if (focused->instance && strcmp(cont->instance, focused->instance) == 0) {
 					matches++;
@@ -372,4 +375,22 @@ list_t *criteria_for(swayc_t *cont) {
 		}
 	}
 	return matches;
+}
+
+struct list_tokens {
+	list_t *list;
+	list_t *tokens;
+};
+
+static void container_match_add(swayc_t *container, struct list_tokens *list_tokens) {
+	if (criteria_test(container, list_tokens->tokens)) {
+		list_add(list_tokens->list, container);
+	}
+}
+list_t *container_for(list_t *tokens) {
+	struct list_tokens list_tokens = (struct list_tokens){create_list(), tokens};
+
+	container_map(&root_container, (void (*)(swayc_t *, void *))container_match_add, &list_tokens);
+
+	return list_tokens.list;
 }

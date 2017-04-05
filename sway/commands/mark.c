@@ -8,11 +8,11 @@
 struct cmd_results *cmd_mark(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "mark", "Can't be used in config file.");
-	if ((error = checkarg(argc, "floating", EXPECTED_AT_LEAST, 1))) {
+	if ((error = checkarg(argc, "mark", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 
-	swayc_t *view = get_focused_container(&root_container);
+	swayc_t *view = current_container;
 	bool add = false;
 	bool toggle = false;
 

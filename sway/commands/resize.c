@@ -19,7 +19,7 @@ enum resize_dim_types {
 };
 
 static bool set_size_floating(int new_dimension, bool use_width) {
-	swayc_t *view = get_focused_float(swayc_active_workspace());
+	swayc_t *view = current_container;
 	if (view) {
 		if (use_width) {
 			int current_width = view->width;
@@ -50,7 +50,7 @@ static bool set_size_floating(int new_dimension, bool use_width) {
 }
 
 static bool resize_floating(int amount, bool use_width) {
-	swayc_t *view = get_focused_float(swayc_active_workspace());
+	swayc_t *view = current_container;
 
 	if (view) {
 		if (use_width) {
@@ -64,7 +64,7 @@ static bool resize_floating(int amount, bool use_width) {
 }
 
 static bool resize_tiled(int amount, bool use_width) {
-	swayc_t *container = get_focused_view(swayc_active_workspace());
+	swayc_t *container = current_container;
 	swayc_t *parent = container->parent;
 	int idx_focused = 0;
 	bool use_major = false;
@@ -199,7 +199,7 @@ static bool resize_tiled(int amount, bool use_width) {
 
 static bool set_size_tiled(int amount, bool use_width) {
 	int desired;
-	swayc_t *focused = get_focused_view(swayc_active_workspace());
+	swayc_t *focused = current_container;
 
 	if (use_width) {
 		desired = amount - focused->width;
@@ -211,7 +211,7 @@ static bool set_size_tiled(int amount, bool use_width) {
 }
 
 static bool set_size(int dimension, bool use_width) {
-	swayc_t *focused = get_focused_view_include_floating(swayc_active_workspace());
+	swayc_t *focused = current_container;
 
 	if (focused) {
 		if (focused->is_floating) {
@@ -225,7 +225,7 @@ static bool set_size(int dimension, bool use_width) {
 }
 
 static bool resize(int dimension, bool use_width, enum resize_dim_types dim_type) {
-	swayc_t *focused = get_focused_view_include_floating(swayc_active_workspace());
+	swayc_t *focused = current_container;
 
 	// translate "10 ppt" (10%) to appropriate # of pixels in case we need it
 	float ppt_dim = (float)dimension / 100;

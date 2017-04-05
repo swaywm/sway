@@ -5,6 +5,9 @@
 #include <wlc/wlc.h>
 #include "config.h"
 
+// Container that a called command should act upon. Only valid in command functions.
+extern swayc_t *current_container;
+
 /**
  * Indicates the result of a command's execution.
  */

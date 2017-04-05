@@ -43,6 +43,8 @@ struct cmd_handler {
 
 int sp_index = 0;
 
+swayc_t *current_container = NULL;
+
 // Returns error object, or NULL if check succeeds.
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
 	struct cmd_results *error = NULL;
@@ -371,42 +373,37 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 	char *head = exec;
 	char *cmdlist;
 	char *cmd;
-	char *criteria __attribute__((unused));
+	list_t *containers = NULL;
 
 	head = exec;
 	do {
 		// Extract criteria (valid for this command list only).
-		criteria = NULL;
 		if (*head == '[') {
 			++head;
-			criteria = argsep(&head, "]");
+			char *criteria_string = argsep(&head, "]");
 			if (head) {
 				++head;
-				// TODO handle criteria
+				list_t *tokens = create_list();
+				char *error;
+
+				if ((error = extract_crit_tokens(tokens, criteria_string))) {
+					results = cmd_results_new(CMD_INVALID, criteria_string,
+						"Can't parse criteria string: %s", error);
+					free(error);
+					free(tokens);
+					goto cleanup;
+				}
+				containers = container_for(tokens);
+
+				free(tokens);
 			} else {
 				if (!results) {
-					results = cmd_results_new(CMD_INVALID, criteria, "Unmatched [");
+					results = cmd_results_new(CMD_INVALID, criteria_string, "Unmatched [");
 				}
 				goto cleanup;
 			}
 			// Skip leading whitespace
 			head += strspn(head, whitespace);
-
-			// TODO: it will yield unexpected results to execute commands
-			// (on any view) that where meant for certain views only.
-			if (!results) {
-				int len = strlen(criteria) + strlen(head) + 4;
-				char *tmp = malloc(len);
-				if (tmp) {
-					snprintf(tmp, len, "[%s] %s", criteria, head);
-				} else {
-					sway_log(L_DEBUG, "Unable to allocate criteria string for cmd result");
-				}
-				results = cmd_results_new(CMD_INVALID, tmp,
-					"Can't handle criteria string: Refusing to execute command");
-				free(tmp);
-			}
-			goto cleanup;
 		}
 		// Split command list
 		cmdlist = argsep(&head, ";");
@@ -450,21 +447,43 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-			struct cmd_results *res = handler->handle(argc-1, argv+1);
-			if (res->status != CMD_SUCCESS) {
-				free_argv(argc, argv);
-				if (results) {
-					free_cmd_results(results);
+			int i = 0;
+			do {
+				if (!containers) {
+					current_container = get_focused_container(&root_container);
+				} else if (containers->length == 0) {
+					break;
+				} else {
+					current_container = (swayc_t *)containers->items[i];
 				}
-				results = res;
-				goto cleanup;
-			}
+				sway_log(L_INFO, "Running on container '%s'", current_container->name);
+
+				struct cmd_results *res = handler->handle(argc-1, argv+1);
+				if (res->status != CMD_SUCCESS) {
+					free_argv(argc, argv);
+					if (results) {
+						free_cmd_results(results);
+					}
+					results = res;
+					goto cleanup;
+				}
+				free_cmd_results(res);
+				++i;
+			} while(containers && i < containers->length);
+
 			free_argv(argc, argv);
-			free_cmd_results(res);
 		} while(cmdlist);
+
+		if (containers) {
+			list_free(containers);
+			containers = NULL;
+		}
 	} while(head);
 	cleanup:
 	free(exec);
+	if (containers) {
+		free(containers);
+	}
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}

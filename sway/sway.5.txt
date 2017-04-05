@@ -316,7 +316,7 @@ The default colors are:
 	If smart_gaps are _on_ then gaps will only be enabled if a workspace has more
 	than one child container.
 
-**mark** <--add|--replace> <--toggle> <identifier>::
+**mark** \<--add|--replace> \<--toggle> <identifier>::
 	Marks are arbitrary labels that can be used to identify certain windows and
 	then jump to them at a later time. By default, the **mark** command sets
 	_identifier_ as the only mark on a window. By specifying _--add_, mark will
@@ -425,6 +425,20 @@ A criteria is a string in the form of e.g.:
 The string contains one or more (space separated) attribute/value pairs and they
 are used by some commands filter which views to execute actions on. All attributes
 must match for the criteria string to match.
+
+Criteria may be used with either the **for_window** or **assign** commands to
+specify operations to perform on new views. A criteria may also be used to
+perform specific commands (ones that normally act upon one window) on all views
+that match that criteria. For example:
+
+Focus on a window with the mark "IRC":
+	[con_mark="IRC"] focus
+
+Kill all windows with the title "Emacs":
+	[class="Emacs"] kill
+
+Mark all Firefox windows with "Browser":
+	[class="Firefox"] mark Browser
 
 Currently supported attributes:
 

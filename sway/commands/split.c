@@ -17,7 +17,7 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 	if ((error = checkarg(argc, name, EXPECTED_EQUAL_TO, 0))) {
 		return error;
 	}
-	swayc_t *focused = get_focused_container(&root_container);
+	swayc_t *focused = current_container;
 
 	// Case of floating window, don't split
 	if (focused->is_floating) {
@@ -66,7 +66,7 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
 		_do_split(argc - 1, argv + 1, L_HORIZ);
 	} else if (strcasecmp(argv[0], "t") == 0 || strcasecmp(argv[0], "toggle") == 0) {
-		swayc_t *focused = get_focused_container(&root_container);
+		swayc_t *focused = current_container;
 		if (focused->parent->layout == L_VERT) {
 			_do_split(argc - 1, argv + 1, L_HORIZ);
 		} else {
@@ -89,7 +89,7 @@ struct cmd_results *cmd_splith(int argc, char **argv) {
 }
 
 struct cmd_results *cmd_splitt(int argc, char **argv) {
-	swayc_t *focused = get_focused_container(&root_container);
+	swayc_t *focused = current_container;
 	if (focused->parent->layout == L_VERT) {
 		return _do_split(argc, argv, L_HORIZ);
 	} else {

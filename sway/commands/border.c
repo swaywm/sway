@@ -20,7 +20,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 			"Expected 'border <normal|pixel|none|toggle> [<n>]");
 	}
 
-	swayc_t *view = get_focused_view(&root_container);
+	swayc_t *view = current_container;
 	enum swayc_border_types border = view->border_type;
 	int thickness = view->border_thickness;
 
