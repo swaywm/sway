@@ -23,17 +23,16 @@ enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_LAST
 };
 
-// this *must* match the ordering in criteria_type enum
-static const char * const criteria_strings[] = {
-	"class",
-	"con_mark",
-	"id",
-	"instance",
-	"title",
-	"urgent", // either "latest" or "oldest" ...
-	"window_role",
-	"window_type",
-	"workspace"
+static const char * const criteria_strings[CRIT_LAST] = {
+	[CRIT_CLASS] = "class",
+	[CRIT_CON_MARK] = "con_mark",
+	[CRIT_ID] = "id",
+	[CRIT_INSTANCE] = "instance",
+	[CRIT_TITLE] = "title",
+	[CRIT_URGENT] = "urgent", // either "latest" or "oldest" ...
+	[CRIT_WINDOW_ROLE] = "window_role",
+	[CRIT_WINDOW_TYPE] = "window_type",
+	[CRIT_WORKSPACE] = "workspace"
 };
 
 /**
@@ -240,7 +239,7 @@ ect_cleanup:
 }
 
 static int regex_cmp(const char *item, const pcre *regex) {
-    return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
 }
 
 // test a single view if it matches list of criteria tokens (all of them).
