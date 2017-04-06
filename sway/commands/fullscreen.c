@@ -14,7 +14,7 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	if ((error = checkarg(argc, "fullscreen", EXPECTED_AT_LEAST, 0))) {
 		return error;
 	}
-	swayc_t *container = get_focused_view(&root_container);
+	swayc_t *container = current_container;
 	if(container->type != C_VIEW){
 		return cmd_results_new(CMD_INVALID, "fullscreen", "Only views can fullscreen");
 	}

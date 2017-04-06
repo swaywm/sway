@@ -5,7 +5,7 @@
 #include "stringop.h"
 
 struct cmd_results *cmd_unmark(int argc, char **argv) {
-	swayc_t *view = get_focused_container(&root_container);
+	swayc_t *view = current_container;
 
 	if (view->marks) {
 		if (argc) {

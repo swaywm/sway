@@ -13,7 +13,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	swayc_t *view = get_focused_container(&root_container);
+	swayc_t *view = current_container;
 	bool wants_floating;
 	if (strcasecmp(argv[0], "enable") == 0) {
 		wants_floating = true;
