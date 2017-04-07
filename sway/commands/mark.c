@@ -5,6 +5,15 @@
 #include "list.h"
 #include "stringop.h"
 
+static void find_marks_callback(swayc_t *container, void *_mark) {
+	char *mark = (char *)_mark;
+
+	int index;
+	if (container->marks && ((index = list_seq_find(container->marks, (int (*)(const void *, const void *))strcmp, mark)) != -1)) {
+		list_del(container->marks, index);
+	}
+}
+
 struct cmd_results *cmd_mark(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (config->reading) return cmd_results_new(CMD_FAILURE, "mark", "Can't be used in config file.");
@@ -30,6 +39,10 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 
 	if (argc) {
 		char *mark = join_args(argv, argc);
+
+		// Remove all existing marks of this type
+		container_map(&root_container, find_marks_callback, mark);
+
 		if (view->marks) {
 			if (add) {
 				int index;

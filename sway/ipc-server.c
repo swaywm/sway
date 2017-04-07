@@ -63,6 +63,7 @@ void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
+static void ipc_get_marks_callback(swayc_t *container, void *data);
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -464,6 +465,19 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_MARKS:
+	{
+		if (!(client->security_policy & IPC_FEATURE_GET_MARKS)) {
+			goto exit_denied;
+		}
+		json_object *marks = json_object_new_array();
+		container_map(&root_container, ipc_get_marks_callback, marks);
+		const char *json_string = json_object_to_json_string(marks);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(marks);
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_VERSION:
 	{
 		json_object *version = ipc_json_get_version();
@@ -614,6 +628,16 @@ void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
 void ipc_get_outputs_callback(swayc_t *container, void *data) {
 	if (container->type == C_OUTPUT) {
 		json_object_array_add((json_object *)data, ipc_json_describe_container(container));
+	}
+}
+
+static void ipc_get_marks_callback(swayc_t *container, void *data) {
+	json_object *object = (json_object *)data;
+	if (container->marks) {
+		for (int i = 0; i < container->marks->length; ++i) {
+			char *mark = (char *)container->marks->items[i];
+			json_object_array_add(object, json_object_new_string(mark));
+		}
 	}
 }
 
