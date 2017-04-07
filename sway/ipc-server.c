@@ -194,15 +194,12 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 
 	if (mask & WLC_EVENT_ERROR) {
 		sway_log(L_ERROR, "IPC Client socket error, removing client");
-		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
 	if (mask & WLC_EVENT_HANGUP) {
 		sway_log(L_DEBUG, "Client %d hung up", client->fd);
-		close(client->fd);
-		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
 	}
