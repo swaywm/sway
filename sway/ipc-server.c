@@ -161,7 +161,8 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	}
 
 	int flags;
-	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
+	if ((flags = fcntl(client_fd, F_GETFD)) == -1
+			|| fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
 		sway_log_errno(L_ERROR, "Unable to set CLOEXEC on IPC client socket");
 		close(client_fd);
 		return 0;
@@ -199,6 +200,8 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	}
 
 	if (mask & WLC_EVENT_HANGUP) {
+		sway_log(L_DEBUG, "Client %d hung up", client->fd);
+		close(client->fd);
 		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
