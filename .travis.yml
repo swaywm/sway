@@ -18,6 +18,7 @@ arch:
     - cairo
     - gdk-pixbuf2
     - wlc-git
+    - libcap
   script:
     - "cmake ."
     - "make"
