@@ -2,7 +2,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
+#include <libinput.h>
 #include "sway/container.h"
+#include "sway/input.h"
 #include "sway/ipc-json.h"
 #include "util.h"
 
@@ -240,6 +242,65 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 	}
 
 	return object;
+}
+
+json_object *ipc_json_describe_input(struct libinput_device *device) {
+	char* identifier = libinput_dev_unique_id(device);
+	int vendor = libinput_device_get_id_vendor(device);
+	int product = libinput_device_get_id_product(device);
+	const char *name = libinput_device_get_name(device);
+	double width = -1, height = -1;
+	int has_size = libinput_device_get_size(device, &width, &height);
+
+	json_object *device_object = json_object_new_object();
+	json_object_object_add(device_object,"identifier",
+			identifier ? json_object_new_string(identifier) : NULL);
+	json_object_object_add(device_object,
+			"vendor", json_object_new_int(vendor));
+	json_object_object_add(device_object,
+			"product", json_object_new_int(product));
+	json_object_object_add(device_object,
+			"name", json_object_new_string(name));
+	if (has_size == 0) {
+		json_object *size_object = json_object_new_object();
+		json_object_object_add(size_object,
+				"width", json_object_new_double(width));
+		json_object_object_add(size_object,
+				"height", json_object_new_double(height));
+	} else {
+		json_object_object_add(device_object, "size", NULL);
+	}
+
+	struct {
+		enum libinput_device_capability cap;
+		const char *name;
+		// If anyone feels like implementing device-specific IPC output,
+		// be my guest
+		json_object *(*describe)(struct libinput_device *);
+	} caps[] = {
+		{ LIBINPUT_DEVICE_CAP_KEYBOARD, "keyboard", NULL },
+		{ LIBINPUT_DEVICE_CAP_POINTER, "pointer", NULL },
+		{ LIBINPUT_DEVICE_CAP_TOUCH, "touch", NULL },
+		{ LIBINPUT_DEVICE_CAP_TABLET_TOOL, "tablet_tool", NULL },
+		{ LIBINPUT_DEVICE_CAP_TABLET_PAD, "tablet_pad", NULL },
+		{ LIBINPUT_DEVICE_CAP_GESTURE, "gesture", NULL },
+		{ LIBINPUT_DEVICE_CAP_SWITCH, "switch", NULL }
+	};
+
+	json_object *_caps = json_object_new_array();
+	for (size_t i = 0; i < sizeof(caps) / sizeof(caps[0]); ++i) {
+		if (libinput_device_has_capability(device, caps[i].cap)) {
+			json_object_array_add(_caps, json_object_new_string(caps[i].name));
+			if (caps[i].describe) {
+				json_object *desc = caps[i].describe(device);
+				json_object_object_add(device_object, caps[i].name, desc);
+			}
+		}
+	}
+	json_object_object_add(device_object, "capabilities", _caps);
+
+	free(identifier);
+	return device_object;
 }
 
 json_object *ipc_json_get_version() {
