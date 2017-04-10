@@ -16,7 +16,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if ((error = checkarg(argc, "layout", EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}
-	swayc_t *parent = get_focused_container(&root_container);
+	swayc_t *parent = current_container;
 	if (parent->is_floating) {
 		return cmd_results_new(CMD_FAILURE, "layout", "Unable to change layout of floating windows");
 	}

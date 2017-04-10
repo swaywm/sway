@@ -1,8 +1,11 @@
+#define _XOPEN_SOURCE 500
 #include <wlc/wlc-render.h>
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include <arpa/inet.h>
 #include "sway/border.h"
 #include "sway/container.h"
@@ -189,6 +192,26 @@ static void render_title_bar(swayc_t *view, cairo_t *cr, struct wlc_geometry *b,
 		cairo_move_to(cr, x + 2, y + 2);
 		cairo_set_source_u32(cr, colors->text);
 		pango_printf(cr, config->font, 1, false, "%s", view->name);
+	}
+	// Marks
+	if (config->show_marks && view->marks) {
+		int total_len = 0;
+
+		for(int i = view->marks->length - 1; i >= 0; --i) {
+			char *mark = (char *)view->marks->items[i];
+			if (*mark != '_') {
+				int width, height;
+				get_text_size(cr, config->font, &width, &height, 1, false, "[%s]", mark);
+				total_len += width;
+				if ((int)tb->size.w + x - (total_len + 2) < x + 2) {
+					break;
+				} else {
+					cairo_move_to(cr, (int)tb->size.w + x - (total_len + 2), y + 2);
+					cairo_set_source_u32(cr, colors->text);
+					pango_printf(cr, config->font, 1, false, "[%s]", mark);
+				}
+			}
+		}
 	}
 
 	// titlebars has a border all around for tabbed layouts

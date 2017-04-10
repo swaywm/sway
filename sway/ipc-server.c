@@ -63,6 +63,7 @@ void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
 void ipc_get_workspaces_callback(swayc_t *workspace, void *data);
 void ipc_get_outputs_callback(swayc_t *container, void *data);
+static void ipc_get_marks_callback(swayc_t *container, void *data);
 
 void ipc_init(void) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -161,7 +162,8 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	}
 
 	int flags;
-	if ((flags=fcntl(client_fd, F_GETFD)) == -1 || fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
+	if ((flags = fcntl(client_fd, F_GETFD)) == -1
+			|| fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
 		sway_log_errno(L_ERROR, "Unable to set CLOEXEC on IPC client socket");
 		close(client_fd);
 		return 0;
@@ -193,13 +195,12 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 
 	if (mask & WLC_EVENT_ERROR) {
 		sway_log(L_ERROR, "IPC Client socket error, removing client");
-		client->fd = -1;
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
 	if (mask & WLC_EVENT_HANGUP) {
-		client->fd = -1;
+		sway_log(L_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
 	}
@@ -456,6 +457,19 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_MARKS:
+	{
+		if (!(client->security_policy & IPC_FEATURE_GET_MARKS)) {
+			goto exit_denied;
+		}
+		json_object *marks = json_object_new_array();
+		container_map(&root_container, ipc_get_marks_callback, marks);
+		const char *json_string = json_object_to_json_string(marks);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(marks);
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_VERSION:
 	{
 		json_object *version = ipc_json_get_version();
@@ -606,6 +620,16 @@ void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
 void ipc_get_outputs_callback(swayc_t *container, void *data) {
 	if (container->type == C_OUTPUT) {
 		json_object_array_add((json_object *)data, ipc_json_describe_container(container));
+	}
+}
+
+static void ipc_get_marks_callback(swayc_t *container, void *data) {
+	json_object *object = (json_object *)data;
+	if (container->marks) {
+		for (int i = 0; i < container->marks->length; ++i) {
+			char *mark = (char *)container->marks->items[i];
+			json_object_array_add(object, json_object_new_string(mark));
+		}
 	}
 }
 

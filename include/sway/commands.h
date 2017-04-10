@@ -5,6 +5,9 @@
 #include <wlc/wlc.h>
 #include "config.h"
 
+// Container that a called command should act upon. Only valid in command functions.
+extern swayc_t *current_container;
+
 /**
  * Indicates the result of a command's execution.
  */
@@ -126,6 +129,7 @@ sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
 sway_cmd cmd_log_colors;
+sway_cmd cmd_mark;
 sway_cmd cmd_mode;
 sway_cmd cmd_mouse_warping;
 sway_cmd cmd_move;
@@ -140,12 +144,14 @@ sway_cmd cmd_resize;
 sway_cmd cmd_scratchpad;
 sway_cmd cmd_seamless_mouse;
 sway_cmd cmd_set;
+sway_cmd cmd_show_marks;
 sway_cmd cmd_smart_gaps;
 sway_cmd cmd_split;
 sway_cmd cmd_splith;
 sway_cmd cmd_splitt;
 sway_cmd cmd_splitv;
 sway_cmd cmd_sticky;
+sway_cmd cmd_unmark;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_workspace_layout;

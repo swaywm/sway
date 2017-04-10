@@ -30,6 +30,9 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 			}
 		}
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	} else if (argc == 0) {
+		set_focused_container(current_container);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if ((error = checkarg(argc, "focus", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}

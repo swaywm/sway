@@ -11,8 +11,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <sys/capability.h>
 #ifdef __linux__
+#include <sys/capability.h>
 #include <sys/prctl.h>
 #endif
 #include "sway/extensions.h"

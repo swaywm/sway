@@ -61,6 +61,10 @@ static void free_swayc(swayc_t *cont) {
 		}
 		list_free(cont->floating);
 	}
+	if (cont->marks) {
+		list_foreach(cont->marks, free);
+		list_free(cont->marks);
+	}
 	if (cont->parent) {
 		remove_child(cont);
 	}

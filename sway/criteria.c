@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <regex.h>
+#include <pcre.h>
 #include "sway/criteria.h"
 #include "sway/container.h"
 #include "sway/config.h"
@@ -12,6 +12,7 @@
 
 enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_CLASS,
+	CRIT_CON_MARK,
 	CRIT_ID,
 	CRIT_INSTANCE,
 	CRIT_TITLE,
@@ -22,16 +23,16 @@ enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_LAST
 };
 
-// this *must* match the ordering in criteria_type enum
-static const char * const criteria_strings[] = {
-	"class",
-	"id",
-	"instance",
-	"title",
-	"urgent", // either "latest" or "oldest" ...
-	"window_role",
-	"window_type",
-	"workspace"
+static const char * const criteria_strings[CRIT_LAST] = {
+	[CRIT_CLASS] = "class",
+	[CRIT_CON_MARK] = "con_mark",
+	[CRIT_ID] = "id",
+	[CRIT_INSTANCE] = "instance",
+	[CRIT_TITLE] = "title",
+	[CRIT_URGENT] = "urgent", // either "latest" or "oldest" ...
+	[CRIT_WINDOW_ROLE] = "window_role",
+	[CRIT_WINDOW_TYPE] = "window_type",
+	[CRIT_WORKSPACE] = "workspace"
 };
 
 /**
@@ -40,18 +41,13 @@ static const char * const criteria_strings[] = {
  */
 struct crit_token {
 	enum criteria_type type;
-	regex_t *regex;
+	pcre *regex;
 	char *raw;
 };
 
 static void free_crit_token(struct crit_token *crit) {
-	if (crit->regex) {
-		regfree(crit->regex);
-		free(crit->regex);
-	}
-	if (crit->raw) {
-		free(crit->raw);
-	}
+	pcre_free(crit->regex);
+	free(crit->raw);
 	free(crit);
 }
 
@@ -188,18 +184,17 @@ static char *parse_criteria_name(enum criteria_type *type, char *name) {
 }
 
 // Returns error string on failure or NULL otherwise.
-static char *generate_regex(regex_t **regex, char *value) {
-	*regex = calloc(1, sizeof(regex_t));
-	int err = regcomp(*regex, value, REG_NOSUB);
-	if (err != 0) {
-		char *reg_err = malloc(64);
-		regerror(err, *regex, reg_err, 64);
+static char *generate_regex(pcre **regex, char *value) {
+	const char *reg_err;
+	int offset;
 
+	*regex = pcre_compile(value, PCRE_UTF8 | PCRE_UCP, &reg_err, &offset, NULL);
+
+	if (!*regex) {
 		const char *fmt = "Regex compilation (for '%s') failed: %s";
 		int len = strlen(fmt) + strlen(value) + strlen(reg_err) - 3;
 		char *error = malloc(len);
 		snprintf(error, len, fmt, value, reg_err);
-		free(reg_err);
 		return error;
 	}
 	return NULL;
@@ -243,6 +238,10 @@ ect_cleanup:
 	return error;
 }
 
+static int regex_cmp(const char *item, const pcre *regex) {
+	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+}
+
 // test a single view if it matches list of criteria tokens (all of them).
 static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	if (cont->type != C_VIEW) {
@@ -260,26 +259,34 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused->class && strcmp(cont->class, focused->class) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regexec(crit->regex, cont->class, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regex_cmp(cont->class, crit->regex) == 0) {
 				matches++;
+			}
+			break;
+		case CRIT_CON_MARK:
+			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
+				// Make sure it isn't matching the NUL string
+				if ((strcmp(crit->raw, "") == 0) == (list_seq_find(cont->marks, (int (*)(const void *, const void *))strcmp, "") != -1)) {
+					++matches;
+				}
 			}
 			break;
 		case CRIT_ID:
 			if (!cont->app_id) {
 				// ignore
-			} else if (crit->regex && regexec(crit->regex, cont->app_id, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regex_cmp(cont->app_id, crit->regex) == 0) {
 				matches++;
 			}
 			break;
 		case CRIT_INSTANCE:
 			if (!cont->instance) {
 				// ignore
-			} else if (strcmp(crit->raw, "focused") == 0) {
+			} else if (crit_is_focused(crit->raw)) {
 				swayc_t *focused = get_focused_view(&root_container);
 				if (focused->instance && strcmp(cont->instance, focused->instance) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regexec(crit->regex, cont->instance, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regex_cmp(cont->instance, crit->regex) == 0) {
 				matches++;
 			}
 			break;
@@ -291,7 +298,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused->name && strcmp(cont->name, focused->name) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regexec(crit->regex, cont->name, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regex_cmp(cont->name, crit->regex) == 0) {
 				matches++;
 			}
 			break;
@@ -311,7 +318,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused_ws->name && strcmp(cont_ws->name, focused_ws->name) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regexec(crit->regex, cont_ws->name, 0, NULL, 0) == 0) {
+			} else if (crit->regex && regex_cmp(cont_ws->name, crit->regex) == 0) {
 				matches++;
 			}
 			break;
@@ -361,4 +368,22 @@ list_t *criteria_for(swayc_t *cont) {
 		}
 	}
 	return matches;
+}
+
+struct list_tokens {
+	list_t *list;
+	list_t *tokens;
+};
+
+static void container_match_add(swayc_t *container, struct list_tokens *list_tokens) {
+	if (criteria_test(container, list_tokens->tokens)) {
+		list_add(list_tokens->list, container);
+	}
+}
+list_t *container_for(list_t *tokens) {
+	struct list_tokens list_tokens = (struct list_tokens){create_list(), tokens};
+
+	container_map(&root_container, (void (*)(swayc_t *, void *))container_match_add, &list_tokens);
+
+	return list_tokens.list;
 }

@@ -165,6 +165,11 @@ struct sway_container {
 	 * Number of slave groups (e.g. columns) in auto layouts.
 	 */
 	size_t nb_slave_groups;
+
+	/**
+	 * Marks applied to the container, list_t of char*.
+	 */
+	list_t *marks;
 };
 
 enum visibility_mask {

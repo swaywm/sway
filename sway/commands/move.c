@@ -20,7 +20,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		"'move <container|window> to workspace <name>' or "
 		"'move <container|window|workspace> to output <name|direction>' or "
 		"'move position mouse'";
-	swayc_t *view = get_focused_container(&root_container);
+	swayc_t *view = current_container;
 
 	if (argc == 2 || (argc == 3 && strcasecmp(argv[2], "px") == 0 )) {
 		char *inv;
@@ -125,7 +125,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		if (view->type != C_CONTAINER && view->type != C_VIEW) {
 			return cmd_results_new(CMD_FAILURE, "move scratchpad", "Can only move containers and views.");
 		}
-		swayc_t *view = get_focused_container(&root_container);
+		swayc_t *view = current_container;
 		int i;
 		for (i = 0; i < scratchpad->length; i++) {
 			if (scratchpad->items[i] == view) {

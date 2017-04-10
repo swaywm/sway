@@ -33,4 +33,7 @@ char *extract_crit_tokens(list_t *tokens, const char *criteria);
 // been set with `for_window` commands and have an associated cmdlist.
 list_t *criteria_for(swayc_t *cont);
 
+// Returns a list of all containers that match the given list of tokens.
+list_t *container_for(list_t *tokens);
+
 #endif
