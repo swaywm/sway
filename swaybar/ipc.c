@@ -7,6 +7,7 @@
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 
 void ipc_send_workspace_command(const char *workspace_name) {
 	uint32_t size = strlen("workspace \"\"") + strlen(workspace_name) + 1;
@@ -19,13 +20,13 @@ void ipc_send_workspace_command(const char *workspace_name) {
 
 static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
-	json_object *tray_output, *mode, *hidden_bar, *position, *status_command;
+	json_object *tray_output, *mode, *hidden_state, *position, *status_command;
 	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
 	json_object *markup;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
 	json_object_object_get_ex(bar_config, "mode", &mode);
-	json_object_object_get_ex(bar_config, "hidden_bar", &hidden_bar);
+	json_object_object_get_ex(bar_config, "hidden_state", &hidden_state);
 	json_object_object_get_ex(bar_config, "position", &position);
 	json_object_object_get_ex(bar_config, "status_command", &status_command);
 	json_object_object_get_ex(bar_config, "font", &font);
@@ -323,7 +324,9 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 	free(res);
 	json_object_put(outputs);
 
-	const char *subscribe_json = "[ \"workspace\", \"mode\" ]";
+	const char *subscribe_json = strcmp(bar->config->mode, "hide") == 0 ?
+		"[ \"workspace\", \"mode\", \"modifier\" ]"
+		: "[ \"workspace\", \"mode\" ]";
 	len = strlen(subscribe_json);
 	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
@@ -363,6 +366,32 @@ bool handle_ipc_event(struct bar *bar) {
 
 		json_object_put(result);
 		break;
+	}
+	case IPC_EVENT_MODIFIER: {
+		if (strcmp(bar->config->mode, "hide") == 0) {
+			json_object *result = json_tokener_parse(resp->payload);
+			if (!result) {
+				free_ipc_response(resp);
+				sway_log(L_ERROR, "failed to parse payload as json");
+				return false;
+			}
+			json_object *json_change;
+			if (json_object_object_get_ex(result, "change", &json_change)) {
+				const char *change = json_object_get_string(json_change);
+				
+				if (strcmp(change, "pressed") == 0) {
+					bar->config->hidden_state = "show";
+				} else { //must be "released"
+					bar->config->hidden_state = "hide";
+				}
+	
+			} else {
+				sway_log(L_ERROR, "failed to parse response");
+			}
+	
+			json_object_put(result);
+			break;
+		}
 	}
 	default:
 		free_ipc_response(resp);
