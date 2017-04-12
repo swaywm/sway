@@ -23,8 +23,8 @@ Options
 *-q, \--quiet*::
 	Sends the IPC message but does not print the response from sway.
 
-*-v, \--version*::
-	Print the version (of swaymsg) and quit.
+*-r, \--raw*::
+	Use raw output even if using a tty.
 
 *-s, --socket* <path>::
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
@@ -32,6 +32,9 @@ Options
 
 *-t, \--type* <type>::
 	Specify the type of IPC message. See below.
+
+*-v, \--version*::
+	Print the version (of swaymsg) and quit.
 
 IPC Message Types
 -----------------
