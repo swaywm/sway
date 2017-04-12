@@ -50,17 +50,17 @@ Commands
 
 **wrap_scroll** <yes|no>::
 	Enables or disables wrapping when scrolling through workspaces with the
-	scroll wheel. Default is no.
+	scroll wheel. Default is _no_.
 
 **workspace_buttons** <yes|no>::
-	Enables or disables workspace buttons on the bar. Default is yes.
+	Enables or disables workspace buttons on the bar. Default is _yes_.
 
 **strip_workspace_numbers** <yes|no>::
 	If set to _yes_, then workspace numbers will be omitted from the workspace
-	button and only the custom name will be shown.
+	button and only the custom name will be shown. Default is _no_.
 
 **binding_mode_indicator** <yes|no>::
-	Enable or disable binding mode indicator. It's enabled by default.
+	Enable or disable binding mode indicator. Default is _yes_.
 
 **height** <height>::
 	Sets the height of the bar. Default height will match the font size.
