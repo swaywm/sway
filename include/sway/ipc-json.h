@@ -10,5 +10,6 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar);
 json_object *ipc_json_describe_container(swayc_t *c);
 json_object *ipc_json_describe_container_recursive(swayc_t *c);
 json_object *ipc_json_describe_window(swayc_t *c);
+json_object *ipc_json_describe_input(struct libinput_device *device);
 
 #endif
