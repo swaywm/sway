@@ -340,7 +340,6 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 	const char *subscribe_json = strcmp(bar->config->display_mode, "hide") == 0 ?
 		"[ \"workspace\", \"mode\", \"modifier\" ]"
 		: "[ \"workspace\", \"mode\" ]";
-	sway_log(L_ERROR, subscribe_json);
 	len = strlen(subscribe_json);
 	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
