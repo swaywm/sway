@@ -321,6 +321,7 @@ static struct cmd_handler ipc_event_handlers[] = {
 	{ "binding", cmd_ipc_event_cmd },
 	{ "input", cmd_ipc_event_cmd },
 	{ "mode", cmd_ipc_event_cmd },
+	{ "modifier", cmd_ipc_event_cmd },
 	{ "output", cmd_ipc_event_cmd },
 	{ "window", cmd_ipc_event_cmd },
 	{ "workspace", cmd_ipc_event_cmd },

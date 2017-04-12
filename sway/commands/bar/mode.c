@@ -7,31 +7,31 @@
 #include "log.h"
 
 static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode) {
-	char *old_mode = bar->mode;
+	char *old_mode = bar->display_mode;
 	if (strcasecmp("toggle", mode) == 0 && !config->reading) {
-		if (strcasecmp("dock", bar->mode) == 0) {
-			bar->mode = strdup("hide");
-		} else if (strcasecmp("hide", bar->mode) == 0) {
-			bar->mode = strdup("dock");
+		if (strcasecmp("dock", bar->display_mode) == 0) {
+			bar->display_mode = strdup("hide");
+		} else if (strcasecmp("hide", bar->display_mode) == 0) {
+			bar->display_mode = strdup("dock");
 		}
 	} else if (strcasecmp("dock", mode) == 0) {
-		bar->mode = strdup("dock");
+		bar->display_mode = strdup("dock");
 	} else if (strcasecmp("hide", mode) == 0) {
-		bar->mode = strdup("hide");
+		bar->display_mode = strdup("hide");
 	} else if (strcasecmp("invisible", mode) == 0) {
-		bar->mode = strdup("invisible");
+		bar->display_mode = strdup("invisible");
 	} else {
 		return cmd_results_new(CMD_INVALID, "mode", "Invalid value %s", mode);
 	}
 
-	if (strcmp(old_mode, bar->mode) != 0) {
+	if (strcmp(old_mode, bar->display_mode) != 0) {
 		if (!config->reading) {
 			ipc_event_barconfig_update(bar);
 
 			// active bar modifiers might have changed.
 			update_active_bar_modifiers();
 		}
-		sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
+		sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->display_mode, bar->id);
 	}
 
 	// free old mode

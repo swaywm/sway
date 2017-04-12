@@ -20,12 +20,14 @@ void ipc_send_workspace_command(const char *workspace_name) {
 
 static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
-	json_object *tray_output, *mode, *hidden_state, *position, *status_command;
+	json_object *tray_output, *display_mode, *hidden_state, *position, *status_command;
 	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
 	json_object *markup;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
-	json_object_object_get_ex(bar_config, "mode", &mode);
+	// "mode" as in the bar's display mode and "mode" as in binding mode
+	// should be distinguished more carefully
+	json_object_object_get_ex(bar_config, "mode", &display_mode);
 	json_object_object_get_ex(bar_config, "hidden_state", &hidden_state);
 	json_object_object_get_ex(bar_config, "position", &position);
 	json_object_object_get_ex(bar_config, "status_command", &status_command);
@@ -44,6 +46,16 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	if (status_command) {
 		free(config->status_command);
 		config->status_command = strdup(json_object_get_string(status_command));
+	}
+	
+	if (display_mode) {
+		free(config->display_mode);
+		config->display_mode = strdup(json_object_get_string(display_mode));
+	}
+	
+	if (hidden_state) {
+		free(config->hidden_state);
+		config->hidden_state = strdup(json_object_get_string(hidden_state));
 	}
 
 	if (position) {
@@ -323,10 +335,12 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 	}
 	free(res);
 	json_object_put(outputs);
-
-	const char *subscribe_json = strcmp(bar->config->mode, "hide") == 0 ?
+	// Will need to be redone for display mode toggling compatibility
+	// Will require setting bar->config->hidden_state to "show" as default
+	const char *subscribe_json = strcmp(bar->config->display_mode, "hide") == 0 ?
 		"[ \"workspace\", \"mode\", \"modifier\" ]"
 		: "[ \"workspace\", \"mode\" ]";
+	sway_log(L_ERROR, subscribe_json);
 	len = strlen(subscribe_json);
 	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
@@ -368,30 +382,28 @@ bool handle_ipc_event(struct bar *bar) {
 		break;
 	}
 	case IPC_EVENT_MODIFIER: {
-		if (strcmp(bar->config->mode, "hide") == 0) {
-			json_object *result = json_tokener_parse(resp->payload);
-			if (!result) {
-				free_ipc_response(resp);
-				sway_log(L_ERROR, "failed to parse payload as json");
-				return false;
-			}
-			json_object *json_change;
-			if (json_object_object_get_ex(result, "change", &json_change)) {
-				const char *change = json_object_get_string(json_change);
-				
-				if (strcmp(change, "pressed") == 0) {
-					bar->config->hidden_state = "show";
-				} else { //must be "released"
-					bar->config->hidden_state = "hide";
-				}
-	
-			} else {
-				sway_log(L_ERROR, "failed to parse response");
-			}
-	
-			json_object_put(result);
-			break;
+		json_object *result = json_tokener_parse(resp->payload);
+		if (!result) {
+			free_ipc_response(resp);
+			sway_log(L_ERROR, "failed to parse payload as json");
+			return false;
 		}
+		json_object *json_change;
+		if (json_object_object_get_ex(result, "change", &json_change)) {
+			const char *change = json_object_get_string(json_change);
+			free(bar->config->hidden_state);
+			if (strcmp(change, "pressed") == 0) {
+				bar->config->hidden_state = strdup("show");
+			} else { //must be "released"
+				bar->config->hidden_state = strdup("hide");
+			}
+	
+		} else {
+			sway_log(L_ERROR, "failed to parse response");
+		}
+	
+		json_object_put(result);
+		break;
 	}
 	default:
 		free_ipc_response(resp);

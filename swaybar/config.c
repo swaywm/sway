@@ -37,6 +37,7 @@ struct config *init_config() {
 	config->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	config->font = strdup("monospace 10");
 	config->mode = NULL;
+	config->display_mode = NULL;
 	config->hidden_state = NULL;
 	config->sep_symbol = NULL;
 	config->strip_workspace_numbers = false;

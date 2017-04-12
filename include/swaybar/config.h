@@ -26,6 +26,7 @@ struct config {
 	char *font;
 	char *sep_symbol;
 	char *mode;
+	char *display_mode;
 	char *hidden_state;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
