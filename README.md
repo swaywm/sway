@@ -44,6 +44,7 @@ Install dependencies:
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
+* libinput >= 1.6.0
 * libcap
 * asciidoc
 * pcre
