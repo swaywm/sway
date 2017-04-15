@@ -38,7 +38,7 @@ static enum secure_feature get_features(int argc, char **argv,
 	return features;
 }
 
-static struct feature_policy *get_policy(const char *name) {
+static struct feature_policy *get_feature_policy(const char *name) {
 	struct feature_policy *policy = NULL;
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *p = config->feature_policies->items[i];
@@ -66,7 +66,7 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 		return error;
 	}
 
-	struct feature_policy *policy = get_policy(argv[0]);
+	struct feature_policy *policy = get_feature_policy(argv[0]);
 	policy->features |= get_features(argc, argv, &error);
 
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
@@ -84,7 +84,7 @@ struct cmd_results *cmd_reject(int argc, char **argv) {
 		return error;
 	}
 
-	struct feature_policy *policy = get_policy(argv[0]);
+	struct feature_policy *policy = get_feature_policy(argv[0]);
 	policy->features &= ~get_features(argc, argv, &error);
 
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
