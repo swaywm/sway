@@ -181,7 +181,7 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	client->event_source = wlc_event_loop_add_fd(client_fd, WLC_EVENT_READABLE, ipc_client_handle_readable, client);
 
 	pid_t pid = get_client_pid(client->fd);
-	client->security_policy = get_ipc_policy(pid);
+	client->security_policy = get_ipc_policy_mask(pid);
 
 	list_add(ipc_client_list, client);
 

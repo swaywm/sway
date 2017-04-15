@@ -437,7 +437,7 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-			if (!(get_command_policy(argv[0]) & context)) {
+			if (!(get_command_policy_mask(argv[0]) & context)) {
 				if (results) {
 					free_cmd_results(results);
 				}

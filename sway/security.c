@@ -94,7 +94,7 @@ static const char *get_pid_exe(pid_t pid) {
 	return link;
 }
 
-uint32_t get_feature_policy(pid_t pid) {
+uint32_t get_feature_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
 
@@ -111,7 +111,7 @@ uint32_t get_feature_policy(pid_t pid) {
 	return default_policy;
 }
 
-uint32_t get_ipc_policy(pid_t pid) {
+uint32_t get_ipc_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
 
@@ -128,7 +128,7 @@ uint32_t get_ipc_policy(pid_t pid) {
 	return default_policy;
 }
 
-uint32_t get_command_policy(const char *cmd) {
+uint32_t get_command_policy_mask(const char *cmd) {
 	uint32_t default_policy = 0;
 
 	for (int i = 0; i < config->command_policies->length; ++i) {

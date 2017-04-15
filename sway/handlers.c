@@ -595,7 +595,7 @@ static void handle_view_state_request(wlc_handle view, enum wlc_view_state_bit s
 	pid_t pid = wlc_view_get_pid(view);
 	switch (state) {
 	case WLC_BIT_FULLSCREEN:
-		if (!(get_feature_policy(pid) & FEATURE_FULLSCREEN)) {
+		if (!(get_feature_policy_mask(pid) & FEATURE_FULLSCREEN)) {
 			sway_log(L_INFO, "Denying fullscreen to %d (%s)", pid, c->name);
 			break;
 		}
@@ -811,7 +811,7 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	swayc_t *focused = get_focused_container(&root_container);
 	if (focused->type == C_VIEW) {
 		pid_t pid = wlc_view_get_pid(focused->handle);
-		if (!(get_feature_policy(pid) & FEATURE_KEYBOARD)) {
+		if (!(get_feature_policy_mask(pid) & FEATURE_KEYBOARD)) {
 			return EVENT_HANDLED;
 		}
 	}
@@ -875,7 +875,7 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 	swayc_t *focused = get_focused_container(&root_container);
 	if (focused->type == C_VIEW) {
 		pid_t pid = wlc_view_get_pid(focused->handle);
-		if (!(get_feature_policy(pid) & FEATURE_MOUSE)) {
+		if (!(get_feature_policy_mask(pid) & FEATURE_MOUSE)) {
 			return EVENT_HANDLED;
 		}
 	}
@@ -953,7 +953,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 	if (swayc_is_fullscreen(focused)) {
 		if (focused->type == C_VIEW) {
 			pid_t pid = wlc_view_get_pid(focused->handle);
-			if (!(get_feature_policy(pid) & FEATURE_MOUSE)) {
+			if (!(get_feature_policy_mask(pid) & FEATURE_MOUSE)) {
 				return EVENT_HANDLED;
 			}
 		}
@@ -1001,7 +1001,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	if (focused->type == C_VIEW) {
 		pid_t pid = wlc_view_get_pid(focused->handle);
-		if (!(get_feature_policy(pid) & FEATURE_MOUSE)) {
+		if (!(get_feature_policy_mask(pid) & FEATURE_MOUSE)) {
 			return EVENT_HANDLED;
 		}
 	}
