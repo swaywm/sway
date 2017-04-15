@@ -38,25 +38,6 @@ static enum secure_feature get_features(int argc, char **argv,
 	return features;
 }
 
-static struct feature_policy *get_feature_policy(const char *name) {
-	struct feature_policy *policy = NULL;
-	for (int i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *p = config->feature_policies->items[i];
-		if (strcmp(p->program, name) == 0) {
-			policy = p;
-			break;
-		}
-	}
-	if (!policy) {
-		policy = alloc_feature_policy(name);
-		if (!policy) {
-			sway_abort("Unable to allocate security policy");
-		}
-		list_add(config->feature_policies, policy);
-	}
-	return policy;
-}
-
 struct cmd_results *cmd_permit(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "permit", EXPECTED_MORE_THAN, 1))) {

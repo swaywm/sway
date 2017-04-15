@@ -7,6 +7,8 @@ uint32_t get_feature_policy_mask(pid_t pid);
 uint32_t get_ipc_policy_mask(pid_t pid);
 uint32_t get_command_policy_mask(const char *cmd);
 
+struct feature_policy *get_feature_policy(const char *name);
+
 const char *command_policy_str(enum command_context context);
 
 struct feature_policy *alloc_feature_policy(const char *program);

@@ -94,6 +94,26 @@ static const char *get_pid_exe(pid_t pid) {
 	return link;
 }
 
+struct feature_policy *get_feature_policy(const char *name) {
+	struct feature_policy *policy = NULL;
+
+	for (int i = 0; i < config->feature_policies->length; ++i) {
+		struct feature_policy *p = config->feature_policies->items[i];
+		if (strcmp(p->program, name) == 0) {
+			policy = p;
+			break;
+		}
+	}
+	if (!policy) {
+		policy = alloc_feature_policy(name);
+		if (!policy) {
+			sway_abort("Unable to allocate security policy");
+		}
+		list_add(config->feature_policies, policy);
+	}
+	return policy;
+}
+
 uint32_t get_feature_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
