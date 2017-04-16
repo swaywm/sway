@@ -19,9 +19,9 @@ void sway_log_colors(int mode);
 void sway_log_errno(log_importance_t verbosity, char* format, ...) __attribute__((format(printf,2,3)));
 void sway_abort(const char* format, ...) __attribute__((format(printf,1,2)));
 
-bool _sway_assert(bool condition, const char* format, ...) __attribute__((format(printf,2,3)));
+bool _sway_assert(bool condition, const char *filename, int line, const char* format, ...) __attribute__((format(printf,4,5)));
 #define sway_assert(COND, FMT, ...) \
-	_sway_assert(COND, "%s:" FMT, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+	_sway_assert(COND, __FILE__, __LINE__, "%s:" FMT, __PRETTY_FUNCTION__, ##__VA_ARGS__)
 
 void _sway_log(const char *filename, int line, log_importance_t verbosity, const char* format, ...) __attribute__((format(printf,4,5)));
 

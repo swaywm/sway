@@ -142,14 +142,14 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 	}
 }
 
-bool _sway_assert(bool condition, const char* format, ...) {
+bool _sway_assert(bool condition, const char *filename, int line, const char* format, ...) {
 	if (condition) {
 		return true;
 	}
 
 	va_list args;
 	va_start(args, format);
-	sway_vlog(L_ERROR, format, args);
+	_sway_vlog(filename, line, L_ERROR, format, args);
 	va_end(args);
 
 #ifndef NDEBUG
