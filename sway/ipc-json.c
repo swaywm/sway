@@ -284,7 +284,9 @@ json_object *ipc_json_describe_input(struct libinput_device *device) {
 		{ LIBINPUT_DEVICE_CAP_TABLET_TOOL, "tablet_tool", NULL },
 		{ LIBINPUT_DEVICE_CAP_TABLET_PAD, "tablet_pad", NULL },
 		{ LIBINPUT_DEVICE_CAP_GESTURE, "gesture", NULL },
-		{ LIBINPUT_DEVICE_CAP_SWITCH, "switch", NULL }
+#ifdef LIBINPUT_DEVICE_CAP_SWITCH // libinput 1.7.0+
+		{ LIBINPUT_DEVICE_CAP_SWITCH, "switch", NULL },
+#endif		
 	};
 
 	json_object *_caps = json_object_new_array();

@@ -86,7 +86,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 		struct wl_resource *_output, struct wl_resource *surface) {
 	pid_t pid;
 	wl_client_get_credentials(client, &pid, NULL, NULL);
-	if (!(get_feature_policy(pid) & FEATURE_BACKGROUND)) {
+	if (!(get_feature_policy_mask(pid) & FEATURE_BACKGROUND)) {
 		sway_log(L_INFO, "Denying background feature to %d", pid);
 		return;
 	}
@@ -114,7 +114,7 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 		struct wl_resource *_output, struct wl_resource *surface) {
 	pid_t pid;
 	wl_client_get_credentials(client, &pid, NULL, NULL);
-	if (!(get_feature_policy(pid) & FEATURE_PANEL)) {
+	if (!(get_feature_policy_mask(pid) & FEATURE_PANEL)) {
 		sway_log(L_INFO, "Denying panel feature to %d", pid);
 		return;
 	}
@@ -152,7 +152,7 @@ static void desktop_ready(struct wl_client *client, struct wl_resource *resource
 static void set_panel_position(struct wl_client *client, struct wl_resource *resource, uint32_t position) {
 	pid_t pid;
 	wl_client_get_credentials(client, &pid, NULL, NULL);
-	if (!(get_feature_policy(pid) & FEATURE_PANEL)) {
+	if (!(get_feature_policy_mask(pid) & FEATURE_PANEL)) {
 		sway_log(L_INFO, "Denying panel feature to %d", pid);
 		return;
 	}
@@ -191,7 +191,7 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		struct wl_resource *_output, struct wl_resource *surface) {
 	pid_t pid;
 	wl_client_get_credentials(client, &pid, NULL, NULL);
-	if (!(get_feature_policy(pid) & FEATURE_LOCK)) {
+	if (!(get_feature_policy_mask(pid) & FEATURE_LOCK)) {
 		sway_log(L_INFO, "Denying lock feature to %d", pid);
 		return;
 	}

@@ -51,9 +51,6 @@ rather than switch to something else.
 Launch sway directly from a tty or via your favorite Wayland-compatible login
 manager.
 
-*Important note for nvidia users*: The proprietary nvidia driver does _not_ have
-support for Wayland as of 2016-06-10. Use nouveau.
-
 Commands
 --------
 

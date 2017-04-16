@@ -1,7 +1,9 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/security.h"
+#include "util.h"
 #include "log.h"
 
 static enum secure_feature get_features(int argc, char **argv,
@@ -38,25 +40,6 @@ static enum secure_feature get_features(int argc, char **argv,
 	return features;
 }
 
-static struct feature_policy *get_policy(const char *name) {
-	struct feature_policy *policy = NULL;
-	for (int i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *p = config->feature_policies->items[i];
-		if (strcmp(p->program, name) == 0) {
-			policy = p;
-			break;
-		}
-	}
-	if (!policy) {
-		policy = alloc_feature_policy(name);
-		if (!policy) {
-			sway_abort("Unable to allocate security policy");
-		}
-		list_add(config->feature_policies, policy);
-	}
-	return policy;
-}
-
 struct cmd_results *cmd_permit(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "permit", EXPECTED_MORE_THAN, 1))) {
@@ -66,12 +49,29 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 		return error;
 	}
 
-	struct feature_policy *policy = get_policy(argv[0]);
-	policy->features |= get_features(argc, argv, &error);
+	bool assign_perms = true;
+	char *program = NULL;
 
+	if (!strcmp(argv[0], "*")) {
+		program = strdup(argv[0]);
+	} else {
+		program = resolve_path(argv[0]);
+	}
+	if (!program) {
+		sway_assert(program, "Unable to resolve IPC permit target '%s'."
+			" will issue empty policy", argv[0]);
+		assign_perms = false;
+		program = strdup(argv[0]);
+	}
+
+	struct feature_policy *policy = get_feature_policy(program);
+	if (assign_perms) {
+		policy->features |= get_features(argc, argv, &error);
+	}
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
 			policy->program, policy->features);
 
+	free(program);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -84,11 +84,25 @@ struct cmd_results *cmd_reject(int argc, char **argv) {
 		return error;
 	}
 
-	struct feature_policy *policy = get_policy(argv[0]);
+	char *program = NULL;
+	if (!strcmp(argv[0], "*")) {
+		program = strdup(argv[0]);
+	} else {
+		program = resolve_path(argv[0]);
+	}
+	if (!program) {
+		// Punt
+		sway_log(L_INFO, "Unable to resolve IPC reject target '%s'."
+			" Will use provided path", argv[0]);
+		program = strdup(argv[0]);
+	}
+
+	struct feature_policy *policy = get_feature_policy(program);
 	policy->features &= ~get_features(argc, argv, &error);
 
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
 			policy->program, policy->features);
 
+	free(program);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

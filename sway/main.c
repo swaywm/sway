@@ -57,25 +57,55 @@ void detect_proprietary() {
 	if (!f) {
 		return;
 	}
+	bool nvidia = false, nvidia_modeset = false, nvidia_uvm = false, nvidia_drm = false;
 	while (!feof(f)) {
 		char *line;
 		if (!(line = read_line(f))) {
 			break;
 		}
 		if (strstr(line, "nvidia")) {
-			fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia drivers do NOT support Wayland. Use nouveau.\x1B[0m\n");
-			fprintf(stderr, "\x1B[1;31mYes, they STILL don't work with the newly announced wayland \"support\".\x1B[0m\n");
-			free(line);
-			break;
+			nvidia = true;
+		}
+		if (strstr(line, "nvidia_modeset")) {
+			nvidia_modeset = true;
+		}
+		if (strstr(line, "nvidia_uvm")) {
+			nvidia_uvm = true;
+		}
+		if (strstr(line, "nvidia_drm")) {
+			nvidia_drm = true;
 		}
 		if (strstr(line, "fglrx")) {
-			fprintf(stderr, "\x1B[1;31mWarning: Proprietary AMD drivers do NOT support Wayland. Use radeon.\x1B[0m\n");
+			fprintf(stderr, "\x1B[1;31mWarning: Proprietary AMD drivers do "
+				"NOT support Wayland. Use radeon.\x1B[0m\n");
 			free(line);
 			break;
 		}
 		free(line);
 	}
 	fclose(f);
+	if (nvidia) {
+		fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia driver support "
+			"is considered experimental. Nouveau is strongly recommended."
+			"\x1B[0m\n");
+		if (!nvidia_modeset || !nvidia_uvm || !nvidia_drm) {
+			fprintf(stderr, "\x1B[1;31mWarning: You do not have all of the "
+				"necessary kernel modules loaded for nvidia support. "
+				"You need nvidia, nvidia_modeset, nvidia_uvm, and nvidia_drm."
+				"\x1B[0m\n");
+		}
+		f = fopen("/proc/cmdline", "r");
+		if (f) {
+			char *line = read_line(f);
+			if (line && !strstr(line, "nvidia-drm.modeset=1")) {
+				fprintf(stderr, "\x1B[1;31mWarning: You must add "
+					"nvidia-drm.modeset=1 to your kernel command line to use "
+					"the proprietary driver.\x1B[0m\n");
+			}
+			fclose(f);
+			free(line);
+		}
+	}
 }
 
 void run_as_ipc_client(char *command, char *socket_path) {
