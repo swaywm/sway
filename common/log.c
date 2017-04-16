@@ -63,7 +63,8 @@ void sway_abort(const char *format, ...) {
 	sway_terminate(EXIT_FAILURE);
 }
 
-void _sway_log(const char *filename, int line, log_importance_t verbosity, const char* format, ...) {
+void _sway_vlog(const char *filename, int line, log_importance_t verbosity,
+		const char *format, va_list args) {
 	if (verbosity <= v) {
 		// prefix the time to the log message
 		static struct tm result;
@@ -99,16 +100,20 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 			fprintf(stderr, "[%s:%d] ", file, line);
 		}
 
-		va_list args;
-		va_start(args, format);
 		vfprintf(stderr, format, args);
-		va_end(args);
 
 		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "\x1B[0m");
 		}
 		fprintf(stderr, "\n");
 	}
+}
+
+void _sway_log(const char *filename, int line, log_importance_t verbosity, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	_sway_vlog(filename, line, verbosity, format, args);
+	va_end(args);
 }
 
 void sway_log_errno(log_importance_t verbosity, char* format, ...) {
@@ -144,7 +149,7 @@ bool _sway_assert(bool condition, const char* format, ...) {
 
 	va_list args;
 	va_start(args, format);
-	sway_log(L_ERROR, format, args);
+	sway_vlog(L_ERROR, format, args);
 	va_end(args);
 
 #ifndef NDEBUG

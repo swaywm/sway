@@ -28,6 +28,9 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 #define sway_log(VERBOSITY, FMT, ...) \
 	_sway_log(__FILE__, __LINE__, VERBOSITY, FMT, ##__VA_ARGS__)
 
+#define sway_vlog(VERBOSITY, FMT, VA_ARGS) \
+    _sway_vlog(__FILE__, __LINE__, VERBOSITY, FMT, VA_ARGS)
+
 void error_handler(int sig);
 
 #endif
