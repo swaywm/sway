@@ -49,4 +49,12 @@ pid_t get_parent_pid(pid_t pid);
  */
 uint32_t parse_color(const char *color);
 
+/**
+ * Given a path string, recurseively resolves any symlinks to their targets
+ * (which may be a file, directory) and returns the result.
+ * argument is returned. Caller must free the returned buffer.
+ * If an error occures, if the path does not exist or if the path corresponds
+ * to a dangling symlink, NULL is returned.
+ */
+char* resolve_path(const char* path);
 #endif

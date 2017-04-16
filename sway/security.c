@@ -1,4 +1,6 @@
 #define _XOPEN_SOURCE 500
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -6,8 +8,46 @@
 #include "sway/security.h"
 #include "log.h"
 
+static bool validate_ipc_target(const char *program) {
+	struct stat sb;
+
+	sway_log(L_DEBUG, "Validating IPC target '%s'", program);
+
+	if (!strcmp(program, "*")) {
+		return true;
+	}
+	if (lstat(program, &sb) == -1) {
+		return false;
+	}
+	if (!S_ISREG(sb.st_mode)) {
+		sway_log(L_ERROR,
+				"IPC target '%s' MUST be/point at an existing regular file",
+				program);
+		return false;
+	}
+	if (sb.st_uid != 0) {
+#ifdef NDEBUG
+		sway_log(L_ERROR, "IPC target '%s' MUST be owned by root", program);
+		return false;
+#else
+		sway_log(L_INFO, "IPC target '%s' MUST be owned by root (waived for debug build)", program);
+		return true;
+#endif
+	}
+	if (sb.st_mode & S_IWOTH) {
+		sway_log(L_ERROR, "IPC target '%s' MUST NOT be world writable", program);
+		return false;
+	}
+
+	return true;
+}
+
 struct feature_policy *alloc_feature_policy(const char *program) {
 	uint32_t default_policy = 0;
+
+	if (!validate_ipc_target(program)) {
+		return NULL;
+	}
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *policy = config->feature_policies->items[i];
 		if (strcmp(policy->program, "*") == 0) {
@@ -26,11 +66,16 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 		return NULL;
 	}
 	policy->features = default_policy;
+
 	return policy;
 }
 
 struct ipc_policy *alloc_ipc_policy(const char *program) {
 	uint32_t default_policy = 0;
+
+	if (!validate_ipc_target(program)) {
+		return NULL;
+	}
 	for (int i = 0; i < config->ipc_policies->length; ++i) {
 		struct ipc_policy *policy = config->ipc_policies->items[i];
 		if (strcmp(policy->program, "*") == 0) {
@@ -49,6 +94,7 @@ struct ipc_policy *alloc_ipc_policy(const char *program) {
 		return NULL;
 	}
 	policy->features = default_policy;
+
 	return policy;
 }
 
@@ -94,7 +140,27 @@ static const char *get_pid_exe(pid_t pid) {
 	return link;
 }
 
-uint32_t get_feature_policy(pid_t pid) {
+struct feature_policy *get_feature_policy(const char *name) {
+	struct feature_policy *policy = NULL;
+
+	for (int i = 0; i < config->feature_policies->length; ++i) {
+		struct feature_policy *p = config->feature_policies->items[i];
+		if (strcmp(p->program, name) == 0) {
+			policy = p;
+			break;
+		}
+	}
+	if (!policy) {
+		policy = alloc_feature_policy(name);
+		if (!policy) {
+			sway_abort("Unable to allocate security policy");
+		}
+		list_add(config->feature_policies, policy);
+	}
+	return policy;
+}
+
+uint32_t get_feature_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
 
@@ -111,7 +177,7 @@ uint32_t get_feature_policy(pid_t pid) {
 	return default_policy;
 }
 
-uint32_t get_ipc_policy(pid_t pid) {
+uint32_t get_ipc_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
 
@@ -128,7 +194,7 @@ uint32_t get_ipc_policy(pid_t pid) {
 	return default_policy;
 }
 
-uint32_t get_command_policy(const char *cmd) {
+uint32_t get_command_policy_mask(const char *cmd) {
 	uint32_t default_policy = 0;
 
 	for (int i = 0; i < config->command_policies->length; ++i) {

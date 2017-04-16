@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <string.h>
 #include "sway/security.h"
@@ -18,8 +19,14 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return error;
 	}
 
-	const char *program = argv[0];
+	char *program = NULL;
 
+	if (!strcmp(argv[0], "*")) {
+		program = strdup(argv[0]);
+	} else if (!(program = resolve_path(argv[0]))) {
+		return cmd_results_new(
+				CMD_INVALID, "ipc", "Unable to resolve IPC Policy target.");
+	}
 	if (config->reading && strcmp("{", argv[1]) != 0) {
 		return cmd_results_new(CMD_INVALID, "ipc",
 				"Expected '{' at start of IPC config definition.");
@@ -32,6 +39,7 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 	current_policy = alloc_ipc_policy(program);
 	list_add(config->ipc_policies, current_policy);
 
+	free(program);
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);
 }
 

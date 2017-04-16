@@ -3,9 +3,11 @@
 #include <unistd.h>
 #include "sway/config.h"
 
-uint32_t get_feature_policy(pid_t pid);
-uint32_t get_ipc_policy(pid_t pid);
-uint32_t get_command_policy(const char *cmd);
+uint32_t get_feature_policy_mask(pid_t pid);
+uint32_t get_ipc_policy_mask(pid_t pid);
+uint32_t get_command_policy_mask(const char *cmd);
+
+struct feature_policy *get_feature_policy(const char *name);
 
 const char *command_policy_str(enum command_context context);
 
