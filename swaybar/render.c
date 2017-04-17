@@ -288,7 +288,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 	cairo_restore(cairo);
 	// Could also be done by always rendering then conditionally clearing and drawing alpha
 	// That may be preferable down the line
-	if ((!strcmp(config->display_mode, "hide")) == 0 || strcmp(config->hidden_state, "show") == 0) {
+	if ((!config->display_mode == MODE_HIDE) || config->hidden_state == BAR_SHOW) {
 	
 		cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	

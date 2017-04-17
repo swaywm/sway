@@ -16,6 +16,17 @@ struct box_colors {
 	uint32_t text;
 };
 
+enum display_mode_types {
+	MODE_HIDE,
+	MODE_DOCK,
+	MODE_INVISIBLE
+};
+
+enum hidden_states {
+	BAR_HIDDEN,
+	BAR_SHOW
+};
+
 /**
  * Swaybar config.
  */
@@ -26,8 +37,8 @@ struct config {
 	char *font;
 	char *sep_symbol;
 	char *mode;
-	char *display_mode;
-	char *hidden_state;
+	enum display_mode_types display_mode;
+	enum hidden_states hidden_state;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
 	bool wrap_scroll;
@@ -63,6 +74,16 @@ uint32_t parse_position(const char *position);
  * Parse font.
  */
 char *parse_font(const char *font);
+
+/**
+ * Parse display mode dock|hide|invisible.
+ */
+enum display_mode_types parse_display_mode(const char *display_mode);
+
+/**
+ * Parse hidden state show|hide.
+ */
+enum hidden_states parse_hidden_state(const char *hidden_state);
 
 /**
  * Initialize default sway config.

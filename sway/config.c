@@ -68,7 +68,6 @@ static void free_bar(struct bar_config *bar) {
 		return;
 	}
 	free(bar->display_mode);
-	free(bar->mode);
 	free(bar->hidden_state);
 	free(bar->status_command);
 	free(bar->font);
@@ -1337,7 +1336,6 @@ struct bar_config *default_bar_config(void) {
 	}
 	if (!(bar->display_mode = strdup("dock"))) goto cleanup;
 	if (!(bar->hidden_state = strdup("hide"))) goto cleanup;
-	bar->mode = NULL;
 	bar->modifier = WLC_BIT_MOD_LOGO;
 	bar->outputs = NULL;
 	bar->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;

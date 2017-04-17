@@ -49,13 +49,11 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	}
 	
 	if (display_mode) {
-		free(config->display_mode);
-		config->display_mode = strdup(json_object_get_string(display_mode));
+		config->display_mode = parse_display_mode(strdup(json_object_get_string(display_mode)));
 	}
 	
 	if (hidden_state) {
-		free(config->hidden_state);
-		config->hidden_state = strdup(json_object_get_string(hidden_state));
+		config->hidden_state = parse_hidden_state(strdup(json_object_get_string(hidden_state)));
 	}
 
 	if (position) {
@@ -337,11 +335,15 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 	json_object_put(outputs);
 	// Will need to be redone for display mode toggling compatibility
 	// Will require setting bar->config->hidden_state to "show" as default
-	const char *subscribe_json = strcmp(bar->config->display_mode, "hide") == 0 ?
-		"[ \"workspace\", \"mode\", \"modifier\" ]"
-		: "[ \"workspace\", \"mode\" ]";
-	len = strlen(subscribe_json);
-	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	json_object *subscribe_json = json_object_new_array();
+	json_object_array_add(subscribe_json, json_object_new_string("workspace"));
+	json_object_array_add(subscribe_json, json_object_new_string("mode"));
+	if (bar->config->display_mode == MODE_HIDE) {
+		json_object_array_add(subscribe_json, json_object_new_string("modifier"));
+	}
+	const char *subscribe_json_string = json_object_to_json_string(subscribe_json);
+	len = strlen(subscribe_json_string);
+	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json_string, &len);
 	free(res);
 
 	ipc_update_workspaces(bar);
@@ -390,11 +392,10 @@ bool handle_ipc_event(struct bar *bar) {
 		json_object *json_change;
 		if (json_object_object_get_ex(result, "change", &json_change)) {
 			const char *change = json_object_get_string(json_change);
-			free(bar->config->hidden_state);
 			if (strcmp(change, "pressed") == 0) {
-				bar->config->hidden_state = strdup("show");
+				bar->config->hidden_state = BAR_SHOW;
 			} else { //must be "released"
-				bar->config->hidden_state = strdup("hide");
+				bar->config->hidden_state = BAR_HIDDEN;
 			}
 	
 		} else {

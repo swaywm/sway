@@ -30,6 +30,28 @@ char *parse_font(const char *font) {
 	return new_font;
 }
 
+enum display_mode_types parse_display_mode(const char *display_mode) {
+	if (strcmp("hide", display_mode) == 0) {
+		return MODE_HIDE;
+	} else if (strcmp("dock", display_mode) == 0) {
+		return MODE_DOCK;
+	} else if (strcmp("invisible", display_mode) == 0) {
+		return MODE_INVISIBLE;
+	} else {
+		return MODE_DOCK;
+	}
+}
+
+enum hidden_states parse_hidden_state(const char *hidden_state) {
+	if (strcmp("show", hidden_state) == 0) {
+		return BAR_SHOW;
+	} else if (strcmp("hide", hidden_state) == 0) {
+		return BAR_HIDDEN;
+	} else {
+		return BAR_SHOW;
+	}
+}
+
 struct config *init_config() {
 	struct config *config = calloc(1, sizeof(struct config));
 	config->status_command = NULL;
@@ -37,8 +59,8 @@ struct config *init_config() {
 	config->position = DESKTOP_SHELL_PANEL_POSITION_BOTTOM;
 	config->font = strdup("monospace 10");
 	config->mode = NULL;
-	config->display_mode = NULL;
-	config->hidden_state = NULL;
+	config->display_mode = MODE_DOCK;
+	config->hidden_state = BAR_SHOW;
 	config->sep_symbol = NULL;
 	config->strip_workspace_numbers = false;
 	config->binding_mode_indicator = true;
