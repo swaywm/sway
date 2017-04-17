@@ -27,6 +27,9 @@ struct panel_config {
 	struct wl_client *client;
 	// wlc handle for this panel's surface, not set until panel is created
 	wlc_handle handle;
+	
+	enum desktop_shell_hide_modes hide_mode;
+	enum desktop_shell_hide_state hide;
 };
 
 struct desktop_shell_state {

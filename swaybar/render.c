@@ -286,67 +286,58 @@ void render(struct output *output, struct config *config, struct status_line *li
 	cairo_set_operator(cairo, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cairo);
 	cairo_restore(cairo);
-	// Could also be done by always rendering then conditionally clearing and drawing alpha
-	// That may be preferable down the line
-	if (!(config->display_mode == MODE_HIDE) || config->hidden_state == BAR_SHOW) {
+	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	
-		cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
-	
-		// Background
-		if (is_focused) {
-			cairo_set_source_u32(cairo, config->colors.focused_background);
-		} else {
-			cairo_set_source_u32(cairo, config->colors.background);
-		}
-		cairo_paint(cairo);
-	
-		// Command output
-		if (is_focused) {
-			cairo_set_source_u32(cairo, config->colors.focused_statusline);
-		} else {
-			cairo_set_source_u32(cairo, config->colors.statusline);
-		}
-	
-		int width, height;
-	
-		if (line->protocol == TEXT) {
-			get_text_size(window->cairo, window->font, &width, &height,
-					window->scale, config->pango_markup, "%s", line->text_line);
-			cairo_move_to(cairo, (window->width * window->scale)
-					- margin - width, margin);
-			pango_printf(window->cairo, window->font, window->scale,
-					config->pango_markup, "%s", line->text_line);
-		} else if (line->protocol == I3BAR && line->block_line) {
-			double pos = (window->width * window->scale) - 0.5;
-			bool edge = true;
-			for (i = line->block_line->length - 1; i >= 0; --i) {
-				struct status_block *block = line->block_line->items[i];
-				if (block->full_text && block->full_text[0]) {
-					render_block(window, config, block, &pos, edge, is_focused);
-					edge = false;
-				}
-			}
-		}
-	
-		cairo_set_line_width(cairo, 1.0);
-		double x = 0.5;
-	
-		// Workspaces
-		if (config->workspace_buttons) {
-			for (i = 0; i < output->workspaces->length; ++i) {
-				struct workspace *ws = output->workspaces->items[i];
-				render_workspace_button(window, config, ws, &x);
-			}
-		}
-	
-		// binding mode indicator
-		if (config->mode && config->binding_mode_indicator) {
-			render_binding_mode_indicator(window, config, x);
-		}
+	// Background
+	if (is_focused) {
+		cairo_set_source_u32(cairo, config->colors.focused_background);
 	} else {
-		cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_u32(cairo, 0x00000000);
-		cairo_paint(cairo);
+		cairo_set_source_u32(cairo, config->colors.background);
+	}
+	cairo_paint(cairo);
+
+	// Command output
+	if (is_focused) {
+		cairo_set_source_u32(cairo, config->colors.focused_statusline);
+	} else {
+		cairo_set_source_u32(cairo, config->colors.statusline);
+	}
+
+	int width, height;
+
+	if (line->protocol == TEXT) {
+		get_text_size(window->cairo, window->font, &width, &height,
+				window->scale, config->pango_markup, "%s", line->text_line);
+		cairo_move_to(cairo, (window->width * window->scale)
+				- margin - width, margin);
+		pango_printf(window->cairo, window->font, window->scale,
+				config->pango_markup, "%s", line->text_line);
+	} else if (line->protocol == I3BAR && line->block_line) {
+		double pos = (window->width * window->scale) - 0.5;
+		bool edge = true;
+		for (i = line->block_line->length - 1; i >= 0; --i) {
+			struct status_block *block = line->block_line->items[i];
+			if (block->full_text && block->full_text[0]) {
+				render_block(window, config, block, &pos, edge, is_focused);
+				edge = false;
+			}
+		}
+	}
+
+	cairo_set_line_width(cairo, 1.0);
+	double x = 0.5;
+
+	// Workspaces
+	if (config->workspace_buttons) {
+		for (i = 0; i < output->workspaces->length; ++i) {
+			struct workspace *ws = output->workspaces->items[i];
+			render_workspace_button(window, config, ws, &x);
+		}
+	}
+
+	// binding mode indicator
+	if (config->mode && config->binding_mode_indicator) {
+		render_binding_mode_indicator(window, config, x);
 	}
 }
 

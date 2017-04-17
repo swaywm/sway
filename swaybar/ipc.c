@@ -383,27 +383,42 @@ bool handle_ipc_event(struct bar *bar) {
 		break;
 	}
 	case IPC_EVENT_MODIFIER: {
-		json_object *result = json_tokener_parse(resp->payload);
-		if (!result) {
-			free_ipc_response(resp);
-			sway_log(L_ERROR, "failed to parse payload as json");
-			return false;
-		}
-		json_object *json_change;
-		if (json_object_object_get_ex(result, "change", &json_change)) {
-			const char *change = json_object_get_string(json_change);
-			if (strcmp(change, "pressed") == 0) {
-				bar->config->hidden_state = BAR_SHOW;
-			} else { //must be "released"
-				bar->config->hidden_state = BAR_HIDDEN;
+		if (bar->config->display_mode == MODE_HIDE) {
+			json_object *result = json_tokener_parse(resp->payload);
+			if (!result) {
+				free_ipc_response(resp);
+				sway_log(L_ERROR, "failed to parse payload as json");
+				return false;
 			}
-	
-		} else {
-			sway_log(L_ERROR, "failed to parse response");
+			json_object *json_change;
+			if (json_object_object_get_ex(result, "change", &json_change)) {
+				const char *change = json_object_get_string(json_change);
+				if (strcmp(change, "pressed") == 0) {
+					bar->config->hidden_state = BAR_SHOW;
+					sway_log(L_ERROR, "Showing bar on %d outputs", bar->outputs->length);
+					int i;
+					for (i = 0; i < bar->outputs->length; ++i) {
+						struct output *bar_output = bar->outputs->items[i];
+						sway_log(L_ERROR, "showing bar on input %d, with registry %p", i, bar_output->registry);
+						desktop_shell_set_panel_hide(bar_output->registry->desktop_shell, DESKTOP_SHELL_HIDE_STATE_SHOW);
+					}
+				} else { //must be "released"
+					bar->config->hidden_state = BAR_HIDDEN;
+					sway_log(L_ERROR, "Hiding bar");
+					int i;
+					for (i = 0; i < bar->outputs->length; ++i) {
+						struct output *bar_output = bar->outputs->items[i];
+						desktop_shell_set_panel_hide(bar_output->registry->desktop_shell, DESKTOP_SHELL_HIDE_STATE_HIDE);
+					}
+				}
+		
+			} else {
+				sway_log(L_ERROR, "failed to parse response");
+			}
+		
+			json_object_put(result);
+			break;
 		}
-	
-		json_object_put(result);
-		break;
 	}
 	default:
 		free_ipc_response(resp);

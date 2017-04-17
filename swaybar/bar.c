@@ -163,6 +163,15 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 				output->output, bar_output->window->surface);
 		desktop_shell_set_panel_position(bar_output->registry->desktop_shell,
 				bar->config->position);
+		switch (bar->config->display_mode) {
+		case MODE_HIDE:
+		case MODE_INVISIBLE:
+			desktop_shell_set_panel_hide_mode(bar_output->registry->desktop_shell, DESKTOP_SHELL_HIDE_MODES_HIDE);
+			break;
+		case MODE_DOCK:
+			desktop_shell_set_panel_hide_mode(bar_output->registry->desktop_shell, DESKTOP_SHELL_HIDE_MODES_SHOW);
+			break;
+		}
 
 		window_make_shell(bar_output->window);
 
