@@ -116,13 +116,6 @@ struct bar_config {
 	 *
 	 * In "show" mode, it will always be shown on top of the active workspace.
 	 */
-	char *mode;
-	/**
-	 * Current keybinding mode
-	 *
-	 * Names should probably be reworked at some point, but I'm keeping it for now
-	 * Don't think this does anything at the moment
-	 */
 	char *hidden_state;
 	/**
 	 * Id name used to identify the bar through IPC.
