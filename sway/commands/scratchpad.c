@@ -16,8 +16,8 @@ static swayc_t *fetch_view_from_scratchpad() {
 		wlc_view_set_output(view->handle, swayc_active_output()->handle);
 	}
 	if (!view->is_floating) {
-		view->width = swayc_active_workspace()->width/2;
-		view->height = swayc_active_workspace()->height/2;
+		view->width = swayc_active_workspace()->width * 0.5;
+		view->height = swayc_active_workspace()->height * 0.75;
 		view->x = (swayc_active_workspace()->width - view->width)/2;
 		view->y = (swayc_active_workspace()->height - view->height)/2;
 	}
