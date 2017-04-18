@@ -118,6 +118,9 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Moves the focused container or workspace to the output identified by _name_ or
 	_direction_. _direction_ may be one of _up_, _down_, _left_, _right_.
 
+**move** [to] scratchpad::
+	Moves the focused window to the scratchpad.
+
 **reload**::
 	Reloads the sway config file without restarting sway.
 
