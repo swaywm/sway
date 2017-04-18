@@ -120,7 +120,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 			swayc_t *workspace = swayc_parent_by_type(view, C_WORKSPACE);
 			move_workspace_to(workspace, output);
 		}
-	} else if (strcasecmp(argv[0], "scratchpad") == 0) {
+	} else if (strcasecmp(argv[0], "scratchpad") == 0 || (strcasecmp(argv[0], "to") == 0 && strcasecmp(argv[1], "scratchpad") == 0)) {
 		// move scratchpad ...
 		if (view->type != C_CONTAINER && view->type != C_VIEW) {
 			return cmd_results_new(CMD_FAILURE, "move scratchpad", "Can only move containers and views.");
