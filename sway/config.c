@@ -912,8 +912,16 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 }
 
 static void invoke_swaybar(struct bar_config *bar) {
+	// Pipe to communicate errors
+	int filedes[2];
+	if (pipe(filedes) == -1) {
+		sway_log(L_ERROR, "Pipe setup failed! Cannot fork into bar");
+		return;
+	}
+
 	bar->pid = fork();
 	if (bar->pid == 0) {
+		close(filedes[0]);
 		if (!bar->swaybar_command) {
 			char *const cmd[] = {
 				"swaybar",
@@ -922,14 +930,20 @@ static void invoke_swaybar(struct bar_config *bar) {
 				NULL,
 			};
 
+			close(filedes[1]);
 			execvp(cmd[0], cmd);
+			_exit(EXIT_SUCCESS);
 		} else {
 			// run custom swaybar
 			int len = strlen(bar->swaybar_command) + strlen(bar->id) + 5;
 			char *command = malloc(len * sizeof(char));
 			if (!command) {
-				sway_log(L_ERROR, "Unable to allocate swaybar command string");
-				return;
+				const char msg[] = "Unable to allocate swaybar command string";
+				int len = sizeof(msg);
+				write(filedes[1], &len, sizeof(int));
+				write(filedes[1], msg, len);
+				close(filedes[1]);
+				_exit(EXIT_FAILURE);
 			}
 			snprintf(command, len, "%s -b %s", bar->swaybar_command, bar->id);
 
@@ -940,10 +954,26 @@ static void invoke_swaybar(struct bar_config *bar) {
 				NULL,
 			};
 
+			close(filedes[1]);
 			execvp(cmd[0], cmd);
 			free(command);
+			_exit(EXIT_SUCCESS);
 		}
 	}
+	close(filedes[0]);
+	int len;
+	if(read(filedes[1], &len, sizeof(int)) == sizeof(int)) {
+		char *buf = malloc(len);
+		if(!buf) {
+			sway_log(L_ERROR, "Cannot allocate error string");
+			return;
+		}
+		if(read(filedes[1], buf, len)) {
+			sway_log(L_ERROR, "%s", buf);
+		}
+		free(buf);
+	}
+	close(filedes[1]);
 }
 
 static void terminate_swaybar(pid_t pid) {
