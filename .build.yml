@@ -1,0 +1,25 @@
+# vim: ft=yaml ts=2 sw=2 et :
+image: archlinux
+packages:
+  - cmake
+  - wlc-git
+  - xorg-server-xwayland
+  - xcb-util-image
+  - json-c
+  - pango
+  - cairo
+  - wayland
+  - gdk-pixbuf2
+  - asciidoc
+repos:
+  - https://git.sr.ht/~sircmpwn/sway
+tasks:
+  - setup: |
+      cd sway
+      mkdir build
+      cd build
+      cmake ..
+  - build: |
+      cd sway
+      cd build
+      make
