@@ -106,6 +106,8 @@ char *workspace_next_name(const char *output_name) {
 				free(target);
 				target = _target;
 				sway_log(L_DEBUG, "Workspace: Found free name %s", _target);
+				free(dup);
+				break;
 			}
 		}
 		free(dup);
