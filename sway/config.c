@@ -940,8 +940,8 @@ static void invoke_swaybar(struct bar_config *bar) {
 			if (!command) {
 				const char msg[] = "Unable to allocate swaybar command string";
 				int len = sizeof(msg);
-				write(filedes[1], &len, sizeof(int));
-				write(filedes[1], msg, len);
+				if (write(filedes[1], &len, sizeof(int))) {};
+				if (write(filedes[1], msg, len)) {};
 				close(filedes[1]);
 				_exit(EXIT_FAILURE);
 			}
