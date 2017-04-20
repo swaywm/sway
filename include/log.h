@@ -17,7 +17,10 @@ void reset_log_level(void);
 bool toggle_debug_logging(void);
 void sway_log_colors(int mode);
 void sway_log_errno(log_importance_t verbosity, char* format, ...) __attribute__((format(printf,2,3)));
-void sway_abort(const char* format, ...) __attribute__((format(printf,1,2)));
+
+void _sway_abort(const char *filename, int line, const char* format, ...) __attribute__((format(printf,3,4)));
+#define sway_abort(FMT, ...) \
+    _sway_abort(__FILE__, __LINE__, FMT, ##__VA_ARGS__)
 
 bool _sway_assert(bool condition, const char *filename, int line, const char* format, ...) __attribute__((format(printf,4,5)));
 #define sway_assert(COND, FMT, ...) \

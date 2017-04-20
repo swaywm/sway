@@ -53,16 +53,6 @@ void sway_log_colors(int mode) {
 	colored = (mode == 1) ? 1 : 0;
 }
 
-void sway_abort(const char *format, ...) {
-	fprintf(stderr, "ERROR: ");
-	va_list args;
-	va_start(args, format);
-	vfprintf(stderr, format, args);
-	va_end(args);
-	fprintf(stderr, "\n");
-	sway_terminate(EXIT_FAILURE);
-}
-
 void _sway_vlog(const char *filename, int line, log_importance_t verbosity,
 		const char *format, va_list args) {
 	if (verbosity <= v) {
@@ -114,6 +104,15 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 	va_start(args, format);
 	_sway_vlog(filename, line, verbosity, format, args);
 	va_end(args);
+}
+
+
+void _sway_abort(const char *filename, int line, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	_sway_vlog(filename, line, L_ERROR, format, args);
+	va_end(args);
+	sway_terminate(EXIT_FAILURE);
 }
 
 void sway_log_errno(log_importance_t verbosity, char* format, ...) {
