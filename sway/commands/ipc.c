@@ -32,8 +32,12 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return cmd_results_new(
 				CMD_FAILURE, "ipc", "Memory allocation error occured.");
 	}
-	current_policy = alloc_ipc_policy(program);
-	list_add(config->ipc_policies, current_policy);
+	if ((current_policy = alloc_ipc_policy(program))) {
+		list_add(config->ipc_policies, current_policy);
+	} else {
+		return cmd_results_new(
+				CMD_FAILURE, "ipc", "Failed to allocate security policy.");
+	}
 
 	free(program);
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);
