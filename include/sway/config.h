@@ -208,6 +208,7 @@ enum secure_feature {
 struct feature_policy {
 	char *program;
 	uint32_t features;
+	bool validated;
 };
 
 enum ipc_feature {
@@ -235,6 +236,7 @@ enum ipc_feature {
 struct ipc_policy {
 	char *program;
 	uint32_t features;
+	bool validated;
 };
 
 /**

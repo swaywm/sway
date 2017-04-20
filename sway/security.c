@@ -45,9 +45,6 @@ static bool validate_ipc_target(const char *program) {
 struct feature_policy *alloc_feature_policy(const char *program) {
 	uint32_t default_policy = 0;
 
-	if (!validate_ipc_target(program)) {
-		return NULL;
-	}
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *policy = config->feature_policies->items[i];
 		if (strcmp(policy->program, "*") == 0) {
@@ -60,6 +57,7 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 	if (!policy) {
 		return NULL;
 	}
+	policy->validated = validate_ipc_target	(program);
 	policy->program = strdup(program);
 	if (!policy->program) {
 		free(policy);
@@ -73,9 +71,6 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 struct ipc_policy *alloc_ipc_policy(const char *program) {
 	uint32_t default_policy = 0;
 
-	if (!validate_ipc_target(program)) {
-		return NULL;
-	}
 	for (int i = 0; i < config->ipc_policies->length; ++i) {
 		struct ipc_policy *policy = config->ipc_policies->items[i];
 		if (strcmp(policy->program, "*") == 0) {
@@ -88,6 +83,7 @@ struct ipc_policy *alloc_ipc_policy(const char *program) {
 	if (!policy) {
 		return NULL;
 	}
+	policy->validated = validate_ipc_target	(program);
 	policy->program = strdup(program);
 	if (!policy->program) {
 		free(policy);

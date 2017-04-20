@@ -49,7 +49,6 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 		return error;
 	}
 
-	bool assign_perms = true;
 	char *program = NULL;
 
 	if (!strcmp(argv[0], "*")) {
@@ -65,11 +64,14 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 	}
 
 	struct feature_policy *policy = get_feature_policy(program);
-	if (assign_perms) {
+	if (policy->validated) {
 		policy->features |= get_features(argc, argv, &error);
+		sway_log(L_DEBUG, "Permissions granted to %s for features %d",
+				policy->program, policy->features);
+	} else {
+		sway_log(L_ERROR, "Unable to validate IPC permit target '%s'."
+			" will issue empty policy", argv[0]);
 	}
-	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
-			policy->program, policy->features);
 
 	free(program);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -98,6 +100,10 @@ struct cmd_results *cmd_reject(int argc, char **argv) {
 	}
 
 	struct feature_policy *policy = get_feature_policy(program);
+	if (!policy->validated) {
+		sway_log(L_ERROR, "Unable to validate IPC reject target '%s'."
+			" Allowing `reject` directive anyway", argv[0]);
+	}
 	policy->features &= ~get_features(argc, argv, &error);
 
 	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
