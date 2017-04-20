@@ -22,7 +22,7 @@ static bool validate_ipc_target(const char *program) {
 	}
 	if (!S_ISREG(sb.st_mode)) {
 		sway_log(L_ERROR,
-				"IPC target '%s' MUST be/point at an existing regular file",
+				"IPC target '%s' MUST point at an existing file",
 				program);
 		return false;
 	}
@@ -31,7 +31,7 @@ static bool validate_ipc_target(const char *program) {
 		sway_log(L_ERROR, "IPC target '%s' MUST be owned by root", program);
 		return false;
 #else
-		sway_log(L_INFO, "IPC target '%s' MUST be owned by root (waived for debug build)", program);
+		sway_log(L_ERROR, "IPC target '%s' MUST be owned by root (waived for debug build)", program);
 		return true;
 #endif
 	}
