@@ -19,14 +19,6 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return error;
 	}
 
-	char *program = NULL;
-
-	if (!strcmp(argv[0], "*")) {
-		program = strdup(argv[0]);
-	} else if (!(program = resolve_path(argv[0]))) {
-		return cmd_results_new(
-				CMD_INVALID, "ipc", "Unable to resolve IPC Policy target.");
-	}
 	if (config->reading && strcmp("{", argv[1]) != 0) {
 		return cmd_results_new(CMD_INVALID, "ipc",
 				"Expected '{' at start of IPC config definition.");
@@ -36,6 +28,14 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "ipc", "Can only be used in config file.");
 	}
 
+    char *program = NULL;
+
+    if (!strcmp(argv[0], "*")) {
+        program = strdup(argv[0]);
+    } else if (!(program = resolve_path(argv[0]))) {
+        return cmd_results_new(
+                CMD_INVALID, "ipc", "Unable to resolve IPC Policy target.");
+    }
 	current_policy = alloc_ipc_policy(program);
 	list_add(config->ipc_policies, current_policy);
 
