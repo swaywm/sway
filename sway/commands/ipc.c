@@ -18,24 +18,20 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 	if ((error = check_security_config())) {
 		return error;
 	}
-
 	if (config->reading && strcmp("{", argv[1]) != 0) {
 		return cmd_results_new(CMD_INVALID, "ipc",
 				"Expected '{' at start of IPC config definition.");
 	}
-
 	if (!config->reading) {
 		return cmd_results_new(CMD_FAILURE, "ipc", "Can only be used in config file.");
 	}
 
-    char *program = NULL;
+	char *program = NULL;
 
-    if (!strcmp(argv[0], "*")) {
-        program = strdup(argv[0]);
-    } else if (!(program = resolve_path(argv[0]))) {
-        return cmd_results_new(
-                CMD_INVALID, "ipc", "Unable to resolve IPC Policy target.");
-    }
+	if (!(program = resolve_ipc_path(argv[0]))) {
+		return cmd_results_new(
+				CMD_FAILURE, "ipc", "Memory allocation error occured.");
+	}
 	current_policy = alloc_ipc_policy(program);
 	list_add(config->ipc_policies, current_policy);
 

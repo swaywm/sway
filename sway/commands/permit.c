@@ -50,17 +50,8 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 	}
 
 	char *program = NULL;
-
-	if (!strcmp(argv[0], "*")) {
-		program = strdup(argv[0]);
-	} else {
-		program = resolve_path(argv[0]);
-	}
-	if (!program) {
-		sway_assert(program, "Unable to resolve IPC permit target '%s'."
-			" will issue empty policy", argv[0]);
-		assign_perms = false;
-		program = strdup(argv[0]);
+	if (!(program = resolve_ipc_path(argv[0]))) {
+		sway_abort("memory allocation failed");
 	}
 
 	struct feature_policy *policy = get_feature_policy(program);
@@ -87,16 +78,8 @@ struct cmd_results *cmd_reject(int argc, char **argv) {
 	}
 
 	char *program = NULL;
-	if (!strcmp(argv[0], "*")) {
-		program = strdup(argv[0]);
-	} else {
-		program = resolve_path(argv[0]);
-	}
-	if (!program) {
-		// Punt
-		sway_log(L_INFO, "Unable to resolve IPC reject target '%s'."
-			" Will use provided path", argv[0]);
-		program = strdup(argv[0]);
+	if (!(program = resolve_ipc_path(argv[0]))) {
+		sway_abort("memory allocation failed");
 	}
 
 	struct feature_policy *policy = get_feature_policy(program);

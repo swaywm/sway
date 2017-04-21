@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "sway/config.h"
 #include "sway/security.h"
+#include "util.h"
 #include "log.h"
 
 static bool validate_ipc_target(const char *program) {
@@ -221,4 +222,22 @@ const char *command_policy_str(enum command_context context) {
 		default:
 			return "unknown";
 	}
+}
+
+/**
+ * An IPC-specific version of util.c:resolve_path()
+ * Always returns the "best" path It can unless an ENOMEM occurs ,
+ * in which case it returns NULL.
+ */
+char *resolve_ipc_path(const char* name) {
+	char *program = NULL;
+	if (!strcmp(name, "*")) {
+		program = strdup(name);
+	} else {
+		program = resolve_path(name);
+		if (!program) {
+			program = strdup(name);
+		}
+	}
+	return program;
 }
