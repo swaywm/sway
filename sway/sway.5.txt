@@ -282,7 +282,7 @@ The default colors are:
 
 **gaps** edge_gaps <on|off|toggle>::
 	Whether or not to add gaps between views and workspace edges if amount of
-	inner gap is not zero. When _no_, no gap is added where the view is aligned to
+	inner gap is not zero. When _off_, no gap is added where the view is aligned to
 	the workspace edge, effectively creating gaps only between views. The toggle
 	argument cannot be used in the configuration file.
 
