@@ -306,39 +306,16 @@ json_object *ipc_json_describe_input(struct libinput_device *device) {
 }
 
 json_object *ipc_json_get_version() {
+	int major = 0, minor = 0, patch = 0;
 	json_object *version = json_object_new_object();
 
-#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
-	char *full_version = calloc(strlen(SWAY_GIT_VERSION) + strlen(SWAY_GIT_BRANCH) + strlen(SWAY_VERSION_DATE) + 20, 1);
-	if (!full_version) {
-		json_object_object_add(version, "human_readable",
-				json_object_new_string("Allocating version string failed"));
-		// TODO: it's stupid that we allocate this in the first place
-		json_object_object_add(version, "major", json_object_new_int(0));
-		json_object_object_add(version, "minor", json_object_new_int(0));
-		json_object_object_add(version, "patch", json_object_new_int(0));
-		return version;
-	}
-	strcat(full_version, SWAY_GIT_VERSION);
-	strcat(full_version, " (");
-	strcat(full_version, SWAY_VERSION_DATE);
-	strcat(full_version, ", branch \"");
-	strcat(full_version, SWAY_GIT_BRANCH);
-	strcat(full_version, "\")");
+	sscanf(SWAY_VERSION, "%u.%u.%u", &major, &minor, &patch);
 
-	json_object_object_add(version, "human_readable", json_object_new_string(full_version));
+	json_object_object_add(version, "human_readable", json_object_new_string(SWAY_VERSION));
 	json_object_object_add(version, "variant", json_object_new_string("sway"));
-	// Todo once we actually release a version
-	json_object_object_add(version, "major", json_object_new_int(0));
-	json_object_object_add(version, "minor", json_object_new_int(0));
-	json_object_object_add(version, "patch", json_object_new_int(1));
-	free(full_version);
-#else
-	json_object_object_add(version, "human_readable", json_object_new_string("version not found"));
-	json_object_object_add(version, "major", json_object_new_int(0));
-	json_object_object_add(version, "minor", json_object_new_int(0));
-	json_object_object_add(version, "patch", json_object_new_int(0));
-#endif
+	json_object_object_add(version, "major", json_object_new_int(major));
+	json_object_object_add(version, "minor", json_object_new_int(minor));
+	json_object_object_add(version, "patch", json_object_new_int(patch));
 
 	return version;
 }
