@@ -451,11 +451,7 @@ int main(int argc, char **argv) {
 			socket_path = optarg;
 			break;
 		case 'v':
-#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
-			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n", SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
-#else
-			fprintf(stdout, "version not detected\n");
-#endif
+			fprintf(stdout, "swaylock version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		case 'u':

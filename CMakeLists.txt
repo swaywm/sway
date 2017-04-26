@@ -20,7 +20,10 @@ endif()
 list(INSERT CMAKE_MODULE_PATH 0
 	${CMAKE_CURRENT_SOURCE_DIR}/CMake
 	)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+
+if (VERSION)
+	add_definitions(-DSWAY_VERSION=\"${VERSION}\")
+else()
 	execute_process(
 		COMMAND git describe --always --tags
 		OUTPUT_VARIABLE GIT_COMMIT_HASH
@@ -33,13 +36,10 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		)
+
+	string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
+	add_definitions("-DSWAY_VERSION=\"${GIT_COMMIT_HASH} (${CURRENT_DATE}, branch \\\"${GIT_BRANCH}\\\")\"")
 endif()
-
-add_definitions(-DSWAY_GIT_VERSION=\"${GIT_COMMIT_HASH}\")
-add_definitions(-DSWAY_GIT_BRANCH=\"${GIT_BRANCH}\")
-
-string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
-add_definitions(-DSWAY_VERSION_DATE=\"${CURRENT_DATE}\")
 
 option(enable-swaylock "Enables the swaylock utility" YES)
 option(enable-swaybg "Enables the wallpaper utility" YES)
