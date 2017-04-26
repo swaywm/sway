@@ -390,8 +390,10 @@ static bool handle_view_created(wlc_handle handle) {
 		}
 	}
 
+	swayc_t *prev_focus = get_focused_container(&root_container);
+
 	if (!focused || focused->type == C_OUTPUT) {
-		focused = get_focused_container(&root_container);
+		focused = prev_focus;
 		// Move focus from floating view
 		if (focused->is_floating) {
 			// To workspace if there are no children
@@ -458,7 +460,11 @@ static bool handle_view_created(wlc_handle handle) {
 
 	if (newview) {
 		ipc_event_window(newview, "new");
-		set_focused_container(newview);
+		swayc_t *workspace = swayc_parent_by_type(newview, C_WORKSPACE);
+		if ((workspace && workspace->children->length == 1)
+				|| !criteria_any(newview, config->no_focus)) {
+			set_focused_container(newview);
+		}
 		wlc_view_set_mask(handle, VISIBLE);
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
@@ -477,7 +483,7 @@ static bool handle_view_created(wlc_handle handle) {
 			// refocus in-between command lists
 			set_focused_container(newview);
 		}
-		swayc_t *workspace = swayc_parent_by_type(focused, C_WORKSPACE);
+		workspace = swayc_parent_by_type(focused, C_WORKSPACE);
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
 		}
