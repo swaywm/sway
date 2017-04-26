@@ -336,6 +336,10 @@ The default colors are:
 	When _output_: place mouse at center of newly focused window when changing
 	output. When _none_: don't move mouse.
 
+**no_focus** <criteria>::
+	Prevents windows matching <criteria> from being focused automatically when
+	they're created. This does not apply to the first window in a workspace.
+
 **output** <name> <resolution|res> <WIDTHxHEIGHT>::
 	Configures the specified output to use the given resolution.
 	+

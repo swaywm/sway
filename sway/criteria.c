@@ -359,6 +359,16 @@ void free_criteria(struct criteria *crit) {
 	free(crit);
 }
 
+bool criteria_any(swayc_t *cont, list_t *criteria) {
+	for (int i = 0; i < criteria->length; i++) {
+		struct criteria *bc = criteria->items[i];
+		if (criteria_test(cont, bc->tokens)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 list_t *criteria_for(swayc_t *cont) {
 	list_t *criteria = config->criteria, *matches = create_list();
 	for (int i = 0; i < criteria->length; i++) {

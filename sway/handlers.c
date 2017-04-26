@@ -390,8 +390,10 @@ static bool handle_view_created(wlc_handle handle) {
 		}
 	}
 
+	swayc_t *prev_focus = get_focused_container(&root_container);
+
 	if (!focused || focused->type == C_OUTPUT) {
-		focused = get_focused_container(&root_container);
+		focused = prev_focus;
 		// Move focus from floating view
 		if (focused->is_floating) {
 			// To workspace if there are no children
@@ -499,6 +501,16 @@ static bool handle_view_created(wlc_handle handle) {
 		// now let's return to where we were
 		workspace_switch(current_ws);
 		set_focused_container(get_focused_container(current_ws));
+	}
+	if (prev_focus && prev_focus->type == C_VIEW
+			&& newview && criteria_any(newview, config->no_focus)) {
+		// Restore focus
+		swayc_t *ws = swayc_parent_by_type(newview, C_WORKSPACE);
+		if (!ws || ws != newview->parent
+				|| ws->children->length + ws->floating->length != 1) {
+			sway_log(L_DEBUG, "no_focus: restoring focus to %s", prev_focus->name);
+			set_focused_container(prev_focus);
+		}
 	}
 
 	suspend_workspace_cleanup = false;

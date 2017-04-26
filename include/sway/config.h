@@ -250,6 +250,7 @@ struct sway_config {
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *criteria;
+	list_t *no_focus;
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;

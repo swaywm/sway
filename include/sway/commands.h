@@ -135,6 +135,7 @@ sway_cmd cmd_mouse_warping;
 sway_cmd cmd_move;
 sway_cmd cmd_new_float;
 sway_cmd cmd_new_window;
+sway_cmd cmd_no_focus;
 sway_cmd cmd_orientation;
 sway_cmd cmd_output;
 sway_cmd cmd_permit;

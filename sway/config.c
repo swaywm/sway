@@ -249,6 +249,11 @@ void free_config(struct sway_config *config) {
 	}
 	list_free(config->criteria);
 
+	for (i = 0; config->no_focus && i < config->no_focus->length; ++i) {
+		free_criteria(config->no_focus->items[i]);
+	}
+	list_free(config->no_focus);
+
 	for (i = 0; config->input_configs && i < config->input_configs->length; ++i) {
 		free_input_config(config->input_configs->items[i]);
 	}
@@ -291,6 +296,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->workspace_outputs = create_list())) goto cleanup;
 	if (!(config->pid_workspaces = create_list())) goto cleanup;
 	if (!(config->criteria = create_list())) goto cleanup;
+	if (!(config->no_focus = create_list())) goto cleanup;
 	if (!(config->input_configs = create_list())) goto cleanup;
 	if (!(config->output_configs = create_list())) goto cleanup;
 
