@@ -460,11 +460,7 @@ static bool handle_view_created(wlc_handle handle) {
 
 	if (newview) {
 		ipc_event_window(newview, "new");
-		swayc_t *workspace = swayc_parent_by_type(newview, C_WORKSPACE);
-		if ((workspace && workspace->children->length == 1)
-				|| !criteria_any(newview, config->no_focus)) {
-			set_focused_container(newview);
-		}
+		set_focused_container(newview);
 		wlc_view_set_mask(handle, VISIBLE);
 		swayc_t *output = swayc_parent_by_type(newview, C_OUTPUT);
 		arrange_windows(output, -1, -1);
@@ -483,7 +479,7 @@ static bool handle_view_created(wlc_handle handle) {
 			// refocus in-between command lists
 			set_focused_container(newview);
 		}
-		workspace = swayc_parent_by_type(focused, C_WORKSPACE);
+		swayc_t *workspace = swayc_parent_by_type(focused, C_WORKSPACE);
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
 		}
@@ -505,6 +501,16 @@ static bool handle_view_created(wlc_handle handle) {
 		// now let's return to where we were
 		workspace_switch(current_ws);
 		set_focused_container(get_focused_container(current_ws));
+	}
+	if (prev_focus && prev_focus->type == C_VIEW
+			&& newview && criteria_any(newview, config->no_focus)) {
+		// Restore focus
+		swayc_t *ws = swayc_parent_by_type(newview, C_WORKSPACE);
+		if (!ws || ws != newview->parent
+				|| ws->children->length + ws->floating->length != 1) {
+			sway_log(L_DEBUG, "no_focus: restoring focus to %s", prev_focus->name);
+			set_focused_container(prev_focus);
+		}
 	}
 
 	suspend_workspace_cleanup = false;
