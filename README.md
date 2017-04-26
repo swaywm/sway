@@ -84,7 +84,7 @@ it'll work out of the box. Otherwise, copy the sample configuration file to
 `~/.config/sway/config`. It is usually located at `/etc/sway/config`.
 Run `man 5 sway` for information on the configuration.
 
-My own dotfiles are available [here](https://gogs.sr.ht/SirCmpwn/dotfiles) if
+My own dotfiles are available [here](https://git.sr.ht/~sircmpwn/dotfiles) if
 you want some inspiration, and definitely check out the
 [wiki](https://github.com/SirCmpwn/sway/wiki) as well.
 
