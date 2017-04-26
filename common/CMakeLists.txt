@@ -10,6 +10,6 @@ add_library(sway-common STATIC
 	util.c
 	readline.c
 	stringop.c
-	)
+)
 
 target_link_libraries(sway-common m)
