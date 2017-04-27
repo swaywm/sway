@@ -11,7 +11,7 @@ packages:
   - wayland
   - gdk-pixbuf2
   - asciidoc
-repos:
+sources:
   - https://git.sr.ht/~sircmpwn/sway
 tasks:
   - setup: |
