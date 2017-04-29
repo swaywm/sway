@@ -25,6 +25,10 @@ static struct cmd_results *parse_border_color(struct border_colors *border_color
 		*colors[i] = strtoul(buffer + 1, NULL, 16);
 	}
 
+	if (argc < 5) {
+		border_colors->child_border = border_colors->background;
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
