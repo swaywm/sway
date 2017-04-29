@@ -85,6 +85,10 @@ static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **
 	enum swayc_layouts old_layout = container->layout;
 	enum swayc_layouts layout = old_layout;
 
+	if ((error = checkarg(argc, "layout auto", EXPECTED_MORE_THAN, 1))) {
+		return error;
+	}
+
 	if (strcasecmp(argv[1], "left") == 0) {
 		layout = L_AUTO_LEFT;
 	} else if (strcasecmp(argv[1], "right") == 0) {
