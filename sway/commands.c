@@ -249,7 +249,7 @@ static struct cmd_handler bar_handlers[] = {
  */
 struct cmd_results *add_color(const char *name, char *buffer, const char *color) {
 	int len = strlen(color);
-	if (len != 7 && len != 9 ) {
+	if (len != 7 && len != 9) {
 		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
 	}
 
