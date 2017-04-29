@@ -42,8 +42,15 @@ struct swaylock_state {
 	wlc_resource surface;
 };
 
+struct decoration_state {
+	list_t *csd_resources;
+};
+
 extern struct desktop_shell_state desktop_shell;
+extern struct decoration_state decoration_state;
 
 void register_extensions(void);
+
+void server_decoration_enable_csd(wlc_handle handle);
 
 #endif
