@@ -276,6 +276,11 @@ The default colors are:
 **focus_follows_mouse** <yes|no>::
 	If set to _yes_, moving your mouse over a window will focus that window.
 
+**font** <font>::
+	Sets font for use in title bars. Generally the format is something like "Name
+	Style Size" e.g. "Deja Vu Sans Book 12". You can also use Pango font
+	descriptions with "pango:font".
+
 **for_window** <criteria> <command>::
 	Whenever a window that matches _criteria_ appears, run list of commands. See
 	**Criteria** section below.
