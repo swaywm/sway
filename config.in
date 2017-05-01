@@ -41,7 +41,6 @@ output * bg __DATADIR__/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #   }
 #
 # You can get the names of your inputs by running: swaymsg -t get_inputs
-# The escape symbol "\" has to be removed.
 # Read `man 5 sway-input` for more information about this section.
 
 ### Key bindings
