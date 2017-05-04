@@ -1,7 +1,9 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/input_state.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
@@ -52,6 +54,12 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		// Check for xkb key
 		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i],
 				XKB_KEYSYM_CASE_INSENSITIVE);
+
+		// Check for mouse binding
+		if (strncasecmp(split->items[i], "button", strlen("button")) == 0 &&
+				strlen(split->items[i]) == strlen("button0")) {
+			sym = ((char *)split->items[i])[strlen("button")] - '1' + M_LEFT_CLICK;
+		}
 		if (!sym) {
 			free_sway_binding(binding);
 			free_flat_list(split);
