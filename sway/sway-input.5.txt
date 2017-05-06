@@ -30,7 +30,7 @@ Commands
 **input** <identifier> dwt <enabled|disabled>::
 	Enables or disables disable-while-typing for the specified input device.
 
-**input** <identifier> events <enable|disabled>::
+**input** <identifier> events <enabled|disabled|disabled_on_external_mouse>::
 	Enables or disables send_events for specified input device.
 	(Disabling  send_events disables the input device)
 
