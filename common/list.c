@@ -1,134 +1,177 @@
 #include "list.h"
-#include <stdio.h>
+
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
-list_t *create_list(void) {
-	list_t *list = malloc(sizeof(list_t));
-	if (!list) {
+list_t *list_new(size_t memb_size, size_t capacity) {
+	if (capacity == 0)
+		capacity = 8;
+
+	list_t *l = malloc(sizeof(*l) + memb_size * capacity);
+	if (!l) {
 		return NULL;
 	}
-	list->capacity = 10;
-	list->length = 0;
-	list->items = malloc(sizeof(void*) * list->capacity);
-	return list;
+
+	l->capacity = capacity;
+	l->length = 0;
+	l->memb_size = memb_size;
+
+	return l;
 }
 
-static void list_resize(list_t *list) {
-	if (list->length == list->capacity) {
-		list->capacity += 10;
-		list->items = realloc(list->items, sizeof(void*) * list->capacity);
+static bool resize(list_t **list) {
+	list_t *l = *list;
+
+	if (l->length < l->capacity) {
+		return true;
 	}
+
+	size_t new_cap = l->capacity * 2;
+	l = realloc(l, sizeof(*l) + l->memb_size * new_cap);
+	if (!l) {
+		return false;
+	}
+
+	*list = l;
+	l->capacity = new_cap;
+	return true;
 }
 
-void list_free(list_t *list) {
-	if (list == NULL) {
+void list_add(list_t **list, const void *data) {
+	if (!data || !list || !*list || !resize(list)) {
 		return;
 	}
-	free(list->items);
-	free(list);
+	list_t *l = *list;
+
+	memcpy(l->data + l->memb_size * l->length, data, l->memb_size);
+	++l->length;
 }
 
-void list_foreach(list_t *list, void (*callback)(void *item)) {
-	if (list == NULL || callback == NULL) {
+void list_insert(list_t **list, size_t index, const void *data) {
+	if (!data || !list || !*list || index > (*list)->length || !resize(list)) {
 		return;
 	}
-	for (int i = 0; i < list->length; i++) {
-		callback(list->items[i]);
+	list_t *l = *list;
+
+	size_t size = l->memb_size;
+	unsigned char (*array)[size] = (void *)l->data;
+	memmove(&array[index + 1], &array[index], size * (l->length - index));
+	memcpy(&array[index], data, size);
+	++l->length;
+}
+
+void list_delete(list_t *list, size_t index) {
+	if (!list || index >= list->length) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = (void *)list->data;
+
+	memmove(&array[index], &array[index + 1], size * (list->length - index));
+	--list->length;
+}
+
+void list_swap(list_t *list, size_t i1, size_t i2) {
+	if (!list || i1 >= list->length || i2 >= list->length) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = (void *)list->data;
+
+	unsigned char tmp[size];
+	memcpy(tmp, &array[i1], size);
+	memcpy(&array[i1], &array[i2], size);
+	memcpy(&array[i2], tmp, size);
+}
+
+void *list_get(list_t *list, size_t index) {
+	if (!list || index >= list->length) {
+		return NULL;
+	}
+
+	return list->data + list->memb_size * index;
+}
+
+void list_qsort(list_t *list, int compare(const void *, const void *)) {
+	if (!list || !compare) {
+		return;
+	}
+
+	qsort(list->data, list->length, list->memb_size, compare);
+}
+
+void list_isort(list_t *list, int compare(const void *, const void *)) {
+	if (!list || !compare) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = (void *)list->data;
+
+	for (size_t i = 1; i < list->length; ++i) {
+		unsigned char tmp[size];
+		memcpy(tmp, &array[i], size);
+
+		ssize_t j = i - 1;
+		while (j >= 0 && compare(&array[j], tmp) > 0) {
+			memcpy(&array[j + 1], &array[j], size);
+			--j;
+		}
+
+		memcpy(array[j + 1], tmp, size);
 	}
 }
 
-void list_add(list_t *list, void *item) {
-	list_resize(list);
-	list->items[list->length++] = item;
-}
+ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *),
+	const void *key, void *ret) {
+	if (!list || !compare || !key) {
+		return -1;
+	}
 
-void list_insert(list_t *list, int index, void *item) {
-	list_resize(list);
-	memmove(&list->items[index + 1], &list->items[index], sizeof(void*) * (list->length - index));
-	list->length++;
-	list->items[index] = item;
-}
-
-void list_del(list_t *list, int index) {
-	list->length--;
-	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->length - index));
-}
-
-void list_cat(list_t *list, list_t *source) {
-	int i;
-	for (i = 0; i < source->length; ++i) {
-		list_add(list, source->items[i]);
+	const unsigned char *ptr = bsearch(key, list->data, list->length, list->memb_size, compare);
+	if (!ptr) {
+		return -1;
+	} else {
+		if (ret) {
+			memcpy(ret, ptr, list->memb_size);
+		}
+		return (ptr - list->data) / list->memb_size;
 	}
 }
 
-void list_qsort(list_t *list, int compare(const void *left, const void *right)) {
-	qsort(list->items, list->length, sizeof(void *), compare);
-}
+ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *),
+	const void *key, void *ret) {
+	if (!list || !compare || !key) {
+		return -1;
+	}
 
-int list_seq_find(list_t *list, int compare(const void *item, const void *data), const void *data) {
-	for (int i = 0; i < list->length; i++) {
-		void *item = list->items[i];
-		if (compare(item, data) == 0) {
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = (void *)list->data;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		if (compare(&array[i], key) == 0) {
+			if (ret) {
+				memcpy(ret, &array[i], size);
+			}
 			return i;
 		}
 	}
+
 	return -1;
 }
 
-void list_swap(list_t *list, int src, int dest) {
-	void *tmp = list->items[src];
-	list->items[src] = list->items[dest];
-	list->items[dest] = tmp;
-}
-
-static void list_rotate(list_t *list, int from, int to) {
-	void *tmp = list->items[to];
-
-	while (to > from) {
-		list->items[to] = list->items[to - 1];
-		to--;
-	}
-
-	list->items[from] = tmp;
-}
-
-static void list_inplace_merge(list_t *list, int left, int last, int mid, int compare(const void *a, const void *b)) {
-	int right = mid + 1;
-
-	if (compare(&list->items[mid], &list->items[right]) <= 0) {
+void list_foreach_cb(list_t *list, void callback(void *)) {
+	if (!list || !callback) {
 		return;
 	}
 
-	while (left <= mid && right <= last) {
-		if (compare(&list->items[left], &list->items[right]) <= 0) {
-			left++;
-		} else {
-			list_rotate(list, left, right);
-			left++;
-			mid++;
-			right++;
-		}
-	}
-}
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = (void *)list->data;
 
-static void list_inplace_sort(list_t *list, int first, int last, int compare(const void *a, const void *b)) {
-	if (first >= last) {
-		return;
-	} else if ((last - first) == 1) {
-		if (compare(&list->items[first], &list->items[last]) > 0) {
-			list_swap(list, first, last);
-		}
-	} else {
-		int mid = (int)((last + first) / 2);
-		list_inplace_sort(list, first, mid, compare);
-		list_inplace_sort(list, mid + 1, last, compare);
-		list_inplace_merge(list, first, last, mid, compare);
-	}
-}
-
-void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
-	if (list->length > 1) {
-		list_inplace_sort(list, 0, list->length - 1, compare);
+	for (size_t i = 0; i < list->length; ++i) {
+		callback(&array[i]);
 	}
 }
