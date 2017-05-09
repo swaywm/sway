@@ -27,6 +27,7 @@
 #include "stringop.h"
 #include "sway.h"
 #include "log.h"
+#include "util.h"
 
 static bool terminate_request = false;
 static int exit_value = 0;
@@ -209,6 +210,27 @@ static void security_sanity_check() {
 #endif
 }
 
+static void executable_sanity_check() {
+#ifdef __linux__
+		struct stat sb;
+		char *exe = realpath("/proc/self/exe", NULL);
+		stat(exe, &sb);
+		// We assume that cap_get_file returning NULL implies ENODATA
+		if (sb.st_mode & (S_ISUID|S_ISGID) && cap_get_file(exe)) {
+			sway_log(L_ERROR,
+				"sway executable has both the s(g)uid bit AND file caps set.");
+			sway_log(L_ERROR,
+				"This is strongly discouraged (and completely broken).");
+			sway_log(L_ERROR,
+				"Please clear one of them (either the suid bit, or the file caps).");
+			sway_log(L_ERROR,
+				"If unsure, strip the file caps.");
+			exit(EXIT_FAILURE);
+		}
+		free(exe);
+#endif
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -326,6 +348,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	executable_sanity_check();
 #ifdef __linux__
 	bool suid = false;
 	if (getuid() != geteuid() || getgid() != getegid()) {
