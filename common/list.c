@@ -8,7 +8,7 @@ list_t *list_new(size_t memb_size, size_t capacity) {
 	if (capacity == 0)
 		capacity = 8;
 
-	list_t *l = malloc(sizeof(*l) + memb_size * capacity);
+	list_t *l = malloc(sizeof(*l));
 	if (!l) {
 		return NULL;
 	}
@@ -17,48 +17,62 @@ list_t *list_new(size_t memb_size, size_t capacity) {
 	l->length = 0;
 	l->memb_size = memb_size;
 
+	l->data = malloc(memb_size * capacity);
+	if (!l->data) {
+		free(l);
+		return NULL;
+	}
+
 	return l;
 }
 
-static bool resize(list_t **list) {
-	list_t *l = *list;
+void list_free(list_t *list) {
+	if (!list) {
+		return;
+	}
 
-	if (l->length < l->capacity) {
+	free(list->data);
+	free(list);
+}
+
+static bool resize(list_t *list) {
+	if (list->length < list->capacity) {
 		return true;
 	}
 
-	size_t new_cap = l->capacity * 2;
-	l = realloc(l, sizeof(*l) + l->memb_size * new_cap);
-	if (!l) {
+	size_t new_cap = list->capacity * 2;
+	void *data = realloc(list->data, list->memb_size * new_cap);
+	if (!data) {
 		return false;
 	}
 
-	*list = l;
-	l->capacity = new_cap;
+	list->data = data;
+	list->capacity = new_cap;
 	return true;
 }
 
-void list_add(list_t **list, const void *data) {
-	if (!data || !list || !*list || !resize(list)) {
+void list_add(list_t *list, const void *data) {
+	if (!data || !list || !resize(list)) {
 		return;
 	}
-	list_t *l = *list;
 
-	memcpy(l->data + l->memb_size * l->length, data, l->memb_size);
-	++l->length;
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = list->data;
+
+	memcpy(&array[list->length], data, size);
+	++list->length;
 }
 
-void list_insert(list_t **list, size_t index, const void *data) {
-	if (!data || !list || !*list || index > (*list)->length || !resize(list)) {
+void list_insert(list_t *list, size_t index, const void *data) {
+	if (!data || !list || index > list->length || !resize(list)) {
 		return;
 	}
-	list_t *l = *list;
 
-	size_t size = l->memb_size;
-	unsigned char (*array)[size] = (void *)l->data;
-	memmove(&array[index + 1], &array[index], size * (l->length - index));
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = list->data;
+	memmove(&array[index + 1], &array[index], size * (list->length - index));
 	memcpy(&array[index], data, size);
-	++l->length;
+	++list->length;
 }
 
 void list_delete(list_t *list, size_t index) {
@@ -67,7 +81,7 @@ void list_delete(list_t *list, size_t index) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = (void *)list->data;
+	unsigned char (*array)[size] = list->data;
 
 	memmove(&array[index], &array[index + 1], size * (list->length - index));
 	--list->length;
@@ -79,7 +93,7 @@ void list_swap(list_t *list, size_t i1, size_t i2) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = (void *)list->data;
+	unsigned char (*array)[size] = list->data;
 
 	unsigned char tmp[size];
 	memcpy(tmp, &array[i1], size);
@@ -92,7 +106,10 @@ void *list_get(list_t *list, size_t index) {
 		return NULL;
 	}
 
-	return list->data + list->memb_size * index;
+	size_t size = list->memb_size;
+	unsigned char (*array)[size] = list->data;
+
+	return &array[index];
 }
 
 void list_qsort(list_t *list, int compare(const void *, const void *)) {
@@ -109,7 +126,7 @@ void list_isort(list_t *list, int compare(const void *, const void *)) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = (void *)list->data;
+	unsigned char (*array)[size] = list->data;
 
 	for (size_t i = 1; i < list->length; ++i) {
 		unsigned char tmp[size];
@@ -138,7 +155,7 @@ ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *)
 		if (ret) {
 			memcpy(ret, ptr, list->memb_size);
 		}
-		return (ptr - list->data) / list->memb_size;
+		return (ptr - (unsigned char *)list->data) / list->memb_size;
 	}
 }
 
@@ -149,7 +166,7 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *)
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = (void *)list->data;
+	unsigned char (*array)[size] = list->data;
 
 	for (size_t i = 0; i < list->length; ++i) {
 		if (compare(&array[i], key) == 0) {
@@ -163,15 +180,23 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *)
 	return -1;
 }
 
-void list_foreach_cb(list_t *list, void callback(void *)) {
+void list_foreach(list_t *list, void callback(void *)) {
 	if (!list || !callback) {
 		return;
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = (void *)list->data;
+	unsigned char (*array)[size] = list->data;
 
 	for (size_t i = 0; i < list->length; ++i) {
 		callback(&array[i]);
 	}
+}
+
+void *list_end(list_t *list) {
+	if (!list) {
+		return NULL;
+	}
+
+	return (unsigned char *)list->data + list->memb_size * list->length;
 }

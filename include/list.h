@@ -1,7 +1,6 @@
 #ifndef _SWAY_LIST_H
 #define _SWAY_LIST_H
 
-#include <stdalign.h>
 #include <stddef.h>
 #include <sys/types.h>
 
@@ -9,7 +8,7 @@ typedef struct {
 	size_t capacity;
 	size_t length;
 	size_t memb_size;
-	alignas(max_align_t) unsigned char data[];
+	void *data;
 } list_t;
 
 /*
@@ -19,22 +18,25 @@ typedef struct {
  * memb_size must be the size of the type stored in this list.
  * If an element is added to this list which is not the same type
  * as the elements of the list, the behavior is undefined.
- *
- * This list should be freed with the stdlib free() function.
  */
 list_t *list_new(size_t memb_size, size_t capacity);
 
 /*
+ * Frees a list.
+ */
+void list_free(list_t *list);
+
+/*
  * Adds an element to the end of the list.
  */
-void list_add(list_t **list, const void *data);
+void list_add(list_t *list, const void *data);
 
 /*
  * Adds an element at an arbitrary position in the list, moving
  * the elements past index to make space.
  * index must be less than or equal to the length of the list.
  */
-void list_insert(list_t **list, size_t index, const void *data);
+void list_insert(list_t *list, size_t index, const void *data);
 
 /*
  * Deletes the element at an arbitrary position in the list,
@@ -87,22 +89,19 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *)
 /*
  * Calls a function on every item in the list.
  */
-void list_foreach_cb(list_t *list, void callback(void *));
+void list_foreach(list_t *list, void callback(void *));
 
 /*
- * This is for loop helper, iterating over every element in list.
- * iter must be a pointer to the list element's type.
- * You should not add, remove, or sort elements from the list while inside this loop.
+ * Returns a pointer to just past the end of the list.
+ * This can be used to write for loops more easily.
  *
- * Example:
- * 	char **ptr;
- * 	list_foreach(list_of_strings, ptr) {
+ * Example (for a list of char *):
+ * 	char **end = list_end(list);
+ * 	for (char **ptr = list->items; ptr < end; ++ptr) {
  * 		printf("%s\n", *ptr);
  * 	}
  */
-#define list_foreach(list, iter) \
-	for (iter = (void *)list->data; \
-		(unsigned char *)iter < list->data + list->memb_size * list->length; \
-		++iter)
+// Consider making this inline or __attribute__((pure))__
+void *list_end(list_t *list);
 
 #endif
