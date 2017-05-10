@@ -23,6 +23,7 @@ list_t *list_new(size_t memb_size, size_t capacity);
 
 /*
  * Frees a list.
+ * If list is null, no action is taken.
  */
 void list_free(list_t *list);
 
@@ -76,7 +77,7 @@ void list_isort(list_t *list, int compare(const void *, const void *));
  * The list must be sorted.
  */
 ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *),
-	const void *key, void *ret);
+		const void *key, void *ret);
 
 /*
  * Returns the index of the key in the list, using a linear search,
@@ -84,7 +85,7 @@ ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *)
  * copied into it.
  */
 ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *),
-	const void *key, void *ret);
+		const void *key, void *ret);
 
 /*
  * Calls a function on every item in the list.
@@ -101,7 +102,6 @@ void list_foreach(list_t *list, void callback(void *));
  * 		printf("%s\n", *ptr);
  * 	}
  */
-// Consider making this inline or __attribute__((pure))__
 void *list_end(list_t *list);
 
 #endif

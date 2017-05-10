@@ -1,4 +1,5 @@
 #include "list.h"
+#include "log.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -52,7 +53,7 @@ static bool resize(list_t *list) {
 }
 
 void list_add(list_t *list, const void *data) {
-	if (!data || !list || !resize(list)) {
+	if (!sway_assert(list && data, "Invalid argument") || !resize(list)) {
 		return;
 	}
 
@@ -64,7 +65,9 @@ void list_add(list_t *list, const void *data) {
 }
 
 void list_insert(list_t *list, size_t index, const void *data) {
-	if (!data || !list || index > list->length || !resize(list)) {
+	if (!sway_assert(list && data && index <= list->length, "Invalid argument") ||
+		!resize(list)) {
+
 		return;
 	}
 
@@ -76,7 +79,7 @@ void list_insert(list_t *list, size_t index, const void *data) {
 }
 
 void list_delete(list_t *list, size_t index) {
-	if (!list || index >= list->length) {
+	if (!sway_assert(list && index < list->length, "Invalid argument")) {
 		return;
 	}
 
@@ -88,7 +91,7 @@ void list_delete(list_t *list, size_t index) {
 }
 
 void list_swap(list_t *list, size_t i1, size_t i2) {
-	if (!list || i1 >= list->length || i2 >= list->length) {
+	if (!sway_assert(list && i1 < list->length && i2 < list->length, "Invalid argument")) {
 		return;
 	}
 
@@ -102,7 +105,7 @@ void list_swap(list_t *list, size_t i1, size_t i2) {
 }
 
 void *list_get(list_t *list, size_t index) {
-	if (!list || index >= list->length) {
+	if (!sway_assert(list && index < list->length, "Invalid argument")) {
 		return NULL;
 	}
 
@@ -113,7 +116,7 @@ void *list_get(list_t *list, size_t index) {
 }
 
 void list_qsort(list_t *list, int compare(const void *, const void *)) {
-	if (!list || !compare) {
+	if (!sway_assert(list && compare, "Invalid argument")) {
 		return;
 	}
 
@@ -121,7 +124,7 @@ void list_qsort(list_t *list, int compare(const void *, const void *)) {
 }
 
 void list_isort(list_t *list, int compare(const void *, const void *)) {
-	if (!list || !compare) {
+	if (!sway_assert(list && compare, "Invalid argument")) {
 		return;
 	}
 
@@ -143,8 +146,9 @@ void list_isort(list_t *list, int compare(const void *, const void *)) {
 }
 
 ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *),
-	const void *key, void *ret) {
-	if (!list || !compare || !key) {
+		const void *key, void *ret) {
+
+	if (!sway_assert(list && compare && key, "Invalid argument")) {
 		return -1;
 	}
 
@@ -160,8 +164,9 @@ ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *)
 }
 
 ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *),
-	const void *key, void *ret) {
-	if (!list || !compare || !key) {
+		const void *key, void *ret) {
+
+	if (!sway_assert(list && compare && key, "Invalid argument")) {
 		return -1;
 	}
 
@@ -181,7 +186,7 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *)
 }
 
 void list_foreach(list_t *list, void callback(void *)) {
-	if (!list || !callback) {
+	if (!sway_assert(list && callback, "Invalid argument")) {
 		return;
 	}
 
@@ -194,7 +199,7 @@ void list_foreach(list_t *list, void callback(void *)) {
 }
 
 void *list_end(list_t *list) {
-	if (!list) {
+	if (!sway_assert(list, "Invalid argument")) {
 		return NULL;
 	}
 
