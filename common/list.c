@@ -1,8 +1,9 @@
 #include "list.h"
 #include "log.h"
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 list_t *list_new(size_t memb_size, size_t capacity) {
@@ -59,7 +60,7 @@ void list_add(list_t *list, const void *data) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
 	memcpy(&array[list->length], data, size);
 	++list->length;
@@ -73,7 +74,7 @@ void list_insert(list_t *list, size_t index, const void *data) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 	memmove(&array[index + 1], &array[index], size * (list->length - index));
 	memcpy(&array[index], data, size);
 	++list->length;
@@ -85,7 +86,7 @@ void list_delete(list_t *list, size_t index) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
 	memmove(&array[index], &array[index + 1], size * (list->length - index));
 	--list->length;
@@ -112,9 +113,9 @@ void list_swap(list_t *list, size_t i1, size_t i2) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
-	unsigned char tmp[size];
+	uint8_t tmp[size];
 	memcpy(tmp, &array[i1], size);
 	memcpy(&array[i1], &array[i2], size);
 	memcpy(&array[i2], tmp, size);
@@ -126,7 +127,7 @@ void *list_get(list_t *list, size_t index) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
 	return &array[index];
 }
@@ -145,10 +146,10 @@ void list_isort(list_t *list, int compare(const void *, const void *)) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
 	for (size_t i = 1; i < list->length; ++i) {
-		unsigned char tmp[size];
+		uint8_t tmp[size];
 		memcpy(tmp, &array[i], size);
 
 		ssize_t j = i - 1;
@@ -168,14 +169,14 @@ ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *)
 		return -1;
 	}
 
-	const unsigned char *ptr = bsearch(key, list->items, list->length, list->memb_size, compare);
+	const uint8_t *ptr = bsearch(key, list->items, list->length, list->memb_size, compare);
 	if (!ptr) {
 		return -1;
 	} else {
 		if (ret) {
 			memcpy(ret, ptr, list->memb_size);
 		}
-		return (ptr - (unsigned char *)list->items) / list->memb_size;
+		return (ptr - (uint8_t *)list->items) / list->memb_size;
 	}
 }
 
@@ -187,7 +188,7 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *)
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
 	for (size_t i = 0; i < list->length; ++i) {
 		if (compare(&array[i], key) == 0) {
@@ -207,7 +208,7 @@ void list_foreach(list_t *list, void callback(void *)) {
 	}
 
 	size_t size = list->memb_size;
-	unsigned char (*array)[size] = list->items;
+	uint8_t (*array)[size] = list->items;
 
 	for (size_t i = 0; i < list->length; ++i) {
 		callback(&array[i]);
@@ -219,5 +220,5 @@ void *list_end(list_t *list) {
 		return NULL;
 	}
 
-	return (unsigned char *)list->items + list->memb_size * list->length;
+	return (uint8_t *)list->items + list->memb_size * list->length;
 }
