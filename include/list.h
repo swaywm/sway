@@ -8,7 +8,7 @@ typedef struct {
 	size_t capacity;
 	size_t length;
 	size_t memb_size;
-	void *data;
+	void *items;
 } list_t;
 
 /*
