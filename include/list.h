@@ -61,14 +61,14 @@ void *list_get(list_t *list, size_t index);
 /*
  * Sorts the list using the stdlib qsort() function.
  */
-void list_qsort(list_t *list, int compare(const void *, const void *));
+void list_qsort(list_t *list, int compare(const void *left, const void *right));
 
 /*
  * Sorts the list using insertion sort.
  * This should be used if you need a stable sort, and your list is
  * short and/or nearly sorted.
  */
-void list_isort(list_t *list, int compare(const void *, const void *));
+void list_isort(list_t *list, int compare(const void *left, const void *right));
 
 /*
  * Returns the index of key in the list, using the stdlib bsearch() function,
@@ -76,7 +76,7 @@ void list_isort(list_t *list, int compare(const void *, const void *));
  * copied into it.
  * The list must be sorted.
  */
-ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *),
+ssize_t list_bsearch(const list_t *list, int compare(const void *key, const void *item),
 		const void *key, void *ret);
 
 /*
@@ -84,13 +84,13 @@ ssize_t list_bsearch(const list_t *list, int compare(const void *, const void *)
  * or -1 if it was not found. If ret is not null, the found element will be
  * copied into it.
  */
-ssize_t list_lsearch(const list_t *list, int compare(const void *, const void *),
+ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void *item),
 		const void *key, void *ret);
 
 /*
  * Calls a function on every item in the list.
  */
-void list_foreach(list_t *list, void callback(void *));
+void list_foreach(list_t *list, void callback(void *item));
 
 /*
  * Returns a pointer to just past the end of the list.
