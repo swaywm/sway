@@ -88,6 +88,21 @@ void list_delete(list_t *list, size_t index) {
 
 	memmove(&array[index], &array[index + 1], size * (list->length - index));
 	--list->length;
+
+	/* We shrink very sparse lists, but only down to a certain size.
+	 * The choice of >= 8 is somewhat arbitrary, but leaves a minimum
+	 * size of 4 elements.
+	 */
+	if (list->length <= list->capacity / 4 && list->capacity >= 8) {
+		size_t new_cap = list->capacity / 2;
+		void *data = realloc(list->data, list->memb_size * new_cap);
+		if (!data) {
+			return;
+		}
+
+		list->data = data;
+		list->capacity = new_cap;
+	}
 }
 
 void list_swap(list_t *list, size_t i1, size_t i2) {
