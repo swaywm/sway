@@ -288,6 +288,15 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// we need to setup logging before wlc_init in case it fails.
+	if (debug) {
+		init_log(L_DEBUG);
+	} else if (verbose || validate) {
+		init_log(L_INFO);
+	} else {
+		init_log(L_ERROR);
+	}
+
 	if (optind < argc) { // Behave as IPC client
 		if(optind != 1) {
 			sway_log(L_ERROR, "Don't use options with the IPC client");
@@ -329,14 +338,6 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	// we need to setup logging before wlc_init in case it fails.
-	if (debug) {
-		init_log(L_DEBUG);
-	} else if (verbose || validate) {
-		init_log(L_INFO);
-	} else {
-		init_log(L_ERROR);
-	}
 	wlc_log_set_handler(wlc_log_handler);
 	log_kernel();
 	log_distro();
