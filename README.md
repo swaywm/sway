@@ -8,7 +8,12 @@ irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
-[More screenshots](https://github.com/SirCmpwn/sway/wiki/Screenshots-of-Sway)
+If you'd like to support Sway development, you can contribute to [my Patreon
+page](https://patreon.com/sircmpwn) or you can contribute to
+[bounties](https://github.com/SirCmpwn/sway/issues/986) for specific features.
+Anyone is welcome to claim a bounty and you can make a bounty for any feature
+you wish, and Patreon is more useful for supporting the overall health and
+maintenance of Sway.
 
 ## Release Signatures
 
@@ -22,8 +27,6 @@ and published [on GitHub](https://github.com/SirCmpwn/sway/releases).
 - [i3bar feature support](https://github.com/SirCmpwn/sway/issues/343)
 - [i3-gaps feature support](https://github.com/SirCmpwn/sway/issues/307)
 - [security features](https://github.com/SirCmpwn/sway/issues/984)
-
-[Bounties](https://github.com/SirCmpwn/sway/issues/986): sponsor features or get paid to write them
 
 ## Installation
 
