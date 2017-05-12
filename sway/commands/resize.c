@@ -118,12 +118,12 @@ static bool resize_tiled(int amount, bool use_width) {
 	// 2. Ensure that the resize operation will not make one of the resized containers drop
 	//    below the "sane" size threshold.
 	bool valid = true;
-	swayc_t *focused = parent->children->items[idx_focused];
-	int start = use_major ? 0 : auto_group_start_index(parent, idx_focused);
-	int end = use_major ? parent->children->length : auto_group_end_index(parent, idx_focused);
-	sway_log(L_DEBUG, "Check children of container %p [%d,%d[", container, start, end);
-	for (int i = start; i < end; ) {
-		swayc_t *sibling = parent->children->items[i];
+	swayc_t *focused = *(swayc_t **)list_get(parent->children, idx_focused);
+	size_t start = use_major ? 0 : (size_t)auto_group_start_index(parent, idx_focused);
+	size_t end = use_major ? parent->children->length : (size_t)auto_group_end_index(parent, idx_focused);
+	sway_log(L_DEBUG, "Check children of container %p [%zu,%zu[", container, start, end);
+	for (size_t i = start; i < end; ) {
+		swayc_t *sibling = *(swayc_t **)list_get(parent->children, i);
 		double pixels = amount;
 		bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
 		bool is_after  = use_width ? sibling->x > focused->x : sibling->y > focused->y;
@@ -142,14 +142,14 @@ static bool resize_tiled(int amount, bool use_width) {
 			sway_log(L_DEBUG, "Container size no longer sane");
 			break;
 		}
-		i = use_major ? auto_group_end_index(parent, i) : (i + 1);
-		sway_log(L_DEBUG, "+++++ check %i", i);
+		i = use_major ? (size_t)auto_group_end_index(parent, i) : (i + 1);
+		sway_log(L_DEBUG, "+++++ check %zu", i);
 	}
 	// 3. Apply the size change
 	if (valid) {
-		for (int i = start; i < end; ) {
-			int next_i = use_major ? auto_group_end_index(parent, i) : (i + 1);
-			swayc_t *sibling = parent->children->items[i];
+		for (size_t i = start; i < end; ) {
+			int next_i = use_major ? (size_t)auto_group_end_index(parent, i) : (i + 1);
+			swayc_t *sibling = *(swayc_t **)list_get(parent->children, i);
 			double pixels = amount;
 			bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
 			bool is_after  = use_width ? sibling->x > focused->x : sibling->y > focused->y;
@@ -162,7 +162,8 @@ static bool resize_tiled(int amount, bool use_width) {
 				sway_log(L_DEBUG, "%p: %s", sibling, is_before ? "before" : "after");
 				if (use_major) {
 					for (int j = i; j < next_i; ++j) {
-						recursive_resize(parent->children->items[j], pixels,
+						swayc_t *item = *(swayc_t **)list_get(parent->children, j);
+						recursive_resize(item, pixels,
 								 use_width ?
 								 (is_before ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_LEFT) :
 								 (is_before ? WLC_RESIZE_EDGE_BOTTOM : WLC_RESIZE_EDGE_TOP));
@@ -176,9 +177,10 @@ static bool resize_tiled(int amount, bool use_width) {
 			} else {
 				if (use_major) {
 					for (int j = i; j < next_i; ++j) {
-						recursive_resize(parent->children->items[j], pixels / 2,
+						swayc_t *item = *(swayc_t **)list_get(parent->children, j);
+						recursive_resize(item, pixels / 2,
 								 use_width ? WLC_RESIZE_EDGE_LEFT : WLC_RESIZE_EDGE_TOP);
-						recursive_resize(parent->children->items[j], pixels / 2,
+						recursive_resize(item, pixels / 2,
 								 use_width ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_BOTTOM);
 					}
 				} else {

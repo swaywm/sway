@@ -126,15 +126,15 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 			return cmd_results_new(CMD_FAILURE, "move scratchpad", "Can only move containers and views.");
 		}
 		swayc_t *view = current_container;
-		int i;
-		for (i = 0; i < scratchpad->length; i++) {
-			if (scratchpad->items[i] == view) {
+		for (size_t i = 0; i < scratchpad->length; i++) {
+			swayc_t *item = *(swayc_t **)list_get(scratchpad, i);
+			if (item == view) {
 				hide_view_in_scratchpad(view);
 				sp_view = NULL;
 				return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 			}
 		}
-		list_add(scratchpad, view);
+		list_add(scratchpad, &view);
 		if (!view->is_floating) {
 			destroy_container(remove_child(view));
 		} else {

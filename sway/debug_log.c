@@ -47,7 +47,7 @@ static void container_log(const swayc_t *c, int depth) {
 	fprintf(stderr, "x:%4.f|y:%4.f|", c->x, c->y);
 	fprintf(stderr, "g:%3d|",c->gaps);
 	fprintf(stderr, "vis:%c|", c->visible?'t':'f');
-	fprintf(stderr, "children:%2d|",c->children?c->children->length:0);
+	fprintf(stderr, "children:%2zu|",c->children?c->children->length:0);
 	fprintf(stderr, "name:%.16s\n", c->name);
 }
 void layout_log(const swayc_t *c, int depth) {
@@ -59,7 +59,7 @@ void layout_log(const swayc_t *c, int depth) {
 		for (i = 0; i < e; ++i) {
 			fputc('|',stderr);
 			for (d = 0; d < depth; ++d) fputc('-', stderr);
-			layout_log(c->children->items[i], depth + 1);
+			layout_log(*(swayc_t **)list_get(c->children, i), depth + 1);
 		}
 	}
 	if (c->type == C_WORKSPACE) {
@@ -68,7 +68,7 @@ void layout_log(const swayc_t *c, int depth) {
 			for (i = 0; i < e; ++i) {
 				fputc('|',stderr);
 				for (d = 0; d < depth; ++d) fputc('=', stderr);
-				layout_log(c->floating->items[i], depth + 1);
+				layout_log(*(swayc_t **)list_get(c->floating, i), depth + 1);
 			}
 		}
 	}

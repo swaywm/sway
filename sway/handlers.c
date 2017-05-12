@@ -35,9 +35,8 @@
 #define EVENT_HANDLED true
 
 static struct panel_config *if_panel_find_config(struct wl_client *client) {
-	int i;
-	for (i = 0; i < desktop_shell.panels->length; i++) {
-		struct panel_config *config = desktop_shell.panels->items[i];
+	for (size_t i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *config = *(struct panel_config **)list_get(desktop_shell.panels, i);
 		if (config->client == client) {
 			return config;
 		}
@@ -46,9 +45,8 @@ static struct panel_config *if_panel_find_config(struct wl_client *client) {
 }
 
 static struct background_config *if_background_find_config(struct wl_client *client) {
-	int i;
-	for (i = 0; i < desktop_shell.backgrounds->length; i++) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
+	for (size_t i = 0; i < desktop_shell.backgrounds->length; i++) {
+		struct background_config *config = *(struct background_config **)list_get(desktop_shell.backgrounds, i);
 		if (config->client == client) {
 			return config;
 		}
@@ -98,8 +96,8 @@ static void update_panel_geometry(struct panel_config *config) {
 }
 
 static void update_panel_geometries(wlc_handle output) {
-	for (int i = 0; i < desktop_shell.panels->length; i++) {
-		struct panel_config *config = desktop_shell.panels->items[i];
+	for (size_t i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *config = *(struct panel_config **)list_get(desktop_shell.panels, i);
 		if (config->output == output) {
 			update_panel_geometry(config);
 		}
@@ -113,8 +111,8 @@ static void update_background_geometry(struct background_config *config) {
 }
 
 static void update_background_geometries(wlc_handle output) {
-	for (int i = 0; i < desktop_shell.backgrounds->length; i++) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
+	for (size_t i = 0; i < desktop_shell.backgrounds->length; i++) {
+		struct background_config *config = *(struct background_config **)list_get(desktop_shell.backgrounds, i);
 		if (config->output == output) {
 			update_background_geometry(config);
 		}
@@ -132,12 +130,11 @@ static bool handle_input_created(struct libinput_device *device) {
 	}
 	sway_log(L_INFO, "Found input device (%s)", identifier);
 
-	list_add(input_devices, device);
+	list_add(input_devices, &device);
 
 	struct input_config *ic = NULL;
-	int i;
-	for (i = 0; i < config->input_configs->length; ++i) {
-		struct input_config *cur = config->input_configs->items[i];
+	for (size_t i = 0; i < config->input_configs->length; ++i) {
+		struct input_config *cur = *(struct input_config **)list_get(config->input_configs, i);
 		if (strcasecmp(identifier, cur->identifier) == 0) {
 			sway_log(L_DEBUG, "Matched input config for %s",
 					identifier);
@@ -157,11 +154,10 @@ static bool handle_input_created(struct libinput_device *device) {
 }
 
 static void handle_input_destroyed(struct libinput_device *device) {
-	int i;
-	list_t *list = input_devices;
-	for (i = 0; i < list->length; ++i) {
-		if(((struct libinput_device *)list->items[i]) == device) {
-			list_del(list, i);
+	for (size_t i = 0; i < input_devices->length; ++i) {
+		struct libinput_device *item = *(struct libinput_device **)list_get(input_devices, i);
+		if (item == device) {
+			list_delete(input_devices, i);
 			break;
 		}
 	}
@@ -179,7 +175,7 @@ static bool handle_output_created(wlc_handle output) {
 
 	// Switch to workspace if we need to
 	if (swayc_active_workspace() == NULL) {
-		swayc_t *ws = op->children->items[0];
+		swayc_t *ws = *(swayc_t **)list_get(op->children, 0);
 		workspace_switch(ws);
 	}
 
@@ -191,21 +187,21 @@ static bool handle_output_created(wlc_handle output) {
 }
 
 static void handle_output_destroyed(wlc_handle output) {
-	int i;
+	size_t i;
 	list_t *list = root_container.children;
 	for (i = 0; i < list->length; ++i) {
-		if (((swayc_t *)list->items[i])->handle == output) {
+		if ((*(swayc_t **)list_get(list, i))->handle == output) {
 			break;
 		}
 	}
 	if (i < list->length) {
-		destroy_output(list->items[i]);
+		destroy_output(*(swayc_t **)list_get(list, i));
 	} else {
 		return;
 	}
 	if (list->length > 0) {
 		// switch to other outputs active workspace
-		workspace_switch(((swayc_t *)root_container.children->items[0])->focused);
+		workspace_switch((*(swayc_t **)list_get(root_container.children, 0))->focused);
 	}
 }
 
@@ -246,16 +242,16 @@ static void handle_output_focused(wlc_handle output, bool focus) {
 
 static void ws_cleanup() {
 	swayc_t *op, *ws;
-	int i = 0, j;
+	size_t i = 0, j;
 	if (!root_container.children)
 		return;
 	while (i < root_container.children->length) {
-		op = root_container.children->items[i++];
+		op = *(swayc_t **)list_get(root_container.children, i++);
 		if (!op->children)
 			continue;
 		j = 0;
 		while (j < op->children->length) {
-			ws = op->children->items[j++];
+			ws = *(swayc_t **)list_get(op->children, j++);
 			if (ws->children->length == 0 && ws->floating->length == 0 && ws != op->focused) {
 				if (destroy_workspace(ws)) {
 					j--;
@@ -403,7 +399,7 @@ static bool handle_view_created(wlc_handle handle) {
 			// TODO find a better way of doing this
 			// Or to focused container
 			else {
-				focused = get_focused_container(focused->parent->children->items[0]);
+				focused = get_focused_container(*(swayc_t **)list_get(focused->parent->children, 0));
 			}
 		}
 	}
@@ -466,8 +462,8 @@ static bool handle_view_created(wlc_handle handle) {
 		arrange_windows(output, -1, -1);
 		// check if it matches for_window in config and execute if so
 		list_t *criteria = criteria_for(newview);
-		for (int i = 0; i < criteria->length; i++) {
-			struct criteria *crit = criteria->items[i];
+		for (size_t i = 0; i < criteria->length; i++) {
+			struct criteria *crit = *(struct criteria **)list_get(criteria, i);
 			sway_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
 					crit->crit_raw, newview, crit->cmdlist);
 			struct cmd_results *res = handle_command(crit->cmdlist, CONTEXT_CRITERIA);
@@ -492,7 +488,7 @@ static bool handle_view_created(wlc_handle handle) {
 		}
 		*h = handle;
 		sway_log(L_DEBUG, "Adding unmanaged window %p to %p", h, output->unmanaged);
-		list_add(output->unmanaged, h);
+		list_add(output->unmanaged, &h);
 		wlc_view_set_mask(handle, VISIBLE);
 	}
 
@@ -559,14 +555,12 @@ static void handle_view_destroyed(wlc_handle handle) {
 		ipc_event_window(parent, "close");
 	} else {
 		// Is it unmanaged?
-		int i;
-		for (i = 0; i < root_container.children->length; ++i) {
-			swayc_t *output = root_container.children->items[i];
-			int j;
-			for (j = 0; j < output->unmanaged->length; ++j) {
-				wlc_handle *_handle = output->unmanaged->items[j];
+		for (size_t i = 0; i < root_container.children->length; ++i) {
+			swayc_t *output = *(swayc_t **)list_get(root_container.children, i);
+			for (size_t j = 0; j < output->unmanaged->length; ++j) {
+				wlc_handle *_handle =  *(wlc_handle **)list_get(output->unmanaged, j);
 				if (*_handle == handle) {
-					list_del(output->unmanaged, j);
+					list_delete(output->unmanaged, j);
 					free(_handle);
 					break;
 				}
@@ -693,16 +687,15 @@ static void handle_binding_command(struct sway_binding *binding) {
 }
 
 static bool handle_bindsym(struct sway_binding *binding, uint32_t keysym, uint32_t keycode) {
-	int i;
-	for (i = 0; i < binding->keys->length; ++i) {
+	for (size_t i = 0; i < binding->keys->length; ++i) {
 		if (binding->bindcode) {
-			xkb_keycode_t *key = binding->keys->items[i];
+			xkb_keycode_t *key = *(xkb_keycode_t **)list_get(binding->keys, i);
 			if (keycode == *key) {
 				handle_binding_command(binding);
 				return true;
 			}
 		} else {
-			xkb_keysym_t *key = binding->keys->items[i];
+			xkb_keysym_t *key = *(xkb_keysym_t **)list_get(binding->keys, i);
 			if (keysym == *key) {
 				handle_binding_command(binding);
 				return true;
@@ -715,15 +708,14 @@ static bool handle_bindsym(struct sway_binding *binding, uint32_t keysym, uint32
 
 static bool valid_bindsym(struct sway_binding *binding) {
 	bool match = false;
-	int i;
-	for (i = 0; i < binding->keys->length; ++i) {
+	for (size_t i = 0; i < binding->keys->length; ++i) {
 		if (binding->bindcode) {
-			xkb_keycode_t *key = binding->keys->items[i];
+			xkb_keycode_t *key = *(xkb_keycode_t **)list_get(binding->keys, i);
 			if ((match = check_key(0, *key)) == false) {
 				break;
 			}
 		} else {
-			xkb_keysym_t *key = binding->keys->items[i];
+			xkb_keysym_t *key = *(xkb_keysym_t **)list_get(binding->keys, i);
 			if ((match = check_key(*key, 0)) == false) {
 				break;
 			}
@@ -735,7 +727,7 @@ static bool valid_bindsym(struct sway_binding *binding) {
 
 static bool handle_bindsym_release(struct sway_binding *binding) {
 	if (binding->keys->length == 1) {
-		xkb_keysym_t *key = binding->keys->items[0];
+		xkb_keysym_t *key = *(xkb_keysym_t **)list_get(binding->keys, 0);
 		if (check_released_key(*key)) {
 			handle_binding_command(binding);
 			return true;
@@ -762,8 +754,6 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	struct wlc_modifiers no_mods = { 0, 0 };
 	uint32_t sym = tolower(wlc_keyboard_get_keysym_for_key(key, &no_mods));
 
-	int i;
-
 	if (state == WLC_KEY_STATE_PRESSED) {
 		press_key(sym, key);
 	} else { // WLC_KEY_STATE_RELEASED
@@ -772,8 +762,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 
 	// handle bar modifiers pressed/released
 	uint32_t modifier;
-	for (i = 0; i < config->active_bar_modifiers->length; ++i) {
-		modifier = *(uint32_t *)config->active_bar_modifiers->items[i];
+	for (size_t i = 0; i < config->active_bar_modifiers->length; ++i) {
+		modifier = **(uint32_t **)list_get(config->active_bar_modifiers, i);
 
 		switch (modifier_state_changed(modifiers->mods, modifier)) {
 		case MOD_STATE_PRESSED:
@@ -788,14 +778,14 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	modifiers_state_update(modifiers->mods);
 
 	// handle bindings
-	list_t *candidates = create_list();
-	for (i = 0; i < mode->bindings->length; ++i) {
-		struct sway_binding *binding = mode->bindings->items[i];
+	list_t *candidates = list_new(sizeof(struct sway_binding *), 0);
+	for (size_t i = 0; i < mode->bindings->length; ++i) {
+		struct sway_binding *binding = *(struct sway_binding **)list_get(mode->bindings, i);
 		if ((modifiers->mods ^ binding->modifiers) == 0) {
 			switch (state) {
 			case WLC_KEY_STATE_PRESSED: {
 				if (!binding->release && valid_bindsym(binding)) {
-					list_add(candidates, binding);
+					list_add(candidates, &binding);
 				}
 			}
 			case WLC_KEY_STATE_RELEASED:
@@ -808,8 +798,8 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		}
 	}
 
-	for (i = 0; i < candidates->length; ++i) {
-		struct sway_binding *binding = candidates->items[i];
+	for (size_t i = 0; i < candidates->length; ++i) {
+		struct sway_binding *binding = *(struct sway_binding **)list_get(candidates, i);
 		if (state == WLC_KEY_STATE_PRESSED) {
 			if (!binding->release && handle_bindsym(binding, sym, key)) {
 				list_free(candidates);
@@ -919,8 +909,8 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	struct sway_mode *mode = config->current_mode;
 	// handle bindings
-	for (int i = 0; i < mode->bindings->length; ++i) {
-		struct sway_binding *binding = mode->bindings->items[i];
+	for (size_t i = 0; i < mode->bindings->length; ++i) {
+		struct sway_binding *binding = *(struct sway_binding **)list_get(mode->bindings, i);
 		if ((modifiers->mods ^ binding->modifiers) == 0) {
 			switch (state) {
 				case WLC_BUTTON_STATE_PRESSED: {
@@ -1014,10 +1004,10 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 		}
 		// Send to front if floating
 		if (pointer->is_floating) {
-			int i;
-			for (i = 0; i < pointer->parent->floating->length; i++) {
-				if (pointer->parent->floating->items[i] == pointer) {
-					list_del(pointer->parent->floating, i);
+			for (size_t i = 0; i < pointer->parent->floating->length; i++) {
+				swayc_t *item = *(swayc_t **)list_get(pointer->parent->floating, i);
+				if (item == pointer) {
+					list_delete(pointer->parent->floating, i);
 					list_add(pointer->parent->floating, pointer);
 					break;
 				}
@@ -1077,14 +1067,14 @@ static void handle_wlc_ready(void) {
 	// Execute commands until there are none left
 	config->active = true;
 	while (config->cmd_queue->length) {
-		char *line = config->cmd_queue->items[0];
+		char *line = *(char **)list_get(config->cmd_queue, 0);
 		struct cmd_results *res = handle_command(line, CONTEXT_CONFIG);
 		if (res->status != CMD_SUCCESS) {
 			sway_log(L_ERROR, "Error on line '%s': %s", line, res->error);
 		}
 		free_cmd_results(res);
 		free(line);
-		list_del(config->cmd_queue, 0);
+		list_delete(config->cmd_queue, 0);
 	}
 }
 

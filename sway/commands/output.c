@@ -38,8 +38,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	// TODO: atoi doesn't handle invalid numbers
 
-	int i;
-	for (i = 1; i < argc; ++i) {
+	for (int i = 1; i < argc; ++i) {
 		const char *command = argv[i];
 
 		if (strcasecmp(command, "disable") == 0) {
@@ -157,15 +156,15 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		}
 	}
 
-	i = list_seq_find(config->output_configs, output_name_cmp, name);
+	struct output_config *oc;
+	ssize_t i = list_lsearch(config->output_configs, output_name_cmp, name, &oc);
 	if (i >= 0) {
 		// merge existing config
-		struct output_config *oc = config->output_configs->items[i];
 		merge_output_config(oc, output);
 		free_output_config(output);
 		output = oc;
 	} else {
-		list_add(config->output_configs, output);
+		list_add(config->output_configs, &output);
 	}
 
 	sway_log(L_DEBUG, "Config stored for output %s (enabled:%d) (%d x %d @ %d, %d scale %d) (bg %s %s)",
@@ -178,8 +177,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		// this is during startup then there will be no container and config
 		// will be applied during normal "new output" event from wlc.
 		swayc_t *cont = NULL;
-		for (int i = 0; i < root_container.children->length; ++i) {
-			cont = root_container.children->items[i];
+		for (size_t i = 0; i < root_container.children->length; ++i) {
+			cont = *(swayc_t **)list_get(root_container.children, i);
 			if (cont->name && ((strcmp(cont->name, output->name) == 0) || (strcmp(output->name, "*") == 0))) {
 				apply_output_config(output, cont);
 

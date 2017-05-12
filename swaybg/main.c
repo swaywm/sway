@@ -25,9 +25,8 @@ enum scaling_mode {
 };
 
 void sway_terminate(int exit_code) {
-	int i;
-	for (i = 0; i < surfaces->length; ++i) {
-		struct window *window = surfaces->items[i];
+	for (size_t i = 0; i < surfaces->length; ++i) {
+		struct window *window = *(struct window **)list_get(surfaces, i);
 		window_teardown(window);
 	}
 	list_free(surfaces);
@@ -54,7 +53,7 @@ bool is_valid_color(const char *color) {
 
 int main(int argc, const char **argv) {
 	init_log(L_INFO);
-	surfaces = create_list();
+	surfaces = list_new(sizeof(struct window *), 0);
 	registry = registry_poll();
 
 	if (argc != 4) {
@@ -66,9 +65,8 @@ int main(int argc, const char **argv) {
 	}
 
 	int desired_output = atoi(argv[1]);
-	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
-	int i;
-	struct output_state *output = registry->outputs->items[desired_output];
+	sway_log(L_INFO, "Using output %d of %zu", desired_output, registry->outputs->length);
+	struct output_state *output = *(struct output_state **)list_get(registry->outputs, desired_output);
 	struct window *window = window_setup(registry,
 			output->width, output->height, output->scale, false);
 	if (!window) {
@@ -76,7 +74,7 @@ int main(int argc, const char **argv) {
 	}
 	desktop_shell_set_background(registry->desktop_shell, output->output, window->surface);
 	window_make_shell(window);
-	list_add(surfaces, window);
+	list_add(surfaces, &window);
 
 	if (strcmp(argv[3], "solid_color") == 0 && is_valid_color(argv[2])) {
 		cairo_set_source_u32(window->cairo, parse_color(argv[2]));
@@ -119,8 +117,8 @@ int main(int argc, const char **argv) {
 		int wwidth = window->width * window->scale;
 		int wheight = window->height * window->scale;
 
-		for (i = 0; i < surfaces->length; ++i) {
-			struct window *window = surfaces->items[i];
+		for (size_t i = 0; i < surfaces->length; ++i) {
+			struct window *window = *(struct window **)list_get(surfaces, i);
 			if (window_prerender(window) && window->cairo) {
 				switch (scaling_mode) {
 				case SCALING_MODE_STRETCH:
@@ -196,8 +194,8 @@ int main(int argc, const char **argv) {
 
 	while (wl_display_dispatch(registry->display) != -1);
 
-	for (i = 0; i < surfaces->length; ++i) {
-		struct window *window = surfaces->items[i];
+	for (size_t i = 0; i < surfaces->length; ++i) {
+		struct window *window = *(struct window **)list_get(surfaces, i);
 		window_teardown(window);
 	}
 	list_free(surfaces);

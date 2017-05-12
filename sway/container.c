@@ -35,7 +35,7 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->nb_master = 1;
 	c->nb_slave_groups = 1;
 	if (type != C_VIEW) {
-		c->children = create_list();
+		c->children = list_new(sizeof(swayc_t *), 0);
 	}
 	return c;
 }
@@ -48,7 +48,7 @@ static void free_swayc(swayc_t *cont) {
 		// remove children until there are no more, free_swayc calls
 		// remove_child, which removes child from this container
 		while (cont->children->length) {
-			free_swayc(cont->children->items[0]);
+			free_swayc(*(swayc_t **)list_get(cont->children, 0));
 		}
 		list_free(cont->children);
 	}
@@ -57,7 +57,7 @@ static void free_swayc(swayc_t *cont) {
 	}
 	if (cont->floating) {
 		while (cont->floating->length) {
-			free_swayc(cont->floating->items[0]);
+			free_swayc(*(swayc_t **)list_get(cont->floating, 0));
 		}
 		list_free(cont->floating);
 	}
@@ -99,8 +99,8 @@ static void update_root_geometry() {
 	int child_width;
 	int child_height;
 
-	for (int i = 0; i < root_container.children->length; ++i) {
-		child = root_container.children->items[i];
+	for (size_t i = 0; i < root_container.children->length; ++i) {
+		child = *(swayc_t **)list_get(root_container.children, i);
 		child_width = child->width + child->x;
 		child_height = child->height + child->y;
 		if (child_width > width) {
@@ -123,24 +123,20 @@ swayc_t *new_output(wlc_handle handle) {
 	output_get_scaled_size(handle, &size);
 	const char *name = wlc_output_get_name(handle);
 	// Find current outputs to see if this already exists
-	{
-		int i, len = root_container.children->length;
-		for (i = 0; i < len; ++i) {
-			swayc_t *op = root_container.children->items[i];
-			const char *op_name = op->name;
-			if (op_name && name && strcmp(op_name, name) == 0) {
-				sway_log(L_DEBUG, "restoring output %" PRIuPTR ":%s", handle, op_name);
-				return op;
-			}
+	for (size_t i = 0; i < root_container.children->length; ++i) {
+		swayc_t *op = *(swayc_t **)list_get(root_container.children, i);
+		const char *op_name = op->name;
+		if (op_name && name && strcmp(op_name, name) == 0) {
+			sway_log(L_DEBUG, "restoring output %" PRIuPTR ":%s", handle, op_name);
+			return op;
 		}
 	}
 
 	sway_log(L_DEBUG, "New output %" PRIuPTR ":%s", handle, name);
 
 	struct output_config *oc = NULL, *all = NULL;
-	int i;
-	for (i = 0; i < config->output_configs->length; ++i) {
-		struct output_config *cur = config->output_configs->items[i];
+	for (size_t i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *cur = *(struct output_config **)list_get(config->output_configs, i);
 		if (strcasecmp(name, cur->name) == 0) {
 			sway_log(L_DEBUG, "Matched output config for %s", name);
 			oc = cur;
@@ -168,7 +164,7 @@ swayc_t *new_output(wlc_handle handle) {
 	output->name = name ? strdup(name) : NULL;
 	output->width = size.w;
 	output->height = size.h;
-	output->unmanaged = create_list();
+	output->unmanaged = list_new(sizeof(wlc_handle *), 0);
 	output->bg_pid = 0;
 
 	apply_output_config(oc, output);
@@ -180,8 +176,8 @@ swayc_t *new_output(wlc_handle handle) {
 	swayc_t *ws = NULL;
 
 	if (name) {
-		for (i = 0; i < config->workspace_outputs->length; ++i) {
-			struct workspace_output *wso = config->workspace_outputs->items[i];
+		for (size_t i = 0; i < config->workspace_outputs->length; ++i) {
+			struct workspace_output *wso = *(struct workspace_output **)list_get(config->workspace_outputs, i);
 			if (strcasecmp(wso->output, name) == 0) {
 				sway_log(L_DEBUG, "Matched workspace to output: %s for %s", wso->workspace, wso->output);
 				// Check if any other workspaces are using this name
@@ -206,7 +202,7 @@ swayc_t *new_output(wlc_handle handle) {
 		ws->is_focused = true;
 	} else {
 		sort_workspaces(output);
-		set_focused_container(output->children->items[0]);
+		set_focused_container(*(swayc_t **)list_get(output->children, 0));
 	}
 
 	free(ws_name);
@@ -231,7 +227,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	workspace->height = output->height;
 	workspace->name = !name ? NULL : strdup(name);
 	workspace->visible = false;
-	workspace->floating = create_list();
+	workspace->floating = list_new(sizeof(swayc_t *), 0);
 
 	add_child(output, workspace);
 	sort_workspaces(output);
@@ -265,9 +261,8 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 		cont->focused = workspace->focused;
 		workspace->focused = cont;
 		// set all children focu to container
-		int i;
-		for (i = 0; i < workspace->children->length; ++i) {
-			((swayc_t *)workspace->children->items[i])->parent = cont;
+		for (size_t i = 0; i < workspace->children->length; ++i) {
+			(*(swayc_t **)list_get(workspace->children, i))->parent = cont;
 		}
 		// Swap children
 		list_t  *tmp_list  = workspace->children;
@@ -437,16 +432,17 @@ swayc_t *destroy_output(swayc_t *output) {
 		// TODO also check if there will ever be no outputs except for exiting
 		// program
 		if (root_container.children->length > 1) {
-			int p = root_container.children->items[0] == output;
+			int p = *(swayc_t **)list_get(root_container.children, 0) == output;
 			// Move workspace from this output to another output
+			swayc_t *item = *(swayc_t **)list_get(root_container.children, p);
 			while (output->children->length) {
-				swayc_t *child = output->children->items[0];
+				swayc_t *child = *(swayc_t **)list_get(output->children, 0);
 				remove_child(child);
-				add_child(root_container.children->items[p], child);
+				add_child(item, child);
 			}
-			sort_workspaces(root_container.children->items[p]);
-			update_visibility(root_container.children->items[p]);
-			arrange_windows(root_container.children->items[p], -1, -1);
+			sort_workspaces(item);
+			update_visibility(item);
+			arrange_windows(item, -1, -1);
 		}
 	}
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%" PRIuPTR "'", output->handle);
@@ -474,23 +470,24 @@ swayc_t *destroy_workspace(swayc_t *workspace) {
 	} else {
 		// Move children to a different workspace on this output
 		swayc_t *new_workspace = NULL;
-		int i;
-		for(i = 0; i < output->children->length; i++) {
-			if(output->children->items[i] != workspace) {
+		for(size_t i = 0; i < output->children->length; i++) {
+			new_workspace = *(swayc_t **)list_get(output->children, i);
+			if (new_workspace != workspace) {
 				break;
 			}
 		}
-		new_workspace = output->children->items[i];
 
 		sway_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
 			workspace->name, new_workspace->name);
 
-		for(i = 0; i < workspace->children->length; i++) {
-			move_container_to(workspace->children->items[i], new_workspace);
+		for (size_t i = 0; i < workspace->children->length; i++) {
+			swayc_t *item = *(swayc_t **)list_get(workspace->children, i);
+			move_container_to(item, new_workspace);
 		}
 
-		for(i = 0; i < workspace->floating->length; i++) {
-			move_container_to(workspace->floating->items[i], new_workspace);
+		for (size_t i = 0; i < workspace->floating->length; i++) {
+			swayc_t *item = *(swayc_t **)list_get(workspace->floating, i);
+			move_container_to(item, new_workspace);
 		}
 	}
 
@@ -534,17 +531,16 @@ swayc_t *swayc_by_test(swayc_t *container, bool (*test)(swayc_t *view, void *dat
 		return NULL;
 	}
 	// Special case for checking floating stuff
-	int i;
 	if (container->type == C_WORKSPACE) {
-		for (i = 0; i < container->floating->length; ++i) {
-			swayc_t *child = container->floating->items[i];
+		for (size_t i = 0; i < container->floating->length; ++i) {
+			swayc_t *child = *(swayc_t **)list_get(container->floating, i);
 			if (test(child, data)) {
 				return child;
 			}
 		}
 	}
-	for (i = 0; i < container->children->length; ++i) {
-		swayc_t *child = container->children->items[i];
+	for (size_t i = 0; i < container->children->length; ++i) {
+		swayc_t *child = *(swayc_t **)list_get(container->children, i);
 		if (test(child, data)) {
 			return child;
 		} else {
@@ -710,8 +706,6 @@ swayc_t *container_under_pointer(void) {
 	struct wlc_point origin;
 	wlc_pointer_get_position(&origin);
 	while (lookup && lookup->type != C_VIEW) {
-		int i;
-		int len;
 		// if tabbed/stacked go directly to focused container, otherwise search
 		// children
 		if (lookup->layout == L_TABBED || lookup->layout == L_STACKED) {
@@ -720,11 +714,13 @@ swayc_t *container_under_pointer(void) {
 		}
 		// if workspace, search floating
 		if (lookup->type == C_WORKSPACE) {
+			ssize_t i, len;
 			i = len = lookup->floating->length;
 			bool got_floating = false;
 			while (--i > -1) {
-				if (pointer_test(lookup->floating->items[i], &origin)) {
-					lookup = lookup->floating->items[i];
+				swayc_t *item = *(swayc_t **)list_get(lookup->floating, i);
+				if (pointer_test(item, &origin)) {
+					lookup = item;
 					got_floating = true;
 					break;
 				}
@@ -734,10 +730,11 @@ swayc_t *container_under_pointer(void) {
 			}
 		}
 		// search children
-		len = lookup->children->length;
+		size_t i, len = lookup->children->length;
 		for (i = 0; i < len; ++i) {
-			if (pointer_test(lookup->children->items[i], &origin)) {
-				lookup = lookup->children->items[i];
+			swayc_t *item = *(swayc_t **)list_get(lookup->children, i);
+			if (pointer_test(item, &origin)) {
+				lookup = item;
 				break;
 			}
 		}
@@ -756,8 +753,8 @@ swayc_t *container_find(swayc_t *container, bool (*f)(swayc_t *, const void *), 
 
 	swayc_t *con;
 	if (container->type == C_WORKSPACE) {
-		for (int i = 0; i < container->floating->length; ++i) {
-			con = container->floating->items[i];
+		for (size_t i = 0; i < container->floating->length; ++i) {
+			con = *(swayc_t **)list_get(container->floating, i);
 			if (f(con, data)) {
 				return con;
 			}
@@ -768,8 +765,8 @@ swayc_t *container_find(swayc_t *container, bool (*f)(swayc_t *, const void *), 
 		}
 	}
 
-	for (int i = 0; i < container->children->length; ++i) {
-		con = container->children->items[i];
+	for (size_t i = 0; i < container->children->length; ++i) {
+		con = *(swayc_t **)list_get(container->children, i);
 		if (f(con, data)) {
 			return con;
 		}
@@ -837,16 +834,15 @@ int swayc_gap(swayc_t *container) {
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
 	if (container) {
 		f(container, data);
-		int i;
 		if (container->children)  {
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
+			for (size_t i = 0; i < container->children->length; ++i) {
+				swayc_t *child = *(swayc_t **)list_get(container->children, i);
 				container_map(child, f, data);
 			}
 		}
 		if (container->floating) {
-			for (i = 0; i < container->floating->length; ++i) {
-				swayc_t *child = container->floating->items[i];
+			for (size_t i = 0; i < container->floating->length; ++i) {
+				swayc_t *child = *(swayc_t **)list_get(container->floating, i);
 				container_map(child, f, data);
 			}
 		}
@@ -870,15 +866,15 @@ void update_visibility_output(swayc_t *container, wlc_handle output) {
 	// Update visibility for children
 	else {
 		if (container->children) {
-			int i, len = container->children->length;
-			for (i = 0; i < len; ++i) {
-				update_visibility_output(container->children->items[i], output);
+			for (size_t i = 0; i < container->children->length; ++i) {
+				swayc_t *item = *(swayc_t **)list_get(container->children, i);
+				update_visibility_output(item, output);
 			}
 		}
 		if (container->floating) {
-			int i, len = container->floating->length;
-			for (i = 0; i < len; ++i) {
-				update_visibility_output(container->floating->items[i], output);
+			for (size_t i = 0; i < container->floating->length; ++i) {
+				swayc_t *item = *(swayc_t **)list_get(container->floating, i);
+				update_visibility_output(item, output);
 			}
 		}
 	}
@@ -890,9 +886,9 @@ void update_visibility(swayc_t *container) {
 	case C_ROOT:
 		container->visible = true;
 		if (container->children) {
-			int i, len = container->children->length;
-			for (i = 0; i < len; ++i) {
-				update_visibility(container->children->items[i]);
+			for (size_t i = 0; i < container->children->length; ++i) {
+				swayc_t *item = *(swayc_t **)list_get(container->children, i);
+				update_visibility(item);
 			}
 		}
 		return;
@@ -900,9 +896,9 @@ void update_visibility(swayc_t *container) {
 	case C_OUTPUT:
 		container->visible = true;
 		if (container->children) {
-			int i, len = container->children->length;
-			for (i = 0; i < len; ++i) {
-				update_visibility_output(container->children->items[i], container->handle);
+			for (size_t i = 0; i < container->children->length; ++i) {
+				swayc_t *item = *(swayc_t **)list_get(container->children, i);
+				update_visibility_output(item, container->handle);
 			}
 		}
 		return;
@@ -983,8 +979,8 @@ swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
 			layout == L_AUTO_LEFT || layout == L_AUTO_RIGHT
 			? L_HORIZ : L_VERT;
 		if (new_major != prev_major) {
-			for (int i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
+			for (size_t i = 0; i < container->children->length; ++i) {
+				swayc_t *child = *(swayc_t **)list_get(container->children, i);
 				double h = child->height;
 				child->height = child->width;
 				child->width = h;

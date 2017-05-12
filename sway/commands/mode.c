@@ -22,9 +22,8 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 	}
 	struct sway_mode *mode = NULL;
 	// Find mode
-	int i, len = config->modes->length;
-	for (i = 0; i < len; ++i) {
-		struct sway_mode *find = config->modes->items[i];
+	for (size_t i = 0; i < config->modes->length; ++i) {
+		struct sway_mode *find = *(struct sway_mode **)list_get(config->modes, i);
 		if (strcasecmp(find->name, mode_name) == 0) {
 			mode = find;
 			break;
@@ -37,8 +36,8 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 			return cmd_results_new(CMD_FAILURE, "mode", "Unable to allocate mode");
 		}
 		mode->name = strdup(mode_name);
-		mode->bindings = create_list();
-		list_add(config->modes, mode);
+		mode->bindings = list_new(sizeof(struct sway_mode *), 0);
+		list_add(config->modes, &mode);
 	}
 	if (!mode) {
 		error = cmd_results_new(CMD_INVALID, "mode", "Unknown mode `%s'", mode_name);

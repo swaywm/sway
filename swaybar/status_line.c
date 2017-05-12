@@ -62,11 +62,15 @@ static void parse_json(struct bar *bar, const char *text) {
 	}
 
 	if (bar->status->block_line) {
-		list_foreach(bar->status->block_line, free_status_block);
+		//list_foreach(bar->status->block_line, free_status_block);
+		for (size_t i = 0; i < bar->status->block_line->length; ++i) {
+			struct status_block *item = *(struct status_block **)list_get(bar->status->block_line, i);
+			free_status_block(item);
+		}
 		list_free(bar->status->block_line);
 	}
 
-	bar->status->block_line = create_list();
+	bar->status->block_line = list_new(sizeof(struct status_block *), 0);
 
 	int i;
 	for (i = 0; i < json_object_array_length(results); ++i) {
@@ -199,7 +203,7 @@ static void parse_json(struct bar *bar, const char *text) {
 			new->border_right = 1;
 		}
 
-		list_add(bar->status->block_line, new);
+		list_add(bar->status->block_line, &new);
 	}
 
 	json_object_put(results);
@@ -438,7 +442,7 @@ bool handle_status_line(struct bar *bar) {
 
 struct status_line *init_status_line() {
 	struct status_line *line = malloc(sizeof(struct status_line));
-	line->block_line = create_list();
+	line->block_line = list_new(sizeof(struct status_block *), 0);
 	line->text_line = NULL;
 	line->protocol = UNDEF;
 
@@ -447,7 +451,11 @@ struct status_line *init_status_line() {
 
 void free_status_line(struct status_line *line) {
 	if (line->block_line) {
-		list_foreach(line->block_line, free_status_block);
+		//list_foreach(line->block_line, free_status_block);
+		for (size_t i = 0; i < line->block_line->length; ++i) {
+			struct status_block *item = *(struct status_block **)list_get(line->block_line, i);
+			free_status_block(item);
+		}
 		list_free(line->block_line);
 	}
 }

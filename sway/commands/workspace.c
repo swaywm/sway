@@ -34,14 +34,14 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 		wso->workspace = join_args(argv, argc - 2);
 		wso->output = strdup(argv[output_location + 1]);
-		int i = -1;
-		if ((i = list_seq_find(config->workspace_outputs, workspace_output_cmp_workspace, wso)) != -1) {
-			struct workspace_output *old = config->workspace_outputs->items[i];
+		ssize_t i = -1;
+		struct workspace_output *old;
+		if ((i = list_lsearch(config->workspace_outputs, workspace_output_cmp_workspace, wso, &old)) != -1) {
 			free(old); // workspaces can only be assigned to a single output
-			list_del(config->workspace_outputs, i);
+			list_delete(config->workspace_outputs, i);
 		}
 		sway_log(L_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
-		list_add(config->workspace_outputs, wso);
+		list_add(config->workspace_outputs, &wso);
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);

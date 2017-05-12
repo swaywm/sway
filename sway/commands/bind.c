@@ -22,7 +22,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "bindsym",
 				"Unable to allocate binding");
 	}
-	binding->keys = create_list();
+	binding->keys = list_new(sizeof(xkb_keysym_t *), 0);
 	binding->modifiers = 0;
 	binding->release = false;
 	binding->bindcode = false;
@@ -44,27 +44,28 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], "+");
-	for (int i = 0; i < split->length; ++i) {
+	for (size_t i = 0; i < split->length; ++i) {
 		// Check for a modifier key
 		uint32_t mod;
-		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {
+		char *item = *(char **)list_get(split, i);
+		if ((mod = get_modifier_mask_by_name(item)) > 0) {
 			binding->modifiers |= mod;
 			continue;
 		}
 		// Check for xkb key
-		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i],
+		xkb_keysym_t sym = xkb_keysym_from_name(item,
 				XKB_KEYSYM_CASE_INSENSITIVE);
 
 		// Check for mouse binding
-		if (strncasecmp(split->items[i], "button", strlen("button")) == 0 &&
-				strlen(split->items[i]) == strlen("button0")) {
-			sym = ((char *)split->items[i])[strlen("button")] - '1' + M_LEFT_CLICK;
+		if (strncasecmp(item, "button", strlen("button")) == 0 &&
+				strlen(item) == strlen("button0")) {
+			sym = ((char *)item)[strlen("button")] - '1' + M_LEFT_CLICK;
 		}
 		if (!sym) {
 			free_sway_binding(binding);
 			free_flat_list(split);
 			return cmd_results_new(CMD_INVALID, "bindsym", "Unknown key '%s'",
-					(char *)split->items[i]);
+					item);
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
 		if (!key) {
@@ -74,20 +75,20 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 					"Unable to allocate binding");
 		}
 		*key = sym;
-		list_add(binding->keys, key);
+		list_add(binding->keys, &key);
 	}
 	free_flat_list(split);
 
 	struct sway_mode *mode = config->current_mode;
-	int i = list_seq_find(mode->bindings, sway_binding_cmp_keys, binding);
+	struct sway_binding *dup;
+	ssize_t i = list_lsearch(mode->bindings, sway_binding_cmp_keys, binding, &dup);
 	if (i > -1) {
 		sway_log(L_DEBUG, "bindsym - '%s' already exists, overwriting", argv[0]);
-		struct sway_binding *dup = mode->bindings->items[i];
 		free_sway_binding(dup);
-		list_del(mode->bindings, i);
+		list_delete(mode->bindings, i);
 	}
 	binding->order = binding_order++;
-	list_add(mode->bindings, binding);
+	list_add(mode->bindings, &binding);
 	list_qsort(mode->bindings, sway_binding_cmp_qsort);
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s", argv[0], binding->command);
@@ -105,7 +106,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "bindsym",
 				"Unable to allocate binding");
 	}
-	binding->keys = create_list();
+	binding->keys = list_new(sizeof(xkb_keycode_t *), 0);
 	binding->modifiers = 0;
 	binding->release = false;
 	binding->bindcode = true;
@@ -127,41 +128,42 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], "+");
-	for (int i = 0; i < split->length; ++i) {
+	for (size_t i = 0; i < split->length; ++i) {
 		// Check for a modifier key
 		uint32_t mod;
-		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {
+		char *item = *(char **)list_get(split, i);
+		if ((mod = get_modifier_mask_by_name(item)) > 0) {
 			binding->modifiers |= mod;
 			continue;
 		}
 		// parse keycode
-		xkb_keycode_t keycode = (int)strtol(split->items[i], NULL, 10);
+		xkb_keycode_t keycode = (int)strtol(item, NULL, 10);
 		if (!xkb_keycode_is_legal_ext(keycode)) {
-			error = cmd_results_new(CMD_INVALID, "bindcode", "Invalid keycode '%s'", (char *)split->items[i]);
+			error = cmd_results_new(CMD_INVALID, "bindcode", "Invalid keycode '%s'", item);
 			free_sway_binding(binding);
 			list_free(split);
 			return error;
 		}
 		xkb_keycode_t *key = malloc(sizeof(xkb_keycode_t));
 		*key = keycode - 8;
-		list_add(binding->keys, key);
+		list_add(binding->keys, &key);
 	}
 	free_flat_list(split);
 
 	struct sway_mode *mode = config->current_mode;
-	int i = list_seq_find(mode->bindings, sway_binding_cmp_keys, binding);
+	struct sway_binding *dup;
+	ssize_t i = list_lsearch(mode->bindings, sway_binding_cmp_keys, binding, &dup);
 	if (i > -1) {
-		struct sway_binding *dup = mode->bindings->items[i];
 		if (dup->bindcode) {
 			sway_log(L_DEBUG, "bindcode - '%s' already exists, overwriting", argv[0]);
 		} else {
 			sway_log(L_DEBUG, "bindcode - '%s' already exists as bindsym, overwriting", argv[0]);
 		}
 		free_sway_binding(dup);
-		list_del(mode->bindings, i);
+		list_delete(mode->bindings, i);
 	}
 	binding->order = binding_order++;
-	list_add(mode->bindings, binding);
+	list_add(mode->bindings, &binding);
 	list_qsort(mode->bindings, sway_binding_cmp_qsort);
 
 	sway_log(L_DEBUG, "bindcode - Bound %s to command %s", argv[0], binding->command);

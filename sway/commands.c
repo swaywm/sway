@@ -102,16 +102,15 @@ void hide_view_in_scratchpad(swayc_t *sp_view) {
 }
 
 void input_cmd_apply(struct input_config *input) {
-	int i;
-	i = list_seq_find(config->input_configs, input_identifier_cmp, input->identifier);
+	struct input_config *ic;
+	ssize_t i = list_lsearch(config->input_configs, input_identifier_cmp, input->identifier, &ic);
 	if (i >= 0) {
 		// merge existing config
-		struct input_config *ic = config->input_configs->items[i];
 		merge_input_config(ic, input);
 		free_input_config(input);
 		input = ic;
 	} else {
-		list_add(config->input_configs, input);
+		list_add(config->input_configs, &input);
 	}
 
 	current_input_config = input;
@@ -121,8 +120,8 @@ void input_cmd_apply(struct input_config *input) {
 		// this is during startup then there will be no container and config
 		// will be applied during normal "new input" event from wlc.
 		struct libinput_device *device = NULL;
-		for (int i = 0; i < input_devices->length; ++i) {
-			device = input_devices->items[i];
+		for (size_t i = 0; i < input_devices->length; ++i) {
+			device = *(struct libinput_device **)list_get(input_devices, i);
 			char* dev_identifier = libinput_dev_unique_id(device);
 			if (!dev_identifier) {
 				break;
@@ -138,15 +137,15 @@ void input_cmd_apply(struct input_config *input) {
 }
 
 void remove_view_from_scratchpad(swayc_t *view) {
-	int i;
-	for (i = 0; i < scratchpad->length; i++) {
-		if (scratchpad->items[i] == view) {
+	for (size_t i = 0; i < scratchpad->length; i++) {
+		swayc_t *item = *(swayc_t **)list_get(scratchpad, i);
+		if (item == view) {
 			if (sp_index == 0) {
 				sp_index = scratchpad->length - 1;
 			} else {
 				sp_index--;
 			}
-			list_del(scratchpad, sp_index);
+			list_delete(scratchpad, sp_index);
 			sp_view = NULL;
 		}
 	}
@@ -384,7 +383,7 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 			char *criteria_string = argsep(&head, "]");
 			if (head) {
 				++head;
-				list_t *tokens = create_list();
+				list_t *tokens = list_new(sizeof(struct crit_token *), 0);
 				char *error;
 
 				if ((error = extract_crit_tokens(tokens, criteria_string))) {
@@ -448,14 +447,14 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-			int i = 0;
+			size_t i = 0;
 			do {
 				if (!containers) {
 					current_container = get_focused_container(&root_container);
 				} else if (containers->length == 0) {
 					break;
 				} else {
-					current_container = (swayc_t *)containers->items[i];
+					current_container = *(swayc_t **)list_get(containers, i);
 				}
 				sway_log(L_INFO, "Running on container '%s'", current_container->name);
 
@@ -483,7 +482,7 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 	cleanup:
 	free(exec);
 	if (containers) {
-		free(containers);
+		list_free(containers);
 	}
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -594,8 +593,8 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 
 	struct command_policy *policy = NULL;
-	for (int i = 0; i < config->command_policies->length; ++i) {
-		struct command_policy *p = config->command_policies->items[i];
+	for (size_t i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *p = *(struct command_policy **)list_get(config->command_policies, i);
 		if (strcmp(p->command, cmd) == 0) {
 			policy = p;
 			break;
@@ -606,7 +605,7 @@ struct cmd_results *config_commands_command(char *exec) {
 		if (!policy) {
 			sway_abort("Unable to allocate security policy");
 		}
-		list_add(config->command_policies, policy);
+		list_add(config->command_policies, &policy);
 	}
 	policy->context = context;
 

@@ -37,8 +37,8 @@ swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
 			output = swayc_opposite_output(MOVE_UP, abs_pos);
 		}
 	} else {
-		for(int i = 0; i < root_container.children->length; ++i) {
-			swayc_t *c = root_container.children->items[i];
+		for (size_t i = 0; i < root_container.children->length; ++i) {
+			swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
 			if (c->type == C_OUTPUT && strcasecmp(c->name, name) == 0) {
 				return c;
 			}
@@ -58,8 +58,8 @@ swayc_t *swayc_opposite_output(enum movement_direction dir,
 	switch(dir) {
 		case MOVE_LEFT:
 		case MOVE_RIGHT: ;
-			for (int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
+			for (size_t i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
 				if (abs_pos->y >= c->y && abs_pos->y <= c->y + c->height) {
 					if (!opposite) {
 						opposite = c;
@@ -73,8 +73,8 @@ swayc_t *swayc_opposite_output(enum movement_direction dir,
 			break;
 		case MOVE_UP:
 		case MOVE_DOWN: ;
-			for (int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
+			for (size_t i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
 				if (abs_pos->x >= c->x && abs_pos->x <= c->x + c->width) {
 					if (!opposite) {
 						opposite = c;
@@ -116,8 +116,8 @@ swayc_t *swayc_adjacent_output(swayc_t *output, enum movement_direction dir,
 		case MOVE_LEFT:
 		case MOVE_RIGHT: ;
 			double delta_y = 0;
-			for(int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
+			for (size_t i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
 				if (c == output || c->type != C_OUTPUT) {
 					continue;
 				}
@@ -169,8 +169,8 @@ swayc_t *swayc_adjacent_output(swayc_t *output, enum movement_direction dir,
 		case MOVE_UP:
 		case MOVE_DOWN: ;
 			double delta_x = 0;
-			for(int i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = root_container.children->items[i];
+			for (size_t i = 0; i < root_container.children->length; ++i) {
+				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
 				if (c == output || c->type != C_OUTPUT) {
 					continue;
 				}
@@ -273,5 +273,5 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 }
 
 void sort_workspaces(swayc_t *output) {
-	list_stable_sort(output->children, sort_workspace_cmp_qsort);
+	list_isort(output->children, sort_workspace_cmp_qsort);
 }

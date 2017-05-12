@@ -12,13 +12,12 @@ struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating_modifier", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	int i;
 	list_t *split = split_string(argv[0], "+");
 	config->floating_mod = 0;
 
 	// set modifier keys
-	for (i = 0; i < split->length; ++i) {
-		config->floating_mod |= get_modifier_mask_by_name(split->items[i]);
+	for (size_t i = 0; i < split->length; ++i) {
+		config->floating_mod |= get_modifier_mask_by_name(*(char **)list_get(split, i));
 	}
 	free_flat_list(split);
 	if (!config->floating_mod) {

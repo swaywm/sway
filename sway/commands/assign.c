@@ -36,7 +36,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	}
 	crit->crit_raw = strdup(criteria);
 	crit->cmdlist = cmdlist;
-	crit->tokens = create_list();
+	crit->tokens = list_new(sizeof(struct crit_token *), 0);
 	char *err_str = extract_crit_tokens(crit->tokens, crit->crit_raw);
 
 	if (err_str) {
@@ -46,12 +46,12 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	} else if (crit->tokens->length == 0) {
 		error = cmd_results_new(CMD_INVALID, "assign", "Found no name/value pairs in criteria");
 		free_criteria(crit);
-	} else if (list_seq_find(config->criteria, criteria_cmp, crit) != -1) {
+	} else if (list_lsearch(config->criteria, criteria_cmp, crit, NULL) != -1) {
 		sway_log(L_DEBUG, "assign: Duplicate, skipping.");
 		free_criteria(crit);
 	} else {
 		sway_log(L_DEBUG, "assign: '%s' -> '%s' added", crit->crit_raw, crit->cmdlist);
-		list_add(config->criteria, crit);
+		list_add(config->criteria, &crit);
 	}
 	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

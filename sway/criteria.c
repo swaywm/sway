@@ -52,8 +52,8 @@ static void free_crit_token(struct crit_token *crit) {
 }
 
 static void free_crit_tokens(list_t *crit_tokens) {
-	for (int i = 0; i < crit_tokens->length; i++) {
-		free_crit_token(crit_tokens->items[i]);
+	for (size_t i = 0; i < crit_tokens->length; i++) {
+		free_crit_token(*(struct crit_token **)list_get(crit_tokens, i));
 	}
 	list_free(crit_tokens);
 }
@@ -223,13 +223,13 @@ char *extract_crit_tokens(list_t *tokens, const char * const criteria) {
 			goto ect_cleanup;
 		} else if (token->type == CRIT_URGENT || crit_is_focused(value)) {
 			sway_log(L_DEBUG, "%s -> \"%s\"", name, value);
-			list_add(tokens, token);
+			list_add(tokens, &token);
 		} else if((error = generate_regex(&token->regex, value))) {
 			free_crit_token(token);
 			goto ect_cleanup;
 		} else {
 			sway_log(L_DEBUG, "%s -> /%s/", name, value);
-			list_add(tokens, token);
+			list_add(tokens, &token);
 		}
 	}
 ect_cleanup:
@@ -238,8 +238,10 @@ ect_cleanup:
 	return error;
 }
 
-static int regex_cmp(const char *item, const pcre *regex) {
-	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+static int regex_cmp(const void *key, const void *item) {
+	const pcre *regex = key;
+	const char *str = item;
+	return pcre_exec(regex, NULL, str, strlen(str), 0, 0, NULL, 0);
 }
 
 // test a single view if it matches list of criteria tokens (all of them).
@@ -247,9 +249,9 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	if (cont->type != C_VIEW) {
 		return false;
 	}
-	int matches = 0;
-	for (int i = 0; i < tokens->length; i++) {
-		struct crit_token *crit = tokens->items[i];
+	size_t matches = 0;
+	for (size_t i = 0; i < tokens->length; i++) {
+		struct crit_token *crit = *(struct crit_token **)list_get(tokens, i);
 		switch (crit->type) {
 		case CRIT_CLASS:
 			if (!cont->class) {
@@ -264,9 +266,9 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 			}
 			break;
 		case CRIT_CON_MARK:
-			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
+			if (crit->regex && cont->marks && (list_lsearch(cont->marks, regex_cmp, crit->regex, NULL) != -1)) {
 				// Make sure it isn't matching the NUL string
-				if ((strcmp(crit->raw, "") == 0) == (list_seq_find(cont->marks, (int (*)(const void *, const void *))strcmp, "") != -1)) {
+				if ((strcmp(crit->raw, "") == 0) == (list_lsearch(cont->marks, (int (*)(const void *, const void *))strcmp, "", NULL) != -1)) {
 					++matches;
 				}
 			}
@@ -330,15 +332,15 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	return matches == tokens->length;
 }
 
-int criteria_cmp(const void *a, const void *b) {
-	if (a == b) {
+int criteria_cmp(const void *key, const void *item) {
+	if (key == item) {
 		return 0;
-	} else if (!a) {
+	} else if (!item) {
 		return -1;
-	} else if (!b) {
+	} else if (!key) {
 		return 1;
 	}
-	const struct criteria *crit_a = a, *crit_b = b;
+	const struct criteria *crit_a = item, *crit_b = key;
 	int cmp = lenient_strcmp(crit_a->cmdlist, crit_b->cmdlist);
 	if (cmp != 0) {
 		return cmp;
@@ -360,8 +362,8 @@ void free_criteria(struct criteria *crit) {
 }
 
 bool criteria_any(swayc_t *cont, list_t *criteria) {
-	for (int i = 0; i < criteria->length; i++) {
-		struct criteria *bc = criteria->items[i];
+	for (size_t i = 0; i < criteria->length; i++) {
+		struct criteria *bc = *(struct criteria **)list_get(criteria, i);
 		if (criteria_test(cont, bc->tokens)) {
 			return true;
 		}
@@ -370,9 +372,9 @@ bool criteria_any(swayc_t *cont, list_t *criteria) {
 }
 
 list_t *criteria_for(swayc_t *cont) {
-	list_t *criteria = config->criteria, *matches = create_list();
-	for (int i = 0; i < criteria->length; i++) {
-		struct criteria *bc = criteria->items[i];
+	list_t *matches = list_new(sizeof(struct criteria *), 0);
+	for (size_t i = 0; i < config->criteria->length; i++) {
+		struct criteria *bc = *(struct criteria **)list_get(config->criteria, i);
 		if (criteria_test(cont, bc->tokens)) {
 			list_add(matches, bc);
 		}
@@ -385,15 +387,16 @@ struct list_tokens {
 	list_t *tokens;
 };
 
-static void container_match_add(swayc_t *container, struct list_tokens *list_tokens) {
+static void container_match_add(swayc_t *container, void *arg) {
+	struct list_tokens *list_tokens = arg;
 	if (criteria_test(container, list_tokens->tokens)) {
 		list_add(list_tokens->list, container);
 	}
 }
 list_t *container_for(list_t *tokens) {
-	struct list_tokens list_tokens = (struct list_tokens){create_list(), tokens};
+	struct list_tokens list_tokens = {list_new(sizeof(swayc_t *), 0), tokens};
 
-	container_map(&root_container, (void (*)(swayc_t *, void *))container_match_add, &list_tokens);
+	container_map(&root_container, container_match_add, &list_tokens);
 
 	return list_tokens.list;
 }

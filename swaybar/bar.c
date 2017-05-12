@@ -19,7 +19,7 @@
 static void bar_init(struct bar *bar) {
 	bar->config = init_config();
 	bar->status = init_status_line();
-	bar->outputs = create_list();
+	bar->outputs = list_new(sizeof(struct output *), 0);
 }
 
 static void spawn_status_cmd_proc(struct bar *bar) {
@@ -55,7 +55,7 @@ struct output *new_output(const char *name) {
 	output->name = strdup(name);
 	output->window = NULL;
 	output->registry = NULL;
-	output->workspaces = create_list();
+	output->workspaces = list_new(sizeof(struct workspace *), 0);
 	return output;
 }
 
@@ -67,8 +67,8 @@ static void mouse_button_notify(struct window *window, int x, int y,
 	}
 
 	struct output *clicked_output = NULL;
-	for (int i = 0; i < swaybar.outputs->length; i++) {
-		struct output *output = swaybar.outputs->items[i];
+	for (size_t i = 0; i < swaybar.outputs->length; i++) {
+		struct output *output = *(struct output **)list_get(swaybar.outputs, i);
 		if (window == output->window) {
 			clicked_output = output;
 			break;
@@ -80,8 +80,8 @@ static void mouse_button_notify(struct window *window, int x, int y,
 	}
 
 	double button_x = 0.5;
-	for (int i = 0; i < clicked_output->workspaces->length; i++) {
-		struct workspace *workspace = clicked_output->workspaces->items[i];
+	for (size_t i = 0; i < clicked_output->workspaces->length; i++) {
+		struct workspace *workspace = *(struct workspace **)list_get(clicked_output->workspaces, i);
 		int button_width, button_height;
 
 		workspace_button_size(window, workspace->name, &button_width, &button_height);
@@ -95,14 +95,14 @@ static void mouse_button_notify(struct window *window, int x, int y,
 }
 
 static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
+	size_t i;
 	sway_log(L_DEBUG, "Mouse wheel scrolled %s", direction == SCROLL_UP ? "up" : "down");
 
 	if (!swaybar.config->wrap_scroll) {
 		// Find output this window lives on
-		int i;
 		struct output *output = NULL;
 		for (i = 0; i < swaybar.outputs->length; ++i) {
-			output = swaybar.outputs->items[i];
+			output = *(struct output **)list_get(swaybar.outputs, i);
 			if (output->window == window) {
 				break;
 			}
@@ -112,7 +112,7 @@ static void mouse_scroll_notify(struct window *window, enum scroll_direction dir
 		}
 		int focused = -1;
 		for (i = 0; i < output->workspaces->length; ++i) {
-			struct workspace *ws = output->workspaces->items[i];
+			struct workspace *ws = *(struct workspace **)list_get(output->workspaces, i);
 			if (ws->focused) {
 				focused = i;
 				break;
@@ -122,7 +122,7 @@ static void mouse_scroll_notify(struct window *window, enum scroll_direction dir
 			return;
 		}
 		if ((focused == 0 && direction == SCROLL_UP) ||
-				(focused == output->workspaces->length - 1 && direction == SCROLL_DOWN)) {
+				(focused == (ssize_t)output->workspaces->length - 1 && direction == SCROLL_DOWN)) {
 			// Do not wrap
 			return;
 		}
@@ -142,9 +142,8 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 	ipc_bar_init(bar, bar_id);
 
-	int i;
-	for (i = 0; i < bar->outputs->length; ++i) {
-		struct output *bar_output = bar->outputs->items[i];
+	for (size_t i = 0; i < bar->outputs->length; ++i) {
+		struct output *bar_output = *(struct output **)list_get(bar->outputs, i);
 
 		bar_output->registry = registry_poll();
 
@@ -152,7 +151,7 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 			sway_abort("swaybar requires the compositor to support the desktop-shell extension.");
 		}
 
-		struct output_state *output = bar_output->registry->outputs->items[bar_output->idx];
+		struct output_state *output = *(struct output_state **)list_get(bar_output->registry->outputs, bar_output->idx);
 
 		bar_output->window = window_setup(bar_output->registry,
 				output->width / output->scale, 30, output->scale, false);
@@ -190,18 +189,16 @@ void bar_run(struct bar *bar) {
 	pfd[1].fd = bar->status_read_fd;
 	pfd[1].events = POLLIN;
 
-	int i;
-	for (i = 0; i < bar->outputs->length; ++i) {
-		struct output *output = bar->outputs->items[i];
+	for (size_t i = 0; i < bar->outputs->length; ++i) {
+		struct output *output = *(struct output **)list_get(bar->outputs, i);
 		pfd[i+2].fd = wl_display_get_fd(output->registry->display);
 		pfd[i+2].events = POLLIN;
 	}
 
 	while (1) {
 		if (dirty) {
-			int i;
-			for (i = 0; i < bar->outputs->length; ++i) {
-				struct output *output = bar->outputs->items[i];
+			for (size_t i = 0; i < bar->outputs->length; ++i) {
+				struct output *output = *(struct output **)list_get(bar->outputs, i);
 				if (window_prerender(output->window) && output->window->cairo) {
 					render(output, bar->config, bar->status);
 					window_render(output->window);
@@ -225,8 +222,8 @@ void bar_run(struct bar *bar) {
 		}
 
 		// dispatch wl_display events
-		for (i = 0; i < bar->outputs->length; ++i) {
-			struct output *output = bar->outputs->items[i];
+		for (size_t i = 0; i < bar->outputs->length; ++i) {
+			struct output *output = *(struct output **)list_get(bar->outputs, i);
 			if (pfd[i+2].revents & POLLIN) {
 				if (wl_display_dispatch(output->registry->display) == -1) {
 					sway_log(L_ERROR, "failed to dispatch wl: %d", errno);
@@ -239,9 +236,8 @@ void bar_run(struct bar *bar) {
 }
 
 void free_workspaces(list_t *workspaces) {
-	int i;
-	for (i = 0; i < workspaces->length; ++i) {
-		struct workspace *ws = workspaces->items[i];
+	for (size_t i = 0; i < workspaces->length; ++i) {
+		struct workspace *ws = *(struct workspace **)list_get(workspaces, i);
 		free(ws->name);
 		free(ws);
 	}
@@ -264,9 +260,9 @@ static void free_output(struct output *output) {
 }
 
 static void free_outputs(list_t *outputs) {
-	int i;
-	for (i = 0; i < outputs->length; ++i) {
-		free_output(outputs->items[i]);
+	for (size_t i = 0; i < outputs->length; ++i) {
+		struct output *item = *(struct output **)list_get(outputs, i);
+		free_output(item);
 	}
 	list_free(outputs);
 }

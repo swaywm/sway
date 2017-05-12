@@ -44,9 +44,8 @@ void sigalarm_handler(int sig) {
 }
 
 void sway_terminate(int exit_code) {
-	int i;
-	for (i = 0; i < render_data.surfaces->length; ++i) {
-		struct window *window = render_data.surfaces->items[i];
+	for (size_t i = 0; i < render_data.surfaces->length; ++i) {
+		struct window *window = *(struct window **)list_get(render_data.surfaces, i);
 		window_teardown(window);
 	}
 	list_free(render_data.surfaces);
@@ -346,7 +345,6 @@ cairo_surface_t *load_image(char *image_path) {
 
 int main(int argc, char **argv) {
 	const char *scaling_mode_str = "fit", *socket_path = NULL;
-	int i;
 	void *images = NULL;
 	config = init_config();
 
@@ -535,7 +533,7 @@ int main(int argc, char **argv) {
 	password_size = 1024;
 	password = malloc(password_size);
 	password[0] = '\0';
-	render_data.surfaces = create_list();
+	render_data.surfaces = list_new(sizeof(struct window *), 0);
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
@@ -557,14 +555,14 @@ int main(int argc, char **argv) {
 		registry->pointer = NULL;
 	}
 
-	for (i = 0; i < registry->outputs->length; ++i) {
-		struct output_state *output = registry->outputs->items[i];
+	for (size_t i = 0; i < registry->outputs->length; ++i) {
+		struct output_state *output = *(struct output_state **)list_get(registry->outputs, i);
 		struct window *window = window_setup(registry,
 				output->width, output->height, output->scale, true);
 		if (!window) {
 			sway_abort("Failed to create surfaces.");
 		}
-		list_add(render_data.surfaces, window);
+		list_add(render_data.surfaces, &window);
 	}
 
 	registry->input->notify = notify_key;
@@ -579,7 +577,7 @@ int main(int argc, char **argv) {
 		char *outputs = ipc_single_command(socketfd, IPC_GET_OUTPUTS, "", &len);
 		struct json_object *json_outputs = json_tokener_parse(outputs);
 
-		for (i = 0; i < registry->outputs->length; ++i) {
+		for (size_t i = 0; i < registry->outputs->length; ++i) {
 			if (displays_paths[i * 2] != NULL) {
 				for (int j = 0;; ++j) {
 					if (j >= json_object_array_length(json_outputs)) {
@@ -608,9 +606,9 @@ int main(int argc, char **argv) {
 	bool locked = false;
 	while (wl_display_dispatch(registry->display) != -1) {
 		if (!locked) {
-			for (i = 0; i < registry->outputs->length; ++i) {
-				struct output_state *output = registry->outputs->items[i];
-				struct window *window = render_data.surfaces->items[i];
+			for (size_t i = 0; i < registry->outputs->length; ++i) {
+				struct output_state *output = *(struct output_state **)list_get(registry->outputs, i);
+				struct window *window = *(struct window **)list_get(render_data.surfaces, i);
 				lock_set_lock_surface(registry->swaylock, output->output, window->surface);
 			}
 			locked = true;
@@ -621,7 +619,7 @@ int main(int argc, char **argv) {
 	if (render_data.num_images == -1) {
 		cairo_surface_destroy(render_data.image);
 	} else if (render_data.num_images >= 1) {
-		for (i = 0; i < registry->outputs->length; ++i) {
+		for (size_t i = 0; i < registry->outputs->length; ++i) {
 			if (render_data.images[i] != NULL) {
 				cairo_surface_destroy(render_data.images[i]);
 			}
@@ -629,8 +627,8 @@ int main(int argc, char **argv) {
 		free(render_data.images);
 	}
 
-	for (i = 0; i < render_data.surfaces->length; ++i) {
-		struct window *window = render_data.surfaces->items[i];
+	for (size_t i = 0; i < render_data.surfaces->length; ++i) {
+		struct window *window = *(struct window **)list_get(render_data.surfaces, i);
 		window_teardown(window);
 	}
 	list_free(render_data.surfaces);
@@ -642,10 +640,9 @@ int main(int argc, char **argv) {
 }
 
 void render(struct render_data *render_data, struct lock_config *config) {
-	int i;
-	for (i = 0; i < render_data->surfaces->length; ++i) {
-		sway_log(L_DEBUG, "Render surface %d of %d", i, render_data->surfaces->length);
-		struct window *window = render_data->surfaces->items[i];
+	for (size_t i = 0; i < render_data->surfaces->length; ++i) {
+		sway_log(L_DEBUG, "Render surface %zu of %zu", i, render_data->surfaces->length);
+		struct window *window = *(struct window **)list_get(render_data->surfaces, i);
 		if (!window_prerender(window) || !window->cairo) {
 			continue;
 		}

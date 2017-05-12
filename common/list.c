@@ -66,6 +66,14 @@ void list_add(list_t *list, const void *data) {
 	++list->length;
 }
 
+void *list_alloc(list_t *list) {
+	if (!sway_assert(list, "Invalid argument") || !resize(list)) {
+		return NULL;
+	}
+
+	return (uint8_t *)list->items + list->memb_size * list->length++;
+}
+
 void list_insert(list_t *list, size_t index, const void *data) {
 	if (!sway_assert(list && data && index <= list->length, "Invalid argument") ||
 		!resize(list)) {
@@ -80,17 +88,7 @@ void list_insert(list_t *list, size_t index, const void *data) {
 	++list->length;
 }
 
-void list_delete(list_t *list, size_t index) {
-	if (!sway_assert(list && index < list->length, "Invalid argument")) {
-		return;
-	}
-
-	size_t size = list->memb_size;
-	uint8_t (*array)[size] = list->items;
-
-	memmove(&array[index], &array[index + 1], size * (list->length - index));
-	--list->length;
-
+static void shrink(list_t *list) {
 	/* We shrink very sparse lists, but only down to a certain size.
 	 * The choice of >= 8 is somewhat arbitrary, but leaves a minimum
 	 * size of 4 elements.
@@ -105,6 +103,28 @@ void list_delete(list_t *list, size_t index) {
 		list->items = items;
 		list->capacity = new_cap;
 	}
+}
+
+void list_remove(list_t *list) {
+	if (!sway_assert(list, "Invalid argument") || list->length == 0) {
+		return;
+	}
+
+	--list->length;
+	shrink(list);
+}
+
+void list_delete(list_t *list, size_t index) {
+	if (!sway_assert(list && index < list->length, "Invalid argument")) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	memmove(&array[index], &array[index + 1], size * (list->length - index));
+	--list->length;
+	shrink(list);
 }
 
 void list_swap(list_t *list, size_t i1, size_t i2) {
@@ -215,10 +235,23 @@ void list_foreach(list_t *list, void callback(void *item)) {
 	}
 }
 
+void list_free_with(list_t *list, void callback(void *item)) {
+	if (!sway_assert(callback, "Invalid argument") || !list) {
+		return;
+	}
+
+	list_foreach(list, callback);
+	list_free(list);
+}
+
 void *list_end(list_t *list) {
 	if (!sway_assert(list, "Invalid argument")) {
 		return NULL;
 	}
 
 	return (uint8_t *)list->items + list->memb_size * list->length;
+}
+
+void list_elem_free(void *item) {
+	free(*(void **)item);
 }

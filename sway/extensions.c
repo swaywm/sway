@@ -15,8 +15,8 @@
 struct desktop_shell_state desktop_shell;
 
 static struct panel_config *find_or_create_panel_config(struct wl_resource *resource) {
-	for (int i = 0; i < desktop_shell.panels->length; i++) {
-		struct panel_config *conf = desktop_shell.panels->items[i];
+	for (size_t i = 0; i < desktop_shell.panels->length; i++) {
+		struct panel_config *conf = *(struct panel_config **)list_get(desktop_shell.panels, i);
 		if (conf->wl_resource == resource) {
 			sway_log(L_DEBUG, "Found existing panel config for resource %p", resource);
 			return conf;
@@ -35,11 +35,10 @@ static struct panel_config *find_or_create_panel_config(struct wl_resource *reso
 
 void background_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Background surface killed");
-	int i;
-	for (i = 0; i < desktop_shell.backgrounds->length; ++i) {
-		struct background_config *config = desktop_shell.backgrounds->items[i];
+	for (size_t i = 0; i < desktop_shell.backgrounds->length; ++i) {
+		struct background_config *config = *(struct background_config **)list_get(desktop_shell.backgrounds, i);
 		if (config->wl_surface_res == resource) {
-			list_del(desktop_shell.backgrounds, i);
+			list_delete(desktop_shell.backgrounds, i);
 			break;
 		}
 	}
@@ -47,11 +46,10 @@ void background_surface_destructor(struct wl_resource *resource) {
 
 void panel_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Panel surface killed");
-	int i;
-	for (i = 0; i < desktop_shell.panels->length; ++i) {
-		struct panel_config *config = desktop_shell.panels->items[i];
+	for (size_t i = 0; i < desktop_shell.panels->length; ++i) {
+		struct panel_config *config = *(struct panel_config **)list_get(desktop_shell.panels, i);
 		if (config->wl_surface_res == resource) {
-			list_del(desktop_shell.panels, i);
+			list_delete(desktop_shell.panels, i);
 			arrange_windows(&root_container, -1, -1);
 			break;
 		}
@@ -60,11 +58,10 @@ void panel_surface_destructor(struct wl_resource *resource) {
 
 void lock_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Lock surface killed");
-	int i;
-	for (i = 0; i < desktop_shell.lock_surfaces->length; ++i) {
-		struct wl_resource *surface = desktop_shell.lock_surfaces->items[i];
+	for (size_t i = 0; i < desktop_shell.lock_surfaces->length; ++i) {
+		struct wl_resource *surface = *(struct wl_resource **)list_get(desktop_shell.lock_surfaces, i);
 		if (surface == resource) {
-			list_del(desktop_shell.lock_surfaces, i);
+			list_delete(desktop_shell.lock_surfaces, i);
 			arrange_windows(&root_container, -1, -1);
 			break;
 		}
@@ -322,9 +319,9 @@ static void gamma_control_manager_bind(struct wl_client *client, void *data,
 
 void register_extensions(void) {
 	wl_global_create(wlc_get_wl_display(), &desktop_shell_interface, 3, NULL, desktop_shell_bind);
-	desktop_shell.backgrounds = create_list();
-	desktop_shell.panels = create_list();
-	desktop_shell.lock_surfaces = create_list();
+	desktop_shell.backgrounds = list_new(sizeof(struct background_config *), 0);
+	desktop_shell.panels = list_new(sizeof(struct panel_config *), 0);
+	desktop_shell.lock_surfaces = list_new(sizeof(struct wl_resource *), 0);
 	desktop_shell.is_locked = false;
 	wl_global_create(wlc_get_wl_display(), &lock_interface, 1, NULL, swaylock_bind);
 	wl_global_create(wlc_get_wl_display(), &gamma_control_manager_interface, 1,

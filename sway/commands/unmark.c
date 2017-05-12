@@ -10,10 +10,11 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 	if (view->marks) {
 		if (argc) {
 			char *mark = join_args(argv, argc);
-			int index;
-			if ((index = list_seq_find(view->marks, (int (*)(const void *, const void *))strcmp, mark)) != -1) {
-				free(view->marks->items[index]);
-				list_del(view->marks, index);
+			char *item;
+			ssize_t index;
+			if ((index = list_lsearch(view->marks, (int (*)(const void *, const void *))strcmp, mark, &item)) != -1) {
+				free(item);
+				list_delete(view->marks, index);
 
 				if (view->marks->length == 0) {
 					list_free(view->marks);
@@ -22,7 +23,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 			}
 			free(mark);
 		} else {
-			list_foreach(view->marks, free);
+			list_foreach(view->marks, list_elem_free);
 			list_free(view->marks);
 			view->marks = NULL;
 		}
