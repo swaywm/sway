@@ -1008,7 +1008,7 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 				swayc_t *item = *(swayc_t **)list_get(pointer->parent->floating, i);
 				if (item == pointer) {
 					list_delete(pointer->parent->floating, i);
-					list_add(pointer->parent->floating, pointer);
+					list_add(pointer->parent->floating, &pointer);
 					break;
 				}
 			}

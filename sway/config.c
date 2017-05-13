@@ -1230,7 +1230,8 @@ int workspace_output_cmp_workspace(const void *a, const void *b) {
 }
 
 int sway_binding_cmp_keys(const void *key, const void *item) {
-	const struct sway_binding *binda = item, *bindb = key;
+	const struct sway_binding *binda = *(struct sway_binding **)item;
+	const struct sway_binding *bindb = *(struct sway_binding **)key;
 
 	// Count keys pressed for this binding. important so we check long before
 	// short ones.  for example mod+a+b  before  mod+a
@@ -1277,7 +1278,7 @@ int sway_binding_cmp_keys(const void *key, const void *item) {
 
 int sway_binding_cmp(const void *a, const void *b) {
 	int cmp = 0;
-	if ((cmp = sway_binding_cmp_keys(a, b)) != 0) {
+	if ((cmp = sway_binding_cmp_keys(&a, &b)) != 0) {
 		return cmp;
 	}
 	const struct sway_binding *binda = a, *bindb = b;

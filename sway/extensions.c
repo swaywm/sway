@@ -28,7 +28,7 @@ static struct panel_config *find_or_create_panel_config(struct wl_resource *reso
 		sway_log(L_ERROR, "Unable to create panel config");
 		return NULL;
 	}
-	list_add(desktop_shell.panels, config);
+	list_add(desktop_shell.panels, &config);
 	config->wl_resource = resource;
 	return config;
 }
@@ -101,7 +101,7 @@ static void set_background(struct wl_client *client, struct wl_resource *resourc
 	config->output = output;
 	config->surface = wlc_resource_from_wl_surface_resource(surface);
 	config->wl_surface_res = surface;
-	list_add(desktop_shell.backgrounds, config);
+	list_add(desktop_shell.backgrounds, &config);
 	wl_resource_set_destructor(surface, background_surface_destructor);
 	arrange_windows(swayc_by_handle(output), -1, -1);
 	wlc_output_schedule_render(config->output);
@@ -211,7 +211,7 @@ static void set_lock_surface(struct wl_client *client, struct wl_resource *resou
 		desktop_shell.is_locked = true;
 		input_init();
 		arrange_windows(workspace, -1, -1);
-		list_add(desktop_shell.lock_surfaces, surface);
+		list_add(desktop_shell.lock_surfaces, &surface);
 		wl_resource_set_destructor(surface, lock_surface_destructor);
 	} else {
 		sway_log(L_ERROR, "Attempted to set lock surface to non-view");

@@ -373,7 +373,7 @@ swayc_t *new_floating_view(wlc_handle handle) {
 	view->is_floating = true;
 
 	// Case of focused workspace, just create as child of it
-	list_add(swayc_active_workspace()->floating, view);
+	list_add(swayc_active_workspace()->floating, &view);
 	view->parent = swayc_active_workspace();
 	if (swayc_active_workspace()->focused == NULL) {
 		set_focused_container_for(swayc_active_workspace(), view);

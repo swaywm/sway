@@ -286,7 +286,7 @@ void ipc_get_pixels(wlc_handle output) {
 	for (size_t i = 0; i < ipc_get_pixel_requests->length; ++i) {
 		req = *(struct get_pixels_request **)list_get(ipc_get_pixel_requests, i);
 		if (req->output != output) {
-			list_add(unhandled, req);
+			list_add(unhandled, &req);
 			continue;
 		}
 

@@ -63,7 +63,7 @@ int index_child(const swayc_t *child) {
 void add_child(swayc_t *parent, swayc_t *child) {
 	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)", child, child->type,
 		child->width, child->height, parent, parent->type, parent->width, parent->height);
-	list_add(parent->children, child);
+	list_add(parent->children, &child);
 	child->parent = parent;
 	// set focus for this container
 	if (!parent->focused) {
@@ -140,7 +140,7 @@ void add_floating(swayc_t *ws, swayc_t *child) {
 	if (!sway_assert(ws->type == C_WORKSPACE, "Must be of workspace type")) {
 		return;
 	}
-	list_add(ws->floating, child);
+	list_add(ws->floating, &child);
 	child->parent = ws;
 	child->is_floating = true;
 	if (!ws->focused) {
@@ -154,19 +154,19 @@ swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
 	if (fixed->is_floating) {
 		if (active->is_floating) {
 			int i = index_child(fixed);
-			list_insert(parent->floating, i + 1, active);
+			list_insert(parent->floating, i + 1, &active);
 		} else {
-			list_add(parent->children, active);
+			list_add(parent->children, &active);
 		}
 	} else {
 		if (active->is_floating) {
-			list_add(parent->floating, active);
+			list_add(parent->floating, &active);
 		} else {
 			int i = index_child(fixed);
 			if (is_auto_layout(parent->layout)) {
-				list_add(parent->children, active);
+				list_add(parent->children, &active);
 			} else {
-				list_insert(parent->children, i + 1, active);
+				list_insert(parent->children, i + 1, &active);
 			}
 		}
 	}

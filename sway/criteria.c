@@ -376,7 +376,7 @@ list_t *criteria_for(swayc_t *cont) {
 	for (size_t i = 0; i < config->criteria->length; i++) {
 		struct criteria *bc = *(struct criteria **)list_get(config->criteria, i);
 		if (criteria_test(cont, bc->tokens)) {
-			list_add(matches, bc);
+			list_add(matches, &bc);
 		}
 	}
 	return matches;
@@ -390,7 +390,7 @@ struct list_tokens {
 static void container_match_add(swayc_t *container, void *arg) {
 	struct list_tokens *list_tokens = arg;
 	if (criteria_test(container, list_tokens->tokens)) {
-		list_add(list_tokens->list, container);
+		list_add(list_tokens->list, &container);
 	}
 }
 list_t *container_for(list_t *tokens) {

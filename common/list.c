@@ -211,7 +211,7 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void
 	uint8_t (*array)[size] = list->items;
 
 	for (size_t i = 0; i < list->length; ++i) {
-		if (compare(key, &array[i]) == 0) {
+		if (compare(&key, &array[i]) == 0) {
 			if (ret) {
 				memcpy(ret, &array[i], size);
 			}
