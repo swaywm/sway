@@ -37,10 +37,10 @@ typedef void (*freefn_t)(void *arg);
 void list_free_with(list_t *list, freefn_t callback);
 
 /*
- * Frees a list, calling a function on each element after it's
- * dereferenced before doing do.
+ * Frees a list, calling a function on each dereferenced element.
  * For example, if you have a list of char * allocated with malloc,
- * it would be safe to use free with this function.
+ * callback would receive a char * instead of a char **, meaning it's
+ * safe to use free as the callback.
  * If list is null, no action is taken.
  * list must be a list of pointers.
  */
@@ -84,7 +84,7 @@ void list_swap(list_t *list, size_t i1, size_t i2);
 void *list_get(list_t *list, size_t index);
 
 /*
- * Gets an element of a list and dereferences it.
+ * Gets an dereferenced element of a list.
  * For example, if you have a list of char *, this function
  * will return a char * instead of a char **, unlike list_get.
  * index must be less than the length of the list.
@@ -127,10 +127,9 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void
 void list_foreach(list_t *list, void callback(void *item));
 
 /*
- * Calls a function on every item in the list, after dereferencing
- * the element.
- * For example, if you have a list of char *, you will receive a char *
- * in callback, instead of a char **, unlike list_foreach.
+ * Calls a function on every dereferenced item in the list.
+ * For example, if you have a list of char *, callback will
+ * receive a char * instead of a char **, unlike list_foreach.
  * list must be a list of pointers.
  */
 void list_foreachp(list_t *list, void callback(void *item));

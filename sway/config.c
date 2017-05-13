@@ -214,63 +214,19 @@ void free_config(struct sway_config *config) {
 	if (!config) {
 		return;
 	}
-	size_t i;
-	for (i = 0; config->symbols && i < config->symbols->length; ++i) {
-		free_variable(list_getp(config->symbols, i));
-	}
-	list_free(config->symbols);
 
-	for (i = 0; config->modes && i < config->modes->length; ++i) {
-		free_mode(list_getp(config->modes, i));
-	}
-	list_free(config->modes);
-
-	for (i = 0; config->bars && i < config->bars->length; ++i) {
-		free_bar(list_getp(config->bars, i));
-	}
-	list_free(config->bars);
-
-	free_flat_list(config->cmd_queue);
-
-	for (i = 0; config->workspace_outputs && i < config->workspace_outputs->length; ++i) {
-		free_workspace_output(list_getp(config->workspace_outputs, i));
-	}
-	list_free(config->workspace_outputs);
-
-	for (i = 0; config->pid_workspaces && i < config->pid_workspaces->length; ++i) {
-		free_pid_workspace(list_getp(config->pid_workspaces, i));
-	}
-	list_free(config->pid_workspaces);
-
-	for (i = 0; config->criteria && i < config->criteria->length; ++i) {
-		free_criteria(list_getp(config->criteria, i));
-	}
-	list_free(config->criteria);
-
-	for (i = 0; config->no_focus && i < config->no_focus->length; ++i) {
-		free_criteria(list_getp(config->no_focus, i));
-	}
-	list_free(config->no_focus);
-
-	for (i = 0; config->input_configs && i < config->input_configs->length; ++i) {
-		free_input_config(list_getp(config->input_configs, i));
-	}
-	list_free(config->input_configs);
-
-	for (i = 0; config->output_configs && i < config->output_configs->length; ++i) {
-		free_output_config(list_getp(config->output_configs, i));
-	}
-	list_free(config->output_configs);
-
-	for (i = 0; config->command_policies && i < config->command_policies->length; ++i) {
-		free_command_policy(list_getp(config->command_policies, i));
-	}
-	list_free(config->command_policies);
-
-	for (i = 0; config->feature_policies && i < config->feature_policies->length; ++i) {
-		free_feature_policy(list_getp(config->feature_policies, i));
-	}
-	list_free(config->feature_policies);
+	list_free_withp(config->symbols, (freefn_t)free_variable);
+	list_free_withp(config->modes, (freefn_t)free_mode);
+	list_free_withp(config->bars, (freefn_t)free_bar);
+	list_free_withp(config->cmd_queue, free);
+	list_free_withp(config->workspace_outputs, (freefn_t)free_workspace_output);
+	list_free_withp(config->pid_workspaces, (freefn_t)free_pid_workspace);
+	list_free_withp(config->criteria, (freefn_t)free_criteria);
+	list_free_withp(config->no_focus, (freefn_t)free_criteria);
+	list_free_withp(config->input_configs, (freefn_t)free_input_config);
+	list_free_withp(config->output_configs, (freefn_t)free_output_config);
+	list_free_withp(config->command_policies, (freefn_t)free_command_policy);
+	list_free_withp(config->feature_policies, (freefn_t)free_feature_policy);
 
 	list_free(config->active_bar_modifiers);
 	free_flat_list(config->config_chain);
