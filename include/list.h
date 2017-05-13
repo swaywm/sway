@@ -27,35 +27,29 @@ list_t *list_new(size_t memb_size, size_t capacity);
  */
 void list_free(list_t *list);
 
+typedef void (*freefn_t)(void *arg);
+
 /*
  * Frees a list, calling a function on each element before doing so.
  * If list is null, no action is taken.
- * DO NOT pass free as the callback. Use list_elem_free if
- * you want to do that.
+ * DO NOT pass free as the callback. Use list_free_withp for that.
  */
-void list_free_with(list_t *list, void callback(void *item));
+void list_free_with(list_t *list, freefn_t callback);
 
 /*
- * This is a convinience function designed to be used with
- * list_free_with or list_foreach.
- * It calls the stdlib free function on each element.
- * We can't pass in free directly, as each pointer needs to be
- * dereferenced first.
- * This should only be used on lists of pointers that were
- * allocated using malloc (or similar).
+ * Frees a list, calling a function on each element after it's
+ * dereferenced before doing do.
+ * For example, if you have a list of char * allocated with malloc,
+ * it would be safe to use free with this function.
+ * If list is null, no action is taken.
+ * list must be a list of pointers.
  */
-void list_elem_free(void *item);
+void list_free_withp(list_t *list, freefn_t callback);
 
 /*
  * Adds an element at the end of the list.
  */
 void list_add(list_t *list, const void *data);
-
-/*
- * Adds an uninitialized element at the end of the list,
- * and returns a pointer to it.
- */
-void *list_alloc(list_t *list);
 
 /*
  * Deletes the last element of the list.
@@ -131,6 +125,15 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void
  * Calls a function on every item in the list.
  */
 void list_foreach(list_t *list, void callback(void *item));
+
+/*
+ * Calls a function on every item in the list, after dereferencing
+ * the element.
+ * For example, if you have a list of char *, you will receive a char *
+ * in callback, instead of a char **, unlike list_foreach.
+ * list must be a list of pointers.
+ */
+void list_foreachp(list_t *list, void callback(void *item));
 
 /*
  * Returns a pointer to just past the end of the list.

@@ -54,26 +54,6 @@ static bool resize(list_t *list) {
 	return true;
 }
 
-void list_add(list_t *list, const void *data) {
-	if (!sway_assert(list && data, "Invalid argument") || !resize(list)) {
-		return;
-	}
-
-	size_t size = list->memb_size;
-	uint8_t (*array)[size] = list->items;
-
-	memcpy(&array[list->length], data, size);
-	++list->length;
-}
-
-void *list_alloc(list_t *list) {
-	if (!sway_assert(list, "Invalid argument") || !resize(list)) {
-		return NULL;
-	}
-
-	return (uint8_t *)list->items + list->memb_size * list->length++;
-}
-
 void list_insert(list_t *list, size_t index, const void *data) {
 	if (!sway_assert(list && data && index <= list->length, "Invalid argument") ||
 		!resize(list)) {
@@ -86,6 +66,14 @@ void list_insert(list_t *list, size_t index, const void *data) {
 	memmove(&array[index + 1], &array[index], size * (list->length - index));
 	memcpy(&array[index], data, size);
 	++list->length;
+}
+
+void list_add(list_t *list, const void *data) {
+	if (!sway_assert(list && data, "Invalid argument")) {
+		return;
+	}
+
+	list_insert(list, list->length, data);
 }
 
 static void shrink(list_t *list) {
@@ -105,15 +93,6 @@ static void shrink(list_t *list) {
 	}
 }
 
-void list_remove(list_t *list) {
-	if (!sway_assert(list, "Invalid argument") || list->length == 0) {
-		return;
-	}
-
-	--list->length;
-	shrink(list);
-}
-
 void list_delete(list_t *list, size_t index) {
 	if (!sway_assert(list && index < list->length, "Invalid argument")) {
 		return;
@@ -125,6 +104,14 @@ void list_delete(list_t *list, size_t index) {
 	memmove(&array[index], &array[index + 1], size * (list->length - index));
 	--list->length;
 	shrink(list);
+}
+
+void list_remove(list_t *list) {
+	if (!sway_assert(list, "Invalid argument") || list->length == 0) {
+		return;
+	}
+
+	list_delete(list, list->length - 1);
 }
 
 void list_swap(list_t *list, size_t i1, size_t i2) {
@@ -240,12 +227,34 @@ void list_foreach(list_t *list, void callback(void *item)) {
 	}
 }
 
-void list_free_with(list_t *list, void callback(void *item)) {
+void list_foreachp(list_t *list, void callback(void *item)) {
+	if (!sway_assert(list && callback, "Invalid argument")) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		callback(*(void **)&array[i]);
+	}
+}
+
+void list_free_with(list_t *list, freefn_t callback) {
 	if (!sway_assert(callback, "Invalid argument") || !list) {
 		return;
 	}
 
 	list_foreach(list, callback);
+	list_free(list);
+}
+
+void list_free_withp(list_t *list, freefn_t callback) {
+	if (!sway_assert(callback, "Invalid argument") || !list) {
+		return;
+	}
+
+	list_foreachp(list, callback);
 	list_free(list);
 }
 
@@ -255,8 +264,4 @@ void *list_end(list_t *list) {
 	}
 
 	return (uint8_t *)list->items + list->memb_size * list->length;
-}
-
-void list_elem_free(void *item) {
-	free(*(void **)item);
 }

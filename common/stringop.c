@@ -84,7 +84,7 @@ list_t *split_string(const char *str, const char *delims) {
 }
 
 void free_flat_list(list_t *list) {
-	list_free_with(list, list_elem_free);
+	list_free_withp(list, free);
 }
 
 char **split_args(const char *start, int *argc) {

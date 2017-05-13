@@ -68,13 +68,11 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 			} else {
 				if (toggle && list_lsearch(view->marks, strcmp_ptr, &mark, NULL) != -1) {
 					// Delete the list
-					list_foreach(view->marks, list_elem_free);
-					list_free(view->marks);
+					list_free_withp(view->marks, free);
 					view->marks = NULL;
 				} else {
 					// Delete and replace with a new list
-					list_foreach(view->marks, list_elem_free);
-					list_free(view->marks);
+					list_free_withp(view->marks, free);
 
 					view->marks = list_new(sizeof(char *), 0);
 					list_add(view->marks, &mark);

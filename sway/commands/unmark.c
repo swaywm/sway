@@ -23,8 +23,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 			}
 			free(mark);
 		} else {
-			list_foreach(view->marks, list_elem_free);
-			list_free(view->marks);
+			list_free_with(view->marks, free);
 			view->marks = NULL;
 		}
 	}
