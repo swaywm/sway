@@ -1656,7 +1656,7 @@ int auto_group_start_index(const swayc_t *container, int index) {
 		} else {
 			start_idx = idx2 + ((index - idx2) / (grp_sz + 1)) * (grp_sz + 1);
 		}
-		return MIN(start_idx, container->children->length);
+		return MIN(start_idx, (ssize_t)container->children->length);
 	}
 }
 
@@ -1684,7 +1684,7 @@ int auto_group_end_index(const swayc_t *container, int index) {
 				nxt_idx = idx2 + ((index - idx2) / (grp_sz + 1) + 1) * (grp_sz + 1);
 			}
 		}
-		return MIN(nxt_idx, container->children->length);
+		return MIN(nxt_idx, (ssize_t)container->children->length);
 	}
 }
 
