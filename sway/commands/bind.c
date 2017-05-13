@@ -47,7 +47,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	for (size_t i = 0; i < split->length; ++i) {
 		// Check for a modifier key
 		uint32_t mod;
-		char *item = *(char **)list_get(split, i);
+		char *item = list_getp(split, i);
 		if ((mod = get_modifier_mask_by_name(item)) > 0) {
 			binding->modifiers |= mod;
 			continue;
@@ -131,7 +131,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	for (size_t i = 0; i < split->length; ++i) {
 		// Check for a modifier key
 		uint32_t mod;
-		char *item = *(char **)list_get(split, i);
+		char *item = list_getp(split, i);
 		if ((mod = get_modifier_mask_by_name(item)) > 0) {
 			binding->modifiers |= mod;
 			continue;

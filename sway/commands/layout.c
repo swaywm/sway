@@ -156,7 +156,7 @@ static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **
 					for (int i = container->nb_master;
 					i >= 0 && (size_t)i < container->children->length
 						&& i != (int)container->nb_master + inc;) {
-						swayc_t *item = *(swayc_t **)list_get(container->children, i);
+						swayc_t *item = list_getp(container->children, i);
 						item->height = -1;
 						item->width = -1;
 						i += inc > 0 ? 1 : -1;

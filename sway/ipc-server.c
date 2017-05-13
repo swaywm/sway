@@ -261,7 +261,7 @@ void ipc_client_disconnect(struct ipc_client *client) {
 	sway_log(L_INFO, "IPC Client %d disconnected", client->fd);
 	wlc_event_source_remove(client->event_source);
 	size_t i = 0;
-	while (i < ipc_client_list->length && *(struct ipc_client **)list_get(ipc_client_list, i) != client) i++;
+	while (i < ipc_client_list->length && list_getp(ipc_client_list, i) != client) i++;
 	list_delete(ipc_client_list, i);
 	close(client->fd);
 	free(client);
@@ -284,7 +284,7 @@ void ipc_get_pixels(wlc_handle output) {
 
 	struct get_pixels_request *req;
 	for (size_t i = 0; i < ipc_get_pixel_requests->length; ++i) {
-		req = *(struct get_pixels_request **)list_get(ipc_get_pixel_requests, i);
+		req = list_getp(ipc_get_pixel_requests, i);
 		if (req->output != output) {
 			list_add(unhandled, &req);
 			continue;
@@ -421,7 +421,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		json_object *inputs = json_object_new_array();
 		if (input_devices) {
 			for(size_t i = 0; i<input_devices->length; i++) {
-				struct libinput_device *device = *(struct libinput_device **)list_get(input_devices, i);
+				struct libinput_device *device = list_getp(input_devices, i);
 				json_object_array_add(inputs, ipc_json_describe_input(device));
 			}
 		}
@@ -533,7 +533,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			// Send list of configured bar IDs
 			json_object *bars = json_object_new_array();
 			for (size_t i = 0; i < config->bars->length; ++i) {
-				struct bar_config *bar = *(struct bar_config **)list_get(config->bars, i);
+				struct bar_config *bar = list_getp(config->bars, i);
 				json_object_array_add(bars, json_object_new_string(bar->id));
 			}
 			const char *json_string = json_object_to_json_string(bars);
@@ -543,7 +543,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			// Send particular bar's details
 			struct bar_config *bar = NULL;
 			for (size_t i = 0; i < config->bars->length; ++i) {
-				bar = *(struct bar_config **)list_get(config->bars, i);
+				bar = list_getp(config->bars, i);
 				if (strcmp(buf, bar->id) == 0) {
 					break;
 				}
@@ -624,7 +624,7 @@ static void ipc_get_marks_callback(swayc_t *container, void *data) {
 	json_object *object = (json_object *)data;
 	if (container->marks) {
 		for (size_t i = 0; i < container->marks->length; ++i) {
-			char *mark = *(char **)list_get(container->marks, i);
+			char *mark = list_getp(container->marks, i);
 			json_object_array_add(object, json_object_new_string(mark));
 		}
 	}
@@ -652,7 +652,7 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 	}
 
 	for (size_t i = 0; i < ipc_client_list->length; i++) {
-		struct ipc_client *client = *(struct ipc_client **)list_get(ipc_client_list, i);
+		struct ipc_client *client = list_getp(ipc_client_list, i);
 		if (!(client->security_policy & security_mask)) {
 			continue;
 		}
@@ -775,7 +775,7 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 	if (sb->bindcode) { // bindcode: populate input_codes
 		uint32_t keycode;
 		for (size_t i = 0; i < sb->keys->length; ++i) {
-			keycode = **(uint32_t **)list_get(sb->keys, i);
+			keycode = *(uint32_t *)list_getp(sb->keys, i);
 			json_object_array_add(input_codes, json_object_new_int(keycode));
 			if (i == 0) {
 				input_code = keycode;
@@ -785,7 +785,7 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 		uint32_t keysym;
 		char buffer[64];
 		for (size_t i = 0; i < sb->keys->length; ++i) {
-			keysym = **(uint32_t **)list_get(sb->keys, i);
+			keysym = *(uint32_t *)list_getp(sb->keys, i);
 			if (xkb_keysym_get_name(keysym, buffer, 64) > 0) {
 				json_object *str = json_object_new_string(buffer);
 				json_object_array_add(symbols, str);

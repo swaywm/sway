@@ -315,7 +315,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 		double pos = (window->width * window->scale) - 0.5;
 		bool edge = true;
 		for (ssize_t i = line->block_line->length - 1; i >= 0; --i) {
-			struct status_block *block = *(struct status_block **)list_get(line->block_line, i);
+			struct status_block *block = list_getp(line->block_line, i);
 			if (block->full_text && block->full_text[0]) {
 				render_block(window, config, block, &pos, edge, is_focused);
 				edge = false;
@@ -329,7 +329,7 @@ void render(struct output *output, struct config *config, struct status_line *li
 	// Workspaces
 	if (config->workspace_buttons) {
 		for (size_t i = 0; i < output->workspaces->length; ++i) {
-			struct workspace *ws = *(struct workspace **)list_get(output->workspaces, i);
+			struct workspace *ws = list_getp(output->workspaces, i);
 			render_workspace_button(window, config, ws, &x);
 		}
 	}

@@ -68,7 +68,7 @@ static void mouse_button_notify(struct window *window, int x, int y,
 
 	struct output *clicked_output = NULL;
 	for (size_t i = 0; i < swaybar.outputs->length; i++) {
-		struct output *output = *(struct output **)list_get(swaybar.outputs, i);
+		struct output *output = list_getp(swaybar.outputs, i);
 		if (window == output->window) {
 			clicked_output = output;
 			break;
@@ -81,7 +81,7 @@ static void mouse_button_notify(struct window *window, int x, int y,
 
 	double button_x = 0.5;
 	for (size_t i = 0; i < clicked_output->workspaces->length; i++) {
-		struct workspace *workspace = *(struct workspace **)list_get(clicked_output->workspaces, i);
+		struct workspace *workspace = list_getp(clicked_output->workspaces, i);
 		int button_width, button_height;
 
 		workspace_button_size(window, workspace->name, &button_width, &button_height);
@@ -102,7 +102,7 @@ static void mouse_scroll_notify(struct window *window, enum scroll_direction dir
 		// Find output this window lives on
 		struct output *output = NULL;
 		for (i = 0; i < swaybar.outputs->length; ++i) {
-			output = *(struct output **)list_get(swaybar.outputs, i);
+			output = list_getp(swaybar.outputs, i);
 			if (output->window == window) {
 				break;
 			}
@@ -112,7 +112,7 @@ static void mouse_scroll_notify(struct window *window, enum scroll_direction dir
 		}
 		int focused = -1;
 		for (i = 0; i < output->workspaces->length; ++i) {
-			struct workspace *ws = *(struct workspace **)list_get(output->workspaces, i);
+			struct workspace *ws = list_getp(output->workspaces, i);
 			if (ws->focused) {
 				focused = i;
 				break;
@@ -143,7 +143,7 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 	ipc_bar_init(bar, bar_id);
 
 	for (size_t i = 0; i < bar->outputs->length; ++i) {
-		struct output *bar_output = *(struct output **)list_get(bar->outputs, i);
+		struct output *bar_output = list_getp(bar->outputs, i);
 
 		bar_output->registry = registry_poll();
 
@@ -151,7 +151,7 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 			sway_abort("swaybar requires the compositor to support the desktop-shell extension.");
 		}
 
-		struct output_state *output = *(struct output_state **)list_get(bar_output->registry->outputs, bar_output->idx);
+		struct output_state *output = list_getp(bar_output->registry->outputs, bar_output->idx);
 
 		bar_output->window = window_setup(bar_output->registry,
 				output->width / output->scale, 30, output->scale, false);
@@ -190,7 +190,7 @@ void bar_run(struct bar *bar) {
 	pfd[1].events = POLLIN;
 
 	for (size_t i = 0; i < bar->outputs->length; ++i) {
-		struct output *output = *(struct output **)list_get(bar->outputs, i);
+		struct output *output = list_getp(bar->outputs, i);
 		pfd[i+2].fd = wl_display_get_fd(output->registry->display);
 		pfd[i+2].events = POLLIN;
 	}
@@ -198,7 +198,7 @@ void bar_run(struct bar *bar) {
 	while (1) {
 		if (dirty) {
 			for (size_t i = 0; i < bar->outputs->length; ++i) {
-				struct output *output = *(struct output **)list_get(bar->outputs, i);
+				struct output *output = list_getp(bar->outputs, i);
 				if (window_prerender(output->window) && output->window->cairo) {
 					render(output, bar->config, bar->status);
 					window_render(output->window);
@@ -223,7 +223,7 @@ void bar_run(struct bar *bar) {
 
 		// dispatch wl_display events
 		for (size_t i = 0; i < bar->outputs->length; ++i) {
-			struct output *output = *(struct output **)list_get(bar->outputs, i);
+			struct output *output = list_getp(bar->outputs, i);
 			if (pfd[i+2].revents & POLLIN) {
 				if (wl_display_dispatch(output->registry->display) == -1) {
 					sway_log(L_ERROR, "failed to dispatch wl: %d", errno);
@@ -237,7 +237,7 @@ void bar_run(struct bar *bar) {
 
 void free_workspaces(list_t *workspaces) {
 	for (size_t i = 0; i < workspaces->length; ++i) {
-		struct workspace *ws = *(struct workspace **)list_get(workspaces, i);
+		struct workspace *ws = list_getp(workspaces, i);
 		free(ws->name);
 		free(ws);
 	}
@@ -261,7 +261,7 @@ static void free_output(struct output *output) {
 
 static void free_outputs(list_t *outputs) {
 	for (size_t i = 0; i < outputs->length; ++i) {
-		struct output *item = *(struct output **)list_get(outputs, i);
+		struct output *item = list_getp(outputs, i);
 		free_output(item);
 	}
 	list_free(outputs);

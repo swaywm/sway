@@ -25,7 +25,7 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 	if (strcmp("*", output) == 0) {
 		// remove all previous defined outputs and replace with '*'
 		for (size_t i = 0; i < outputs->length; ++i) {
-			char *item = *(char **)list_get(outputs, i);
+			char *item = list_getp(outputs, i);
 			free(item);
 			list_delete(outputs, i);
 		}
@@ -33,7 +33,7 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 		// only add output if not already defined with either the same
 		// name or as '*'
 		for (size_t i = 0; i < outputs->length; ++i) {
-			const char *find = *(char **)list_get(outputs, i);
+			const char *find = list_getp(outputs, i);
 			if (strcmp("*", find) == 0 || strcmp(output, find) == 0) {
 				add_output = 0;
 				break;

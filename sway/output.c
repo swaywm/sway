@@ -38,7 +38,7 @@ swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos) {
 		}
 	} else {
 		for (size_t i = 0; i < root_container.children->length; ++i) {
-			swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
+			swayc_t *c = list_getp(root_container.children, i);
 			if (c->type == C_OUTPUT && strcasecmp(c->name, name) == 0) {
 				return c;
 			}
@@ -59,7 +59,7 @@ swayc_t *swayc_opposite_output(enum movement_direction dir,
 		case MOVE_LEFT:
 		case MOVE_RIGHT: ;
 			for (size_t i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
+				swayc_t *c = list_getp(root_container.children, i);
 				if (abs_pos->y >= c->y && abs_pos->y <= c->y + c->height) {
 					if (!opposite) {
 						opposite = c;
@@ -74,7 +74,7 @@ swayc_t *swayc_opposite_output(enum movement_direction dir,
 		case MOVE_UP:
 		case MOVE_DOWN: ;
 			for (size_t i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
+				swayc_t *c = list_getp(root_container.children, i);
 				if (abs_pos->x >= c->x && abs_pos->x <= c->x + c->width) {
 					if (!opposite) {
 						opposite = c;
@@ -117,7 +117,7 @@ swayc_t *swayc_adjacent_output(swayc_t *output, enum movement_direction dir,
 		case MOVE_RIGHT: ;
 			double delta_y = 0;
 			for (size_t i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
+				swayc_t *c = list_getp(root_container.children, i);
 				if (c == output || c->type != C_OUTPUT) {
 					continue;
 				}
@@ -170,7 +170,7 @@ swayc_t *swayc_adjacent_output(swayc_t *output, enum movement_direction dir,
 		case MOVE_DOWN: ;
 			double delta_x = 0;
 			for (size_t i = 0; i < root_container.children->length; ++i) {
-				swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
+				swayc_t *c = list_getp(root_container.children, i);
 				if (c == output || c->type != C_OUTPUT) {
 					continue;
 				}

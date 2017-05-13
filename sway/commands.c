@@ -121,7 +121,7 @@ void input_cmd_apply(struct input_config *input) {
 		// will be applied during normal "new input" event from wlc.
 		struct libinput_device *device = NULL;
 		for (size_t i = 0; i < input_devices->length; ++i) {
-			device = *(struct libinput_device **)list_get(input_devices, i);
+			device = list_getp(input_devices, i);
 			char* dev_identifier = libinput_dev_unique_id(device);
 			if (!dev_identifier) {
 				break;
@@ -138,7 +138,7 @@ void input_cmd_apply(struct input_config *input) {
 
 void remove_view_from_scratchpad(swayc_t *view) {
 	for (size_t i = 0; i < scratchpad->length; i++) {
-		swayc_t *item = *(swayc_t **)list_get(scratchpad, i);
+		swayc_t *item = list_getp(scratchpad, i);
 		if (item == view) {
 			if (sp_index == 0) {
 				sp_index = scratchpad->length - 1;
@@ -454,7 +454,7 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				} else if (containers->length == 0) {
 					break;
 				} else {
-					current_container = *(swayc_t **)list_get(containers, i);
+					current_container = list_getp(containers, i);
 				}
 				sway_log(L_INFO, "Running on container '%s'", current_container->name);
 
@@ -594,7 +594,7 @@ struct cmd_results *config_commands_command(char *exec) {
 
 	struct command_policy *policy = NULL;
 	for (size_t i = 0; i < config->command_policies->length; ++i) {
-		struct command_policy *p = *(struct command_policy **)list_get(config->command_policies, i);
+		struct command_policy *p = list_getp(config->command_policies, i);
 		if (strcmp(p->command, cmd) == 0) {
 			policy = p;
 			break;

@@ -56,7 +56,7 @@ static void free_mode(struct sway_mode *mode) {
 	}
 	free(mode->name);
 	for (size_t i = 0; mode->bindings && i < mode->bindings->length; ++i) {
-		free_binding(*(struct sway_binding **)list_get(mode->bindings, i));
+		free_binding(list_getp(mode->bindings, i));
 	}
 	list_free(mode->bindings);
 	free(mode);
@@ -72,7 +72,7 @@ static void free_bar(struct bar_config *bar) {
 	free(bar->font);
 	free(bar->separator_symbol);
 	for (size_t i = 0; bar->bindings && i < bar->bindings->length; ++i) {
-		free_sway_mouse_binding(*(struct sway_mouse_binding **)list_get(bar->bindings, i));
+		free_sway_mouse_binding(list_getp(bar->bindings, i));
 	}
 	list_free(bar->bindings);
 
@@ -143,7 +143,7 @@ static void pid_workspace_cleanup() {
 	// work backwards through list and remove any entries
 	// older than PID_WORKSPACE_TIMEOUT
 	for (ssize_t i = config->pid_workspaces->length - 1; i > -1; i--) {
-		pw = *(struct pid_workspace **)list_get(config->pid_workspaces, i);
+		pw = list_getp(config->pid_workspaces, i);
 
 		if (difftime(ts.tv_sec, *pw->time_added) >= PID_WORKSPACE_TIMEOUT) {
 			free_pid_workspace(pw);
@@ -173,7 +173,7 @@ void pid_workspace_add(struct pid_workspace *pw) {
 	// work backwards through list and delete any entries that
 	// have the same pid as that in our new pid_workspace
 	for (ssize_t i = config->pid_workspaces->length - 1; i > -1; i--) {
-		list_pw = *(struct pid_workspace **)list_get(config->pid_workspaces, i);
+		list_pw = list_getp(config->pid_workspaces, i);
 
 		if (pw->pid == list_pw->pid) {
 			free_pid_workspace(list_pw);
@@ -216,59 +216,59 @@ void free_config(struct sway_config *config) {
 	}
 	size_t i;
 	for (i = 0; config->symbols && i < config->symbols->length; ++i) {
-		free_variable(*(struct sway_variable **)list_get(config->symbols, i));
+		free_variable(list_getp(config->symbols, i));
 	}
 	list_free(config->symbols);
 
 	for (i = 0; config->modes && i < config->modes->length; ++i) {
-		free_mode(*(struct sway_mode **)list_get(config->modes, i));
+		free_mode(list_getp(config->modes, i));
 	}
 	list_free(config->modes);
 
 	for (i = 0; config->bars && i < config->bars->length; ++i) {
-		free_bar(*(struct bar_config **)list_get(config->bars, i));
+		free_bar(list_getp(config->bars, i));
 	}
 	list_free(config->bars);
 
 	free_flat_list(config->cmd_queue);
 
 	for (i = 0; config->workspace_outputs && i < config->workspace_outputs->length; ++i) {
-		free_workspace_output(*(struct workspace_output **)list_get(config->workspace_outputs, i));
+		free_workspace_output(list_getp(config->workspace_outputs, i));
 	}
 	list_free(config->workspace_outputs);
 
 	for (i = 0; config->pid_workspaces && i < config->pid_workspaces->length; ++i) {
-		free_pid_workspace(*(struct pid_workspace **)list_get(config->pid_workspaces, i));
+		free_pid_workspace(list_getp(config->pid_workspaces, i));
 	}
 	list_free(config->pid_workspaces);
 
 	for (i = 0; config->criteria && i < config->criteria->length; ++i) {
-		free_criteria(*(struct criteria **)list_get(config->criteria, i));
+		free_criteria(list_getp(config->criteria, i));
 	}
 	list_free(config->criteria);
 
 	for (i = 0; config->no_focus && i < config->no_focus->length; ++i) {
-		free_criteria(*(struct criteria **)list_get(config->no_focus, i));
+		free_criteria(list_getp(config->no_focus, i));
 	}
 	list_free(config->no_focus);
 
 	for (i = 0; config->input_configs && i < config->input_configs->length; ++i) {
-		free_input_config(*(struct input_config **)list_get(config->input_configs, i));
+		free_input_config(list_getp(config->input_configs, i));
 	}
 	list_free(config->input_configs);
 
 	for (i = 0; config->output_configs && i < config->output_configs->length; ++i) {
-		free_output_config(*(struct output_config **)list_get(config->output_configs, i));
+		free_output_config(list_getp(config->output_configs, i));
 	}
 	list_free(config->output_configs);
 
 	for (i = 0; config->command_policies && i < config->command_policies->length; ++i) {
-		free_command_policy(*(struct command_policy **)list_get(config->command_policies, i));
+		free_command_policy(list_getp(config->command_policies, i));
 	}
 	list_free(config->command_policies);
 
 	for (i = 0; config->feature_policies && i < config->feature_policies->length; ++i) {
-		free_feature_policy(*(struct feature_policy **)list_get(config->feature_policies, i));
+		free_feature_policy(list_getp(config->feature_policies, i));
 	}
 	list_free(config->feature_policies);
 
@@ -409,7 +409,7 @@ void update_active_bar_modifiers() {
 	}
 
 	for (size_t i = 0; i < config->bars->length; ++i) {
-		struct bar_config *bar = *(struct bar_config **)list_get(config->bars, i);
+		struct bar_config *bar = list_getp(config->bars, i);
 		if (strcmp(bar->mode, "hide") == 0 && strcmp(bar->hidden_state, "hide") == 0) {
 			if (list_lsearch(config->active_bar_modifiers, compare_modifiers, &bar->modifier, NULL) < 0) {
 				list_add(config->active_bar_modifiers, &bar->modifier);
@@ -549,7 +549,7 @@ bool load_main_config(const char *file, bool is_active) {
 
 		list_qsort(secconfigs, qstrcmp);
 		for (size_t i = 0; i < secconfigs->length; ++i) {
-			char *_path = *(char **)list_get(secconfigs, i);
+			char *_path = list_getp(secconfigs, i);
 			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 || (((s.st_mode & 0777) != 0644) && (s.st_mode & 0777) != 0444)) {
 				sway_log(L_ERROR, "Refusing to load %s - it must be owned by root and mode 644 or 444", _path);
 				success = false;
@@ -605,7 +605,7 @@ static bool load_include_config(const char *path, const char *parent_dir, struct
 
 	// check if config has already been included
 	for (size_t j = 0; j < config->config_chain->length; ++j) {
-		char *old_path = *(char **)list_get(config->config_chain, j);
+		char *old_path = list_getp(config->config_chain, j);
 		if (strcmp(real_path, old_path) == 0) {
 			sway_log(L_DEBUG, "%s already included once, won't be included again.", real_path);
 			free(real_path);
@@ -774,7 +774,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			switch(block) {
 			case CMD_BLOCK_MODE:
 				sway_log(L_DEBUG, "End of mode block");
-				config->current_mode = *(struct sway_mode **)list_get(config->modes, 0);
+				config->current_mode = list_getp(config->modes, 0);
 				block = CMD_BLOCK_END;
 				break;
 
@@ -1000,7 +1000,7 @@ void terminate_swaybg(pid_t pid) {
 
 static bool active_output(const char *name) {
 	for (size_t i = 0; i < root_container.children->length; ++i) {
-		swayc_t *cont = *(swayc_t **)list_get(root_container.children, i);
+		swayc_t *cont = list_getp(root_container.children, i);
 		if (cont->type == C_OUTPUT && strcasecmp(name, cont->name) == 0) {
 			return true;
 		}
@@ -1014,11 +1014,11 @@ void load_swaybars() {
 	list_t *bars = list_new(sizeof(struct bar_config *), 0);
 	struct bar_config *bar = NULL;
 	for (size_t i = 0; i < config->bars->length; ++i) {
-		bar = *(struct bar_config **)list_get(config->bars, i);
+		bar = list_getp(config->bars, i);
 		bool apply = false;
 		if (bar->outputs) {
 			for (size_t j = 0; j < bar->outputs->length; ++j) {
-				char *o = *(char **)list_get(bar->outputs, j);
+				char *o = list_getp(bar->outputs, j);
 				if (!strcmp(o, "*") || active_output(o)) {
 					apply = true;
 					break;
@@ -1033,7 +1033,7 @@ void load_swaybars() {
 	}
 
 	for (size_t i = 0; i < bars->length; ++i) {
-		bar = *(struct bar_config **)list_get(bars, i);
+		bar = list_getp(bars, i);
 		if (bar->pid != 0) {
 			terminate_swaybar(bar->pid);
 		}
@@ -1123,7 +1123,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	} else {
 		int x = 0;
 		for (size_t i = 0; i < root_container.children->length; ++i) {
-			swayc_t *c = *(swayc_t **)list_get(root_container.children, i);
+			swayc_t *c = list_getp(root_container.children, i);
 			if (c->type == C_OUTPUT) {
 				if (c->width + c->x > x) {
 					x = c->width + c->x;
@@ -1146,7 +1146,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 
 	size_t output_i;
 	for (output_i = 0; output_i < root_container.children->length; ++output_i) {
-		swayc_t *item = *(swayc_t **)list_get(root_container.children, output_i);
+		swayc_t *item = list_getp(root_container.children, output_i);
 		if (item == output) {
 			break;
 		}
@@ -1192,7 +1192,7 @@ char *do_var_replacement(char *str) {
 		size_t i;
 		// Find matching variable
 		for (i = 0; i < config->symbols->length; ++i) {
-			struct sway_variable *var = *(struct sway_variable **)list_get(config->symbols, i);
+			struct sway_variable *var = list_getp(config->symbols, i);
 			int vnlen = strlen(var->name);
 			if (strncmp(find, var->name, vnlen) == 0) {
 				int vvlen = strlen(var->value);
@@ -1255,15 +1255,15 @@ int sway_binding_cmp_keys(const void *key, const void *item) {
 	}
 	struct wlc_modifiers no_mods = { 0, 0 };
 	for (size_t i = 0; i < binda->keys->length; i++) {
-		xkb_keysym_t ka = **(xkb_keysym_t **)list_get(binda->keys, i),
-			kb = **(xkb_keysym_t **)list_get(bindb->keys, i);
+		xkb_keysym_t ka = *(xkb_keysym_t *)list_getp(binda->keys, i),
+			kb = *(xkb_keysym_t *)list_getp(bindb->keys, i);
 		if (binda->bindcode) {
-			uint32_t *keycode = *(uint32_t **)list_get(binda->keys, i);
+			uint32_t *keycode = list_getp(binda->keys, i);
 			ka = wlc_keyboard_get_keysym_for_key(*keycode, &no_mods);
 		}
 
 		if (bindb->bindcode) {
-			uint32_t *keycode = *(uint32_t **)list_get(bindb->keys, i);
+			uint32_t *keycode = list_getp(bindb->keys, i);
 			kb = wlc_keyboard_get_keysym_for_key(*keycode, &no_mods);
 		}
 
@@ -1293,7 +1293,7 @@ int sway_binding_cmp_qsort(const void *a, const void *b) {
 void free_sway_binding(struct sway_binding *binding) {
 	if (binding->keys) {
 		for (size_t i = 0; i < binding->keys->length; i++) {
-			free(*(void **)list_get(binding->keys, i));
+			free(list_getp(binding->keys, i));
 		}
 		list_free(binding->keys);
 	}
@@ -1351,7 +1351,7 @@ struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
 			free_sway_binding(new_sb);
 			return NULL;
 		}
-		*key = **(xkb_keysym_t **)list_get(sb->keys, i);
+		*key = *(xkb_keysym_t *)list_getp(sb->keys, i);
 		list_add(new_sb->keys, &key);
 	}
 

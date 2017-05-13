@@ -64,7 +64,7 @@ static void parse_json(struct bar *bar, const char *text) {
 	if (bar->status->block_line) {
 		//list_foreach(bar->status->block_line, free_status_block);
 		for (size_t i = 0; i < bar->status->block_line->length; ++i) {
-			struct status_block *item = *(struct status_block **)list_get(bar->status->block_line, i);
+			struct status_block *item = list_getp(bar->status->block_line, i);
 			free_status_block(item);
 		}
 		list_free(bar->status->block_line);
@@ -453,7 +453,7 @@ void free_status_line(struct status_line *line) {
 	if (line->block_line) {
 		//list_foreach(line->block_line, free_status_block);
 		for (size_t i = 0; i < line->block_line->length; ++i) {
-			struct status_block *item = *(struct status_block **)list_get(line->block_line, i);
+			struct status_block *item = list_getp(line->block_line, i);
 			free_status_block(item);
 		}
 		list_free(line->block_line);

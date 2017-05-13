@@ -146,7 +146,7 @@ static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object)
 // window is in the scratchpad ? changed : none
 static const char *ipc_json_get_scratchpad_state(swayc_t *c) {
 	for (size_t i = 0; i < scratchpad->length; i++) {
-		swayc_t *item = *(swayc_t **)list_get(scratchpad, i);
+		swayc_t *item = list_getp(scratchpad, i);
 		if (item == c) {
 			return "changed";
 		}
@@ -421,7 +421,7 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	if (bar->outputs && bar->outputs->length > 0) {
 		json_object *outputs = json_object_new_array();
 		for (size_t i = 0; i < bar->outputs->length; ++i) {
-			const char *name = *(char **)list_get(bar->outputs, i);
+			const char *name = list_getp(bar->outputs, i);
 			json_object_array_add(outputs, json_object_new_string(name));
 		}
 		json_object_object_add(json, "outputs", outputs);
@@ -436,7 +436,7 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 	json_object *floating = json_object_new_array();
 	if (c->type != C_VIEW && c->floating && c->floating->length > 0) {
 		for (size_t i = 0; i < c->floating->length; ++i) {
-			swayc_t *item = *(swayc_t **)list_get(c->floating, i);
+			swayc_t *item = list_getp(c->floating, i);
 			json_object_array_add(floating, ipc_json_describe_container_recursive(item));
 		}
 	}
@@ -445,7 +445,7 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 	json_object *children = json_object_new_array();
 	if (c->type != C_VIEW && c->children && c->children->length > 0) {
 		for (size_t i = 0; i < c->children->length; ++i) {
-			swayc_t *item = *(swayc_t **)list_get(c->children, i);
+			swayc_t *item = list_getp(c->children, i);
 			json_object_array_add(children, ipc_json_describe_container_recursive(item));
 		}
 	}
@@ -454,7 +454,7 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 	if (c->type == C_ROOT) {
 		json_object *scratchpad_json = json_object_new_array();
 		for (size_t i = 0; i < scratchpad->length; ++i) {
-			swayc_t *item = *(swayc_t **)list_get(scratchpad, i);
+			swayc_t *item = list_getp(scratchpad, i);
 			json_object_array_add(scratchpad_json, ipc_json_describe_container_recursive(item));
 		}
 		json_object_object_add(object, "scratchpad", scratchpad_json);

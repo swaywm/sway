@@ -85,7 +85,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 	// free previous outputs list
 	for (size_t i = 0; i < config->outputs->length; ++i) {
-		free(*(char **)list_get(config->outputs, i));
+		free(list_getp(config->outputs, i));
 	}
 	list_free(config->outputs);
 	config->outputs = list_new(sizeof(char *), 0);
@@ -215,7 +215,7 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 
 static void ipc_update_workspaces(struct bar *bar) {
 	for (size_t i = 0; i < bar->outputs->length; ++i) {
-		struct output *output = *(struct output **)list_get(bar->outputs, i);
+		struct output *output = list_getp(bar->outputs, i);
 		if (output->workspaces) {
 			free_workspaces(output->workspaces);
 		}
@@ -244,7 +244,7 @@ static void ipc_update_workspaces(struct bar *bar) {
 		json_object_object_get_ex(ws_json, "urgent", &urgent);
 
 		for (size_t j = 0; j < bar->outputs->length; ++j) {
-			struct output *output = *(struct output **)list_get(bar->outputs, j);
+			struct output *output = list_getp(bar->outputs, j);
 			if (strcmp(json_object_get_string(out), output->name) == 0) {
 				struct workspace *ws = malloc(sizeof(struct workspace));
 				ws->num = json_object_get_int(num);
@@ -300,7 +300,7 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 			use_output = true;
 		} else {
 			for (size_t j = 0; j < bar->config->outputs->length; ++j) {
-				const char *conf_name = *(char **)list_get(bar->config->outputs, j);
+				const char *conf_name = list_getp(bar->config->outputs, j);
 				if (strcasecmp(name, conf_name) == 0) {
 					use_output = true;
 					break;

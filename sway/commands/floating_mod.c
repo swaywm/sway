@@ -17,7 +17,7 @@ struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 
 	// set modifier keys
 	for (size_t i = 0; i < split->length; ++i) {
-		config->floating_mod |= get_modifier_mask_by_name(*(char **)list_get(split, i));
+		config->floating_mod |= get_modifier_mask_by_name(list_getp(split, i));
 	}
 	free_flat_list(split);
 	if (!config->floating_mod) {

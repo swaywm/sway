@@ -26,7 +26,7 @@ enum scaling_mode {
 
 void sway_terminate(int exit_code) {
 	for (size_t i = 0; i < surfaces->length; ++i) {
-		struct window *window = *(struct window **)list_get(surfaces, i);
+		struct window *window = list_getp(surfaces, i);
 		window_teardown(window);
 	}
 	list_free(surfaces);
@@ -66,7 +66,7 @@ int main(int argc, const char **argv) {
 
 	int desired_output = atoi(argv[1]);
 	sway_log(L_INFO, "Using output %d of %zu", desired_output, registry->outputs->length);
-	struct output_state *output = *(struct output_state **)list_get(registry->outputs, desired_output);
+	struct output_state *output = list_getp(registry->outputs, desired_output);
 	struct window *window = window_setup(registry,
 			output->width, output->height, output->scale, false);
 	if (!window) {
@@ -118,7 +118,7 @@ int main(int argc, const char **argv) {
 		int wheight = window->height * window->scale;
 
 		for (size_t i = 0; i < surfaces->length; ++i) {
-			struct window *window = *(struct window **)list_get(surfaces, i);
+			struct window *window = list_getp(surfaces, i);
 			if (window_prerender(window) && window->cairo) {
 				switch (scaling_mode) {
 				case SCALING_MODE_STRETCH:
@@ -195,7 +195,7 @@ int main(int argc, const char **argv) {
 	while (wl_display_dispatch(registry->display) != -1);
 
 	for (size_t i = 0; i < surfaces->length; ++i) {
-		struct window *window = *(struct window **)list_get(surfaces, i);
+		struct window *window = list_getp(surfaces, i);
 		window_teardown(window);
 	}
 	list_free(surfaces);

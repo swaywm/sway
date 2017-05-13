@@ -118,12 +118,12 @@ static bool resize_tiled(int amount, bool use_width) {
 	// 2. Ensure that the resize operation will not make one of the resized containers drop
 	//    below the "sane" size threshold.
 	bool valid = true;
-	swayc_t *focused = *(swayc_t **)list_get(parent->children, idx_focused);
+	swayc_t *focused = list_getp(parent->children, idx_focused);
 	size_t start = use_major ? 0 : (size_t)auto_group_start_index(parent, idx_focused);
 	size_t end = use_major ? parent->children->length : (size_t)auto_group_end_index(parent, idx_focused);
 	sway_log(L_DEBUG, "Check children of container %p [%zu,%zu[", container, start, end);
 	for (size_t i = start; i < end; ) {
-		swayc_t *sibling = *(swayc_t **)list_get(parent->children, i);
+		swayc_t *sibling = list_getp(parent->children, i);
 		double pixels = amount;
 		bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
 		bool is_after  = use_width ? sibling->x > focused->x : sibling->y > focused->y;
@@ -149,7 +149,7 @@ static bool resize_tiled(int amount, bool use_width) {
 	if (valid) {
 		for (size_t i = start; i < end; ) {
 			int next_i = use_major ? (size_t)auto_group_end_index(parent, i) : (i + 1);
-			swayc_t *sibling = *(swayc_t **)list_get(parent->children, i);
+			swayc_t *sibling = list_getp(parent->children, i);
 			double pixels = amount;
 			bool is_before = use_width ? sibling->x < focused->x : sibling->y < focused->y;
 			bool is_after  = use_width ? sibling->x > focused->x : sibling->y > focused->y;
@@ -162,7 +162,7 @@ static bool resize_tiled(int amount, bool use_width) {
 				sway_log(L_DEBUG, "%p: %s", sibling, is_before ? "before" : "after");
 				if (use_major) {
 					for (int j = i; j < next_i; ++j) {
-						swayc_t *item = *(swayc_t **)list_get(parent->children, j);
+						swayc_t *item = list_getp(parent->children, j);
 						recursive_resize(item, pixels,
 								 use_width ?
 								 (is_before ? WLC_RESIZE_EDGE_RIGHT : WLC_RESIZE_EDGE_LEFT) :
@@ -177,7 +177,7 @@ static bool resize_tiled(int amount, bool use_width) {
 			} else {
 				if (use_major) {
 					for (int j = i; j < next_i; ++j) {
-						swayc_t *item = *(swayc_t **)list_get(parent->children, j);
+						swayc_t *item = list_getp(parent->children, j);
 						recursive_resize(item, pixels / 2,
 								 use_width ? WLC_RESIZE_EDGE_LEFT : WLC_RESIZE_EDGE_TOP);
 						recursive_resize(item, pixels / 2,

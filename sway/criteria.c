@@ -53,7 +53,7 @@ static void free_crit_token(struct crit_token *crit) {
 
 static void free_crit_tokens(list_t *crit_tokens) {
 	for (size_t i = 0; i < crit_tokens->length; i++) {
-		free_crit_token(*(struct crit_token **)list_get(crit_tokens, i));
+		free_crit_token(list_getp(crit_tokens, i));
 	}
 	list_free(crit_tokens);
 }
@@ -251,7 +251,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	}
 	size_t matches = 0;
 	for (size_t i = 0; i < tokens->length; i++) {
-		struct crit_token *crit = *(struct crit_token **)list_get(tokens, i);
+		struct crit_token *crit = list_getp(tokens, i);
 		switch (crit->type) {
 		case CRIT_CLASS:
 			if (!cont->class) {
@@ -365,7 +365,7 @@ void free_criteria(struct criteria *crit) {
 
 bool criteria_any(swayc_t *cont, list_t *criteria) {
 	for (size_t i = 0; i < criteria->length; i++) {
-		struct criteria *bc = *(struct criteria **)list_get(criteria, i);
+		struct criteria *bc = list_getp(criteria, i);
 		if (criteria_test(cont, bc->tokens)) {
 			return true;
 		}
@@ -376,7 +376,7 @@ bool criteria_any(swayc_t *cont, list_t *criteria) {
 list_t *criteria_for(swayc_t *cont) {
 	list_t *matches = list_new(sizeof(struct criteria *), 0);
 	for (size_t i = 0; i < config->criteria->length; i++) {
-		struct criteria *bc = *(struct criteria **)list_get(config->criteria, i);
+		struct criteria *bc = list_getp(config->criteria, i);
 		if (criteria_test(cont, bc->tokens)) {
 			list_add(matches, &bc);
 		}

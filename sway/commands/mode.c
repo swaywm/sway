@@ -23,7 +23,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 	struct sway_mode *mode = NULL;
 	// Find mode
 	for (size_t i = 0; i < config->modes->length; ++i) {
-		struct sway_mode *find = *(struct sway_mode **)list_get(config->modes, i);
+		struct sway_mode *find = list_getp(config->modes, i);
 		if (strcasecmp(find->name, mode_name) == 0) {
 			mode = find;
 			break;

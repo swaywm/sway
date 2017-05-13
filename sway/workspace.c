@@ -30,7 +30,7 @@ struct workspace_by_number_data {
 
 static bool workspace_valid_on_output(const char *output_name, const char *ws_name) {
 	for (size_t i = 0; i < config->workspace_outputs->length; ++i) {
-		struct workspace_output *wso = *(struct workspace_output **)list_get(config->workspace_outputs, i);
+		struct workspace_output *wso = list_getp(config->workspace_outputs, i);
 		if (strcasecmp(wso->workspace, ws_name) == 0) {
 			if (strcasecmp(wso->output, output_name) != 0) {
 				return false;
@@ -51,7 +51,7 @@ char *workspace_next_name(const char *output_name) {
 	int order = INT_MAX;
 	char *target = NULL;
 	for (size_t i = 0; i < mode->bindings->length; ++i) {
-		struct sway_binding *binding = *(struct sway_binding **)list_get(mode->bindings, i);
+		struct sway_binding *binding = list_getp(mode->bindings, i);
 		char *cmdlist = strdup(binding->command);
 		char *dup = cmdlist;
 		char *name = NULL;
@@ -133,12 +133,12 @@ swayc_t *workspace_create(const char* name) {
 	// Search for workspace<->output pair
 	size_t i, e = config->workspace_outputs->length;
 	for (i = 0; i < e; ++i) {
-		struct workspace_output *wso = *(struct workspace_output **)list_get(config->workspace_outputs, i);
+		struct workspace_output *wso = list_getp(config->workspace_outputs, i);
 		if (strcasecmp(wso->workspace, name) == 0) {
 			// Find output to use if it exists
 			e = root_container.children->length;
 			for (i = 0; i < e; ++i) {
-				parent = *(swayc_t **)list_get(root_container.children, i);
+				parent = list_getp(root_container.children, i);
 				if (strcmp(parent->name, wso->output) == 0) {
 					return new_workspace(parent, name);
 				}
@@ -206,9 +206,9 @@ swayc_t *workspace_output_prev_next_impl(swayc_t *output, bool next) {
 	}
 
 	for (size_t i = 0; i < output->children->length; i++) {
-		swayc_t *item = *(swayc_t **)list_get(output->children, i);
+		swayc_t *item = list_getp(output->children, i);
 		if (item == output->focused) {
-			return *(swayc_t **)list_get(output->children, (wrap(i + (next ? 1 : -1), output->children->length)));
+			return list_getp(output->children, (wrap(i + (next ? 1 : -1), output->children->length)));
 		}
 	}
 
@@ -231,18 +231,18 @@ swayc_t *workspace_prev_next_impl(swayc_t *workspace, bool next) {
 	size_t start = next ? 0 : 1;
 	size_t end = next ? (current_output->children->length) - 1 : current_output->children->length;
 	for (size_t i = start; i < end; i++) {
-		swayc_t *item = *(swayc_t **)list_get(current_output->children, i);
+		swayc_t *item = list_getp(current_output->children, i);
 		if (item == workspace) {
-			return *(swayc_t **)list_get(current_output->children, i + offset);
+			return list_getp(current_output->children, i + offset);
 		}
 	}
 
 	// Given workspace is the first/last on the output, jump to the previous/next output
 	size_t num_outputs = root_container.children->length;
 	for (size_t i = 0; i < num_outputs; i++) {
-		swayc_t *item = *(swayc_t **)list_get(root_container.children, i);
+		swayc_t *item = list_getp(root_container.children, i);
 		if (item == current_output) {
-			swayc_t *next_output = *(swayc_t **)list_get(root_container.children, wrap(i + offset, num_outputs));
+			swayc_t *next_output = list_getp(root_container.children, wrap(i + offset, num_outputs));
 			return workspace_output_prev_next_impl(next_output, next);
 		}
 	}
@@ -294,13 +294,13 @@ bool workspace_switch(swayc_t *workspace) {
 		// don't change list while traversing it, use intermediate list instead
 		list_t *stickies = list_new(sizeof(swayc_t *), 0);
 		for (size_t i = 0; i < active_ws->floating->length; i++) {
-			swayc_t *cont = *(swayc_t **)list_get(active_ws->floating, i);
+			swayc_t *cont = list_getp(active_ws->floating, i);
 			if (cont->sticky) {
 				list_add(stickies, &cont);
 			}
 		}
 		for (size_t i = 0; i < stickies->length; i++) {
-			swayc_t *cont = *(swayc_t **)list_get(stickies, i);
+			swayc_t *cont = list_getp(stickies, i);
 			sway_log(L_DEBUG, "Moving sticky container %p to %p:%s",
 					cont, workspace, workspace->name);
 			swayc_t *parent = remove_child(cont);
@@ -336,7 +336,7 @@ swayc_t *workspace_for_pid(pid_t pid) {
 
 	do {
 		for (i = 0; i < config->pid_workspaces->length; i++) {
-			pw = *(struct pid_workspace **)list_get(config->pid_workspaces, i);
+			pw = list_getp(config->pid_workspaces, i);
 			pid_t *pw_pid = pw->pid;
 
 			if (pid == *pw_pid) {

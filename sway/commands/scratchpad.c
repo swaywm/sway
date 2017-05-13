@@ -10,7 +10,7 @@ static swayc_t *fetch_view_from_scratchpad() {
 	if ((size_t)sp_index >= scratchpad->length) {
 		sp_index = 0;
 	}
-	swayc_t *view = *(swayc_t **)list_get(scratchpad, sp_index++);
+	swayc_t *view = list_getp(scratchpad, sp_index++);
 
 	if (wlc_view_get_output(view->handle) != swayc_active_output()->handle) {
 		wlc_view_set_output(view->handle, swayc_active_output()->handle);

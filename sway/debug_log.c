@@ -59,7 +59,7 @@ void layout_log(const swayc_t *c, int depth) {
 		for (i = 0; i < e; ++i) {
 			fputc('|',stderr);
 			for (d = 0; d < depth; ++d) fputc('-', stderr);
-			layout_log(*(swayc_t **)list_get(c->children, i), depth + 1);
+			layout_log(list_getp(c->children, i), depth + 1);
 		}
 	}
 	if (c->type == C_WORKSPACE) {
@@ -68,7 +68,7 @@ void layout_log(const swayc_t *c, int depth) {
 			for (i = 0; i < e; ++i) {
 				fputc('|',stderr);
 				for (d = 0; d < depth; ++d) fputc('=', stderr);
-				layout_log(*(swayc_t **)list_get(c->floating, i), depth + 1);
+				layout_log(list_getp(c->floating, i), depth + 1);
 			}
 		}
 	}

@@ -60,17 +60,17 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		if (focused->is_floating) {
 			if (workspace->children->length > 0) {
 				for (size_t i = 0;i < workspace->floating->length; i++) {
-					swayc_t *item = *(swayc_t **)list_get(workspace->floating, i);
+					swayc_t *item = list_getp(workspace->floating, i);
 					if (item == focused) {
 						floating_toggled_index = i;
 						break;
 					}
 				}
 				if (workspace->children->length > tiled_toggled_index) {
-					swayc_t *item = *(swayc_t **)list_get(workspace->children, tiled_toggled_index);
+					swayc_t *item = list_getp(workspace->children, tiled_toggled_index);
 					set_focused_container(get_focused_view(item));
 				} else {
-					swayc_t *item = *(swayc_t **)list_get(workspace->children, 0);
+					swayc_t *item = list_getp(workspace->children, 0);
 					set_focused_container(get_focused_view(item));
 					tiled_toggled_index = 0;
 				}
@@ -78,17 +78,17 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		} else {
 			if (workspace->floating->length > 0) {
 				for (size_t i = 0;i < workspace->children->length; i++) {
-					swayc_t *item = *(swayc_t **)list_get(workspace->children, i);
+					swayc_t *item = list_getp(workspace->children, i);
 					if (item == focused) {
 						tiled_toggled_index = i;
 						break;
 					}
 				}
 				if (workspace->floating->length > floating_toggled_index) {
-					swayc_t *floating = *(swayc_t **)list_get(workspace->floating, floating_toggled_index);
+					swayc_t *floating = list_getp(workspace->floating, floating_toggled_index);
 					set_focused_container(get_focused_view(floating));
 				} else {
-					swayc_t *floating = *(swayc_t **)list_get(workspace->floating, workspace->floating->length - 1);
+					swayc_t *floating = list_getp(workspace->floating, workspace->floating->length - 1);
 					set_focused_container(get_focused_view(floating));
 					tiled_toggled_index = workspace->floating->length - 1;
 				}

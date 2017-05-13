@@ -38,7 +38,7 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 	struct sway_variable *var = NULL;
 	// Find old variable if it exists
 	for (size_t i = 0; i < config->symbols->length; ++i) {
-		var = *(struct sway_variable **)list_get(config->symbols, i);
+		var = list_getp(config->symbols, i);
 		if (strcmp(var->name, argv[0]) == 0) {
 			break;
 		}

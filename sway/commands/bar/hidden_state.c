@@ -59,7 +59,7 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 	}
 
 	for (size_t i = 0; i < config->bars->length; ++i) {
-		struct bar_config *bar = *(struct bar_config **)list_get(config->bars, i);
+		struct bar_config *bar = list_getp(config->bars, i);
 		if (id && strcmp(id, bar->id) == 0) {
 			return bar_set_hidden_state(bar, state);
 		}

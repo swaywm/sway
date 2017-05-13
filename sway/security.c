@@ -49,7 +49,7 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 		return NULL;
 	}
 	for (size_t i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *policy = *(struct feature_policy **)list_get(config->feature_policies, i);
+		struct feature_policy *policy = list_getp(config->feature_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 			break;
@@ -77,7 +77,7 @@ struct ipc_policy *alloc_ipc_policy(const char *program) {
 		return NULL;
 	}
 	for (size_t i = 0; i < config->ipc_policies->length; ++i) {
-		struct ipc_policy *policy = *(struct ipc_policy **)list_get(config->ipc_policies, i);
+		struct ipc_policy *policy = list_getp(config->ipc_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 			break;
@@ -144,7 +144,7 @@ struct feature_policy *get_feature_policy(const char *name) {
 	struct feature_policy *policy = NULL;
 
 	for (size_t i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *p = *(struct feature_policy **)list_get(config->feature_policies, i);
+		struct feature_policy *p = list_getp(config->feature_policies, i);
 		if (strcmp(p->program, name) == 0) {
 			policy = p;
 			break;
@@ -165,7 +165,7 @@ uint32_t get_feature_policy_mask(pid_t pid) {
 	const char *link = get_pid_exe(pid);
 
 	for (size_t i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *policy = *(struct feature_policy **)list_get(config->feature_policies, i);
+		struct feature_policy *policy = list_getp(config->feature_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 		}
@@ -182,7 +182,7 @@ uint32_t get_ipc_policy_mask(pid_t pid) {
 	const char *link = get_pid_exe(pid);
 
 	for (size_t i = 0; i < config->ipc_policies->length; ++i) {
-		struct ipc_policy *policy = *(struct ipc_policy **)list_get(config->ipc_policies, i);
+		struct ipc_policy *policy = list_getp(config->ipc_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 		}
@@ -198,7 +198,7 @@ uint32_t get_command_policy_mask(const char *cmd) {
 	uint32_t default_policy = 0;
 
 	for (size_t i = 0; i < config->command_policies->length; ++i) {
-		struct command_policy *policy = *(struct command_policy **)list_get(config->command_policies, i);
+		struct command_policy *policy = list_getp(config->command_policies, i);
 		if (strcmp(policy->command, "*") == 0) {
 			default_policy = policy->context;
 		}

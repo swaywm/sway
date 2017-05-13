@@ -178,7 +178,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		// will be applied during normal "new output" event from wlc.
 		swayc_t *cont = NULL;
 		for (size_t i = 0; i < root_container.children->length; ++i) {
-			cont = *(swayc_t **)list_get(root_container.children, i);
+			cont = list_getp(root_container.children, i);
 			if (cont->name && ((strcmp(cont->name, output->name) == 0) || (strcmp(output->name, "*") == 0))) {
 				apply_output_config(output, cont);
 

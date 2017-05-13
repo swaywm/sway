@@ -45,7 +45,7 @@ void sigalarm_handler(int sig) {
 
 void sway_terminate(int exit_code) {
 	for (size_t i = 0; i < render_data.surfaces->length; ++i) {
-		struct window *window = *(struct window **)list_get(render_data.surfaces, i);
+		struct window *window = list_getp(render_data.surfaces, i);
 		window_teardown(window);
 	}
 	list_free(render_data.surfaces);
@@ -556,7 +556,7 @@ int main(int argc, char **argv) {
 	}
 
 	for (size_t i = 0; i < registry->outputs->length; ++i) {
-		struct output_state *output = *(struct output_state **)list_get(registry->outputs, i);
+		struct output_state *output = list_getp(registry->outputs, i);
 		struct window *window = window_setup(registry,
 				output->width, output->height, output->scale, true);
 		if (!window) {
@@ -607,8 +607,8 @@ int main(int argc, char **argv) {
 	while (wl_display_dispatch(registry->display) != -1) {
 		if (!locked) {
 			for (size_t i = 0; i < registry->outputs->length; ++i) {
-				struct output_state *output = *(struct output_state **)list_get(registry->outputs, i);
-				struct window *window = *(struct window **)list_get(render_data.surfaces, i);
+				struct output_state *output = list_getp(registry->outputs, i);
+				struct window *window = list_getp(render_data.surfaces, i);
 				lock_set_lock_surface(registry->swaylock, output->output, window->surface);
 			}
 			locked = true;
@@ -628,7 +628,7 @@ int main(int argc, char **argv) {
 	}
 
 	for (size_t i = 0; i < render_data.surfaces->length; ++i) {
-		struct window *window = *(struct window **)list_get(render_data.surfaces, i);
+		struct window *window = list_getp(render_data.surfaces, i);
 		window_teardown(window);
 	}
 	list_free(render_data.surfaces);
@@ -642,7 +642,7 @@ int main(int argc, char **argv) {
 void render(struct render_data *render_data, struct lock_config *config) {
 	for (size_t i = 0; i < render_data->surfaces->length; ++i) {
 		sway_log(L_DEBUG, "Render surface %zu of %zu", i, render_data->surfaces->length);
-		struct window *window = *(struct window **)list_get(render_data->surfaces, i);
+		struct window *window = list_getp(render_data->surfaces, i);
 		if (!window_prerender(window) || !window->cairo) {
 			continue;
 		}

@@ -127,7 +127,7 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		}
 		swayc_t *view = current_container;
 		for (size_t i = 0; i < scratchpad->length; i++) {
-			swayc_t *item = *(swayc_t **)list_get(scratchpad, i);
+			swayc_t *item = list_getp(scratchpad, i);
 			if (item == view) {
 				hide_view_in_scratchpad(view);
 				sp_view = NULL;

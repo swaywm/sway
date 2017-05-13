@@ -16,7 +16,7 @@ struct desktop_shell_state desktop_shell;
 
 static struct panel_config *find_or_create_panel_config(struct wl_resource *resource) {
 	for (size_t i = 0; i < desktop_shell.panels->length; i++) {
-		struct panel_config *conf = *(struct panel_config **)list_get(desktop_shell.panels, i);
+		struct panel_config *conf = list_getp(desktop_shell.panels, i);
 		if (conf->wl_resource == resource) {
 			sway_log(L_DEBUG, "Found existing panel config for resource %p", resource);
 			return conf;
@@ -36,7 +36,7 @@ static struct panel_config *find_or_create_panel_config(struct wl_resource *reso
 void background_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Background surface killed");
 	for (size_t i = 0; i < desktop_shell.backgrounds->length; ++i) {
-		struct background_config *config = *(struct background_config **)list_get(desktop_shell.backgrounds, i);
+		struct background_config *config = list_getp(desktop_shell.backgrounds, i);
 		if (config->wl_surface_res == resource) {
 			list_delete(desktop_shell.backgrounds, i);
 			break;
@@ -47,7 +47,7 @@ void background_surface_destructor(struct wl_resource *resource) {
 void panel_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Panel surface killed");
 	for (size_t i = 0; i < desktop_shell.panels->length; ++i) {
-		struct panel_config *config = *(struct panel_config **)list_get(desktop_shell.panels, i);
+		struct panel_config *config = list_getp(desktop_shell.panels, i);
 		if (config->wl_surface_res == resource) {
 			list_delete(desktop_shell.panels, i);
 			arrange_windows(&root_container, -1, -1);
@@ -59,7 +59,7 @@ void panel_surface_destructor(struct wl_resource *resource) {
 void lock_surface_destructor(struct wl_resource *resource) {
 	sway_log(L_DEBUG, "Lock surface killed");
 	for (size_t i = 0; i < desktop_shell.lock_surfaces->length; ++i) {
-		struct wl_resource *surface = *(struct wl_resource **)list_get(desktop_shell.lock_surfaces, i);
+		struct wl_resource *surface = list_getp(desktop_shell.lock_surfaces, i);
 		if (surface == resource) {
 			list_delete(desktop_shell.lock_surfaces, i);
 			arrange_windows(&root_container, -1, -1);

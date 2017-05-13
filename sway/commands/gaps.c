@@ -134,9 +134,9 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 	} else if (inout == OUTER) {
 		//resize all workspace.
 		for (size_t i = 0; i < root_container.children->length; ++i) {
-			swayc_t *op = *(swayc_t **)list_get(root_container.children, i);
+			swayc_t *op = list_getp(root_container.children, i);
 			for (size_t j = 0; j < op->children->length; ++j) {
-				swayc_t *ws = *(swayc_t **)list_get(op->children, j);
+				swayc_t *ws = list_getp(op->children, j);
 				if (method == SET) {
 					ws->gaps = amount;
 				} else if ((ws->gaps += amount) < 0) {
