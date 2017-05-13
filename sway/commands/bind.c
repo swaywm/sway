@@ -81,7 +81,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 
 	struct sway_mode *mode = config->current_mode;
 	struct sway_binding *dup;
-	ssize_t i = list_lsearch(mode->bindings, sway_binding_cmp_keys, binding, &dup);
+	ssize_t i = list_lsearch(mode->bindings, sway_binding_cmp_keys, &binding, &dup);
 	if (i > -1) {
 		sway_log(L_DEBUG, "bindsym - '%s' already exists, overwriting", argv[0]);
 		free_sway_binding(dup);
@@ -152,7 +152,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 
 	struct sway_mode *mode = config->current_mode;
 	struct sway_binding *dup;
-	ssize_t i = list_lsearch(mode->bindings, sway_binding_cmp_keys, binding, &dup);
+	ssize_t i = list_lsearch(mode->bindings, sway_binding_cmp_keys, &binding, &dup);
 	if (i > -1) {
 		if (dup->bindcode) {
 			sway_log(L_DEBUG, "bindcode - '%s' already exists, overwriting", argv[0]);

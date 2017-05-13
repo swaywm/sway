@@ -30,7 +30,7 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 	} else if (crit->tokens->length == 0) {
 		error = cmd_results_new(CMD_INVALID, "for_window", "Found no name/value pairs in criteria");
 		free_criteria(crit);
-	} else if (list_lsearch(config->criteria, criteria_cmp, crit, NULL) != -1) {
+	} else if (list_lsearch(config->criteria, criteria_cmp, &crit, NULL) != -1) {
 		sway_log(L_DEBUG, "for_window: Duplicate, skipping.");
 		free_criteria(crit);
 	} else {

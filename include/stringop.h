@@ -14,6 +14,10 @@ char *strip_whitespace(char *str);
 char *strip_comments(char *str);
 void strip_quotes(char *str);
 
+// strcmp that dereferences args first.
+// Designed to be taken by list_lsearch and such
+int strcmp_ptr(const void *a, const void *b);
+
 // strcmp that also handles null pointers.
 int lenient_strcmp(char *a, char *b);
 

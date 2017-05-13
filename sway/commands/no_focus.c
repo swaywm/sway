@@ -30,7 +30,7 @@ struct cmd_results *cmd_no_focus(int argc, char **argv) {
 	} else if (crit->tokens->length == 0) {
 		error = cmd_results_new(CMD_INVALID, "no_focus", "Found no name/value pairs in criteria");
 		free_criteria(crit);
-	} else if (list_lsearch(config->no_focus, criteria_cmp, crit, NULL) != -1) {
+	} else if (list_lsearch(config->no_focus, criteria_cmp, &crit, NULL) != -1) {
 		sway_log(L_DEBUG, "no_focus: Duplicate, skipping.");
 		free_criteria(crit);
 	} else {

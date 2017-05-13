@@ -90,6 +90,15 @@ void list_swap(list_t *list, size_t i1, size_t i2);
 void *list_get(list_t *list, size_t index);
 
 /*
+ * Gets an element of a list and dereferences it.
+ * For example, if you have a list of char *, this function
+ * will return a char * instead of a char **, unlike list_get.
+ * index must be less than the length of the list.
+ * list must be a list of pointers.
+ */
+void *list_getp(list_t *list, size_t index);
+
+/*
  * Sorts the list using the stdlib qsort() function.
  */
 void list_qsort(list_t *list, int compare(const void *left, const void *right));

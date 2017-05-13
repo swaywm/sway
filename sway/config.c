@@ -395,9 +395,9 @@ cleanup:
 	sway_abort("Unable to allocate config structures");
 }
 
-static int compare_modifiers(const void *left, const void *right) {
-	uint32_t a = *(uint32_t *)left;
-	uint32_t b = *(uint32_t *)right;
+static int compare_modifiers(const void *key, const void *item) {
+	uint32_t a = **(uint32_t **)item;
+	uint32_t b = *(uint32_t *)key;
 
 	return a - b;
 }
@@ -831,11 +831,11 @@ int input_identifier_cmp(const void *key, const void *item) {
 	return strcmp((*ic)->identifier, identifier);
 }
 
-int output_name_cmp(const void *item, const void *data) {
-	const struct output_config *output = item;
-	const char *name = data;
+int output_name_cmp(const void *key, const void *item) {
+	const struct output_config *const *output = item;
+	const char *const *name = key;
 
-	return strcmp(output->name, name);
+	return strcmp((*output)->name, *name);
 }
 
 void merge_input_config(struct input_config *dst, struct input_config *src) {
@@ -1136,7 +1136,8 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (!oc || !oc->background) {
 		// Look for a * config for background
 		struct output_config *item;
-		if (list_lsearch(config->output_configs, output_name_cmp, "*", &item) != -1) {
+		const char *str = "*";
+		if (list_lsearch(config->output_configs, output_name_cmp, &str, &item) != -1) {
 			oc = item;
 		} else {
 			oc = NULL;
@@ -1224,9 +1225,9 @@ char *do_var_replacement(char *str) {
 // the naming is intentional (albeit long): a workspace_output_cmp function
 // would compare two structs in full, while this method only compares the
 // workspace.
-int workspace_output_cmp_workspace(const void *a, const void *b) {
-	const struct workspace_output *wsa = a, *wsb = b;
-	return lenient_strcmp(wsa->workspace, wsb->workspace);
+int workspace_output_cmp_workspace(const void *key, const void *item) {
+	const struct workspace_output *const *wsa = item, *const *wsb = key;
+	return lenient_strcmp((*wsa)->workspace, (*wsb)->workspace);
 }
 
 int sway_binding_cmp_keys(const void *key, const void *item) {

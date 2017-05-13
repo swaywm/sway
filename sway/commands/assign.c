@@ -46,7 +46,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	} else if (crit->tokens->length == 0) {
 		error = cmd_results_new(CMD_INVALID, "assign", "Found no name/value pairs in criteria");
 		free_criteria(crit);
-	} else if (list_lsearch(config->criteria, criteria_cmp, crit, NULL) != -1) {
+	} else if (list_lsearch(config->criteria, criteria_cmp, &crit, NULL) != -1) {
 		sway_log(L_DEBUG, "assign: Duplicate, skipping.");
 		free_criteria(crit);
 	} else {

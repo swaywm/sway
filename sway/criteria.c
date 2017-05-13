@@ -240,8 +240,8 @@ ect_cleanup:
 
 static int regex_cmp(const void *key, const void *item) {
 	const pcre *regex = key;
-	const char *str = item;
-	return pcre_exec(regex, NULL, str, strlen(str), 0, 0, NULL, 0);
+	const char *const *str = item;
+	return pcre_exec(regex, NULL, *str, strlen(*str), 0, 0, NULL, 0);
 }
 
 // test a single view if it matches list of criteria tokens (all of them).
@@ -261,14 +261,15 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused->class && strcmp(cont->class, focused->class) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont->class, crit->regex) == 0) {
+			} else if (crit->regex && regex_cmp(crit->regex, &cont->class) == 0) {
 				matches++;
 			}
 			break;
 		case CRIT_CON_MARK:
 			if (crit->regex && cont->marks && (list_lsearch(cont->marks, regex_cmp, crit->regex, NULL) != -1)) {
 				// Make sure it isn't matching the NUL string
-				if ((strcmp(crit->raw, "") == 0) == (list_lsearch(cont->marks, (int (*)(const void *, const void *))strcmp, "", NULL) != -1)) {
+				const char *nul = "";
+				if ((strcmp(crit->raw, "") == 0) == (list_lsearch(cont->marks, strcmp_ptr, &nul, NULL) != -1)) {
 					++matches;
 				}
 			}
@@ -276,7 +277,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 		case CRIT_ID:
 			if (!cont->app_id) {
 				// ignore
-			} else if (crit->regex && regex_cmp(cont->app_id, crit->regex) == 0) {
+			} else if (crit->regex && regex_cmp(crit->regex, &cont->app_id) == 0) {
 				matches++;
 			}
 			break;
@@ -288,7 +289,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused->instance && strcmp(cont->instance, focused->instance) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont->instance, crit->regex) == 0) {
+			} else if (crit->regex && regex_cmp(crit->regex, &cont->instance) == 0) {
 				matches++;
 			}
 			break;
@@ -300,7 +301,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused->name && strcmp(cont->name, focused->name) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont->name, crit->regex) == 0) {
+			} else if (crit->regex && regex_cmp(crit->regex, &cont->name) == 0) {
 				matches++;
 			}
 			break;
@@ -320,7 +321,7 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				if (focused_ws->name && strcmp(cont_ws->name, focused_ws->name) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont_ws->name, crit->regex) == 0) {
+			} else if (crit->regex && regex_cmp(crit->regex, &cont_ws->name) == 0) {
 				matches++;
 			}
 			break;
@@ -340,7 +341,8 @@ int criteria_cmp(const void *key, const void *item) {
 	} else if (!key) {
 		return 1;
 	}
-	const struct criteria *crit_a = item, *crit_b = key;
+	const struct criteria *crit_a = *(struct criteria **)item;
+	const struct criteria *crit_b = *(struct criteria **)key;
 	int cmp = lenient_strcmp(crit_a->cmdlist, crit_b->cmdlist);
 	if (cmp != 0) {
 		return cmp;

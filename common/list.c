@@ -152,6 +152,11 @@ void *list_get(list_t *list, size_t index) {
 	return &array[index];
 }
 
+void *list_getp(list_t *list, size_t index) {
+	void **elem = list_get(list, index);
+	return elem ? *elem : NULL;
+}
+
 void list_qsort(list_t *list, int compare(const void *, const void *)) {
 	if (!sway_assert(list && compare, "Invalid argument")) {
 		return;
@@ -211,7 +216,7 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void
 	uint8_t (*array)[size] = list->items;
 
 	for (size_t i = 0; i < list->length; ++i) {
-		if (compare(&key, &array[i]) == 0) {
+		if (compare(key, &array[i]) == 0) {
 			if (ret) {
 				memcpy(ret, &array[i], size);
 			}

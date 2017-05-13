@@ -12,7 +12,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 			char *mark = join_args(argv, argc);
 			char *item;
 			ssize_t index;
-			if ((index = list_lsearch(view->marks, (int (*)(const void *, const void *))strcmp, mark, &item)) != -1) {
+			if ((index = list_lsearch(view->marks, strcmp_ptr, &mark, &item)) != -1) {
 				free(item);
 				list_delete(view->marks, index);
 

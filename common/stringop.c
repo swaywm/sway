@@ -386,3 +386,7 @@ char *argsep(char **stringp, const char *delim) {
 	found:
 	return start;
 }
+
+int strcmp_ptr(const void *a, const void *b) {
+	return strcmp(*(char **)a, *(char **)b);
+}
