@@ -351,9 +351,9 @@ cleanup:
 	sway_abort("Unable to allocate config structures");
 }
 
-static int compare_modifiers(const void *key, const void *item) {
-	uint32_t a = **(uint32_t **)item;
-	uint32_t b = *(uint32_t *)key;
+static int compare_modifiers(const void *left, const void *right) {
+	uint32_t a = *(uint32_t *)left;
+	uint32_t b = *(uint32_t *)right;
 
 	return a - b;
 }
@@ -367,7 +367,7 @@ void update_active_bar_modifiers() {
 	for (size_t i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = list_getp(config->bars, i);
 		if (strcmp(bar->mode, "hide") == 0 && strcmp(bar->hidden_state, "hide") == 0) {
-			if (list_lsearch(config->active_bar_modifiers, compare_modifiers, &bar->modifier, NULL) < 0) {
+			if (list_lsearchp(config->active_bar_modifiers, compare_modifiers, &bar->modifier, NULL) < 0) {
 				list_add(config->active_bar_modifiers, &bar->modifier);
 			}
 		}
@@ -781,17 +781,17 @@ bool read_config(FILE *file, struct sway_config *config) {
 	return success;
 }
 
-int input_identifier_cmp(const void *key, const void *item) {
-	const struct input_config *const *ic = item;
-	const char *identifier = key;
-	return strcmp((*ic)->identifier, identifier);
+int input_identifier_cmp(const void *item, const void *data) {
+	const struct input_config *ic = item;
+	const char *identifier = data;
+	return strcmp(ic->identifier, identifier);
 }
 
-int output_name_cmp(const void *key, const void *item) {
-	const struct output_config *const *output = item;
-	const char *const *name = key;
+int output_name_cmp(const void *item, const void *data) {
+	const struct output_config *output = item;
+	const char *name = data;
 
-	return strcmp((*output)->name, *name);
+	return strcmp(output->name, name);
 }
 
 void merge_input_config(struct input_config *dst, struct input_config *src) {
@@ -1093,7 +1093,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		// Look for a * config for background
 		struct output_config *item;
 		const char *str = "*";
-		if (list_lsearch(config->output_configs, output_name_cmp, &str, &item) != -1) {
+		if (list_lsearchp(config->output_configs, output_name_cmp, str, &item) != -1) {
 			oc = item;
 		} else {
 			oc = NULL;
@@ -1181,14 +1181,13 @@ char *do_var_replacement(char *str) {
 // the naming is intentional (albeit long): a workspace_output_cmp function
 // would compare two structs in full, while this method only compares the
 // workspace.
-int workspace_output_cmp_workspace(const void *key, const void *item) {
-	const struct workspace_output *const *wsa = item, *const *wsb = key;
-	return lenient_strcmp((*wsa)->workspace, (*wsb)->workspace);
+int workspace_output_cmp_workspace(const void *a, const void *b) {
+	const struct workspace_output *wsa = a, *wsb = b;
+	return lenient_strcmp(wsa->workspace, wsb->workspace);
 }
 
-int sway_binding_cmp_keys(const void *key, const void *item) {
-	const struct sway_binding *binda = *(struct sway_binding **)item;
-	const struct sway_binding *bindb = *(struct sway_binding **)key;
+int sway_binding_cmp_keys(const void *a, const void *b) {
+	const struct sway_binding *binda = a, *bindb = b;
 
 	// Count keys pressed for this binding. important so we check long before
 	// short ones.  for example mod+a+b  before  mod+a
@@ -1235,7 +1234,7 @@ int sway_binding_cmp_keys(const void *key, const void *item) {
 
 int sway_binding_cmp(const void *a, const void *b) {
 	int cmp = 0;
-	if ((cmp = sway_binding_cmp_keys(&a, &b)) != 0) {
+	if ((cmp = sway_binding_cmp_keys(a, b)) != 0) {
 		return cmp;
 	}
 	const struct sway_binding *binda = a, *bindb = b;
@@ -1247,20 +1246,13 @@ int sway_binding_cmp_qsort(const void *a, const void *b) {
 }
 
 void free_sway_binding(struct sway_binding *binding) {
-	if (binding->keys) {
-		for (size_t i = 0; i < binding->keys->length; i++) {
-			free(list_getp(binding->keys, i));
-		}
-		list_free(binding->keys);
-	}
-	if (binding->command) {
-		free(binding->command);
-	}
+	list_free_withp(binding->keys, free);
+	free(binding->command);
 	free(binding);
 }
 
-int sway_mouse_binding_cmp_buttons(const void *key, const void *item) {
-	const struct sway_mouse_binding *binda = item, *bindb = key;
+int sway_mouse_binding_cmp_buttons(const void *a, const void *b) {
+	const struct sway_mouse_binding *binda = a, *bindb = b;
 	if (binda->button > bindb->button) {
 		return 1;
 	}

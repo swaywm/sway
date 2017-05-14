@@ -103,7 +103,7 @@ void hide_view_in_scratchpad(swayc_t *sp_view) {
 
 void input_cmd_apply(struct input_config *input) {
 	struct input_config *ic;
-	ssize_t i = list_lsearch(config->input_configs, input_identifier_cmp, input->identifier, &ic);
+	ssize_t i = list_lsearchp(config->input_configs, input_identifier_cmp, input->identifier, &ic);
 	if (i >= 0) {
 		// merge existing config
 		merge_input_config(ic, input);

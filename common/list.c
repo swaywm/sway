@@ -174,24 +174,6 @@ void list_isort(list_t *list, int compare(const void *, const void *)) {
 	}
 }
 
-ssize_t list_bsearch(const list_t *list, int compare(const void *key, const void *item),
-		const void *key, void *ret) {
-
-	if (!sway_assert(list && compare && key, "Invalid argument")) {
-		return -1;
-	}
-
-	const uint8_t *ptr = bsearch(key, list->items, list->length, list->memb_size, compare);
-	if (!ptr) {
-		return -1;
-	} else {
-		if (ret) {
-			memcpy(ret, ptr, list->memb_size);
-		}
-		return (ptr - (uint8_t *)list->items) / list->memb_size;
-	}
-}
-
 ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void *item),
 		const void *key, void *ret) {
 
@@ -203,7 +185,29 @@ ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void
 	uint8_t (*array)[size] = list->items;
 
 	for (size_t i = 0; i < list->length; ++i) {
-		if (compare(key, &array[i]) == 0) {
+		if (compare(&array[i], key) == 0) {
+			if (ret) {
+				memcpy(ret, &array[i], size);
+			}
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+ssize_t list_lsearchp(const list_t *list, int compare(const void *key, const void *item),
+		const void *key, void *ret) {
+
+	if (!sway_assert(list && compare && key, "Invalid argument")) {
+		return -1;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		if (compare(*(void **)&array[i], key) == 0) {
 			if (ret) {
 				memcpy(ret, &array[i], size);
 			}

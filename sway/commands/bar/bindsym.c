@@ -34,7 +34,7 @@ struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 
 	struct bar_config *bar = config->current_bar;
 	struct sway_mouse_binding *dup;
-	ssize_t i = list_lsearch(bar->bindings, sway_mouse_binding_cmp_buttons, &binding, &dup);
+	ssize_t i = list_lsearchp(bar->bindings, sway_mouse_binding_cmp_buttons, binding, &dup);
 	if (i > -1) {
 		sway_log(L_DEBUG, "bindsym - '%s' for swaybar already exists, overwriting", argv[0]);
 		free_sway_mouse_binding(dup);

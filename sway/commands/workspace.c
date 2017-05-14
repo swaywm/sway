@@ -36,7 +36,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		wso->output = strdup(argv[output_location + 1]);
 		ssize_t i = -1;
 		struct workspace_output *old;
-		if ((i = list_lsearch(config->workspace_outputs, workspace_output_cmp_workspace, &wso, &old)) != -1) {
+		if ((i = list_lsearchp(config->workspace_outputs, workspace_output_cmp_workspace, wso, &old)) != -1) {
 			free(old); // workspaces can only be assigned to a single output
 			list_delete(config->workspace_outputs, i);
 		}

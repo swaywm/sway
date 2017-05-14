@@ -105,20 +105,22 @@ void list_qsort(list_t *list, int compare(const void *left, const void *right));
 void list_isort(list_t *list, int compare(const void *left, const void *right));
 
 /*
- * Returns the index of key in the list, using the stdlib bsearch() function,
+ * Returns the index of the key in the list, using a linear search,
  * or -1 if it was not found. If ret is not null, the found element will be
  * copied into it.
- * The list must be sorted.
  */
-ssize_t list_bsearch(const list_t *list, int compare(const void *key, const void *item),
+ssize_t list_lsearch(const list_t *list, int compare(const void *item, const void *key),
 		const void *key, void *ret);
 
 /*
  * Returns the index of the key in the list, using a linear search,
  * or -1 if it was not found. If ret is not null, the found element will be
- * copied into it.
+ * copied into it. The item passed into compare will be dereferenced first.
+ * For example, if you have a list of char *, it will get a char * instead
+ * of a char **, unlike list_lsearch.
+ * list must be a list of pointers.
  */
-ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void *item),
+ssize_t list_lsearchp(const list_t *list, int compare(const void *item, const void *key),
 		const void *key, void *ret);
 
 /*

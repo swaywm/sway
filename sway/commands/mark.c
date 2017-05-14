@@ -12,7 +12,7 @@ static void find_marks_callback(swayc_t *container, void *_mark) {
 		return;
 	}
 
-	ssize_t index = list_lsearch(container->marks, strcmp_ptr, &mark, NULL);
+	ssize_t index = list_lsearchp(container->marks, (int (*)(const void *, const void *))strcmp, mark, NULL);
 	if (index != -1) {
 		list_delete(container->marks, index);
 	}
@@ -51,7 +51,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 			if (add) {
 				ssize_t index;
 				char *item;
-				if ((index = list_lsearch(view->marks, strcmp_ptr, &mark, &item)) != -1) {
+				if ((index = list_lsearchp(view->marks, (int (*)(const void *, const void *))strcmp, mark, &item)) != -1) {
 					if (toggle) {
 						free(item);
 						list_delete(view->marks, index);
@@ -66,7 +66,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 					list_add(view->marks, &mark);
 				}
 			} else {
-				if (toggle && list_lsearch(view->marks, strcmp_ptr, &mark, NULL) != -1) {
+				if (toggle && list_lsearchp(view->marks, (int (*)(const void *, const void *))strcmp, mark, NULL) != -1) {
 					// Delete the list
 					list_free_withp(view->marks, free);
 					view->marks = NULL;

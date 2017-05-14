@@ -157,7 +157,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 
 	struct output_config *oc;
-	ssize_t i = list_lsearch(config->output_configs, output_name_cmp, &name, &oc);
+	ssize_t i = list_lsearchp(config->output_configs, output_name_cmp, name, &oc);
 	if (i >= 0) {
 		// merge existing config
 		merge_output_config(oc, output);
