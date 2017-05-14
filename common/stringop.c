@@ -83,10 +83,6 @@ list_t *split_string(const char *str, const char *delims) {
 	return res;
 }
 
-void free_flat_list(list_t *list) {
-	list_free_withp(list, free);
-}
-
 char **split_args(const char *start, int *argc) {
 	*argc = 0;
 	int alloc = 2;
@@ -312,18 +308,18 @@ char *join_list(list_t *list, char *separator) {
 	}
 
 	for (size_t i = 0; i < list->length; i++) {
-		char *item = *(char **)list_get(list, i);
+		char *item = list_getp(list, i);
 		len += strlen(item);
 	}
 
 	char *res = malloc(len);
 
-	char *item = *(char **)list_get(list, 0);
+	char *item = list_getp(list, 0);
 	char *p = res + strlen(item);
 	strcpy(res, item);
 
 	for (size_t i = 1; i < list->length; i++) {
-		item = *(char **)list_get(list, i);
+		item = list_getp(list, i);
 		if (sep_len) {
 			memcpy(p, separator, sep_len);
 			p += sep_len;

@@ -287,7 +287,7 @@ void registry_teardown(struct registry *registry) {
 		wl_display_disconnect(registry->display);
 	}
 	if (registry->outputs) {
-		free_flat_list(registry->outputs);
+		list_free_withp(registry->outputs, free);
 	}
 	free(registry);
 }

@@ -45,7 +45,7 @@ static void free_binding(struct sway_binding *bind) {
 	if (!bind) {
 		return;
 	}
-	free_flat_list(bind->keys);
+	list_free_withp(bind->keys, free);
 	free(bind->command);
 	free(bind);
 }
@@ -77,7 +77,7 @@ static void free_bar(struct bar_config *bar) {
 	list_free(bar->bindings);
 
 	if (bar->outputs) {
-		free_flat_list(bar->outputs);
+		list_free_withp(bar->outputs, free);
 	}
 
 	if (bar->pid != 0) {
@@ -229,7 +229,7 @@ void free_config(struct sway_config *config) {
 	list_free_withp(config->feature_policies, (freefn_t)free_feature_policy);
 
 	list_free(config->active_bar_modifiers);
-	free_flat_list(config->config_chain);
+	list_free_withp(config->config_chain, free);
 	free(config->font);
 	free(config->floating_scroll_up_cmd);
 	free(config->floating_scroll_down_cmd);
@@ -514,7 +514,7 @@ bool load_main_config(const char *file, bool is_active) {
 			}
 		}
 
-		free_flat_list(secconfigs);
+		list_free_withp(secconfigs, free);
 	}
 
 	success = success && load_config(path, config);

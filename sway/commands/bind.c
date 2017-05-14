@@ -63,21 +63,21 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		}
 		if (!sym) {
 			free_sway_binding(binding);
-			free_flat_list(split);
+			list_free_withp(split, free);
 			return cmd_results_new(CMD_INVALID, "bindsym", "Unknown key '%s'",
 					item);
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
 		if (!key) {
 			free_sway_binding(binding);
-			free_flat_list(split);
+			list_free_withp(split, free);
 			return cmd_results_new(CMD_FAILURE, "bindsym",
 					"Unable to allocate binding");
 		}
 		*key = sym;
 		list_add(binding->keys, &key);
 	}
-	free_flat_list(split);
+	list_free_withp(split, free);
 
 	struct sway_mode *mode = config->current_mode;
 	struct sway_binding *dup;
@@ -148,7 +148,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 		*key = keycode - 8;
 		list_add(binding->keys, &key);
 	}
-	free_flat_list(split);
+	list_free_withp(split, free);
 
 	struct sway_mode *mode = config->current_mode;
 	struct sway_binding *dup;

@@ -19,7 +19,7 @@ struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 	for (size_t i = 0; i < split->length; ++i) {
 		config->floating_mod |= get_modifier_mask_by_name(list_getp(split, i));
 	}
-	free_flat_list(split);
+	list_free_withp(split, free);
 	if (!config->floating_mod) {
 		error = cmd_results_new(CMD_INVALID, "floating_modifier", "Unknown keys %s", argv[0]);
 		return error;
