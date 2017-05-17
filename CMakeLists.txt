@@ -68,6 +68,10 @@ find_package(PAM)
 find_package(LibInput REQUIRED)
 find_package(Libcap REQUIRED)
 
+if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+	find_package(EpollShim REQUIRED)
+endif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+
 include(FeatureSummary)
 include(Manpage)
 include(GNUInstallDirs)
