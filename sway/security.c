@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "sway/config.h"
 #include "sway/security.h"
+#include "util.h"
 #include "log.h"
 
 static bool validate_ipc_target(const char *program) {
@@ -21,7 +22,7 @@ static bool validate_ipc_target(const char *program) {
 	}
 	if (!S_ISREG(sb.st_mode)) {
 		sway_log(L_ERROR,
-				"IPC target '%s' MUST be/point at an existing regular file",
+				"IPC target '%s' MUST point at an existing file",
 				program);
 		return false;
 	}
@@ -30,7 +31,7 @@ static bool validate_ipc_target(const char *program) {
 		sway_log(L_ERROR, "IPC target '%s' MUST be owned by root", program);
 		return false;
 #else
-		sway_log(L_INFO, "IPC target '%s' MUST be owned by root (waived for debug build)", program);
+		sway_log(L_ERROR, "IPC target '%s' MUST be owned by root (waived for debug build)", program);
 		return true;
 #endif
 	}
@@ -45,9 +46,6 @@ static bool validate_ipc_target(const char *program) {
 struct feature_policy *alloc_feature_policy(const char *program) {
 	uint32_t default_policy = 0;
 
-	if (!validate_ipc_target(program)) {
-		return NULL;
-	}
 	for (int i = 0; i < config->feature_policies->length; ++i) {
 		struct feature_policy *policy = config->feature_policies->items[i];
 		if (strcmp(policy->program, "*") == 0) {
@@ -60,6 +58,7 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 	if (!policy) {
 		return NULL;
 	}
+	policy->validated = validate_ipc_target	(program);
 	policy->program = strdup(program);
 	if (!policy->program) {
 		free(policy);
@@ -73,9 +72,6 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 struct ipc_policy *alloc_ipc_policy(const char *program) {
 	uint32_t default_policy = 0;
 
-	if (!validate_ipc_target(program)) {
-		return NULL;
-	}
 	for (int i = 0; i < config->ipc_policies->length; ++i) {
 		struct ipc_policy *policy = config->ipc_policies->items[i];
 		if (strcmp(policy->program, "*") == 0) {
@@ -88,6 +84,7 @@ struct ipc_policy *alloc_ipc_policy(const char *program) {
 	if (!policy) {
 		return NULL;
 	}
+	policy->validated = validate_ipc_target	(program);
 	policy->program = strdup(program);
 	if (!policy->program) {
 		free(policy);
@@ -225,4 +222,22 @@ const char *command_policy_str(enum command_context context) {
 		default:
 			return "unknown";
 	}
+}
+
+/**
+ * An IPC-specific version of util.c:resolve_path()
+ * Always returns the "best" path It can unless an ENOMEM occurs ,
+ * in which case it returns NULL.
+ */
+char *resolve_ipc_path(const char* name) {
+	char *program = NULL;
+	if (!strcmp(name, "*")) {
+		program = strdup(name);
+	} else {
+		program = resolve_path(name);
+		if (!program) {
+			program = strdup(name);
+		}
+	}
+	return program;
 }

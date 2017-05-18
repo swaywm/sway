@@ -15,4 +15,5 @@ struct feature_policy *alloc_feature_policy(const char *program);
 struct ipc_policy *alloc_ipc_policy(const char *program);
 struct command_policy *alloc_command_policy(const char *command);
 
+char *resolve_ipc_path(const char* program);
 #endif
