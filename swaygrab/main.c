@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <stdbool.h>

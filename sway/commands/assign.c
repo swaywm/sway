@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <string.h>
 #include "sway/commands.h"
@@ -55,4 +55,3 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	}
 	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
-

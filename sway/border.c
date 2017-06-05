@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #include <wlc/wlc-render.h>
 #include <cairo/cairo.h>
 #include <pango/pangocairo.h>
