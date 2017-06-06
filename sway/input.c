@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #include <ctype.h>
 #include <float.h>
 #include <limits.h>
@@ -60,7 +60,7 @@ char *libinput_dev_unique_id(struct libinput_device *device) {
 	}
 
 	const char *fmt = "%d:%d:%s";
-	snprintf(identifier, len, fmt, vendor, product, name); 
+	snprintf(identifier, len, fmt, vendor, product, name);
 	free(name);
 	return identifier;
 }

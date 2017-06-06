@@ -66,7 +66,10 @@ find_package(GdkPixbuf)
 find_package(PAM)
 
 find_package(LibInput REQUIRED)
-find_package(Libcap REQUIRED)
+
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	find_package(Libcap REQUIRED)
+endif (CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 	find_package(EpollShim REQUIRED)
