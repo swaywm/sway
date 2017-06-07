@@ -327,7 +327,22 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 
 	json_object *json = json_object_new_object();
 	json_object_object_add(json, "id", json_object_new_string(bar->id));
-	json_object_object_add(json, "tray_output", NULL);
+#ifdef ENABLE_TRAY
+	if (bar->tray_output) {
+		json_object_object_add(json, "tray_output", json_object_new_string(bar->tray_output));
+	} else {
+		json_object_object_add(json, "tray_output", NULL);
+	}
+	if (bar->icon_theme) {
+		json_object_object_add(json, "icon_theme", json_object_new_string(bar->icon_theme));
+	} else {
+		json_object_object_add(json, "icon_theme", NULL);
+	}
+	json_object_object_add(json, "tray_padding", json_object_new_int(bar->tray_padding));
+	json_object_object_add(json, "activate_button", json_object_new_int(bar->activate_button));
+	json_object_object_add(json, "context_button", json_object_new_int(bar->context_button));
+	json_object_object_add(json, "secondary_button", json_object_new_int(bar->secondary_button));
+#endif
 	json_object_object_add(json, "mode", json_object_new_string(bar->mode));
 	json_object_object_add(json, "hidden_state", json_object_new_string(bar->hidden_state));
 	json_object_object_add(json, "modifier", json_object_new_string(get_modifier_name_by_mask(bar->modifier)));

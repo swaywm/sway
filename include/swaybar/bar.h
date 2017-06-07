@@ -21,6 +21,9 @@ struct output {
 	struct window *window;
 	struct registry *registry;
 	list_t *workspaces;
+#ifdef ENABLE_TRAY
+	list_t *items;
+#endif
 	char *name;
 	int idx;
 	bool focused;
@@ -36,6 +39,9 @@ struct workspace {
 
 /** Global bar state */
 extern struct bar swaybar;
+
+/** True if sway needs to render */
+extern bool dirty;
 
 /**
  * Setup bar.

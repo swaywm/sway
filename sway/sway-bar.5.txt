@@ -65,6 +65,42 @@ Commands
 **height** <height>::
 	Sets the height of the bar. Default height will match the font size.
 
+Tray
+----
+
+Swaybar provides a system tray where programs such as NetworkManager, VLC,
+Pidgin, etc. can place little icons. The following commands configure
+interaction with the tray or individual icons.
+The _button_ argument in all following commands is a Linux input event code as
+defined in linux/input-event-codes.h. This is because wayland defines button
+codes in this manner.
+
+**activate_button** <button>::
+	Sets the button to be used for the _activate_ (primary click) tray item
+	event. By default is BTN_LEFT (0x110).
+
+**context_button** <button>::
+	Sets the button to be used for the _context menu_ (right click) tray item
+	event. By default is BTN_RIGHT (0x111).
+
+**secondary_button** <button>::
+	Sets the button to be used for the _secondary_ (middle click) tray item
+	event. By default is BTN_MIDDLE (0x112).
+
+**tray_output** none|all|<name>::
+	Sets the output that the tray will appear on or none. Unlike i3bar, swaybar
+	should be able to show icons on any number of bars and outputs without
+	races. Because of this, the default value for this is _all_.
+
+**tray_padding** <px> [px]::
+	Sets the pixel padding of the system tray. This padding will surround the
+	tray on all sides and between each item. The default value for _px_ is 2.
+
+**icon_theme** <name>::
+	Sets the icon theme that sway will look for item icons in. This option has
+	no default value, because sway will always default to the fallback theme,
+	hicolor.
+
 Colors
 ------
 

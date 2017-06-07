@@ -19,11 +19,19 @@ void ipc_send_workspace_command(const char *workspace_name) {
 
 static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
-	json_object *tray_output, *mode, *hidden_bar, *position, *status_command;
+	json_object *markup, *mode, *hidden_bar, *position, *status_command;
 	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
-	json_object *markup;
+#ifdef ENABLE_TRAY
+	json_object *tray_output, *icon_theme, *tray_padding, *activate_button, *context_button;
+	json_object *secondary_button;
 	json_object_object_get_ex(bar_config, "tray_output", &tray_output);
+	json_object_object_get_ex(bar_config, "icon_theme", &icon_theme);
+	json_object_object_get_ex(bar_config, "tray_padding", &tray_padding);
+	json_object_object_get_ex(bar_config, "activate_button", &activate_button);
+	json_object_object_get_ex(bar_config, "context_button", &context_button);
+	json_object_object_get_ex(bar_config, "secondary_button", &secondary_button);
+#endif
 	json_object_object_get_ex(bar_config, "mode", &mode);
 	json_object_object_get_ex(bar_config, "hidden_bar", &hidden_bar);
 	json_object_object_get_ex(bar_config, "position", &position);
@@ -82,6 +90,34 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	if (markup) {
 		config->pango_markup = json_object_get_boolean(markup);
 	}
+
+#ifdef ENABLE_TRAY
+	if (tray_output) {
+		free(config->tray_output);
+		config->tray_output = strdup(json_object_get_string(tray_output));
+	}
+
+	if (icon_theme) {
+		free(config->icon_theme);
+		config->icon_theme = strdup(json_object_get_string(icon_theme));
+	}
+
+	if (tray_padding) {
+		config->tray_padding = json_object_get_int(tray_padding);
+	}
+
+	if (activate_button) {
+		config->activate_button = json_object_get_int(activate_button);
+	}
+
+	if (context_button) {
+		config->context_button = json_object_get_int(context_button);
+	}
+
+	if (secondary_button) {
+		config->secondary_button = json_object_get_int(secondary_button);
+	}
+#endif
 
 	// free previous outputs list
 	int i;

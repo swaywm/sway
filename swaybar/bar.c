@@ -7,10 +7,17 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <poll.h>
+#ifdef ENABLE_TRAY
+#include <dbus/dbus.h>
+#include "swaybar/tray/sni_watcher.h"
+#include "swaybar/tray/tray.h"
+#include "swaybar/tray/sni.h"
+#endif
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
+#include "swaybar/event_loop.h"
 #include "swaybar/bar.h"
 #include "ipc-client.h"
 #include "list.h"
@@ -50,18 +57,39 @@ static void spawn_status_cmd_proc(struct bar *bar) {
 	}
 }
 
+#ifdef ENABLE_TRAY
+static void spawn_xembed_sni_proxy() {
+	pid_t pid = fork();
+	if (pid == 0) {
+		int wstatus;
+		do {
+			pid = fork();
+			if (pid == 0) {
+				execlp("xembedsniproxy", "xembedsniproxy", NULL);
+				_exit(EXIT_FAILURE);
+			}
+			waitpid(pid, &wstatus, 0);
+		} while (!WIFEXITED(wstatus));
+		_exit(EXIT_FAILURE);
+	}
+}
+#endif
+
 struct output *new_output(const char *name) {
 	struct output *output = malloc(sizeof(struct output));
 	output->name = strdup(name);
 	output->window = NULL;
 	output->registry = NULL;
 	output->workspaces = create_list();
+#ifdef ENABLE_TRAY
+	output->items = create_list();
+#endif
 	return output;
 }
 
 static void mouse_button_notify(struct window *window, int x, int y,
 		uint32_t button, uint32_t state_w) {
-	sway_log(L_DEBUG, "Mouse button %d clicked at %d %d %d\n", button, x, y, state_w);
+	sway_log(L_DEBUG, "Mouse button %d clicked at %d %d %d", button, x, y, state_w);
 	if (!state_w) {
 		return;
 	}
@@ -92,6 +120,30 @@ static void mouse_button_notify(struct window *window, int x, int y,
 			break;
 		}
 	}
+
+#ifdef ENABLE_TRAY
+	uint32_t tray_padding = swaybar.config->tray_padding;
+	int tray_width = window->width * window->scale;
+
+	for (int i = 0; i < clicked_output->items->length; ++i) {
+		struct sni_icon_ref *item =
+			 clicked_output->items->items[i];
+		int icon_width = cairo_image_surface_get_width(item->icon);
+
+		tray_width -= tray_padding;
+		if (x <= tray_width && x >= tray_width - icon_width) {
+			if (button == swaybar.config->activate_button) {
+				sni_activate(item->ref, x, y);
+			} else if (button == swaybar.config->context_button) {
+				sni_context_menu(item->ref, x, y);
+			} else if (button == swaybar.config->secondary_button) {
+				sni_secondary(item->ref, x, y);
+			}
+			break;
+		}
+		tray_width -= icon_width;
+	}
+#endif
 }
 
 static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
@@ -136,6 +188,9 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 	/* initialize bar with default values */
 	bar_init(bar);
 
+	/* Initialize event loop lists */
+	init_event_loop();
+
 	/* connect to sway ipc */
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
@@ -178,23 +233,54 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 	}
 	/* spawn status command */
 	spawn_status_cmd_proc(bar);
+
+#ifdef ENABLE_TRAY
+	// We should have at least one output to serve the tray to
+	if (!swaybar.config->tray_output || strcmp(swaybar.config->tray_output, "none") != 0) {
+		/* Connect to the D-Bus */
+		dbus_init();
+
+		/* Start the SNI watcher */
+		init_sni_watcher();
+
+		/* Start the SNI host */
+		init_tray();
+
+		/* Start xembedsniproxy */
+		spawn_xembed_sni_proxy();
+	}
+#endif
+}
+
+bool dirty = true;
+
+static void respond_ipc(int fd, short mask, void *_bar) {
+	struct bar *bar = (struct bar *)_bar;
+	sway_log(L_DEBUG, "Got IPC event.");
+	dirty = handle_ipc_event(bar);
+}
+
+static void respond_command(int fd, short mask, void *_bar) {
+	struct bar *bar = (struct bar *)_bar;
+	dirty = handle_status_line(bar);
+}
+
+static void respond_output(int fd, short mask, void *_output) {
+	struct output *output = (struct output *)_output;
+	if (wl_display_dispatch(output->registry->display) == -1) {
+		sway_log(L_ERROR, "failed to dispatch wl: %d", errno);
+	}
 }
 
 void bar_run(struct bar *bar) {
-	int pfds = bar->outputs->length + 2;
-	struct pollfd *pfd = malloc(pfds * sizeof(struct pollfd));
-	bool dirty = true;
-
-	pfd[0].fd = bar->ipc_event_socketfd;
-	pfd[0].events = POLLIN;
-	pfd[1].fd = bar->status_read_fd;
-	pfd[1].events = POLLIN;
+	add_event(bar->ipc_event_socketfd, POLLIN, respond_ipc, bar);
+	add_event(bar->status_read_fd, POLLIN, respond_command, bar);
 
 	int i;
 	for (i = 0; i < bar->outputs->length; ++i) {
 		struct output *output = bar->outputs->items[i];
-		pfd[i+2].fd = wl_display_get_fd(output->registry->display);
-		pfd[i+2].events = POLLIN;
+		add_event(wl_display_get_fd(output->registry->display),
+				POLLIN, respond_output, output);
 	}
 
 	while (1) {
@@ -212,29 +298,10 @@ void bar_run(struct bar *bar) {
 
 		dirty = false;
 
-		poll(pfd, pfds, -1);
-
-		if (pfd[0].revents & POLLIN) {
-			sway_log(L_DEBUG, "Got IPC event.");
-			dirty = handle_ipc_event(bar);
-		}
-
-		if (bar->config->status_command && pfd[1].revents & POLLIN) {
-			sway_log(L_DEBUG, "Got update from status command.");
-			dirty = handle_status_line(bar);
-		}
-
-		// dispatch wl_display events
-		for (i = 0; i < bar->outputs->length; ++i) {
-			struct output *output = bar->outputs->items[i];
-			if (pfd[i+2].revents & POLLIN) {
-				if (wl_display_dispatch(output->registry->display) == -1) {
-					sway_log(L_ERROR, "failed to dispatch wl: %d", errno);
-				}
-			} else {
-				wl_display_dispatch_pending(output->registry->display);
-			}
-		}
+		event_loop_poll();
+#ifdef ENABLE_TRAY
+		dispatch_dbus();
+#endif
 	}
 }
 
