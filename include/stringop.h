@@ -14,12 +14,15 @@ char *strip_whitespace(char *str);
 char *strip_comments(char *str);
 void strip_quotes(char *str);
 
+// strcmp that dereferences args first.
+// Designed to be taken by list_lsearch and such
+int strcmp_ptr(const void *a, const void *b);
+
 // strcmp that also handles null pointers.
 int lenient_strcmp(char *a, char *b);
 
-// Simply split a string with delims, free with `free_flat_list`
+// Simply split a string with delims, free with `list_free_withp(..., free)`
 list_t *split_string(const char *str, const char *delims);
-void free_flat_list(list_t *list);
 
 // Splits an argument string, keeping quotes intact
 char **split_args(const char *str, int *argc);

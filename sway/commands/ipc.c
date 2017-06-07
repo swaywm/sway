@@ -37,7 +37,7 @@ struct cmd_results *cmd_ipc(int argc, char **argv) {
 	}
 
 	current_policy = alloc_ipc_policy(program);
-	list_add(config->ipc_policies, current_policy);
+	list_add(config->ipc_policies, &current_policy);
 
 	free(program);
 	return cmd_results_new(CMD_BLOCK_IPC, NULL, NULL);

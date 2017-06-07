@@ -38,13 +38,12 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 	}
 
 	// set bar id
-	int i;
-	for (i = 0; i < config->bars->length; ++i) {
-		if (bar == config->bars->items[i]) {
+	for (size_t i = 0; i < config->bars->length; ++i) {
+		if (bar == list_getp(config->bars, i)) {
 			const int len = 5 + numlen(i); // "bar-" + i + \0
 			bar->id = malloc(len * sizeof(char));
 			if (bar->id) {
-				snprintf(bar->id, len, "bar-%d", i);
+				snprintf(bar->id, len, "bar-%zu", i);
 			} else {
 				return cmd_results_new(CMD_FAILURE, "bar", "Unable to allocate bar ID");
 			}

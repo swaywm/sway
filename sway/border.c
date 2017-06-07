@@ -198,7 +198,7 @@ static void render_title_bar(swayc_t *view, cairo_t *cr, struct wlc_geometry *b,
 		int total_len = 0;
 
 		for(int i = view->marks->length - 1; i >= 0; --i) {
-			char *mark = (char *)view->marks->items[i];
+			char *mark = list_getp(view->marks, i);
 			if (*mark != '_') {
 				int width, height;
 				get_text_size(cr, config->font, &width, &height, 1, false, "[%s]", mark);
@@ -271,10 +271,9 @@ static char *generate_container_title(swayc_t *container) {
 	}
 	snprintf(name, len, "sway: %c[", layout);
 
-	int i;
-	for (i = 0; i < container->children->length; ++i) {
+	for (size_t i = 0; i < container->children->length; ++i) {
 		prev_name = name;
-		swayc_t* child = container->children->items[i];
+		swayc_t* child = list_getp(container->children, i);
 		const char *title = NULL;
 		if (child->type == C_VIEW) {
 			title = child->app_id ? child->app_id :
@@ -330,9 +329,8 @@ void update_tabbed_stacked_titlebars(swayc_t *c, cairo_t *cr, struct wlc_geometr
 			return;
 		}
 
-		int i;
-		for (i = 0; i < c->children->length; ++i) {
-			swayc_t *child = c->children->items[i];
+		for (size_t i = 0; i < c->children->length; ++i) {
+			swayc_t *child = list_getp(c->children, i);
 			update_tabbed_stacked_titlebars(child, cr, g, focused, focused_inactive);
 		}
 	} else {
@@ -402,9 +400,8 @@ static void update_view_border(swayc_t *view) {
 		}
 
 		// generate container titles
-		int i;
-		for (i = 0; i < p->children->length; ++i) {
-			swayc_t *child = p->children->items[i];
+		for (size_t i = 0; i < p->children->length; ++i) {
+			swayc_t *child = list_getp(p->children, i);
 			if (child->type == C_CONTAINER) {
 				generate_container_title(child);
 			}
@@ -471,8 +468,9 @@ void update_container_border(swayc_t *container) {
 		update_view_border(container);
 		return;
 	} else {
-		for (int i = 0; i < container->children->length; ++i) {
-			update_container_border(container->children->items[i]);
+		for (size_t i = 0; i < container->children->length; ++i) {
+			swayc_t *item = list_getp(container->children, i);
+			update_container_border(item);
 		}
 	}
 }

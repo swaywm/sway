@@ -275,8 +275,6 @@ static void render_binding_mode_indicator(struct window *window, struct config *
 }
 
 void render(struct output *output, struct config *config, struct status_line *line) {
-	int i;
-
 	struct window *window = output->window;
 	cairo_t *cairo = window->cairo;
 	bool is_focused = output->focused;
@@ -316,8 +314,8 @@ void render(struct output *output, struct config *config, struct status_line *li
 	} else if (line->protocol == I3BAR && line->block_line) {
 		double pos = (window->width * window->scale) - 0.5;
 		bool edge = true;
-		for (i = line->block_line->length - 1; i >= 0; --i) {
-			struct status_block *block = line->block_line->items[i];
+		for (ssize_t i = line->block_line->length - 1; i >= 0; --i) {
+			struct status_block *block = list_getp(line->block_line, i);
 			if (block->full_text && block->full_text[0]) {
 				render_block(window, config, block, &pos, edge, is_focused);
 				edge = false;
@@ -330,8 +328,8 @@ void render(struct output *output, struct config *config, struct status_line *li
 
 	// Workspaces
 	if (config->workspace_buttons) {
-		for (i = 0; i < output->workspaces->length; ++i) {
-			struct workspace *ws = output->workspaces->items[i];
+		for (size_t i = 0; i < output->workspaces->length; ++i) {
+			struct workspace *ws = list_getp(output->workspaces, i);
 			render_workspace_button(window, config, ws, &x);
 		}
 	}

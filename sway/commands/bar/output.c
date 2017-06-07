@@ -17,23 +17,23 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 	const char *output = argv[0];
 	list_t *outputs = config->current_bar->outputs;
 	if (!outputs) {
-		outputs = create_list();
+		outputs = list_new(sizeof(char *), 0);
 		config->current_bar->outputs = outputs;
 	}
 
-	int i;
 	int add_output = 1;
 	if (strcmp("*", output) == 0) {
 		// remove all previous defined outputs and replace with '*'
-		for (i = 0; i < outputs->length; ++i) {
-			free(outputs->items[i]);
-			list_del(outputs, i);
+		for (size_t i = 0; i < outputs->length; ++i) {
+			char *item = list_getp(outputs, i);
+			free(item);
+			list_delete(outputs, i);
 		}
 	} else {
 		// only add output if not already defined with either the same
 		// name or as '*'
-		for (i = 0; i < outputs->length; ++i) {
-			const char *find = outputs->items[i];
+		for (size_t i = 0; i < outputs->length; ++i) {
+			const char *find = list_getp(outputs, i);
 			if (strcmp("*", find) == 0 || strcmp(output, find) == 0) {
 				add_output = 0;
 				break;
@@ -42,7 +42,8 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 	}
 
 	if (add_output) {
-		list_add(outputs, strdup(output));
+		char *ptr = strdup(output);
+		list_add(outputs, &ptr);
 		sway_log(L_DEBUG, "Adding bar: '%s' to output '%s'", config->current_bar->id, output);
 	}
 

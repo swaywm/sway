@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
 	log_env();
 	detect_proprietary();
 
-	input_devices = create_list();
+	input_devices = list_new(sizeof(struct libudev_device *), 0);
 
 	/* Changing code earlier than this point requires detailed review */
 	/* (That code runs as root on systems without logind, and wlc_init drops to

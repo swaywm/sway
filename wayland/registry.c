@@ -227,7 +227,7 @@ static void registry_global(void *data, struct wl_registry *registry,
 		ostate->output = output;
 		ostate->scale = 1;
 		wl_output_add_listener(output, &output_listener, ostate);
-		list_add(reg->outputs, ostate);
+		list_add(reg->outputs, &ostate);
 	} else if (strcmp(interface, desktop_shell_interface.name) == 0) {
 		reg->desktop_shell = wl_registry_bind(registry, name, &desktop_shell_interface, version);
 	} else if (strcmp(interface, lock_interface.name) == 0) {
@@ -247,7 +247,7 @@ static const struct wl_registry_listener registry_listener = {
 struct registry *registry_poll(void) {
 	struct registry *registry = malloc(sizeof(struct registry));
 	memset(registry, 0, sizeof(struct registry));
-	registry->outputs = create_list();
+	registry->outputs = list_new(sizeof(struct output_state *), 0);
 	registry->input = calloc(sizeof(struct input), 1);
 	registry->input->xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 
@@ -287,7 +287,7 @@ void registry_teardown(struct registry *registry) {
 		wl_display_disconnect(registry->display);
 	}
 	if (registry->outputs) {
-		free_flat_list(registry->outputs);
+		list_free_withp(registry->outputs, free);
 	}
 	free(registry);
 }

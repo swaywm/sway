@@ -344,7 +344,7 @@ char *do_var_replacement(char *str);
 
 struct cmd_results *check_security_config();
 
-int input_identifier_cmp(const void *item, const void *data);
+int input_identifier_cmp(const void *key, const void *item);
 void merge_input_config(struct input_config *dst, struct input_config *src);
 void apply_input_config(struct input_config *ic, struct libinput_device *dev);
 void free_input_config(struct input_config *ic);

@@ -69,26 +69,18 @@ int lenient_strcmp(char *a, char *b) {
 }
 
 list_t *split_string(const char *str, const char *delims) {
-	list_t *res = create_list();
+	list_t *res = list_new(sizeof(char *), 0);
 	char *copy = strdup(str);
 	char *token;
 
 	token = strtok(copy, delims);
 	while(token) {
 		token = strdup(token);
-		list_add(res, token);
+		list_add(res, &token);
 		token = strtok(NULL, delims);
 	}
 	free(copy);
 	return res;
-}
-
-void free_flat_list(list_t *list) {
-	int i;
-	for (i = 0; i < list->length; ++i) {
-		free(list->items[i]);
-	}
-	list_free(list);
 }
 
 char **split_args(const char *start, int *argc) {
@@ -315,22 +307,25 @@ char *join_list(list_t *list, char *separator) {
 		len += (list->length - 1) * sep_len;
 	}
 
-	for (int i = 0; i < list->length; i++) {
-		len += strlen(list->items[i]);
+	for (size_t i = 0; i < list->length; i++) {
+		char *item = list_getp(list, i);
+		len += strlen(item);
 	}
 
 	char *res = malloc(len);
 
-	char *p = res + strlen(list->items[0]);
-	strcpy(res, list->items[0]);
+	char *item = list_getp(list, 0);
+	char *p = res + strlen(item);
+	strcpy(res, item);
 
-	for (int i = 1; i < list->length; i++) {
+	for (size_t i = 1; i < list->length; i++) {
+		item = list_getp(list, i);
 		if (sep_len) {
 			memcpy(p, separator, sep_len);
 			p += sep_len;
 		}
-		strcpy(p, list->items[i]);
-		p += strlen(list->items[i]);
+		strcpy(p, item);
+		p += strlen(item);
 	}
 
 	*p = '\0';
@@ -386,4 +381,8 @@ char *argsep(char **stringp, const char *delim) {
 	}
 	found:
 	return start;
+}
+
+int strcmp_ptr(const void *a, const void *b) {
+	return strcmp(*(char **)a, *(char **)b);
 }

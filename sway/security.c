@@ -48,8 +48,8 @@ struct feature_policy *alloc_feature_policy(const char *program) {
 	if (!validate_ipc_target(program)) {
 		return NULL;
 	}
-	for (int i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *policy = config->feature_policies->items[i];
+	for (size_t i = 0; i < config->feature_policies->length; ++i) {
+		struct feature_policy *policy = list_getp(config->feature_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 			break;
@@ -76,8 +76,8 @@ struct ipc_policy *alloc_ipc_policy(const char *program) {
 	if (!validate_ipc_target(program)) {
 		return NULL;
 	}
-	for (int i = 0; i < config->ipc_policies->length; ++i) {
-		struct ipc_policy *policy = config->ipc_policies->items[i];
+	for (size_t i = 0; i < config->ipc_policies->length; ++i) {
+		struct ipc_policy *policy = list_getp(config->ipc_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 			break;
@@ -143,8 +143,8 @@ static const char *get_pid_exe(pid_t pid) {
 struct feature_policy *get_feature_policy(const char *name) {
 	struct feature_policy *policy = NULL;
 
-	for (int i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *p = config->feature_policies->items[i];
+	for (size_t i = 0; i < config->feature_policies->length; ++i) {
+		struct feature_policy *p = list_getp(config->feature_policies, i);
 		if (strcmp(p->program, name) == 0) {
 			policy = p;
 			break;
@@ -155,7 +155,7 @@ struct feature_policy *get_feature_policy(const char *name) {
 		if (!policy) {
 			sway_abort("Unable to allocate security policy");
 		}
-		list_add(config->feature_policies, policy);
+		list_add(config->feature_policies, &policy);
 	}
 	return policy;
 }
@@ -164,8 +164,8 @@ uint32_t get_feature_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
 
-	for (int i = 0; i < config->feature_policies->length; ++i) {
-		struct feature_policy *policy = config->feature_policies->items[i];
+	for (size_t i = 0; i < config->feature_policies->length; ++i) {
+		struct feature_policy *policy = list_getp(config->feature_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 		}
@@ -181,8 +181,8 @@ uint32_t get_ipc_policy_mask(pid_t pid) {
 	uint32_t default_policy = 0;
 	const char *link = get_pid_exe(pid);
 
-	for (int i = 0; i < config->ipc_policies->length; ++i) {
-		struct ipc_policy *policy = config->ipc_policies->items[i];
+	for (size_t i = 0; i < config->ipc_policies->length; ++i) {
+		struct ipc_policy *policy = list_getp(config->ipc_policies, i);
 		if (strcmp(policy->program, "*") == 0) {
 			default_policy = policy->features;
 		}
@@ -197,8 +197,8 @@ uint32_t get_ipc_policy_mask(pid_t pid) {
 uint32_t get_command_policy_mask(const char *cmd) {
 	uint32_t default_policy = 0;
 
-	for (int i = 0; i < config->command_policies->length; ++i) {
-		struct command_policy *policy = config->command_policies->items[i];
+	for (size_t i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *policy = list_getp(config->command_policies, i);
 		if (strcmp(policy->command, "*") == 0) {
 			default_policy = policy->context;
 		}

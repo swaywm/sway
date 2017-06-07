@@ -43,7 +43,7 @@ struct config *init_config() {
 	config->wrap_scroll = false;
 	config->workspace_buttons = true;
 	config->all_outputs = false;
-	config->outputs = create_list();
+	config->outputs = list_new(sizeof(char *), 0);
 
 	/* height */
 	config->height = 0;

@@ -252,7 +252,7 @@ swayc_t *get_focused_float(swayc_t *ws) {
 		ws = swayc_active_workspace();
 	}
 	if (ws->floating->length) {
-		return ws->floating->items[ws->floating->length - 1];
+		return list_getp(ws->floating, ws->floating->length - 1);
 	}
 	return NULL;
 }

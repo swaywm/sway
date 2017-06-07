@@ -37,9 +37,8 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 
 	struct sway_variable *var = NULL;
 	// Find old variable if it exists
-	int i;
-	for (i = 0; i < config->symbols->length; ++i) {
-		var = config->symbols->items[i];
+	for (size_t i = 0; i < config->symbols->length; ++i) {
+		var = list_getp(config->symbols, i);
 		if (strcmp(var->name, argv[0]) == 0) {
 			break;
 		}
@@ -53,7 +52,7 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 			return cmd_results_new(CMD_FAILURE, "set", "Unable to allocate variable");
 		}
 		var->name = strdup(argv[0]);
-		list_add(config->symbols, var);
+		list_add(config->symbols, &var);
 		list_qsort(config->symbols, compare_set_qsort);
 	}
 	var->value = join_args(argv + 1, argc - 1);

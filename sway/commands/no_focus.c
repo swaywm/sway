@@ -19,7 +19,7 @@ struct cmd_results *cmd_no_focus(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "no_focus", "Unable to allocate criteria");
 	}
 	crit->crit_raw = strdup(criteria);
-	crit->tokens = create_list();
+	crit->tokens = list_new(sizeof(struct crit_token *), 0);
 	crit->cmdlist = NULL;
 	char *err_str = extract_crit_tokens(crit->tokens, crit->crit_raw);
 
@@ -30,12 +30,12 @@ struct cmd_results *cmd_no_focus(int argc, char **argv) {
 	} else if (crit->tokens->length == 0) {
 		error = cmd_results_new(CMD_INVALID, "no_focus", "Found no name/value pairs in criteria");
 		free_criteria(crit);
-	} else if (list_seq_find(config->no_focus, criteria_cmp, crit) != -1) {
+	} else if (list_lsearchp(config->no_focus, criteria_cmp, crit, NULL) != -1) {
 		sway_log(L_DEBUG, "no_focus: Duplicate, skipping.");
 		free_criteria(crit);
 	} else {
 		sway_log(L_DEBUG, "no_focus: '%s' added", crit->crit_raw);
-		list_add(config->no_focus, crit);
+		list_add(config->no_focus, &crit);
 	}
 	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

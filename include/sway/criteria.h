@@ -22,7 +22,7 @@ struct criteria {
 	char *cmdlist;
 };
 
-int criteria_cmp(const void *item, const void *data);
+int criteria_cmp(const void *key, const void *item);
 void free_criteria(struct criteria *crit);
 
 // Pouplate list with crit_tokens extracted from criteria string, returns error
@@ -38,5 +38,7 @@ list_t *container_for(list_t *tokens);
 
 // Returns true if any criteria in the given list matches this container
 bool criteria_any(swayc_t *cont, list_t *criteria);
+
+struct crit_token;
 
 #endif

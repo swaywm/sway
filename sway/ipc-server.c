@@ -92,8 +92,8 @@ void ipc_init(void) {
 	setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
 	setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
 
-	ipc_client_list = create_list();
-	ipc_get_pixel_requests = create_list();
+	ipc_client_list = list_new(sizeof(struct ipc_client *), 0);
+	ipc_get_pixel_requests = list_new(sizeof(struct get_pixels_request), 0);
 
 	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
 }
@@ -183,7 +183,7 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	pid_t pid = get_client_pid(client->fd);
 	client->security_policy = get_ipc_policy_mask(pid);
 
-	list_add(ipc_client_list, client);
+	list_add(ipc_client_list, &client);
 
 	return 0;
 }
@@ -260,9 +260,9 @@ void ipc_client_disconnect(struct ipc_client *client) {
 
 	sway_log(L_INFO, "IPC Client %d disconnected", client->fd);
 	wlc_event_source_remove(client->event_source);
-	int i = 0;
-	while (i < ipc_client_list->length && ipc_client_list->items[i] != client) i++;
-	list_del(ipc_client_list, i);
+	size_t i = 0;
+	while (i < ipc_client_list->length && list_getp(ipc_client_list, i) != client) i++;
+	list_delete(ipc_client_list, i);
 	close(client->fd);
 	free(client);
 }
@@ -280,14 +280,13 @@ void ipc_get_pixels(wlc_handle output) {
 		return;
 	}
 
-	list_t *unhandled = create_list();
+	list_t *unhandled = list_new(sizeof(struct get_pixels_request *), 0);
 
 	struct get_pixels_request *req;
-	int i;
-	for (i = 0; i < ipc_get_pixel_requests->length; ++i) {
-		req = ipc_get_pixel_requests->items[i];
+	for (size_t i = 0; i < ipc_get_pixel_requests->length; ++i) {
+		req = list_getp(ipc_get_pixel_requests, i);
 		if (req->output != output) {
-			list_add(unhandled, req);
+			list_add(unhandled, &req);
 			continue;
 		}
 
@@ -421,8 +420,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 		json_object *inputs = json_object_new_array();
 		if (input_devices) {
-			for(int i = 0; i<input_devices->length; i++) {
-				struct libinput_device *device = input_devices->items[i];
+			for(size_t i = 0; i<input_devices->length; i++) {
+				struct libinput_device *device = list_getp(input_devices, i);
 				json_object_array_add(inputs, ipc_json_describe_input(device));
 			}
 		}
@@ -520,7 +519,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		req->client = client;
 		req->output = output->handle;
 		req->geo = g;
-		list_add(ipc_get_pixel_requests, req);
+		list_add(ipc_get_pixel_requests, &req);
 		wlc_output_schedule_render(output->handle);
 		goto exit_cleanup;
 	}
@@ -533,9 +532,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		if (!buf[0]) {
 			// Send list of configured bar IDs
 			json_object *bars = json_object_new_array();
-			int i;
-			for (i = 0; i < config->bars->length; ++i) {
-				struct bar_config *bar = config->bars->items[i];
+			for (size_t i = 0; i < config->bars->length; ++i) {
+				struct bar_config *bar = list_getp(config->bars, i);
 				json_object_array_add(bars, json_object_new_string(bar->id));
 			}
 			const char *json_string = json_object_to_json_string(bars);
@@ -544,9 +542,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		} else {
 			// Send particular bar's details
 			struct bar_config *bar = NULL;
-			int i;
-			for (i = 0; i < config->bars->length; ++i) {
-				bar = config->bars->items[i];
+			for (size_t i = 0; i < config->bars->length; ++i) {
+				bar = list_getp(config->bars, i);
 				if (strcmp(buf, bar->id) == 0) {
 					break;
 				}
@@ -626,8 +623,8 @@ void ipc_get_outputs_callback(swayc_t *container, void *data) {
 static void ipc_get_marks_callback(swayc_t *container, void *data) {
 	json_object *object = (json_object *)data;
 	if (container->marks) {
-		for (int i = 0; i < container->marks->length; ++i) {
-			char *mark = (char *)container->marks->items[i];
+		for (size_t i = 0; i < container->marks->length; ++i) {
+			char *mark = list_getp(container->marks, i);
 			json_object_array_add(object, json_object_new_string(mark));
 		}
 	}
@@ -654,10 +651,8 @@ void ipc_send_event(const char *json_string, enum ipc_command_type event) {
 		}
 	}
 
-	int i;
-	struct ipc_client *client;
-	for (i = 0; i < ipc_client_list->length; i++) {
-		client = ipc_client_list->items[i];
+	for (size_t i = 0; i < ipc_client_list->length; i++) {
+		struct ipc_client *client = list_getp(ipc_client_list, i);
 		if (!(client->security_policy & security_mask)) {
 			continue;
 		}
@@ -765,9 +760,8 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 	const char *names[10];
 
 	int len = get_modifier_names(names, sb->modifiers);
-	int i;
 	json_object *modifiers = json_object_new_array();
-	for (i = 0; i < len; ++i) {
+	for (int i = 0; i < len; ++i) {
 		json_object_array_add(modifiers, json_object_new_string(names[i]));
 	}
 
@@ -780,8 +774,8 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 
 	if (sb->bindcode) { // bindcode: populate input_codes
 		uint32_t keycode;
-		for (i = 0; i < sb->keys->length; ++i) {
-			keycode = *(uint32_t *)sb->keys->items[i];
+		for (size_t i = 0; i < sb->keys->length; ++i) {
+			keycode = *(uint32_t *)list_getp(sb->keys, i);
 			json_object_array_add(input_codes, json_object_new_int(keycode));
 			if (i == 0) {
 				input_code = keycode;
@@ -790,8 +784,8 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 	} else { // bindsym: populate symbols
 		uint32_t keysym;
 		char buffer[64];
-		for (i = 0; i < sb->keys->length; ++i) {
-			keysym = *(uint32_t *)sb->keys->items[i];
+		for (size_t i = 0; i < sb->keys->length; ++i) {
+			keysym = *(uint32_t *)list_getp(sb->keys, i);
 			if (xkb_keysym_get_name(keysym, buffer, 64) > 0) {
 				json_object *str = json_object_new_string(buffer);
 				json_object_array_add(symbols, str);

@@ -1,134 +1,271 @@
 #include "list.h"
-#include <stdio.h>
+#include "log.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-list_t *create_list(void) {
-	list_t *list = malloc(sizeof(list_t));
+list_t *list_new(size_t memb_size, size_t capacity) {
+	if (capacity == 0) {
+		capacity = 8;
+	}
+
+	list_t *list = malloc(sizeof(*list));
 	if (!list) {
 		return NULL;
 	}
-	list->capacity = 10;
+
+	list->capacity = capacity;
 	list->length = 0;
-	list->items = malloc(sizeof(void*) * list->capacity);
+	list->memb_size = memb_size;
+
+	list->items = malloc(memb_size * capacity);
+	if (!list->items) {
+		free(list);
+		return NULL;
+	}
+
 	return list;
 }
 
-static void list_resize(list_t *list) {
-	if (list->length == list->capacity) {
-		list->capacity += 10;
-		list->items = realloc(list->items, sizeof(void*) * list->capacity);
-	}
-}
-
 void list_free(list_t *list) {
-	if (list == NULL) {
+	if (!list) {
 		return;
 	}
+
 	free(list->items);
 	free(list);
 }
 
-void list_foreach(list_t *list, void (*callback)(void *item)) {
-	if (list == NULL || callback == NULL) {
+static bool resize(list_t *list) {
+	if (list->length < list->capacity) {
+		return true;
+	}
+
+	size_t new_cap = list->capacity * 2;
+	void *items = realloc(list->items, list->memb_size * new_cap);
+	if (!items) {
+		return false;
+	}
+
+	list->items = items;
+	list->capacity = new_cap;
+	return true;
+}
+
+void list_insert(list_t *list, size_t index, const void *data) {
+	if (!sway_assert(list && data && index <= list->length, "Invalid argument") ||
+		!resize(list)) {
+
 		return;
 	}
-	for (int i = 0; i < list->length; i++) {
-		callback(list->items[i]);
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+	memmove(&array[index + 1], &array[index], size * (list->length - index));
+	memcpy(&array[index], data, size);
+	++list->length;
+}
+
+void list_add(list_t *list, const void *data) {
+	if (!sway_assert(list && data, "Invalid argument")) {
+		return;
+	}
+
+	list_insert(list, list->length, data);
+}
+
+static void shrink(list_t *list) {
+	/* We shrink very sparse lists, but only down to a certain size.
+	 * The choice of >= 8 is somewhat arbitrary, but leaves a minimum
+	 * size of 4 elements.
+	 */
+	if (list->length <= list->capacity / 4 && list->capacity >= 8) {
+		size_t new_cap = list->capacity / 2;
+		void *items = realloc(list->items, list->memb_size * new_cap);
+		if (!items) {
+			return;
+		}
+
+		list->items = items;
+		list->capacity = new_cap;
 	}
 }
 
-void list_add(list_t *list, void *item) {
-	list_resize(list);
-	list->items[list->length++] = item;
+void list_delete(list_t *list, size_t index) {
+	if (!sway_assert(list && index < list->length, "Invalid argument")) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	memmove(&array[index], &array[index + 1], size * (list->length - index));
+	--list->length;
+	shrink(list);
 }
 
-void list_insert(list_t *list, int index, void *item) {
-	list_resize(list);
-	memmove(&list->items[index + 1], &list->items[index], sizeof(void*) * (list->length - index));
-	list->length++;
-	list->items[index] = item;
+void list_remove(list_t *list) {
+	if (!sway_assert(list, "Invalid argument") || list->length == 0) {
+		return;
+	}
+
+	list_delete(list, list->length - 1);
 }
 
-void list_del(list_t *list, int index) {
-	list->length--;
-	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->length - index));
+void list_swap(list_t *list, size_t i1, size_t i2) {
+	if (!sway_assert(list && i1 < list->length && i2 < list->length, "Invalid argument")) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	uint8_t tmp[size];
+	memcpy(tmp, &array[i1], size);
+	memcpy(&array[i1], &array[i2], size);
+	memcpy(&array[i2], tmp, size);
 }
 
-void list_cat(list_t *list, list_t *source) {
-	int i;
-	for (i = 0; i < source->length; ++i) {
-		list_add(list, source->items[i]);
+void *list_get(list_t *list, size_t index) {
+	if (!sway_assert(list && index < list->length, "Invalid argument")) {
+		return NULL;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	return &array[index];
+}
+
+void *list_getp(list_t *list, size_t index) {
+	void **elem = list_get(list, index);
+	return elem ? *elem : NULL;
+}
+
+void list_qsort(list_t *list, int compare(const void *, const void *)) {
+	if (!sway_assert(list && compare, "Invalid argument")) {
+		return;
+	}
+
+	qsort(list->items, list->length, list->memb_size, compare);
+}
+
+void list_isort(list_t *list, int compare(const void *, const void *)) {
+	if (!sway_assert(list && compare, "Invalid argument")) {
+		return;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 1; i < list->length; ++i) {
+		uint8_t tmp[size];
+		memcpy(tmp, &array[i], size);
+
+		ssize_t j = i - 1;
+		while (j >= 0 && compare(&array[j], tmp) > 0) {
+			memcpy(&array[j + 1], &array[j], size);
+			--j;
+		}
+
+		memcpy(array[j + 1], tmp, size);
 	}
 }
 
-void list_qsort(list_t *list, int compare(const void *left, const void *right)) {
-	qsort(list->items, list->length, sizeof(void *), compare);
-}
+ssize_t list_lsearch(const list_t *list, int compare(const void *key, const void *item),
+		const void *key, void *ret) {
 
-int list_seq_find(list_t *list, int compare(const void *item, const void *data), const void *data) {
-	for (int i = 0; i < list->length; i++) {
-		void *item = list->items[i];
-		if (compare(item, data) == 0) {
+	if (!sway_assert(list && compare && key, "Invalid argument")) {
+		return -1;
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		if (compare(&array[i], key) == 0) {
+			if (ret) {
+				memcpy(ret, &array[i], size);
+			}
 			return i;
 		}
 	}
+
 	return -1;
 }
 
-void list_swap(list_t *list, int src, int dest) {
-	void *tmp = list->items[src];
-	list->items[src] = list->items[dest];
-	list->items[dest] = tmp;
-}
+ssize_t list_lsearchp(const list_t *list, int compare(const void *key, const void *item),
+		const void *key, void *ret) {
 
-static void list_rotate(list_t *list, int from, int to) {
-	void *tmp = list->items[to];
-
-	while (to > from) {
-		list->items[to] = list->items[to - 1];
-		to--;
+	if (!sway_assert(list && compare && key, "Invalid argument")) {
+		return -1;
 	}
 
-	list->items[from] = tmp;
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		if (compare(*(void **)&array[i], key) == 0) {
+			if (ret) {
+				memcpy(ret, &array[i], size);
+			}
+			return i;
+		}
+	}
+
+	return -1;
 }
 
-static void list_inplace_merge(list_t *list, int left, int last, int mid, int compare(const void *a, const void *b)) {
-	int right = mid + 1;
-
-	if (compare(&list->items[mid], &list->items[right]) <= 0) {
+void list_foreach(list_t *list, void callback(void *item)) {
+	if (!sway_assert(list && callback, "Invalid argument")) {
 		return;
 	}
 
-	while (left <= mid && right <= last) {
-		if (compare(&list->items[left], &list->items[right]) <= 0) {
-			left++;
-		} else {
-			list_rotate(list, left, right);
-			left++;
-			mid++;
-			right++;
-		}
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		callback(&array[i]);
 	}
 }
 
-static void list_inplace_sort(list_t *list, int first, int last, int compare(const void *a, const void *b)) {
-	if (first >= last) {
+void list_foreachp(list_t *list, void callback(void *item)) {
+	if (!sway_assert(list && callback, "Invalid argument")) {
 		return;
-	} else if ((last - first) == 1) {
-		if (compare(&list->items[first], &list->items[last]) > 0) {
-			list_swap(list, first, last);
-		}
-	} else {
-		int mid = (int)((last + first) / 2);
-		list_inplace_sort(list, first, mid, compare);
-		list_inplace_sort(list, mid + 1, last, compare);
-		list_inplace_merge(list, first, last, mid, compare);
+	}
+
+	size_t size = list->memb_size;
+	uint8_t (*array)[size] = list->items;
+
+	for (size_t i = 0; i < list->length; ++i) {
+		callback(*(void **)&array[i]);
 	}
 }
 
-void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
-	if (list->length > 1) {
-		list_inplace_sort(list, 0, list->length - 1, compare);
+void list_free_with(list_t *list, freefn_t callback) {
+	if (!sway_assert(callback, "Invalid argument") || !list) {
+		return;
 	}
+
+	list_foreach(list, callback);
+	list_free(list);
+}
+
+void list_free_withp(list_t *list, freefn_t callback) {
+	if (!sway_assert(callback, "Invalid argument") || !list) {
+		return;
+	}
+
+	list_foreachp(list, callback);
+	list_free(list);
+}
+
+void *list_end(list_t *list) {
+	if (!sway_assert(list, "Invalid argument")) {
+		return NULL;
+	}
+
+	return (uint8_t *)list->items + list->memb_size * list->length;
 }

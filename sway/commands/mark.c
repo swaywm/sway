@@ -8,9 +8,13 @@
 static void find_marks_callback(swayc_t *container, void *_mark) {
 	char *mark = (char *)_mark;
 
-	int index;
-	if (container->marks && ((index = list_seq_find(container->marks, (int (*)(const void *, const void *))strcmp, mark)) != -1)) {
-		list_del(container->marks, index);
+	if (!container->marks) {
+		return;
+	}
+
+	ssize_t index = list_lsearchp(container->marks, (int (*)(const void *, const void *))strcmp, mark, NULL);
+	if (index != -1) {
+		list_delete(container->marks, index);
 	}
 }
 
@@ -45,11 +49,12 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 
 		if (view->marks) {
 			if (add) {
-				int index;
-				if ((index = list_seq_find(view->marks, (int (*)(const void *, const void *))strcmp, mark)) != -1) {
+				ssize_t index;
+				char *item;
+				if ((index = list_lsearchp(view->marks, (int (*)(const void *, const void *))strcmp, mark, &item)) != -1) {
 					if (toggle) {
-						free(view->marks->items[index]);
-						list_del(view->marks, index);
+						free(item);
+						list_delete(view->marks, index);
 
 						if (0 == view->marks->length) {
 							list_free(view->marks);
@@ -58,26 +63,24 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 					}
 					free(mark);
 				} else {
-					list_add(view->marks, mark);
+					list_add(view->marks, &mark);
 				}
 			} else {
-				if (toggle && list_seq_find(view->marks, (int (*)(const void *, const void *))strcmp, mark) != -1) {
+				if (toggle && list_lsearchp(view->marks, (int (*)(const void *, const void *))strcmp, mark, NULL) != -1) {
 					// Delete the list
-					list_foreach(view->marks, free);
-					list_free(view->marks);
+					list_free_withp(view->marks, free);
 					view->marks = NULL;
 				} else {
 					// Delete and replace with a new list
-					list_foreach(view->marks, free);
-					list_free(view->marks);
+					list_free_withp(view->marks, free);
 
-					view->marks = create_list();
-					list_add(view->marks, mark);
+					view->marks = list_new(sizeof(char *), 0);
+					list_add(view->marks, &mark);
 				}
 			}
 		} else {
-			view->marks = create_list();
-			list_add(view->marks, mark);
+			view->marks = list_new(sizeof(char *), 0);
+			list_add(view->marks, &mark);
 		}
 	} else {
 		return cmd_results_new(CMD_FAILURE, "mark",

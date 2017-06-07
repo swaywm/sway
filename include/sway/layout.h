@@ -24,7 +24,7 @@ void add_child(swayc_t *parent, swayc_t *child);
 
 // Adds child to parent at index, if parent has no focus, it is set to child
 // parent must be of type C_WORKSPACE or C_CONTAINER
-void insert_child(swayc_t *parent, swayc_t *child, int index);
+void insert_child(swayc_t *parent, swayc_t *child, size_t index);
 
 // Adds child as floating window to ws, if there is no focus it is set to child.
 // ws must be of type C_WORKSPACE

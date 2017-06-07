@@ -154,10 +154,11 @@ static struct cmd_results *cmd_layout_auto(swayc_t *container, int argc, char **
 				}
 				if (inc) {
 					for (int i = container->nb_master;
-					i >= 0 && i < container->children->length
+					i >= 0 && (size_t)i < container->children->length
 						&& i != (int)container->nb_master + inc;) {
-						((swayc_t *)container->children->items[i])->height = -1;
-						((swayc_t *)container->children->items[i])->width = -1;
+						swayc_t *item = list_getp(container->children, i);
+						item->height = -1;
+						item->width = -1;
 						i += inc > 0 ? 1 : -1;
 					}
 					container->nb_master += inc;

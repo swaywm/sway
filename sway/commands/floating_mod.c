@@ -12,15 +12,14 @@ struct cmd_results *cmd_floating_mod(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating_modifier", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	int i;
 	list_t *split = split_string(argv[0], "+");
 	config->floating_mod = 0;
 
 	// set modifier keys
-	for (i = 0; i < split->length; ++i) {
-		config->floating_mod |= get_modifier_mask_by_name(split->items[i]);
+	for (size_t i = 0; i < split->length; ++i) {
+		config->floating_mod |= get_modifier_mask_by_name(list_getp(split, i));
 	}
-	free_flat_list(split);
+	list_free_withp(split, free);
 	if (!config->floating_mod) {
 		error = cmd_results_new(CMD_INVALID, "floating_modifier", "Unknown keys %s", argv[0]);
 		return error;
