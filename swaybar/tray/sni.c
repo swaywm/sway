@@ -397,11 +397,16 @@ static void get_unique_name(struct StatusNotifierItem *item) {
 		return;
 	}
 
+	char *unique_name;
 	if (!dbus_message_get_args(reply, NULL,
-				DBUS_TYPE_STRING, &item->unique_name,
+				DBUS_TYPE_STRING, &unique_name,
 				DBUS_TYPE_INVALID)) {
-		item->unique_name = NULL;
 		sway_log(L_ERROR, "Error parsing method args");
+	} else {
+		if (item->unique_name) {
+			free(item->unique_name);
+		}
+		item->unique_name = strdup(unique_name);
 	}
 
 	dbus_message_unref(reply);
@@ -434,14 +439,14 @@ struct StatusNotifierItem *sni_create(const char *name) {
 
 	return item;
 }
-/* Return true if `item` has a name of `str` */
+/* Return 0 if `item` has a name of `str` */
 int sni_str_cmp(const void *_item, const void *_str) {
 	const struct StatusNotifierItem *item = _item;
 	const char *str = _str;
 
 	return strcmp(item->name, str);
 }
-/* Returns true if `item` has a unique name of `str` */
+/* Returns 0 if `item` has a unique name of `str` */
 int sni_uniq_cmp(const void *_item, const void *_str) {
 	const struct StatusNotifierItem *item = _item;
 	const char *str = _str;
@@ -456,6 +461,9 @@ void sni_free(struct StatusNotifierItem *item) {
 		return;
 	}
 	free(item->name);
+	if (item->unique_name) {
+		free(item->unique_name);
+	}
 	if (item->image) {
 		cairo_surface_destroy(item->image);
 	}

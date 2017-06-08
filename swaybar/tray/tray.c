@@ -179,6 +179,7 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 		name = dbus_message_get_sender(message);
 		if ((index = list_seq_find(tray->items, sni_uniq_cmp, name)) != -1) {
 			item = tray->items->items[index];
+			sway_log(L_INFO, "NewIcon signal from item %s", item->name);
 			get_icon(item);
 		}
 
