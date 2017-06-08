@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "log.h"
 
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font, const char *text,
