@@ -350,9 +350,12 @@ void render(struct output *output, struct config *config, struct status_line *li
 		tray_width -= tray_padding;
 		tray_width -= item_size;
 
+		cairo_operator_t op = cairo_get_operator(cairo);
+		cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
 		cairo_set_source_surface(cairo, render_item->icon, tray_width, tray_padding);
 		cairo_rectangle(cairo, tray_width, tray_padding, item_size, item_size);
 		cairo_fill(cairo);
+		cairo_set_operator(cairo, op);
 
 		item->dirty = false;
 	}
