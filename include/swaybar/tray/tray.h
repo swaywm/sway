@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "swaybar/tray/dbus.h"
 #include "swaybar/tray/sni.h"
+#include "swaybar/bar.h"
 #include "list.h"
 
 extern struct tray *tray;
@@ -14,13 +15,18 @@ struct tray {
 };
 
 /**
- * Initializes the tray host with D-Bus
+ * Processes a mouse event on the bar
  */
-int init_tray();
+void tray_mouse_event(struct output *output, int x, int y,
+		uint32_t button, uint32_t state);
+
+uint32_t tray_render(struct output *output, struct config *config);
+
+void tray_upkeep(struct bar *bar);
 
 /**
- * Returns an item if `x` and `y` collide with it and NULL otherwise
+ * Initializes the tray with D-Bus
  */
-struct StatusNotifierItem *collides_with_sni(int x, int y);
+void init_tray();
 
 #endif /* _SWAYBAR_TRAY_H */

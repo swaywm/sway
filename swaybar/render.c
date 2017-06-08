@@ -302,72 +302,9 @@ void render(struct output *output, struct config *config, struct status_line *li
 	cairo_paint(cairo);
 
 #ifdef ENABLE_TRAY
-	// Tray icons
-	uint32_t tray_padding = config->tray_padding;
-	unsigned int tray_width = window->width * window->scale;
-	const int item_size = (window->height * window->scale) - (2 * tray_padding);
-
-	if (item_size < 0) {
-		// Can't render items if the padding is too large
-		goto no_tray;
-	}
-
-	if (config->tray_output && strcmp(config->tray_output, output->name) != 0) {
-		goto no_tray;
-	}
-
-	for (int i = 0; i < tray->items->length; ++i) {
-		struct StatusNotifierItem *item =
-			tray->items->items[i];
-		if (!item->image) {
-			continue;
-		}
-
-		struct sni_icon_ref *render_item = NULL;
-		int j;
-		for (j = i; j < output->items->length; ++j) {
-			struct sni_icon_ref *ref =
-				output->items->items[j];
-			if (ref->ref == item) {
-				render_item = ref;
-				break;
-			} else {
-				sni_icon_ref_free(ref);
-				list_del(output->items, j);
-			}
-		}
-
-		if (!render_item) {
-			render_item = sni_icon_ref_create(item, item_size);
-			list_add(output->items, render_item);
-		} else if (item->dirty) {
-			// item needs re-render
-			sni_icon_ref_free(render_item);
-			output->items->items[j] = render_item =
-				sni_icon_ref_create(item, item_size);
-		}
-
-		tray_width -= tray_padding;
-		tray_width -= item_size;
-
-		cairo_operator_t op = cairo_get_operator(cairo);
-		cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
-		cairo_set_source_surface(cairo, render_item->icon, tray_width, tray_padding);
-		cairo_rectangle(cairo, tray_width, tray_padding, item_size, item_size);
-		cairo_fill(cairo);
-		cairo_set_operator(cairo, op);
-
-		item->dirty = false;
-	}
-
-
-	if (tray_width != window->width * window->scale) {
-		tray_width -= tray_padding;
-	}
-
-no_tray:
+	uint32_t tray_width = tray_render(output, config);
 #else
-	const int tray_width = window->width * window->scale;
+	const uint32_t tray_width = window->width * window->scale;
 #endif
 
 	// Command output

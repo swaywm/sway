@@ -27,6 +27,9 @@ static void bar_init(struct bar *bar) {
 	bar->config = init_config();
 	bar->status = init_status_line();
 	bar->outputs = create_list();
+#ifdef ENABLE_TRAY
+	bar->xembed_pid = 0;
+#endif
 }
 
 static void spawn_status_cmd_proc(struct bar *bar) {
@@ -56,24 +59,6 @@ static void spawn_status_cmd_proc(struct bar *bar) {
 		fcntl(bar->status_read_fd, F_SETFL, O_NONBLOCK);
 	}
 }
-
-#ifdef ENABLE_TRAY
-static void spawn_xembed_sni_proxy() {
-	pid_t pid = fork();
-	if (pid == 0) {
-		int wstatus;
-		do {
-			pid = fork();
-			if (pid == 0) {
-				execlp("xembedsniproxy", "xembedsniproxy", NULL);
-				_exit(EXIT_FAILURE);
-			}
-			waitpid(pid, &wstatus, 0);
-		} while (!WIFEXITED(wstatus));
-		_exit(EXIT_FAILURE);
-	}
-}
-#endif
 
 struct output *new_output(const char *name) {
 	struct output *output = malloc(sizeof(struct output));
@@ -122,27 +107,7 @@ static void mouse_button_notify(struct window *window, int x, int y,
 	}
 
 #ifdef ENABLE_TRAY
-	uint32_t tray_padding = swaybar.config->tray_padding;
-	int tray_width = window->width * window->scale;
-
-	for (int i = 0; i < clicked_output->items->length; ++i) {
-		struct sni_icon_ref *item =
-			 clicked_output->items->items[i];
-		int icon_width = cairo_image_surface_get_width(item->icon);
-
-		tray_width -= tray_padding;
-		if (x <= tray_width && x >= tray_width - icon_width) {
-			if (button == swaybar.config->activate_button) {
-				sni_activate(item->ref, x, y);
-			} else if (button == swaybar.config->context_button) {
-				sni_context_menu(item->ref, x, y);
-			} else if (button == swaybar.config->secondary_button) {
-				sni_secondary(item->ref, x, y);
-			}
-			break;
-		}
-		tray_width -= icon_width;
-	}
+	tray_mouse_event(clicked_output, x, y, button, state_w);
 #endif
 }
 
@@ -235,20 +200,7 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 	spawn_status_cmd_proc(bar);
 
 #ifdef ENABLE_TRAY
-	// We should have at least one output to serve the tray to
-	if (!swaybar.config->tray_output || strcmp(swaybar.config->tray_output, "none") != 0) {
-		/* Connect to the D-Bus */
-		dbus_init();
-
-		/* Start the SNI watcher */
-		init_sni_watcher();
-
-		/* Start the SNI host */
-		init_tray();
-
-		/* Start xembedsniproxy */
-		spawn_xembed_sni_proxy();
-	}
+	init_tray(bar);
 #endif
 }
 
@@ -300,6 +252,8 @@ void bar_run(struct bar *bar) {
 
 		event_loop_poll();
 #ifdef ENABLE_TRAY
+		tray_upkeep(bar);
+
 		dispatch_dbus();
 #endif
 	}

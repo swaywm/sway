@@ -15,6 +15,9 @@ struct bar {
 	int ipc_socketfd;
 	int status_read_fd;
 	pid_t status_command_pid;
+#ifdef ENABLE_TRAY
+	pid_t xembed_pid;
+#endif
 };
 
 struct output {

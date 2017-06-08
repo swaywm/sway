@@ -2,12 +2,15 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <dbus/dbus.h>
 #include "swaybar/bar.h"
 #include "swaybar/tray/tray.h"
 #include "swaybar/tray/dbus.h"
 #include "swaybar/tray/sni.h"
+#include "swaybar/tray/sni_watcher.h"
 #include "swaybar/bar.h"
+#include "swaybar/config.h"
 #include "list.h"
 #include "log.h"
 
@@ -184,7 +187,7 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
-int init_tray() {
+static int init_host() {
 	tray = (struct tray *)malloc(sizeof(tray));
 
 	tray->items = create_list();
@@ -276,4 +279,130 @@ err:
 	// TODO better handle errors
 	free(name);
 	return -1;
+}
+
+void tray_mouse_event(struct output *output, int x, int y,
+		uint32_t button, uint32_t state) {
+
+	struct window *window = output->window;
+	uint32_t tray_padding = swaybar.config->tray_padding;
+	int tray_width = window->width * window->scale;
+
+	for (int i = 0; i < output->items->length; ++i) {
+		struct sni_icon_ref *item =
+			 output->items->items[i];
+		int icon_width = cairo_image_surface_get_width(item->icon);
+
+		tray_width -= tray_padding;
+		if (x <= tray_width && x >= tray_width - icon_width) {
+			if (button == swaybar.config->activate_button) {
+				sni_activate(item->ref, x, y);
+			} else if (button == swaybar.config->context_button) {
+				sni_context_menu(item->ref, x, y);
+			} else if (button == swaybar.config->secondary_button) {
+				sni_secondary(item->ref, x, y);
+			}
+			break;
+		}
+		tray_width -= icon_width;
+	}
+}
+
+uint32_t tray_render(struct output *output, struct config *config) {
+	struct window *window = output->window;
+	cairo_t *cairo = window->cairo;
+
+	// Tray icons
+	uint32_t tray_padding = config->tray_padding;
+	uint32_t tray_width = window->width * window->scale;
+	const int item_size = (window->height * window->scale) - (2 * tray_padding);
+
+	if (item_size < 0) {
+		// Can't render items if the padding is too large
+		return tray_width;
+	}
+
+	if (config->tray_output && strcmp(config->tray_output, output->name) != 0) {
+		return tray_width;
+	}
+
+	for (int i = 0; i < tray->items->length; ++i) {
+		struct StatusNotifierItem *item =
+			tray->items->items[i];
+		if (!item->image) {
+			continue;
+		}
+
+		struct sni_icon_ref *render_item = NULL;
+		int j;
+		for (j = i; j < output->items->length; ++j) {
+			struct sni_icon_ref *ref =
+				output->items->items[j];
+			if (ref->ref == item) {
+				render_item = ref;
+				break;
+			} else {
+				sni_icon_ref_free(ref);
+				list_del(output->items, j);
+			}
+		}
+
+		if (!render_item) {
+			render_item = sni_icon_ref_create(item, item_size);
+			list_add(output->items, render_item);
+		} else if (item->dirty) {
+			// item needs re-render
+			sni_icon_ref_free(render_item);
+			output->items->items[j] = render_item =
+				sni_icon_ref_create(item, item_size);
+		}
+
+		tray_width -= tray_padding;
+		tray_width -= item_size;
+
+		cairo_operator_t op = cairo_get_operator(cairo);
+		cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
+		cairo_set_source_surface(cairo, render_item->icon, tray_width, tray_padding);
+		cairo_rectangle(cairo, tray_width, tray_padding, item_size, item_size);
+		cairo_fill(cairo);
+		cairo_set_operator(cairo, op);
+
+		item->dirty = false;
+	}
+
+
+	if (tray_width != window->width * window->scale) {
+		tray_width -= tray_padding;
+	}
+
+	return tray_width;
+}
+
+void tray_upkeep(struct bar *bar) {
+	if (!bar->xembed_pid ||
+			(bar->xembed_pid == waitpid(bar->xembed_pid, NULL, WNOHANG))) {
+		pid_t pid = fork();
+		if (pid == 0) {
+			execlp("xembedsniproxy", "xembedsniproxy", NULL);
+			_exit(EXIT_FAILURE);
+		} else {
+			bar->xembed_pid = pid;
+		}
+	}
+}
+
+void init_tray(struct bar *bar) {
+	if (!bar->config->tray_output || strcmp(bar->config->tray_output, "none") != 0) {
+		/* Connect to the D-Bus */
+		dbus_init();
+
+		/* Start the SNI watcher */
+		init_sni_watcher();
+
+		/* Start the SNI host */
+		init_host();
+
+		/* Start xembedsniproxy */
+		tray_upkeep(bar);
+	}
 }
