@@ -138,6 +138,7 @@ struct cmd_results *cmd_ipc_event_cmd(int argc, char **argv) {
 		{ "window", IPC_FEATURE_EVENT_WINDOW },
 		{ "binding", IPC_FEATURE_EVENT_BINDING },
 		{ "input", IPC_FEATURE_EVENT_INPUT },
+		{ "modifier", IPC_FEATURE_EVENT_MODIFIER }
 	};
 
 	uint32_t type = 0;

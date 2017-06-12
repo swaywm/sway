@@ -286,9 +286,8 @@ void render(struct output *output, struct config *config, struct status_line *li
 	cairo_set_operator(cairo, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cairo);
 	cairo_restore(cairo);
-
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
-
+	
 	// Background
 	if (is_focused) {
 		cairo_set_source_u32(cairo, config->colors.focused_background);

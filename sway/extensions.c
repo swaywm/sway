@@ -133,6 +133,34 @@ static void set_panel(struct wl_client *client, struct wl_resource *resource,
 	wlc_output_schedule_render(config->output);
 }
 
+static void set_panel_hide_mode(struct wl_client *client, struct wl_resource *resource,
+		uint32_t mode) {
+	struct panel_config *config = find_or_create_panel_config(resource);
+	config->hide_mode = mode;
+	if (mode == 0) {
+		wlc_view_set_mask(wlc_handle_from_wl_surface_resource(config->wl_surface_res), false);
+	} else {
+		wlc_view_set_mask(wlc_handle_from_wl_surface_resource(config->wl_surface_res), true);
+	}	
+	arrange_windows(&root_container, -1, -1);
+	wlc_output_schedule_render(config->output);
+}
+
+static void set_panel_hide(struct wl_client *client, struct wl_resource *resource,
+		uint32_t hide) {
+	sway_log(L_ERROR, "Attempting to find panel %p", resource);
+	struct panel_config *config = find_or_create_panel_config(resource);
+	config->hide = hide;
+	if (hide == 0) {
+		sway_log(L_ERROR, "Hiding panel %p", resource);
+		wlc_view_set_mask(wlc_handle_from_wl_surface_resource(config->wl_surface_res), false);
+	} else if (hide == 1) {
+		sway_log(L_ERROR, "Showing panel %p", resource);
+		wlc_view_set_mask(wlc_handle_from_wl_surface_resource(config->wl_surface_res), true);
+	}
+	wlc_output_schedule_render(config->output);
+}
+
 static void desktop_set_lock_surface(struct wl_client *client, struct wl_resource *resource, struct wl_resource *surface) {
 	sway_log(L_ERROR, "desktop_set_lock_surface is not currently supported");
 }
@@ -169,7 +197,9 @@ static struct desktop_shell_interface desktop_shell_implementation = {
 	.unlock = desktop_unlock,
 	.set_grab_surface = set_grab_surface,
 	.desktop_ready = desktop_ready,
-	.set_panel_position = set_panel_position
+	.set_panel_position = set_panel_position,
+	.set_panel_hide_mode = set_panel_hide_mode,
+	.set_panel_hide = set_panel_hide
 };
 
 static void desktop_shell_bind(struct wl_client *client, void *data,

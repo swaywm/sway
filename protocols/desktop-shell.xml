@@ -116,6 +116,32 @@
       </description>
       <arg name="position" type="uint"/>
     </request>
+    
+    <!-- Bar Hiding additions -->
+    <enum name="hide_modes">
+      <entry name="hide" value="0"/>
+      <entry name="show" value="1"/>
+    </enum>
+
+    <enum name="hide_state">
+      <entry name="hide" value="0"/>
+      <entry name="show" value="1"/>
+    </enum>
+    <request name="set_panel_hide_mode" since="3">
+      <description summary="set panel hide mode">
+        Tell the shell whether or not panel is in hide mode
+        i.e. whether to allocate a fixed amount of space
+        for the panel (hide mode false) or not (hide mode true)
+      </description>
+      <arg name="mode" type="uint"/>
+    </request>
+    
+    <request name="set_panel_hide" since="3">
+      <description summary="set if panel is currently hidden">
+        Tell the shell whether or not panel is currently hidden
+      </description>
+      <arg name="mode" type="uint"/>
+    </request>
 
   </interface>
 

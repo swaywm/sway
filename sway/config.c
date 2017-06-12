@@ -67,7 +67,7 @@ static void free_bar(struct bar_config *bar) {
 	if (!bar) {
 		return;
 	}
-	free(bar->mode);
+	free(bar->display_mode);
 	free(bar->hidden_state);
 	free(bar->status_command);
 	free(bar->font);
@@ -414,7 +414,7 @@ void update_active_bar_modifiers() {
 	int i;
 	for (i = 0; i < config->bars->length; ++i) {
 		bar = config->bars->items[i];
-		if (strcmp(bar->mode, "hide") == 0 && strcmp(bar->hidden_state, "hide") == 0) {
+		if (strcmp(bar->display_mode, "hide") == 0 && strcmp(bar->hidden_state, "hide") == 0) {
 			if (list_seq_find(config->active_bar_modifiers, compare_modifiers, &bar->modifier) < 0) {
 				list_add(config->active_bar_modifiers, &bar->modifier);
 			}
@@ -1370,7 +1370,7 @@ struct bar_config *default_bar_config(void) {
 	if (!bar) {
 		return NULL;
 	}
-	if (!(bar->mode = strdup("dock"))) goto cleanup;
+	if (!(bar->display_mode = strdup("dock"))) goto cleanup;
 	if (!(bar->hidden_state = strdup("hide"))) goto cleanup;
 	bar->modifier = WLC_BIT_MOD_LOGO;
 	bar->outputs = NULL;

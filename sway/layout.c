@@ -1006,19 +1006,21 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 				if (config->output == output->handle) {
 					struct wlc_size size = *wlc_surface_get_size(config->surface);
 					sway_log(L_DEBUG, "-> Found panel for this workspace: %ux%u, position: %u", size.w, size.h, config->panel_position);
-					switch (config->panel_position) {
-					case DESKTOP_SHELL_PANEL_POSITION_TOP:
-						y += size.h; height -= size.h;
-						break;
-					case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
-						height -= size.h;
-						break;
-					case DESKTOP_SHELL_PANEL_POSITION_LEFT:
-						x += size.w; width -= size.w;
-						break;
-					case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
-						width -= size.w;
-						break;
+					if (config->hide_mode == DESKTOP_SHELL_HIDE_MODES_SHOW) {
+						switch (config->panel_position) {
+						case DESKTOP_SHELL_PANEL_POSITION_TOP:
+							y += size.h; height -= size.h;
+							break;
+						case DESKTOP_SHELL_PANEL_POSITION_BOTTOM:
+							height -= size.h;
+							break;
+						case DESKTOP_SHELL_PANEL_POSITION_LEFT:
+							x += size.w; width -= size.w;
+							break;
+						case DESKTOP_SHELL_PANEL_POSITION_RIGHT:
+							width -= size.w;
+							break;
+						}
 					}
 				}
 			}

@@ -110,7 +110,7 @@ struct bar_config {
 	 * Always visible in dock mode. Visible only when modifier key is held in hide mode.
 	 * Never visible in invisible mode.
 	 */
-	char *mode;
+	char *display_mode;
 	/**
 	 * One of "show" or "hide".
 	 *
@@ -225,9 +225,10 @@ enum ipc_feature {
 	IPC_FEATURE_EVENT_WINDOW = 2048,
 	IPC_FEATURE_EVENT_BINDING = 4096,
 	IPC_FEATURE_EVENT_INPUT = 8192,
+	IPC_FEATURE_EVENT_MODIFIER = 16384,
 
 	IPC_FEATURE_ALL_COMMANDS = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
-	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192,
+	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384,
 
 	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
 };

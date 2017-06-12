@@ -33,6 +33,7 @@ ipc __PREFIX__/bin/swaybar {
     events {
         workspace enabled
         mode enabled
+        modifier enabled
     }
 }
 
