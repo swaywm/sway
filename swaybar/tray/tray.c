@@ -379,19 +379,6 @@ uint32_t tray_render(struct output *output, struct config *config) {
 	return tray_width;
 }
 
-void tray_upkeep(struct bar *bar) {
-	if (!bar->xembed_pid ||
-			(bar->xembed_pid == waitpid(bar->xembed_pid, NULL, WNOHANG))) {
-		pid_t pid = fork();
-		if (pid == 0) {
-			execlp("xembedsniproxy", "xembedsniproxy", NULL);
-			_exit(EXIT_FAILURE);
-		} else {
-			bar->xembed_pid = pid;
-		}
-	}
-}
-
 void init_tray(struct bar *bar) {
 	if (!bar->config->tray_output || strcmp(bar->config->tray_output, "none") != 0) {
 		/* Connect to the D-Bus */
@@ -402,8 +389,5 @@ void init_tray(struct bar *bar) {
 
 		/* Start the SNI host */
 		init_host();
-
-		/* Start xembedsniproxy */
-		tray_upkeep(bar);
 	}
 }

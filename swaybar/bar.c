@@ -27,9 +27,6 @@ static void bar_init(struct bar *bar) {
 	bar->config = init_config();
 	bar->status = init_status_line();
 	bar->outputs = create_list();
-#ifdef ENABLE_TRAY
-	bar->xembed_pid = 0;
-#endif
 }
 
 static void spawn_status_cmd_proc(struct bar *bar) {
@@ -252,8 +249,6 @@ void bar_run(struct bar *bar) {
 
 		event_loop_poll();
 #ifdef ENABLE_TRAY
-		tray_upkeep(bar);
-
 		dispatch_dbus();
 #endif
 	}
