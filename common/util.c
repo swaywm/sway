@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -124,38 +124,38 @@ uint32_t parse_color(const char *color) {
 }
 
 char* resolve_path(const char* path) {
-    struct stat sb;
-    ssize_t r;
-    int i;
-    char *current = NULL;
-    char *resolved = NULL;
+	struct stat sb;
+	ssize_t r;
+	int i;
+	char *current = NULL;
+	char *resolved = NULL;
 
-    if(!(current = strdup(path))) {
-           return NULL;
-    }
-    for (i = 0; i < 16; ++i) {
-        if (lstat(current, &sb) == -1) {
-           goto failed;
-        }
-        if((sb.st_mode & S_IFMT) != S_IFLNK) {
-            return current;
-        }
-        if (!(resolved = malloc(sb.st_size + 1))) {
-           goto failed;
-        }
-        r = readlink(current, resolved, sb.st_size);
-        if (r == -1 || r > sb.st_size) {
-           goto failed;
-        }
-        resolved[r] = '\0';
-        free(current);
-        current = strdup(resolved);
-        free(resolved);
-        resolved = NULL;
-    }
+	if(!(current = strdup(path))) {
+		return NULL;
+	}
+	for (i = 0; i < 16; ++i) {
+		if (lstat(current, &sb) == -1) {
+			goto failed;
+		}
+		if((sb.st_mode & S_IFMT) != S_IFLNK) {
+			return current;
+		}
+		if (!(resolved = malloc(sb.st_size + 1))) {
+			goto failed;
+		}
+		r = readlink(current, resolved, sb.st_size);
+		if (r == -1 || r > sb.st_size) {
+			goto failed;
+		}
+		resolved[r] = '\0';
+		free(current);
+		current = strdup(resolved);
+		free(resolved);
+		resolved = NULL;
+	}
 
 failed:
-    free(resolved);
-    free(current);
-    return NULL;
+	free(resolved);
+	free(current);
+	return NULL;
 }

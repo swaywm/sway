@@ -33,6 +33,17 @@ struct config {
 	bool all_outputs;
 	list_t *outputs;
 
+#ifdef ENABLE_TRAY
+	// Tray
+	char *tray_output;
+	char *icon_theme;
+
+	uint32_t tray_padding;
+	uint32_t activate_button;
+	uint32_t context_button;
+	uint32_t secondary_button;
+#endif
+
 	int height;
 
 	struct {

@@ -133,7 +133,17 @@ struct bar_config {
 	char *swaybar_command;
 	char *font;
 	int height; // -1 not defined
-	int tray_padding;
+
+#ifdef ENABLE_TRAY
+	// Tray
+	char *tray_output;
+	char *icon_theme;
+	uint32_t tray_padding;
+	uint32_t activate_button;
+	uint32_t context_button;
+	uint32_t secondary_button;
+#endif
+
 	bool workspace_buttons;
 	bool wrap_scroll;
 	char *separator_symbol;

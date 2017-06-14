@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -69,6 +69,10 @@ static void free_bar(struct bar_config *bar) {
 	}
 	free(bar->mode);
 	free(bar->hidden_state);
+#ifdef ENABLE_TRAY
+	free(bar->tray_output);
+	free(bar->icon_theme);
+#endif
 	free(bar->status_command);
 	free(bar->font);
 	free(bar->separator_symbol);
@@ -527,7 +531,7 @@ bool load_main_config(const char *file, bool is_active) {
 	list_add(config->config_chain, path);
 
 	config->reading = true;
-	
+
 	// Read security configs
 	bool success = true;
 	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
@@ -1386,7 +1390,14 @@ struct bar_config *default_bar_config(void) {
 	bar->separator_symbol = NULL;
 	bar->strip_workspace_numbers = false;
 	bar->binding_mode_indicator = true;
+#ifdef ENABLE_TRAY
+	bar->tray_output = NULL;
+	bar->icon_theme = NULL;
 	bar->tray_padding = 2;
+	bar->activate_button = 0x110; /* BTN_LEFT */
+	bar->context_button = 0x111; /* BTN_RIGHT */
+	bar->secondary_button = 0x112; /* BTN_MIDDLE */
+#endif
 	bar->verbose = false;
 	bar->pid = 0;
 	// set default colors

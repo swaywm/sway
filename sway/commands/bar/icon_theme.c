@@ -2,7 +2,7 @@
 #include <string.h>
 #include "sway/commands.h"
 
-struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
+struct cmd_results *bar_cmd_icon_theme(int argc, char **argv) {
 	const char *cmd_name = "tray_output";
 #ifndef ENABLE_TRAY
 	return cmd_results_new(CMD_INVALID, cmd_name, "Invalid %s command "
@@ -18,11 +18,7 @@ struct cmd_results *bar_cmd_tray_output(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, cmd_name, "No bar defined.");
 	}
 
-	if (strcmp(argv[0], "all") == 0) {
-		// Default behaviour
-		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-	}
-	config->current_bar->tray_output = strdup(argv[0]);
+	config->current_bar->icon_theme = strdup(argv[0]);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 #endif

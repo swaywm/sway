@@ -609,6 +609,8 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 			view->y = geometry->origin.y;
 			update_geometry(view);
 		}
+	} else {
+		wlc_view_set_geometry(handle, 0, geometry);
 	}
 }
 
@@ -926,6 +928,26 @@ static bool handle_pointer_button(wlc_handle view, uint32_t time, const struct w
 
 	// Update view pointer is on
 	pointer_state.view = container_under_pointer();
+
+	struct sway_mode *mode = config->current_mode;
+	// handle bindings
+	for (int i = 0; i < mode->bindings->length; ++i) {
+		struct sway_binding *binding = mode->bindings->items[i];
+		if ((modifiers->mods ^ binding->modifiers) == 0) {
+			switch (state) {
+				case WLC_BUTTON_STATE_PRESSED: {
+					if (!binding->release && handle_bindsym(binding, button, 0)) {
+						return EVENT_HANDLED;
+					}
+				}
+				case WLC_BUTTON_STATE_RELEASED:
+					if (binding->release && handle_bindsym(binding, button, 0)) {
+						return EVENT_HANDLED;
+					}
+				break;
+			}
+		}
+	}
 
 	// Update pointer_state
 	switch (button) {

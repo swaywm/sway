@@ -8,6 +8,25 @@ void cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 			(color >> (0*8) & 0xFF) / 255.0);
 }
 
+cairo_surface_t *cairo_image_surface_scale(cairo_surface_t *image, int width, int height) {
+	int image_width = cairo_image_surface_get_width(image);
+	int image_height = cairo_image_surface_get_height(image);
+
+	cairo_surface_t *new =
+		cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+
+	cairo_t *cairo = cairo_create(new);
+
+	cairo_scale(cairo, (double) width / image_width, (double) height / image_height);
+
+	cairo_set_source_surface(cairo, image, 0, 0);
+	cairo_paint(cairo);
+
+	cairo_destroy(cairo);
+
+	return new;
+}
+
 #ifdef WITH_GDK_PIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
 

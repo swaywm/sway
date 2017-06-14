@@ -4,26 +4,30 @@
 
 static struct cmd_results *parse_border_color(struct border_colors *border_colors, const char *cmd_name, int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (argc != 5) {
-		return cmd_results_new(CMD_INVALID, cmd_name, "Requires exactly five color values");
+	if (argc < 3 || argc > 5) {
+		return cmd_results_new(CMD_INVALID, cmd_name, "Requires between three and five color values");
 	}
 
-	uint32_t colors[5];
+	uint32_t *colors[5] = {
+		&border_colors->border,
+		&border_colors->background,
+		&border_colors->text,
+		&border_colors->indicator,
+		&border_colors->child_border
+	};
 	int i;
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i < argc; i++) {
 		char buffer[10];
 		error = add_color(cmd_name, buffer, argv[i]);
 		if (error) {
 			return error;
 		}
-		colors[i] = strtoul(buffer+1, NULL, 16);
+		*colors[i] = strtoul(buffer + 1, NULL, 16);
 	}
 
-	border_colors->border = colors[0];
-	border_colors->background = colors[1];
-	border_colors->text = colors[2];
-	border_colors->indicator = colors[3];
-	border_colors->child_border = colors[4];
+	if (argc < 5) {
+		border_colors->child_border = border_colors->background;
+	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
