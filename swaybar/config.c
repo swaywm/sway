@@ -48,6 +48,18 @@ struct config *init_config() {
 	/* height */
 	config->height = 0;
 
+#ifdef ENABLE_TRAY
+	config->tray_output = NULL;
+	config->icon_theme = NULL;
+	config->tray_padding = 2;
+	/**
+	 * These constants are used by wayland and are defined in
+	 * linux/input-event-codes.h
+	 */
+	config->activate_button = 0x110; /* BTN_LEFT */
+	config->context_button = 0x111; /* BTN_RIGHT */
+#endif
+
 	/* colors */
 	config->colors.background = 0x000000FF;
 	config->colors.statusline = 0xFFFFFFFF;

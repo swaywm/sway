@@ -8,6 +8,10 @@
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 #include "swaybar/render.h"
+#ifdef ENABLE_TRAY
+#include "swaybar/tray/tray.h"
+#include "swaybar/tray/sni.h"
+#endif
 #include "log.h"
 
 
@@ -297,6 +301,12 @@ void render(struct output *output, struct config *config, struct status_line *li
 	}
 	cairo_paint(cairo);
 
+#ifdef ENABLE_TRAY
+	uint32_t tray_width = tray_render(output, config);
+#else
+	const uint32_t tray_width = window->width * window->scale;
+#endif
+
 	// Command output
 	if (is_focused) {
 		cairo_set_source_u32(cairo, config->colors.focused_statusline);
@@ -309,12 +319,11 @@ void render(struct output *output, struct config *config, struct status_line *li
 	if (line->protocol == TEXT) {
 		get_text_size(window->cairo, window->font, &width, &height,
 				window->scale, config->pango_markup, "%s", line->text_line);
-		cairo_move_to(cairo, (window->width * window->scale)
-				- margin - width, margin);
+		cairo_move_to(cairo, tray_width - margin - width, margin);
 		pango_printf(window->cairo, window->font, window->scale,
 				config->pango_markup, "%s", line->text_line);
 	} else if (line->protocol == I3BAR && line->block_line) {
-		double pos = (window->width * window->scale) - 0.5;
+		double pos = tray_width - 0.5;
 		bool edge = true;
 		for (i = line->block_line->length - 1; i >= 0; --i) {
 			struct status_block *block = line->block_line->items[i];

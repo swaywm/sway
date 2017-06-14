@@ -599,6 +599,8 @@ static void handle_view_geometry_request(wlc_handle handle, const struct wlc_geo
 			view->y = geometry->origin.y;
 			update_geometry(view);
 		}
+	} else {
+		wlc_view_set_geometry(handle, 0, geometry);
 	}
 }
 

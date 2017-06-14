@@ -699,12 +699,12 @@ static bool pointer_test(swayc_t *view, void *_origin) {
 
 swayc_t *container_under_pointer(void) {
 	// root.output->workspace
-	if (!root_container.focused || !root_container.focused->focused) {
+	if (!root_container.focused) {
 		return NULL;
 	}
-	swayc_t *lookup = root_container.focused->focused;
+	swayc_t *lookup = root_container.focused;
 	// Case of empty workspace
-	if (lookup->children == 0) {
+	if (lookup->children && !lookup->unmanaged) {
 		return NULL;
 	}
 	struct wlc_point origin;
@@ -712,6 +712,17 @@ swayc_t *container_under_pointer(void) {
 	while (lookup && lookup->type != C_VIEW) {
 		int i;
 		int len;
+		for (int _i = 0; lookup->unmanaged && _i < lookup->unmanaged->length; ++_i) {
+			wlc_handle *handle = lookup->unmanaged->items[_i];
+			const struct wlc_geometry *geo = wlc_view_get_geometry(*handle);
+			if (origin.x >= geo->origin.x && origin.y >= geo->origin.y
+					&& origin.x < geo->origin.x + (int)geo->size.w
+					&& origin.y < geo->origin.y + (int)geo->size.h) {
+				// Hack: we force focus upon unmanaged views here
+				wlc_view_focus(*handle);
+				return NULL;
+			}
+		}
 		// if tabbed/stacked go directly to focused container, otherwise search
 		// children
 		if (lookup->layout == L_TABBED || lookup->layout == L_STACKED) {

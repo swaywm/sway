@@ -221,18 +221,22 @@ static struct cmd_handler handlers[] = {
 };
 
 static struct cmd_handler bar_handlers[] = {
+	{ "activate_button", bar_cmd_activate_button },
 	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
 	{ "bindsym", bar_cmd_bindsym },
 	{ "colors", bar_cmd_colors },
+	{ "context_button", bar_cmd_context_button },
 	{ "font", bar_cmd_font },
 	{ "height", bar_cmd_height },
 	{ "hidden_state", bar_cmd_hidden_state },
+	{ "icon_theme", bar_cmd_icon_theme },
 	{ "id", bar_cmd_id },
 	{ "mode", bar_cmd_mode },
 	{ "modifier", bar_cmd_modifier },
 	{ "output", bar_cmd_output },
 	{ "pango_markup", bar_cmd_pango_markup },
 	{ "position", bar_cmd_position },
+	{ "secondary_button", bar_cmd_secondary_button },
 	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
