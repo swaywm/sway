@@ -5,6 +5,7 @@
 #include "wayland-desktop-shell-server-protocol.h"
 #include "wayland-swaylock-server-protocol.h"
 #include "wayland-gamma-control-server-protocol.h"
+#include "wayland-server-decoration-server-protocol.h"
 #include "sway/layout.h"
 #include "sway/input_state.h"
 #include "sway/extensions.h"
@@ -13,6 +14,7 @@
 #include "log.h"
 
 struct desktop_shell_state desktop_shell;
+struct decoration_state decoration_state;
 
 static struct panel_config *find_or_create_panel_config(struct wl_resource *resource) {
 	for (int i = 0; i < desktop_shell.panels->length; i++) {
@@ -173,7 +175,7 @@ static struct desktop_shell_interface desktop_shell_implementation = {
 };
 
 static void desktop_shell_bind(struct wl_client *client, void *data,
-		unsigned int version, unsigned int id) {
+		uint32_t version, uint32_t id) {
 	if (version > 3) {
 		// Unsupported version
 		return;
@@ -232,7 +234,7 @@ static struct lock_interface swaylock_implementation = {
 };
 
 static void swaylock_bind(struct wl_client *client, void *data,
-		unsigned int version, unsigned int id) {
+		uint32_t version, uint32_t id) {
 	if (version > 1) {
 		// Unsupported version
 		return;
@@ -305,19 +307,89 @@ static struct gamma_control_manager_interface gamma_manager_implementation = {
 };
 
 static void gamma_control_manager_bind(struct wl_client *client, void *data,
-		unsigned int version, unsigned int fd) {
+		uint32_t version, uint32_t id) {
 	if (version > 1) {
 		// Unsupported version
 		return;
 	}
-
 	struct wl_resource *resource = wl_resource_create(client,
-			&gamma_control_manager_interface, version, fd);
+			&gamma_control_manager_interface, version, id);
 	if (!resource) {
 		wl_client_post_no_memory(client);
 	}
-
 	wl_resource_set_implementation(resource, &gamma_manager_implementation, NULL, NULL);
+}
+
+static void server_decoration_release(struct wl_client *client,
+		struct wl_resource *resource) {
+	wl_resource_destroy(resource);
+}
+
+void server_decoration_enable_csd(wlc_handle handle) {
+	swayc_t *view = swayc_by_handle(handle);
+	if (!view) {
+		sway_log(L_DEBUG, "view invalid");
+		return;
+	}
+	sway_log(L_DEBUG, "%s requested client side decorations", view->name);
+	view->border_type = B_NONE;
+	update_geometry(view);
+}
+
+static void server_decoration_request_mode(struct wl_client *client,
+		struct wl_resource *resource, uint32_t mode) {
+	sway_log(L_DEBUG, "Client requested server decoration mode %d", mode);
+	if (mode == ORG_KDE_KWIN_SERVER_DECORATION_MODE_SERVER) {
+		return;
+	}
+	struct wl_resource *surface = wl_resource_get_user_data(resource);
+	if (!surface) {
+		sway_log(L_DEBUG, "surface invalid");
+		return;
+	}
+	wlc_handle handle = wlc_handle_from_wl_surface_resource(surface);
+	if (!handle) {
+		list_add(decoration_state.csd_resources, surface);
+		return;
+	}
+	server_decoration_enable_csd(handle);
+}
+
+static struct org_kde_kwin_server_decoration_interface server_decoration_implementation = {
+	.release = server_decoration_release,
+	.request_mode = server_decoration_request_mode,
+};
+
+static void server_decoration_manager_create(struct wl_client *client,
+		struct wl_resource *resource, uint32_t id, struct wl_resource *surface) {
+	sway_log(L_DEBUG, "Client requested server decoration manager");
+	struct wl_resource *manager = wl_resource_create(client,
+			&org_kde_kwin_server_decoration_interface, 1, id);
+	if (!manager) {
+		wl_client_post_no_memory(client);
+	}
+	wl_resource_set_implementation(manager, &server_decoration_implementation, surface, NULL);
+}
+
+// Jesus christ KDE, these names are whack as hell
+static struct org_kde_kwin_server_decoration_manager_interface server_decoration_manager_implementation = {
+	.create = server_decoration_manager_create,
+};
+
+static void server_decoration_manager_bind(struct wl_client *client, void *data,
+		uint32_t version, uint32_t id) {
+	if (version > 1) {
+		// Unsupported version
+		return;
+	}
+	struct wl_resource *resource = wl_resource_create(client,
+			&org_kde_kwin_server_decoration_manager_interface, version, id);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+	}
+	wl_resource_set_implementation(resource, &server_decoration_manager_implementation, NULL, NULL);
+	org_kde_kwin_server_decoration_manager_send_default_mode(resource,
+			ORG_KDE_KWIN_SERVER_DECORATION_MODE_SERVER);
 }
 
 void register_extensions(void) {
@@ -326,7 +398,10 @@ void register_extensions(void) {
 	desktop_shell.panels = create_list();
 	desktop_shell.lock_surfaces = create_list();
 	desktop_shell.is_locked = false;
+	decoration_state.csd_resources = create_list();
 	wl_global_create(wlc_get_wl_display(), &lock_interface, 1, NULL, swaylock_bind);
 	wl_global_create(wlc_get_wl_display(), &gamma_control_manager_interface, 1,
 			NULL, gamma_control_manager_bind);
+	wl_global_create(wlc_get_wl_display(), &org_kde_kwin_server_decoration_manager_interface ,
+			1, NULL, server_decoration_manager_bind);
 }

@@ -345,6 +345,8 @@ static bool handle_view_created(wlc_handle handle) {
 	swayc_t *current_ws = swayc_active_workspace();
 	bool return_to_workspace = false;
 	struct wl_client *client = wlc_view_get_wl_client(handle);
+	struct wl_resource *resource = wlc_surface_get_wl_resource(
+		wlc_view_get_surface(handle));
 	pid_t pid;
 	struct panel_config *panel_config = NULL;
 	struct background_config *background_config = NULL;
@@ -482,6 +484,14 @@ static bool handle_view_created(wlc_handle handle) {
 		swayc_t *workspace = swayc_parent_by_type(focused, C_WORKSPACE);
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
+		}
+		for (int i = 0; i < decoration_state.csd_resources->length; ++i) {
+			struct wl_resource *res = decoration_state.csd_resources->items[i];
+			if (res == resource) {
+				list_del(decoration_state.csd_resources, i);
+				server_decoration_enable_csd(handle);
+				break;
+			}
 		}
 	} else {
 		swayc_t *output = swayc_parent_by_type(focused, C_OUTPUT);
