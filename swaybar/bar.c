@@ -41,6 +41,7 @@ static void spawn_status_cmd_proc(struct bar *bar) {
 			close(pipefd[0]);
 			dup2(pipefd[1], STDOUT_FILENO);
 			close(pipefd[1]);
+			setpgid(bar->status_command_pid, 0);
 			char *const cmd[] = {
 				"sh",
 				"-c",
@@ -290,7 +291,7 @@ static void free_outputs(list_t *outputs) {
 static void terminate_status_command(pid_t pid) {
 	if (pid) {
 		// terminate status_command process
-		int ret = kill(pid, SIGTERM);
+		int ret = killpg(pid, SIGTERM);
 		if (ret != 0) {
 			sway_log(L_ERROR, "Unable to terminate status_command [pid: %d]", pid);
 		} else {
