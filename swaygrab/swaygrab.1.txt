@@ -48,6 +48,13 @@ Options
 *-f, --focused*::
 	Capture only the currently focused container.
 
+Environment Variables
+---------------------
+swaygrab reads the following environment variables.
+
+*SWAYGRAB_FFMPEG_OPTS*::
+	Pass additional arguments to FFmpeg when starting a capture.
+
 Examples
 --------
 
@@ -56,6 +63,10 @@ swaygrab output.png::
 
 swaygrab -c -o HDMI-A-1 output.webm::
 	Capture a webm of HDMI-A-1.
+
+SWAYGRAB_FFMPEG_OPTS="-f alsa -i pulse" swaygrab -c::
+	Capture the focused output and encode audio from the default recording
+	device.
 
 Authors
 -------

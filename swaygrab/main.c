@@ -84,13 +84,18 @@ void grab_and_apply_movie_magic(const char *file, const char *payload,
 		sway_abort("Unknown output %s.", name);
 	}
 
-	const char *fmt = "ffmpeg -f rawvideo -framerate %d "
+	char *ffmpeg_opts = getenv("SWAYGRAB_FFMPEG_OPTS");
+	if(!ffmpeg_opts) {
+			ffmpeg_opts = "";
+	}
+
+	const char *fmt = "ffmpeg %s -f rawvideo -framerate %d "
 		"-video_size %dx%d -pixel_format argb "
 		"-i pipe:0 -r %d -vf vflip %s";
 	char *cmd = malloc(strlen(fmt) - 8 /*args*/
-			+ numlen(width) + numlen(height) + numlen(framerate) * 2
-			+ strlen(file) + 1);
-	sprintf(cmd, fmt, framerate, width, height, framerate, file);
+			+ strlen(ffmpeg_opts) + numlen(width) + numlen(height) 
+			+ numlen(framerate) * 2 + strlen(file) + 1);
+	sprintf(cmd, fmt, ffmpeg_opts, framerate, width, height, framerate, file);
 
 	long ns = (long)(1000000000 * (1.0 / framerate));
 	struct timespec start, finish, ts;
