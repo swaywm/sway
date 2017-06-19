@@ -23,12 +23,13 @@ Options
 	Show help message and quit.
 
 *-c, \--color* <rrggbb[aa]>::
-	Turn the screen into the given color instead of white. If an image is in use,
-	also enables color display. This option and -i are mutually exclusive.
+	Turn the screen into the given color. If -i is used, this sets the
+	background of the image to the given color. Defaults to white (ffffff), or
+	transparent (00000000) if an image is in use.
 
 *-i, \--image* [<output>:]<path>::
-	Display the given image, optionally only on the given output. This option
-	and -c are mutually exclusive.
+	Display the given image, optionally only on the given output. Use -c to set
+	a background color.
 
 *--scaling*::
 	Scaling mode for images: stretch, fill, fit, center, or tile.

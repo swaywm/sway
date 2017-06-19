@@ -7,7 +7,7 @@ _arguments -s \
     '(-v --version)'{-v,--version}'[Show the version number and quit]' \
     '(-h --help)'{-h,--help}'[Show help message and quit]' \
     '(-f --daemonize)'{-f, --daemonize}'[Detach from the controlling terminal]\
-    '(-c --color)'{-c,--color}'[Specify a color (rrggbb) instead of white]' \
+    '(-c --color)'{-c,--color}'[Specify a color (rrggbb)]' \
     '(-i --image)'{-i,--image}'[Display an image]:files:_files' \
     '(-s --scaling)'{-s,--scaling}'[Scaling mode]:mode:(stretch fill fit center tile)' \
     '(-u --no-unlock-indicator)'{-u,--no-unlock-indicator}'[Disable the unlock indicator]'
