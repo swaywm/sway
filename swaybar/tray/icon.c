@@ -49,8 +49,7 @@ static list_t *find_inherits(const char *theme_dir) {
 
 	char *buf = NULL;
 	size_t n = 0;
-	while (!feof(index)) {
-		getline(&buf, &n, index);
+	while (!feof(index) && getline(&buf, &n, index) != -1) {
 		if (n <= sizeof(inherits) + 1) {
 			continue;
 		}
@@ -247,9 +246,8 @@ static list_t* find_theme_subdirs(const char *theme_dir) {
 
 	char *buf = NULL;
 	size_t n = 0;
-	while (!feof(index)) {
-		const char directories[] = "Directories";
-		getline(&buf, &n, index);
+	const char directories[] = "Directories";
+	while (!feof(index) && getline(&buf, &n, index) != -1) {
 		if (n <= sizeof(directories) + 1) {
 			continue;
 		}
@@ -261,10 +259,8 @@ static list_t* find_theme_subdirs(const char *theme_dir) {
 	}
 	// Now, find the size of each dir
 	struct subdir *current_subdir = NULL;
-	while (!feof(index)) {
-		const char size[] = "Size";
-		getline(&buf, &n, index);
-
+	const char size[] = "Size";
+	while (!feof(index) && getline(&buf, &n, index) != -1) {
 		if (buf[0] == '[') {
 			int len = strlen(buf);
 			if (buf[len-1] == '\n') {
