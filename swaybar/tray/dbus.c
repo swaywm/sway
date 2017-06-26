@@ -158,6 +158,12 @@ int dbus_init() {
 	dbus_error_init(&error);
 
 	conn = dbus_bus_get(DBUS_BUS_SESSION, &error);
+	if (conn == NULL) {
+		sway_log(L_INFO, "Compiled with dbus support, but unable to connect to dbus");
+		sway_log(L_INFO, "swaybar will be unable to display tray icons.");
+		return -1;
+	}
+
 	dbus_connection_set_exit_on_disconnect(conn, FALSE);
 	if (dbus_error_is_set(&error)) {
 		sway_log(L_ERROR, "Cannot get bus connection: %s\n", error.message);
