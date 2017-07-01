@@ -103,6 +103,7 @@ sway_cmd cmd_client_unfocused;
 sway_cmd cmd_client_urgent;
 sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
+sway_cmd cmd_clipboard;
 sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
 sway_cmd cmd_default_border;
