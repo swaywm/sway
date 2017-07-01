@@ -65,11 +65,11 @@ struct cmd_results *cmd_permit(int argc, char **argv) {
 	}
 
 	struct feature_policy *policy = get_feature_policy(program);
-	if (assign_perms) {
+	if (policy && assign_perms) {
 		policy->features |= get_features(argc, argv, &error);
+		sway_log(L_DEBUG, "Permissions granted to %s for features %d",
+				policy->program, policy->features);
 	}
-	sway_log(L_DEBUG, "Permissions granted to %s for features %d",
-			policy->program, policy->features);
 
 	free(program);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
