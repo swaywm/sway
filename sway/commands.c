@@ -608,10 +608,10 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	if (!policy) {
 		policy = alloc_command_policy(cmd);
-		if (!policy) {
-			sway_abort("Unable to allocate security policy");
+		sway_assert(policy, "Unable to allocate security policy");
+		if (policy) {
+			list_add(config->command_policies, policy);
 		}
-		list_add(config->command_policies, policy);
 	}
 	policy->context = context;
 
