@@ -97,6 +97,14 @@ int main(int argc, const char **argv) {
 		if (!image) {
 			sway_abort("Failed to read background image.");
 		}
+		if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS) {
+			sway_abort("Failed to read background image: %s."
+#ifndef WITH_GDK_PIXBUF
+					"\nSway was compiled without gdk_pixbuf support, so only"
+					"\nPNG images can be loaded. This is the likely cause."
+#endif //WITH_GDK_PIXBUF
+					, cairo_status_to_string(cairo_surface_status(image)));
+		}
 		double width = cairo_image_surface_get_width(image);
 		double height = cairo_image_surface_get_height(image);
 
