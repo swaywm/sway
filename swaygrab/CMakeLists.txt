@@ -23,4 +23,6 @@ install(
 	COMPONENT runtime
 )
 
-add_manpage(swaygrab 1)
+if (A2X_FOUND)
+    add_manpage(swaygrab 1)
+endif()

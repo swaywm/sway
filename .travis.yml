@@ -10,7 +10,6 @@ arch:
   packages:
     - cmake
     - xorg-server-xwayland
-    - asciidoc
     - json-c
     - wayland
     - xcb-util-image

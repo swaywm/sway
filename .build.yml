@@ -10,7 +10,6 @@ packages:
   - cairo
   - wayland
   - gdk-pixbuf2
-  - asciidoc
 sources:
   - https://git.sr.ht/~sircmpwn/sway
 tasks:
