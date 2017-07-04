@@ -18,4 +18,6 @@ install(
 	COMPONENT runtime
 )
 
-add_manpage(swaymsg 1)
+if (A2X_FOUND)
+    add_manpage(swaymsg 1)
+endif()
