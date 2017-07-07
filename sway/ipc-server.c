@@ -55,6 +55,11 @@ struct get_pixels_request {
 	struct wlc_geometry geo;
 };
 
+struct get_clipboard_request {
+   struct ipc_client *client;
+   struct wlc_event_source *event_source;
+};
+
 struct sockaddr_un *ipc_user_sockaddr(void);
 int ipc_handle_connection(int fd, uint32_t mask, void *data);
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
@@ -322,6 +327,46 @@ void ipc_get_pixels(wlc_handle output) {
 	ipc_get_pixel_requests = unhandled;
 }
 
+static int ipc_selection_data_cb(int fd, uint32_t mask, void *data)
+{
+	assert(data);
+	struct get_clipboard_request *req = (struct get_clipboard_request*) data;
+
+	if (mask & WLC_EVENT_ERROR) {
+		sway_log(L_ERROR, "Selection data fd error");
+		const char *error = "{ \"success\": false, \"error\": "
+			"\"Could not receive text data from clipboard\" }";
+		ipc_send_reply(req->client, error, (uint32_t)strlen(error));
+		goto cleanup;
+	}
+
+	if (mask & WLC_EVENT_READABLE) {
+		char buf[512];
+		int ret = read(fd, buf, 511);
+		if (ret < 0) {
+			sway_log_errno(L_ERROR, "Reading from selection data fd failed");
+			const char *error = "{ \"success\": false, \"error\": "
+				"\"Could not receive text data from clipboard\" }";
+			ipc_send_reply(req->client, error, (uint32_t)strlen(error));
+			goto cleanup;
+		}
+
+		buf[ret] = '\0';
+		json_object *obj = json_object_new_object();
+		json_object_object_add(obj, "success", json_object_new_boolean(true));
+		json_object_object_add(obj, "content", json_object_new_string(buf));
+		const char *str = json_object_to_json_string(obj);
+		ipc_send_reply(req->client, str, (uint32_t)strlen(str));
+		json_object_put(obj);
+	}
+
+cleanup:
+   wlc_event_source_remove(req->event_source);
+   close(fd);
+   free(req);
+   return 0;
+}
+
 void ipc_client_handle_command(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
@@ -562,6 +607,70 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 			json_object_put(json); // free
 		}
+		goto exit_cleanup;
+	}
+
+   case IPC_GET_CLIPBOARD:
+   {
+		if (!(client->security_policy & IPC_FEATURE_GET_CLIPBOARD)) {
+			goto exit_denied;
+		}
+
+		size_t size;
+		bool found = false;
+		const char **types = wlc_get_selection_types(&size);
+		if (types == NULL || size == 0) {
+			const char *error = "{ \"success\": false, \"error\": "
+				"\"Empty clipboard\" }";
+			ipc_send_reply(client, error, (uint32_t)strlen(error));
+			goto exit_cleanup;
+		}
+
+		for (size_t i = 0; i < size; ++i) {
+			if (strcmp(types[i], "text/plain;charset=utf-8") != 0
+					&& strcmp(types[i], "text/plain") != 0) {
+				continue;
+			}
+
+			struct get_clipboard_request *req = malloc(sizeof(*req));
+			if (!req) {
+				sway_log(L_ERROR, "Unable to allocate get_clipboard_request");
+				goto exit_cleanup;
+			}
+
+			int pipes[2];
+			if (pipe(pipes) == -1) {
+				sway_log_errno(L_ERROR, "pipe call failed");
+				free(req);
+				break;
+			}
+
+			fcntl(pipes[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+			fcntl(pipes[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+			if (!wlc_get_selection_data(types[i], pipes[1])) {
+				close(pipes[0]);
+				close(pipes[1]);
+				free(req);
+				sway_log(L_ERROR, "wlc_get_selection_data failed");
+				break;
+			}
+
+			req->client = client;
+			req->event_source = wlc_event_loop_add_fd(pipes[0],
+				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
+				&ipc_selection_data_cb, req);
+			found = true;
+			break;
+		}
+
+		if (!found) {
+			sway_log(L_INFO, "Clipboard has to text data");
+			const char *error = "{ \"success\": false, \"error\": "
+				"\"Could not receive text data from clipboard\" }";
+			ipc_send_reply(client, error, (uint32_t)strlen(error));
+		}
+
+		free(types);
 		goto exit_cleanup;
 	}
 

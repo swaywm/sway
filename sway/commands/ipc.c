@@ -89,6 +89,7 @@ struct cmd_results *cmd_ipc_cmd(int argc, char **argv) {
 		{ "marks", IPC_FEATURE_GET_MARKS },
 		{ "bar-config", IPC_FEATURE_GET_BAR_CONFIG },
 		{ "inputs", IPC_FEATURE_GET_INPUTS },
+		{ "clipboard", IPC_FEATURE_GET_CLIPBOARD },
 	};
 
 	uint32_t type = 0;

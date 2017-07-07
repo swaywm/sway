@@ -144,10 +144,23 @@ static void pretty_print_version(json_object *v) {
 	printf("sway version %s\n", json_object_get_string(ver));
 }
 
+static void pretty_print_clipboard(json_object *v) {
+	bool _success;
+	json_object *success;
+	json_object_object_get_ex(v, "success", &success);
+	_success = json_object_get_boolean(success);
+
+	if (_success) {
+		json_object *ver;
+		json_object_object_get_ex(v, "content", &ver);
+		printf("%s\n", json_object_get_string(ver));
+	}
+}
+
 static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
-			type != IPC_GET_VERSION) {
+			type != IPC_GET_VERSION && type != IPC_GET_CLIPBOARD) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
@@ -155,6 +168,11 @@ static void pretty_print(int type, json_object *resp) {
 
 	if (type == IPC_GET_VERSION) {
 		pretty_print_version(resp);
+		return;
+	}
+
+	if (type == IPC_GET_CLIPBOARD) {
+		pretty_print_clipboard(resp);
 		return;
 	}
 
@@ -267,6 +285,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_BAR_CONFIG;
 	} else if (strcasecmp(cmdtype, "get_version") == 0) {
 		type = IPC_GET_VERSION;
+	} else if (strcasecmp(cmdtype, "get_clipboard") == 0) {
+		type = IPC_GET_CLIPBOARD;
 	} else {
 		sway_abort("Unknown message type %s", cmdtype);
 	}
