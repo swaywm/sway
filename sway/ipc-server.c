@@ -331,6 +331,14 @@ void ipc_get_pixels(wlc_handle output) {
 	ipc_get_pixel_requests = unhandled;
 }
 
+static bool is_text_target(const char *target) {
+	return (strncmp(target, "text/", 5) == 0
+		|| strcmp(target, "UTF8_STRING") == 0
+		|| strcmp(target, "STRING") == 0
+		|| strcmp(target, "TEXT") == 0
+		|| strcmp(target, "COMPOUND_TEXT") == 0);
+}
+
 static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 	assert(data);
 	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
@@ -340,7 +348,7 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 		goto cleanup;
 	}
 
-	if (mask & WLC_EVENT_READABLE || true) {
+	if (mask & WLC_EVENT_READABLE) {
 		static const int step_size = 512;
 		char *data = NULL;
 		int ret = 0;
@@ -366,7 +374,7 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 
 		data[current] = '\0';
 
-		if (strncmp(req->type, "text/", 5) == 0) {
+		if (is_text_target(req->type)) {
 			json_object_object_add(req->json, req->type,
 				json_object_new_string(data));
 		} else {
@@ -378,8 +386,6 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 		}
 
 		free(data);
-	} else {
-		return 0; // TODO
 	}
 
 cleanup:
