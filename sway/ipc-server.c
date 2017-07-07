@@ -349,43 +349,53 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 	}
 
 	if (mask & WLC_EVENT_READABLE) {
-		static const int step_size = 512;
-		char *data = NULL;
-		int ret = 0;
-		int current = 0;
+		static const int max_size = 8192 * 1000;
+		int len = 512;
+		int i = 0;
+		char *buf = malloc(len);
 
 		// read data as long as there is data avilable
 		// grow the buffer step_size in every iteration
-		do {
-			if (data == NULL) {
-				data = malloc(step_size);
-			} else {
-				data = realloc(data, current + step_size);
+		for(;;) {
+			int amt = read(fd, buf + i, len - i - 1);
+			if (amt <= 0)
+				break;
+
+			i += amt;
+			if (i >= len - 1) {
+				if (len >= max_size) {
+					sway_log(L_ERROR, "selection data too large");
+					free(buf);
+					goto cleanup;
+				}
+				char *next = realloc(buf, (len *= 2));
+				if (!next) {
+					sway_log_errno(L_ERROR, "relloc failed");
+					free(buf);
+					goto cleanup;
+				}
+
+				buf = next;
 			}
+		}
 
-			ret = read(fd, data + current, step_size - 1);
-			if (ret < 0) {
-				sway_log_errno(L_ERROR, "Reading from selection data fd failed");
-				goto cleanup;
-			}
-
-			current += ret;
-		} while (ret == step_size - 1);
-
-		data[current] = '\0';
+		buf[i] = '\0';
 
 		if (is_text_target(req->type)) {
 			json_object_object_add(req->json, req->type,
-				json_object_new_string(data));
+				json_object_new_string(buf));
 		} else {
 			size_t outlen;
-			char *b64 = b64_encode(data, current, &outlen);
-			json_object_object_add(req->json, req->type,
+			char *b64 = b64_encode(buf, i, &outlen);
+			char *type = malloc(strlen(req->type) + 8);
+			strcat(type, ";base64");
+			json_object_object_add(req->json, type,
 					json_object_new_string(b64));
+			free(type);
 			free(b64);
 		}
 
-		free(data);
+		free(buf);
 	}
 
 cleanup:
