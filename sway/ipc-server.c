@@ -617,8 +617,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		size_t size;
-		bool found = false;
 		const char **types = wlc_get_selection_types(&size);
+		const char *type = NULL;
 		if (types == NULL || size == 0) {
 			const char *error = "{ \"success\": false, \"error\": "
 				"\"Empty clipboard\" }";
@@ -627,48 +627,50 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		for (size_t i = 0; i < size; ++i) {
-			if (strcmp(types[i], "text/plain;charset=utf-8") != 0
-					&& strcmp(types[i], "text/plain") != 0) {
-				continue;
+			if (strcmp(types[i], "text/plain;charset=utf-8") == 0
+					|| strcmp(types[i], "text/plain") == 0) {
+				type = types[i];
+				break;
 			}
+		}
 
+		if (type) {
 			struct get_clipboard_request *req = malloc(sizeof(*req));
 			if (!req) {
 				sway_log(L_ERROR, "Unable to allocate get_clipboard_request");
-				goto exit_cleanup;
+				goto clipboard_error;
 			}
 
 			int pipes[2];
 			if (pipe(pipes) == -1) {
 				sway_log_errno(L_ERROR, "pipe call failed");
 				free(req);
-				break;
+				goto clipboard_error;
 			}
 
 			fcntl(pipes[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
 			fcntl(pipes[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-			if (!wlc_get_selection_data(types[i], pipes[1])) {
+			if (!wlc_get_selection_data(type, pipes[1])) {
 				close(pipes[0]);
 				close(pipes[1]);
 				free(req);
 				sway_log(L_ERROR, "wlc_get_selection_data failed");
-				break;
+				goto clipboard_error;
 			}
 
 			req->client = client;
 			req->event_source = wlc_event_loop_add_fd(pipes[0],
 				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
 				&ipc_selection_data_cb, req);
-			found = true;
-			break;
+			free(types);
+			goto exit_cleanup;
 		}
 
-		if (!found) {
-			sway_log(L_INFO, "Clipboard has to text data");
-			const char *error = "{ \"success\": false, \"error\": "
-				"\"Could not receive text data from clipboard\" }";
-			ipc_send_reply(client, error, (uint32_t)strlen(error));
-		}
+clipboard_error:
+		sway_log(L_INFO, "Clipboard has to text data");
+		const char *error = "{ \"success\": false, \"error\": "
+			"\"Could not receive text data from clipboard\" }";
+		ipc_send_reply(client, error, (uint32_t)strlen(error));
 
 		free(types);
 		goto exit_cleanup;
