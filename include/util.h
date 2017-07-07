@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <unistd.h>
+#include <sys/types.h> 
 #include <xkbcommon/xkbcommon.h>
 
 /**
@@ -57,4 +58,8 @@ uint32_t parse_color(const char *color);
  * to a dangling symlink, NULL is returned.
  */
 char* resolve_path(const char* path);
+
+char *b64_encode(const char* binaryData, size_t len, size_t *flen);
+unsigned char *b64_decode(const char *ascii, size_t len, size_t *flen);
+
 #endif

@@ -19,6 +19,7 @@ file(GLOB cmds
 add_executable(sway
 	commands.c
 	${cmds}
+	base64.c
 	config.c
 	container.c
 	criteria.c
@@ -35,7 +36,7 @@ add_executable(sway
 	output.c
 	workspace.c
 	border.c
-    security.c
+	security.c
 )
 
 add_definitions(

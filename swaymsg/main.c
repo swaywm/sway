@@ -19,15 +19,17 @@ void sway_terminate(int exit_code) {
 	exit(exit_code);
 }
 
-static void pretty_print_cmd(json_object *r) {
-	bool _success;
+static bool success(json_object *r, bool fallback) {
 	json_object *success;
 	if (!json_object_object_get_ex(r, "success", &success)) {
-		_success = true;
+		return fallback;
 	} else {
-		_success = json_object_get_boolean(success);
+		return json_object_get_boolean(success);
 	}
-	if (!_success) {
+}
+
+static void pretty_print_cmd(json_object *r) {
+	if (!success(r, true)) {
 		json_object *error;
 		if (!json_object_object_get_ex(r, "error", &error)) {
 			printf("An unknkown error occured");
@@ -145,15 +147,23 @@ static void pretty_print_version(json_object *v) {
 }
 
 static void pretty_print_clipboard(json_object *v) {
-	bool _success;
-	json_object *success;
-	json_object_object_get_ex(v, "success", &success);
-	_success = json_object_get_boolean(success);
-
-	if (_success) {
-		json_object *ver;
-		json_object_object_get_ex(v, "content", &ver);
-		printf("%s\n", json_object_get_string(ver));
+	if (success(v, true)) {
+		if (json_object_is_type(v, json_type_array)) {
+			for (int i = 0; i < json_object_array_length(v); ++i) {
+				json_object *o = json_object_array_get_idx(v, i);
+				printf("%s\n", json_object_get_string(o));
+			}
+		} else {
+			// NOTE: could be extended to print all received types
+			// instead just the first one when sways ipc server
+			// supports it
+			struct json_object_iterator iter = json_object_iter_begin(v);
+			struct json_object_iterator end = json_object_iter_end(v);
+			if (!json_object_iter_equal(&iter, &end)) {
+				printf("%s\n", json_object_get_string(
+					json_object_iter_peek_value(&iter)));
+			}
+		}
 	}
 }
 
@@ -310,6 +320,9 @@ int main(int argc, char **argv) {
 			printf("%s\n", resp);
 			ret = 1;
 		} else {
+			if (!success(obj, true)) {
+				ret = 1;
+			}
 			if (raw) {
 				printf("%s\n", json_object_to_json_string_ext(obj,
 					JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
