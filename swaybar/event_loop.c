@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -96,7 +96,7 @@ bool remove_event(int fd) {
 static int timer_item_timer_cmp(const void *_timer_item, const void *_timer) {
 	const struct timer_item *timer_item = _timer_item;
 	const timer_t *timer = _timer;
-	if (timer_item->timer == timer) {
+	if (timer_item->timer == *timer) {
 		return 0;
 	} else {
 		return -1;
