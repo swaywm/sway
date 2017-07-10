@@ -61,10 +61,11 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 			sym = ((char *)split->items[i])[strlen("button")] - '1' + M_LEFT_CLICK;
 		}
 		if (!sym) {
+			struct cmd_results *ret = cmd_results_new(CMD_INVALID, "bindsym",
+					"Unknown key '%s'", (char *)split->items[i]);
 			free_sway_binding(binding);
 			free_flat_list(split);
-			return cmd_results_new(CMD_INVALID, "bindsym", "Unknown key '%s'",
-					(char *)split->items[i]);
+			return ret;
 		}
 		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
 		if (!key) {
