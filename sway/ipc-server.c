@@ -59,9 +59,13 @@ struct get_pixels_request {
 struct get_clipboard_request {
 	struct ipc_client *client;
 	json_object *json;
-	struct wlc_event_source *event_source;
+	struct wlc_event_source *fd_event_source;
+	struct wlc_event_source *timer_event_source;
 	char *type;
 	unsigned int *pending;
+	char *buf;
+	size_t buf_size;
+	size_t buf_position;
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -339,68 +343,7 @@ static bool is_text_target(const char *target) {
 		|| strcmp(target, "COMPOUND_TEXT") == 0);
 }
 
-static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
-	assert(data);
-	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
-
-	if (mask & WLC_EVENT_ERROR) {
-		sway_log(L_ERROR, "Selection data fd error");
-		goto cleanup;
-	}
-
-	if (mask & WLC_EVENT_READABLE) {
-		static const int max_size = 8192 * 1000;
-		int len = 512;
-		int i = 0;
-		char *buf = malloc(len);
-
-		// read data as long as there is data avilable
-		// grow the buffer step_size in every iteration
-		for(;;) {
-			int amt = read(fd, buf + i, len - i - 1);
-			if (amt <= 0)
-				break;
-
-			i += amt;
-			if (i >= len - 1) {
-				if (len >= max_size) {
-					sway_log(L_ERROR, "selection data too large");
-					free(buf);
-					goto cleanup;
-				}
-				char *next = realloc(buf, (len *= 2));
-				if (!next) {
-					sway_log_errno(L_ERROR, "relloc failed");
-					free(buf);
-					goto cleanup;
-				}
-
-				buf = next;
-			}
-		}
-
-		buf[i] = '\0';
-
-		if (is_text_target(req->type)) {
-			json_object_object_add(req->json, req->type,
-				json_object_new_string(buf));
-		} else {
-			size_t outlen;
-			char *b64 = b64_encode(buf, i, &outlen);
-			char *type = malloc(strlen(req->type) + 8);
-			strcat(type, ";base64");
-			json_object_object_add(req->json, type,
-					json_object_new_string(b64));
-			free(type);
-			free(b64);
-		}
-
-		free(buf);
-	}
-
-cleanup:
-	close(fd);
-
+static void release_clipboard_request(struct get_clipboard_request *req) {
 	if (--(*req->pending) == 0) {
 		const char *str = json_object_to_json_string(req->json);
 		ipc_send_reply(req->client, str, (uint32_t)strlen(str));
@@ -408,8 +351,81 @@ cleanup:
 	}
 
 	free(req->type);
-	wlc_event_source_remove(req->event_source);
+	free(req->buf);
+	wlc_event_source_remove(req->fd_event_source);
+	wlc_event_source_remove(req->timer_event_source);
 	free(req);
+}
+
+static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
+	assert(data);
+	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
+
+	if (mask & WLC_EVENT_ERROR) {
+		sway_log(L_ERROR, "Selection data fd error");
+		goto release;
+	}
+
+	if (mask & WLC_EVENT_READABLE) {
+		static const unsigned int max_size = 8192 * 1024;
+		int amt = 0;
+
+		do {
+			int size = req->buf_size - req->buf_position;
+			int amt = read(fd, req->buf + req->buf_position, size - 1);
+			if (amt < 0) {
+				if (errno == EAGAIN) {
+					return 0;
+				}
+
+				sway_log_errno(L_INFO, "Failed to read from clipboard data fd");
+				goto release;
+			}
+
+			req->buf_position += amt;
+			if (req->buf_position >= req->buf_size - 1) {
+				if (req->buf_size >= max_size) {
+					sway_log(L_ERROR, "get_clipbard: selection data too large");
+					goto release;
+				}
+				char *next = realloc(req->buf, req->buf_size *= 2);
+				if (!next) {
+					sway_log_errno(L_ERROR, "get_clipboard: realloc data buffer failed");
+					goto release;
+				}
+
+				req->buf = next;
+			}
+		} while(amt != 0);
+
+		req->buf[req->buf_position] = '\0';
+
+		if (is_text_target(req->type)) {
+			json_object_object_add(req->json, req->type,
+				json_object_new_string(req->buf));
+		} else {
+			size_t outlen;
+			char *b64 = b64_encode(req->buf, req->buf_position, &outlen);
+			char *type = malloc(strlen(req->type) + 8);
+			strcat(type, ";base64");
+			json_object_object_add(req->json, type,
+					json_object_new_string(b64));
+			free(type);
+			free(b64);
+		}
+	}
+
+release:
+	release_clipboard_request(req);
+	return 0;
+}
+
+static int ipc_selection_timer_cb(void *data) {
+	assert(data);
+	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
+
+	sway_log(L_INFO, "get_clipbard: timeout for type %s", req->type);
+	release_clipboard_request(req);
 	return 0;
 }
 
@@ -471,53 +487,69 @@ void ipc_get_clipboard(struct ipc_client *client, char *buf) {
 		const char *pattern = requested->items[l];
 		bool found = false;
 		for (size_t i = 0; i < size; ++i) {
-			if (mime_type_matches(types[i], pattern)) {
-				found = true;
-
-				struct get_clipboard_request *req = malloc(sizeof(*req));
-				if (!req) {
-					sway_log(L_ERROR, "Cannot allocate get_clipboard_request");
-					goto data_error;
-				}
-
-				int pipes[2];
-				if (pipe(pipes) == -1) {
-					sway_log_errno(L_ERROR, "pipe call failed");
-					free(req);
-					goto data_error;
-				}
-
-				fcntl(pipes[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-				fcntl(pipes[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-
-				if (!wlc_get_selection_data(types[i], pipes[1])) {
-					close(pipes[0]);
-					close(pipes[1]);
-					free(req);
-					sway_log(L_ERROR, "wlc_get_selection_data failed");
-					goto data_error;
-				}
-
-				(*pending)++;
-
-				req->client = client;
-				req->type = strdup(types[i]);
-				req->json = json;
-				req->pending = pending;
-				req->event_source = wlc_event_loop_add_fd(pipes[0],
-					WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
-					&ipc_selection_data_cb, req);
-
-				// NOTE: remove this goto to enable retrieving multiple
-				// targets at once. The whole implementation is already
-				// made for it. The only reason it was disabled
-				// at the time of writing is that neither wlc's xselection
-				// implementation nor (apparently) gtk on wayland supports
-				// multiple send requests at the same time which makes
-				// every request except the last one fail (and therefore
-				// return empty data)
-				goto cleanup;
+			if (!mime_type_matches(types[i], pattern)) {
+				continue;
 			}
+
+			found = true;
+
+			struct get_clipboard_request *req = malloc(sizeof(*req));
+			if (!req) {
+				sway_log(L_ERROR, "get_clipboard: request malloc failed");
+				goto data_error;
+			}
+
+			int pipes[2];
+			if (pipe(pipes) == -1) {
+				sway_log_errno(L_ERROR, "get_clipboard: pipe call failed");
+				free(req);
+				goto data_error;
+			}
+
+			fcntl(pipes[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+			fcntl(pipes[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+
+			if (!wlc_get_selection_data(types[i], pipes[1])) {
+				close(pipes[0]);
+				close(pipes[1]);
+				free(req);
+				sway_log(L_ERROR, "get_clipboard: failed to retrieve "
+					"selection data");
+				goto data_error;
+			}
+
+			if (!(req->buf = malloc(512))) {
+				close(pipes[0]);
+				close(pipes[1]);
+				free(req);
+				sway_log_errno(L_ERROR, "get_clipboard: buf malloc failed");
+				goto data_error;
+			}
+
+			(*pending)++;
+
+			req->client = client;
+			req->type = strdup(types[i]);
+			req->json = json;
+			req->pending = pending;
+			req->buf_position = 0;
+			req->buf_size = 512;
+			req->timer_event_source = wlc_event_loop_add_timer(ipc_selection_timer_cb, req);
+			req->fd_event_source = wlc_event_loop_add_fd(pipes[0],
+				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
+				&ipc_selection_data_cb, req);
+
+			wlc_event_source_timer_update(req->timer_event_source, 1000);
+
+			// NOTE: remove this goto to enable retrieving multiple
+			// targets at once. The whole implementation is already
+			// made for it. The only reason it was disabled
+			// at the time of writing is that neither wlc's xselection
+			// implementation nor (apparently) gtk on wayland supports
+			// multiple send requests at the same time which makes
+			// every request except the last one fail (and therefore
+			// return empty data)
+			goto cleanup;
 		}
 
 		if (!found) {
