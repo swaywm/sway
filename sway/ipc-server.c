@@ -59,6 +59,7 @@ struct get_pixels_request {
 struct get_clipboard_request {
 	struct ipc_client *client;
 	json_object *json;
+	int fd;
 	struct wlc_event_source *fd_event_source;
 	struct wlc_event_source *timer_event_source;
 	char *type;
@@ -354,6 +355,7 @@ static void release_clipboard_request(struct get_clipboard_request *req) {
 	free(req->buf);
 	wlc_event_source_remove(req->fd_event_source);
 	wlc_event_source_remove(req->timer_event_source);
+	close(req->fd);
 	free(req);
 }
 
@@ -534,6 +536,7 @@ void ipc_get_clipboard(struct ipc_client *client, char *buf) {
 			req->pending = pending;
 			req->buf_position = 0;
 			req->buf_size = 512;
+			req->fd = pipes[0];
 			req->timer_event_source = wlc_event_loop_add_timer(ipc_selection_timer_cb, req);
 			req->fd_event_source = wlc_event_loop_add_fd(pipes[0],
 				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
