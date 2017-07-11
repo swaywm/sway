@@ -365,7 +365,7 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 
 	if (mask & WLC_EVENT_ERROR) {
 		sway_log(L_ERROR, "Selection data fd error");
-		goto release;
+		goto error;
 	}
 
 	if (mask & WLC_EVENT_READABLE) {
@@ -388,12 +388,12 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 			if (req->buf_position >= req->buf_size - 1) {
 				if (req->buf_size >= max_size) {
 					sway_log(L_ERROR, "get_clipbard: selection data too large");
-					goto release;
+					goto error;
 				}
 				char *next = realloc(req->buf, req->buf_size *= 2);
 				if (!next) {
 					sway_log_errno(L_ERROR, "get_clipboard: realloc data buffer failed");
-					goto release;
+					goto error;
 				}
 
 				req->buf = next;
@@ -402,20 +402,32 @@ static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
 
 		req->buf[req->buf_position] = '\0';
 
+		json_object *obj = json_object_new_object();
+		json_object_object_add(obj, "success", json_object_new_boolean(true));
 		if (is_text_target(req->type)) {
-			json_object_object_add(req->json, req->type,
-				json_object_new_string(req->buf));
+			json_object_object_add(obj, "content", json_object_new_string(req->buf));
+			json_object_object_add(req->json, req->type, obj);
 		} else {
 			size_t outlen;
 			char *b64 = b64_encode(req->buf, req->buf_position, &outlen);
+			json_object_object_add(obj, "content", json_object_new_string(b64));
+			free(b64);
+
 			char *type = malloc(strlen(req->type) + 8);
 			strcat(type, ";base64");
-			json_object_object_add(req->json, type,
-					json_object_new_string(b64));
+			json_object_object_add(req->json, type, obj);
 			free(type);
-			free(b64);
 		}
 	}
+
+	goto release;
+
+error:;
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "success", json_object_new_boolean(false));
+	json_object_object_add(obj, "error",
+		json_object_new_string("Failed to retrieve data"));
+	json_object_object_add(req->json, req->type, obj);
 
 release:
 	release_clipboard_request(req);
@@ -427,13 +439,18 @@ static int ipc_selection_timer_cb(void *data) {
 	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
 
 	sway_log(L_INFO, "get_clipbard: timeout for type %s", req->type);
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "success", json_object_new_boolean(false));
+	json_object_object_add(obj, "error", json_object_new_string("Timeout"));
+	json_object_object_add(req->json, req->type, obj);
+
 	release_clipboard_request(req);
 	return 0;
 }
 
 // greedy wildcard (only "*") matching
 bool mime_type_matches(const char *mime_type, const char *pattern) {
-	const char* wildcard = NULL;
+	const char *wildcard = NULL;
 	while (*mime_type && *pattern) {
 		if (*pattern == '*' && !wildcard) {
 			wildcard = pattern;
@@ -461,9 +478,6 @@ bool mime_type_matches(const char *mime_type, const char *pattern) {
 }
 
 void ipc_get_clipboard(struct ipc_client *client, char *buf) {
-	static const char *error_json = "{ \"success\": false, \"error\": "
-		"\"Failed to retrieve clipboard data\" }";
-
 	size_t size;
 	const char **types = wlc_get_selection_types(&size);
 	if (client->payload_length == 0) {
@@ -542,7 +556,7 @@ void ipc_get_clipboard(struct ipc_client *client, char *buf) {
 				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
 				&ipc_selection_data_cb, req);
 
-			wlc_event_source_timer_update(req->timer_event_source, 1000);
+			wlc_event_source_timer_update(req->timer_event_source, 30000);
 
 			// NOTE: remove this goto to enable retrieving multiple
 			// targets at once. The whole implementation is already
@@ -561,15 +575,18 @@ void ipc_get_clipboard(struct ipc_client *client, char *buf) {
 	}
 
 	if (*pending == 0) {
-		static const char *empty = "[]";
-		ipc_send_reply(client, empty, (uint32_t)strlen(empty));
+		static const char *error_empty = "{ \"success\": false, \"error\": "
+			"\"No matching types found\" }";
+		ipc_send_reply(client, error_empty, (uint32_t)strlen(error_empty));
 		free(json);
 		free(pending);
 	}
 
 	goto cleanup;
 
-data_error:
+data_error:;
+	static const char *error_json = "{ \"success\": false, \"error\": "
+		"\"Failed to create clipboard data request\" }";
 	ipc_send_reply(client, error_json, (uint32_t)strlen(error_json));
 	free(json);
 	free(pending);

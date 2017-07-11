@@ -160,10 +160,22 @@ static void pretty_print_clipboard(json_object *v) {
 			struct json_object_iterator iter = json_object_iter_begin(v);
 			struct json_object_iterator end = json_object_iter_end(v);
 			if (!json_object_iter_equal(&iter, &end)) {
-				printf("%s\n", json_object_get_string(
-					json_object_iter_peek_value(&iter)));
+				json_object *obj = json_object_iter_peek_value(&iter);
+				if (success(obj, false)) {
+					json_object *content;
+					json_object_object_get_ex(obj, "content", &content);
+					printf("%s\n", json_object_get_string(content));
+				} else {
+					json_object *error;
+					json_object_object_get_ex(obj, "error", &error);
+					printf("Error: %s\n", json_object_get_string(error));
+				}
 			}
 		}
+	} else {
+		json_object *error;
+		json_object_object_get_ex(v, "error", &error);
+		printf("Error: %s\n", json_object_get_string(error));
 	}
 }
 
