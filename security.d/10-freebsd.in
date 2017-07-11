@@ -1,0 +1,12 @@
+# sway security rules
+#
+# FreeBSD does not support getting client PID from server side
+# so we can not know the path to the client's binary.
+#
+# The solution for now is to be permissive and allow all
+# features by default for any client.
+
+# Configures enabled compositor features for specific programs
+permit * fullscreen keyboard mouse background screenshot panel lock 
+
+
