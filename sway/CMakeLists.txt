@@ -93,6 +93,10 @@ endfunction()
 add_config(config config sway)
 add_config(00-defaults security.d/00-defaults sway/security.d)
 
+if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    add_config(10-freebsd security.d/10-freebsd sway/security.d)
+endif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+
 if (A2X_FOUND)
     add_manpage(sway 1)
     add_manpage(sway 5)
