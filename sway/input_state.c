@@ -202,13 +202,13 @@ static void reset_initial_sibling(void) {
 	pointer_state.mode = 0;
 }
 
-void pointer_position_set(struct wlc_point *new_origin, bool force_focus) {
-	struct wlc_point origin;
-	wlc_pointer_get_position(&origin);
-	pointer_state.delta.x = new_origin->x - origin.x;
-	pointer_state.delta.y = new_origin->y - origin.y;
+void pointer_position_set(double new_x, double new_y, bool force_focus) {
+	double x, y;
+	wlc_pointer_get_position_v2(&x, &y);
+	pointer_state.delta.x = new_x - x;
+	pointer_state.delta.y = new_y - y;
 
-	wlc_pointer_set_position(new_origin);
+	wlc_pointer_set_position_v2(new_x, new_y);
 
 	// Update view under pointer
 	swayc_t *prev_view = pointer_state.view;
@@ -226,10 +226,7 @@ void pointer_position_set(struct wlc_point *new_origin, bool force_focus) {
 }
 
 void center_pointer_on(swayc_t *view) {
-	struct wlc_point new_origin;
-	new_origin.x = view->x + view->width/2;
-	new_origin.y = view->y + view->height/2;
-	pointer_position_set(&new_origin, true);
+	pointer_position_set(view->x + view->width/2, view->y + view->height/2, true);
 }
 
 // Mode set left/right click
@@ -269,10 +266,10 @@ static void pointer_mode_set_resizing(void) {
 	int midway_x = initial.ptr->x + initial.ptr->width/2;
 	int midway_y = initial.ptr->y + initial.ptr->height/2;
 
-	struct wlc_point origin;
-	wlc_pointer_get_position(&origin);
-	lock.left = origin.x > midway_x;
-	lock.top = origin.y > midway_y;
+	double x, y;
+	wlc_pointer_get_position_v2(&x, &y);
+	lock.left = x > midway_x;
+	lock.top = y > midway_y;
 
 	if (initial.ptr->is_floating) {
 		pointer_state.mode = M_RESIZING | M_FLOATING;
@@ -346,10 +343,10 @@ void pointer_mode_update(void) {
 		pointer_state.mode = 0;
 		return;
 	}
-	struct wlc_point origin;
-	wlc_pointer_get_position(&origin);
-	int dx = origin.x;
-	int dy = origin.y;
+	double x, y;
+	wlc_pointer_get_position_v2(&x, &y);
+	int dx = x;
+	int dy = y;
 
 	switch (pointer_state.mode) {
 	case M_FLOATING | M_DRAGGING:

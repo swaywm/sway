@@ -69,7 +69,7 @@ enum modifier_state {
 	MOD_STATE_RELEASED = 2
 };
 
-void pointer_position_set(struct wlc_origin *new_origin, bool force_focus);
+void pointer_position_set(double new_x, double new_y, bool force_focus);
 void center_pointer_on(swayc_t *view);
 
 // on button release unset mode depending on the button.

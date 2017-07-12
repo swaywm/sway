@@ -842,12 +842,13 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 	return EVENT_PASSTHROUGH;
 }
 
-static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct wlc_point *origin) {
+static bool handle_pointer_motion(wlc_handle handle, uint32_t time, double x, double y) {
 	if (desktop_shell.is_locked) {
 		return EVENT_PASSTHROUGH;
 	}
 
-	struct wlc_point new_origin = *origin;
+	double new_x = x;
+	double new_y = y;
 	// Switch to adjacent output if touching output edge.
 	//
 	// Since this doesn't currently support moving windows between outputs we
@@ -856,45 +857,43 @@ static bool handle_pointer_motion(wlc_handle handle, uint32_t time, const struct
 			!pointer_state.left.held && !pointer_state.right.held && !pointer_state.scroll.held) {
 
 		swayc_t *output = swayc_active_output(), *adjacent = NULL;
-		struct wlc_point abs_pos = *origin;
-		abs_pos.x += output->x;
-		abs_pos.y += output->y;
-		if (origin->x == 0) { // Left edge
+		struct wlc_point abs_pos = { .x = x + output->x, .y = y + output->y };
+		if (x <= 0) { // Left edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_LEFT, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
-					new_origin.x = adjacent->width;
+					new_x = adjacent->width;
 					// adjust for differently aligned outputs (well, this is
 					// only correct when the two outputs have the same
 					// resolution or the same dpi I guess, it should take
 					// physical attributes into account)
-					new_origin.y += (output->y - adjacent->y);
+					new_y += (output->y - adjacent->y);
 				}
 			}
-		} else if ((double)origin->x == output->width) { // Right edge
+		} else if (x >= output->width) { // Right edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_RIGHT, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
-					new_origin.x = 0;
-					new_origin.y += (output->y - adjacent->y);
+					new_x = 0;
+					new_y += (output->y - adjacent->y);
 				}
 			}
-		} else if (origin->y == 0) { // Top edge
+		} else if (y <= 0) { // Top edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_UP, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
-					new_origin.y = adjacent->height;
-					new_origin.x += (output->x - adjacent->x);
+					new_y = adjacent->height;
+					new_x += (output->x - adjacent->x);
 				}
 			}
-		} else if ((double)origin->y == output->height) { // Bottom edge
+		} else if (y >= output->height) { // Bottom edge
 			if ((adjacent = swayc_adjacent_output(output, MOVE_DOWN, &abs_pos, false))) {
 				if (workspace_switch(swayc_active_workspace_for(adjacent))) {
-					new_origin.y = 0;
-					new_origin.x += (output->x - adjacent->x);
+					new_y = 0;
+					new_x += (output->x - adjacent->x);
 				}
 			}
 		}
 	}
 
-	pointer_position_set(&new_origin, false);
+	pointer_position_set(new_x, new_y, false);
 
 	swayc_t *focused = get_focused_container(&root_container);
 	if (focused->type == C_VIEW) {
@@ -1122,7 +1121,7 @@ void register_wlc_handlers() {
 	wlc_set_view_request_state_cb(handle_view_state_request);
 	wlc_set_view_properties_updated_cb(handle_view_properties_updated);
 	wlc_set_keyboard_key_cb(handle_key);
-	wlc_set_pointer_motion_cb(handle_pointer_motion);
+	wlc_set_pointer_motion_cb_v2(handle_pointer_motion);
 	wlc_set_pointer_button_cb(handle_pointer_button);
 	wlc_set_pointer_scroll_cb(handle_pointer_scroll);
 	wlc_set_compositor_ready_cb(handle_wlc_ready);
