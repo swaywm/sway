@@ -161,11 +161,11 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 			wlc_view_get_visible_geometry(view->handle, &g);
 			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
 
-			struct wlc_point origin;
-			wlc_pointer_get_position(&origin);
+			double x_pos, y_pos;
+			wlc_pointer_get_position_v2(&x_pos, &y_pos);
 
-			int32_t x = origin.x - g.size.w / 2;
-			int32_t y = origin.y - g.size.h / 2;
+			int32_t x = x_pos - g.size.w / 2;
+			int32_t y = y_pos - g.size.h / 2;
 
 			uint32_t w = size->w - g.size.w;
 			uint32_t h = size->h - g.size.h;

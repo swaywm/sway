@@ -707,8 +707,10 @@ swayc_t *container_under_pointer(void) {
 	if (lookup->children && !lookup->unmanaged) {
 		return NULL;
 	}
-	struct wlc_point origin;
-	wlc_pointer_get_position(&origin);
+	double x, y;
+	wlc_pointer_get_position_v2(&x, &y);
+	struct wlc_point origin = { .x = x, .y = y };
+
 	while (lookup && lookup->type != C_VIEW) {
 		int i;
 		int len;
