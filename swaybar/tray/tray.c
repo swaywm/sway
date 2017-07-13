@@ -90,9 +90,11 @@ static void get_items_reply(DBusPendingCall *pending, void *_data) {
 
 		struct StatusNotifierItem *item = sni_create(name);
 
-		sway_log(L_DEBUG, "Item registered with host: %s", name);
-		list_add(tray->items, item);
-		dirty = true;
+		if (item) {
+			sway_log(L_DEBUG, "Item registered with host: %s", name);
+			list_add(tray->items, item);
+			dirty = true;
+		}
 	}
 
 bail:
@@ -141,8 +143,10 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 		if (list_seq_find(tray->items, sni_str_cmp, name) == -1) {
 			struct StatusNotifierItem *item = sni_create(name);
 
-			list_add(tray->items, item);
-			dirty = true;
+			if (item) {
+				list_add(tray->items, item);
+				dirty = true;
+			}
 		}
 
 		return DBUS_HANDLER_RESULT_HANDLED;
