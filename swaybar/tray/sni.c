@@ -413,6 +413,12 @@ static void get_unique_name(struct StatusNotifierItem *item) {
 }
 
 struct StatusNotifierItem *sni_create(const char *name) {
+	// Make sure `name` is well formed
+	if (!dbus_validate_bus_name(name, NULL)) {
+		sway_log(L_INFO, "Name (%s) is not a bus name. We cannot create an item.", name);
+		return NULL;
+	}
+
 	struct StatusNotifierItem *item = malloc(sizeof(struct StatusNotifierItem));
 	item->name = strdup(name);
 	item->unique_name = NULL;

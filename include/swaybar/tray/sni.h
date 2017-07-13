@@ -28,6 +28,7 @@ void sni_icon_ref_free(struct sni_icon_ref *sni_ref);
 
 /**
  * Will return a new item and get its icon. (see warning below)
+ * May return `NULL` if `name` is not valid.
  */
 struct StatusNotifierItem *sni_create(const char *name);
 
