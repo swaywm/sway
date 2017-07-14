@@ -150,10 +150,14 @@ static void register_item(DBusConnection *connection, DBusMessage *message) {
 		sway_log(L_ERROR, "Error parsing method args: %s\n", error.message);
 	}
 
-	name = strdup(name);
 	sway_log(L_INFO, "RegisterStatusNotifierItem called with \"%s\"\n", name);
 
 	// Don't add duplicate or not real item
+	if (!dbus_validate_bus_name(name, NULL)) {
+		sway_log(L_INFO, "This item is not valid, we cannot keep track of it.");
+		return;
+	}
+
 	if (list_seq_find(items, (int (*)(const void *, const void *))strcmp, name) != -1) {
 		return;
 	}
@@ -161,7 +165,7 @@ static void register_item(DBusConnection *connection, DBusMessage *message) {
 		return;
 	}
 
-	list_add(items, name);
+	list_add(items, strdup(name));
 	item_registered_signal(connection, name);
 
 	// It's silly, but xembedsniproxy wants a reply for this function
@@ -184,6 +188,12 @@ static void register_host(DBusConnection *connection, DBusMessage *message) {
 	sway_log(L_INFO, "RegisterStatusNotifierHost called with \"%s\"\n", name);
 
 	// Don't add duplicate or not real host
+	if (!dbus_validate_bus_name(name, NULL)) {
+		sway_log(L_INFO, "This item is not valid, we cannot keep track of it.");
+		return;
+	}
+
+
 	if (list_seq_find(hosts, (int (*)(const void *, const void *))strcmp, name) != -1) {
 		return;
 	}
