@@ -108,7 +108,7 @@ static dbus_bool_t add_timeout(DBusTimeout *timeout, void *_data) {
 
 	timer_settime(*timer, 0, &time, NULL);
 
-	dbus_timeout_set_data(timeout, timer, free);
+	dbus_timeout_set_data(timeout, timer, NULL);
 
 	sway_log(L_DEBUG, "Adding DBus timeout. Interval: %ds %dms", interval_sec, interval_msec);
 	add_timer(*timer, dispatch_timeout, timeout);
@@ -121,6 +121,8 @@ static void remove_timeout(DBusTimeout *timeout, void *_data) {
 
 	if (timer) {
 		remove_timer(*timer);
+		timer_delete(*timer);
+		free(timer);
 	}
 }
 
