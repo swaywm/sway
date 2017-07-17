@@ -105,6 +105,7 @@ static int timer_item_timer_cmp(const void *_timer_item, const void *_timer) {
 bool remove_timer(timer_t timer) {
 	int index = list_seq_find(event_loop.timers, timer_item_timer_cmp, &timer);
 	if (index != -1) {
+		free(event_loop.timers->items[index]);
 		list_del(event_loop.timers, index);
 		return true;
 	}

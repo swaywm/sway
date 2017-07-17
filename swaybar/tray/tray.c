@@ -99,6 +99,7 @@ static void get_items_reply(DBusPendingCall *pending, void *_data) {
 
 bail:
 	dbus_message_unref(reply);
+	dbus_pending_call_unref(pending);
 	return;
 }
 static void get_items() {
