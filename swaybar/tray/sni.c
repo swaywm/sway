@@ -160,6 +160,7 @@ static void reply_icon(DBusPendingCall *pending, void *_data) {
 		dirty = true;
 
 		dbus_message_unref(reply);
+		dbus_pending_call_unref(pending);
 		return;
 	} else {
 		sway_log(L_ERROR, "Could not create image surface");
@@ -170,6 +171,7 @@ bail:
 	if (reply) {
 		dbus_message_unref(reply);
 	}
+	dbus_pending_call_unref(pending);
 	sway_log(L_ERROR, "Could not get icon from item");
 	return;
 }
@@ -266,6 +268,7 @@ static void reply_icon_name(DBusPendingCall *pending, void *_data) {
 		dirty = true;
 
 		dbus_message_unref(reply);
+		dbus_pending_call_unref(pending);
 		return;
 	}
 
@@ -273,6 +276,7 @@ bail:
 	if (reply) {
 		dbus_message_unref(reply);
 	}
+	dbus_pending_call_unref(pending);
 	// Now try the pixmap
 	send_icon_msg(item);
 	return;
