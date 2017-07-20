@@ -7,7 +7,7 @@ include_directories(
 	${XKBCOMMON_INCLUDE_DIRS}
 	${DBUS_INCLUDE_DIRS}
 )
-if (enable-tray)
+if (ENABLE_TRAY)
 	file(GLOB tray
 		tray/*.c
 	)

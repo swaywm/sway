@@ -95,7 +95,7 @@ endif()
 
 if (enable-tray)
 	if (DBUS_FOUND)
-		set(ENABLE_TRAY)
+		set(ENABLE_TRAY TRUE)
 		add_definitions(-DENABLE_TRAY)
 	else()
 		message(WARNING "Tray required but DBus was not found. Tray will not be included")
