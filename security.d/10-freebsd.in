@@ -9,4 +9,11 @@
 # Configures enabled compositor features for specific programs
 permit * fullscreen keyboard mouse background screenshot panel lock 
 
+ipc * {
+   * enabled
+   events {
+     * enabled
+   }
+}
+
 
