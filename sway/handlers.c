@@ -1083,16 +1083,8 @@ bool handle_pointer_scroll(wlc_handle view, uint32_t time, const struct wlc_modi
 	return EVENT_PASSTHROUGH;
 }
 
-static void clip_test_cb(void *data, const char *type, int fd) {
-	const char *str = data;
-	write(fd, str, strlen(str));
-	close(fd);
-}
-
 static void handle_wlc_ready(void) {
 	sway_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
-	const char *type = "text/plain;charset=utf-8";
-	wlc_set_selection("test", &type, 1, &clip_test_cb);
 	// Execute commands until there are none left
 	config->active = true;
 	while (config->cmd_queue->length) {
