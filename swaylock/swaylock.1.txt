@@ -95,6 +95,14 @@ Appearance
 *--textcolor* <rrggbb[aa]>::
 	Sets the color of the text inside the indicator.
 
+*--indicator-radius* <radius>::
+	Sets the radius of the indicator to _radius_ pixels. The default value is
+	50.
+
+*--indicator-thickness* <thickness>::
+	Sets the thickness of the indicator to _thickness_ pixels. The default value
+	is 10.
+
 Authors
 -------
 

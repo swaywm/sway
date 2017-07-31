@@ -81,6 +81,9 @@ struct lock_config *init_config() {
 	config->colors.invalid.inner_ring = 0xFA0000BF;
 	config->colors.invalid.outer_ring = 0x7D3300FF;
 
+	config->radius = 50;
+	config->thickness = 10;
+
 	return config;
 }
 
@@ -383,6 +386,8 @@ int main(int argc, char **argv) {
 		{"separatorcolor", required_argument, NULL, 0},
 		{"keyhlcolor", required_argument, NULL, 0},
 		{"bshlcolor", required_argument, NULL, 0},
+		{"indicator-radius", required_argument, NULL, 0},
+		{"indicator-thickness", required_argument, NULL, 0},
 		{0, 0, 0, 0}
 	};
 
@@ -509,6 +514,10 @@ int main(int argc, char **argv) {
 				config->colors.input_cursor = parse_color(optarg);
 			} else if (strcmp(long_options[option_index].name, "bshlcolor") == 0) {
 				config->colors.backspace_cursor = parse_color(optarg);
+			} else if (strcmp(long_options[option_index].name, "indicator-radius") == 0) {
+				config->radius = atoi(optarg);
+			} else if (strcmp(long_options[option_index].name, "indicator-thickness") == 0) {
+				config->thickness = atoi(optarg);
 			}
 			break;
 		default:
@@ -678,16 +687,14 @@ void render(struct render_data *render_data, struct lock_config *config) {
 		cairo_identity_matrix(window->cairo);
 
 		// Draw specific values (copied from i3)
-		const int ARC_RADIUS = 50;
-		const int ARC_THICKNESS = 10;
 		const float TYPE_INDICATOR_RANGE = M_PI / 3.0f;
 		const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
 
 		// Add visual indicator
 		if (show_indicator && render_data->auth_state != AUTH_STATE_IDLE) {
 			// Draw circle
-			cairo_set_line_width(window->cairo, ARC_THICKNESS);
-			cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, 0, 2 * M_PI);
+			cairo_set_line_width(window->cairo, config->thickness);
+			cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, 0, 2 * M_PI);
 			switch (render_data->auth_state) {
 			case AUTH_STATE_INPUT:
 			case AUTH_STATE_BACKSPACE: {
@@ -715,7 +722,7 @@ void render(struct render_data *render_data, struct lock_config *config) {
 			char *text = NULL;
 			cairo_set_source_u32(window->cairo, config->colors.text);
 			cairo_select_font_face(window->cairo, config->font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-			cairo_set_font_size(window->cairo, ARC_RADIUS/3.0f);
+			cairo_set_font_size(window->cairo, config->radius/3.0f);
 			switch (render_data->auth_state) {
 			case AUTH_STATE_VALIDATING:
 				text = "verifying";
@@ -744,7 +751,7 @@ void render(struct render_data *render_data, struct lock_config *config) {
 			if (render_data->auth_state == AUTH_STATE_INPUT || render_data->auth_state == AUTH_STATE_BACKSPACE) {
 				static double highlight_start = 0;
 				highlight_start += (rand() % (int)(M_PI * 100)) / 100.0 + M_PI * 0.5;
-				cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
+				cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
 				if (render_data->auth_state == AUTH_STATE_INPUT) {
 					cairo_set_source_u32(window->cairo, config->colors.input_cursor);
 				} else {
@@ -754,10 +761,10 @@ void render(struct render_data *render_data, struct lock_config *config) {
 
 				// Draw borders
 				cairo_set_source_u32(window->cairo, config->colors.separator);
-				cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, highlight_start, highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
+				cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, highlight_start, highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
 				cairo_stroke(window->cairo);
 
-				cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS, highlight_start + TYPE_INDICATOR_RANGE, (highlight_start + TYPE_INDICATOR_RANGE) + TYPE_INDICATOR_BORDER_THICKNESS);
+				cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, highlight_start + TYPE_INDICATOR_RANGE, (highlight_start + TYPE_INDICATOR_RANGE) + TYPE_INDICATOR_BORDER_THICKNESS);
 				cairo_stroke(window->cairo);
 			}
 
@@ -793,9 +800,9 @@ void render(struct render_data *render_data, struct lock_config *config) {
 			}
 			// Draw inner + outer border of the circle
 			cairo_set_line_width(window->cairo, 2.0);
-			cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS - ARC_THICKNESS/2, 0, 2*M_PI);
+			cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius - config->thickness/2, 0, 2*M_PI);
 			cairo_stroke(window->cairo);
-			cairo_arc(window->cairo, wwidth/2, wheight/2, ARC_RADIUS + ARC_THICKNESS/2, 0, 2*M_PI);
+			cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius + config->thickness/2, 0, 2*M_PI);
 			cairo_stroke(window->cairo);
 		}
 		window_render(window);
