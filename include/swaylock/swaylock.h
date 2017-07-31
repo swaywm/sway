@@ -56,6 +56,9 @@ struct lock_config {
 		struct lock_colors validating;
 		struct lock_colors invalid;
 	} colors;
+
+	int radius;
+	int thickness;
 };
 
 void render(struct render_data* render_data, struct lock_config *config);
