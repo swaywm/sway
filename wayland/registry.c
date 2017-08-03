@@ -19,7 +19,7 @@ static void display_handle_mode(void *data, struct wl_output *wl_output,
 		state->flags = flags;
 		state->width = width;
 		state->height = height;
-		sway_log(L_DEBUG, "Got mode %dx%x:0x%X for output %p",
+		sway_log(L_DEBUG, "Got mode %dx%d:0x%X for output %p",
 				width, height, flags, data);
 	}
 }
