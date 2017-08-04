@@ -163,8 +163,8 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 
 	int flags;
 	if ((flags = fcntl(client_fd, F_GETFD)) == -1
-			|| fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC) == -1) {
-		sway_log_errno(L_ERROR, "Unable to set CLOEXEC on IPC client socket");
+			|| fcntl(client_fd, F_SETFD, flags|FD_CLOEXEC|O_NONBLOCK) == -1) {
+		sway_log_errno(L_ERROR, "Unable to set CLOEXEC|NONBLOCK on IPC client socket");
 		close(client_fd);
 		return 0;
 	}
