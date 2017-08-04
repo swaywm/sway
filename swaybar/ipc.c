@@ -14,7 +14,7 @@ void ipc_send_workspace_command(const char *workspace_name) {
 	char command[size];
 	sprintf(command, "workspace \"%s\"", workspace_name);
 
-	ipc_single_command(swaybar.ipc_socketfd, IPC_COMMAND, command, &size);
+	ipc_single_command_no_response(swaybar.ipc_socketfd, IPC_COMMAND, command, &size);
 }
 
 static void ipc_parse_config(struct config *config, const char *payload) {
@@ -249,7 +249,27 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 	json_object_put(bar_config);
 }
 
-static void ipc_update_workspaces(struct bar *bar) {
+static void ipc_update_workspaces_request(struct bar *bar) {
+	uint32_t len = 0;
+
+	if (bar->pending_ipc_requests >= 10) {
+		sway_log(L_DEBUG, "Ignoring update request");
+		return;
+	}
+	bar->pending_ipc_requests++;
+	sway_log(L_DEBUG, "Sending update request, %d pending", bar->pending_ipc_requests);
+
+	ipc_single_command_no_response(bar->ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
+}
+
+static void ipc_update_workspaces_response(struct bar *bar, char *res) {
+	bar->pending_ipc_requests--;
+	sway_log(L_DEBUG, "Got update response, %d pending", bar->pending_ipc_requests);
+	if (bar->pending_ipc_requests < 0) {
+		sway_log(L_DEBUG, "Unexpected update response");
+		bar->pending_ipc_requests = 0;
+	}
+
 	int i;
 	for (i = 0; i < bar->outputs->length; ++i) {
 		struct output *output = bar->outputs->items[i];
@@ -259,11 +279,8 @@ static void ipc_update_workspaces(struct bar *bar) {
 		output->workspaces = create_list();
 	}
 
-	uint32_t len = 0;
-	char *res = ipc_single_command(bar->ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
 	json_object *results = json_tokener_parse(res);
 	if (!results) {
-		free(res);
 		return;
 	}
 
@@ -303,7 +320,6 @@ static void ipc_update_workspaces(struct bar *bar) {
 	}
 
 	json_object_put(results);
-	free(res);
 }
 
 void ipc_bar_init(struct bar *bar, const char *bar_id) {
@@ -359,22 +375,27 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 	free(res);
 	json_object_put(outputs);
 
+	ipc_update_workspaces_request(bar);
+	// This will handle update response, since we haven't subscribed yet
+	handle_ipc_event(bar);
+
 	const char *subscribe_json = "[ \"workspace\", \"mode\" ]";
 	len = strlen(subscribe_json);
-	res = ipc_single_command(bar->ipc_event_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
+	res = ipc_single_command(bar->ipc_socketfd, IPC_SUBSCRIBE, subscribe_json, &len);
 	free(res);
-
-	ipc_update_workspaces(bar);
 }
 
 bool handle_ipc_event(struct bar *bar) {
-	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
+	struct ipc_response *resp = ipc_recv_response(bar->ipc_socketfd);
 	if (!resp) {
 		return false;
 	}
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
-		ipc_update_workspaces(bar);
+		ipc_update_workspaces_request(bar);
+		// This should read update response, but if there are events
+		// in socket, there shouldn't be problems.
+		handle_ipc_event(bar);
 		break;
 	case IPC_EVENT_MODE: {
 		json_object *result = json_tokener_parse(resp->payload);
@@ -400,7 +421,11 @@ bool handle_ipc_event(struct bar *bar) {
 		json_object_put(result);
 		break;
 	}
+	case IPC_GET_WORKSPACES:
+		ipc_update_workspaces_response(bar, resp->payload);
+		break;
 	default:
+		sway_log(L_DEBUG, "Unknown message type: 0x%x", resp->type);
 		free_ipc_response(resp);
 		return false;
 	}

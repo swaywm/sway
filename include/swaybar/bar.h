@@ -15,6 +15,8 @@ struct bar {
 	int ipc_socketfd;
 	int status_read_fd;
 	pid_t status_command_pid;
+
+	int pending_ipc_requests;
 };
 
 struct output {

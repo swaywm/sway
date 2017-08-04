@@ -155,7 +155,6 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 	/* connect to sway ipc */
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
-	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
 
 	ipc_bar_init(bar, bar_id);
 
@@ -205,7 +204,7 @@ bool dirty = true;
 
 static void respond_ipc(int fd, short mask, void *_bar) {
 	struct bar *bar = (struct bar *)_bar;
-	sway_log(L_DEBUG, "Got IPC event.");
+	sway_log(L_DEBUG, "Got IPC event or reply.");
 	dirty = handle_ipc_event(bar);
 }
 
@@ -222,7 +221,7 @@ static void respond_output(int fd, short mask, void *_output) {
 }
 
 void bar_run(struct bar *bar) {
-	add_event(bar->ipc_event_socketfd, POLLIN, respond_ipc, bar);
+	add_event(bar->ipc_socketfd, POLLIN, respond_ipc, bar);
 	add_event(bar->status_read_fd, POLLIN, respond_command, bar);
 
 	int i;
@@ -320,10 +319,6 @@ void bar_teardown(struct bar *bar) {
 
 	if (bar->ipc_socketfd) {
 		close(bar->ipc_socketfd);
-	}
-
-	if (bar->ipc_event_socketfd) {
-		close(bar->ipc_event_socketfd);
 	}
 
 	/* terminate status command process */

@@ -24,6 +24,10 @@ char *get_socketpath(void);
  */
 int ipc_open_socket(const char *socket_path);
 /**
+ * Issues a single IPC command without reading response.
+ */
+void ipc_single_command_no_response(int socketfd, uint32_t type, const char *payload, uint32_t *len);
+/**
  * Issues a single IPC command and returns the buffer. len will be updated with
  * the length of the buffer returned from sway.
  */
