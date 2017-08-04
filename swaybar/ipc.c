@@ -250,25 +250,14 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 }
 
 static void ipc_update_workspaces_request(struct bar *bar) {
+	sway_log(L_DEBUG, "Sending update request");
+
 	uint32_t len = 0;
-
-	if (bar->pending_ipc_requests >= 10) {
-		sway_log(L_DEBUG, "Ignoring update request");
-		return;
-	}
-	bar->pending_ipc_requests++;
-	sway_log(L_DEBUG, "Sending update request, %d pending", bar->pending_ipc_requests);
-
 	ipc_single_command_no_response(bar->ipc_socketfd, IPC_GET_WORKSPACES, NULL, &len);
 }
 
 static void ipc_update_workspaces_response(struct bar *bar, char *res) {
-	bar->pending_ipc_requests--;
-	sway_log(L_DEBUG, "Got update response, %d pending", bar->pending_ipc_requests);
-	if (bar->pending_ipc_requests < 0) {
-		sway_log(L_DEBUG, "Unexpected update response");
-		bar->pending_ipc_requests = 0;
-	}
+	sway_log(L_DEBUG, "Got update response");
 
 	int i;
 	for (i = 0; i < bar->outputs->length; ++i) {
