@@ -849,7 +849,6 @@ int swayc_gap(swayc_t *container) {
 
 void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
 	if (container) {
-		f(container, data);
 		int i;
 		if (container->children)  {
 			for (i = 0; i < container->children->length; ++i) {
@@ -863,6 +862,7 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 				container_map(child, f, data);
 			}
 		}
+		f(container, data);
 	}
 }
 
