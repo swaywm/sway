@@ -806,11 +806,11 @@ static bool handle_key(wlc_handle view, uint32_t time, const struct wlc_modifier
 		struct sway_binding *binding = mode->bindings->items[i];
 		if ((modifiers->mods ^ binding->modifiers) == 0) {
 			switch (state) {
-			case WLC_KEY_STATE_PRESSED: {
+			case WLC_KEY_STATE_PRESSED:
 				if (!binding->release && valid_bindsym(binding)) {
 					list_add(candidates, binding);
 				}
-			}
+				break;
 			case WLC_KEY_STATE_RELEASED:
 				if (binding->release && handle_bindsym_release(binding)) {
 					list_free(candidates);
