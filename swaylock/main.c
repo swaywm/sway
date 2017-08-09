@@ -152,10 +152,11 @@ bool verify_password() {
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
 	int redraw_screen = 0;
 	char *password_realloc;
+	int i;
 
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
-		case XKB_KEY_KP_Enter: // fallthrough
+		case XKB_KEY_KP_Enter:
 		case XKB_KEY_Return:
 			render_data.auth_state = AUTH_STATE_VALIDATING;
 
@@ -166,6 +167,7 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			if (verify_password()) {
 				exit(0);
 			}
+
 			render_data.auth_state = AUTH_STATE_INVALID;
 			redraw_screen = 1;
 
@@ -174,73 +176,65 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			password[0] = '\0';
 			break;
 		case XKB_KEY_BackSpace:
-			{
-				int i = strlen(password);
-				if (i > 0) {
-					password[i - 1] = '\0';
-					render_data.auth_state = AUTH_STATE_BACKSPACE;
-					redraw_screen = 1;
-				}
-				break;
+			i = strlen(password);
+			if (i > 0) {
+				password[i - 1] = '\0';
+				render_data.auth_state = AUTH_STATE_BACKSPACE;
+				redraw_screen = 1;
 			}
-		case XKB_KEY_Control_L: // fallthrough
-		case XKB_KEY_Control_R: // fallthrough
-		case XKB_KEY_Shift_L: // fallthrough
-		case XKB_KEY_Shift_R: // fallthrough
-		case XKB_KEY_Caps_Lock: // fallthrough
-		case XKB_KEY_Shift_Lock: // fallthrough
-		case XKB_KEY_Meta_L: // fallthrough
-		case XKB_KEY_Meta_R: // fallthrough
-		case XKB_KEY_Alt_L: // fallthrough
-		case XKB_KEY_Alt_R: // fallthrough
-		case XKB_KEY_Super_L: // fallthrough
-		case XKB_KEY_Super_R: // fallthrough
-		case XKB_KEY_Hyper_L: // fallthrough
+			break;
+		case XKB_KEY_Control_L:
+		case XKB_KEY_Control_R:
+		case XKB_KEY_Shift_L:
+		case XKB_KEY_Shift_R:
+		case XKB_KEY_Caps_Lock:
+		case XKB_KEY_Shift_Lock:
+		case XKB_KEY_Meta_L:
+		case XKB_KEY_Meta_R:
+		case XKB_KEY_Alt_L:
+		case XKB_KEY_Alt_R:
+		case XKB_KEY_Super_L:
+		case XKB_KEY_Super_R:
+		case XKB_KEY_Hyper_L:
 		case XKB_KEY_Hyper_R:
-			{
-				// don't draw screen on modifier keys
+			break; // don't draw screen on modifier keys
+		case XKB_KEY_Escape:
+		case XKB_KEY_u:
+		case XKB_KEY_U:
+			// clear password buffer on ctrl-u (or escape for i3lock compatibility)
+			if (sym == XKB_KEY_Escape || xkb_state_mod_name_is_active(registry->input->xkb.state,
+					XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0) {
+				render_data.auth_state = AUTH_STATE_BACKSPACE;
+				redraw_screen = 1;
+
+				password_size = 1024;
+				free(password);
+				password = malloc(password_size);
+				password[0] = '\0';
 				break;
 			}
-		case XKB_KEY_Escape: // fallthrough
-		case XKB_KEY_u: // fallthrough
-		case XKB_KEY_U:
-			{
-				// clear password buffer on ctrl-u (or escape for i3lock compatibility)
-				if (sym == XKB_KEY_Escape || xkb_state_mod_name_is_active(registry->input->xkb.state,
-						XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0) {
-					render_data.auth_state = AUTH_STATE_BACKSPACE;
-					redraw_screen = 1;
-
+			/* fallthrough */
+		default:
+			render_data.auth_state = AUTH_STATE_INPUT;
+			redraw_screen = 1;
+			i = strlen(password);
+			if (i + 1 == password_size) {
+				password_size += 1024;
+				password_realloc = realloc(password, password_size);
+				// reset password if realloc fails.
+				if (password_realloc == NULL) {
 					password_size = 1024;
 					free(password);
 					password = malloc(password_size);
 					password[0] = '\0';
 					break;
+				} else {
+					password = password_realloc;
 				}
 			}
-		default:
-			{
-				render_data.auth_state = AUTH_STATE_INPUT;
-				redraw_screen = 1;
-				int i = strlen(password);
-				if (i + 1 == password_size) {
-					password_size += 1024;
-					password_realloc = realloc(password, password_size);
-					// reset password if realloc fails.
-					if (password_realloc == NULL) {
-						password_size = 1024;
-						free(password);
-						password = malloc(password_size);
-						password[0] = '\0';
-						break;
-					} else {
-						password = password_realloc;
-					}
-				}
-				password[i] = (char)codepoint;
-				password[i + 1] = '\0';
-				break;
-			}
+			password[i] = (char)codepoint;
+			password[i + 1] = '\0';
+			break;
 		}
 		if (redraw_screen) {
 			render(&render_data, config);
