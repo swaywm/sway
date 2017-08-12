@@ -138,7 +138,7 @@ static void dispatch_status(DBusConnection *connection, DBusDispatchStatus new_s
 /* Public functions below */
 
 void dispatch_dbus() {
-	if (!should_dispatch) {
+	if (!should_dispatch || !conn) {
 		return;
 	}
 
