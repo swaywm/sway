@@ -1,5 +1,7 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
+[**English**](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [日本語](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--)
+
 "**S**irCmpwn's **Way**land compositor" is a **work in progress**
 i3-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
 Read the [FAQ](https://github.com/SirCmpwn/sway/wiki). Join the
@@ -93,5 +95,5 @@ you want some inspiration, and definitely check out the
 
 ## Running
 
-Instead of running `startx`, run `sway`. You can run `sway` from within X as
-well, which is useful for testing.
+Run `sway` from a TTY. Some display managers may work but are not supported by
+Sway (gdm is known to work fairly well).
