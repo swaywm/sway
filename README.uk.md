@@ -1,7 +1,5 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-[**English**](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [日本語](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/SirCmpwn/sway/blob/master/README.de.md#sway--)
-
 **Sway** ("**S**irCmpwn's **Way**land compositor") це сумісний з i3 композитор
 [Wayland](http://wayland.freedesktop.org/) (**у стані розробки**).
 Ознайомтесь з [ЧаПами](https://github.com/SirCmpwn/sway/wiki).
@@ -18,10 +16,18 @@
 (і, відповідно, забрати її собі, виконавши це завдання);
 кошти від сторінки Patreon підтримують загальну розробку та підтримку Sway.
 
+## Підтримка українською мовою
+
+Якщо ви хочете отримати підтримку українською мовою, можете звернутись до користувача
+Hummer12007 у IRC-спільноті. Будьте терплячі, вам обов'язково допоможуть.
+
+Наразі переклад Sway українською ще не завершено (він неповний), проте у вас є шанс долучитись,
+детальніше див. [статус](https://github.com/SirCmpwn/sway/issues/1318#issuecomment-322277382).
+
 ## Підписи випусків
 
 Випуски підписані ключем [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
-та публікуюця на сторінці [GitHub](https://github.com/SirCmpwn/sway/releases).
+та публікуються на сторінці [GitHub](https://github.com/SirCmpwn/sway/releases).
 
 ## Стан розробки
 
