@@ -1,5 +1,5 @@
 /////
-vim:set ts=4 sw=4 tw=82 noet:
+vim:set ts=4 sw=4 tw=82 noet ft=asciidoc:
 /////
 sway (5)
 ========
