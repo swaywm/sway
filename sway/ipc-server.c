@@ -668,7 +668,8 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 		client->write_buffer_size *= 2;
 	}
 
-	if (client->write_buffer_size > (1 << 22)) { // 4 MB
+	// TODO: reduce the limit back to 4 MB when screenshooter is implemented
+	if (client->write_buffer_size > (1 << 28)) { // 256 MB
 		sway_log(L_ERROR, "Client write buffer too big, disconnecting client");
 		ipc_client_disconnect(client);
 		return false;
