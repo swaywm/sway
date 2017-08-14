@@ -10,8 +10,8 @@ irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
-If you'd like to support Sway development, you can contribute to [my Patreon
-page](https://patreon.com/sircmpwn) or you can contribute to
+If you'd like to support Sway development, you can contribute to [SirCmpwn's
+Patreon page](https://patreon.com/sircmpwn) or you can contribute to
 [bounties](https://github.com/SirCmpwn/sway/issues/986) for specific features.
 Anyone is welcome to claim a bounty and you can make a bounty for any feature
 you wish, and Patreon is more useful for supporting the overall health and
@@ -88,10 +88,6 @@ If you already use i3, then copy your i3 config to `~/.config/sway/config` and
 it'll work out of the box. Otherwise, copy the sample configuration file to
 `~/.config/sway/config`. It is usually located at `/etc/sway/config`.
 Run `man 5 sway` for information on the configuration.
-
-My own dotfiles are available [here](https://git.sr.ht/~sircmpwn/dotfiles) if
-you want some inspiration, and definitely check out the
-[wiki](https://github.com/SirCmpwn/sway/wiki) as well.
 
 ## Running
 

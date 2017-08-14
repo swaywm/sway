@@ -90,10 +90,6 @@ Wenn du schon i3 benutzt, kopiere einfach deine i3 Konfiguration nach
 benutzen. Die befindent sich normalerweise unter `/etc/sway/config`.
 Um mehr Informationen über die Konfiguration zu erhalten, führe `man 5 sway` aus.
 
-Als Inspiration kannst du dir meine eigene Konfiguration
-[hier](https://git.sr.ht/~sircmpwn/dotfiles) anschauen. Außerdem solltest du
-einen Blick in das [Wiki](https://github.com/SirCmpwn/sway/wiki) werfen.
-
 ## Verwendung
 
 Führe `sway` von einem TTY aus. Manche Displaymanager könnten funktionieren, werden aber
