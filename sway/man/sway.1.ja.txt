@@ -1,17 +1,17 @@
 /////
-vim:set ts=4 sw=4 tw=82 noet:
+vim:set ts=4 sw=4 tw=82 noet ft=asciidoc:
 /////
 :quotes.~:
 
 sway (1)
 ========
 
-Name
+名前
 ----
-sway - SirCmpwn's Wayland window manager
+sway - SirCmpwnのWaylandのcompositor
 
-Synopsis
---------
+書式
+----
 'sway' [options] [command]
 
 Options

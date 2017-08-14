@@ -46,6 +46,4 @@ install(
 	COMPONENT data
 )
 
-if (A2X_FOUND)
-    add_manpage(swaylock 1)
-endif()
+add_manpage(swaylock 1 en)
