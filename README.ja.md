@@ -1,7 +1,5 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-[English](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [**日本語**](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--)
-
 注・私の日本語で苦手です。パッチは与えったください。
 
 "**S**irCmpwnの**Way**landのcompositor"は仕掛け品のWaylandのCompositorだ。
