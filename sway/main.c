@@ -53,6 +53,46 @@ static void wlc_log_handler(enum wlc_log_type type, const char *str) {
 	}
 }
 
+void detect_raspi() {
+	bool raspi = false;
+	FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
+	if (!f) {
+		return;
+	}
+	char *line;
+	while(!feof(f)) {
+		if (!(line = read_line(f))) {
+			break;
+		}
+		if (strstr(line, "Raspberry Pi")) {
+			raspi = true;
+		}
+		free(line);
+	}
+	fclose(f);
+	FILE *g = fopen("/proc/modules", "r");
+	if (!g) {
+		return;
+	}
+	bool vc4 = false;
+	while (!feof(g)) {
+		if (!(line = read_line(g))) {
+			break;
+		}
+		if (strstr(line, "vc4")) {
+			vc4 = true;
+		}
+		free(line);
+	}
+	fclose(g);
+	if (!vc4 && raspi) {
+		fprintf(stderr, "\x1B[1;31mWarning: You have a "
+				"Raspberry Pi, but the vc4 Module is "
+				"not loaded! Set 'dtoverlay=vc4-kms-v3d'"
+				"in /boot/config.txt and reboot.\x1B[0m\n");
+	}
+}
+
 void detect_proprietary() {
 	FILE *f = fopen("/proc/modules", "r");
 	if (!f) {
@@ -366,6 +406,7 @@ int main(int argc, char **argv) {
 	log_distro();
 	log_env();
 	detect_proprietary();
+	detect_raspi();
 
 	input_devices = create_list();
 
