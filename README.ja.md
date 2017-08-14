@@ -1,21 +1,20 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-[English](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [**日本語**](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--)
-
 注・私の日本語で苦手です。パッチは与えったください。
 
 "**S**irCmpwnの**Way**landのcompositor"は仕掛け品のWaylandのCompositorだ。
 [英語のよくある質問](https://github.com/SirCmpwn/sway/wiki)は読みください。
 [IRCのチャット](http://webchat.freenode.net/?channels=sway&uio=d4)(#swayにirc.freenode.net)は入ってください。
-私の名前はSirCmpwnです。助けのはIRCとGitHubで日本語で頑張ります。
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 あなたが施したいから、[Patreon](https://patreon.com/sircmpwn)か[報奨金プロジェクト](https://github.com/SirCmpwn/sway/issues/986)は見てください。
 
-## 日本語翻訳
+## 日本語助け
 
-日本語翻訳は完成じゃない、正しくない。パッチは与えったください。
+SirCmpwnはIRCとGitHubでUTC-4に日本語助け人だ。
+
+日本語翻訳は完成じゃない、正しくない。[パッチは与えったください](https://github.com/SirCmpwn/sway/issues/1318)。
 
 ## 発売の電子署名
 
@@ -80,8 +79,7 @@ logindはあるないば:
 
 今はi3があるばi3のコンフィグは`~/.config/sway/config`にコピー。
 あるないば`/etc/sway/config`をコピー。
-ファイルは読みください。英語は難しいのばIRCで助けのを尋ねる。
-日本語助けのはUTC-4。
+ファイルは読みください。
 
 ## swayは実効する
 
