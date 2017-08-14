@@ -1,8 +1,8 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Mit fosspay spenden](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
 "**S**irCmpwn's **Way**land Kompositor" is a i3-kompatibler
-[Wayland](http://wayland.freedesktop.org/) Kompositor.
-Liest das [FAQ](https://github.com/SirCmpwn/sway/wiki). Tritt dem
+[Wayland](http://wayland.freedesktop.org/) Kompositor der noch in Bearbeitung
+ist. Liest das [FAQ](https://github.com/SirCmpwn/sway/wiki). Tritt dem
 [IRC Channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net) zu.
 
