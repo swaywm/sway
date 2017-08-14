@@ -24,3 +24,4 @@ install(
 )
 
 add_manpage(swaygrab 1 en)
+add_manpage(swaygrab 1 fr)

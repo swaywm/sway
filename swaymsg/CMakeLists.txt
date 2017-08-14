@@ -19,3 +19,4 @@ install(
 )
 
 add_manpage(swaymsg 1 en)
+add_manpage(swaymsg 1 fr)

@@ -47,3 +47,4 @@ install(
 )
 
 add_manpage(swaylock 1 en)
+add_manpage(swaylock 1 fr)
