@@ -1,15 +1,18 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
 "Ο Sway (**S**irCmpwn's **Way**land) είναι ένας **υπό ανάπτυξη** [Wayland](http://wayland.freedesktop.org/) διαχειριστής παραθύρων συμβατός με τον αντίστοιχο διαχειριστή παραθύρων i3 για τον X11.
-Διαβάστε τις [Συνήθεις Ερωτήσεις](https://github.com/SirCmpwn/sway/wiki). Συνδεθείτε στο [κανάλι μας στο IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
+Διαβάστε τις [Συνήθεις Ερωτήσεις](https://github.com/SirCmpwn/sway/wiki). Συνδεθείτε στο [κανάλι μας στο IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway στο
 irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 
-### Η ελληνική μετάφραση είναι ακόμα ελλειπής!
+### Η ελληνική μετάφραση ενδέχεται να είναι ελλειπής!
 
-Δείτε [εδώ](https://github.com/SirCmpwn/sway/issues/1318) πως μπορείτε να βοηθήσετε στη μετάφραση του Sway.
+Η τεκμηρίωση του Sway ξεκινάει πάντα από τα Αγγλικά και στη συνέχεια μεταφράζεται, γι' αυτό ενδέχεται τα ελληνικά κείμενα να μην είναι πάντα διαθέσιμα ή ενημερωμένα.
+Μπορείτε πάντα να υποδεικνύετε σφάλματα και να κάνετε ερωτήσεις σχετικά με τις ελληνικές μεταφράσεις στο [IRC](http://webchat.freenode.net/?channels=sway&uio=d4).
+To username μου στο Freenode είναι kon14 και θα με βρείτε στο IRC σε ώρες GMT+2.
+Δείτε [εδώ](https://github.com/SirCmpwn/sway/issues/1318) πως μπορείτε και οι ίδιοι να βοηθήσετε στη μετάφραση του Sway.
 
 Αν θέλετε να υποστηρίξετε την ανάπτυξη του Sway, μπορείτε να συμβάλετε στη [σελίδα Patreon του SirCmpwn](https://patreon.com/sircmpwn)
 ή να επιδοτήσετε τις [αμοιβές](https://github.com/SirCmpwn/sway/issues/986) για υλοποίηση συγκεκριμένων δυνατοτήτων.
@@ -36,7 +39,7 @@ irc.freenode.net).
 Δοκιμάστε να εγκαταστήσετε το πακέτο ονομαζόμενο ως "sway" για τη δική σας.
 Αν δεν είναι διαθέσιμο, μεταβείτε στη [σελίδα τεκμηρίωσης](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages) για πληροφορίες σχετικά με την εγκατάσταση για τη διανομή σας.
 
-Αν ενδιαφέρεστε να δημιουργήσετε ένα πακέτο του Sway για τη διανομή σας, περάστε απο το κανάλι μας στο IRC ή στείλτε ένα email στο sir@cmpwn.com για συμβουλές.
+Αν ενδιαφέρεστε να δημιουργήσετε ένα πακέτο του Sway για τη διανομή σας, περάστε απο το κανάλι μας στο IRC ή στείλτε ένα email, στα **Αγγλικά**, στο sir@cmpwn.com για συμβουλές.
 
 ### Compile από Πηγαίο Κώδικα
 
