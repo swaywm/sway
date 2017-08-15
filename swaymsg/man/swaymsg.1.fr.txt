@@ -1,0 +1,79 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet ft=asciidoc:
+/////
+:quotes.~:
+
+swaymsg (1)
+===========
+
+Nom
+---
+swaymsg - Envoyer des messages à une instance en exécution sur le socket IPC.
+
+Synopsis
+--------
+'swaymsg' [options] [message]
+
+Options
+-------
+
+*-h, --help*::
+	Affiche le message d'aide et quitte.
+
+*-q, \--quiet*::
+	Envoie le message IPC, mais n'affiche pas la réponse de sway.
+
+*-r, \--raw*::
+	Utilise la sortie brute (raw) malgré l'utilisation d'un tty.
+
+*-s, --socket* <path>::
+	Utilise le chemin de socket spécifié. Sinon, swaymsg demandera à sway où se
+	trouve le socket (d'abord la valeur de $SWAYSOCK, puis de $I3SOCK).
+
+*-t, \--type* <type>::
+	Spécifie le type du message IPC. Voir ci-dessous.
+
+*-v, \--version*::
+	Affiche la version (de swaymsg) et quitte.
+
+Types de message IPC
+--------------------
+
+*command*::
+	Le message est une commande sway (les mêmes commandes que vous pouvez lier aux keybindings
+	dans votre fichier de configuration de sway). Ce sera exécuté immédiatement.
+
+*get_workspaces*::
+	Obtient une liste d'espaces de travail encodée en JSON et leur statut.
+
+*get_inputs*::
+	Obtient une liste des entrées actuelles encodée en JSON.
+
+*get_outputs*::
+	Obtient une liste des sorties actuelles encodée en JSON.
+
+*get_tree*::
+	Obtient un arbre de layout encodé en JSON de tous les fenêtres ouvertes,
+	conteneurs, sorties, espaces de travail, etc.
+
+*get_marks*::
+	Obtient une liste de maques encodée en JSON.
+
+*get_bar_config*::
+	Obtient une configuration pour swaybar encodée en JSON.
+
+*get_version*::
+	Obtient des informations sur la version de l'instance de sway
+	en cours d'exécution, encodée en JSON.
+
+Auteurs
+-------
+
+Maintenu par Drew DeVault <sir@cmpwn.com>, assisté par d'autres contributeurs
+open source. Pour plus d'information sur le développement de sway, voir
+<https://github.com/SirCmpwn/sway>.
+
+Voir aussi
+----------
+
+**sway**(5)
