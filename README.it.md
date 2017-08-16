@@ -40,7 +40,7 @@ per informazioni sull'installazione per le tue distribuzioni.
 Se vuoi creare un pacchetto per la tua distribuzione, passa dall'IRC o manda un email (in Inglese)
 a sir@cmpwn.com.
 
-### Compilare dal codice sorgente
+### Compilando il codice sorgente
 
 Installa queste dipendenze:
 
