@@ -16,6 +16,10 @@ di funzionalità specifiche.
 Chiunque è libero di reclamare un premio o crearne uno per qualsiasi funzionalità.
 Patreon è più utile al supporto e alla manutenzione generale di Sway.
 
+## Supporto italiano
+syknro offre supporto in Italiano su GitHub nel fuso orario CET/CEST.
+Questa traduzione non è ancora completa. [Clicca qui per maggiori informazioni](https://github.com/SirCmpwn/sway/issues/1318)
+
 ## Firme digitali
 
 Le release sono firmate con [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
