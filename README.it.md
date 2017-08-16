@@ -3,7 +3,7 @@
 "**S**irCmpwn's **Way**land compositor" è un compositor 
 [Wayland](http://wayland.freedesktop.org/) **in via di sviluppo** 
 compatibile con i3.
-Leggi le [FAQ](https://github.com/SirCmpwn/sway/wiki). Unisciti al
+Leggi le [FAQ (in Inglese)](https://github.com/SirCmpwn/sway/wiki). Unisciti al
 [canale IRC (in Inglese)](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
@@ -13,7 +13,7 @@ Se vuoi supportare lo sviluppo di Sway, puoi contribuire dalla
 [pagina Patreon di SirCmpwn's](https://patreon.com/sircmpwn) o con dei
 [premi](https://github.com/SirCmpwn/sway/issues/986) per finanziare lo sviluppo
 di funzionalità specifiche.
-Chiunque è libero di reclamare un premio o crearne uno per qualsiasi funzione.
+Chiunque è libero di reclamare un premio o crearne uno per qualsiasi funzionalità.
 Patreon è più utile al supporto e alla manutenzione generale di Sway.
 
 ## Firme digitali
@@ -34,10 +34,10 @@ e pubblicate [su GitHub](https://github.com/SirCmpwn/sway/releases).
 ### Dai pacchetti
 
 Sway è disponibile in molte distribuzioni. Prova a installare il pacchetto "sway" per la tua.
-Se non funziona, controlla [questa pagina](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
+Se non funziona, controlla [questa pagina (in Inglese)](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
 per informazioni sull'installazione per le tue distribuzioni.
 
-Se vuoi creare un pacchetto per la tua distribuzione, passa dall'IRC o manda un email
+Se vuoi creare un pacchetto per la tua distribuzione, passa dall'IRC o manda un email (in Inglese)
 a sir@cmpwn.com.
 
 ### Compilare dal codice sorgente
