@@ -94,3 +94,6 @@ Esegui `man 5 sway` per informazioni sulla configurazione.
 Esegui `sway` da un TTY. Qualche display manager potrebbe funzionare ma non sono
 ufficialmente supportati da Sway (gdm è risaputo funzionare abbastanza bene).
 
+## Supporto italiano
+syknro offre supporto in Italiano su GitHub nel fuso orario CET/CEST.
+Questa traduzione non è ancora completa. [Clicca qui per maggiori informazioni](https://github.com/SirCmpwn/sway/issues/1318)
