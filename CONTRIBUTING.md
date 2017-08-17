@@ -2,7 +2,7 @@
 
 Contributing just involves sending a pull request. You will probably be more
 successful with your contribution if you visit the [IRC
-channel](http://webchat.freenode.net/?channels=sway&uio=d4) upfront and discuss
+channel](http://webchat.freenode.net/?channels=sway-devel&uio=d4) upfront and discuss
 your plans.
 
 ## Release Cycle
