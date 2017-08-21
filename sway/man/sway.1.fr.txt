@@ -1,0 +1,108 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet ft=asciidoc:
+/////
+:quotes.~:
+
+sway (1)
+========
+
+Nom
+----
+sway - Le compositeur Wayland de SirCmpwn
+
+Synopsis
+--------
+'sway' [options] [commande]
+
+Options
+-------
+
+*-h, --help*::
+	Affiche un message d'aide et s'arrête.
+
+*-c, \--config* <config>::
+	Specifie un fichier de configuration.
+
+*-C, \--validate*::
+	Valide le fichier de configuration et s'arrête.
+
+*-d, --debug*::
+	Active la journalisation complète, avec les informations de mise au point.
+
+*-v, \--version*::
+	Affiche le numéro de version et s'arrête.
+
+*-V, --verbose*::
+	Rend la journalisation plus verbeuse.
+
+*--get-socketpath*::
+	Affiche le socket IPC, et s'arrête.
+
+Description
+-----------
+
+sway a été créé pour combler le besoin d'un gestionnaire de fenêtres semblable à i3 pour Wayland. Les développeurs en charge de i3 n'ont pas l'intention d'effectuer le portage vers Wayland, et les projets d'autres développeurs ne sont pas maintenus. Merci beaucoup à l'équipe d'i3 qui fournit un excellent logiciel, tellement réussi que d'autres préfèrent réécrire un gestionnaire de fenêtres qui se comporte _exactement_ pareil plutôt que de passer à autre chose.
+
+Démarrez sway directement depuis la console tty ou bien via votre gestionnaire d'affichage favori.
+
+Commandes
+---------
+
+Si sway est lancé, vous pouvez exécuter _sway [commande]_ pour envoyer _commande_ à l'instance de sway en cours d'exécution. Les commandes valables pour le fichier de configuration le sont aussi ici (voir **sway**(5)). Pour des raisons de compatibilité, vous pouvez aussi envoyer les commandes avec **swaymsg**(1) ou **i3-msg**(1) (et probablement aussi avec **i3**(1)).
+
+Configuration
+-------------
+
+Si _-c_ n'est pas spécifié, sway cherchera votre fichier de configuration dans plusieurs emplacements. L' emplacement suggéré pour le fichier de configuration est ~/.config/sway/config. ~/.sway/config fonctionne aussi et les autres emplacements XDG usuels sont supportés. Si aucune configuration de sway n'est disponible, sway essaiera de charger une configuration pour i3 depuis tous les emplacements supportés par i3. En dernier recours, sway cherchera un fichier de configuration dans le dossier par défaut qui est réglé de base sur /etc/sway. Un fichier de configuration standard devrait s'y trouver. Si rien n'est disponible, le programme retournera une erreur.
+
+Pour écrire sa propre configuration, il est recommandé de copier le fichier de configuration par défaut dans l'emplacement de votre choix puis de s'en servir comme point de départ.
+
+Pour plus d'informations sur le format du fichier de configuration, consulter **sway**(5).
+
+Environnement
+-------------
+
+Les variables d'environnement ci-dessous influencent le fonctionnement de sway:
+
+*SWAY_CURSOR_THEME*::
+	Spécifie le thème de curseur à utiliser.
+
+*SWAY_CURSOR_SIZE*::
+	Spécifie la taille de curseur à utiliser.
+
+*SWAYSOCK*::
+	Spécifie le chemin vers le socket IPC de sway.
+
+*WLC_DRM_DEVICE*::
+	Spécifie le périphérique à utiliser en mode DRM.
+
+*WLC_SHM*::
+	Régler à 1 pour forcer les clients EGL à utiliser de la mémoire partagée.
+
+*WLC_OUTPUTS*::
+	Nombre de sorties fictives à utiliser pour l'exécution en mode X11.
+
+*WLC_XWAYLAND*::
+	Régler à 0 pour désactiver le support de Wayland.
+
+*WLC_LIBINPUT*::
+	Régler à 1 pour forcer l'utilisation de libinput (même en mode X11).
+
+*WLC_REPEAT_DELAY*::
+	Configure le délai de répétition du clavier.
+
+*WLC_REPEAT_RATE*::
+	Configure la fréquence de répétition du clavier.
+
+*XKB_DEFAULT_RULES*, *XKB_DEFAULT_MODEL*, *XKB_DEFAULT_LAYOUT*, *XKB_DEFAULT_VARIANT*, *XKB_DEFAULT_OPTIONS*::
+	Configure les paramètres xcb du clavier. Voir xkeyboard-config(7).
+
+Auteurs
+-------
+
+Maintenu par Drew DeVault <sir@cmpwn.com>, avec l'assistance d'autres contributeurs open-source. Pour plus d'informations sur le développement de sway, consulter <https://github.com/SirCmpwn/sway>.
+
+Voir aussi
+----------
+
+**sway**(5) **swaymsg**(1) **swaygrab**(1) **sway-input**(5) **sway-bar**(5)
