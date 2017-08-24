@@ -1,8 +1,6 @@
 # Sway
 
-English - 日本語 - Deutsch - Ελληνικά - Français - Español - Українська - Italiano - Nederlands
-
-“**S**irCompwn’s **Way**land compositor” is een **werk-in-uitvoering** zijnde i3-compatible [Wayland](http://wayland.freedesktop.org/) compositor. Lees Voor meer informatie a.u.b. the [FAQ](https://github.com/SirCmpwn/sway/wiki) of bezoek het IRC kanaal (#sway op irc.freenode.net). 
+“**S**irCmpwn’s **Way**land compositor” is een **werk-in-uitvoering** zijnde i3-compatible [Wayland](http://wayland.freedesktop.org/) compositor. Lees Voor meer informatie a.u.b. the [FAQ](https://github.com/SirCmpwn/sway/wiki) of bezoek het IRC kanaal (#sway op irc.freenode.net). 
 
 ![sway](https://camo.githubusercontent.com/6e869959b9de17be94823d9423ba7bbc0adeff09/68747470733a2f2f73722e68742f494364352e706e67)
 
@@ -81,5 +79,5 @@ Voer ```sway``` uit vanuit een TTY. Sommige Display Managers zouden kunnen werke
 
 SleepyMario biedt ondersteuning in het Nederlands op IRC en GitHub, maar op onregelmatige tijdstippen. Laat aub. een berichtje achter en hij zal u z.s.m te woord staan.  
 
-Stuur een email naar [SleepyMario](theonesleepymario@gmail.com) voor suggesties wat betreft deze vertaling. 
+Suggesties voor een betere vertaling graag via [GitHub](https://github.com/sleepymario).  
 
