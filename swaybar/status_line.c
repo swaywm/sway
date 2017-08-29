@@ -410,8 +410,7 @@ bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button) {
 
 		if (num_blocks == 0) {
 			return false;
-		}
-		else {
+		} else {
 			current_block = bar->status->block_line->items[0];
 			if (x < current_block->x) {
 				return false;
