@@ -492,7 +492,7 @@ bool handle_status_line(struct bar *bar) {
 
 				json_object *click_events;
 				if (json_object_object_get_ex(proto, "click_events", &click_events)
-							&& json_object_get_boolean(click_events)
+							&& json_object_get_boolean(click_events) == true
 				) {
 					sway_log(L_DEBUG, "Enabling click events.");
 					bar->status->click_events = true;

@@ -123,15 +123,15 @@ static void mouse_button_notify(struct window *window, int x, int y,
 	}
 
 	switch (button) {
-		case BTN_LEFT:
-			status_line_mouse_event(&swaybar, x, y, 1);
-			break;
-		case BTN_MIDDLE:
-			status_line_mouse_event(&swaybar, x, y, 2);
-			break;
-		case BTN_RIGHT:
-			status_line_mouse_event(&swaybar, x, y, 3);
-			break;
+	case BTN_LEFT:
+		status_line_mouse_event(&swaybar, x, y, 1);
+		break;
+	case BTN_MIDDLE:
+		status_line_mouse_event(&swaybar, x, y, 2);
+		break;
+	case BTN_RIGHT:
+		status_line_mouse_event(&swaybar, x, y, 3);
+		break;
 	}
 
 #ifdef ENABLE_TRAY
