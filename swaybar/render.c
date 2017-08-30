@@ -94,6 +94,9 @@ static void render_block(struct window *window, struct config *config, struct st
 
 	double pos = *x;
 
+	block->x = (int)pos;
+	block->width = (int)block_width;
+
 	// render background
 	if (block->background != 0x0) {
 		cairo_set_source_u32(window->cairo, block->background);

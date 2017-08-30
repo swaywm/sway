@@ -27,6 +27,8 @@ struct {
 static char line[1024];
 static char line_rest[1024];
 
+static char event_buff[1024];
+
 static void free_status_block(void *item) {
 	if (!item) {
 		return;
@@ -391,6 +393,66 @@ static int i3json_handle_fd(struct bar *bar) {
 	return i3json_parse(bar);
 }
 
+bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button) {
+	sway_log(L_DEBUG, "status_line_mouse_event.");
+	if (!bar->status->click_events) {
+		sway_log(L_DEBUG, "click_events are not enabled.");
+		return false;
+	}
+
+	if (bar->status->protocol == I3BAR) {
+		sway_log(L_DEBUG, "Sending click event.");
+
+		// find clicked block
+		struct status_block *clicked_block = NULL;
+		struct status_block *current_block = NULL;
+		int num_blocks = bar->status->block_line->length;
+
+		if (num_blocks == 0) {
+			return false;
+		} else {
+			current_block = bar->status->block_line->items[0];
+			if (x < current_block->x) {
+				return false;
+			}
+		}
+
+		for (int i = 0; i < num_blocks; i++) {
+			current_block = bar->status->block_line->items[i];
+			if (x < (current_block->x + current_block->width)) {
+				clicked_block = current_block;
+				break;
+			}
+		}
+
+		if (!clicked_block || !clicked_block->name) {
+			return false;
+		}
+
+		// event example {"name":"capture","instance":"label","button":1,"x":3431,"y":18}
+	
+		struct json_object *event_json = json_object_new_object();
+		json_object_object_add(event_json, "name", json_object_new_string(clicked_block->name));
+		if (clicked_block->instance) {
+			json_object_object_add(event_json, "instance", json_object_new_string(clicked_block->instance));
+		}
+		json_object_object_add(event_json, "button", json_object_new_int(button));
+		json_object_object_add(event_json, "x", json_object_new_int(x));
+		json_object_object_add(event_json, "y", json_object_new_int(y));
+
+		int len = snprintf(event_buff, sizeof(event_buff), "%s,\n", json_object_to_json_string(event_json));
+
+		json_object_put(event_json);
+
+		if (len <= (int)sizeof(event_buff)) { // if not truncated
+			write(bar->status_write_fd, event_buff, len);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool handle_status_line(struct bar *bar) {
 	bool dirty = false;
 
@@ -418,15 +480,29 @@ bool handle_status_line(struct bar *bar) {
 		if (line[0] == '{') {
 			// detect i3bar json protocol
 			json_object *proto = json_tokener_parse(line);
-			json_object *version;
 			if (proto) {
+
+				json_object *version;
 				if (json_object_object_get_ex(proto, "version", &version)
 							&& json_object_get_int(version) == 1
 				) {
 					sway_log(L_DEBUG, "Switched to i3bar protocol.");
 					bar->status->protocol = I3BAR;
-					i3json_handle_data(bar, line_rest);
 				}
+
+				json_object *click_events;
+				if (json_object_object_get_ex(proto, "click_events", &click_events)
+						&& json_object_get_boolean(click_events)) {
+
+					sway_log(L_DEBUG, "Enabling click events.");
+					bar->status->click_events = true;
+
+					const char *events_array = "[\n";
+					write(bar->status_write_fd, events_array, strlen(events_array));
+				}
+
+				i3json_handle_data(bar, line_rest);
+
 				json_object_put(proto);
 			}
 		}
@@ -441,6 +517,7 @@ struct status_line *init_status_line() {
 	line->block_line = create_list();
 	line->text_line = NULL;
 	line->protocol = UNDEF;
+	line->click_events = false;
 
 	return line;
 }

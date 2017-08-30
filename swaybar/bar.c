@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <poll.h>
+#include <linux/input-event-codes.h>
 #ifdef ENABLE_TRAY
 #include <dbus/dbus.h>
 #include "swaybar/tray/sni_watcher.h"
@@ -31,16 +32,30 @@ static void bar_init(struct bar *bar) {
 
 static void spawn_status_cmd_proc(struct bar *bar) {
 	if (bar->config->status_command) {
-		int pipefd[2];
-		if (pipe(pipefd) != 0) {
-			sway_log(L_ERROR, "Unable to create pipe for status_command fork");
+		int pipe_read_fd[2];
+		int pipe_write_fd[2];
+
+		if (pipe(pipe_read_fd) != 0) {
+			sway_log(L_ERROR, "Unable to create pipes for status_command fork");
 			return;
 		}
+		if (pipe(pipe_write_fd) != 0) {
+			sway_log(L_ERROR, "Unable to create pipe for status_command fork (write)");
+			close(pipe_read_fd[0]);
+			close(pipe_read_fd[1]);
+			return;
+		}
+
 		bar->status_command_pid = fork();
 		if (bar->status_command_pid == 0) {
-			close(pipefd[0]);
-			dup2(pipefd[1], STDOUT_FILENO);
-			close(pipefd[1]);
+			close(pipe_read_fd[0]);
+			dup2(pipe_read_fd[1], STDOUT_FILENO);
+			close(pipe_read_fd[1]);
+			
+			dup2(pipe_write_fd[0], STDIN_FILENO);
+			close(pipe_write_fd[0]);
+			close(pipe_write_fd[1]);
+			
 			char *const cmd[] = {
 				"sh",
 				"-c",
@@ -51,9 +66,13 @@ static void spawn_status_cmd_proc(struct bar *bar) {
 			return;
 		}
 
-		close(pipefd[1]);
-		bar->status_read_fd = pipefd[0];
+		close(pipe_read_fd[1]);
+		bar->status_read_fd = pipe_read_fd[0];
 		fcntl(bar->status_read_fd, F_SETFL, O_NONBLOCK);
+		
+		close(pipe_write_fd[0]);
+		bar->status_write_fd = pipe_write_fd[1];
+		fcntl(bar->status_write_fd, F_SETFL, O_NONBLOCK);
 	}
 }
 
@@ -103,9 +122,22 @@ static void mouse_button_notify(struct window *window, int x, int y,
 		}
 	}
 
+	switch (button) {
+	case BTN_LEFT:
+		status_line_mouse_event(&swaybar, x, y, 1);
+		break;
+	case BTN_MIDDLE:
+		status_line_mouse_event(&swaybar, x, y, 2);
+		break;
+	case BTN_RIGHT:
+		status_line_mouse_event(&swaybar, x, y, 3);
+		break;
+	}
+
 #ifdef ENABLE_TRAY
 	tray_mouse_event(clicked_output, x, y, button, state_w);
 #endif
+
 }
 
 static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
@@ -316,6 +348,10 @@ void bar_teardown(struct bar *bar) {
 	/* close sockets/pipes */
 	if (bar->status_read_fd) {
 		close(bar->status_read_fd);
+	}
+
+	if (bar->status_write_fd) {
+		close(bar->status_write_fd);
 	}
 
 	if (bar->ipc_socketfd) {

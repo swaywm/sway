@@ -13,6 +13,7 @@ struct status_line {
 	list_t *block_line;
 	const char *text_line;
 	command_protocol protocol;
+	bool click_events;
 };
 
 struct status_block {
@@ -31,6 +32,10 @@ struct status_block {
 	int border_bottom;
 	int border_left;
 	int border_right;
+
+	// Set during rendering
+	int x;
+	int width;
 };
 
 /**
@@ -42,6 +47,11 @@ struct status_line *init_status_line();
  * handle status line activity.
  */
 bool handle_status_line(struct bar *bar);
+
+/**
+ * Handle mouse clicks.
+ */
+bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button);
 
 /**
  * Free status line struct.
