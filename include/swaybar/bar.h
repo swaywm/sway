@@ -14,6 +14,7 @@ struct bar {
 	int ipc_event_socketfd;
 	int ipc_socketfd;
 	int status_read_fd;
+	int status_write_fd;
 	pid_t status_command_pid;
 };
 

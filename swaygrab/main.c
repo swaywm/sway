@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <time.h>
+#include <sys/wait.h>
 #include <json-c/json.h>
 #include "log.h"
 #include "ipc-client.h"
@@ -47,17 +48,27 @@ void grab_and_apply_magick(const char *file, const char *payload,
 		return;
 	}
 
-	const char *fmt = "convert -depth 8 -size %dx%d+0 rgba:- -flip %s";
-	char *cmd = malloc(strlen(fmt) - 6 /*args*/
-			+ numlen(width) + numlen(height) + strlen(file) + 1);
-	sprintf(cmd, fmt, width, height, file);
+	char size[10 + 1 + 10 + 2 + 1]; // int32_t are max 10 digits
+	sprintf(size, "%dx%d+0", width, height);
 
-	FILE *f = popen(cmd, "w");
-	fwrite(pixels, 1, len, f);
-	fflush(f);
-	fclose(f);
-	free(pixels - 9);
-	free(cmd);
+	pid_t child;
+	int fd[2];
+	pipe(fd);
+
+	if ((child = fork()) < 0) {
+		sway_log(L_ERROR, "Swaygrab failed to fork.");
+		exit(EXIT_FAILURE);
+	} else if (child == 0) {
+		close(fd[1]);
+		write(fd[0], pixels, len);
+		free(pixels - 9);
+		waitpid(child, NULL, 0);
+	} else {
+		close(fd[0]);
+		execlp("convert", "-depth", "8", "-size", size, "rgba:-", "-flip", file, NULL);
+		sway_log(L_ERROR, "Swaygrab could not run convert.");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void grab_and_apply_movie_magic(const char *file, const char *payload,
