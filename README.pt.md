@@ -14,6 +14,16 @@ para recursos específicos. Qualquer um pode requerer um *bounty* implementando
 o recurso especificado, e você pode criar um *bounty* para qualquer recurso que desejar.
 O Patreon é melhor direcionado para a manutenção de longo prazo do Sway.
 
+## Ajuda em português
+
+No momento, o suporte em português no canal do IRC **não está ativo**. Em caso de problemas,
+use as [*issues*](https://github.com/SirCmpwn/sway/issues/) do Github (*em inglês*).
+
+A tradução para português é um *trabalho em progresso*, no momento. Caso encontre algum erro
+ou queira colaborar com a tradução, visite
+[essa *issue*](https://github.com/SirCmpwn/sway/issues/1318) para mais informações e não
+exite em enviar quaisquer correções necessárias.
+
 ## Assinaturas dos *Releases*
 
 *Releases* são assinadas com a chave
@@ -93,14 +103,4 @@ para `~/.config/sway/config`. É comum esse arquivo estar localizado em
 Execute `sway` a partir de um terminal do Linux. Alguns gerenciadores de *display*
 podem funcionar, porém o Sway não procura manter compatibilidade com esses (segundo
 relatos, o gdm funciona bem com o Sway).
-
-## Ajuda em português
-
-No momento, o suporte em português no canal do IRC **não está ativo**. Em caso de problemas,
-use as [*issues*](https://github.com/SirCmpwn/sway/issues/) do Github (*em inglês*).
-
-Essa tradução, apesar de estar comparável com a versão original em inglês, é um
-*trabalho em progresso*. Caso encontre algum erro, visite
-[essa *issue*](https://github.com/SirCmpwn/sway/issues/1318) para mais informações
-e não exite em enviar as correções necessárias.
 
