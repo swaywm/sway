@@ -9,10 +9,10 @@ irc.freenode.net).
 
 Se você deseja apoiar o desenvolvimento do Sway, você pode contribuir com o
 SirCmpwn em sua [página no Patreon](https://patreon.com/sircmpwn) ou você
-pode colaborar com [*bounties*](https://github.com/SirCmpwn/sway/issues/986)
-para recursos específicos. Qualquer um pode requerer um *bounty* implementando
-o recurso especificado, e você pode criar um *bounty* para qualquer recurso que desejar.
-O Patreon é melhor direcionado para a manutenção de longo prazo do Sway.
+pode colaborar com [premiações](https://github.com/SirCmpwn/sway/issues/986)
+para recursos específicos. Qualquer um pode requerer uma premiação ao implementar
+o recurso especificado, e você pode criar uma premiação para qualquer recurso que desejar.
+O Patreon é melhor direcionado para a manutenção a longo prazo do Sway.
 
 ## Ajuda em português
 
