@@ -1,0 +1,111 @@
+/////
+vim:set ts=4 sw=4 tw=82 noet ft=asciidoc:
+/////
+:quotes.~:
+
+swaylock (1)
+============
+
+Nom
+---
+swaylock - Écran de verrouillage pour sway.
+
+Synopsis
+--------
+'swaylock' [options]
+
+Verrouiller la session actuelle de sway.
+
+Options
+-------
+
+*-h, --help*::
+	Affiche le message d'aide et quitte.
+
+*-c, \--color* <rrggbb[aa]>::
+	Turn l'écran into la couleur donnée. Si -i est utilisé, cela définit
+	l'arrière-plan de l'image à la couleur donnée. Blanc (ffffff) par défaut, ou
+	transparent (00000000) si une image est utilisée.
+
+*-i, \--image* [<output>:]<path>::
+	Affiche l'image donnée, facultativement uniquement sur la sortie donnée.
+	Utilisez -c pour définir une couleur d'arrière-plan.
+
+*--scaling*::
+	Mode de mise à l'échelle pour les images : stretch, fill, fit, center, or tile.
+
+*-t, --tiling*::
+	Semblable à --scaling=tile.
+
+*-u, --no-unlock-indicator*::
+	Désactive l'indicateur de déverrouillage.
+
+*-v, \--version*::
+	Affiche le numéro de version et quitte.
+
+*--socket <path>*::
+	Utilise le chemin de socket spécifié. Sinon, swaymsg demandera à sway où se
+	trouve le socket (d'abord la valeur de $SWAYSOCK, puis de $I3SOCK).
+
+Apparence
+---------
+
+*--bshlcolor* <rrggbb[aa]>::
+	Définit the color of backspace highlight segments.
+
+*--font* <font>::
+	Définit the font of the text inside the indicator.
+
+*--insidecolor* <rrggbb[aa]>::
+	Définit the color of the inside of the indicator when typing or idle.
+
+*--insidevercolor* <rrggbb[aa]>::
+	Définit the color of the inside of the indicator when verifying.
+
+*--insidewrongcolor* <rrggbb[aa]>::
+	Définit the color of the inside of the indicator when invalid.
+
+*--keyhlcolor* <rrggbb[aa]>::
+	Définit the color of keypress highlight segments.
+
+*--linecolor* <rrggbb[aa]>::
+	Définit the color of the lines that separate the inside and outside of the
+	indicator.
+
+*-s, \--line-uses-inside*::
+	Use the color of the inside of the indicator for the line separating the
+	inside and outside of the indicator.
+
+*-r, \--line-uses-ring*::
+	Use the outer ring's color for the line separating the inside and outside of
+	the indicator.
+
+*--ringcolor* <rrggbb[aa]>::
+	Définit the color of the outside of the indicator when typing or idle.
+
+*--ringvercolor* <rrggbb[aa]>::
+	Définit the color of the outside of the indicator when verifying.
+
+*--ringwrongcolor* <rrggbb[aa]>::
+	Définit the color of the outside of the indicator when invalid.
+
+*--separatorcolor* <rrggbb[aa]>::
+	Définit the color of the lines that seperate highlight segments.
+
+*--textcolor* <rrggbb[aa]>::
+	Définit the color of the text inside the indicator.
+
+*--indicator-radius* <radius>::
+	Définit the radius of the indicator to _radius_ pixels. The default value is
+	50.
+
+*--indicator-thickness* <thickness>::
+	Définit the thickness of the indicator to _thickness_ pixels. The default value
+	is 10.
+
+Auteurs
+-------
+
+Maintenu par Drew DeVault <sir@cmpwn.com>, assisté par d'autres contributeurs
+open source. Pour plus d'information sur le développement de sway, voir
+<https://github.com/SirCmpwn/sway>.
