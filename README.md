@@ -1,7 +1,7 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-[**English**](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [日本語](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/SirCmpwn/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/SirCmpwn/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/SirCmpwn/sway/blob/master/README.fr.md#sway--) - [Español](https://github.com/SirCmpwn/sway/blob/master/README.es.md#sway--) - [Українська](https://github.com/SirCmpwn/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/SirCmpwn/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/SirCmpwn/sway/blob/master/README.pt.md#sway--)
-
+[**English**](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [日本語](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/SirCmpwn/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/SirCmpwn/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/SirCmpwn/sway/blob/master/README.fr.md#sway--) - [Español](https://github.com/SirCmpwn/sway/blob/master/README.es.md#sway--) - [Українська](https://github.com/SirCmpwn/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/SirCmpwn/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/SirCmpwn/sway/blob/master/README.pt.md#sway--) -
+[Русский](https://github.com/SirCmpwn/sway/blob/master/README.ru.md#sway--)
 
 "**S**irCmpwn's **Way**land compositor" is a **work in progress**
 i3-compatible [Wayland](http://wayland.freedesktop.org/) compositor.
