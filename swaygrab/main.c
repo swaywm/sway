@@ -58,14 +58,19 @@ void grab_and_apply_magick(const char *file, const char *payload,
 	if ((child = fork()) < 0) {
 		sway_log(L_ERROR, "Swaygrab failed to fork.");
 		exit(EXIT_FAILURE);
-	} else if (child == 0) {
+	} else if (child != 0) {
+		close(fd[0]);
+		write(fd[1], pixels, len);
 		close(fd[1]);
-		write(fd[0], pixels, len);
 		free(pixels - 9);
 		waitpid(child, NULL, 0);
 	} else {
+		close(fd[1]);
+		if (dup2(fd[0], 0) != 0) {
+			sway_log(L_ERROR, "Could not fdup the pipe");
+		}
 		close(fd[0]);
-		execlp("convert", "-depth", "8", "-size", size, "rgba:-", "-flip", file, NULL);
+		execlp("convert", "convert", "-depth", "8", "-size", size, "rgba:-", "-flip", file, NULL);
 		sway_log(L_ERROR, "Swaygrab could not run convert.");
 		exit(EXIT_FAILURE);
 	}
@@ -104,7 +109,7 @@ void grab_and_apply_movie_magic(const char *file, const char *payload,
 		"-video_size %dx%d -pixel_format argb "
 		"-i pipe:0 -r %d -vf vflip %s";
 	char *cmd = malloc(strlen(fmt) - 8 /*args*/
-			+ strlen(ffmpeg_opts) + numlen(width) + numlen(height) 
+			+ strlen(ffmpeg_opts) + numlen(width) + numlen(height)
 			+ numlen(framerate) * 2 + strlen(file) + 1);
 	sprintf(cmd, fmt, ffmpeg_opts, framerate, width, height, framerate, file);
 
