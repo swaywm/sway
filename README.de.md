@@ -82,8 +82,7 @@ Führe diese Befehle aus:
 
 In Systemen mit logind musst du `sway` einige Capabilities geben:
 
-    sudo setcap cap_sys_ptrace=eip /usr/local/bin/sway
-    sudo setcap cap_sys_tty_config=eip /usr/local/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
 
 In Systemen ohne logind musst du `sway` das suid-Flag geben:
 

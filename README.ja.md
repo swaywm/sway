@@ -68,8 +68,7 @@ Swayは多いディストリビューションにある。
 
 logindはあるば:
 
-    sudo setcap cap_sys_ptrace=eip /usr/local/bin/sway
-    sudo setcap cap_sys_tty_config=eip /usr/local/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
 
 logindはあるないば:
 
