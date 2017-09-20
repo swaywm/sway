@@ -1,44 +1,48 @@
 # sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-注・私の日本語で苦手です。パッチは与えったください。
+[English](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [**日本語**](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/SirCmpwn/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/SirCmpwn/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/SirCmpwn/sway/blob/master/README.fr.md#sway--) - [Español](https://github.com/SirCmpwn/sway/blob/master/README.es.md#sway--) - [Українська](https://github.com/SirCmpwn/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/SirCmpwn/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/SirCmpwn/sway/blob/master/README.pt.md#sway--) -
+[Русский](https://github.com/SirCmpwn/sway/blob/master/README.ru.md#sway--)
 
-"**S**irCmpwnの**Way**landのcompositor"は仕掛け品のWaylandのCompositorだ。
-[英語のよくある質問](https://github.com/SirCmpwn/sway/wiki)は読みください。
-[IRCのチャット](http://webchat.freenode.net/?channels=sway&uio=d4)(#swayにirc.freenode.net)は入ってください。
+"**S**irCmpwn's **Way**land compositor"は**開発中**の
+i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
+[FAQ](https://github.com/SirCmpwn/sway/wiki)も合わせてご覧ください。
+[IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
+irc.freenode.net)もあります。
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
-あなたが施したいから、[Patreon](https://patreon.com/sircmpwn)か[報奨金プロジェクト](https://github.com/SirCmpwn/sway/issues/986)は見てください。
+もしSwayの開発を支援したい場合は[SirCmpwnのPatreon](https://patreon.com/sircmpwn)や
+[こちら](https://github.com/SirCmpwn/sway/issues/986)をご覧ください。
 
-## 日本語助け
+誰でも賞金を受け取る事ができますし、自分の欲しい機能に賞金を掛ける事が出来ます。
+PatreonはSwayの開発を支援するのにもっとも便利です。
 
-SirCmpwnはIRCとGitHubでUTC-4に日本語助け人だ。
+## リリース
 
-日本語翻訳は完成じゃない、正しくない。[パッチは与えったください](https://github.com/SirCmpwn/sway/issues/1318)。
+Swayのリリースは[B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)で書名されて
+[GitHub](https://github.com/SirCmpwn/sway/releases)で公開されています。
 
-## 発売の電子署名
+## 開発状況
 
-発売は[B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)に調印して[GitHub](https://github.com/SirCmpwn/sway/releases)に発売する。
+- [i3のサポート](https://github.com/SirCmpwn/sway/issues/2)
+- [IPCのサポート](https://github.com/SirCmpwn/sway/issues/98)
+- [i3barのサポート](https://github.com/SirCmpwn/sway/issues/343)
+- [i3-gapsのサポート](https://github.com/SirCmpwn/sway/issues/307)
+- [セキュリティ対応](https://github.com/SirCmpwn/sway/issues/984)
 
-## 進展
+## インストール
 
-- [i3のコンパチ](https://github.com/SirCmpwn/sway/issues/2)
-- [IPCのコンパチ](https://github.com/SirCmpwn/sway/issues/98)
-- [i3barのコンパチ](https://github.com/SirCmpwn/sway/issues/343)
-- [i3-gapsのコンパチ](https://github.com/SirCmpwn/sway/issues/307)
-- [無難の進むの](https://github.com/SirCmpwn/sway/issues/984)
+### パッケージから
 
-## インスコ
+Swayは沢山のディストリビューションで提供されています。"sway"パッケージをインストールしてみてください。
+もし、パッケージが存在しないならば、[このページ](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
+を参照してインストールしてみてください。
 
-### パッケージ
+もし、Swayのパッケージを提供したいならば、SwayのIRCチャンネルか"sir@cmpwn.com"に連絡してください。
 
-Swayは多いディストリビューションにある。
-"sway"のパッケージは据え付ける。
-パッケージはなかったば[wiki](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)が読みください。
+### ソースコードから
 
-### コンパイル
-
-依存性インスコ:
+まずはコンパイルや実行に必要なソフトウェアやライブラリをインストールしてください。:
 
 * cmake
 * [wlc](https://github.com/Cloudef/wlc)
@@ -52,13 +56,15 @@ Swayは多いディストリビューションにある。
 * pango
 * cairo
 * gdk-pixbuf2 *
-* pam *
-* imagemagick *
-* ffmpeg *
+* pam **
+* imagemagick (swaygrabでスクリーンショットを撮るのに必要です)
+* ffmpeg (swaygrabで画面を録画するのに必要です)
 
-\* 任意
+_\*swaybar,swaybg,swaylockが使用します_
 
-実効する:
+_\*\*swaylockが使用します_
+
+ターミナルで次のコマンドを実行してください:
 
     mkdir build
     cd build
@@ -66,21 +72,22 @@ Swayは多いディストリビューションにある。
     make
     sudo make install
 
-logindはあるば:
+logindを使用している場合はバイナリにcapを設定してください:
 
     sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
 
-logindはあるないば:
+logindを使用していない場合はバイナリにsuidを設定してください:
 
     sudo chmod a+s /usr/local/bin/sway
 
-## コンフィギュレーション
+## 設定
 
-今はi3があるばi3のコンフィグは`~/.config/sway/config`にコピー。
-あるないば`/etc/sway/config`をコピー。
-ファイルは読みください。
+もし、既にi3を使用しているなら、i3のコンフィグファイルを`~/.config/sway/config`にコピーすれば動きます。
+そうでないならば、サンプルのコンフィグファイルを`~/.config/sway/config`にコピーしてください。
+サンプルのコンフィグファイルは基本的には`/etc/sway/config`にあります。
+`man 5 sway`で各種設定について確認できます。
 
-## swayは実効する
+## 実行
 
-ttyに"sway"は実効する。
-若干ディスプレイマネージャもいいです、でも支援があるない。
+`sway`をTTYから実行してください。いくつかのDesktopManagerはSwayからサポートされていませんが、動く場合もあります(gdmは特にSwayと相性が良いそうです)。
+
