@@ -14,7 +14,7 @@ irc.freenode.net)もあります。
 もしSwayの開発を支援したい場合は[SirCmpwnのPatreon](https://patreon.com/sircmpwn)や
 [こちら](https://github.com/SirCmpwn/sway/issues/986)をご覧ください。
 
-誰でも賞金を受け取る事ができますし、他の物に賞金をつける事が出来ます。
+誰でも賞金を受け取る事ができますし、自分の欲しい機能に賞金を掛ける事が出来ます。
 PatreonはSwayの開発を支援するのにもっとも便利です。
 
 ## リリース
