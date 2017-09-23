@@ -143,6 +143,25 @@ static void mouse_button_notify(struct window *window, int x, int y,
 static void mouse_scroll_notify(struct window *window, enum scroll_direction direction) {
 	sway_log(L_DEBUG, "Mouse wheel scrolled %s", direction == SCROLL_UP ? "up" : "down");
 
+	// If there are status blocks and click_events are enabled
+	// check if the position is within the status area and if so
+	// tell the status line to output the event and skip workspace
+	// switching below.
+	int num_blocks = swaybar.status->block_line->length;
+	if (swaybar.status->click_events && num_blocks > 0) {
+		struct status_block *first_block = swaybar.status->block_line->items[0];
+		int x = window->pointer_input.last_x;
+		int y = window->pointer_input.last_y;
+		if (x > first_block->x) {
+			if (direction == SCROLL_UP) {
+				status_line_mouse_event(&swaybar, x, y, 4);
+			} else {
+				status_line_mouse_event(&swaybar, x, y, 5);
+			}
+			return;
+		}
+	}
+
 	if (!swaybar.config->wrap_scroll) {
 		// Find output this window lives on
 		int i;
