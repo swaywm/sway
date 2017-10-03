@@ -1,59 +1,38 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/css/bootstrap.css" />
-        <link rel="stylesheet" href="/css/master.css" />
-        <title>{{ page.title }}</title>
-    </head>
-    <body>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4">
-                    <h1>
-                        <img src="/assets/logo.png" id="logo" alt="Sway" />
-                    </h1>
-                    <p>
-                        Sway is a drop-in replacement for the <a href="http://i3wm.org/">i3
-                            window manager</a>, but for Wayland instead of X11. It works
-                        with your existing i3 configuration and supports most of i3's features,
-                        and a few extras.
-                    </p>
-                </div>
-                <div class="col-md-8">
-                    {{ content }}
-                </div>
-            </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/master.css" />
+    <title>{{ page.title }}</title>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="navbar navbar-toggleable-md navbar-light">
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand" href="/">Sway</a>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="https://github.com/swaywm/sway/releases">Releases ≫</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="https://github.com/swaywm/sway">Source Code ≫</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="https://github.com/SirCmpwn/sway/wiki">Wiki ≫</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="http://webchat.freenode.net/?channels=sway&uio=d4">Support Chat ≫</a>
+            </li>
+          </ul>
         </div>
-        <nav class="navbar navbar-dark navbar-fixed-bottom">
-            <div class="container">
-                <a href="/" class="navbar-brand">Sway</span>
-                <ul class="nav navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link"
-                            href="https://github.com/SirCmpwn/sway/releases">Releases</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link"
-                            href="https://github.com/SirCmpwn/sway">Source code</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link"
-                            href="/roadmap">Roadmap</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link"
-                            href="https://github.com/SirCmpwn/sway/wiki">FAQ</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link"
-                            href="http://webchat.freenode.net/?channels=sway&uio=d4">IRC channel</a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-        <script src="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/js/bootstrap.js"></script>
-    </body>
+      </nav>
+      <div class="main">
+        {{ content }}
+      </div>
+    </div>
+  </body>
 </html>

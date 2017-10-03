@@ -3,4 +3,35 @@ title: Sway
 layout: master
 ---
 
-<video src="https://sr.ht/-ssd.webm" controls></video>
+<div class="row">
+  <div class="col-md-4">
+    <h1><img src="/assets/logo.png" id="logo" alt="Sway" /></h1>
+    <p>
+      Sway is tiling Wayland compositor and a drop-in replacement for the
+      <a href="http://i3wm.org/">i3 window manager</a> for X11. It works
+      with your existing i3 configuration and supports most of i3's
+      features, plus a few extras.
+    </p>
+    <p>
+      We also maintain the <a href="https://github.com/swaywm/wlroots">wlroots</a>
+      project to provide a modular basis for Sway and other Wayland compositors
+      to build upon, and we <a href="https://github.com/swaywm/sway-protocols">
+      publish standards</a> for interopable Wayland desktops.
+    </p>
+    <a rel="noopener noreferrer" target="_blank" href="https://patreon.com/sircmpwn">
+      <img src="/assets/patreon.png" alt="Support Sway on Patreon" />
+    </a>
+  </div>
+  <div class="col-md-8">
+    <link rel="stylesheet" href="/css/video-js.css">
+    <script>
+    window.HELP_IMPROVE_VIDEOJS = false;
+    </script>
+    <script src="/js/video.js"></script>
+
+    <video class="video-js vjs-16-9" data-setup="{}" controls>
+      <source src="https://sr.ht/lJ9C.webm" type="video/webm">
+      <p>Your browser does not support HTML5 video.</p>
+    </video>
+  </div>
+</div>

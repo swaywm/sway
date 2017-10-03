@@ -1,35 +1,46 @@
 ---
 ---
 
+@import "bootstrap/scss/bootstrap";
+
+html {
+  height: 100%;
+}
+
 body {
-    background-color: #000;
-    color: #fff;
-    margin-top: 1rem;
-    margin-bottom: 5rem;
+  background: linear-gradient(to bottom right, #75d3e8, #3c84ac);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  margin: 0;
+  height: 100%;
+}
+
+.navbar-light {
+  margin-bottom: 1rem;
+
+  .navbar-nav .nav-link {
+    color: rgba(0, 0, 0, 0.8);
+    text-decoration: underline;
+  }
+}
+
+.main a {
+  color: darken(#014c8c, 10);
+  text-decoration: underline;
 }
 
 video {
-    max-width: 100%;
+  max-width: 100%;
+  box-shadow: 0 0 3px 3px #444;
 }
 
 .text-center {
-    text-align: center;
+  text-align: center;
 }
 
 hr {
-    border-color: white;
-}
-
-.table-success {
-    background-color: green;
-}
-
-.table-danger {
-    background-color: darken(red, 10);
-}
-
-nav {
-    background: black;
+  border-color: white;
 }
 
 #logo {
