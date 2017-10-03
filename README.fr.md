@@ -1,15 +1,15 @@
-# sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
 "**S**irCmpwn's **Way**land compositor" est un compositeur [Wayland](http://wayland.freedesktop.org/)
 compatible avec i3, **en cours de développement**.
-Lisez la [FAQ](https://github.com/SirCmpwn/sway/wiki). Rejoignez le
+Lisez la [FAQ](https://github.com/swaywm/sway/wiki). Rejoignez le
 [canal IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway sur
 irc.freenode.net).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 Si vous souhaitez soutenir le développement de Sway, vous pouvez contribuer à [ma page
-Patreon](https://patreon.com/sircmpwn) ou aux [primes](https://github.com/SirCmpwn/sway/issues/986)
+Patreon](https://patreon.com/sircmpwn) ou aux [primes](https://github.com/swaywm/sway/issues/986)
 pour des fonctionnalités spécifiques.
 Tout le monde est invité à réclamer une prime et vous pouvez donner une prime pour n'importe quelle
 fonctionnalité souhaitée. Patreon est plus utile pour supporter l'état général et la
@@ -22,22 +22,22 @@ maintenance de Sway.
 ## Signatures de nouvelles versions
 
 Les nouvelles versions sont signées avec [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
-et publiées [sur GitHub](https://github.com/SirCmpwn/sway/releases).
+et publiées [sur GitHub](https://github.com/swaywm/sway/releases).
 
 ## Statut
 
-- [support des fonctionnalités d'i3](https://github.com/SirCmpwn/sway/issues/2)
-- [support des fonctionnalités d'IPC](https://github.com/SirCmpwn/sway/issues/98)
-- [support des fonctionnalités d'i3bar](https://github.com/SirCmpwn/sway/issues/343)
-- [support des fonctionnalités d'i3-gaps](https://github.com/SirCmpwn/sway/issues/307)
-- [fonctionnalités de sécurité](https://github.com/SirCmpwn/sway/issues/984)
+- [support des fonctionnalités d'i3](https://github.com/swaywm/sway/issues/2)
+- [support des fonctionnalités d'IPC](https://github.com/swaywm/sway/issues/98)
+- [support des fonctionnalités d'i3bar](https://github.com/swaywm/sway/issues/343)
+- [support des fonctionnalités d'i3-gaps](https://github.com/swaywm/sway/issues/307)
+- [fonctionnalités de sécurité](https://github.com/swaywm/sway/issues/984)
 
 ## Installation
 
 ### À partir de paquets
 
 Sway est disponible sur plusieurs distributions. Essayez d'installer le paquet "sway" pour
-la vôtre. Si ce n'est pas disponible, consultez [cette page wiki](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
+la vôtre. Si ce n'est pas disponible, consultez [cette page wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 pour de l'information sur l'installation pour vos distributions.
 
 Si vous êtes intéressé à maintenir Sway pour votre distribution, passez par le canal
@@ -92,7 +92,7 @@ Exécutez `man 5 sway` pour l'information sur la configuration.
 
 Mes propres dotfiles sont disponibles [ici](https://git.sr.ht/~sircmpwn/dotfiles) si
 vous voulez un peu d'inspiration. Je vous recommande aussi de consulter le
-[wiki](https://github.com/SirCmpwn/sway/wiki).
+[wiki](https://github.com/swaywm/sway/wiki).
 
 ## Exécution
 

@@ -1,18 +1,15 @@
-# sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
-
-[English](https://github.com/SirCmpwn/sway/blob/master/README.md#sway--) - [**日本語**](https://github.com/SirCmpwn/sway/blob/master/README.ja.md#sway--) - [Deutsch](https://github.com/SirCmpwn/sway/blob/master/README.de.md#sway--) - [Ελληνικά](https://github.com/SirCmpwn/sway/blob/master/README.el.md#sway--) - [Français](https://github.com/SirCmpwn/sway/blob/master/README.fr.md#sway--) - [Español](https://github.com/SirCmpwn/sway/blob/master/README.es.md#sway--) - [Українська](https://github.com/SirCmpwn/sway/blob/master/README.uk.md#sway--) - [Italiano](https://github.com/SirCmpwn/sway/blob/master/README.it.md#sway--) - [Português](https://github.com/SirCmpwn/sway/blob/master/README.pt.md#sway--) -
-[Русский](https://github.com/SirCmpwn/sway/blob/master/README.ru.md#sway--)
+# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
 "**S**irCmpwn's **Way**land compositor"は**開発中**の
 i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
-[FAQ](https://github.com/SirCmpwn/sway/wiki)も合わせてご覧ください。
+[FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
 [IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net)もあります。
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 もしSwayの開発を支援したい場合は[SirCmpwnのPatreon](https://patreon.com/sircmpwn)や
-[こちら](https://github.com/SirCmpwn/sway/issues/986)をご覧ください。
+[こちら](https://github.com/swaywm/sway/issues/986)をご覧ください。
 
 誰でも賞金を受け取る事ができますし、自分の欲しい機能に賞金を掛ける事が出来ます。
 PatreonはSwayの開発を支援するのにもっとも便利です。
@@ -20,22 +17,22 @@ PatreonはSwayの開発を支援するのにもっとも便利です。
 ## リリース
 
 Swayのリリースは[B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)で書名されて
-[GitHub](https://github.com/SirCmpwn/sway/releases)で公開されています。
+[GitHub](https://github.com/swaywm/sway/releases)で公開されています。
 
 ## 開発状況
 
-- [i3のサポート](https://github.com/SirCmpwn/sway/issues/2)
-- [IPCのサポート](https://github.com/SirCmpwn/sway/issues/98)
-- [i3barのサポート](https://github.com/SirCmpwn/sway/issues/343)
-- [i3-gapsのサポート](https://github.com/SirCmpwn/sway/issues/307)
-- [セキュリティ対応](https://github.com/SirCmpwn/sway/issues/984)
+- [i3のサポート](https://github.com/swaywm/sway/issues/2)
+- [IPCのサポート](https://github.com/swaywm/sway/issues/98)
+- [i3barのサポート](https://github.com/swaywm/sway/issues/343)
+- [i3-gapsのサポート](https://github.com/swaywm/sway/issues/307)
+- [セキュリティ対応](https://github.com/swaywm/sway/issues/984)
 
 ## インストール
 
 ### パッケージから
 
 Swayは沢山のディストリビューションで提供されています。"sway"パッケージをインストールしてみてください。
-もし、パッケージが存在しないならば、[このページ](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
+もし、パッケージが存在しないならば、[このページ](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 を参照してインストールしてみてください。
 
 もし、Swayのパッケージを提供したいならば、SwayのIRCチャンネルか"sir@cmpwn.com"に連絡してください。

@@ -1,8 +1,8 @@
-# sway [![](https://api.travis-ci.org/SirCmpwn/sway.svg)](https://travis-ci.org/SirCmpwn/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
 **Sway** ("**S**irCmpwn's **Way**land compositor") це сумісний з i3 композитор
 [Wayland](http://wayland.freedesktop.org/) (**у стані розробки**).
-Ознайомтесь з [ЧаПами](https://github.com/SirCmpwn/sway/wiki).
+Ознайомтесь з [ЧаПами](https://github.com/swaywm/sway/wiki).
 Приєднуйтесь до [спільноти в IRC](http://webchat.freenode.net/?channels=sway&uio=d4)
 (#sway на irc.freenode.net).
 
@@ -10,7 +10,7 @@
 
 Якщо ви хочете підтримати розробку Sway, ви можете зробити свій внесок у
 [SirCmpwn'ову сторінку Patreon](https://patreon.com/sircmpwn) або до
-[фонду винагород](https://github.com/SirCmpwn/sway/issues/986) за реалізацію
+[фонду винагород](https://github.com/swaywm/sway/issues/986) за реалізацію
 певного функціоналу.
 Кожен може виставити винагороду за реалізацію довільної функції
 (і, відповідно, забрати її собі, виконавши це завдання);
@@ -22,20 +22,20 @@
 Hummer12007 у IRC-спільноті. Будьте терплячі, вам обов'язково допоможуть.
 
 Наразі переклад Sway українською ще не завершено (він неповний), проте у вас є шанс долучитись,
-детальніше див. [статус](https://github.com/SirCmpwn/sway/issues/1318#issuecomment-322277382).
+детальніше див. [статус](https://github.com/swaywm/sway/issues/1318#issuecomment-322277382).
 
 ## Підписи випусків
 
 Випуски підписані ключем [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
-та публікуються на сторінці [GitHub](https://github.com/SirCmpwn/sway/releases).
+та публікуються на сторінці [GitHub](https://github.com/swaywm/sway/releases).
 
 ## Стан розробки
 
-- [Підтримка функцій i3](https://github.com/SirCmpwn/sway/issues/2)
-- [Реалізація IPC-протоколу i3](https://github.com/SirCmpwn/sway/issues/98)
-- [Підтримка функцій i3bar](https://github.com/SirCmpwn/sway/issues/343)
-- [Підтримка функцій i3-gaps](https://github.com/SirCmpwn/sway/issues/307)
-- [Функції безпеки](https://github.com/SirCmpwn/sway/issues/984)
+- [Підтримка функцій i3](https://github.com/swaywm/sway/issues/2)
+- [Реалізація IPC-протоколу i3](https://github.com/swaywm/sway/issues/98)
+- [Підтримка функцій i3bar](https://github.com/swaywm/sway/issues/343)
+- [Підтримка функцій i3-gaps](https://github.com/swaywm/sway/issues/307)
+- [Функції безпеки](https://github.com/swaywm/sway/issues/984)
 
 ## Встановлення
 
@@ -43,7 +43,7 @@ Hummer12007 у IRC-спільноті. Будьте терплячі, вам о�
 
 Sway доступний у багатьох дистрибутивах Linux (а також у FreeBSD).
 Спробуйте встановити пакунок `sway` у вашому.
-Якщо він недоступний, перегляньте цю [сторінку Wiki](https://github.com/SirCmpwn/sway/wiki/Unsupported-packages)
+Якщо він недоступний, перегляньте цю [сторінку Wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 для інформації щодо встановлення на вашому дистрибутиві.
 
 Якщо ви готові та зацікавлені запакувати і підтримувати Sway у вашому

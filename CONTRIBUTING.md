@@ -34,7 +34,7 @@ upstream. Try this:
 
 1. Fork sway
 2. Clone your fork
-3. git remote add upstream git://github.com/SirCmpwn/sway.git
+3. git remote add upstream git://github.com/swaywm/sway.git
 
 You only need to do this once. You're never going to use your fork's master
 branch. Instead, when you start working on a feature, do this:
