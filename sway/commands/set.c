@@ -30,7 +30,7 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 		if (!tmp) {
 			return cmd_results_new(CMD_FAILURE, "set", "Not possible to create variable $'%s'", argv[0]);
 		}
-		snprintf(tmp, size, "$%s", argv[0]);
+		snprintf(tmp, size+1, "$%s", argv[0]);
 
 		argv[0] = tmp;
 	}
