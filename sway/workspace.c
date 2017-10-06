@@ -61,7 +61,7 @@ char *workspace_next_name(const char *output_name) {
 		// workspace n
 		char *cmd = argsep(&cmdlist, " ");
 		if (cmdlist) {
-			name = argsep(&cmdlist, " ,;");
+			name = argsep(&cmdlist, ",;");
 		}
 
 		if (strcmp("workspace", cmd) == 0 && name) {
