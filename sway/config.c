@@ -550,8 +550,11 @@ bool load_main_config(const char *file, bool is_active) {
 			strcpy(_path, base);
 			strcat(_path, ent->d_name);
 			lstat(_path, &s);
-			if (S_ISREG(s.st_mode)) {
+			if (S_ISREG(s.st_mode) && ent->d_name[0] != '.') {
 				list_add(secconfigs, _path);
+			}
+			else {
+				free(_path);
 			}
 			ent = readdir(dir);
 		}
