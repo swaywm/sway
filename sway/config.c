@@ -128,6 +128,8 @@ void free_output_config(struct output_config *oc) {
 		return;
 	}
 	free(oc->name);
+	free(oc->background);
+	free(oc->background_option);
 	free(oc);
 }
 
