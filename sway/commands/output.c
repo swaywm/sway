@@ -46,7 +46,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			output->enabled = 0;
 		} else if (strcasecmp(command, "resolution") == 0 || strcasecmp(command, "res") == 0) {
 			if (++i >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing resolution argument.");
+				error = cmd_results_new(CMD_INVALID, "output", "Missing resolution argument.");
+				goto fail;
 			}
 			char *res = argv[i];
 			char *x = strchr(res, 'x');
@@ -61,7 +62,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				// Format is 1234 4321
 				width = atoi(res);
 				if (++i >= argc) {
-					return cmd_results_new(CMD_INVALID, "output", "Missing resolution argument (height).");
+					error = cmd_results_new(CMD_INVALID, "output", "Missing resolution argument (height).");
+					goto fail;
 				}
 				res = argv[i];
 				height = atoi(res);
@@ -70,7 +72,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			output->height = height;
 		} else if (strcasecmp(command, "position") == 0 || strcasecmp(command, "pos") == 0) {
 			if (++i >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing position argument.");
+				error = cmd_results_new(CMD_INVALID, "output", "Missing position argument.");
+				goto fail;
 			}
 			char *res = argv[i];
 			char *c = strchr(res, ',');
@@ -85,7 +88,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				// Format is 1234 4321
 				x = atoi(res);
 				if (++i >= argc) {
-					return cmd_results_new(CMD_INVALID, "output", "Missing position argument (y).");
+					error = cmd_results_new(CMD_INVALID, "output", "Missing position argument (y).");
+					goto fail;
 				}
 				res = argv[i];
 				y = atoi(res);
@@ -94,25 +98,49 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			output->y = y;
 		} else if (strcasecmp(command, "scale") == 0) {
 			if (++i >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing scale parameter.");
+				error = cmd_results_new(CMD_INVALID, "output", "Missing scale parameter.");
+				goto fail;
 			}
 			output->scale = atoi(argv[i]);
 		} else if (strcasecmp(command, "background") == 0 || strcasecmp(command, "bg") == 0) {
 			wordexp_t p;
 			if (++i >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing background file or color specification.");
+				error = cmd_results_new(CMD_INVALID, "output", "Missing background file or color specification.");
+				goto fail;
 			}
 			if (i + 1 >= argc) {
-				return cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode or `solid_color`.");
+				error = cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode or `solid_color`.");
+				goto fail;
 			}
-			if (strcasecmp(argv[argc - 1], "solid_color") == 0) {
+			if (strcasecmp(argv[i + 1], "solid_color") == 0) {
 				output->background = strdup(argv[argc - 2]);
 				output->background_option = strdup("solid_color");
 			} else {
-				char *src = join_args(argv + i, argc - i - 1);
-				char *mode = argv[argc - 1];
+				// argv[i+j]=bg_option
+				bool valid = false;
+				char *mode;
+				size_t j;
+				for (j = 0; j < (size_t) (argc - i); ++j) {
+					mode = argv[i + j];
+					for (size_t k = 0; k < sizeof(bg_options) / sizeof(char *); ++k) {
+						if (strcasecmp(mode, bg_options[k]) == 0) {
+							valid = true;
+							break;
+						}
+					}
+					if (valid) {
+						break;
+					}
+				}
+				if (!valid) {
+					error = cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode.");
+					goto fail;
+				}
+
+				char *src = join_args(argv + i, j);
 				if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-					return cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
+					error = cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
+					goto fail;
 				}
 				free(src);
 				src = p.we_wordv[0];
@@ -132,27 +160,19 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 					}
 				}
 				if (!src || access(src, F_OK) == -1) {
-					return cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
+					error = cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
+					wordfree(&p);
+					goto fail;
 				}
-				for (char *m = mode; *m; ++m) *m = tolower(*m);
-				// Check mode
-				bool valid = false;
-				size_t j;
-				for (j = 0; j < sizeof(bg_options) / sizeof(char *); ++j) {
-					if (strcasecmp(mode, bg_options[j]) == 0) {
-						valid = true;
-						break;
-					}
-				}
-				if (!valid) {
-					return cmd_results_new(CMD_INVALID, "output", "Invalid background scaling mode.");
-				}
+
 				output->background = strdup(src);
 				output->background_option = strdup(mode);
 				if (src != p.we_wordv[0]) {
 					free(src);
 				}
 				wordfree(&p);
+
+				i += j;
 			}
 		}
 	}
@@ -192,4 +212,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+
+fail:
+	free_output_config(output);
+	return error;
 }
