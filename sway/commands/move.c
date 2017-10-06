@@ -7,6 +7,7 @@
 #include "sway/output.h"
 #include "sway/workspace.h"
 #include "list.h"
+#include "stringop.h"
 
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -59,18 +60,23 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
 			}
 
-			const char *ws_name = argv[3];
 			swayc_t *ws;
-			if (argc == 5 && strcasecmp(ws_name, "number") == 0) {
+			const char *num_name = NULL;
+			char *ws_name = NULL;
+			if (argc == 5 && strcasecmp(argv[3], "number") == 0) {
 				// move "container to workspace number x"
-				ws_name = argv[4];
-				ws = workspace_by_number(ws_name);
+				num_name = argv[4];
+				ws = workspace_by_number(num_name);
 			} else {
+				ws_name = join_args(argv + 3, argc - 3);
 				ws = workspace_by_name(ws_name);
 			}
 
 			if (ws == NULL) {
-				ws = workspace_create(ws_name);
+				ws = workspace_create(ws_name ? ws_name : num_name);
+			}
+			if (ws_name) {
+				free(ws_name);
 			}
 			move_container_to(view, get_focused_container(ws));
 		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "output") == 0) {
