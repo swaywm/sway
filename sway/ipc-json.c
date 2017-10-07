@@ -454,20 +454,49 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 	int i;
 
 	json_object *floating = json_object_new_array();
-	if (c->type != C_VIEW && c->floating && c->floating->length > 0) {
+	if (c->type != C_VIEW && c->floating) {
 		for (i = 0; i < c->floating->length; ++i) {
-			json_object_array_add(floating, ipc_json_describe_container_recursive(c->floating->items[i]));
+			swayc_t *item = c->floating->items[i];
+			json_object_array_add(floating, ipc_json_describe_container_recursive(item));
 		}
 	}
 	json_object_object_add(object, "floating_nodes", floating);
 
 	json_object *children = json_object_new_array();
-	if (c->type != C_VIEW && c->children && c->children->length > 0) {
+	if (c->type != C_VIEW && c->children) {
 		for (i = 0; i < c->children->length; ++i) {
 			json_object_array_add(children, ipc_json_describe_container_recursive(c->children->items[i]));
 		}
 	}
 	json_object_object_add(object, "nodes", children);
+
+	json_object *focus = json_object_new_array();
+	if (c->type != C_VIEW) {
+		if (c->focused) {
+			json_object_array_add(focus, json_object_new_double(c->focused->id));
+		}
+		if (c->floating) {
+			for (i = 0; i < c->floating->length; ++i) {
+				swayc_t *item = c->floating->items[i];
+				if (item == c->focused) {
+					continue;
+				}
+
+				json_object_array_add(focus, json_object_new_double(item->id));
+			}
+		}
+		if (c->children) {
+			for (i = 0; i < c->children->length; ++i) {
+				swayc_t *item = c->children->items[i];
+				if (item == c->focused) {
+					continue;
+				}
+
+				json_object_array_add(focus, json_object_new_double(item->id));
+			}
+		}
+	}
+	json_object_object_add(object, "focus", focus);
 
 	if (c->type == C_ROOT) {
 		json_object *scratchpad_json = json_object_new_array();
