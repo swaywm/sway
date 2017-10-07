@@ -12,9 +12,12 @@
 
 enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_CLASS,
+	CRIT_CON_ID,
 	CRIT_CON_MARK,
+	CRIT_FLOATING,
 	CRIT_ID,
 	CRIT_INSTANCE,
+	CRIT_TILING,
 	CRIT_TITLE,
 	CRIT_URGENT,
 	CRIT_WINDOW_ROLE,
@@ -25,9 +28,12 @@ enum criteria_type { // *must* keep in sync with criteria_strings[]
 
 static const char * const criteria_strings[CRIT_LAST] = {
 	[CRIT_CLASS] = "class",
+	[CRIT_CON_ID] = "con_id",
 	[CRIT_CON_MARK] = "con_mark",
+	[CRIT_FLOATING] = "floating",
 	[CRIT_ID] = "id",
 	[CRIT_INSTANCE] = "instance",
+	[CRIT_TILING] = "tiling",
 	[CRIT_TITLE] = "title",
 	[CRIT_URGENT] = "urgent", // either "latest" or "oldest" ...
 	[CRIT_WINDOW_ROLE] = "window_role",
@@ -263,12 +269,26 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				matches++;
 			}
 			break;
+		case CRIT_CON_ID: {
+			char *endptr;
+			size_t crit_id = strtoul(crit->raw, &endptr, 10);
+
+			if (*endptr == 0 && cont->id == crit_id) {
+				++matches;
+			}
+			break;
+		}
 		case CRIT_CON_MARK:
 			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
 				// Make sure it isn't matching the NUL string
 				if ((strcmp(crit->raw, "") == 0) == (list_seq_find(cont->marks, (int (*)(const void *, const void *))strcmp, "") != -1)) {
 					++matches;
 				}
+			}
+			break;
+		case CRIT_FLOATING:
+			if (cont->is_floating) {
+				matches++;
 			}
 			break;
 		case CRIT_ID:
@@ -287,6 +307,11 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 					matches++;
 				}
 			} else if (crit->regex && regex_cmp(cont->instance, crit->regex) == 0) {
+				matches++;
+			}
+			break;
+		case CRIT_TILING:
+			if (!cont->is_floating) {
 				matches++;
 			}
 			break;
