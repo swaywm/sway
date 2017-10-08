@@ -458,7 +458,11 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				if (!containers) {
 					current_container = get_focused_container(&root_container);
 				} else if (containers->length == 0) {
-					break;
+					if (results) {
+						free_cmd_results(results);
+					}
+					results = cmd_results_new(CMD_FAILURE, argv[0], "No matching container");
+					goto cleanup;
 				} else {
 					current_container = (swayc_t *)containers->items[i];
 				}

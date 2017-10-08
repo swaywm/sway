@@ -12,9 +12,12 @@
 
 enum criteria_type { // *must* keep in sync with criteria_strings[]
 	CRIT_CLASS,
+	CRIT_CON_ID,
 	CRIT_CON_MARK,
+	CRIT_FLOATING,
 	CRIT_ID,
 	CRIT_INSTANCE,
+	CRIT_TILING,
 	CRIT_TITLE,
 	CRIT_URGENT,
 	CRIT_WINDOW_ROLE,
@@ -25,9 +28,12 @@ enum criteria_type { // *must* keep in sync with criteria_strings[]
 
 static const char * const criteria_strings[CRIT_LAST] = {
 	[CRIT_CLASS] = "class",
+	[CRIT_CON_ID] = "con_id",
 	[CRIT_CON_MARK] = "con_mark",
+	[CRIT_FLOATING] = "floating",
 	[CRIT_ID] = "id",
 	[CRIT_INSTANCE] = "instance",
+	[CRIT_TILING] = "tiling",
 	[CRIT_TITLE] = "title",
 	[CRIT_URGENT] = "urgent", // either "latest" or "oldest" ...
 	[CRIT_WINDOW_ROLE] = "window_role",
@@ -108,6 +114,7 @@ static char *crit_tokens(int *argc, char ***buf, const char * const criteria_str
 
 	char **argv = *buf = calloc(max_tokens, sizeof(char*));
 	argv[0] = base; // this needs to be freed by caller
+	bool quoted = true;
 
 	*argc = 1; // uneven = name, even = value
 	while (*head && *argc < max_tokens) {
@@ -128,7 +135,8 @@ static char *crit_tokens(int *argc, char ***buf, const char * const criteria_str
 				if (*(namep) == ' ') {
 					namep = strrchr(namep, ' ') + 1;
 				}
-				argv[(*argc)++] = namep;
+				argv[*argc] = namep;
+				*argc += 1;
 			}
 		} else if (*head == '"') {
 			if (*argc % 2 != 0) {
@@ -137,21 +145,38 @@ static char *crit_tokens(int *argc, char ***buf, const char * const criteria_str
 					"Found quoted value where it was not expected");
 			} else if (!valp) { // value starts here
 				valp = head + 1;
+				quoted = true;
 			} else {
 				// value ends here
-				argv[(*argc)++] = valp;
+				argv[*argc] = valp;
+				*argc += 1;
 				*head = '\0';
 				valp = NULL;
 				namep = head + 1;
 			}
-		} else if (*argc % 2 == 0 && !valp && *head != ' ') {
-			// We're expecting a quoted value, haven't found one yet, and this
-			// is not an empty space.
-			return strdup("Unable to parse criteria: "
-				"Names must be unquoted, values must be quoted");
+		} else if (*argc % 2 == 0 && *head != ' ') {
+			// parse unquoted values
+			if (!valp) {
+				quoted = false;
+				valp = head;  // value starts here
+			}
+		} else if (valp && !quoted && *head == ' ') {
+			// value ends here
+			argv[*argc] = valp;
+			*argc += 1;
+			*head = '\0';
+			valp = NULL;
+			namep = head + 1;
 		}
 		head++;
 	}
+
+	// catch last unquoted value if needed
+	if (valp && !quoted && !*head) {
+		argv[*argc] = valp;
+		*argc += 1;
+	}
+
 	return NULL;
 }
 
@@ -263,12 +288,26 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				matches++;
 			}
 			break;
+		case CRIT_CON_ID: {
+			char *endptr;
+			size_t crit_id = strtoul(crit->raw, &endptr, 10);
+
+			if (*endptr == 0 && cont->id == crit_id) {
+				++matches;
+			}
+			break;
+		}
 		case CRIT_CON_MARK:
 			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
 				// Make sure it isn't matching the NUL string
 				if ((strcmp(crit->raw, "") == 0) == (list_seq_find(cont->marks, (int (*)(const void *, const void *))strcmp, "") != -1)) {
 					++matches;
 				}
+			}
+			break;
+		case CRIT_FLOATING:
+			if (cont->is_floating) {
+				matches++;
 			}
 			break;
 		case CRIT_ID:
@@ -287,6 +326,11 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 					matches++;
 				}
 			} else if (crit->regex && regex_cmp(cont->instance, crit->regex) == 0) {
+				matches++;
+			}
+			break;
+		case CRIT_TILING:
+			if (!cont->is_floating) {
 				matches++;
 			}
 			break;

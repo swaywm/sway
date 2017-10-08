@@ -557,6 +557,8 @@ static void handle_view_destroyed(wlc_handle handle) {
 			parent->fullscreen = NULL;
 		}
 
+		ipc_event_window(parent, "close");
+
 		// Destroy empty workspaces
 		if (parent->type == C_WORKSPACE &&
 			parent->children->length == 0 &&
@@ -567,7 +569,6 @@ static void handle_view_destroyed(wlc_handle handle) {
 		}
 
 		arrange_windows(parent, -1, -1);
-		ipc_event_window(parent, "close");
 	} else {
 		// Is it unmanaged?
 		int i;

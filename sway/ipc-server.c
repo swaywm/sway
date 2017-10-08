@@ -792,11 +792,7 @@ void ipc_event_window(swayc_t *window, const char *change) {
 	sway_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
-	if (strcmp(change, "close") == 0 || !window) {
-		json_object_object_add(obj, "container", NULL);
-	} else {
-		json_object_object_add(obj, "container", ipc_json_describe_container(window));
-	}
+	json_object_object_add(obj, "container", ipc_json_describe_container_recursive(window));
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_WINDOW);
