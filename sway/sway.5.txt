@@ -463,8 +463,14 @@ Currently supported attributes:
 	is _focused_ then the window class must be the same as that of the currently
 	focused window.
 
+**con_id**::
+	Compare against the internal container ID, which you can find via IPC.
+
 **con_mark**::
 	Compare against the window marks. Can be a regular expression.
+
+**floating**::
+	Matches against floating windows.
 
 **id**::
 	Compare value against the app id. Can be a regular expression.
@@ -473,6 +479,9 @@ Currently supported attributes:
 	Compare against the window title. Can be a regular expression. If value is
 	_focused_ then the window title must be the same as that of the currently
 	focused window.
+
+**tiling**::
+	Matches against tiling windows.
 
 **workspace**::
 	Compare against the workspace name for this view. Can be a regular expression.
