@@ -1,5 +1,6 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
 
+#define _XOPEN_SOURCE 700
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -57,6 +58,19 @@ struct get_pixels_request {
 	struct ipc_client *client;
 	wlc_handle output;
 	struct wlc_geometry geo;
+};
+
+struct get_clipboard_request {
+	struct ipc_client *client;
+	json_object *json;
+	int fd;
+	struct wlc_event_source *fd_event_source;
+	struct wlc_event_source *timer_event_source;
+	char *type;
+	unsigned int *pending;
+	char *buf;
+	size_t buf_size;
+	size_t buf_position;
 };
 
 struct sockaddr_un *ipc_user_sockaddr(void);
@@ -394,6 +408,266 @@ void ipc_get_pixels(wlc_handle output) {
 	ipc_get_pixel_requests = unhandled;
 }
 
+static bool is_text_target(const char *target) {
+	return (strncmp(target, "text/", 5) == 0
+		|| strcmp(target, "UTF8_STRING") == 0
+		|| strcmp(target, "STRING") == 0
+		|| strcmp(target, "TEXT") == 0
+		|| strcmp(target, "COMPOUND_TEXT") == 0);
+}
+
+static void release_clipboard_request(struct get_clipboard_request *req) {
+	if (--(*req->pending) == 0) {
+		const char *str = json_object_to_json_string(req->json);
+		ipc_send_reply(req->client, str, (uint32_t)strlen(str));
+		json_object_put(req->json);
+	}
+
+	free(req->type);
+	free(req->buf);
+	wlc_event_source_remove(req->fd_event_source);
+	wlc_event_source_remove(req->timer_event_source);
+	close(req->fd);
+	free(req);
+}
+
+static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
+	assert(data);
+	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
+
+	if (mask & WLC_EVENT_ERROR) {
+		sway_log(L_ERROR, "Selection data fd error");
+		goto error;
+	}
+
+	if (mask & WLC_EVENT_READABLE) {
+		static const unsigned int max_size = 8192 * 1024;
+		int amt = 0;
+
+		do {
+			int size = req->buf_size - req->buf_position;
+			int amt = read(fd, req->buf + req->buf_position, size - 1);
+			if (amt < 0) {
+				if (errno == EAGAIN) {
+					return 0;
+				}
+
+				sway_log_errno(L_INFO, "Failed to read from clipboard data fd");
+				goto release;
+			}
+
+			req->buf_position += amt;
+			if (req->buf_position >= req->buf_size - 1) {
+				if (req->buf_size >= max_size) {
+					sway_log(L_ERROR, "get_clipbard: selection data too large");
+					goto error;
+				}
+				char *next = realloc(req->buf, req->buf_size *= 2);
+				if (!next) {
+					sway_log_errno(L_ERROR, "get_clipboard: realloc data buffer failed");
+					goto error;
+				}
+
+				req->buf = next;
+			}
+		} while(amt != 0);
+
+		req->buf[req->buf_position] = '\0';
+
+		json_object *obj = json_object_new_object();
+		json_object_object_add(obj, "success", json_object_new_boolean(true));
+		if (is_text_target(req->type)) {
+			json_object_object_add(obj, "content", json_object_new_string(req->buf));
+			json_object_object_add(req->json, req->type, obj);
+		} else {
+			size_t outlen;
+			char *b64 = b64_encode(req->buf, req->buf_position, &outlen);
+			json_object_object_add(obj, "content", json_object_new_string(b64));
+			free(b64);
+
+			char *type = malloc(strlen(req->type) + 8);
+			strcat(type, ";base64");
+			json_object_object_add(req->json, type, obj);
+			free(type);
+		}
+	}
+
+	goto release;
+
+error:;
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "success", json_object_new_boolean(false));
+	json_object_object_add(obj, "error",
+		json_object_new_string("Failed to retrieve data"));
+	json_object_object_add(req->json, req->type, obj);
+
+release:
+	release_clipboard_request(req);
+	return 0;
+}
+
+static int ipc_selection_timer_cb(void *data) {
+	assert(data);
+	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
+
+	sway_log(L_INFO, "get_clipbard: timeout for type %s", req->type);
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "success", json_object_new_boolean(false));
+	json_object_object_add(obj, "error", json_object_new_string("Timeout"));
+	json_object_object_add(req->json, req->type, obj);
+
+	release_clipboard_request(req);
+	return 0;
+}
+
+// greedy wildcard (only "*") matching
+bool mime_type_matches(const char *mime_type, const char *pattern) {
+	const char *wildcard = NULL;
+	while (*mime_type && *pattern) {
+		if (*pattern == '*' && !wildcard) {
+			wildcard = pattern;
+			++pattern;
+		}
+
+		if (*mime_type != *pattern) {
+			if (!wildcard)
+				return false;
+
+			pattern = wildcard;
+			++mime_type;
+			continue;
+		}
+
+		++mime_type;
+		++pattern;
+	}
+
+	while (*pattern == '*') {
+		++pattern;
+	}
+
+	return (*mime_type == *pattern);
+}
+
+void ipc_get_clipboard(struct ipc_client *client, char *buf) {
+	size_t size;
+	const char **types = wlc_get_selection_types(&size);
+	if (client->payload_length == 0) {
+		json_object *obj = json_object_new_array();
+		for (size_t i = 0; i < size; ++i) {
+			json_object_array_add(obj, json_object_new_string(types[i]));
+		}
+
+		const char *str = json_object_to_json_string(obj);
+		ipc_send_reply(client, str, strlen(str));
+		json_object_put(obj);
+		return;
+	}
+
+	unescape_string(buf);
+	strip_quotes(buf);
+	list_t *requested = split_string(buf, " ");
+	json_object *json = json_object_new_object();
+	unsigned int *pending = malloc(sizeof(unsigned int));
+	*pending = 0;
+
+	for (size_t l = 0; l < (size_t) requested->length; ++l) {
+		const char *pattern = requested->items[l];
+		bool found = false;
+		for (size_t i = 0; i < size; ++i) {
+			if (!mime_type_matches(types[i], pattern)) {
+				continue;
+			}
+
+			found = true;
+
+			struct get_clipboard_request *req = malloc(sizeof(*req));
+			if (!req) {
+				sway_log(L_ERROR, "get_clipboard: request malloc failed");
+				goto data_error;
+			}
+
+			int pipes[2];
+			if (pipe(pipes) == -1) {
+				sway_log_errno(L_ERROR, "get_clipboard: pipe call failed");
+				free(req);
+				goto data_error;
+			}
+
+			fcntl(pipes[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+			fcntl(pipes[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+
+			if (!wlc_get_selection_data(types[i], pipes[1])) {
+				close(pipes[0]);
+				close(pipes[1]);
+				free(req);
+				sway_log(L_ERROR, "get_clipboard: failed to retrieve "
+					"selection data");
+				goto data_error;
+			}
+
+			if (!(req->buf = malloc(512))) {
+				close(pipes[0]);
+				close(pipes[1]);
+				free(req);
+				sway_log_errno(L_ERROR, "get_clipboard: buf malloc failed");
+				goto data_error;
+			}
+
+			(*pending)++;
+
+			req->client = client;
+			req->type = strdup(types[i]);
+			req->json = json;
+			req->pending = pending;
+			req->buf_position = 0;
+			req->buf_size = 512;
+			req->fd = pipes[0];
+			req->timer_event_source = wlc_event_loop_add_timer(ipc_selection_timer_cb, req);
+			req->fd_event_source = wlc_event_loop_add_fd(pipes[0],
+				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
+				&ipc_selection_data_cb, req);
+
+			wlc_event_source_timer_update(req->timer_event_source, 30000);
+
+			// NOTE: remove this goto to enable retrieving multiple
+			// targets at once. The whole implementation is already
+			// made for it. The only reason it was disabled
+			// at the time of writing is that neither wlc's xselection
+			// implementation nor (apparently) gtk on wayland supports
+			// multiple send requests at the same time which makes
+			// every request except the last one fail (and therefore
+			// return empty data)
+			goto cleanup;
+		}
+
+		if (!found) {
+			sway_log(L_INFO, "Invalid clipboard type %s requested", pattern);
+		}
+	}
+
+	if (*pending == 0) {
+		static const char *error_empty = "{ \"success\": false, \"error\": "
+			"\"No matching types found\" }";
+		ipc_send_reply(client, error_empty, (uint32_t)strlen(error_empty));
+		free(json);
+		free(pending);
+	}
+
+	goto cleanup;
+
+data_error:;
+	static const char *error_json = "{ \"success\": false, \"error\": "
+		"\"Failed to create clipboard data request\" }";
+	ipc_send_reply(client, error_json, (uint32_t)strlen(error_json));
+	free(json);
+	free(pending);
+
+cleanup:
+	list_free(requested);
+	free(types);
+}
+
 void ipc_client_handle_command(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
@@ -635,6 +909,16 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 			json_object_put(json); // free
 		}
+		goto exit_cleanup;
+	}
+
+	case IPC_GET_CLIPBOARD:
+	{
+		if (!(client->security_policy & IPC_FEATURE_GET_CLIPBOARD)) {
+			goto exit_denied;
+		}
+
+		ipc_get_clipboard(client, buf);
 		goto exit_cleanup;
 	}
 

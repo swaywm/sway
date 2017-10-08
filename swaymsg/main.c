@@ -19,15 +19,17 @@ void sway_terminate(int exit_code) {
 	exit(exit_code);
 }
 
-static void pretty_print_cmd(json_object *r) {
-	bool _success;
+static bool success(json_object *r, bool fallback) {
 	json_object *success;
 	if (!json_object_object_get_ex(r, "success", &success)) {
-		_success = true;
+		return fallback;
 	} else {
-		_success = json_object_get_boolean(success);
+		return json_object_get_boolean(success);
 	}
-	if (!_success) {
+}
+
+static void pretty_print_cmd(json_object *r) {
+	if (!success(r, true)) {
 		json_object *error;
 		if (!json_object_object_get_ex(r, "error", &error)) {
 			printf("An unknkown error occured");
@@ -144,10 +146,43 @@ static void pretty_print_version(json_object *v) {
 	printf("sway version %s\n", json_object_get_string(ver));
 }
 
+static void pretty_print_clipboard(json_object *v) {
+	if (success(v, true)) {
+		if (json_object_is_type(v, json_type_array)) {
+			for (int i = 0; i < json_object_array_length(v); ++i) {
+				json_object *o = json_object_array_get_idx(v, i);
+				printf("%s\n", json_object_get_string(o));
+			}
+		} else {
+			// NOTE: could be extended to print all received types
+			// instead just the first one when sways ipc server
+			// supports it
+			struct json_object_iterator iter = json_object_iter_begin(v);
+			struct json_object_iterator end = json_object_iter_end(v);
+			if (!json_object_iter_equal(&iter, &end)) {
+				json_object *obj = json_object_iter_peek_value(&iter);
+				if (success(obj, false)) {
+					json_object *content;
+					json_object_object_get_ex(obj, "content", &content);
+					printf("%s\n", json_object_get_string(content));
+				} else {
+					json_object *error;
+					json_object_object_get_ex(obj, "error", &error);
+					printf("Error: %s\n", json_object_get_string(error));
+				}
+			}
+		}
+	} else {
+		json_object *error;
+		json_object_object_get_ex(v, "error", &error);
+		printf("Error: %s\n", json_object_get_string(error));
+	}
+}
+
 static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
-			type != IPC_GET_VERSION) {
+			type != IPC_GET_VERSION && type != IPC_GET_CLIPBOARD) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
@@ -155,6 +190,11 @@ static void pretty_print(int type, json_object *resp) {
 
 	if (type == IPC_GET_VERSION) {
 		pretty_print_version(resp);
+		return;
+	}
+
+	if (type == IPC_GET_CLIPBOARD) {
+		pretty_print_clipboard(resp);
 		return;
 	}
 
@@ -267,6 +307,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_BAR_CONFIG;
 	} else if (strcasecmp(cmdtype, "get_version") == 0) {
 		type = IPC_GET_VERSION;
+	} else if (strcasecmp(cmdtype, "get_clipboard") == 0) {
+		type = IPC_GET_CLIPBOARD;
 	} else {
 		sway_abort("Unknown message type %s", cmdtype);
 	}
@@ -290,6 +332,9 @@ int main(int argc, char **argv) {
 			printf("%s\n", resp);
 			ret = 1;
 		} else {
+			if (!success(obj, true)) {
+				ret = 1;
+			}
 			if (raw) {
 				printf("%s\n", json_object_to_json_string_ext(obj,
 					JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));

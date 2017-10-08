@@ -65,6 +65,12 @@ IPC Message Types
 *get_version*::
 	Get JSON-encoded version information for the running instance of sway.
 
+*get_clipboard*::
+	Get JSON-encoded information about the clipboard.
+	Returns the current clipboard mime-types if called without
+	arguments, otherwise returns the clipboard data in the requested
+	formats. Encodes the data using base64 for non-text mime types.
+
 Authors
 -------
 
