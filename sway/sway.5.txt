@@ -143,6 +143,10 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	_amount_. The [px] parameters are optional and have no effect. This command
 	only accepts pixel dimensions.
 
+**scratchpad show**::
+	Shows a window from the scratchpad. Repeatedly using this command will cycle
+	through the windows in the scratchpad.
+
 **split** <vertical|v|horizontal|h|toggle|t>::
 	Splits the current container, vertically or horizontally. If toggled then the
 	current container is split opposite to the parent container.

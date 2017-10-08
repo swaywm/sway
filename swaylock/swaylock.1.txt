@@ -27,6 +27,10 @@ Options
 	background of the image to the given color. Defaults to white (ffffff), or
 	transparent (00000000) if an image is in use.
 
+*-f, \--daemonize*::
+	Fork into the background after spawning. Note: this is the default behavior of
+	i3lock.
+
 *-i, \--image* [<output>:]<path>::
 	Display the given image, optionally only on the given output. Use -c to set
 	a background color.
