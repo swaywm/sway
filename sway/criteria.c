@@ -434,10 +434,18 @@ static void container_match_add(swayc_t *container, struct list_tokens *list_tok
 		list_add(list_tokens->list, container);
 	}
 }
+
 list_t *container_for(list_t *tokens) {
 	struct list_tokens list_tokens = (struct list_tokens){create_list(), tokens};
 
 	container_map(&root_container, (void (*)(swayc_t *, void *))container_match_add, &list_tokens);
+	
+	for (int i = 0; i < scratchpad->length; ++i) {
+		swayc_t *c = scratchpad->items[i];
+		if (criteria_test(c, tokens)) {
+			list_add(list_tokens.list, c);
+		}
+	}
 
 	return list_tokens.list;
 }

@@ -7,10 +7,8 @@
 #include "sway/layout.h"
 
 static swayc_t *fetch_view_from_scratchpad() {
-	if (sp_index >= scratchpad->length) {
-		sp_index = 0;
-	}
-	swayc_t *view = scratchpad->items[sp_index++];
+	sp_index = (sp_index + 1) % scratchpad->length;
+	swayc_t *view = scratchpad->items[sp_index];
 
 	if (wlc_view_get_output(view->handle) != swayc_active_output()->handle) {
 		wlc_view_set_output(view->handle, swayc_active_output()->handle);
@@ -46,6 +44,14 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 
 	if (strcasecmp(argv[0], "show") == 0 && scratchpad->length > 0) {
 		if (!sp_view) {
+			if (current_container) {
+				// Haxor the scratchpad index if criteria'd
+				for (int i = 0; i < scratchpad->length; ++i) {
+					if (scratchpad->items[i] == current_container) {
+						sp_index = (i - 1) % scratchpad->length;
+					}
+				}
+			}
 			sp_view = fetch_view_from_scratchpad();
 		} else {
 			if (swayc_active_workspace() != sp_view->parent) {
