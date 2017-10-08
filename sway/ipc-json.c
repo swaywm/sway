@@ -155,22 +155,11 @@ static const char *ipc_json_get_scratchpad_state(swayc_t *c) {
 
 static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 	json_object *props = json_object_new_object();
-	const char *layout = (c->parent->type == C_CONTAINER) ?
-		ipc_json_layout_description(c->parent->layout) : "none";
-	const char *last_layout = (c->parent->type == C_CONTAINER) ?
-		ipc_json_layout_description(c->parent->prev_layout) : "none";
-	wlc_handle parent = wlc_view_get_parent(c->handle);
-
 	json_object_object_add(object, "type", json_object_new_string((c->is_floating) ? "floating_con" : "con"));
 
+	wlc_handle parent = wlc_view_get_parent(c->handle);
 	json_object_object_add(object, "scratchpad_state",
 		json_object_new_string(ipc_json_get_scratchpad_state(c)));
-	json_object_object_add(object, "layout",
-		(strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
-	json_object_object_add(object, "last_split_layout",
-		(strcmp(last_layout, "null") == 0) ? NULL : json_object_new_string(last_layout));
-	json_object_object_add(object, "workspace_layout",
-		json_object_new_string(ipc_json_layout_description(swayc_parent_by_type(c, C_WORKSPACE)->workspace_layout)));
 
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 
@@ -189,6 +178,19 @@ static void ipc_json_describe_view(swayc_t *c, json_object *object) {
 		c->is_floating ? "auto_on" : "auto_off")); // we can't state the cause
 
 	json_object_object_add(object, "app_id", c->app_id ? json_object_new_string(c->app_id) : NULL);
+
+	if (c->parent) {
+		const char *layout = (c->parent->type == C_CONTAINER) ?
+			ipc_json_layout_description(c->parent->layout) : "none";
+		const char *last_layout = (c->parent->type == C_CONTAINER) ?
+			ipc_json_layout_description(c->parent->prev_layout) : "none";
+		json_object_object_add(object, "layout",
+			(strcmp(layout, "null") == 0) ? NULL : json_object_new_string(layout));
+		json_object_object_add(object, "last_split_layout",
+			(strcmp(last_layout, "null") == 0) ? NULL : json_object_new_string(last_layout));
+		json_object_object_add(object, "workspace_layout",
+			json_object_new_string(ipc_json_layout_description(swayc_parent_by_type(c, C_WORKSPACE)->workspace_layout)));
+	}
 }
 
 static void ipc_json_describe_root(swayc_t *c, json_object *object) {
