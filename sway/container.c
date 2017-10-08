@@ -516,11 +516,11 @@ swayc_t *destroy_view(swayc_t *view) {
 		return NULL;
 	}
 	sway_log(L_DEBUG, "Destroying view '%p'", view);
-	swayc_t *parent = view->parent;
 	free_swayc(view);
 
 	// Destroy empty containers
-	if (parent->type == C_CONTAINER) {
+	swayc_t *parent = view->parent;
+	if (parent && parent->type == C_CONTAINER) {
 		return destroy_container(parent);
 	}
 	return parent;

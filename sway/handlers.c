@@ -553,22 +553,24 @@ static void handle_view_destroyed(wlc_handle handle) {
 		bool fullscreen = swayc_is_fullscreen(view);
 		remove_view_from_scratchpad(view);
 		swayc_t *parent = destroy_view(view);
-		if (fullscreen) {
-			parent->fullscreen = NULL;
+		if (parent) {
+			if (fullscreen) {
+				parent->fullscreen = NULL;
+			}
+
+			ipc_event_window(parent, "close");
+
+			// Destroy empty workspaces
+			if (parent->type == C_WORKSPACE &&
+				parent->children->length == 0 &&
+				parent->floating->length == 0 &&
+				swayc_active_workspace() != parent &&
+				!parent->visible) {
+				parent = destroy_workspace(parent);
+			}
+
+			arrange_windows(parent, -1, -1);
 		}
-
-		ipc_event_window(parent, "close");
-
-		// Destroy empty workspaces
-		if (parent->type == C_WORKSPACE &&
-			parent->children->length == 0 &&
-			parent->floating->length == 0 &&
-			swayc_active_workspace() != parent &&
-			!parent->visible) {
-			parent = destroy_workspace(parent);
-		}
-
-		arrange_windows(parent, -1, -1);
 	} else {
 		// Is it unmanaged?
 		int i;
@@ -582,6 +584,15 @@ static void handle_view_destroyed(wlc_handle handle) {
 					free(_handle);
 					break;
 				}
+			}
+		}
+		// Is it in the scratchpad?
+		for (i = 0; i < scratchpad->length; ++i) {
+			swayc_t *item = scratchpad->items[i];
+			if (item->handle == handle) {
+				list_del(scratchpad, i);
+				destroy_view(item);
+				break;
 			}
 		}
 	}
