@@ -1,6 +1,7 @@
 include_directories(
 	${PROTOCOLS_INCLUDE_DIRS}
 	${WLC_INCLUDE_DIRS}
+	${WLR_INCLUDE_DIRS}
 	${PCRE_INCLUDE_DIRS}
 	${JSONC_INCLUDE_DIRS}
 	${XKBCOMMON_INCLUDE_DIRS}
@@ -48,6 +49,7 @@ target_link_libraries(sway
 	sway-protocols
 	sway-wayland
 	${WLC_LIBRARIES}
+	${WLR_LIBRARIES}
 	${XKBCOMMON_LIBRARIES}
 	${PCRE_LIBRARIES}
 	${JSONC_LIBRARIES}
