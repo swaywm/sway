@@ -39,9 +39,11 @@ Options
 IPC Message Types
 -----------------
 
-*command*::
+*<command>*::
 	The message is a sway command (the same commands you can bind to keybindings
 	in your sway config file). It will be executed immediately.
+	+
+	See **sway**(5) for a list of commands.
 
 *get_workspaces*::
 	Gets a JSON-encoded list of workspaces and their status.
