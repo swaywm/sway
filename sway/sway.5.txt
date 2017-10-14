@@ -36,12 +36,12 @@ The following commands may only be used in the configuration file.
 	+
 	See **sway-bar**(5) for details.
 
+**default_orientation** <horizontal|vertical|auto>::
+	Sets the default container layout for tiled containers.
+
 **set** <name> <value>::
 	Sets variable $name to _value_. You can use the new variable in the arguments
 	of future commands.
-
-**orientation** <horizontal|vertical|auto>::
-	Sets the default container layout for tiled containers.
 
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with **bindsym** or at runtime through **swaymsg**(1).
