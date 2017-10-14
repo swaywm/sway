@@ -62,16 +62,19 @@ commands with **swaymsg**(1) or **i3-msg**(1) (or even with **i3**(1), probably)
 Configuration
 -------------
 
-If _-c_ is not specified, sway will look in several locations for your config
-file. The suggested location for your config file is ~/.config/sway/config.
-~/.sway/config will also work, and the rest of the usual XDG config locations
-are supported.  If no sway config is found, sway will attempt to load an i3
-config from all the config locations i3 supports. Sway looks for a config file in
-a fallback directory as a last resort, which is /etc/sway/ by default. A standard
-configuration file is installed at this location.  If still nothing is found,
-you will receive an error.
+The path to a config file can be given via the _-c_ parameter, else
+sway searches for it in the following locations:
+- ~/.sway/config
+- $XDG_CONFIG_HOME/sway/config (suggested location)
+- ~/.i3/config
+- $XDG_CONFIG_HOME/i3/config (XDG_HOME )
+- /etc/sway/config
+- /etc/i3/config
 
-To write your own config, it's suggested that you copy the default config file to
+In /etc/sway/config the standard config file is installed.
+An error is raised when no config file is found.
+
+To write your own configuration, it's suggested that you copy the default config file to
 the location of your choosing and start there.
 
 For information on the config file format, see **sway**(5).

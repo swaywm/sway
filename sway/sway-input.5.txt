@@ -12,8 +12,8 @@ Description
 -----------
 
 Sway allows for configuration of libinput devices within the sway configuration file.
-sway-input commands must be used inside a _input { }_ block in the config.
-To obtain a list of available devices identifier, run **swaymsg -t get_inputs**.
+sway-input commands must be used inside an _input { }_ block in the config.
+To obtain a list of available device identifiers, run **swaymsg -t get_inputs**.
 
 Commands
 --------
@@ -32,7 +32,7 @@ Commands
 
 **input** <identifier> events <enabled|disabled|disabled_on_external_mouse>::
 	Enables or disables send_events for specified input device.
-	(Disabling  send_events disables the input device)
+	(Disabling send_events disables the input device)
 
 **input** <identifier> left_handed <enabled|disabled>::
 	Enables or disables left handed mode for specified input device.
