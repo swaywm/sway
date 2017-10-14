@@ -26,7 +26,7 @@ if (A2X_FOUND)
 
         install(
             FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.${section}
-            DESTINATION ${CMAKE_INSTALL_FULL_DATAROOTDIR}/man/man${section}
+            DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/man${section}
             COMPONENT documentation
         )
     endfunction()
