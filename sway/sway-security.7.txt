@@ -15,8 +15,8 @@ Security Overview
 figured out yet. The following man page is provisional.
 
 Securing sway requires careful configuration of your environment, the sort that's
-usually best suited to a distro maintainer who wants to ship a secure sway
-environment in their distro. Sway provides a number of means of securing it but
+usually best suited to a distribution maintainer who wants to ship a secure sway
+environment in their distribution. Sway provides a number of means of securing it but
 you must make a few changes external to sway first.
 
 Configuration of security features is limited to files in the security directory
@@ -31,7 +31,7 @@ Environment security
 --------------------
 
 LD_PRELOAD is a mechanism designed to ruin the security of your system. There are
-a number of strategies for dealing with this but they all suck a little. In order
+a number of strategies for dealing with this, but they all suck a little. In order
 of most practical to least practical:
 
 1. Only run important programs via exec. Sway's exec command will ensure that
@@ -50,8 +50,7 @@ compromised by LD_PRELOAD. It probably isn't, but you can be sure by setting
 permit LD_PRELOAD for it (and will also run it as root, which sway will shortly
 drop). You could also statically link sway itself.
 
-Note that LD_LIBRARY_PATH has all of the same problems, and all of the same
-solutions.
+Note that LD_LIBRARY_PATH has all of these problems, and the same solutions.
 
 Read your log
 -------------
@@ -93,16 +92,16 @@ policies. These features are:
 	Permission to take screenshots or record the screen.
 
 By default, no permissions are granted (though saner defaults are provided in
-/etc/sway/config.d/security). You can use the following config commands to control
+/etc/sway/config.d/security). You can use the following configuration options to control
 a program's access:
 
 **permit** <executable> <features...>::
-	Permits <executable> to use <features> (each feature seperated by a space).
+	Permits <executable> to use <features> (each feature separated by a space).
 	<executable> may be * to affect the default policy, or the full path to the
 	executable file.
 
 **reject** <executable> <features...>::
-	Disallows <executable> from using <features> (each feature seperated by a space).
+	Disallows <executable> from using <features> (each feature separated by a space).
 	<executable> may be * to affect the default policy, or the full path to the
 	executable file.
 
@@ -154,7 +153,7 @@ a commands block and fill it with policies:
 	}
 
 For example, you could do this to limit the use of the focus command to just
-binding and critiera:
+binding and criteria:
 
 	commands {
 		focus binding criteria
@@ -210,7 +209,7 @@ You can also control which IPC events can be raised with an events block:
 		}
 	}
 
-The following commands are vaild within an ipc events block:
+The following commands are valid within an IPC events block:
 
 **binding** <enabled|disabled>::
 	Controls keybinding notifications (disabled by default).
