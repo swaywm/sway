@@ -11,8 +11,8 @@ sway-bar - bar configuration file and commands
 Description
 -----------
 
-Sway allows for configuration of swaybar within the sway configuation file.
-Swaybar commands must be used inside a _bar { }_ block in the config.
+Sway allows configuring swaybar in the sway configuration file.
+Swaybar commands must be used inside a _bar { }_ block in the config file.
 
 
 Commands
@@ -77,15 +77,15 @@ codes in this manner.
 
 **activate_button** <button>::
 	Sets the button to be used for the _activate_ (primary click) tray item
-	event. By default is BTN_LEFT (0x110).
+	event. The default is BTN_LEFT (0x110).
 
 **context_button** <button>::
 	Sets the button to be used for the _context menu_ (right click) tray item
-	event. By default is BTN_RIGHT (0x111).
+	event. The default is BTN_RIGHT (0x111).
 
 **secondary_button** <button>::
 	Sets the button to be used for the _secondary_ (middle click) tray item
-	event. By default is BTN_MIDDLE (0x112).
+	event. The default is BTN_MIDDLE (0x112).
 
 **tray_output** none|all|<name>::
 	Sets the output that the tray will appear on or none. Unlike i3bar, swaybar

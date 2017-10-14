@@ -73,7 +73,7 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 **focus** output <direction|name>::
 	Direction may be one of _up_, _down_, _left_, _right_. The directional focus
 	commands will move the focus to the output in that direction. When name is
-	given the focus is changed to the output with that name.
+	given, the focus is changed to the output with that name.
 
 **focus** mode_toggle::
 	Toggles focus between floating view and tiled view.
@@ -148,7 +148,7 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	through the windows in the scratchpad.
 
 **split** <vertical|v|horizontal|h|toggle|t>::
-	Splits the current container, vertically or horizontally. If toggled then the
+	Splits the current container, vertically or horizontally. If toggled, then the
 	current container is split opposite to the parent container.
 
 **splith**::
@@ -185,10 +185,10 @@ or triggered at runtime.
 
 **client**.<color_class> <border> <background> <text> <indicator> <child_border>::
 	The client commands control the colors of the view borders and title bars. All
-	of the client commands _require_ five color values. (The one exception is
+	client commands _require_ five color values. (The one exception is
 	**client.background** which _requires_ one color value.) If you only want to
 	specify a subset, supply default colors for all the others. Colors must be
-	defined in hex. i.e. _#rrggbb_ or _#rrggbbaa_ when including the alpha
+	defined in hex. i.e. _#rrggbb_ or _#rrggbbaa_, when including the alpha
 	channel.
 	+
 	The command tokens are:
@@ -258,7 +258,7 @@ The default colors are:
 	Uses the container dimensions as default.
 	-1 x -1 will remove any restriction on dimensions.
 	0 x 0 has the same behavior as not setting any value.
-	If in conflict this option has precedence over floating_minimum_size.
+	If in conflict, this option has precedence over floating_minimum_size.
 
 **floating_minimum_size** <width> x <height>::
 	Specifies the minimum dimensions of floating windows.
@@ -338,8 +338,8 @@ The default colors are:
 
 **mode** <mode_name>::
 	Switches to the given mode_name. The default mode is simply _default_. To
-	create a new mode in config append _{_ to this command, the following lines
-	will be keybinds for that mode, and _}_ on its own line to close the block.
+	create a new mode append _{_ to this command, the following lines
+	will be keybindings for that mode, and _}_ on its own line to close the block.
 
 **mouse_warping** <output|none>::
 	When _output_: place mouse at center of newly focused window when changing
@@ -352,7 +352,7 @@ The default colors are:
 **output** <name> <resolution|res> <WIDTHxHEIGHT>::
 	Configures the specified output to use the given resolution.
 	+
-	_Note_: sway does not currently support modesetting. Your output's native
+	_Note_: sway does not currently support setting the output mode. Your output's native
 	resolution will be used and the screen will be scaled from the resolution
 	specified to your native resolution.
 
@@ -399,12 +399,12 @@ The default colors are:
 
 **unmark** <identifier>::
 	**Unmark** will remove _identifier_ from the list of current marks on a window. If
-	no _identifier_ is specified then **unmark** will remove all marks.
+	no _identifier_ is specified, then **unmark** will remove all marks.
 
 **workspace** [number] <name>::
 	Switches to the specified workspace. The string "number" is optional. The
-	worspace _name_, if unquoted, may not contain the string "output", as sway
-	will assume that the command is moving a worspace to an output, as described
+	workspace _name_, if unquoted, may not contain the string "output", as sway
+	will assume that the command is moving a workspace to an output, as described
 	below.
 
 **workspace** <prev|next>::
@@ -438,9 +438,9 @@ A criteria is a string in the form of e.g.:
 
 	[class="[Rr]egex.*" title="some title"]
 
-The string contains one or more (space separated) attribute/value pairs and they
-are used by some commands filter which views to execute actions on. All attributes
-must match for the criteria string to match.
+The string contains one or more (space separated) attribute/value pairs. They
+are used by some commands to choose which views to execute actions on. All attributes
+must match for the criteria to match.
 
 Criteria may be used with either the **for_window** or **assign** commands to
 specify operations to perform on new views. A criteria may also be used to
@@ -460,7 +460,7 @@ Currently supported attributes:
 
 **class**::
 	Compare value against the window class. Can be a regular expression. If value
-	is _focused_ then the window class must be the same as that of the currently
+	is _focused_, then the window class must be the same as that of the currently
 	focused window.
 
 **con_id**::
@@ -485,7 +485,7 @@ Currently supported attributes:
 
 **workspace**::
 	Compare against the workspace name for this view. Can be a regular expression.
-	If value is _focused_ then all the views on the currently focused workspace
+	If the value is _focused_, then all the views on the currently focused workspace
 	matches.
 
 See Also
