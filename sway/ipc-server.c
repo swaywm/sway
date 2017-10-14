@@ -1,6 +1,10 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
 
+#ifndef __FreeBSD__
+// Any value will hide SOCK_CLOEXEC on FreeBSD (__BSD_VISIBLE=0)
 #define _XOPEN_SOURCE 700
+#endif
+
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
