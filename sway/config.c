@@ -912,6 +912,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->y != -1) {
 		dst->y = src->y;
 	}
+  if (src->scale != -1) {
+    dst->scale = src->scale;
+  }
 	if (src->background) {
 		if (dst->background) {
 			free(dst->background);
@@ -1127,7 +1130,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		sway_log(L_DEBUG, "Set %s size to %ix%i (%d)", oc->name, oc->width, oc->height, oc->scale);
 		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
 		wlc_output_set_resolution(output->handle, &new_size, (uint32_t)oc->scale);
-	} else if (oc && oc->scale != 1) {
+	} else if (oc) {
 		const struct wlc_size *new_size = wlc_output_get_resolution(output->handle);
 		wlc_output_set_resolution(output->handle, new_size, (uint32_t)oc->scale);
 	}
