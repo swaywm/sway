@@ -7,7 +7,11 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <poll.h>
+#ifdef __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#else
 #include <linux/input-event-codes.h>
+#endif
 #ifdef ENABLE_TRAY
 #include <dbus/dbus.h>
 #include "swaybar/tray/sni_watcher.h"
