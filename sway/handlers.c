@@ -552,7 +552,7 @@ static void handle_view_destroyed(wlc_handle handle) {
 	if (view) {
 		bool fullscreen = swayc_is_fullscreen(view);
 		remove_view_from_scratchpad(view);
-		swayc_t *parent = destroy_view(view);
+		swayc_t *parent = destroy_view(view), *iter = NULL;
 		if (parent) {
 			ipc_event_window(parent, "close");
 
@@ -566,17 +566,18 @@ static void handle_view_destroyed(wlc_handle handle) {
 			}
 
 			if (fullscreen) {
-				while (parent) {
-					if (parent->fullscreen) {
-						parent->fullscreen = NULL;
+				iter = parent;
+				while (iter) {
+					if (iter->fullscreen) {
+						iter->fullscreen = NULL;
 						break;
 					}
-					parent = parent->parent;
+					iter = iter->parent;
 				}
 			}
 
 
-			arrange_windows(parent, -1, -1);
+			arrange_windows(iter ? iter : parent, -1, -1);
 		}
 	} else {
 		// Is it unmanaged?
