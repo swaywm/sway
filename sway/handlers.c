@@ -554,10 +554,6 @@ static void handle_view_destroyed(wlc_handle handle) {
 		remove_view_from_scratchpad(view);
 		swayc_t *parent = destroy_view(view);
 		if (parent) {
-			if (fullscreen) {
-				parent->fullscreen = NULL;
-			}
-
 			ipc_event_window(parent, "close");
 
 			// Destroy empty workspaces
@@ -568,6 +564,17 @@ static void handle_view_destroyed(wlc_handle handle) {
 				!parent->visible) {
 				parent = destroy_workspace(parent);
 			}
+
+			if (fullscreen) {
+				while (parent) {
+					if (parent->fullscreen) {
+						parent->fullscreen = NULL;
+						break;
+					}
+					parent = parent->parent;
+				}
+			}
+
 
 			arrange_windows(parent, -1, -1);
 		}
