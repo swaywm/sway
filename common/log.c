@@ -22,6 +22,12 @@ static const char *verbosity_colors[] = {
 	[L_INFO  ] = "\x1B[1;34m",
 	[L_DEBUG ] = "\x1B[1;30m",
 };
+static const char verbosity_chars[] = {
+	[L_SILENT] = '\0',
+	[L_ERROR ] = 'E',
+	[L_INFO  ] = 'I',
+	[L_DEBUG ] = 'D',
+};
 
 void init_log(log_importance_t verbosity) {
 	if (verbosity != L_DEBUG) {
@@ -62,6 +68,16 @@ void _sway_vlog(const char *filename, int line, log_importance_t verbosity,
 		static struct tm *tm_info;
 		char buffer[26];
 
+		unsigned int c = verbosity;
+		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
+			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
+		}
+
+		// First, if not printing color, show the log level
+		if (!(colored && isatty(STDERR_FILENO)) && c != L_SILENT) {
+			fprintf(stderr, "%c: ", verbosity_chars[c]);
+		}
+
 		// get current time
 		t = time(NULL);
 		// convert time to local time (determined by the locale)
@@ -69,11 +85,6 @@ void _sway_vlog(const char *filename, int line, log_importance_t verbosity,
 		// generate time prefix
 		strftime(buffer, sizeof(buffer), "%x %X - ", tm_info);
 		fprintf(stderr, "%s", buffer);
-
-		unsigned int c = verbosity;
-		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
-			c = sizeof(verbosity_colors) / sizeof(char *) - 1;
-		}
 
 		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "%s", verbosity_colors[c]);
@@ -124,6 +135,8 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 
 		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "%s", verbosity_colors[c]);
+		} else if (c != L_SILENT) {
+			fprintf(stderr, "%c: ", verbosity_chars[c]);
 		}
 
 		va_list args;
