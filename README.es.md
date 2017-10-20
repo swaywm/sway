@@ -30,6 +30,15 @@ Adicionalmente se pueden crear recompensas("bounties") para cualquier
 característica que se desee desarrollar. En general el uso de Patreon es más
 útil para el sustento de Sway.
 
+## Ayuda en Español
+
+Al momento no hay ayuda en Español en IRC, [tonyskapunk](https://github.com/tonyskapunk)
+puede proveer ayuda en Español en GitHub en el uso horario [UTC-6](https://en.wikipedia.org/wiki/UTC%E2%88%9206:00)
+
+La traducción al Español no esta completa, información sobre el progreso de
+la traducción se encuentra documentada en el "issue":
+[Documentation i18n](https://github.com/swaywm/sway/issues/1318)
+
 ## Firmas digitales
 
 Los lanzamientos son firmados con [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
@@ -53,7 +62,8 @@ Sway esta disponible en muchas distribuciones. Intenta instalar el paquete
 para información de la instalación en tu distribución.
 
 Si estas interesado en crear un paquete de Sway para tu distribución entra 
-al canal de IRC o envía un correo a sir@cmpwn.com para más información.
+al canal de IRC o envía un correo(en Inglés) a sir@cmpwn.com para más
+información.
 
 ### Compilando código fuente
 
