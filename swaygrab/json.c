@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "log.h"
 #include "ipc-client.h"
 #include "swaygrab/json.h"
 
@@ -12,7 +13,15 @@ static json_object *tree;
 void init_json_tree(int socketfd) {
 	uint32_t len = 0;
 	char *res = ipc_single_command(socketfd, IPC_GET_TREE, NULL, &len);
-	tree = json_tokener_parse(res);
+	struct json_tokener *tok = json_tokener_new_ex(256);
+	if (!tok) {
+		sway_abort("Unable to get json tokener.");
+	}
+	tree = json_tokener_parse_ex(tok, res, len);
+	if (!tree || tok->err != json_tokener_success) {
+		sway_abort("Unable to parse IPC response as JSON: %s", json_tokener_error_desc(tok->err));
+	}
+	json_tokener_free(tok);
 }
 
 void free_json_tree() {
