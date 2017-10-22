@@ -11,7 +11,6 @@
 
 struct sway_server {
 	// TODO WLR
-	//struct roots_desktop *desktop;
 	//struct roots_input *input;
 
 	struct wl_display *wl_display;

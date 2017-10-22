@@ -24,8 +24,17 @@ arch:
     - wlc-git
     - libcap
   script:
-    - "cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ."
-    - "make"
+    - git clone https://github.com/swaywm/wlroots
+    - cd wlroots
+    - mkdir build
+    - cd build
+    - meson --prefix=/usr ..
+    - sudo ninja install
+    - cd ../..
+    - cmake .
+    - make
+    - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
+    - make
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"

@@ -12,7 +12,15 @@ packages:
   - gdk-pixbuf2
 sources:
   - https://git.sr.ht/~sircmpwn/sway
+  - https://git.sr.ht/~sircmpwn/wlroots
 tasks:
+  - wlroots: |
+      cd wlroots
+      mkdir build
+      cd build
+      meson --prefix=/usr ..
+      ninja
+      sudo ninja install
   - setup: |
       cd sway
       mkdir build
