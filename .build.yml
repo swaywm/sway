@@ -10,6 +10,7 @@ packages:
   - cairo
   - wayland
   - gdk-pixbuf2
+  - meson
 sources:
   - https://git.sr.ht/~sircmpwn/sway
   - https://git.sr.ht/~sircmpwn/wlroots

@@ -23,6 +23,7 @@ arch:
     - gdk-pixbuf2
     - wlc-git
     - libcap
+    - meson
   script:
     - git clone https://github.com/swaywm/wlroots
     - cd wlroots
