@@ -4,7 +4,6 @@
 #include "sway/workspace.h"
 #include "sway/layout.h"
 #include "sway/config.h"
-#include "sway/extensions.h"
 #include "sway/input_state.h"
 #include "sway/ipc-server.h"
 #include "sway/border.h"
@@ -163,12 +162,14 @@ bool set_focused_container(swayc_t *c) {
 		if (c->type == C_VIEW) {
 			wlc_view_set_state(c->handle, WLC_BIT_ACTIVATED, true);
 		}
+		/* TODO WLR
 		if (!desktop_shell.is_locked) {
 			// If the system is locked, we do everything _but_ actually setting
 			// focus. This includes making our internals think that this view is
 			// focused.
 			wlc_view_focus(c->handle);
 		}
+		*/
 		if (c->parent->layout != L_TABBED && c->parent->layout != L_STACKED) {
 			update_container_border(c);
 		}

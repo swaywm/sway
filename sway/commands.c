@@ -120,6 +120,7 @@ void input_cmd_apply(struct input_config *input) {
 		// Try to find the input device and apply configuration now. If
 		// this is during startup then there will be no container and config
 		// will be applied during normal "new input" event from wlc.
+		/* TODO WLR
 		struct libinput_device *device = NULL;
 		for (int i = 0; i < input_devices->length; ++i) {
 			device = input_devices->items[i];
@@ -134,6 +135,7 @@ void input_cmd_apply(struct input_config *input) {
 				break;
 			}
 		}
+		*/
 	}
 }
 

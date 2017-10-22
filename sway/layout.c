@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <math.h>
 #include <wlc/wlc.h>
-#include "sway/extensions.h"
 #include "sway/config.h"
 #include "sway/container.h"
 #include "sway/workspace.h"
@@ -1001,6 +1000,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 		{
 			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
 			width = output->width, height = output->height;
+			/* TODO WLR
 			for (i = 0; i < desktop_shell.panels->length; ++i) {
 				struct panel_config *config = desktop_shell.panels->items[i];
 				if (config->output == output->handle) {
@@ -1022,6 +1022,7 @@ static void arrange_windows_r(swayc_t *container, double width, double height) {
 					}
 				}
 			}
+			*/
 			int gap = swayc_gap(container);
 			x = container->x = x + gap;
 			y = container->y = y + gap;
@@ -1380,11 +1381,13 @@ void arrange_windows(swayc_t *container, double width, double height) {
 }
 
 void arrange_backgrounds(void) {
+	/* TODO WLR
 	struct background_config *bg;
 	for (int i = 0; i < desktop_shell.backgrounds->length; ++i) {
 		bg = desktop_shell.backgrounds->items[i];
 		wlc_view_send_to_back(bg->handle);
 	}
+	*/
 }
 
 /**

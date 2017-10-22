@@ -10,7 +10,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdbool.h>
-#include <wlc/wlc-render.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -31,21 +30,22 @@ struct ucred {
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input.h"
+#include "sway/server.h"
 #include "stringop.h"
 #include "log.h"
 #include "list.h"
 #include "util.h"
 
 static int ipc_socket = -1;
-static struct wlc_event_source *ipc_event_source =  NULL;
+static struct wl_event_source *ipc_event_source =  NULL;
 static struct sockaddr_un *ipc_sockaddr = NULL;
 static list_t *ipc_client_list = NULL;
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
 struct ipc_client {
-	struct wlc_event_source *event_source;
-	struct wlc_event_source *writable_event_source;
+	struct wl_event_source *event_source;
+	struct wl_event_source *writable_event_source;
 	int fd;
 	uint32_t payload_length;
 	uint32_t security_policy;
@@ -57,25 +57,6 @@ struct ipc_client {
 };
 
 static list_t *ipc_get_pixel_requests = NULL;
-
-struct get_pixels_request {
-	struct ipc_client *client;
-	wlc_handle output;
-	struct wlc_geometry geo;
-};
-
-struct get_clipboard_request {
-	struct ipc_client *client;
-	json_object *json;
-	int fd;
-	struct wlc_event_source *fd_event_source;
-	struct wlc_event_source *timer_event_source;
-	char *type;
-	unsigned int *pending;
-	char *buf;
-	size_t buf_size;
-	size_t buf_position;
-};
 
 struct sockaddr_un *ipc_user_sockaddr(void);
 int ipc_handle_connection(int fd, uint32_t mask, void *data);
@@ -118,12 +99,13 @@ void ipc_init(void) {
 	ipc_client_list = create_list();
 	ipc_get_pixel_requests = create_list();
 
-	ipc_event_source = wlc_event_loop_add_fd(ipc_socket, WLC_EVENT_READABLE, ipc_handle_connection, NULL);
+	ipc_event_source = wl_event_loop_add_fd(server.wl_event_loop, ipc_socket,
+			WL_EVENT_READABLE, ipc_handle_connection, NULL);
 }
 
 void ipc_terminate(void) {
 	if (ipc_event_source) {
-		wlc_event_source_remove(ipc_event_source);
+		wl_event_source_remove(ipc_event_source);
 	}
 	close(ipc_socket);
 	unlink(ipc_sockaddr->sun_path);
@@ -176,7 +158,7 @@ static pid_t get_client_pid(int client_fd) {
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	(void) fd; (void) data;
 	sway_log(L_DEBUG, "Event on IPC listening socket");
-	assert(mask == WLC_EVENT_READABLE);
+	assert(mask == WL_EVENT_READABLE);
 
 	int client_fd = accept(ipc_socket, NULL, NULL);
 	if (client_fd == -1) {
@@ -207,7 +189,8 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 	client->payload_length = 0;
 	client->fd = client_fd;
 	client->subscribed_events = 0;
-	client->event_source = wlc_event_loop_add_fd(client_fd, WLC_EVENT_READABLE, ipc_client_handle_readable, client);
+	client->event_source = wl_event_loop_add_fd(server.wl_event_loop, client_fd,
+			WL_EVENT_READABLE, ipc_client_handle_readable, client);
 	client->writable_event_source = NULL;
 
 	client->write_buffer_size = 128;
@@ -234,13 +217,13 @@ static const int ipc_header_size = sizeof(ipc_magic)+8;
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
-	if (mask & WLC_EVENT_ERROR) {
+	if (mask & WL_EVENT_ERROR) {
 		sway_log(L_ERROR, "IPC Client socket error, removing client");
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
-	if (mask & WLC_EVENT_HANGUP) {
+	if (mask & WL_EVENT_HANGUP) {
 		sway_log(L_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
@@ -296,13 +279,13 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
-	if (mask & WLC_EVENT_ERROR) {
+	if (mask & WL_EVENT_ERROR) {
 		sway_log(L_ERROR, "IPC Client socket error, removing client");
 		ipc_client_disconnect(client);
 		return 0;
 	}
 
-	if (mask & WLC_EVENT_HANGUP) {
+	if (mask & WL_EVENT_HANGUP) {
 		sway_log(L_DEBUG, "Client %d hung up", client->fd);
 		ipc_client_disconnect(client);
 		return 0;
@@ -328,7 +311,7 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	client->write_buffer_len -= written;
 
 	if (client->write_buffer_len == 0 && client->writable_event_source) {
-		wlc_event_source_remove(client->writable_event_source);
+		wl_event_source_remove(client->writable_event_source);
 		client->writable_event_source = NULL;
 	}
 
@@ -345,9 +328,9 @@ void ipc_client_disconnect(struct ipc_client *client) {
 	}
 
 	sway_log(L_INFO, "IPC Client %d disconnected", client->fd);
-	wlc_event_source_remove(client->event_source);
+	wl_event_source_remove(client->event_source);
 	if (client->writable_event_source) {
-		wlc_event_source_remove(client->writable_event_source);
+		wl_event_source_remove(client->writable_event_source);
 	}
 	int i = 0;
 	while (i < ipc_client_list->length && ipc_client_list->items[i] != client) i++;
@@ -363,165 +346,6 @@ bool output_by_name_test(swayc_t *view, void *data) {
 		return false;
 	}
 	return !strcmp(name, view->name);
-}
-
-void ipc_get_pixels(wlc_handle output) {
-	if (ipc_get_pixel_requests->length == 0) {
-		return;
-	}
-
-	list_t *unhandled = create_list();
-
-	struct get_pixels_request *req;
-	int i;
-	for (i = 0; i < ipc_get_pixel_requests->length; ++i) {
-		req = ipc_get_pixel_requests->items[i];
-		if (req->output != output) {
-			list_add(unhandled, req);
-			continue;
-		}
-
-		const struct wlc_size *size = &req->geo.size;
-		struct wlc_geometry g_out;
-		char response_header[9];
-		memset(response_header, 0, sizeof(response_header));
-		char *data = malloc(sizeof(response_header) + size->w * size->h * 4);
-		if (!data) {
-			sway_log(L_ERROR, "Unable to allocate pixels for get_pixels");
-			ipc_client_disconnect(req->client);
-			free(req);
-			continue;
-		}
-		wlc_pixels_read(WLC_RGBA8888, &req->geo, &g_out, data + sizeof(response_header));
-
-		response_header[0] = 1;
-		uint32_t *_size = (uint32_t *)(response_header + 1);
-		_size[0] = g_out.size.w;
-		_size[1] = g_out.size.h;
-		size_t len = sizeof(response_header) + (g_out.size.w * g_out.size.h * 4);
-		memcpy(data, response_header, sizeof(response_header));
-		ipc_send_reply(req->client, data, len);
-		free(data);
-		// free the request since it has been handled
-		free(req);
-	}
-
-	// free old list of pixel requests and set new list to all unhandled
-	// requests (request for another output).
-	list_free(ipc_get_pixel_requests);
-	ipc_get_pixel_requests = unhandled;
-}
-
-static bool is_text_target(const char *target) {
-	return (strncmp(target, "text/", 5) == 0
-		|| strcmp(target, "UTF8_STRING") == 0
-		|| strcmp(target, "STRING") == 0
-		|| strcmp(target, "TEXT") == 0
-		|| strcmp(target, "COMPOUND_TEXT") == 0);
-}
-
-static void release_clipboard_request(struct get_clipboard_request *req) {
-	if (--(*req->pending) == 0) {
-		const char *str = json_object_to_json_string(req->json);
-		ipc_send_reply(req->client, str, (uint32_t)strlen(str));
-		json_object_put(req->json);
-	}
-
-	free(req->type);
-	free(req->buf);
-	wlc_event_source_remove(req->fd_event_source);
-	wlc_event_source_remove(req->timer_event_source);
-	close(req->fd);
-	free(req);
-}
-
-static int ipc_selection_data_cb(int fd, uint32_t mask, void *data) {
-	assert(data);
-	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
-
-	if (mask & WLC_EVENT_ERROR) {
-		sway_log(L_ERROR, "Selection data fd error");
-		goto error;
-	}
-
-	if (mask & WLC_EVENT_READABLE) {
-		static const unsigned int max_size = 8192 * 1024;
-		int amt = 0;
-
-		do {
-			int size = req->buf_size - req->buf_position;
-			int amt = read(fd, req->buf + req->buf_position, size - 1);
-			if (amt < 0) {
-				if (errno == EAGAIN) {
-					return 0;
-				}
-
-				sway_log_errno(L_INFO, "Failed to read from clipboard data fd");
-				goto release;
-			}
-
-			req->buf_position += amt;
-			if (req->buf_position >= req->buf_size - 1) {
-				if (req->buf_size >= max_size) {
-					sway_log(L_ERROR, "get_clipbard: selection data too large");
-					goto error;
-				}
-				char *next = realloc(req->buf, req->buf_size *= 2);
-				if (!next) {
-					sway_log_errno(L_ERROR, "get_clipboard: realloc data buffer failed");
-					goto error;
-				}
-
-				req->buf = next;
-			}
-		} while(amt != 0);
-
-		req->buf[req->buf_position] = '\0';
-
-		json_object *obj = json_object_new_object();
-		json_object_object_add(obj, "success", json_object_new_boolean(true));
-		if (is_text_target(req->type)) {
-			json_object_object_add(obj, "content", json_object_new_string(req->buf));
-			json_object_object_add(req->json, req->type, obj);
-		} else {
-			size_t outlen;
-			char *b64 = b64_encode(req->buf, req->buf_position, &outlen);
-			json_object_object_add(obj, "content", json_object_new_string(b64));
-			free(b64);
-
-			char *type = malloc(strlen(req->type) + 8);
-			strcat(type, ";base64");
-			json_object_object_add(req->json, type, obj);
-			free(type);
-		}
-	}
-
-	goto release;
-
-error:;
-	json_object *obj = json_object_new_object();
-	json_object_object_add(obj, "success", json_object_new_boolean(false));
-	json_object_object_add(obj, "error",
-		json_object_new_string("Failed to retrieve data"));
-	json_object_object_add(req->json, req->type, obj);
-
-release:
-	release_clipboard_request(req);
-	return 0;
-}
-
-static int ipc_selection_timer_cb(void *data) {
-	assert(data);
-	struct get_clipboard_request *req = (struct get_clipboard_request *)data;
-
-	sway_log(L_INFO, "get_clipbard: timeout for type %s", req->type);
-	json_object *obj = json_object_new_object();
-	json_object_object_add(obj, "success", json_object_new_boolean(false));
-	json_object_object_add(obj, "error", json_object_new_string("Timeout"));
-	json_object_object_add(req->json, req->type, obj);
-
-	release_clipboard_request(req);
-	return 0;
 }
 
 // greedy wildcard (only "*") matching
@@ -551,125 +375,6 @@ bool mime_type_matches(const char *mime_type, const char *pattern) {
 	}
 
 	return (*mime_type == *pattern);
-}
-
-void ipc_get_clipboard(struct ipc_client *client, char *buf) {
-	size_t size;
-	const char **types = wlc_get_selection_types(&size);
-	if (client->payload_length == 0) {
-		json_object *obj = json_object_new_array();
-		for (size_t i = 0; i < size; ++i) {
-			json_object_array_add(obj, json_object_new_string(types[i]));
-		}
-
-		const char *str = json_object_to_json_string(obj);
-		ipc_send_reply(client, str, strlen(str));
-		json_object_put(obj);
-		return;
-	}
-
-	unescape_string(buf);
-	strip_quotes(buf);
-	list_t *requested = split_string(buf, " ");
-	json_object *json = json_object_new_object();
-	unsigned int *pending = malloc(sizeof(unsigned int));
-	*pending = 0;
-
-	for (size_t l = 0; l < (size_t) requested->length; ++l) {
-		const char *pattern = requested->items[l];
-		bool found = false;
-		for (size_t i = 0; i < size; ++i) {
-			if (!mime_type_matches(types[i], pattern)) {
-				continue;
-			}
-
-			found = true;
-
-			struct get_clipboard_request *req = malloc(sizeof(*req));
-			if (!req) {
-				sway_log(L_ERROR, "get_clipboard: request malloc failed");
-				goto data_error;
-			}
-
-			int pipes[2];
-			if (pipe(pipes) == -1) {
-				sway_log_errno(L_ERROR, "get_clipboard: pipe call failed");
-				free(req);
-				goto data_error;
-			}
-
-			fcntl(pipes[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-			fcntl(pipes[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-
-			if (!wlc_get_selection_data(types[i], pipes[1])) {
-				close(pipes[0]);
-				close(pipes[1]);
-				free(req);
-				sway_log(L_ERROR, "get_clipboard: failed to retrieve "
-					"selection data");
-				goto data_error;
-			}
-
-			if (!(req->buf = malloc(512))) {
-				close(pipes[0]);
-				close(pipes[1]);
-				free(req);
-				sway_log_errno(L_ERROR, "get_clipboard: buf malloc failed");
-				goto data_error;
-			}
-
-			(*pending)++;
-
-			req->client = client;
-			req->type = strdup(types[i]);
-			req->json = json;
-			req->pending = pending;
-			req->buf_position = 0;
-			req->buf_size = 512;
-			req->fd = pipes[0];
-			req->timer_event_source = wlc_event_loop_add_timer(ipc_selection_timer_cb, req);
-			req->fd_event_source = wlc_event_loop_add_fd(pipes[0],
-				WLC_EVENT_READABLE | WLC_EVENT_ERROR | WLC_EVENT_HANGUP,
-				&ipc_selection_data_cb, req);
-
-			wlc_event_source_timer_update(req->timer_event_source, 30000);
-
-			// NOTE: remove this goto to enable retrieving multiple
-			// targets at once. The whole implementation is already
-			// made for it. The only reason it was disabled
-			// at the time of writing is that neither wlc's xselection
-			// implementation nor (apparently) gtk on wayland supports
-			// multiple send requests at the same time which makes
-			// every request except the last one fail (and therefore
-			// return empty data)
-			goto cleanup;
-		}
-
-		if (!found) {
-			sway_log(L_INFO, "Invalid clipboard type %s requested", pattern);
-		}
-	}
-
-	if (*pending == 0) {
-		static const char *error_empty = "{ \"success\": false, \"error\": "
-			"\"No matching types found\" }";
-		ipc_send_reply(client, error_empty, (uint32_t)strlen(error_empty));
-		free(json);
-		free(pending);
-	}
-
-	goto cleanup;
-
-data_error:;
-	static const char *error_json = "{ \"success\": false, \"error\": "
-		"\"Failed to create clipboard data request\" }";
-	ipc_send_reply(client, error_json, (uint32_t)strlen(error_json));
-	free(json);
-	free(pending);
-
-cleanup:
-	list_free(requested);
-	free(types);
 }
 
 void ipc_client_handle_command(struct ipc_client *client) {
@@ -830,52 +535,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
-	case IPC_SWAY_GET_PIXELS:
-	{
-		char response_header[9];
-		memset(response_header, 0, sizeof(response_header));
-
-		json_object *obj = json_tokener_parse(buf);
-		json_object *o, *x, *y, *w, *h;
-
-		json_object_object_get_ex(obj, "output", &o);
-		json_object_object_get_ex(obj, "x", &x);
-		json_object_object_get_ex(obj, "y", &y);
-		json_object_object_get_ex(obj, "w", &w);
-		json_object_object_get_ex(obj, "h", &h);
-
-		struct wlc_geometry g = {
-			.origin = {
-				.x = json_object_get_int(x),
-				.y = json_object_get_int(y)
-			},
-			.size = {
-				.w = json_object_get_int(w),
-				.h = json_object_get_int(h)
-			}
-		};
-
-		swayc_t *output = swayc_by_test(&root_container, output_by_name_test, (void *)json_object_get_string(o));
-		json_object_put(obj);
-
-		if (!output) {
-			sway_log(L_ERROR, "IPC GET_PIXELS request with unknown output name");
-			ipc_send_reply(client, response_header, sizeof(response_header));
-			goto exit_cleanup;
-		}
-		struct get_pixels_request *req = malloc(sizeof(struct get_pixels_request));
-		if (!req) {
-			sway_log(L_ERROR, "Unable to allocate get_pixels request");
-			goto exit_cleanup;
-		}
-		req->client = client;
-		req->output = output->handle;
-		req->geo = g;
-		list_add(ipc_get_pixel_requests, req);
-		wlc_output_schedule_render(output->handle);
-		goto exit_cleanup;
-	}
-
 	case IPC_GET_BAR_CONFIG:
 	{
 		if (!(client->security_policy & IPC_FEATURE_GET_BAR_CONFIG)) {
@@ -917,14 +576,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 
 	case IPC_GET_CLIPBOARD:
-	{
-		if (!(client->security_policy & IPC_FEATURE_GET_CLIPBOARD)) {
-			goto exit_denied;
-		}
-
-		ipc_get_clipboard(client, buf);
-		goto exit_cleanup;
-	}
+		// TODO WLR
+		break;
 
 	default:
 		sway_log(L_INFO, "Unknown IPC command type %i", client->current_command);
@@ -977,7 +630,9 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	client->write_buffer_len += payload_length;
 
 	if (!client->writable_event_source) {
-		client->writable_event_source = wlc_event_loop_add_fd(client->fd, WLC_EVENT_WRITABLE, ipc_client_handle_writable, client);
+		client->writable_event_source = wl_event_loop_add_fd(
+				server.wl_event_loop, client->fd, WL_EVENT_WRITABLE,
+				ipc_client_handle_writable, client);
 	}
 
 	sway_log(L_DEBUG, "Added IPC reply to client %d queue: %s", client->fd, payload);

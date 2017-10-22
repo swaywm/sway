@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <wlc/wlc.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -15,13 +14,13 @@
 #include <sys/capability.h>
 #include <sys/prctl.h>
 #endif
-#include "sway/extensions.h"
 #include "sway/layout.h"
 #include "sway/config.h"
 #include "sway/security.h"
 #include "sway/handlers.h"
 #include "sway/input.h"
 #include "sway/ipc-server.h"
+#include "sway/server.h"
 #include "ipc-client.h"
 #include "readline.h"
 #include "stringop.h"
@@ -31,26 +30,17 @@
 
 static bool terminate_request = false;
 static int exit_value = 0;
+struct sway_server server;
 
 void sway_terminate(int exit_code) {
 	terminate_request = true;
 	exit_value = exit_code;
-	wlc_terminate();
+	wl_display_terminate(server.wl_display);
 }
 
 void sig_handler(int signal) {
 	close_views(&root_container);
 	sway_terminate(EXIT_SUCCESS);
-}
-
-static void wlc_log_handler(enum wlc_log_type type, const char *str) {
-	if (type == WLC_LOG_ERROR) {
-		sway_log(L_ERROR, "[wlc] %s", str);
-	} else if (type == WLC_LOG_WARN) {
-		sway_log(L_INFO, "[wlc] %s", str);
-	} else {
-		sway_log(L_DEBUG, "[wlc] %s", str);
-	}
 }
 
 void detect_raspi() {
@@ -189,19 +179,7 @@ static void log_env() {
 		"LD_LIBRARY_PATH",
 		"SWAY_CURSOR_THEME",
 		"SWAY_CURSOR_SIZE",
-		"SWAYSOCK",
-		"WLC_DRM_DEVICE",
-		"WLC_SHM",
-		"WLC_OUTPUTS",
-		"WLC_XWAYLAND",
-		"WLC_LIBINPUT",
-		"WLC_REPEAT_DELAY",
-		"WLC_REPEAT_RATE",
-		"XKB_DEFAULT_RULES",
-		"XKB_DEFAULT_MODEL",
-		"XKB_DEFAULT_LAYOUT",
-		"XKB_DEFAULT_VARIANT",
-		"XKB_DEFAULT_OPTIONS",
+		"SWAYSOCK"
 	};
 	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
 		sway_log(L_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
@@ -295,6 +273,37 @@ static void executable_sanity_check() {
 #endif
 }
 
+static void drop_permissions(bool keep_caps) {
+	if (getuid() != geteuid() || getgid() != getegid()) {
+		if (setgid(getgid()) != 0) {
+			sway_log(L_ERROR, "Unable to drop root");
+			exit(EXIT_FAILURE);
+		}
+		if (setuid(getuid()) != 0) {
+			sway_log(L_ERROR, "Unable to drop root");
+			exit(EXIT_FAILURE);
+		}
+	}
+	if (setuid(0) != -1) {
+		sway_log(L_ERROR, "Root privileges can be restored.");
+		exit(EXIT_FAILURE);
+	}
+#ifdef __linux__
+	if (keep_caps) {
+		// Drop every cap except CAP_SYS_PTRACE
+		cap_t caps = cap_init();
+		cap_value_t keep = CAP_SYS_PTRACE;
+		sway_log(L_INFO, "Dropping extra capabilities");
+		if (cap_set_flag(caps, CAP_PERMITTED, 1, &keep, CAP_SET) ||
+			cap_set_flag(caps, CAP_EFFECTIVE, 1, &keep, CAP_SET) ||
+			cap_set_proc(caps)) {
+			sway_log(L_ERROR, "Failed to drop extra capabilities");
+			exit(EXIT_FAILURE);
+		}
+	}
+#endif
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -374,7 +383,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// we need to setup logging before wlc_init in case it fails.
+	// TODO: switch logging over to wlroots?
 	if (debug) {
 		init_log(L_DEBUG);
 	} else if (verbose || validate) {
@@ -388,20 +397,7 @@ int main(int argc, char **argv) {
 			sway_log(L_ERROR, "Don't use options with the IPC client");
 			exit(EXIT_FAILURE);
 		}
-		if (getuid() != geteuid() || getgid() != getegid()) {
-			if (setgid(getgid()) != 0) {
-				sway_log(L_ERROR, "Unable to drop root");
-				exit(EXIT_FAILURE);
-			}
-			if (setuid(getuid()) != 0) {
-				sway_log(L_ERROR, "Unable to drop root");
-				exit(EXIT_FAILURE);
-			}
-		}
-		if (setuid(0) != -1) {
-			sway_log(L_ERROR, "Root privileges can be restored.");
-			exit(EXIT_FAILURE);
-		}
+		drop_permissions(false);
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
 			sway_log(L_ERROR, "Unable to retrieve socket path");
@@ -413,8 +409,8 @@ int main(int argc, char **argv) {
 	}
 
 	executable_sanity_check();
-#ifdef __linux__
 	bool suid = false;
+#ifdef __linux__
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		// Retain capabilities after setuid()
 		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0)) {
@@ -425,37 +421,14 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	wlc_log_set_handler(wlc_log_handler);
 	log_kernel();
 	log_distro();
 	log_env();
 	detect_proprietary();
 	detect_raspi();
 
-	input_devices = create_list();
-
-	/* Changing code earlier than this point requires detailed review */
-	/* (That code runs as root on systems without logind, and wlc_init drops to
-	 * another user.) */
-	register_wlc_handlers();
-	if (!wlc_init()) {
-		return 1;
-	}
-	register_extensions();
-
 #ifdef __linux__
-	if (suid) {
-		// Drop every cap except CAP_SYS_PTRACE
-		cap_t caps = cap_init();
-		cap_value_t keep = CAP_SYS_PTRACE;
-		sway_log(L_INFO, "Dropping extra capabilities");
-		if (cap_set_flag(caps, CAP_PERMITTED, 1, &keep, CAP_SET) ||
-			cap_set_flag(caps, CAP_EFFECTIVE, 1, &keep, CAP_SET) ||
-			cap_set_proc(caps)) {
-			sway_log(L_ERROR, "Failed to drop extra capabilities");
-			exit(EXIT_FAILURE);
-		}
-	}
+	drop_permissions(suid);
 #endif
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
@@ -465,8 +438,10 @@ int main(int argc, char **argv) {
 
 	sway_log(L_INFO, "Starting sway version " SWAY_VERSION "\n");
 
+	if (!server_init(&server)) {
+		return 1;
+	}
 	init_layout();
-
 	ipc_init();
 
 	if (validate) {
@@ -485,10 +460,10 @@ int main(int argc, char **argv) {
 	security_sanity_check();
 
 	if (!terminate_request) {
-		wlc_run();
+		wl_display_run(server.wl_display);
 	}
 
-	list_free(input_devices);
+	server_fini(&server);
 
 	ipc_terminate();
 

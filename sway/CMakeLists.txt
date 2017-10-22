@@ -25,9 +25,7 @@ add_executable(sway
 	container.c
 	criteria.c
 	debug_log.c
-	extensions.c
 	focus.c
-	handlers.c
 	input.c
 	input_state.c
 	ipc-json.c
@@ -38,6 +36,7 @@ add_executable(sway
 	workspace.c
 	border.c
 	security.c
+    server.c
 )
 
 add_definitions(

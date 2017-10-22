@@ -8,7 +8,6 @@
 #include <strings.h>
 #include <sys/types.h>
 #include "sway/ipc-server.h"
-#include "sway/extensions.h"
 #include "sway/workspace.h"
 #include "sway/layout.h"
 #include "sway/container.h"
