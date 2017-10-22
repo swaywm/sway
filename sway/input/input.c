@@ -7,8 +7,19 @@
 #include <libinput.h>
 #include "sway/config.h"
 #include "sway/input.h"
+#include "sway/server.h"
 #include "list.h"
 #include "log.h"
+
+struct input_config *current_input_config = NULL;
+
+struct sway_input *sway_input_create(struct sway_server *server) {
+	struct sway_input *input = calloc(1, sizeof(struct sway_input));
+	if (!input) {
+		return NULL;
+	}
+	return input;
+}
 
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
@@ -64,6 +75,3 @@ char *libinput_dev_unique_id(struct libinput_device *device) {
 	free(name);
 	return identifier;
 }
-
-list_t *input_devices = NULL;
-struct input_config *current_input_config = NULL;

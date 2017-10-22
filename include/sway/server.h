@@ -10,9 +10,6 @@
 #include <wlr/xwayland.h>
 
 struct sway_server {
-	// TODO WLR
-	//struct roots_input *input;
-
 	struct wl_display *wl_display;
 	struct wl_event_loop *wl_event_loop;
 
@@ -20,6 +17,8 @@ struct sway_server {
 	struct wlr_renderer *renderer;
 
 	struct wlr_data_device_manager *data_device_manager;
+
+	struct sway_input *input;
 };
 
 bool server_init(struct sway_server *server);

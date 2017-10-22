@@ -476,12 +476,14 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			goto exit_denied;
 		}
 		json_object *inputs = json_object_new_array();
+		/* TODO WLR
 		if (input_devices) {
 			for(int i = 0; i<input_devices->length; i++) {
 				struct libinput_device *device = input_devices->items[i];
 				json_object_array_add(inputs, ipc_json_describe_input(device));
 			}
 		}
+		*/
 		const char *json_string = json_object_to_json_string(inputs);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(inputs);

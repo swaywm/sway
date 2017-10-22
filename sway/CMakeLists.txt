@@ -26,7 +26,6 @@ add_executable(sway
 	criteria.c
 	debug_log.c
 	focus.c
-	input.c
 	input_state.c
 	ipc-json.c
 	ipc-server.c
@@ -37,6 +36,8 @@ add_executable(sway
 	border.c
 	security.c
     server.c
+
+	input/input.c
 )
 
 add_definitions(
