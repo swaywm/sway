@@ -179,7 +179,7 @@ static void send_icon_msg(struct StatusNotifierItem *item) {
 	DBusPendingCall *pending;
 	DBusMessage *message = dbus_message_new_method_call(
 			item->name,
-			"/StatusNotifierItem",
+			item->object_path,
 			"org.freedesktop.DBus.Properties",
 			"Get");
 	const char *iface;
@@ -285,7 +285,7 @@ static void send_icon_name_msg(struct StatusNotifierItem *item) {
 	DBusPendingCall *pending;
 	DBusMessage *message = dbus_message_new_method_call(
 			item->name,
-			"/StatusNotifierItem",
+			item->object_path,
 			"org.freedesktop.DBus.Properties",
 			"Get");
 	const char *iface;
@@ -324,7 +324,7 @@ void sni_activate(struct StatusNotifierItem *item, uint32_t x, uint32_t y) {
 		 : "org.freedesktop.StatusNotifierItem");
 	DBusMessage *message = dbus_message_new_method_call(
 			item->name,
-			"/StatusNotifierItem",
+			item->object_path,
 			iface,
 			"Activate");
 
@@ -342,9 +342,10 @@ void sni_context_menu(struct StatusNotifierItem *item, uint32_t x, uint32_t y) {
 	const char *iface =
 		(item->kde_special_snowflake ? "org.kde.StatusNotifierItem"
 		 : "org.freedesktop.StatusNotifierItem");
+	sway_log(L_INFO, "Activating context menu for item: (%s,%s)", item->name, item->object_path);
 	DBusMessage *message = dbus_message_new_method_call(
 			item->name,
-			"/StatusNotifierItem",
+			item->object_path,
 			iface,
 			"ContextMenu");
 
@@ -363,7 +364,7 @@ void sni_secondary(struct StatusNotifierItem *item, uint32_t x, uint32_t y) {
 		 : "org.freedesktop.StatusNotifierItem");
 	DBusMessage *message = dbus_message_new_method_call(
 			item->name,
-			"/StatusNotifierItem",
+			item->object_path,
 			iface,
 			"SecondaryActivate");
 
@@ -426,6 +427,8 @@ struct StatusNotifierItem *sni_create(const char *name) {
 	struct StatusNotifierItem *item = malloc(sizeof(struct StatusNotifierItem));
 	item->name = strdup(name);
 	item->unique_name = NULL;
+	// TODO use static str if the default path instead of all these god-damn strdups
+	item->object_path = strdup("/StatusNotifierItem");
 	item->image = NULL;
 	item->dirty = false;
 
@@ -447,6 +450,21 @@ struct StatusNotifierItem *sni_create(const char *name) {
 
 	get_unique_name(item);
 
+	return item;
+}
+struct StatusNotifierItem *sni_create_from_obj_path(const char *unique_name,
+		const char *object_path) {
+	struct StatusNotifierItem *item = malloc(sizeof(struct StatusNotifierItem));
+	// XXX strdup-ing twice to avoid a double-free; see above todo
+	item->name = strdup(unique_name);
+	item->unique_name = strdup(unique_name);
+	item->object_path = strdup(object_path);
+	item->image = NULL;
+	item->dirty = false;
+	// If they're registering by obj-path they're a special snowflake
+	item->kde_special_snowflake = true;
+
+	get_icon(item);
 	return item;
 }
 /* Return 0 if `item` has a name of `str` */
@@ -471,9 +489,8 @@ void sni_free(struct StatusNotifierItem *item) {
 		return;
 	}
 	free(item->name);
-	if (item->unique_name) {
-		free(item->unique_name);
-	}
+	free(item->unique_name);
+	free(item->object_path);
 	if (item->image) {
 		cairo_surface_destroy(item->image);
 	}

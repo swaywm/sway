@@ -102,6 +102,70 @@ bail:
 	dbus_pending_call_unref(pending);
 	return;
 }
+static void get_obj_items_reply(DBusPendingCall *pending, void *_data) {
+	DBusMessage *reply = dbus_pending_call_steal_reply(pending);
+
+	if (!reply) {
+		sway_log(L_ERROR, "Got no object path items reply from sni watcher");
+		goto bail;
+	}
+
+	int message_type = dbus_message_get_type(reply);
+
+	if (message_type == DBUS_MESSAGE_TYPE_ERROR) {
+		char *msg;
+
+		dbus_message_get_args(reply, NULL,
+				DBUS_TYPE_STRING, &msg,
+				DBUS_TYPE_INVALID);
+
+		sway_log(L_ERROR, "Message is error: %s", msg);
+		goto bail;
+	}
+
+	DBusMessageIter iter;
+	DBusMessageIter variant;
+	DBusMessageIter array;
+	DBusMessageIter dstruct;
+
+	dbus_message_iter_init(reply, &iter);
+	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
+		sway_log(L_ERROR, "Replyed with wrong type, not v(a(os))");
+		goto bail;
+	}
+	dbus_message_iter_recurse(&iter, &variant);
+	if (strcmp(dbus_message_iter_get_signature(&variant), "a(os)") != 0) {
+		sway_log(L_ERROR, "Replyed with wrong type not a(os)");
+		goto bail;
+	}
+
+	int len = dbus_message_iter_get_element_count(&variant);
+
+	dbus_message_iter_recurse(&variant, &array);
+	for (int i = 0; i < len; i++) {
+		const char *object_path;
+		const char *unique_name;
+
+		dbus_message_iter_recurse(&array, &dstruct);
+
+		dbus_message_iter_get_basic(&dstruct, &object_path);
+		dbus_message_iter_get_basic(&dstruct, &unique_name);
+
+		struct StatusNotifierItem *item =
+			sni_create_from_obj_path(unique_name, object_path);
+
+		if (item) {
+			sway_log(L_DEBUG, "Item registered with host: %s", unique_name);
+			list_add(tray->items, item);
+			dirty = true;
+		}
+	}
+
+bail:
+	dbus_message_unref(reply);
+	dbus_pending_call_unref(pending);
+}
+
 static void get_items() {
 	DBusPendingCall *pending;
 	DBusMessage *message = dbus_message_new_method_call(
@@ -127,6 +191,28 @@ static void get_items() {
 	}
 
 	dbus_pending_call_set_notify(pending, get_items_reply, NULL, NULL);
+
+	message = dbus_message_new_method_call(
+			"org.freedesktop.StatusNotifierWatcher",
+			"/StatusNotifierWatcher",
+			"org.freedesktop.DBus.Properties",
+			"Get");
+
+	iface = "org.swaywm.LessSuckyStatusNotifierWatcher";
+	prop = "RegisteredObjectPathItems";
+	dbus_message_append_args(message,
+			DBUS_TYPE_STRING, &iface,
+			DBUS_TYPE_STRING, &prop,
+			DBUS_TYPE_INVALID);
+
+	status = dbus_connection_send_with_reply(conn, message, &pending, -1);
+	dbus_message_unref(message);
+
+	if (!(pending || status)) {
+		sway_log(L_ERROR, "Could not get items");
+		return;
+	}
+	dbus_pending_call_set_notify(pending, get_obj_items_reply, NULL, NULL);
 }
 
 static DBusHandlerResult signal_handler(DBusConnection *connection,
@@ -162,11 +248,14 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 		}
 
 		int index;
-		if ((index = list_seq_find(tray->items, sni_str_cmp, name)) != -1) {
+		bool found_item = false;
+		while ((index = list_seq_find(tray->items, sni_str_cmp, name)) != -1) {
+			found_item = true;
 			sni_free(tray->items->items[index]);
 			list_del(tray->items, index);
 			dirty = true;
-		} else {
+		}
+		if (found_item == false) {
 			// If it's not in our list, then our list is incorrect.
 			// Fetch all items again
 			sway_log(L_INFO, "Host item list incorrect, refreshing");
@@ -186,6 +275,32 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 			item = tray->items->items[index];
 			sway_log(L_INFO, "NewIcon signal from item %s", item->name);
 			get_icon(item);
+		}
+
+		return DBUS_HANDLER_RESULT_HANDLED;
+	} else if (dbus_message_is_signal(message,
+				"org.swaywm.LessSuckyStatusNotifierWatcher",
+				"ObjPathItemRegistered")) {
+		const char *object_path;
+		const char *unique_name;
+		if (!dbus_message_get_args(message, NULL,
+				DBUS_TYPE_OBJECT_PATH, &object_path,
+				DBUS_TYPE_STRING, &unique_name,
+				DBUS_TYPE_INVALID)) {
+			sway_log(L_ERROR, "Error getting ObjPathItemRegistered args");
+			return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+		}
+
+		// TODO allow one unique name to have multiple items
+		if (list_seq_find(tray->items, sni_str_cmp, unique_name) == -1) {
+			struct StatusNotifierItem *item =
+				sni_create_from_obj_path(unique_name,
+						object_path);
+
+			if (item) {
+				list_add(tray->items, item);
+				dirty = true;
+			}
 		}
 
 		return DBUS_HANDLER_RESULT_HANDLED;
@@ -250,6 +365,15 @@ static int init_host() {
 			"type='signal',\
 			sender='org.freedesktop.StatusNotifierWatcher',\
 			member='StatusNotifierItemUnregistered'",
+			&error);
+	if (dbus_error_is_set(&error)) {
+		sway_log(L_ERROR, "dbus_err: %s", error.message);
+		return -1;
+	}
+	dbus_bus_add_match(conn,
+			"type='signal',\
+			sender='org.freedesktop.StatusNotifierWatcher',\
+			member='ObjPathItemRegistered'",
 			&error);
 	if (dbus_error_is_set(&error)) {
 		sway_log(L_ERROR, "dbus_err: %s", error.message);

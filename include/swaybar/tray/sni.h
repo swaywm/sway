@@ -9,6 +9,8 @@ struct StatusNotifierItem {
 	char *name;
 	/* Unique bus name, needed for determining signal origins */
 	char *unique_name;
+	/* Object path, useful for items not registerd by well known name */
+	char *object_path;
 	bool kde_special_snowflake;
 
 	cairo_surface_t *image;
@@ -31,6 +33,12 @@ void sni_icon_ref_free(struct sni_icon_ref *sni_ref);
  * May return `NULL` if `name` is not valid.
  */
 struct StatusNotifierItem *sni_create(const char *name);
+/**
+ * Same as sni_create, but takes an object path and unique name instead of
+ * well-known name.
+ */
+struct StatusNotifierItem *sni_create_from_obj_path(const char *unique_name,
+		const char *object_path);
 
 /**
  * `item` must be a struct StatusNotifierItem *
