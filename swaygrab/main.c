@@ -168,6 +168,7 @@ int main(int argc, char **argv) {
 	char *output = NULL;
 	int framerate = 30;
 	bool grab_focused = false;
+	char *geometry = NULL;
 
 	init_log(L_INFO);
 
@@ -180,29 +181,34 @@ int main(int argc, char **argv) {
 		{"raw", no_argument, NULL, 'r'},
 		{"rate", required_argument, NULL, 'R'},
 		{"focused", no_argument, NULL, 'f'},
+		{"geometry", required_argument, NULL, 'g'},
 		{0, 0, 0, 0}
 	};
 
 	const char *usage =
 		"Usage: swaygrab [options] [file]\n"
 		"\n"
-		"  -h, --help             Show help message and quit.\n"
-		"  -c, --capture          Capture video.\n"
-		"  -o, --output <output>  Output source.\n"
-		"  -v, --version          Show the version number and quit.\n"
-		"  -s, --socket <socket>  Use the specified socket.\n"
-		"  -R, --rate <rate>      Specify framerate (default: 30)\n"
-		"  -r, --raw              Write raw rgba data to stdout.\n"
-		"  -f, --focused          Grab the focused container.\n";
+		"  -h, --help                Show help message and quit.\n"
+		"  -c, --capture             Capture video.\n"
+		"  -o, --output <output>     Output source.\n"
+		"  -v, --version             Show the version number and quit.\n"
+		"  -s, --socket <socket>     Use the specified socket.\n"
+		"  -R, --rate <rate>         Specify framerate (default: 30)\n"
+		"  -r, --raw                 Write raw rgba data to stdout.\n"
+		"  -f, --focused             Grab the focused container.\n"
+		"  -g, --geometry <wxh+x+y>  Sets the region to capture (default: fullscreen).\n";
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hco:vs:R:rf", long_options, &option_index);
+		c = getopt_long(argc, argv, "hco:vs:R:rfg:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
+		case 'g':
+			geometry = strdup(optarg);
+			break;
 		case 'f':
 			grab_focused = true;
 			break;
@@ -261,6 +267,13 @@ int main(int argc, char **argv) {
 		json_object_object_get_ex(con, "name", &name);
 		geo = get_container_geometry(con);
 		free(con);
+	} else if (geometry) {
+			geo = malloc(sizeof(struct wlc_geometry));
+			int read = sscanf(geometry, "%ux%u%d%d",
+					&geo->size.w, &geo->size.h, &geo->origin.x, &geo->origin.y);
+			if (read != 4) {
+				sway_abort("Unable to parse geometry");
+			}
 	} else {
 		if (!output) {
 			output = get_focused_output();
