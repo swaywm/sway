@@ -80,6 +80,17 @@ static bool isdir(const char *path) {
 
 }
 
+static bool isfile(const char *path) {
+	struct stat statbuf;
+	if (stat(path, &statbuf) != -1) {
+		if (S_ISREG(statbuf.st_mode) || S_ISLNK(statbuf.st_mode)) {
+			return true;
+		}
+	}
+	return false;
+
+}
+
 /**
  * Returns the directory of a given theme if it exists.
  * The returned pointer must be freed.
@@ -290,6 +301,24 @@ fail:
 	return dirs;
 }
 
+/* Returns true if full path and file exists */
+static bool is_valid_path(const char *file) {
+	if (strstr(file, "/") == NULL || !isfile(file)) {
+		return false;
+	}
+#ifdef WITH_GDK_PIXBUF
+	if (strstr(file, ".png") == NULL &&
+	    strstr(file, ".xpm") == NULL &&
+	    strstr(file, ".svg") == NULL) {
+#else
+	if (strstr(file, ".png") == NULL) {
+#endif
+		return false;
+	}
+
+	return true;
+}
+
 /* Returns the file of an icon given its name and size */
 static char *find_icon_file(const char *name, int size) {
 	int namelen = strlen(name);
@@ -372,7 +401,12 @@ static char *find_icon_file(const char *name, int size) {
 }
 
 cairo_surface_t *find_icon(const char *name, int size) {
-	char *image_path = find_icon_file(name, size);
+	char *image_path;
+	if (is_valid_path(name)) {
+		image_path = strdup(name);
+	} else {
+		image_path = find_icon_file(name, size);
+	}
 	if (image_path == NULL) {
 		return NULL;
 	}
