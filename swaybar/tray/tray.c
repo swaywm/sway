@@ -291,8 +291,11 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 			return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 		}
 
-		// TODO allow one unique name to have multiple items
-		if (list_seq_find(tray->items, sni_str_cmp, unique_name) == -1) {
+		struct ObjName obj_name = {
+			object_path,
+			unique_name,
+		};
+		if (list_seq_find(tray->items, sni_obj_name_cmp, &obj_name) == -1) {
 			struct StatusNotifierItem *item =
 				sni_create_from_obj_path(unique_name,
 						object_path);

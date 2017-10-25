@@ -484,6 +484,17 @@ int sni_uniq_cmp(const void *_item, const void *_str) {
 	}
 	return strcmp(item->unique_name, str);
 }
+int sni_obj_name_cmp(const void *_item, const void *_obj_name) {
+	const struct StatusNotifierItem *item = _item;
+	const struct ObjName *obj_name = _obj_name;
+
+	if (strcmp(item->name, obj_name->name) == 0 &&
+			strcmp(item->object_path, obj_name->obj_path) == 0) {
+		return 0;
+	}
+	return 1;
+}
+
 void sni_free(struct StatusNotifierItem *item) {
 	if (!item) {
 		return;

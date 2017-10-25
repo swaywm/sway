@@ -54,6 +54,17 @@ int sni_str_cmp(const void *item, const void *str);
  */
 int sni_uniq_cmp(const void *item, const void *str);
 
+
+struct ObjName {
+	const void *obj_path;
+	const void *name;
+};
+/**
+ * Returns 0 if `item` has a name of `obj_name->name` and object path of
+ * `obj_name->obj_path`.
+ */
+int sni_obj_name_cmp(const void *item, const void *obj_name);
+
 /**
  * Gets an icon for the given item if found.
  *
