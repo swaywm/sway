@@ -122,15 +122,28 @@ static char *find_theme_dir(const char *theme) {
 	}
 
 	if ((basedir = getenv("XDG_DATA_DIRS"))) {
-		if (snprintf(icon_dir, 1024, "%s/icons/%s", basedir, theme) >= 1024) {
-			sway_log(L_ERROR, "Path too long to render");
-			// ditto
+		if (!(basedir = strdup(basedir))) {
+			sway_log_errno(L_ERROR, "Path too long to render");
 			goto fail;
 		}
+		char *token = strtok(basedir, ":");
+		while (token) {
+			// By peeking at the spec, there should be a slash at
+			// the end of the data dir.
+			if (snprintf(icon_dir, 1024, "%sicons/%s", token, theme) >= 1024) {
+				sway_log(L_ERROR, "Path too long to render");
+				// ditto
+				free(basedir);
+				goto fail;
+			}
 
-		if (isdir(icon_dir)) {
-			return icon_dir;
+			if (isdir(icon_dir)) {
+				free(basedir);
+				return icon_dir;
+			}
+			token = strtok(NULL, ":");
 		}
+		free(basedir);
 	}
 
 	// Spec says use "/usr/share/pixmaps/", but I see everything in
@@ -167,6 +180,15 @@ static list_t *find_all_theme_dirs(const char *theme) {
 		return NULL;
 	}
 	char *dir = find_theme_dir(theme);
+	if (dir) {
+		list_add(dirs, dir);
+		list_t *inherits = find_inherits(dir);
+		list_cat(dirs, inherits);
+		list_free(inherits);
+	}
+	// 'default' usually inherits the default theme. I don't believe it has
+	// any icons, but look for them anyway
+	dir = find_theme_dir("default");
 	if (dir) {
 		list_add(dirs, dir);
 		list_t *inherits = find_inherits(dir);
