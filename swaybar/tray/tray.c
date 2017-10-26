@@ -75,11 +75,6 @@ static void get_items_reply(DBusPendingCall *pending, void *_data) {
 		goto bail;
 	}
 
-	// Clear list
-	list_foreach(tray->items, (void (*)(void *))sni_free);
-	list_free(tray->items);
-	tray->items = create_list();
-
 	// O(n) function, could be faster dynamically reading values
 	int len = dbus_message_iter_get_element_count(&variant);
 
@@ -88,12 +83,14 @@ static void get_items_reply(DBusPendingCall *pending, void *_data) {
 		const char *name;
 		dbus_message_iter_get_basic(&array, &name);
 
-		struct StatusNotifierItem *item = sni_create(name);
+		if (list_seq_find(tray->items, sni_str_cmp, name) == -1) {
+			struct StatusNotifierItem *item = sni_create(name);
 
-		if (item) {
-			sway_log(L_DEBUG, "Item registered with host: %s", name);
-			list_add(tray->items, item);
-			dirty = true;
+			if (item) {
+				sway_log(L_DEBUG, "Item registered with host: %s", name);
+				list_add(tray->items, item);
+				dirty = true;
+			}
 		}
 	}
 
@@ -149,15 +146,22 @@ static void get_obj_items_reply(DBusPendingCall *pending, void *_data) {
 		dbus_message_iter_recurse(&array, &dstruct);
 
 		dbus_message_iter_get_basic(&dstruct, &object_path);
+		dbus_message_iter_next(&dstruct);
 		dbus_message_iter_get_basic(&dstruct, &unique_name);
 
-		struct StatusNotifierItem *item =
-			sni_create_from_obj_path(unique_name, object_path);
+		struct ObjName obj_name = {
+			object_path,
+			unique_name,
+		};
+		if (list_seq_find(tray->items, sni_obj_name_cmp, &obj_name) == -1) {
+			struct StatusNotifierItem *item =
+				sni_create_from_obj_path(unique_name, object_path);
 
-		if (item) {
-			sway_log(L_DEBUG, "Item registered with host: %s", unique_name);
-			list_add(tray->items, item);
-			dirty = true;
+			if (item) {
+				sway_log(L_DEBUG, "Item registered with host: %s", unique_name);
+				list_add(tray->items, item);
+				dirty = true;
+			}
 		}
 	}
 
@@ -167,6 +171,11 @@ bail:
 }
 
 static void get_items() {
+	// Clear list
+	list_foreach(tray->items, (void (*)(void *))sni_free);
+	list_free(tray->items);
+	tray->items = create_list();
+
 	DBusPendingCall *pending;
 	DBusMessage *message = dbus_message_new_method_call(
 			"org.freedesktop.StatusNotifierWatcher",
@@ -352,6 +361,9 @@ static int init_host() {
 
 	register_host(name);
 
+	// Chances are if an item is already running, we'll get it two times.
+	// Once from this and another time from queued signals. Still we want
+	// to do this to be a complient sni host just in case.
 	get_items();
 
 	// Perhaps use addmatch helper functions like wlc does?

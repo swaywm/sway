@@ -389,9 +389,9 @@ static void get_property(DBusConnection *connection, DBusMessage *message) {
 					DBUS_TYPE_STRUCT, NULL, &dstruct);
 
 			dbus_message_iter_append_basic(&dstruct,
-					DBUS_TYPE_OBJECT_PATH, item->obj_path);
+					DBUS_TYPE_OBJECT_PATH, &item->obj_path);
 			dbus_message_iter_append_basic(&dstruct,
-					DBUS_TYPE_STRING, item->unique_name);
+					DBUS_TYPE_STRING, &item->unique_name);
 
 			dbus_message_iter_close_container(&array, &dstruct);
 		}
