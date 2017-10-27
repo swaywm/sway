@@ -60,7 +60,7 @@ Abhängigkeiten:
 * libcap
 * asciidoc
 * pcre
-* json-c
+* json-c <= 0.12.1
 * pango
 * cairo
 * gdk-pixbuf2 *
