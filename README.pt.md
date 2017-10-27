@@ -62,7 +62,7 @@ Antes de iniciar a compilação, instale as dependências:
 * libcap
 * asciidoc
 * pcre
-* json-c
+* json-c <= 0.12.1
 * pango
 * cairo
 * gdk-pixbuf2 *
