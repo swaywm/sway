@@ -120,18 +120,17 @@ static void ipc_parse_config(struct config *config, const char *payload) {
 #endif
 
 	// free previous outputs list
-	int i;
-	for (i = 0; i < config->outputs->length; ++i) {
+	for (int i = 0; i < config->outputs->length; ++i) {
 		free(config->outputs->items[i]);
 	}
 	list_free(config->outputs);
 	config->outputs = create_list();
 
 	if (outputs) {
-		int length = json_object_array_length(outputs);
+		size_t length = (size_t)json_object_array_length(outputs);
 		json_object *output;
 		const char *output_str;
-		for (i = 0; i < length; ++i) {
+		for (size_t i = 0; i < length; ++i) {
 			output = json_object_array_get_idx(outputs, i);
 			output_str = json_object_get_string(output);
 			if (strcmp("*", output_str) == 0) {
