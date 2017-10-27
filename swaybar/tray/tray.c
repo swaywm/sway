@@ -276,11 +276,17 @@ static DBusHandlerResult signal_handler(DBusConnection *connection,
 				"NewIcon") || dbus_message_is_signal(message,
 				"org.kde.StatusNotifierItem", "NewIcon")) {
 		const char *name;
+		const char *obj_path;
 		int index;
 		struct StatusNotifierItem *item;
 
 		name = dbus_message_get_sender(message);
-		if ((index = list_seq_find(tray->items, sni_uniq_cmp, name)) != -1) {
+		obj_path = dbus_message_get_path(message);
+		struct ObjName obj_name = {
+			obj_path,
+			name,
+		};
+		if ((index = list_seq_find(tray->items, sni_obj_name_cmp, &obj_name)) != -1) {
 			item = tray->items->items[index];
 			sway_log(L_INFO, "NewIcon signal from item %s", item->name);
 			get_icon(item);
