@@ -210,6 +210,7 @@ static void respond_to_introspect(DBusConnection *connection, DBusMessage *reque
 
 static void register_item(DBusConnection *connection, DBusMessage *message) {
 	DBusError error;
+	DBusMessage *reply;
 	char *name;
 
 	dbus_error_init(&error);
@@ -235,7 +236,7 @@ static void register_item(DBusConnection *connection, DBusMessage *message) {
 			}
 			list_add(object_path_items, item);
 			obj_path_item_registered_signal(connection, item);
-			return;
+			goto send_reply;
 		} else {
 			sway_log(L_INFO, "This item is not valid, we cannot keep track of it.");
 			return;
@@ -253,8 +254,9 @@ static void register_item(DBusConnection *connection, DBusMessage *message) {
 		item_registered_signal(connection, name);
 	}
 
+send_reply:
 	// It's silly, but clients want a reply for this function
-	DBusMessage *reply = dbus_message_new_method_return(message);
+	reply = dbus_message_new_method_return(message);
 	dbus_connection_send(connection, reply, NULL);
 	dbus_message_unref(reply);
 }
