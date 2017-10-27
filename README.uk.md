@@ -62,7 +62,7 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c
 * pango
 * cairo
 * gdk-pixbuf2 *
