@@ -52,5 +52,17 @@ endif ()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Libcap DEFAULT_MSG Libcap_INCLUDE_DIRS Libcap_LIBRARIES)
+
+IF(Libcap_FOUND)
+  IF(NOT TARGET Libcap::Libcap)
+    add_library(Libcap::Libcap UNKNOWN IMPORTED)
+    set_target_properties(Libcap::Libcap PROPERTIES
+        IMPORTED_LOCATION "${Libcap_LIBRARIES}"
+        INTERFACE_COMPILE_OPTIONS "${Libcap_DEFINITIONS}"
+        INTERFACE_INCLUDE_DIRECTORIES "${Libcap_INCLUDE_DIRS}"
+    )
+  ENDIF()
+ENDIF()
+
 mark_as_advanced(Libcap_INCLUDE_DIRS Libcap_LIBRARIES Libcap_DEFINITIONS
    Libcap_VERSION Libcap_VERSION_MAJOR Libcap_VERSION_MICRO Libcap_VERSION_MINOR)
