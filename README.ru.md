@@ -77,7 +77,7 @@ _\*\*Требуется только для swaylock_
 
 Если у вас logind:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Иначе:
 

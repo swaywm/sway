@@ -84,7 +84,7 @@ Para compilar, execute estes comandos:
 
 Em sistemas com logind, configure as seguintes capacidades para o arquivo binário:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Em sistemas sem logind, ative a *flag* de *suid* do arquivo binário:
 
