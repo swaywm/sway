@@ -432,8 +432,12 @@ err:
 	return -1;
 }
 
-void tray_mouse_event(struct output *output, int x, int y,
+void tray_mouse_event(struct output *output, int rel_x, int rel_y,
 		uint32_t button, uint32_t state) {
+
+	int x = rel_x;
+	int y = rel_y + (swaybar.config->position == DESKTOP_SHELL_PANEL_POSITION_TOP
+			? 0 : (output->state->height - output->window->height));
 
 	struct window *window = output->window;
 	uint32_t tray_padding = swaybar.config->tray_padding;

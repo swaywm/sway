@@ -247,6 +247,8 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 		/* set window height */
 		set_window_height(bar_output->window, bar->config->height);
+
+		bar_output->state = output;
 	}
 	/* spawn status command */
 	spawn_status_cmd_proc(bar);

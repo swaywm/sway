@@ -21,6 +21,7 @@ struct bar {
 struct output {
 	struct window *window;
 	struct registry *registry;
+	struct output_state *state;
 	list_t *workspaces;
 #ifdef ENABLE_TRAY
 	list_t *items;
