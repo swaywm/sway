@@ -83,7 +83,7 @@ Run these commands:
 
 On systems with logind, you need to set a few caps on the binary:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 On systems without logind, you need to suid the sway binary:
 

@@ -68,7 +68,7 @@ _\*\*swaylockでのみ必要です_
 
 logindを使用しているシステムでは、バイナリにいくつかのケーパビリティを設定する必要があります:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 logindを使用していないシステムでは、バイナリにsuidを設定する必要があります:
 
