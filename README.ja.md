@@ -71,7 +71,7 @@ _\*\*swaylockが使用します_
 
 logindを使用している場合はバイナリにcapを設定してください:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 logindを使用していない場合はバイナリにsuidを設定してください:
 

@@ -85,7 +85,7 @@ _\*\*Лише для swaylock_
 На системах **з** logind, варто встановити декілька можливостей (caps)
 на виконуваний файл sway:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 На системах **без** logind, необхідно встановити біт SUID на виконуваний файл sway:
 
