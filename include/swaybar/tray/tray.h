@@ -27,6 +27,6 @@ void tray_upkeep(struct bar *bar);
 /**
  * Initializes the tray with D-Bus
  */
-void init_tray();
+void init_tray(struct bar *bar);
 
 #endif /* _SWAYBAR_TRAY_H */
