@@ -57,7 +57,7 @@ find_package(Cairo REQUIRED)
 find_package(Pango REQUIRED)
 find_package(GdkPixbuf)
 find_package(PAM)
-find_package(DBus)
+find_package(DBus 1.10)
 
 find_package(LibInput REQUIRED)
 
