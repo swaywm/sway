@@ -66,12 +66,15 @@ Install dependencies:
 * cairo
 * gdk-pixbuf2 *
 * pam **
+* dbus >= 1.10 ***
 * imagemagick (required for image capture with swaygrab)
 * ffmpeg (required for video capture with swaygrab)
 
 _\*Only required for swaybar, swaybg, and swaylock_
 
 _\*\*Only required for swaylock_
+
+_\*\*\*Only required for tray support_
 
 Run these commands:
 
