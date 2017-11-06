@@ -584,8 +584,8 @@ int main(int argc, char **argv) {
 
 		for (i = 0; i < registry->outputs->length; ++i) {
 			if (displays_paths[i * 2] != NULL) {
-				for (int j = 0;; ++j) {
-					if (j >= json_object_array_length(json_outputs)) {
+				for (size_t j = 0;; ++j) {
+					if (j >= (size_t)json_object_array_length(json_outputs)) {
 						sway_log(L_ERROR, "%s is not an extant output", displays_paths[i * 2]);
 						exit(EXIT_FAILURE);
 					}

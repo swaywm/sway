@@ -70,8 +70,7 @@ static void parse_json(struct bar *bar, const char *text) {
 
 	bar->status->block_line = create_list();
 
-	int i;
-	for (i = 0; i < json_object_array_length(results); ++i) {
+	for (size_t i = 0; i < (size_t)json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
 		json_object *background, *border, *border_top, *border_bottom;
@@ -430,7 +429,7 @@ bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button) {
 		}
 
 		// event example {"name":"capture","instance":"label","button":1,"x":3431,"y":18}
-	
+
 		struct json_object *event_json = json_object_new_object();
 		json_object_object_add(event_json, "name", json_object_new_string(clicked_block->name));
 		if (clicked_block->instance) {
