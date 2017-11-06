@@ -61,7 +61,7 @@ endif()
 
 find_package(JsonC 0.12.1 REQUIRED)
 find_package(PCRE REQUIRED)
-find_package(WLC REQUIRED)
+find_package(WLC 0.0.10 REQUIRED)
 find_package(Wayland REQUIRED)
 find_package(XKBCommon REQUIRED)
 find_package(Cairo REQUIRED)
