@@ -131,7 +131,7 @@ static void get_obj_items_reply(DBusPendingCall *pending, void *_data) {
 		goto bail;
 	}
 	dbus_message_iter_recurse(&iter, &variant);
-	if (strcmp(dbus_message_iter_get_signature(&variant), "a(os)") != 0) {
+	if (dbus_message_iter_check_signature(&iter, "a(os)")) {
 		sway_log(L_ERROR, "Replyed with wrong type not a(os)");
 		goto bail;
 	}

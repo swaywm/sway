@@ -71,17 +71,13 @@ static void reply_icon(DBusPendingCall *pending, void *_data) {
 
 	// Each if here checks the types above before recursing
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		sway_log(L_ERROR, "Relpy type incorrect");
-		sway_log(L_ERROR, "Should be \"v\", is \"%s\"",
-				dbus_message_iter_get_signature(&iter));
+		sway_log(L_ERROR, "Icon relpy type incorrect");
 		goto bail;
 	}
 	dbus_message_iter_recurse(&iter, &variant);
 
-	if (strcmp("a(iiay)", dbus_message_iter_get_signature(&variant)) != 0) {
-		sway_log(L_ERROR, "Relpy type incorrect");
-		sway_log(L_ERROR, "Should be \"a(iiay)\", is \"%s\"",
-				dbus_message_iter_get_signature(&variant));
+	if (dbus_message_iter_check_signature(&variant, "a(iiay)")) {
+		sway_log(L_ERROR, "Icon relpy type incorrect");
 		goto bail;
 	}
 
@@ -237,18 +233,14 @@ static void reply_icon_name(DBusPendingCall *pending, void *_data) {
 
 	dbus_message_iter_init(reply, &iter);
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		sway_log(L_ERROR, "Relpy type incorrect");
-		sway_log(L_ERROR, "Should be \"v\", is \"%s\"",
-				dbus_message_iter_get_signature(&iter));
+		sway_log(L_ERROR, "Icon name relpy type incorrect");
 		goto bail;
 	}
 	dbus_message_iter_recurse(&iter, &variant);
 
 
 	if (dbus_message_iter_get_arg_type(&variant) != DBUS_TYPE_STRING) {
-		sway_log(L_ERROR, "Relpy type incorrect");
-		sway_log(L_ERROR, "Should be \"s\", is \"%s\"",
-				dbus_message_iter_get_signature(&iter));
+		sway_log(L_ERROR, "Icon name relpy type incorrect");
 		goto bail;
 	}
 

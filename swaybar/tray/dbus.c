@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 700
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -136,6 +137,13 @@ static void dispatch_status(DBusConnection *connection, DBusDispatchStatus new_s
 }
 
 /* Public functions below */
+
+bool dbus_message_iter_check_signature(DBusMessageIter *iter, const char *sig) {
+	char *msg_sig = dbus_message_iter_get_signature(iter);
+	int result = strcmp(msg_sig, sig);
+	dbus_free(msg_sig);
+	return (result == 0);
+}
 
 void dispatch_dbus() {
 	if (!should_dispatch || !conn) {
