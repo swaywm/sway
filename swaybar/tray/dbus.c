@@ -136,13 +136,101 @@ static void dispatch_status(DBusConnection *connection, DBusDispatchStatus new_s
 	}
 }
 
-/* Public functions below */
+struct async_prop_data {
+	char const *sig;
+	void(*callback)(DBusMessageIter *, void *);
+	void *usr_data;
+};
+
+static void get_prop_callback(DBusPendingCall *pending, void *_data) {
+	struct async_prop_data *data = _data;
+
+	DBusMessage *reply = dbus_pending_call_steal_reply(pending);
+
+	if (!reply) {
+		sway_log(L_INFO, "Got no icon name reply from item");
+		goto bail;
+	}
+
+	if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+		char *msg;
+
+		dbus_message_get_args(reply, NULL,
+				DBUS_TYPE_STRING, &msg,
+				DBUS_TYPE_INVALID);
+
+		sway_log(L_INFO, "Failure to get property: %s", msg);
+		goto bail;
+	}
+
+	DBusMessageIter iter;
+	DBusMessageIter variant;
+
+	dbus_message_iter_init(reply, &iter);
+	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
+		sway_log(L_ERROR, "Property relpy type incorrect");
+		goto bail;
+	}
+	dbus_message_iter_recurse(&iter, &variant);
+
+	if (!dbus_message_iter_check_signature(&variant, data->sig)) {
+		sway_log(L_INFO, "Property returned has incorrect signatue.");
+		goto bail;
+	}
+
+	data->callback(&variant, data->usr_data);
+
+bail:
+	if (reply) {
+		dbus_message_unref(reply);
+	}
+	dbus_pending_call_unref(pending);
+}
+
+/* Public functions below -- see header for docs*/
 
 bool dbus_message_iter_check_signature(DBusMessageIter *iter, const char *sig) {
 	char *msg_sig = dbus_message_iter_get_signature(iter);
 	int result = strcmp(msg_sig, sig);
 	dbus_free(msg_sig);
 	return (result == 0);
+}
+
+bool dbus_get_prop_async(const char *destination,
+		const char *path, const char *iface,
+		const char *prop, const char *expected_signature,
+		void(*callback)(DBusMessageIter *, void *), void *usr_data) {
+	struct async_prop_data *data = malloc(sizeof(struct async_prop_data));
+	if (!data) {
+		return false;
+	}
+	DBusPendingCall *pending;
+	DBusMessage *message = dbus_message_new_method_call(
+			destination, path,
+			"org.freedesktop.DBus.Properties",
+			"Get");
+
+	dbus_message_append_args(message,
+			DBUS_TYPE_STRING, &iface,
+			DBUS_TYPE_STRING, &prop,
+			DBUS_TYPE_INVALID);
+
+	bool status =
+		dbus_connection_send_with_reply(conn, message, &pending, -1);
+
+	dbus_message_unref(message);
+
+	if (!(pending || status)) {
+		sway_log(L_ERROR, "Could not get property");
+		return false;
+	}
+
+	data->sig = expected_signature;
+	data->callback = callback;
+	data->usr_data = usr_data;
+	dbus_pending_call_set_notify(pending, get_prop_callback, data, free);
+
+	return true;
 }
 
 void dispatch_dbus() {

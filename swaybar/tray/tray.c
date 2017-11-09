@@ -38,47 +38,13 @@ static void register_host(char *name) {
 	dbus_message_unref(message);
 }
 
-static void get_items_reply(DBusPendingCall *pending, void *_data) {
-	DBusMessage *reply = dbus_pending_call_steal_reply(pending);
-
-	if (!reply) {
-		sway_log(L_ERROR, "Got no items reply from sni watcher");
-		goto bail;
-	}
-
-	int message_type = dbus_message_get_type(reply);
-
-	if (message_type == DBUS_MESSAGE_TYPE_ERROR) {
-		char *msg;
-
-		dbus_message_get_args(reply, NULL,
-				DBUS_TYPE_STRING, &msg,
-				DBUS_TYPE_INVALID);
-
-		sway_log(L_ERROR, "Message is error: %s", msg);
-		goto bail;
-	}
-
-	DBusMessageIter iter;
-	DBusMessageIter variant;
+static void get_items_reply(DBusMessageIter *iter, void *_data) {
 	DBusMessageIter array;
 
-	dbus_message_iter_init(reply, &iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		sway_log(L_ERROR, "Replyed with wrong type, not v(as)");
-		goto bail;
-	}
-	dbus_message_iter_recurse(&iter, &variant);
-	if (dbus_message_iter_get_arg_type(&variant) != DBUS_TYPE_ARRAY ||
-			dbus_message_iter_get_element_type(&variant) != DBUS_TYPE_STRING) {
-		sway_log(L_ERROR, "Replyed with wrong type, not v(as)");
-		goto bail;
-	}
-
 	// O(n) function, could be faster dynamically reading values
-	int len = dbus_message_iter_get_element_count(&variant);
+	int len = dbus_message_iter_get_element_count(iter);
 
-	dbus_message_iter_recurse(&variant, &array);
+	dbus_message_iter_recurse(iter, &array);
 	for (int i = 0; i < len; i++) {
 		const char *name;
 		dbus_message_iter_get_basic(&array, &name);
@@ -93,52 +59,14 @@ static void get_items_reply(DBusPendingCall *pending, void *_data) {
 			}
 		}
 	}
-
-bail:
-	dbus_message_unref(reply);
-	dbus_pending_call_unref(pending);
-	return;
 }
-static void get_obj_items_reply(DBusPendingCall *pending, void *_data) {
-	DBusMessage *reply = dbus_pending_call_steal_reply(pending);
-
-	if (!reply) {
-		sway_log(L_ERROR, "Got no object path items reply from sni watcher");
-		goto bail;
-	}
-
-	int message_type = dbus_message_get_type(reply);
-
-	if (message_type == DBUS_MESSAGE_TYPE_ERROR) {
-		char *msg;
-
-		dbus_message_get_args(reply, NULL,
-				DBUS_TYPE_STRING, &msg,
-				DBUS_TYPE_INVALID);
-
-		sway_log(L_ERROR, "Message is error: %s", msg);
-		goto bail;
-	}
-
-	DBusMessageIter iter;
-	DBusMessageIter variant;
+static void get_obj_items_reply(DBusMessageIter *iter, void *_data) {
 	DBusMessageIter array;
 	DBusMessageIter dstruct;
 
-	dbus_message_iter_init(reply, &iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		sway_log(L_ERROR, "Replyed with wrong type, not v(a(os))");
-		goto bail;
-	}
-	dbus_message_iter_recurse(&iter, &variant);
-	if (dbus_message_iter_check_signature(&iter, "a(os)")) {
-		sway_log(L_ERROR, "Replyed with wrong type not a(os)");
-		goto bail;
-	}
+	int len = dbus_message_iter_get_element_count(iter);
 
-	int len = dbus_message_iter_get_element_count(&variant);
-
-	dbus_message_iter_recurse(&variant, &array);
+	dbus_message_iter_recurse(iter, &array);
 	for (int i = 0; i < len; i++) {
 		const char *object_path;
 		const char *unique_name;
@@ -164,10 +92,6 @@ static void get_obj_items_reply(DBusPendingCall *pending, void *_data) {
 			}
 		}
 	}
-
-bail:
-	dbus_message_unref(reply);
-	dbus_pending_call_unref(pending);
 }
 
 static void get_items() {
@@ -176,52 +100,13 @@ static void get_items() {
 	list_free(tray->items);
 	tray->items = create_list();
 
-	DBusPendingCall *pending;
-	DBusMessage *message = dbus_message_new_method_call(
-			"org.freedesktop.StatusNotifierWatcher",
-			"/StatusNotifierWatcher",
-			"org.freedesktop.DBus.Properties",
-			"Get");
+	dbus_get_prop_async("org.freedesktop.StatusNotifierWatcher",
+		"/StatusNotifierWatcher","org.freedesktop.StatusNotifierWatcher",
+		"RegisteredStatusNotifierItems", "as", get_items_reply, NULL);
 
-	const char *iface = "org.freedesktop.StatusNotifierWatcher";
-	const char *prop = "RegisteredStatusNotifierItems";
-	dbus_message_append_args(message,
-			DBUS_TYPE_STRING, &iface,
-			DBUS_TYPE_STRING, &prop,
-			DBUS_TYPE_INVALID);
-
-	bool status =
-		dbus_connection_send_with_reply(conn, message, &pending, -1);
-	dbus_message_unref(message);
-
-	if (!(pending || status)) {
-		sway_log(L_ERROR, "Could not get items");
-		return;
-	}
-
-	dbus_pending_call_set_notify(pending, get_items_reply, NULL, NULL);
-
-	message = dbus_message_new_method_call(
-			"org.freedesktop.StatusNotifierWatcher",
-			"/StatusNotifierWatcher",
-			"org.freedesktop.DBus.Properties",
-			"Get");
-
-	iface = "org.swaywm.LessSuckyStatusNotifierWatcher";
-	prop = "RegisteredObjectPathItems";
-	dbus_message_append_args(message,
-			DBUS_TYPE_STRING, &iface,
-			DBUS_TYPE_STRING, &prop,
-			DBUS_TYPE_INVALID);
-
-	status = dbus_connection_send_with_reply(conn, message, &pending, -1);
-	dbus_message_unref(message);
-
-	if (!(pending || status)) {
-		sway_log(L_ERROR, "Could not get items");
-		return;
-	}
-	dbus_pending_call_set_notify(pending, get_obj_items_reply, NULL, NULL);
+	dbus_get_prop_async("org.freedesktop.StatusNotifierWatcher",
+		"/StatusNotifierWatcher","org.swaywm.LessSuckyStatusNotifierWatcher",
+		"RegisteredObjectPathItems", "a(os)", get_obj_items_reply, NULL);
 }
 
 static DBusHandlerResult signal_handler(DBusConnection *connection,

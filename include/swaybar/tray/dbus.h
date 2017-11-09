@@ -12,6 +12,23 @@ extern DBusConnection *conn;
 bool dbus_message_iter_check_signature(DBusMessageIter *iter, const char *sig);
 
 /**
+ * Fetches the property and calls `callback` with a message iter pointing it.
+ * Performs error handling and signature checking.
+ *
+ * Returns: true if message is successfully sent (will not necessarily arrive)
+ * and false otherwise
+ *
+ * NOTE: `expected_signature` must remain valid until the message reply is
+ * received, please only use 'static signatures.
+ */
+bool dbus_get_prop_async(const char *destination,
+		const char *path,
+		const char *iface,
+		const char *prop,
+		const char *expected_signature,
+		void(*callback)(DBusMessageIter *iter, void *data),
+		void *data);
+/**
  * Should be called in main loop to dispatch events
  */
 void dispatch_dbus();

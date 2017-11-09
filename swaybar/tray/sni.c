@@ -14,6 +14,9 @@
 #include "client/cairo.h"
 #include "log.h"
 
+static const char *KDE_IFACE = "org.kde.StatusNotifierItem";
+static const char *FD_IFACE = "org.freedesktop.StatusNotifierItem";
+
 // Not sure what this is but cairo needs it.
 static const cairo_user_data_key_t cairo_user_data_key;
 
@@ -38,57 +41,19 @@ void sni_icon_ref_free(struct sni_icon_ref *sni_ref) {
 }
 
 /* Gets the pixmap of an icon */
-static void reply_icon(DBusPendingCall *pending, void *_data) {
+static void reply_icon(DBusMessageIter *iter /* a(iiay) */, void *_data) {
 	struct StatusNotifierItem *item = _data;
 
-	DBusMessage *reply = dbus_pending_call_steal_reply(pending);
-
-	if (!reply) {
-		sway_log(L_ERROR, "Did not get reply");
-		goto bail;
-	}
-
-	int message_type = dbus_message_get_type(reply);
-
-	if (message_type == DBUS_MESSAGE_TYPE_ERROR) {
-		char *msg;
-
-		dbus_message_get_args(reply, NULL,
-				DBUS_TYPE_STRING, &msg,
-				DBUS_TYPE_INVALID);
-
-		sway_log(L_ERROR, "Message is error: %s", msg);
-		goto bail;
-	}
-
-	DBusMessageIter iter;
-	DBusMessageIter variant; /* v[a(iiay)] */
-	DBusMessageIter array; /* a(iiay) */
 	DBusMessageIter d_struct; /* (iiay) */
 	DBusMessageIter icon; /* ay */
 
-	dbus_message_iter_init(reply, &iter);
-
-	// Each if here checks the types above before recursing
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		sway_log(L_ERROR, "Icon relpy type incorrect");
-		goto bail;
-	}
-	dbus_message_iter_recurse(&iter, &variant);
-
-	if (dbus_message_iter_check_signature(&variant, "a(iiay)")) {
-		sway_log(L_ERROR, "Icon relpy type incorrect");
-		goto bail;
-	}
-
-	if (dbus_message_iter_get_element_count(&variant) == 0) {
+	if (dbus_message_iter_get_element_count(iter) == 0) {
 		// Can't recurse if there are no items
 		sway_log(L_INFO, "Item has no icon");
-		goto bail;
+		return;
 	}
-	dbus_message_iter_recurse(&variant, &array);
 
-	dbus_message_iter_recurse(&array, &d_struct);
+	dbus_message_iter_recurse(iter, &d_struct);
 
 	int width;
 	dbus_message_iter_get_basic(&d_struct, &width);
@@ -102,13 +67,13 @@ static void reply_icon(DBusPendingCall *pending, void *_data) {
 
 	if (!len) {
 		sway_log(L_ERROR, "No icon data");
-		goto bail;
+		return;
 	}
 
 	// Also implies len % 4 == 0, useful below
 	if (len != width * height * 4) {
 		sway_log(L_ERROR, "Incorrect array size passed");
-		goto bail;
+		return;
 	}
 
 	dbus_message_iter_recurse(&d_struct, &icon);
@@ -117,7 +82,7 @@ static void reply_icon(DBusPendingCall *pending, void *_data) {
 	// FIXME support a variable stride
 	// (works on my machine though for all tested widths)
 	if (!sway_assert(stride == width * 4, "Stride must be equal to byte length")) {
-		goto bail;
+		return;
 	}
 
 	// Data is by reference, no need to free
@@ -127,7 +92,7 @@ static void reply_icon(DBusPendingCall *pending, void *_data) {
 	uint8_t *image_data = malloc(stride * height);
 	if (!image_data) {
 		sway_log(L_ERROR, "Could not allocate memory for icon");
-		goto bail;
+		return;
 	}
 
 	// Transform from network byte order to host byte order
@@ -155,97 +120,22 @@ static void reply_icon(DBusPendingCall *pending, void *_data) {
 		item->dirty = true;
 		dirty = true;
 
-		dbus_message_unref(reply);
-		dbus_pending_call_unref(pending);
 		return;
 	} else {
 		sway_log(L_ERROR, "Could not create image surface");
 		free(image_data);
 	}
 
-bail:
-	if (reply) {
-		dbus_message_unref(reply);
-	}
-	dbus_pending_call_unref(pending);
 	sway_log(L_ERROR, "Could not get icon from item");
 	return;
 }
-static void send_icon_msg(struct StatusNotifierItem *item) {
-	DBusPendingCall *pending;
-	DBusMessage *message = dbus_message_new_method_call(
-			item->name,
-			item->object_path,
-			"org.freedesktop.DBus.Properties",
-			"Get");
-	const char *iface;
-	if (item->kde_special_snowflake) {
-		iface = "org.kde.StatusNotifierItem";
-	} else {
-		iface = "org.freedesktop.StatusNotifierItem";
-	}
-	const char *prop = "IconPixmap";
-
-	dbus_message_append_args(message,
-			DBUS_TYPE_STRING, &iface,
-			DBUS_TYPE_STRING, &prop,
-			DBUS_TYPE_INVALID);
-
-	bool status =
-		dbus_connection_send_with_reply(conn, message, &pending, -1);
-
-	dbus_message_unref(message);
-
-	if (!(pending || status)) {
-		sway_log(L_ERROR, "Could not get item icon");
-		return;
-	}
-
-	dbus_pending_call_set_notify(pending, reply_icon, item, NULL);
-}
 
 /* Get an icon by its name */
-static void reply_icon_name(DBusPendingCall *pending, void *_data) {
+static void reply_icon_name(DBusMessageIter *iter, void *_data) {
 	struct StatusNotifierItem *item = _data;
 
-	DBusMessage *reply = dbus_pending_call_steal_reply(pending);
-
-	if (!reply) {
-		sway_log(L_INFO, "Got no icon name reply from item");
-		goto bail;
-	}
-
-	int message_type = dbus_message_get_type(reply);
-
-	if (message_type == DBUS_MESSAGE_TYPE_ERROR) {
-		char *msg;
-
-		dbus_message_get_args(reply, NULL,
-				DBUS_TYPE_STRING, &msg,
-				DBUS_TYPE_INVALID);
-
-		sway_log(L_INFO, "Could not get icon name: %s", msg);
-		goto bail;
-	}
-
-	DBusMessageIter iter; /* v[s] */
-	DBusMessageIter variant; /* s */
-
-	dbus_message_iter_init(reply, &iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		sway_log(L_ERROR, "Icon name relpy type incorrect");
-		goto bail;
-	}
-	dbus_message_iter_recurse(&iter, &variant);
-
-
-	if (dbus_message_iter_get_arg_type(&variant) != DBUS_TYPE_STRING) {
-		sway_log(L_ERROR, "Icon name relpy type incorrect");
-		goto bail;
-	}
-
 	char *icon_name;
-	dbus_message_iter_get_basic(&variant, &icon_name);
+	dbus_message_iter_get_basic(iter, &icon_name);
 
 	cairo_surface_t *image = find_icon(icon_name, 256);
 
@@ -259,55 +149,19 @@ static void reply_icon_name(DBusPendingCall *pending, void *_data) {
 		item->dirty = true;
 		dirty = true;
 
-		dbus_message_unref(reply);
-		dbus_pending_call_unref(pending);
 		return;
 	}
 
-bail:
-	if (reply) {
-		dbus_message_unref(reply);
-	}
-	dbus_pending_call_unref(pending);
 	// Now try the pixmap
-	send_icon_msg(item);
-	return;
-}
-static void send_icon_name_msg(struct StatusNotifierItem *item) {
-	DBusPendingCall *pending;
-	DBusMessage *message = dbus_message_new_method_call(
-			item->name,
-			item->object_path,
-			"org.freedesktop.DBus.Properties",
-			"Get");
-	const char *iface;
-	if (item->kde_special_snowflake) {
-		iface = "org.kde.StatusNotifierItem";
-	} else {
-		iface = "org.freedesktop.StatusNotifierItem";
-	}
-	const char *prop = "IconName";
-
-	dbus_message_append_args(message,
-			DBUS_TYPE_STRING, &iface,
-			DBUS_TYPE_STRING, &prop,
-			DBUS_TYPE_INVALID);
-
-	bool status =
-		dbus_connection_send_with_reply(conn, message, &pending, -1);
-
-	dbus_message_unref(message);
-
-	if (!(pending || status)) {
-		sway_log(L_ERROR, "Could not get item icon name");
-		return;
-	}
-
-	dbus_pending_call_set_notify(pending, reply_icon_name, item, NULL);
+	dbus_get_prop_async(item->name, item->object_path,
+		(item->kde_special_snowflake ? KDE_IFACE : FD_IFACE),
+		"IconPixmap", "a(iiay)", reply_icon, item);
 }
 
 void get_icon(struct StatusNotifierItem *item) {
-	send_icon_name_msg(item);
+	dbus_get_prop_async(item->name, item->object_path,
+		(item->kde_special_snowflake ? KDE_IFACE : FD_IFACE),
+		"IconName", "s", reply_icon_name, item);
 }
 
 void sni_activate(struct StatusNotifierItem *item, uint32_t x, uint32_t y) {
