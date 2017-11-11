@@ -15,6 +15,7 @@
 #include <float.h>
 #include <dirent.h>
 #include <strings.h>
+#include <wlr/types/wlr_output.h>
 #include "wayland-desktop-shell-server-protocol.h"
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -930,6 +931,7 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 }
 
 static void invoke_swaybar(struct bar_config *bar) {
+	return; // TODO WLR
 	// Pipe to communicate errors
 	int filedes[2];
 	if (pipe(filedes) == -1) {
@@ -1128,13 +1130,15 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output->height = oc->height;
 
 		sway_log(L_DEBUG, "Set %s size to %ix%i (%d)", oc->name, oc->width, oc->height, oc->scale);
-		struct wlc_size new_size = { .w = oc->width, .h = oc->height };
-		wlc_output_set_resolution(output->handle, &new_size, (uint32_t)oc->scale);
+		// TODO WLR: modes
+		//struct wlc_size new_size = { .w = oc->width, .h = oc->height };
+		//wlc_output_set_resolution(output->handle, &new_size, (uint32_t)oc->scale);
 	} else if (oc) {
-		const struct wlc_size *new_size = wlc_output_get_resolution(output->handle);
-		wlc_output_set_resolution(output->handle, new_size, (uint32_t)oc->scale);
+		//const struct wlc_size *new_size = wlc_output_get_resolution(output->handle);
+		//wlc_output_set_resolution(output->handle, new_size, (uint32_t)oc->scale);
 	}
 
+	// TODO WLR: wlr_output_layout
 	// Find position for it
 	if (oc && oc->x != -1 && oc->y != -1) {
 		sway_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
@@ -1170,6 +1174,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		}
 	}
 
+	/* TODO WLR
 	if (oc && oc->background) {
 		if (output->bg_pid != 0) {
 			terminate_swaybg(output->bg_pid);
@@ -1195,6 +1200,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 			execvp(cmd[0], cmd);
 		}
 	}
+	*/
 }
 
 char *do_var_replacement(char *str) {

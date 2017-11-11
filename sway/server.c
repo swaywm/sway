@@ -27,27 +27,31 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	const char *socket = wl_display_add_socket_auto(server->wl_display);
-	if (!socket) {
-		sway_log_errno(L_ERROR, "Unable to open wayland socket");
+	server->output_add.notify = output_add_notify;
+	wl_signal_add(&server->backend->events.output_add, &server->output_add);
+
+	server->socket = wl_display_add_socket_auto(server->wl_display);
+	if (!sway_assert(server->socket,  "Unable to open wayland socket")) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
-
-	sway_log(L_INFO, "Running compositor on wayland display '%s'", socket);
-	setenv("_WAYLAND_DISPLAY", socket, true);
-
-	if (!wlr_backend_start(server->backend)) {
-		sway_log(L_ERROR, "Failed to start backend");
-		wlr_backend_destroy(server->backend);
-		return false;
-	}
-
-	setenv("WAYLAND_DISPLAY", socket, true);
 	return true;
 }
 
 void server_fini(struct sway_server *server) {
 	// TODO WLR: tear down more stuff
 	wlr_backend_destroy(server->backend);
+}
+
+void server_run(struct sway_server *server) {
+	sway_log(L_INFO, "Running compositor on wayland display '%s'",
+			server->socket);
+	setenv("_WAYLAND_DISPLAY", server->socket, true);
+	if (!sway_assert(wlr_backend_start(server->backend),
+				"Failed to start backend")) {
+		wlr_backend_destroy(server->backend);
+		return;
+	}
+	setenv("WAYLAND_DISPLAY", server->socket, true);
+	wl_display_run(server->wl_display);
 }

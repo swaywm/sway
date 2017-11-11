@@ -12,6 +12,7 @@
 struct sway_server {
 	struct wl_display *wl_display;
 	struct wl_event_loop *wl_event_loop;
+	const char *socket;
 
 	struct wlr_backend *backend;
 	struct wlr_renderer *renderer;
@@ -19,11 +20,18 @@ struct sway_server {
 	struct wlr_data_device_manager *data_device_manager;
 
 	struct sway_input *input;
+
+	struct wl_listener output_add;
+	struct wl_listener output_remove;
+	struct wl_listener output_frame;
 };
+
+struct sway_server server;
 
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
+void server_run(struct sway_server *server);
 
-struct sway_server server;
+void output_add_notify(struct wl_listener *listener, void *data);
 
 #endif

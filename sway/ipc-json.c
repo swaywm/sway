@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <libinput.h>
+#include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_output.h>
 #include "sway/container.h"
 #include "sway/input.h"
 #include "sway/ipc-json.h"
@@ -14,16 +16,19 @@ static json_object *ipc_json_create_rect(swayc_t *c) {
 	json_object_object_add(rect, "x", json_object_new_int((int32_t)c->x));
 	json_object_object_add(rect, "y", json_object_new_int((int32_t)c->y));
 
-	struct wlc_size size;
+	struct wlr_box box;
 	if (c->type == C_OUTPUT) {
-		size = *wlc_output_get_resolution(c->handle);
+		wlr_output_effective_resolution(c->_handle.output,
+				&box.width, &box.height);
 	} else {
-		size.w = c->width;
-		size.h = c->height;
+		box.width = c->width;
+		box.width = c->height;
 	}
 
-	json_object_object_add(rect, "width", json_object_new_int((int32_t)size.w));
-	json_object_object_add(rect, "height", json_object_new_int((int32_t)size.h));
+	json_object_object_add(rect, "width",
+			json_object_new_int((int32_t)box.width));
+	json_object_object_add(rect, "height",
+			json_object_new_int((int32_t)box.height));
 
 	return rect;
 }

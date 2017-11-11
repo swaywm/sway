@@ -2,6 +2,7 @@
 #define _SWAY_CONTAINER_H
 #include <sys/types.h>
 #include <wlc/wlc.h>
+#include <wlr/types/wlr_output.h>
 #include <stdint.h>
 
 #include "list.h"
@@ -25,6 +26,14 @@ enum swayc_types {
 	C_VIEW,		/**< A view (aka window). */
 	// Keep last
 	C_TYPES,
+};
+
+enum swayc_view_types {
+	V_WL_SHELL,
+	V_XDG_SHELL_V6,
+	V_XWAYLAND,
+	// Keep last
+	V_TYPES,
 };
 
 /**
@@ -63,11 +72,12 @@ enum swayc_border_types {
  * The tree is made of these. Views are containers that cannot have children.
  */
 struct sway_container {
-	/**
-	 * If this container maps to a WLC object, this is set to that object's
-	 * handle. Otherwise, NULL.
-	 */
+	// TODO WLR: reconcile these
 	wlc_handle handle;
+
+	union {
+		struct wlr_output *output;
+	} _handle;
 
 	/**
 	 * A unique ID to identify this container. Primarily used in the
@@ -179,7 +189,7 @@ enum visibility_mask {
 /**
  * Allocates a new output container.
  */
-swayc_t *new_output(wlc_handle handle);
+swayc_t *new_output(struct wlr_output *wlr_output);
 /**
  * Allocates a new workspace container.
  */

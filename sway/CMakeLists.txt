@@ -18,14 +18,20 @@ file(GLOB cmds
 )
 
 add_executable(sway
-	commands.c
-	${cmds}
+    desktop/output.c
+
 	tree/container.c
 	tree/criteria.c
 	tree/focus.c
 	tree/output.c
 	tree/workspace.c
 	tree/layout.c
+
+	input/input.c
+
+	commands.c
+	${cmds}
+
 	base64.c
 	config.c
 	debug_log.c
@@ -36,8 +42,6 @@ add_executable(sway
 	border.c
 	security.c
     server.c
-
-	input/input.c
 )
 
 add_definitions(

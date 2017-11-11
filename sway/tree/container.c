@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <strings.h>
 #include <string.h>
+#include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_output.h>
 #include "sway/config.h"
 #include "sway/container.h"
 #include "sway/workspace.h"
@@ -118,10 +120,10 @@ static void update_root_geometry() {
 
 // New containers
 
-swayc_t *new_output(wlc_handle handle) {
-	struct wlc_size size;
-	output_get_scaled_size(handle, &size);
-	const char *name = wlc_output_get_name(handle);
+swayc_t *new_output(struct wlr_output *wlr_output) {
+	struct wlr_box size;
+	wlr_output_effective_resolution(wlr_output, &size.width, &size.height);
+	const char *name = wlr_output->name;
 	// Find current outputs to see if this already exists
 	{
 		int i, len = root_container.children->length;
@@ -129,13 +131,11 @@ swayc_t *new_output(wlc_handle handle) {
 			swayc_t *op = root_container.children->items[i];
 			const char *op_name = op->name;
 			if (op_name && name && strcmp(op_name, name) == 0) {
-				sway_log(L_DEBUG, "restoring output %" PRIuPTR ":%s", handle, op_name);
+				sway_log(L_DEBUG, "restoring output %p: %s", wlr_output, op_name);
 				return op;
 			}
 		}
 	}
-
-	sway_log(L_DEBUG, "New output %" PRIuPTR ":%s", handle, name);
 
 	struct output_config *oc = NULL, *all = NULL;
 	int i;
@@ -164,10 +164,10 @@ swayc_t *new_output(wlc_handle handle) {
 	}
 
 	swayc_t *output = new_swayc(C_OUTPUT);
-	output->handle = handle;
+	output->_handle.output = wlr_output;
 	output->name = name ? strdup(name) : NULL;
-	output->width = size.w;
-	output->height = size.h;
+	output->width = size.width;
+	output->height = size.width;
 	output->unmanaged = create_list();
 	output->bg_pid = 0;
 

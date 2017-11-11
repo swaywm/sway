@@ -441,6 +441,7 @@ int main(int argc, char **argv) {
 	if (!server_init(&server)) {
 		return 1;
 	}
+
 	init_layout();
 	ipc_init();
 
@@ -460,7 +461,7 @@ int main(int argc, char **argv) {
 	security_sanity_check();
 
 	if (!terminate_request) {
-		wl_display_run(server.wl_display);
+		server_run(&server);
 	}
 
 	server_fini(&server);
