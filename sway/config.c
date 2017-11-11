@@ -932,6 +932,7 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 
 static void invoke_swaybar(struct bar_config *bar) {
 	return; // TODO WLR
+	sway_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
 	// Pipe to communicate errors
 	int filedes[2];
 	if (pipe(filedes) == -1) {
@@ -1059,7 +1060,6 @@ void load_swaybars() {
 		if (bar->pid != 0) {
 			terminate_swaybar(bar->pid);
 		}
-		sway_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
 		invoke_swaybar(bar);
 	}
 

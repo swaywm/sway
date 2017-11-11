@@ -34,6 +34,11 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->backend->events.output_remove,
 			&server->output_remove);
 
+	server->xdg_shell_v6 = wlr_xdg_shell_v6_create(server->wl_display);
+	wl_signal_add(&server->xdg_shell_v6->events.new_surface,
+		&server->xdg_shell_v6_surface);
+	server->xdg_shell_v6_surface.notify = handle_xdg_shell_v6_surface;
+
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!sway_assert(server->socket,  "Unable to open wayland socket")) {
 		wlr_backend_destroy(server->backend);

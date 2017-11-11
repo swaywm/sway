@@ -11,6 +11,8 @@ typedef struct sway_container swayc_t;
 extern swayc_t root_container;
 extern swayc_t *current_focus;
 
+struct sway_view;
+
 /**
  * Different kinds of containers.
  *
@@ -25,14 +27,6 @@ enum swayc_types {
 	C_VIEW,		/**< A view (aka window). */
 	// Keep last
 	C_TYPES,
-};
-
-enum swayc_view_types {
-	V_WL_SHELL,
-	V_XDG_SHELL_V6,
-	V_XWAYLAND,
-	// Keep last
-	V_TYPES,
 };
 
 /**
@@ -76,6 +70,7 @@ struct sway_container {
 
 	union {
 		struct sway_output *output;
+		struct sway_view *view;
 	} _handle;
 
 	/**
@@ -207,7 +202,7 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout);
  *
  * Pass in a sibling view, or a workspace to become this container's parent.
  */
-swayc_t *new_view(swayc_t *sibling, wlc_handle handle);
+swayc_t *new_view(swayc_t *sibling, struct sway_view *view);
 /**
  * Allocates a new floating view in the active workspace.
  */

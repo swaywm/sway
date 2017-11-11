@@ -19,6 +19,7 @@ file(GLOB cmds
 
 add_executable(sway
     desktop/output.c
+    desktop/xdg_shell_v6.c
 
 	tree/container.c
 	tree/criteria.c

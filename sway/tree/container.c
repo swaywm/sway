@@ -15,6 +15,7 @@
 #include "sway/input_state.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/view.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -291,44 +292,49 @@ swayc_t *new_container(swayc_t *child, enum swayc_layouts layout) {
 	return cont;
 }
 
-swayc_t *new_view(swayc_t *sibling, wlc_handle handle) {
+swayc_t *new_view(swayc_t *sibling, struct sway_view *view) {
 	if (!ASSERT_NONNULL(sibling)) {
 		return NULL;
 	}
-	const char *title = wlc_view_get_title(handle);
-	swayc_t *view = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %" PRIuPTR ":%s to container %p %d",
-		handle, title, sibling, sibling ? sibling->type : 0);
+	const char *title = view->iface.get_prop(view, VIEW_PROP_TITLE);
+	swayc_t *swayc = new_swayc(C_VIEW);
+	sway_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
+		swayc, title, sibling, sibling ? sibling->type : 0);
 	// Setup values
-	view->handle = handle;
-	view->name = title ? strdup(title) : NULL;
-	const char *class = wlc_view_get_class(handle);
-	view->class = class ? strdup(class) : NULL;
-	const char *instance = wlc_view_get_instance(handle);
-	view->instance = instance ? strdup(instance) : NULL;
-	const char *app_id = wlc_view_get_app_id(handle);
-	view->app_id = app_id ? strdup(app_id) : NULL;
-	view->visible = true;
-	view->is_focused = true;
-	view->sticky = false;
-	view->width = 0;
-	view->height = 0;
-	view->desired_width = -1;
-	view->desired_height = -1;
-	// setup border
-	view->border_type = config->border;
-	view->border_thickness = config->border_thickness;
+	swayc->_handle.view = view;
 
-	view->is_floating = false;
+	swayc->name = title ? strdup(title) : NULL;
+
+	const char *class = view->iface.get_prop(view, VIEW_PROP_CLASS);
+	swayc->class = class ? strdup(class) : NULL;
+
+	const char *instance = view->iface.get_prop(view, VIEW_PROP_INSTANCE);
+	swayc->instance = instance ? strdup(instance) : NULL;
+
+	const char *app_id = view->iface.get_prop(view, VIEW_PROP_APP_ID);
+	swayc->app_id = app_id ? strdup(app_id) : NULL;
+
+	swayc->visible = true;
+	swayc->is_focused = true;
+	swayc->sticky = false;
+	swayc->width = 0;
+	swayc->height = 0;
+	swayc->desired_width = -1;
+	swayc->desired_height = -1;
+	// setup border
+	swayc->border_type = config->border;
+	swayc->border_thickness = config->border_thickness;
+
+	swayc->is_floating = false;
 
 	if (sibling->type == C_WORKSPACE) {
 		// Case of focused workspace, just create as child of it
-		add_child(sibling, view);
+		add_child(sibling, swayc);
 	} else {
 		// Regular case, create as sibling of current container
-		add_sibling(sibling, view);
+		add_sibling(sibling, swayc);
 	}
-	return view;
+	return swayc;
 }
 
 swayc_t *new_floating_view(wlc_handle handle) {
