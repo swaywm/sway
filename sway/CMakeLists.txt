@@ -20,19 +20,19 @@ file(GLOB cmds
 add_executable(sway
 	commands.c
 	${cmds}
+	tree/container.c
+	tree/criteria.c
+	tree/focus.c
+	tree/output.c
+	tree/workspace.c
+	tree/layout.c
 	base64.c
 	config.c
-	container.c
-	criteria.c
 	debug_log.c
-	focus.c
 	input_state.c
 	ipc-json.c
 	ipc-server.c
-	layout.c
 	main.c
-	output.c
-	workspace.c
 	border.c
 	security.c
     server.c
