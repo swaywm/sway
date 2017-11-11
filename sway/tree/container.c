@@ -120,10 +120,11 @@ static void update_root_geometry() {
 
 // New containers
 
-swayc_t *new_output(struct wlr_output *wlr_output) {
+swayc_t *new_output(struct sway_output *sway_output) {
 	struct wlr_box size;
-	wlr_output_effective_resolution(wlr_output, &size.width, &size.height);
-	const char *name = wlr_output->name;
+	wlr_output_effective_resolution(sway_output->wlr_output,
+			&size.width, &size.height);
+	const char *name = sway_output->wlr_output->name;
 	// Find current outputs to see if this already exists
 	{
 		int i, len = root_container.children->length;
@@ -131,7 +132,8 @@ swayc_t *new_output(struct wlr_output *wlr_output) {
 			swayc_t *op = root_container.children->items[i];
 			const char *op_name = op->name;
 			if (op_name && name && strcmp(op_name, name) == 0) {
-				sway_log(L_DEBUG, "restoring output %p: %s", wlr_output, op_name);
+				sway_log(L_DEBUG, "restoring output %p: %s",
+						sway_output, op_name);
 				return op;
 			}
 		}
@@ -164,7 +166,7 @@ swayc_t *new_output(struct wlr_output *wlr_output) {
 	}
 
 	swayc_t *output = new_swayc(C_OUTPUT);
-	output->_handle.output = wlr_output;
+	output->_handle.output = sway_output;
 	output->name = name ? strdup(name) : NULL;
 	output->width = size.width;
 	output->height = size.width;

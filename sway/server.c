@@ -30,6 +30,10 @@ bool server_init(struct sway_server *server) {
 	server->output_add.notify = output_add_notify;
 	wl_signal_add(&server->backend->events.output_add, &server->output_add);
 
+	server->output_remove.notify = output_remove_notify;
+	wl_signal_add(&server->backend->events.output_remove,
+			&server->output_remove);
+
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!sway_assert(server->socket,  "Unable to open wayland socket")) {
 		wlr_backend_destroy(server->backend);

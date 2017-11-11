@@ -33,5 +33,6 @@ void server_fini(struct sway_server *server);
 void server_run(struct sway_server *server);
 
 void output_add_notify(struct wl_listener *listener, void *data);
+void output_remove_notify(struct wl_listener *listener, void *data);
 
 #endif

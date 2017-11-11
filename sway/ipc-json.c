@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <json-c/json.h>
 #include <ctype.h>
 #include <string.h>
@@ -5,6 +6,7 @@
 #include <libinput.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
+#include "sway/output.h"
 #include "sway/container.h"
 #include "sway/input.h"
 #include "sway/ipc-json.h"
@@ -18,7 +20,7 @@ static json_object *ipc_json_create_rect(swayc_t *c) {
 
 	struct wlr_box box;
 	if (c->type == C_OUTPUT) {
-		wlr_output_effective_resolution(c->_handle.output,
+		wlr_output_effective_resolution(c->_handle.output->wlr_output,
 				&box.width, &box.height);
 	} else {
 		box.width = c->width;

@@ -4,7 +4,6 @@
 #include <wlc/wlc.h>
 #include <wlr/types/wlr_output.h>
 #include <stdint.h>
-
 #include "list.h"
 
 typedef struct sway_container swayc_t;
@@ -76,7 +75,7 @@ struct sway_container {
 	wlc_handle handle;
 
 	union {
-		struct wlr_output *output;
+		struct sway_output *output;
 	} _handle;
 
 	/**
@@ -186,10 +185,11 @@ enum visibility_mask {
 	VISIBLE = true
 } visible;
 
+struct sway_output;
 /**
  * Allocates a new output container.
  */
-swayc_t *new_output(struct wlr_output *wlr_output);
+swayc_t *new_output(struct sway_output *sway_output);
 /**
  * Allocates a new workspace container.
  */

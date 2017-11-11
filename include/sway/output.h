@@ -1,8 +1,19 @@
 #ifndef _SWAY_OUTPUT_H
 #define _SWAY_OUTPUT_H
-
+#include <time.h>
+#include <wayland-server.h>
+#include <wlr/types/wlr_output.h>
 #include "container.h"
 #include "focus.h"
+
+struct sway_server;
+
+struct sway_output {
+	struct wlr_output *wlr_output;
+	struct wl_listener frame;
+	struct sway_server *server;
+	struct timespec last_frame;
+};
 
 // Position is absolute coordinates on the edge where the adjacent output
 // should be searched for.
