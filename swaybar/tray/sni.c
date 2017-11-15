@@ -41,11 +41,15 @@ void sni_icon_ref_free(struct sni_icon_ref *sni_ref) {
 }
 
 /* Gets the pixmap of an icon */
-static void reply_icon(DBusMessageIter *iter /* a(iiay) */, void *_data) {
+static void reply_icon(DBusMessageIter *iter /* a(iiay) */, void *_data, enum property_status status) {
+	if (status != PROP_EXISTS) {
+		return;
+	}
 	struct StatusNotifierItem *item = _data;
 
 	DBusMessageIter d_struct; /* (iiay) */
-	DBusMessageIter icon; /* ay */
+	DBusMessageIter struct_items;
+	DBusMessageIter icon;
 
 	if (dbus_message_iter_get_element_count(iter) == 0) {
 		// Can't recurse if there are no items
@@ -54,16 +58,17 @@ static void reply_icon(DBusMessageIter *iter /* a(iiay) */, void *_data) {
 	}
 
 	dbus_message_iter_recurse(iter, &d_struct);
+	dbus_message_iter_recurse(&d_struct, &struct_items);
 
 	int width;
-	dbus_message_iter_get_basic(&d_struct, &width);
-	dbus_message_iter_next(&d_struct);
+	dbus_message_iter_get_basic(&struct_items, &width);
+	dbus_message_iter_next(&struct_items);
 
 	int height;
-	dbus_message_iter_get_basic(&d_struct, &height);
-	dbus_message_iter_next(&d_struct);
+	dbus_message_iter_get_basic(&struct_items, &height);
+	dbus_message_iter_next(&struct_items);
 
-	int len = dbus_message_iter_get_element_count(&d_struct);
+	int len = dbus_message_iter_get_element_count(&struct_items);
 
 	if (!len) {
 		sway_log(L_ERROR, "No icon data");
@@ -76,7 +81,7 @@ static void reply_icon(DBusMessageIter *iter /* a(iiay) */, void *_data) {
 		return;
 	}
 
-	dbus_message_iter_recurse(&d_struct, &icon);
+	dbus_message_iter_recurse(&struct_items, &icon);
 
 	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	// FIXME support a variable stride
@@ -131,8 +136,15 @@ static void reply_icon(DBusMessageIter *iter /* a(iiay) */, void *_data) {
 }
 
 /* Get an icon by its name */
-static void reply_icon_name(DBusMessageIter *iter, void *_data) {
+static void reply_icon_name(DBusMessageIter *iter, void *_data, enum property_status status) {
 	struct StatusNotifierItem *item = _data;
+
+	if (status != PROP_EXISTS) {
+		dbus_get_prop_async(item->name, item->object_path,
+			(item->kde_special_snowflake ? KDE_IFACE : FD_IFACE),
+			"IconPixmap", "a(iiay)", reply_icon, item);
+		return;
+	}
 
 	char *icon_name;
 	dbus_message_iter_get_basic(iter, &icon_name);

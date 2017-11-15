@@ -138,7 +138,7 @@ static void dispatch_status(DBusConnection *connection, DBusDispatchStatus new_s
 
 struct async_prop_data {
 	char const *sig;
-	void(*callback)(DBusMessageIter *, void *);
+	void(*callback)(DBusMessageIter *, void *, enum property_status);
 	void *usr_data;
 };
 
@@ -160,6 +160,7 @@ static void get_prop_callback(DBusPendingCall *pending, void *_data) {
 				DBUS_TYPE_INVALID);
 
 		sway_log(L_INFO, "Failure to get property: %s", msg);
+		data->callback(NULL, data->usr_data, PROP_ERROR);
 		goto bail;
 	}
 
@@ -169,16 +170,18 @@ static void get_prop_callback(DBusPendingCall *pending, void *_data) {
 	dbus_message_iter_init(reply, &iter);
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
 		sway_log(L_ERROR, "Property relpy type incorrect");
+		data->callback(NULL, data->usr_data, PROP_BAD_DATA);
 		goto bail;
 	}
 	dbus_message_iter_recurse(&iter, &variant);
 
 	if (!dbus_message_iter_check_signature(&variant, data->sig)) {
 		sway_log(L_INFO, "Property returned has incorrect signatue.");
+		data->callback(&variant, data->usr_data, PROP_WRONG_SIG);
 		goto bail;
 	}
 
-	data->callback(&variant, data->usr_data);
+	data->callback(&variant, data->usr_data, PROP_EXISTS);
 
 bail:
 	if (reply) {
@@ -199,7 +202,8 @@ bool dbus_message_iter_check_signature(DBusMessageIter *iter, const char *sig) {
 bool dbus_get_prop_async(const char *destination,
 		const char *path, const char *iface,
 		const char *prop, const char *expected_signature,
-		void(*callback)(DBusMessageIter *, void *), void *usr_data) {
+		void(*callback)(DBusMessageIter *, void *, enum property_status),
+		void *usr_data) {
 	struct async_prop_data *data = malloc(sizeof(struct async_prop_data));
 	if (!data) {
 		return false;

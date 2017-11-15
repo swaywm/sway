@@ -38,7 +38,10 @@ static void register_host(char *name) {
 	dbus_message_unref(message);
 }
 
-static void get_items_reply(DBusMessageIter *iter, void *_data) {
+static void get_items_reply(DBusMessageIter *iter, void *_data, enum property_status status) {
+	if (status != PROP_EXISTS) {
+		return;
+	}
 	DBusMessageIter array;
 
 	// O(n) function, could be faster dynamically reading values
@@ -60,7 +63,10 @@ static void get_items_reply(DBusMessageIter *iter, void *_data) {
 		}
 	}
 }
-static void get_obj_items_reply(DBusMessageIter *iter, void *_data) {
+static void get_obj_items_reply(DBusMessageIter *iter, void *_data, enum property_status status) {
+	if (status != PROP_EXISTS) {
+		return;
+	}
 	DBusMessageIter array;
 	DBusMessageIter dstruct;
 
