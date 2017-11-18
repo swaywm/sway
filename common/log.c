@@ -9,7 +9,6 @@
 #include <string.h>
 #include <time.h>
 #include "log.h"
-#include "sway.h"
 #include "readline.h"
 
 static int colored = 1;
@@ -117,6 +116,7 @@ void _sway_log(const char *filename, int line, log_importance_t verbosity, const
 	va_end(args);
 }
 
+void sway_terminate(int code);
 
 void _sway_abort(const char *filename, int line, const char* format, ...) {
 	va_list args;

@@ -1,10 +1,8 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
-
 #ifndef __FreeBSD__
 // Any value will hide SOCK_CLOEXEC on FreeBSD (__BSD_VISIBLE=0)
 #define _XOPEN_SOURCE 700
 #endif
-
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -56,8 +54,6 @@ struct ipc_client {
 	char *write_buffer;
 };
 
-static list_t *ipc_get_pixel_requests = NULL;
-
 struct sockaddr_un *ipc_user_sockaddr(void);
 int ipc_handle_connection(int fd, uint32_t mask, void *data);
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
@@ -97,7 +93,6 @@ void ipc_init(void) {
 	setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
 
 	ipc_client_list = create_list();
-	ipc_get_pixel_requests = create_list();
 
 	ipc_event_source = wl_event_loop_add_fd(server.wl_event_loop, ipc_socket,
 			WL_EVENT_READABLE, ipc_handle_connection, NULL);

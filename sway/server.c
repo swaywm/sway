@@ -10,7 +10,6 @@
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 #include "sway/server.h"
-#include "sway/input.h"
 #include "log.h"
 
 bool server_init(struct sway_server *server) {
@@ -23,7 +22,6 @@ bool server_init(struct sway_server *server) {
 	server->renderer = wlr_gles2_renderer_create(server->backend);
 	wl_display_init_shm(server->wl_display);
 
-	server->input = sway_input_create(server);
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 

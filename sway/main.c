@@ -1,30 +1,24 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 200112L
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <unistd.h>
 #include <getopt.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/un.h>
+#include <unistd.h>
 #ifdef __linux__
 #include <sys/capability.h>
 #include <sys/prctl.h>
 #endif
-#include "sway/layout.h"
-#include "sway/config.h"
-#include "sway/security.h"
-#include "sway/handlers.h"
-#include "sway/input.h"
-#include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "ipc-client.h"
 #include "readline.h"
 #include "stringop.h"
-#include "sway.h"
 #include "log.h"
 #include "util.h"
 
@@ -39,7 +33,7 @@ void sway_terminate(int exit_code) {
 }
 
 void sig_handler(int signal) {
-	close_views(&root_container);
+	//close_views(&root_container);
 	sway_terminate(EXIT_SUCCESS);
 }
 
@@ -442,17 +436,17 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	init_layout();
-	ipc_init();
+	//init_layout();
+	//ipc_init();
 
-	if (validate) {
-		bool valid = load_main_config(config_path, false);
-		return valid ? 0 : 1;
-	}
+	//if (validate) {
+	//	bool valid = load_main_config(config_path, false);
+	//	return valid ? 0 : 1;
+	//}
 
-	if (!load_main_config(config_path, false)) {
-		sway_terminate(EXIT_FAILURE);
-	}
+	//if (!load_main_config(config_path, false)) {
+	//	sway_terminate(EXIT_FAILURE);
+	//}
 
 	if (config_path) {
 		free(config_path);
@@ -466,11 +460,11 @@ int main(int argc, char **argv) {
 
 	server_fini(&server);
 
-	ipc_terminate();
+	//ipc_terminate();
 
-	if (config) {
-		free_config(config);
-	}
+	//if (config) {
+	//	free_config(config);
+	//}
 
 	return exit_value;
 }

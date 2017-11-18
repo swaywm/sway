@@ -1,6 +1,5 @@
 include_directories(
 	${PROTOCOLS_INCLUDE_DIRS}
-	${WLC_INCLUDE_DIRS}
 	${WLR_INCLUDE_DIRS}
 	${PCRE_INCLUDE_DIRS}
 	${JSONC_INCLUDE_DIRS}
@@ -11,37 +10,12 @@ include_directories(
 	${WAYLAND_INCLUDE_DIR}
 )
 
-file(GLOB cmds
-	"commands/*.c"
-	"commands/bar/*.c"
-	"commands/input/*.c"
-)
-
 add_executable(sway
     desktop/output.c
     desktop/xdg_shell_v6.c
 
-	tree/container.c
-	tree/criteria.c
-	tree/focus.c
-	tree/output.c
-	tree/workspace.c
-	tree/layout.c
-
-	input/input.c
-
-	commands.c
-	${cmds}
-
 	base64.c
-	config.c
-	debug_log.c
-	input_state.c
-	ipc-json.c
-	ipc-server.c
 	main.c
-	border.c
-	security.c
     server.c
 )
 
@@ -53,7 +27,6 @@ target_link_libraries(sway
 	sway-common
 	sway-protocols
 	sway-wayland
-	${WLC_LIBRARIES}
 	${WLR_LIBRARIES}
 	${XKBCOMMON_LIBRARIES}
 	${PCRE_LIBRARIES}

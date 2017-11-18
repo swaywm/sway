@@ -4,11 +4,9 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/render.h>
-#include "sway/server.h"
-#include "sway/container.h"
-#include "sway/workspace.h"
-#include "sway/output.h"
 #include "log.h"
+#include "sway/output.h"
+#include "sway/server.h"
 
 static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(
@@ -37,19 +35,10 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	output->server = server;
 
-	swayc_t *node = new_output(output);
-	if (!sway_assert(node, "Failed to allocate output")) {
-		return;
-	}
-
-	// Switch to workspace if we need to
-	if (swayc_active_workspace() == NULL) {
-		swayc_t *ws = node->children->items[0];
-		workspace_switch(ws);
-	}
-
 	output->frame.notify = output_frame_notify;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
+
+	// TODO: Add to tree
 }
 
 void output_remove_notify(struct wl_listener *listener, void *data) {

@@ -1,8 +1,5 @@
 #ifndef _SWAY_IPC_SERVER_H
 #define _SWAY_IPC_SERVER_H
-
-#include <wlc/wlc.h>
-
 #include "container.h"
 #include "config.h"
 #include "ipc.h"
@@ -32,10 +29,5 @@ void ipc_event_modifier(uint32_t modifier, const char *state);
  */
 void ipc_event_binding_keyboard(struct sway_binding *sb);
 const char *swayc_type_string(enum swayc_types type);
-
-/**
- * Send pixel data to registered clients.
- */
-void ipc_get_pixels(wlc_handle output);
 
 #endif
