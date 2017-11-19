@@ -54,7 +54,7 @@ channel or shoot an email to sir@cmpwn.com for advice.
 Install dependencies:
 
 * cmake
-* [wlc](https://github.com/Cloudef/wlc)
+* [wlroots](https://github.com/swaywm/wlroots)
 * wayland
 * xwayland
 * libinput >= 1.6.0
