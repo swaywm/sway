@@ -16,10 +16,11 @@
 #include <sys/prctl.h>
 #endif
 #include "sway/server.h"
+#include "sway/layout.h"
 #include "ipc-client.h"
+#include "log.h"
 #include "readline.h"
 #include "stringop.h"
-#include "log.h"
 #include "util.h"
 
 static bool terminate_request = false;
@@ -436,7 +437,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	//init_layout();
+	init_layout();
 	//ipc_init();
 
 	//if (validate) {
