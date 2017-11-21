@@ -295,9 +295,12 @@ void bar_run(struct bar *bar) {
 			for (i = 0; i < bar->outputs->length; ++i) {
 				struct output *output = bar->outputs->items[i];
 				if (window_prerender(output->window) && output->window->cairo) {
+					output->active = true;
 					render(output, bar->config, bar->status);
 					window_render(output->window);
 					wl_display_flush(output->registry->display);
+				} else {
+					output->active = false;
 				}
 			}
 		}

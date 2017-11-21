@@ -372,6 +372,24 @@ uint32_t tray_render(struct output *output, struct config *config) {
 		return tray_width;
 	}
 
+	bool clean_item = false;
+	// Clean item if only one output has tray or this is the last output
+	if (swaybar.outputs->length == 1 || config->tray_output || output->idx == swaybar.outputs->length-1) {
+		clean_item = true;
+	// More trickery is needed in case you plug off secondary outputs on live
+	} else {
+		int active_outputs = 0;
+		for (int i = 0; i < swaybar.outputs->length; i++) {
+			struct output *output = swaybar.outputs->items[i];
+			if (output->active) {
+				active_outputs++;
+			}
+		}
+		if (active_outputs == 1) {
+			clean_item = true;
+		}
+	}
+
 	for (int i = 0; i < tray->items->length; ++i) {
 		struct StatusNotifierItem *item =
 			tray->items->items[i];
@@ -398,6 +416,7 @@ uint32_t tray_render(struct output *output, struct config *config) {
 			list_add(output->items, render_item);
 		} else if (item->dirty) {
 			// item needs re-render
+			sway_log(L_DEBUG, "Redrawing item %d for output %d", i, output->idx);
 			sni_icon_ref_free(render_item);
 			output->items->items[j] = render_item =
 				sni_icon_ref_create(item, item_size);
@@ -413,7 +432,9 @@ uint32_t tray_render(struct output *output, struct config *config) {
 		cairo_fill(cairo);
 		cairo_set_operator(cairo, op);
 
-		item->dirty = false;
+		if (clean_item) {
+			item->dirty = false;
+		}
 	}
 
 

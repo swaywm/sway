@@ -29,6 +29,7 @@ struct output {
 	char *name;
 	int idx;
 	bool focused;
+	bool active;
 };
 
 struct workspace {
