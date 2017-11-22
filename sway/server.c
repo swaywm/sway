@@ -4,7 +4,6 @@
 #include <wayland-server.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
-#include <wlr/types/wlr_data_device_manager.h>
 #include <wlr/render.h>
 #include <wlr/render/gles2.h>
 // TODO WLR: make Xwayland optional
