@@ -29,7 +29,9 @@ struct output {
 	char *name;
 	int idx;
 	bool focused;
+#ifdef ENABLE_TRAY
 	bool active;
+#endif
 };
 
 struct workspace {
