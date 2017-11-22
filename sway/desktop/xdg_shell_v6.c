@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
