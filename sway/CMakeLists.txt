@@ -24,6 +24,8 @@ add_executable(sway
 	base64.c
 	main.c
     server.c
+    ipc-json.c
+    ipc-server.c
 )
 
 add_definitions(

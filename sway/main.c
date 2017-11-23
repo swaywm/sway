@@ -17,6 +17,7 @@
 #endif
 #include "sway/server.h"
 #include "sway/layout.h"
+#include "sway/ipc-server.h"
 #include "ipc-client.h"
 #include "log.h"
 #include "readline.h"
@@ -438,7 +439,7 @@ int main(int argc, char **argv) {
 	}
 
 	init_layout();
-	//ipc_init();
+	ipc_init(&server);
 
 	//if (validate) {
 	//	bool valid = load_main_config(config_path, false);
@@ -461,7 +462,7 @@ int main(int argc, char **argv) {
 
 	server_fini(&server);
 
-	//ipc_terminate();
+	ipc_terminate();
 
 	//if (config) {
 	//	free_config(config);
