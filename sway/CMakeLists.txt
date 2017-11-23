@@ -14,8 +14,9 @@ add_executable(sway
     desktop/output.c
     desktop/xdg_shell_v6.c
 
-    tree/layout.c
     tree/container.c
+    tree/layout.c
+    tree/workspace.c
 
 	base64.c
 	main.c

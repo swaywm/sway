@@ -126,5 +126,6 @@ struct sway_container {
 };
 
 swayc_t *new_output(struct sway_output *sway_output);
+swayc_t *new_workspace(swayc_t *output, const char *name);
 
 #endif
