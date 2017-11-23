@@ -125,7 +125,11 @@ struct sway_container {
 	list_t *marks;
 };
 
+void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
+		void (*func)(swayc_t *item, void *data), void *data);
+
 swayc_t *new_output(struct sway_output *sway_output);
 swayc_t *new_workspace(swayc_t *output, const char *name);
+swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view);
 
 #endif

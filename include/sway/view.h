@@ -1,6 +1,7 @@
 #ifndef _SWAY_VIEW_H
 #define _SWAY_VIEW_H
 #include <wayland-server.h>
+#include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 
 struct sway_container;
@@ -38,6 +39,7 @@ struct sway_view {
 	struct wl_listener destroy;
 	enum sway_view_type type;
 	struct sway_container *swayc;
+	struct wlr_surface *surface;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;

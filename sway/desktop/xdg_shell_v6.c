@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include "sway/container.h"
 #include "sway/server.h"
 #include "sway/view.h"
 #include "log.h"
@@ -47,6 +48,9 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	}
 	sway_view->type = SWAY_XDG_SHELL_V6_VIEW;
 	sway_view->iface.get_prop = get_prop;
+	sway_view->wlr_xdg_surface_v6 = xdg_surface;
+	sway_view->sway_xdg_surface_v6 = sway_surface;
+	sway_view->surface = xdg_surface->surface;
 	sway_surface->view = sway_view;
 	
 	// TODO:
@@ -56,4 +60,11 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
+
+	// TODO: actual focus semantics
+	swayc_t *parent = root_container.children->items[0];
+	parent = parent->children->items[0]; // workspace
+
+	swayc_t *cont = new_view(parent, sway_view);
+	sway_view->swayc = cont;
 }

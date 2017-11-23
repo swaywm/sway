@@ -5,8 +5,22 @@
 #include "sway/container.h"
 #include "sway/layout.h"
 #include "sway/output.h"
+#include "sway/view.h"
 #include "sway/workspace.h"
 #include "log.h"
+
+void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
+		void (*func)(swayc_t *item, void *data), void *data) {
+	for (int i = 0; i < root->children->length; ++i) {
+		swayc_t *item = root->children->items[i];
+		if (item->type == type) {
+			func(item, data);
+		}
+		if (item->children && item->children->length) {
+			swayc_descendants_of_type(item, type, func, data);
+		}
+	}
+}
 
 static swayc_t *new_swayc(enum swayc_types type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
@@ -68,4 +82,29 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	add_child(output, workspace);
 	sort_workspaces(output);
 	return workspace;
+}
+
+swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
+	if (!sway_assert(sibling, "new_view called with NULL sibling/parent")) {
+		return NULL;
+	}
+	const char *title = sway_view->iface.get_prop(sway_view, VIEW_PROP_TITLE);
+	swayc_t *swayc = new_swayc(C_VIEW);
+	sway_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
+		swayc, title, sibling, sibling ? sibling->type : 0);
+	// Setup values
+	swayc->sway_view = sway_view;
+	swayc->name = title ? strdup(title) : NULL;
+	swayc->width = 0;
+	swayc->height = 0;
+
+	if (sibling->type == C_WORKSPACE) {
+		// Case of focused workspace, just create as child of it
+		add_child(sibling, swayc);
+	} else {
+		// Regular case, create as sibling of current container
+		// TODO WLR
+		//add_sibling(sibling, swayc);
+	}
+	return swayc;
 }

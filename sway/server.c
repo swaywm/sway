@@ -6,6 +6,7 @@
 #include <wlr/backend/session.h>
 #include <wlr/render.h>
 #include <wlr/render/gles2.h>
+#include <wlr/types/wlr_compositor.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 #include "sway/server.h"
@@ -20,6 +21,9 @@ bool server_init(struct sway_server *server) {
 
 	server->renderer = wlr_gles2_renderer_create(server->backend);
 	wl_display_init_shm(server->wl_display);
+
+	server->compositor = wlr_compositor_create(
+			server->wl_display, server->renderer);
 
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);

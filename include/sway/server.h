@@ -4,6 +4,7 @@
 #include <wayland-server.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/render.h>
@@ -18,6 +19,7 @@ struct sway_server {
 	struct wlr_backend *backend;
 	struct wlr_renderer *renderer;
 
+	struct wlr_compositor *compositor;
 	struct wlr_data_device_manager *data_device_manager;
 
 	struct sway_input *input;
