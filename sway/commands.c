@@ -177,6 +177,16 @@ struct cmd_results *handle_command(char *_exec) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
+			struct cmd_results *res = handler->handle(argc-1, argv+1);
+			if (res->status != CMD_SUCCESS) {
+				free_argv(argc, argv);
+				if (results) {
+					free_cmd_results(results);
+				}
+				results = res;
+				goto cleanup;
+			}
+			free_cmd_results(res);
 			free_argv(argc, argv);
 		} while(cmdlist);
 	} while(head);
