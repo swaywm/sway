@@ -108,3 +108,16 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	}
 	return swayc;
 }
+
+swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
+	if (!sway_assert(container, "container is NULL")) {
+		return NULL;
+	}
+	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "invalid type")) {
+		return NULL;
+	}
+	do {
+		container = container->parent;
+	} while (container && container->type != type);
+	return container;
+}

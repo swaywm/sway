@@ -13,6 +13,7 @@ struct sway_output {
 	struct sway_server *server;
 	struct timespec last_frame;
 	struct wl_listener frame;
+	struct wl_listener resolution;
 };
 
 #endif

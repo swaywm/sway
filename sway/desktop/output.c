@@ -8,6 +8,7 @@
 #include <wlr/render/matrix.h>
 #include "log.h"
 #include "sway/container.h"
+#include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/view.h"
@@ -25,10 +26,9 @@ static void output_frame_view(swayc_t *view, void *data) {
 		return;
 	}
 	// TODO
-	// - Force sway's resolution
 	// - Deal with wlr_output_layout
-	int width = surface->current->width;
-	int height = surface->current->height;
+	int width = sway_view->swayc->width;
+	int height = sway_view->swayc->height;
 	int render_width = width * wlr_output->scale;
 	int render_height = height * wlr_output->scale;
 	double ox = view->x, oy = view->y;
@@ -101,6 +101,12 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	soutput->last_frame = now;
 }
 
+static void output_resolution_notify(struct wl_listener *listener, void *data) {
+	struct sway_output *soutput = wl_container_of(
+			listener, soutput, resolution);
+	arrange_windows(soutput->swayc, -1, -1);
+}
+
 void output_add_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_add);
 	struct wlr_output *wlr_output = data;
@@ -113,6 +119,9 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 
 	output->frame.notify = output_frame_notify;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
+
+	output->resolution.notify = output_resolution_notify;
+	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
 }
 
 void output_remove_notify(struct wl_listener *listener, void *data) {
