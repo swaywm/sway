@@ -14,6 +14,7 @@ struct sway_xdg_surface_v6 {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener destroy;
 
 	int pending_width, pending_height;
 };
@@ -38,7 +39,6 @@ enum sway_view_prop {
  * tree (shell surfaces).
  */
 struct sway_view {
-	struct wl_listener destroy;
 	enum sway_view_type type;
 	struct sway_container *swayc;
 	struct wlr_surface *surface;

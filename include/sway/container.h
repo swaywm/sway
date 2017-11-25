@@ -132,6 +132,8 @@ swayc_t *new_output(struct sway_output *sway_output);
 swayc_t *new_workspace(swayc_t *output, const char *name);
 swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view);
 
+swayc_t *destroy_view(swayc_t *view);
+
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type);
 
 #endif

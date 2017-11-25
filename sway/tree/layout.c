@@ -40,6 +40,19 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	*/
 }
 
+swayc_t *remove_child(swayc_t *child) {
+	int i;
+	swayc_t *parent = child->parent;
+	for (i = 0; i < parent->children->length; ++i) {
+		if (parent->children->items[i] == child) {
+			list_del(parent->children, i);
+			break;
+		}
+	}
+	child->parent = NULL;
+	return parent;
+}
+
 enum swayc_layouts default_layout(swayc_t *output) {
 	/* TODO WLR
 	if (config->default_layout != L_NONE) {

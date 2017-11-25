@@ -44,9 +44,20 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	sway_log(L_DEBUG, "xdg surface commit %dx%d",
 			sway_surface->pending_width, sway_surface->pending_height);
 	// NOTE: We intentionally discard the view's desired width here
-	// TODO: Don't do that for floating views
+	// TODO: Let floating views do whatever
 	view->width = sway_surface->pending_width;
 	view->height = sway_surface->pending_height;
+}
+
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xdg_surface_v6 *sway_xdg_surface =
+		wl_container_of(listener, sway_xdg_surface, destroy);
+	wl_list_remove(&sway_xdg_surface->commit.link);
+	wl_list_remove(&sway_xdg_surface->destroy.link);
+	swayc_t *parent = destroy_view(sway_xdg_surface->view->swayc);
+	free(sway_xdg_surface->view);
+	free(sway_xdg_surface);
+	arrange_windows(parent, -1, -1);
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
@@ -90,6 +101,8 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	
 	sway_surface->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->events.commit, &sway_surface->commit);
+	sway_surface->destroy.notify = handle_destroy;
+	wl_signal_add(&xdg_surface->events.destroy, &sway_surface->destroy);
 
 	// TODO: actual focus semantics
 	swayc_t *parent = root_container.children->items[0];

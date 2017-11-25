@@ -109,6 +109,48 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	return swayc;
 }
 
+static void free_swayc(swayc_t *cont) {
+	if (!sway_assert(cont, "free_swayc passed NULL")) {
+		return;
+	}
+	if (cont->children) {
+		// remove children until there are no more, free_swayc calls
+		// remove_child, which removes child from this container
+		while (cont->children->length) {
+			free_swayc(cont->children->items[0]);
+		}
+		list_free(cont->children);
+	}
+	if (cont->marks) {
+		list_foreach(cont->marks, free);
+		list_free(cont->marks);
+	}
+	if (cont->parent) {
+		remove_child(cont);
+	}
+	if (cont->name) {
+		free(cont->name);
+	}
+	free(cont);
+}
+
+swayc_t *destroy_view(swayc_t *view) {
+	if (!sway_assert(view, "null view passed to destroy_view")) {
+		return NULL;
+	}
+	sway_log(L_DEBUG, "Destroying view '%s'", view->name);
+	swayc_t *parent = view->parent;
+	free_swayc(view);
+
+	// TODO WLR: Destroy empty containers
+	/*
+	if (parent && parent->type == C_CONTAINER) {
+		return destroy_container(parent);
+	}
+	*/
+	return parent;
+}
+
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 	if (!sway_assert(container, "container is NULL")) {
 		return NULL;
