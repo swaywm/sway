@@ -129,11 +129,10 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	case C_WORKSPACE:
 		{
 			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
-			width = output->width, height = output->height;
+			container->width = output->width;
+			container->height = output->height;
 			container->x = x;
 			container->y = y;
-			width = container->width;
-			height = container->height;
 			sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 					container->name, container->x, container->y);
 		}

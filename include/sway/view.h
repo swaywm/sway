@@ -14,6 +14,8 @@ struct sway_xdg_surface_v6 {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+
+	int pending_width, pending_height;
 };
 
 enum sway_view_type {
@@ -40,6 +42,7 @@ struct sway_view {
 	enum sway_view_type type;
 	struct sway_container *swayc;
 	struct wlr_surface *surface;
+	int width, height;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;

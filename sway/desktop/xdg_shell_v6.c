@@ -29,9 +29,24 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 }
 
 static void set_dimensions(struct sway_view *view, int width, int height) {
-	if (assert_xdg(view)) {
-		wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
+	if (!assert_xdg(view)) {
+		return;
 	}
+	view->sway_xdg_surface_v6->pending_width = width;
+	view->sway_xdg_surface_v6->pending_height = height;
+	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
+}
+
+static void handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_xdg_surface_v6 *sway_surface =
+		wl_container_of(listener, sway_surface, commit);
+	struct sway_view *view = sway_surface->view;
+	sway_log(L_DEBUG, "xdg surface commit %dx%d",
+			sway_surface->pending_width, sway_surface->pending_height);
+	// NOTE: We intentionally discard the view's desired width here
+	// TODO: Don't do that for floating views
+	view->width = sway_surface->pending_width;
+	view->height = sway_surface->pending_height;
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
@@ -72,6 +87,9 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
+	
+	sway_surface->commit.notify = handle_commit;
+	wl_signal_add(&xdg_surface->events.commit, &sway_surface->commit);
 
 	// TODO: actual focus semantics
 	swayc_t *parent = root_container.children->items[0];

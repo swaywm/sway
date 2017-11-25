@@ -27,8 +27,8 @@ static void output_frame_view(swayc_t *view, void *data) {
 	}
 	// TODO
 	// - Deal with wlr_output_layout
-	int width = sway_view->swayc->width;
-	int height = sway_view->swayc->height;
+	int width = sway_view->width;
+	int height = sway_view->height;
 	int render_width = width * wlr_output->scale;
 	int render_height = height * wlr_output->scale;
 	double ox = view->x, oy = view->y;
@@ -122,6 +122,8 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 
 	output->resolution.notify = output_resolution_notify;
 	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
+
+	arrange_windows(output->swayc, -1, -1);
 }
 
 void output_remove_notify(struct wl_listener *listener, void *data) {
