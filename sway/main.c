@@ -84,23 +84,16 @@ void detect_proprietary() {
 	if (!f) {
 		return;
 	}
-	bool nvidia = false, nvidia_modeset = false, nvidia_uvm = false, nvidia_drm = false;
 	while (!feof(f)) {
 		char *line;
 		if (!(line = read_line(f))) {
 			break;
 		}
 		if (strstr(line, "nvidia")) {
-			nvidia = true;
-		}
-		if (strstr(line, "nvidia_modeset")) {
-			nvidia_modeset = true;
-		}
-		if (strstr(line, "nvidia_uvm")) {
-			nvidia_uvm = true;
-		}
-		if (strstr(line, "nvidia_drm")) {
-			nvidia_drm = true;
+			fprintf(stderr, "\x1B[1;31mWarning: Proprietary Nvidia drivers are "
+				"NOT supported. Use Nouveau.\x1B[0m\n");
+			free(line);
+			break;
 		}
 		if (strstr(line, "fglrx")) {
 			fprintf(stderr, "\x1B[1;31mWarning: Proprietary AMD drivers do "
@@ -111,52 +104,6 @@ void detect_proprietary() {
 		free(line);
 	}
 	fclose(f);
-	if (nvidia) {
-		fprintf(stderr, "\x1B[1;31mWarning: Proprietary nvidia driver support "
-			"is considered experimental. Nouveau is strongly recommended."
-			"\x1B[0m\n");
-		if (!nvidia_modeset || !nvidia_uvm || !nvidia_drm) {
-			fprintf(stderr, "\x1B[1;31mWarning: You do not have all of the "
-				"necessary kernel modules loaded for nvidia support. "
-				"You need nvidia, nvidia_modeset, nvidia_uvm, and nvidia_drm."
-				"\x1B[0m\n");
-		}
-#ifdef __linux__
-		f = fopen("/sys/module/nvidia_drm/parameters/modeset", "r");
-		if (f) {
-			char *line = read_line(f);
-			if (line && strstr(line, "Y")) {
-				// nvidia-drm.modeset is set to 0
-				fprintf(stderr, "\x1B[1;31mWarning: You must load "
-					"nvidia-drm with the modeset option on to use "
-					"the proprietary driver. Consider adding "
-					"nvidia-drm.modeset=1 to your kernel command line "
-					"parameters.\x1B[0m\n");
-			}
-			fclose(f);
-			free(line);
-		} else {
-			// nvidia-drm.modeset is not set
-			fprintf(stderr, "\x1B[1;31mWarning: You must load "
-				"nvidia-drm with the modeset option on to use "
-				"the proprietary driver. Consider adding "
-				"nvidia-drm.modeset=1 to your kernel command line "
-				"parameters.\x1B[0m\n");
-		}
-#else
-		f = fopen("/proc/cmdline", "r");
-		if (f) {
-			char *line = read_line(f);
-			if (line && !strstr(line, "nvidia-drm.modeset=1")) {
-				fprintf(stderr, "\x1B[1;31mWarning: You must add "
-					"nvidia-drm.modeset=1 to your kernel command line to use "
-					"the proprietary driver.\x1B[0m\n");
-			}
-			fclose(f);
-			free(line);
-		}
-#endif
-	}
 }
 
 void run_as_ipc_client(char *command, char *socket_path) {
