@@ -117,6 +117,12 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 	output->server = server;
 	output->swayc = new_output(output);
 
+	if (wl_list_length(&wlr_output->modes) > 0) {
+		struct wlr_output_mode *mode = NULL;
+		mode = wl_container_of((&wlr_output->modes)->prev, mode, link);
+		wlr_output_set_mode(wlr_output, mode);
+	}
+
 	output->frame.notify = output_frame_notify;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
 
