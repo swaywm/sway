@@ -24,8 +24,11 @@ pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 math           = cc.find_library('m')
 
-# TODO version
-add_project_arguments('-DSWAY_VERSION="5"', language: 'c')
+git_commit_hash = run_command(['git', 'describe', '--always', '--tags']).stdout().strip()
+git_branch = run_command(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).stdout().strip()
+version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash, git_branch)
+
+add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
 sway_inc = include_directories('include')
 
