@@ -81,6 +81,7 @@ sway_inc = include_directories('include')
 
 subdir('common')
 subdir('sway')
+subdir('swaymsg')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))
