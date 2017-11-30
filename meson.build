@@ -11,6 +11,11 @@ project(
 
 cc = meson.get_compiler('c')
 
+is_freebsd = host_machine.system().startswith('freebsd')
+datadir = get_option('datadir')
+sysconfdir = get_option('sysconfdir')
+prefix = get_option('prefix')
+
 jsonc          = dependency('json-c', version: '>=0.12.1')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots')
@@ -37,7 +42,6 @@ else
 	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD']).stdout().strip()
 	version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash, git_branch)
 endif
-
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
 sway_inc = include_directories('include')
@@ -45,3 +49,51 @@ sway_inc = include_directories('include')
 subdir('common')
 subdir('sway')
 
+config = configuration_data()
+config.set('sysconfdir', join_paths(prefix, sysconfdir))
+config.set('datadir', join_paths(prefix, datadir))
+config.set('prefix', prefix)
+
+configure_file(
+	configuration: config,
+	input: 'config.in',
+	output: '@BASENAME@',
+	install_dir: sysconfdir + '/sway'
+)
+
+if is_freebsd
+	configure_file(
+		configuration: config,
+		input: 'security.d/10-freebsd.in',
+		output: '@BASENAME@',
+		install_dir: sysconfdir + '/sway/security.d'
+	)
+else
+	configure_file(
+		configuration: config,
+		input: 'security.d/00-defaults.in',
+		output: '@BASENAME@',
+		install_dir: sysconfdir + '/sway/security.d'
+	)
+endif
+
+install_data(
+	'sway.desktop',
+	install_dir: datadir + '/wayland-sessions'
+)
+
+if (get_option('default_wallpaper'))
+	wallpaper_files = files(
+		'assets/Sway_Wallpaper_Blue_768x1024.png',
+		'assets/Sway_Wallpaper_Blue_768x1024_Portrait.png',
+		'assets/Sway_Wallpaper_Blue_1136x640.png',
+		'assets/Sway_Wallpaper_Blue_1136x640_Portrait.png',
+		'assets/Sway_Wallpaper_Blue_1366x768.png',
+		'assets/Sway_Wallpaper_Blue_1920x1080.png',
+		'assets/Sway_Wallpaper_Blue_2048x1536.png',
+		'assets/Sway_Wallpaper_Blue_2048x1536_Portrait.png',
+	)
+	wallpaper_install_dir = datadir + '/backgrounds/sway'
+
+	install_data(wallpaper_files, install_dir: wallpaper_install_dir)
+endif

@@ -6,17 +6,17 @@
 # installation.
 #
 # DO NOT CHANGE THIS FILE. Override these defaults by writing new files in
-# __SYSCONFDIR__/sway/security.d/*
+# @sysconfdir@/sway/security.d/*
 
 # Configures enabled compositor features for specific programs
 permit * fullscreen keyboard mouse
-permit __PREFIX__/bin/swaylock lock
-permit __PREFIX__/bin/swaybg background
-permit __PREFIX__/bin/swaygrab screenshot
-permit __PREFIX__/bin/swaybar panel
+permit @prefix@/bin/swaylock lock
+permit @prefix@/bin/swaybg background
+permit @prefix@/bin/swaygrab screenshot
+permit @prefix@/bin/swaybar panel
 
 # Configures enabled IPC features for specific programs
-ipc __PREFIX__/bin/swaymsg {
+ipc @prefix@/bin/swaymsg {
     * enabled
 
     events {
@@ -24,7 +24,7 @@ ipc __PREFIX__/bin/swaymsg {
     }
 }
 
-ipc __PREFIX__/bin/swaybar {
+ipc @prefix@/bin/swaybar {
     bar-config enabled
     outputs enabled
     workspaces enabled
@@ -36,12 +36,12 @@ ipc __PREFIX__/bin/swaybar {
     }
 }
 
-ipc __PREFIX__/bin/swaygrab {
+ipc @prefix@/bin/swaygrab {
     outputs enabled
     tree enabled
 }
 
-ipc __PREFIX__/bin/swaylock {
+ipc @prefix@/bin/swaylock {
     outputs enabled
 }
 
