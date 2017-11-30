@@ -131,3 +131,15 @@ if (get_option('default_wallpaper'))
 
 	install_data(wallpaper_files, install_dir: wallpaper_install_dir)
 endif
+
+if (get_option('zsh_completions'))
+	zsh_files = files(
+		'completions/zsh/_sway',
+		'completions/zsh/_swaygrab',
+		'completions/zsh/_swaylock',
+		'completions/zsh/_swaymsg',
+	)
+	zsh_install_dir = datadir + '/zsh/site-functions'
+
+	install_data(zsh_files, install_dir: zsh_install_dir)
+endif
