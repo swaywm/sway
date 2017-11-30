@@ -30,37 +30,6 @@ add_project_arguments('-DSWAY_VERSION="5"', language: 'c')
 
 sway_inc = include_directories('include')
 
-sway_sources = [
-	'sway/main.c',
-	'sway/server.c',
-	'sway/commands.c',
-	'sway/commands/exit.c',
-	'sway/ipc-json.c',
-	'sway/ipc-server.c',
-	'sway/desktop/output.c',
-	'sway/desktop/xdg_shell_v6.c',
-	'sway/tree/container.c',
-	'sway/tree/layout.c',
-	'sway/tree/workspace.c',
-	'common/log.c',
-	'common/list.c',
-	'common/stringop.c',
-	'common/readline.c',
-	'common/ipc-client.c',
-]
+subdir('common')
+subdir('sway')
 
-sway_deps = [
-	pixman,
-	wayland_server,
-	jsonc,
-	wlroots,
-	libcap,
-	math,
-]
-
-executable(
-	'sway',
-	sway_sources,
-	include_directories: [sway_inc],
-	dependencies: sway_deps
-)
