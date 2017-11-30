@@ -29,6 +29,39 @@ pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 math           = cc.find_library('m')
 git = find_program('git', required: false)
+a2x = find_program('a2x', required: false)
+
+if a2x.found()
+	mandir = get_option('mandir')
+	man_files = [
+		'sway/sway.1.txt',
+		'sway/sway.5.txt',
+		'sway/sway-bar.5.txt',
+		'sway/sway-input.5.txt',
+		'sway/sway-security.7.txt',
+		'swaymsg/swaymsg.1.txt',
+	]
+	foreach filename : man_files
+		topic = filename.split('.')[-3].split('/')[-1]
+		section = filename.split('.')[-2]
+
+		custom_target(
+			'man-@0@-@1@'.format(topic, section),
+			input: filename,
+			output: '@BASENAME@',
+			command: [
+				a2x,
+				'--no-xmllint',
+				'--doctype', 'manpage',
+				'--format', 'manpage',
+				'--destination-dir', meson.current_build_dir(),
+				'@INPUT@'
+			],
+			install: true,
+			install_dir: '@0@/man@1@'.format(mandir, section)
+		)
+	endforeach
+endif
 
 version = get_option('sway_version')
 if version != ''
