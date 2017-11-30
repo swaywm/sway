@@ -1,4 +1,4 @@
-sway_sources = sway_common + files(
+sway_sources = files(
 	'main.c',
 	'server.c',
 	'commands.c',
@@ -25,5 +25,6 @@ executable(
 	'sway',
 	sway_sources,
 	include_directories: [sway_inc],
-	dependencies: sway_deps
+	dependencies: sway_deps,
+	link_with: [lib_sway_common]
 )
