@@ -1,0 +1,1 @@
+option('sway_version', type : 'string', description : 'The version string reported in `sway --version`.')

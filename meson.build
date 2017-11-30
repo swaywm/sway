@@ -23,10 +23,20 @@ pango          = dependency('pango')
 pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 math           = cc.find_library('m')
+git = find_program('git', required: false)
 
-git_commit_hash = run_command(['git', 'describe', '--always', '--tags']).stdout().strip()
-git_branch = run_command(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).stdout().strip()
-version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash, git_branch)
+version = get_option('sway_version')
+if version != ''
+	version = '"@0@"'.format(version)
+else
+	if not git.found()
+		error('git is required to make the version string')
+	endif
+
+	git_commit_hash = run_command([git.path(), 'describe', '--always', '--tags']).stdout().strip()
+	git_branch = run_command([git.path(), 'rev-parse', '--abbrev-ref', 'HEAD']).stdout().strip()
+	version = '"@0@ (" __DATE__ ", branch \'@1@\')"'.format(git_commit_hash, git_branch)
+endif
 
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
