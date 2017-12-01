@@ -82,7 +82,7 @@ Instalación de dependencias:
 * cairo
 * gdk-pixbuf2 *
 * pam **
-* imagemagick (requerido para captura de imágenes con swaybrab)
+* imagemagick (requerido para captura de imágenes con swaygrab)
 * ffmpeg (requerido para captura de video con swaygrab)
 
 _\*Sólo requerido para swaybar, swaybg, and swaylock_
@@ -107,7 +107,7 @@ En sistemas sin logind, se necesita habilitar el "suid" en el binario de sway:
 
 ## Configuración
 
-Si ya haces uso de i3 sólo copia tu configuracirión de i3 a
+Si ya haces uso de i3 sólo copia tu configuración de i3 a
 `~/.config/sway/config` y sway funcionará sin configuraciones adicionales.
 De lo contrario, copia el archivo de configuración de ejemplo a
 `~/.config/sway/config`. El archivo de configuración generalmente se encuentra
