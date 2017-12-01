@@ -53,7 +53,7 @@ channel or shoot an email to sir@cmpwn.com for advice.
 
 Install dependencies:
 
-* cmake
+* meson
 * [wlroots](https://github.com/swaywm/wlroots)
 * wayland
 * xwayland
@@ -78,11 +78,9 @@ _\*\*\*Only required for tray support_
 
 Run these commands:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 On systems with logind, you need to set a few caps on the binary:
 
