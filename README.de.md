@@ -52,7 +52,7 @@ schau im IRC-Channel vorbei oder schreibe eine e-Mail an sir@cmpwn.com (nur engl
 
 Abhängigkeiten:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -74,11 +74,9 @@ _\*\*Nur erforderlich für swaylock_
 
 Führe diese Befehle aus:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 In Systemen mit logind musst du `sway` einige Capabilities geben:
 

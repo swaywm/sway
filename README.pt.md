@@ -54,7 +54,7 @@ visite o canal no IRC ou mande um email para sir@cmpwn.com (*em inglês*).
 
 Antes de iniciar a compilação, instale as dependências:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -76,11 +76,9 @@ _\*\*Dependência apenas de swaylock_
 
 Para compilar, execute estes comandos:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Em sistemas com logind, configure as seguintes capacidades para o arquivo binário:
 

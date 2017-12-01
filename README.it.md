@@ -48,7 +48,7 @@ a sir@cmpwn.com.
 
 Installa queste dipendenze:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -70,11 +70,9 @@ _\*\*Richiesto solo per swaylock_
 
 Esegui questi comandi:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Per i sistemi con logind, devi impostare un paio di caps sull'eseguibile:
 

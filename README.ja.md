@@ -38,7 +38,7 @@ Swayは沢山のディストリビューションで提供されています。"
 
 次の依存パッケージをインストールしてください:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -60,11 +60,9 @@ _\*\*swaylockでのみ必要です_
 
 次のコマンドを実行してください:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 logindを使用しているシステムでは、バイナリにいくつかのケーパビリティを設定する必要があります:
 
