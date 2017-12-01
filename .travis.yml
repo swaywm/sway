@@ -7,35 +7,29 @@ compiler:
   - clang
 
 env:
-  - BUILD_TYPE=Release
-  - BUILD_TYPE=Debug
-  - BUILD_TYPE=ASAN
+  - BUILD_TYPE=release
+  - BUILD_TYPE=debug
 
 arch:
   packages:
-    - cmake
+    - meson
+    - ninja
     - xorg-server-xwayland
     - json-c
     - wayland
+    - wayland-protocols
     - xcb-util-image
     - pango
     - cairo
     - gdk-pixbuf2
-    - wlc-git
     - libcap
-    - meson
+    - libinput
+    - libxkbcommon
   script:
     - git clone https://github.com/swaywm/wlroots
-    - cd wlroots
-    - mkdir build
-    - cd build
-    - meson --prefix=/usr ..
-    - sudo ninja install
-    - cd ../..
-    - cmake .
-    - make
-    - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
-    - make
+    - 'cd wlroots && meson --prefix=/usr build && ninja -C build && sudo ninja -C build install'
+    - meson build --buildtype=$BUILD_TYPE
+    - ninja -C build
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
