@@ -9,6 +9,8 @@ project(
 	],
 )
 
+add_project_arguments('-Wno-unused-parameter', language: 'c')
+
 cc = meson.get_compiler('c')
 
 is_freebsd = host_machine.system().startswith('freebsd')
