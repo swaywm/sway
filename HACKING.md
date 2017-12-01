@@ -22,14 +22,3 @@ assertion fails.
 
 Outside of the compositor (swaymsg, swaybar, etc), using `assert.h` is
 permitted.
-
-## Building against a local wlc
-
-1. Build wlc as described [here](https://github.com/Cloudef/wlc#building)
-2. Inside your sway source folder, tell `cmake` to use your local version of wlc:
-
-```bash
-cmake \
-    -DWLC_LIBRARIES=path/to/wlc/target/src/libwlc.so \
-    -DWLC_INCLUDE_DIRS=path/to/wlc/include .
-```
