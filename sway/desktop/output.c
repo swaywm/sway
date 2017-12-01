@@ -72,12 +72,7 @@ static void output_frame_view(swayc_t *view, void *data) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	struct wlr_frame_callback *cb, *cnext;
-	wl_list_for_each_safe(cb, cnext,
-			&surface->current->frame_callback_list, link) {
-		wl_callback_send_done(cb->resource, timespec_to_msec(&now));
-		wl_resource_destroy(cb->resource);
-	}
+	wlr_surface_send_frame_done(surface, &now);
 }
 
 static void output_frame_notify(struct wl_listener *listener, void *data) {
