@@ -47,7 +47,7 @@ Sway доступен во многих дистрибутивах и наход
 
 Установите следующие пакеты:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -69,11 +69,9 @@ _\*\*Требуется только для swaylock_
 
 Выполните следующие команды:
 
-	mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Если у вас logind:
 

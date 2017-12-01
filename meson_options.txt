@@ -1,0 +1,3 @@
+option('sway_version', type : 'string', description: 'The version string reported in `sway --version`.')
+option('default_wallpaper', type: 'boolean', value: true, description: 'Install the default wallpaper.')
+option('zsh_completions', type: 'boolean', value: true, description: 'Install zsh shell completions.')

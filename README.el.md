@@ -45,7 +45,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 
 Εγκατάσταση εξαρτήσεων:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -67,11 +67,9 @@ _\*\*Απαιτείται μόνο για swaylock_
 
 Εκτελέστε αυτές τις εντολές:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Σε συστήματα με logind, χρειάζεται να ορίσετε μερικά δικαιώματα caps στο εκτελέσιμο αρχείο:
 

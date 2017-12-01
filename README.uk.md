@@ -54,7 +54,7 @@ Sway доступний у багатьох дистрибутивах Linux (а
 
 Встановіть залежності:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -76,11 +76,9 @@ _\*\*Лише для swaylock_
 
 Виконайте ці команди:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 На системах **з** logind, варто встановити декілька можливостей (caps)
 на виконуваний файл sway:

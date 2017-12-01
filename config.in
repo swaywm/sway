@@ -21,7 +21,7 @@ set $menu dmenu_run
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in __DATADIR__/backgrounds/sway/)
-output * bg __DATADIR__/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+output * bg @datadir@/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
 # Example configuration:
 #
@@ -194,4 +194,4 @@ bar {
     }
 }
 
-include __SYSCONFDIR__/sway/config.d/*
+include @sysconfdir@/sway/config.d/*
