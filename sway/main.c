@@ -366,7 +366,6 @@ int main(int argc, char **argv) {
 
 	log_kernel();
 	log_distro();
-	log_env();
 	detect_proprietary();
 	detect_raspi();
 
@@ -387,6 +386,7 @@ int main(int argc, char **argv) {
 
 	init_layout();
 	ipc_init(&server);
+	log_env();
 
 	//if (validate) {
 	//	bool valid = load_main_config(config_path, false);
