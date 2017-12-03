@@ -343,6 +343,16 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_TREE:
+	{
+		json_object *tree =
+			ipc_json_describe_container_recursive(&root_container);
+		const char *json_string = json_object_to_json_string(tree);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(tree);
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_VERSION:
 	{
 		json_object *version = ipc_json_get_version();
