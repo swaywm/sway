@@ -55,7 +55,7 @@ struct sway_view {
 	struct {
 		const char *(*get_prop)(struct sway_view *view,
 				enum sway_view_prop prop);
-		void (*set_dimensions)(struct sway_view *view,
+		void (*set_size)(struct sway_view *view,
 				int width, int height);
 	} iface;
 };
