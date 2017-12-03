@@ -30,6 +30,9 @@ struct sway_server {
 
 	struct wlr_xdg_shell_v6 *xdg_shell_v6;
 	struct wl_listener xdg_shell_v6_surface;
+
+	struct wlr_wl_shell *wl_shell;
+	struct wl_listener wl_shell_surface;
 };
 
 struct sway_server server;
