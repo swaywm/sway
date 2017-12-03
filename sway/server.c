@@ -7,6 +7,7 @@
 #include <wlr/render.h>
 #include <wlr/render/gles2.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_wl_shell.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 #include "sway/server.h"
@@ -39,6 +40,11 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_shell_v6->events.new_surface,
 		&server->xdg_shell_v6_surface);
 	server->xdg_shell_v6_surface.notify = handle_xdg_shell_v6_surface;
+
+	server->wl_shell = wlr_wl_shell_create(server->wl_display);
+	wl_signal_add(&server->wl_shell->events.new_surface,
+		&server->wl_shell_surface);
+	server->wl_shell_surface.notify = handle_wl_shell_surface;
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!sway_assert(server->socket,  "Unable to open wayland socket")) {

@@ -19,6 +19,18 @@ struct sway_xdg_surface_v6 {
 	int pending_width, pending_height;
 };
 
+struct sway_wl_shell_surface {
+	struct sway_view *view;
+
+	struct wl_listener commit;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
+	struct wl_listener request_maximize;
+	struct wl_listener destroy;
+
+	int pending_width, pending_height;
+};
+
 enum sway_view_type {
 	SWAY_WL_SHELL_VIEW,
 	SWAY_XDG_SHELL_V6_VIEW,
@@ -29,9 +41,9 @@ enum sway_view_type {
 
 enum sway_view_prop {
 	VIEW_PROP_TITLE,
+	VIEW_PROP_APP_ID,
 	VIEW_PROP_CLASS,
 	VIEW_PROP_INSTANCE,
-	VIEW_PROP_APP_ID,
 };
 
 /**
@@ -46,10 +58,12 @@ struct sway_view {
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
 
 	union {
 		struct sway_xdg_surface_v6 *sway_xdg_surface_v6;
+		struct sway_wl_shell_surface *sway_wl_shell_surface;
 	};
 
 	struct {
