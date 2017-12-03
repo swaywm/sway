@@ -42,6 +42,7 @@ enum sway_view_type {
 enum sway_view_prop {
 	VIEW_PROP_TITLE,
 	VIEW_PROP_APP_ID,
+	VIEW_PROP_CLASS,
 	VIEW_PROP_INSTANCE,
 };
 

@@ -21,7 +21,7 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	switch (prop) {
 	case VIEW_PROP_TITLE:
 		return view->wlr_wl_shell_surface->title;
-	case VIEW_PROP_APP_ID:
+	case VIEW_PROP_CLASS:
 		return view->wlr_wl_shell_surface->class;
 	default:
 		return NULL;
