@@ -155,7 +155,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		{
 			container->width = width;
 			container->height = height;
-			container->sway_view->iface.set_dimensions(container->sway_view,
+			container->sway_view->iface.set_size(container->sway_view,
 					container->width, container->height);
 			sway_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f",
 					container->width, container->height,

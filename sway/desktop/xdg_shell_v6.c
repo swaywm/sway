@@ -28,7 +28,7 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void set_dimensions(struct sway_view *view, int width, int height) {
+static void set_size(struct sway_view *view, int width, int height) {
 	if (!assert_xdg(view)) {
 		return;
 	}
@@ -86,7 +86,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	}
 	sway_view->type = SWAY_XDG_SHELL_V6_VIEW;
 	sway_view->iface.get_prop = get_prop;
-	sway_view->iface.set_dimensions = set_dimensions;
+	sway_view->iface.set_size = set_size;
 	sway_view->wlr_xdg_surface_v6 = xdg_surface;
 	sway_view->sway_xdg_surface_v6 = sway_surface;
 	sway_view->surface = xdg_surface->surface;
