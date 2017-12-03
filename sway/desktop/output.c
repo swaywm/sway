@@ -13,10 +13,6 @@
 #include "sway/server.h"
 #include "sway/view.h"
 
-static inline int64_t timespec_to_msec(const struct timespec *a) {
-	return (int64_t)a->tv_sec * 1000 + a->tv_nsec / 1000000;
-}
-
 static void output_frame_view(swayc_t *view, void *data) {
 	struct sway_output *output = data;
 	struct wlr_output *wlr_output = output->wlr_output;
