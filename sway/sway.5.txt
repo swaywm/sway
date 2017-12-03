@@ -126,22 +126,21 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **resize** <shrink|grow> <width|height> [<amount>] [px|ppt]::
 	Resizes the currently focused container or view by _amount_. _amount_ is
-	optional: the default value is 10 (either px or ppt depending on the view
-	type). The [px|ppt] parameter is optional. _px_ specifies that _amount_ refers
-	to pixels; _ppt_ specifies that _amount_ refers to percentage points of the
-	current dimension. Floating views use px dimensions by default (but can use
-	ppt if specified); tiled views use ppt dimensions by default (but can use px
-	if specified).
+	optional: the default value is 10 (either px or ppt depending on the view type).
+	The [px|ppt] parameter is optional. _px_ specifies that _amount_ refers to pixels;
+	_ppt_ specifies that _amount_ refers to percentage points of the current
+	size. Floating views use px by default (but can use ppt if specified); tiled
+	views use ppt by default (but can use px if specified).
 
 **resize set** <width> [px] <height> [px]::
 	Sets the width and height of the currently focused container to _width_ pixels
 	and _height_ pixels. The [px] parameters are optional and have no effect. This
-	command only accepts pixel dimensions.
+	command only accepts a size in pixels.
 
 **resize set** <width|height> <amount> [px] [<width|height> <amount> [px]]::
 	Sets the _width_ and/or _height_ of the currently focused container to
 	_amount_. The [px] parameters are optional and have no effect. This command
-	only accepts pixel dimensions.
+	only accepts a size in pixels.
 
 **scratchpad show**::
 	Shows a window from the scratchpad. Repeatedly using this command will cycle
@@ -254,14 +253,14 @@ The default colors are:
 	*restart* is executed.
 
 **floating_maximum_size** <width> x <height>::
-	Specifies the maximum dimensions of floating windows.
-	Uses the container dimensions as default.
-	-1 x -1 will remove any restriction on dimensions.
+	Specifies the maximum size of floating windows.
+	Uses the container size as default.
+	-1 x -1 will remove any restriction on size.
 	0 x 0 has the same behavior as not setting any value.
 	If in conflict, this option has precedence over floating_minimum_size.
 
 **floating_minimum_size** <width> x <height>::
-	Specifies the minimum dimensions of floating windows.
+	Specifies the minimum size of floating windows.
 	Default parameters are 75 x 50.
 	-1 and 0 are invalid parameters, default will be used instead.
 
