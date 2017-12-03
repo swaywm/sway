@@ -29,9 +29,8 @@ enum sway_view_type {
 
 enum sway_view_prop {
 	VIEW_PROP_TITLE,
-	VIEW_PROP_CLASS,
-	VIEW_PROP_INSTANCE,
 	VIEW_PROP_APP_ID,
+	VIEW_PROP_INSTANCE,
 };
 
 /**
@@ -46,10 +45,12 @@ struct sway_view {
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
 
 	union {
 		struct sway_xdg_surface_v6 *sway_xdg_surface_v6;
+		struct sway_wl_shell_surface *sway_wl_shell_surface;
 	};
 
 	struct {
