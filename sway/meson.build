@@ -8,6 +8,7 @@ sway_sources = files(
 	'desktop/output.c',
 	'desktop/wl_shell.c',
 	'desktop/xdg_shell_v6.c',
+	'desktop/xwayland.c',
 	'tree/container.c',
 	'tree/layout.c',
 	'tree/workspace.c',

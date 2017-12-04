@@ -41,6 +41,13 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_shell_v6_surface);
 	server->xdg_shell_v6_surface.notify = handle_xdg_shell_v6_surface;
 
+	// TODO make xwayland optional
+	server->xwayland =
+		wlr_xwayland_create(server->wl_display, server->compositor);
+	wl_signal_add(&server->xwayland->events.new_surface,
+		&server->xwayland_surface);
+	server->xwayland_surface.notify = handle_xwayland_surface;
+
 	server->wl_shell = wlr_wl_shell_create(server->wl_display);
 	wl_signal_add(&server->wl_shell->events.new_surface,
 		&server->wl_shell_surface);
