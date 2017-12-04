@@ -30,6 +30,9 @@ struct sway_server {
 
 	struct wlr_xdg_shell_v6 *xdg_shell_v6;
 	struct wl_listener xdg_shell_v6_surface;
+
+	struct wlr_xwayland *xwayland;
+	struct wl_listener xwayland_surface;
 };
 
 struct sway_server server;
@@ -42,5 +45,6 @@ void output_add_notify(struct wl_listener *listener, void *data);
 void output_remove_notify(struct wl_listener *listener, void *data);
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
+void handle_xwayland_surface(struct wl_listener *listener, void *data);
 
 #endif

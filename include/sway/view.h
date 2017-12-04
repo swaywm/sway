@@ -3,6 +3,7 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include <wlr/xwayland.h>
 
 struct sway_container;
 struct sway_view;
@@ -14,6 +15,19 @@ struct sway_xdg_surface_v6 {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener destroy;
+
+	int pending_width, pending_height;
+};
+
+struct sway_xwayland_surface {
+	struct sway_view *view;
+
+	struct wl_listener commit;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
+	struct wl_listener request_maximize;
+	struct wl_listener request_configure;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
@@ -46,10 +60,12 @@ struct sway_view {
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+		struct wlr_xwayland_surface *wlr_xwayland_surface;
 	};
 
 	union {
 		struct sway_xdg_surface_v6 *sway_xdg_surface_v6;
+		struct sway_xwayland_surface *sway_xwayland_surface;
 	};
 
 	struct {

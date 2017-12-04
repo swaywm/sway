@@ -40,6 +40,13 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_shell_v6_surface);
 	server->xdg_shell_v6_surface.notify = handle_xdg_shell_v6_surface;
 
+	// TODO make xwayland optional
+	server->xwayland =
+		wlr_xwayland_create(server->wl_display, server->compositor);
+	wl_signal_add(&server->xwayland->events.new_surface,
+		&server->xwayland_surface);
+	server->xwayland_surface.notify = handle_xwayland_surface;
+
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!sway_assert(server->socket,  "Unable to open wayland socket")) {
 		wlr_backend_destroy(server->backend);

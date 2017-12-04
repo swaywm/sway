@@ -7,6 +7,7 @@ sway_sources = files(
 	'ipc-server.c',
 	'desktop/output.c',
 	'desktop/xdg_shell_v6.c',
+	'desktop/xwayland.c',
 	'tree/container.c',
 	'tree/layout.c',
 	'tree/workspace.c',
