@@ -15,13 +15,7 @@ packages:
   - libxkbcommon
 sources:
   - https://git.sr.ht/~sircmpwn/sway
-  - https://git.sr.ht/~sircmpwn/wlroots
 tasks:
-  - wlroots: |
-      cd wlroots
-      meson --prefix=/usr build
-      ninja -C build
-      sudo ninja -C build install
   - setup: |
       cd sway
       meson build

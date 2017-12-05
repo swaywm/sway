@@ -1,0 +1,4 @@
+[wrap-git]
+directory=wlroots
+url=https://github.com/swaywm/wlroots.git
+revision=head
