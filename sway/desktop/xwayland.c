@@ -3,14 +3,17 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/xwayland.h>
+#include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_output.h>
 #include "sway/container.h"
 #include "sway/layout.h"
 #include "sway/server.h"
 #include "sway/view.h"
+#include "sway/output.h"
 #include "log.h"
 
  static bool assert_xwayland(struct sway_view *view) {
-	 return sway_assert(view->type == SWAY_XWAYLAND_VIEW,
+	 return sway_assert(view->type == SWAY_XWAYLAND_VIEW && view->wlr_xwayland_surface,
 		 "Expected xwayland view!");
  }
 
@@ -38,6 +41,33 @@ static void set_size(struct sway_view *view, int width, int height) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	wlr_xwayland_surface_configure(xsurface, view->swayc->x, view->swayc->y,
 		width, height);
+}
+
+static void set_position(struct sway_view *view, double ox, double oy) {
+	if (!assert_xwayland(view)) {
+		return;
+	}
+	swayc_t *output = swayc_parent_by_type(view->swayc, C_OUTPUT);
+	if (!sway_assert(output, "view must be within tree to set position")) {
+		return;
+	}
+	swayc_t *root = swayc_parent_by_type(output, C_ROOT);
+	if (!sway_assert(root, "output must be within tree to set position")) {
+		return;
+	}
+	struct wlr_output_layout *layout = root->output_layout;
+	struct wlr_output_layout_output *loutput =
+		wlr_output_layout_get(layout, output->sway_output->wlr_output);
+	if (!sway_assert(loutput, "output must be within layout to set position")) {
+		return;
+	}
+
+	view->swayc->x = ox;
+	view->swayc->y = oy;
+
+	wlr_xwayland_surface_configure(view->wlr_xwayland_surface,
+		ox + loutput->x, oy + loutput->y,
+		view->width, view->height);
 }
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -102,6 +132,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	sway_view->type = SWAY_XWAYLAND_VIEW;
 	sway_view->iface.get_prop = get_prop;
 	sway_view->iface.set_size = set_size;
+	sway_view->iface.set_position = set_position;
 	sway_view->wlr_xwayland_surface = xsurface;
 	sway_view->sway_xwayland_surface = sway_surface;
 	// TODO remove from the tree when the surface goes away (unmapped)

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wlr/types/wlr_output_layout.h>
 #include "sway/container.h"
 #include "sway/layout.h"
 #include "sway/output.h"
@@ -52,6 +53,10 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	output->name = name ? strdup(name) : NULL;
 	output->width = size.width;
 	output->height = size.width;
+
+	// TODO configure output layout position
+	wlr_output_layout_add_auto(root_container.output_layout,
+		sway_output->wlr_output);
 
 	add_child(&root_container, output);
 
