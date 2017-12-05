@@ -87,6 +87,8 @@ struct sway_view {
 				enum sway_view_prop prop);
 		void (*set_size)(struct sway_view *view,
 				int width, int height);
+		void (*set_position)(struct sway_view *view,
+				double ox, double oy);
 	} iface;
 };
 

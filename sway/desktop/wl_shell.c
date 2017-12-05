@@ -37,6 +37,14 @@ static void set_size(struct sway_view *view, int width, int height) {
 	wlr_wl_shell_surface_configure(view->wlr_wl_shell_surface, 0, width, height);
 }
 
+static void set_position(struct sway_view *view, double ox, double oy) {
+	if (!assert_wl_shell(view)) {
+		return;
+	}
+	view->swayc->x = ox;
+	view->swayc->y = oy;
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -87,6 +95,7 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	sway_view->type = SWAY_WL_SHELL_VIEW;
 	sway_view->iface.get_prop = get_prop;
 	sway_view->iface.set_size = set_size;
+	sway_view->iface.set_position = set_position;
 	sway_view->wlr_wl_shell_surface = shell_surface;
 	sway_view->sway_wl_shell_surface = sway_surface;
 	sway_view->surface = shell_surface->surface;

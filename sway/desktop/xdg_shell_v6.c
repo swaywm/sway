@@ -37,6 +37,14 @@ static void set_size(struct sway_view *view, int width, int height) {
 	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
 }
 
+static void set_position(struct sway_view *view, double ox, double oy) {
+	if (!assert_xdg(view)) {
+		return;
+	}
+	view->swayc->x = ox;
+	view->swayc->y = oy;
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -87,6 +95,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_view->type = SWAY_XDG_SHELL_V6_VIEW;
 	sway_view->iface.get_prop = get_prop;
 	sway_view->iface.set_size = set_size;
+	sway_view->iface.set_position = set_position;
 	sway_view->wlr_xdg_surface_v6 = xdg_surface;
 	sway_view->sway_xdg_surface_v6 = sway_surface;
 	sway_view->surface = xdg_surface->surface;
