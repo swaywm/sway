@@ -20,7 +20,7 @@ prefix = get_option('prefix')
 
 jsonc          = dependency('json-c', version: '>=0.12.1')
 pcre           = dependency('libpcre')
-wlroots        = dependency('wlroots')
+wlroots        = dependency('wlroots', fallback: ['wlroots', 'wlroots'])
 wayland_server = dependency('wayland-server')
 wayland_client = dependency('wayland-client')
 wayland_egl    = dependency('wayland-egl')
