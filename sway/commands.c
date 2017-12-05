@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <json-c/json.h>
 #include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/security.h"
 #include "stringop.h"
 #include "log.h"
 
@@ -197,6 +199,136 @@ cleanup:
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
+	return results;
+}
+
+// this is like handle_command above, except:
+// 1) it ignores empty commands (empty lines)
+// 2) it does variable substitution
+// 3) it doesn't split commands (because the multiple commands are supposed to
+//	  be chained together)
+// 4) handle_command handles all state internally while config_command has some
+//	  state handled outside (notably the block mode, in read_config)
+struct cmd_results *config_command(char *exec, enum cmd_status block) {
+	struct cmd_results *results = NULL;
+	int argc;
+	char **argv = split_args(exec, &argc);
+	if (!argc) {
+		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		goto cleanup;
+	}
+
+	sway_log(L_INFO, "handling config command '%s'", exec);
+	// Endblock
+	if (**argv == '}') {
+		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
+		goto cleanup;
+	}
+	struct cmd_handler *handler = find_handler(argv[0], block);
+	if (!handler) {
+		char *input = argv[0] ? argv[0] : "(empty)";
+		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		goto cleanup;
+	}
+	int i;
+	// Var replacement, for all but first argument of set
+	// TODO commands
+	for (i = /*handler->handle == cmd_set ? 2 :*/ 1; i < argc; ++i) {
+		argv[i] = do_var_replacement(argv[i]);
+		unescape_string(argv[i]);
+	}
+	/* Strip quotes for first argument.
+	 * TODO This part needs to be handled much better */
+	if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
+		strip_quotes(argv[1]);
+	}
+	if (handler->handle) {
+		results = handler->handle(argc-1, argv+1);
+	} else {
+		results = cmd_results_new(CMD_INVALID, argv[0], "This command is shimmed, but unimplemented");
+	}
+
+cleanup:
+	free_argv(argc, argv);
+	return results;
+}
+
+struct cmd_results *config_commands_command(char *exec) {
+	struct cmd_results *results = NULL;
+	int argc;
+	char **argv = split_args(exec, &argc);
+	if (!argc) {
+		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		goto cleanup;
+	}
+
+	// Find handler for the command this is setting a policy for
+	char *cmd = argv[0];
+
+	if (strcmp(cmd, "}") == 0) {
+		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
+		goto cleanup;
+	}
+
+	struct cmd_handler *handler = find_handler(cmd, CMD_BLOCK_END);
+	if (!handler && strcmp(cmd, "*") != 0) {
+		char *input = cmd ? cmd : "(empty)";
+		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		goto cleanup;
+	}
+
+	enum command_context context = 0;
+
+	struct {
+		char *name;
+		enum command_context context;
+	} context_names[] = {
+		{ "config", CONTEXT_CONFIG },
+		{ "binding", CONTEXT_BINDING },
+		{ "ipc", CONTEXT_IPC },
+		{ "criteria", CONTEXT_CRITERIA },
+		{ "all", CONTEXT_ALL },
+	};
+
+	for (int i = 1; i < argc; ++i) {
+		size_t j;
+		for (j = 0; j < sizeof(context_names) / sizeof(context_names[0]); ++j) {
+			if (strcmp(context_names[j].name, argv[i]) == 0) {
+				break;
+			}
+		}
+		if (j == sizeof(context_names) / sizeof(context_names[0])) {
+			results = cmd_results_new(CMD_INVALID, cmd,
+					"Invalid command context %s", argv[i]);
+			goto cleanup;
+		}
+		context |= context_names[j].context;
+	}
+
+	struct command_policy *policy = NULL;
+	for (int i = 0; i < config->command_policies->length; ++i) {
+		struct command_policy *p = config->command_policies->items[i];
+		if (strcmp(p->command, cmd) == 0) {
+			policy = p;
+			break;
+		}
+	}
+	if (!policy) {
+		policy = alloc_command_policy(cmd);
+		sway_assert(policy, "Unable to allocate security policy");
+		if (policy) {
+			list_add(config->command_policies, policy);
+		}
+	}
+	policy->context = context;
+
+	sway_log(L_INFO, "Set command policy for %s to %d",
+			policy->command, policy->context);
+
+	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+
+cleanup:
+	free_argv(argc, argv);
 	return results;
 }
 
