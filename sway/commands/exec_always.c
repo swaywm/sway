@@ -5,15 +5,15 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "sway/commands.h"
-#include "sway/workspace.h"
+#include "sway/config.h"
 #include "sway/container.h"
+#include "sway/workspace.h"
 #include "log.h"
 #include "stringop.h"
 
 struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	// TODO: config
-	//if (!config->active) return cmd_results_new(CMD_DEFER, NULL, NULL);
+	if (!config->active) return cmd_results_new(CMD_DEFER, NULL, NULL);
 	if ((error = checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}

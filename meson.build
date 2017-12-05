@@ -65,6 +65,8 @@ if a2x.found()
 	endforeach
 endif
 
+add_project_arguments('-DSYSCONFDIR="/@0@"'.format(sysconfdir), language : 'c')
+
 version = get_option('sway_version')
 if version != ''
 	version = '"@0@"'.format(version)

@@ -47,6 +47,16 @@ struct cmd_results *checkarg(int argc, const char *name,
  */
 struct cmd_results *handle_command(char *command);
 /**
+ * Parse and handles a command during config file loading.
+ *
+ * Do not use this under normal conditions.
+ */
+struct cmd_results *config_command(char *command, enum cmd_status block);
+/*
+ * Parses a command policy rule.
+ */
+struct cmd_results *config_commands_command(char *exec);
+/**
  * Allocates a cmd_results object.
  */
 struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *error, ...);

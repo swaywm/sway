@@ -15,6 +15,7 @@
 #include <sys/capability.h>
 #include <sys/prctl.h>
 #endif
+#include "sway/config.h"
 #include "sway/server.h"
 #include "sway/layout.h"
 #include "sway/ipc-server.h"
@@ -388,14 +389,14 @@ int main(int argc, char **argv) {
 	ipc_init(&server);
 	log_env();
 
-	//if (validate) {
-	//	bool valid = load_main_config(config_path, false);
-	//	return valid ? 0 : 1;
-	//}
+	if (validate) {
+		bool valid = load_main_config(config_path, false);
+		return valid ? 0 : 1;
+	}
 
-	//if (!load_main_config(config_path, false)) {
-	//	sway_terminate(EXIT_FAILURE);
-	//}
+	if (!load_main_config(config_path, false)) {
+		sway_terminate(EXIT_FAILURE);
+	}
 
 	if (config_path) {
 		free(config_path);
@@ -411,9 +412,9 @@ int main(int argc, char **argv) {
 
 	ipc_terminate();
 
-	//if (config) {
-	//	free_config(config);
-	//}
+	if (config) {
+		free_config(config);
+	}
 
 	return exit_value;
 }
