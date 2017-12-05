@@ -5,8 +5,8 @@
 
 #include <libinput.h>
 #include <stdint.h>
-#include <wlc/geometry.h>
-#include <wlc/wlc.h>
+#include <string.h>
+#include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
 #include <time.h>
 #include "list.h"
@@ -68,7 +68,7 @@ struct input_config {
 	int tap;
 
 	bool capturable;
-	struct wlc_geometry region;
+	struct wlr_box region;
 };
 
 /**
