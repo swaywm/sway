@@ -11,6 +11,7 @@
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 #include "sway/server.h"
+#include "sway/input.h"
 #include "log.h"
 
 bool server_init(struct sway_server *server) {
@@ -58,6 +59,9 @@ bool server_init(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
+
+	server->input = sway_input_create(server);
+
 	return true;
 }
 
