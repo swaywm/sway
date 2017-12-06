@@ -26,27 +26,10 @@ void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
 }
 
 static void update_root_geometry() {
-	int width = 0;
-	int height = 0;
-	swayc_t *child;
-	int child_width;
-	int child_height;
-
-	for (int i = 0; i < root_container.children->length; ++i) {
-		child = root_container.children->items[i];
-		child_width = child->width + child->x;
-		child_height = child->height + child->y;
-		if (child_width > width) {
-			width = child_width;
-		}
-
-		if (child_height > height) {
-			height = child_height;
-		}
-	}
-
-	root_container.width = width;
-	root_container.height = height;
+	struct wlr_box *box =
+		wlr_output_layout_get_box(root_container.output_layout, NULL);
+	root_container.width = box->width;
+	root_container.height = box->height;
 }
 
 static swayc_t *new_swayc(enum swayc_types type) {
