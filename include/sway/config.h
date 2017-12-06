@@ -84,7 +84,7 @@ struct output_config {
 	float refresh_rate;
 	int x, y;
 	int scale;
-	enum wl_output_transform transform;
+	int32_t transform;
 
 	char *background;
 	char *background_option;
@@ -364,6 +364,7 @@ void apply_input_config(struct input_config *ic, struct libinput_device *dev);
 void free_input_config(struct input_config *ic);
 
 int output_name_cmp(const void *item, const void *data);
+void output_config_defaults(struct output_config *oc);
 void merge_output_config(struct output_config *dst, struct output_config *src);
 /** Sets up a WLC output handle based on a given output_config.
  */

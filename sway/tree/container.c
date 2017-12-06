@@ -100,12 +100,6 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->sway_output = sway_output;
 	output->name = name ? strdup(name) : NULL;
-	output->width = size.width;
-	output->height = size.width;
-
-	// TODO configure output layout position
-	wlr_output_layout_add_auto(root_container.output_layout,
-		sway_output->wlr_output);
 
 	apply_output_config(oc, output);
 

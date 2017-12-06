@@ -31,10 +31,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	if (!output) {
 		return cmd_results_new(CMD_FAILURE, "output", "Unable to allocate output config");
 	}
-	output->x = output->y = output->width = output->height = -1;
+	output_config_defaults(output);
 	output->name = strdup(name);
-	output->enabled = -1;
-	output->scale = 1;
 
 	// TODO: atoi doesn't handle invalid numbers
 

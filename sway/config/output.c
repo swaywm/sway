@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
 #include "sway/config.h"
 #include "sway/output.h"
 #include "log.h"
@@ -11,6 +12,15 @@ int output_name_cmp(const void *item, const void *data) {
 	const char *name = data;
 
 	return strcmp(output->name, name);
+}
+
+void output_config_defaults(struct output_config *oc) {
+	oc->enabled = -1;
+	oc->width = oc->height -1;
+	oc->refresh_rate = -1;
+	oc->x = oc->y = -1;
+	oc->scale = -1;
+	oc->transform = -1;
 }
 
 void merge_output_config(struct output_config *dst, struct output_config *src) {
@@ -37,6 +47,12 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	}
 	if (src->scale != -1) {
 		dst->scale = src->scale;
+	}
+	if (src->refresh_rate != -1) {
+		dst->refresh_rate = src->refresh_rate;
+	}
+	if (src->transform != -1) {
+		dst->transform = src->transform;
 	}
 	if (src->background) {
 		if (dst->background) {
@@ -86,29 +102,28 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	}
 	if (oc && oc->scale > 0) {
+		sway_log(L_DEBUG, "Set %s scale to %d", oc->name, oc->scale);
 		wlr_output->scale = oc->scale;
 	}
-	if (oc && oc->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
+	if (oc && oc->transform >= 0) {
+		sway_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_transform(wlr_output, oc->transform);
 	}
 
 	// Find position for it
-	if (oc && oc->x != -1 && oc->y != -1) {
+	if (oc && (oc->x != -1 || oc->y != -1)) {
 		sway_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
-		output->x = oc->x;
-		output->y = oc->y;
+		wlr_output_layout_add(root_container.output_layout, wlr_output, oc->x,
+			oc->y);
 	} else {
-		int x = 0;
-		for (int i = 0; i < root_container.children->length; ++i) {
-			swayc_t *c = root_container.children->items[i];
-			if (c->type == C_OUTPUT) {
-				if (c->width + c->x > x) {
-					x = c->width + c->x;
-				}
-			}
-		}
-		output->x = x;
+		wlr_output_layout_add_auto(root_container.output_layout, wlr_output);
 	}
+	struct wlr_box *output_layout_box =
+		wlr_output_layout_get_box(root_container.output_layout, wlr_output);
+	output->x = output_layout_box->x;
+	output->y = output_layout_box->y;
+	output->width = output_layout_box->width;
+	output->height = output_layout_box->height;
 
 	if (!oc || !oc->background) {
 		// Look for a * config for background
@@ -128,7 +143,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 
 	if (oc && oc->background) {
-		// TODO: swaybg
+		// TODO swaybg
 		/*if (output->bg_pid != 0) {
 			terminate_swaybg(output->bg_pid);
 		}
