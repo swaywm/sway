@@ -45,6 +45,10 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 	view->swayc->y = oy;
 }
 
+static void set_activated(struct sway_view *view, bool activated) {
+	// no way to activate wl_shell
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -96,6 +100,7 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.get_prop = get_prop;
 	sway_view->iface.set_size = set_size;
 	sway_view->iface.set_position = set_position;
+	sway_view->iface.set_activated = set_activated;
 	sway_view->wlr_wl_shell_surface = shell_surface;
 	sway_view->sway_wl_shell_surface = sway_surface;
 	sway_view->surface = shell_surface->surface;

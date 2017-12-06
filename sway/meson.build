@@ -5,6 +5,7 @@ sway_sources = files(
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
+	'commands/include.c',
 	'commands/output.c',
 	'config.c',
 	'config/output.c',

@@ -89,6 +89,7 @@ struct sway_view {
 				int width, int height);
 		void (*set_position)(struct sway_view *view,
 				double ox, double oy);
+		void (*set_activated)(struct sway_view *view, bool activated);
 	} iface;
 };
 
