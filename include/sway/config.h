@@ -6,6 +6,7 @@
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
+#include <wayland-server.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
 #include <time.h>
@@ -80,8 +81,11 @@ struct output_config {
 	char *name;
 	int enabled;
 	int width, height;
+	float refresh_rate;
 	int x, y;
 	int scale;
+	enum wl_output_transform transform;
+
 	char *background;
 	char *background_option;
 };
