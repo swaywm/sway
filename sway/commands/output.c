@@ -27,11 +27,10 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 	const char *name = argv[0];
 
-	struct output_config *output = calloc(1, sizeof(struct output_config));
+	struct output_config *output = new_output_config();
 	if (!output) {
 		return cmd_results_new(CMD_FAILURE, "output", "Unable to allocate output config");
 	}
-	output_config_defaults(output);
 	output->name = strdup(name);
 
 	// TODO: atoi doesn't handle invalid numbers

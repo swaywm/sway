@@ -364,10 +364,8 @@ void apply_input_config(struct input_config *ic, struct libinput_device *dev);
 void free_input_config(struct input_config *ic);
 
 int output_name_cmp(const void *item, const void *data);
-void output_config_defaults(struct output_config *oc);
+struct output_config *new_output_config();
 void merge_output_config(struct output_config *dst, struct output_config *src);
-/** Sets up a WLC output handle based on a given output_config.
- */
 void apply_output_config(struct output_config *oc, swayc_t *output);
 void free_output_config(struct output_config *oc);
 

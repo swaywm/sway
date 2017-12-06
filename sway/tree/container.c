@@ -93,6 +93,7 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	sway_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	new_workspace(output, ws_name);
 	free(ws_name);
+	update_root_geometry();
 	return output;
 }
 

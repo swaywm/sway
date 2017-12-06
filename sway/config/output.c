@@ -14,13 +14,18 @@ int output_name_cmp(const void *item, const void *data) {
 	return strcmp(output->name, name);
 }
 
-void output_config_defaults(struct output_config *oc) {
+struct output_config *new_output_config() {
+	struct output_config *oc = calloc(1, sizeof(struct output_config));
+	if (oc == NULL) {
+		return NULL;
+	}
 	oc->enabled = -1;
 	oc->width = oc->height -1;
 	oc->refresh_rate = -1;
 	oc->x = oc->y = -1;
 	oc->scale = -1;
 	oc->transform = -1;
+	return oc;
 }
 
 void merge_output_config(struct output_config *dst, struct output_config *src) {
