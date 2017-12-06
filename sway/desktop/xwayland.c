@@ -70,6 +70,14 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 		view->width, view->height);
 }
 
+static void set_activated(struct sway_view *view, bool activated) {
+	if (!assert_xwayland(view)) {
+		return;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	wlr_xwayland_surface_activate(surface, activated);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -133,6 +141,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.get_prop = get_prop;
 	sway_view->iface.set_size = set_size;
 	sway_view->iface.set_position = set_position;
+	sway_view->iface.set_activated = set_activated;
 	sway_view->wlr_xwayland_surface = xsurface;
 	sway_view->sway_xwayland_surface = sway_surface;
 	// TODO remove from the tree when the surface goes away (unmapped)
