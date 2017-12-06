@@ -25,9 +25,7 @@ void output_config_defaults(struct output_config *oc) {
 
 void merge_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->name) {
-		if (dst->name) {
-			free(dst->name);
-		}
+		free(dst->name);
 		dst->name = strdup(src->name);
 	}
 	if (src->enabled != -1) {
@@ -55,15 +53,11 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 		dst->transform = src->transform;
 	}
 	if (src->background) {
-		if (dst->background) {
-			free(dst->background);
-		}
+		free(dst->background);
 		dst->background = strdup(src->background);
 	}
 	if (src->background_option) {
-		if (dst->background_option) {
-			free(dst->background_option);
-		}
+		free(dst->background_option);
 		dst->background_option = strdup(src->background_option);
 	}
 }
@@ -103,7 +97,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 	if (oc && oc->scale > 0) {
 		sway_log(L_DEBUG, "Set %s scale to %d", oc->name, oc->scale);
-		wlr_output->scale = oc->scale;
+		wlr_output_set_scale(wlr_output, oc->scale);
 	}
 	if (oc && oc->transform >= 0) {
 		sway_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
