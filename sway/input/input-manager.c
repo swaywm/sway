@@ -6,15 +6,17 @@
 #include <string.h>
 #include <libinput.h>
 #include "sway/config.h"
-#include "sway/input.h"
+#include "sway/input-manager.h"
 #include "sway/server.h"
 #include "list.h"
 #include "log.h"
 
 struct input_config *current_input_config = NULL;
 
-struct sway_input *sway_input_create(struct sway_server *server) {
-	struct sway_input *input = calloc(1, sizeof(struct sway_input));
+struct sway_input_manager *sway_input_manager_create(
+		struct sway_server *server) {
+	struct sway_input_manager *input =
+		calloc(1, sizeof(struct sway_input_manager));
 	if (!input) {
 		return NULL;
 	}

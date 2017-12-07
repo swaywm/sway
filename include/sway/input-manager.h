@@ -5,7 +5,7 @@
 #include "config.h"
 #include "list.h"
 
-struct sway_input {
+struct sway_input_manager {
 	list_t *input_devices;
 };
 
@@ -13,6 +13,7 @@ struct input_config *new_input_config(const char* identifier);
 
 char* libinput_dev_unique_id(struct libinput_device *dev);
 
-struct sway_input *sway_input_create(struct sway_server *server);
+struct sway_input_manager *sway_input_manager_create(
+		struct sway_server *server);
 
 #endif
