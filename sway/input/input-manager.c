@@ -7,11 +7,51 @@
 #include <libinput.h>
 #include "sway/config.h"
 #include "sway/input-manager.h"
+#include "sway/seat.h"
 #include "sway/server.h"
 #include "list.h"
 #include "log.h"
 
+static const char *default_seat = "seat0";
+
 struct input_config *current_input_config = NULL;
+
+static struct sway_seat *input_manager_get_seat(
+		struct sway_input_manager *input, const char *seat_name) {
+	struct sway_seat *seat = NULL;
+
+	for (int i = 0; i < input->seats->length; ++i) {
+		seat = input->seats->items[i];
+		if (strcmp(seat->seat->name, seat_name) == 0) {
+			return seat;
+		}
+	}
+
+	seat = sway_seat_create(input->server->wl_display, seat_name);
+	list_add(input->seats, seat);
+
+	return seat;
+}
+
+static void input_add_notify(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input =
+		wl_container_of(listener, input, input_add);
+	struct wlr_input_device *device = data;
+
+	// TODO device configuration
+	struct sway_seat *seat = input_manager_get_seat(input, default_seat);
+	sway_seat_add_device(seat, device);
+}
+
+static void input_remove_notify(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input =
+		wl_container_of(listener, input, input_remove);
+	struct wlr_input_device *device = data;
+
+	// TODO device configuration
+	struct sway_seat *seat = input_manager_get_seat(input, default_seat);
+	sway_seat_remove_device(seat, device);
+}
 
 struct sway_input_manager *sway_input_manager_create(
 		struct sway_server *server) {
@@ -20,6 +60,20 @@ struct sway_input_manager *sway_input_manager_create(
 	if (!input) {
 		return NULL;
 	}
+	// XXX probably don't need the full server
+	input->server = server;
+
+	input->seats = create_list();
+
+	// create the default seat
+	input_manager_get_seat(input, default_seat);
+
+	input->input_add.notify = input_add_notify;
+	wl_signal_add(&server->backend->events.input_add, &input->input_add);
+
+	input->input_remove.notify = input_remove_notify;
+	wl_signal_add(&server->backend->events.input_remove, &input->input_remove);
+
 	return input;
 }
 
