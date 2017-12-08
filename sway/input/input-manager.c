@@ -6,8 +6,8 @@
 #include <string.h>
 #include <libinput.h>
 #include "sway/config.h"
-#include "sway/input-manager.h"
-#include "sway/seat.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/server.h"
 #include "list.h"
 #include "log.h"

@@ -1,7 +1,7 @@
 #ifndef _SWAY_CURSOR_H
 #define _SWAY_CURSOR_H
 
-#include "sway/seat.h"
+#include "sway/input/seat.h"
 
 struct sway_cursor {
 	struct wlr_cursor *cursor;

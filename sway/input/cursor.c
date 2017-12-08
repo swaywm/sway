@@ -1,6 +1,6 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
-#include "sway/cursor.h"
+#include "sway/input/cursor.h"
 #include "log.h"
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {

@@ -2,7 +2,7 @@
 #define _SWAY_INPUT_MANAGER_H
 #include <libinput.h>
 #include "sway/server.h"
-#include "config.h"
+#include "sway/config.h"
 #include "list.h"
 
 struct sway_input_manager {

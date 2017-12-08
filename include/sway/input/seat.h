@@ -2,7 +2,7 @@
 #define _SWAY_SEAT_H
 
 #include <wlr/types/wlr_seat.h>
-#include "sway/input-manager.h"
+#include "sway/input/input-manager.h"
 
 struct sway_seat {
 	struct wlr_seat *seat;
