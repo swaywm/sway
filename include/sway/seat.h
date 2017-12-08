@@ -6,6 +6,7 @@
 
 struct sway_seat {
 	struct wlr_seat *seat;
+	struct sway_cursor *cursor;
 };
 
 struct sway_seat *sway_seat_create(struct wl_display *display,

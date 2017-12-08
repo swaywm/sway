@@ -4,6 +4,7 @@ sway_sources = files(
 	'commands.c',
 	'input/input-manager.c',
 	'input/seat.c',
+	'input/cursor.c',
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
