@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/input/cursor.h"
 #include "log.h"
 
@@ -7,7 +8,10 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion);
 	struct wlr_event_pointer_motion *event = data;
-	sway_log(L_DEBUG, "TODO: handle event: %p", event);
+	sway_log(L_DEBUG, "TODO: handle cursor motion event: dx=%f, dy=%f", event->delta_x, event->delta_y);
+	wlr_cursor_move(cursor->cursor, event->device, event->delta_x, event->delta_y);
+	sway_log(L_DEBUG, "TODO: new x=%f, y=%f", cursor->cursor->x, cursor->cursor->y);
+	wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, "left_ptr", cursor->cursor);
 }
 
 static void handle_cursor_motion_absolute(struct wl_listener *listener,
@@ -86,6 +90,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		free(cursor);
 		return NULL;
 	}
+
+	wlr_cursor_attach_output_layout(wlr_cursor, root_container.output_layout);
 
 	// input events
 	wl_signal_add(&wlr_cursor->events.motion, &cursor->motion);

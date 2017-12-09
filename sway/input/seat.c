@@ -83,15 +83,13 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 	// TODO configure theme and size
 	const char *cursor_theme = "default";
 
-	if (seat->cursor->xcursor_manager) {
-		wlr_xcursor_manager_destroy(seat->cursor->xcursor_manager);
-	}
-
-	seat->cursor->xcursor_manager =
-		wlr_xcursor_manager_create(NULL, 24);
-	if (sway_assert(seat->cursor->xcursor_manager,
-				"Cannot create XCursor manager for theme %s", cursor_theme)) {
-		return;
+	if (!seat->cursor->xcursor_manager) {
+		seat->cursor->xcursor_manager =
+			wlr_xcursor_manager_create("default", 24);
+		if (sway_assert(seat->cursor->xcursor_manager,
+					"Cannot create XCursor manager for theme %s", cursor_theme)) {
+			return;
+		}
 	}
 
 	for (int i = 0; i < root_container.children->length; ++i) {
@@ -102,7 +100,7 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 			wlr_xcursor_manager_load(seat->cursor->xcursor_manager,
 				output->scale);
 
-		sway_assert(result,
+		sway_assert(!result,
 			"Cannot load xcursor theme for output '%s' with scale %d",
 			output->name, output->scale);
 	}

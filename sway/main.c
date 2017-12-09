@@ -381,11 +381,12 @@ int main(int argc, char **argv) {
 
 	sway_log(L_INFO, "Starting sway version " SWAY_VERSION "\n");
 
+	init_layout();
+
 	if (!server_init(&server)) {
 		return 1;
 	}
 
-	init_layout();
 	ipc_init(&server);
 	log_env();
 

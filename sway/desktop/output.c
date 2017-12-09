@@ -12,6 +12,8 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/view.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 
 static void output_frame_view(swayc_t *view, void *data) {
 	struct sway_output *output = data;
@@ -119,6 +121,11 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 
 	output->resolution.notify = output_resolution_notify;
 	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
+
+    for (int i = 0; i < server->input->seats->length; ++i) {
+        struct sway_seat *seat = server->input->seats->items[i];
+        sway_seat_configure_xcursor(seat);
+    }
 
 	arrange_windows(output->swayc, -1, -1);
 }
