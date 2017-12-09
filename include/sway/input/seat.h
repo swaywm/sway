@@ -18,4 +18,6 @@ void sway_seat_add_device(struct sway_seat *seat,
 void sway_seat_remove_device(struct sway_seat *seat,
 		struct wlr_input_device *device);
 
+void sway_seat_configure_xcursor(struct sway_seat *seat);
+
 #endif
