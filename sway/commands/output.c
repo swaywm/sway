@@ -227,7 +227,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	if (output->name) {
 		// Try to find the output container and apply configuration now. If
 		// this is during startup then there will be no container and config
-		// will be applied during normal "new output" event from wlc.
+		// will be applied during normal "new output" event from wlroots.
 		swayc_t *cont = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
 			cont = root_container.children->items[i];

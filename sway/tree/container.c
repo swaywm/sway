@@ -8,6 +8,7 @@
 #include "sway/container.h"
 #include "sway/layout.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/view.h"
 #include "sway/workspace.h"
 #include "log.h"
@@ -172,6 +173,7 @@ swayc_t *destroy_output(swayc_t *output) {
 	if (!sway_assert(output, "null output passed to destroy_output")) {
 		return NULL;
 	}
+
 	if (output->children->length > 0) {
 		// TODO save workspaces when there are no outputs.
 		// TODO also check if there will ever be no outputs except for exiting
@@ -190,9 +192,11 @@ swayc_t *destroy_output(swayc_t *output) {
 			arrange_windows(root_container.children->items[p], -1, -1);
 		}
 	}
+
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 	free_swayc(output);
 	update_root_geometry();
+
 	return &root_container;
 }
 

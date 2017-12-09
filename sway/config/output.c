@@ -91,12 +91,13 @@ static void set_mode(struct wlr_output *output, int width, int height,
 void apply_output_config(struct output_config *oc, swayc_t *output) {
 	assert(output->type == C_OUTPUT);
 
+	struct wlr_output *wlr_output = output->sway_output->wlr_output;
 	if (oc && oc->enabled == 0) {
+		wlr_output_layout_remove(root_container.output_layout, wlr_output);
 		destroy_output(output);
 		return;
 	}
 
-	struct wlr_output *wlr_output = output->sway_output->wlr_output;
 	if (oc && oc->width > 0 && oc->height > 0) {
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	}
