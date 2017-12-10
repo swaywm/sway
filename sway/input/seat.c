@@ -63,7 +63,7 @@ void sway_seat_add_device(struct sway_seat *seat,
 
 static void seat_remove_pointer(struct sway_seat *seat,
 		struct wlr_input_device *device) {
-	// TODO
+	wlr_cursor_detach_input_device(seat->cursor->cursor, device);
 }
 
 void sway_seat_remove_device(struct sway_seat *seat,
