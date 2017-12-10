@@ -53,5 +53,14 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 	wl_signal_add(&device->keyboard->events.modifiers, &keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
 
+	wl_list_insert(&seat->keyboards, &keyboard->link);
+
 	return keyboard;
+}
+
+void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
+	wl_list_remove(&keyboard->keyboard_key.link);
+	wl_list_remove(&keyboard->keyboard_modifiers.link);
+	wl_list_remove(&keyboard->link);
+	free(keyboard);
 }

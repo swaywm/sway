@@ -11,3 +11,5 @@ struct sway_keyboard {
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 		struct wlr_input_device *device);
+
+void sway_keyboard_destroy(struct sway_keyboard *keyboard);
