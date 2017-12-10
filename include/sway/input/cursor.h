@@ -4,8 +4,11 @@
 #include "sway/input/seat.h"
 
 struct sway_cursor {
+	struct sway_seat *seat;
 	struct wlr_cursor *cursor;
 	struct wlr_xcursor_manager *xcursor_manager;
+
+	double x, y;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;

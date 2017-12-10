@@ -2,16 +2,44 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/input/cursor.h"
+#include "sway/view.h"
+#include "list.h"
 #include "log.h"
+
+static void cursor_update_position(struct sway_cursor *cursor) {
+	double x = cursor->cursor->x;
+	double y = cursor->cursor->y;
+
+	wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
+		"left_ptr", cursor->cursor);
+
+	cursor->x = x;
+	cursor->y = y;
+}
+
+static void cursor_send_pointer_motion(struct sway_cursor *cursor,
+		uint32_t time) {
+	struct wlr_seat *seat = cursor->seat->seat;
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	swayc_t *swayc =
+		swayc_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
+	if (swayc) {
+		wlr_seat_pointer_enter(seat, surface, sx, sy);
+		wlr_seat_pointer_notify_motion(seat, time, sx, sy);
+	} else {
+		wlr_seat_pointer_clear_focus(seat);
+	}
+}
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion);
 	struct wlr_event_pointer_motion *event = data;
-	sway_log(L_DEBUG, "TODO: handle cursor motion event: dx=%f, dy=%f", event->delta_x, event->delta_y);
-	wlr_cursor_move(cursor->cursor, event->device, event->delta_x, event->delta_y);
-	sway_log(L_DEBUG, "TODO: new x=%f, y=%f", cursor->cursor->x, cursor->cursor->y);
-	wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, "left_ptr", cursor->cursor);
+	wlr_cursor_move(cursor->cursor, event->device,
+		event->delta_x, event->delta_y);
+	cursor_update_position(cursor);
+	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
 static void handle_cursor_motion_absolute(struct wl_listener *listener,
@@ -19,7 +47,10 @@ static void handle_cursor_motion_absolute(struct wl_listener *listener,
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_event_pointer_motion_absolute *event = data;
-	sway_log(L_DEBUG, "TODO: handle event: %p", event);
+	wlr_cursor_warp_absolute(cursor->cursor, event->device,
+		event->x_mm / event->width_mm, event->y_mm / event->height_mm);
+	cursor_update_position(cursor);
+	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
@@ -91,6 +122,7 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		return NULL;
 	}
 
+	cursor->seat = seat;
 	wlr_cursor_attach_output_layout(wlr_cursor, root_container.output_layout);
 
 	// input events

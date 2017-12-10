@@ -25,8 +25,8 @@ static void output_frame_view(swayc_t *view, void *data) {
 	}
 	// TODO
 	// - Deal with wlr_output_layout
-	int width = sway_view->width;
-	int height = sway_view->height;
+	int width = sway_view->surface->current->width;
+	int height = sway_view->surface->current->height;
 	int render_width = width * wlr_output->scale;
 	int render_height = height * wlr_output->scale;
 	double ox = view->x, oy = view->y;
@@ -40,19 +40,33 @@ static void output_frame_view(swayc_t *view, void *data) {
 	//		return;
 	//}
 
+	// if the shell specifies window geometry, make the top left corner of the
+	// window in the top left corner of the container to avoid arbitrarily
+	// sized gaps based on the attached buffer size
+	int window_offset_x = 0;
+	int window_offset_y = 0;
+
+	if (view->sway_view->type == SWAY_XDG_SHELL_V6_VIEW) {
+		window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry->x;
+		window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry->y;
+	}
+
 	// TODO
 	double rotation = 0;
 	float matrix[16];
 
 	float translate_origin[16];
 	wlr_matrix_translate(&translate_origin,
-		(int)ox + render_width / 2, (int)oy + render_height / 2, 0);
+		(int)ox + render_width / 2 - window_offset_x,
+		(int)oy + render_height / 2 - window_offset_y,
+		0);
 
 	float rotate[16];
 	wlr_matrix_rotate(&rotate, rotation);
 
 	float translate_center[16];
-	wlr_matrix_translate(&translate_center, -render_width / 2,
+	wlr_matrix_translate(&translate_center,
+		-render_width / 2,
 		-render_height / 2, 0);
 
 	float scale[16];
@@ -122,10 +136,10 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 	output->resolution.notify = output_resolution_notify;
 	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
 
-    for (int i = 0; i < server->input->seats->length; ++i) {
-        struct sway_seat *seat = server->input->seats->items[i];
-        sway_seat_configure_xcursor(seat);
-    }
+	for (int i = 0; i < server->input->seats->length; ++i) {
+		struct sway_seat *seat = server->input->seats->items[i];
+		sway_seat_configure_xcursor(seat);
+	}
 
 	arrange_windows(output->swayc, -1, -1);
 }

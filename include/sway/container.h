@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_surface.h>
 #include "list.h"
 
 typedef struct sway_container swayc_t;
@@ -135,5 +136,8 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view);
 swayc_t *destroy_view(swayc_t *view);
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type);
+
+swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy);
 
 #endif

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_wl_shell.h>
 #include "sway/container.h"
 #include "sway/layout.h"
 #include "sway/output.h"
@@ -167,4 +168,63 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 		container = container->parent;
 	} while (container && container->type != type);
 	return container;
+}
+
+swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	list_t *queue = create_list();
+	list_add(queue, parent);
+
+	swayc_t *swayc = NULL;
+	while (queue->length) {
+		swayc = queue->items[0];
+		list_del(queue, 0);
+		if (swayc->type == C_VIEW) {
+			struct sway_view *sview = swayc->sway_view;
+			swayc_t *soutput = swayc_parent_by_type(swayc, C_OUTPUT);
+			struct wlr_box *output_box =
+				wlr_output_layout_get_box(root_container.output_layout,
+					soutput->sway_output->wlr_output);
+			double ox = lx - output_box->x;
+			double oy = ly - output_box->y;
+			double view_sx = ox - swayc->x;
+			double view_sy = oy - swayc->y;
+			int width = swayc->sway_view->surface->current->width;
+			int height = swayc->sway_view->surface->current->height;
+
+			// TODO popups and subsurfaces
+			switch (sview->type) {
+				case SWAY_WL_SHELL_VIEW:
+					break;
+				case SWAY_XDG_SHELL_V6_VIEW:
+					// the top left corner of the sway container is the
+					// coordinate of the top left corner of the window geometry
+					view_sx += sview->wlr_xdg_surface_v6->geometry->x;
+					view_sy += sview->wlr_xdg_surface_v6->geometry->y;
+					break;
+				case SWAY_XWAYLAND_VIEW:
+					break;
+				default:
+					break;
+			}
+
+			if (view_sx > 0 && view_sx < width &&
+					view_sy > 0 && view_sy < height &&
+					pixman_region32_contains_point(
+						&sview->surface->current->input,
+						view_sx, view_sy, NULL)) {
+				*sx = view_sx;
+				*sy = view_sy;
+				*surface = swayc->sway_view->surface;
+				list_free(queue);
+				return swayc;
+			}
+		} else {
+			list_cat(queue, swayc->children);
+		}
+	}
+
+	list_free(queue);
+
+	return NULL;
 }
