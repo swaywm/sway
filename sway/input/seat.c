@@ -4,6 +4,7 @@
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/keyboard.h"
 #include "sway/output.h"
 #include "sway/view.h"
 #include "log.h"
@@ -36,6 +37,8 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 
 	sway_seat_configure_xcursor(seat);
 
+	wl_list_init(&seat->keyboards);
+
 	return seat;
 }
 
@@ -43,6 +46,13 @@ static void seat_add_pointer(struct sway_seat *seat,
 		struct wlr_input_device *device) {
 	// TODO pointer configuration
 	wlr_cursor_attach_input_device(seat->cursor->cursor, device);
+}
+
+static void seat_add_keyboard(struct sway_seat *seat,
+		struct wlr_input_device *device) {
+	struct sway_keyboard *keyboard = sway_keyboard_create(seat, device);
+	wl_list_insert(&seat->keyboards, &keyboard->link);
+	wlr_seat_set_keyboard(seat->seat, device);
 }
 
 void sway_seat_add_device(struct sway_seat *seat,
@@ -53,6 +63,8 @@ void sway_seat_add_device(struct sway_seat *seat,
 			seat_add_pointer(seat, device);
 			break;
 		case WLR_INPUT_DEVICE_KEYBOARD:
+			seat_add_keyboard(seat, device);
+			break;
 		case WLR_INPUT_DEVICE_TOUCH:
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
@@ -138,7 +150,7 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 		view->iface.set_activated(view, true);
 		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
 		seat->focus_destroy.notify = handle_focus_destroy;
-		// TODO give keyboard focus
+		wlr_seat_keyboard_notify_enter(seat->seat, view->surface);
 	}
 
 	seat->focus = container;

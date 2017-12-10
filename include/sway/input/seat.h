@@ -10,6 +10,8 @@ struct sway_seat {
 	struct sway_input_manager *input;
 	swayc_t *focus;
 
+	struct wl_list keyboards;
+
 	struct wl_listener focus_destroy;
 };
 

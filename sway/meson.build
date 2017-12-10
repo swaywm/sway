@@ -5,6 +5,7 @@ sway_sources = files(
 	'input/input-manager.c',
 	'input/seat.c',
 	'input/cursor.c',
+	'input/keyboard.c',
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
@@ -30,6 +31,7 @@ sway_deps = [
 	libcap,
 	math,
 	libinput,
+	xkbcommon,
 ]
 
 executable(
