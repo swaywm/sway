@@ -8,6 +8,7 @@ sway_sources = files(
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
+	'commands/include.c',
 	'config.c',
 	'ipc-json.c',
 	'ipc-server.c',

@@ -95,6 +95,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
+	{ "include", cmd_include },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
