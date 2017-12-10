@@ -27,7 +27,7 @@ static struct sway_seat *input_manager_get_seat(
 		}
 	}
 
-	seat = sway_seat_create(input->server->wl_display, seat_name);
+	seat = sway_seat_create(input, seat_name);
 	list_add(input->seats, seat);
 
 	return seat;
@@ -130,4 +130,16 @@ char *libinput_dev_unique_id(struct libinput_device *device) {
 	snprintf(identifier, len, fmt, vendor, product, name);
 	free(name);
 	return identifier;
+}
+
+bool sway_input_manager_swayc_has_focus(struct sway_input_manager *input,
+		swayc_t *container) {
+	for (int i = 0; i < input->seats->length; ++i) {
+		struct sway_seat *seat = input->seats->items[i];
+		if (seat->focus == container) {
+			return true;
+		}
+	}
+
+	return false;
 }

@@ -19,4 +19,7 @@ char* libinput_dev_unique_id(struct libinput_device *dev);
 struct sway_input_manager *sway_input_manager_create(
 		struct sway_server *server);
 
+bool sway_input_manager_swayc_has_focus(struct sway_input_manager *input,
+		swayc_t *container);
+
 #endif

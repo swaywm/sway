@@ -1,4 +1,9 @@
 #define _XOPEN_SOURCE 700
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/input/cursor.h"
@@ -57,6 +62,16 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, button);
 	struct wlr_event_pointer_button *event = data;
+
+	if (event->button == BTN_LEFT) {
+		struct wlr_surface *surface = NULL;
+		double sx, sy;
+		swayc_t *swayc =
+			swayc_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
+
+		sway_seat_set_focus(cursor->seat, swayc);
+	}
+
 	wlr_seat_pointer_notify_button(cursor->seat->seat, event->time_msec,
 		event->button, event->state);
 }

@@ -124,6 +124,10 @@ struct sway_container {
 	 * Marks applied to the container, list_t of char*.
 	 */
 	list_t *marks;
+
+	struct {
+		struct wl_signal destroy;
+	} events;
 };
 
 void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,

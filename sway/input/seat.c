@@ -5,16 +5,17 @@
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/output.h"
+#include "sway/view.h"
 #include "log.h"
 
-struct sway_seat *sway_seat_create(struct wl_display *display,
+struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		const char *seat_name) {
 	struct sway_seat *seat = calloc(1, sizeof(struct sway_seat));
 	if (!seat) {
 		return NULL;
 	}
 
-	seat->seat = wlr_seat_create(display, seat_name);
+	seat->seat = wlr_seat_create(input->server->wl_display, seat_name);
 	if (!sway_assert(seat->seat, "could not allocate seat")) {
 		return NULL;
 	}
@@ -25,6 +26,8 @@ struct sway_seat *sway_seat_create(struct wl_display *display,
 		free(seat);
 		return NULL;
 	}
+
+	seat->input = input;
 
 	wlr_seat_set_capabilities(seat->seat,
 		WL_SEAT_CAPABILITY_KEYBOARD |
@@ -109,4 +112,41 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		"left_ptr", seat->cursor->cursor);
 	wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
 		seat->cursor->cursor->y);
+}
+
+static void handle_focus_destroy(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, focus_destroy);
+	//swayc_t *container = data;
+
+	// TODO set new focus based on the state of the tree
+	sway_seat_set_focus(seat, NULL);
+}
+
+void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
+	swayc_t *last_focus = seat->focus;
+
+	if (last_focus == container) {
+		return;
+	}
+
+	if (last_focus) {
+		wl_list_remove(&seat->focus_destroy.link);
+	}
+
+	if (container) {
+		struct sway_view *view = container->sway_view;
+		view->iface.set_activated(view, true);
+		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
+		seat->focus_destroy.notify = handle_focus_destroy;
+		// TODO give keyboard focus
+	}
+
+	seat->focus = container;
+
+	if (last_focus &&
+			!sway_input_manager_swayc_has_focus(seat->input, last_focus)) {
+		struct sway_view *view = last_focus->sway_view;
+		view->iface.set_activated(view, false);
+
+	}
 }

@@ -40,6 +40,9 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}
+
+	wl_signal_init(&c->events.destroy);
+
 	return c;
 }
 
@@ -119,6 +122,9 @@ static void free_swayc(swayc_t *cont) {
 	if (!sway_assert(cont, "free_swayc passed NULL")) {
 		return;
 	}
+
+	wl_signal_emit(&cont->events.destroy, cont);
+
 	if (cont->children) {
 		// remove children until there are no more, free_swayc calls
 		// remove_child, which removes child from this container
