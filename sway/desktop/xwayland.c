@@ -10,6 +10,8 @@
 #include "sway/server.h"
 #include "sway/view.h"
 #include "sway/output.h"
+#include "sway/input/seat.h"
+#include "sway/input/input-manager.h"
 #include "log.h"
 
  static bool assert_xwayland(struct sway_view *view) {
@@ -171,4 +173,9 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
+
+	for (int i = 0; i < server->input->seats->length; ++i) {
+		struct sway_seat *seat = server->input->seats->items[i];
+		sway_seat_set_focus(seat, cont);
+	}
 }
