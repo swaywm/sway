@@ -42,6 +42,18 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 	return seat;
 }
 
+static struct sway_pointer *seat_pointer_from_device(struct sway_seat *seat,
+		struct wlr_input_device *device) {
+	struct sway_pointer *pointer = NULL;
+	wl_list_for_each(pointer, &seat->pointers, link) {
+		if (pointer->device == device) {
+			return pointer;
+		}
+	}
+
+	return pointer;
+}
+
 static struct sway_keyboard *seat_keyboard_from_device(struct sway_seat *seat,
 		struct wlr_input_device *device) {
 	struct sway_keyboard *keyboard = NULL;
@@ -57,6 +69,16 @@ static struct sway_keyboard *seat_keyboard_from_device(struct sway_seat *seat,
 static void seat_add_pointer(struct sway_seat *seat,
 		struct wlr_input_device *device) {
 	// TODO pointer configuration
+	if (seat_pointer_from_device(seat, device)) {
+		// already added
+		return;
+	}
+
+	struct sway_pointer *pointer = calloc(1, sizeof(struct sway_pointer));
+	pointer->seat = seat;
+	pointer->device = device;
+	wl_list_insert(&seat->pointers, &pointer->link);
+
 	wlr_cursor_attach_input_device(seat->cursor->cursor, device);
 }
 
@@ -100,7 +122,13 @@ static void seat_remove_keyboard(struct sway_seat *seat,
 
 static void seat_remove_pointer(struct sway_seat *seat,
 		struct wlr_input_device *device) {
-	wlr_cursor_detach_input_device(seat->cursor->cursor, device);
+	struct sway_pointer *pointer = seat_pointer_from_device(seat, device);
+
+	if (pointer) {
+		wl_list_remove(&pointer->link);
+		free(pointer);
+		wlr_cursor_detach_input_device(seat->cursor->cursor, device);
+	}
 }
 
 void sway_seat_remove_device(struct sway_seat *seat,

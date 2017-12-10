@@ -10,9 +10,16 @@ struct sway_seat {
 	struct sway_input_manager *input;
 	swayc_t *focus;
 
-	struct wl_list keyboards;
+	struct wl_list keyboards; // sway_keyboard::link
+	struct wl_list pointers; // sway_pointer::link
 
 	struct wl_listener focus_destroy;
+};
+
+struct sway_pointer {
+	struct sway_seat *seat;
+	struct wlr_input_device *device;
+	struct wl_list link;
 };
 
 struct sway_seat *sway_seat_create(struct sway_input_manager *input,
