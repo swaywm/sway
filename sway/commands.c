@@ -9,6 +9,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/security.h"
+#include "sway/input/input-manager.h"
 #include "stringop.h"
 #include "log.h"
 
@@ -56,6 +57,44 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 	return error;
 }
 
+void input_cmd_apply(struct input_config *input) {
+	int i;
+	i = list_seq_find(config->input_configs, input_identifier_cmp, input->identifier);
+	if (i >= 0) {
+		// merge existing config
+		struct input_config *ic = config->input_configs->items[i];
+		merge_input_config(ic, input);
+		free_input_config(input);
+		input = ic;
+	} else {
+		list_add(config->input_configs, input);
+	}
+
+	current_input_config = input;
+
+	if (input->identifier) {
+		// Try to find the input device and apply configuration now. If
+		// this is during startup then there will be no container and config
+		// will be applied during normal "new input" event from wlc.
+		/* TODO WLR
+		struct libinput_device *device = NULL;
+		for (int i = 0; i < input_devices->length; ++i) {
+			device = input_devices->items[i];
+			char* dev_identifier = libinput_dev_unique_id(device);
+			if (!dev_identifier) {
+				break;
+			}
+			int match = dev_identifier && strcmp(dev_identifier, input->identifier) == 0;
+			free(dev_identifier);
+			if (match) {
+				apply_input_config(input, device);
+				break;
+			}
+		}
+		*/
+	}
+}
+
 /**
  * Check and add color to buffer.
  *
@@ -96,6 +135,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
 	{ "include", cmd_include },
+	{ "input", cmd_input },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -104,37 +144,35 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
+static struct cmd_handler input_handlers[] = {
+	{ "accel_profile", input_cmd_accel_profile },
+	{ "click_method", input_cmd_click_method },
+	{ "drag_lock", input_cmd_drag_lock },
+	{ "dwt", input_cmd_dwt },
+	{ "events", input_cmd_events },
+	{ "left_handed", input_cmd_left_handed },
+	{ "middle_emulation", input_cmd_middle_emulation },
+	{ "natural_scroll", input_cmd_natural_scroll },
+	{ "pointer_accel", input_cmd_pointer_accel },
+	{ "scroll_method", input_cmd_scroll_method },
+	{ "tap", input_cmd_tap },
+};
+
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
 	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_INPUT);
-	/* TODO
-	if (block == CMD_BLOCK_BAR) {
-		res = bsearch(&d, bar_handlers,
-			sizeof(bar_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_BAR_COLORS){
-		res = bsearch(&d, bar_colors_handlers,
-			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_INPUT) {
+
+	if (block == CMD_BLOCK_INPUT) {
 		res = bsearch(&d, input_handlers,
-			sizeof(input_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_IPC) {
-		res = bsearch(&d, ipc_handlers,
-			sizeof(ipc_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_IPC_EVENTS) {
-		res = bsearch(&d, ipc_event_handlers,
-			sizeof(ipc_event_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
+				sizeof(input_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
 	} else {
-	*/
 		res = bsearch(&d, handlers,
-			sizeof(handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	//}
+				sizeof(handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	}
+
 	return res;
 }
 
@@ -238,8 +276,8 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 		argv[i] = do_var_replacement(argv[i]);
 		unescape_string(argv[i]);
 	}
-	/* Strip quotes for first argument.
-	 * TODO This part needs to be handled much better */
+	// Strip quotes for first argument.
+	// TODO This part needs to be handled much better
 	if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
 		strip_quotes(argv[1]);
 	}

@@ -1,6 +1,8 @@
 #ifndef _SWAY_COMMANDS_H
 #define _SWAY_COMMANDS_H
 
+#include "config.h"
+
 /**
  * Indicates the result of a command's execution.
  */
@@ -38,6 +40,8 @@ enum expected_args {
 	EXPECTED_LESS_THAN,
 	EXPECTED_EQUAL_TO
 };
+
+void input_cmd_apply(struct input_config *input);
 
 struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);

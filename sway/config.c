@@ -226,6 +226,59 @@ static int qstrcmp(const void* a, const void* b) {
 	return strcmp(*((char**) a), *((char**) b));
 }
 
+void merge_input_config(struct input_config *dst, struct input_config *src) {
+	if (src->identifier) {
+		if (dst->identifier) {
+			free(dst->identifier);
+		}
+		dst->identifier = strdup(src->identifier);
+	}
+	if (src->accel_profile != INT_MIN) {
+		dst->accel_profile = src->accel_profile;
+	}
+	if (src->click_method != INT_MIN) {
+		dst->click_method = src->click_method;
+	}
+	if (src->drag_lock != INT_MIN) {
+		dst->drag_lock = src->drag_lock;
+	}
+	if (src->dwt != INT_MIN) {
+		dst->dwt = src->dwt;
+	}
+	if (src->middle_emulation != INT_MIN) {
+		dst->middle_emulation = src->middle_emulation;
+	}
+	if (src->natural_scroll != INT_MIN) {
+		dst->natural_scroll = src->natural_scroll;
+	}
+	if (src->pointer_accel != FLT_MIN) {
+		dst->pointer_accel = src->pointer_accel;
+	}
+	if (src->scroll_method != INT_MIN) {
+		dst->scroll_method = src->scroll_method;
+	}
+	if (src->send_events != INT_MIN) {
+		dst->send_events = src->send_events;
+	}
+	if (src->tap != INT_MIN) {
+		dst->tap = src->tap;
+	}
+}
+
+void free_input_config(struct input_config *ic) {
+	if (!ic) {
+		return;
+	}
+	free(ic->identifier);
+	free(ic);
+}
+
+int input_identifier_cmp(const void *item, const void *data) {
+	const struct input_config *ic = item;
+	const char *identifier = data;
+	return strcmp(ic->identifier, identifier);
+}
+
 bool load_main_config(const char *file, bool is_active) {
 	char *path;
 	if (file != NULL) {

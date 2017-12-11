@@ -5,6 +5,8 @@
 #include "sway/config.h"
 #include "list.h"
 
+extern struct input_config *current_input_config;
+
 struct sway_input_manager {
 	struct wl_listener input_add;
 	struct wl_listener input_remove;
