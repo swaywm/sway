@@ -69,8 +69,14 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 
 static void set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate) {
-	struct wlr_output_mode *mode, *best = NULL;
 	int mhz = (int)(refresh_rate * 1000);
+	if (wl_list_empty(&output->modes)) {
+		sway_log(L_DEBUG, "Assigning custom mode to %s", output->name);
+		wlr_output_set_custom_mode(output, width, height, mhz);
+		return;
+	}
+
+	struct wlr_output_mode *mode, *best = NULL;
 	wl_list_for_each(mode, &output->modes, link) {
 		if (mode->width == width && mode->height == height) {
 			if (mode->refresh == mhz) {
@@ -99,6 +105,8 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 
 	if (oc && oc->width > 0 && oc->height > 0) {
+		sway_log(L_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
+			oc->height, oc->refresh_rate);
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	}
 	if (oc && oc->scale > 0) {
