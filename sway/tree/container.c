@@ -26,13 +26,6 @@ void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
 	}
 }
 
-static void update_root_geometry() {
-	struct wlr_box *box =
-		wlr_output_layout_get_box(root_container.output_layout, NULL);
-	root_container.width = box->width;
-	root_container.height = box->height;
-}
-
 static swayc_t *new_swayc(enum swayc_types type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
@@ -94,7 +87,6 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	sway_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	new_workspace(output, ws_name);
 	free(ws_name);
-	update_root_geometry();
 	return output;
 }
 
@@ -195,7 +187,6 @@ swayc_t *destroy_output(swayc_t *output) {
 
 	sway_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 	free_swayc(output);
-	update_root_geometry();
 
 	return &root_container;
 }

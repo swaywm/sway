@@ -99,7 +99,8 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 
 	struct wlr_output *wlr_output = output->sway_output->wlr_output;
 	if (oc && oc->enabled == 0) {
-		wlr_output_layout_remove(root_container.output_layout, wlr_output);
+		wlr_output_layout_remove(root_container.sway_root->output_layout,
+			wlr_output);
 		destroy_output(output);
 		return;
 	}
@@ -117,19 +118,21 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->transform >= 0) {
 		sway_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_transform(wlr_output, oc->transform);
-		wl_signal_emit(&output->sway_output->events.transform, output->sway_output);
+		wl_signal_emit(&output->sway_output->events.transform,
+			output->sway_output);
 	}
 
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
 		sway_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
-		wlr_output_layout_add(root_container.output_layout, wlr_output, oc->x,
-			oc->y);
+		wlr_output_layout_add(root_container.sway_root->output_layout,
+			wlr_output, oc->x, oc->y);
 	} else {
-		wlr_output_layout_add_auto(root_container.output_layout, wlr_output);
+		wlr_output_layout_add_auto(root_container.sway_root->output_layout,
+			wlr_output);
 	}
-	struct wlr_box *output_layout_box =
-		wlr_output_layout_get_box(root_container.output_layout, wlr_output);
+	struct wlr_box *output_layout_box = wlr_output_layout_get_box(
+		root_container.sway_root->output_layout, wlr_output);
 	output->x = output_layout_box->x;
 	output->y = output_layout_box->y;
 	output->width = output_layout_box->width;

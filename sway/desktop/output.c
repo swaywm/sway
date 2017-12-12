@@ -72,8 +72,7 @@ static void output_frame_view(swayc_t *view, void *data) {
 }
 
 static void output_frame_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(
-			listener, soutput, frame);
+	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
 	struct sway_server *server = soutput->server;
 
@@ -93,20 +92,17 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 }
 
 static void output_resolution_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(
-			listener, soutput, resolution);
+	struct sway_output *soutput = wl_container_of(listener, soutput, resolution);
 	arrange_windows(soutput->swayc, -1, -1);
 }
 
 static void output_scale_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(
-			listener, soutput, scale);
+	struct sway_output *soutput = wl_container_of(listener, soutput, scale);
 	arrange_windows(soutput->swayc, -1, -1);
 }
 
 static void output_transform_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(
-			listener, soutput, transform);
+	struct sway_output *soutput = wl_container_of(listener, soutput, transform);
 	arrange_windows(soutput->swayc, -1, -1);
 }
 

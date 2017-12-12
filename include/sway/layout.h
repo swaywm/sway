@@ -1,7 +1,15 @@
 #ifndef _SWAY_LAYOUT_H
 #define _SWAY_LAYOUT_H
 
+#include <wlr/types/wlr_output_layout.h>
+
 struct sway_container;
+
+struct sway_root {
+	struct wlr_output_layout *output_layout;
+
+	struct wl_listener output_layout_change;
+};
 
 void init_layout(void);
 void add_child(struct sway_container *parent, struct sway_container *child);
