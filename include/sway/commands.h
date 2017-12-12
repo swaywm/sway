@@ -180,6 +180,7 @@ sway_cmd bar_colors_cmd_statusline;
 sway_cmd bar_colors_cmd_focused_statusline;
 sway_cmd bar_colors_cmd_urgent_workspace;
 
+sway_cmd input_cmd_seat;
 sway_cmd input_cmd_accel_profile;
 sway_cmd input_cmd_click_method;
 sway_cmd input_cmd_drag_lock;

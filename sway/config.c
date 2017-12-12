@@ -300,6 +300,7 @@ void free_input_config(struct input_config *ic) {
 		return;
 	}
 	free(ic->identifier);
+	free(ic->seat);
 	free(ic);
 }
 

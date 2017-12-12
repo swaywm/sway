@@ -104,7 +104,9 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	struct sway_seat *seat = input_manager_get_seat(input, default_seat);
+	const char *seat_name =
+		(sway_device->config ? sway_device->config->seat : default_seat);
+	struct sway_seat *seat = input_manager_get_seat(input, seat_name);
 	sway_seat_add_device(seat, sway_device);
 }
 
@@ -176,9 +178,9 @@ void sway_input_manager_set_focus(struct sway_input_manager *input,
 }
 
 void sway_input_manager_apply_config(struct sway_input_manager *input,
-		struct input_config *config) {
+		struct input_config *input_config) {
 	struct sway_input_device *sway_device =
-		input_sway_device_from_config(input, config);
+		input_sway_device_from_config(input, input_config);
 	if (!sway_device) {
 		return;
 	}
@@ -188,7 +190,8 @@ void sway_input_manager_apply_config(struct sway_input_manager *input,
 		sway_seat_remove_device(seat, sway_device);
 	}
 
-	seat = input_manager_get_seat(input, default_seat);
+	const char *seat_name = (input_config->seat ? input_config->seat : default_seat);
+	seat = input_manager_get_seat(input, seat_name);
 	sway_seat_add_device(seat, sway_device);
 }
 

@@ -123,6 +123,7 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
+// must be in order for the bsearch
 static struct cmd_handler input_handlers[] = {
 	{ "accel_profile", input_cmd_accel_profile },
 	{ "click_method", input_cmd_click_method },
@@ -134,6 +135,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "natural_scroll", input_cmd_natural_scroll },
 	{ "pointer_accel", input_cmd_pointer_accel },
 	{ "scroll_method", input_cmd_scroll_method },
+	{ "seat", input_cmd_seat },
 	{ "tap", input_cmd_tap },
 };
 

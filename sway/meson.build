@@ -11,6 +11,7 @@ sway_sources = files(
 	'commands/exec_always.c',
 	'commands/include.c',
 	'commands/input.c',
+	'commands/input/seat.c',
 	'commands/input/accel_profile.c',
 	'commands/input/click_method.c',
 	'commands/input/drag_lock.c',
