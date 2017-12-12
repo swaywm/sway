@@ -112,10 +112,12 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	if (oc && oc->scale > 0) {
 		sway_log(L_DEBUG, "Set %s scale to %d", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
+		wl_signal_emit(&output->sway_output->events.scale, output->sway_output);
 	}
 	if (oc && oc->transform >= 0) {
 		sway_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_transform(wlr_output, oc->transform);
+		wl_signal_emit(&output->sway_output->events.transform, output->sway_output);
 	}
 
 	// Find position for it
