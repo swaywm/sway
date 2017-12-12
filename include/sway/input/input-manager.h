@@ -7,21 +7,40 @@
 
 extern struct input_config *current_input_config;
 
+/**
+ * The global singleton input manager
+ * TODO: make me not a global
+ */
+extern struct sway_input_manager *input_manager;
+
+struct sway_input_device {
+	char *identifier;
+	struct wlr_input_device *wlr_device;
+	struct input_config *config;
+	struct sway_keyboard *keyboard; // managed by the seat
+	struct wl_list link;
+};
+
 struct sway_input_manager {
 	struct wl_listener input_add;
 	struct wl_listener input_remove;
 	struct sway_server *server;
-	list_t *seats;
+	struct wl_list devices;
+	struct wl_list seats;
 };
-
-struct input_config *new_input_config(const char* identifier);
-
-char* libinput_dev_unique_id(struct libinput_device *dev);
 
 struct sway_input_manager *sway_input_manager_create(
 		struct sway_server *server);
 
-bool sway_input_manager_swayc_has_focus(struct sway_input_manager *input,
+bool sway_input_manager_has_focus(struct sway_input_manager *input,
 		swayc_t *container);
+
+void sway_input_manager_set_focus(struct sway_input_manager *input,
+		swayc_t *container);
+
+void sway_input_manager_configure_xcursor(struct sway_input_manager *input);
+
+void sway_input_manager_apply_config(struct sway_input_manager *input,
+		struct input_config *config);
 
 #endif

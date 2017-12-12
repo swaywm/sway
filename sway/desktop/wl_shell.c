@@ -129,8 +129,5 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 
 	arrange_windows(cont->parent, -1, -1);
 
-	for (int i = 0; i < server->input->seats->length; ++i) {
-		struct sway_seat *seat = server->input->seats->items[i];
-		sway_seat_set_focus(seat, cont);
-	}
+	sway_input_manager_set_focus(input_manager, cont);
 }

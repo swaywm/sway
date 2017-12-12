@@ -226,6 +226,34 @@ static int qstrcmp(const void* a, const void* b) {
 	return strcmp(*((char**) a), *((char**) b));
 }
 
+struct input_config *new_input_config(const char* identifier) {
+	struct input_config *input = calloc(1, sizeof(struct input_config));
+	if (!input) {
+		sway_log(L_DEBUG, "Unable to allocate input config");
+		return NULL;
+	}
+	sway_log(L_DEBUG, "new_input_config(%s)", identifier);
+	if (!(input->identifier = strdup(identifier))) {
+		free(input);
+		sway_log(L_DEBUG, "Unable to allocate input config");
+		return NULL;
+	}
+
+	input->tap = INT_MIN;
+	input->drag_lock = INT_MIN;
+	input->dwt = INT_MIN;
+	input->send_events = INT_MIN;
+	input->click_method = INT_MIN;
+	input->middle_emulation = INT_MIN;
+	input->natural_scroll = INT_MIN;
+	input->accel_profile = INT_MIN;
+	input->pointer_accel = FLT_MIN;
+	input->scroll_method = INT_MIN;
+	input->left_handed = INT_MIN;
+
+	return input;
+}
+
 void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->identifier) {
 		if (dst->identifier) {
@@ -452,6 +480,7 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	free(wd);
 	return true;
 }
+
 
 bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;

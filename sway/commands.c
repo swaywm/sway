@@ -71,28 +71,7 @@ void input_cmd_apply(struct input_config *input) {
 	}
 
 	current_input_config = input;
-
-	if (input->identifier) {
-		// Try to find the input device and apply configuration now. If
-		// this is during startup then there will be no container and config
-		// will be applied during normal "new input" event from wlc.
-		/* TODO WLR
-		struct libinput_device *device = NULL;
-		for (int i = 0; i < input_devices->length; ++i) {
-			device = input_devices->items[i];
-			char* dev_identifier = libinput_dev_unique_id(device);
-			if (!dev_identifier) {
-				break;
-			}
-			int match = dev_identifier && strcmp(dev_identifier, input->identifier) == 0;
-			free(dev_identifier);
-			if (match) {
-				apply_input_config(input, device);
-				break;
-			}
-		}
-		*/
-	}
+	sway_input_manager_apply_config(input_manager, input);
 }
 
 /**

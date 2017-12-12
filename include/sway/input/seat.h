@@ -10,26 +10,21 @@ struct sway_seat {
 	struct sway_input_manager *input;
 	swayc_t *focus;
 
-	struct wl_list keyboards; // sway_keyboard::link
-	struct wl_list pointers; // sway_pointer::link
+	list_t *devices;
 
 	struct wl_listener focus_destroy;
-};
 
-struct sway_pointer {
-	struct sway_seat *seat;
-	struct wlr_input_device *device;
-	struct wl_list link;
+	struct wl_list link; // input_manager::seats
 };
 
 struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		const char *seat_name);
 
 void sway_seat_add_device(struct sway_seat *seat,
-		struct wlr_input_device *device);
+		struct sway_input_device *device);
 
 void sway_seat_remove_device(struct sway_seat *seat,
-		struct wlr_input_device *device);
+		struct sway_input_device *device);
 
 void sway_seat_configure_xcursor(struct sway_seat *seat);
 

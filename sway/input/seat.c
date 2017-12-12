@@ -29,6 +29,7 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 	}
 
 	seat->input = input;
+	seat->devices = create_list();
 
 	wlr_seat_set_capabilities(seat->seat,
 		WL_SEAT_CAPABILITY_KEYBOARD |
@@ -37,67 +38,38 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 
 	sway_seat_configure_xcursor(seat);
 
-	wl_list_init(&seat->keyboards);
+	wl_list_insert(&input->seats, &seat->link);
 
 	return seat;
 }
 
-static struct sway_pointer *seat_pointer_from_device(struct sway_seat *seat,
-		struct wlr_input_device *device) {
-	struct sway_pointer *pointer = NULL;
-	wl_list_for_each(pointer, &seat->pointers, link) {
-		if (pointer->device == device) {
-			return pointer;
-		}
-	}
-
-	return pointer;
-}
-
-static struct sway_keyboard *seat_keyboard_from_device(struct sway_seat *seat,
-		struct wlr_input_device *device) {
-	struct sway_keyboard *keyboard = NULL;
-	wl_list_for_each(keyboard, &seat->keyboards, link) {
-		if (keyboard->device == device) {
-			return keyboard;
-		}
-	}
-
-	return keyboard;
-}
-
 static void seat_add_pointer(struct sway_seat *seat,
-		struct wlr_input_device *device) {
+		struct sway_input_device *sway_device) {
 	// TODO pointer configuration
-	if (seat_pointer_from_device(seat, device)) {
-		// already added
-		return;
-	}
-
-	struct sway_pointer *pointer = calloc(1, sizeof(struct sway_pointer));
-	pointer->seat = seat;
-	pointer->device = device;
-	wl_list_insert(&seat->pointers, &pointer->link);
-
-	wlr_cursor_attach_input_device(seat->cursor->cursor, device);
+	wlr_cursor_attach_input_device(seat->cursor->cursor,
+		sway_device->wlr_device);
 }
 
 static void seat_add_keyboard(struct sway_seat *seat,
-		struct wlr_input_device *device) {
+		struct sway_input_device *device) {
 	// TODO keyboard configuration
-	if (seat_keyboard_from_device(seat, device)) {
-		// already added
-		return;
-	}
-
 	sway_keyboard_create(seat, device);
-	wlr_seat_set_keyboard(seat->seat, device);
+	wlr_seat_set_keyboard(seat->seat, device->wlr_device);
+}
+
+bool sway_seat_has_device(struct sway_seat *seat,
+		struct sway_input_device *device) {
+	return false;
 }
 
 void sway_seat_add_device(struct sway_seat *seat,
-		struct wlr_input_device *device) {
-	sway_log(L_DEBUG, "input add: %s", device->name);
-	switch (device->type) {
+		struct sway_input_device *device) {
+	if (sway_seat_has_device(seat, device)) {
+		return;
+	}
+
+	sway_log(L_DEBUG, "input add: %s", device->identifier);
+	switch (device->wlr_device->type) {
 		case WLR_INPUT_DEVICE_POINTER:
 			seat_add_pointer(seat, device);
 			break;
@@ -110,31 +82,30 @@ void sway_seat_add_device(struct sway_seat *seat,
 			sway_log(L_DEBUG, "TODO: add other devices");
 			break;
 	}
+
+	list_add(seat->devices, device);
 }
 
 static void seat_remove_keyboard(struct sway_seat *seat,
-		struct wlr_input_device *device) {
-	struct sway_keyboard *keyboard = seat_keyboard_from_device(seat, device);
-	if (keyboard) {
-		sway_keyboard_destroy(keyboard);
+		struct sway_input_device *device) {
+	if (device && device->keyboard) {
+		sway_keyboard_destroy(device->keyboard);
 	}
 }
 
 static void seat_remove_pointer(struct sway_seat *seat,
-		struct wlr_input_device *device) {
-	struct sway_pointer *pointer = seat_pointer_from_device(seat, device);
-
-	if (pointer) {
-		wl_list_remove(&pointer->link);
-		free(pointer);
-		wlr_cursor_detach_input_device(seat->cursor->cursor, device);
-	}
+		struct sway_input_device *device) {
+	wlr_cursor_detach_input_device(seat->cursor->cursor, device->wlr_device);
 }
 
 void sway_seat_remove_device(struct sway_seat *seat,
-		struct wlr_input_device *device) {
-	sway_log(L_DEBUG, "input remove: %s", device->name);
-	switch (device->type) {
+		struct sway_input_device *device) {
+	sway_log(L_DEBUG, "input remove: %s", device->identifier);
+	if (!sway_seat_has_device(seat, device)) {
+		return;
+	}
+
+	switch (device->wlr_device->type) {
 		case WLR_INPUT_DEVICE_POINTER:
 			seat_remove_pointer(seat, device);
 			break;
@@ -146,6 +117,13 @@ void sway_seat_remove_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
 			sway_log(L_DEBUG, "TODO: remove other devices");
 			break;
+	}
+
+	for (int i = 0; i < seat->devices->length; ++i) {
+		if (seat->devices->items[i] == device) {
+			list_del(seat->devices, i);
+			break;
+		}
 	}
 }
 
@@ -211,7 +189,7 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 	seat->focus = container;
 
 	if (last_focus &&
-			!sway_input_manager_swayc_has_focus(seat->input, last_focus)) {
+			!sway_input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
 		view->iface.set_activated(view, false);
 

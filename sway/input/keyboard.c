@@ -6,7 +6,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct sway_keyboard *keyboard =
 		wl_container_of(listener, keyboard, keyboard_key);
 	struct wlr_event_keyboard_key *event = data;
-	wlr_seat_set_keyboard(keyboard->seat->seat, keyboard->device);
+	wlr_seat_set_keyboard(keyboard->seat->seat, keyboard->device->wlr_device);
 	wlr_seat_keyboard_notify_key(keyboard->seat->seat, event->time_msec,
 		event->keycode, event->state);
 }
@@ -15,12 +15,12 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 		void *data) {
 	struct sway_keyboard *keyboard =
 		wl_container_of(listener, keyboard, keyboard_modifiers);
-	wlr_seat_set_keyboard(keyboard->seat->seat, keyboard->device);
+	wlr_seat_set_keyboard(keyboard->seat->seat, keyboard->device->wlr_device);
 	wlr_seat_keyboard_notify_modifiers(keyboard->seat->seat);
 }
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
-		struct wlr_input_device *device) {
+		struct sway_input_device *device) {
 	struct sway_keyboard *keyboard =
 		calloc(1, sizeof(struct sway_keyboard));
 	if (!sway_assert(keyboard, "could not allocate sway keyboard")) {
@@ -43,17 +43,17 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 		return NULL;
 	}
 
-	wlr_keyboard_set_keymap(device->keyboard, xkb_map_new_from_names(context,
-		&rules, XKB_KEYMAP_COMPILE_NO_FLAGS));
+	wlr_keyboard_set_keymap(device->wlr_device->keyboard,
+		xkb_map_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS));
 	xkb_context_unref(context);
 
-	wl_signal_add(&device->keyboard->events.key, &keyboard->keyboard_key);
+	wl_signal_add(&device->wlr_device->keyboard->events.key,
+		&keyboard->keyboard_key);
 	keyboard->keyboard_key.notify = handle_keyboard_key;
 
-	wl_signal_add(&device->keyboard->events.modifiers, &keyboard->keyboard_modifiers);
+	wl_signal_add(&device->wlr_device->keyboard->events.modifiers,
+		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
-
-	wl_list_insert(&seat->keyboards, &keyboard->link);
 
 	return keyboard;
 }

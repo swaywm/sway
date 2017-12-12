@@ -136,10 +136,7 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 	output->resolution.notify = output_resolution_notify;
 	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
 
-	for (int i = 0; i < server->input->seats->length; ++i) {
-		struct sway_seat *seat = server->input->seats->items[i];
-		sway_seat_configure_xcursor(seat);
-	}
+	sway_input_manager_configure_xcursor(input_manager);
 
 	arrange_windows(output->swayc, -1, -1);
 }
