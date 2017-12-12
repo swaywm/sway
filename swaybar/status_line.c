@@ -440,7 +440,7 @@ bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button) {
 		json_object_object_add(event_json, "x", json_object_new_int(x));
 		json_object_object_add(event_json, "y", json_object_new_int(y));
 
-		int len = snprintf(event_buff, sizeof(event_buff), "%s,\n", json_object_to_json_string(event_json));
+		int len = snprintf(event_buff, sizeof(event_buff), "%s\n", json_object_to_json_string(event_json));
 
 		json_object_put(event_json);
 

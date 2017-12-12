@@ -53,7 +53,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * libcap
 * asciidoc
 * pcre
-* json-c
+* json-c <= 0.12.1
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -75,7 +75,7 @@ _\*\*Απαιτείται μόνο για swaylock_
 
 Σε συστήματα με logind, χρειάζεται να ορίσετε μερικά δικαιώματα caps στο εκτελέσιμο αρχείο:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Σε συστήματα χωρίς logind, χρειάζεται να θέσετε το suid bit στο εκτελέσιμο αρχείο:
 

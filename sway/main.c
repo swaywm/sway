@@ -135,6 +135,29 @@ void detect_proprietary() {
 				"You need nvidia, nvidia_modeset, nvidia_uvm, and nvidia_drm."
 				"\x1B[0m\n");
 		}
+#ifdef __linux__
+		f = fopen("/sys/module/nvidia_drm/parameters/modeset", "r");
+		if (f) {
+			char *line = read_line(f);
+			if (line && strstr(line, "Y")) {
+				// nvidia-drm.modeset is set to 0
+				fprintf(stderr, "\x1B[1;31mWarning: You must load "
+					"nvidia-drm with the modeset option on to use "
+					"the proprietary driver. Consider adding "
+					"nvidia-drm.modeset=1 to your kernel command line "
+					"parameters.\x1B[0m\n");
+			}
+			fclose(f);
+			free(line);
+		} else {
+			// nvidia-drm.modeset is not set
+			fprintf(stderr, "\x1B[1;31mWarning: You must load "
+				"nvidia-drm with the modeset option on to use "
+				"the proprietary driver. Consider adding "
+				"nvidia-drm.modeset=1 to your kernel command line "
+				"parameters.\x1B[0m\n");
+		}
+#else
 		f = fopen("/proc/cmdline", "r");
 		if (f) {
 			char *line = read_line(f);
@@ -146,6 +169,7 @@ void detect_proprietary() {
 			fclose(f);
 			free(line);
 		}
+#endif
 	}
 }
 

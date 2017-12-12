@@ -61,17 +61,20 @@ Install dependencies:
 * libcap
 * asciidoc
 * pcre
-* json-c
+* json-c <= 0.12.1
 * pango
 * cairo
 * gdk-pixbuf2 *
 * pam **
+* dbus >= 1.10 ***
 * imagemagick (required for image capture with swaygrab)
 * ffmpeg (required for video capture with swaygrab)
 
 _\*Only required for swaybar, swaybg, and swaylock_
 
 _\*\*Only required for swaylock_
+
+_\*\*\*Only required for tray support_
 
 Run these commands:
 
@@ -83,7 +86,7 @@ Run these commands:
 
 On systems with logind, you need to set a few caps on the binary:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 On systems without logind, you need to suid the sway binary:
 

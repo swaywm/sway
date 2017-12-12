@@ -55,7 +55,7 @@ Installez les dépendances :
 * libcap
 * asciidoc
 * pcre
-* json-c
+* json-c <= 0.12.1
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -77,7 +77,7 @@ Exécutez ces commandes :
 
 Sur les systèmes avec logind, vous devez définir quelques caps sur le binaire :
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Sur les systèmes sans logind, vous devez suid le binaire de sway :
 

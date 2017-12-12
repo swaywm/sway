@@ -56,7 +56,7 @@ Installa queste dipendenze:
 * libcap
 * asciidoc
 * pcre
-* json-c
+* json-c <= 0.12.1
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -78,7 +78,7 @@ Esegui questi comandi:
 
 Per i sistemi con logind, devi impostare un paio di caps sull'eseguibile:
 
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/bin/sway
+    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
 
 Per i sistemi senza logind, devi cambiare i permessi (suid):
 

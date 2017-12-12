@@ -2,16 +2,23 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(sway C)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+add_compile_options(-g)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-result")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-result -Werror)
+
+# Add Address Sanitiezed build type
+set(CMAKE_C_FLAGS_ASAN
+    "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer"
+    CACHE STRING "Flags used by the C compiler during address sanitizer builds."
+    FORCE )
+mark_as_advanced(
+    CMAKE_C_FLAGS_ASAN
+    CMAKE_EXE_LINKER_FLAGS_DEBUG
+    CMAKE_SHARED_LINKER_FLAGS_DEBUG
+    )
 
 list(INSERT CMAKE_MODULE_PATH 0
 	${CMAKE_CURRENT_SOURCE_DIR}/CMake
@@ -52,7 +59,7 @@ if (LD_LIBRARY_PATH)
 	add_definitions(-D_LD_LIBRARY_PATH="${LD_LIBRARY_PATH}")
 endif()
 
-find_package(JsonC REQUIRED)
+find_package(JsonC 0.12.1 REQUIRED)
 find_package(PCRE REQUIRED)
 find_package(WLC REQUIRED)
 find_package(Wayland REQUIRED)
@@ -61,7 +68,7 @@ find_package(Cairo REQUIRED)
 find_package(Pango REQUIRED)
 find_package(GdkPixbuf)
 find_package(PAM)
-find_package(DBus)
+find_package(DBus 1.10)
 
 find_package(LibInput REQUIRED)
 

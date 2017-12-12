@@ -6,6 +6,11 @@ compiler:
   - gcc
   - clang
 
+env:
+  - BUILD_TYPE=Release
+  - BUILD_TYPE=Debug
+  - BUILD_TYPE=ASAN
+
 arch:
   packages:
     - cmake
@@ -19,7 +24,7 @@ arch:
     - wlc-git
     - libcap
   script:
-    - "cmake ."
+    - "cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ."
     - "make"
 
 script:
