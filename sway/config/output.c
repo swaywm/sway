@@ -131,12 +131,6 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		wlr_output_layout_add_auto(root_container.sway_root->output_layout,
 			wlr_output);
 	}
-	struct wlr_box *output_layout_box = wlr_output_layout_get_box(
-		root_container.sway_root->output_layout, wlr_output);
-	output->x = output_layout_box->x;
-	output->y = output_layout_box->y;
-	output->width = output_layout_box->width;
-	output->height = output_layout_box->height;
 
 	if (!oc || !oc->background) {
 		// Look for a * config for background

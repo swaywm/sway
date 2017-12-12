@@ -6,7 +6,6 @@
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
-#include <wayland-server.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
 #include <time.h>

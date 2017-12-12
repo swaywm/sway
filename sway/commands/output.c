@@ -29,7 +29,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	struct output_config *output = new_output_config();
 	if (!output) {
-		return cmd_results_new(CMD_FAILURE, "output", "Unable to allocate output config");
+		sway_log(L_ERROR, "Failed to allocate output config");
+		return NULL;
 	}
 	output->name = strdup(name);
 

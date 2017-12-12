@@ -91,19 +91,30 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	soutput->last_frame = now;
 }
 
+static void output_update_size(struct sway_output *output) {
+	struct wlr_box *output_layout_box = wlr_output_layout_get_box(
+		root_container.sway_root->output_layout, output->wlr_output);
+	output->swayc->x = output_layout_box->x;
+	output->swayc->y = output_layout_box->y;
+	output->swayc->width = output_layout_box->width;
+	output->swayc->height = output_layout_box->height;
+
+	arrange_windows(output->swayc, -1, -1);
+}
+
 static void output_resolution_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(listener, soutput, resolution);
-	arrange_windows(soutput->swayc, -1, -1);
+	struct sway_output *output = wl_container_of(listener, output, resolution);
+	output_update_size(output);
 }
 
 static void output_scale_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(listener, soutput, scale);
-	arrange_windows(soutput->swayc, -1, -1);
+	struct sway_output *output = wl_container_of(listener, output, scale);
+	output_update_size(output);
 }
 
 static void output_transform_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(listener, soutput, transform);
-	arrange_windows(soutput->swayc, -1, -1);
+	struct sway_output *output = wl_container_of(listener, output, transform);
+	output_update_size(output);
 }
 
 void output_add_notify(struct wl_listener *listener, void *data) {
