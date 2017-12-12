@@ -9,9 +9,11 @@ struct cmd_results *input_cmd_accel_profile(int argc, char **argv) {
 		return error;
 	}
 	if (!current_input_config) {
-		return cmd_results_new(CMD_FAILURE, "accel_profile", "No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "accel_profile",
+				"No input device defined.");
 	}
-	struct input_config *new_config = new_input_config(current_input_config->identifier);
+	struct input_config *new_config =
+		new_input_config(current_input_config->identifier);
 
 	if (strcasecmp(argv[0], "adaptive") == 0) {
 		new_config->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;

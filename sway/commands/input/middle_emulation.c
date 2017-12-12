@@ -9,16 +9,20 @@ struct cmd_results *input_cmd_middle_emulation(int argc, char **argv) {
 		return error;
 	}
 	if (!current_input_config) {
-		return cmd_results_new(CMD_FAILURE, "middle_emulation", "No input device defined.");
+		return cmd_results_new(CMD_FAILURE, "middle_emulation",
+			"No input device defined.");
 	}
-	struct input_config *new_config = new_input_config(current_input_config->identifier);
+	struct input_config *new_config =
+		new_input_config(current_input_config->identifier);
 
 	if (strcasecmp(argv[0], "enabled") == 0) {
 		new_config->middle_emulation = LIBINPUT_CONFIG_MIDDLE_EMULATION_ENABLED;
 	} else if (strcasecmp(argv[0], "disabled") == 0) {
-		new_config->middle_emulation = LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
+		new_config->middle_emulation =
+			LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
 	} else {
-		return cmd_results_new(CMD_INVALID, "middle_emulation", "Expected 'middle_emulation <enabled|disabled>'");
+		return cmd_results_new(CMD_INVALID, "middle_emulation",
+			"Expected 'middle_emulation <enabled|disabled>'");
 	}
 
 	input_cmd_apply(new_config);

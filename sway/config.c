@@ -21,6 +21,7 @@
 #include <dev/evdev/input-event-codes.h>
 #endif
 #include <wlr/types/wlr_output.h>
+#include "sway/input/input-manager.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/layout.h"
@@ -48,7 +49,8 @@ static void config_defaults(struct sway_config *config) {
 
 	if (!(config->cmd_queue = create_list())) goto cleanup;
 
-	if (!(config->current_mode = malloc(sizeof(struct sway_mode)))) goto cleanup;
+	if (!(config->current_mode = malloc(sizeof(struct sway_mode))))
+		goto cleanup;
 	if (!(config->current_mode->name = malloc(sizeof("default")))) goto cleanup;
 	strcpy(config->current_mode->name, "default");
 	if (!(config->current_mode->bindings = create_list())) goto cleanup;
@@ -337,8 +339,9 @@ bool load_main_config(const char *file, bool is_active) {
 	bool success = true;
 	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
 	if (!dir) {
-		sway_log(L_ERROR, "%s does not exist, sway will have no security configuration"
-				" and will probably be broken", SYSCONFDIR "/sway/security.d");
+		sway_log(L_ERROR,
+			"%s does not exist, sway will have no security configuration"
+			" and will probably be broken", SYSCONFDIR "/sway/security.d");
 	} else {
 		list_t *secconfigs = create_list();
 		char *base = SYSCONFDIR "/sway/security.d/";
@@ -362,8 +365,12 @@ bool load_main_config(const char *file, bool is_active) {
 		list_qsort(secconfigs, qstrcmp);
 		for (int i = 0; i < secconfigs->length; ++i) {
 			char *_path = secconfigs->items[i];
-			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 || (((s.st_mode & 0777) != 0644) && (s.st_mode & 0777) != 0444)) {
-				sway_log(L_ERROR, "Refusing to load %s - it must be owned by root and mode 644 or 444", _path);
+			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 ||
+					(((s.st_mode & 0777) != 0644) &&
+					 (s.st_mode & 0777) != 0444)) {
+				sway_log(L_ERROR,
+					"Refusing to load %s - it must be owned by root "
+					"and mode 644 or 444", _path);
 				success = false;
 			} else {
 				success = success && load_config(_path, config);
@@ -392,7 +399,8 @@ bool load_main_config(const char *file, bool is_active) {
 	return success;
 }
 
-static bool load_include_config(const char *path, const char *parent_dir, struct sway_config *config) {
+static bool load_include_config(const char *path, const char *parent_dir,
+		struct sway_config *config) {
 	// save parent config
 	const char *parent_config = config->current_config;
 
@@ -402,7 +410,8 @@ static bool load_include_config(const char *path, const char *parent_dir, struct
 		len = len + strlen(parent_dir) + 2;
 		full_path = malloc(len * sizeof(char));
 		if (!full_path) {
-			sway_log(L_ERROR, "Unable to allocate full path to included config");
+			sway_log(L_ERROR,
+				"Unable to allocate full path to included config");
 			return false;
 		}
 		snprintf(full_path, len, "%s/%s", parent_dir, path);
@@ -421,7 +430,9 @@ static bool load_include_config(const char *path, const char *parent_dir, struct
 	for (j = 0; j < config->config_chain->length; ++j) {
 		char *old_path = config->config_chain->items[j];
 		if (strcmp(real_path, old_path) == 0) {
-			sway_log(L_DEBUG, "%s already included once, won't be included again.", real_path);
+			sway_log(L_DEBUG,
+				"%s already included once, won't be included again.",
+				real_path);
 			free(real_path);
 			return false;
 		}
@@ -509,8 +520,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			sway_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number, line,
-				res->error, config->current_config);
+			sway_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number,
+				line, res->error, config->current_config);
 			success = false;
 			break;
 
@@ -585,8 +596,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 
 			case CMD_BLOCK_INPUT:
 				sway_log(L_DEBUG, "End of input block");
-				// TODO: input
-				//current_input_config = NULL;
+				current_input_config = NULL;
 				block = CMD_BLOCK_END;
 				break;
 
@@ -651,7 +661,8 @@ char *do_var_replacement(char *str) {
 				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
 				if (!newstr) {
 					sway_log(L_ERROR,
-							"Unable to allocate replacement during variable expansion");
+						"Unable to allocate replacement "
+						"during variable expansion");
 					break;
 				}
 				char *newptr = newstr;
