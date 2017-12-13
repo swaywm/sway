@@ -192,7 +192,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 				char *src = join_args(argv + i, j);
 				if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-					error = cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s)", src);
+					error = cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s).", src);
 					goto fail;
 				}
 				free(src);
@@ -213,7 +213,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 					}
 				}
 				if (!src || access(src, F_OK) == -1) {
-					error = cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s)", src);
+					error = cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s).", src);
 					wordfree(&p);
 					goto fail;
 				}
@@ -227,6 +227,9 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 				i += j;
 			}
+		} else {
+			error = cmd_results_new(CMD_INVALID, "output", "Invalid output subcommand: %s.", command);
+			goto fail;
 		}
 	}
 
