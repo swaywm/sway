@@ -23,10 +23,16 @@ static void output_layout_change_notify(struct wl_listener *listener, void *data
 
 	for (int i = 0 ; i < root_container.children->length; ++i) {
 		swayc_t *output_container = root_container.children->items[i];
+		if (output_container->type != C_OUTPUT) {
+			continue;
+		}
 		struct sway_output *output = output_container->sway_output;
 
 		struct wlr_box *output_box = wlr_output_layout_get_box(
 			root_container.sway_root->output_layout, output->wlr_output);
+		if (!output_box) {
+			continue;
+		}
 		output_container->x = output_box->x;
 		output_container->y = output_box->y;
 		output_container->width = output_box->width;

@@ -123,5 +123,19 @@ void output_remove_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_remove);
 	struct wlr_output *wlr_output = data;
 	sway_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
-	// TODO
+
+	swayc_t *output_container = NULL;
+	for (int i = 0 ; i < root_container.children->length; ++i) {
+		swayc_t *child = root_container.children->items[i];
+		if (child->type == C_OUTPUT &&
+				child->sway_output->wlr_output == wlr_output) {
+			output_container = child;
+			break;
+		}
+	}
+	if (!output_container) {
+		return;
+	}
+
+	destroy_output(output_container);
 }
