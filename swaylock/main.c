@@ -343,6 +343,7 @@ cairo_surface_t *load_image(char *image_path) {
 
 int main(int argc, char **argv) {
 	const char *scaling_mode_str = "fit", *socket_path = NULL;
+	char *image_path = NULL;
 	int i;
 	void *images = NULL;
 	config = init_config();
@@ -400,8 +401,6 @@ int main(int argc, char **argv) {
 		"  For more information see `man swaylock`\n";
 
 
-	registry = registry_poll();
-
 	int c;
 	while (1) {
 		int option_index = 0;
@@ -418,29 +417,7 @@ int main(int argc, char **argv) {
 		}
 		case 'i':
 		{
-			char *image_path = strchr(optarg, ':');
-			if (image_path == NULL) {
-				if (render_data.num_images == 0) {
-					// Provided image without output
-					render_data.image = load_image(optarg);
-					render_data.num_images = -1;
-				} else {
-					sway_log(L_ERROR, "output must be defined for all --images or no --images");
-					exit(EXIT_FAILURE);
-				}
-			} else {
-				// Provided image for all outputs
-				if (render_data.num_images == 0) {
-					images = calloc(registry->outputs->length, sizeof(char*) * 2);
-				} else if (render_data.num_images == -1) {
-					sway_log(L_ERROR, "output must be defined for all --images or no --images");
-					exit(EXIT_FAILURE);
-				}
-
-				image_path[0] = '\0';
-				((char**) images)[render_data.num_images * 2] = optarg;
-				((char**) images)[render_data.num_images++ * 2 + 1] = ++image_path;
-			}
+			image_path = optarg;
 			break;
 		}
 		case 't':
@@ -517,6 +494,33 @@ int main(int argc, char **argv) {
 		default:
 			fprintf(stderr, "%s", usage);
 			exit(EXIT_FAILURE);
+		}
+	}
+	registry = registry_poll();
+
+	if (image_path) {
+		char *path = strchr(image_path, ':');
+		if (path == NULL) {
+			if (render_data.num_images == 0) {
+				// Provided image without output
+				render_data.image = load_image(image_path);
+				render_data.num_images = -1;
+			} else {
+				sway_log(L_ERROR, "output must be defined for all --images or no --images");
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			// Provided image for all outputs
+			if (render_data.num_images == 0) {
+				images = calloc(registry->outputs->length, sizeof(char*) * 2);
+			} else if (render_data.num_images == -1) {
+				sway_log(L_ERROR, "output must be defined for all --images or no --images");
+				exit(EXIT_FAILURE);
+			}
+
+			path[0] = '\0';
+			((char**) images)[render_data.num_images * 2] = image_path;
+			((char**) images)[render_data.num_images++ * 2 + 1] = ++path;
 		}
 	}
 
