@@ -20,7 +20,7 @@ struct output_config *new_output_config() {
 		return NULL;
 	}
 	oc->enabled = -1;
-	oc->width = oc->height -1;
+	oc->width = oc->height = -1;
 	oc->refresh_rate = -1;
 	oc->x = oc->y = -1;
 	oc->scale = -1;

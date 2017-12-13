@@ -42,61 +42,84 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 		if (strcasecmp(command, "disable") == 0) {
 			output->enabled = 0;
-		} else if (strcasecmp(command, "resolution") == 0 || strcasecmp(command, "res") == 0) {
+		} else if (strcasecmp(command, "mode") == 0 ||
+				strcasecmp(command, "resolution") == 0 ||
+				strcasecmp(command, "res") == 0) {
 			if (++i >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing resolution argument.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Missing mode argument.");
 				goto fail;
 			}
-			char *res = argv[i];
-			char *x = strchr(res, 'x');
+
 			int width = -1, height = -1;
-			if (x != NULL) {
+			float refresh_rate = -1;
+
+			char *end;
+			width = strtol(argv[i], &end, 10);
+			if (*end) {
 				// Format is 1234x4321
-				*x = '\0';
-				width = atoi(res);
-				height = atoi(x + 1);
-				*x = 'x';
-			} else {
-				// Format is 1234 4321
-				width = atoi(res);
-				if (++i >= argc) {
-					error = cmd_results_new(CMD_INVALID, "output", "Missing resolution argument (height).");
+				if (*end != 'x') {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Invalid mode width.");
 					goto fail;
 				}
-				res = argv[i];
-				height = atoi(res);
+				++end;
+				height = strtol(end, &end, 10);
+				if (*end) {
+					if (*end != '@') {
+						error = cmd_results_new(CMD_INVALID, "output",
+							"Invalid mode height.");
+						goto fail;
+					}
+					++end;
+					refresh_rate = strtof(end, &end);
+					if (strcasecmp("Hz", end) != 0) {
+						error = cmd_results_new(CMD_INVALID, "output",
+							"Invalid mode refresh rate.");
+						goto fail;
+					}
+				}
+			} else {
+				// Format is 1234 4321 (legacy)
+				++i;
+				if (i >= argc) {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Missing mode argument (height).");
+					goto fail;
+				}
+				height = strtol(argv[i], &end, 10);
+				if (*end) {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Invalid mode height.");
+					goto fail;
+				}
 			}
 			output->width = width;
 			output->height = height;
-		} else if (strcasecmp(command, "refresh_rate") == 0) {
-			if (++i >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing refresh_rate argument.");
-				goto fail;
-			}
-			output->refresh_rate = atof(argv[i]);
+			output->refresh_rate = refresh_rate;
 		} else if (strcasecmp(command, "position") == 0 || strcasecmp(command, "pos") == 0) {
 			if (++i >= argc) {
 				error = cmd_results_new(CMD_INVALID, "output", "Missing position argument.");
 				goto fail;
 			}
-			char *res = argv[i];
-			char *c = strchr(res, ',');
+			char *pos = argv[i];
+			char *c = strchr(pos, ',');
 			int x = -1, y = -1;
 			if (c != NULL) {
 				// Format is 1234,4321
 				*c = '\0';
-				x = atoi(res);
+				x = atoi(pos);
 				y = atoi(c + 1);
 				*c = ',';
 			} else {
 				// Format is 1234 4321
-				x = atoi(res);
+				x = atoi(pos);
 				if (++i >= argc) {
 					error = cmd_results_new(CMD_INVALID, "output", "Missing position argument (y).");
 					goto fail;
 				}
-				res = argv[i];
-				y = atoi(res);
+				pos = argv[i];
+				y = atoi(pos);
 			}
 			output->x = x;
 			output->y = y;
@@ -218,11 +241,11 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		list_add(config->output_configs, output);
 	}
 
-	sway_log(L_DEBUG, "Config stored for output %s (enabled:%d) (%d x %d @ "
-			"%d, %d scale %d transform %d refresh_rate %f) (bg %s %s)",
+	sway_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
+			"position %d,%d scale %d transform %d) (bg %s %s)",
 			output->name, output->enabled, output->width,
-			output->height, output->x, output->y, output->scale,
-			output->transform, output->refresh_rate,
+			output->height, output->refresh_rate, output->x, output->y,
+			output->scale, output->transform,
 			output->background, output->background_option);
 
 	if (output->name) {
