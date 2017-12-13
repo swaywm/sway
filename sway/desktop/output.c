@@ -91,32 +91,6 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	soutput->last_frame = now;
 }
 
-static void output_update_size(struct sway_output *output) {
-	struct wlr_box *output_layout_box = wlr_output_layout_get_box(
-		root_container.sway_root->output_layout, output->wlr_output);
-	output->swayc->x = output_layout_box->x;
-	output->swayc->y = output_layout_box->y;
-	output->swayc->width = output_layout_box->width;
-	output->swayc->height = output_layout_box->height;
-
-	arrange_windows(output->swayc, -1, -1);
-}
-
-static void output_resolution_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, resolution);
-	output_update_size(output);
-}
-
-static void output_scale_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, scale);
-	output_update_size(output);
-}
-
-static void output_transform_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, transform);
-	output_update_size(output);
-}
-
 void output_add_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_add);
 	struct wlr_output *wlr_output = data;
@@ -129,8 +103,11 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	output->server = server;
 
-	wl_signal_init(&output->events.scale);
-	wl_signal_init(&output->events.transform);
+	if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
+		wlr_output_set_mode(wlr_output, mode);
+	}
 
 	output->swayc = new_output(output);
 	if (!output->swayc) {
@@ -138,22 +115,8 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode = NULL;
-		mode = wl_container_of((&wlr_output->modes)->prev, mode, link);
-		wlr_output_set_mode(wlr_output, mode);
-	}
-
 	output->frame.notify = output_frame_notify;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
-	output->resolution.notify = output_resolution_notify;
-	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
-	output->scale.notify = output_scale_notify;
-	wl_signal_add(&output->events.scale, &output->scale);
-	output->transform.notify = output_transform_notify;
-	wl_signal_add(&output->events.transform, &output->transform);
-
-	arrange_windows(output->swayc, -1, -1);
 }
 
 void output_remove_notify(struct wl_listener *listener, void *data) {

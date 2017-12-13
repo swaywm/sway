@@ -16,10 +16,24 @@
 swayc_t root_container;
 
 static void output_layout_change_notify(struct wl_listener *listener, void *data) {
-	struct wlr_box *box = wlr_output_layout_get_box(
+	struct wlr_box *layout_box = wlr_output_layout_get_box(
 		root_container.sway_root->output_layout, NULL);
-	root_container.width = box->width;
-	root_container.height = box->height;
+	root_container.width = layout_box->width;
+	root_container.height = layout_box->height;
+
+	for (int i = 0 ; i < root_container.children->length; ++i) {
+		swayc_t *output_container = root_container.children->items[i];
+		struct sway_output *output = output_container->sway_output;
+
+		struct wlr_box *output_box = wlr_output_layout_get_box(
+			root_container.sway_root->output_layout, output->wlr_output);
+		output_container->x = output_box->x;
+		output_container->y = output_box->y;
+		output_container->width = output_box->width;
+		output_container->height = output_box->height;
+	}
+
+	arrange_windows(&root_container, -1, -1);
 }
 
 void init_layout(void) {
