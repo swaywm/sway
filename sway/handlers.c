@@ -931,7 +931,7 @@ static bool swayc_border_check(swayc_t *c, const void *_origin) {
 	const struct wlc_point *origin = _origin;
 	const struct wlc_geometry title_bar = c->title_bar_geometry;
 
-	if (c->border_type != B_NORMAL) {
+	if (c->border_type != B_NORMAL || !c->visible) {
 		return false;
 	}
 
