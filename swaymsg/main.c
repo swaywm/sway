@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <json-c/json.h>
+#include "sway_json_helper.h"
 #include "stringop.h"
 #include "ipc-client.h"
 #include "readline.h"
@@ -149,7 +149,7 @@ static void pretty_print_version(json_object *v) {
 static void pretty_print_clipboard(json_object *v) {
 	if (success(v, true)) {
 		if (json_object_is_type(v, json_type_array)) {
-			for (int i = 0; i < json_object_array_length(v); ++i) {
+			for (json_ar_len_t i = 0; i < json_object_array_length(v); ++i) {
 				json_object *o = json_object_array_get_idx(v, i);
 				printf("%s\n", json_object_get_string(o));
 			}

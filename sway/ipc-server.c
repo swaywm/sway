@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <json-c/json.h>
 #include <list.h>
 #include <libinput.h>
 #ifdef __linux__
@@ -25,6 +24,7 @@ struct ucred {
 	gid_t gid;
 };
 #endif
+#include "sway_json_helper.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/security.h"
@@ -724,7 +724,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		// parse requested event types
-		for (int i = 0; i < json_object_array_length(request); i++) {
+		for (json_ar_len_t i = 0; i < json_object_array_length(request); i++) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
 			if (strcmp(event_type, "workspace") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
