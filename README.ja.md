@@ -46,7 +46,7 @@ Swayは沢山のディストリビューションで提供されています。"
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c
 * pango
 * cairo
 * gdk-pixbuf2 *
