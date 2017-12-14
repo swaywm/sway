@@ -17,6 +17,7 @@ enum cmd_status {
 	CMD_BLOCK_BAR,
 	CMD_BLOCK_BAR_COLORS,
 	CMD_BLOCK_INPUT,
+	CMD_BLOCK_SEAT,
 	CMD_BLOCK_COMMANDS,
 	CMD_BLOCK_IPC,
 	CMD_BLOCK_IPC_EVENTS,
@@ -42,6 +43,7 @@ enum expected_args {
 };
 
 void input_cmd_apply(struct input_config *input);
+void seat_cmd_apply(struct seat_config *seat);
 
 struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
@@ -111,6 +113,7 @@ sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_input;
+sway_cmd cmd_seat;
 sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
@@ -192,6 +195,8 @@ sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+
+sway_cmd seat_cmd_attach;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

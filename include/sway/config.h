@@ -69,7 +69,22 @@ struct input_config {
 
 	bool capturable;
 	struct wlr_box region;
-	char *seat;
+};
+
+/**
+ * Options for misc device configurations that happen in the seat block
+ */
+struct seat_attachment_config {
+	char *identifier;
+	// TODO other things are configured here for some reason
+};
+
+/**
+ * Options for multiseat and other misc device configurations
+ */
+struct seat_config {
+	char *name;
+	list_t *attachments; // list of seat_attachment configs
 };
 
 /**
@@ -260,6 +275,7 @@ struct sway_config {
 	list_t *pid_workspaces;
 	list_t *output_configs;
 	list_t *input_configs;
+	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;
 	list_t *active_bar_modifiers;
@@ -358,8 +374,15 @@ struct cmd_results *check_security_config();
 int input_identifier_cmp(const void *item, const void *data);
 struct input_config *new_input_config(const char* identifier);
 void merge_input_config(struct input_config *dst, struct input_config *src);
-void apply_input_config(struct input_config *ic, struct libinput_device *dev);
 void free_input_config(struct input_config *ic);
+
+int seat_name_cmp(const void *item, const void *data);
+struct seat_config *new_seat_config(const char* name);
+void merge_seat_config(struct seat_config *dst, struct seat_config *src);
+void free_seat_config(struct seat_config *ic);
+struct seat_attachment_config *seat_attachment_config_new();
+struct seat_attachment_config *seat_config_get_attachment(
+		struct seat_config *seat_config, char *identifier);
 
 int output_name_cmp(const void *item, const void *data);
 void merge_output_config(struct output_config *dst, struct output_config *src);

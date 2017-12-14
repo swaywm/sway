@@ -71,7 +71,24 @@ void input_cmd_apply(struct input_config *input) {
 	}
 
 	current_input_config = input;
-	sway_input_manager_apply_config(input_manager, input);
+	sway_input_manager_apply_input_config(input_manager, input);
+}
+
+void seat_cmd_apply(struct seat_config *seat) {
+	int i;
+	i = list_seq_find(config->seat_configs, seat_name_cmp, seat->name);
+	if (i >= 0) {
+		// merge existing config
+		struct seat_config *sc = config->seat_configs->items[i];
+		merge_seat_config(sc, seat);
+		free_seat_config(seat);
+		seat = sc;
+	} else {
+		list_add(config->seat_configs, seat);
+	}
+
+	current_seat_config = seat;
+	sway_input_manager_apply_seat_config(input_manager, seat);
 }
 
 /**
@@ -115,6 +132,7 @@ static struct cmd_handler handlers[] = {
 	{ "exit", cmd_exit },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
+	{ "seat", cmd_seat },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -135,18 +153,26 @@ static struct cmd_handler input_handlers[] = {
 	{ "natural_scroll", input_cmd_natural_scroll },
 	{ "pointer_accel", input_cmd_pointer_accel },
 	{ "scroll_method", input_cmd_scroll_method },
-	{ "seat", input_cmd_seat },
 	{ "tap", input_cmd_tap },
+};
+
+// must be in order for the bsearch
+static struct cmd_handler seat_handlers[] = {
+	{ "attach", seat_cmd_attach },
 };
 
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_INPUT);
+	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
 
 	if (block == CMD_BLOCK_INPUT) {
 		res = bsearch(&d, input_handlers,
 				sizeof(input_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_SEAT) {
+		res = bsearch(&d, seat_handlers,
+				sizeof(seat_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
 	} else {
 		res = bsearch(&d, handlers,

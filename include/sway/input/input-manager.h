@@ -6,6 +6,7 @@
 #include "list.h"
 
 extern struct input_config *current_input_config;
+extern struct seat_config *current_seat_config;
 
 /**
  * The global singleton input manager
@@ -17,7 +18,6 @@ struct sway_input_device {
 	char *identifier;
 	struct wlr_input_device *wlr_device;
 	struct input_config *config;
-	struct sway_keyboard *keyboard; // managed by the seat
 	struct wl_list link;
 };
 
@@ -40,7 +40,10 @@ void sway_input_manager_set_focus(struct sway_input_manager *input,
 
 void sway_input_manager_configure_xcursor(struct sway_input_manager *input);
 
-void sway_input_manager_apply_config(struct sway_input_manager *input,
-		struct input_config *config);
+void sway_input_manager_apply_input_config(struct sway_input_manager *input,
+		struct input_config *input_config);
+
+void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
+		struct seat_config *seat_config);
 
 #endif

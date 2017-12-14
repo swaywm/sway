@@ -24,7 +24,7 @@ static void cursor_update_position(struct sway_cursor *cursor) {
 
 static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 		uint32_t time) {
-	struct wlr_seat *seat = cursor->seat->seat;
+	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 	swayc_t *swayc =
@@ -72,7 +72,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 		sway_seat_set_focus(cursor->seat, swayc);
 	}
 
-	wlr_seat_pointer_notify_button(cursor->seat->seat, event->time_msec,
+	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat, event->time_msec,
 		event->button, event->state);
 }
 
@@ -80,7 +80,7 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, axis);
 	struct wlr_event_pointer_axis *event = data;
-	wlr_seat_pointer_notify_axis(cursor->seat->seat, event->time_msec,
+	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
 		event->orientation, event->delta);
 }
 
@@ -173,7 +173,7 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	wl_signal_add(&wlr_cursor->events.tablet_tool_tip, &cursor->tool_tip);
 	cursor->tool_tip.notify = handle_tool_tip;
 
-	wl_signal_add(&seat->seat->events.request_set_cursor,
+	wl_signal_add(&seat->wlr_seat->events.request_set_cursor,
 			&cursor->request_set_cursor);
 	cursor->request_set_cursor.notify = handle_request_set_cursor;
 

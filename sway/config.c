@@ -45,6 +45,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->criteria = create_list())) goto cleanup;
 	if (!(config->no_focus = create_list())) goto cleanup;
 	if (!(config->input_configs = create_list())) goto cleanup;
+	if (!(config->seat_configs = create_list())) goto cleanup;
 	if (!(config->output_configs = create_list())) goto cleanup;
 
 	if (!(config->cmd_queue = create_list())) goto cleanup;
@@ -258,9 +259,7 @@ struct input_config *new_input_config(const char* identifier) {
 
 void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->identifier) {
-		if (dst->identifier) {
-			free(dst->identifier);
-		}
+		free(dst->identifier);
 		dst->identifier = strdup(src->identifier);
 	}
 	if (src->accel_profile != INT_MIN) {
@@ -300,7 +299,6 @@ void free_input_config(struct input_config *ic) {
 		return;
 	}
 	free(ic->identifier);
-	free(ic->seat);
 	free(ic);
 }
 
@@ -308,6 +306,128 @@ int input_identifier_cmp(const void *item, const void *data) {
 	const struct input_config *ic = item;
 	const char *identifier = data;
 	return strcmp(ic->identifier, identifier);
+}
+
+struct seat_config *new_seat_config(const char* name) {
+	struct seat_config *seat = calloc(1, sizeof(struct seat_config));
+	if (!seat) {
+		sway_log(L_DEBUG, "Unable to allocate seat config");
+		return NULL;
+	}
+
+	sway_log(L_DEBUG, "new_seat_config(%s)", name);
+	seat->name = strdup(name);
+	if (!sway_assert(seat->name, "could not allocate name for seat")) {
+		return NULL;
+	}
+
+	seat->attachments = create_list();
+	if (!sway_assert(seat->attachments,
+				"could not allocate seat attachments list")) {
+		return NULL;
+	}
+
+	return seat;
+}
+
+struct seat_attachment_config *seat_attachment_config_new() {
+	struct seat_attachment_config *attachment =
+		calloc(1, sizeof(struct seat_attachment_config));
+	if (!attachment) {
+		sway_log(L_DEBUG, "cannot allocate attachment config");
+		return NULL;
+	}
+	return attachment;
+}
+
+static void seat_attachment_config_free(
+		struct seat_attachment_config *attachment) {
+	free(attachment->identifier);
+	free(attachment);
+	return;
+}
+
+static struct seat_attachment_config *seat_attachment_config_copy(
+		struct seat_attachment_config *attachment) {
+	struct seat_attachment_config *copy = seat_attachment_config_new();
+	if (!copy) {
+		return NULL;
+	}
+
+	copy->identifier = strdup(attachment->identifier);
+
+	return copy;
+}
+
+static void merge_seat_attachment_config(struct seat_attachment_config *dest,
+		struct seat_attachment_config *source) {
+	// nothing to merge yet, but there will be some day
+}
+
+void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
+	if (source->name) {
+		free(dest->name);
+		dest->name = strdup(source->name);
+	}
+
+	for (int i = 0; i < source->attachments->length; ++i) {
+		struct seat_attachment_config *source_attachment =
+			source->attachments->items[i];
+		bool found = false;
+		for (int j = 0; j < dest->attachments->length; ++j) {
+			struct seat_attachment_config *dest_attachment =
+				dest->attachments->items[j];
+			if (strcmp(source_attachment->identifier,
+						dest_attachment->identifier) == 0) {
+				merge_seat_attachment_config(dest_attachment,
+					source_attachment);
+				found = true;
+			}
+		}
+
+		if (!found) {
+			struct seat_attachment_config *copy =
+				seat_attachment_config_copy(source_attachment);
+			if (copy) {
+				list_add(dest->attachments, copy);
+			}
+		}
+	}
+}
+
+void free_seat_config(struct seat_config *seat) {
+	if (!seat) {
+		return;
+	}
+
+	free(seat->name);
+	for (int i = 0; i < seat->attachments->length; ++i) {
+		struct seat_attachment_config *attachment =
+			seat->attachments->items[i];
+		seat_attachment_config_free(attachment);
+	}
+
+	list_free(seat->attachments);
+	free(seat);
+}
+
+int seat_name_cmp(const void *item, const void *data) {
+	const struct seat_config *sc = item;
+	const char *name = data;
+	return strcmp(sc->name, name);
+}
+
+struct seat_attachment_config *seat_config_get_attachment(
+		struct seat_config *seat_config, char *identifier) {
+	for (int i = 0; i < seat_config->attachments->length; ++i) {
+		struct seat_attachment_config *attachment =
+			seat_config->attachments->items[i];
+		if (strcmp(attachment->identifier, identifier) == 0) {
+			return attachment;
+		}
+	}
+
+	return NULL;
 }
 
 bool load_main_config(const char *file, bool is_active) {
@@ -368,7 +488,7 @@ bool load_main_config(const char *file, bool is_active) {
 			char *_path = secconfigs->items[i];
 			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 ||
 					(((s.st_mode & 0777) != 0644) &&
-					 (s.st_mode & 0777) != 0444)) {
+					(s.st_mode & 0777) != 0444)) {
 				sway_log(L_ERROR,
 					"Refusing to load %s - it must be owned by root "
 					"and mode 644 or 444", _path);
@@ -547,6 +667,14 @@ bool read_config(FILE *file, struct sway_config *config) {
 			}
 			break;
 
+		case CMD_BLOCK_SEAT:
+			if (block == CMD_BLOCK_END) {
+				block = CMD_BLOCK_SEAT;
+			} else {
+				sway_log(L_ERROR, "Invalid block '%s'", line);
+			}
+			break;
+
 		case CMD_BLOCK_BAR:
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_BAR;
@@ -598,6 +726,12 @@ bool read_config(FILE *file, struct sway_config *config) {
 			case CMD_BLOCK_INPUT:
 				sway_log(L_DEBUG, "End of input block");
 				current_input_config = NULL;
+				block = CMD_BLOCK_END;
+				break;
+
+			case CMD_BLOCK_SEAT:
+				sway_log(L_DEBUG, "End of seat block");
+				current_seat_config = NULL;
 				block = CMD_BLOCK_END;
 				break;
 
