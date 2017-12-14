@@ -53,7 +53,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c
 * pango
 * cairo
 * gdk-pixbuf2 *
