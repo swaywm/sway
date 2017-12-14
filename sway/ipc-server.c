@@ -1126,7 +1126,8 @@ static void ipc_event_binding(json_object *sb_obj) {
 	sway_log(L_DEBUG, "Sending binding::run event");
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("run"));
-	json_object_object_add(obj, "binding", sb_obj);
+	// sb_obj gets owned by the temporary json_object, too.
+	json_object_object_add(obj, "binding", json_object_get(sb_obj));
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_BINDING);
