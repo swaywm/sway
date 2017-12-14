@@ -34,8 +34,6 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 	output->name = strdup(name);
 
-	// TODO: atoi doesn't handle invalid numbers
-
 	int i;
 	for (i = 1; i < argc; ++i) {
 		const char *command = argv[i];
@@ -80,9 +78,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 					}
 				}
 			} else {
-				// Format is 1234 4321 (legacy)
-				++i;
-				if (i >= argc) {
+				// Format is 1234 4321
+				if (++i >= argc) {
 					error = cmd_results_new(CMD_INVALID, "output",
 						"Missing mode argument (height).");
 					goto fail;
@@ -97,41 +94,66 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			output->width = width;
 			output->height = height;
 			output->refresh_rate = refresh_rate;
-		} else if (strcasecmp(command, "position") == 0 || strcasecmp(command, "pos") == 0) {
+		} else if (strcasecmp(command, "position") == 0 ||
+				strcasecmp(command, "pos") == 0) {
 			if (++i >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing position argument.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Missing position argument.");
 				goto fail;
 			}
-			char *pos = argv[i];
-			char *c = strchr(pos, ',');
+
 			int x = -1, y = -1;
-			if (c != NULL) {
+
+			char *end;
+			x = strtol(argv[i], &end, 10);
+			if (*end) {
 				// Format is 1234,4321
-				*c = '\0';
-				x = atoi(pos);
-				y = atoi(c + 1);
-				*c = ',';
-			} else {
-				// Format is 1234 4321
-				x = atoi(pos);
-				if (++i >= argc) {
-					error = cmd_results_new(CMD_INVALID, "output", "Missing position argument (y).");
+				if (*end != ',') {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Invalid position x.");
 					goto fail;
 				}
-				pos = argv[i];
-				y = atoi(pos);
+				++end;
+				y = strtol(end, &end, 10);
+				if (*end) {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Invalid position y.");
+					goto fail;
+				}
+			} else {
+				// Format is 1234 4321 (legacy)
+				if (++i >= argc) {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Missing position argument (y).");
+					goto fail;
+				}
+				y = strtol(argv[i], &end, 10);
+				if (*end) {
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Invalid position y.");
+					goto fail;
+				}
 			}
+
 			output->x = x;
 			output->y = y;
 		} else if (strcasecmp(command, "scale") == 0) {
 			if (++i >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing scale parameter.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Missing scale parameter.");
 				goto fail;
 			}
-			output->scale = atoi(argv[i]);
+			char *end;
+			output->scale = strtol(argv[i], &end, 10);
+			if (*end) {
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Invalid scale.");
+				goto fail;
+			}
 		} else if (strcasecmp(command, "transform") == 0) {
 			if (++i >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing transform parameter.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Missing transform parameter.");
 				goto fail;
 			}
 			char *value = argv[i];
@@ -152,17 +174,21 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 			} else if (strcmp(value, "flipped-270") == 0) {
 				output->transform = WL_OUTPUT_TRANSFORM_FLIPPED_270;
 			} else {
-				error = cmd_results_new(CMD_INVALID, "output", "Invalid output transform.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Invalid output transform.");
 				goto fail;
 			}
-		} else if (strcasecmp(command, "background") == 0 || strcasecmp(command, "bg") == 0) {
+		} else if (strcasecmp(command, "background") == 0 ||
+				strcasecmp(command, "bg") == 0) {
 			wordexp_t p;
 			if (++i >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing background file or color specification.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Missing background file or color specification.");
 				goto fail;
 			}
 			if (i + 1 >= argc) {
-				error = cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode or `solid_color`.");
+				error = cmd_results_new(CMD_INVALID, "output",
+					"Missing background scaling mode or `solid_color`.");
 				goto fail;
 			}
 			if (strcasecmp(argv[i + 1], "solid_color") == 0) {
@@ -175,7 +201,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				size_t j;
 				for (j = 0; j < (size_t) (argc - i); ++j) {
 					mode = argv[i + j];
-					for (size_t k = 0; k < sizeof(bg_options) / sizeof(char *); ++k) {
+					size_t n = sizeof(bg_options) / sizeof(char *);
+					for (size_t k = 0; k < n; ++k) {
 						if (strcasecmp(mode, bg_options[k]) == 0) {
 							valid = true;
 							break;
@@ -186,13 +213,15 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 					}
 				}
 				if (!valid) {
-					error = cmd_results_new(CMD_INVALID, "output", "Missing background scaling mode.");
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Missing background scaling mode.");
 					goto fail;
 				}
 
 				char *src = join_args(argv + i, j);
 				if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-					error = cmd_results_new(CMD_INVALID, "output", "Invalid syntax (%s).", src);
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Invalid syntax (%s).", src);
 					goto fail;
 				}
 				free(src);
@@ -205,15 +234,18 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 						if (src) {
 							sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
 						} else {
-							sway_log(L_ERROR, "Unable to allocate background source");
+							sway_log(L_ERROR,
+								"Unable to allocate background source");
 						}
 						free(conf);
 					} else {
-						sway_log(L_ERROR, "Unable to allocate background source");
+						sway_log(L_ERROR,
+							"Unable to allocate background source");
 					}
 				}
 				if (!src || access(src, F_OK) == -1) {
-					error = cmd_results_new(CMD_INVALID, "output", "Background file unreadable (%s).", src);
+					error = cmd_results_new(CMD_INVALID, "output",
+						"Background file unreadable (%s).", src);
 					wordfree(&p);
 					goto fail;
 				}
@@ -228,7 +260,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				i += j;
 			}
 		} else {
-			error = cmd_results_new(CMD_INVALID, "output", "Invalid output subcommand: %s.", command);
+			error = cmd_results_new(CMD_INVALID, "output",
+				"Invalid output subcommand: %s.", command);
 			goto fail;
 		}
 	}
@@ -245,11 +278,10 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 
 	sway_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-			"position %d,%d scale %d transform %d) (bg %s %s)",
-			output->name, output->enabled, output->width,
-			output->height, output->refresh_rate, output->x, output->y,
-			output->scale, output->transform,
-			output->background, output->background_option);
+		"position %d,%d scale %d transform %d) (bg %s %s)",
+		output->name, output->enabled, output->width, output->height,
+		output->refresh_rate, output->x, output->y, output->scale,
+		output->transform, output->background, output->background_option);
 
 	if (output->name) {
 		// Try to find the output container and apply configuration now. If
@@ -258,11 +290,13 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		swayc_t *cont = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
 			cont = root_container.children->items[i];
-			if (cont->name && ((strcmp(cont->name, output->name) == 0) || (strcmp(output->name, "*") == 0))) {
+			if (cont->name && ((strcmp(cont->name, output->name) == 0) ||
+					(strcmp(output->name, "*") == 0))) {
 				apply_output_config(output, cont);
 
 				if (strcmp(output->name, "*") != 0) {
-					// stop looking if the output config isn't applicable to all outputs
+					// Stop looking if the output config isn't applicable to all
+					// outputs
 					break;
 				}
 			}
