@@ -57,9 +57,9 @@ enum swayc_border_types {
 	B_NORMAL, /**< Normal border with title bar */
 };
 
+struct sway_root;
 struct sway_output;
 struct sway_view;
-struct wlr_output_layout;
 
 /**
  * Stores information about a container.
@@ -69,7 +69,7 @@ struct wlr_output_layout;
 struct sway_container {
 	union {
 		// TODO: Encapsulate state for other node types as well like C_CONTAINER
-		struct wlr_output_layout *output_layout; // C_ROOT
+		struct sway_root *sway_root;             // C_ROOT
 		struct sway_output *sway_output;         // C_OUTPUT
 		struct sway_view *sway_view;             // C_VIEW
 	};
@@ -132,6 +132,7 @@ swayc_t *new_output(struct sway_output *sway_output);
 swayc_t *new_workspace(swayc_t *output, const char *name);
 swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view);
 
+swayc_t *destroy_output(swayc_t *output);
 swayc_t *destroy_view(swayc_t *view);
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type);

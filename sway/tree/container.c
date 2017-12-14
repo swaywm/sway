@@ -2,10 +2,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "sway/config.h"
 #include "sway/container.h"
 #include "sway/layout.h"
 #include "sway/output.h"
+#include "sway/server.h"
 #include "sway/view.h"
 #include "sway/workspace.h"
 #include "log.h"
@@ -44,19 +47,38 @@ static swayc_t *new_swayc(enum swayc_types type) {
 
 swayc_t *new_output(struct sway_output *sway_output) {
 	struct wlr_box size;
-	wlr_output_effective_resolution(
-			sway_output->wlr_output, &size.width, &size.height);
+	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
+		&size.height);
 	const char *name = sway_output->wlr_output->name;
+
+	struct output_config *oc = NULL, *all = NULL;
+	for (int i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *cur = config->output_configs->items[i];
+		if (strcasecmp(name, cur->name) == 0) {
+			sway_log(L_DEBUG, "Matched output config for %s", name);
+			oc = cur;
+		}
+		if (strcasecmp("*", cur->name) == 0) {
+			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			all = cur;
+		}
+
+		if (oc && all) {
+			break;
+		}
+	}
+	if (!oc) {
+		oc = all;
+	}
+	if (oc && !oc->enabled) {
+		return NULL;
+	}
 
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->sway_output = sway_output;
 	output->name = name ? strdup(name) : NULL;
-	output->width = size.width;
-	output->height = size.width;
 
-	// TODO configure output layout position
-	wlr_output_layout_add_auto(root_container.output_layout,
-		sway_output->wlr_output);
+	apply_output_config(oc, output);
 
 	add_child(&root_container, output);
 
@@ -137,6 +159,34 @@ static void free_swayc(swayc_t *cont) {
 		free(cont->name);
 	}
 	free(cont);
+}
+
+swayc_t *destroy_output(swayc_t *output) {
+	if (!sway_assert(output, "null output passed to destroy_output")) {
+		return NULL;
+	}
+
+	if (output->children->length > 0) {
+		// TODO save workspaces when there are no outputs.
+		// TODO also check if there will ever be no outputs except for exiting
+		// program
+		if (root_container.children->length > 1) {
+			int p = root_container.children->items[0] == output;
+			// Move workspace from this output to another output
+			while (output->children->length) {
+				swayc_t *child = output->children->items[0];
+				remove_child(child);
+				add_child(root_container.children->items[p], child);
+			}
+			sort_workspaces(root_container.children->items[p]);
+			arrange_windows(root_container.children->items[p], -1, -1);
+		}
+	}
+
+	sway_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
+	free_swayc(output);
+
+	return &root_container;
 }
 
 swayc_t *destroy_view(swayc_t *view) {

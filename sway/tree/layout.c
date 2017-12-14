@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "sway/container.h"
+#include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/view.h"
 #include "list.h"
@@ -14,13 +15,47 @@
 
 swayc_t root_container;
 
+static void output_layout_change_notify(struct wl_listener *listener, void *data) {
+	struct wlr_box *layout_box = wlr_output_layout_get_box(
+		root_container.sway_root->output_layout, NULL);
+	root_container.width = layout_box->width;
+	root_container.height = layout_box->height;
+
+	for (int i = 0 ; i < root_container.children->length; ++i) {
+		swayc_t *output_container = root_container.children->items[i];
+		if (output_container->type != C_OUTPUT) {
+			continue;
+		}
+		struct sway_output *output = output_container->sway_output;
+
+		struct wlr_box *output_box = wlr_output_layout_get_box(
+			root_container.sway_root->output_layout, output->wlr_output);
+		if (!output_box) {
+			continue;
+		}
+		output_container->x = output_box->x;
+		output_container->y = output_box->y;
+		output_container->width = output_box->width;
+		output_container->height = output_box->height;
+	}
+
+	arrange_windows(&root_container, -1, -1);
+}
+
 void init_layout(void) {
 	root_container.id = 0; // normally assigned in new_swayc()
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
 	root_container.name = strdup("root");
 	root_container.children = create_list();
-	root_container.output_layout = wlr_output_layout_create();
+
+	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
+	root_container.sway_root->output_layout = wlr_output_layout_create();
+
+	root_container.sway_root->output_layout_change.notify =
+		output_layout_change_notify;
+	wl_signal_add(&root_container.sway_root->output_layout->events.change,
+		&root_container.sway_root->output_layout_change);
 }
 
 void add_child(swayc_t *parent, swayc_t *child) {
