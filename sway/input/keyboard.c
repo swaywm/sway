@@ -10,10 +10,9 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 	struct wlr_event_keyboard_key *event = data;
-	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
 	wlr_seat_set_keyboard(wlr_seat, wlr_device);
-	wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,event->keycode,
-		event->state);
+	wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
+		event->keycode, event->state);
 }
 
 static void handle_keyboard_modifiers(struct wl_listener *listener,
@@ -23,7 +22,6 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
-	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
 	wlr_seat_set_keyboard(wlr_seat, wlr_device);
 	wlr_seat_keyboard_notify_modifiers(wlr_seat);
 }
@@ -50,6 +48,8 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	memset(&rules, 0, sizeof(rules));
 	struct input_config *input_config =
 		keyboard->seat_device->input_device->config;
+	struct wlr_input_device *wlr_device =
+		keyboard->seat_device->input_device->wlr_device;
 
 	if (input_config && input_config->xkb_layout) {
 		rules.layout = input_config->xkb_layout;
@@ -88,18 +88,16 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	xkb_keymap_unref(keyboard->keymap);
 	keyboard->keymap =
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
-	wlr_keyboard_set_keymap(keyboard->seat_device->input_device->wlr_device->keyboard, keyboard->keymap);
+	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
+	wlr_keyboard_set_repeat_info(wlr_device->keyboard, 25, 600);
 	xkb_context_unref(context);
 
 	wl_list_remove(&keyboard->keyboard_key.link);
-	wl_signal_add(
-		&keyboard->seat_device->input_device->wlr_device->keyboard->events.key,
-		&keyboard->keyboard_key);
+	wl_signal_add(&wlr_device->keyboard->events.key, &keyboard->keyboard_key);
 	keyboard->keyboard_key.notify = handle_keyboard_key;
 
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
-	wl_signal_add(
-		&keyboard->seat_device->input_device->wlr_device->keyboard->events.modifiers,
+	wl_signal_add( &wlr_device->keyboard->events.modifiers,
 		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
 }
