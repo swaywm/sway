@@ -67,6 +67,12 @@ struct input_config {
 	int send_events;
 	int tap;
 
+	char *xkb_layout;
+	char *xkb_model;
+	char *xkb_options;
+	char *xkb_rules;
+	char *xkb_variant;
+
 	bool capturable;
 	struct wlr_box region;
 };

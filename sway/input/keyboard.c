@@ -1,5 +1,6 @@
 #include "sway/input/seat.h"
 #include "sway/input/keyboard.h"
+#include "sway/input/input-manager.h"
 #include "log.h"
 
 static void handle_keyboard_key(struct wl_listener *listener, void *data) {
@@ -47,17 +48,44 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct xkb_rule_names rules;
 	memset(&rules, 0, sizeof(rules));
-	rules.rules = getenv("XKB_DEFAULT_RULES");
-	rules.model = getenv("XKB_DEFAULT_MODEL");
-	rules.layout = getenv("XKB_DEFAULT_LAYOUT");
-	rules.variant = getenv("XKB_DEFAULT_VARIANT");
-	rules.options = getenv("XKB_DEFAULT_OPTIONS");
+	struct input_config *input_config =
+		keyboard->seat_device->input_device->config;
+
+	if (input_config && input_config->xkb_layout) {
+		rules.layout = input_config->xkb_layout;
+	} else {
+		rules.layout = getenv("XKB_DEFAULT_LAYOUT");
+	}
+	if (input_config && input_config->xkb_model) {
+		rules.model = input_config->xkb_model;
+	} else {
+		rules.model = getenv("XKB_DEFAULT_MODEL");
+	}
+
+	if (input_config && input_config->xkb_options) {
+		rules.options = input_config->xkb_options;
+	} else {
+		rules.options = getenv("XKB_DEFAULT_OPTIONS");
+	}
+
+	if (input_config && input_config->xkb_rules) {
+		rules.rules = input_config->xkb_rules;
+	} else {
+		rules.rules = getenv("XKB_DEFAULT_RULES");
+	}
+
+	if (input_config && input_config->xkb_variant) {
+		rules.variant = input_config->xkb_variant;
+	} else {
+		rules.variant = getenv("XKB_DEFAULT_VARIANT");
+	}
 
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	if (!sway_assert(context, "cannot create XKB context")) {
 		return;
 	}
 
+	xkb_keymap_unref(keyboard->keymap);
 	keyboard->keymap =
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	wlr_keyboard_set_keymap(keyboard->seat_device->input_device->wlr_device->keyboard, keyboard->keymap);

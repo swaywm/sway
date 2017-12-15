@@ -292,6 +292,26 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->tap != INT_MIN) {
 		dst->tap = src->tap;
 	}
+	if (src->xkb_layout) {
+		free(dst->xkb_layout);
+		dst->xkb_layout = strdup(src->xkb_layout);
+	}
+	if (src->xkb_model) {
+		free(dst->xkb_model);
+		dst->xkb_model = strdup(src->xkb_model);
+	}
+	if (src->xkb_options) {
+		free(dst->xkb_options);
+		dst->xkb_options = strdup(src->xkb_options);
+	}
+	if (src->xkb_rules) {
+		free(dst->xkb_rules);
+		dst->xkb_rules = strdup(src->xkb_rules);
+	}
+	if (src->xkb_variant) {
+		free(dst->xkb_variant);
+		dst->xkb_variant = strdup(src->xkb_variant);
+	}
 }
 
 void free_input_config(struct input_config *ic) {

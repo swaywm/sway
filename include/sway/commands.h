@@ -195,6 +195,11 @@ sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+sway_cmd input_cmd_xkb_layout;
+sway_cmd input_cmd_xkb_model;
+sway_cmd input_cmd_xkb_options;
+sway_cmd input_cmd_xkb_rules;
+sway_cmd input_cmd_xkb_variant;
 
 sway_cmd seat_cmd_attach;
 

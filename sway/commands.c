@@ -154,6 +154,11 @@ static struct cmd_handler input_handlers[] = {
 	{ "pointer_accel", input_cmd_pointer_accel },
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
+	{ "xkb_layout", input_cmd_xkb_layout },
+	{ "xkb_model", input_cmd_xkb_model },
+	{ "xkb_options", input_cmd_xkb_options },
+	{ "xkb_rules", input_cmd_xkb_rules },
+	{ "xkb_variant", input_cmd_xkb_variant },
 };
 
 // must be in order for the bsearch
