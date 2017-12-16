@@ -1,3 +1,6 @@
+#ifndef _SWAY_INPUT_KEYBOARD_H
+#define _SWAY_INPUT_KEYBOARD_H
+
 #include "sway/input/seat.h"
 
 struct sway_keyboard {
@@ -16,3 +19,5 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 void sway_keyboard_configure(struct sway_keyboard *keyboard);
 
 void sway_keyboard_destroy(struct sway_keyboard *keyboard);
+
+#endif

@@ -1,5 +1,5 @@
-#ifndef _SWAY_INPUT_MANAGER_H
-#define _SWAY_INPUT_MANAGER_H
+#ifndef _SWAY_INPUT_INPUT_MANAGER_H
+#define _SWAY_INPUT_INPUT_MANAGER_H
 #include <libinput.h>
 #include "sway/server.h"
 #include "sway/config.h"

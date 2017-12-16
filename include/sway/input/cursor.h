@@ -1,5 +1,5 @@
-#ifndef _SWAY_CURSOR_H
-#define _SWAY_CURSOR_H
+#ifndef _SWAY_INPUT_CURSOR_H
+#define _SWAY_INPUT_CURSOR_H
 
 #include "sway/input/seat.h"
 

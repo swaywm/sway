@@ -1,5 +1,5 @@
-#ifndef _SWAY_SEAT_H
-#define _SWAY_SEAT_H
+#ifndef _SWAY_INPUT_SEAT_H
+#define _SWAY_INPUT_SEAT_H
 
 #include <wlr/types/wlr_seat.h>
 #include "sway/input/input-manager.h"
