@@ -32,6 +32,8 @@ sway_sources = files(
 	'commands/output.c',
 	'config.c',
 	'config/output.c',
+	'config/seat.c',
+	'config/input.c',
 	'ipc-json.c',
 	'ipc-server.c',
 	'desktop/output.c',
