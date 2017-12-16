@@ -9,6 +9,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/server.h"
+#include "stringop.h"
 #include "list.h"
 #include "log.h"
 
@@ -36,6 +37,7 @@ static char *get_device_identifier(struct wlr_input_device *device) {
 	int vendor = device->vendor;
 	int product = device->product;
 	char *name = strdup(device->name);
+	name = strip_whitespace(name);
 
 	char *p = name;
 	for (; *p; ++p) {
