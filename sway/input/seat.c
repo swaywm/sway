@@ -125,6 +125,9 @@ void sway_seat_add_device(struct sway_seat *seat,
 		return;
 	}
 
+	sway_log(L_DEBUG, "adding device %s to seat %s",
+		input_device->identifier, seat->wlr_seat->name);
+
 	seat_device->sway_seat = seat;
 	seat_device->input_device = input_device;
 	wl_list_insert(&seat->devices, &seat_device->link);
@@ -134,13 +137,15 @@ void sway_seat_add_device(struct sway_seat *seat,
 
 void sway_seat_remove_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
-	sway_log(L_DEBUG, "input remove: %s", input_device->identifier);
 	struct sway_seat_device *seat_device =
 		sway_seat_get_device(seat, input_device);
 
 	if (!seat_device) {
 		return;
 	}
+
+	sway_log(L_DEBUG, "removing device %s from seat %s",
+		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device_destroy(seat_device);
 }

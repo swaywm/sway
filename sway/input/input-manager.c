@@ -120,6 +120,9 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 	input_device->identifier = get_device_identifier(device);
 	wl_list_insert(&input->devices, &input_device->link);
 
+	sway_log(L_DEBUG, "adding device: '%s'",
+		input_device->identifier);
+
 	// find config
 	for (int i = 0; i < config->input_configs->length; ++i) {
 		struct input_config *input_config = config->input_configs->items[i];
@@ -156,6 +159,9 @@ static void input_remove_notify(struct wl_listener *listener, void *data) {
 	if (!sway_assert(input_device, "could not find sway device")) {
 		return;
 	}
+
+	sway_log(L_DEBUG, "removing device: '%s'",
+		input_device->identifier);
 
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
