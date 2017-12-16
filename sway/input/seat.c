@@ -168,7 +168,7 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 				output->scale);
 
 		sway_assert(!result,
-			"Cannot load xcursor theme for output '%s' with scale %d",
+			"Cannot load xcursor theme for output '%s' with scale %f",
 			output->name, output->scale);
 	}
 
