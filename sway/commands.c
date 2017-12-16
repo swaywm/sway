@@ -57,7 +57,7 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 	return error;
 }
 
-void input_cmd_apply(struct input_config *input) {
+void apply_input_config(struct input_config *input) {
 	int i;
 	i = list_seq_find(config->input_configs, input_identifier_cmp, input->identifier);
 	if (i >= 0) {
@@ -74,7 +74,7 @@ void input_cmd_apply(struct input_config *input) {
 	sway_input_manager_apply_input_config(input_manager, input);
 }
 
-void seat_cmd_apply(struct seat_config *seat) {
+void apply_seat_config(struct seat_config *seat) {
 	int i;
 	i = list_seq_find(config->seat_configs, seat_name_cmp, seat->name);
 	if (i >= 0) {

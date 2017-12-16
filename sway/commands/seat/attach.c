@@ -21,6 +21,6 @@ struct cmd_results *seat_cmd_attach(int argc, char **argv) {
 	new_attachment->identifier = strdup(argv[0]);
 	list_add(new_config->attachments, new_attachment);
 
-	seat_cmd_apply(new_config);
+	apply_seat_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

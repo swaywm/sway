@@ -1,5 +1,6 @@
 #include <string.h>
 #include <strings.h>
+#include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "log.h"
@@ -30,6 +31,6 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 			"Expected 'events <enabled|disabled|disabled_on_external_mouse>'");
 	}
 
-	input_cmd_apply(new_config);
+	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

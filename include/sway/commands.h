@@ -42,9 +42,6 @@ enum expected_args {
 	EXPECTED_EQUAL_TO
 };
 
-void input_cmd_apply(struct input_config *input);
-void seat_cmd_apply(struct seat_config *seat);
-
 struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
 

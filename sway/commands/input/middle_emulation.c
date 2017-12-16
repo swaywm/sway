@@ -1,5 +1,6 @@
 #include <string.h>
 #include <strings.h>
+#include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 
@@ -25,6 +26,6 @@ struct cmd_results *input_cmd_middle_emulation(int argc, char **argv) {
 			"Expected 'middle_emulation <enabled|disabled>'");
 	}
 
-	input_cmd_apply(new_config);
+	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
