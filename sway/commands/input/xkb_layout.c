@@ -7,7 +7,7 @@
 struct cmd_results *input_cmd_xkb_layout(int argc, char **argv) {
 	sway_log(L_DEBUG, "xkb layout for device: %s", current_input_config->identifier);
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "xkb_layout", EXPECTED_AT_LEAST, 1))) {
+	if ((error = checkarg(argc, "xkb_layout", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 	if (!current_input_config) {
