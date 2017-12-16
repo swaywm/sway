@@ -88,8 +88,7 @@ static void output_frame_view(swayc_t *view, void *data) {
 }
 
 static void output_frame_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(
-			listener, soutput, frame);
+	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
 	struct sway_server *server = soutput->server;
 
@@ -108,42 +107,53 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	soutput->last_frame = now;
 }
 
-static void output_resolution_notify(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(
-			listener, soutput, resolution);
-	arrange_windows(soutput->swayc, -1, -1);
-}
-
 void output_add_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_add);
 	struct wlr_output *wlr_output = data;
 	sway_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
+	if (!output) {
+		return;
+	}
 	output->wlr_output = wlr_output;
 	output->server = server;
-	output->swayc = new_output(output);
 
-	if (wl_list_length(&wlr_output->modes) > 0) {
-		struct wlr_output_mode *mode = NULL;
-		mode = wl_container_of((&wlr_output->modes)->prev, mode, link);
+	if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
 		wlr_output_set_mode(wlr_output, mode);
 	}
 
-	output->frame.notify = output_frame_notify;
-	wl_signal_add(&wlr_output->events.frame, &output->frame);
-
-	output->resolution.notify = output_resolution_notify;
-	wl_signal_add(&wlr_output->events.resolution, &output->resolution);
+	output->swayc = new_output(output);
+	if (!output->swayc) {
+		free(output);
+		return;
+	}
 
 	sway_input_manager_configure_xcursor(input_manager);
 
-	arrange_windows(output->swayc, -1, -1);
+	output->frame.notify = output_frame_notify;
+	wl_signal_add(&wlr_output->events.frame, &output->frame);
 }
 
 void output_remove_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_remove);
 	struct wlr_output *wlr_output = data;
 	sway_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
-	// TODO
+
+	swayc_t *output_container = NULL;
+	for (int i = 0 ; i < root_container.children->length; ++i) {
+		swayc_t *child = root_container.children->items[i];
+		if (child->type == C_OUTPUT &&
+				child->sway_output->wlr_output == wlr_output) {
+			output_container = child;
+			break;
+		}
+	}
+	if (!output_container) {
+		return;
+	}
+
+	destroy_output(output_container);
 }

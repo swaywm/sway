@@ -102,8 +102,11 @@ struct output_config {
 	char *name;
 	int enabled;
 	int width, height;
+	float refresh_rate;
 	int x, y;
 	int scale;
+	int32_t transform;
+
 	char *background;
 	char *background_option;
 };
@@ -391,9 +394,8 @@ struct seat_attachment_config *seat_config_get_attachment(
 		struct seat_config *seat_config, char *identifier);
 
 int output_name_cmp(const void *item, const void *data);
+struct output_config *new_output_config();
 void merge_output_config(struct output_config *dst, struct output_config *src);
-/** Sets up a WLC output handle based on a given output_config.
- */
 void apply_output_config(struct output_config *oc, swayc_t *output);
 void free_output_config(struct output_config *oc);
 

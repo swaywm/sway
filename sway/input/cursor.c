@@ -140,7 +140,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	}
 
 	cursor->seat = seat;
-	wlr_cursor_attach_output_layout(wlr_cursor, root_container.output_layout);
+	wlr_cursor_attach_output_layout(wlr_cursor,
+		root_container.sway_root->output_layout);
 
 	// input events
 	wl_signal_add(&wlr_cursor->events.motion, &cursor->motion);

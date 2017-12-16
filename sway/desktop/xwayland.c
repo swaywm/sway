@@ -57,7 +57,7 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 	if (!sway_assert(root, "output must be within tree to set position")) {
 		return;
 	}
-	struct wlr_output_layout *layout = root->output_layout;
+	struct wlr_output_layout *layout = root->sway_root->output_layout;
 	struct wlr_output_layout_output *loutput =
 		wlr_output_layout_get(layout, output->sway_output->wlr_output);
 	if (!sway_assert(loutput, "output must be within layout to set position")) {
@@ -149,14 +149,14 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	// TODO remove from the tree when the surface goes away (unmapped)
 	sway_view->surface = xsurface->surface;
 	sway_surface->view = sway_view;
-	
+
 	// TODO:
 	// - Wire up listeners
 	// - Handle popups
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
-	
+
 	sway_surface->commit.notify = handle_commit;
 	wl_signal_add(&xsurface->surface->events.commit, &sway_surface->commit);
 	sway_surface->destroy.notify = handle_destroy;

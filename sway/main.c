@@ -406,6 +406,10 @@ int main(int argc, char **argv) {
 
 	security_sanity_check();
 
+	// TODO: wait for server to be ready
+	// TODO: consume config->cmd_queue
+	config->active = true;
+
 	if (!terminate_request) {
 		server_run(&server);
 	}
