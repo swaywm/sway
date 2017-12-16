@@ -312,12 +312,17 @@ The default colors are:
 **hide_edge_borders** <none|vertical|horizontal|both|smart>::
 	Hide window borders adjacent to the screen edges. Default is _none_.
 
-**input** <input device> <block of commands>::
+**input** <input_device> <block of commands>::
 	Append _{_ to this command, the following lines will be commands to configure
 	the named input device, and _}_ on its own line will close the block.
 	+
 	**input * <block of commands>** may be used to match all input devices.
 	+
+	See **sway-input**(5) for details.
+
+**seat** <seat_name> <block of commands>::
+	Append _{_ to this command, the following lines will be commands to configure
+	the named seat, and _}_ on its own line will close the block.
 	See **sway-input**(5) for details.
 
 **kill**::

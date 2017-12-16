@@ -1,5 +1,5 @@
 /////
-vim:set ts=4 sw=4 tw=82 noet:
+vim:set ft=asciidoc ts=4 sw=4 tw=82 noet:
 /////
 sway-input (5)
 ==============
@@ -11,12 +11,37 @@ sway-input - input configuration file and commands
 Description
 -----------
 
-Sway allows for configuration of libinput devices within the sway configuration file.
+Sway allows for configuration of devices within the sway configuration file.
 sway-input commands must be used inside an _input { }_ block in the config.
 To obtain a list of available device identifiers, run **swaymsg -t get_inputs**.
 
-Commands
---------
+Input Commands
+--------------
+
+Keyboard Configuration
+~~~~~~~~~~~~~~~~~~~~~~
+
+For more information on these xkb configuration options, see
+**xkeyboard-config**(7).
+
+**input** <identifier> xkb_layout <layout_name>::
+	Sets the layout of the keyboard like _us_ or _de_.
+
+**input** <identifier> xkb_model <model_name>::
+	Sets the model of the keyboard. This has an influence for some extra keys your
+	keyboard might have.
+
+**input** <identifier> xkb_options <options>::
+	Sets extra xkb configuration options for the keyboard.
+
+**input** <identifier> xkb_rules <rules>::
+	Sets files of rules to be used for keyboard mapping composition.
+
+**input** <identifier> xkb_variant <variant>::
+	Sets the variant of the keyboard like _dvorak_ or _colemak_.
+
+Libinput Configuration
+~~~~~~~~~~~~~~~~~~~~~~
 
 **input** <identifier> accel_profile <adaptive|flat>::
 	Sets the pointer acceleration profile for the specified input device.
@@ -52,6 +77,23 @@ Commands
 
 **input** <identifier> tap <enabled|disabled>::
 	Enables or disables tap for specified input device.
+
+Seat Configuration
+------------------
+
+Configure options for multiseat mode. sway-seat commands must be used inside a
+_seat { }_ block in the config.
+
+A _seat_ is a collection of input devices that act independently of each other.
+Seats are identified by name and the default seat is _seat0_ if no seats are
+configured. Each seat has an independent keyboard focus and a separate cursor that
+is controlled by the pointer devices of the seat. This is useful for multiple
+people using the desktop at the same time with their own devices (each sitting in
+their own "seat").
+
+**seat** <name> attach <input_identifier>::
+	Attach an input device to this seat by its input identifier. A special value
+	of _*_ will attach all devices to the seat.
 
 See Also
 --------
