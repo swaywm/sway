@@ -1,4 +1,4 @@
-#include <json-c/json.h>
+#include "sway_json_helper.h"
 #include "wlc/wlc.h"
 
 void init_json_tree(int socketfd);
