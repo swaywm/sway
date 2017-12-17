@@ -24,6 +24,8 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 		current_seat_config = new_seat_config(argv[0]);
 		if (strcasecmp("attach", argv[1]) == 0) {
 			res = seat_cmd_attach(argc_new, argv_new);
+		} else if (strcasecmp("fallback", argv[1]) == 0) {
+			res = seat_cmd_fallback(argc_new, argv_new);
 		} else {
 			res = cmd_results_new(CMD_INVALID, "seat <name>", "Unknown command %s", argv[1]);
 		}

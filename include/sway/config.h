@@ -90,6 +90,7 @@ struct seat_attachment_config {
  */
 struct seat_config {
 	char *name;
+	int fallback; // -1 means not set
 	list_t *attachments; // list of seat_attachment configs
 };
 

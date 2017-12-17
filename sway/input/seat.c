@@ -120,6 +120,7 @@ void sway_seat_configure_device(struct sway_seat *seat,
 void sway_seat_add_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
 	if (sway_seat_get_device(seat, input_device)) {
+		sway_seat_configure_device(seat, input_device);
 		return;
 	}
 
@@ -246,7 +247,5 @@ void sway_seat_set_config(struct sway_seat *seat,
 		seat_device->attachment_config =
 			seat_config_get_attachment(seat_config,
 				seat_device->input_device->identifier);
-		sway_seat_configure_device(seat, seat_device->input_device);
 	}
-
 }

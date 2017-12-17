@@ -56,9 +56,9 @@ static char *get_device_identifier(struct wlr_input_device *device) {
 
 	int len =
 		(strlen(name) +
-		 strlen_num(device->vendor) +
-		 strlen_num(device->product) +
-		 3) * sizeof(char);
+		strlen_num(device->vendor) +
+		strlen_num(device->product) +
+		3) * sizeof(char);
 
 	char *identifier = malloc(len);
 	if (!identifier) {
@@ -151,12 +151,29 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	bool added = false;
 	wl_list_for_each(seat, &input->seats, link) {
 		if (seat->config &&
 				(seat_config_get_attachment(seat->config, input_device->identifier) ||
 				seat_config_get_attachment(seat->config, "*"))) {
 			sway_seat_add_device(seat, input_device);
+			added = true;
 		}
+	}
+
+	if (!added) {
+		wl_list_for_each(seat, &input->seats, link) {
+			if (seat->config && seat->config->fallback == 1) {
+				sway_seat_add_device(seat, input_device);
+				added = true;
+			}
+		}
+	}
+
+	if (!added) {
+		sway_log(L_DEBUG,
+			"device '%s' is not configured on any seats",
+			input_device->identifier);
 	}
 }
 
@@ -248,35 +265,53 @@ void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config) {
 	sway_log(L_DEBUG, "applying new seat config for seat %s", seat_config->name);
 	struct sway_seat *seat = input_manager_get_seat(input, seat_config->name);
-	// the old config is invalid so clear it
-	sway_seat_set_config(seat, NULL);
-
-	// clear devices
-	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &input->devices, link) {
-		sway_seat_remove_device(seat, input_device);
-	}
-
-	if (seat_config_get_attachment(seat_config, "*")) {
-		wl_list_for_each(input_device, &input->devices, link) {
-			sway_seat_add_device(seat, input_device);
-		}
-	} else {
-		for (int i = 0; i < seat_config->attachments->length; ++i) {
-			struct seat_attachment_config *attachment =
-				seat_config->attachments->items[i];
-
-			struct sway_input_device *device =
-				input_sway_device_from_identifier(input,
-					attachment->identifier);
-
-			if (device) {
-				sway_seat_add_device(seat, device);
-			}
-		}
+	if (!seat) {
+		return;
 	}
 
 	sway_seat_set_config(seat, seat_config);
+
+	// for every device, try to add it to a seat and if no seat has it
+	// attached, add it to the fallback seats.
+	struct sway_input_device *input_device = NULL;
+	wl_list_for_each(input_device, &input->devices, link) {
+		list_t *seat_list = create_list();
+		struct sway_seat *seat = NULL;
+		wl_list_for_each(seat, &input->seats, link) {
+			if (!seat->config) {
+				continue;
+			}
+			if (seat_config_get_attachment(seat->config, "*") ||
+					seat_config_get_attachment(seat->config, input_device->identifier)) {
+				list_add(seat_list, seat);
+			}
+		}
+
+		if (seat_list->length) {
+			wl_list_for_each(seat, &input->seats, link) {
+				bool attached = false;
+				for (int i = 0; i < seat_list->length; ++i) {
+					if (seat == seat_list->items[i]) {
+						attached = true;
+						break;
+					}
+				}
+				if (attached) {
+					sway_seat_add_device(seat, input_device);
+				} else {
+					sway_seat_remove_device(seat, input_device);
+				}
+			}
+		} else {
+			wl_list_for_each(seat, &input->seats, link) {
+				if (seat->config && seat->config->fallback == 1) {
+					sway_seat_add_device(seat, input_device);
+				} else {
+					sway_seat_remove_device(seat, input_device);
+				}
+			}
+		}
+	}
 }
 
 void sway_input_manager_configure_xcursor(struct sway_input_manager *input) {

@@ -17,6 +17,7 @@ struct seat_config *new_seat_config(const char* name) {
 		return NULL;
 	}
 
+	seat->fallback = -1;
 	seat->attachments = create_list();
 	if (!sway_assert(seat->attachments,
 				"could not allocate seat attachments list")) {
@@ -64,6 +65,10 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 	if (source->name) {
 		free(dest->name);
 		dest->name = strdup(source->name);
+	}
+
+	if (source->fallback != -1) {
+		dest->fallback = source->fallback;
 	}
 
 	for (int i = 0; i < source->attachments->length; ++i) {

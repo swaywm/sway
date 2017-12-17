@@ -198,6 +198,7 @@ sway_cmd input_cmd_xkb_options;
 sway_cmd input_cmd_xkb_rules;
 sway_cmd input_cmd_xkb_variant;
 
+sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_attach;
 
 sway_cmd cmd_ipc_cmd;

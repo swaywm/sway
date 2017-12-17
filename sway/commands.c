@@ -165,6 +165,7 @@ static struct cmd_handler input_handlers[] = {
 // must be in order for the bsearch
 static struct cmd_handler seat_handlers[] = {
 	{ "attach", seat_cmd_attach },
+	{ "fallback", seat_cmd_fallback },
 };
 
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
