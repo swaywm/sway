@@ -94,17 +94,6 @@ static struct sway_input_device *input_sway_device_from_config(
 	return NULL;
 }
 
-static struct sway_input_device *input_sway_device_from_identifier(
-		struct sway_input_manager *input, char *identifier) {
-	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &input->devices, link) {
-		if (strcmp(input_device->identifier, identifier) == 0) {
-			return input_device;
-		}
-	}
-	return NULL;
-}
-
 static bool input_has_seat_configuration(struct sway_input_manager *input) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
@@ -154,7 +143,8 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 	bool added = false;
 	wl_list_for_each(seat, &input->seats, link) {
 		if (seat->config &&
-				(seat_config_get_attachment(seat->config, input_device->identifier) ||
+				(seat_config_get_attachment(seat->config,
+											input_device->identifier) ||
 				seat_config_get_attachment(seat->config, "*"))) {
 			sway_seat_add_device(seat, input_device);
 			added = true;
@@ -263,7 +253,8 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 
 void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config) {
-	sway_log(L_DEBUG, "applying new seat config for seat %s", seat_config->name);
+	sway_log(L_DEBUG, "applying new seat config for seat %s",
+		seat_config->name);
 	struct sway_seat *seat = input_manager_get_seat(input, seat_config->name);
 	if (!seat) {
 		return;
@@ -282,7 +273,8 @@ void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 				continue;
 			}
 			if (seat_config_get_attachment(seat->config, "*") ||
-					seat_config_get_attachment(seat->config, input_device->identifier)) {
+					seat_config_get_attachment(seat->config,
+						input_device->identifier)) {
 				list_add(seat_list, seat);
 			}
 		}
@@ -311,6 +303,7 @@ void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 				}
 			}
 		}
+		list_free(seat_list);
 	}
 }
 
