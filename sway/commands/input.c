@@ -44,6 +44,16 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			res = input_cmd_scroll_method(argc_new, argv_new);
 		} else if (strcasecmp("tap", argv[1]) == 0) {
 			res = input_cmd_tap(argc_new, argv_new);
+		} else if (strcasecmp("xkb_layout", argv[1]) == 0) {
+			res = input_cmd_xkb_layout(argc_new, argv_new);
+		} else if (strcasecmp("xkb_model", argv[1]) == 0) {
+			res = input_cmd_xkb_model(argc_new, argv_new);
+		} else if (strcasecmp("xkb_options", argv[1]) == 0) {
+			res = input_cmd_xkb_options(argc_new, argv_new);
+		} else if (strcasecmp("xkb_rules", argv[1]) == 0) {
+			res = input_cmd_xkb_rules(argc_new, argv_new);
+		} else if (strcasecmp("xkb_variant", argv[1]) == 0) {
+			res = input_cmd_xkb_variant(argc_new, argv_new);
 		} else {
 			res = cmd_results_new(CMD_INVALID, "input <device>", "Unknown command %s", argv[1]);
 		}
