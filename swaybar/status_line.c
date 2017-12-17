@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <json-c/json.h>
 
-#include "sway_json_helper.h"
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 #include "log.h"
@@ -70,7 +70,8 @@ static void parse_json(struct bar *bar, const char *text) {
 
 	bar->status->block_line = create_list();
 
-	for (json_ar_len_t i = 0; i < json_object_array_length(results); ++i) {
+	int i;
+	for (i = 0; i < json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
 		json_object *background, *border, *border_top, *border_bottom;

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <json-c/json.h>
 #include <list.h>
 #include <libinput.h>
 #ifdef __linux__
@@ -24,7 +25,6 @@ struct ucred {
 	gid_t gid;
 };
 #endif
-#include "sway_json_helper.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/security.h"
@@ -724,7 +724,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		// parse requested event types
-		for (json_ar_len_t i = 0; i < json_object_array_length(request); i++) {
+		for (int i = 0; i < json_object_array_length(request); i++) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
 			if (strcmp(event_type, "workspace") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
@@ -1126,8 +1126,7 @@ static void ipc_event_binding(json_object *sb_obj) {
 	sway_log(L_DEBUG, "Sending binding::run event");
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("run"));
-	// sb_obj gets owned by the temporary json_object, too.
-	json_object_object_add(obj, "binding", json_object_get(sb_obj));
+	json_object_object_add(obj, "binding", sb_obj);
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_BINDING);

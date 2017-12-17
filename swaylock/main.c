@@ -3,6 +3,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <security/pam_appl.h>
+#include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +14,6 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include "sway_json_helper.h"
 #include "client/window.h"
 #include "client/registry.h"
 #include "client/cairo.h"
@@ -583,7 +583,7 @@ int main(int argc, char **argv) {
 
 		for (i = 0; i < registry->outputs->length; ++i) {
 			if (displays_paths[i * 2] != NULL) {
-				for (json_ar_len_t j = 0;; ++j) {
+				for (int j = 0;; ++j) {
 					if (j >= json_object_array_length(json_outputs)) {
 						sway_log(L_ERROR, "%s is not an extant output", displays_paths[i * 2]);
 						exit(EXIT_FAILURE);
