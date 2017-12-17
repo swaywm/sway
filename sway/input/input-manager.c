@@ -145,6 +145,7 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat = NULL;
 	if (!input_has_seat_configuration(input)) {
+		sway_log(L_DEBUG, "no seat configuration, using default seat");
 		seat = input_manager_get_seat(input, default_seat);
 		sway_seat_add_device(seat, input_device);
 		return;
@@ -245,6 +246,7 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 
 void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config) {
+	sway_log(L_DEBUG, "applying new seat config for seat %s", seat_config->name);
 	struct sway_seat *seat = input_manager_get_seat(input, seat_config->name);
 	// the old config is invalid so clear it
 	sway_seat_set_config(seat, NULL);
