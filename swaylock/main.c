@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <getopt.h>
@@ -56,8 +57,7 @@ void sway_terminate(int exit_code) {
 	exit(exit_code);
 }
 
-char *password;
-int password_size;
+char password[1024];
 enum line_source line_source = LINE_SOURCE_DEFAULT;
 
 struct lock_config *init_config() {
@@ -115,7 +115,7 @@ int function_conversation(int num_msg, const struct pam_message **msg,
 		switch (msg[i]->msg_style) {
 		case PAM_PROMPT_ECHO_OFF:
 		case PAM_PROMPT_ECHO_ON:
-			pam_reply[i].resp = password;
+			pam_reply[i].resp = strdup(password); // PAM clears and frees this
 			break;
 
 		case PAM_ERROR_MSG:
@@ -127,9 +127,15 @@ int function_conversation(int num_msg, const struct pam_message **msg,
 	return PAM_SUCCESS;
 }
 
-/**
- * Note: PAM will free() 'password' during the process
- */
+void clear_password_buffer() {
+	// Use volatile keyword so so compiler can't optimize this out.
+	volatile char *pw = password;
+	volatile char zero = '\0';
+	for (size_t i = 0; i < sizeof(password); ++i) {
+		pw[i] = zero;
+	}
+}
+
 bool verify_password() {
 	struct passwd *passwd = getpwuid(getuid());
 	char *username = passwd->pw_name;
@@ -151,8 +157,7 @@ bool verify_password() {
 
 void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
 	int redraw_screen = 0;
-	char *password_realloc;
-	int i;
+	size_t i;
 
 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		switch (sym) {
@@ -165,14 +170,14 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			wl_dispatch_events();
 
 			if (verify_password()) {
+				clear_password_buffer();
 				exit(0);
 			}
 
 			render_data.auth_state = AUTH_STATE_INVALID;
 			redraw_screen = 1;
 
-			password_size = 1024;
-			password = malloc(password_size);
+			clear_password_buffer();
 			password[0] = '\0';
 			break;
 		case XKB_KEY_BackSpace:
@@ -207,9 +212,7 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 				render_data.auth_state = AUTH_STATE_BACKSPACE;
 				redraw_screen = 1;
 
-				password_size = 1024;
-				free(password);
-				password = malloc(password_size);
+				clear_password_buffer();
 				password[0] = '\0';
 				break;
 			}
@@ -218,22 +221,10 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			render_data.auth_state = AUTH_STATE_INPUT;
 			redraw_screen = 1;
 			i = strlen(password);
-			if (i + 1 == password_size) {
-				password_size += 1024;
-				password_realloc = realloc(password, password_size);
-				// reset password if realloc fails.
-				if (password_realloc == NULL) {
-					password_size = 1024;
-					free(password);
-					password = malloc(password_size);
-					password[0] = '\0';
-					break;
-				} else {
-					password = password_realloc;
-				}
+			if (i + 1 < sizeof(password)) {
+				password[i] = (char)codepoint;
+				password[i + 1] = '\0';
 			}
-			password[i] = (char)codepoint;
-			password[i + 1] = '\0';
 			break;
 		}
 		if (redraw_screen) {
@@ -539,8 +530,12 @@ int main(int argc, char **argv) {
 		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
 	}
 
-	password_size = 1024;
-	password = malloc(password_size);
+#ifdef __linux__
+	// Most non-linux platforms require root to mlock()
+	if (mlock(password, sizeof(password)) != 0) {
+		sway_abort("Unable to mlock() password memory.");
+	}
+#endif
 	password[0] = '\0';
 	render_data.surfaces = create_list();
 	if (!socket_path) {
