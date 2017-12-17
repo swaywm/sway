@@ -103,9 +103,10 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 }
 
 void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
-	xkb_keymap_unref(keyboard->keymap);
+	if (!keyboard) {
+		return;
+	}
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
-	wl_list_remove(&keyboard->link);
 	free(keyboard);
 }

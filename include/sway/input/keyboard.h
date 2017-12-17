@@ -5,7 +5,6 @@
 
 struct sway_keyboard {
 	struct sway_seat_device *seat_device;
-	struct wl_list link; // sway_seat::keyboards
 
 	struct xkb_keymap *keymap;
 
