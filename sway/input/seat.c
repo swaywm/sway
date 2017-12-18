@@ -180,7 +180,8 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 
 		sway_assert(!result,
 			"Cannot load xcursor theme for output '%s' with scale %f",
-			output->name, output->scale);
+			// TODO: Fractional scaling
+			output->name, (double)output->scale);
 	}
 
 	wlr_xcursor_manager_set_cursor_image(seat->cursor->xcursor_manager,
