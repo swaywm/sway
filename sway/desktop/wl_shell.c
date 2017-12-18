@@ -55,8 +55,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
 	struct sway_view *view = sway_surface->view;
-	sway_log(L_DEBUG, "wl_shell surface commit %dx%d",
-			sway_surface->pending_width, sway_surface->pending_height);
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
 	view->width = sway_surface->pending_width;
