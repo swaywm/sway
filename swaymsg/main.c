@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
 			} else {
 				pretty_print(type, obj);
 			}
-			free(obj);
+			json_object_put(obj);
 		}
 	}
 	close(socketfd);
