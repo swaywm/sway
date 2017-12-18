@@ -91,6 +91,8 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
 	wlr_keyboard_set_repeat_info(wlr_device->keyboard, 25, 600);
 	xkb_context_unref(context);
+	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
+	wlr_seat_set_keyboard(seat, wlr_device);
 
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_signal_add(&wlr_device->keyboard->events.key, &keyboard->keyboard_key);
