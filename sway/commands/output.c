@@ -144,7 +144,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 				goto fail;
 			}
 			char *end;
-			output->scale = strtol(argv[i], &end, 10);
+			output->scale = strtof(argv[i], &end);
 			if (*end) {
 				error = cmd_results_new(CMD_INVALID, "output",
 					"Invalid scale.");
@@ -278,7 +278,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 
 	sway_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %d transform %d) (bg %s %s)",
+		"position %d,%d scale %f transform %d) (bg %s %s)",
 		output->name, output->enabled, output->width, output->height,
 		output->refresh_rate, output->x, output->y, output->scale,
 		output->transform, output->background, output->background_option);

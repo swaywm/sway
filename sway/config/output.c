@@ -111,7 +111,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	}
 	if (oc && oc->scale > 0) {
-		sway_log(L_DEBUG, "Set %s scale to %d", oc->name, oc->scale);
+		sway_log(L_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
 	}
 	if (oc && oc->transform >= 0) {
