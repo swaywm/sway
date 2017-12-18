@@ -18,8 +18,8 @@ struct cmd_results *input_cmd_xkb_model(int argc, char **argv) {
 
 	new_config->xkb_model = strdup(argv[0]);
 
-	sway_log(L_DEBUG, "apply-xkb_model for device: %s",
-		current_input_config->identifier);
+	sway_log(L_DEBUG, "apply-xkb_model for device: %s model: %s",
+		current_input_config->identifier, new_config->xkb_model);
 	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
