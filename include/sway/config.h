@@ -105,7 +105,7 @@ struct output_config {
 	int width, height;
 	float refresh_rate;
 	int x, y;
-	int scale;
+	float scale;
 	int32_t transform;
 
 	char *background;
