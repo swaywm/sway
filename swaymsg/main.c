@@ -61,55 +61,49 @@ static void pretty_print_workspace(json_object *w) {
 	);
 }
 
-static void pretty_print_input(json_object *i) {
-	json_object *id, *name, *size, *caps;
-	json_object_object_get_ex(i, "identifier", &id);
-	json_object_object_get_ex(i, "name", &name);
-	json_object_object_get_ex(i, "size", &size);
-	json_object_object_get_ex(i, "capabilities", &caps);
-
-	printf( "Input device %s\n  Type: ", json_object_get_string(name));
-
+static const char *pretty_type_name(const char *name) {
+	// TODO these constants probably belong in the common lib
 	struct {
 		const char *a;
 		const char *b;
-	} cap_names[] = {
+	} type_names[] = {
 		{ "keyboard", "Keyboard" },
 		{ "pointer", "Mouse" },
-		{ "touch", "Touch" },
-		{ "tablet_tool", "Tablet tool" },
 		{ "tablet_pad", "Tablet pad" },
-		{ "gesture", "Gesture" },
-		{ "switch", "Switch" },
+		{ "tablet_tool", "Tablet tool" },
+		{ "touch", "Touch" },
 	};
 
-	size_t len = json_object_array_length(caps);
-	if (len == 0) {
-		printf("Unknown");
+	for (size_t i = 0; i < sizeof(type_names) / sizeof(type_names[0]); ++i) {
+		if (strcmp(type_names[i].a, name) == 0) {
+			return type_names[i].b;
+		}
 	}
 
-	json_object *cap;
-	for (size_t i = 0; i < len; ++i) {
-		cap = json_object_array_get_idx(caps, i);
-		const char *cap_s = json_object_get_string(cap);
-		const char *_name = NULL;
-		for (size_t j = 0; j < sizeof(cap_names) / sizeof(cap_names[0]); ++i) {
-			if (strcmp(cap_names[i].a, cap_s) == 0) {
-				_name = cap_names[i].b;
-				break;
-			}
-		}
-		printf("%s%s", _name ? _name : cap_s, len > 1 && i != len - 1 ? ", " : "");
-	}
-	printf("\n  Sway ID: %s\n", json_object_get_string(id));
-	if (size) {
-		json_object *width, *height;
-		json_object_object_get_ex(size, "width", &width);
-		json_object_object_get_ex(size, "height", &height);
-		printf("  Size: %lfmm x %lfmm\n",
-				json_object_get_double(width), json_object_get_double(height));
-	}
-	printf("\n");
+	return name;
+}
+
+static void pretty_print_input(json_object *i) {
+	json_object *id, *name, *type, *product, *vendor;
+	json_object_object_get_ex(i, "identifier", &id);
+	json_object_object_get_ex(i, "name", &name);
+	json_object_object_get_ex(i, "type", &type);
+	json_object_object_get_ex(i, "product", &product);
+	json_object_object_get_ex(i, "vendor", &vendor);
+
+	const char *fmt =
+		"Input device: %s\n"
+		"  Type: %s\n"
+		"  Identifier: %s\n"
+		"  Product ID: %d\n"
+		"  Vendor ID: %d\n\n";
+
+
+	printf(fmt, json_object_get_string(name),
+		pretty_type_name(json_object_get_string(type)),
+		json_object_get_string(id),
+		json_object_get_int(product),
+		json_object_get_int(vendor));
 }
 
 static void pretty_print_output(json_object *o) {
