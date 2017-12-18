@@ -4,6 +4,7 @@
 #include "log.h"
 #include "sway/ipc-json.h"
 #include "sway/container.h"
+#include "sway/output.h"
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
 
@@ -38,10 +39,43 @@ static void ipc_json_describe_root(swayc_t *root, json_object *object) {
 	json_object_object_add(object, "layout", json_object_new_string("splith"));
 }
 
-static void ipc_json_describe_output(swayc_t *output, json_object *object) {
+static const char *ipc_json_get_output_transform(enum wl_output_transform transform) {
+	switch (transform) {
+	case WL_OUTPUT_TRANSFORM_NORMAL:
+		return "normal";
+	case WL_OUTPUT_TRANSFORM_90:
+		return "90";
+	case WL_OUTPUT_TRANSFORM_180:
+		return "180";
+	case WL_OUTPUT_TRANSFORM_270:
+		return "270";
+	case WL_OUTPUT_TRANSFORM_FLIPPED:
+		return "flipped";
+	case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+		return "flipped-90";
+	case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+		return "flipped-180";
+	case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+		return "flipped-270";
+	}
+	return NULL;
+}
+
+static void ipc_json_describe_output(swayc_t *container, json_object *object) {
+	struct wlr_output *wlr_output = container->sway_output->wlr_output;
 	json_object_object_add(object, "type", json_object_new_string("output"));
+	json_object_object_add(object, "active", json_object_new_boolean(true));
+	json_object_object_add(object, "primary", json_object_new_boolean(false));
+	json_object_object_add(object, "layout", json_object_new_string("output"));
+	json_object_object_add(object, "make", json_object_new_string(wlr_output->make));
+	json_object_object_add(object, "model", json_object_new_string(wlr_output->model));
+	json_object_object_add(object, "serial", json_object_new_string(wlr_output->serial));
+	json_object_object_add(object, "scale", json_object_new_double(wlr_output->scale));
+	json_object_object_add(object, "refresh", json_object_new_int(wlr_output->refresh));
+	json_object_object_add(object, "transform",
+		json_object_new_string(ipc_json_get_output_transform(wlr_output->transform)));
 	json_object_object_add(object, "current_workspace",
-		(output->focused) ? json_object_new_string(output->focused->name) : NULL);
+		(container->focused) ? json_object_new_string(container->focused->name) : NULL);
 }
 
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {

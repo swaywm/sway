@@ -343,6 +343,22 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_OUTPUTS:
+	{
+		json_object *outputs = json_object_new_array();
+		for (int i = 0; i < root_container.children->length; ++i) {
+			swayc_t *container = root_container.children->items[i];
+			if (container->type == C_OUTPUT) {
+				json_object_array_add(outputs,
+					ipc_json_describe_container(container));
+			}
+		}
+		const char *json_string = json_object_to_json_string(outputs);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(outputs); // free
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_TREE:
 	{
 		json_object *tree =
