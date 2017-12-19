@@ -308,9 +308,11 @@ int main(int argc, char **argv) {
 	}
 	free(cmdtype);
 
-	char *command = strdup("");
+	char *command = NULL;
 	if (optind < argc) {
 		command = join_args(argv + optind, argc - optind);
+	} else {
+		command = strdup("");
 	}
 
 	int ret = 0;
