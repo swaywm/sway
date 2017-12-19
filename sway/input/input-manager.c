@@ -34,13 +34,6 @@ static struct sway_seat *input_manager_get_seat(
 	return sway_seat_create(input, seat_name);
 }
 
-static inline int strlen_num(int num) {
-	if (num == 0) {
-		return 2;
-	}
-	return (int)((ceil(log10(abs(num)))+2));
-}
-
 static char *get_device_identifier(struct wlr_input_device *device) {
 	int vendor = device->vendor;
 	int product = device->product;
@@ -54,19 +47,14 @@ static char *get_device_identifier(struct wlr_input_device *device) {
 		}
 	}
 
-	int len =
-		(strlen(name) +
-		strlen_num(device->vendor) +
-		strlen_num(device->product) +
-		3) * sizeof(char);
-
+	const char *fmt = "%d:%d:%s";
+	int len = snprintf(NULL, 0, fmt, vendor, product, name) + 1;
 	char *identifier = malloc(len);
 	if (!identifier) {
 		sway_log(L_ERROR, "Unable to allocate unique input device name");
 		return NULL;
 	}
 
-	const char *fmt = "%d:%d:%s";
 	snprintf(identifier, len, fmt, vendor, product, name);
 	free(name);
 	return identifier;
