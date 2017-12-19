@@ -15,9 +15,6 @@ static void cursor_update_position(struct sway_cursor *cursor) {
 	double x = cursor->cursor->x;
 	double y = cursor->cursor->y;
 
-	wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-		"left_ptr", cursor->cursor);
-
 	cursor->x = x;
 	cursor->y = y;
 }
