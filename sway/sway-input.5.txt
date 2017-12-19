@@ -95,6 +95,10 @@ their own "seat").
 	Attach an input device to this seat by its input identifier. A special value
 	of _*_ will attach all devices to the seat.
 
+**seat** <name> fallback <true|false>::
+	Set this seat as the fallback seat. A fallback seat will attach any device not
+	explicitly attached to another seat (similar to a "default" seat).
+
 See Also
 --------
 
