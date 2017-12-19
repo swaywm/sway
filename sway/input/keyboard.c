@@ -85,10 +85,19 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		return;
 	}
 
-	xkb_keymap_unref(keyboard->keymap);
-	keyboard->keymap =
+	struct xkb_keymap *keymap =
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+	if (!keymap) {
+		sway_log(L_DEBUG, "cannot configure keyboard: keymap does not exist");
+		xkb_context_unref(context);
+		return;
+	}
+
+	xkb_keymap_unref(keyboard->keymap);
+	keyboard->keymap = keymap;
 	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
+
 	wlr_keyboard_set_repeat_info(wlr_device->keyboard, 25, 600);
 	xkb_context_unref(context);
 	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
