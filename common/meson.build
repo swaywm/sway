@@ -7,5 +7,6 @@ lib_sway_common = static_library('sway-common',
 		'readline.c',
 		'ipc-client.c'
 	),
+	dependencies: [ wlroots ],
 	include_directories: sway_inc
 )
