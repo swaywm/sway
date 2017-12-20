@@ -30,6 +30,7 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 
 	seat->wlr_seat = wlr_seat_create(input->server->wl_display, seat_name);
 	if (!sway_assert(seat->wlr_seat, "could not allocate seat")) {
+		free(seat);
 		return NULL;
 	}
 

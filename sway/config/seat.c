@@ -14,6 +14,7 @@ struct seat_config *new_seat_config(const char* name) {
 	sway_log(L_DEBUG, "new_seat_config(%s)", name);
 	seat->name = strdup(name);
 	if (!sway_assert(seat->name, "could not allocate name for seat")) {
+		free(seat);
 		return NULL;
 	}
 
@@ -21,6 +22,8 @@ struct seat_config *new_seat_config(const char* name) {
 	seat->attachments = create_list();
 	if (!sway_assert(seat->attachments,
 				"could not allocate seat attachments list")) {
+		free(seat->name);
+		free(seat);
 		return NULL;
 	}
 

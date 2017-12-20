@@ -119,10 +119,11 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 
 	bool added = false;
 	wl_list_for_each(seat, &input->seats, link) {
-		if (seat->config &&
-				(seat_config_get_attachment(seat->config,
-											input_device->identifier) ||
-				seat_config_get_attachment(seat->config, "*"))) {
+		bool has_attachment = seat->config &&
+			(seat_config_get_attachment(seat->config, input_device->identifier) ||
+			 seat_config_get_attachment(seat->config, "*"));
+
+		if (has_attachment) {
 			sway_seat_add_device(seat, input_device);
 			added = true;
 		}
