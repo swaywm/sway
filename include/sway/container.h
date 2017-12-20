@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_surface.h>
 #include "list.h"
 
 typedef struct sway_container swayc_t;
@@ -123,6 +124,10 @@ struct sway_container {
 	 * Marks applied to the container, list_t of char*.
 	 */
 	list_t *marks;
+
+	struct {
+		struct wl_signal destroy;
+	} events;
 };
 
 void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
@@ -136,5 +141,8 @@ swayc_t *destroy_output(swayc_t *output);
 swayc_t *destroy_view(swayc_t *view);
 
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type);
+
+swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy);
 
 #endif

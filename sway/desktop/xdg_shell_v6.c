@@ -7,6 +7,8 @@
 #include "sway/layout.h"
 #include "sway/server.h"
 #include "sway/view.h"
+#include "sway/input/seat.h"
+#include "sway/input/input-manager.h"
 #include "log.h"
 
 static bool assert_xdg(struct sway_view *view) {
@@ -59,8 +61,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
 	struct sway_view *view = sway_surface->view;
-	sway_log(L_DEBUG, "xdg surface commit %dx%d",
-			sway_surface->pending_width, sway_surface->pending_height);
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
 	view->width = sway_surface->pending_width;
@@ -132,4 +132,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
+
+	sway_input_manager_set_focus(input_manager, cont);
 }

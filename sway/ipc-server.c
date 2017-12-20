@@ -20,6 +20,7 @@
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/server.h"
+#include "sway/input/input-manager.h"
 #include "list.h"
 #include "log.h"
 
@@ -356,6 +357,19 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(outputs);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(outputs); // free
+		goto exit_cleanup;
+	}
+
+	case IPC_GET_INPUTS:
+	{
+		json_object *inputs = json_object_new_array();
+		struct sway_input_device *device = NULL;
+		wl_list_for_each(device, &input_manager->devices, link) {
+			json_object_array_add(inputs, ipc_json_describe_input(device));
+		}
+		const char *json_string = json_object_to_json_string(inputs);
+		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		json_object_put(inputs); // free
 		goto exit_cleanup;
 	}
 

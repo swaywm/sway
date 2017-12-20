@@ -1,6 +1,8 @@
 #ifndef _SWAY_COMMANDS_H
 #define _SWAY_COMMANDS_H
 
+#include "config.h"
+
 /**
  * Indicates the result of a command's execution.
  */
@@ -15,6 +17,7 @@ enum cmd_status {
 	CMD_BLOCK_BAR,
 	CMD_BLOCK_BAR_COLORS,
 	CMD_BLOCK_INPUT,
+	CMD_BLOCK_SEAT,
 	CMD_BLOCK_COMMANDS,
 	CMD_BLOCK_IPC,
 	CMD_BLOCK_IPC_EVENTS,
@@ -107,6 +110,7 @@ sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_input;
+sway_cmd cmd_seat;
 sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
@@ -176,6 +180,7 @@ sway_cmd bar_colors_cmd_statusline;
 sway_cmd bar_colors_cmd_focused_statusline;
 sway_cmd bar_colors_cmd_urgent_workspace;
 
+sway_cmd input_cmd_seat;
 sway_cmd input_cmd_accel_profile;
 sway_cmd input_cmd_click_method;
 sway_cmd input_cmd_drag_lock;
@@ -187,6 +192,14 @@ sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+sway_cmd input_cmd_xkb_layout;
+sway_cmd input_cmd_xkb_model;
+sway_cmd input_cmd_xkb_options;
+sway_cmd input_cmd_xkb_rules;
+sway_cmd input_cmd_xkb_variant;
+
+sway_cmd seat_cmd_fallback;
+sway_cmd seat_cmd_attach;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

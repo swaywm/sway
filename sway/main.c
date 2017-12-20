@@ -158,6 +158,7 @@ static void log_distro() {
 }
 
 static void log_kernel() {
+	return;
 	FILE *f = popen("uname -a", "r");
 	if (!f) {
 		sway_log(L_INFO, "Unable to determine kernel version");
@@ -381,11 +382,12 @@ int main(int argc, char **argv) {
 
 	sway_log(L_INFO, "Starting sway version " SWAY_VERSION "\n");
 
+	init_layout();
+
 	if (!server_init(&server)) {
 		return 1;
 	}
 
-	init_layout();
 	ipc_init(&server);
 	log_env();
 

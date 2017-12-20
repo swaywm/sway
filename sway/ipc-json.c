@@ -141,3 +141,40 @@ json_object *ipc_json_describe_container_recursive(swayc_t *c) {
 
 	return object;
 }
+
+static const char *describe_device_type(struct sway_input_device *device) {
+	switch (device->wlr_device->type) {
+	case WLR_INPUT_DEVICE_POINTER:
+		return "pointer";
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return "keyboard";
+	case WLR_INPUT_DEVICE_TOUCH:
+		return "touch";
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return "tablet_tool";
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		return "tablet_pad";
+	}
+	return "unknown";
+}
+
+json_object *ipc_json_describe_input(struct sway_input_device *device) {
+	if (!(sway_assert(device, "Device must not be null"))) {
+		return NULL;
+	}
+
+	json_object *object = json_object_new_object();
+
+	json_object_object_add(object, "identifier",
+		json_object_new_string(device->identifier));
+	json_object_object_add(object, "name",
+		json_object_new_string(device->wlr_device->name));
+	json_object_object_add(object, "vendor",
+		json_object_new_int(device->wlr_device->vendor));
+	json_object_object_add(object, "product",
+		json_object_new_int(device->wlr_device->product));
+	json_object_object_add(object, "type",
+		json_object_new_string(describe_device_type(device)));
+
+	return object;
+}
