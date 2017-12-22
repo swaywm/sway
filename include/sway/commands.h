@@ -111,6 +111,7 @@ sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_input;
 sway_cmd cmd_seat;
+sway_cmd cmd_backend;
 sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
@@ -142,6 +143,9 @@ sway_cmd cmd_unmark;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_workspace_layout;
+
+sway_cmd backend_cmd_add;
+sway_cmd backend_cmd_del;
 
 sway_cmd bar_cmd_activate_button;
 sway_cmd bar_cmd_binding_mode_indicator;

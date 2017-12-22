@@ -127,6 +127,7 @@ struct cmd_results *add_color(const char *name, char *buffer, const char *color)
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
+	{ "backend", cmd_backend },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },

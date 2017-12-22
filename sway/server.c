@@ -6,6 +6,8 @@
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
 #include <wlr/backend/multi.h>
+#include <wlr/backend/wayland.h>
+#include <wlr/backend/headless.h>
 #include <wlr/render.h>
 #include <wlr/render/gles2.h>
 #include <wlr/types/wlr_compositor.h>
@@ -123,22 +125,34 @@ static void handle_subbackend_backend_destroy(struct wl_listener *listener,
 	sway_subbackend_destroy(subbackend);
 }
 
-static struct wlr_backend *wayland_backend_create() {
+static struct wlr_backend *wayland_backend_create(struct sway_server *server) {
 	sway_log(L_DEBUG, "TODO: create wayland backend");
 	return NULL;
+	/*
+	struct wlr_backend *backend =
+		wlr_wl_backend_create(server->wl_display);
+	wlr_wl_output_create(backend);
+	return backend;
+	*/
 }
 
-static struct wlr_backend *x11_backend_create() {
+static struct wlr_backend *x11_backend_create(struct sway_server *server) {
 	sway_log(L_DEBUG, "TODO: create x11 backend");
 	return NULL;
 }
 
-static struct wlr_backend *headless_backend_create() {
+static struct wlr_backend *headless_backend_create(
+		struct sway_server *server) {
 	sway_log(L_DEBUG, "TODO: create headless backend");
 	return NULL;
+	/*
+	struct wlr_backend *backend =
+		wlr_headless_backend_create(server->wl_display);
+	return backend;
+	*/
 }
 
-static struct wlr_backend *drm_backend_create() {
+static struct wlr_backend *drm_backend_create(struct sway_server *server) {
 	sway_log(L_DEBUG, "TODO: create drm backend");
 	return NULL;
 }
@@ -149,16 +163,16 @@ void sway_server_add_subbackend(struct sway_server *server,
 
 	switch (subbackend->type) {
 	case SWAY_SUBBACKEND_WAYLAND:
-		backend = wayland_backend_create();
+		backend = wayland_backend_create(server);
 		break;
 	case SWAY_SUBBACKEND_X11:
-		backend = x11_backend_create();
+		backend = x11_backend_create(server);
 		break;
 	case SWAY_SUBBACKEND_DRM:
-		backend = drm_backend_create();
+		backend = drm_backend_create(server);
 		break;
 	case SWAY_SUBBACKEND_HEADLESS:
-		backend = headless_backend_create();
+		backend = headless_backend_create(server);
 		break;
 	}
 
@@ -175,6 +189,7 @@ void sway_server_add_subbackend(struct sway_server *server,
 	subbackend->backend_destroy.notify = handle_subbackend_backend_destroy;
 
 	wlr_multi_backend_add(server->backend, backend);
+	wlr_backend_start(backend);
 }
 
 void sway_server_remove_subbackend(struct sway_server *server, char *name) {
