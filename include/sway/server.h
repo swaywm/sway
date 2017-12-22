@@ -11,12 +11,29 @@
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 
+enum sway_subbackend_type {
+	SWAY_SUBBACKEND_WAYLAND,
+	SWAY_SUBBACKEND_X11,
+	SWAY_SUBBACKEND_DRM,
+	SWAY_SUBBACKEND_HEADLESS,
+};
+
+struct sway_subbackend {
+	char *name;
+	enum sway_subbackend_type type;
+	struct wlr_backend *backend;
+	struct wl_list link; // sway_server::subbackends
+
+	struct wl_listener backend_destroy;
+};
+
 struct sway_server {
 	struct wl_display *wl_display;
 	struct wl_event_loop *wl_event_loop;
 	const char *socket;
 
 	struct wlr_backend *backend;
+	struct wl_list subbackends; // sway_server_subbackend::link
 	struct wlr_renderer *renderer;
 
 	struct wlr_compositor *compositor;
@@ -50,5 +67,11 @@ void output_remove_notify(struct wl_listener *listener, void *data);
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 void handle_wl_shell_surface(struct wl_listener *listener, void *data);
+
+struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
+		char *name);
+void sway_server_add_subbackend(struct sway_server *server,
+		struct sway_subbackend *subbackend);
+void sway_server_remove_subbackend(struct sway_server *server, char *name);
 
 #endif
