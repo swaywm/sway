@@ -12,6 +12,8 @@
 #include <wlr/render/gles2.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include <wlr/types/wlr_input_device.h>
+#include <wlr/interfaces/wlr_input_device.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 #include "sway/server.h"
@@ -95,6 +97,18 @@ static void sway_subbackend_destroy(struct sway_subbackend *subbackend) {
 	free(subbackend);
 }
 
+struct sway_subbackend *sway_server_get_subbackend(struct sway_server *server,
+		char *name) {
+	struct sway_subbackend *subbackend = NULL;
+	wl_list_for_each(subbackend, &server->subbackends, link) {
+		if (strcasecmp(subbackend->name, name) == 0) {
+			return subbackend;
+		}
+	}
+
+	return NULL;
+}
+
 struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
 		char *name) {
 	struct sway_subbackend *subbackend =
@@ -113,6 +127,8 @@ struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
 	}
 
 	subbackend->type = type;
+	wl_list_init(&subbackend->outputs);
+	wl_list_init(&subbackend->inputs);
 	wl_list_init(&subbackend->link);
 
 	return subbackend;
@@ -159,6 +175,13 @@ static struct wlr_backend *drm_backend_create(struct sway_server *server) {
 
 void sway_server_add_subbackend(struct sway_server *server,
 		struct sway_subbackend *subbackend) {
+	if (sway_server_get_subbackend(server, subbackend->name)) {
+		sway_log(L_ERROR, "cannot add subbackend '%s': already exists",
+			subbackend->name);
+		sway_subbackend_destroy(subbackend);
+		return;
+	}
+
 	struct wlr_backend *backend = NULL;
 
 	switch (subbackend->type) {
@@ -193,12 +216,8 @@ void sway_server_add_subbackend(struct sway_server *server,
 }
 
 void sway_server_remove_subbackend(struct sway_server *server, char *name) {
-	struct sway_subbackend *subbackend = NULL;
-	wl_list_for_each(subbackend, &server->subbackends, link) {
-		if (strcasecmp(subbackend->name, name) == 0) {
-			break;
-		}
-	}
+	struct sway_subbackend *subbackend =
+		sway_server_get_subbackend(server, name);
 
 	if (!subbackend) {
 		sway_log(L_DEBUG, "could not find subbackend named '%s'", name);
@@ -206,4 +225,137 @@ void sway_server_remove_subbackend(struct sway_server *server, char *name) {
 	}
 
 	wlr_backend_destroy(subbackend->backend);
+}
+
+struct subbackend_output {
+	struct sway_subbackend *backend;
+	struct wlr_output *wlr_output;
+
+	struct wl_listener output_destroy;
+
+	struct wl_list link; // sway_subbackend::outputs
+};
+
+static void subbackend_output_destroy(struct subbackend_output *output) {
+	wl_list_remove(&output->link);
+	wl_list_remove(&output->output_destroy.link);
+	free(output);
+}
+
+static void handle_subbackend_output_destroy(struct wl_listener *listener,
+		void *data) {
+	struct subbackend_output *output =
+		wl_container_of(listener, output, output_destroy);
+	subbackend_output_destroy(output);
+}
+
+void sway_subbackend_add_output(struct sway_server *server,
+		struct sway_subbackend *subbackend, char *name) {
+	struct wlr_output *wlr_output = NULL;
+
+	switch(subbackend->type) {
+	case SWAY_SUBBACKEND_WAYLAND:
+		sway_log(L_DEBUG, "TODO: create wayland subbackend output");
+		break;
+	case SWAY_SUBBACKEND_X11:
+		sway_log(L_DEBUG, "TODO: create x11 subbackend output");
+		break;
+	case SWAY_SUBBACKEND_DRM:
+		sway_log(L_DEBUG, "creating DRM subbackend outputs is not supported");
+		break;
+	case SWAY_SUBBACKEND_HEADLESS:
+		wlr_output =
+			wlr_headless_add_output(subbackend->backend, 500, 500, name);
+		break;
+	}
+
+	if (wlr_output == NULL) {
+		sway_log(L_ERROR, "could not create subbackend output '%s'", name);
+		return;
+	}
+
+	struct subbackend_output *output =
+		calloc(1, sizeof(struct subbackend_output));
+	if (output == NULL) {
+		sway_log(L_ERROR, "could not allocate subbackend output");
+		return;
+	}
+
+	output->wlr_output = wlr_output;
+
+	wl_signal_add(&wlr_output->events.destroy, &output->output_destroy);
+	output->output_destroy.notify = handle_subbackend_output_destroy;
+
+	wl_list_insert(&subbackend->outputs, &output->link);
+}
+
+void sway_subbackend_remove_output(struct sway_server *server,
+		struct sway_subbackend *subbackend, char *name) {
+	struct subbackend_output *output = NULL, *tmp = NULL;
+	wl_list_for_each_safe(output, tmp, &subbackend->outputs, link) {
+		if (strcasecmp(output->wlr_output->name, name) == 0) {
+			wlr_output_destroy(output->wlr_output);
+		}
+	}
+}
+
+struct subbackend_input {
+	struct sway_subbackend *backend;
+	struct wlr_input_device *device;
+
+	struct wl_listener input_destroy;
+
+	struct wl_list link; // sway_subbackend::inputs
+};
+
+static void subbackend_input_destroy(struct subbackend_input *input) {
+	wl_list_remove(&input->link);
+	wl_list_remove(&input->input_destroy.link);
+	free(input);
+}
+
+static void handle_subbackend_device_destroy(struct wl_listener *listener,
+		void *data) {
+	struct subbackend_input *input =
+		wl_container_of(listener, input, input_destroy);
+	subbackend_input_destroy(input);
+}
+
+void sway_subbackend_add_input(struct sway_server *server,
+		struct sway_subbackend *subbackend, enum wlr_input_device_type type,
+		char *name) {
+	if (subbackend->type != SWAY_SUBBACKEND_HEADLESS) {
+		sway_log(L_DEBUG, "adding inputs is only supported for the headless backend");
+		return;
+	}
+
+	struct wlr_input_device *device =
+		wlr_headless_add_input_device(subbackend->backend, type, name);
+	if (device == NULL) {
+		return;
+	}
+
+	struct subbackend_input *input =
+		calloc(1, sizeof(struct subbackend_input));
+	if (input == NULL) {
+		sway_log(L_ERROR, "could not allocate subbackend input device");
+		return;
+	}
+
+	input->device = device;
+
+	wl_signal_add(&device->events.destroy, &input->input_destroy);
+	input->input_destroy.notify = handle_subbackend_device_destroy;
+
+	wl_list_insert(&subbackend->inputs, &input->link);
+}
+
+void sway_subbackend_remove_input(struct sway_server *server,
+		struct sway_subbackend *subbackend, char *name) {
+	struct subbackend_input *input = NULL, *tmp = NULL;
+	wl_list_for_each_safe(input, tmp, &subbackend->inputs, link) {
+		if (strcasecmp(input->device->name, name) == 0) {
+			wlr_input_device_destroy(input->device);
+		}
+	}
 }

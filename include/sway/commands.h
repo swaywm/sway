@@ -144,9 +144,6 @@ sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_workspace_layout;
 
-sway_cmd backend_cmd_add;
-sway_cmd backend_cmd_del;
-
 sway_cmd bar_cmd_activate_button;
 sway_cmd bar_cmd_binding_mode_indicator;
 sway_cmd bar_cmd_bindsym;

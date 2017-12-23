@@ -7,8 +7,6 @@ sway_sources = files(
 	'input/cursor.c',
 	'input/keyboard.c',
 	'commands/backend.c',
-	'commands/backend/add.c',
-	'commands/backend/del.c',
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
