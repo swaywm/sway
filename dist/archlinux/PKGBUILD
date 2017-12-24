@@ -51,10 +51,7 @@ build() {
   meson build \
 		--prefix=/usr \
 		-Dbuildtype=debugoptimized \
-		-Db_lto=True \
-		-Denable-systemd=True \
-		-Denable-elogind=False \
-		-Denable-libcap=True
+		-Db_lto=True
     
     ninja -C build
 }
