@@ -34,7 +34,7 @@ optdepends=(
 )
 arch=("i686" "x86_64")
 url='http://swaywm.org'
-source=("${pkgname%-*}::git+https://github.com/SirCmpwn/sway.git#wlroots")
+source=("${pkgname%-*}::git+https://github.com/SirCmpwn/sway.git#branch=wlroots")
 sha1sums=('SKIP')
 provides=('sway')
 conflicts=('sway-git')
