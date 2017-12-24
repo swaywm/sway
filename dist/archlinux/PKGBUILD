@@ -1,0 +1,63 @@
+# Maintainer: Drew DeVault <sir@cmpwn.com>
+# Contributor: chrisaw <home@chrisaw.com>
+
+pkgname=sway
+pkgver=git
+pkgrel=1
+license=('MIT')
+pkgdesc='i3 compatible window manager for Wayland'
+makedepends=(
+  "meson"
+  "git"
+  "asciidoc"
+)
+depends=(
+  "wlroots"
+  "wayland"
+  "xorg-server-xwayland"
+  "libinput"
+  "libcap"
+  "pcre"
+  "json-c"
+  "pango"
+  "cairo"
+  "gdk-pixbuf2"
+  "pam"
+  "dbus"
+)
+optdepends=(
+	"rxvt-unicode: Default terminal emulator."
+	"dmenu: Default for launching applications."
+	"imagemagick: For taking screenshots."
+	"ffmpeg: For recording screencasts."
+	"i3status: To display system information with a bar."
+)
+arch=("i686" "x86_64")
+url='http://swaywm.org'
+source=("${pkgname%-*}::git+https://github.com/SirCmpwn/sway.git#branch=wlroots")
+sha1sums=('SKIP')
+provides=('sway')
+conflicts=('sway-git')
+install=sway.install
+
+pkgver() {
+	cd "${srcdir}/${pkgname}"
+	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+	cd "${srcdir}/${pkgname}"
+
+  meson build \
+		--prefix=/usr \
+		-Dbuildtype=debugoptimized \
+		-Db_lto=True
+    
+    ninja -C build
+}
+
+package() {
+	cd "${srcdir}/${pkgname}"
+
+	DESTDIR="${pkgdir}" ninja -C build install
+}
