@@ -2,7 +2,6 @@
 image: archlinux
 packages:
   - meson
-  - wlc-git
   - xorg-server-xwayland
   - xcb-util-image
   - json-c
