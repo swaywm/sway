@@ -1,7 +1,51 @@
+#include <wlr/backend/multi.h>
+#include <wlr/backend/session.h>
 #include "sway/input/seat.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/input-manager.h"
 #include "log.h"
+
+/**
+ * Execute a built-in, hardcoded compositor binding. These are triggered from a
+ * single keysym.
+ *
+ * Returns true if the keysym was handled by a binding and false if the event
+ * should be propagated to clients.
+ */
+static bool keyboard_execute_compositor_binding(xkb_keysym_t keysym) {
+	if (keysym >= XKB_KEY_XF86Switch_VT_1 &&
+			keysym <= XKB_KEY_XF86Switch_VT_12) {
+		if (wlr_backend_is_multi(server.backend)) {
+			struct wlr_session *session =
+				wlr_multi_get_session(server.backend);
+			if (session) {
+				unsigned vt = keysym - XKB_KEY_XF86Switch_VT_1 + 1;
+				wlr_session_change_vt(session, vt);
+			}
+		}
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * Execute keyboard bindings. These include compositor bindings and user-defined
+ * bindings.
+ *
+ * Returns true if the keysym was handled by a binding and false if the event
+ * should be propagated to clients.
+ */
+static bool keyboard_execute_binding(struct sway_keyboard *keyboard,
+		xkb_keysym_t *pressed_keysyms, uint32_t modifiers,
+		const xkb_keysym_t *keysyms, size_t keysyms_len) {
+	for (size_t i = 0; i < keysyms_len; ++i) {
+		if (keyboard_execute_compositor_binding(keysyms[i])) {
+			return true;
+		}
+	}
+	return false;
+}
 
 /*
  * Get keysyms and modifiers from the keyboard as xkb sees them.
@@ -138,7 +182,9 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	pressed_keysyms_update(keyboard->pressed_keysyms_translated, keysyms,
 		keysyms_len, event->state);
 	if (event->state == WLR_KEY_PRESSED) {
-		// TODO execute binding
+		handled = keyboard_execute_binding(keyboard,
+			keyboard->pressed_keysyms_translated, modifiers, keysyms,
+			keysyms_len);
 	}
 
 	// Handle raw keysyms
@@ -146,7 +192,8 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	pressed_keysyms_update(keyboard->pressed_keysyms_raw, keysyms, keysyms_len,
 		event->state);
 	if (event->state == WLR_KEY_PRESSED && !handled) {
-		// TODO execute binding
+		handled = keyboard_execute_binding(keyboard,
+			keyboard->pressed_keysyms_raw, modifiers, keysyms, keysyms_len);
 	}
 
 	if (!handled) {
