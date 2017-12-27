@@ -3,6 +3,7 @@
 #include "sway/input/seat.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/input-manager.h"
+#include "sway/commands.h"
 #include "log.h"
 
 static size_t pressed_keysyms_length(xkb_keysym_t *pressed_keysyms) {
@@ -80,7 +81,7 @@ static bool keyboard_execute_binding(struct sway_keyboard *keyboard,
 		for (int j = 0; j < binding->keys->length; ++j) {
 			match =
 				pressed_keysyms_index(pressed_keysyms,
-					*(int*)binding->keys->items[j]) < 0;
+					*(int*)binding->keys->items[j]) >= 0;
 
 			if (!match) {
 				break;
@@ -88,7 +89,13 @@ static bool keyboard_execute_binding(struct sway_keyboard *keyboard,
 		}
 
 		if (match) {
-			sway_log(L_DEBUG, "TODO: executing binding command: %s", binding->command);
+			sway_log(L_DEBUG, "running command for binding: %s", binding->command);
+			struct cmd_results *results = handle_command(binding->command);
+			if (results->status != CMD_SUCCESS) {
+				sway_log(L_DEBUG, "could not run command for binding: %s",
+					binding->command);
+			}
+			free_cmd_results(results);
 			return true;
 		}
 	}
