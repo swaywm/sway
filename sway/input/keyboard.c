@@ -5,6 +5,27 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+static size_t pressed_keysyms_length(xkb_keysym_t *pressed_keysyms) {
+	size_t n = 0;
+	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++i) {
+		if (pressed_keysyms[i] != XKB_KEY_NoSymbol) {
+			++n;
+		}
+	}
+	return n;
+}
+
+static ssize_t pressed_keysyms_index(xkb_keysym_t *pressed_keysyms,
+		xkb_keysym_t keysym) {
+	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++i) {
+		if (pressed_keysyms[i] == keysym) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+
 /**
  * Execute a built-in, hardcoded compositor binding. These are triggered from a
  * single keysym.
@@ -39,11 +60,39 @@ static bool keyboard_execute_compositor_binding(xkb_keysym_t keysym) {
 static bool keyboard_execute_binding(struct sway_keyboard *keyboard,
 		xkb_keysym_t *pressed_keysyms, uint32_t modifiers,
 		const xkb_keysym_t *keysyms, size_t keysyms_len) {
+	// compositor bindings
 	for (size_t i = 0; i < keysyms_len; ++i) {
 		if (keyboard_execute_compositor_binding(keysyms[i])) {
 			return true;
 		}
 	}
+
+	// configured bindings
+	int n = pressed_keysyms_length(pressed_keysyms);
+	list_t *keysym_bindings = config->current_mode->keysym_bindings;
+	for (int i = 0; i < keysym_bindings->length; ++i) {
+		struct sway_binding *binding = keysym_bindings->items[i];
+		if (modifiers ^ binding->modifiers || n != binding->keys->length) {
+			continue;
+		}
+
+		bool match = true;
+		for (int j = 0; j < binding->keys->length; ++j) {
+			match =
+				pressed_keysyms_index(pressed_keysyms,
+					*(int*)binding->keys->items[j]) < 0;
+
+			if (!match) {
+				break;
+			}
+		}
+
+		if (match) {
+			sway_log(L_DEBUG, "TODO: executing binding command: %s", binding->command);
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -90,26 +139,6 @@ static size_t keyboard_keysyms_raw(struct sway_keyboard *keyboard,
 		device->keyboard->xkb_state, keycode);
 	return xkb_keymap_key_get_syms_by_level(device->keyboard->keymap,
 		keycode, layout_index, 0, keysyms);
-}
-
-static ssize_t pressed_keysyms_index(xkb_keysym_t *pressed_keysyms,
-		xkb_keysym_t keysym) {
-	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++i) {
-		if (pressed_keysyms[i] == keysym) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-static size_t pressed_keysyms_length(xkb_keysym_t *pressed_keysyms) {
-	size_t n = 0;
-	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++i) {
-		if (pressed_keysyms[i] != XKB_KEY_NoSymbol) {
-			++n;
-		}
-	}
-	return n;
 }
 
 static void pressed_keysyms_add(xkb_keysym_t *pressed_keysyms,
