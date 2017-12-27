@@ -3,6 +3,121 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+/*
+ * Get keysyms and modifiers from the keyboard as xkb sees them.
+ *
+ * This uses the xkb keysyms translation based on pressed modifiers and clears
+ * the consumed modifiers from the list of modifiers passed to keybind
+ * detection.
+ *
+ * On US layout, pressing Alt+Shift+2 will trigger Alt+@.
+ */
+static size_t keyboard_keysyms_translated(struct sway_keyboard *keyboard,
+		xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
+		uint32_t *modifiers) {
+	struct wlr_input_device *device =
+		keyboard->seat_device->input_device->wlr_device;
+	*modifiers = wlr_keyboard_get_modifiers(device->keyboard);
+	xkb_mod_mask_t consumed = xkb_state_key_get_consumed_mods2(
+		device->keyboard->xkb_state, keycode, XKB_CONSUMED_MODE_XKB);
+	*modifiers = *modifiers & ~consumed;
+
+	return xkb_state_key_get_syms(device->keyboard->xkb_state,
+		keycode, keysyms);
+}
+
+/*
+ * Get keysyms and modifiers from the keyboard as if modifiers didn't change
+ * keysyms.
+ *
+ * This avoids the xkb keysym translation based on modifiers considered pressed
+ * in the state.
+ *
+ * This will trigger keybinds such as Alt+Shift+2.
+ */
+static size_t keyboard_keysyms_raw(struct sway_keyboard *keyboard,
+		xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
+		uint32_t *modifiers) {
+	struct wlr_input_device *device =
+		keyboard->seat_device->input_device->wlr_device;
+	*modifiers = wlr_keyboard_get_modifiers(device->keyboard);
+
+	xkb_layout_index_t layout_index = xkb_state_key_get_layout(
+		device->keyboard->xkb_state, keycode);
+	return xkb_keymap_key_get_syms_by_level(device->keyboard->keymap,
+		keycode, layout_index, 0, keysyms);
+}
+
+static ssize_t pressed_keysyms_index(xkb_keysym_t *pressed_keysyms,
+		xkb_keysym_t keysym) {
+	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++i) {
+		if (pressed_keysyms[i] == keysym) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static size_t pressed_keysyms_length(xkb_keysym_t *pressed_keysyms) {
+	size_t n = 0;
+	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++i) {
+		if (pressed_keysyms[i] != XKB_KEY_NoSymbol) {
+			++n;
+		}
+	}
+	return n;
+}
+
+static void pressed_keysyms_add(xkb_keysym_t *pressed_keysyms,
+		xkb_keysym_t keysym) {
+	ssize_t i = pressed_keysyms_index(pressed_keysyms, keysym);
+	if (i < 0) {
+		i = pressed_keysyms_index(pressed_keysyms, XKB_KEY_NoSymbol);
+		if (i >= 0) {
+			pressed_keysyms[i] = keysym;
+		}
+	}
+}
+
+static void pressed_keysyms_remove(xkb_keysym_t *pressed_keysyms,
+		xkb_keysym_t keysym) {
+	ssize_t i = pressed_keysyms_index(pressed_keysyms, keysym);
+	if (i >= 0) {
+		pressed_keysyms[i] = XKB_KEY_NoSymbol;
+	}
+}
+
+static bool keysym_is_modifier(xkb_keysym_t keysym) {
+	switch (keysym) {
+	case XKB_KEY_Shift_L: case XKB_KEY_Shift_R:
+	case XKB_KEY_Control_L: case XKB_KEY_Control_R:
+	case XKB_KEY_Caps_Lock:
+	case XKB_KEY_Shift_Lock:
+	case XKB_KEY_Meta_L: case XKB_KEY_Meta_R:
+	case XKB_KEY_Alt_L: case XKB_KEY_Alt_R:
+	case XKB_KEY_Super_L: case XKB_KEY_Super_R:
+	case XKB_KEY_Hyper_L: case XKB_KEY_Hyper_R:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static void pressed_keysyms_update(xkb_keysym_t *pressed_keysyms,
+		const xkb_keysym_t *keysyms, size_t keysyms_len,
+		enum wlr_key_state state) {
+	for (size_t i = 0; i < keysyms_len; ++i) {
+		if (keysym_is_modifier(keysyms[i])) {
+			continue;
+		}
+		if (state == WLR_KEY_PRESSED) {
+			pressed_keysyms_add(pressed_keysyms, keysyms[i]);
+		} else { // WLR_KEY_RELEASED
+			pressed_keysyms_remove(pressed_keysyms, keysyms[i]);
+		}
+	}
+}
+
 static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct sway_keyboard *keyboard =
 		wl_container_of(listener, keyboard, keyboard_key);
@@ -10,9 +125,35 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 	struct wlr_event_keyboard_key *event = data;
-	wlr_seat_set_keyboard(wlr_seat, wlr_device);
-	wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
-		event->keycode, event->state);
+
+	xkb_keycode_t keycode = event->keycode + 8;
+	bool handled = false;
+	uint32_t modifiers;
+	const xkb_keysym_t *keysyms;
+	size_t keysyms_len;
+
+	// handle translated keysyms
+	keysyms_len = keyboard_keysyms_translated(keyboard, keycode, &keysyms,
+		&modifiers);
+	pressed_keysyms_update(keyboard->pressed_keysyms_translated, keysyms,
+		keysyms_len, event->state);
+	if (event->state == WLR_KEY_PRESSED) {
+		// TODO execute binding
+	}
+
+	// Handle raw keysyms
+	keysyms_len = keyboard_keysyms_raw(keyboard, keycode, &keysyms, &modifiers);
+	pressed_keysyms_update(keyboard->pressed_keysyms_raw, keysyms, keysyms_len,
+		event->state);
+	if (event->state == WLR_KEY_PRESSED && !handled) {
+		// TODO execute binding
+	}
+
+	if (!handled) {
+		wlr_seat_set_keyboard(wlr_seat, wlr_device);
+		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
+				event->keycode, event->state);
+	}
 }
 
 static void handle_keyboard_modifiers(struct wl_listener *listener,
