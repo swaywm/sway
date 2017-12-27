@@ -58,7 +58,6 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 
 static void seat_configure_pointer(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
-	// TODO pointer configuration
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
 }
