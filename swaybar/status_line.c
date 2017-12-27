@@ -70,7 +70,7 @@ static void parse_json(struct bar *bar, const char *text) {
 
 	bar->status->block_line = create_list();
 
-	int i;
+	size_t i;
 	for (i = 0; i < json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;

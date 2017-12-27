@@ -59,7 +59,7 @@ if (LD_LIBRARY_PATH)
 	add_definitions(-D_LD_LIBRARY_PATH="${LD_LIBRARY_PATH}")
 endif()
 
-find_package(JsonC 0.12.1 REQUIRED)
+find_package(JsonC REQUIRED)
 find_package(PCRE REQUIRED)
 find_package(WLC REQUIRED)
 find_package(Wayland REQUIRED)
