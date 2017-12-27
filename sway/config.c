@@ -53,7 +53,8 @@ static void config_defaults(struct sway_config *config) {
 		goto cleanup;
 	if (!(config->current_mode->name = malloc(sizeof("default")))) goto cleanup;
 	strcpy(config->current_mode->name, "default");
-	if (!(config->current_mode->bindings = create_list())) goto cleanup;
+	if (!(config->current_mode->keysym_bindings = create_list())) goto cleanup;
+	if (!(config->current_mode->keycode_bindings = create_list())) goto cleanup;
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;

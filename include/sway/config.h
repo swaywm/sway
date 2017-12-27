@@ -46,7 +46,8 @@ struct sway_mouse_binding {
  */
 struct sway_mode {
 	char *name;
-	list_t *bindings;
+	list_t *keysym_bindings;
+	list_t *keycode_bindings;
 };
 
 /**
