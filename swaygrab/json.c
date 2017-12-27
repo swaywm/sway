@@ -50,7 +50,7 @@ static json_object *get_focused_container_r(json_object *c) {
 	} else {
 		json_object *nodes, *node, *child;
 		json_object_object_get_ex(c, "nodes", &nodes);
-		int i;
+		size_t i;
 		for (i = 0; i < json_object_array_length(nodes); i++) {
 			node = json_object_array_get_idx(nodes, i);
 
@@ -83,7 +83,7 @@ char *get_focused_output() {
 	if (!outputs) {
 		sway_abort("Unabled to get focused output. No nodes in tree.");
 	}
-	for (int i = 0; i < json_object_array_length(outputs); i++) {
+	for (size_t i = 0; i < json_object_array_length(outputs); i++) {
 		output = json_object_array_get_idx(outputs, i);
 
 		if (get_focused_container_r(output)) {
@@ -131,7 +131,7 @@ json_object *get_output_container(const char *output) {
 	json_object *outputs, *json_output, *name;
 	json_object_object_get_ex(tree, "nodes", &outputs);
 
-	for (int i = 0; i < json_object_array_length(outputs); i++) {
+	for (size_t i = 0; i < json_object_array_length(outputs); i++) {
 		json_output = json_object_array_get_idx(outputs, i);
 		json_object_object_get_ex(json_output, "name", &name);
 
