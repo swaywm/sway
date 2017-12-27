@@ -120,7 +120,8 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	// - Criteria
 	
 	sway_surface->commit.notify = handle_commit;
-	wl_signal_add(&xdg_surface->events.commit, &sway_surface->commit);
+	wl_signal_add(&xdg_surface->surface->events.commit, &sway_surface->commit);
+
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &sway_surface->destroy);
 
