@@ -67,7 +67,9 @@ static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
 	list_t *keysym_bindings = config->current_mode->keysym_bindings;
 	for (int i = 0; i < keysym_bindings->length; ++i) {
 		struct sway_binding *binding = keysym_bindings->items[i];
+		sway_log(L_DEBUG, "@@ checking binding: %s", binding->command);
 		if (modifiers ^ binding->modifiers || n != binding->keys->length) {
+			sway_log(L_DEBUG, "@@ modifiers or key num dont match");
 			continue;
 		}
 
@@ -286,17 +288,18 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 
 	xkb_keycode_t keycode = event->keycode + 8;
 	bool handled = false;
-	const xkb_keysym_t *keysyms;
 
 	// handle keycodes
 	handled = keyboard_execute_bindcode(keyboard);
+	sway_log(L_DEBUG, "@@ handled by bindcode? %d", handled);
 
 	// handle translated keysyms
+	const xkb_keysym_t *translated_keysyms;
 	uint32_t translated_modifiers;
 	size_t translated_keysyms_len =
-		keyboard_keysyms_translated(keyboard, keycode, &keysyms,
+		keyboard_keysyms_translated(keyboard, keycode, &translated_keysyms,
 			&translated_modifiers);
-	pressed_keysyms_update(keyboard->pressed_keysyms_translated, keysyms,
+	pressed_keysyms_update(keyboard->pressed_keysyms_translated, translated_keysyms,
 		translated_keysyms_len, event->state);
 	if (event->state == WLR_KEY_PRESSED && !handled) {
 		handled = keyboard_execute_bindsym(keyboard,
@@ -305,9 +308,10 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	// Handle raw keysyms
+	const xkb_keysym_t *raw_keysyms;
 	uint32_t raw_modifiers;
-	size_t raw_keysyms_len = keyboard_keysyms_raw(keyboard, keycode, &keysyms, &raw_modifiers);
-	pressed_keysyms_update(keyboard->pressed_keysyms_raw, keysyms, raw_keysyms_len,
+	size_t raw_keysyms_len = keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &raw_modifiers);
+	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms, raw_keysyms_len,
 		event->state);
 	if (event->state == WLR_KEY_PRESSED && !handled) {
 		handled = keyboard_execute_bindsym(keyboard,

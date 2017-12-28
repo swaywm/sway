@@ -28,6 +28,44 @@ void free_sway_binding(struct sway_binding *binding) {
 	free(binding);
 }
 
+/**
+ * Returns true if the bindings have the same key and modifier combinations.
+ * Note that keyboard layout is not considered, so the bindings might actually
+ * not be equivalent on some layouts.
+ */
+bool binding_key_compare(struct sway_binding *binding_a,
+		struct sway_binding *binding_b) {
+	if (binding_a->bindcode != binding_b->bindcode) {
+		return false;
+	}
+
+	if (binding_a->modifiers ^ binding_b->modifiers) {
+		return false;
+	}
+
+	if (binding_a->keys->length != binding_b->keys->length) {
+		return false;
+	}
+
+	int keys_len = binding_a->keys->length;
+	for (int i = 0; i < keys_len; ++i) {
+		uint32_t key_a = *(uint32_t*)binding_a->keys->items[i];
+		bool found = false;
+		for (int j = 0; j < keys_len; ++j) {
+			uint32_t key_b = *(uint32_t*)binding_b->keys->items[j];
+			if (key_b == key_a) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
@@ -95,11 +133,26 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		list_add(binding->keys, key);
 	}
 	free_flat_list(split);
-
-	struct sway_mode *mode = config->current_mode;
-	// TODO overwrite the binding if it already exists
 	binding->order = binding_order++;
-	list_add(mode->keysym_bindings, binding);
+
+	list_t *mode_bindings = config->current_mode->keysym_bindings;
+
+	// overwrite the binding if it already exists
+	bool overwritten = false;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_binding *config_binding = mode_bindings->items[i];
+		if (binding_key_compare(binding, config_binding)) {
+			sway_log(L_DEBUG, "overwriting old binding with command '%s'",
+				config_binding->command);
+			free_sway_binding(config_binding);
+			mode_bindings->items[i] = binding;
+			overwritten = true;
+		}
+	}
+
+	if (!overwritten) {
+		list_add(mode_bindings, binding);
+	}
 
 	sway_log(L_DEBUG, "bindsym - Bound %s to command %s",
 		argv[0], binding->command);
@@ -162,10 +215,26 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	}
 	free_flat_list(split);
 
-	struct sway_mode *mode = config->current_mode;
-	// TODO overwrite binding if it already exists
 	binding->order = binding_order++;
-	list_add(mode->keycode_bindings, binding);
+
+	list_t *mode_bindings = config->current_mode->keycode_bindings;
+
+	// overwrite the binding if it already exists
+	bool overwritten = false;
+	for (int i = 0; i < mode_bindings->length; ++i) {
+		struct sway_binding *config_binding = mode_bindings->items[i];
+		if (binding_key_compare(binding, config_binding)) {
+			sway_log(L_DEBUG, "overwriting old binding with command '%s'",
+				config_binding->command);
+			free_sway_binding(config_binding);
+			mode_bindings->items[i] = binding;
+			overwritten = true;
+		}
+	}
+
+	if (!overwritten) {
+		list_add(mode_bindings, binding);
+	}
 
 	sway_log(L_DEBUG, "bindcode - Bound %s to command %s",
 		argv[0], binding->command);
