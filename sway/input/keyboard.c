@@ -34,18 +34,22 @@ static ssize_t pressed_keysyms_index(xkb_keysym_t *pressed_keysyms,
  * Returns true if the keysym was handled by a binding and false if the event
  * should be propagated to clients.
  */
-static bool keyboard_execute_compositor_binding(xkb_keysym_t keysym) {
-	if (keysym >= XKB_KEY_XF86Switch_VT_1 &&
-			keysym <= XKB_KEY_XF86Switch_VT_12) {
-		if (wlr_backend_is_multi(server.backend)) {
-			struct wlr_session *session =
-				wlr_multi_get_session(server.backend);
-			if (session) {
-				unsigned vt = keysym - XKB_KEY_XF86Switch_VT_1 + 1;
-				wlr_session_change_vt(session, vt);
+static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
+		xkb_keysym_t *pressed_keysyms, uint32_t modifiers, size_t keysyms_len) {
+	for (size_t i = 0; i < keysyms_len; ++i) {
+		xkb_keysym_t keysym = pressed_keysyms[i];
+		if (keysym >= XKB_KEY_XF86Switch_VT_1 &&
+				keysym <= XKB_KEY_XF86Switch_VT_12) {
+			if (wlr_backend_is_multi(server.backend)) {
+				struct wlr_session *session =
+					wlr_multi_get_session(server.backend);
+				if (session) {
+					unsigned vt = keysym - XKB_KEY_XF86Switch_VT_1 + 1;
+					wlr_session_change_vt(session, vt);
+				}
 			}
+			return true;
 		}
-		return true;
 	}
 
 	return false;
@@ -58,16 +62,8 @@ static bool keyboard_execute_compositor_binding(xkb_keysym_t keysym) {
  * Returns true if the keysym was handled by a binding and false if the event
  * should be propagated to clients.
  */
-static bool keyboard_execute_binding(struct sway_keyboard *keyboard,
-		xkb_keysym_t *pressed_keysyms, uint32_t modifiers,
-		const xkb_keysym_t *keysyms, size_t keysyms_len) {
-	// compositor bindings
-	for (size_t i = 0; i < keysyms_len; ++i) {
-		if (keyboard_execute_compositor_binding(keysyms[i])) {
-			return true;
-		}
-	}
-
+static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
+		xkb_keysym_t *pressed_keysyms, uint32_t modifiers, size_t keysyms_len) {
 	// configured bindings
 	int n = pressed_keysyms_length(pressed_keysyms);
 	list_t *keysym_bindings = config->current_mode->keysym_bindings;
@@ -208,28 +204,48 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 
 	xkb_keycode_t keycode = event->keycode + 8;
 	bool handled = false;
-	uint32_t modifiers;
 	const xkb_keysym_t *keysyms;
-	size_t keysyms_len;
+
+	// handle keycodes
+	// TODO
+	handled = keyboard_execute_bindcode(keyboard);
 
 	// handle translated keysyms
-	keysyms_len = keyboard_keysyms_translated(keyboard, keycode, &keysyms,
-		&modifiers);
+	uint32_t translated_modifiers;
+	size_t translated_keysyms_len =
+		keyboard_keysyms_translated(keyboard, keycode, &keysyms,
+			&translated_modifiers);
 	pressed_keysyms_update(keyboard->pressed_keysyms_translated, keysyms,
-		keysyms_len, event->state);
-	if (event->state == WLR_KEY_PRESSED) {
-		handled = keyboard_execute_binding(keyboard,
-			keyboard->pressed_keysyms_translated, modifiers, keysyms,
-			keysyms_len);
+		translated_keysyms_len, event->state);
+	if (event->state == WLR_KEY_PRESSED && !handled) {
+		handled = keyboard_execute_bindsym(keyboard,
+			keyboard->pressed_keysyms_translated, translated_modifiers,
+			translated_keysyms_len);
 	}
 
 	// Handle raw keysyms
-	keysyms_len = keyboard_keysyms_raw(keyboard, keycode, &keysyms, &modifiers);
-	pressed_keysyms_update(keyboard->pressed_keysyms_raw, keysyms, keysyms_len,
+	uint32_t raw_modifiers;
+	size_t raw_keysyms_len = keyboard_keysyms_raw(keyboard, keycode, &keysyms, &raw_modifiers);
+	pressed_keysyms_update(keyboard->pressed_keysyms_raw, keysyms, raw_keysyms_len,
 		event->state);
 	if (event->state == WLR_KEY_PRESSED && !handled) {
-		handled = keyboard_execute_binding(keyboard,
-			keyboard->pressed_keysyms_raw, modifiers, keysyms, keysyms_len);
+		handled = keyboard_execute_bindsym(keyboard,
+			keyboard->pressed_keysyms_raw, raw_modifiers,
+			raw_keysyms_len);
+	}
+
+	// Compositor bindings
+	if (event->state == WLR_KEY_PRESSED && !handled) {
+		handled =
+			keyboard_execute_compositor_binding(keyboard,
+				keyboard->pressed_keysyms_translated, translated_modifiers,
+				translated_keysyms_len);
+	}
+	if (event->state == WLR_KEY_PRESSED && !handled) {
+		handled =
+			keyboard_execute_compositor_binding(keyboard,
+				keyboard->pressed_keysyms_raw, raw_modifiers,
+				raw_keysyms_len);
 	}
 
 	if (!handled) {
