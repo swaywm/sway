@@ -183,17 +183,14 @@ static bool keyboard_execute_bindcode(struct sway_keyboard *keyboard) {
 	list_t *keycode_bindings = config->current_mode->keycode_bindings;
 	for (int i = 0; i < keycode_bindings->length; ++i) {
 		struct sway_binding *binding = keycode_bindings->items[i];
-		//bool match = true;
-		for (int j = 0; j < binding->keys->length; ++j) {
-			if (binding_matches_keycodes(wlr_keyboard, binding)) {
-				struct cmd_results *results = handle_command(binding->command);
-				if (results->status != CMD_SUCCESS) {
-					sway_log(L_DEBUG, "could not run command for binding: %s",
-							binding->command);
-				}
-				free_cmd_results(results);
-				return true;
+		if (binding_matches_keycodes(wlr_keyboard, binding)) {
+			struct cmd_results *results = handle_command(binding->command);
+			if (results->status != CMD_SUCCESS) {
+				sway_log(L_DEBUG, "could not run command for binding: %s",
+						binding->command);
 			}
+			free_cmd_results(results);
+			return true;
 		}
 	}
 
