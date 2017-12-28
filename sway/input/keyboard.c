@@ -26,7 +26,6 @@ static ssize_t pressed_keysyms_index(xkb_keysym_t *pressed_keysyms,
 	return -1;
 }
 
-
 /**
  * Execute a built-in, hardcoded compositor binding. These are triggered from a
  * single keysym.
@@ -56,8 +55,7 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
 }
 
 /**
- * Execute keyboard bindings. These include compositor bindings and user-defined
- * bindings.
+ * Execute keyboard bindings bound with `bindysm`.
  *
  * Returns true if the keysym was handled by a binding and false if the event
  * should be propagated to clients.
@@ -99,7 +97,110 @@ static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
 	return false;
 }
 
-/*
+static bool keysym_is_modifier(xkb_keysym_t keysym) {
+	switch (keysym) {
+	case XKB_KEY_Shift_L: case XKB_KEY_Shift_R:
+	case XKB_KEY_Control_L: case XKB_KEY_Control_R:
+	case XKB_KEY_Caps_Lock:
+	case XKB_KEY_Shift_Lock:
+	case XKB_KEY_Meta_L: case XKB_KEY_Meta_R:
+	case XKB_KEY_Alt_L: case XKB_KEY_Alt_R:
+	case XKB_KEY_Super_L: case XKB_KEY_Super_R:
+	case XKB_KEY_Hyper_L: case XKB_KEY_Hyper_R:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool binding_matches_keycodes(struct wlr_keyboard *keyboard,
+		struct sway_binding *binding) {
+	uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard);
+	if (modifiers ^ binding->modifiers) {
+		return false;
+	}
+
+	// every keycode in the binding must be present in the pressed keys on the
+	// keyboard
+	for (int i = 0; i < binding->keys->length; ++i) {
+		uint32_t binding_keycode = *(uint32_t*)binding->keys->items[i] + 8;
+		bool found = false;
+		for (size_t j = 0; j < keyboard->num_keycodes; ++j) {
+			xkb_keycode_t keycode = keyboard->keycodes[j] + 8;
+			if (keycode == binding_keycode) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			return false;
+		}
+	}
+
+	// every keycode pressed on the keyboard must be present within the binding
+	// keys (unless it is a modifier)
+	for (size_t i = 0; i < keyboard->num_keycodes; ++i) {
+		xkb_keycode_t keycode = keyboard->keycodes[i] + 8;
+		bool found = false;
+		for (int j = 0; j < binding->keys->length; ++j) {
+			uint32_t binding_keycode = *(uint32_t*)binding->keys->items[j] + 8;
+			if (binding_keycode == keycode) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			if (!binding->modifiers) {
+				return false;
+			}
+
+			// check if it is a modifier, which we know matched from the check
+			// above
+			const xkb_keysym_t *keysyms;
+			int num_keysyms =
+				xkb_state_key_get_syms(keyboard->xkb_state,
+					keycode, &keysyms);
+			if (num_keysyms != 1 || !keysym_is_modifier(keysyms[0])) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Execute keyboard bindings bound with `bindcode`.
+ *
+ * Returns true if the keysym was handled by a binding and false if the event
+ * should be propagated to clients.
+ */
+static bool keyboard_execute_bindcode(struct sway_keyboard *keyboard) {
+	struct wlr_keyboard *wlr_keyboard =
+		keyboard->seat_device->input_device->wlr_device->keyboard;
+	list_t *keycode_bindings = config->current_mode->keycode_bindings;
+	for (int i = 0; i < keycode_bindings->length; ++i) {
+		struct sway_binding *binding = keycode_bindings->items[i];
+		//bool match = true;
+		for (int j = 0; j < binding->keys->length; ++j) {
+			if (binding_matches_keycodes(wlr_keyboard, binding)) {
+				struct cmd_results *results = handle_command(binding->command);
+				if (results->status != CMD_SUCCESS) {
+					sway_log(L_DEBUG, "could not run command for binding: %s",
+							binding->command);
+				}
+				free_cmd_results(results);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * Get keysyms and modifiers from the keyboard as xkb sees them.
  *
  * This uses the xkb keysyms translation based on pressed modifiers and clears
@@ -122,7 +223,7 @@ static size_t keyboard_keysyms_translated(struct sway_keyboard *keyboard,
 		keycode, keysyms);
 }
 
-/*
+/**
  * Get keysyms and modifiers from the keyboard as if modifiers didn't change
  * keysyms.
  *
@@ -163,22 +264,6 @@ static void pressed_keysyms_remove(xkb_keysym_t *pressed_keysyms,
 	}
 }
 
-static bool keysym_is_modifier(xkb_keysym_t keysym) {
-	switch (keysym) {
-	case XKB_KEY_Shift_L: case XKB_KEY_Shift_R:
-	case XKB_KEY_Control_L: case XKB_KEY_Control_R:
-	case XKB_KEY_Caps_Lock:
-	case XKB_KEY_Shift_Lock:
-	case XKB_KEY_Meta_L: case XKB_KEY_Meta_R:
-	case XKB_KEY_Alt_L: case XKB_KEY_Alt_R:
-	case XKB_KEY_Super_L: case XKB_KEY_Super_R:
-	case XKB_KEY_Hyper_L: case XKB_KEY_Hyper_R:
-		return true;
-	default:
-		return false;
-	}
-}
-
 static void pressed_keysyms_update(xkb_keysym_t *pressed_keysyms,
 		const xkb_keysym_t *keysyms, size_t keysyms_len,
 		enum wlr_key_state state) {
@@ -207,7 +292,6 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	const xkb_keysym_t *keysyms;
 
 	// handle keycodes
-	// TODO
 	handled = keyboard_execute_bindcode(keyboard);
 
 	// handle translated keysyms
