@@ -449,8 +449,10 @@ static bool handle_view_created(wlc_handle handle) {
 
 	// Modals, get focus, popups do not
 	case WLC_BIT_MODAL:
-		wlc_view_focus(handle);
-		wlc_view_bring_to_front(handle);
+		if (!desktop_shell.is_locked) {
+			wlc_view_focus(handle);
+			wlc_view_bring_to_front(handle);
+		}
 		newview = new_floating_view(handle);
 		/* fallthrough */
 	case WLC_BIT_POPUP:
