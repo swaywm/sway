@@ -107,29 +107,42 @@ static void pretty_print_input(json_object *i) {
 }
 
 static void pretty_print_output(json_object *o) {
-	json_object *name, *rect, *focused, *active, *ws, *scale;
+	json_object *name, *rect, *focused, *active, *ws;
 	json_object_object_get_ex(o, "name", &name);
 	json_object_object_get_ex(o, "rect", &rect);
 	json_object_object_get_ex(o, "focused", &focused);
 	json_object_object_get_ex(o, "active", &active);
 	json_object_object_get_ex(o, "current_workspace", &ws);
+	json_object *make, *model, *serial, *scale, *refresh, *transform;
+	json_object_object_get_ex(o, "make", &make);
+	json_object_object_get_ex(o, "model", &model);
+	json_object_object_get_ex(o, "serial", &serial);
 	json_object_object_get_ex(o, "scale", &scale);
+	json_object_object_get_ex(o, "refresh", &refresh);
+	json_object_object_get_ex(o, "transform", &transform);
 	json_object *x, *y, *width, *height;
 	json_object_object_get_ex(rect, "x", &x);
 	json_object_object_get_ex(rect, "y", &y);
 	json_object_object_get_ex(rect, "width", &width);
 	json_object_object_get_ex(rect, "height", &height);
 	printf(
-		"Output %s%s%s\n"
-		"  Geometry: %dx%d @ %d,%d\n"
+		"Output %s '%s %s %s'%s%s\n"
+		"  Mode: %dx%d @ %f Hz\n"
+		"  Position: %d,%d\n"
 		"  Scale factor: %dx\n"
+		"  Transform: %s\n"
 		"  Workspace: %s\n\n",
 		json_object_get_string(name),
+		json_object_get_string(make),
+		json_object_get_string(model),
+		json_object_get_string(serial),
 		json_object_get_boolean(focused) ? " (focused)" : "",
 		!json_object_get_boolean(active) ? " (inactive)" : "",
 		json_object_get_int(width), json_object_get_int(height),
+		(float)json_object_get_int(refresh) / 1000,
 		json_object_get_int(x), json_object_get_int(y),
 		json_object_get_int(scale),
+		json_object_get_string(transform),
 		json_object_get_string(ws)
 	);
 }
