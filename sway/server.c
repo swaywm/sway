@@ -91,7 +91,9 @@ void server_run(struct sway_server *server) {
 }
 
 static void sway_subbackend_destroy(struct sway_subbackend *subbackend) {
-	wl_list_remove(&subbackend->backend_destroy.link);
+	if (subbackend->backend) {
+		wl_list_remove(&subbackend->backend_destroy.link);
+	}
 	wl_list_remove(&subbackend->link);
 	// free(name)?
 	free(subbackend);
