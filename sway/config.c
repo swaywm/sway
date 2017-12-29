@@ -31,15 +31,6 @@
 
 struct sway_config *config = NULL;
 
-static void free_binding(struct sway_binding *bind) {
-        if (!bind) {
-                return;
-        }
-        free_flat_list(bind->keys);
-        free(bind->command);
-        free(bind);
-}
-
 static void free_mode(struct sway_mode *mode) {
 	int i;
 
@@ -49,13 +40,13 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode->name);
 	if (mode->keysym_bindings) {
 		for (i = 0; i < mode->keysym_bindings->length; i++) {
-			free_binding(mode->keysym_bindings->items[i]);
+			free_sway_binding(mode->keysym_bindings->items[i]);
 		}
 		list_free(mode->keysym_bindings);
 	}
 	if (mode->keycode_bindings) {
 		for (i = 0; i < mode->keycode_bindings->length; i++) {
-			free_binding(mode->keycode_bindings->items[i]);
+			free_sway_binding(mode->keycode_bindings->items[i]);
 		}
 		list_free(mode->keycode_bindings);
 	}
