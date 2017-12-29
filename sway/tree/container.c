@@ -49,16 +49,49 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	return c;
 }
 
+static void free_swayc(swayc_t *cont) {
+	if (!sway_assert(cont, "free_swayc passed NULL")) {
+		return;
+	}
+
+	wl_signal_emit(&cont->events.destroy, cont);
+
+	if (cont->children) {
+		// remove children until there are no more, free_swayc calls
+		// remove_child, which removes child from this container
+		while (cont->children->length) {
+			free_swayc(cont->children->items[0]);
+		}
+		list_free(cont->children);
+	}
+	if (cont->marks) {
+		list_foreach(cont->marks, free);
+		list_free(cont->marks);
+	}
+	if (cont->parent) {
+		remove_child(cont);
+	}
+	if (cont->name) {
+		free(cont->name);
+	}
+	free(cont);
+}
+
 swayc_t *new_output(struct sway_output *sway_output) {
 	struct wlr_box size;
 	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
 		&size.height);
+
 	const char *name = sway_output->wlr_output->name;
+	char identifier[128];
+	output_get_identifier(identifier, sizeof(identifier), sway_output);
 
 	struct output_config *oc = NULL, *all = NULL;
 	for (int i = 0; i < config->output_configs->length; ++i) {
 		struct output_config *cur = config->output_configs->items[i];
-		if (strcasecmp(name, cur->name) == 0) {
+
+		if (strcasecmp(name, cur->name) == 0 ||
+				strcasecmp(identifier, cur->name) == 0) {
 			sway_log(L_DEBUG, "Matched output config for %s", name);
 			oc = cur;
 		}
@@ -74,13 +107,18 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	if (!oc) {
 		oc = all;
 	}
+
 	if (oc && !oc->enabled) {
 		return NULL;
 	}
 
 	swayc_t *output = new_swayc(C_OUTPUT);
 	output->sway_output = sway_output;
-	output->name = name ? strdup(name) : NULL;
+	output->name = strdup(name);
+	if (output->name == NULL) {
+		free_swayc(output);
+		return NULL;
+	}
 
 	apply_output_config(oc, output);
 
@@ -138,34 +176,6 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 		//add_sibling(sibling, swayc);
 	}
 	return swayc;
-}
-
-static void free_swayc(swayc_t *cont) {
-	if (!sway_assert(cont, "free_swayc passed NULL")) {
-		return;
-	}
-
-	wl_signal_emit(&cont->events.destroy, cont);
-
-	if (cont->children) {
-		// remove children until there are no more, free_swayc calls
-		// remove_child, which removes child from this container
-		while (cont->children->length) {
-			free_swayc(cont->children->items[0]);
-		}
-		list_free(cont->children);
-	}
-	if (cont->marks) {
-		list_foreach(cont->marks, free);
-		list_free(cont->marks);
-	}
-	if (cont->parent) {
-		remove_child(cont);
-	}
-	if (cont->name) {
-		free(cont->name);
-	}
-	free(cont);
 }
 
 swayc_t *destroy_output(swayc_t *output) {

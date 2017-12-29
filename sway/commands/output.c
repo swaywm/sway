@@ -231,8 +231,8 @@ static struct cmd_results *cmd_output_background(struct output_config *output,
 }
 
 struct cmd_results *cmd_output(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1))) {
+	struct cmd_results *error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1);
+	if (error != NULL) {
 		return error;
 	}
 
@@ -275,11 +275,11 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	int i = list_seq_find(config->output_configs, output_name_cmp, output->name);
 	if (i >= 0) {
-		// merge existing config
-		struct output_config *oc = config->output_configs->items[i];
-		merge_output_config(oc, output);
+		// Merge existing config
+		struct output_config *current = config->output_configs->items[i];
+		merge_output_config(current, output);
 		free_output_config(output);
-		output = oc;
+		output = current;
 	} else {
 		list_add(config->output_configs, output);
 	}
@@ -290,22 +290,26 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		output->refresh_rate, output->x, output->y, output->scale,
 		output->transform, output->background, output->background_option);
 
-	if (output->name) {
-		// Try to find the output container and apply configuration now. If
-		// this is during startup then there will be no container and config
-		// will be applied during normal "new output" event from wlroots.
-		swayc_t *cont = NULL;
-		for (int i = 0; i < root_container.children->length; ++i) {
-			cont = root_container.children->items[i];
-			if (cont->name && ((strcmp(cont->name, output->name) == 0) ||
-					(strcmp(output->name, "*") == 0))) {
-				apply_output_config(output, cont);
+	// Try to find the output container and apply configuration now. If
+	// this is during startup then there will be no container and config
+	// will be applied during normal "new output" event from wlroots.
+	char identifier[128];
+	bool all = strcmp(output->name, "*") == 0;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		swayc_t *cont = root_container.children->items[i];
+		if (cont->type != C_OUTPUT) {
+			continue;
+		}
 
-				if (strcmp(output->name, "*") != 0) {
-					// Stop looking if the output config isn't applicable to all
-					// outputs
-					break;
-				}
+		output_get_identifier(identifier, sizeof(identifier), cont->sway_output);
+		if (all || strcmp(cont->name, output->name) == 0 ||
+				strcmp(identifier, output->name) == 0) {
+			apply_output_config(output, cont);
+
+			if (!all) {
+				// Stop looking if the output config isn't applicable to all
+				// outputs
+				break;
 			}
 		}
 	}
