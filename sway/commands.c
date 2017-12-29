@@ -70,8 +70,10 @@ void apply_input_config(struct input_config *input) {
 		list_add(config->input_configs, input);
 	}
 
+	struct input_config *old_input_config = current_input_config;
 	current_input_config = input;
 	sway_input_manager_apply_input_config(input_manager, input);
+	current_input_config = old_input_config;
 }
 
 void apply_seat_config(struct seat_config *seat) {
