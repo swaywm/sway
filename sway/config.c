@@ -61,7 +61,12 @@ void free_config(struct sway_config *config) {
 	}
 
 	// TODO: handle all currently unhandled lists as we add implementations
-	list_free(config->symbols);
+	if (config->symbols) {
+		for (i = 0; i < config->symbols->length; i++) {
+			free_sway_variable(config->symbols->items[i]);
+		}
+		list_free(config->symbols);
+	}
 	if (config->modes) {
 		for (i = 0; i < config->modes->length; i++) {
 			free_mode(config->modes->items[i]);
