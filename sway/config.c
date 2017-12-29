@@ -31,8 +31,79 @@
 
 struct sway_config *config = NULL;
 
+static void free_binding(struct sway_binding *bind) {
+        if (!bind) {
+                return;
+        }
+        free_flat_list(bind->keys);
+        free(bind->command);
+        free(bind);
+}
+
+static void free_mode(struct sway_mode *mode) {
+	int i;
+
+	if (!mode) {
+		return;
+	}
+	free(mode->name);
+	if (mode->keysym_bindings) {
+		for (i = 0; i < mode->keysym_bindings->length; i++) {
+			free_binding(mode->keysym_bindings->items[i]);
+		}
+		list_free(mode->keysym_bindings);
+	}
+	if (mode->keycode_bindings) {
+		for (i = 0; i < mode->keycode_bindings->length; i++) {
+			free_binding(mode->keycode_bindings->items[i]);
+		}
+		list_free(mode->keycode_bindings);
+	}
+	free(mode);
+}
+
 void free_config(struct sway_config *config) {
-	// TODO
+	int i;
+
+	if (!config) {
+		return;
+	}
+
+	// TODO: handle all currently unhandled lists as we add implementations
+	list_free(config->symbols);
+	if (config->modes) {
+		for (i = 0; i < config->modes->length; i++) {
+			free_mode(config->modes->items[i]);
+		}
+		list_free(config->modes);
+	}
+	list_free(config->bars);
+	list_free(config->cmd_queue);
+	list_free(config->workspace_outputs);
+	list_free(config->pid_workspaces);
+	list_free(config->output_configs);
+	if (config->input_configs) {
+		for (i = 0; i < config->input_configs->length; i++) {
+			free_input_config(config->input_configs->items[i]);
+		}
+		list_free(config->input_configs);
+	}
+	list_free(config->seat_configs);
+	list_free(config->criteria);
+	list_free(config->no_focus);
+	list_free(config->active_bar_modifiers);
+	list_free(config->config_chain);
+	list_free(config->command_policies);
+	list_free(config->feature_policies);
+	list_free(config->ipc_policies);
+	free(config->current_bar);
+	free(config->floating_scroll_up_cmd);
+	free(config->floating_scroll_down_cmd);
+	free(config->floating_scroll_left_cmd);
+	free(config->floating_scroll_right_cmd);
+	free(config->font);
+	free((char *)config->current_config);
+	free(config);
 }
 
 static void config_defaults(struct sway_config *config) {
@@ -186,6 +257,7 @@ static char *get_config_path(void) {
 			if (file_exists(path)) {
 				return path;
 			}
+			free(path);
 		}
 	}
 
@@ -524,6 +596,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 
 			case CMD_BLOCK_INPUT:
 				sway_log(L_DEBUG, "End of input block");
+				free_input_config(current_input_config);
 				current_input_config = NULL;
 				block = CMD_BLOCK_END;
 				break;
