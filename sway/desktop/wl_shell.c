@@ -114,7 +114,9 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	// - Criteria
 
 	sway_surface->commit.notify = handle_commit;
-	wl_signal_add(&shell_surface->events.commit, &sway_surface->commit);
+	wl_signal_add(&shell_surface->surface->events.commit,
+		&sway_surface->commit);
+
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&shell_surface->events.destroy, &sway_surface->destroy);
 

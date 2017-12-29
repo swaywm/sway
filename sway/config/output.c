@@ -14,9 +14,14 @@ int output_name_cmp(const void *item, const void *data) {
 	return strcmp(output->name, name);
 }
 
-struct output_config *new_output_config() {
+struct output_config *new_output_config(const char *name) {
 	struct output_config *oc = calloc(1, sizeof(struct output_config));
 	if (oc == NULL) {
+		return NULL;
+	}
+	oc->name = strdup(name);
+	if (oc->name == NULL) {
+		free(oc);
 		return NULL;
 	}
 	oc->enabled = -1;
