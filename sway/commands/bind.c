@@ -16,15 +16,14 @@
 int binding_order = 0;
 
 void free_sway_binding(struct sway_binding *binding) {
+	if (!binding) {
+		return;
+	}
+
 	if (binding->keys) {
-		for (int i = 0; i < binding->keys->length; i++) {
-			free(binding->keys->items[i]);
-		}
-		list_free(binding->keys);
+		free_flat_list(binding->keys);
 	}
-	if (binding->command) {
-		free(binding->command);
-	}
+	free(binding->command);
 	free(binding);
 }
 
@@ -72,7 +71,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		return error;
 	}
 
-	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
+	struct sway_binding *binding = calloc(1, sizeof(struct sway_binding));
 	if (!binding) {
 		return cmd_results_new(CMD_FAILURE, "bindsym",
 				"Unable to allocate binding");
@@ -122,7 +121,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 			free_flat_list(split);
 			return ret;
 		}
-		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
+		xkb_keysym_t *key = calloc(1, sizeof(xkb_keysym_t));
 		if (!key) {
 			free_sway_binding(binding);
 			free_flat_list(split);
@@ -165,7 +164,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 		return error;
 	}
 
-	struct sway_binding *binding = malloc(sizeof(struct sway_binding));
+	struct sway_binding *binding = calloc(1, sizeof(struct sway_binding));
 	if (!binding) {
 		return cmd_results_new(CMD_FAILURE, "bindsym",
 				"Unable to allocate binding");
@@ -209,7 +208,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 			list_free(split);
 			return error;
 		}
-		xkb_keycode_t *key = malloc(sizeof(xkb_keycode_t));
+		xkb_keycode_t *key = calloc(1, sizeof(xkb_keycode_t));
 		*key = keycode - 8;
 		list_add(binding->keys, key);
 	}
