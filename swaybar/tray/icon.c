@@ -80,6 +80,17 @@ static bool isdir(const char *path) {
 
 }
 
+static bool isfile(const char *path) {
+	struct stat statbuf;
+	if (stat(path, &statbuf) != -1) {
+		if (S_ISREG(statbuf.st_mode) || S_ISLNK(statbuf.st_mode)) {
+			return true;
+		}
+	}
+	return false;
+
+}
+
 /**
  * Returns the directory of a given theme if it exists.
  * The returned pointer must be freed.
@@ -111,15 +122,28 @@ static char *find_theme_dir(const char *theme) {
 	}
 
 	if ((basedir = getenv("XDG_DATA_DIRS"))) {
-		if (snprintf(icon_dir, 1024, "%s/icons/%s", basedir, theme) >= 1024) {
-			sway_log(L_ERROR, "Path too long to render");
-			// ditto
+		if (!(basedir = strdup(basedir))) {
+			sway_log_errno(L_ERROR, "Path too long to render");
 			goto fail;
 		}
+		char *token = strtok(basedir, ":");
+		while (token) {
+			// By peeking at the spec, there should be a slash at
+			// the end of the data dir.
+			if (snprintf(icon_dir, 1024, "%sicons/%s", token, theme) >= 1024) {
+				sway_log(L_ERROR, "Path too long to render");
+				// ditto
+				free(basedir);
+				goto fail;
+			}
 
-		if (isdir(icon_dir)) {
-			return icon_dir;
+			if (isdir(icon_dir)) {
+				free(basedir);
+				return icon_dir;
+			}
+			token = strtok(NULL, ":");
 		}
+		free(basedir);
 	}
 
 	// Spec says use "/usr/share/pixmaps/", but I see everything in
@@ -156,6 +180,15 @@ static list_t *find_all_theme_dirs(const char *theme) {
 		return NULL;
 	}
 	char *dir = find_theme_dir(theme);
+	if (dir) {
+		list_add(dirs, dir);
+		list_t *inherits = find_inherits(dir);
+		list_cat(dirs, inherits);
+		list_free(inherits);
+	}
+	// 'default' usually inherits the default theme. I don't believe it has
+	// any icons, but look for them anyway
+	dir = find_theme_dir("default");
 	if (dir) {
 		list_add(dirs, dir);
 		list_t *inherits = find_inherits(dir);
@@ -290,6 +323,24 @@ fail:
 	return dirs;
 }
 
+/* Returns true if full path and file exists */
+static bool is_valid_path(const char *file) {
+	if (strstr(file, "/") == NULL || !isfile(file)) {
+		return false;
+	}
+#ifdef WITH_GDK_PIXBUF
+	if (strstr(file, ".png") == NULL &&
+	    strstr(file, ".xpm") == NULL &&
+	    strstr(file, ".svg") == NULL) {
+#else
+	if (strstr(file, ".png") == NULL) {
+#endif
+		return false;
+	}
+
+	return true;
+}
+
 /* Returns the file of an icon given its name and size */
 static char *find_icon_file(const char *name, int size) {
 	int namelen = strlen(name);
@@ -372,7 +423,12 @@ static char *find_icon_file(const char *name, int size) {
 }
 
 cairo_surface_t *find_icon(const char *name, int size) {
-	char *image_path = find_icon_file(name, size);
+	char *image_path;
+	if (is_valid_path(name)) {
+		image_path = strdup(name);
+	} else {
+		image_path = find_icon_file(name, size);
+	}
 	if (image_path == NULL) {
 		return NULL;
 	}

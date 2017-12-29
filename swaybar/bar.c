@@ -247,6 +247,8 @@ void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id) {
 
 		/* set window height */
 		set_window_height(bar_output->window, bar->config->height);
+
+		bar_output->state = output;
 	}
 	/* spawn status command */
 	spawn_status_cmd_proc(bar);
@@ -296,6 +298,11 @@ void bar_run(struct bar *bar) {
 					render(output, bar->config, bar->status);
 					window_render(output->window);
 					wl_display_flush(output->registry->display);
+#ifdef ENABLE_TRAY
+					output->active = true;
+				} else {
+					output->active = false;
+#endif
 				}
 			}
 		}
