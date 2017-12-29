@@ -197,7 +197,7 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 struct cmd_results *handle_command(char *_exec) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
-	// error string we could e.g. concatonate all errors there.)
+	// error string we could e.g. concatenate all errors there.)
 	struct cmd_results *results = NULL;
 	char *exec = strdup(_exec);
 	char *head = exec;

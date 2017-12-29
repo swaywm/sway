@@ -380,7 +380,7 @@ int main(int argc, char **argv) {
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
 
-	wlr_log(L_INFO, "Starting sway version " SWAY_VERSION "\n");
+	wlr_log(L_INFO, "Starting sway version " SWAY_VERSION);
 
 	init_layout();
 
@@ -413,6 +413,8 @@ int main(int argc, char **argv) {
 	if (!terminate_request) {
 		server_run(&server);
 	}
+
+	wlr_log(L_INFO, "Shutting down sway");
 
 	server_fini(&server);
 

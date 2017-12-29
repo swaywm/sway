@@ -446,7 +446,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			break;
 
 		case CMD_DEFER:
-			sway_log(L_DEBUG, "Defferring command `%s'", line);
+			sway_log(L_DEBUG, "Deferring command `%s'", line);
 			list_add(config->cmd_queue, strdup(line));
 			break;
 
