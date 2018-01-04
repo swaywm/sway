@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include "sway/input/seat.h"
@@ -54,6 +55,18 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
 	return false;
 }
 
+static bool binding_matches_keystate(struct sway_binding *binding,
+		enum wlr_key_state key_state) {
+	if (key_state == WLR_KEY_PRESSED && !binding->release) {
+		return true;
+	}
+	if (key_state == WLR_KEY_RELEASED && binding->release) {
+		return true;
+	}
+
+	return false;
+}
+
 /**
  * Execute keyboard bindings bound with `bindysm`.
  *
@@ -61,13 +74,15 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
  * should be propagated to clients.
  */
 static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
-		xkb_keysym_t *pressed_keysyms, uint32_t modifiers, size_t keysyms_len) {
+		xkb_keysym_t *pressed_keysyms, uint32_t modifiers, enum wlr_key_state key_state) {
 	// configured bindings
 	int n = pressed_keysyms_length(pressed_keysyms);
 	list_t *keysym_bindings = config->current_mode->keysym_bindings;
 	for (int i = 0; i < keysym_bindings->length; ++i) {
 		struct sway_binding *binding = keysym_bindings->items[i];
-		if (modifiers ^ binding->modifiers || n != binding->keys->length) {
+		if (!binding_matches_keystate(binding, key_state) ||
+				modifiers ^ binding->modifiers ||
+				n != binding->keys->length) {
 			continue;
 		}
 
@@ -115,16 +130,43 @@ static bool keysym_is_modifier(xkb_keysym_t keysym) {
 }
 
 static bool binding_matches_keycodes(struct wlr_keyboard *keyboard,
-		struct sway_binding *binding) {
+		struct sway_binding *binding, struct wlr_event_keyboard_key *event) {
+	assert(binding->bindcode);
+
+	uint32_t keycode = event->keycode + 8;
+
+	if (!binding_matches_keystate(binding, event->state)) {
+		return false;
+	}
+
 	uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard);
 	if (modifiers ^ binding->modifiers) {
 		return false;
+	}
+
+	// on release, the released key must be in the binding
+	if (event->state == WLR_KEY_RELEASED) {
+		bool found = false;
+		for (int i = 0; i < binding->keys->length; ++i) {
+			uint32_t binding_keycode = *(uint32_t*)binding->keys->items[i] + 8;
+			if (binding_keycode == keycode) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			return false;
+		}
 	}
 
 	// every keycode in the binding must be present in the pressed keys on the
 	// keyboard
 	for (int i = 0; i < binding->keys->length; ++i) {
 		uint32_t binding_keycode = *(uint32_t*)binding->keys->items[i] + 8;
+		if (event->state == WLR_KEY_RELEASED && keycode == binding_keycode) {
+			continue;
+		}
+
 		bool found = false;
 		for (size_t j = 0; j < keyboard->num_keycodes; ++j) {
 			xkb_keycode_t keycode = keyboard->keycodes[j] + 8;
@@ -178,13 +220,14 @@ static bool binding_matches_keycodes(struct wlr_keyboard *keyboard,
  * Returns true if the keysym was handled by a binding and false if the event
  * should be propagated to clients.
  */
-static bool keyboard_execute_bindcode(struct sway_keyboard *keyboard) {
+static bool keyboard_execute_bindcode(struct sway_keyboard *keyboard,
+		struct wlr_event_keyboard_key *event) {
 	struct wlr_keyboard *wlr_keyboard =
 		keyboard->seat_device->input_device->wlr_device->keyboard;
 	list_t *keycode_bindings = config->current_mode->keycode_bindings;
 	for (int i = 0; i < keycode_bindings->length; ++i) {
 		struct sway_binding *binding = keycode_bindings->items[i];
-		if (binding_matches_keycodes(wlr_keyboard, binding)) {
+		if (binding_matches_keycodes(wlr_keyboard, binding, event)) {
 			struct cmd_results *results = handle_command(binding->command);
 			if (results->status != CMD_SUCCESS) {
 				sway_log(L_DEBUG, "could not run command for binding: %s",
@@ -289,50 +332,61 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	bool handled = false;
 
 	// handle keycodes
-	handled = keyboard_execute_bindcode(keyboard);
+	handled = keyboard_execute_bindcode(keyboard, event);
 
 	// handle translated keysyms
+	if (!handled && event->state == WLR_KEY_RELEASED) {
+		handled = keyboard_execute_bindsym(keyboard,
+			keyboard->pressed_keysyms_translated,
+			keyboard->modifiers_translated,
+			event->state);
+	}
 	const xkb_keysym_t *translated_keysyms;
-	uint32_t translated_modifiers;
 	size_t translated_keysyms_len =
 		keyboard_keysyms_translated(keyboard, keycode, &translated_keysyms,
-			&translated_modifiers);
+			&keyboard->modifiers_translated);
 	pressed_keysyms_update(keyboard->pressed_keysyms_translated,
 		translated_keysyms, translated_keysyms_len, event->state);
-	if (event->state == WLR_KEY_PRESSED && !handled) {
+	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled = keyboard_execute_bindsym(keyboard,
-			keyboard->pressed_keysyms_translated, translated_modifiers,
-			translated_keysyms_len);
+			keyboard->pressed_keysyms_translated,
+			keyboard->modifiers_translated,
+			event->state);
 	}
 
 	// Handle raw keysyms
+	if (!handled && event->state == WLR_KEY_RELEASED) {
+		handled = keyboard_execute_bindsym(keyboard,
+			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
+			event->state);
+	}
 	const xkb_keysym_t *raw_keysyms;
-	uint32_t raw_modifiers;
 	size_t raw_keysyms_len =
-		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &raw_modifiers);
+		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &keyboard->modifiers_raw);
 	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms,
 		raw_keysyms_len, event->state);
-	if (event->state == WLR_KEY_PRESSED && !handled) {
+	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled = keyboard_execute_bindsym(keyboard,
-			keyboard->pressed_keysyms_raw, raw_modifiers,
-			raw_keysyms_len);
+			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
+			event->state);
 	}
 
 	// Compositor bindings
-	if (event->state == WLR_KEY_PRESSED && !handled) {
+	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled =
 			keyboard_execute_compositor_binding(keyboard,
-				keyboard->pressed_keysyms_translated, translated_modifiers,
+				keyboard->pressed_keysyms_translated,
+				keyboard->modifiers_translated,
 				translated_keysyms_len);
 	}
-	if (event->state == WLR_KEY_PRESSED && !handled) {
+	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled =
 			keyboard_execute_compositor_binding(keyboard,
-				keyboard->pressed_keysyms_raw, raw_modifiers,
+				keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
 				raw_keysyms_len);
 	}
 
-	if (!handled) {
+	if (!handled || event->state == WLR_KEY_RELEASED) {
 		wlr_seat_set_keyboard(wlr_seat, wlr_device);
 		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 				event->keycode, event->state);

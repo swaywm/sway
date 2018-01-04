@@ -34,6 +34,10 @@ void free_sway_binding(struct sway_binding *binding) {
  */
 bool binding_key_compare(struct sway_binding *binding_a,
 		struct sway_binding *binding_b) {
+	if (binding_a->release != binding_b->release) {
+		return false;
+	}
+
 	if (binding_a->bindcode != binding_b->bindcode) {
 		return false;
 	}

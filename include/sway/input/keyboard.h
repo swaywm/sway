@@ -14,7 +14,10 @@ struct sway_keyboard {
 	struct wl_listener keyboard_modifiers;
 
 	xkb_keysym_t pressed_keysyms_translated[SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP];
+	uint32_t modifiers_translated;
+
 	xkb_keysym_t pressed_keysyms_raw[SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP];
+	uint32_t modifiers_raw;
 };
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
