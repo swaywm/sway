@@ -156,7 +156,11 @@ static void pretty_print_version(json_object *v) {
 static void pretty_print_clipboard(json_object *v) {
 	if (success(v, true)) {
 		if (json_object_is_type(v, json_type_array)) {
+#if JSON_C_MAJOR_VERSION > 0 || JSON_C_MINOR_VERSION >= 13
 			for (size_t i = 0; i < json_object_array_length(v); ++i) {
+#else
+			for (int i = 0; i < json_object_array_length(v); ++i) {
+#endif
 				json_object *o = json_object_array_get_idx(v, i);
 				printf("%s\n", json_object_get_string(o));
 			}

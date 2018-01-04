@@ -18,7 +18,7 @@ datadir = get_option('datadir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
 
-jsonc          = dependency('json-c', version: '>=0.13')
+jsonc          = dependency('json-c', version: '>=0.12.1')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots')
 wayland_server = dependency('wayland-server')
