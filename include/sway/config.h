@@ -397,6 +397,8 @@ struct seat_attachment_config *seat_config_get_attachment(
 void apply_seat_config(struct seat_config *seat);
 
 int output_name_cmp(const void *item, const void *data);
+void output_get_identifier(char *identifier, size_t len,
+	struct sway_output *output);
 struct output_config *new_output_config(const char *name);
 void merge_output_config(struct output_config *dst, struct output_config *src);
 void apply_output_config(struct output_config *oc, swayc_t *output);

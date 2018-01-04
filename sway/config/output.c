@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#include <stdbool.h>
 #include <string.h>
 #include <assert.h>
 #include <wlr/types/wlr_output.h>
@@ -12,6 +13,13 @@ int output_name_cmp(const void *item, const void *data) {
 	const char *name = data;
 
 	return strcmp(output->name, name);
+}
+
+void output_get_identifier(char *identifier, size_t len,
+		struct sway_output *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
+	snprintf(identifier, len, "%s %s %s", wlr_output->make, wlr_output->model,
+		wlr_output->serial);
 }
 
 struct output_config *new_output_config(const char *name) {
