@@ -16,6 +16,7 @@
 #include <sys/prctl.h>
 #endif
 #include <wlr/util/log.h>
+void init_log(log_importance_t verbosity); // log.h, but can't include because of conflict
 #include "sway/config.h"
 #include "sway/server.h"
 #include "sway/layout.h"
@@ -331,10 +332,13 @@ int main(int argc, char **argv) {
 	// TODO: switch logging over to wlroots?
 	if (debug) {
 		wlr_log_init(L_DEBUG, NULL);
+		init_log(L_DEBUG);
 	} else if (verbose || validate) {
 		wlr_log_init(L_INFO, NULL);
+		init_log(L_INFO);
 	} else {
 		wlr_log_init(L_ERROR, NULL);
+		init_log(L_ERROR);
 	}
 
 	if (optind < argc) { // Behave as IPC client
