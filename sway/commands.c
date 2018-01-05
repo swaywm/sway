@@ -136,6 +136,7 @@ static struct cmd_handler handlers[] = {
 	{ "input", cmd_input },
 	{ "kill", cmd_kill },
 	{ "output", cmd_output },
+	{ "reload", cmd_reload },
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
 };
