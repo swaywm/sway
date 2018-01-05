@@ -138,6 +138,7 @@ static struct cmd_handler handlers[] = {
 	{ "input", cmd_input },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
+	{ "set", cmd_set },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -290,7 +291,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	int i;
 	// Var replacement, for all but first argument of set
 	// TODO commands
-	for (i = /*handler->handle == cmd_set ? 2 :*/ 1; i < argc; ++i) {
+	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 		argv[i] = do_var_replacement(argv[i]);
 		unescape_string(argv[i]);
 	}
