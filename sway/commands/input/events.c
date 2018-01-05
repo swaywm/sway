@@ -6,7 +6,7 @@
 #include "log.h"
 
 struct cmd_results *input_cmd_events(int argc, char **argv) {
-	sway_log(L_DEBUG, "events for device: %s",
+	wlr_log(L_DEBUG, "events for device: %s",
 		current_input_config->identifier);
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "events", EXPECTED_AT_LEAST, 1))) {

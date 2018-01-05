@@ -112,7 +112,7 @@ void sway_seat_configure_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_TOUCH:
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
-			sway_log(L_DEBUG, "TODO: configure other devices");
+			wlr_log(L_DEBUG, "TODO: configure other devices");
 			break;
 	}
 }
@@ -127,11 +127,11 @@ void sway_seat_add_device(struct sway_seat *seat,
 	struct sway_seat_device *seat_device =
 		calloc(1, sizeof(struct sway_seat_device));
 	if (!seat_device) {
-		sway_log(L_DEBUG, "could not allocate seat device");
+		wlr_log(L_DEBUG, "could not allocate seat device");
 		return;
 	}
 
-	sway_log(L_DEBUG, "adding device %s to seat %s",
+	wlr_log(L_DEBUG, "adding device %s to seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device->sway_seat = seat;
@@ -150,7 +150,7 @@ void sway_seat_remove_device(struct sway_seat *seat,
 		return;
 	}
 
-	sway_log(L_DEBUG, "removing device %s from seat %s",
+	wlr_log(L_DEBUG, "removing device %s from seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device_destroy(seat_device);

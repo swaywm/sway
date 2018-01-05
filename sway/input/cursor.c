@@ -85,35 +85,35 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_down);
 	struct wlr_event_touch_down *event = data;
-	sway_log(L_DEBUG, "TODO: handle touch down event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle touch down event: %p", event);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_up);
 	struct wlr_event_touch_up *event = data;
-	sway_log(L_DEBUG, "TODO: handle touch up event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle touch up event: %p", event);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
 	struct wlr_event_touch_motion *event = data;
-	sway_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
 }
 
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, tool_axis);
 	struct wlr_event_tablet_tool_axis *event = data;
-	sway_log(L_DEBUG, "TODO: handle tool axis event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle tool axis event: %p", event);
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, tool_tip);
 	struct wlr_event_tablet_tool_tip *event = data;
-	sway_log(L_DEBUG, "TODO: handle tool tip event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle tool tip event: %p", event);
 }
 
 static void handle_request_set_cursor(struct wl_listener *listener,
@@ -121,7 +121,7 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, request_set_cursor);
 	struct wlr_seat_pointer_request_set_cursor_event *event = data;
-	sway_log(L_DEBUG, "TODO: handle request set cursor event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle request set cursor event: %p", event);
 }
 
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {

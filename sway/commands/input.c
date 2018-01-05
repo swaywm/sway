@@ -12,7 +12,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 
 	if (config->reading && strcmp("{", argv[1]) == 0) {
 		current_input_config = new_input_config(argv[0]);
-		sway_log(L_DEBUG, "entering input block: %s", current_input_config->identifier);
+		wlr_log(L_DEBUG, "entering input block: %s", current_input_config->identifier);
 		return cmd_results_new(CMD_BLOCK_INPUT, NULL, NULL);
 	}
 

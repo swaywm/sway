@@ -59,7 +59,7 @@ void init_layout(void) {
 }
 
 void add_child(swayc_t *parent, swayc_t *child) {
-	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
+	wlr_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
 			child, child->type, child->width, child->height,
 			parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
@@ -145,7 +145,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	width = floor(width);
 	height = floor(height);
 
-	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
+	wlr_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
 		 container->name, container->width, container->height, container->x,
 		 container->y);
 
@@ -155,7 +155,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		// TODO: wlr_output_layout probably
 		for (i = 0; i < container->children->length; ++i) {
 			swayc_t *output = container->children->items[i];
-			sway_log(L_DEBUG, "Arranging output '%s' at %f,%f",
+			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 					output->name, output->x, output->y);
 			arrange_windows(output, -1, -1);
 		}
@@ -181,7 +181,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 			container->height = output->height;
 			container->x = x;
 			container->y = y;
-			sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
+			wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 					container->name, container->x, container->y);
 		}
 		// children are properly handled below
@@ -192,7 +192,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 			container->height = height;
 			container->sway_view->iface.set_size(container->sway_view,
 					container->width, container->height);
-			sway_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f",
+			wlr_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f",
 					container->width, container->height,
 					container->x, container->y);
 		}
@@ -215,7 +215,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 			container->children->length);
 		break;
 	default:
-		sway_log(L_DEBUG, "TODO: arrange layout type %d", container->layout);
+		wlr_log(L_DEBUG, "TODO: arrange layout type %d", container->layout);
 		apply_horiz_layout(container, x, y, width, height, 0,
 			container->children->length);
 		break;
@@ -244,10 +244,10 @@ static void apply_horiz_layout(swayc_t *container,
 	// Resize windows
 	double child_x = x;
 	if (scale > 0.1) {
-		sway_log(L_DEBUG, "Arranging %p horizontally", container);
+		wlr_log(L_DEBUG, "Arranging %p horizontally", container);
 		for (int i = start; i < end; ++i) {
 			swayc_t *child = container->children->items[i];
-			sway_log(L_DEBUG,
+			wlr_log(L_DEBUG,
 				 "Calculating arrangement for %p:%d (will scale %f by %f)",
 				 child, child->type, width, scale);
 			child->sway_view->iface.set_position(child->sway_view, child_x, y);
@@ -294,10 +294,10 @@ void apply_vert_layout(swayc_t *container,
 	// Resize
 	double child_y = y;
 	if (scale > 0.1) {
-		sway_log(L_DEBUG, "Arranging %p vertically", container);
+		wlr_log(L_DEBUG, "Arranging %p vertically", container);
 		for (i = start; i < end; ++i) {
 			swayc_t *child = container->children->items[i];
-			sway_log(L_DEBUG,
+			wlr_log(L_DEBUG,
 				 "Calculating arrangement for %p:%d (will scale %f by %f)",
 				 child, child->type, height, scale);
 			child->sway_view->iface.set_position(child->sway_view, x, child_y);

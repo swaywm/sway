@@ -11,7 +11,7 @@ void next_name_map(swayc_t *ws, void *data) {
 }
 
 char *workspace_next_name(const char *output_name) {
-	sway_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
+	wlr_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
 	int count = 0;
 	next_name_map(&root_container, &count);

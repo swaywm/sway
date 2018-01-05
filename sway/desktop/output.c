@@ -110,7 +110,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 void output_add_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_add);
 	struct wlr_output *wlr_output = data;
-	sway_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
+	wlr_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	if (!output) {
@@ -140,7 +140,7 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 void output_remove_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, output_remove);
 	struct wlr_output *wlr_output = data;
-	sway_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
+	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
 
 	swayc_t *output_container = NULL;
 	for (int i = 0 ; i < root_container.children->length; ++i) {

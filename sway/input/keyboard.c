@@ -90,11 +90,11 @@ static bool binding_matches_key_state(struct sway_binding *binding,
 }
 
 static void binding_execute_command(struct sway_binding *binding) {
-	sway_log(L_DEBUG, "running command for binding: %s",
+	wlr_log(L_DEBUG, "running command for binding: %s",
 		binding->command);
 	struct cmd_results *results = handle_command(binding->command);
 	if (results->status != CMD_SUCCESS) {
-		sway_log(L_DEBUG, "could not run command for binding: %s",
+		wlr_log(L_DEBUG, "could not run command for binding: %s",
 			binding->command);
 	}
 	free_cmd_results(results);
@@ -467,7 +467,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 	if (!keymap) {
-		sway_log(L_DEBUG, "cannot configure keyboard: keymap does not exist");
+		wlr_log(L_DEBUG, "cannot configure keyboard: keymap does not exist");
 		xkb_context_unref(context);
 		return;
 	}

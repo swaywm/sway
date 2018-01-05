@@ -145,7 +145,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	for (int i = 0; i < mode_bindings->length; ++i) {
 		struct sway_binding *config_binding = mode_bindings->items[i];
 		if (binding_key_compare(binding, config_binding)) {
-			sway_log(L_DEBUG, "overwriting old binding with command '%s'",
+			wlr_log(L_DEBUG, "overwriting old binding with command '%s'",
 				config_binding->command);
 			free_sway_binding(config_binding);
 			mode_bindings->items[i] = binding;
@@ -157,7 +157,7 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		list_add(mode_bindings, binding);
 	}
 
-	sway_log(L_DEBUG, "bindsym - Bound %s to command %s",
+	wlr_log(L_DEBUG, "bindsym - Bound %s to command %s",
 		argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
@@ -227,7 +227,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	for (int i = 0; i < mode_bindings->length; ++i) {
 		struct sway_binding *config_binding = mode_bindings->items[i];
 		if (binding_key_compare(binding, config_binding)) {
-			sway_log(L_DEBUG, "overwriting old binding with command '%s'",
+			wlr_log(L_DEBUG, "overwriting old binding with command '%s'",
 				config_binding->command);
 			free_sway_binding(config_binding);
 			mode_bindings->items[i] = binding;
@@ -239,7 +239,7 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 		list_add(mode_bindings, binding);
 	}
 
-	sway_log(L_DEBUG, "bindcode - Bound %s to command %s",
+	wlr_log(L_DEBUG, "bindcode - Bound %s to command %s",
 		argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
