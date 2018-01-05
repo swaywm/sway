@@ -3,13 +3,13 @@
 #include <stdbool.h>
 #include <wlr/util/log.h>
 
-void _sway_abort(const char *filename, int line, const char* format, ...) __attribute__((format(printf,3,4)));
+void _sway_abort(const char *filename, ...) ATTRIB_PRINTF(1, 2);
 #define sway_abort(FMT, ...) \
-    _sway_abort(__FILE__, __LINE__, FMT, ##__VA_ARGS__)
+    _sway_abort("[%s:%d] " FMT, _strip_path(__FILE__), __LINE__, ##__VA_ARGS__)
 
-bool _sway_assert(bool condition, const char *filename, int line, const char* format, ...) __attribute__((format(printf,4,5)));
+bool _sway_assert(bool condition, const char* format, ...) ATTRIB_PRINTF(2, 3);
 #define sway_assert(COND, FMT, ...) \
-	_sway_assert(COND, __FILE__, __LINE__, "%s:" FMT, __PRETTY_FUNCTION__, ##__VA_ARGS__)
+	_sway_assert(COND, "[%s:%d] %s:" FMT, _strip_path(__FILE__), __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__)
 
 void error_handler(int sig);
 
