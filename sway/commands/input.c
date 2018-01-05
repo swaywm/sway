@@ -24,7 +24,11 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	char **argv_new = argv+2;
 
 	struct cmd_results *res;
+	struct input_config *old_input_config = current_input_config;
 	current_input_config = new_input_config(argv[0]);
+	if (!current_input_config) {
+		return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+	}
 	if (strcasecmp("accel_profile", argv[1]) == 0) {
 		res = input_cmd_accel_profile(argc_new, argv_new);
 	} else if (strcasecmp("click_method", argv[1]) == 0) {
@@ -60,6 +64,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	} else {
 		res = cmd_results_new(CMD_INVALID, "input <device>", "Unknown command %s", argv[1]);
 	}
-	current_input_config = NULL;
+	free_input_config(current_input_config);
+	current_input_config = old_input_config;
 	return res;
 }

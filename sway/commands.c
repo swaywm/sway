@@ -70,8 +70,10 @@ void apply_input_config(struct input_config *input) {
 		list_add(config->input_configs, input);
 	}
 
+	struct input_config *old_input_config = current_input_config;
 	current_input_config = input;
 	sway_input_manager_apply_input_config(input_manager, input);
+	current_input_config = old_input_config;
 }
 
 void apply_seat_config(struct seat_config *seat) {
@@ -195,7 +197,7 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 struct cmd_results *handle_command(char *_exec) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
-	// error string we could e.g. concatonate all errors there.)
+	// error string we could e.g. concatenate all errors there.)
 	struct cmd_results *results = NULL;
 	char *exec = strdup(_exec);
 	char *head = exec;
