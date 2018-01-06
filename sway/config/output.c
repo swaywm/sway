@@ -84,7 +84,7 @@ static void set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate) {
 	int mhz = (int)(refresh_rate * 1000);
 	if (wl_list_empty(&output->modes)) {
-		sway_log(L_DEBUG, "Assigning custom mode to %s", output->name);
+		wlr_log(L_DEBUG, "Assigning custom mode to %s", output->name);
 		wlr_output_set_custom_mode(output, width, height, mhz);
 		return;
 	}
@@ -100,9 +100,9 @@ static void set_mode(struct wlr_output *output, int width, int height,
 		}
 	}
 	if (!best) {
-		sway_log(L_ERROR, "Configured mode for %s not available", output->name);
+		wlr_log(L_ERROR, "Configured mode for %s not available", output->name);
 	} else {
-		sway_log(L_DEBUG, "Assigning configured mode to %s", output->name);
+		wlr_log(L_DEBUG, "Assigning configured mode to %s", output->name);
 		wlr_output_set_mode(output, best);
 	}
 }
@@ -119,22 +119,22 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 
 	if (oc && oc->width > 0 && oc->height > 0) {
-		sway_log(L_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
+		wlr_log(L_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	}
 	if (oc && oc->scale > 0) {
-		sway_log(L_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
+		wlr_log(L_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
 	}
 	if (oc && oc->transform >= 0) {
-		sway_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
+		wlr_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
 	}
 
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
-		sway_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
+		wlr_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
 		wlr_output_layout_add(root_container.sway_root->output_layout,
 			wlr_output, oc->x, oc->y);
 	} else {
@@ -165,7 +165,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 			terminate_swaybg(output->bg_pid);
 		}
 
-		sway_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
+		wlr_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
 
 		size_t bufsize = 12;
 		char output_id[bufsize];

@@ -124,7 +124,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	sway_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
+	wlr_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
 			xsurface->title, xsurface->class);
 
 	struct sway_xwayland_surface *sway_surface =

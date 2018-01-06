@@ -12,7 +12,7 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 
 	if (config->reading && strcmp("{", argv[1]) == 0) {
 		current_seat_config = new_seat_config(argv[0]);
-		sway_log(L_DEBUG, "entering seat block: %s", current_seat_config->name);
+		wlr_log(L_DEBUG, "entering seat block: %s", current_seat_config->name);
 		return cmd_results_new(CMD_BLOCK_SEAT, NULL, NULL);
 	}
 

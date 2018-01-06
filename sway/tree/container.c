@@ -92,11 +92,11 @@ swayc_t *new_output(struct sway_output *sway_output) {
 
 		if (strcasecmp(name, cur->name) == 0 ||
 				strcasecmp(identifier, cur->name) == 0) {
-			sway_log(L_DEBUG, "Matched output config for %s", name);
+			wlr_log(L_DEBUG, "Matched output config for %s", name);
 			oc = cur;
 		}
 		if (strcasecmp("*", cur->name) == 0) {
-			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			wlr_log(L_DEBUG, "Matched wildcard output config for %s", name);
 			all = cur;
 		}
 
@@ -126,7 +126,7 @@ swayc_t *new_output(struct sway_output *sway_output) {
 
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
-	sway_log(L_DEBUG, "Creating default workspace %s", ws_name);
+	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	new_workspace(output, ws_name);
 	free(ws_name);
 	return output;
@@ -136,7 +136,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	if (!sway_assert(output, "new_workspace called with null output")) {
 		return NULL;
 	}
-	sway_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
+	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
 	swayc_t *workspace = new_swayc(C_WORKSPACE);
 
 	workspace->x = output->x;
@@ -159,7 +159,7 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	}
 	const char *title = sway_view->iface.get_prop(sway_view, VIEW_PROP_TITLE);
 	swayc_t *swayc = new_swayc(C_VIEW);
-	sway_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
+	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
 		swayc, title, sibling, sibling ? sibling->type : 0);
 	// Setup values
 	swayc->sway_view = sway_view;
@@ -200,7 +200,7 @@ swayc_t *destroy_output(swayc_t *output) {
 		}
 	}
 
-	sway_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
+	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 	free_swayc(output);
 
 	return &root_container;
@@ -210,7 +210,7 @@ swayc_t *destroy_view(swayc_t *view) {
 	if (!sway_assert(view, "null view passed to destroy_view")) {
 		return NULL;
 	}
-	sway_log(L_DEBUG, "Destroying view '%s'", view->name);
+	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
 	swayc_t *parent = view->parent;
 	free_swayc(view);
 

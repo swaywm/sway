@@ -5,7 +5,7 @@
 #include "log.h"
 
 struct cmd_results *input_cmd_xkb_variant(int argc, char **argv) {
-	sway_log(L_DEBUG, "xkb variant for device: %s", current_input_config->identifier);
+	wlr_log(L_DEBUG, "xkb variant for device: %s", current_input_config->identifier);
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "xkb_variant", EXPECTED_EQUAL_TO, 1))) {
 		return error;
@@ -18,7 +18,7 @@ struct cmd_results *input_cmd_xkb_variant(int argc, char **argv) {
 
 	new_config->xkb_variant = strdup(argv[0]);
 
-	sway_log(L_DEBUG, "apply-xkb_variant for device: %s variant: %s",
+	wlr_log(L_DEBUG, "apply-xkb_variant for device: %s variant: %s",
 		current_input_config->identifier, new_config->xkb_variant);
 	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

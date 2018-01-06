@@ -88,7 +88,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	sway_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
+	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
 			xdg_surface->title, xdg_surface->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
 

@@ -82,7 +82,7 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	sway_log(L_DEBUG, "New wl_shell toplevel title='%s' app_id='%s'",
+	wlr_log(L_DEBUG, "New wl_shell toplevel title='%s' app_id='%s'",
 			shell_surface->title, shell_surface->class);
 	wlr_wl_shell_surface_ping(shell_surface);
 

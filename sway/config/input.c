@@ -8,13 +8,13 @@
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
 	if (!input) {
-		sway_log(L_DEBUG, "Unable to allocate input config");
+		wlr_log(L_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
-	sway_log(L_DEBUG, "new_input_config(%s)", identifier);
+	wlr_log(L_DEBUG, "new_input_config(%s)", identifier);
 	if (!(input->identifier = strdup(identifier))) {
 		free(input);
-		sway_log(L_DEBUG, "Unable to allocate input config");
+		wlr_log(L_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
 
