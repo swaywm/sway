@@ -136,6 +136,12 @@ static void mouse_button_notify(struct window *window, int x, int y,
 	case BTN_RIGHT:
 		status_line_mouse_event(&swaybar, x, y, 3);
 		break;
+	case BTN_SIDE:
+		status_line_mouse_event(&swaybar, x, y, 8);
+		break;
+	case BTN_EXTRA:
+		status_line_mouse_event(&swaybar, x, y, 9);
+		break;
 	}
 
 #ifdef ENABLE_TRAY
