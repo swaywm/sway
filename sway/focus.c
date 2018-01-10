@@ -162,12 +162,12 @@ bool set_focused_container(swayc_t *c) {
 		}
 		if (c->type == C_VIEW) {
 			wlc_view_set_state(c->handle, WLC_BIT_ACTIVATED, true);
-		}
-		if (!desktop_shell.is_locked) {
-			// If the system is locked, we do everything _but_ actually setting
-			// focus. This includes making our internals think that this view is
-			// focused.
-			wlc_view_focus(c->handle);
+			if (!desktop_shell.is_locked) {
+				// If the system is locked, we do everything _but_ actually setting
+				// focus. This includes making our internals think that this view is
+				// focused.
+				wlc_view_focus(c->handle);
+			}
 		}
 		if (c->parent->layout != L_TABBED && c->parent->layout != L_STACKED) {
 			update_container_border(c);
