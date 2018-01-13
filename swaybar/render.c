@@ -97,6 +97,10 @@ static void render_block(struct window *window, struct config *config, struct st
 	block->x = (int)pos;
 	block->width = (int)block_width;
 
+	if (!block->full_text || !block->full_text[0]) {
+		return;
+	}
+
 	// render background
 	if (block->background != 0x0) {
 		cairo_set_source_u32(window->cairo, block->background);
@@ -330,10 +334,8 @@ void render(struct output *output, struct config *config, struct status_line *li
 		bool edge = true;
 		for (i = line->block_line->length - 1; i >= 0; --i) {
 			struct status_block *block = line->block_line->items[i];
-			if (block->full_text && block->full_text[0]) {
-				render_block(window, config, block, &pos, edge, is_focused);
-				edge = false;
-			}
+			render_block(window, config, block, &pos, edge, is_focused);
+			edge = false;
 		}
 	}
 
