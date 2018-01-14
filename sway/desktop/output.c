@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <stdlib.h>
 #include <time.h>
 #include <wayland-server.h>
@@ -15,85 +16,137 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 
+/**
+ * Rotate a child's position relative to a parent. The parent size is (pw, ph),
+ * the child position is (*sx, *sy) and its size is (sw, sh).
+ */
+static void rotate_child_position(double *sx, double *sy, double sw, double sh,
+		double pw, double ph, float rotation) {
+	if (rotation != 0.0) {
+		// Coordinates relative to the center of the subsurface
+		double ox = *sx - pw/2 + sw/2,
+			oy = *sy - ph/2 + sh/2;
+		// Rotated coordinates
+		double rx = cos(-rotation)*ox - sin(-rotation)*oy,
+			ry = cos(-rotation)*oy + sin(-rotation)*ox;
+		*sx = rx + pw/2 - sw/2;
+		*sy = ry + ph/2 - sh/2;
+	}
+}
+
+static void render_surface(struct wlr_surface *surface,
+		struct wlr_output *wlr_output, struct timespec *when,
+		double lx, double ly, float rotation) {
+	if (!wlr_surface_has_buffer(surface)) {
+		return;
+	}
+	struct wlr_output_layout *layout = root_container.sway_root->output_layout;
+	int width = surface->current->width;
+	int height = surface->current->height;
+	int render_width = width * wlr_output->scale;
+	int render_height = height * wlr_output->scale;
+	double ox = lx, oy = ly;
+	wlr_output_layout_output_coords(layout, wlr_output, &ox, &oy);
+	ox *= wlr_output->scale;
+	oy *= wlr_output->scale;
+
+	struct wlr_box render_box = {
+		.x = lx, .y = ly,
+		.width = render_width, .height = render_height,
+	};
+	if (wlr_output_layout_intersects(layout, wlr_output, &render_box)) {
+		float matrix[16];
+
+		float translate_center[16];
+		wlr_matrix_translate(&translate_center,
+			(int)ox + render_width / 2, (int)oy + render_height / 2, 0);
+
+		float rotate[16];
+		wlr_matrix_rotate(&rotate, rotation);
+
+		float translate_origin[16];
+		wlr_matrix_translate(&translate_origin, -render_width / 2,
+			-render_height / 2, 0);
+
+		float scale[16];
+		wlr_matrix_scale(&scale, render_width, render_height, 1);
+
+		float transform[16];
+		wlr_matrix_mul(&translate_center, &rotate, &transform);
+		wlr_matrix_mul(&transform, &translate_origin, &transform);
+		wlr_matrix_mul(&transform, &scale, &transform);
+
+		if (surface->current->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
+			float surface_translate_center[16];
+			wlr_matrix_translate(&surface_translate_center, 0.5, 0.5, 0);
+
+			float surface_transform[16];
+			wlr_matrix_transform(surface_transform,
+				wlr_output_transform_invert(surface->current->transform));
+
+			float surface_translate_origin[16];
+			wlr_matrix_translate(&surface_translate_origin, -0.5, -0.5, 0);
+
+			wlr_matrix_mul(&transform, &surface_translate_center,
+				&transform);
+			wlr_matrix_mul(&transform, &surface_transform, &transform);
+			wlr_matrix_mul(&transform, &surface_translate_origin,
+				&transform);
+		}
+
+		wlr_matrix_mul(&wlr_output->transform_matrix, &transform, &matrix);
+
+		wlr_render_with_matrix(server.renderer, surface->texture,
+			&matrix);
+
+		wlr_surface_send_frame_done(surface, when);
+	}
+
+	struct wlr_subsurface *subsurface;
+	wl_list_for_each(subsurface, &surface->subsurface_list, parent_link) {
+		struct wlr_surface_state *state = subsurface->surface->current;
+		double sx = state->subsurface_position.x;
+		double sy = state->subsurface_position.y;
+		double sw = state->buffer_width / state->scale;
+		double sh = state->buffer_height / state->scale;
+		rotate_child_position(&sx, &sy, sw, sh, width, height, rotation);
+
+		render_surface(subsurface->surface, wlr_output, when,
+			lx + sx,
+			ly + sy,
+			rotation);
+	}
+}
+
 static void output_frame_view(swayc_t *view, void *data) {
 	struct sway_output *output = data;
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct sway_view *sway_view = view->sway_view;
 	struct wlr_surface *surface = sway_view->surface;
-	if (!wlr_surface_has_buffer(surface)) {
-		return;
+
+	switch (sway_view->type) {
+	case SWAY_XDG_SHELL_V6_VIEW: {
+		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry->x;
+		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry->y;
+		render_surface(surface, wlr_output, &output->last_frame,
+			view->x - window_offset_x,
+			view->y - window_offset_y,
+			0);
+		break;
 	}
-	// TODO
-	// - Deal with wlr_output_layout
-	int width = sway_view->surface->current->width;
-	int height = sway_view->surface->current->height;
-	int render_width = width * wlr_output->scale;
-	int render_height = height * wlr_output->scale;
-	double ox = view->x, oy = view->y;
-	// TODO
-	//wlr_output_layout_output_coords(desktop->layout, wlr_output, &ox, &oy);
-	ox *= wlr_output->scale;
-	oy *= wlr_output->scale;
-	// TODO
-	//if (wlr_output_layout_intersects(desktop->layout, wlr_output,
-	//		lx, ly, lx + render_width, ly + render_height)) {
-	//		return;
-	//}
-
-	// if the shell specifies window geometry, make the top left corner of the
-	// window in the top left corner of the container to avoid arbitrarily
-	// sized gaps based on the attached buffer size
-	int window_offset_x = 0;
-	int window_offset_y = 0;
-
-	if (view->sway_view->type == SWAY_XDG_SHELL_V6_VIEW) {
-		window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry->x;
-		window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry->y;
+	case SWAY_WL_SHELL_VIEW:
+		break;
+	case SWAY_XWAYLAND_VIEW:
+		break;
+	case SWAY_VIEW_TYPES:
+		break;
 	}
-
-	// TODO
-	double rotation = 0;
-	float matrix[16];
-
-	float translate_origin[16];
-	wlr_matrix_translate(&translate_origin,
-		(int)ox + render_width / 2 - window_offset_x,
-		(int)oy + render_height / 2 - window_offset_y,
-		0);
-
-	float rotate[16];
-	wlr_matrix_rotate(&rotate, rotation);
-
-	float translate_center[16];
-	wlr_matrix_translate(&translate_center,
-		-render_width / 2,
-		-render_height / 2, 0);
-
-	float scale[16];
-	wlr_matrix_scale(&scale, render_width, render_height, 1);
-
-	float transform[16];
-	wlr_matrix_mul(&translate_origin, &rotate, &transform);
-	wlr_matrix_mul(&transform, &translate_center, &transform);
-	wlr_matrix_mul(&transform, &scale, &transform);
-	wlr_matrix_mul(&wlr_output->transform_matrix, &transform, &matrix);
-
-	wlr_render_with_matrix(output->server->renderer, surface->texture, &matrix);
-
-	// TODO: move into wlroots
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-
-	wlr_surface_send_frame_done(surface, &now);
 }
 
 static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
 	struct sway_server *server = soutput->server;
-
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
 
 	wlr_output_make_current(wlr_output);
 	wlr_renderer_begin(server->renderer, wlr_output);
@@ -104,6 +157,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	wlr_renderer_end(server->renderer);
 	wlr_output_swap_buffers(wlr_output);
 
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
 	soutput->last_frame = now;
 }
 
