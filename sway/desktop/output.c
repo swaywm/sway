@@ -5,6 +5,7 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_surface.h>
+#include <wlr/types/wlr_wl_shell.h>
 #include <wlr/render.h>
 #include <wlr/render/matrix.h>
 #include "log.h"
@@ -145,6 +146,34 @@ static void render_xdg_v6_popups(struct wlr_xdg_surface_v6 *surface,
 	}
 }
 
+static void render_wl_shell_surface(struct wlr_wl_shell_surface *surface,
+		struct wlr_output *wlr_output, struct timespec *when,
+		double lx, double ly, float rotation,
+		bool is_child) {
+	if (is_child || surface->state != WLR_WL_SHELL_SURFACE_STATE_POPUP) {
+		render_surface(surface->surface, wlr_output, when,
+			lx, ly, rotation);
+
+		double width = surface->surface->current->width;
+		double height = surface->surface->current->height;
+
+		struct wlr_wl_shell_surface *popup;
+		wl_list_for_each(popup, &surface->popups, popup_link) {
+			double popup_width = popup->surface->current->width;
+			double popup_height = popup->surface->current->height;
+
+			double popup_x = popup->transient_state->x;
+			double popup_y = popup->transient_state->y;
+			rotate_child_position(&popup_x, &popup_y, popup_width, popup_height,
+				width, height, rotation);
+
+			render_wl_shell_surface(popup, wlr_output, when,
+				lx + popup_x, ly + popup_y, rotation, true);
+		}
+	}
+}
+
+
 static void output_frame_view(swayc_t *view, void *data) {
 	struct sway_output *output = data;
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -166,10 +195,14 @@ static void output_frame_view(swayc_t *view, void *data) {
 		break;
 	}
 	case SWAY_WL_SHELL_VIEW:
+		render_wl_shell_surface(sway_view->wlr_wl_shell_surface, wlr_output,
+			&output->last_frame, view->x, view->y, 0, false);
 		break;
 	case SWAY_XWAYLAND_VIEW:
+		render_surface(surface, wlr_output, &output->last_frame, view->x,
+			view->y, 0);
 		break;
-	case SWAY_VIEW_TYPES:
+	default:
 		break;
 	}
 }

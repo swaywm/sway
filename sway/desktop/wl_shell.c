@@ -77,10 +77,12 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 			listener, server, wl_shell_surface);
 	struct wlr_wl_shell_surface *shell_surface = data;
 
-	if (shell_surface->state != WLR_WL_SHELL_SURFACE_STATE_TOPLEVEL) {
-		// TODO: transient and popups should be floating
+	if (shell_surface->state == WLR_WL_SHELL_SURFACE_STATE_POPUP) {
+		// popups don't get views
 		return;
 	}
+
+	// TODO make transient windows floating
 
 	wlr_log(L_DEBUG, "New wl_shell toplevel title='%s' app_id='%s'",
 			shell_surface->title, shell_surface->class);
