@@ -207,7 +207,7 @@ swayc_t *destroy_output(swayc_t *output) {
 }
 
 swayc_t *destroy_view(swayc_t *view) {
-	if (!sway_assert(view, "null view passed to destroy_view")) {
+	if (!view) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);

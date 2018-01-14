@@ -51,6 +51,7 @@ void init_layout(void) {
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
 	root_container.sway_root->output_layout = wlr_output_layout_create();
+	wl_list_init(&root_container.sway_root->unmanaged_views);
 
 	root_container.sway_root->output_layout_change.notify =
 		output_layout_change_notify;

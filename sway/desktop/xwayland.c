@@ -93,13 +93,43 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, destroy);
+	struct wlr_xwayland_surface *xsurface = data;
 	wl_list_remove(&sway_surface->commit.link);
 	wl_list_remove(&sway_surface->destroy.link);
 	wl_list_remove(&sway_surface->request_configure.link);
-	swayc_t *parent = destroy_view(sway_surface->view->swayc);
+	if (xsurface->override_redirect) {
+		if (xsurface->mapped) {
+			wl_list_remove(&sway_surface->view->unmanaged_view_link);
+		}
+	} else {
+		swayc_t *parent = destroy_view(sway_surface->view->swayc);
+		arrange_windows(parent, -1, -1);
+	}
 	free(sway_surface->view);
 	free(sway_surface);
-	arrange_windows(parent, -1, -1);
+}
+
+static void handle_unmap_notify(struct wl_listener *listener, void *data) {
+	// TODO take the view out of the tree
+	struct sway_xwayland_surface *sway_surface =
+		wl_container_of(listener, sway_surface, unmap_notify);
+	struct wlr_xwayland_surface *xsurface = data;
+	if (xsurface->override_redirect) {
+		wl_list_remove(&sway_surface->view->unmanaged_view_link);
+	}
+	sway_surface->view->surface = NULL;
+}
+
+static void handle_map_notify(struct wl_listener *listener, void *data) {
+	// TODO put the view back into the tree
+	struct sway_xwayland_surface *sway_surface =
+		wl_container_of(listener, sway_surface, map_notify);
+	struct wlr_xwayland_surface *xsurface = data;
+	if (xsurface->override_redirect) {
+		wl_list_insert(&root_container.sway_root->unmanaged_views,
+			&sway_surface->view->unmanaged_view_link);
+	}
+	sway_surface->view->surface = xsurface->surface;
 }
 
 static void handle_configure_request(struct wl_listener *listener, void *data) {
@@ -118,11 +148,6 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(
 			listener, server, xwayland_surface);
 	struct wlr_xwayland_surface *xsurface = data;
-
-	if (xsurface->override_redirect) {
-		// TODO: floating popups
-		return;
-	}
 
 	wlr_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
 			xsurface->title, xsurface->class);
@@ -155,15 +180,29 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
 
-	sway_surface->commit.notify = handle_commit;
 	wl_signal_add(&xsurface->surface->events.commit, &sway_surface->commit);
-	sway_surface->destroy.notify = handle_destroy;
+	sway_surface->commit.notify = handle_commit;
+
 	wl_signal_add(&xsurface->events.destroy, &sway_surface->destroy);
-	sway_surface->request_configure.notify = handle_configure_request;
+	sway_surface->destroy.notify = handle_destroy;
+
 	wl_signal_add(&xsurface->events.request_configure,
 		&sway_surface->request_configure);
+	sway_surface->request_configure.notify = handle_configure_request;
 
-	// TODO: actual focus semantics
+	wl_signal_add(&xsurface->events.unmap_notify, &sway_surface->unmap_notify);
+	sway_surface->unmap_notify.notify = handle_unmap_notify;
+
+	wl_signal_add(&xsurface->events.map_notify, &sway_surface->map_notify);
+	sway_surface->map_notify.notify = handle_map_notify;
+
+	if (xsurface->override_redirect) {
+		// these don't get a container in the tree
+		wl_list_insert(&root_container.sway_root->unmanaged_views,
+			&sway_view->unmanaged_view_link);
+		return;
+	}
+
 	swayc_t *parent = root_container.children->items[0];
 	parent = parent->children->items[0]; // workspace
 

@@ -218,6 +218,19 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	swayc_descendants_of_type(
 			&root_container, C_VIEW, output_frame_view, soutput);
 
+	// render unmanaged views on top
+	struct sway_view *view;
+	wl_list_for_each(view, &root_container.sway_root->unmanaged_views,
+			unmanaged_view_link) {
+		if (view->type == SWAY_XWAYLAND_VIEW) {
+			// the only kind of unamanged view right now is xwayland override redirect
+			int view_x = view->wlr_xwayland_surface->x;
+			int view_y = view->wlr_xwayland_surface->y;
+			render_surface(view->surface, wlr_output, &soutput->last_frame,
+					view_x, view_y, 0);
+		}
+	}
+
 	wlr_renderer_end(server->renderer);
 	wlr_output_swap_buffers(wlr_output);
 
