@@ -288,6 +288,19 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 					break;
 			}
 
+			// check for subsurfaces
+			double sub_x, sub_y;
+			struct wlr_subsurface *subsurface =
+				wlr_surface_subsurface_at(sview->surface,
+						view_sx, view_sy, &sub_x, &sub_y);
+			if (subsurface) {
+				*sx = view_sx - sub_x;
+				*sy = view_sy - sub_y;
+				*surface = subsurface->surface;
+				list_free(queue);
+				return swayc;
+			}
+
 			if (view_sx > 0 && view_sx < width &&
 					view_sy > 0 && view_sy < height &&
 					pixman_region32_contains_point(
