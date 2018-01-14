@@ -118,6 +118,33 @@ static void render_surface(struct wlr_surface *surface,
 	}
 }
 
+static void render_xdg_v6_popups(struct wlr_xdg_surface_v6 *surface,
+		struct wlr_output *wlr_output, struct timespec *when, double base_x,
+		double base_y, float rotation) {
+	double width = surface->surface->current->width;
+	double height = surface->surface->current->height;
+
+	struct wlr_xdg_surface_v6 *popup;
+	wl_list_for_each(popup, &surface->popups, popup_link) {
+		if (!popup->configured) {
+			continue;
+		}
+
+		double popup_width = popup->surface->current->width;
+		double popup_height = popup->surface->current->height;
+
+		double popup_sx, popup_sy;
+		wlr_xdg_surface_v6_popup_get_position(popup, &popup_sx, &popup_sy);
+		rotate_child_position(&popup_sx, &popup_sy, popup_width, popup_height,
+			width, height, rotation);
+
+		render_surface(popup->surface, wlr_output, when,
+			base_x + popup_sx, base_y + popup_sy, rotation);
+		render_xdg_v6_popups(popup, wlr_output, when,
+			base_x + popup_sx, base_y + popup_sy, rotation);
+	}
+}
+
 static void output_frame_view(swayc_t *view, void *data) {
 	struct sway_output *output = data;
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -131,6 +158,10 @@ static void output_frame_view(swayc_t *view, void *data) {
 		render_surface(surface, wlr_output, &output->last_frame,
 			view->x - window_offset_x,
 			view->y - window_offset_y,
+			0);
+		render_xdg_v6_popups(sway_view->wlr_xdg_surface_v6, wlr_output,
+			&output->last_frame,
+			view->x - window_offset_x, view->y - window_offset_y,
 			0);
 		break;
 	}
