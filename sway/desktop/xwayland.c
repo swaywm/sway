@@ -101,22 +101,32 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		if (xsurface->mapped) {
 			wl_list_remove(&sway_surface->view->unmanaged_view_link);
 		}
-	} else {
-		swayc_t *parent = destroy_view(sway_surface->view->swayc);
+	}
+
+	swayc_t *parent = destroy_view(sway_surface->view->swayc);
+	if (parent) {
 		arrange_windows(parent, -1, -1);
 	}
+
 	free(sway_surface->view);
 	free(sway_surface);
 }
 
 static void handle_unmap_notify(struct wl_listener *listener, void *data) {
-	// TODO take the view out of the tree
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, unmap_notify);
 	struct wlr_xwayland_surface *xsurface = data;
 	if (xsurface->override_redirect) {
 		wl_list_remove(&sway_surface->view->unmanaged_view_link);
 	}
+
+	// take it out of the tree
+	swayc_t *parent = destroy_view(sway_surface->view->swayc);
+	if (parent) {
+		arrange_windows(parent, -1, -1);
+	}
+
+	sway_surface->view->swayc = NULL;
 	sway_surface->view->surface = NULL;
 }
 
@@ -125,11 +135,26 @@ static void handle_map_notify(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, map_notify);
 	struct wlr_xwayland_surface *xsurface = data;
+
+	sway_surface->view->surface = xsurface->surface;
+
+	// put it back into the tree
 	if (xsurface->override_redirect) {
 		wl_list_insert(&root_container.sway_root->unmanaged_views,
 			&sway_surface->view->unmanaged_view_link);
+	} else {
+		struct sway_view *view = sway_surface->view;
+		destroy_view(view->swayc);
+
+		swayc_t *parent = root_container.children->items[0];
+		parent = parent->children->items[0]; // workspace
+
+		swayc_t *cont = new_view(parent, view);
+		view->swayc = cont;
+
+		arrange_windows(cont->parent, -1, -1);
+		sway_input_manager_set_focus(input_manager, cont);
 	}
-	sway_surface->view->surface = xsurface->surface;
 }
 
 static void handle_configure_request(struct wl_listener *listener, void *data) {
@@ -169,13 +194,10 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.set_activated = set_activated;
 	sway_view->wlr_xwayland_surface = xsurface;
 	sway_view->sway_xwayland_surface = sway_surface;
-	// TODO remove from the tree when the surface goes away (unmapped)
 	sway_view->surface = xsurface->surface;
 	sway_surface->view = sway_view;
 
 	// TODO:
-	// - Wire up listeners
-	// - Handle popups
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria

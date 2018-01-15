@@ -180,6 +180,10 @@ static void output_frame_view(swayc_t *view, void *data) {
 	struct sway_view *sway_view = view->sway_view;
 	struct wlr_surface *surface = sway_view->surface;
 
+	if (!surface) {
+		return;
+	}
+
 	switch (sway_view->type) {
 	case SWAY_XDG_SHELL_V6_VIEW: {
 		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry->x;
