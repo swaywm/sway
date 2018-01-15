@@ -207,7 +207,7 @@ swayc_t *destroy_output(swayc_t *output) {
 }
 
 swayc_t *destroy_view(swayc_t *view) {
-	if (!sway_assert(view, "null view passed to destroy_view")) {
+	if (!view) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
@@ -259,7 +259,6 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 			int width = swayc->sway_view->surface->current->width;
 			int height = swayc->sway_view->surface->current->height;
 
-			// TODO popups and subsurfaces
 			switch (sview->type) {
 				case SWAY_WL_SHELL_VIEW:
 					break;
@@ -268,11 +267,38 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 					// coordinate of the top left corner of the window geometry
 					view_sx += sview->wlr_xdg_surface_v6->geometry->x;
 					view_sy += sview->wlr_xdg_surface_v6->geometry->y;
+
+					// check for popups
+					double popup_sx, popup_sy;
+					struct wlr_xdg_surface_v6 *popup =
+						wlr_xdg_surface_v6_popup_at(sview->wlr_xdg_surface_v6,
+								view_sx, view_sy, &popup_sx, &popup_sy);
+
+					if (popup) {
+						*sx = view_sx - popup_sx;
+						*sy = view_sy - popup_sy;
+						*surface = popup->surface;
+						list_free(queue);
+						return swayc;
+					}
 					break;
 				case SWAY_XWAYLAND_VIEW:
 					break;
 				default:
 					break;
+			}
+
+			// check for subsurfaces
+			double sub_x, sub_y;
+			struct wlr_subsurface *subsurface =
+				wlr_surface_subsurface_at(sview->surface,
+						view_sx, view_sy, &sub_x, &sub_y);
+			if (subsurface) {
+				*sx = view_sx - sub_x;
+				*sy = view_sy - sub_y;
+				*surface = subsurface->surface;
+				list_free(queue);
+				return swayc;
 			}
 
 			if (view_sx > 0 && view_sx < width &&

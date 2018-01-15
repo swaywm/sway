@@ -28,6 +28,8 @@ struct sway_xwayland_surface {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_configure;
+	struct wl_listener unmap_notify;
+	struct wl_listener map_notify;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
@@ -91,6 +93,9 @@ struct sway_view {
 				double ox, double oy);
 		void (*set_activated)(struct sway_view *view, bool activated);
 	} iface;
+
+	// only used for unmanaged views (shell specific)
+	struct wl_list unmanaged_view_link; // sway_root::unmanaged views
 };
 
 #endif

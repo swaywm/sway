@@ -24,6 +24,31 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
+
+	// check for unmanaged views first
+	struct sway_view *view;
+	wl_list_for_each_reverse(view, &root_container.sway_root->unmanaged_views,
+		unmanaged_view_link) {
+		if (view->type == SWAY_XWAYLAND_VIEW) {
+			struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+			struct wlr_box box = {
+				.x = xsurface->x,
+				.y = xsurface->y,
+				.width = xsurface->width,
+				.height = xsurface->height,
+			};
+
+			if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
+				surface = xsurface->surface;
+				sx = cursor->x - box.x;
+				sy = cursor->y - box.y;
+				wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+				wlr_seat_pointer_notify_motion(seat, time, sx, sy);
+				return;
+			}
+		}
+	}
+
 	swayc_t *swayc =
 		swayc_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
 	if (swayc) {

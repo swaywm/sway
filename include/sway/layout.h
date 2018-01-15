@@ -9,6 +9,8 @@ struct sway_root {
 	struct wlr_output_layout *output_layout;
 
 	struct wl_listener output_layout_change;
+
+	struct wl_list unmanaged_views; // sway_view::unmanaged_view_link
 };
 
 void init_layout(void);
