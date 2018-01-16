@@ -149,6 +149,16 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	wlr_log(L_DEBUG, "TODO: handle request set cursor event: %p", event);
 }
 
+void sway_cursor_destroy(struct sway_cursor *cursor) {
+	if (!cursor) {
+		return;
+	}
+
+	wlr_xcursor_manager_destroy(cursor->xcursor_manager);
+	wlr_cursor_destroy(cursor->cursor);
+	free(cursor);
+}
+
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	struct sway_cursor *cursor = calloc(1, sizeof(struct sway_cursor));
 	if (!sway_assert(cursor, "could not allocate sway cursor")) {

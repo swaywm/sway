@@ -23,7 +23,7 @@ struct sway_input_manager *input_manager;
 struct input_config *current_input_config = NULL;
 struct seat_config *current_seat_config = NULL;
 
-static struct sway_seat *input_manager_get_seat(
+struct sway_seat *input_manager_get_seat(
 		struct sway_input_manager *input, const char *seat_name) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {

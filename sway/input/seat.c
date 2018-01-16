@@ -21,6 +21,16 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	free(seat_device);
 }
 
+void sway_seat_destroy(struct sway_seat *seat) {
+	struct sway_seat_device *seat_device, *next;
+	wl_list_for_each_safe(seat_device, next, &seat->devices, link) {
+		seat_device_destroy(seat_device);
+	}
+	sway_cursor_destroy(seat->cursor);
+	wl_list_remove(&seat->link);
+	wlr_seat_destroy(seat->wlr_seat);
+}
+
 struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		const char *seat_name) {
 	struct sway_seat *seat = calloc(1, sizeof(struct sway_seat));
