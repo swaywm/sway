@@ -67,13 +67,16 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	if (!seat_device->keyboard) {
 		sway_keyboard_create(seat, seat_device);
 	}
+	struct wlr_keyboard *wlr_keyboard = seat_device->input_device->wlr_device->keyboard;
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 		seat_device->input_device->wlr_device);
 	if (seat->focus) {
 		// force notify reenter to pick up the new configuration
 		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat, seat->focus->sway_view->surface);
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+			seat->focus->sway_view->surface, wlr_keyboard->keycodes,
+			wlr_keyboard->num_keycodes, &wlr_keyboard->modifiers);
 	}
 }
 
@@ -214,7 +217,16 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 		view->iface.set_activated(view, true);
 		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
 		seat->focus_destroy.notify = handle_focus_destroy;
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface);
+
+		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+		if (keyboard) {
+			wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
+				keyboard->keycodes, keyboard->num_keycodes,
+				&keyboard->modifiers);
+		} else {
+			wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
+				NULL, 0, NULL);
+		}
 	}
 
 	seat->focus = container;
