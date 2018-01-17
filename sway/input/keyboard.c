@@ -401,7 +401,7 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 	wlr_seat_set_keyboard(wlr_seat, wlr_device);
-	wlr_seat_keyboard_notify_modifiers(wlr_seat);
+	wlr_seat_keyboard_notify_modifiers(wlr_seat, &wlr_device->keyboard->modifiers);
 }
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
