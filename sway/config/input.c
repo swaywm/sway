@@ -90,6 +90,16 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 }
 
+struct input_config *copy_input_config(struct input_config *ic) {
+	struct input_config *copy = calloc(1, sizeof(struct input_config));
+	if (copy == NULL) {
+		wlr_log(L_ERROR, "could not allocate input config");
+		return NULL;
+	}
+	merge_input_config(copy, ic);
+	return copy;
+}
+
 void free_input_config(struct input_config *ic) {
 	if (!ic) {
 		return;

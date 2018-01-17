@@ -99,6 +99,17 @@ void merge_seat_config(struct seat_config *dest, struct seat_config *source) {
 	}
 }
 
+struct seat_config *copy_seat_config(struct seat_config *seat) {
+	struct seat_config *copy = new_seat_config(seat->name);
+	if (copy == NULL) {
+		return NULL;
+	}
+
+	merge_seat_config(copy, seat);
+
+	return copy;
+}
+
 void free_seat_config(struct seat_config *seat) {
 	if (!seat) {
 		return;
