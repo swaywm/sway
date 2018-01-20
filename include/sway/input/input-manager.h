@@ -5,8 +5,6 @@
 #include "sway/config.h"
 #include "list.h"
 
-extern struct seat_config *current_seat_config;
-
 /**
  * The global singleton input manager
  * TODO: make me not a global

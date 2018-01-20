@@ -28,6 +28,9 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	if (!has_context) {
 		// caller did not give a context so create one just for this command
 		config->handler_context.input_config = new_input_config(argv[0]);
+		if (!config->handler_context.input_config) {
+			return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+		}
 	}
 
 	int argc_new = argc-2;

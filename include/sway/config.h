@@ -354,6 +354,7 @@ struct sway_config {
 	// Context for command handlers
 	struct {
 		struct input_config *input_config;
+		struct seat_config *seat_config;
 	} handler_context;
 };
 

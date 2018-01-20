@@ -86,7 +86,6 @@ void apply_seat_config(struct seat_config *seat) {
 		list_add(config->seat_configs, seat);
 	}
 
-	current_seat_config = seat;
 	sway_input_manager_apply_seat_config(input_manager, seat);
 }
 
