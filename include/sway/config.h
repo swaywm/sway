@@ -350,6 +350,11 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
+
+	// Context for command handlers
+	struct {
+		struct input_config *input_config;
+	} handler_context;
 };
 
 void pid_workspace_add(struct pid_workspace *pw);
@@ -375,6 +380,9 @@ bool read_config(FILE *file, struct sway_config *config);
  * Free config struct
  */
 void free_config(struct sway_config *config);
+
+void config_clear_handler_context(struct sway_config *config);
+
 void free_sway_variable(struct sway_variable *var);
 /**
  * Does variable replacement for a string based on the config's currently loaded variables.

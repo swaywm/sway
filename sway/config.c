@@ -54,6 +54,8 @@ static void free_mode(struct sway_mode *mode) {
 }
 
 void free_config(struct sway_config *config) {
+	config_clear_handler_context(config);
+
 	int i;
 
 	if (!config) {
@@ -480,6 +482,11 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	return true;
 }
 
+void config_clear_handler_context(struct sway_config *config) {
+	free_input_config(config->handler_context.input_config);
+
+	memset(&config->handler_context, 0, sizeof(config->handler_context));
+}
 
 bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;
@@ -592,8 +599,6 @@ bool read_config(FILE *file, struct sway_config *config) {
 
 			case CMD_BLOCK_INPUT:
 				wlr_log(L_DEBUG, "End of input block");
-				free_input_config(current_input_config);
-				current_input_config = NULL;
 				block = CMD_BLOCK_END;
 				break;
 
@@ -635,6 +640,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 
 			default:;
 			}
+			config_clear_handler_context(config);
 		default:;
 		}
 		free(line);

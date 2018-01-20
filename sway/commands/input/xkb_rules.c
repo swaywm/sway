@@ -5,11 +5,12 @@
 #include "log.h"
 
 struct cmd_results *input_cmd_xkb_rules(int argc, char **argv) {
-	wlr_log(L_DEBUG, "xkb rules for device: %s", current_input_config->identifier);
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "xkb_rules", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
+	struct input_config *current_input_config =
+		config->handler_context.input_config;
 	if (!current_input_config) {
 		return cmd_results_new(CMD_FAILURE, "xkb_rules", "No input device defined.");
 	}

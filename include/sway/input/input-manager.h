@@ -5,7 +5,6 @@
 #include "sway/config.h"
 #include "list.h"
 
-extern struct input_config *current_input_config;
 extern struct seat_config *current_seat_config;
 
 /**
