@@ -8,6 +8,7 @@
 #include <json-c/json.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/criteria.h"
 #include "sway/security.h"
 #include "sway/input/input-manager.h"
 #include "stringop.h"
@@ -201,9 +202,41 @@ struct cmd_results *handle_command(char *_exec) {
 	char *head = exec;
 	char *cmdlist;
 	char *cmd;
+	list_t *containers = NULL;
 
 	head = exec;
 	do {
+		// Extract criteria (valid for this command list only).
+		bool has_criteria = false;
+		if (*head == '[') {
+			has_criteria = true;
+			++head;
+			char *criteria_string = argsep(&head, "]");
+			if (head) {
+				++head;
+				list_t *tokens = create_list();
+				char *error;
+
+				if ((error = extract_crit_tokens(tokens, criteria_string))) {
+					wlr_log(L_DEBUG, "criteria string parse error: %s", error);
+					results = cmd_results_new(CMD_INVALID, criteria_string,
+						"Can't parse criteria string: %s", error);
+					free(error);
+					free(tokens);
+					goto cleanup;
+				}
+				containers = container_for(tokens);
+
+				free(tokens);
+			} else {
+				if (!results) {
+					results = cmd_results_new(CMD_INVALID, criteria_string, "Unmatched [");
+				}
+				goto cleanup;
+			}
+			// Skip leading whitespace
+			head += strspn(head, whitespace);
+		}
 		// Split command list
 		cmdlist = argsep(&head, ";");
 		cmdlist += strspn(cmdlist, whitespace);
@@ -236,16 +269,35 @@ struct cmd_results *handle_command(char *_exec) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-			struct cmd_results *res = handler->handle(argc-1, argv+1);
-			if (res->status != CMD_SUCCESS) {
-				free_argv(argc, argv);
-				if (results) {
-					free_cmd_results(results);
+
+			if (!has_criteria) {
+				config->handler_context.current_container = NULL;
+				struct cmd_results *res = handler->handle(argc-1, argv+1);
+				if (res->status != CMD_SUCCESS) {
+					free_argv(argc, argv);
+					if (results) {
+						free_cmd_results(results);
+					}
+					results = res;
+					goto cleanup;
 				}
-				results = res;
-				goto cleanup;
+				free_cmd_results(res);
+			} else {
+				wlr_log(L_DEBUG, "@@ running command on containers");
+				for (int i = 0; i < containers->length; ++i) {
+					config->handler_context.current_container = containers->items[i];
+					struct cmd_results *res = handler->handle(argc-1, argv+1);
+					if (res->status != CMD_SUCCESS) {
+						free_argv(argc, argv);
+						if (results) {
+							free_cmd_results(results);
+						}
+						results = res;
+						goto cleanup;
+					}
+					free_cmd_results(res);
+				}
 			}
-			free_cmd_results(res);
 			free_argv(argc, argv);
 		} while(cmdlist);
 	} while(head);

@@ -38,6 +38,7 @@ sway_sources = files(
 	'config/output.c',
 	'config/seat.c',
 	'config/input.c',
+	'criteria.c',
 	'ipc-json.c',
 	'ipc-server.c',
 	'desktop/output.c',
@@ -51,6 +52,7 @@ sway_sources = files(
 )
 
 sway_deps = [
+	pcre,
 	pixman,
 	wayland_server,
 	jsonc,

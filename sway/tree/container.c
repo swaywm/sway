@@ -321,3 +321,25 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 
 	return NULL;
 }
+
+void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
+	if (container) {
+		int i;
+		if (container->children)  {
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				container_map(child, f, data);
+			}
+		}
+		// TODO
+		/*
+		if (container->floating) {
+			for (i = 0; i < container->floating->length; ++i) {
+				swayc_t *child = container->floating->items[i];
+				container_map(child, f, data);
+			}
+		}
+		*/
+		f(container, data);
+	}
+}

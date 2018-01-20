@@ -15,7 +15,13 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, NULL, "no seat context given");
 	}
 
-	struct sway_view *view = seat->focus->sway_view;
+	struct sway_view *view = NULL;
+
+	if (config->handler_context.current_container) {
+		view = config->handler_context.current_container->sway_view;
+	} else {
+		view = seat->focus->sway_view;
+	}
 
 	if (view->iface.close) {
 		view->iface.close(view);
