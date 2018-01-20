@@ -43,4 +43,7 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config);
 
+struct sway_seat *sway_input_manager_get_default_seat(
+		struct sway_input_manager *input);
+
 #endif

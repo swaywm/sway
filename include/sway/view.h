@@ -92,6 +92,7 @@ struct sway_view {
 		void (*set_position)(struct sway_view *view,
 				double ox, double oy);
 		void (*set_activated)(struct sway_view *view, bool activated);
+		void (*close)(struct sway_view *view);
 	} iface;
 
 	// only used for unmanaged views (shell specific)

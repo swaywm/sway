@@ -355,6 +355,7 @@ struct sway_config {
 	struct {
 		struct input_config *input_config;
 		struct seat_config *seat_config;
+		struct sway_seat *seat;
 	} handler_context;
 };
 
