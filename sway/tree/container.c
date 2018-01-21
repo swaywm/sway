@@ -157,7 +157,7 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	if (!sway_assert(sibling, "new_view called with NULL sibling/parent")) {
 		return NULL;
 	}
-	const char *title = sway_view->iface.get_prop(sway_view, VIEW_PROP_TITLE);
+	const char *title = view_get_title(sway_view);
 	swayc_t *swayc = new_swayc(C_VIEW);
 	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
 		swayc, title, sibling, sibling ? sibling->type : 0);

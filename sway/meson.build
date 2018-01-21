@@ -48,6 +48,7 @@ sway_sources = files(
 	'security.c',
 	'tree/container.c',
 	'tree/layout.c',
+	'tree/view.c',
 	'tree/workspace.c',
 )
 

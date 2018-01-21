@@ -299,21 +299,17 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 		case CRIT_ID: // TODO
 			break;
 		case CRIT_APP_ID:
-			if (!view->iface.get_prop) {
+			{
+				const char *app_id = view_get_app_id(cont->sway_view);
+				if (!app_id) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(app_id, crit->regex) == 0) {
+					matches++;
+				}
 				break;
 			}
-
-			const char *app_id =
-				cont->sway_view->iface.get_prop(view, VIEW_PROP_APP_ID);
-
-			if (!app_id) {
-				break;
-			}
-			
-			if (crit->regex && regex_cmp(app_id, crit->regex) == 0) {
-				matches++;
-			}
-			break;
 		case CRIT_INSTANCE: // TODO
 			break;
 		case CRIT_TILING: // TODO

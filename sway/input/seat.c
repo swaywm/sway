@@ -214,7 +214,7 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 
 	if (container) {
 		struct sway_view *view = container->sway_view;
-		view->iface.set_activated(view, true);
+		view_set_activated(view, true);
 		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
 		seat->focus_destroy.notify = handle_focus_destroy;
 
@@ -234,8 +234,7 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 	if (last_focus &&
 			!sway_input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
-		view->iface.set_activated(view, false);
-
+		view_set_activated(view, false);
 	}
 }
 

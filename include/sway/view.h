@@ -99,4 +99,20 @@ struct sway_view {
 	struct wl_list unmanaged_view_link; // sway_root::unmanaged views
 };
 
+const char *view_get_title(struct sway_view *view);
+
+const char *view_get_app_id(struct sway_view *view);
+
+const char *view_get_class(struct sway_view *view);
+
+const char *view_get_instance(struct sway_view *view);
+
+void view_set_size(struct sway_view *view, int width, int height);
+
+void view_set_position(struct sway_view *view, double ox, double oy);
+
+void view_set_activated(struct sway_view *view, bool activated);
+
+void view_close(struct sway_view *view);
+
 #endif

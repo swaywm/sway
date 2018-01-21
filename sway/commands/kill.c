@@ -15,8 +15,8 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 	struct sway_view *view =
 		config->handler_context.current_container->sway_view;
 
-	if (view && view->iface.close) {
-		view->iface.close(view);
+	if (view) {
+		view_close(view);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
