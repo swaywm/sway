@@ -275,28 +275,39 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 	if (cont->type != C_VIEW) {
 		return false;
 	}
-	struct sway_view *view = cont->sway_view;
-
 	int matches = 0;
 	for (int i = 0; i < tokens->length; i++) {
 		struct crit_token *crit = tokens->items[i];
 		switch (crit->type) {
-		case CRIT_CLASS: // TODO
-			break;
-		case CRIT_CON_ID: {
-			char *endptr;
-			size_t crit_id = strtoul(crit->raw, &endptr, 10);
-
-			if (*endptr == 0 && cont->id == crit_id) {
-				++matches;
+		case CRIT_CLASS:
+			{
+				const char *class = view_get_class(cont->sway_view);
+				if (!class) {
+					break;
+				}
+				if (crit->regex && regex_cmp(class, crit->regex) == 0) {
+					matches++;
+				}
+				break;
 			}
+		case CRIT_CON_ID:
+			{
+				char *endptr;
+				size_t crit_id = strtoul(crit->raw, &endptr, 10);
+
+				if (*endptr == 0 && cont->id == crit_id) {
+					++matches;
+				}
+				break;
+			}
+		case CRIT_CON_MARK:
+			// TODO
 			break;
-		}
-		case CRIT_CON_MARK: // TODO
+		case CRIT_FLOATING:
+			// TODO
 			break;
-		case CRIT_FLOATING: // TODO
-			break;
-		case CRIT_ID: // TODO
+		case CRIT_ID:
+			// TODO
 			break;
 		case CRIT_APP_ID:
 			{
@@ -310,24 +321,44 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 				}
 				break;
 			}
-		case CRIT_INSTANCE: // TODO
-			break;
-		case CRIT_TILING: // TODO
+		case CRIT_INSTANCE:
+			{
+				const char *instance = view_get_instance(cont->sway_view);
+				if (!instance) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(instance, crit->regex) == 0) {
+					matches++;
+				}
+				break;
+			}
+		case CRIT_TILING:
+			// TODO
 			break;
 		case CRIT_TITLE:
-			if (!cont->name) {
-				// ignore
-			} else if (crit->regex && regex_cmp(cont->name, crit->regex) == 0) {
-				matches++;
+			{
+				const char *title = view_get_title(cont->sway_view);
+				if (!title) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(title, crit->regex) == 0) {
+					matches++;
+				}
+				break;
 			}
-			break;
-		case CRIT_URGENT: // "latest" or "oldest"
+		case CRIT_URGENT:
+			// TODO "latest" or "oldest"
 			break;
 		case CRIT_WINDOW_ROLE:
+			// TODO
 			break;
 		case CRIT_WINDOW_TYPE:
+			// TODO
 			break;
-		case CRIT_WORKSPACE: // TODO
+		case CRIT_WORKSPACE:
+			// TODO
 			break;
 		default:
 			sway_abort("Invalid criteria type (%i)", crit->type);
