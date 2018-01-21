@@ -11,6 +11,7 @@
 #include "sway/criteria.h"
 #include "sway/security.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "stringop.h"
 #include "log.h"
 
@@ -271,19 +272,26 @@ struct cmd_results *handle_command(char *_exec) {
 			}
 
 			if (!has_criteria) {
-				config->handler_context.current_container = NULL;
-				struct cmd_results *res = handler->handle(argc-1, argv+1);
-				if (res->status != CMD_SUCCESS) {
-					free_argv(argc, argv);
-					if (results) {
-						free_cmd_results(results);
-					}
-					results = res;
-					goto cleanup;
+				// without criteria, the command acts upon the focused
+				// container
+				struct sway_seat *seat = config->handler_context.seat;
+				if (!seat) {
+					seat = sway_input_manager_get_default_seat(input_manager);
 				}
-				free_cmd_results(res);
+				if (seat) {
+					config->handler_context.current_container = seat->focus;
+					struct cmd_results *res = handler->handle(argc-1, argv+1);
+					if (res->status != CMD_SUCCESS) {
+						free_argv(argc, argv);
+						if (results) {
+							free_cmd_results(results);
+						}
+						results = res;
+						goto cleanup;
+					}
+					free_cmd_results(res);
+				}
 			} else {
-				wlr_log(L_DEBUG, "@@ running command on containers");
 				for (int i = 0; i < containers->length; ++i) {
 					config->handler_context.current_container = containers->items[i];
 					struct cmd_results *res = handler->handle(argc-1, argv+1);
