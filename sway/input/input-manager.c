@@ -174,7 +174,8 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 	for (int i = 0; i < config->input_configs->length; ++i) {
 		struct input_config *input_config = config->input_configs->items[i];
 		if (strcmp(input_config->identifier, input_device->identifier) == 0) {
-			input_device->config = input_config;
+			free_input_config(input_device->config);
+			input_device->config = copy_input_config(input_config);
 			break;
 		}
 	}
@@ -240,6 +241,7 @@ static void input_remove_notify(struct wl_listener *listener, void *data) {
 	}
 
 	wl_list_remove(&input_device->link);
+	free_input_config(input_device->config);
 	free(input_device->identifier);
 	free(input_device);
 }
@@ -293,7 +295,8 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &input->devices, link) {
 		if (strcmp(input_device->identifier, input_config->identifier) == 0) {
-			input_device->config = input_config;
+			free_input_config(input_device->config);
+			input_device->config = copy_input_config(input_config);
 
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 				sway_input_manager_libinput_config_pointer(input_device);

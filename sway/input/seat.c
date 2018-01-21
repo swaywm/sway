@@ -242,6 +242,7 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 void sway_seat_set_config(struct sway_seat *seat,
 		struct seat_config *seat_config) {
 	// clear configs
+	free_seat_config(seat->config);
 	seat->config = NULL;
 
 	struct sway_seat_device *seat_device = NULL;
@@ -254,11 +255,9 @@ void sway_seat_set_config(struct sway_seat *seat,
 	}
 
 	// add configs
-	seat->config = seat_config;
+	seat->config = copy_seat_config(seat_config);
 
 	wl_list_for_each(seat_device, &seat->devices, link) {
-		seat_device->attachment_config =
-			seat_config_get_attachment(seat_config,
-				seat_device->input_device->identifier);
+		sway_seat_configure_device(seat, seat_device->input_device);
 	}
 }

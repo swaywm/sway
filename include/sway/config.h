@@ -386,12 +386,14 @@ struct cmd_results *check_security_config();
 int input_identifier_cmp(const void *item, const void *data);
 struct input_config *new_input_config(const char* identifier);
 void merge_input_config(struct input_config *dst, struct input_config *src);
+struct input_config *copy_input_config(struct input_config *ic);
 void free_input_config(struct input_config *ic);
 void apply_input_config(struct input_config *input);
 
 int seat_name_cmp(const void *item, const void *data);
 struct seat_config *new_seat_config(const char* name);
 void merge_seat_config(struct seat_config *dst, struct seat_config *src);
+struct seat_config *copy_seat_config(struct seat_config *seat);
 void free_seat_config(struct seat_config *ic);
 struct seat_attachment_config *seat_attachment_config_new();
 struct seat_attachment_config *seat_config_get_attachment(

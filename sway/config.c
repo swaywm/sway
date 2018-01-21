@@ -84,7 +84,12 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->input_configs);
 	}
-	list_free(config->seat_configs);
+	if (config->seat_configs) {
+		for (i = 0; i < config->seat_configs->length; i++) {
+			free_seat_config(config->seat_configs->items[i]);
+		}
+		list_free(config->seat_configs);
+	}
 	list_free(config->criteria);
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
