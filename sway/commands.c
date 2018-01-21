@@ -226,7 +226,7 @@ struct cmd_results *handle_command(char *_exec) {
 					free(tokens);
 					goto cleanup;
 				}
-				containers = container_for(tokens);
+				containers = container_for_crit_tokens(tokens);
 
 				free(tokens);
 			} else {

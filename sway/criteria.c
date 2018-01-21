@@ -103,7 +103,8 @@ static int countchr(char *str, char c) {
 // of buf.
 //
 // Returns error string or NULL if successful.
-static char *crit_tokens(int *argc, char ***buf, const char * const criteria_str) {
+static char *crit_tokens(int *argc, char ***buf,
+		const char * const criteria_str) {
 	wlr_log(L_DEBUG, "Parsing criteria: '%s'", criteria_str);
 	char *base = criteria_from(criteria_str);
 	char *head = base;
@@ -423,16 +424,20 @@ struct list_tokens {
 	list_t *tokens;
 };
 
-static void container_match_add(swayc_t *container, struct list_tokens *list_tokens) {
+static void container_match_add(swayc_t *container,
+		struct list_tokens *list_tokens) {
 	if (criteria_test(container, list_tokens->tokens)) {
 		list_add(list_tokens->list, container);
 	}
 }
 
-list_t *container_for(list_t *tokens) {
-	struct list_tokens list_tokens = (struct list_tokens){create_list(), tokens};
+list_t *container_for_crit_tokens(list_t *tokens) {
+	struct list_tokens list_tokens =
+		(struct list_tokens){create_list(), tokens};
 
-	container_map(&root_container, (void (*)(swayc_t *, void *))container_match_add, &list_tokens);
+	container_map(&root_container,
+		(void (*)(swayc_t *, void *))container_match_add,
+		&list_tokens);
 
 	// TODO look in the scratchpad
 	
