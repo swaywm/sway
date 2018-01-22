@@ -372,3 +372,14 @@ void sway_input_manager_configure_xcursor(struct sway_input_manager *input) {
 		sway_seat_configure_xcursor(seat);
 	}
 }
+
+struct sway_seat *sway_input_manager_get_default_seat(
+		struct sway_input_manager *input) {
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input->seats, link) {
+		if (strcmp(seat->wlr_seat->name, "seat0") == 0) {
+			return seat;
+		}
+	}
+	return seat;
+}

@@ -191,8 +191,8 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		{
 			container->width = width;
 			container->height = height;
-			container->sway_view->iface.set_size(container->sway_view,
-					container->width, container->height);
+			view_set_size(container->sway_view,
+				container->width, container->height);
 			wlr_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f",
 					container->width, container->height,
 					container->x, container->y);
@@ -251,7 +251,7 @@ static void apply_horiz_layout(swayc_t *container,
 			wlr_log(L_DEBUG,
 				 "Calculating arrangement for %p:%d (will scale %f by %f)",
 				 child, child->type, width, scale);
-			child->sway_view->iface.set_position(child->sway_view, child_x, y);
+			view_set_position(child->sway_view, child_x, y);
 
 			if (i == end - 1) {
 				double remaining_width = x + width - child_x;
@@ -301,7 +301,7 @@ void apply_vert_layout(swayc_t *container,
 			wlr_log(L_DEBUG,
 				 "Calculating arrangement for %p:%d (will scale %f by %f)",
 				 child, child->type, height, scale);
-			child->sway_view->iface.set_position(child->sway_view, x, child_y);
+			view_set_position(child->sway_view, x, child_y);
 
 			if (i == end - 1) {
 				double remaining_height = y + height - child_y;

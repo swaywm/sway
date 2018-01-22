@@ -89,9 +89,12 @@ static bool binding_matches_key_state(struct sway_binding *binding,
 	return false;
 }
 
-static void binding_execute_command(struct sway_binding *binding) {
+static void keyboard_execute_command(struct sway_keyboard *keyboard,
+		struct sway_binding *binding) {
 	wlr_log(L_DEBUG, "running command for binding: %s",
 		binding->command);
+	config_clear_handler_context(config);
+	config->handler_context.seat = keyboard->seat_device->sway_seat;
 	struct cmd_results *results = handle_command(binding->command);
 	if (results->status != CMD_SUCCESS) {
 		wlr_log(L_DEBUG, "could not run command for binding: %s",
@@ -160,7 +163,7 @@ static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
 		}
 
 		if (match) {
-			binding_execute_command(binding);
+			keyboard_execute_command(keyboard, binding);
 			return true;
 		}
 	}
@@ -267,7 +270,7 @@ static bool keyboard_execute_bindcode(struct sway_keyboard *keyboard,
 	for (int i = 0; i < keycode_bindings->length; ++i) {
 		struct sway_binding *binding = keycode_bindings->items[i];
 		if (binding_matches_keycodes(wlr_keyboard, binding, event)) {
-			binding_execute_command(binding);
+			keyboard_execute_command(keyboard, binding);
 			return true;
 		}
 	}

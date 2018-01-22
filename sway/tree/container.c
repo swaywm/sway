@@ -157,7 +157,7 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	if (!sway_assert(sibling, "new_view called with NULL sibling/parent")) {
 		return NULL;
 	}
-	const char *title = sway_view->iface.get_prop(sway_view, VIEW_PROP_TITLE);
+	const char *title = view_get_title(sway_view);
 	swayc_t *swayc = new_swayc(C_VIEW);
 	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
 		swayc, title, sibling, sibling ? sibling->type : 0);
@@ -320,4 +320,26 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 	list_free(queue);
 
 	return NULL;
+}
+
+void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
+	if (container) {
+		int i;
+		if (container->children)  {
+			for (i = 0; i < container->children->length; ++i) {
+				swayc_t *child = container->children->items[i];
+				container_map(child, f, data);
+			}
+		}
+		// TODO
+		/*
+		if (container->floating) {
+			for (i = 0; i < container->floating->length; ++i) {
+				swayc_t *child = container->floating->items[i];
+				container_map(child, f, data);
+			}
+		}
+		*/
+		f(container, data);
+	}
 }

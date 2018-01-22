@@ -80,6 +80,13 @@ static void set_activated(struct sway_view *view, bool activated) {
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
+static void close(struct sway_view *view) {
+	if (!assert_xwayland(view)) {
+		return;
+	}
+	wlr_xwayland_surface_close(view->wlr_xwayland_surface);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -192,6 +199,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.set_size = set_size;
 	sway_view->iface.set_position = set_position;
 	sway_view->iface.set_activated = set_activated;
+	sway_view->iface.close = close;
 	sway_view->wlr_xwayland_surface = xsurface;
 	sway_view->sway_xwayland_surface = sway_surface;
 	sway_view->surface = xsurface->surface;

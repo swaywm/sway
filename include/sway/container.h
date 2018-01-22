@@ -145,4 +145,6 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type);
 swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
 
+void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data);
+
 #endif
