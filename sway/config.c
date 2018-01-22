@@ -717,7 +717,3 @@ char *do_var_replacement(char *str) {
 	}
 	return str;
 }
-
-void load_swaybars() {
-	/* stub function for reload commnd, to fill when we restore swaybars */
-}

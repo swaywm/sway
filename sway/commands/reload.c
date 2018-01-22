@@ -14,7 +14,7 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "reload", "Error(s) reloading config.");
 	}
 
-	load_swaybars();
+	/* load_swaybars(); -- for when it's implemented */
 
 	arrange_windows(&root_container, -1, -1);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
