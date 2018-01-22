@@ -6,6 +6,10 @@
 #include "sway/commands.h"
 
 struct cmd_results *cmd_kill(int argc, char **argv) {
+	if (config->reading) {
+		return cmd_results_new(CMD_FAILURE, "kill",
+			"Command 'kill' cannot be used in the config file");
+	}
 	if (!sway_assert(config->handler_context.current_container,
 				"cmd_kill called without container context")) {
 		return cmd_results_new(CMD_INVALID, NULL,
