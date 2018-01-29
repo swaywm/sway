@@ -34,6 +34,7 @@ sway_sources = files(
 	'commands/input/xkb_rules.c',
 	'commands/input/xkb_variant.c',
 	'commands/output.c',
+	'commands/reload.c',
 	'config.c',
 	'config/output.c',
 	'config/seat.c',

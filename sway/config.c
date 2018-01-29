@@ -21,6 +21,7 @@
 #endif
 #include <wlr/types/wlr_output.h>
 #include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/layout.h"
@@ -107,6 +108,23 @@ void free_config(struct sway_config *config) {
 	free(config->font);
 	free((char *)config->current_config);
 	free(config);
+}
+
+static void destroy_removed_seats(struct sway_config *old_config,
+		struct sway_config *new_config) {
+	struct seat_config *seat_config;
+	struct sway_seat *seat;
+	int i;
+	for (i = 0; i < old_config->seat_configs->length; i++) {
+		seat_config = old_config->seat_configs->items[i];
+		/* Also destroy seats that aren't present in new config */
+		if (new_config && list_seq_find(new_config->seat_configs,
+				seat_name_cmp, seat_config->name) < 0) {
+			seat = input_manager_get_seat(input_manager,
+				seat_config->name);
+			sway_seat_destroy(seat);
+		}
+	}
 }
 
 static void config_defaults(struct sway_config *config) {
@@ -382,6 +400,7 @@ bool load_main_config(const char *file, bool is_active) {
 	}
 
 	if (old_config) {
+		destroy_removed_seats(old_config, config);
 		free_config(old_config);
 	}
 	config->reading = false;
