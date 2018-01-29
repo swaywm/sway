@@ -55,6 +55,9 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 	Set border style for focused window to _none_ or _toggle_ between the
 	available border styles: _normal_, _pixel_, _none_.
 
+**clipboard** <content>::
+	Store content in the system clipboard, with a MIME type of "text/plain"
+
 **exit**::
 	Exit sway and end your Wayland session.
 
