@@ -48,4 +48,8 @@ struct sway_seat *sway_input_manager_get_default_seat(
 
 struct sway_seat *input_manager_get_seat(struct sway_input_manager *input,
 		const char *seat_name);
+
+/** Gets the last seat the user interacted with */
+struct sway_seat *input_manager_current_seat(struct sway_input_manager *input);
+
 #endif

@@ -318,10 +318,6 @@ static bool load_config(const char *path, struct sway_config *config) {
 	return true;
 }
 
-static int qstrcmp(const void* a, const void* b) {
-	return strcmp(*((char**) a), *((char**) b));
-}
-
 bool load_main_config(const char *file, bool is_active) {
 	char *path;
 	if (file != NULL) {
@@ -349,7 +345,9 @@ bool load_main_config(const char *file, bool is_active) {
 	config->reading = true;
 
 	// Read security configs
+	// TODO: Security
 	bool success = true;
+	/*
 	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
 	if (!dir) {
 		wlr_log(L_ERROR,
@@ -392,6 +390,7 @@ bool load_main_config(const char *file, bool is_active) {
 
 		free_flat_list(secconfigs);
 	}
+	*/
 
 	success = success && load_config(path, config);
 
@@ -716,4 +715,12 @@ char *do_var_replacement(char *str) {
 		}
 	}
 	return str;
+}
+
+// the naming is intentional (albeit long): a workspace_output_cmp function
+// would compare two structs in full, while this method only compares the
+// workspace.
+int workspace_output_cmp_workspace(const void *a, const void *b) {
+	const struct workspace_output *wsa = a, *wsb = b;
+	return lenient_strcmp(wsa->workspace, wsb->workspace);
 }

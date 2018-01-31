@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include "sway/container.h"
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
@@ -81,7 +82,7 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 		seat_device->input_device->wlr_device);
-	if (seat->focus) {
+	if (seat->focus && seat->focus->type == C_VIEW) {
 		// force notify reenter to pick up the new configuration
 		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
 		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
@@ -205,10 +206,8 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 
 static void handle_focus_destroy(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = wl_container_of(listener, seat, focus_destroy);
-	//swayc_t *container = data;
-
-	// TODO set new focus based on the state of the tree
-	sway_seat_set_focus(seat, NULL);
+	swayc_t *container = data;
+	sway_seat_set_focus(seat, container->parent);
 }
 
 void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
@@ -218,11 +217,11 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 		return;
 	}
 
-	if (last_focus) {
+	if (last_focus && last_focus->type == C_VIEW) {
 		wl_list_remove(&seat->focus_destroy.link);
 	}
 
-	if (container) {
+	if (container && container->type == C_VIEW) {
 		struct sway_view *view = container->sway_view;
 		view_set_activated(view, true);
 		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
@@ -241,7 +240,7 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 
 	seat->focus = container;
 
-	if (last_focus &&
+	if (last_focus && last_focus->type == C_VIEW &&
 			!sway_input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
 		view_set_activated(view, false);

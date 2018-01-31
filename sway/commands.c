@@ -139,6 +139,7 @@ static struct cmd_handler handlers[] = {
 	{ "reload", cmd_reload },
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
+	{ "workspace", cmd_workspace },
 };
 
 static int handler_compare(const void *_a, const void *_b) {

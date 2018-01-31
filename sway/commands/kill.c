@@ -10,11 +10,10 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "kill",
 			"Command 'kill' cannot be used in the config file");
 	}
-	if (!sway_assert(config->handler_context.current_container,
-				"cmd_kill called without container context")) {
+	enum swayc_types type = config->handler_context.current_container->type;
+	if (type != C_VIEW || type != C_CONTAINER) {
 		return cmd_results_new(CMD_INVALID, NULL,
-				"cmd_kill called without container context "
-				"(this is a bug in sway)");
+				"Can only kill views and containers with this command");
 	}
 	// TODO close arbitrary containers without a view
 	struct sway_view *view =

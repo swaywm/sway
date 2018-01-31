@@ -124,8 +124,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_surface->view = sway_view;
 	
 	// TODO:
-	// - Wire up listeners
-	// - Handle popups
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
@@ -136,11 +134,8 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &sway_surface->destroy);
 
-	// TODO: actual focus semantics
-	swayc_t *parent = root_container.children->items[0];
-	parent = parent->children->items[0]; // workspace
-
-	swayc_t *cont = new_view(parent, sway_view);
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *cont = new_view(seat->focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);

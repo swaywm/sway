@@ -3,16 +3,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include "sway/config.h"
 #include "sway/container.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/view.h"
 #include "sway/workspace.h"
 #include "log.h"
+
+swayc_t *swayc_by_test(swayc_t *container,
+		bool (*test)(swayc_t *view, void *data), void *data) {
+	if (!container->children) {
+		return NULL;
+	}
+	// TODO: floating windows
+	for (int i = 0; i < container->children->length; ++i) {
+		swayc_t *child = container->children->items[i];
+		if (test(child, data)) {
+			return child;
+		} else {
+			swayc_t *res = swayc_by_test(child, test, data);
+			if (res) {
+				return res;
+			}
+		}
+	}
+	return NULL;
+}
 
 void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
 		void (*func)(swayc_t *item, void *data), void *data) {
@@ -127,7 +150,19 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
-	new_workspace(output, ws_name);
+	swayc_t *ws = new_workspace(output, ws_name);
+	output->focused = ws;
+	// Set each seat's focus if not already set
+	// TODO FOCUS: this is probably stupid, we shouldn't define focus in two
+	// places. We should probably put the active workspace on the sway_output
+	// struct instead of trying to do focus semantics like this
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		if (!seat->focus) {
+			seat->focus = ws;
+		}
+	}
+
 	free(ws_name);
 	return output;
 }
@@ -159,8 +194,8 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	}
 	const char *title = view_get_title(sway_view);
 	swayc_t *swayc = new_swayc(C_VIEW);
-	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d",
-		swayc, title, sibling, sibling ? sibling->type : 0);
+	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d %s",
+		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
 	swayc->name = title ? strdup(title) : NULL;

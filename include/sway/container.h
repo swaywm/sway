@@ -11,6 +11,7 @@ typedef struct sway_container swayc_t;
 extern swayc_t root_container;
 
 struct sway_view;
+struct sway_seat;
 
 /**
  * Different kinds of containers.
@@ -140,11 +141,25 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view);
 swayc_t *destroy_output(swayc_t *output);
 swayc_t *destroy_view(swayc_t *view);
 
+swayc_t *next_view_sibling(struct sway_seat *seat);
+
+/**
+ * Finds a container based on test criteria. Returns the first container that
+ * passes the test.
+ */
+swayc_t *swayc_by_test(swayc_t *container,
+		bool (*test)(swayc_t *view, void *data), void *data);
+/**
+ * Finds a parent container with the given swayc_type.
+ */
 swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type);
+/**
+ * Maps a container's children over a function.
+ */
+void container_map(swayc_t *container,
+		void (*f)(swayc_t *view, void *data), void *data);
 
 swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
-
-void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data);
 
 #endif
