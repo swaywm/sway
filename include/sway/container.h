@@ -162,4 +162,10 @@ void container_map(swayc_t *container,
 swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
 
+/**
+ * Get a list of containers that are descendents of the container in rendering
+ * order
+ */
+list_t *container_list_children(swayc_t *con);
+
 #endif

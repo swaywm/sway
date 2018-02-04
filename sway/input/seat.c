@@ -32,6 +32,44 @@ void sway_seat_destroy(struct sway_seat *seat) {
 	wlr_seat_destroy(seat->wlr_seat);
 }
 
+static void handle_seat_container_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_seat_container *seat_con =
+		wl_container_of(listener, seat_con, destroy);
+	wl_list_remove(&seat_con->link);
+	wl_list_remove(&seat_con->destroy.link);
+	free(seat_con);
+}
+
+static struct sway_seat_container *seat_container_from_container(
+		struct sway_seat *seat, swayc_t *con) {
+	struct sway_seat_container *seat_con = NULL;
+	wl_list_for_each(seat_con, &seat->focus_stack, link) {
+		if (seat_con->container == con) {
+			return seat_con;
+		}
+	}
+
+	seat_con = calloc(1, sizeof(struct sway_seat_container));
+	if (seat_con == NULL) {
+		wlr_log(L_ERROR, "could not allocate seat container");
+		return NULL;
+	}
+
+	seat_con->container = con;
+	wl_list_insert(seat->focus_stack.prev, &seat_con->link);
+	wl_signal_add(&con->events.destroy, &seat_con->destroy);
+	seat_con->destroy.notify = handle_seat_container_destroy;
+
+	return seat_con;
+}
+
+static void handle_new_container(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, new_container);
+	swayc_t *con = data;
+	seat_container_from_container(seat, con);
+}
+
 struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		const char *seat_name) {
 	struct sway_seat *seat = calloc(1, sizeof(struct sway_seat));
@@ -51,6 +89,24 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		free(seat);
 		return NULL;
 	}
+
+	// init the focus stack
+	wl_list_init(&seat->focus_stack);
+	list_t *containers = container_list_children(&root_container);
+	if (containers == NULL) {
+		wlr_seat_destroy(seat->wlr_seat);
+		free(seat);
+		return NULL;
+	}
+	for (int i = containers->length - 1; i >= 0; --i) {
+		swayc_t *con = containers->items[i];
+		seat_container_from_container(seat, con);
+	}
+	free(containers);
+
+	wl_signal_add(&root_container.sway_root->events.new_container,
+		&seat->new_container);
+	seat->new_container.notify = handle_new_container;
 
 	seat->input = input;
 	wl_list_init(&seat->devices);
@@ -82,12 +138,15 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 		seat_device->input_device->wlr_device);
-	if (seat->focus && seat->focus->type == C_VIEW) {
-		// force notify reenter to pick up the new configuration
-		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-			seat->focus->sway_view->surface, wlr_keyboard->keycodes,
-			wlr_keyboard->num_keycodes, &wlr_keyboard->modifiers);
+	if (seat->has_focus) {
+		swayc_t *focus = sway_seat_get_focus(seat, &root_container);
+		if (focus && focus->type == C_VIEW) {
+			// force notify reenter to pick up the new configuration
+			wlr_seat_keyboard_clear_focus(seat->wlr_seat);
+			wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+					focus->sway_view->surface, wlr_keyboard->keycodes,
+					wlr_keyboard->num_keycodes, &wlr_keyboard->modifiers);
+		}
 	}
 }
 
@@ -211,40 +270,72 @@ static void handle_focus_destroy(struct wl_listener *listener, void *data) {
 }
 
 void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
-	swayc_t *last_focus = seat->focus;
+	swayc_t *last_focus =
+		(seat->has_focus ? sway_seat_get_focus(seat, &root_container) : NULL);
 
-	if (last_focus == container) {
+	if (container && last_focus == container) {
 		return;
 	}
 
-	if (last_focus && last_focus->type == C_VIEW) {
+	if (last_focus) {
 		wl_list_remove(&seat->focus_destroy.link);
+		seat->has_focus = false;
 	}
 
-	if (container && container->type == C_VIEW) {
-		struct sway_view *view = container->sway_view;
-		view_set_activated(view, true);
+	if (container) {
+		struct sway_seat_container *seat_con =
+			seat_container_from_container(seat, container);
 		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
 		seat->focus_destroy.notify = handle_focus_destroy;
+		seat->has_focus = true;
 
-		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
-		if (keyboard) {
-			wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
-				keyboard->keycodes, keyboard->num_keycodes,
-				&keyboard->modifiers);
-		} else {
-			wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
-				NULL, 0, NULL);
+		wl_list_remove(&seat_con->link);
+		wl_list_insert(&seat->focus_stack, &seat_con->link);
+
+		if (container->type == C_VIEW) {
+			struct sway_view *view = container->sway_view;
+			view_set_activated(view, true);
+			struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+			if (keyboard) {
+				wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
+						keyboard->keycodes, keyboard->num_keycodes,
+						&keyboard->modifiers);
+			} else {
+				wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
+						NULL, 0, NULL);
+			}
 		}
 	}
-
-	seat->focus = container;
 
 	if (last_focus && last_focus->type == C_VIEW &&
 			!sway_input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
 		view_set_activated(view, false);
 	}
+}
+
+swayc_t *sway_seat_get_focus(struct sway_seat *seat, swayc_t *container) {
+	struct sway_seat_container *current = NULL;
+	swayc_t *parent = NULL;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (current->container->type < C_WORKSPACE) {
+			continue;
+		}
+		parent = current->container->parent;
+
+		if (current->container == container) {
+			return current->container;
+		}
+
+		while (parent) {
+			if (parent == container) {
+				return current->container;
+			}
+			parent = parent->parent;
+		}
+	}
+
+	return NULL;
 }
 
 void sway_seat_set_config(struct sway_seat *seat,

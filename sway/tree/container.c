@@ -158,12 +158,13 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	// struct instead of trying to do focus semantics like this
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
-		if (!seat->focus) {
-			seat->focus = ws;
+		if (!seat->has_focus) {
+			sway_seat_set_focus(seat, ws);
 		}
 	}
 
 	free(ws_name);
+	wl_signal_emit(&root_container.sway_root->events.new_container, output);
 	return output;
 }
 
@@ -185,6 +186,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 
 	add_child(output, workspace);
 	sort_workspaces(output);
+	wl_signal_emit(&root_container.sway_root->events.new_container, workspace);
 	return workspace;
 }
 
@@ -207,9 +209,9 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 		add_child(sibling, swayc);
 	} else {
 		// Regular case, create as sibling of current container
-		// TODO WLR
-		//add_sibling(sibling, swayc);
+		add_sibling(sibling, swayc);
 	}
+	wl_signal_emit(&root_container.sway_root->events.new_container, swayc);
 	return swayc;
 }
 
@@ -377,4 +379,27 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 		*/
 		f(container, data);
 	}
+}
+
+/**
+ * Get a list of containers that are descendents of the container in rendering
+ * order
+ */
+list_t *container_list_children(swayc_t *con) {
+	list_t *list = create_list();
+	list_t *queue = create_list();
+
+	list_add(queue, con);
+
+	swayc_t *current = NULL;
+	while (queue->length) {
+		current = queue->items[0];
+		list_del(queue, 0);
+		list_add(list, current);
+		// TODO floating containers
+		list_cat(queue, current->children);
+	}
+
+	list_free(queue);
+	return list;
 }

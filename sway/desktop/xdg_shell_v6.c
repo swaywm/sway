@@ -135,7 +135,8 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xdg_surface->events.destroy, &sway_surface->destroy);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	swayc_t *cont = new_view(seat->focus, sway_view);
+	swayc_t *focus = sway_seat_get_focus(seat, &root_container);
+	swayc_t *cont = new_view(focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);

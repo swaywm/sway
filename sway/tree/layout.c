@@ -48,15 +48,45 @@ void init_layout(void) {
 	root_container.layout = L_NONE;
 	root_container.name = strdup("root");
 	root_container.children = create_list();
+	wl_signal_init(&root_container.events.destroy);
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
 	root_container.sway_root->output_layout = wlr_output_layout_create();
 	wl_list_init(&root_container.sway_root->unmanaged_views);
+	wl_signal_init(&root_container.sway_root->events.new_container);
 
 	root_container.sway_root->output_layout_change.notify =
 		output_layout_change_notify;
 	wl_signal_add(&root_container.sway_root->output_layout->events.change,
 		&root_container.sway_root->output_layout_change);
+}
+
+int index_child(const swayc_t *child) {
+	// TODO handle floating
+	swayc_t *parent = child->parent;
+	int i, len;
+	len = parent->children->length;
+	for (i = 0; i < len; ++i) {
+		if (parent->children->items[i] == child) {
+			break;
+		}
+	}
+
+	if (!sway_assert(i < len, "Stray container")) {
+		return -1;
+	}
+	return i;
+}
+
+swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
+	// TODO handle floating
+	swayc_t *parent = fixed->parent;
+	int i = index_child(fixed);
+	list_insert(parent->children, i + 1, active);
+	active->parent = parent;
+	// focus new child
+	parent->focused = active;
+	return active->parent;
 }
 
 void add_child(swayc_t *parent, swayc_t *child) {

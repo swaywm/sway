@@ -63,9 +63,10 @@ static bool _workspace_by_name(swayc_t *view, void *data) {
 swayc_t *workspace_by_name(const char *name) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	swayc_t *current_workspace = NULL, *current_output = NULL;
-	if (seat->focus) {
-		current_workspace = swayc_parent_by_type(seat->focus, C_WORKSPACE);
-		current_output = swayc_parent_by_type(seat->focus, C_OUTPUT);
+	if (seat->has_focus) {
+		swayc_t *focus = sway_seat_get_focus(seat, &root_container);
+		current_workspace = swayc_parent_by_type(focus, C_WORKSPACE);
+		current_output = swayc_parent_by_type(focus, C_OUTPUT);
 	}
 	if (strcmp(name, "prev") == 0) {
 		return workspace_prev(current_workspace);
@@ -102,7 +103,8 @@ swayc_t *workspace_create(const char *name) {
 	}
 	// Otherwise create a new one
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	parent = seat->focus;
+	swayc_t *focus = sway_seat_get_focus(seat, &root_container);
+	parent = focus;
 	parent = swayc_parent_by_type(parent, C_OUTPUT);
 	return new_workspace(parent, name);
 }
@@ -193,12 +195,13 @@ bool workspace_switch(swayc_t *workspace) {
 		return false;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	if (!seat || !seat->focus) {
+	swayc_t *focus = sway_seat_get_focus(seat, &root_container);
+	if (!seat || !focus) {
 		return false;
 	}
-	swayc_t *active_ws = seat->focus;
+	swayc_t *active_ws = focus;
 	if (active_ws->type != C_WORKSPACE) {
-		swayc_parent_by_type(seat->focus, C_WORKSPACE);
+		swayc_parent_by_type(focus, C_WORKSPACE);
 	}
 
 	if (config->auto_back_and_forth
