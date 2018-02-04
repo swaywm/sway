@@ -20,6 +20,19 @@ struct timer_item {
 	void *data;
 };
 
+enum state_item_flags {
+	ITEM_IS_FD,
+	ITEM_IS_TIMER,
+};
+
+struct state_item {
+	enum state_item_flags flags;
+	union {
+		int fd;
+		timer_t timer;
+	} inner;
+};
+
 static struct {
 	// The order of each must be kept consistent
 	struct {   /* pollfd array */
@@ -31,6 +44,9 @@ static struct {
 
 	// Timer list
 	list_t *timers;
+
+	// List of state changes at the end of each iteration
+	list_t *state;
 } event_loop;
 
 void add_timer(timer_t timer,
@@ -72,7 +88,7 @@ void add_event(int fd, short mask,
 	return;
 }
 
-bool remove_event(int fd) {
+static void _remove_event(int fd) {
 	int index = -1;
 	for (int i = 0; i < event_loop.fds.length; ++i) {
 		if (event_loop.fds.items[i].fd == fd) {
@@ -87,10 +103,14 @@ bool remove_event(int fd) {
 				sizeof(struct pollfd) * event_loop.fds.length - index);
 
 		list_del(event_loop.items, index);
-		return true;
-	} else {
-		return false;
 	}
+}
+
+void remove_event(int fd) {
+	struct state_item *item = malloc(sizeof(struct state_item));
+	item->flags = ITEM_IS_FD;
+	item->inner.fd = fd;
+	list_add(event_loop.state, item);
 }
 
 static int timer_item_timer_cmp(const void *_timer_item, const void *_timer) {
@@ -102,14 +122,19 @@ static int timer_item_timer_cmp(const void *_timer_item, const void *_timer) {
 		return -1;
 	}
 }
-bool remove_timer(timer_t timer) {
+static void _remove_timer(timer_t timer) {
 	int index = list_seq_find(event_loop.timers, timer_item_timer_cmp, &timer);
 	if (index != -1) {
 		free(event_loop.timers->items[index]);
 		list_del(event_loop.timers, index);
-		return true;
 	}
-	return false;
+}
+
+void remove_timer(timer_t timer) {
+	struct state_item *item = malloc(sizeof(struct state_item));
+	item->flags = ITEM_IS_TIMER;
+	item->inner.timer = timer;
+	list_add(event_loop.state, item);
 }
 
 void event_loop_poll() {
@@ -133,6 +158,19 @@ void event_loop_poll() {
 			item->cb(item->timer, item->data);
 		}
 	}
+
+	// Remove all requested items from the event loop. We can't do this
+	// during normal operation, as it will cause race conditions.
+	for (int i = 0; i < event_loop.state->length; ++i) {
+		struct state_item *item = event_loop.state->items[i];
+		if (item->flags == ITEM_IS_FD) {
+			_remove_event(item->inner.fd);
+		} else {
+			_remove_timer(item->inner.timer);
+		}
+		free(item);
+	}
+	event_loop.state->length = 0; // reset state list
 }
 
 void init_event_loop() {
@@ -141,4 +179,5 @@ void init_event_loop() {
 	event_loop.fds.items = malloc(event_loop.fds.capacity * sizeof(struct pollfd));
 	event_loop.items = create_list();
 	event_loop.timers = create_list();
+	event_loop.state = create_list();
 }

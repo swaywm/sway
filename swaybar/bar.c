@@ -274,6 +274,14 @@ static void respond_ipc(int fd, short mask, void *_bar) {
 
 static void respond_command(int fd, short mask, void *_bar) {
 	struct bar *bar = (struct bar *)_bar;
+	if (mask & POLLHUP) {
+		// Something's wrong with the command
+		handle_status_hup(bar->status);
+		dirty = true;
+		// We will stop watching the status line so swaybar won't
+		// flood the CPU with its HUPs
+		remove_event(fd);
+	}
 	dirty = handle_status_line(bar);
 }
 
@@ -286,7 +294,7 @@ static void respond_output(int fd, short mask, void *_output) {
 
 void bar_run(struct bar *bar) {
 	add_event(bar->ipc_event_socketfd, POLLIN, respond_ipc, bar);
-	add_event(bar->status_read_fd, POLLIN, respond_command, bar);
+	add_event(bar->status_read_fd, POLLIN | POLLHUP, respond_command, bar);
 
 	int i;
 	for (i = 0; i < bar->outputs->length; ++i) {

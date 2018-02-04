@@ -13,11 +13,11 @@ void add_timer(timer_t timer,
 		void(*cb)(timer_t timer, void *data),
 		void *data);
 
-// Returns false if nothing exists, true otherwise
-bool remove_event(int fd);
+// Remove the given event from the event loop
+void remove_event(int fd);
 
-// Returns false if nothing exists, true otherwise
-bool remove_timer(timer_t timer);
+// Remove the given timer from the event loop
+void remove_timer(timer_t timer);
 
 // Blocks and returns after sending callbacks
 void event_loop_poll();

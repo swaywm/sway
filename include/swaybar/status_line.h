@@ -49,6 +49,12 @@ struct status_line *init_status_line();
 bool handle_status_line(struct bar *bar);
 
 /**
+ * This should be called if statusline input cannot be accessed.
+ * It will set an error statusline instead of using the status command
+ */
+void handle_status_hup(struct status_line *status);
+
+/**
  * Handle mouse clicks.
  */
 bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button);
