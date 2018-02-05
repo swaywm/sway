@@ -511,6 +511,35 @@ bool handle_status_line(struct bar *bar) {
 	return dirty;
 }
 
+void handle_status_hup(struct status_line *line) {
+	// This is somewhat hacky, but free all previous status line state and
+	// then create a status block that displays an error string. This is so
+	// we can have pretty error colors.
+	sway_log(L_ERROR, "Replacing statusline with error string, as the status command has failed");
+	if (line->block_line) {
+		list_foreach(line->block_line, free_status_block);
+		list_free(line->block_line);
+	}
+	line->block_line = create_list();
+	struct status_block *new = calloc(1, sizeof(struct status_block));
+	new->full_text = strdup("ERROR: swaybar cannot access the statusline");
+	new->color = 0xff0000ff;
+	new->min_width = 0;
+	new->align = strdup("left");
+	new->markup = false;
+	new->separator = true;
+	new->separator_block_width = 9;
+	new->background = 0x0;
+	new->border = 0x0;
+	new->border_top = 1;
+	new->border_bottom = 1;
+	new->border_left = 1;
+	new->border_right = 1;
+	list_add(line->block_line, new);
+
+	line->protocol = I3BAR;
+}
+
 struct status_line *init_status_line() {
 	struct status_line *line = malloc(sizeof(struct status_line));
 	line->block_line = create_list();
