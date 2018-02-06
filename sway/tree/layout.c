@@ -61,7 +61,7 @@ void init_layout(void) {
 		&root_container.sway_root->output_layout_change);
 }
 
-int index_child(const swayc_t *child) {
+static int index_child(const swayc_t *child) {
 	// TODO handle floating
 	swayc_t *parent = child->parent;
 	int i, len;
