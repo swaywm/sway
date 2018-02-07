@@ -282,9 +282,7 @@ struct cmd_results *handle_command(char *_exec) {
 				}
 				if (seat) {
 					config->handler_context.current_container =
-						(seat->has_focus ?
-						 sway_seat_get_focus(seat, &root_container) :
-						 NULL);
+						sway_seat_get_focus(seat);
 					struct cmd_results *res = handler->handle(argc-1, argv+1);
 					if (res->status != CMD_SUCCESS) {
 						free_argv(argc, argv);

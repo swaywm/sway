@@ -56,7 +56,9 @@ void sway_seat_configure_xcursor(struct sway_seat *seat);
 
 void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container);
 
-swayc_t *sway_seat_get_focus(struct sway_seat *seat, swayc_t *container);
+swayc_t *sway_seat_get_focus(struct sway_seat *seat);
+
+swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container);
 
 void sway_seat_set_config(struct sway_seat *seat, struct seat_config *seat_config);
 

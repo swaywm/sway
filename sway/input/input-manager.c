@@ -282,7 +282,7 @@ bool sway_input_manager_has_focus(struct sway_input_manager *input,
 		swayc_t *container) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
-		if (seat->has_focus && sway_seat_get_focus(seat, &root_container) == container) {
+		if (sway_seat_get_focus(seat) == container) {
 			return true;
 		}
 	}
