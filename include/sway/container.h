@@ -163,9 +163,9 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
 
 /**
- * Get a list of containers that are descendents of the container in rendering
- * order
+ * Apply the function for each child of the container breadth first.
  */
-list_t *container_list_children(swayc_t *con);
+void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
+		void *data);
 
 #endif

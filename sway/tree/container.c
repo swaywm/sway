@@ -381,13 +381,13 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 	}
 }
 
-/**
- * Get a list of containers that are descendents of the container in rendering
- * order
- */
-list_t *container_list_children(swayc_t *con) {
-	list_t *list = create_list();
+void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
+		void *data) {
 	list_t *queue = create_list();
+	if (queue == NULL) {
+		wlr_log(L_ERROR, "could not allocate list");
+		return;
+	}
 
 	list_add(queue, con);
 
@@ -395,11 +395,10 @@ list_t *container_list_children(swayc_t *con) {
 	while (queue->length) {
 		current = queue->items[0];
 		list_del(queue, 0);
-		list_add(list, current);
+		f(current, data);
 		// TODO floating containers
 		list_cat(queue, current->children);
 	}
 
 	list_free(queue);
-	return list;
 }

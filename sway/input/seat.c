@@ -70,6 +70,20 @@ static void handle_new_container(struct wl_listener *listener, void *data) {
 	seat_container_from_container(seat, con);
 }
 
+static void collect_focus_iter(swayc_t *con, void *data) {
+	struct sway_seat *seat = data;
+	if (con->type > C_WORKSPACE) {
+		return;
+	}
+	struct sway_seat_container *seat_con =
+		seat_container_from_container(seat, con);
+	if (!seat_con) {
+		return;
+	}
+	wl_list_remove(&seat_con->link);
+	wl_list_insert(&seat->focus_stack, &seat_con->link);
+}
+
 struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		const char *seat_name) {
 	struct sway_seat *seat = calloc(1, sizeof(struct sway_seat));
@@ -92,17 +106,8 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
-	list_t *containers = container_list_children(&root_container);
-	if (containers == NULL) {
-		wlr_seat_destroy(seat->wlr_seat);
-		free(seat);
-		return NULL;
-	}
-	for (int i = containers->length - 1; i >= 0; --i) {
-		swayc_t *con = containers->items[i];
-		seat_container_from_container(seat, con);
-	}
-	free(containers);
+
+	container_for_each_bfs(&root_container, collect_focus_iter, seat);
 
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);
