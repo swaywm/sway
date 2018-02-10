@@ -1,7 +1,7 @@
 #ifndef _SWAY_WORKSPACE_H
 #define _SWAY_WORKSPACE_H
 
-struct sway_container;
+#include <sway/container.h>
 
 extern char *prev_workspace_name;
 
@@ -12,9 +12,9 @@ bool workspace_switch(swayc_t *workspace);
 struct sway_container *workspace_by_number(const char* name);
 swayc_t *workspace_by_name(const char*);
 
-struct sway_container *workspace_output_next(struct sway_container *current);
-struct sway_container *workspace_next(struct sway_container *current);
-struct sway_container *workspace_output_prev(struct sway_container *current);
-struct sway_container *workspace_prev(struct sway_container *current);
+struct sway_container *workspace_output_next(swayc_t *current);
+struct sway_container *workspace_next(swayc_t *current);
+struct sway_container *workspace_output_prev(swayc_t *current);
+struct sway_container *workspace_prev(swayc_t *current);
 
 #endif
