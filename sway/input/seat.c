@@ -36,13 +36,35 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_seat_container *seat_con =
 		wl_container_of(listener, seat_con, destroy);
+	struct sway_seat *seat = seat_con->seat;
+	swayc_t *con = seat_con->container;
+
+	bool is_focus = (sway_seat_get_focus(seat) == con);
+
 	wl_list_remove(&seat_con->link);
+
+	if  (is_focus) {
+		// pick next focus
+		sway_seat_set_focus(seat, NULL);
+		swayc_t *next = sway_seat_get_focus_inactive(seat, con->parent);
+		if (next == NULL) {
+			next = con->parent;
+		}
+		sway_seat_set_focus(seat, next);
+	}
+
 	wl_list_remove(&seat_con->destroy.link);
+
 	free(seat_con);
 }
 
 static struct sway_seat_container *seat_container_from_container(
 		struct sway_seat *seat, swayc_t *con) {
+	if (con->type < C_WORKSPACE) {
+		// these don't get seat containers ever
+		return NULL;
+	}
+
 	struct sway_seat_container *seat_con = NULL;
 	wl_list_for_each(seat_con, &seat->focus_stack, link) {
 		if (seat_con->container == con) {
@@ -57,6 +79,7 @@ static struct sway_seat_container *seat_container_from_container(
 	}
 
 	seat_con->container = con;
+	seat_con->seat = seat;
 	wl_list_insert(seat->focus_stack.prev, &seat_con->link);
 	wl_signal_add(&con->events.destroy, &seat_con->destroy);
 	seat_con->destroy.notify = handle_seat_container_destroy;
@@ -266,14 +289,6 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-static void handle_focus_destroy(struct wl_listener *listener, void *data) {
-	struct sway_seat *seat = wl_container_of(listener, seat, focus_destroy);
-	swayc_t *container = data;
-	// TODO dont set focus to the parent, set focus to the next focus inactive
-	// of the parent
-	sway_seat_set_focus(seat, container->parent);
-}
-
 void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 	swayc_t *last_focus = sway_seat_get_focus(seat);
 
@@ -281,17 +296,12 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 		return;
 	}
 
-	if (last_focus) {
-		wl_list_remove(&seat->focus_destroy.link);
-		seat->has_focus = false;
-	}
-
 	if (container) {
 		struct sway_seat_container *seat_con =
 			seat_container_from_container(seat, container);
-		wl_signal_add(&container->events.destroy, &seat->focus_destroy);
-		seat->focus_destroy.notify = handle_focus_destroy;
-		seat->has_focus = true;
+		if (!seat_con) {
+			return;
+		}
 
 		wl_list_remove(&seat_con->link);
 		wl_list_insert(&seat->focus_stack, &seat_con->link);
@@ -316,15 +326,14 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 		struct sway_view *view = last_focus->sway_view;
 		view_set_activated(view, false);
 	}
+
+	seat->has_focus = (container != NULL);
 }
 
 swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container) {
 	struct sway_seat_container *current = NULL;
 	swayc_t *parent = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
-		if (current->container->type < C_WORKSPACE) {
-			continue;
-		}
 		parent = current->container->parent;
 
 		if (current->container == container) {
