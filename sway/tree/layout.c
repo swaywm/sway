@@ -84,8 +84,6 @@ swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
 	int i = index_child(fixed);
 	list_insert(parent->children, i + 1, active);
 	active->parent = parent;
-	// focus new child
-	parent->focused = active;
 	return active->parent;
 }
 
@@ -96,9 +94,6 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	list_add(parent->children, child);
 	child->parent = parent;
 	// set focus for this container
-	if (!parent->focused) {
-		parent->focused = child;
-	}
 	/* TODO WLR
 	if (parent->type == C_WORKSPACE && child->type == C_VIEW && (parent->workspace_layout == L_TABBED || parent->workspace_layout == L_STACKED)) {
 		child = new_container(child, parent->workspace_layout);

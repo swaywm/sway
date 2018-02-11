@@ -74,8 +74,8 @@ static void ipc_json_describe_output(swayc_t *container, json_object *object) {
 	json_object_object_add(object, "refresh", json_object_new_int(wlr_output->refresh));
 	json_object_object_add(object, "transform",
 		json_object_new_string(ipc_json_get_output_transform(wlr_output->transform)));
-	json_object_object_add(object, "current_workspace",
-		(container->focused) ? json_object_new_string(container->focused->name) : NULL);
+	// TODO WLR need to set "current_workspace" to the currently focused
+	// workspace in a way that makes sense with multiseat
 }
 
 static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {

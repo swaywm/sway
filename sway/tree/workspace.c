@@ -120,9 +120,15 @@ swayc_t *workspace_output_prev_next_impl(swayc_t *output, bool next) {
 		return NULL;
 	}
 
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, output);
+	swayc_t *workspace = (focus->type == C_WORKSPACE ?
+			focus :
+			swayc_parent_by_type(focus, C_WORKSPACE));
+
 	int i;
 	for (i = 0; i < output->children->length; i++) {
-		if (output->children->items[i] == output->focused) {
+		if (output->children->items[i] == workspace) {
 			return output->children->items[
 				wrap(i + (next ? 1 : -1), output->children->length)];
 		}
@@ -225,16 +231,12 @@ bool workspace_switch(swayc_t *workspace) {
 	// TODO: Deal with sticky containers
 
 	wlr_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
-	// TODO FOCUS: Focus the last view this seat had focused on this workspace
-	if (workspace->children->length) {
-		// TODO FOCUS: This is really fucking stupid
-		sway_seat_set_focus(seat, workspace->children->items[0]);
-	} else {
-		sway_seat_set_focus(seat, workspace);
+	swayc_t *next = sway_seat_get_focus_inactive(seat, workspace);
+	if (next == NULL) {
+		next = workspace;
 	}
+	sway_seat_set_focus(seat, next);
 	swayc_t *output = swayc_parent_by_type(workspace, C_OUTPUT);
-	// TODO FOCUS: take a look at this
-	output->focused = workspace;
 	arrange_windows(output, -1, -1);
 	return true;
 }

@@ -225,7 +225,12 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	wlr_output_make_current(wlr_output, &buffer_age);
 	wlr_renderer_begin(server->renderer, wlr_output);
 
-	swayc_t *workspace = soutput->swayc->focused;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
+	swayc_t *workspace = (focus->type == C_WORKSPACE ?
+			focus :
+			swayc_parent_by_type(focus, C_WORKSPACE));
+
 	swayc_descendants_of_type(workspace, C_VIEW, output_frame_view, soutput);
 
 	// render unmanaged views on top

@@ -106,10 +106,6 @@ struct sway_container {
 	 * The parent of this container. NULL for the root container.
 	 */
 	struct sway_container *parent;
-	/**
-	 * Which of this container's children has focus.
-	 */
-	struct sway_container *focused;
 
 	/**
 	 * Number of master views in auto layouts.

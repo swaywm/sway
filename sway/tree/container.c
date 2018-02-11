@@ -151,7 +151,6 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	char *ws_name = workspace_next_name(output->name);
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	swayc_t *ws = new_workspace(output, ws_name);
-	output->focused = ws;
 	// Set each seat's focus if not already set
 	// TODO FOCUS: this is probably stupid, we shouldn't define focus in two
 	// places. We should probably put the active workspace on the sway_output
