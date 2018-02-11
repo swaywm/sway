@@ -62,22 +62,21 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 		return error;
 	}
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
-		_do_split(argc - 1, argv + 1, L_VERT);
+		return _do_split(argc - 1, argv + 1, L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 || strcasecmp(argv[0], "horizontal") == 0) {
-		_do_split(argc - 1, argv + 1, L_HORIZ);
+		return _do_split(argc - 1, argv + 1, L_HORIZ);
 	} else if (strcasecmp(argv[0], "t") == 0 || strcasecmp(argv[0], "toggle") == 0) {
 		swayc_t *focused = current_container;
 		if (focused->parent->layout == L_VERT) {
-			_do_split(argc - 1, argv + 1, L_HORIZ);
+			return _do_split(argc - 1, argv + 1, L_HORIZ);
 		} else {
-			_do_split(argc - 1, argv + 1, L_VERT);
+			return _do_split(argc - 1, argv + 1, L_VERT);
 		}
 	} else {
 		error = cmd_results_new(CMD_FAILURE, "split",
 			"Invalid split command (expected either horizontal or vertical).");
 		return error;
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 struct cmd_results *cmd_splitv(int argc, char **argv) {
