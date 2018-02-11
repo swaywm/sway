@@ -368,6 +368,7 @@ swayc_t *workspace_for_pid(pid_t pid) {
 			ws = workspace_create(pw->workspace);
 		}
 
+		free_pid_workspace(pw);
 		list_del(config->pid_workspaces, i);
 	}
 
