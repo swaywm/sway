@@ -1127,7 +1127,7 @@ static void ipc_event_binding(json_object *sb_obj) {
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string("run"));
 	// sb_obj gets owned by the temporary json_object, too.
-	json_object_object_add(obj, "binding", json_object_get(sb_obj));
+	json_object_object_add(obj, "binding", sb_obj);
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_BINDING);
@@ -1171,9 +1171,13 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 			keysym = *(uint32_t *)sb->keys->items[i];
 			if (xkb_keysym_get_name(keysym, buffer, 64) > 0) {
 				json_object *str = json_object_new_string(buffer);
-				json_object_array_add(symbols, str);
 				if (i == 0) {
+					// str is owned by both symbol and symbols. Make sure
+					// to bump the ref count.
+					json_object_array_add(symbols, json_object_get(str));
 					symbol = str;
+				} else {
+					json_object_array_add(symbols, str);
 				}
 			}
 		}

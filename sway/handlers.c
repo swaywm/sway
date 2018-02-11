@@ -484,6 +484,8 @@ static bool handle_view_created(wlc_handle handle) {
 			// refocus in-between command lists
 			set_focused_container(newview);
 		}
+		// Make sure to free the list_t returned by criteria_for.
+		list_free(criteria);
 		swayc_t *workspace = swayc_parent_by_type(focused, C_WORKSPACE);
 		if (workspace && workspace->fullscreen) {
 			set_focused_container(workspace->fullscreen);
