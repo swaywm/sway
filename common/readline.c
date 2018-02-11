@@ -36,7 +36,7 @@ char *read_line(FILE *file) {
 		}
 		string[length++] = c;
 	}
-	if (length + 1 == size) {
+	if (length + 1 >= size) {
 		char *new_string = realloc(string, length + 1);
 		if (!new_string) {
 			free(string);
