@@ -172,6 +172,7 @@ void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t cod
 			redraw_screen = 1;
 
 			password_size = 1024;
+			free(password);
 			password = malloc(password_size);
 			password[0] = '\0';
 			break;
