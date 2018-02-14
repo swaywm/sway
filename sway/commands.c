@@ -132,6 +132,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "exit", cmd_exit },
+	{ "focus", cmd_focus },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
 	{ "kill", cmd_kill },

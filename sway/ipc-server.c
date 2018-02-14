@@ -336,6 +336,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_COMMAND:
 	{
 		config_clear_handler_context(config);
+		config->handler_context.seat = input_manager_current_seat(input_manager);
 		struct cmd_results *results = handle_command(buf);
 		const char *json = cmd_results_to_json(results);
 		char reply[256];
