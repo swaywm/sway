@@ -173,8 +173,8 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	height = floor(height);
 
 	wlr_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
-		 container->name, container->width, container->height, container->x,
-		 container->y);
+		container->name, container->width, container->height, container->x,
+		container->y);
 
 	double x = 0, y = 0;
 	switch (container->type) {
@@ -275,8 +275,8 @@ static void apply_horiz_layout(swayc_t *container,
 		for (int i = start; i < end; ++i) {
 			swayc_t *child = container->children->items[i];
 			wlr_log(L_DEBUG,
-				 "Calculating arrangement for %p:%d (will scale %f by %f)",
-				 child, child->type, width, scale);
+				"Calculating arrangement for %p:%d (will scale %f by %f)",
+				child, child->type, width, scale);
 			view_set_position(child->sway_view, child_x, y);
 
 			if (i == end - 1) {
@@ -325,8 +325,8 @@ void apply_vert_layout(swayc_t *container,
 		for (i = start; i < end; ++i) {
 			swayc_t *child = container->children->items[i];
 			wlr_log(L_DEBUG,
-				 "Calculating arrangement for %p:%d (will scale %f by %f)",
-				 child, child->type, height, scale);
+				"Calculating arrangement for %p:%d (will scale %f by %f)",
+				child, child->type, height, scale);
 			view_set_position(child->sway_view, x, child_y);
 
 			if (i == end - 1) {
@@ -373,24 +373,23 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 			// get most left child of new output
 			return ws->children->items[0];
 		case MOVE_UP:
-		case MOVE_DOWN:
-			{
-				swayc_t *focused = sway_seat_get_focus_inactive(seat, ws);
-				if (focused && focused->parent) {
-					swayc_t *parent = focused->parent;
-					if (parent->layout == L_VERT) {
-						if (dir == MOVE_UP) {
-							// get child furthest down on new output
-							return parent->children->items[parent->children->length-1];
-						} else if (dir == MOVE_DOWN) {
-							// get child furthest up on new output
-							return parent->children->items[0];
-						}
+		case MOVE_DOWN: {
+			swayc_t *focused = sway_seat_get_focus_inactive(seat, ws);
+			if (focused && focused->parent) {
+				swayc_t *parent = focused->parent;
+				if (parent->layout == L_VERT) {
+					if (dir == MOVE_UP) {
+						// get child furthest down on new output
+						return parent->children->items[parent->children->length-1];
+					} else if (dir == MOVE_DOWN) {
+						// get child furthest up on new output
+						return parent->children->items[0];
 					}
-					return focused;
 				}
-				break;
+				return focused;
 			}
+			break;
+		}
 		default:
 			break;
 		}
