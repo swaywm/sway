@@ -16,6 +16,7 @@ struct sway_input_device {
 	struct wlr_input_device *wlr_device;
 	struct input_config *config;
 	struct wl_list link;
+	struct wl_listener device_destroy;
 };
 
 struct sway_input_manager {

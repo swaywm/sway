@@ -48,12 +48,8 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	server->output_add.notify = output_add_notify;
-	wl_signal_add(&server->backend->events.output_add, &server->output_add);
-
-	server->output_remove.notify = output_remove_notify;
-	wl_signal_add(&server->backend->events.output_remove,
-			&server->output_remove);
+	server->new_output.notify = handle_new_output;
+	wl_signal_add(&server->backend->events.new_output, &server->new_output);
 
 	server->xdg_shell_v6 = wlr_xdg_shell_v6_create(server->wl_display);
 	wl_signal_add(&server->xdg_shell_v6->events.new_surface,

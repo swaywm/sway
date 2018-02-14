@@ -160,7 +160,32 @@ static void sway_input_manager_libinput_config_pointer(struct sway_input_device 
 	}
 }
 
-static void input_add_notify(struct wl_listener *listener, void *data) {
+static void handle_device_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_input_device *device = data;
+
+	struct sway_input_device *input_device =
+		input_sway_device_from_wlr(input_manager, device);
+
+	if (!sway_assert(input_device, "could not find sway device")) {
+		return;
+	}
+
+	wlr_log(L_DEBUG, "removing device: '%s'",
+		input_device->identifier);
+
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		sway_seat_remove_device(seat, input_device);
+	}
+
+	wl_list_remove(&input_device->link);
+	wl_list_remove(&input_device->device_destroy.link);
+	free_input_config(input_device->config);
+	free(input_device->identifier);
+	free(input_device);
+}
+
+static void handle_new_input(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input =
 		wl_container_of(listener, input, input_add);
 	struct wlr_input_device *device = data;
@@ -226,32 +251,9 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 			"device '%s' is not configured on any seats",
 			input_device->identifier);
 	}
-}
 
-static void input_remove_notify(struct wl_listener *listener, void *data) {
-	struct sway_input_manager *input =
-		wl_container_of(listener, input, input_remove);
-	struct wlr_input_device *device = data;
-
-	struct sway_input_device *input_device =
-		input_sway_device_from_wlr(input, device);
-
-	if (!sway_assert(input_device, "could not find sway device")) {
-		return;
-	}
-
-	wlr_log(L_DEBUG, "removing device: '%s'",
-		input_device->identifier);
-
-	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
-		sway_seat_remove_device(seat, input_device);
-	}
-
-	wl_list_remove(&input_device->link);
-	free_input_config(input_device->config);
-	free(input_device->identifier);
-	free(input_device);
+	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
+	input_device->device_destroy.notify = handle_device_destroy;
 }
 
 struct sway_input_manager *sway_input_manager_create(
@@ -269,11 +271,8 @@ struct sway_input_manager *sway_input_manager_create(
 	// create the default seat
 	input_manager_get_seat(input, default_seat);
 
-	input->input_add.notify = input_add_notify;
-	wl_signal_add(&server->backend->events.input_add, &input->input_add);
-
-	input->input_remove.notify = input_remove_notify;
-	wl_signal_add(&server->backend->events.input_remove, &input->input_remove);
+	input->input_add.notify = handle_new_input;
+	wl_signal_add(&server->backend->events.new_input, &input->input_add);
 
 	return input;
 }

@@ -461,6 +461,8 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 		int desired;
 		int idx = index_child(container);
 		if (parent->type == C_ROOT) {
+			// TODO
+			/*
 			struct wlr_output_layout *layout = root_container.sway_root->output_layout;
 			wlr_output_layout_adjacent_output(layout, container->sway_output->wlr_output);
 			//swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
@@ -469,6 +471,7 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 			}
 			wlr_log(L_DEBUG, "Moving between outputs");
 			return get_swayc_in_output_direction(output, dir, seat);
+			*/
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
