@@ -243,8 +243,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	soutput->last_frame = now;
 }
 
-void output_add_notify(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, output_add);
+void handle_new_output(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
@@ -269,12 +269,14 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 
 	sway_input_manager_configure_xcursor(input_manager);
 
-	output->frame.notify = output_frame_notify;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
+	output->frame.notify = output_frame_notify;
+
+	wl_signal_add(&wlr_output->events.destroy, &output->output_destroy);
+	output->output_destroy.notify = handle_output_destroy;
 }
 
-void output_remove_notify(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, output_remove);
+void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
 

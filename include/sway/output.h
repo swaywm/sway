@@ -14,6 +14,7 @@ struct sway_output {
 	struct timespec last_frame;
 
 	struct wl_listener frame;
+	struct wl_listener output_destroy;
 };
 
 #endif
