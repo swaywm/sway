@@ -125,8 +125,9 @@ static void render_xdg_v6_popups(struct wlr_xdg_surface_v6 *surface,
 	double width = surface->surface->current->width;
 	double height = surface->surface->current->height;
 
-	struct wlr_xdg_surface_v6 *popup;
-	wl_list_for_each(popup, &surface->popups, popup_link) {
+	struct wlr_xdg_popup_v6 *popup_state;
+	wl_list_for_each(popup_state, &surface->popups, link) {
+		struct wlr_xdg_surface_v6 *popup = popup_state->base;
 		if (!popup->configured) {
 			continue;
 		}
@@ -215,8 +216,13 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
 	struct sway_server *server = soutput->server;
+	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+	wlr_renderer_clear(renderer, &clear_color);
 
-	wlr_output_make_current(wlr_output);
+	int buffer_age = -1;
+	wlr_output_make_current(wlr_output, &buffer_age);
+ 	wlr_renderer_begin(server->renderer, wlr_output);
 	wlr_renderer_begin(server->renderer, wlr_output);
 
 	swayc_t *workspace = soutput->swayc->focused;
@@ -236,7 +242,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_renderer_end(server->renderer);
-	wlr_output_swap_buffers(wlr_output);
+	wlr_output_swap_buffers(wlr_output, &soutput->last_frame, NULL);
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
