@@ -60,6 +60,9 @@ swayc_t *sway_seat_get_focus(struct sway_seat *seat);
 
 swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container);
 
+swayc_t *sway_seat_get_focus_by_type(struct sway_seat *seat,
+		enum swayc_types type);
+
 void sway_seat_set_config(struct sway_seat *seat, struct seat_config *seat_config);
 
 #endif

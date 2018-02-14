@@ -10,6 +10,7 @@
 #include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/view.h"
+#include "sway/input/seat.h"
 #include "list.h"
 #include "log.h"
 
@@ -345,4 +346,177 @@ void apply_vert_layout(swayc_t *container,
 		}
 		*/
 	}
+}
+
+/**
+ * Get swayc in the direction of newly entered output.
+ */
+static swayc_t *get_swayc_in_output_direction(swayc_t *output,
+		enum movement_direction dir, struct sway_seat *seat) {
+	// XXX is this really a seat function or can we do it with the default
+	// seat?
+	if (!output) {
+		return NULL;
+	}
+
+	swayc_t *ws = sway_seat_get_focus_inactive(seat, output);
+	if (ws->type != C_WORKSPACE) {
+		ws = swayc_parent_by_type(ws, C_WORKSPACE);
+	}
+
+	if (ws && ws->children->length > 0) {
+		switch (dir) {
+		case MOVE_LEFT:
+			// get most right child of new output
+			return ws->children->items[ws->children->length-1];
+		case MOVE_RIGHT:
+			// get most left child of new output
+			return ws->children->items[0];
+		case MOVE_UP:
+		case MOVE_DOWN:
+			{
+				swayc_t *focused = sway_seat_get_focus_inactive(seat, ws);
+				if (focused && focused->parent) {
+					swayc_t *parent = focused->parent;
+					if (parent->layout == L_VERT) {
+						if (dir == MOVE_UP) {
+							// get child furthest down on new output
+							return parent->children->items[parent->children->length-1];
+						} else if (dir == MOVE_DOWN) {
+							// get child furthest up on new output
+							return parent->children->items[0];
+						}
+					}
+					return focused;
+				}
+				break;
+			}
+		default:
+			break;
+		}
+	}
+
+	return output;
+}
+
+static void get_absolute_center_position(swayc_t *container, int *x, int *y) {
+	*x = container->x + container->width/2;
+	*y = container->y + container->height/2;
+}
+
+static swayc_t *get_swayc_in_direction_under(swayc_t *container,
+		enum movement_direction dir, struct sway_seat *seat, swayc_t *limit) {
+	if (dir == MOVE_CHILD) {
+		return sway_seat_get_focus_inactive(seat, container);
+	}
+
+	swayc_t *parent = container->parent;
+	if (dir == MOVE_PARENT) {
+		if (parent->type == C_OUTPUT) {
+			return NULL;
+		} else {
+			return parent;
+		}
+	}
+
+	if (dir == MOVE_PREV || dir == MOVE_NEXT) {
+		int focused_idx = index_child(container);
+		if (focused_idx == -1) {
+			return NULL;
+		} else {
+			int desired = (focused_idx + (dir == MOVE_NEXT ? 1 : -1)) %
+				parent->children->length;
+			if (desired < 0) {
+				desired += parent->children->length;
+			}
+			return parent->children->items[desired];
+		}
+	}
+
+	// If moving to an adjacent output we need a starting position (since this
+	// output might border to multiple outputs).
+	//struct wlc_point abs_pos;
+	//get_absolute_center_position(container, &abs_pos);
+
+
+	// TODO WLR fullscreen
+	/*
+	if (container->type == C_VIEW && swayc_is_fullscreen(container)) {
+		wlr_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
+		container = swayc_parent_by_type(container, C_OUTPUT);
+		get_absolute_center_position(container, &abs_pos);
+		swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
+		return get_swayc_in_output_direction(output, dir);
+	}
+	if (container->type == C_WORKSPACE && container->fullscreen) {
+		sway_log(L_DEBUG, "Moving to fullscreen view");
+		return container->fullscreen;
+	}
+	*/
+
+	swayc_t *wrap_candidate = NULL;
+	while (true) {
+		// Test if we can even make a difference here
+		bool can_move = false;
+		int desired;
+		int idx = index_child(container);
+		if (parent->type == C_ROOT) {
+			struct wlr_output_layout *layout = root_container.sway_root->output_layout;
+			wlr_output_layout_adjacent_output(layout, container->sway_output->wlr_output);
+			//swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
+			if (!output || output == container) {
+				return wrap_candidate;
+			}
+			wlr_log(L_DEBUG, "Moving between outputs");
+			return get_swayc_in_output_direction(output, dir, seat);
+		} else {
+			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
+					can_move = true;
+					desired = idx + (dir == MOVE_LEFT ? -1 : 1);
+				}
+			} else {
+				if (parent->layout == L_VERT || parent->layout == L_STACKED) {
+					can_move = true;
+					desired = idx + (dir == MOVE_UP ? -1 : 1);
+				}
+			}
+		}
+
+		if (can_move) {
+			// TODO handle floating
+			if (desired < 0 || desired >= parent->children->length) {
+				can_move = false;
+				int len = parent->children->length;
+				if (!wrap_candidate && len > 1) {
+					if (desired < 0) {
+						wrap_candidate = parent->children->items[len-1];
+					} else {
+						wrap_candidate = parent->children->items[0];
+					}
+					if (config->force_focus_wrapping) {
+						return wrap_candidate;
+					}
+				}
+			} else {
+				wlr_log(L_DEBUG, "%s cont %d-%p dir %i sibling %d: %p", __func__,
+						idx, container, dir, desired, parent->children->items[desired]);
+				return parent->children->items[desired];
+			}
+		}
+
+		if (!can_move) {
+			container = parent;
+			parent = parent->parent;
+			if (!parent || container == limit) {
+				// wrapping is the last chance
+				return wrap_candidate;
+			}
+		}
+	}
+}
+
+swayc_t *get_swayc_in_direction(swayc_t *container, struct sway_seat *seat,
+		enum movement_direction dir) {
+	return get_swayc_in_direction_under(container, dir, seat, NULL);
 }

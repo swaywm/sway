@@ -358,6 +358,16 @@ swayc_t *sway_seat_get_focus(struct sway_seat *seat) {
 	return sway_seat_get_focus_inactive(seat, &root_container);
 }
 
+swayc_t *sway_seat_get_focus_by_type(struct sway_seat *seat,
+		enum swayc_types type) {
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	if (focus->type == type) {
+		return focus;
+	}
+
+	return swayc_parent_by_type(focus, type);
+}
+
 void sway_seat_set_config(struct sway_seat *seat,
 		struct seat_config *seat_config) {
 	// clear configs
