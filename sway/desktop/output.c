@@ -46,18 +46,22 @@ static void render_surface(struct wlr_surface *surface,
 	int height = surface->current->height;
 	int render_width = width * wlr_output->scale;
 	int render_height = height * wlr_output->scale;
-	double ox = lx, oy = ly;
-	wlr_output_layout_output_coords(layout, wlr_output, &ox, &oy);
-	ox *= wlr_output->scale;
-	oy *= wlr_output->scale;
+	int owidth, oheight;
+	wlr_output_effective_resolution(wlr_output, &owidth, &oheight);
 
-	struct wlr_box render_box = {
-		.x = lx, .y = ly,
+	// FIXME: view coords are inconsistently assumed to be in output or layout coords
+	struct wlr_box layout_box = {
+		.x = lx + owidth, .y = ly + oheight,
 		.width = render_width, .height = render_height,
 	};
-	if (wlr_output_layout_intersects(layout, wlr_output, &render_box)) {
+	if (wlr_output_layout_intersects(layout, wlr_output, &layout_box)) {
+		struct wlr_box render_box = {
+			.x = lx, .y = ly,
+			.width = render_width, .height = render_height
+		};
 		float matrix[16];
-		wlr_matrix_project_box(&matrix, &render_box, surface->current->transform, 0, &wlr_output->transform_matrix);
+		wlr_matrix_project_box(&matrix, &render_box,
+				surface->current->transform, 0, &wlr_output->transform_matrix);
 		wlr_render_with_matrix(server.renderer, surface->texture,
 			&matrix);
 
