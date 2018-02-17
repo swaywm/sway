@@ -57,46 +57,7 @@ static void render_surface(struct wlr_surface *surface,
 	};
 	if (wlr_output_layout_intersects(layout, wlr_output, &render_box)) {
 		float matrix[16];
-
-		float translate_center[16];
-		wlr_matrix_translate(&translate_center,
-			(int)ox + render_width / 2, (int)oy + render_height / 2, 0);
-
-		float rotate[16];
-		wlr_matrix_rotate(&rotate, rotation);
-
-		float translate_origin[16];
-		wlr_matrix_translate(&translate_origin, -render_width / 2,
-			-render_height / 2, 0);
-
-		float scale[16];
-		wlr_matrix_scale(&scale, render_width, render_height, 1);
-
-		float transform[16];
-		wlr_matrix_mul(&translate_center, &rotate, &transform);
-		wlr_matrix_mul(&transform, &translate_origin, &transform);
-		wlr_matrix_mul(&transform, &scale, &transform);
-
-		if (surface->current->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
-			float surface_translate_center[16];
-			wlr_matrix_translate(&surface_translate_center, 0.5, 0.5, 0);
-
-			float surface_transform[16];
-			wlr_matrix_transform(surface_transform,
-				wlr_output_transform_invert(surface->current->transform));
-
-			float surface_translate_origin[16];
-			wlr_matrix_translate(&surface_translate_origin, -0.5, -0.5, 0);
-
-			wlr_matrix_mul(&transform, &surface_translate_center,
-				&transform);
-			wlr_matrix_mul(&transform, &surface_transform, &transform);
-			wlr_matrix_mul(&transform, &surface_translate_origin,
-				&transform);
-		}
-
-		wlr_matrix_mul(&wlr_output->transform_matrix, &transform, &matrix);
-
+		wlr_matrix_project_box(&matrix, &render_box, surface->current->transform, 0, &wlr_output->transform_matrix);
 		wlr_render_with_matrix(server.renderer, surface->texture,
 			&matrix);
 
@@ -218,8 +179,6 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = soutput->server;
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
-	wlr_renderer_clear(renderer, &clear_color);
-
 	wlr_renderer_clear(renderer, &clear_color);
 
 	int buffer_age = -1;
