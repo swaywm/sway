@@ -286,6 +286,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&wlr_output->events.destroy, &output->output_destroy);
 	output->output_destroy.notify = handle_output_destroy;
+
+	arrange_windows(&root_container, -1, -1);
 }
 
 void handle_output_destroy(struct wl_listener *listener, void *data) {
