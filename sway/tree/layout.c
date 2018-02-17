@@ -398,9 +398,58 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 	return output;
 }
 
-static void get_absolute_center_position(swayc_t *container, int *x, int *y) {
-	*x = container->x + container->width/2;
-	*y = container->y + container->height/2;
+static void get_layout_center_position(swayc_t *container, int *x, int *y) {
+	// FIXME view coords are inconsistently referred to in layout/output systems
+	if (container->type == C_OUTPUT) {
+		*x = container->x + container->width/2;
+		*y = container->y + container->height/2;
+	} else {
+		swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+		if (container->type == C_WORKSPACE) {
+			// Workspace coordinates are actually wrong/arbitrary, but should
+			// be same as output.
+			*x = output->x;
+			*y = output->y;
+		} else {
+			*x = output->x + container->x;
+			*y = output->y + container->y;
+		}
+	}
+}
+
+static bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out) {
+	*out = 0;
+	switch (dir) {
+	case MOVE_UP:
+		*out = WLR_DIRECTION_UP;
+		break;
+	case MOVE_DOWN:
+		*out = WLR_DIRECTION_DOWN;
+		break;
+	case MOVE_LEFT:
+		*out = WLR_DIRECTION_LEFT;
+		break;
+	case MOVE_RIGHT:
+		*out = WLR_DIRECTION_RIGHT;
+		break;
+	default:
+		break;
+	}
+
+	return *out != 0;
+}
+
+static swayc_t *sway_output_from_wlr(struct wlr_output *output) {
+	if (output == NULL) {
+		return NULL;
+	}
+	for (int i = 0; i < root_container.children->length; ++i) {
+		swayc_t *o = root_container.children->items[i];
+		if (o->type == C_OUTPUT && o->sway_output->wlr_output == output) {
+			return o;
+		}
+	}
+	return NULL;
 }
 
 static swayc_t *get_swayc_in_direction_under(swayc_t *container,
@@ -435,7 +484,7 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 	// If moving to an adjacent output we need a starting position (since this
 	// output might border to multiple outputs).
 	//struct wlc_point abs_pos;
-	//get_absolute_center_position(container, &abs_pos);
+	//get_layout_center_position(container, &abs_pos);
 
 
 	// TODO WLR fullscreen
@@ -443,7 +492,7 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 	if (container->type == C_VIEW && swayc_is_fullscreen(container)) {
 		wlr_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
 		container = swayc_parent_by_type(container, C_OUTPUT);
-		get_absolute_center_position(container, &abs_pos);
+		get_layout_center_position(container, &abs_pos);
 		swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
 		return get_swayc_in_output_direction(output, dir);
 	}
@@ -460,17 +509,28 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 		int desired;
 		int idx = index_child(container);
 		if (parent->type == C_ROOT) {
-			// TODO
-			/*
+			enum wlr_direction wlr_dir = 0;
+			if (!sway_assert(sway_dir_to_wlr(dir, &wlr_dir),
+						"got invalid direction: %d", dir)) {
+				return NULL;
+			}
+			int lx, ly;
+			get_layout_center_position(container, &lx, &ly);
 			struct wlr_output_layout *layout = root_container.sway_root->output_layout;
-			wlr_output_layout_adjacent_output(layout, container->sway_output->wlr_output);
-			//swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
-			if (!output || output == container) {
+			struct wlr_output *wlr_adjacent =
+				wlr_output_layout_adjacent_output(layout, wlr_dir,
+					container->sway_output->wlr_output, lx, ly);
+			swayc_t *adjacent = sway_output_from_wlr(wlr_adjacent);
+
+			if (!adjacent || adjacent == container) {
 				return wrap_candidate;
 			}
-			wlr_log(L_DEBUG, "Moving between outputs");
-			return get_swayc_in_output_direction(output, dir, seat);
-			*/
+			// TODO descend into the focus-inactive of the physically closest
+			// view of the output
+			//swayc_t *new_con = get_swayc_in_output_direction(adjacent, dir, seat);
+			swayc_t *new_con = sway_seat_get_focus_inactive(seat, adjacent);
+			return new_con;
+
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
