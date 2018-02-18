@@ -10,11 +10,15 @@ Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the
 irc.freenode.net).
 
 **Notice**: Sway is currently *frozen* and no new features are being shipped
-until we finish integrating Sway and  wlroots. Bug fixes are still going out.
+until we finish integrating Sway and wlroots. Bug fixes are still going out.
 for more information, [see this
 article](https://drewdevault.com/2017/10/09/Future-of-sway.html). To follow
 wlroots integration status, [see this
 ticket](https://github.com/swaywm/sway/issues/1390).
+
+**2018-02-18**: We are fundraising for a hackathon to complete the work
+integrating wlroots and Sway! Please [consider
+contributing](https://www.indiegogo.com/projects/sway-hackathon-software/x/1059863).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
