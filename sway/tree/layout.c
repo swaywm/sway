@@ -364,7 +364,12 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 		ws = swayc_parent_by_type(ws, C_WORKSPACE);
 	}
 
-	if (ws && ws->children->length > 0) {
+	if (ws == NULL) {
+		wlr_log(L_ERROR, "got an output without a workspace");
+		return NULL;
+	}
+
+	if (ws->children->length > 0) {
 		switch (dir) {
 		case MOVE_LEFT:
 			// get most right child of new output
@@ -395,7 +400,7 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 		}
 	}
 
-	return output;
+	return ws;
 }
 
 static void get_layout_center_position(swayc_t *container, int *x, int *y) {
@@ -525,12 +530,13 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 			if (!adjacent || adjacent == container) {
 				return wrap_candidate;
 			}
-			// TODO descend into the focus-inactive of the physically closest
-			// view of the output
-			//swayc_t *new_con = get_swayc_in_output_direction(adjacent, dir, seat);
-			swayc_t *new_con = sway_seat_get_focus_inactive(seat, adjacent);
-			return new_con;
-
+			swayc_t *next = get_swayc_in_output_direction(adjacent, dir, seat);
+			if (next->children->length) {
+				// TODO consider floating children as well
+				return sway_seat_get_focus_inactive(seat, next);
+			} else {
+				return next;
+			}
 		} else {
 			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
 				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
