@@ -1,7 +1,7 @@
 #ifndef _SWAY_WORKSPACE_H
 #define _SWAY_WORKSPACE_H
 
-#include <sway/container.h>
+#include "sway/container.h"
 
 extern char *prev_workspace_name;
 
