@@ -51,7 +51,7 @@ static void render_surface(struct wlr_surface *surface,
 
 	// FIXME: view coords are inconsistently assumed to be in output or layout coords
 	struct wlr_box layout_box = {
-		.x = lx + owidth, .y = ly + oheight,
+		.x = lx + wlr_output->lx, .y = ly + wlr_output->ly,
 		.width = render_width, .height = render_height,
 	};
 	if (wlr_output_layout_intersects(layout, wlr_output, &layout_box)) {

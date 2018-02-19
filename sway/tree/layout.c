@@ -531,7 +531,10 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 				return wrap_candidate;
 			}
 			swayc_t *next = get_swayc_in_output_direction(adjacent, dir, seat);
-			if (next->children->length) {
+			if (next == NULL) {
+				return NULL;
+			}
+			if (next->children && next->children->length) {
 				// TODO consider floating children as well
 				return sway_seat_get_focus_inactive(seat, next);
 			} else {
