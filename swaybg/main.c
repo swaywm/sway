@@ -31,7 +31,9 @@ void sway_terminate(int exit_code) {
 		window_teardown(window);
 	}
 	list_free(surfaces);
-	registry_teardown(registry);
+	if (registry) {
+		registry_teardown(registry);
+	}
 	exit(exit_code);
 }
 
