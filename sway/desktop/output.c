@@ -219,23 +219,11 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 }
 
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, output_destroy);
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
 
-	swayc_t *output_container = NULL;
-	for (int i = 0 ; i < root_container.children->length; ++i) {
-		swayc_t *child = root_container.children->items[i];
-		if (child->type == C_OUTPUT &&
-				child->sway_output->wlr_output == wlr_output) {
-			output_container = child;
-			break;
-		}
-	}
-	if (!output_container) {
-		return;
-	}
-
-	destroy_output(output_container);
+	destroy_output(output->swayc);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
