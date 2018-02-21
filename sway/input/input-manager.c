@@ -187,7 +187,7 @@ static void handle_device_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_new_input(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input =
-		wl_container_of(listener, input, input_add);
+		wl_container_of(listener, input, new_input);
 	struct wlr_input_device *device = data;
 
 	struct sway_input_device *input_device =
@@ -271,8 +271,8 @@ struct sway_input_manager *sway_input_manager_create(
 	// create the default seat
 	input_manager_get_seat(input, default_seat);
 
-	input->input_add.notify = handle_new_input;
-	wl_signal_add(&server->backend->events.new_input, &input->input_add);
+	input->new_input.notify = handle_new_input;
+	wl_signal_add(&server->backend->events.new_input, &input->new_input);
 
 	return input;
 }

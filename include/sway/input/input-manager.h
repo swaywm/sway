@@ -20,11 +20,11 @@ struct sway_input_device {
 };
 
 struct sway_input_manager {
-	struct wl_listener input_add;
-	struct wl_listener input_remove;
 	struct sway_server *server;
 	struct wl_list devices;
 	struct wl_list seats;
+
+	struct wl_listener new_input;
 };
 
 struct sway_input_manager *sway_input_manager_create(
