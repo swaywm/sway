@@ -58,6 +58,15 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container);
 
 swayc_t *sway_seat_get_focus(struct sway_seat *seat);
 
+/**
+ * Return the last container to be focused for the seat (or the most recently
+ * opened if no container has received focused) that is a child of the given
+ * container. The focus-inactive container of the root window is the focused
+ * container for the seat (if the seat does have focus). This function can be
+ * used to determine what container gets focused next if the focused container
+ * is destroyed, or focus moves to a container with children and we need to
+ * descend into the next leaf in focus order.
+ */
 swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container);
 
 swayc_t *sway_seat_get_focus_by_type(struct sway_seat *seat,
