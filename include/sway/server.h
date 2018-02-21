@@ -45,7 +45,6 @@ void server_fini(struct sway_server *server);
 void server_run(struct sway_server *server);
 
 void handle_new_output(struct wl_listener *listener, void *data);
-void handle_output_destroy(struct wl_listener *listener, void *data);
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

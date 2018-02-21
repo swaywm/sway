@@ -218,6 +218,26 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	soutput->last_frame = now;
 }
 
+static void handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_output *wlr_output = data;
+	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
+
+	swayc_t *output_container = NULL;
+	for (int i = 0 ; i < root_container.children->length; ++i) {
+		swayc_t *child = root_container.children->items[i];
+		if (child->type == C_OUTPUT &&
+				child->sway_output->wlr_output == wlr_output) {
+			output_container = child;
+			break;
+		}
+	}
+	if (!output_container) {
+		return;
+	}
+
+	destroy_output(output_container);
+}
+
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
@@ -251,24 +271,4 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->output_destroy.notify = handle_output_destroy;
 
 	arrange_windows(&root_container, -1, -1);
-}
-
-void handle_output_destroy(struct wl_listener *listener, void *data) {
-	struct wlr_output *wlr_output = data;
-	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
-
-	swayc_t *output_container = NULL;
-	for (int i = 0 ; i < root_container.children->length; ++i) {
-		swayc_t *child = root_container.children->items[i];
-		if (child->type == C_OUTPUT &&
-				child->sway_output->wlr_output == wlr_output) {
-			output_container = child;
-			break;
-		}
-	}
-	if (!output_container) {
-		return;
-	}
-
-	destroy_output(output_container);
 }
