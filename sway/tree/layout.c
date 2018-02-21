@@ -421,7 +421,6 @@ static void get_layout_center_position(swayc_t *container, int *x, int *y) {
 }
 
 static bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out) {
-	*out = 0;
 	switch (dir) {
 	case MOVE_UP:
 		*out = WLR_DIRECTION_UP;
@@ -436,10 +435,10 @@ static bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out
 		*out = WLR_DIRECTION_RIGHT;
 		break;
 	default:
-		break;
+		return false;
 	}
 
-	return *out != 0;
+	return true;
 }
 
 static swayc_t *sway_output_from_wlr(struct wlr_output *output) {
