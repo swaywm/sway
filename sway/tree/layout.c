@@ -353,8 +353,6 @@ void apply_vert_layout(swayc_t *container,
  */
 static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 		enum movement_direction dir, struct sway_seat *seat) {
-	// XXX is this really a seat function or can we do it with the default
-	// seat?
 	if (!output) {
 		return NULL;
 	}

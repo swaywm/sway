@@ -152,9 +152,6 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	swayc_t *ws = new_workspace(output, ws_name);
 	// Set each seat's focus if not already set
-	// TODO FOCUS: this is probably stupid, we shouldn't define focus in two
-	// places. We should probably put the active workspace on the sway_output
-	// struct instead of trying to do focus semantics like this
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		if (!seat->has_focus) {
