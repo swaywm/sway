@@ -164,4 +164,6 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
 		void *data);
 
+swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout);
+
 #endif

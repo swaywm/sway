@@ -400,3 +400,15 @@ void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
 
 	list_free(queue);
 }
+
+swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
+	if (container->type == C_WORKSPACE) {
+		container->workspace_layout = layout;
+		if (layout == L_HORIZ || layout == L_VERT) {
+			container->layout = layout;
+		}
+	} else {
+		container->layout = layout;
+	}
+	return container;
+}
