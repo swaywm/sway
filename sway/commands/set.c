@@ -27,7 +27,6 @@ void free_sway_variable(struct sway_variable *var) {
 struct cmd_results *cmd_set(int argc, char **argv) {
 	char *tmp;
 	struct cmd_results *error = NULL;
-	if (!config->reading) return cmd_results_new(CMD_FAILURE, "set", "Can only be used in config file.");
 	if ((error = checkarg(argc, "set", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}

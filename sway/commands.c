@@ -138,8 +138,15 @@ static struct cmd_handler handlers[] = {
 	{ "input", cmd_input },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
-	{ "set", cmd_set },
 	{ "workspace", cmd_workspace },
+};
+
+/**
+ * Commands that can *only* run in the config loading context
+ * Keep alphabetized
+ */
+static struct cmd_handler config_handlers[] = {
+	{ "set", cmd_set },
 };
 
 /**
@@ -208,6 +215,16 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	if (!config_loading) {
 		res = bsearch(&d, command_handlers,
 				sizeof(command_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+
+		if (res) {
+			return res;
+		}
+	}
+
+	if (config->reading) {
+		res = bsearch(&d, config_handlers,
+				sizeof(config_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
 
 		if (res) {
