@@ -17,6 +17,21 @@
 #include "sway/workspace.h"
 #include "log.h"
 
+static list_t *bfs_queue;
+
+static list_t *get_bfs_queue() {
+	if (!bfs_queue) {
+		bfs_queue = create_list();
+		if (!bfs_queue) {
+			wlr_log(L_ERROR, "could not allocate list for bfs queue");
+			return NULL;
+		}
+	}
+	bfs_queue->length = 0;
+
+	return bfs_queue;
+}
+
 swayc_t *swayc_by_test(swayc_t *container,
 		bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {
@@ -273,7 +288,11 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 
 swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	list_t *queue = create_list();
+	list_t *queue = get_bfs_queue();
+	if (!queue) {
+		return NULL;
+	}
+
 	list_add(queue, parent);
 
 	swayc_t *swayc = NULL;
@@ -313,7 +332,6 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 						*sx = view_sx - popup_sx;
 						*sy = view_sy - popup_sy;
 						*surface = popup->surface;
-						list_free(queue);
 						return swayc;
 					}
 					break;
@@ -332,7 +350,6 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 				*sx = view_sx - sub_x;
 				*sy = view_sy - sub_y;
 				*surface = subsurface->surface;
-				list_free(queue);
 				return swayc;
 			}
 
@@ -344,15 +361,12 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 				*sx = view_sx;
 				*sy = view_sy;
 				*surface = swayc->sway_view->surface;
-				list_free(queue);
 				return swayc;
 			}
 		} else {
 			list_cat(queue, swayc->children);
 		}
 	}
-
-	list_free(queue);
 
 	return NULL;
 }
@@ -381,7 +395,11 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 
 void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
 		void *data) {
-	list_t *queue = create_list();
+	list_t *queue = get_bfs_queue();
+	if (!queue) {
+		return;
+	}
+
 	if (queue == NULL) {
 		wlr_log(L_ERROR, "could not allocate list");
 		return;
@@ -397,8 +415,6 @@ void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
 		// TODO floating containers
 		list_cat(queue, current->children);
 	}
-
-	list_free(queue);
 }
 
 swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
