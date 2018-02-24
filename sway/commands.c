@@ -125,23 +125,33 @@ struct cmd_results *add_color(const char *name, char *buffer, const char *color)
 	return NULL;
 }
 
-/* Keep alphabetized */
+/**
+ * handlers that can run in either config or command context
+ * Keep alphabetized
+ */
 static struct cmd_handler handlers[] = {
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
-	{ "exit", cmd_exit },
-	{ "focus", cmd_focus },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
-	{ "kill", cmd_kill },
-	{ "layout", cmd_layout },
 	{ "output", cmd_output },
-	{ "reload", cmd_reload },
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
 	{ "workspace", cmd_workspace },
+};
+
+/**
+ * Commands that can *not* run in the config loading context
+ * Keep alphabetized
+ */
+static struct cmd_handler command_handlers[] = {
+	{ "exit", cmd_exit },
+	{ "focus", cmd_focus },
+	{ "kill", cmd_kill },
+	{ "layout", cmd_layout },
+	{ "reload", cmd_reload },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -181,19 +191,33 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler *res = NULL;
 	wlr_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
 
+	bool config_loading = config->reading || !config->active;
+
 	if (block == CMD_BLOCK_INPUT) {
-		res = bsearch(&d, input_handlers,
+		// input commands can run in either context
+		return bsearch(&d, input_handlers,
 				sizeof(input_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
 	} else if (block == CMD_BLOCK_SEAT) {
-		res = bsearch(&d, seat_handlers,
+		// seat commands can run in either context
+		return bsearch(&d, seat_handlers,
 				sizeof(seat_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
-	} else {
-		res = bsearch(&d, handlers,
-				sizeof(handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
 	}
+
+	if (!config_loading) {
+		res = bsearch(&d, command_handlers,
+				sizeof(command_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+
+		if (res) {
+			return res;
+		}
+	}
+
+	res = bsearch(&d, handlers,
+			sizeof(handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
 
 	return res;
 }
