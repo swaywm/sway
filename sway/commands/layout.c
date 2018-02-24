@@ -7,19 +7,10 @@
 
 struct cmd_results *cmd_layout(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (config->reading) {
-		return cmd_results_new(CMD_FAILURE, "layout", "Can't be used in config file.");
-	}
-	if (!config->active) {
-		return cmd_results_new(CMD_FAILURE, "layout", "Can only be used when sway is running.");
-	}
 	if ((error = checkarg(argc, "layout", EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}
 	swayc_t *parent = config->handler_context.current_container;
-	if (!sway_assert(parent != NULL, "command called without container context")) {
-		return NULL;
-	}
 
 	// TODO: floating
 	/*
