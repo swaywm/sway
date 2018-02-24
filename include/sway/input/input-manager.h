@@ -16,14 +16,15 @@ struct sway_input_device {
 	struct wlr_input_device *wlr_device;
 	struct input_config *config;
 	struct wl_list link;
+	struct wl_listener device_destroy;
 };
 
 struct sway_input_manager {
-	struct wl_listener input_add;
-	struct wl_listener input_remove;
 	struct sway_server *server;
 	struct wl_list devices;
 	struct wl_list seats;
+
+	struct wl_listener new_input;
 };
 
 struct sway_input_manager *sway_input_manager_create(

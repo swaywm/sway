@@ -46,57 +46,22 @@ static void render_surface(struct wlr_surface *surface,
 	int height = surface->current->height;
 	int render_width = width * wlr_output->scale;
 	int render_height = height * wlr_output->scale;
-	double ox = lx, oy = ly;
-	wlr_output_layout_output_coords(layout, wlr_output, &ox, &oy);
-	ox *= wlr_output->scale;
-	oy *= wlr_output->scale;
+	int owidth, oheight;
+	wlr_output_effective_resolution(wlr_output, &owidth, &oheight);
 
-	struct wlr_box render_box = {
-		.x = lx, .y = ly,
+	// FIXME: view coords are inconsistently assumed to be in output or layout coords
+	struct wlr_box layout_box = {
+		.x = lx + wlr_output->lx, .y = ly + wlr_output->ly,
 		.width = render_width, .height = render_height,
 	};
-	if (wlr_output_layout_intersects(layout, wlr_output, &render_box)) {
+	if (wlr_output_layout_intersects(layout, wlr_output, &layout_box)) {
+		struct wlr_box render_box = {
+			.x = lx, .y = ly,
+			.width = render_width, .height = render_height
+		};
 		float matrix[16];
-
-		float translate_center[16];
-		wlr_matrix_translate(&translate_center,
-			(int)ox + render_width / 2, (int)oy + render_height / 2, 0);
-
-		float rotate[16];
-		wlr_matrix_rotate(&rotate, rotation);
-
-		float translate_origin[16];
-		wlr_matrix_translate(&translate_origin, -render_width / 2,
-			-render_height / 2, 0);
-
-		float scale[16];
-		wlr_matrix_scale(&scale, render_width, render_height, 1);
-
-		float transform[16];
-		wlr_matrix_mul(&translate_center, &rotate, &transform);
-		wlr_matrix_mul(&transform, &translate_origin, &transform);
-		wlr_matrix_mul(&transform, &scale, &transform);
-
-		if (surface->current->transform != WL_OUTPUT_TRANSFORM_NORMAL) {
-			float surface_translate_center[16];
-			wlr_matrix_translate(&surface_translate_center, 0.5, 0.5, 0);
-
-			float surface_transform[16];
-			wlr_matrix_transform(surface_transform,
-				wlr_output_transform_invert(surface->current->transform));
-
-			float surface_translate_origin[16];
-			wlr_matrix_translate(&surface_translate_origin, -0.5, -0.5, 0);
-
-			wlr_matrix_mul(&transform, &surface_translate_center,
-				&transform);
-			wlr_matrix_mul(&transform, &surface_transform, &transform);
-			wlr_matrix_mul(&transform, &surface_translate_origin,
-				&transform);
-		}
-
-		wlr_matrix_mul(&wlr_output->transform_matrix, &transform, &matrix);
-
+		wlr_matrix_project_box(&matrix, &render_box,
+				surface->current->transform, 0, &wlr_output->transform_matrix);
 		wlr_render_with_matrix(server.renderer, surface->texture,
 			&matrix);
 
@@ -125,8 +90,9 @@ static void render_xdg_v6_popups(struct wlr_xdg_surface_v6 *surface,
 	double width = surface->surface->current->width;
 	double height = surface->surface->current->height;
 
-	struct wlr_xdg_surface_v6 *popup;
-	wl_list_for_each(popup, &surface->popups, popup_link) {
+	struct wlr_xdg_popup_v6 *popup_state;
+	wl_list_for_each(popup_state, &surface->popups, link) {
+		struct wlr_xdg_surface_v6 *popup = popup_state->base;
 		if (!popup->configured) {
 			continue;
 		}
@@ -215,11 +181,20 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
 	struct sway_server *server = soutput->server;
+	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+	wlr_renderer_clear(renderer, &clear_color);
 
-	wlr_output_make_current(wlr_output);
+	int buffer_age = -1;
+	wlr_output_make_current(wlr_output, &buffer_age);
 	wlr_renderer_begin(server->renderer, wlr_output);
 
-	swayc_t *workspace = soutput->swayc->focused;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
+	swayc_t *workspace = (focus->type == C_WORKSPACE ?
+			focus :
+			swayc_parent_by_type(focus, C_WORKSPACE));
+
 	swayc_descendants_of_type(workspace, C_VIEW, output_frame_view, soutput);
 
 	// render unmanaged views on top
@@ -236,15 +211,23 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_renderer_end(server->renderer);
-	wlr_output_swap_buffers(wlr_output);
+	wlr_output_swap_buffers(wlr_output, &soutput->last_frame, NULL);
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	soutput->last_frame = now;
 }
 
-void output_add_notify(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, output_add);
+static void handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, output_destroy);
+	struct wlr_output *wlr_output = data;
+	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
+
+	destroy_output(output->swayc);
+}
+
+void handle_new_output(struct wl_listener *listener, void *data) {
+	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
@@ -269,27 +252,11 @@ void output_add_notify(struct wl_listener *listener, void *data) {
 
 	sway_input_manager_configure_xcursor(input_manager);
 
-	output->frame.notify = output_frame_notify;
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
-}
+	output->frame.notify = output_frame_notify;
 
-void output_remove_notify(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(listener, server, output_remove);
-	struct wlr_output *wlr_output = data;
-	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
+	wl_signal_add(&wlr_output->events.destroy, &output->output_destroy);
+	output->output_destroy.notify = handle_output_destroy;
 
-	swayc_t *output_container = NULL;
-	for (int i = 0 ; i < root_container.children->length; ++i) {
-		swayc_t *child = root_container.children->items[i];
-		if (child->type == C_OUTPUT &&
-				child->sway_output->wlr_output == wlr_output) {
-			output_container = child;
-			break;
-		}
-	}
-	if (!output_container) {
-		return;
-	}
-
-	destroy_output(output_container);
+	arrange_windows(&root_container, -1, -1);
 }

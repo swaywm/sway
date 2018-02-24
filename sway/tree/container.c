@@ -17,6 +17,21 @@
 #include "sway/workspace.h"
 #include "log.h"
 
+static list_t *bfs_queue;
+
+static list_t *get_bfs_queue() {
+	if (!bfs_queue) {
+		bfs_queue = create_list();
+		if (!bfs_queue) {
+			wlr_log(L_ERROR, "could not allocate list for bfs queue");
+			return NULL;
+		}
+	}
+	bfs_queue->length = 0;
+
+	return bfs_queue;
+}
+
 swayc_t *swayc_by_test(swayc_t *container,
 		bool (*test)(swayc_t *view, void *data), void *data) {
 	if (!container->children) {
@@ -151,19 +166,16 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	char *ws_name = workspace_next_name(output->name);
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	swayc_t *ws = new_workspace(output, ws_name);
-	output->focused = ws;
 	// Set each seat's focus if not already set
-	// TODO FOCUS: this is probably stupid, we shouldn't define focus in two
-	// places. We should probably put the active workspace on the sway_output
-	// struct instead of trying to do focus semantics like this
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
-		if (!seat->focus) {
-			seat->focus = ws;
+		if (!seat->has_focus) {
+			sway_seat_set_focus(seat, ws);
 		}
 	}
 
 	free(ws_name);
+	wl_signal_emit(&root_container.sway_root->events.new_container, output);
 	return output;
 }
 
@@ -185,6 +197,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 
 	add_child(output, workspace);
 	sort_workspaces(output);
+	wl_signal_emit(&root_container.sway_root->events.new_container, workspace);
 	return workspace;
 }
 
@@ -207,9 +220,9 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 		add_child(sibling, swayc);
 	} else {
 		// Regular case, create as sibling of current container
-		// TODO WLR
-		//add_sibling(sibling, swayc);
+		add_sibling(sibling, swayc);
 	}
+	wl_signal_emit(&root_container.sway_root->events.new_container, swayc);
 	return swayc;
 }
 
@@ -234,6 +247,8 @@ swayc_t *destroy_output(swayc_t *output) {
 			arrange_windows(root_container.children->items[p], -1, -1);
 		}
 	}
+
+	wl_list_remove(&output->sway_output->output_destroy.link);
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 	free_swayc(output);
@@ -273,7 +288,11 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 
 swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	list_t *queue = create_list();
+	list_t *queue = get_bfs_queue();
+	if (!queue) {
+		return NULL;
+	}
+
 	list_add(queue, parent);
 
 	swayc_t *swayc = NULL;
@@ -313,7 +332,6 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 						*sx = view_sx - popup_sx;
 						*sy = view_sy - popup_sy;
 						*surface = popup->surface;
-						list_free(queue);
 						return swayc;
 					}
 					break;
@@ -332,7 +350,6 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 				*sx = view_sx - sub_x;
 				*sy = view_sy - sub_y;
 				*surface = subsurface->surface;
-				list_free(queue);
 				return swayc;
 			}
 
@@ -344,15 +361,12 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 				*sx = view_sx;
 				*sy = view_sy;
 				*surface = swayc->sway_view->surface;
-				list_free(queue);
 				return swayc;
 			}
 		} else {
 			list_cat(queue, swayc->children);
 		}
 	}
-
-	list_free(queue);
 
 	return NULL;
 }
@@ -377,4 +391,40 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 		*/
 		f(container, data);
 	}
+}
+
+void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
+		void *data) {
+	list_t *queue = get_bfs_queue();
+	if (!queue) {
+		return;
+	}
+
+	if (queue == NULL) {
+		wlr_log(L_ERROR, "could not allocate list");
+		return;
+	}
+
+	list_add(queue, con);
+
+	swayc_t *current = NULL;
+	while (queue->length) {
+		current = queue->items[0];
+		list_del(queue, 0);
+		f(current, data);
+		// TODO floating containers
+		list_cat(queue, current->children);
+	}
+}
+
+swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
+	if (container->type == C_WORKSPACE) {
+		container->workspace_layout = layout;
+		if (layout == L_HORIZ || layout == L_VERT) {
+			container->layout = layout;
+		}
+	} else {
+		container->layout = layout;
+	}
+	return container;
 }

@@ -24,8 +24,7 @@ struct sway_server {
 
 	struct sway_input_manager *input;
 
-	struct wl_listener output_add;
-	struct wl_listener output_remove;
+	struct wl_listener new_output;
 	struct wl_listener output_frame;
 
 	struct wlr_xdg_shell_v6 *xdg_shell_v6;
@@ -45,8 +44,7 @@ bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
 void server_run(struct sway_server *server);
 
-void output_add_notify(struct wl_listener *listener, void *data);
-void output_remove_notify(struct wl_listener *listener, void *data);
+void handle_new_output(struct wl_listener *listener, void *data);
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xwayland_surface(struct wl_listener *listener, void *data);

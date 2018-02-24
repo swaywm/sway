@@ -106,10 +106,6 @@ struct sway_container {
 	 * The parent of this container. NULL for the root container.
 	 */
 	struct sway_container *parent;
-	/**
-	 * Which of this container's children has focus.
-	 */
-	struct sway_container *focused;
 
 	/**
 	 * Number of master views in auto layouts.
@@ -161,5 +157,13 @@ void container_map(swayc_t *container,
 
 swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
+
+/**
+ * Apply the function for each child of the container breadth first.
+ */
+void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
+		void *data);
+
+swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout);
 
 #endif
