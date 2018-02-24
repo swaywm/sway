@@ -198,7 +198,7 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	return res;
 }
 
-struct cmd_results *handle_command(char *_exec) {
+struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
 	// error string we could e.g. concatenate all errors there.)
@@ -208,6 +208,16 @@ struct cmd_results *handle_command(char *_exec) {
 	char *cmdlist;
 	char *cmd;
 	list_t *containers = NULL;
+
+	if (seat == NULL) {
+		// passing a NULL seat means we just pick the default seat
+		seat = sway_input_manager_get_default_seat(input_manager);
+		if (!sway_assert(seat, "could not find a seat to run the command on")) {
+			return NULL;
+		}
+	}
+
+	config->handler_context.seat = seat;
 
 	head = exec;
 	do {
@@ -278,24 +288,22 @@ struct cmd_results *handle_command(char *_exec) {
 			if (!has_criteria) {
 				// without criteria, the command acts upon the focused
 				// container
-				struct sway_seat *seat = config->handler_context.seat;
-				if (!seat) {
-					seat = sway_input_manager_get_default_seat(input_manager);
+				config->handler_context.current_container =
+					sway_seat_get_focus_inactive(seat, &root_container);
+				if (!sway_assert(config->handler_context.current_container,
+						"could not get focus-inactive for root container")) {
+					return NULL;
 				}
-				if (seat) {
-					config->handler_context.current_container =
-						sway_seat_get_focus(seat);
-					struct cmd_results *res = handler->handle(argc-1, argv+1);
-					if (res->status != CMD_SUCCESS) {
-						free_argv(argc, argv);
-						if (results) {
-							free_cmd_results(results);
-						}
-						results = res;
-						goto cleanup;
+				struct cmd_results *res = handler->handle(argc-1, argv+1);
+				if (res->status != CMD_SUCCESS) {
+					free_argv(argc, argv);
+					if (results) {
+						free_cmd_results(results);
 					}
-					free_cmd_results(res);
+					results = res;
+					goto cleanup;
 				}
+				free_cmd_results(res);
 			} else {
 				for (int i = 0; i < containers->length; ++i) {
 					config->handler_context.current_container = containers->items[i];
@@ -322,13 +330,13 @@ cleanup:
 	return results;
 }
 
-// this is like handle_command above, except:
+// this is like execute_command above, except:
 // 1) it ignores empty commands (empty lines)
 // 2) it does variable substitution
 // 3) it doesn't split commands (because the multiple commands are supposed to
 //	  be chained together)
-// 4) handle_command handles all state internally while config_command has some
-//	  state handled outside (notably the block mode, in read_config)
+// 4) execute_command handles all state internally while config_command has
+// some state handled outside (notably the block mode, in read_config)
 struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	struct cmd_results *results = NULL;
 	int argc;

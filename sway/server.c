@@ -22,7 +22,7 @@ static void server_ready(struct wl_listener *listener, void *data) {
 	config->active = true;
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
-		struct cmd_results *res = handle_command(line);
+		struct cmd_results *res = execute_command(line, NULL);
 		if (res->status != CMD_SUCCESS) {
 			wlr_log(L_ERROR, "Error on line '%s': %s", line, res->error);
 		}
