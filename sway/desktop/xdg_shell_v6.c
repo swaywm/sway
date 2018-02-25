@@ -72,6 +72,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_surface, commit);
 	struct sway_view *view = sway_surface->view;
 	// NOTE: We intentionally discard the view's desired width here
+	// TODO: Store this for restoration when moving to floating plane
 	// TODO: Let floating views do whatever
 	view->width = sway_surface->pending_width;
 	view->height = sway_surface->pending_height;
