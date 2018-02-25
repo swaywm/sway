@@ -46,25 +46,25 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 
 static struct cmd_results *backend_cmd_add_output(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	sway_log(L_DEBUG, "TODO: backend cmd add_output");
+	wlr_log(L_DEBUG, "TODO: backend cmd add_output");
 	return NULL;
 }
 
 static struct cmd_results *backend_cmd_del_output(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	sway_log(L_DEBUG, "TODO: backend cmd del_output");
+	wlr_log(L_DEBUG, "TODO: backend cmd del_output");
 	return NULL;
 }
 
 static struct cmd_results *backend_cmd_add_input(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	sway_log(L_DEBUG, "TODO: backend cmd add_input");
+	wlr_log(L_DEBUG, "TODO: backend cmd add_input");
 	return NULL;
 }
 
 static struct cmd_results *backend_cmd_del_input(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	sway_log(L_DEBUG, "TODO: backend cmd del_input");
+	wlr_log(L_DEBUG, "TODO: backend cmd del_input");
 	return NULL;
 }
 

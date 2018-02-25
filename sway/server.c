@@ -21,6 +21,7 @@
 #include "sway/config.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
+#include "log.h"
 
 static void server_ready(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
@@ -135,7 +136,7 @@ struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
 	struct sway_subbackend *subbackend =
 		calloc(1, sizeof(struct sway_subbackend));
 	if (subbackend == NULL) {
-		sway_log(L_ERROR, "could not allocate subbackend");
+		wlr_log(L_ERROR, "could not allocate subbackend");
 		return NULL;
 	}
 
@@ -163,7 +164,7 @@ static void handle_subbackend_backend_destroy(struct wl_listener *listener,
 }
 
 static struct wlr_backend *wayland_backend_create(struct sway_server *server) {
-	sway_log(L_DEBUG, "TODO: create wayland backend");
+	wlr_log(L_DEBUG, "TODO: create wayland backend");
 	return NULL;
 	/*
 	struct wlr_backend *backend =
@@ -174,13 +175,13 @@ static struct wlr_backend *wayland_backend_create(struct sway_server *server) {
 }
 
 static struct wlr_backend *x11_backend_create(struct sway_server *server) {
-	sway_log(L_DEBUG, "TODO: create x11 backend");
+	wlr_log(L_DEBUG, "TODO: create x11 backend");
 	return NULL;
 }
 
 static struct wlr_backend *headless_backend_create(
 		struct sway_server *server) {
-	sway_log(L_DEBUG, "TODO: create headless backend");
+	wlr_log(L_DEBUG, "TODO: create headless backend");
 	return NULL;
 	/*
 	struct wlr_backend *backend =
@@ -190,14 +191,14 @@ static struct wlr_backend *headless_backend_create(
 }
 
 static struct wlr_backend *drm_backend_create(struct sway_server *server) {
-	sway_log(L_DEBUG, "TODO: create drm backend");
+	wlr_log(L_DEBUG, "TODO: create drm backend");
 	return NULL;
 }
 
 void sway_server_add_subbackend(struct sway_server *server,
 		struct sway_subbackend *subbackend) {
 	if (sway_server_get_subbackend(server, subbackend->name)) {
-		sway_log(L_ERROR, "cannot add subbackend '%s': already exists",
+		wlr_log(L_ERROR, "cannot add subbackend '%s': already exists",
 			subbackend->name);
 		sway_subbackend_destroy(subbackend);
 		return;
@@ -221,7 +222,7 @@ void sway_server_add_subbackend(struct sway_server *server,
 	}
 
 	if (backend == NULL) {
-		sway_log(L_ERROR, "could not create subbackend '%s'", subbackend->name);
+		wlr_log(L_ERROR, "could not create subbackend '%s'", subbackend->name);
 		sway_subbackend_destroy(subbackend);
 		return;
 	}
@@ -241,7 +242,7 @@ void sway_server_remove_subbackend(struct sway_server *server, char *name) {
 		sway_server_get_subbackend(server, name);
 
 	if (!subbackend) {
-		sway_log(L_DEBUG, "could not find subbackend named '%s'", name);
+		wlr_log(L_DEBUG, "could not find subbackend named '%s'", name);
 		return;
 	}
 
@@ -276,29 +277,30 @@ void sway_subbackend_add_output(struct sway_server *server,
 
 	switch(subbackend->type) {
 	case SWAY_SUBBACKEND_WAYLAND:
-		sway_log(L_DEBUG, "TODO: create wayland subbackend output");
+		wlr_log(L_DEBUG, "TODO: create wayland subbackend output");
 		break;
 	case SWAY_SUBBACKEND_X11:
-		sway_log(L_DEBUG, "TODO: create x11 subbackend output");
+		wlr_log(L_DEBUG, "TODO: create x11 subbackend output");
 		break;
 	case SWAY_SUBBACKEND_DRM:
-		sway_log(L_DEBUG, "creating DRM subbackend outputs is not supported");
+		wlr_log(L_DEBUG, "creating DRM subbackend outputs is not supported");
 		break;
 	case SWAY_SUBBACKEND_HEADLESS:
+		// TODO allow to name the output
 		wlr_output =
-			wlr_headless_add_output(subbackend->backend, 500, 500, name);
+			wlr_headless_add_output(subbackend->backend, 500, 500);
 		break;
 	}
 
 	if (wlr_output == NULL) {
-		sway_log(L_ERROR, "could not create subbackend output '%s'", name);
+		wlr_log(L_ERROR, "could not create subbackend output '%s'", name);
 		return;
 	}
 
 	struct subbackend_output *output =
 		calloc(1, sizeof(struct subbackend_output));
 	if (output == NULL) {
-		sway_log(L_ERROR, "could not allocate subbackend output");
+		wlr_log(L_ERROR, "could not allocate subbackend output");
 		return;
 	}
 
@@ -346,12 +348,13 @@ void sway_subbackend_add_input(struct sway_server *server,
 		struct sway_subbackend *subbackend, enum wlr_input_device_type type,
 		char *name) {
 	if (subbackend->type != SWAY_SUBBACKEND_HEADLESS) {
-		sway_log(L_DEBUG, "adding inputs is only supported for the headless backend");
+		wlr_log(L_DEBUG, "adding inputs is only supported for the headless backend");
 		return;
 	}
 
+	// TODO allow naming the input device
 	struct wlr_input_device *device =
-		wlr_headless_add_input_device(subbackend->backend, type, name);
+		wlr_headless_add_input_device(subbackend->backend, type);
 	if (device == NULL) {
 		return;
 	}
@@ -359,7 +362,7 @@ void sway_subbackend_add_input(struct sway_server *server,
 	struct subbackend_input *input =
 		calloc(1, sizeof(struct subbackend_input));
 	if (input == NULL) {
-		sway_log(L_ERROR, "could not allocate subbackend input device");
+		wlr_log(L_ERROR, "could not allocate subbackend input device");
 		return;
 	}
 
