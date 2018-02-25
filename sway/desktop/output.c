@@ -37,7 +37,7 @@ static void rotate_child_position(double *sx, double *sy, double sw, double sh,
 
 static void render_surface(struct wlr_surface *surface,
 		struct wlr_output *wlr_output, struct timespec *when,
-		double lx, double ly, float rotation) {
+		double ox, double oy, float rotation) {
 	if (!wlr_surface_has_buffer(surface)) {
 		return;
 	}
@@ -46,17 +46,16 @@ static void render_surface(struct wlr_surface *surface,
 	int height = surface->current->height;
 	int render_width = width * wlr_output->scale;
 	int render_height = height * wlr_output->scale;
-	int owidth, oheight;
-	wlr_output_effective_resolution(wlr_output, &owidth, &oheight);
+	ox *= wlr_output->scale;
+	oy *= wlr_output->scale;
 
-	// FIXME: view coords are inconsistently assumed to be in output or layout coords
 	struct wlr_box layout_box = {
-		.x = lx + wlr_output->lx, .y = ly + wlr_output->ly,
+		.x = ox + wlr_output->lx, .y = oy + wlr_output->ly,
 		.width = render_width, .height = render_height,
 	};
 	if (wlr_output_layout_intersects(layout, wlr_output, &layout_box)) {
 		struct wlr_box render_box = {
-			.x = lx, .y = ly,
+			.x = ox, .y = oy,
 			.width = render_width, .height = render_height
 		};
 		float matrix[16];
@@ -78,8 +77,8 @@ static void render_surface(struct wlr_surface *surface,
 		rotate_child_position(&sx, &sy, sw, sh, width, height, rotation);
 
 		render_surface(subsurface->surface, wlr_output, when,
-			lx + sx,
-			ly + sy,
+			ox + sx,
+			oy + sy,
 			rotation);
 	}
 }
