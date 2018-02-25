@@ -16,12 +16,30 @@
 #include <wlr/interfaces/wlr_input_device.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
+#include <wlr/util/log.h>
+#include "sway/commands.h"
+#include "sway/config.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
-#include "log.h"
+
+static void server_ready(struct wl_listener *listener, void *data) {
+	wlr_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
+	// Execute commands until there are none left
+	config->active = true;
+	while (config->cmd_queue->length) {
+		char *line = config->cmd_queue->items[0];
+		struct cmd_results *res = execute_command(line, NULL);
+		if (res->status != CMD_SUCCESS) {
+			wlr_log(L_ERROR, "Error on line '%s': %s", line, res->error);
+		}
+		free_cmd_results(res);
+		free(line);
+		list_del(config->cmd_queue, 0);
+	}
+}
 
 bool server_init(struct sway_server *server) {
-	sway_log(L_DEBUG, "Initializing Wayland server");
+	wlr_log(L_DEBUG, "Initializing Wayland server");
 
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
@@ -37,12 +55,8 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	server->output_add.notify = output_add_notify;
-	wl_signal_add(&server->backend->events.output_add, &server->output_add);
-
-	server->output_remove.notify = output_remove_notify;
-	wl_signal_add(&server->backend->events.output_remove,
-			&server->output_remove);
+	server->new_output.notify = handle_new_output;
+	wl_signal_add(&server->backend->events.new_output, &server->new_output);
 
 	server->xdg_shell_v6 = wlr_xdg_shell_v6_create(server->wl_display);
 	wl_signal_add(&server->xdg_shell_v6->events.new_surface,
@@ -55,6 +69,10 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xwayland->events.new_surface,
 		&server->xwayland_surface);
 	server->xwayland_surface.notify = handle_xwayland_surface;
+	wl_signal_add(&server->xwayland->events.ready,
+		&server->xwayland_ready);
+	// TODO: call server_ready now if xwayland is not enabled
+	server->xwayland_ready.notify = server_ready;
 
 	server->wl_shell = wlr_wl_shell_create(server->wl_display);
 	wl_signal_add(&server->wl_shell->events.new_surface,
@@ -62,7 +80,8 @@ bool server_init(struct sway_server *server) {
 	server->wl_shell_surface.notify = handle_wl_shell_surface;
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
-	if (!sway_assert(server->socket,  "Unable to open wayland socket")) {
+	if (!server->socket) {
+		wlr_log(L_ERROR, "Unable to open wayland socket");
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
@@ -78,11 +97,11 @@ void server_fini(struct sway_server *server) {
 }
 
 void server_run(struct sway_server *server) {
-	sway_log(L_INFO, "Running compositor on wayland display '%s'",
+	wlr_log(L_INFO, "Running compositor on wayland display '%s'",
 			server->socket);
 	setenv("_WAYLAND_DISPLAY", server->socket, true);
-	if (!sway_assert(wlr_backend_start(server->backend),
-				"Failed to start backend")) {
+	if (!wlr_backend_start(server->backend)) {
+		wlr_log(L_ERROR, "Failed to start backend");
 		wlr_backend_destroy(server->backend);
 		return;
 	}

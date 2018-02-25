@@ -9,6 +9,8 @@ struct cmd_results *input_cmd_middle_emulation(int argc, char **argv) {
 	if ((error = checkarg(argc, "middle_emulation", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	struct input_config *current_input_config =
+		config->handler_context.input_config;
 	if (!current_input_config) {
 		return cmd_results_new(CMD_FAILURE, "middle_emulation",
 			"No input device defined.");

@@ -51,6 +51,14 @@ static void set_activated(struct sway_view *view, bool activated) {
 	// no way to activate wl_shell
 }
 
+static void close(struct sway_view *view) {
+	if (!assert_wl_shell(view)) {
+		return;
+	}
+
+	wl_client_destroy(view->wlr_wl_shell_surface->client);
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -77,12 +85,14 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 			listener, server, wl_shell_surface);
 	struct wlr_wl_shell_surface *shell_surface = data;
 
-	if (shell_surface->state != WLR_WL_SHELL_SURFACE_STATE_TOPLEVEL) {
-		// TODO: transient and popups should be floating
+	if (shell_surface->state == WLR_WL_SHELL_SURFACE_STATE_POPUP) {
+		// popups don't get views
 		return;
 	}
 
-	sway_log(L_DEBUG, "New wl_shell toplevel title='%s' app_id='%s'",
+	// TODO make transient windows floating
+
+	wlr_log(L_DEBUG, "New wl_shell toplevel title='%s' app_id='%s'",
 			shell_surface->title, shell_surface->class);
 	wlr_wl_shell_surface_ping(shell_surface);
 
@@ -101,6 +111,7 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.set_size = set_size;
 	sway_view->iface.set_position = set_position;
 	sway_view->iface.set_activated = set_activated;
+	sway_view->iface.close = close;
 	sway_view->wlr_wl_shell_surface = shell_surface;
 	sway_view->sway_wl_shell_surface = sway_surface;
 	sway_view->surface = shell_surface->surface;

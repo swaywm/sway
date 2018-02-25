@@ -25,6 +25,7 @@ struct sway_cursor {
 	struct wl_listener request_set_cursor;
 };
 
+void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
 
 #endif

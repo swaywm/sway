@@ -11,8 +11,12 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	}
 
 	if (config->reading && strcmp("{", argv[1]) == 0) {
-		current_input_config = new_input_config(argv[0]);
-		sway_log(L_DEBUG, "entering input block: %s", current_input_config->identifier);
+		free_input_config(config->handler_context.input_config);
+		config->handler_context.input_config = new_input_config(argv[0]);
+		if (!config->handler_context.input_config) {
+			return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+		}
+		wlr_log(L_DEBUG, "entering input block: %s", argv[0]);
 		return cmd_results_new(CMD_BLOCK_INPUT, NULL, NULL);
 	}
 
@@ -20,11 +24,19 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return error;
 	}
 
+	bool has_context = (config->handler_context.input_config != NULL);
+	if (!has_context) {
+		// caller did not give a context so create one just for this command
+		config->handler_context.input_config = new_input_config(argv[0]);
+		if (!config->handler_context.input_config) {
+			return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+		}
+	}
+
 	int argc_new = argc-2;
 	char **argv_new = argv+2;
 
 	struct cmd_results *res;
-	current_input_config = new_input_config(argv[0]);
 	if (strcasecmp("accel_profile", argv[1]) == 0) {
 		res = input_cmd_accel_profile(argc_new, argv_new);
 	} else if (strcasecmp("click_method", argv[1]) == 0) {
@@ -60,6 +72,12 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	} else {
 		res = cmd_results_new(CMD_INVALID, "input <device>", "Unknown command %s", argv[1]);
 	}
-	current_input_config = NULL;
+
+	if (!has_context) {
+		// clean up the context we created earlier
+		free_input_config(config->handler_context.input_config);
+		config->handler_context.input_config = NULL;
+	}
+
 	return res;
 }

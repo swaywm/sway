@@ -23,7 +23,15 @@ struct sway_input_manager *input_manager;
 struct input_config *current_input_config = NULL;
 struct seat_config *current_seat_config = NULL;
 
-static struct sway_seat *input_manager_get_seat(
+struct sway_seat *input_manager_current_seat(struct sway_input_manager *input) {
+	struct sway_seat *seat = config->handler_context.seat;
+	if (!seat) {
+		seat = sway_input_manager_get_default_seat(input_manager);
+	}
+	return seat;
+}
+
+struct sway_seat *input_manager_get_seat(
 		struct sway_input_manager *input, const char *seat_name) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
@@ -52,7 +60,7 @@ static char *get_device_identifier(struct wlr_input_device *device) {
 	int len = snprintf(NULL, 0, fmt, vendor, product, name) + 1;
 	char *identifier = malloc(len);
 	if (!identifier) {
-		sway_log(L_ERROR, "Unable to allocate unique input device name");
+		wlr_log(L_ERROR, "Unable to allocate unique input device name");
 		return NULL;
 	}
 
@@ -93,68 +101,93 @@ static void sway_input_manager_libinput_config_pointer(struct sway_input_device 
 	}
 
 	libinput_device = wlr_libinput_get_device_handle(wlr_device);
-	sway_log(L_DEBUG, "sway_input_manager_libinput_config_pointer(%s)", ic->identifier);
+	wlr_log(L_DEBUG, "sway_input_manager_libinput_config_pointer(%s)", ic->identifier);
 
 	if (ic->accel_profile != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_profile(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_profile(%d)",
 			ic->identifier, ic->accel_profile);
 		libinput_device_config_accel_set_profile(libinput_device, ic->accel_profile);
 	}
 	if (ic->click_method != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) click_set_method(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) click_set_method(%d)",
 			ic->identifier, ic->click_method);
 		libinput_device_config_click_set_method(libinput_device, ic->click_method);
 	}
 	if (ic->drag_lock != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_drag_lock_enabled(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_drag_lock_enabled(%d)",
 			ic->identifier, ic->click_method);
 		libinput_device_config_tap_set_drag_lock_enabled(libinput_device, ic->drag_lock);
 	}
 	if (ic->dwt != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) dwt_set_enabled(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) dwt_set_enabled(%d)",
 			ic->identifier, ic->dwt);
 		libinput_device_config_dwt_set_enabled(libinput_device, ic->dwt);
 	}
 	if (ic->left_handed != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) left_handed_set_enabled(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) left_handed_set_enabled(%d)",
 			ic->identifier, ic->left_handed);
 		libinput_device_config_left_handed_set(libinput_device, ic->left_handed);
 	}
 	if (ic->middle_emulation != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) middle_emulation_set_enabled(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) middle_emulation_set_enabled(%d)",
 			ic->identifier, ic->middle_emulation);
 		libinput_device_config_middle_emulation_set_enabled(libinput_device, ic->middle_emulation);
 	}
 	if (ic->natural_scroll != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) natural_scroll_set_enabled(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) natural_scroll_set_enabled(%d)",
 			ic->identifier, ic->natural_scroll);
 		libinput_device_config_scroll_set_natural_scroll_enabled(libinput_device, ic->natural_scroll);
 	}
 	if (ic->pointer_accel != FLT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_speed(%f)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_speed(%f)",
 			ic->identifier, ic->pointer_accel);
 		libinput_device_config_accel_set_speed(libinput_device, ic->pointer_accel);
 	}
 	if (ic->scroll_method != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) scroll_set_method(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) scroll_set_method(%d)",
 			ic->identifier, ic->scroll_method);
 		libinput_device_config_scroll_set_method(libinput_device, ic->scroll_method);
 	}
 	if (ic->send_events != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) send_events_set_mode(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) send_events_set_mode(%d)",
 			ic->identifier, ic->send_events);
 		libinput_device_config_send_events_set_mode(libinput_device, ic->send_events);
 	}
 	if (ic->tap != INT_MIN) {
-		sway_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_enabled(%d)",
+		wlr_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_enabled(%d)",
 			ic->identifier, ic->tap);
 		libinput_device_config_tap_set_enabled(libinput_device, ic->tap);
 	}
 }
 
-static void input_add_notify(struct wl_listener *listener, void *data) {
+static void handle_device_destroy(struct wl_listener *listener, void *data) {
+	struct wlr_input_device *device = data;
+
+	struct sway_input_device *input_device =
+		input_sway_device_from_wlr(input_manager, device);
+
+	if (!sway_assert(input_device, "could not find sway device")) {
+		return;
+	}
+
+	wlr_log(L_DEBUG, "removing device: '%s'",
+		input_device->identifier);
+
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		sway_seat_remove_device(seat, input_device);
+	}
+
+	wl_list_remove(&input_device->link);
+	wl_list_remove(&input_device->device_destroy.link);
+	free_input_config(input_device->config);
+	free(input_device->identifier);
+	free(input_device);
+}
+
+static void handle_new_input(struct wl_listener *listener, void *data) {
 	struct sway_input_manager *input =
-		wl_container_of(listener, input, input_add);
+		wl_container_of(listener, input, new_input);
 	struct wlr_input_device *device = data;
 
 	struct sway_input_device *input_device =
@@ -167,14 +200,15 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 	input_device->identifier = get_device_identifier(device);
 	wl_list_insert(&input->devices, &input_device->link);
 
-	sway_log(L_DEBUG, "adding device: '%s'",
+	wlr_log(L_DEBUG, "adding device: '%s'",
 		input_device->identifier);
 
 	// find config
 	for (int i = 0; i < config->input_configs->length; ++i) {
 		struct input_config *input_config = config->input_configs->items[i];
 		if (strcmp(input_config->identifier, input_device->identifier) == 0) {
-			input_device->config = input_config;
+			free_input_config(input_device->config);
+			input_device->config = copy_input_config(input_config);
 			break;
 		}
 	}
@@ -185,7 +219,7 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat = NULL;
 	if (!input_has_seat_configuration(input)) {
-		sway_log(L_DEBUG, "no seat configuration, using default seat");
+		wlr_log(L_DEBUG, "no seat configuration, using default seat");
 		seat = input_manager_get_seat(input, default_seat);
 		sway_seat_add_device(seat, input_device);
 		return;
@@ -213,35 +247,13 @@ static void input_add_notify(struct wl_listener *listener, void *data) {
 	}
 
 	if (!added) {
-		sway_log(L_DEBUG,
+		wlr_log(L_DEBUG,
 			"device '%s' is not configured on any seats",
 			input_device->identifier);
 	}
-}
 
-static void input_remove_notify(struct wl_listener *listener, void *data) {
-	struct sway_input_manager *input =
-		wl_container_of(listener, input, input_remove);
-	struct wlr_input_device *device = data;
-
-	struct sway_input_device *input_device =
-		input_sway_device_from_wlr(input, device);
-
-	if (!sway_assert(input_device, "could not find sway device")) {
-		return;
-	}
-
-	sway_log(L_DEBUG, "removing device: '%s'",
-		input_device->identifier);
-
-	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
-		sway_seat_remove_device(seat, input_device);
-	}
-
-	wl_list_remove(&input_device->link);
-	free(input_device->identifier);
-	free(input_device);
+	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
+	input_device->device_destroy.notify = handle_device_destroy;
 }
 
 struct sway_input_manager *sway_input_manager_create(
@@ -259,11 +271,8 @@ struct sway_input_manager *sway_input_manager_create(
 	// create the default seat
 	input_manager_get_seat(input, default_seat);
 
-	input->input_add.notify = input_add_notify;
-	wl_signal_add(&server->backend->events.input_add, &input->input_add);
-
-	input->input_remove.notify = input_remove_notify;
-	wl_signal_add(&server->backend->events.input_remove, &input->input_remove);
+	input->new_input.notify = handle_new_input;
+	wl_signal_add(&server->backend->events.new_input, &input->new_input);
 
 	return input;
 }
@@ -272,7 +281,7 @@ bool sway_input_manager_has_focus(struct sway_input_manager *input,
 		swayc_t *container) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
-		if (seat->focus == container) {
+		if (sway_seat_get_focus(seat) == container) {
 			return true;
 		}
 	}
@@ -293,7 +302,8 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &input->devices, link) {
 		if (strcmp(input_device->identifier, input_config->identifier) == 0) {
-			input_device->config = input_config;
+			free_input_config(input_device->config);
+			input_device->config = copy_input_config(input_config);
 
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 				sway_input_manager_libinput_config_pointer(input_device);
@@ -309,7 +319,7 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 
 void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config) {
-	sway_log(L_DEBUG, "applying new seat config for seat %s",
+	wlr_log(L_DEBUG, "applying new seat config for seat %s",
 		seat_config->name);
 	struct sway_seat *seat = input_manager_get_seat(input, seat_config->name);
 	if (!seat) {
@@ -368,4 +378,15 @@ void sway_input_manager_configure_xcursor(struct sway_input_manager *input) {
 	wl_list_for_each(seat, &input->seats, link) {
 		sway_seat_configure_xcursor(seat);
 	}
+}
+
+struct sway_seat *sway_input_manager_get_default_seat(
+		struct sway_input_manager *input) {
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input->seats, link) {
+		if (strcmp(seat->wlr_seat->name, "seat0") == 0) {
+			return seat;
+		}
+	}
+	return seat;
 }

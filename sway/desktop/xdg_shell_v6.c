@@ -57,6 +57,16 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+static void close(struct sway_view *view) {
+	if (!assert_xdg(view)) {
+		return;
+	}
+	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
+	if (surface->role == WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL) {
+		wlr_xdg_toplevel_v6_send_close(surface);
+	}
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -88,7 +98,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	sway_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
+	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
 			xdg_surface->title, xdg_surface->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
 
@@ -107,14 +117,13 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.set_size = set_size;
 	sway_view->iface.set_position = set_position;
 	sway_view->iface.set_activated = set_activated;
+	sway_view->iface.close = close;
 	sway_view->wlr_xdg_surface_v6 = xdg_surface;
 	sway_view->sway_xdg_surface_v6 = sway_surface;
 	sway_view->surface = xdg_surface->surface;
 	sway_surface->view = sway_view;
 	
 	// TODO:
-	// - Wire up listeners
-	// - Handle popups
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
@@ -125,11 +134,9 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &sway_surface->destroy);
 
-	// TODO: actual focus semantics
-	swayc_t *parent = root_container.children->items[0];
-	parent = parent->children->items[0]; // workspace
-
-	swayc_t *cont = new_view(parent, sway_view);
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	swayc_t *cont = new_view(focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);

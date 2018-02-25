@@ -46,9 +46,9 @@ struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
 
 /**
- * Parse and handles a command.
+ * Parse and executes a command.
  */
-struct cmd_results *handle_command(char *command);
+struct cmd_results *execute_command(char *command,  struct sway_seat *seat);
 /**
  * Parse and handles a command during config file loading.
  *

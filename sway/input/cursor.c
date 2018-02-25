@@ -24,6 +24,31 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
+
+	// check for unmanaged views first
+	struct sway_view *view;
+	wl_list_for_each_reverse(view, &root_container.sway_root->unmanaged_views,
+		unmanaged_view_link) {
+		if (view->type == SWAY_XWAYLAND_VIEW) {
+			struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+			struct wlr_box box = {
+				.x = xsurface->x,
+				.y = xsurface->y,
+				.width = xsurface->width,
+				.height = xsurface->height,
+			};
+
+			if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
+				surface = xsurface->surface;
+				sx = cursor->x - box.x;
+				sy = cursor->y - box.y;
+				wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+				wlr_seat_pointer_notify_motion(seat, time, sx, sy);
+				return;
+			}
+		}
+	}
+
 	swayc_t *swayc =
 		swayc_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
 	if (swayc) {
@@ -85,35 +110,35 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_down);
 	struct wlr_event_touch_down *event = data;
-	sway_log(L_DEBUG, "TODO: handle touch down event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle touch down event: %p", event);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_up);
 	struct wlr_event_touch_up *event = data;
-	sway_log(L_DEBUG, "TODO: handle touch up event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle touch up event: %p", event);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
 	struct wlr_event_touch_motion *event = data;
-	sway_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
 }
 
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, tool_axis);
 	struct wlr_event_tablet_tool_axis *event = data;
-	sway_log(L_DEBUG, "TODO: handle tool axis event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle tool axis event: %p", event);
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, tool_tip);
 	struct wlr_event_tablet_tool_tip *event = data;
-	sway_log(L_DEBUG, "TODO: handle tool tip event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle tool tip event: %p", event);
 }
 
 static void handle_request_set_cursor(struct wl_listener *listener,
@@ -121,7 +146,17 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, request_set_cursor);
 	struct wlr_seat_pointer_request_set_cursor_event *event = data;
-	sway_log(L_DEBUG, "TODO: handle request set cursor event: %p", event);
+	wlr_log(L_DEBUG, "TODO: handle request set cursor event: %p", event);
+}
+
+void sway_cursor_destroy(struct sway_cursor *cursor) {
+	if (!cursor) {
+		return;
+	}
+
+	wlr_xcursor_manager_destroy(cursor->xcursor_manager);
+	wlr_cursor_destroy(cursor->cursor);
+	free(cursor);
 }
 
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {

@@ -10,6 +10,7 @@ project(
 )
 
 add_project_arguments('-Wno-unused-parameter', language: 'c')
+add_project_arguments('-Wno-unused-function', language: 'c')
 
 cc = meson.get_compiler('c')
 
@@ -18,7 +19,7 @@ datadir = get_option('datadir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
 
-jsonc          = dependency('json-c', version: '>=0.12.1')
+jsonc          = dependency('json-c', version: '>=0.13')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots')
 wayland_server = dependency('wayland-server')

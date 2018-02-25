@@ -8,8 +8,10 @@
 #include <json-c/json.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/criteria.h"
 #include "sway/security.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "stringop.h"
 #include "log.h"
 
@@ -70,7 +72,6 @@ void apply_input_config(struct input_config *input) {
 		list_add(config->input_configs, input);
 	}
 
-	current_input_config = input;
 	sway_input_manager_apply_input_config(input_manager, input);
 }
 
@@ -87,7 +88,6 @@ void apply_seat_config(struct seat_config *seat) {
 		list_add(config->seat_configs, seat);
 	}
 
-	current_seat_config = seat;
 	sway_input_manager_apply_seat_config(input_manager, seat);
 }
 
@@ -125,16 +125,41 @@ struct cmd_results *add_color(const char *name, char *buffer, const char *color)
 	return NULL;
 }
 
-/* Keep alphabetized */
+/**
+ * handlers that can run in either config or command context
+ * Keep alphabetized
+ */
 static struct cmd_handler handlers[] = {
 	{ "backend", cmd_backend },
+	{ "bindcode", cmd_bindcode },
+	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
-	{ "exit", cmd_exit },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
+	{ "workspace", cmd_workspace },
+};
+
+/**
+ * Commands that can *only* run in the config loading context
+ * Keep alphabetized
+ */
+static struct cmd_handler config_handlers[] = {
+	{ "set", cmd_set },
+};
+
+/**
+ * Commands that can *not* run in the config loading context
+ * Keep alphabetized
+ */
+static struct cmd_handler command_handlers[] = {
+	{ "exit", cmd_exit },
+	{ "focus", cmd_focus },
+	{ "kill", cmd_kill },
+	{ "layout", cmd_layout },
+	{ "reload", cmd_reload },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -172,37 +197,103 @@ static struct cmd_handler seat_handlers[] = {
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
+	wlr_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
+
+	bool config_loading = config->reading || !config->active;
 
 	if (block == CMD_BLOCK_INPUT) {
-		res = bsearch(&d, input_handlers,
+		// input commands can run in either context
+		return bsearch(&d, input_handlers,
 				sizeof(input_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
 	} else if (block == CMD_BLOCK_SEAT) {
-		res = bsearch(&d, seat_handlers,
+		// seat commands can run in either context
+		return bsearch(&d, seat_handlers,
 				sizeof(seat_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
-	} else {
-		res = bsearch(&d, handlers,
-				sizeof(handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
 	}
+
+	if (!config_loading) {
+		res = bsearch(&d, command_handlers,
+				sizeof(command_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+
+		if (res) {
+			return res;
+		}
+	}
+
+	if (config->reading) {
+		res = bsearch(&d, config_handlers,
+				sizeof(config_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+
+		if (res) {
+			return res;
+		}
+	}
+
+	res = bsearch(&d, handlers,
+			sizeof(handlers) / sizeof(struct cmd_handler),
+			sizeof(struct cmd_handler), handler_compare);
 
 	return res;
 }
 
-struct cmd_results *handle_command(char *_exec) {
+struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
-	// error string we could e.g. concatonate all errors there.)
+	// error string we could e.g. concatenate all errors there.)
 	struct cmd_results *results = NULL;
 	char *exec = strdup(_exec);
 	char *head = exec;
 	char *cmdlist;
 	char *cmd;
+	list_t *containers = NULL;
+
+	if (seat == NULL) {
+		// passing a NULL seat means we just pick the default seat
+		seat = sway_input_manager_get_default_seat(input_manager);
+		if (!sway_assert(seat, "could not find a seat to run the command on")) {
+			return NULL;
+		}
+	}
+
+	config->handler_context.seat = seat;
 
 	head = exec;
 	do {
+		// Extract criteria (valid for this command list only).
+		bool has_criteria = false;
+		if (*head == '[') {
+			has_criteria = true;
+			++head;
+			char *criteria_string = argsep(&head, "]");
+			if (head) {
+				++head;
+				list_t *tokens = create_list();
+				char *error;
+
+				if ((error = extract_crit_tokens(tokens, criteria_string))) {
+					wlr_log(L_DEBUG, "criteria string parse error: %s", error);
+					results = cmd_results_new(CMD_INVALID, criteria_string,
+						"Can't parse criteria string: %s", error);
+					free(error);
+					free(tokens);
+					goto cleanup;
+				}
+				containers = container_for_crit_tokens(tokens);
+
+				free(tokens);
+			} else {
+				if (!results) {
+					results = cmd_results_new(CMD_INVALID, criteria_string, "Unmatched [");
+				}
+				goto cleanup;
+			}
+			// Skip leading whitespace
+			head += strspn(head, whitespace);
+		}
 		// Split command list
 		cmdlist = argsep(&head, ";");
 		cmdlist += strspn(cmdlist, whitespace);
@@ -211,10 +302,10 @@ struct cmd_results *handle_command(char *_exec) {
 			cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
-				sway_log(L_INFO, "Ignoring empty command.");
+				wlr_log(L_INFO, "Ignoring empty command.");
 				continue;
 			}
-			sway_log(L_INFO, "Handling command '%s'", cmd);
+			wlr_log(L_INFO, "Handling command '%s'", cmd);
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
@@ -235,16 +326,41 @@ struct cmd_results *handle_command(char *_exec) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-			struct cmd_results *res = handler->handle(argc-1, argv+1);
-			if (res->status != CMD_SUCCESS) {
-				free_argv(argc, argv);
-				if (results) {
-					free_cmd_results(results);
+
+			if (!has_criteria) {
+				// without criteria, the command acts upon the focused
+				// container
+				config->handler_context.current_container =
+					sway_seat_get_focus_inactive(seat, &root_container);
+				if (!sway_assert(config->handler_context.current_container,
+						"could not get focus-inactive for root container")) {
+					return NULL;
 				}
-				results = res;
-				goto cleanup;
+				struct cmd_results *res = handler->handle(argc-1, argv+1);
+				if (res->status != CMD_SUCCESS) {
+					free_argv(argc, argv);
+					if (results) {
+						free_cmd_results(results);
+					}
+					results = res;
+					goto cleanup;
+				}
+				free_cmd_results(res);
+			} else {
+				for (int i = 0; i < containers->length; ++i) {
+					config->handler_context.current_container = containers->items[i];
+					struct cmd_results *res = handler->handle(argc-1, argv+1);
+					if (res->status != CMD_SUCCESS) {
+						free_argv(argc, argv);
+						if (results) {
+							free_cmd_results(results);
+						}
+						results = res;
+						goto cleanup;
+					}
+					free_cmd_results(res);
+				}
 			}
-			free_cmd_results(res);
 			free_argv(argc, argv);
 		} while(cmdlist);
 	} while(head);
@@ -256,13 +372,13 @@ cleanup:
 	return results;
 }
 
-// this is like handle_command above, except:
+// this is like execute_command above, except:
 // 1) it ignores empty commands (empty lines)
 // 2) it does variable substitution
 // 3) it doesn't split commands (because the multiple commands are supposed to
 //	  be chained together)
-// 4) handle_command handles all state internally while config_command has some
-//	  state handled outside (notably the block mode, in read_config)
+// 4) execute_command handles all state internally while config_command has
+// some state handled outside (notably the block mode, in read_config)
 struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	struct cmd_results *results = NULL;
 	int argc;
@@ -272,7 +388,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 		goto cleanup;
 	}
 
-	sway_log(L_INFO, "handling config command '%s'", exec);
+	wlr_log(L_INFO, "handling config command '%s'", exec);
 	// Endblock
 	if (**argv == '}') {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
@@ -287,7 +403,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	int i;
 	// Var replacement, for all but first argument of set
 	// TODO commands
-	for (i = /*handler->handle == cmd_set ? 2 :*/ 1; i < argc; ++i) {
+	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 		argv[i] = do_var_replacement(argv[i]);
 		unescape_string(argv[i]);
 	}
@@ -376,7 +492,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	policy->context = context;
 
-	sway_log(L_INFO, "Set command policy for %s to %d",
+	wlr_log(L_INFO, "Set command policy for %s to %d",
 			policy->command, policy->context);
 
 	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -390,7 +506,7 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		const char *input, const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	if (!results) {
-		sway_log(L_ERROR, "Unable to allocate command results");
+		wlr_log(L_ERROR, "Unable to allocate command results");
 		return NULL;
 	}
 	results->status = status;

@@ -8,13 +8,13 @@
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
 	if (!input) {
-		sway_log(L_DEBUG, "Unable to allocate input config");
+		wlr_log(L_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
-	sway_log(L_DEBUG, "new_input_config(%s)", identifier);
+	wlr_log(L_DEBUG, "new_input_config(%s)", identifier);
 	if (!(input->identifier = strdup(identifier))) {
 		free(input);
-		sway_log(L_DEBUG, "Unable to allocate input config");
+		wlr_log(L_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
 
@@ -88,6 +88,16 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		free(dst->xkb_variant);
 		dst->xkb_variant = strdup(src->xkb_variant);
 	}
+}
+
+struct input_config *copy_input_config(struct input_config *ic) {
+	struct input_config *copy = calloc(1, sizeof(struct input_config));
+	if (copy == NULL) {
+		wlr_log(L_ERROR, "could not allocate input config");
+		return NULL;
+	}
+	merge_input_config(copy, ic);
+	return copy;
 }
 
 void free_input_config(struct input_config *ic) {

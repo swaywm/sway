@@ -5,9 +5,6 @@
 #include "sway/config.h"
 #include "list.h"
 
-extern struct input_config *current_input_config;
-extern struct seat_config *current_seat_config;
-
 /**
  * The global singleton input manager
  * TODO: make me not a global
@@ -19,14 +16,15 @@ struct sway_input_device {
 	struct wlr_input_device *wlr_device;
 	struct input_config *config;
 	struct wl_list link;
+	struct wl_listener device_destroy;
 };
 
 struct sway_input_manager {
-	struct wl_listener input_add;
-	struct wl_listener input_remove;
 	struct sway_server *server;
 	struct wl_list devices;
 	struct wl_list seats;
+
+	struct wl_listener new_input;
 };
 
 struct sway_input_manager *sway_input_manager_create(
@@ -45,5 +43,14 @@ void sway_input_manager_apply_input_config(struct sway_input_manager *input,
 
 void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config);
+
+struct sway_seat *sway_input_manager_get_default_seat(
+		struct sway_input_manager *input);
+
+struct sway_seat *input_manager_get_seat(struct sway_input_manager *input,
+		const char *seat_name);
+
+/** Gets the last seat the user interacted with */
+struct sway_seat *input_manager_current_seat(struct sway_input_manager *input);
 
 #endif

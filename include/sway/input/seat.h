@@ -12,14 +12,26 @@ struct sway_seat_device {
 	struct wl_list link; // sway_seat::devices
 };
 
+struct sway_seat_container {
+	struct sway_seat *seat;
+	swayc_t *container;
+
+	struct wl_list link; // sway_seat::focus_stack
+
+	struct wl_listener destroy;
+};
+
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct seat_config *config;
 	struct sway_cursor *cursor;
 	struct sway_input_manager *input;
-	swayc_t *focus;
+
+	bool has_focus;
+	struct wl_list focus_stack; // list of containers in focus order
 
 	struct wl_listener focus_destroy;
+	struct wl_listener new_container;
 
 	struct wl_list devices; // sway_seat_device::link
 
@@ -28,6 +40,8 @@ struct sway_seat {
 
 struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		const char *seat_name);
+
+void sway_seat_destroy(struct sway_seat *seat);
 
 void sway_seat_add_device(struct sway_seat *seat,
 		struct sway_input_device *device);
@@ -41,6 +55,22 @@ void sway_seat_remove_device(struct sway_seat *seat,
 void sway_seat_configure_xcursor(struct sway_seat *seat);
 
 void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container);
+
+swayc_t *sway_seat_get_focus(struct sway_seat *seat);
+
+/**
+ * Return the last container to be focused for the seat (or the most recently
+ * opened if no container has received focused) that is a child of the given
+ * container. The focus-inactive container of the root window is the focused
+ * container for the seat (if the seat does have focus). This function can be
+ * used to determine what container gets focused next if the focused container
+ * is destroyed, or focus moves to a container with children and we need to
+ * descend into the next leaf in focus order.
+ */
+swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container);
+
+swayc_t *sway_seat_get_focus_by_type(struct sway_seat *seat,
+		enum swayc_types type);
 
 void sway_seat_set_config(struct sway_seat *seat, struct seat_config *seat_config);
 

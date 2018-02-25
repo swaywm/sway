@@ -46,7 +46,8 @@ struct sway_mouse_binding {
  */
 struct sway_mode {
 	char *name;
-	list_t *bindings;
+	list_t *keysym_bindings;
+	list_t *keycode_bindings;
 };
 
 /**
@@ -349,6 +350,14 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
+
+	// Context for command handlers
+	struct {
+		struct input_config *input_config;
+		struct seat_config *seat_config;
+		struct sway_seat *seat;
+		swayc_t *current_container;
+	} handler_context;
 };
 
 void pid_workspace_add(struct pid_workspace *pw);
@@ -374,6 +383,10 @@ bool read_config(FILE *file, struct sway_config *config);
  * Free config struct
  */
 void free_config(struct sway_config *config);
+
+void config_clear_handler_context(struct sway_config *config);
+
+void free_sway_variable(struct sway_variable *var);
 /**
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
@@ -384,12 +397,14 @@ struct cmd_results *check_security_config();
 int input_identifier_cmp(const void *item, const void *data);
 struct input_config *new_input_config(const char* identifier);
 void merge_input_config(struct input_config *dst, struct input_config *src);
+struct input_config *copy_input_config(struct input_config *ic);
 void free_input_config(struct input_config *ic);
 void apply_input_config(struct input_config *input);
 
 int seat_name_cmp(const void *item, const void *data);
 struct seat_config *new_seat_config(const char* name);
 void merge_seat_config(struct seat_config *dst, struct seat_config *src);
+struct seat_config *copy_seat_config(struct seat_config *seat);
 void free_seat_config(struct seat_config *ic);
 struct seat_attachment_config *seat_attachment_config_new();
 struct seat_attachment_config *seat_config_get_attachment(
@@ -397,6 +412,8 @@ struct seat_attachment_config *seat_config_get_attachment(
 void apply_seat_config(struct seat_config *seat);
 
 int output_name_cmp(const void *item, const void *data);
+void output_get_identifier(char *identifier, size_t len,
+	struct sway_output *output);
 struct output_config *new_output_config(const char *name);
 void merge_output_config(struct output_config *dst, struct output_config *src);
 void apply_output_config(struct output_config *oc, swayc_t *output);

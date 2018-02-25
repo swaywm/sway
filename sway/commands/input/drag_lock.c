@@ -9,6 +9,8 @@ struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
 	if ((error = checkarg(argc, "drag_lock", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	struct input_config *current_input_config =
+		config->handler_context.input_config;
 	if (!current_input_config) {
 		return cmd_results_new(CMD_FAILURE,
 			"drag_lock", "No input device defined.");

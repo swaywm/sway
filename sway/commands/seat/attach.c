@@ -12,6 +12,8 @@ struct cmd_results *seat_cmd_attach(int argc, char **argv) {
 	if ((error = checkarg(argc, "attach", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	struct seat_config *current_seat_config =
+		config->handler_context.seat_config;
 	if (!current_seat_config) {
 		return cmd_results_new(CMD_FAILURE, "attach", "No seat defined");
 	}
