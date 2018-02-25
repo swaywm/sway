@@ -1,5 +1,7 @@
 #define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 700
 #include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <wayland-server.h>
@@ -19,6 +21,7 @@
 #include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
 #include "log.h"
@@ -296,7 +299,6 @@ void sway_subbackend_add_output(struct sway_server *server,
 		wlr_log(L_DEBUG, "creating DRM subbackend outputs is not supported");
 		break;
 	case SWAY_SUBBACKEND_HEADLESS:
-		// TODO allow to name the output
 		wlr_output =
 			wlr_headless_add_output(subbackend->backend, 1280, 960);
 		break;
@@ -310,8 +312,23 @@ void sway_subbackend_add_output(struct sway_server *server,
 	struct subbackend_output *output =
 		calloc(1, sizeof(struct subbackend_output));
 	if (output == NULL) {
+		wlr_output_destroy(wlr_output);
 		wlr_log(L_ERROR, "could not allocate subbackend output");
 		return;
+	}
+
+	strncpy(wlr_output->name, name, sizeof(wlr_output->name));
+	for (int i = 0; i < root_container.children->length; ++i) {
+		swayc_t *output = root_container.children->items[i];
+		if (output->type != C_OUTPUT) {
+			continue;
+		}
+
+		if (output->sway_output->wlr_output == wlr_output) {
+			free(output->name);
+			output->name = strdup(name);
+			break;
+		}
 	}
 
 	output->wlr_output = wlr_output;
