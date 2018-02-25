@@ -39,16 +39,27 @@ static void server_ready(struct wl_listener *listener, void *data) {
 	}
 }
 
-bool server_init(struct sway_server *server) {
+bool server_init(struct sway_server *server, bool headless) {
 	wlr_log(L_DEBUG, "Initializing Wayland server");
 
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display);
+
 	wl_list_init(&server->subbackends);
 
-	server->renderer = wlr_gles2_renderer_create(server->backend);
+	if (headless) {
+		server->backend = wlr_multi_backend_create(server->wl_display);
+		struct sway_subbackend *subbackend =
+			sway_subbackend_create(SWAY_SUBBACKEND_HEADLESS, "headless");
+		sway_server_add_subbackend(server, subbackend);
+	} else {
+		// TODO add whatever this function creates to the subbackends
+		server->backend = wlr_backend_autocreate(server->wl_display);
+	}
+
 	wl_display_init_shm(server->wl_display);
+
+	server->renderer = wlr_backend_get_renderer(server->backend);
 
 	server->compositor = wlr_compositor_create(
 			server->wl_display, server->renderer);
@@ -181,13 +192,9 @@ static struct wlr_backend *x11_backend_create(struct sway_server *server) {
 
 static struct wlr_backend *headless_backend_create(
 		struct sway_server *server) {
-	wlr_log(L_DEBUG, "TODO: create headless backend");
-	return NULL;
-	/*
 	struct wlr_backend *backend =
 		wlr_headless_backend_create(server->wl_display);
 	return backend;
-	*/
 }
 
 static struct wlr_backend *drm_backend_create(struct sway_server *server) {
