@@ -78,18 +78,14 @@ static struct cmd_results *backend_cmd_del_output(int argc, char **argv,
 
 static struct cmd_results *backend_cmd_add_input(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	wlr_log(L_DEBUG, "TODO: backend cmd add_input");
-	return NULL;
+	return cmd_results_new(CMD_INVALID, "backend <cmd> [args]",
+			"add_output is not implemented");
 }
 
 static struct cmd_results *backend_cmd_del_input(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "backend", EXPECTED_AT_LEAST, 1))) {
-		return error;
-	}
-
-	return NULL;
+	return cmd_results_new(CMD_INVALID, "backend <cmd> [args]",
+			"del_output is not implemented");
 }
 
 struct cmd_results *cmd_backend(int argc, char **argv) {
