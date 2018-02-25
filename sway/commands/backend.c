@@ -1,6 +1,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/server.h"
+#include "sway/output.h"
 #include "log.h"
 
 static struct cmd_results *backend_cmd_del(int argc, char **argv) {
@@ -46,14 +47,33 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 
 static struct cmd_results *backend_cmd_add_output(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	wlr_log(L_DEBUG, "TODO: backend cmd add_output");
-	return NULL;
+	// TODO allow to name the output
+	sway_subbackend_add_output(&server, backend, NULL);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *backend_cmd_del_output(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	wlr_log(L_DEBUG, "TODO: backend cmd del_output");
-	return NULL;
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "backend", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
+	for (int i = 0; i < root_container.children->length; ++i) {
+		swayc_t *output = root_container.children->items[i];
+		if (output->type != C_OUTPUT) {
+			continue;
+		}
+
+		const char *name = output->sway_output->wlr_output->name;
+
+		if (output->sway_output->wlr_output->backend == backend->backend &&
+				strcmp(argv[0], name) == 0) {
+			wlr_output_destroy(output->sway_output->wlr_output);
+		}
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *backend_cmd_add_input(int argc, char **argv,
@@ -64,7 +84,11 @@ static struct cmd_results *backend_cmd_add_input(int argc, char **argv,
 
 static struct cmd_results *backend_cmd_del_input(int argc, char **argv,
 		struct sway_subbackend *backend) {
-	wlr_log(L_DEBUG, "TODO: backend cmd del_input");
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "backend", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+
 	return NULL;
 }
 
@@ -74,8 +98,8 @@ struct cmd_results *cmd_backend(int argc, char **argv) {
 		return error;
 	}
 
-	int argc_new = argc-1;
-	char **argv_new = argv+1;
+	int argc_new = argc-2;
+	char **argv_new = argv+2;
 
 	if (strcasecmp("add", argv[0]) == 0) {
 		return backend_cmd_add(argc_new, argv_new);

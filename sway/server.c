@@ -52,6 +52,7 @@ bool server_init(struct sway_server *server, bool headless) {
 		struct sway_subbackend *subbackend =
 			sway_subbackend_create(SWAY_SUBBACKEND_HEADLESS, "headless");
 		sway_server_add_subbackend(server, subbackend);
+		sway_subbackend_add_output(server, subbackend, "headless");
 	} else {
 		// TODO add whatever this function creates to the subbackends
 		server->backend = wlr_backend_autocreate(server->wl_display);
@@ -234,6 +235,8 @@ void sway_server_add_subbackend(struct sway_server *server,
 		return;
 	}
 
+	subbackend->backend = backend;
+
 	wl_list_remove(&subbackend->link);
 	wl_list_insert(&server->subbackends, &subbackend->link);
 
@@ -295,7 +298,7 @@ void sway_subbackend_add_output(struct sway_server *server,
 	case SWAY_SUBBACKEND_HEADLESS:
 		// TODO allow to name the output
 		wlr_output =
-			wlr_headless_add_output(subbackend->backend, 500, 500);
+			wlr_headless_add_output(subbackend->backend, 1280, 960);
 		break;
 	}
 
