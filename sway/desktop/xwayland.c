@@ -233,10 +233,9 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	swayc_t *parent = root_container.children->items[0];
-	parent = parent->children->items[0]; // workspace
-
-	swayc_t *cont = new_view(parent, sway_view);
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	swayc_t *cont = new_view(focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
