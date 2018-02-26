@@ -5,6 +5,8 @@
 #include "sway/ipc-json.h"
 #include "sway/container.h"
 #include "sway/output.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
 
@@ -95,11 +97,15 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 		return NULL;
 	}
 
+	struct sway_seat *seat = sway_input_manager_get_default_seat(input_manager);
+	bool focused = sway_seat_get_focus(seat) == c;
+
 	json_object *object = json_object_new_object();
 
 	json_object_object_add(object, "id", json_object_new_int((int)c->id));
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
+	json_object_object_add(object, "focused", json_object_new_boolean(focused));
 
 	switch (c->type) {
 	case C_ROOT:
