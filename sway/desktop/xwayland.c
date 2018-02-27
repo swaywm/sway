@@ -226,7 +226,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.map_notify, &sway_surface->map_notify);
 	sway_surface->map_notify.notify = handle_map_notify;
 
-	if (xsurface->override_redirect) {
+	if (wlr_xwayland_surface_is_unmanaged(xsurface)) {
 		// these don't get a container in the tree
 		wl_list_insert(&root_container.sway_root->unmanaged_views,
 			&sway_view->unmanaged_view_link);
