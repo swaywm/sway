@@ -240,6 +240,57 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	return 0;
 }
 
+static void ipc_send_event(const char *json_string, enum ipc_command_type event) {
+	static struct {
+		enum ipc_command_type event;
+		enum ipc_feature feature;
+	} security_mappings[] = {
+		{ IPC_EVENT_WORKSPACE, IPC_FEATURE_EVENT_WORKSPACE },
+		{ IPC_EVENT_OUTPUT, IPC_FEATURE_EVENT_OUTPUT },
+		{ IPC_EVENT_MODE, IPC_FEATURE_EVENT_MODE },
+		{ IPC_EVENT_WINDOW, IPC_FEATURE_EVENT_WINDOW },
+		{ IPC_EVENT_BINDING, IPC_FEATURE_EVENT_BINDING },
+		{ IPC_EVENT_INPUT, IPC_FEATURE_EVENT_INPUT }
+	};
+
+	uint32_t security_mask = 0;
+	for (size_t i = 0; i < sizeof(security_mappings) / sizeof(security_mappings[0]); ++i) {
+		if (security_mappings[i].event == event) {
+			security_mask = security_mappings[i].feature;
+			break;
+		}
+	}
+
+	int i;
+	struct ipc_client *client;
+	for (i = 0; i < ipc_client_list->length; i++) {
+		client = ipc_client_list->items[i];
+		if (!(client->security_policy & security_mask)) {
+			continue;
+		}
+		if ((client->subscribed_events & event_mask(event)) == 0) {
+			continue;
+		}
+		client->current_command = event;
+		if (!ipc_send_reply(client, json_string, (uint32_t) strlen(json_string))) {
+			wlr_log_errno(L_INFO, "Unable to send reply to IPC client");
+			ipc_client_disconnect(client);
+		}
+	}
+}
+
+void ipc_event_window(swayc_t *window, const char *change) {
+	wlr_log(L_DEBUG, "Sending window::%s event", change);
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string(change));
+	json_object_object_add(obj, "container", ipc_json_describe_container_recursive(window));
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_WINDOW);
+
+	json_object_put(obj); // free
+}
+
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
@@ -358,6 +409,45 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(outputs);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(outputs); // free
+		goto exit_cleanup;
+	}
+
+	case IPC_SUBSCRIBE:
+	{
+		// TODO: Check if they're permitted to use these events
+		struct json_object *request = json_tokener_parse(buf);
+		if (request == NULL) {
+			ipc_send_reply(client, "{\"success\": false}", 18);
+			wlr_log_errno(L_INFO, "Failed to read request");
+			goto exit_cleanup;
+		}
+
+		// parse requested event types
+		for (size_t i = 0; i < json_object_array_length(request); i++) {
+			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
+			if (strcmp(event_type, "workspace") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
+			} else if (strcmp(event_type, "barconfig_update") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
+			} else if (strcmp(event_type, "mode") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_MODE);
+			} else if (strcmp(event_type, "window") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
+			} else if (strcmp(event_type, "modifier") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
+			} else if (strcmp(event_type, "binding") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
+			} else {
+				ipc_send_reply(client, "{\"success\": false}", 18);
+				json_object_put(request);
+				wlr_log_errno(L_INFO, "Failed to parse request");
+				goto exit_cleanup;
+			}
+		}
+
+		json_object_put(request);
+
+		ipc_send_reply(client, "{\"success\": true}", 17);
 		goto exit_cleanup;
 	}
 
