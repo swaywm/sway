@@ -15,6 +15,7 @@
 #include "sway/server.h"
 #include "sway/view.h"
 #include "sway/workspace.h"
+#include "sway/ipc-server.h"
 #include "log.h"
 
 static list_t *bfs_queue;
@@ -30,6 +31,11 @@ static list_t *get_bfs_queue() {
 	bfs_queue->length = 0;
 
 	return bfs_queue;
+}
+
+static void notify_new_container(swayc_t *container) {
+	wl_signal_emit(&root_container.sway_root->events.new_container, container);
+	ipc_event_window(container, "new");
 }
 
 swayc_t *swayc_by_test(swayc_t *container,
@@ -175,7 +181,7 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	}
 
 	free(ws_name);
-	wl_signal_emit(&root_container.sway_root->events.new_container, output);
+	notify_new_container(output);
 	return output;
 }
 
@@ -197,7 +203,7 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 
 	add_child(output, workspace);
 	sort_workspaces(output);
-	wl_signal_emit(&root_container.sway_root->events.new_container, workspace);
+	notify_new_container(workspace);
 	return workspace;
 }
 
@@ -222,7 +228,7 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 		// Regular case, create as sibling of current container
 		add_sibling(sibling, swayc);
 	}
-	wl_signal_emit(&root_container.sway_root->events.new_container, swayc);
+	notify_new_container(swayc);
 	return swayc;
 }
 

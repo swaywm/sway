@@ -115,4 +115,6 @@ void view_set_activated(struct sway_view *view, bool activated);
 
 void view_close(struct sway_view *view);
 
+void view_update_outputs(struct sway_view *view, const struct wlr_box *before);
+
 #endif

@@ -63,7 +63,7 @@ static void render_surface(struct wlr_surface *surface,
 		wlr_matrix_project_box(&matrix, &render_box,
 				surface->current->transform, 0, &wlr_output->transform_matrix);
 		wlr_render_with_matrix(server.renderer, surface->texture,
-			&matrix);
+			&matrix, 1.0f); // TODO: configurable alpha
 
 		wlr_surface_send_frame_done(surface, when);
 	}

@@ -226,17 +226,16 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.map_notify, &sway_surface->map_notify);
 	sway_surface->map_notify.notify = handle_map_notify;
 
-	if (xsurface->override_redirect) {
+	if (wlr_xwayland_surface_is_unmanaged(xsurface)) {
 		// these don't get a container in the tree
 		wl_list_insert(&root_container.sway_root->unmanaged_views,
 			&sway_view->unmanaged_view_link);
 		return;
 	}
 
-	swayc_t *parent = root_container.children->items[0];
-	parent = parent->children->items[0]; // workspace
-
-	swayc_t *cont = new_view(parent, sway_view);
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	swayc_t *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	swayc_t *cont = new_view(focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
