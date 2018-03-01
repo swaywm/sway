@@ -12,16 +12,16 @@
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 
-enum sway_subbackend_type {
-	SWAY_SUBBACKEND_WAYLAND,
-	SWAY_SUBBACKEND_X11,
-	SWAY_SUBBACKEND_DRM,
-	SWAY_SUBBACKEND_HEADLESS,
+enum sway_backend_type {
+	SWAY_BACKEND_WAYLAND,
+	SWAY_BACKEND_X11,
+	SWAY_BACKEND_DRM,
+	SWAY_BACKEND_HEADLESS,
 };
 
-struct sway_subbackend {
+struct sway_backend {
 	char *name;
-	enum sway_subbackend_type type;
+	enum sway_backend_type type;
 	struct wlr_backend *backend;
 
 	struct wl_list outputs;
@@ -29,7 +29,7 @@ struct sway_subbackend {
 
 	struct wl_listener backend_destroy;
 
-	struct wl_list link; // sway_server::subbackends
+	struct wl_list link; // sway_server::backends
 
 };
 
@@ -39,7 +39,7 @@ struct sway_server {
 	const char *socket;
 
 	struct wlr_backend *backend;
-	struct wl_list subbackends; // sway_server_subbackend::link
+	struct wl_list backends; // sway_server_backend::link
 	struct wlr_renderer *renderer;
 
 	struct wlr_compositor *compositor;
@@ -73,23 +73,23 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 void handle_wl_shell_surface(struct wl_listener *listener, void *data);
 
-struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
+struct sway_backend *sway_backend_create(enum sway_backend_type type,
 		char *name);
-void sway_server_add_subbackend(struct sway_server *server,
-		struct sway_subbackend *subbackend);
-void sway_server_remove_subbackend(struct sway_server *server, char *name);
-struct sway_subbackend *sway_server_get_subbackend(struct sway_server *server,
+void sway_server_add_backend(struct sway_server *server,
+		struct sway_backend *backend);
+void sway_server_remove_backend(struct sway_server *server, char *name);
+struct sway_backend *sway_server_get_backend(struct sway_server *server,
 		char *name);
 
-void sway_subbackend_add_output(struct sway_server *server,
-		struct sway_subbackend *subbackend, char *name);
-void sway_subbackend_remove_output(struct sway_server *server,
-		struct sway_subbackend *subbackend, char *name);
+void sway_backend_add_output(struct sway_server *server,
+		struct sway_backend *backend, char *name);
+void sway_backend_remove_output(struct sway_server *server,
+		struct sway_backend *backend, char *name);
 
-void sway_subbackend_add_input(struct sway_server *server,
-		struct sway_subbackend *subbackend, enum wlr_input_device_type type,
+void sway_backend_add_input(struct sway_server *server,
+		struct sway_backend *backend, enum wlr_input_device_type type,
 		char *name);
-void sway_subbackend_remove_input(struct sway_server *server,
-		struct sway_subbackend *subbackend, char *name);
+void sway_backend_remove_input(struct sway_server *server,
+		struct sway_backend *backend, char *name);
 
 #endif

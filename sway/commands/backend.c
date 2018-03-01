@@ -10,7 +10,7 @@ static struct cmd_results *backend_cmd_del(int argc, char **argv) {
 		return error;
 	}
 
-	sway_server_remove_subbackend(&server, argv[0]);
+	sway_server_remove_backend(&server, argv[0]);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
@@ -22,15 +22,15 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 	}
 
 	const char *type_name = argv[0];
-	enum sway_subbackend_type type;
+	enum sway_backend_type type;
 	if (strcasecmp(type_name, "wayland") == 0) {
-		type = SWAY_SUBBACKEND_WAYLAND;
+		type = SWAY_BACKEND_WAYLAND;
 	} else if (strcasecmp(type_name, "x11") == 0) {
-		type = SWAY_SUBBACKEND_X11;
+		type = SWAY_BACKEND_X11;
 	} else if (strcasecmp(type_name, "drm") == 0) {
-		type = SWAY_SUBBACKEND_DRM;
+		type = SWAY_BACKEND_DRM;
 	} else if (strcasecmp(type_name, "headless") == 0) {
-		type = SWAY_SUBBACKEND_HEADLESS;
+		type = SWAY_BACKEND_HEADLESS;
 	} else {
 		error =
 			cmd_results_new(CMD_INVALID,
@@ -38,15 +38,15 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 		return error;
 	}
 
-	struct sway_subbackend *subbackend =
-		sway_subbackend_create(type, NULL);
-	sway_server_add_subbackend(&server, subbackend);
+	struct sway_backend *backend =
+		sway_backend_create(type, NULL);
+	sway_server_add_backend(&server, backend);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *backend_cmd_add_output(int argc, char **argv,
-		struct sway_subbackend *backend) {
+		struct sway_backend *backend) {
 	// TODO allow to name the output
 	char *name = NULL;
 	if (argc > 0) {
@@ -57,31 +57,31 @@ static struct cmd_results *backend_cmd_add_output(int argc, char **argv,
 		}
 	}
 
-	sway_subbackend_add_output(&server, backend, name);
+	sway_backend_add_output(&server, backend, name);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *backend_cmd_del_output(int argc, char **argv,
-		struct sway_subbackend *backend) {
+		struct sway_backend *backend) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "backend", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	sway_subbackend_remove_output(&server, backend, argv[0]);
+	sway_backend_remove_output(&server, backend, argv[0]);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *backend_cmd_add_input(int argc, char **argv,
-		struct sway_subbackend *backend) {
+		struct sway_backend *backend) {
 	return cmd_results_new(CMD_INVALID, "backend <cmd> [args]",
-			"add_output is not implemented");
+			"add_input is not implemented");
 }
 
 static struct cmd_results *backend_cmd_del_input(int argc, char **argv,
-		struct sway_subbackend *backend) {
+		struct sway_backend *backend) {
 	return cmd_results_new(CMD_INVALID, "backend <cmd> [args]",
-			"del_output is not implemented");
+			"del_input is not implemented");
 }
 
 struct cmd_results *cmd_backend(int argc, char **argv) {
@@ -99,22 +99,22 @@ struct cmd_results *cmd_backend(int argc, char **argv) {
 		return backend_cmd_del(argc_new, argv_new);
 	}
 
-	struct sway_subbackend *subbackend =
-		sway_server_get_subbackend(&server, argv[0]);
+	struct sway_backend *backend =
+		sway_server_get_backend(&server, argv[0]);
 
-	if (subbackend == NULL) {
+	if (backend == NULL) {
 		return cmd_results_new(CMD_INVALID, "backend <cmd> [args]",
 				"Cannot find backend: %s", argv[0]);
 	}
 
 	if (strcasecmp("add-output", argv[1]) == 0) {
-		return backend_cmd_add_output(argc_new, argv_new, subbackend);
+		return backend_cmd_add_output(argc_new, argv_new, backend);
 	} else if (strcasecmp("del-output", argv[1]) == 0) {
-		return backend_cmd_del_output(argc_new, argv_new, subbackend);
+		return backend_cmd_del_output(argc_new, argv_new, backend);
 	} else if (strcasecmp("add-input", argv[1]) == 0) {
-		return backend_cmd_add_input(argc_new, argv_new, subbackend);
+		return backend_cmd_add_input(argc_new, argv_new, backend);
 	} else if (strcasecmp("del-input", argv[1]) == 0) {
-		return backend_cmd_del_input(argc_new, argv_new, subbackend);
+		return backend_cmd_del_input(argc_new, argv_new, backend);
 	}
 
 	return cmd_results_new(CMD_INVALID, "backend <cmd> [args]", "Unknown command %s", argv[1]);

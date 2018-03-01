@@ -48,16 +48,16 @@ bool server_init(struct sway_server *server, bool headless) {
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 
-	wl_list_init(&server->subbackends);
+	wl_list_init(&server->backends);
 
 	if (headless) {
 		server->backend = wlr_multi_backend_create(server->wl_display);
-		struct sway_subbackend *subbackend =
-			sway_subbackend_create(SWAY_SUBBACKEND_HEADLESS, "headless");
-		sway_server_add_subbackend(server, subbackend);
-		sway_subbackend_add_output(server, subbackend, "headless");
+		struct sway_backend *backend =
+			sway_backend_create(SWAY_BACKEND_HEADLESS, "headless");
+		sway_server_add_backend(server, backend);
+		sway_backend_add_output(server, backend, "headless");
 	} else {
-		// TODO add whatever this function creates to the subbackends
+		// TODO add whatever this function creates to the backends
 		server->backend = wlr_backend_autocreate(server->wl_display);
 	}
 
@@ -125,33 +125,33 @@ void server_run(struct sway_server *server) {
 	wl_display_run(server->wl_display);
 }
 
-static void sway_subbackend_destroy(struct sway_subbackend *subbackend) {
-	if (subbackend->backend) {
-		wl_list_remove(&subbackend->backend_destroy.link);
+static void sway_backend_destroy(struct sway_backend *backend) {
+	if (backend->backend) {
+		wl_list_remove(&backend->backend_destroy.link);
 	}
-	wl_list_remove(&subbackend->link);
+	wl_list_remove(&backend->link);
 	// free(name)?
-	free(subbackend);
+	free(backend);
 }
 
-struct sway_subbackend *sway_server_get_subbackend(struct sway_server *server,
+struct sway_backend *sway_server_get_backend(struct sway_server *server,
 		char *name) {
-	struct sway_subbackend *subbackend = NULL;
-	wl_list_for_each(subbackend, &server->subbackends, link) {
-		if (strcasecmp(subbackend->name, name) == 0) {
-			return subbackend;
+	struct sway_backend *backend = NULL;
+	wl_list_for_each(backend, &server->backends, link) {
+		if (strcasecmp(backend->name, name) == 0) {
+			return backend;
 		}
 	}
 
 	return NULL;
 }
 
-struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
+struct sway_backend *sway_backend_create(enum sway_backend_type type,
 		char *name) {
-	struct sway_subbackend *subbackend =
-		calloc(1, sizeof(struct sway_subbackend));
-	if (subbackend == NULL) {
-		wlr_log(L_ERROR, "could not allocate subbackend");
+	struct sway_backend *backend =
+		calloc(1, sizeof(struct sway_backend));
+	if (backend == NULL) {
+		wlr_log(L_ERROR, "could not allocate backend");
 		return NULL;
 	}
 
@@ -160,22 +160,22 @@ struct sway_subbackend *sway_subbackend_create(enum sway_subbackend_type type,
 		// type is and how many other backends are configured of that type
 		// (<type>-<num>).
 	} else {
-		subbackend->name = name;
+		backend->name = name;
 	}
 
-	subbackend->type = type;
-	wl_list_init(&subbackend->outputs);
-	wl_list_init(&subbackend->inputs);
-	wl_list_init(&subbackend->link);
+	backend->type = type;
+	wl_list_init(&backend->outputs);
+	wl_list_init(&backend->inputs);
+	wl_list_init(&backend->link);
 
-	return subbackend;
+	return backend;
 }
 
-static void handle_subbackend_backend_destroy(struct wl_listener *listener,
+static void handle_backend_backend_destroy(struct wl_listener *listener,
 		void *data) {
-	struct sway_subbackend *subbackend =
-		wl_container_of(listener, subbackend, backend_destroy);
-	sway_subbackend_destroy(subbackend);
+	struct sway_backend *backend =
+		wl_container_of(listener, backend, backend_destroy);
+	sway_backend_destroy(backend);
 }
 
 static struct wlr_backend *wayland_backend_create(struct sway_server *server) {
@@ -206,114 +206,114 @@ static struct wlr_backend *drm_backend_create(struct sway_server *server) {
 	return NULL;
 }
 
-void sway_server_add_subbackend(struct sway_server *server,
-		struct sway_subbackend *subbackend) {
-	if (sway_server_get_subbackend(server, subbackend->name)) {
-		wlr_log(L_ERROR, "cannot add subbackend '%s': already exists",
-			subbackend->name);
-		sway_subbackend_destroy(subbackend);
+void sway_server_add_backend(struct sway_server *server,
+		struct sway_backend *backend) {
+	if (sway_server_get_backend(server, backend->name)) {
+		wlr_log(L_ERROR, "cannot add backend '%s': already exists",
+			backend->name);
+		sway_backend_destroy(backend);
 		return;
 	}
 
-	struct wlr_backend *backend = NULL;
+	struct wlr_backend *wlr_backend = NULL;
 
-	switch (subbackend->type) {
-	case SWAY_SUBBACKEND_WAYLAND:
-		backend = wayland_backend_create(server);
+	switch (backend->type) {
+	case SWAY_BACKEND_WAYLAND:
+		wlr_backend = wayland_backend_create(server);
 		break;
-	case SWAY_SUBBACKEND_X11:
-		backend = x11_backend_create(server);
+	case SWAY_BACKEND_X11:
+		wlr_backend = x11_backend_create(server);
 		break;
-	case SWAY_SUBBACKEND_DRM:
-		backend = drm_backend_create(server);
+	case SWAY_BACKEND_DRM:
+		wlr_backend = drm_backend_create(server);
 		break;
-	case SWAY_SUBBACKEND_HEADLESS:
-		backend = headless_backend_create(server);
+	case SWAY_BACKEND_HEADLESS:
+		wlr_backend = headless_backend_create(server);
 		break;
 	}
 
 	if (backend == NULL) {
-		wlr_log(L_ERROR, "could not create subbackend '%s'", subbackend->name);
-		sway_subbackend_destroy(subbackend);
+		wlr_log(L_ERROR, "could not create backend '%s'", backend->name);
+		sway_backend_destroy(backend);
 		return;
 	}
 
-	subbackend->backend = backend;
+	backend->backend = wlr_backend;
 
-	wl_list_remove(&subbackend->link);
-	wl_list_insert(&server->subbackends, &subbackend->link);
+	wl_list_remove(&backend->link);
+	wl_list_insert(&server->backends, &backend->link);
 
-	wl_signal_add(&backend->events.destroy, &subbackend->backend_destroy);
-	subbackend->backend_destroy.notify = handle_subbackend_backend_destroy;
+	wl_signal_add(&wlr_backend->events.destroy, &backend->backend_destroy);
+	backend->backend_destroy.notify = handle_backend_backend_destroy;
 
-	wlr_multi_backend_add(server->backend, backend);
-	wlr_backend_start(backend);
+	wlr_multi_backend_add(server->backend, wlr_backend);
+	wlr_backend_start(wlr_backend);
 }
 
-void sway_server_remove_subbackend(struct sway_server *server, char *name) {
-	struct sway_subbackend *subbackend =
-		sway_server_get_subbackend(server, name);
+void sway_server_remove_backend(struct sway_server *server, char *name) {
+	struct sway_backend *backend =
+		sway_server_get_backend(server, name);
 
-	if (!subbackend) {
-		wlr_log(L_DEBUG, "could not find subbackend named '%s'", name);
+	if (!backend) {
+		wlr_log(L_DEBUG, "could not find backend named '%s'", name);
 		return;
 	}
 
-	wlr_backend_destroy(subbackend->backend);
+	wlr_backend_destroy(backend->backend);
 }
 
-struct subbackend_output {
-	struct sway_subbackend *backend;
+struct backend_output {
+	struct sway_backend *backend;
 	struct wlr_output *wlr_output;
 
 	struct wl_listener output_destroy;
 
-	struct wl_list link; // sway_subbackend::outputs
+	struct wl_list link; // sway_backend::outputs
 };
 
-static void subbackend_output_destroy(struct subbackend_output *output) {
+static void backend_output_destroy(struct backend_output *output) {
 	wl_list_remove(&output->link);
 	wl_list_remove(&output->output_destroy.link);
 	free(output);
 }
 
-static void handle_subbackend_output_destroy(struct wl_listener *listener,
+static void handle_backend_output_destroy(struct wl_listener *listener,
 		void *data) {
-	struct subbackend_output *output =
+	struct backend_output *output =
 		wl_container_of(listener, output, output_destroy);
-	subbackend_output_destroy(output);
+	backend_output_destroy(output);
 }
 
-void sway_subbackend_add_output(struct sway_server *server,
-		struct sway_subbackend *subbackend, char *name) {
+void sway_backend_add_output(struct sway_server *server,
+		struct sway_backend *backend, char *name) {
 	struct wlr_output *wlr_output = NULL;
 
-	switch(subbackend->type) {
-	case SWAY_SUBBACKEND_WAYLAND:
-		wlr_log(L_DEBUG, "TODO: create wayland subbackend output");
+	switch(backend->type) {
+	case SWAY_BACKEND_WAYLAND:
+		wlr_log(L_DEBUG, "TODO: create wayland backend output");
 		break;
-	case SWAY_SUBBACKEND_X11:
-		wlr_log(L_DEBUG, "TODO: create x11 subbackend output");
+	case SWAY_BACKEND_X11:
+		wlr_log(L_DEBUG, "TODO: create x11 backend output");
 		break;
-	case SWAY_SUBBACKEND_DRM:
-		wlr_log(L_DEBUG, "creating DRM subbackend outputs is not supported");
+	case SWAY_BACKEND_DRM:
+		wlr_log(L_DEBUG, "creating DRM backend outputs is not supported");
 		break;
-	case SWAY_SUBBACKEND_HEADLESS:
+	case SWAY_BACKEND_HEADLESS:
 		wlr_output =
-			wlr_headless_add_output(subbackend->backend, 1280, 960);
+			wlr_headless_add_output(backend->backend, 1280, 960);
 		break;
 	}
 
 	if (wlr_output == NULL) {
-		wlr_log(L_ERROR, "could not create subbackend output '%s'", name);
+		wlr_log(L_ERROR, "could not create backend output '%s'", name);
 		return;
 	}
 
-	struct subbackend_output *output =
-		calloc(1, sizeof(struct subbackend_output));
+	struct backend_output *output =
+		calloc(1, sizeof(struct backend_output));
 	if (output == NULL) {
 		wlr_output_destroy(wlr_output);
-		wlr_log(L_ERROR, "could not allocate subbackend output");
+		wlr_log(L_ERROR, "could not allocate backend output");
 		return;
 	}
 
@@ -334,77 +334,77 @@ void sway_subbackend_add_output(struct sway_server *server,
 	output->wlr_output = wlr_output;
 
 	wl_signal_add(&wlr_output->events.destroy, &output->output_destroy);
-	output->output_destroy.notify = handle_subbackend_output_destroy;
+	output->output_destroy.notify = handle_backend_output_destroy;
 
-	wl_list_insert(&subbackend->outputs, &output->link);
+	wl_list_insert(&backend->outputs, &output->link);
 }
 
-void sway_subbackend_remove_output(struct sway_server *server,
-		struct sway_subbackend *subbackend, char *name) {
-	struct subbackend_output *output = NULL, *tmp = NULL;
-	wl_list_for_each_safe(output, tmp, &subbackend->outputs, link) {
+void sway_backend_remove_output(struct sway_server *server,
+		struct sway_backend *backend, char *name) {
+	struct backend_output *output = NULL, *tmp = NULL;
+	wl_list_for_each_safe(output, tmp, &backend->outputs, link) {
 		if (strcasecmp(output->wlr_output->name, name) == 0) {
 			wlr_output_destroy(output->wlr_output);
 		}
 	}
 }
 
-struct subbackend_input {
-	struct sway_subbackend *backend;
+struct backend_input {
+	struct sway_backend *backend;
 	struct wlr_input_device *device;
 
 	struct wl_listener input_destroy;
 
-	struct wl_list link; // sway_subbackend::inputs
+	struct wl_list link; // sway_backend::inputs
 };
 
-static void subbackend_input_destroy(struct subbackend_input *input) {
+static void backend_input_destroy(struct backend_input *input) {
 	wl_list_remove(&input->link);
 	wl_list_remove(&input->input_destroy.link);
 	free(input);
 }
 
-static void handle_subbackend_device_destroy(struct wl_listener *listener,
+static void handle_backend_device_destroy(struct wl_listener *listener,
 		void *data) {
-	struct subbackend_input *input =
+	struct backend_input *input =
 		wl_container_of(listener, input, input_destroy);
-	subbackend_input_destroy(input);
+	backend_input_destroy(input);
 }
 
-void sway_subbackend_add_input(struct sway_server *server,
-		struct sway_subbackend *subbackend, enum wlr_input_device_type type,
+void sway_backend_add_input(struct sway_server *server,
+		struct sway_backend *backend, enum wlr_input_device_type type,
 		char *name) {
-	if (subbackend->type != SWAY_SUBBACKEND_HEADLESS) {
+	if (backend->type != SWAY_BACKEND_HEADLESS) {
 		wlr_log(L_DEBUG, "adding inputs is only supported for the headless backend");
 		return;
 	}
 
 	// TODO allow naming the input device
 	struct wlr_input_device *device =
-		wlr_headless_add_input_device(subbackend->backend, type);
+		wlr_headless_add_input_device(backend->backend, type);
 	if (device == NULL) {
 		return;
 	}
 
-	struct subbackend_input *input =
-		calloc(1, sizeof(struct subbackend_input));
+	struct backend_input *input =
+		calloc(1, sizeof(struct backend_input));
 	if (input == NULL) {
-		wlr_log(L_ERROR, "could not allocate subbackend input device");
+		wlr_log(L_ERROR, "could not allocate backend input device");
 		return;
 	}
 
 	input->device = device;
 
 	wl_signal_add(&device->events.destroy, &input->input_destroy);
-	input->input_destroy.notify = handle_subbackend_device_destroy;
+	input->input_destroy.notify = handle_backend_device_destroy;
 
-	wl_list_insert(&subbackend->inputs, &input->link);
+	wl_list_insert(&backend->inputs, &input->link);
 }
 
-void sway_subbackend_remove_input(struct sway_server *server,
-		struct sway_subbackend *subbackend, char *name) {
-	struct subbackend_input *input = NULL, *tmp = NULL;
-	wl_list_for_each_safe(input, tmp, &subbackend->inputs, link) {
+void sway_backend_remove_input(struct sway_server *server,
+		struct sway_backend *backend, char *name) {
+	struct backend_input *input = NULL, *tmp = NULL;
+	wl_list_for_each_safe(input, tmp, &backend->inputs, link) {
 		if (strcasecmp(input->device->name, name) == 0) {
 			wlr_input_device_destroy(input->device);
 		}
