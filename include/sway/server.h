@@ -74,22 +74,22 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data);
 void handle_wl_shell_surface(struct wl_listener *listener, void *data);
 
 struct sway_backend *sway_backend_create(enum sway_backend_type type,
-		char *name);
+		const char *name);
 void sway_server_add_backend(struct sway_server *server,
 		struct sway_backend *backend);
-void sway_server_remove_backend(struct sway_server *server, char *name);
+void sway_server_remove_backend(struct sway_server *server, const char *name);
 struct sway_backend *sway_server_get_backend(struct sway_server *server,
-		char *name);
+		const char *name);
 
 void sway_backend_add_output(struct sway_server *server,
-		struct sway_backend *backend, char *name);
+		struct sway_backend *backend, const char *name);
 void sway_backend_remove_output(struct sway_server *server,
-		struct sway_backend *backend, char *name);
+		struct sway_backend *backend, const char *name);
 
 void sway_backend_add_input(struct sway_server *server,
 		struct sway_backend *backend, enum wlr_input_device_type type,
-		char *name);
+		const char *name);
 void sway_backend_remove_input(struct sway_server *server,
-		struct sway_backend *backend, char *name);
+		struct sway_backend *backend, const char *name);
 
 #endif

@@ -130,12 +130,12 @@ static void sway_backend_destroy(struct sway_backend *backend) {
 		wl_list_remove(&backend->backend_destroy.link);
 	}
 	wl_list_remove(&backend->link);
-	// free(name)?
+	free(backend->name);
 	free(backend);
 }
 
 struct sway_backend *sway_server_get_backend(struct sway_server *server,
-		char *name) {
+		const char *name) {
 	struct sway_backend *backend = NULL;
 	wl_list_for_each(backend, &server->backends, link) {
 		if (strcasecmp(backend->name, name) == 0) {
@@ -147,7 +147,7 @@ struct sway_backend *sway_server_get_backend(struct sway_server *server,
 }
 
 struct sway_backend *sway_backend_create(enum sway_backend_type type,
-		char *name) {
+		const char *name) {
 	struct sway_backend *backend =
 		calloc(1, sizeof(struct sway_backend));
 	if (backend == NULL) {
@@ -160,7 +160,7 @@ struct sway_backend *sway_backend_create(enum sway_backend_type type,
 		// type is and how many other backends are configured of that type
 		// (<type>-<num>).
 	} else {
-		backend->name = name;
+		backend->name = strdup(name);
 	}
 
 	backend->type = type;
@@ -250,7 +250,7 @@ void sway_server_add_backend(struct sway_server *server,
 	wlr_backend_start(wlr_backend);
 }
 
-void sway_server_remove_backend(struct sway_server *server, char *name) {
+void sway_server_remove_backend(struct sway_server *server, const char *name) {
 	struct sway_backend *backend =
 		sway_server_get_backend(server, name);
 
@@ -285,7 +285,7 @@ static void handle_backend_output_destroy(struct wl_listener *listener,
 }
 
 void sway_backend_add_output(struct sway_server *server,
-		struct sway_backend *backend, char *name) {
+		struct sway_backend *backend, const char *name) {
 	struct wlr_output *wlr_output = NULL;
 
 	switch(backend->type) {
@@ -340,7 +340,7 @@ void sway_backend_add_output(struct sway_server *server,
 }
 
 void sway_backend_remove_output(struct sway_server *server,
-		struct sway_backend *backend, char *name) {
+		struct sway_backend *backend, const char *name) {
 	struct backend_output *output = NULL, *tmp = NULL;
 	wl_list_for_each_safe(output, tmp, &backend->outputs, link) {
 		if (strcasecmp(output->wlr_output->name, name) == 0) {
@@ -373,7 +373,7 @@ static void handle_backend_device_destroy(struct wl_listener *listener,
 
 void sway_backend_add_input(struct sway_server *server,
 		struct sway_backend *backend, enum wlr_input_device_type type,
-		char *name) {
+		const char *name) {
 	if (backend->type != SWAY_BACKEND_HEADLESS) {
 		wlr_log(L_DEBUG, "adding inputs is only supported for the headless backend");
 		return;
@@ -402,7 +402,7 @@ void sway_backend_add_input(struct sway_server *server,
 }
 
 void sway_backend_remove_input(struct sway_server *server,
-		struct sway_backend *backend, char *name) {
+		struct sway_backend *backend, const char *name) {
 	struct backend_input *input = NULL, *tmp = NULL;
 	wl_list_for_each_safe(input, tmp, &backend->inputs, link) {
 		if (strcasecmp(input->device->name, name) == 0) {
