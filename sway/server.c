@@ -146,6 +146,8 @@ struct sway_backend *sway_server_get_backend(struct sway_server *server,
 	return NULL;
 }
 
+static int backend_count = 0;
+
 struct sway_backend *sway_backend_create(enum sway_backend_type type,
 		const char *name) {
 	struct sway_backend *backend =
@@ -159,6 +161,9 @@ struct sway_backend *sway_backend_create(enum sway_backend_type type,
 		// TODO: figure out what to call the backend based on what the backend
 		// type is and how many other backends are configured of that type
 		// (<type>-<num>).
+		char new_name[256];
+		snprintf(new_name, sizeof(new_name), "backend-%d", ++backend_count);
+		backend->name = strdup(new_name);
 	} else {
 		backend->name = strdup(name);
 	}
@@ -232,7 +237,7 @@ void sway_server_add_backend(struct sway_server *server,
 		break;
 	}
 
-	if (backend == NULL) {
+	if (wlr_backend == NULL) {
 		wlr_log(L_ERROR, "could not create backend '%s'", backend->name);
 		sway_backend_destroy(backend);
 		return;

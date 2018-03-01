@@ -21,6 +21,11 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 		return error;
 	}
 
+	const char *name = NULL;
+	if (argc > 1) {
+		name = argv[1];
+	}
+
 	const char *type_name = argv[0];
 	enum sway_backend_type type;
 	if (strcasecmp(type_name, "wayland") == 0) {
@@ -39,7 +44,7 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 	}
 
 	struct sway_backend *backend =
-		sway_backend_create(type, NULL);
+		sway_backend_create(type, name);
 	sway_server_add_backend(&server, backend);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -47,7 +52,6 @@ static struct cmd_results *backend_cmd_add(int argc, char **argv) {
 
 static struct cmd_results *backend_cmd_add_output(int argc, char **argv,
 		struct sway_backend *backend) {
-	// TODO allow to name the output
 	char *name = NULL;
 	if (argc > 0) {
 		name = argv[0];
@@ -90,8 +94,8 @@ struct cmd_results *cmd_backend(int argc, char **argv) {
 		return error;
 	}
 
-	int argc_new = argc-2;
-	char **argv_new = argv+2;
+	int argc_new = argc-1;
+	char **argv_new = argv+1;
 
 	if (strcasecmp("add", argv[0]) == 0) {
 		return backend_cmd_add(argc_new, argv_new);
@@ -106,6 +110,9 @@ struct cmd_results *cmd_backend(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "backend <cmd> [args]",
 				"Cannot find backend: %s", argv[0]);
 	}
+
+	--argc_new;
+	++argv_new;
 
 	if (strcasecmp("add-output", argv[1]) == 0) {
 		return backend_cmd_add_output(argc_new, argv_new, backend);
