@@ -67,6 +67,10 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 	view->swayc->x = ox;
 	view->swayc->y = oy;
 
+	if (view->width == 0 || view->height == 0) {
+		return;
+	}
+
 	wlr_xwayland_surface_configure(view->wlr_xwayland_surface,
 		ox + loutput->x, oy + loutput->y,
 		view->width, view->height);
