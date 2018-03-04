@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "**S**irCmpwn's **Way**land compositor"は**開発中**の
 i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。

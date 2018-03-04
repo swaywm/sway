@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Doe através do fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "**S**irCmpwn's **Way**land compositor" é um compositor [Wayland](http://wayland.freedesktop.org/)
 compatível com o i3. Leia o [FAQ](https://github.com/swaywm/sway/wiki). Participe do
