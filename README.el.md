@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "Ο Sway (**S**irCmpwn's **Way**land) είναι ένας **υπό ανάπτυξη** [Wayland](http://wayland.freedesktop.org/) διαχειριστής παραθύρων συμβατός με τον αντίστοιχο διαχειριστή παραθύρων i3 για τον X11.
 Διαβάστε τις [Συνήθεις Ερωτήσεις](https://github.com/swaywm/sway/wiki). Συνδεθείτε στο [κανάλι μας στο IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway στο
