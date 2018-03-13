@@ -125,13 +125,16 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(rect, "y", &y);
 	json_object_object_get_ex(rect, "width", &width);
 	json_object_object_get_ex(rect, "height", &height);
+	json_object *modes;
+	json_object_object_get_ex(o, "modes", &modes);
+
 	printf(
 		"Output %s '%s %s %s'%s%s\n"
-		"  Mode: %dx%d @ %f Hz\n"
+		"  Current mode: %dx%d @ %f Hz\n"
 		"  Position: %d,%d\n"
 		"  Scale factor: %dx\n"
 		"  Transform: %s\n"
-		"  Workspace: %s\n\n",
+		"  Workspace: %s\n",
 		json_object_get_string(name),
 		json_object_get_string(make),
 		json_object_get_string(model),
@@ -145,6 +148,25 @@ static void pretty_print_output(json_object *o) {
 		json_object_get_string(transform),
 		json_object_get_string(ws)
 	);
+
+	size_t modes_len = json_object_array_length(modes);
+	if (modes_len > 0) {
+		printf("  Available modes:\n");
+		for (size_t i = 0; i < modes_len; ++i) {
+			json_object *mode = json_object_array_get_idx(modes, i);
+
+			json_object *mode_width, *mode_height, *mode_refresh;
+			json_object_object_get_ex(mode, "width", &mode_width);
+			json_object_object_get_ex(mode, "height", &mode_height);
+			json_object_object_get_ex(mode, "refresh", &mode_refresh);
+
+			printf("    %dx%d @ %f Hz\n", json_object_get_int(mode_width),
+				json_object_get_int(mode_height),
+				(float)json_object_get_int(mode_refresh) / 1000);
+		}
+	}
+
+	printf("\n");
 }
 
 static void pretty_print_version(json_object *v) {
