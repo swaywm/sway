@@ -3,19 +3,19 @@
 #include <stdlib.h>
 #include <time.h>
 #include <wayland-server.h>
+#include <wlr/render.h>
+#include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_wl_shell.h>
-#include <wlr/render.h>
-#include <wlr/render/matrix.h>
 #include "log.h"
 #include "sway/container.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/view.h"
-#include "sway/input/input-manager.h"
-#include "sway/input/seat.h"
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
@@ -59,11 +59,11 @@ static void render_surface(struct wlr_surface *surface,
 			.x = lx, .y = ly,
 			.width = render_width, .height = render_height
 		};
-		float matrix[16];
-		wlr_matrix_project_box(&matrix, &render_box,
-				surface->current->transform, 0, &wlr_output->transform_matrix);
-		wlr_render_with_matrix(server.renderer, surface->texture,
-			&matrix, 1.0f); // TODO: configurable alpha
+		float matrix[9];
+		wlr_matrix_project_box(matrix, &render_box, surface->current->transform,
+			0, wlr_output->transform_matrix);
+		wlr_render_texture_with_matrix(server.renderer, surface->texture,
+			matrix, 1.0f); // TODO: configurable alpha
 
 		wlr_surface_send_frame_done(surface, when);
 	}
@@ -183,7 +183,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_server *server = soutput->server;
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
-	wlr_renderer_clear(renderer, &clear_color);
+	wlr_renderer_clear(renderer, clear_color);
 
 	int buffer_age = -1;
 	wlr_output_make_current(wlr_output, &buffer_age);
