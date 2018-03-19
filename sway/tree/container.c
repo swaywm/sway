@@ -325,8 +325,8 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 				case SWAY_XDG_SHELL_V6_VIEW:
 					// the top left corner of the sway container is the
 					// coordinate of the top left corner of the window geometry
-					view_sx += sview->wlr_xdg_surface_v6->geometry->x;
-					view_sy += sview->wlr_xdg_surface_v6->geometry->y;
+					view_sx += sview->wlr_xdg_surface_v6->geometry.x;
+					view_sy += sview->wlr_xdg_surface_v6->geometry.y;
 
 					// check for popups
 					double popup_sx, popup_sy;

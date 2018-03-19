@@ -7,7 +7,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
-#include <wlr/render.h>
+#include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <wayland-server.h>
-#include <wlr/render.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_surface.h>
@@ -152,8 +152,8 @@ static void output_frame_view(swayc_t *view, void *data) {
 
 	switch (sway_view->type) {
 	case SWAY_XDG_SHELL_V6_VIEW: {
-		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry->x;
-		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry->y;
+		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry.x;
+		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry.y;
 		render_surface(surface, wlr_output, &output->last_frame,
 			view->x - window_offset_x,
 			view->y - window_offset_y,
