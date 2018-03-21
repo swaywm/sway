@@ -16,10 +16,6 @@ article](https://drewdevault.com/2017/10/09/Future-of-sway.html). To follow
 wlroots integration status, [see this
 ticket](https://github.com/swaywm/sway/issues/1390).
 
-**2018-02-18**: We are fundraising for a hackathon to complete the work
-integrating wlroots and Sway! Please [consider
-contributing](https://www.indiegogo.com/projects/sway-hackathon-software/x/1059863).
-
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 If you'd like to support Sway development, you can contribute to [SirCmpwn's
