@@ -10,7 +10,7 @@ Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the
 irc.freenode.net).
 
 **Notice**: Sway is currently *frozen* and no new features are being shipped
-until we finish integrating Sway and  wlroots. Bug fixes are still going out.
+until we finish integrating Sway and wlroots. Bug fixes are still going out.
 for more information, [see this
 article](https://drewdevault.com/2017/10/09/Future-of-sway.html). To follow
 wlroots integration status, [see this
