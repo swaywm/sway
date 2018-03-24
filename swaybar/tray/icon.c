@@ -28,7 +28,7 @@
 /* Finds all themes that the given theme inherits */
 static list_t *find_inherits(const char *theme_dir) {
 	const char inherits[] = "Inherits";
-	const char index_name[] = "index.theme";
+	const char index_name[] = "/index.theme";
 	list_t *themes = create_list();
 	FILE *index = NULL;
 	char *path = malloc(strlen(theme_dir) + sizeof(index_name));
@@ -253,6 +253,10 @@ static list_t* find_theme_subdirs(const char *theme_dir) {
 		}
 		if (strncmp(directories, buf, sizeof(directories) - 1) == 0) {
 			char *dirstr = buf + sizeof(directories);
+			int len = strlen(dirstr);
+			if (dirstr[len-1] == '\n') {
+				dirstr[len-1] = '\0';
+			}
 			dirs = split_subdirs(dirstr);
 			break;
 		}
