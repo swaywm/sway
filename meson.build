@@ -85,9 +85,11 @@ add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
 sway_inc = include_directories('include')
 
+subdir('protocols')
 subdir('common')
 subdir('sway')
 subdir('swaymsg')
+subdir('swaybg')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))
