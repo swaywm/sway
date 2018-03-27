@@ -187,7 +187,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 
 	int buffer_age = -1;
 	wlr_output_make_current(wlr_output, &buffer_age);
-	wlr_renderer_begin(server->renderer, wlr_output);
+	wlr_renderer_begin(server->renderer, wlr_output->width, wlr_output->height);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	swayc_t *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);

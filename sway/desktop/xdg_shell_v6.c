@@ -63,7 +63,7 @@ static void close(struct sway_view *view) {
 	}
 	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
 	if (surface->role == WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL) {
-		wlr_xdg_toplevel_v6_send_close(surface);
+		wlr_xdg_surface_v6_send_close(surface);
 	}
 }
 
