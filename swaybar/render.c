@@ -61,6 +61,13 @@ static void render_block(struct window *window, struct config *config, struct st
 	int textwidth = width;
 	double block_width = width;
 
+	if (block->min_width_str) {
+		int w, h;
+		get_text_size(window->cairo, window->font, &w, &h,
+				window->scale, block->markup, "%s", block->min_width_str);
+		block->min_width = w;
+	}
+
 	if (width < block->min_width) {
 		width = block->min_width;
 	}

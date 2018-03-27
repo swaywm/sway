@@ -121,7 +121,7 @@ static void parse_json(struct bar *bar, const char *text) {
 				new->min_width = json_object_get_int(min_width);
 			} else if (type == json_type_string) {
 				/* the width will be calculated when rendering */
-				new->min_width = 0;
+				new->min_width_str = strdup(json_object_get_string(min_width));
 			}
 		}
 
