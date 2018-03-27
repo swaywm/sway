@@ -13,7 +13,7 @@
 static int create_pool_file(size_t size, char **name) {
 	static const char template[] = "sway-client-XXXXXX";
 	const char *path = getenv("XDG_RUNTIME_DIR");
-		if (!path) {
+	if (!path) {
 		return -1;
 	}
 
