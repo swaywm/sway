@@ -123,12 +123,12 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_view->sway_xdg_surface_v6 = sway_surface;
 	sway_view->surface = xdg_surface->surface;
 	sway_surface->view = sway_view;
-	
+
 	// TODO:
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
-	
+
 	sway_surface->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit, &sway_surface->commit);
 
