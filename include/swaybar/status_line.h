@@ -17,7 +17,7 @@ struct status_line {
 };
 
 struct status_block {
-	char *full_text, *short_text, *align;
+	char *full_text, *short_text, *align, *min_width_str;
 	bool urgent;
 	uint32_t color;
 	int min_width;
