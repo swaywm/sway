@@ -26,8 +26,14 @@ struct swaybg_args {
 	enum scaling_mode mode;
 };
 
+struct swaybg_context {
+	uint32_t color;
+	cairo_surface_t *image;
+};
+
 struct swaybg_state {
 	const struct swaybg_args *args;
+	struct swaybg_context context;
 
 	struct wl_display *display;
 	struct wl_compositor *compositor;
@@ -62,6 +68,71 @@ bool is_valid_color(const char *color) {
 	return true;
 }
 
+static void render_image(struct swaybg_state *state) {
+	cairo_t *cairo = state->current_buffer->cairo;
+	cairo_surface_t *image = state->context.image;
+	double width = cairo_image_surface_get_width(image);
+	double height = cairo_image_surface_get_height(image);
+	int wwidth = state->width;
+	int wheight = state->height;
+
+	switch (state->args->mode) {
+	case SCALING_MODE_STRETCH:
+		cairo_scale(cairo, (double)wwidth / width, (double)wheight / height);
+		cairo_set_source_surface(cairo, image, 0, 0);
+		break;
+	case SCALING_MODE_FILL: {
+		double window_ratio = (double)wwidth / wheight;
+		double bg_ratio = width / height;
+
+		if (window_ratio > bg_ratio) {
+			double scale = (double)wwidth / width;
+			cairo_scale(cairo, scale, scale);
+			cairo_set_source_surface(cairo, image,
+					0, (double)wheight / 2 / scale - height / 2);
+		} else {
+			double scale = (double)wheight / height;
+			cairo_scale(cairo, scale, scale);
+			cairo_set_source_surface(cairo, image,
+					(double)wwidth / 2 / scale - width / 2, 0);
+		}
+		break;
+	}
+	case SCALING_MODE_FIT: {
+		double window_ratio = (double)wwidth / wheight;
+		double bg_ratio = width / height;
+
+		if (window_ratio > bg_ratio) {
+			double scale = (double)wheight / height;
+			cairo_scale(cairo, scale, scale);
+			cairo_set_source_surface(cairo, image,
+					(double)wwidth / 2 / scale - width / 2, 0);
+		} else {
+			double scale = (double)wwidth / width;
+			cairo_scale(cairo, scale, scale);
+			cairo_set_source_surface(cairo, image,
+					0, (double)wheight / 2 / scale - height / 2);
+		}
+		break;
+	}
+	case SCALING_MODE_CENTER:
+		cairo_set_source_surface(cairo, image,
+				(double)wwidth / 2 - width / 2,
+				(double)wheight / 2 - height / 2);
+		break;
+	case SCALING_MODE_TILE: {
+		cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
+		cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
+		cairo_set_source(cairo, pattern);
+		break;
+	}
+	case SCALING_MODE_SOLID_COLOR:
+		// Should never happen
+		break;
+	}
+	cairo_paint(cairo);
+}
+
 static void render_frame(struct swaybg_state *state) {
 	if (!state->run_display) {
 		return;
@@ -73,17 +144,52 @@ static void render_frame(struct swaybg_state *state) {
 
 	switch (state->args->mode) {
 	case SCALING_MODE_SOLID_COLOR:
-		cairo_set_source_u32(cairo, parse_color(state->args->path));
+		cairo_set_source_u32(cairo, state->context.color);
 		cairo_paint(cairo);
 		break;
 	default:
-		exit(1);
+		render_image(state);
 		break;
 	}
 
 	wl_surface_attach(state->surface, state->current_buffer->buffer, 0, 0);
 	wl_surface_damage(state->surface, 0, 0, state->width, state->height);
 	wl_surface_commit(state->surface);
+}
+
+static bool prepare_context(struct swaybg_state *state) {
+	if (state->args->mode == SCALING_MODE_SOLID_COLOR) {
+		state->context.color = parse_color(state->args->path);
+		return is_valid_color(state->args->path);
+	}
+#ifdef WITH_GDK_PIXBUF
+	GError *err = NULL;
+	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(state->args->path, &err);
+	if (!pixbuf) {
+		wlr_log(L_ERROR, "Failed to load background image.");
+		return false;
+	}
+	state->context.image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
+	g_object_unref(pixbuf);
+#else
+	state->context.image = cairo_image_surface_create_from_png(
+			state->args->path);
+#endif //WITH_GDK_PIXBUF
+	if (!state->context.image) {
+		wlr_log(L_ERROR, "Failed to read background image.");
+		return false;
+	}
+	if (cairo_surface_status(state->context.image) != CAIRO_STATUS_SUCCESS) {
+		wlr_log(L_ERROR, "Failed to read background image: %s."
+#ifndef WITH_GDK_PIXBUF
+				"\nSway was compiled without gdk_pixbuf support, so only"
+				"\nPNG images can be loaded. This is the likely cause."
+#endif //WITH_GDK_PIXBUF
+				, cairo_status_to_string(
+				cairo_surface_status(state->context.image)));
+		return false;
+	}
+	return true;
 }
 
 static void layer_surface_configure(void *data,
@@ -216,6 +322,10 @@ int main(int argc, const char **argv) {
 			&layer_surface_listener, &state);
 	wl_surface_commit(state.surface);
 	wl_display_roundtrip(state.display);
+
+	if (!prepare_context(&state)) {
+		return 1;
+	}
 
 	state.run_display = true;
 	render_frame(&state);
