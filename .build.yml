@@ -14,8 +14,8 @@ packages:
   - libinput
   - libxkbcommon
 sources:
-  - https://git.sr.ht/~sircmpwn/sway
-  - https://git.sr.ht/~sircmpwn/wlroots
+  - https://github.com/~sircmpwn/sway
+  - https://github.com/~sircmpwn/wlroots
 tasks:
   - wlroots: |
       cd wlroots
