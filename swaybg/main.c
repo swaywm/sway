@@ -11,19 +11,19 @@
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-enum scaling_mode {
-	SCALING_MODE_STRETCH,
-	SCALING_MODE_FILL,
-	SCALING_MODE_FIT,
-	SCALING_MODE_CENTER,
-	SCALING_MODE_TILE,
-	SCALING_MODE_SOLID_COLOR,
+enum background_mode {
+	BACKGROUND_MODE_STRETCH,
+	BACKGROUND_MODE_FILL,
+	BACKGROUND_MODE_FIT,
+	BACKGROUND_MODE_CENTER,
+	BACKGROUND_MODE_TILE,
+	BACKGROUND_MODE_SOLID_COLOR,
 };
 
 struct swaybg_args {
 	int output_idx;
 	const char *path;
-	enum scaling_mode mode;
+	enum background_mode mode;
 };
 
 struct swaybg_context {
@@ -77,11 +77,11 @@ static void render_image(struct swaybg_state *state) {
 	int wheight = state->height;
 
 	switch (state->args->mode) {
-	case SCALING_MODE_STRETCH:
+	case BACKGROUND_MODE_STRETCH:
 		cairo_scale(cairo, (double)wwidth / width, (double)wheight / height);
 		cairo_set_source_surface(cairo, image, 0, 0);
 		break;
-	case SCALING_MODE_FILL: {
+	case BACKGROUND_MODE_FILL: {
 		double window_ratio = (double)wwidth / wheight;
 		double bg_ratio = width / height;
 
@@ -98,7 +98,7 @@ static void render_image(struct swaybg_state *state) {
 		}
 		break;
 	}
-	case SCALING_MODE_FIT: {
+	case BACKGROUND_MODE_FIT: {
 		double window_ratio = (double)wwidth / wheight;
 		double bg_ratio = width / height;
 
@@ -115,18 +115,18 @@ static void render_image(struct swaybg_state *state) {
 		}
 		break;
 	}
-	case SCALING_MODE_CENTER:
+	case BACKGROUND_MODE_CENTER:
 		cairo_set_source_surface(cairo, image,
 				(double)wwidth / 2 - width / 2,
 				(double)wheight / 2 - height / 2);
 		break;
-	case SCALING_MODE_TILE: {
+	case BACKGROUND_MODE_TILE: {
 		cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
 		cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
 		cairo_set_source(cairo, pattern);
 		break;
 	}
-	case SCALING_MODE_SOLID_COLOR:
+	case BACKGROUND_MODE_SOLID_COLOR:
 		// Should never happen
 		break;
 	}
@@ -143,7 +143,7 @@ static void render_frame(struct swaybg_state *state) {
 	cairo_t *cairo = state->current_buffer->cairo;
 
 	switch (state->args->mode) {
-	case SCALING_MODE_SOLID_COLOR:
+	case BACKGROUND_MODE_SOLID_COLOR:
 		cairo_set_source_u32(cairo, state->context.color);
 		cairo_paint(cairo);
 		break;
@@ -158,7 +158,7 @@ static void render_frame(struct swaybg_state *state) {
 }
 
 static bool prepare_context(struct swaybg_state *state) {
-	if (state->args->mode == SCALING_MODE_SOLID_COLOR) {
+	if (state->args->mode == BACKGROUND_MODE_SOLID_COLOR) {
 		state->context.color = parse_color(state->args->path);
 		return is_valid_color(state->args->path);
 	}
@@ -262,21 +262,21 @@ int main(int argc, const char **argv) {
 	args.path = argv[2];
 	args.mode = atoi(argv[3]);
 
-	args.mode = SCALING_MODE_STRETCH;
+	args.mode = BACKGROUND_MODE_STRETCH;
 	if (strcmp(argv[3], "stretch") == 0) {
-		args.mode = SCALING_MODE_STRETCH;
+		args.mode = BACKGROUND_MODE_STRETCH;
 	} else if (strcmp(argv[3], "fill") == 0) {
-		args.mode = SCALING_MODE_FILL;
+		args.mode = BACKGROUND_MODE_FILL;
 	} else if (strcmp(argv[3], "fit") == 0) {
-		args.mode = SCALING_MODE_FIT;
+		args.mode = BACKGROUND_MODE_FIT;
 	} else if (strcmp(argv[3], "center") == 0) {
-		args.mode = SCALING_MODE_CENTER;
+		args.mode = BACKGROUND_MODE_CENTER;
 	} else if (strcmp(argv[3], "tile") == 0) {
-		args.mode = SCALING_MODE_TILE;
+		args.mode = BACKGROUND_MODE_TILE;
 	} else if (strcmp(argv[3], "solid_color") == 0) {
-		args.mode = SCALING_MODE_SOLID_COLOR;
+		args.mode = BACKGROUND_MODE_SOLID_COLOR;
 	} else {
-		wlr_log(L_ERROR, "Unsupported scaling mode: %s", argv[3]);
+		wlr_log(L_ERROR, "Unsupported background mode: %s", argv[3]);
 		return 1;
 	}
 
