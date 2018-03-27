@@ -22,9 +22,9 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 	switch (prop) {
 	case VIEW_PROP_TITLE:
-		return view->wlr_xdg_surface_v6->title;
+		return view->wlr_xdg_surface_v6->toplevel->title;
 	case VIEW_PROP_APP_ID:
-		return view->wlr_xdg_surface_v6->app_id;
+		return view->wlr_xdg_surface_v6->toplevel->app_id;
 	default:
 		return NULL;
 	}
@@ -100,7 +100,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
-			xdg_surface->title, xdg_surface->app_id);
+			xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
 
 	struct sway_xdg_surface_v6 *sway_surface =
