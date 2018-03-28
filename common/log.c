@@ -153,6 +153,7 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 		}
 		fprintf(stderr, "\n");
 	}
+	errno = errsv;
 }
 
 bool _sway_assert(bool condition, const char *filename, int line, const char* format, ...) {
