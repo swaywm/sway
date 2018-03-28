@@ -6,6 +6,7 @@
 #include <wlr/backend/session.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
@@ -27,6 +28,9 @@ struct sway_server {
 	struct wl_listener new_output;
 	struct wl_listener output_frame;
 
+	struct wlr_layer_shell *layer_shell;
+	struct wl_listener layer_shell_surface;
+
 	struct wlr_xdg_shell_v6 *xdg_shell_v6;
 	struct wl_listener xdg_shell_v6_surface;
 
@@ -46,6 +50,7 @@ void server_run(struct sway_server *server);
 
 void handle_new_output(struct wl_listener *listener, void *data);
 
+void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 void handle_wl_shell_surface(struct wl_listener *listener, void *data);

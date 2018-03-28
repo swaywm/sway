@@ -4,12 +4,12 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: [
 		cairo,
+		client_protos,
 		gdk_pixbuf,
 		jsonc,
 		math,
 		pango,
 		pangocairo,
-		sway_protos,
 		wayland_client,
 		wlroots,
 	],

@@ -236,6 +236,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		return;
 	}
 	output->wlr_output = wlr_output;
+	wlr_output->data = output;
 	output->server = server;
 
 	if (!wl_list_empty(&wlr_output->modes)) {
@@ -248,6 +249,11 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	if (!output->swayc) {
 		free(output);
 		return;
+	}
+
+	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
+	for (size_t i = 0; i < len; ++i) {
+		wl_list_init(&output->layers[i]);
 	}
 
 	sway_input_manager_configure_xcursor(input_manager);

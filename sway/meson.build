@@ -46,6 +46,7 @@ sway_sources = files(
 	'ipc-json.c',
 	'ipc-server.c',
 	'desktop/output.c',
+	'desktop/layer_shell.c',
 	'desktop/wl_shell.c',
 	'desktop/xdg_shell_v6.c',
 	'desktop/xwayland.c',
@@ -57,14 +58,15 @@ sway_sources = files(
 )
 
 sway_deps = [
+	jsonc,
+	libcap,
+	libinput,
+	math,
 	pcre,
 	pixman,
+	server_protos,
 	wayland_server,
-	jsonc,
 	wlroots,
-	libcap,
-	math,
-	libinput,
 	xkbcommon,
 ]
 
