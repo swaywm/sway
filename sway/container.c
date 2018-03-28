@@ -869,6 +869,9 @@ void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), voi
 void update_visibility_output(swayc_t *container, wlc_handle output) {
 	// Inherit visibility
 	swayc_t *parent = container->parent;
+	if (parent == NULL) {
+		return;
+	}
 	container->visible = parent->visible;
 	// special cases where visibility depends on focus
 	if (parent->type == C_OUTPUT || parent->layout == L_TABBED ||
