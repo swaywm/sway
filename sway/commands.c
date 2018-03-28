@@ -141,12 +141,12 @@ void remove_view_from_scratchpad(swayc_t *view) {
 	int i;
 	for (i = 0; i < scratchpad->length; i++) {
 		if (scratchpad->items[i] == view) {
+			list_del(scratchpad, sp_index);
 			if (sp_index == 0) {
 				sp_index = scratchpad->length - 1;
 			} else {
 				sp_index--;
 			}
-			list_del(scratchpad, sp_index);
 			sp_view = NULL;
 		}
 	}
