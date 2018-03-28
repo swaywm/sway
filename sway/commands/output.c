@@ -188,7 +188,7 @@ static struct cmd_results *cmd_output_background(struct output_config *output,
 		}
 
 		wordexp_t p;
-		char *src = join_args(argv + *i - 1, j);
+		char *src = join_args(argv + *i, j);
 		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
 			return cmd_results_new(CMD_INVALID, "output",
 				"Invalid syntax (%s).", src);

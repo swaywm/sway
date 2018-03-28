@@ -7,6 +7,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/render/gles2.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_wl_shell.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
@@ -50,6 +51,11 @@ bool server_init(struct sway_server *server) {
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
+
+	server->layer_shell = wlr_layer_shell_create(server->wl_display);
+	wl_signal_add(&server->layer_shell->events.new_surface,
+		&server->layer_shell_surface);
+	server->layer_shell_surface.notify = handle_layer_shell_surface;
 
 	server->xdg_shell_v6 = wlr_xdg_shell_v6_create(server->wl_display);
 	wl_signal_add(&server->xdg_shell_v6->events.new_surface,

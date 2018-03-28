@@ -204,10 +204,13 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	case C_WORKSPACE:
 		{
 			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
-			container->width = output->width;
-			container->height = output->height;
-			container->x = x;
-			container->y = y;
+			struct wlr_box *area = &output->sway_output->usable_area;
+			wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
+					area->width, area->height, area->x, area->y);
+			container->width = area->width;
+			container->height = area->height;
+			container->x = x = area->x;
+			container->y = y = area->y;
 			wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 					container->name, container->x, container->y);
 		}

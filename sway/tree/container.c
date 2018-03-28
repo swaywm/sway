@@ -254,7 +254,9 @@ swayc_t *destroy_output(swayc_t *output) {
 		}
 	}
 
-	wl_list_remove(&output->sway_output->output_destroy.link);
+	wl_list_remove(&output->sway_output->frame.link);
+	wl_list_remove(&output->sway_output->destroy.link);
+	wl_list_remove(&output->sway_output->mode.link);
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 	free_swayc(output);
