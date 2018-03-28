@@ -74,8 +74,7 @@ static void handle_cursor_motion_absolute(struct wl_listener *listener,
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_event_pointer_motion_absolute *event = data;
-	wlr_cursor_warp_absolute(cursor->cursor, event->device,
-		event->x_mm / event->width_mm, event->y_mm / event->height_mm);
+	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_update_position(cursor);
 	cursor_send_pointer_motion(cursor, event->time_msec);
 }
