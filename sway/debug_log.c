@@ -71,11 +71,11 @@ void layout_log(const swayc_t *c, int depth) {
 				layout_log(c->floating->items[i], depth + 1);
 			}
 		}
-	}
-	if (c->type == C_ROOT) {
-		fprintf(stderr,"ScratchPad\n");
-		for (int i = 0; i < scratchpad->length; ++i)
+	} else if (c->type == C_ROOT && scratchpad->length > 0) {
+		fprintf(stderr, "ScratchPad\n");
+		for (i = 0; i < scratchpad->length; ++i) {
 			container_log(scratchpad->items[i], 0);
+		}
 	}
 }
 
