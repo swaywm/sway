@@ -27,13 +27,22 @@ wayland_client = dependency('wayland-client')
 wayland_egl    = dependency('wayland-egl')
 wayland_protos = dependency('wayland-protocols')
 xkbcommon      = dependency('xkbcommon')
+cairo          = dependency('cairo')
 pango          = dependency('pango')
+pangocairo     = dependency('pangocairo')
+gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: false)
 pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 libinput       = dependency('libinput')
 math           = cc.find_library('m')
 git = find_program('git', required: false)
 a2x = find_program('a2x', required: false)
+
+conf_data = configuration_data()
+
+if gdk_pixbuf.found()
+	conf_data.set('HAVE_GDK_PIXBUF', true)
+endif
 
 if a2x.found()
 	mandir = get_option('mandir')
@@ -85,9 +94,13 @@ add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
 sway_inc = include_directories('include')
 
+subdir('include')
+subdir('protocols')
 subdir('common')
 subdir('sway')
 subdir('swaymsg')
+subdir('client')
+subdir('swaybg')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))
