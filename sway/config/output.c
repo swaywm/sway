@@ -1,9 +1,12 @@
 #define _XOPEN_SOURCE 700
+#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
-#include <assert.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <unistd.h>
 #include "sway/config.h"
 #include "sway/output.h"
 #include "log.h"
@@ -107,6 +110,16 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	}
 }
 
+void terminate_swaybg(pid_t pid) {
+	int ret = kill(pid, SIGTERM);
+	if (ret != 0) {
+		wlr_log(L_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
+	}
+}
+
 void apply_output_config(struct output_config *oc, swayc_t *output) {
 	assert(output->type == C_OUTPUT);
 
@@ -160,12 +173,12 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 	}
 
 	if (oc && oc->background) {
-		// TODO swaybg
-		/*if (output->bg_pid != 0) {
-			terminate_swaybg(output->bg_pid);
+		if (output->sway_output->bg_pid != 0) {
+			terminate_swaybg(output->sway_output->bg_pid);
 		}
 
-		wlr_log(L_DEBUG, "Setting background for output %d to %s", output_i, oc->background);
+		wlr_log(L_DEBUG, "Setting background for output %d to %s",
+				output_i, oc->background);
 
 		size_t bufsize = 12;
 		char output_id[bufsize];
@@ -173,17 +186,17 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output_id[bufsize-1] = 0;
 
 		char *const cmd[] = {
-			"swaybg",
+			"./swaybg/swaybg",
 			output_id,
 			oc->background,
 			oc->background_option,
 			NULL,
 		};
 
-		output->bg_pid = fork();
-		if (output->bg_pid == 0) {
+		output->sway_output->bg_pid = fork();
+		if (output->sway_output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
-		}*/
+		}
 	}
 }
 

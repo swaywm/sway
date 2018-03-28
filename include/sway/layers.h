@@ -21,4 +21,7 @@ struct sway_layer_surface {
 	struct wlr_box geo;
 };
 
+struct sway_output;
+void arrange_layers(struct sway_output *output);
+
 #endif

@@ -4,6 +4,7 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
+#include <unistd.h>
 
 struct sway_server;
 struct sway_container;
@@ -18,7 +19,10 @@ struct sway_output {
 	struct wlr_box usable_area;
 
 	struct wl_listener frame;
-	struct wl_listener output_destroy;
+	struct wl_listener destroy;
+	struct wl_listener mode;
+
+	pid_t bg_pid;
 };
 
 #endif

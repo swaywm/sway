@@ -4,14 +4,17 @@
 #include <time.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include "log.h"
 #include "sway/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/layers.h"
 #include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
@@ -177,6 +180,20 @@ static void output_frame_view(swayc_t *view, void *data) {
 	}
 }
 
+static void render_layer(struct sway_output *output,
+		const struct wlr_box *output_layout_box,
+		struct timespec *when,
+		struct wl_list *layer) {
+	struct sway_layer_surface *sway_layer;
+	wl_list_for_each(sway_layer, layer, link) {
+		struct wlr_layer_surface *layer = sway_layer->layer_surface;
+		render_surface(layer->surface, output->wlr_output, when,
+				sway_layer->geo.x + output_layout_box->x,
+				sway_layer->geo.y + output_layout_box->y, 0);
+		wlr_surface_send_frame_done(layer->surface, when);
+	}
+}
+
 static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
@@ -188,6 +205,18 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	int buffer_age = -1;
 	wlr_output_make_current(wlr_output, &buffer_age);
 	wlr_renderer_begin(server->renderer, wlr_output->width, wlr_output->height);
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	struct wlr_output_layout *layout = root_container.sway_root->output_layout;
+	const struct wlr_box *output_box = wlr_output_layout_get_box(
+			layout, wlr_output);
+
+	render_layer(soutput, output_box, &now,
+			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+	render_layer(soutput, output_box, &now,
+			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	swayc_t *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
@@ -210,20 +239,30 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 		}
 	}
 
+	// TODO: Consider revising this when fullscreen windows are supported
+	render_layer(soutput, output_box, &now,
+			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	render_layer(soutput, output_box, &now,
+			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+
 	wlr_renderer_end(server->renderer);
 	wlr_output_swap_buffers(wlr_output, &soutput->last_frame, NULL);
 
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
 	soutput->last_frame = now;
 }
 
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, output_destroy);
+	struct sway_output *output = wl_container_of(listener, output, destroy);
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
 
 	destroy_output(output->swayc);
+}
+
+static void handle_output_mode(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, mode);
+	arrange_layers(output);
+	arrange_windows(output->swayc, -1, -1);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -260,9 +299,11 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
 	output->frame.notify = output_frame_notify;
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	output->destroy.notify = handle_output_destroy;
+	wl_signal_add(&wlr_output->events.mode, &output->mode);
+	output->mode.notify = handle_output_mode;
 
-	wl_signal_add(&wlr_output->events.destroy, &output->output_destroy);
-	output->output_destroy.notify = handle_output_destroy;
-
+	arrange_layers(output);
 	arrange_windows(&root_container, -1, -1);
 }
