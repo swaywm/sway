@@ -134,10 +134,6 @@ static void render_image(struct swaybg_state *state) {
 }
 
 static void render_frame(struct swaybg_state *state) {
-	if (!state->run_display) {
-		return;
-	}
-
 	state->current_buffer = get_next_buffer(state->shm,
 			state->buffers, state->width, state->height);
 	cairo_t *cairo = state->current_buffer->cairo;
@@ -198,8 +194,8 @@ static void layer_surface_configure(void *data,
 	struct swaybg_state *state = data;
 	state->width = width;
 	state->height = height;
-	render_frame(state);
 	zwlr_layer_surface_v1_ack_configure(surface, serial);
+	render_frame(state);
 }
 
 static void layer_surface_closed(void *data,
@@ -280,6 +276,10 @@ int main(int argc, const char **argv) {
 		return 1;
 	}
 
+	if (!prepare_context(&state)) {
+		return 1;
+	}
+
 	state.display = wl_display_connect(NULL);
 	if (!state.display) {
 		wlr_log(L_ERROR, "Failed to create display\n");
@@ -323,12 +323,7 @@ int main(int argc, const char **argv) {
 	wl_surface_commit(state.surface);
 	wl_display_roundtrip(state.display);
 
-	if (!prepare_context(&state)) {
-		return 1;
-	}
-
 	state.run_display = true;
-	render_frame(&state);
 	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
 		// This space intentionally left blank
 	}
