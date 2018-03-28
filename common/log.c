@@ -127,6 +127,7 @@ void _sway_abort(const char *filename, int line, const char* format, ...) {
 }
 
 void sway_log_errno(log_importance_t verbosity, char* format, ...) {
+	int errsv = errno;
 	if (verbosity <= v) {
 		unsigned int c = verbosity;
 		if (c > sizeof(verbosity_colors) / sizeof(char *) - 1) {
@@ -145,13 +146,14 @@ void sway_log_errno(log_importance_t verbosity, char* format, ...) {
 		va_end(args);
 
 		fprintf(stderr, ": ");
-		fprintf(stderr, "%s", strerror(errno));
+		fprintf(stderr, "%s", strerror(errsv));
 
 		if (colored && isatty(STDERR_FILENO)) {
 			fprintf(stderr, "\x1B[0m");
 		}
 		fprintf(stderr, "\n");
 	}
+	errno = errsv;
 }
 
 bool _sway_assert(bool condition, const char *filename, int line, const char* format, ...) {
