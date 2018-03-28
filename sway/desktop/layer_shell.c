@@ -192,9 +192,10 @@ void arrange_layers(struct sway_output *output) {
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer =
 		wl_container_of(listener, sway_layer, output_destroy);
-	sway_layer->layer_surface->output = NULL;
 	wl_list_remove(&sway_layer->output_destroy.link);
 	wl_list_remove(&sway_layer->output_mode.link);
+	wl_list_remove(&sway_layer->output_transform.link);
+	sway_layer->layer_surface->output = NULL;
 	wlr_layer_surface_close(sway_layer->layer_surface);
 }
 
@@ -240,9 +241,11 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->map.link);
 	wl_list_remove(&sway_layer->unmap.link);
 	wl_list_remove(&sway_layer->surface_commit.link);
-	wl_list_remove(&sway_layer->output_destroy.link);
-	wl_list_remove(&sway_layer->output_mode.link);
-	wl_list_remove(&sway_layer->output_transform.link);
+	if (sway_layer->layer_surface->output != NULL) {
+		wl_list_remove(&sway_layer->output_destroy.link);
+		wl_list_remove(&sway_layer->output_mode.link);
+		wl_list_remove(&sway_layer->output_transform.link);
+	}
 	struct sway_output *output = sway_layer->layer_surface->output->data;
 	arrange_layers(output);
 	free(sway_layer);

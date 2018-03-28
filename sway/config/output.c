@@ -4,9 +4,9 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <unistd.h>
 #include "sway/config.h"
 #include "sway/output.h"
 #include "log.h"

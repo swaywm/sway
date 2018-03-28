@@ -81,9 +81,7 @@ static void render_surface(struct wlr_surface *surface,
 		rotate_child_position(&sx, &sy, sw, sh, width, height, rotation);
 
 		render_surface(subsurface->surface, wlr_output, when,
-			lx + sx,
-			ly + sy,
-			rotation);
+			lx + sx, ly + sy, rotation);
 	}
 }
 
@@ -142,9 +140,15 @@ static void render_wl_shell_surface(struct wlr_wl_shell_surface *surface,
 	}
 }
 
+struct render_data {
+	struct sway_output *output;
+	struct timespec *now;
+};
 
 static void output_frame_view(swayc_t *view, void *data) {
-	struct sway_output *output = data;
+	struct render_data *rdata = data;
+	struct sway_output *output = rdata->output;
+	struct timespec *now = rdata->now;
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct sway_view *sway_view = view->sway_view;
 	struct wlr_surface *surface = sway_view->surface;
@@ -157,23 +161,18 @@ static void output_frame_view(swayc_t *view, void *data) {
 	case SWAY_XDG_SHELL_V6_VIEW: {
 		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry.x;
 		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry.y;
-		render_surface(surface, wlr_output, &output->last_frame,
-			view->x - window_offset_x,
-			view->y - window_offset_y,
-			0);
+		render_surface(surface, wlr_output, now,
+			view->x - window_offset_x, view->y - window_offset_y, 0);
 		render_xdg_v6_popups(sway_view->wlr_xdg_surface_v6, wlr_output,
-			&output->last_frame,
-			view->x - window_offset_x, view->y - window_offset_y,
-			0);
+			now, view->x - window_offset_x, view->y - window_offset_y, 0);
 		break;
 	}
 	case SWAY_WL_SHELL_VIEW:
 		render_wl_shell_surface(sway_view->wlr_wl_shell_surface, wlr_output,
-			&output->last_frame, view->x, view->y, 0, false);
+			now, view->x, view->y, 0, false);
 		break;
 	case SWAY_XWAYLAND_VIEW:
-		render_surface(surface, wlr_output, &output->last_frame, view->x,
-			view->y, 0);
+		render_surface(surface, wlr_output, now, view->x, view->y, 0);
 		break;
 	default:
 		break;
@@ -224,7 +223,11 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 			focus :
 			swayc_parent_by_type(focus, C_WORKSPACE));
 
-	swayc_descendants_of_type(workspace, C_VIEW, output_frame_view, soutput);
+	struct render_data rdata = {
+		.output = soutput,
+		.now = &now,
+	};
+	swayc_descendants_of_type(workspace, C_VIEW, output_frame_view, &rdata);
 
 	// render unmanaged views on top
 	struct sway_view *view;
@@ -246,8 +249,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 	wlr_renderer_end(server->renderer);
-	wlr_output_swap_buffers(wlr_output, &soutput->last_frame, NULL);
-
+	wlr_output_swap_buffers(wlr_output, &now, NULL);
 	soutput->last_frame = now;
 }
 
