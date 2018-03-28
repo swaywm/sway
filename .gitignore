@@ -9,3 +9,4 @@ build/
 config-debug
 wayland-*-protocol.*
 /subprojects/wlroots
+subprojects
