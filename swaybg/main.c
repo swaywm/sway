@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -6,7 +7,7 @@
 #include <time.h>
 #include <wayland-client.h>
 #include <wlr/util/log.h>
-#include "buffer_pool.h"
+#include "pool-buffer.h"
 #include "cairo.h"
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -127,7 +128,7 @@ static void render_image(struct swaybg_state *state) {
 		break;
 	}
 	case BACKGROUND_MODE_SOLID_COLOR:
-		// Should never happen
+		assert(0);
 		break;
 	}
 	cairo_paint(cairo);
@@ -158,7 +159,7 @@ static bool prepare_context(struct swaybg_state *state) {
 		state->context.color = parse_color(state->args->path);
 		return is_valid_color(state->args->path);
 	}
-#ifdef WITH_GDK_PIXBUF
+#ifdef HAVE_GDK_PIXBUF
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(state->args->path, &err);
 	if (!pixbuf) {
@@ -170,17 +171,17 @@ static bool prepare_context(struct swaybg_state *state) {
 #else
 	state->context.image = cairo_image_surface_create_from_png(
 			state->args->path);
-#endif //WITH_GDK_PIXBUF
+#endif //HAVE_GDK_PIXBUF
 	if (!state->context.image) {
 		wlr_log(L_ERROR, "Failed to read background image.");
 		return false;
 	}
 	if (cairo_surface_status(state->context.image) != CAIRO_STATUS_SUCCESS) {
 		wlr_log(L_ERROR, "Failed to read background image: %s."
-#ifndef WITH_GDK_PIXBUF
+#ifndef HAVE_GDK_PIXBUF
 				"\nSway was compiled without gdk_pixbuf support, so only"
 				"\nPNG images can be loaded. This is the likely cause."
-#endif //WITH_GDK_PIXBUF
+#endif //HAVE_GDK_PIXBUF
 				, cairo_status_to_string(
 				cairo_surface_status(state->context.image)));
 		return false;
@@ -256,7 +257,6 @@ int main(int argc, const char **argv) {
 	}
 	args.output_idx = atoi(argv[1]);
 	args.path = argv[2];
-	args.mode = atoi(argv[3]);
 
 	args.mode = BACKGROUND_MODE_STRETCH;
 	if (strcmp(argv[3], "stretch") == 0) {
@@ -280,38 +280,20 @@ int main(int argc, const char **argv) {
 		return 1;
 	}
 
-	state.display = wl_display_connect(NULL);
-	if (!state.display) {
-		wlr_log(L_ERROR, "Failed to create display\n");
-		return 1;
-	}
+	assert(state.display = wl_display_connect(NULL));
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
 	wl_display_roundtrip(state.display);
+	assert(state.compositor && state.layer_shell && state.output && state.shm);
 
-	if (!state.compositor) {
-		wlr_log(L_DEBUG, "wl-compositor not available");
-		return 1;
-	}
-	if (!state.layer_shell) {
-		wlr_log(L_ERROR, "layer-shell not available");
-		return 1;
-	}
-
-	state.surface = wl_compositor_create_surface(state.compositor);
-	if (!state.surface) {
-		wlr_log(L_ERROR, "failed to create wl_surface");
-		return 1;
-	}
+	assert(state.surface = wl_compositor_create_surface(state.compositor));
 
 	state.layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			state.layer_shell, state.surface, state.output,
 			ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "wallpaper");
-	if (!state.layer_surface) {
-		wlr_log(L_ERROR, "failed to create zwlr_layer_surface");
-		return 1;
-	}
+	assert(state.layer_surface);
+
 	zwlr_layer_surface_v1_set_size(state.layer_surface, 0, 0);
 	zwlr_layer_surface_v1_set_anchor(state.layer_surface,
 			ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
@@ -320,10 +302,10 @@ int main(int argc, const char **argv) {
 			ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
 	zwlr_layer_surface_v1_add_listener(state.layer_surface,
 			&layer_surface_listener, &state);
+	state.run_display = true;
 	wl_surface_commit(state.surface);
 	wl_display_roundtrip(state.display);
 
-	state.run_display = true;
 	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
 		// This space intentionally left blank
 	}

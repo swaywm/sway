@@ -38,8 +38,10 @@ math           = cc.find_library('m')
 git = find_program('git', required: false)
 a2x = find_program('a2x', required: false)
 
+conf_data = configuration_data()
+
 if gdk_pixbuf.found()
-	add_project_arguments('-DWITH_GDK_PIXBUF', language : 'c')
+	conf_data.set('HAVE_GDK_PIXBUF', true)
 endif
 
 if a2x.found()
@@ -92,6 +94,7 @@ add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
 sway_inc = include_directories('include')
 
+subdir('include')
 subdir('protocols')
 subdir('common')
 subdir('sway')

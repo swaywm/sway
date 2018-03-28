@@ -8,7 +8,8 @@
 #include <pango/pangocairo.h>
 #include <unistd.h>
 #include <wayland-client.h>
-#include "buffer_pool.h"
+#include "config.h"
+#include "pool-buffer.h"
 
 static int create_pool_file(size_t size, char **name) {
 	static const char template[] = "sway-client-XXXXXX";
