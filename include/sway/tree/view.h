@@ -62,10 +62,6 @@ enum sway_view_prop {
 	VIEW_PROP_INSTANCE,
 };
 
-/**
- * sway_view is a state container for surfaces that are arranged in the sway
- * tree (shell surfaces).
- */
 struct sway_view {
 	enum sway_view_type type;
 	struct sway_container *swayc;

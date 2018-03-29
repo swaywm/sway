@@ -3,10 +3,11 @@
 #include "log.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "sway/commands.h"
 
-static bool parse_movement_direction(const char *name, enum movement_direction *out) {
+static bool parse_movement_direction(const char *name,
+		enum movement_direction *out) {
 	if (strcasecmp(name, "left") == 0) {
 		*out = MOVE_LEFT;
 	} else if (strcasecmp(name, "right") == 0) {

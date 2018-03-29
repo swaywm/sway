@@ -7,14 +7,14 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include "sway/config.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/layout.h"
+#include "sway/tree/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/view.h"
-#include "sway/workspace.h"
+#include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "sway/ipc-server.h"
 #include "log.h"
 
@@ -82,8 +82,6 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	c->layout = L_NONE;
 	c->workspace_layout = L_NONE;
 	c->type = type;
-	c->nb_master = 1;
-	c->nb_slave_groups = 1;
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}

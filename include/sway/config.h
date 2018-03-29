@@ -10,8 +10,8 @@
 #include <xkbcommon/xkbcommon.h>
 #include <time.h>
 #include "list.h"
-#include "layout.h"
-#include "container.h"
+#include "tree/layout.h"
+#include "tree/container.h"
 
 /**
  * Describes a variable created via the `set` command.

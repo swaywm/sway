@@ -6,10 +6,10 @@
 #include <string.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
-#include "sway/container.h"
-#include "sway/layout.h"
+#include "sway/tree/container.h"
+#include "sway/tree/layout.h"
 #include "sway/output.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "sway/input/seat.h"
 #include "list.h"
 #include "log.h"

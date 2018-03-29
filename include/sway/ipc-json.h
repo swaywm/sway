@@ -1,7 +1,7 @@
 #ifndef _SWAY_IPC_JSON_H
 #define _SWAY_IPC_JSON_H
 #include <json-c/json.h>
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 
 json_object *ipc_json_get_version();

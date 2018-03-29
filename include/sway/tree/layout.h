@@ -2,7 +2,7 @@
 #define _SWAY_LAYOUT_H
 
 #include <wlr/types/wlr_output_layout.h>
-#include "sway/container.h"
+#include "sway/tree/container.h"
 
 enum movement_direction {
 	MOVE_LEFT,
@@ -31,12 +31,20 @@ struct sway_root {
 };
 
 void init_layout(void);
+
 void add_child(struct sway_container *parent, struct sway_container *child);
+
 swayc_t *add_sibling(swayc_t *parent, swayc_t *child);
+
 struct sway_container *remove_child(struct sway_container *child);
+
 enum swayc_layouts default_layout(struct sway_container *output);
+
 void sort_workspaces(struct sway_container *output);
-void arrange_windows(struct sway_container *container, double width, double height);
+
+void arrange_windows(struct sway_container *container,
+		double width, double height);
+
 swayc_t *get_swayc_in_direction(swayc_t *container,
 		struct sway_seat *seat, enum movement_direction dir);
 

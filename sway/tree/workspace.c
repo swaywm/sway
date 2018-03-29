@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/workspace.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 #include "util.h"
 

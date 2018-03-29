@@ -5,10 +5,10 @@
 #include <wlr/xwayland.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
-#include "sway/container.h"
-#include "sway/layout.h"
+#include "sway/tree/container.h"
+#include "sway/tree/layout.h"
 #include "sway/server.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "sway/output.h"
 #include "sway/input/seat.h"
 #include "sway/input/input-manager.h"

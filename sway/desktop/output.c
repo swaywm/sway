@@ -11,14 +11,14 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include "log.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
-#include "sway/layout.h"
+#include "sway/tree/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),

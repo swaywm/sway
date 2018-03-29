@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include "log.h"
 #include "sway/ipc-json.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"

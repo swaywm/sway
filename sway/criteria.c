@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <pcre.h>
 #include "sway/criteria.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/config.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"

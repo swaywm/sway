@@ -4,7 +4,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/seat.h"
-#include "sway/workspace.h"
+#include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"

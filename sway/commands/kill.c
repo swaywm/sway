@@ -2,7 +2,7 @@
 #include "log.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "sway/commands.h"
 
 struct cmd_results *cmd_kill(int argc, char **argv) {

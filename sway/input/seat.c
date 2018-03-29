@@ -1,13 +1,13 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/output.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "log.h"
 
 static void seat_device_destroy(struct sway_seat_device *seat_device) {

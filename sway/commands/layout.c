@@ -1,8 +1,8 @@
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
-#include "sway/container.h"
-#include "sway/layout.h"
+#include "sway/tree/container.h"
+#include "sway/tree/layout.h"
 #include "log.h"
 
 struct cmd_results *cmd_layout(int argc, char **argv) {

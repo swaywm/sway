@@ -1,7 +1,7 @@
 #ifndef _SWAY_CRITERIA_H
 #define _SWAY_CRITERIA_H
 
-#include "container.h"
+#include "tree/container.h"
 #include "list.h"
 
 /**
