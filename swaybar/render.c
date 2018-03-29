@@ -158,6 +158,9 @@ void render_frame(struct swaybar *bar,
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
 	cairo_t *cairo = cairo_create(recorder);
 	uint32_t height = render_to_cairo(cairo, bar, output);
+	if (bar->config->height >= 0 && height < (uint32_t)bar->config->height) {
+		height = bar->config->height;
+	}
 	if (height != output->height) {
 		// Reconfigure surface
 		zwlr_layer_surface_v1_set_size(
