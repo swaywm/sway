@@ -16,6 +16,7 @@ struct swaybar {
 
 	struct swaybar_config *config;
 	struct swaybar_output *focused_output;
+	struct status_line *status;
 
 	int ipc_event_socketfd;
 	int ipc_socketfd;

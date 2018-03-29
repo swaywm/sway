@@ -13,6 +13,7 @@
 #include "swaybar/render.h"
 #include "swaybar/config.h"
 #include "swaybar/event_loop.h"
+#include "swaybar/status_line.h"
 #include "swaybar/bar.h"
 #include "swaybar/ipc.h"
 #include "ipc-client.h"
@@ -98,6 +99,9 @@ void bar_setup(struct swaybar *bar,
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
 	ipc_initialize(bar, bar_id);
+	if (bar->config->status_command) {
+		bar->status = status_line_init(bar->config->status_command);
+	}
 
 	assert(bar->display = wl_display_connect(NULL));
 
@@ -134,6 +138,13 @@ void bar_setup(struct swaybar *bar,
 	}
 }
 
+static void render_all_frames(struct swaybar *bar) {
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		render_frame(bar, output);
+	}
+}
+
 static void display_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
 	if (wl_display_dispatch(bar->display) == -1) {
@@ -144,16 +155,23 @@ static void display_in(int fd, short mask, void *_bar) {
 static void ipc_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
 	if (handle_ipc_event(bar)) {
-		struct swaybar_output *output;
-		wl_list_for_each(output, &bar->outputs, link) {
-			render_frame(bar, output);
-		}
+		render_all_frames(bar);
+	}
+}
+
+static void status_in(int fd, short mask, void *_bar) {
+	struct swaybar *bar = (struct swaybar *)_bar;
+	if (handle_status_readable(bar->status)) {
+		render_all_frames(bar);
 	}
 }
 
 void bar_run(struct swaybar *bar) {
 	add_event(wl_display_get_fd(bar->display), POLLIN, display_in, bar);
 	add_event(bar->ipc_event_socketfd, POLLIN, ipc_in, bar);
+	if (bar->status) {
+		add_event(bar->status->read_fd, POLLIN, status_in, bar);
+	}
 	while (1) {
 		event_loop_poll();
 	}

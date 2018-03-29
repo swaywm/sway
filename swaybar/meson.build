@@ -7,6 +7,7 @@ executable(
 		'ipc.c',
 		'main.c',
 		'render.c',
+		'status_line.c',
 	],
 	include_directories: [sway_inc],
 	dependencies: [

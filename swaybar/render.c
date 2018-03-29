@@ -9,11 +9,58 @@
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/render.h"
+#include "swaybar/status_line.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static const int ws_horizontal_padding = 5;
 static const double ws_vertical_padding = 1.5;
 static const double border_width = 1;
+
+static uint32_t render_status_line_text(cairo_t *cairo,
+		struct swaybar_config *config, struct status_line *status,
+		bool focused, uint32_t width, uint32_t height) {
+	if (!status->text) {
+		return 0;
+	}
+	//wlr_log(L_DEBUG, "focused %d", focused);
+	cairo_set_source_u32(cairo, focused ?
+			config->colors.focused_statusline : config->colors.statusline);
+	static const int margin = 3;
+	int text_width, text_height;
+	get_text_size(cairo, config->font, &text_width, &text_height,
+			1, config->pango_markup, "%s", status->text);
+	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
+	if (height < ideal_height) {
+		height = ideal_height;
+	}
+	double text_y = height / 2.0 - text_height / 2.0;
+	cairo_move_to(cairo, width - text_width - margin, (int)floor(text_y));
+	pango_printf(cairo, config->font, 1, config->pango_markup,
+			"%s", status->text);
+	return ideal_height;
+}
+
+static uint32_t render_status_line_i3bar(cairo_t *cairo,
+		struct swaybar_config *config, struct status_line *status,
+		bool focused, uint32_t width, uint32_t height) {
+	// TODO
+	return 0;
+}
+
+static uint32_t render_status_line(cairo_t *cairo,
+		struct swaybar_config *config, struct status_line *status,
+		bool focused, uint32_t width, uint32_t height) {
+	switch (status->protocol) {
+	case PROTOCOL_TEXT:
+		return render_status_line_text(cairo,
+				config, status, focused, width, height);
+	case PROTOCOL_I3BAR:
+		return render_status_line_i3bar(cairo,
+				config, status, focused, width, height);
+	default:
+		return 0;
+	}
+}
 
 static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 		struct swaybar_config *config, const char *mode, double x,
@@ -148,6 +195,11 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 				cairo, config, config->mode, x, output->height);
 		max_height = h > max_height ? h : max_height;
 	}
+	if (bar->status) {
+		uint32_t h = render_status_line(cairo, config, bar->status,
+				output->focused, output->width, output->height);
+		max_height = h > max_height ? h : max_height;
+	}
 
 	return max_height > output->height ? max_height : output->height;
 }
@@ -157,6 +209,10 @@ void render_frame(struct swaybar *bar,
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
 	cairo_t *cairo = cairo_create(recorder);
+	cairo_save(cairo);
+	cairo_set_operator(cairo, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cairo);
+	cairo_restore(cairo);
 	uint32_t height = render_to_cairo(cairo, bar, output);
 	if (bar->config->height >= 0 && height < (uint32_t)bar->config->height) {
 		height = bar->config->height;
