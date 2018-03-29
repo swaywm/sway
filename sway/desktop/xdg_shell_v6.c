@@ -102,6 +102,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
 			xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
+	wlr_xdg_toplevel_v6_set_maximized(xdg_surface, true);
 
 	struct sway_xdg_surface_v6 *sway_surface =
 		calloc(1, sizeof(struct sway_xdg_surface_v6));
