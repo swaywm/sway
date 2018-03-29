@@ -1,17 +1,16 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
-
 #define PID_WORKSPACE_TIMEOUT 60
-
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
-#include <time.h>
 #include "list.h"
 #include "layout.h"
 #include "container.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 /**
  * Describes a variable created via the `set` command.
@@ -152,7 +151,7 @@ struct bar_config {
 	char *id;
 	uint32_t modifier;
 	list_t *outputs;
-	//enum desktop_shell_panel_position position; // TODO
+	char *position;
 	list_t *bindings;
 	char *status_command;
 	bool pango_markup;

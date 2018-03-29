@@ -35,6 +35,7 @@ pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 libinput       = dependency('libinput')
 math           = cc.find_library('m')
+rt             = cc.find_library('rt')
 git = find_program('git', required: false)
 a2x = find_program('a2x', required: false)
 
@@ -99,8 +100,10 @@ subdir('protocols')
 subdir('common')
 subdir('sway')
 subdir('swaymsg')
+
 subdir('client')
 subdir('swaybg')
+subdir('swaybar')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))

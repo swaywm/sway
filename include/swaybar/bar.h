@@ -1,72 +1,45 @@
 #ifndef _SWAYBAR_BAR_H
 #define _SWAYBAR_BAR_H
-
-#include "client/registry.h"
-#include "client/window.h"
+#include <wayland-client.h>
+#include "pool-buffer.h"
 #include "list.h"
 
-struct bar {
-	struct config *config;
-	struct status_line *status;
-	list_t *outputs;
-	struct output *focused_output;
+struct swaybar_config;
+struct swaybar_output;
+struct swaybar_workspace;
 
-	int ipc_event_socketfd;
-	int ipc_socketfd;
-	int status_read_fd;
-	int status_write_fd;
-	pid_t status_command_pid;
+struct swaybar {
+	struct wl_display *display;
+	struct wl_compositor *compositor;
+	struct zwlr_layer_shell_v1 *layer_shell;
+	struct wl_shm *shm;
+
+	struct swaybar_config *config;
+	struct swaybar_output *focused_output;
+
+	struct wl_list outputs;
 };
 
-struct output {
-	struct window *window;
-	struct registry *registry;
-	list_t *workspaces;
-#ifdef ENABLE_TRAY
-	list_t *items;
-#endif
+struct swaybar_output {
+	struct wl_list link;
+	struct swaybar *bar;
+	struct wl_output *output;
+	struct wl_surface *surface;
+	struct zwlr_layer_surface_v1 *layer_surface;
+
 	char *name;
 	int idx;
 	bool focused;
+
+	uint32_t width, height;
+	struct pool_buffer buffers[2];
+	struct pool_buffer *current_buffer;
 };
 
-struct workspace {
-	int num;
-	char *name;
-	bool focused;
-	bool visible;
-	bool urgent;
-};
+void bar_setup(struct swaybar *bar,
+		const char *socket_path,
+		const char *bar_id);
+void bar_run(struct swaybar *bar);
+void bar_teardown(struct swaybar *bar);
 
-/** Global bar state */
-extern struct bar swaybar;
-
-/** True if sway needs to render */
-extern bool dirty;
-
-/**
- * Setup bar.
- */
-void bar_setup(struct bar *bar, const char *socket_path, const char *bar_id);
-
-/**
- * Create new output struct from name.
- */
-struct output *new_output(const char *name);
-
-/**
- * Bar mainloop.
- */
-void bar_run(struct bar *bar);
-
-/**
- * free workspace list.
- */
-void free_workspaces(list_t *workspaces);
-
-/**
- * Teardown bar.
- */
-void bar_teardown(struct bar *bar);
-
-#endif /* _SWAYBAR_BAR_H */
+#endif

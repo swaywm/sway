@@ -4,19 +4,18 @@
 #include <string.h>
 #include <strings.h>
 #include <poll.h>
-#include "swaybar/bar.h"
+#include <time.h>
 #include "swaybar/event_loop.h"
 #include "list.h"
-#include "log.h"
 
 struct event_item {
-	void(*cb)(int fd, short mask, void *data);
+	void (*cb)(int fd, short mask, void *data);
 	void *data;
 };
 
 struct timer_item {
 	timer_t timer;
-	void(*cb)(timer_t timer, void *data);
+	void (*cb)(timer_t timer, void *data);
 	void *data;
 };
 
@@ -138,7 +137,8 @@ void event_loop_poll() {
 void init_event_loop() {
 	event_loop.fds.length = 0;
 	event_loop.fds.capacity = 10;
-	event_loop.fds.items = malloc(event_loop.fds.capacity * sizeof(struct pollfd));
+	event_loop.fds.items = malloc(
+			event_loop.fds.capacity * sizeof(struct pollfd));
 	event_loop.items = create_list();
 	event_loop.timers = create_list();
 }
