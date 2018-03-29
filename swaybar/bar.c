@@ -191,4 +191,9 @@ void bar_teardown(struct swaybar *bar) {
 	if (bar->config) {
 		free_config(bar->config);
 	}
+	close(bar->ipc_event_socketfd);
+	close(bar->ipc_socketfd);
+	if (bar->status) {
+		status_line_free(bar->status);
+	}
 }

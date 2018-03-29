@@ -73,6 +73,8 @@ struct status_line *status_line_init(char *cmd) {
 	return status;
 }
 
-void status_line_free(struct status_line *line) {
-	free(line);
+void status_line_free(struct status_line *status) {
+	close(status->read_fd);
+	close(status->write_fd);
+	free(status);
 }
