@@ -52,7 +52,8 @@ struct sway_container *workspace_by_number(const char* name) {
 	if (wbnd.len <= 0) {
 		return NULL;
 	}
-	return container_find(&root_container, _workspace_by_number, (void *) &wbnd);
+	return container_find(&root_container,
+			_workspace_by_number, (void *) &wbnd);
 }
 
 static bool _workspace_by_name(struct sway_container *view, void *data) {
@@ -79,7 +80,8 @@ struct sway_container *workspace_by_name(const char *name) {
 	} else if (strcmp(name, "current") == 0) {
 		return current_workspace;
 	} else {
-		return container_find(&root_container, _workspace_by_name, (void *) name);
+		return container_find(&root_container, _workspace_by_name,
+				(void *)name);
 	}
 }
 
@@ -103,7 +105,8 @@ struct sway_container *workspace_create(const char *name) {
 	}
 	// Otherwise create a new one
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *focus =
+		sway_seat_get_focus_inactive(seat, &root_container);
 	parent = focus;
 	parent = container_parent(parent, C_OUTPUT);
 	return container_workspace_create(parent, name);
@@ -114,7 +117,8 @@ struct sway_container *workspace_create(const char *name) {
  * the end and beginning.  If next is false, the previous workspace is returned,
  * otherwise the next one is returned.
  */
-struct sway_container *workspace_output_prev_next_impl(struct sway_container *output, bool next) {
+struct sway_container *workspace_output_prev_next_impl(
+		struct sway_container *output, bool next) {
 	if (!sway_assert(output->type == C_OUTPUT,
 				"Argument must be an output, is %d", output->type)) {
 		return NULL;
@@ -134,7 +138,8 @@ struct sway_container *workspace_output_prev_next_impl(struct sway_container *ou
 		}
 	}
 
-	// Doesn't happen, at worst the for loop returns the previously active workspace
+	// Doesn't happen, at worst the for loop returns the previously active
+	// workspace
 	return NULL;
 }
 
@@ -144,7 +149,8 @@ struct sway_container *workspace_output_prev_next_impl(struct sway_container *ou
  * next is false, the previous workspace is returned, otherwise the next one is
  * returned.
  */
-struct sway_container *workspace_prev_next_impl(struct sway_container *workspace, bool next) {
+struct sway_container *workspace_prev_next_impl(
+		struct sway_container *workspace, bool next) {
 	if (!sway_assert(workspace->type == C_WORKSPACE,
 				"Argument must be a workspace, is %d", workspace->type)) {
 		return NULL;
@@ -166,7 +172,8 @@ struct sway_container *workspace_prev_next_impl(struct sway_container *workspace
 		}
 	}
 
-	// Given workspace is the first/last on the output, jump to the previous/next output
+	// Given workspace is the first/last on the output, jump to the
+	// previous/next output
 	int num_outputs = root_container.children->length;
 	for (i = 0; i < num_outputs; i++) {
 		if (root_container.children->items[i] == current_output) {
@@ -176,7 +183,8 @@ struct sway_container *workspace_prev_next_impl(struct sway_container *workspace
 		}
 	}
 
-	// Doesn't happen, at worst the for loop returns the previously active workspace on the active output
+	// Doesn't happen, at worst the for loop returns the previously active
+	// workspace on the active output
 	return NULL;
 }
 
@@ -201,7 +209,8 @@ bool workspace_switch(struct sway_container *workspace) {
 		return false;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *focus =
+		sway_seat_get_focus_inactive(seat, &root_container);
 	if (!seat || !focus) {
 		return false;
 	}
@@ -230,7 +239,8 @@ bool workspace_switch(struct sway_container *workspace) {
 
 	// TODO: Deal with sticky containers
 
-	wlr_log(L_DEBUG, "Switching to workspace %p:%s", workspace, workspace->name);
+	wlr_log(L_DEBUG, "Switching to workspace %p:%s",
+		workspace, workspace->name);
 	struct sway_container *next = sway_seat_get_focus_inactive(seat, workspace);
 	if (next == NULL) {
 		next = workspace;
