@@ -14,6 +14,8 @@
 #include "swaybar/config.h"
 #include "swaybar/event_loop.h"
 #include "swaybar/bar.h"
+#include "swaybar/ipc.h"
+#include "ipc-client.h"
 #include "list.h"
 #include "pango.h"
 #include "pool-buffer.h"
@@ -92,6 +94,10 @@ void bar_setup(struct swaybar *bar,
 	bar_init(bar);
 	init_event_loop();
 
+	bar->ipc_socketfd = ipc_open_socket(socket_path);
+	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
+	ipc_get_config(bar, bar_id);
+
 	assert(bar->display = wl_display_connect(NULL));
 
 	struct wl_registry *registry = wl_display_get_registry(bar->display);
@@ -120,6 +126,11 @@ static void display_in(int fd, short mask, void *_bar) {
 	if (wl_display_dispatch(bar->display) == -1) {
 		wlr_log(L_ERROR, "failed to dispatch wl: %d", errno);
 	}
+}
+
+static void ipc_in(int fd, short mask, void *_bar) {
+	struct swaybar *bar = (struct swaybar *)_bar;
+	handle_ipc_event(bar);
 }
 
 void bar_run(struct swaybar *bar) {

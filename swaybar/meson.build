@@ -4,6 +4,7 @@ executable(
 		'bar.c',
 		'config.c',
 		'event_loop.c',
+		'ipc.c',
 		'main.c',
 		'render.c',
 	],

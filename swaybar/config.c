@@ -22,17 +22,6 @@ uint32_t parse_position(const char *position) {
 	}
 }
 
-char *parse_font(const char *font) {
-	char *new_font = NULL;
-	if (strncmp("pango:", font, 6) == 0) {
-		font += 6;
-	}
-
-	new_font = strdup(font);
-
-	return new_font;
-}
-
 struct swaybar_config *init_config() {
 	struct swaybar_config *config = calloc(1, sizeof(struct swaybar_config));
 	config->status_command = NULL;
@@ -45,8 +34,7 @@ struct swaybar_config *init_config() {
 	config->binding_mode_indicator = true;
 	config->wrap_scroll = false;
 	config->workspace_buttons = true;
-	config->all_outputs = false;
-	config->outputs = create_list();
+	wl_list_init(&config->outputs);
 
 	/* height */
 	config->height = 0;

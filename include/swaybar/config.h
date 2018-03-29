@@ -2,21 +2,20 @@
 #define _SWAYBAR_CONFIG_H
 #include <stdbool.h>
 #include <stdint.h>
-#include "list.h"
+#include <wayland-client.h>
 #include "util.h"
 
-/**
- * Colors for a box with background, border and text colors.
- */
 struct box_colors {
 	uint32_t border;
 	uint32_t background;
 	uint32_t text;
 };
 
-/**
- * Swaybar config.
- */
+struct config_output {
+	struct wl_list link;
+	char *name;
+};
+
 struct swaybar_config {
 	char *status_command;
 	bool pango_markup;
@@ -28,8 +27,7 @@ struct swaybar_config {
 	bool binding_mode_indicator;
 	bool wrap_scroll;
 	bool workspace_buttons;
-	bool all_outputs;
-	list_t *outputs;
+	struct wl_list outputs;
 	int height;
 
 	struct {
@@ -51,5 +49,6 @@ struct swaybar_config {
 
 struct swaybar_config *init_config();
 void free_config(struct swaybar_config *config);
+uint32_t parse_position(const char *position);
 
 #endif
