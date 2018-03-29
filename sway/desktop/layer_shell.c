@@ -156,7 +156,6 @@ void arrange_layers(struct sway_output *output) {
 	struct wlr_box usable_area = { 0 };
 	wlr_output_effective_resolution(output->wlr_output,
 			&usable_area.width, &usable_area.height);
-	struct wlr_box usable_area_before = output->usable_area;
 
 	// Arrange exclusive surfaces from top->bottom
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
@@ -169,11 +168,7 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area, true);
 	memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
 
-	if (memcmp(&usable_area_before,
-			&usable_area, sizeof(struct wlr_box)) != 0) {
-		wlr_log(L_DEBUG, "arrange");
-		arrange_windows(output->swayc, -1, -1);
-	}
+	arrange_windows(output->swayc, -1, -1);
 
 	// Arrange non-exlusive surfaces from top->bottom
 	usable_area.x = usable_area.y = 0;
@@ -221,6 +216,7 @@ static void unmap(struct wlr_layer_surface *layer_surface) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer = wl_container_of(
 			listener, sway_layer, destroy);
+	wlr_log(L_DEBUG, "layer surface removed");
 	if (sway_layer->layer_surface->mapped) {
 		unmap(sway_layer->layer_surface);
 	}
@@ -233,8 +229,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_list_remove(&sway_layer->output_destroy.link);
 	}
 	struct sway_output *output = sway_layer->layer_surface->output->data;
-	arrange_layers(output);
 	free(sway_layer);
+	arrange_layers(output);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {

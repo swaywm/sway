@@ -403,12 +403,6 @@ bool load_main_config(const char *file, bool is_active) {
 		free_config(old_config);
 	}
 	config->reading = false;
-
-	if (success) {
-		// TODO: bar
-		//update_active_bar_modifiers();
-	}
-
 	return success;
 }
 
