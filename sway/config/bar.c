@@ -15,6 +15,16 @@
 #include "list.h"
 #include "log.h"
 
+static void terminate_swaybar(pid_t pid) {
+	int ret = kill(pid, SIGTERM);
+	if (ret != 0) {
+		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
+	}
+}
+
 void free_bar_config(struct bar_config *bar) {
 	if (!bar) {
 		return;
@@ -31,7 +41,7 @@ void free_bar_config(struct bar_config *bar) {
 		free_flat_list(bar->outputs);
 	}
 	if (bar->pid != 0) {
-		// TODO terminate_swaybar(bar->pid);
+		terminate_swaybar(bar->pid);
 	}
 	free(bar->colors.background);
 	free(bar->colors.statusline);
@@ -189,16 +199,6 @@ void invoke_swaybar(struct bar_config *bar) {
 		free(buf);
 	}
 	close(filedes[1]);
-}
-
-static void terminate_swaybar(pid_t pid) {
-	int ret = kill(pid, SIGTERM);
-	if (ret != 0) {
-		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
-	} else {
-		int status;
-		waitpid(pid, &status, 0);
-	}
 }
 
 static bool active_output(const char *name) {
