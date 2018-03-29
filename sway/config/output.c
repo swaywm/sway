@@ -180,19 +180,20 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		wlr_log(L_DEBUG, "Setting background for output %d to %s",
 				output_i, oc->background);
 
-		size_t bufsize = 12;
-		char output_id[bufsize];
-		snprintf(output_id, bufsize, "%d", output_i);
-		output_id[bufsize-1] = 0;
+		size_t len = snprintf(NULL, 0, "%s %d %s %s",
+				config->swaybg_command ? config->swaybg_command : "swaybg",
+				output_i, oc->background, oc->background_option);
+		char *command = malloc(len + 1);
+		if (!command) {
+			wlr_log(L_DEBUG, "Unable to allocate swaybg command");
+			return;
+		}
+		snprintf(command, len + 1, "%s %d %s %s",
+				config->swaybg_command ? config->swaybg_command : "swaybg",
+				output_i, oc->background, oc->background_option);
+		wlr_log(L_DEBUG, "-> %s", command);
 
-		char *const cmd[] = {
-			"swaybg",
-			output_id,
-			oc->background,
-			oc->background_option,
-			NULL,
-		};
-
+		char *const cmd[] = { "sh", "-c", command, NULL };
 		output->sway_output->bg_pid = fork();
 		if (output->sway_output->bg_pid == 0) {
 			execvp(cmd[0], cmd);

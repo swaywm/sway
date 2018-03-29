@@ -20,6 +20,7 @@ sway_sources = files(
 	'commands/seat/attach.c',
 	'commands/seat/fallback.c',
 	'commands/set.c',
+	'commands/swaybg_command.c',
 	'commands/bar/activate_button.c',
 	'commands/bar/binding_mode_indicator.c',
 	'commands/bar/bindsym.c',

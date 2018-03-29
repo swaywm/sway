@@ -282,6 +282,7 @@ struct sway_config {
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;
+	char *swaybg_command;
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
