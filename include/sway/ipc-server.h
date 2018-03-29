@@ -12,5 +12,6 @@ struct sockaddr_un *ipc_user_sockaddr(void);
 
 void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change);
 void ipc_event_window(swayc_t *window, const char *change);
+void ipc_event_barconfig_update(struct bar_config *bar);
 
 #endif

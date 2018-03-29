@@ -91,45 +91,9 @@ void apply_seat_config(struct seat_config *seat) {
 	sway_input_manager_apply_seat_config(input_manager, seat);
 }
 
-/**
- * Check and add color to buffer.
- *
- * return error object, or NULL if color is valid.
- */
-struct cmd_results *add_color(const char *name, char *buffer, const char *color) {
-	int len = strlen(color);
-	if (len != 7 && len != 9) {
-		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
-	}
-
-	if (color[0] != '#') {
-		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
-	}
-
-	int i;
-	for (i = 1; i < len; ++i) {
-		if (!isxdigit(color[i])) {
-			return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
-		}
-	}
-
-	// copy color to buffer
-	strncpy(buffer, color, len);
-	// add default alpha channel if color was defined without it
-	if (len == 7) {
-		buffer[7] = 'f';
-		buffer[8] = 'f';
-	}
-	buffer[9] = '\0';
-
-	return NULL;
-}
-
-/**
- * handlers that can run in either config or command context
- * Keep alphabetized
- */
+/* Keep alphabetized */
 static struct cmd_handler handlers[] = {
+	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
@@ -141,18 +105,53 @@ static struct cmd_handler handlers[] = {
 	{ "workspace", cmd_workspace },
 };
 
-/**
- * Commands that can *only* run in the config loading context
- * Keep alphabetized
- */
+static struct cmd_handler bar_handlers[] = {
+	{ "activate_button", bar_cmd_activate_button },
+	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
+	{ "bindsym", bar_cmd_bindsym },
+	{ "colors", bar_cmd_colors },
+	{ "context_button", bar_cmd_context_button },
+	{ "font", bar_cmd_font },
+	{ "height", bar_cmd_height },
+	{ "hidden_state", bar_cmd_hidden_state },
+	{ "icon_theme", bar_cmd_icon_theme },
+	{ "id", bar_cmd_id },
+	{ "mode", bar_cmd_mode },
+	{ "modifier", bar_cmd_modifier },
+	{ "output", bar_cmd_output },
+	{ "pango_markup", bar_cmd_pango_markup },
+	{ "position", bar_cmd_position },
+	{ "secondary_button", bar_cmd_secondary_button },
+	{ "separator_symbol", bar_cmd_separator_symbol },
+	{ "status_command", bar_cmd_status_command },
+	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
+	{ "swaybar_command", bar_cmd_swaybar_command },
+	{ "tray_output", bar_cmd_tray_output },
+	{ "tray_padding", bar_cmd_tray_padding },
+	{ "workspace_buttons", bar_cmd_workspace_buttons },
+	{ "wrap_scroll", bar_cmd_wrap_scroll },
+};
+
+static struct cmd_handler bar_colors_handlers[] = {
+	{ "active_workspace", bar_colors_cmd_active_workspace },
+	{ "background", bar_colors_cmd_background },
+	{ "binding_mode", bar_colors_cmd_binding_mode },
+	{ "focused_background", bar_colors_cmd_focused_background },
+	{ "focused_separator", bar_colors_cmd_focused_separator },
+	{ "focused_statusline", bar_colors_cmd_focused_statusline },
+	{ "focused_workspace", bar_colors_cmd_focused_workspace },
+	{ "inactive_workspace", bar_colors_cmd_inactive_workspace },
+	{ "separator", bar_colors_cmd_separator },
+	{ "statusline", bar_colors_cmd_statusline },
+	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
+};
+
+/* Config-time only commands. Keep alphabetized */
 static struct cmd_handler config_handlers[] = {
 	{ "set", cmd_set },
 };
 
-/**
- * Commands that can *not* run in the config loading context
- * Keep alphabetized
- */
+/* Runtime-only commands. Keep alphabetized */
 static struct cmd_handler command_handlers[] = {
 	{ "exit", cmd_exit },
 	{ "focus", cmd_focus },
@@ -200,13 +199,19 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 
 	bool config_loading = config->reading || !config->active;
 
-	if (block == CMD_BLOCK_INPUT) {
-		// input commands can run in either context
+	if (block == CMD_BLOCK_BAR) {
+		return bsearch(&d, bar_handlers,
+				sizeof(bar_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_BAR_COLORS) {
+		return bsearch(&d, bar_colors_handlers,
+				sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_INPUT) {
 		return bsearch(&d, input_handlers,
 				sizeof(input_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
 	} else if (block == CMD_BLOCK_SEAT) {
-		// seat commands can run in either context
 		return bsearch(&d, seat_handlers,
 				sizeof(seat_handlers) / sizeof(struct cmd_handler),
 				sizeof(struct cmd_handler), handler_compare);
@@ -557,4 +562,36 @@ const char *cmd_results_to_json(struct cmd_results *results) {
 	free(result_array);
 	free(root);
 	return json;
+}
+
+/**
+ * Check and add color to buffer.
+ *
+ * return error object, or NULL if color is valid.
+ */
+struct cmd_results *add_color(const char *name,
+		char *buffer, const char *color) {
+	int len = strlen(color);
+	if (len != 7 && len != 9) {
+		return cmd_results_new(CMD_INVALID, name,
+				"Invalid color definition %s", color);
+	}
+	if (color[0] != '#') {
+		return cmd_results_new(CMD_INVALID, name,
+				"Invalid color definition %s", color);
+	}
+	for (int i = 1; i < len; ++i) {
+		if (!isxdigit(color[i])) {
+			return cmd_results_new(CMD_INVALID, name,
+					"Invalid color definition %s", color);
+		}
+	}
+	strncpy(buffer, color, len);
+	// add default alpha channel if color was defined without it
+	if (len == 7) {
+		buffer[7] = 'f';
+		buffer[8] = 'f';
+	}
+	buffer[9] = '\0';
+	return NULL;
 }

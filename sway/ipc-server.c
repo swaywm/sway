@@ -313,8 +313,16 @@ void ipc_event_window(swayc_t *window, const char *change) {
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_WINDOW);
-
 	json_object_put(obj); // free
+}
+
+void ipc_event_barconfig_update(struct bar_config *bar) {
+	wlr_log(L_DEBUG, "Sending barconfig_update event");
+	json_object *json = ipc_json_describe_bar_config(bar);
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_BARCONFIG_UPDATE);
+	json_object_put(json); // free
 }
 
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
