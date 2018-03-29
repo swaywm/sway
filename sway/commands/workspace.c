@@ -23,9 +23,9 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		if (current_container->type == C_WORKSPACE) {
 			old_workspace = current_container;
 		} else {
-			old_workspace = sway_container_parent(current_container, C_WORKSPACE);
+			old_workspace = container_parent(current_container, C_WORKSPACE);
 		}
-		old_output = sway_container_parent(current_container, C_OUTPUT);
+		old_output = container_parent(current_container, C_OUTPUT);
 	}
 
 	for (int i = 0; i < argc; ++i) {
@@ -92,7 +92,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		workspace_switch(ws);
 		current_container =
 			sway_seat_get_focus(config->handler_context.seat);
-		struct sway_container *new_output = sway_container_parent(current_container, C_OUTPUT);
+		struct sway_container *new_output = container_parent(current_container, C_OUTPUT);
 
 		if (config->mouse_warping && old_output != new_output) {
 			// TODO: Warp mouse

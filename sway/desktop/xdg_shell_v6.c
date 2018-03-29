@@ -83,10 +83,10 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_xdg_surface, destroy);
 	wl_list_remove(&sway_xdg_surface->commit.link);
 	wl_list_remove(&sway_xdg_surface->destroy.link);
-	struct sway_container *parent = sway_container_view_destroy(sway_xdg_surface->view->swayc);
+	struct sway_container *parent = container_view_destroy(sway_xdg_surface->view->swayc);
 	free(sway_xdg_surface->view);
 	free(sway_xdg_surface);
-	arrange_windows(parent, -1, -1);
+	container_arrange_windows(parent, -1, -1);
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
@@ -137,10 +137,10 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = sway_container_view_create(focus, sway_view);
+	struct sway_container *cont = container_view_create(focus, sway_view);
 	sway_view->swayc = cont;
 
-	arrange_windows(cont->parent, -1, -1);
+	container_arrange_windows(cont->parent, -1, -1);
 
 	sway_input_manager_set_focus(input_manager, cont);
 }

@@ -172,7 +172,7 @@ void arrange_layers(struct sway_output *output) {
 	if (memcmp(&usable_area_before,
 			&usable_area, sizeof(struct wlr_box)) != 0) {
 		wlr_log(L_DEBUG, "arrange");
-		arrange_windows(output->swayc, -1, -1);
+		container_arrange_windows(output->swayc, -1, -1);
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom

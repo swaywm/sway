@@ -30,23 +30,23 @@ struct sway_root {
 	} events;
 };
 
-void init_layout(void);
+void layout_init(void);
 
-void add_child(struct sway_container *parent, struct sway_container *child);
+void container_add_child(struct sway_container *parent, struct sway_container *child);
 
-struct sway_container *add_sibling(struct sway_container *parent,
+struct sway_container *container_add_sibling(struct sway_container *parent,
 		struct sway_container *child);
 
-struct sway_container *remove_child(struct sway_container *child);
+struct sway_container *container_remove_child(struct sway_container *child);
 
-enum sway_container_layout default_layout(struct sway_container *output);
+enum sway_container_layout container_get_default_layout(struct sway_container *output);
 
-void sort_workspaces(struct sway_container *output);
+void container_sort_workspaces(struct sway_container *output);
 
-void arrange_windows(struct sway_container *container,
+void container_arrange_windows(struct sway_container *container,
 		double width, double height);
 
-struct sway_container *get_swayc_in_direction(struct sway_container
+struct sway_container *container_get_in_direction(struct sway_container
 		*container, struct sway_seat *seat, enum movement_direction dir);
 
 #endif

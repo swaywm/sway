@@ -13,6 +13,6 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 
 	/* load_swaybars(); -- for when it's implemented */
 
-	arrange_windows(&root_container, -1, -1);
+	container_arrange_windows(&root_container, -1, -1);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

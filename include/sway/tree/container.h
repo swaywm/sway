@@ -88,41 +88,38 @@ struct sway_container {
 };
 
 // TODO only one container create function and pass the type?
-struct sway_container *sway_container_output_create(
+struct sway_container *container_output_create(
 		struct sway_output *sway_output);
 
-struct sway_container *sway_container_workspace_create(
+struct sway_container *container_workspace_create(
 		struct sway_container *output, const char *name);
 
-struct sway_container *sway_container_view_create(
+struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
 
-struct sway_container *sway_container_output_destroy(
+struct sway_container *container_output_destroy(
 		struct sway_container *output);
 
-struct sway_container *sway_container_view_destroy(struct sway_container *view);
+struct sway_container *container_view_destroy(struct sway_container *view);
 
-struct sway_container *sway_container_set_layout(
+struct sway_container *container_set_layout(
 		struct sway_container *container, enum sway_container_layout layout);
 
-void sway_container_descendents(struct sway_container *root,
+void container_descendents(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data);
-
-// XXX: what is this?
-struct sway_container *next_view_sibling(struct sway_seat *seat);
 
 /**
  * Finds a container based on test criteria. Returns the first container that
  * passes the test.
  */
-struct sway_container *sway_container_find(struct sway_container *container,
+struct sway_container *container_find(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
 /**
  * Finds a parent container with the given struct sway_containerype.
  */
-struct sway_container *sway_container_parent(struct sway_container *container,
+struct sway_container *container_parent(struct sway_container *container,
 		enum sway_container_type type);
 
 /**

@@ -67,7 +67,7 @@ static void free_swayc(struct sway_container *cont) {
 
 	if (cont->children) {
 		// remove children until there are no more, free_swayc calls
-		// remove_child, which removes child from this container
+		// container_remove_child, which removes child from this container
 		while (cont->children->length) {
 			free_swayc(cont->children->items[0]);
 		}
@@ -78,7 +78,7 @@ static void free_swayc(struct sway_container *cont) {
 		list_free(cont->marks);
 	}
 	if (cont->parent) {
-		remove_child(cont);
+		container_remove_child(cont);
 	}
 	if (cont->name) {
 		free(cont->name);
@@ -86,7 +86,7 @@ static void free_swayc(struct sway_container *cont) {
 	free(cont);
 }
 
-struct sway_container *sway_container_output_create(struct sway_output *sway_output) {
+struct sway_container *container_output_create(struct sway_output *sway_output) {
 	struct wlr_box size;
 	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
 		&size.height);
@@ -131,12 +131,12 @@ struct sway_container *sway_container_output_create(struct sway_output *sway_out
 
 	apply_output_config(oc, output);
 
-	add_child(&root_container, output);
+	container_add_child(&root_container, output);
 
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
-	struct sway_container *ws = sway_container_workspace_create(output, ws_name);
+	struct sway_container *ws = container_workspace_create(output, ws_name);
 	// Set each seat's focus if not already set
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
@@ -150,8 +150,8 @@ struct sway_container *sway_container_output_create(struct sway_output *sway_out
 	return output;
 }
 
-struct sway_container *sway_container_workspace_create(struct sway_container *output, const char *name) {
-	if (!sway_assert(output, "sway_container_workspace_create called with null output")) {
+struct sway_container *container_workspace_create(struct sway_container *output, const char *name) {
+	if (!sway_assert(output, "container_workspace_create called with null output")) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
@@ -163,17 +163,17 @@ struct sway_container *sway_container_workspace_create(struct sway_container *ou
 	workspace->height = output->height;
 	workspace->name = !name ? NULL : strdup(name);
 	workspace->prev_layout = L_NONE;
-	workspace->layout = default_layout(output);
-	workspace->workspace_layout = default_layout(output);
+	workspace->layout = container_get_default_layout(output);
+	workspace->workspace_layout = container_get_default_layout(output);
 
-	add_child(output, workspace);
-	sort_workspaces(output);
+	container_add_child(output, workspace);
+	container_sort_workspaces(output);
 	notify_new_container(workspace);
 	return workspace;
 }
 
-struct sway_container *sway_container_view_create(struct sway_container *sibling, struct sway_view *sway_view) {
-	if (!sway_assert(sibling, "sway_container_view_create called with NULL sibling/parent")) {
+struct sway_container *container_view_create(struct sway_container *sibling, struct sway_view *sway_view) {
+	if (!sway_assert(sibling, "container_view_create called with NULL sibling/parent")) {
 		return NULL;
 	}
 	const char *title = view_get_title(sway_view);
@@ -188,17 +188,17 @@ struct sway_container *sway_container_view_create(struct sway_container *sibling
 
 	if (sibling->type == C_WORKSPACE) {
 		// Case of focused workspace, just create as child of it
-		add_child(sibling, swayc);
+		container_add_child(sibling, swayc);
 	} else {
 		// Regular case, create as sibling of current container
-		add_sibling(sibling, swayc);
+		container_add_sibling(sibling, swayc);
 	}
 	notify_new_container(swayc);
 	return swayc;
 }
 
-struct sway_container *sway_container_output_destroy(struct sway_container *output) {
-	if (!sway_assert(output, "null output passed to sway_container_output_destroy")) {
+struct sway_container *container_output_destroy(struct sway_container *output) {
+	if (!sway_assert(output, "null output passed to container_output_destroy")) {
 		return NULL;
 	}
 
@@ -211,11 +211,11 @@ struct sway_container *sway_container_output_destroy(struct sway_container *outp
 			// Move workspace from this output to another output
 			while (output->children->length) {
 				struct sway_container *child = output->children->items[0];
-				remove_child(child);
-				add_child(root_container.children->items[p], child);
+				container_remove_child(child);
+				container_add_child(root_container.children->items[p], child);
 			}
-			sort_workspaces(root_container.children->items[p]);
-			arrange_windows(root_container.children->items[p], -1, -1);
+			container_sort_workspaces(root_container.children->items[p]);
+			container_arrange_windows(root_container.children->items[p], -1, -1);
 		}
 	}
 
@@ -229,7 +229,7 @@ struct sway_container *sway_container_output_destroy(struct sway_container *outp
 	return &root_container;
 }
 
-struct sway_container *sway_container_view_destroy(struct sway_container *view) {
+struct sway_container *container_view_destroy(struct sway_container *view) {
 	if (!view) {
 		return NULL;
 	}
@@ -246,7 +246,7 @@ struct sway_container *sway_container_view_destroy(struct sway_container *view) 
 	return parent;
 }
 
-struct sway_container *swayc_change_layout(struct sway_container *container, enum sway_container_layout layout) {
+struct sway_container *container_set_layout(struct sway_container *container, enum sway_container_layout layout) {
 	if (container->type == C_WORKSPACE) {
 		container->workspace_layout = layout;
 		if (layout == L_HORIZ || layout == L_VERT) {
@@ -258,7 +258,7 @@ struct sway_container *swayc_change_layout(struct sway_container *container, enu
 	return container;
 }
 
-void sway_container_descendents(struct sway_container *root, enum sway_container_type type,
+void container_descendents(struct sway_container *root, enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data) {
 	for (int i = 0; i < root->children->length; ++i) {
 		struct sway_container *item = root->children->items[i];
@@ -266,12 +266,12 @@ void sway_container_descendents(struct sway_container *root, enum sway_container
 			func(item, data);
 		}
 		if (item->children && item->children->length) {
-			sway_container_descendents(item, type, func, data);
+			container_descendents(item, type, func, data);
 		}
 	}
 }
 
-struct sway_container *sway_container_find(struct sway_container *container,
+struct sway_container *container_find(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data) {
 	if (!container->children) {
 		return NULL;
@@ -282,7 +282,7 @@ struct sway_container *sway_container_find(struct sway_container *container,
 		if (test(child, data)) {
 			return child;
 		} else {
-			struct sway_container *res = sway_container_find(child, test, data);
+			struct sway_container *res = container_find(child, test, data);
 			if (res) {
 				return res;
 			}
@@ -291,7 +291,7 @@ struct sway_container *sway_container_find(struct sway_container *container,
 	return NULL;
 }
 
-struct sway_container *sway_container_parent(struct sway_container *container, enum sway_container_type type) {
+struct sway_container *container_parent(struct sway_container *container, enum sway_container_type type) {
 	if (!sway_assert(container, "container is NULL")) {
 		return NULL;
 	}
@@ -341,7 +341,7 @@ struct sway_container *sway_container_at(struct sway_container *parent, double l
 		list_del(queue, 0);
 		if (swayc->type == C_VIEW) {
 			struct sway_view *sview = swayc->sway_view;
-			struct sway_container *soutput = sway_container_parent(swayc, C_OUTPUT);
+			struct sway_container *soutput = container_parent(swayc, C_OUTPUT);
 			struct wlr_box *output_box =
 				wlr_output_layout_get_box(
 					root_container.sway_root->output_layout,

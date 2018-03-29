@@ -365,7 +365,7 @@ struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
 		return focus;
 	}
 
-	return sway_container_parent(focus, type);
+	return container_parent(focus, type);
 }
 
 void sway_seat_set_config(struct sway_seat *seat,

@@ -52,7 +52,7 @@ struct sway_container *workspace_by_number(const char* name) {
 	if (wbnd.len <= 0) {
 		return NULL;
 	}
-	return sway_container_find(&root_container, _workspace_by_number, (void *) &wbnd);
+	return container_find(&root_container, _workspace_by_number, (void *) &wbnd);
 }
 
 static bool _workspace_by_name(struct sway_container *view, void *data) {
@@ -65,8 +65,8 @@ struct sway_container *workspace_by_name(const char *name) {
 	struct sway_container *current_workspace = NULL, *current_output = NULL;
 	struct sway_container *focus = sway_seat_get_focus(seat);
 	if (focus) {
-		current_workspace = sway_container_parent(focus, C_WORKSPACE);
-		current_output = sway_container_parent(focus, C_OUTPUT);
+		current_workspace = container_parent(focus, C_WORKSPACE);
+		current_output = container_parent(focus, C_OUTPUT);
 	}
 	if (strcmp(name, "prev") == 0) {
 		return workspace_prev(current_workspace);
@@ -79,7 +79,7 @@ struct sway_container *workspace_by_name(const char *name) {
 	} else if (strcmp(name, "current") == 0) {
 		return current_workspace;
 	} else {
-		return sway_container_find(&root_container, _workspace_by_name, (void *) name);
+		return container_find(&root_container, _workspace_by_name, (void *) name);
 	}
 }
 
@@ -95,7 +95,7 @@ struct sway_container *workspace_create(const char *name) {
 			for (i = 0; i < e; ++i) {
 				parent = root_container.children->items[i];
 				if (strcmp(parent->name, wso->output) == 0) {
-					return sway_container_workspace_create(parent, name);
+					return container_workspace_create(parent, name);
 				}
 			}
 			break;
@@ -105,8 +105,8 @@ struct sway_container *workspace_create(const char *name) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
 	parent = focus;
-	parent = sway_container_parent(parent, C_OUTPUT);
-	return sway_container_workspace_create(parent, name);
+	parent = container_parent(parent, C_OUTPUT);
+	return container_workspace_create(parent, name);
 }
 
 /**
@@ -124,7 +124,7 @@ struct sway_container *workspace_output_prev_next_impl(struct sway_container *ou
 	struct sway_container *focus = sway_seat_get_focus_inactive(seat, output);
 	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
 			focus :
-			sway_container_parent(focus, C_WORKSPACE));
+			container_parent(focus, C_WORKSPACE));
 
 	int i;
 	for (i = 0; i < output->children->length; i++) {
@@ -207,7 +207,7 @@ bool workspace_switch(struct sway_container *workspace) {
 	}
 	struct sway_container *active_ws = focus;
 	if (active_ws->type != C_WORKSPACE) {
-		sway_container_parent(focus, C_WORKSPACE);
+		container_parent(focus, C_WORKSPACE);
 	}
 
 	if (config->auto_back_and_forth
@@ -236,7 +236,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		next = workspace;
 	}
 	sway_seat_set_focus(seat, next);
-	struct sway_container *output = sway_container_parent(workspace, C_OUTPUT);
-	arrange_windows(output, -1, -1);
+	struct sway_container *output = container_parent(workspace, C_OUTPUT);
+	container_arrange_windows(output, -1, -1);
 	return true;
 }

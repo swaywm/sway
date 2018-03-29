@@ -221,13 +221,13 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_container *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
 	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
 			focus :
-			sway_container_parent(focus, C_WORKSPACE));
+			container_parent(focus, C_WORKSPACE));
 
 	struct render_data rdata = {
 		.output = soutput,
 		.now = &now,
 	};
-	sway_container_descendents(workspace, C_VIEW, output_frame_view, &rdata);
+	container_descendents(workspace, C_VIEW, output_frame_view, &rdata);
 
 	// render unmanaged views on top
 	struct sway_view *view;
@@ -258,13 +258,13 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
 
-	sway_container_output_destroy(output->swayc);
+	container_output_destroy(output->swayc);
 }
 
 static void handle_output_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
-	arrange_windows(output->swayc, -1, -1);
+	container_arrange_windows(output->swayc, -1, -1);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -286,7 +286,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wlr_output_set_mode(wlr_output, mode);
 	}
 
-	output->swayc = sway_container_output_create(output);
+	output->swayc = container_output_create(output);
 	if (!output->swayc) {
 		free(output);
 		return;
@@ -307,5 +307,5 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->mode.notify = handle_output_mode;
 
 	arrange_layers(output);
-	arrange_windows(&root_container, -1, -1);
+	container_arrange_windows(&root_container, -1, -1);
 }

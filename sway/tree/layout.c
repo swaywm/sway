@@ -40,7 +40,7 @@ static void output_layout_change_notify(struct wl_listener *listener, void *data
 		output_container->height = output_box->height;
 	}
 
-	arrange_windows(&root_container, -1, -1);
+	container_arrange_windows(&root_container, -1, -1);
 }
 
 void init_layout(void) {
@@ -79,7 +79,7 @@ static int index_child(const struct sway_container *child) {
 	return i;
 }
 
-struct sway_container *add_sibling(struct sway_container *fixed, struct sway_container *active) {
+struct sway_container *container_add_sibling(struct sway_container *fixed, struct sway_container *active) {
 	// TODO handle floating
 	struct sway_container *parent = fixed->parent;
 	int i = index_child(fixed);
@@ -88,7 +88,7 @@ struct sway_container *add_sibling(struct sway_container *fixed, struct sway_con
 	return active->parent;
 }
 
-void add_child(struct sway_container *parent, struct sway_container *child) {
+void container_add_child(struct sway_container *parent, struct sway_container *child) {
 	wlr_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
 			child, child->type, child->width, child->height,
 			parent, parent->type, parent->width, parent->height);
@@ -102,7 +102,7 @@ void add_child(struct sway_container *parent, struct sway_container *child) {
 	*/
 }
 
-struct sway_container *remove_child(struct sway_container *child) {
+struct sway_container *container_remove_child(struct sway_container *child) {
 	int i;
 	struct sway_container *parent = child->parent;
 	for (i = 0; i < parent->children->length; ++i) {
@@ -115,7 +115,7 @@ struct sway_container *remove_child(struct sway_container *child) {
 	return parent;
 }
 
-enum sway_container_layout default_layout(struct sway_container *output) {
+enum sway_container_layout container_get_default_layout(struct sway_container *output) {
 	/* TODO WLR
 	if (config->default_layout != L_NONE) {
 		//return config->default_layout;
@@ -146,7 +146,7 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	return retval;
 }
 
-void sort_workspaces(struct sway_container *output) {
+void container_sort_workspaces(struct sway_container *output) {
 	list_stable_sort(output->children, sort_workspace_cmp_qsort);
 }
 
@@ -160,7 +160,7 @@ static void apply_vert_layout(struct sway_container *container, const double x,
 				const double height, const int start,
 				const int end);
 
-void arrange_windows(struct sway_container *container, double width, double height) {
+void container_arrange_windows(struct sway_container *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
 		width = container->width;
@@ -184,7 +184,7 @@ void arrange_windows(struct sway_container *container, double width, double heig
 			struct sway_container *output = container->children->items[i];
 			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 					output->name, output->x, output->y);
-			arrange_windows(output, -1, -1);
+			container_arrange_windows(output, -1, -1);
 		}
 		return;
 	case C_OUTPUT:
@@ -198,12 +198,12 @@ void arrange_windows(struct sway_container *container, double width, double heig
 		// arrange all workspaces:
 		for (i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
-			arrange_windows(child, -1, -1);
+			container_arrange_windows(child, -1, -1);
 		}
 		return;
 	case C_WORKSPACE:
 		{
-			struct sway_container *output = sway_container_parent(container, C_OUTPUT);
+			struct sway_container *output = container_parent(container, C_OUTPUT);
 			struct wlr_box *area = &output->sway_output->usable_area;
 			wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 					area->width, area->height, area->x, area->y);
@@ -284,9 +284,9 @@ static void apply_horiz_layout(struct sway_container *container,
 
 			if (i == end - 1) {
 				double remaining_width = x + width - child_x;
-				arrange_windows(child, remaining_width, height);
+				container_arrange_windows(child, remaining_width, height);
 			} else {
-				arrange_windows(child, child->width * scale, height);
+				container_arrange_windows(child, child->width * scale, height);
 			}
 			child_x += child->width;
 		}
@@ -334,9 +334,9 @@ void apply_vert_layout(struct sway_container *container,
 
 			if (i == end - 1) {
 				double remaining_height = y + height - child_y;
-				arrange_windows(child, width, remaining_height);
+				container_arrange_windows(child, width, remaining_height);
 			} else {
-				arrange_windows(child, width, child->height * scale);
+				container_arrange_windows(child, width, child->height * scale);
 			}
 			child_y += child->height;
 		}
@@ -362,7 +362,7 @@ static struct sway_container *get_swayc_in_output_direction(struct sway_containe
 
 	struct sway_container *ws = sway_seat_get_focus_inactive(seat, output);
 	if (ws->type != C_WORKSPACE) {
-		ws = sway_container_parent(ws, C_WORKSPACE);
+		ws = container_parent(ws, C_WORKSPACE);
 	}
 
 	if (ws == NULL) {
@@ -410,7 +410,7 @@ static void get_layout_center_position(struct sway_container *container, int *x,
 		*x = container->x + container->width/2;
 		*y = container->y + container->height/2;
 	} else {
-		struct sway_container *output = sway_container_parent(container, C_OUTPUT);
+		struct sway_container *output = container_parent(container, C_OUTPUT);
 		if (container->type == C_WORKSPACE) {
 			// Workspace coordinates are actually wrong/arbitrary, but should
 			// be same as output.
@@ -496,7 +496,7 @@ static struct sway_container *get_swayc_in_direction_under(struct sway_container
 	/*
 	if (container->type == C_VIEW && swayc_is_fullscreen(container)) {
 		wlr_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
-		container = sway_container_parent(container, C_OUTPUT);
+		container = container_parent(container, C_OUTPUT);
 		get_layout_center_position(container, &abs_pos);
 		struct sway_container *output = swayc_adjacent_output(container, dir, &abs_pos, true);
 		return get_swayc_in_output_direction(output, dir);
