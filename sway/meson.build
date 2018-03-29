@@ -64,6 +64,7 @@ sway_sources = files(
 	'commands/reload.c',
 	'commands/workspace.c',
 	'config.c',
+	'config/bar.c',
 	'config/output.c',
 	'config/seat.c',
 	'config/input.c',

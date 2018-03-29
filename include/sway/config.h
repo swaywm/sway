@@ -12,6 +12,8 @@
 #include "container.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+// TODO: Refactor this shit
+
 /**
  * Describes a variable created via the `set` command.
  */
@@ -407,11 +409,6 @@ void merge_output_config(struct output_config *dst, struct output_config *src);
 void apply_output_config(struct output_config *oc, swayc_t *output);
 void free_output_config(struct output_config *oc);
 
-/**
- * Updates the list of active bar modifiers
- */
-void update_active_bar_modifiers(void);
-
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
@@ -420,27 +417,16 @@ int sway_binding_cmp_keys(const void *a, const void *b);
 void free_sway_binding(struct sway_binding *sb);
 struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
-int sway_mouse_binding_cmp(const void *a, const void *b);
-int sway_mouse_binding_cmp_qsort(const void *a, const void *b);
-int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
-void free_sway_mouse_binding(struct sway_mouse_binding *smb);
-
+/* Bar stuff */
 void load_swaybars();
 void terminate_swaybg(pid_t pid);
-
-/**
- * Allocate and initialize default bar configuration.
- */
 struct bar_config *default_bar_config(void);
+void free_bar_config(struct bar_config *bar);
 
-/**
- * Global config singleton.
- */
+/* Global config singleton. */
 extern struct sway_config *config;
 
-/**
- * Config file currently being read.
- */
+/* Config file currently being read */
 extern const char *current_config_path;
 
 #endif

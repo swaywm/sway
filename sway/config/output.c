@@ -186,7 +186,7 @@ void apply_output_config(struct output_config *oc, swayc_t *output) {
 		output_id[bufsize-1] = 0;
 
 		char *const cmd[] = {
-			"./swaybg/swaybg",
+			"swaybg",
 			output_id,
 			oc->background,
 			oc->background_option,
