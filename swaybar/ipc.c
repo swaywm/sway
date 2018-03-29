@@ -216,9 +216,11 @@ static void free_workspaces(struct wl_list *list) {
 }
 
 void ipc_get_workspaces(struct swaybar *bar) {
+	bar->focused_output = NULL;
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		free_workspaces(&output->workspaces);
+		output->focused = false;
 	}
 	uint32_t len = 0;
 	char *res = ipc_single_command(bar->ipc_socketfd,
@@ -251,10 +253,6 @@ void ipc_get_workspaces(struct swaybar *bar) {
 				ws->visible = json_object_get_boolean(visible);
 				ws->focused = json_object_get_boolean(focused);
 				if (ws->focused) {
-					if (bar->focused_output) {
-						bar->focused_output->focused = false;
-					}
-					bar->focused_output = output;
 					output->focused = true;
 				}
 				ws->urgent = json_object_get_boolean(urgent);
@@ -262,6 +260,7 @@ void ipc_get_workspaces(struct swaybar *bar) {
 			}
 		}
 	}
+	json_object_put(results);
 	free(res);
 }
 
