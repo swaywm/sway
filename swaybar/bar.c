@@ -148,7 +148,8 @@ static void render_all_frames(struct swaybar *bar) {
 static void display_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
 	if (wl_display_dispatch(bar->display) == -1) {
-		wlr_log(L_ERROR, "failed to dispatch wl: %d", errno);
+		bar_teardown(bar);
+		exit(0);
 	}
 }
 

@@ -22,7 +22,6 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 	if (!status->text) {
 		return 0;
 	}
-	//wlr_log(L_DEBUG, "focused %d", focused);
 	cairo_set_source_u32(cairo, focused ?
 			config->colors.focused_statusline : config->colors.statusline);
 	static const int margin = 3;
