@@ -58,18 +58,18 @@ static struct sway_container *new_swayc(enum sway_container_type type) {
 	return c;
 }
 
-static void free_swayc(struct sway_container *cont) {
-	if (!sway_assert(cont, "free_swayc passed NULL")) {
+static void container_destroy(struct sway_container *cont) {
+	if (cont == NULL) {
 		return;
 	}
 
 	wl_signal_emit(&cont->events.destroy, cont);
 
 	if (cont->children) {
-		// remove children until there are no more, free_swayc calls
+		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
 		while (cont->children->length) {
-			free_swayc(cont->children->items[0]);
+			container_destroy(cont->children->items[0]);
 		}
 		list_free(cont->children);
 	}
@@ -125,7 +125,7 @@ struct sway_container *container_output_create(struct sway_output *sway_output) 
 	output->sway_output = sway_output;
 	output->name = strdup(name);
 	if (output->name == NULL) {
-		free_swayc(output);
+		container_destroy(output);
 		return NULL;
 	}
 
@@ -224,7 +224,7 @@ struct sway_container *container_output_destroy(struct sway_container *output) {
 	wl_list_remove(&output->sway_output->mode.link);
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
-	free_swayc(output);
+	container_destroy(output);
 
 	return &root_container;
 }
@@ -235,7 +235,7 @@ struct sway_container *container_view_destroy(struct sway_container *view) {
 	}
 	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
 	struct sway_container *parent = view->parent;
-	free_swayc(view);
+	container_destroy(view);
 
 	// TODO WLR: Destroy empty containers
 	/*
