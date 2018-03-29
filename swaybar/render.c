@@ -137,7 +137,7 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 	double x = 0;
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;
-		wl_list_for_each(ws, &output->workspaces, link) {
+		wl_list_for_each_reverse(ws, &output->workspaces, link) {
 			uint32_t h = render_workspace_button(
 					cairo, config, ws, &x, output->height);
 			max_height = h > max_height ? h : max_height;
