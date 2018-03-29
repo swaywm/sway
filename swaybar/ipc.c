@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <json-c/json.h>
+#include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
 #include "ipc-client.h"
@@ -288,10 +289,51 @@ void ipc_initialize(struct swaybar *bar, const char *bar_id) {
 	ipc_parse_config(bar->config, res);
 	free(res);
 	ipc_get_outputs(bar);
-	// TODO: subscribe to stuff
+
+	const char *subscribe = "[ \"workspace\", \"mode\" ]";
+	len = strlen(subscribe);
+	free(ipc_single_command(bar->ipc_event_socketfd,
+			IPC_SUBSCRIBE, subscribe, &len));
 }
 
-void handle_ipc_event(struct swaybar *bar) {
+bool handle_ipc_event(struct swaybar *bar) {
 	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
+	if (!resp) {
+		return false;
+	}
+	switch (resp->type) {
+	case IPC_EVENT_WORKSPACE:
+		ipc_get_workspaces(bar);
+		break;
+	case IPC_EVENT_MODE: {
+		json_object *result = json_tokener_parse(resp->payload);
+		if (!result) {
+			free_ipc_response(resp);
+			wlr_log(L_ERROR, "failed to parse payload as json");
+			return false;
+		}
+		json_object *json_change;
+		if (json_object_object_get_ex(result, "change", &json_change)) {
+			const char *change = json_object_get_string(json_change);
+			free(bar->config->mode);
+			if (strcmp(change, "default") == 0) {
+				bar->config->mode = NULL;
+			} else {
+				bar->config->mode = strdup(change);
+			}
+		} else {
+			wlr_log(L_ERROR, "failed to parse response");
+			json_object_put(result);
+			free_ipc_response(resp);
+			return false;
+		}
+		json_object_put(result);
+		break;
+	}
+	default:
+		free_ipc_response(resp);
+		return false;
+	}
 	free_ipc_response(resp);
+	return true;
 }

@@ -143,11 +143,17 @@ static void display_in(int fd, short mask, void *_bar) {
 
 static void ipc_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
-	handle_ipc_event(bar);
+	if (handle_ipc_event(bar)) {
+		struct swaybar_output *output;
+		wl_list_for_each(output, &bar->outputs, link) {
+			render_frame(bar, output);
+		}
+	}
 }
 
 void bar_run(struct swaybar *bar) {
 	add_event(wl_display_get_fd(bar->display), POLLIN, display_in, bar);
+	add_event(bar->ipc_event_socketfd, POLLIN, ipc_in, bar);
 	while (1) {
 		event_loop_poll();
 	}
