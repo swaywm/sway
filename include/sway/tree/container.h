@@ -97,13 +97,12 @@ struct sway_container *container_workspace_create(
 struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
 
-struct sway_container *container_output_destroy(
-		struct sway_container *output);
+struct sway_container *container_output_destroy(struct sway_container *output);
 
 struct sway_container *container_view_destroy(struct sway_container *view);
 
-struct sway_container *container_set_layout(
-		struct sway_container *container, enum sway_container_layout layout);
+struct sway_container *container_set_layout(struct sway_container *container,
+		enum sway_container_layout layout);
 
 void container_descendents(struct sway_container *root,
 		enum sway_container_type type,

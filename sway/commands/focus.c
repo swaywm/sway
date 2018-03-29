@@ -51,7 +51,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 				"Expected 'focus <direction|parent|child|mode_toggle>' or 'focus output <direction|name>'");
 	}
 
-	struct sway_container *next_focus = get_swayc_in_direction(con, seat, direction);
+	struct sway_container *next_focus = container_get_in_direction(con, seat, direction);
 	if (next_focus) {
 		sway_seat_set_focus(seat, next_focus);
 	}

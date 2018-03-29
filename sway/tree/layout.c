@@ -587,7 +587,7 @@ static struct sway_container *get_swayc_in_direction_under(struct sway_container
 	}
 }
 
-struct sway_container *get_swayc_in_direction(struct sway_container *container, struct sway_seat *seat,
+struct sway_container *container_get_in_direction(struct sway_container *container, struct sway_seat *seat,
 		enum movement_direction dir) {
 	return get_swayc_in_direction_under(container, dir, seat, NULL);
 }
