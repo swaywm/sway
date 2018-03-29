@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <limits.h>
 #include <string.h>
 #include <strings.h>
 #include <json-c/json.h>
@@ -174,6 +175,7 @@ static void ipc_parse_config(
 			struct config_output *coutput = calloc(
 					1, sizeof(struct config_output));
 			coutput->name = strdup(name);
+			coutput->index = SIZE_MAX;
 			wl_list_insert(&config->outputs, &coutput->link);
 		}
 	}
@@ -185,12 +187,47 @@ static void ipc_parse_config(
 	json_object_put(bar_config);
 }
 
+static void ipc_get_outputs(struct swaybar *bar) {
+	uint32_t len = 0;
+	char *res = ipc_single_command(bar->ipc_socketfd,
+			IPC_GET_OUTPUTS, NULL, &len);
+	json_object *outputs = json_tokener_parse(res);
+	for (size_t i = 0; i < json_object_array_length(outputs); ++i) {
+		json_object *output = json_object_array_get_idx(outputs, i);
+		json_object *output_name, *output_active;
+		json_object_object_get_ex(output, "name", &output_name);
+		json_object_object_get_ex(output, "active", &output_active);
+		const char *name = json_object_get_string(output_name);
+		bool active = json_object_get_boolean(output_active);
+		if (!active) {
+			continue;
+		}
+		if (wl_list_empty(&bar->config->outputs)) {
+			struct config_output *coutput = calloc(
+					1, sizeof(struct config_output));
+			coutput->name = strdup(name);
+			coutput->index = i;
+			wl_list_insert(&bar->config->outputs, &coutput->link);
+		} else {
+			struct config_output *coutput;
+			wl_list_for_each(coutput, &bar->config->outputs, link) {
+				if (strcmp(name, coutput->name) == 0) {
+					coutput->index = i;
+					break;
+				}
+			}
+		}
+	}
+	free(res);
+}
+
 void ipc_get_config(struct swaybar *bar, const char *bar_id) {
 	uint32_t len = strlen(bar_id);
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_BAR_CONFIG, bar_id, &len);
 	ipc_parse_config(bar->config, res);
 	free(res);
+	ipc_get_outputs(bar);
 }
 
 void handle_ipc_event(struct swaybar *bar) {

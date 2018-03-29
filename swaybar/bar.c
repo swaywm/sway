@@ -65,13 +65,13 @@ static void handle_global(void *data, struct wl_registry *registry,
 		bar->shm = wl_registry_bind(registry, name,
 				&wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
-		static int idx = 0;
+		static size_t index = 0;
 		struct swaybar_output *output =
 			calloc(1, sizeof(struct swaybar_output));
 		output->bar = bar;
 		output->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 1);
-		output->idx = idx++;
+		output->index = index++;
 		wl_list_insert(&bar->outputs, &output->link);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		bar->layer_shell = wl_registry_bind(
@@ -108,16 +108,24 @@ void bar_setup(struct swaybar *bar,
 	// TODO: we might not necessarily be meant to do all of the outputs
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
-		assert(output->surface = wl_compositor_create_surface(bar->compositor));
-		output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-				bar->layer_shell, output->surface, output->output,
-				ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");
-		assert(output->layer_surface);
-		zwlr_layer_surface_v1_add_listener(output->layer_surface,
-				&layer_surface_listener, output);
-		zwlr_layer_surface_v1_set_anchor(output->layer_surface,
-				bar->config->position);
-		render_frame(bar, output);
+		struct config_output *coutput;
+		wl_list_for_each(coutput, &bar->config->outputs, link) {
+			if (coutput->index != output->index) {
+				continue;
+			}
+			assert(output->surface = wl_compositor_create_surface(
+					bar->compositor));
+			output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+					bar->layer_shell, output->surface, output->output,
+					ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");
+			assert(output->layer_surface);
+			zwlr_layer_surface_v1_add_listener(output->layer_surface,
+					&layer_surface_listener, output);
+			zwlr_layer_surface_v1_set_anchor(output->layer_surface,
+					bar->config->position);
+			render_frame(bar, output);
+			break;
+		}
 	}
 }
 

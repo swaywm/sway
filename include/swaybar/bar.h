@@ -31,7 +31,7 @@ struct swaybar_output {
 	struct zwlr_layer_surface_v1 *layer_surface;
 
 	char *name;
-	int idx;
+	size_t index;
 	bool focused;
 
 	uint32_t width, height;

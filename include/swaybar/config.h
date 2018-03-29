@@ -14,6 +14,7 @@ struct box_colors {
 struct config_output {
 	struct wl_list link;
 	char *name;
+	size_t index;
 };
 
 struct swaybar_config {
