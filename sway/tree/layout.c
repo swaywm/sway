@@ -43,7 +43,7 @@ static void output_layout_change_notify(struct wl_listener *listener, void *data
 	container_arrange_windows(&root_container, -1, -1);
 }
 
-void init_layout(void) {
+void layout_init(void) {
 	root_container.id = 0; // normally assigned in new_swayc()
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;

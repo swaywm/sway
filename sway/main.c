@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
 
 	wlr_log(L_INFO, "Starting sway version " SWAY_VERSION);
 
-	init_layout();
+	layout_init();
 
 	if (!server_init(&server)) {
 		return 1;
