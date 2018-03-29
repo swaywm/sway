@@ -187,6 +187,65 @@ static void ipc_parse_config(
 	json_object_put(bar_config);
 }
 
+static void free_workspaces(struct wl_list *list) {
+	struct swaybar_workspace *ws, *tmp;
+	wl_list_for_each_safe(ws, tmp, list, link) {
+		wl_list_remove(&ws->link);
+		free(ws->name);
+		free(ws);
+	}
+}
+
+void ipc_get_workspaces(struct swaybar *bar) {
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		free_workspaces(&output->workspaces);
+	}
+	uint32_t len = 0;
+	char *res = ipc_single_command(bar->ipc_socketfd,
+			IPC_GET_WORKSPACES, NULL, &len);
+	json_object *results = json_tokener_parse(res);
+	if (!results) {
+		free(res);
+		return;
+	}
+	size_t length = json_object_array_length(results);
+	json_object *ws_json;
+	json_object *num, *name, *visible, *focused, *out, *urgent;
+	for (size_t i = 0; i < length; ++i) {
+		ws_json = json_object_array_get_idx(results, i);
+
+		json_object_object_get_ex(ws_json, "num", &num);
+		json_object_object_get_ex(ws_json, "name", &name);
+		json_object_object_get_ex(ws_json, "visible", &visible);
+		json_object_object_get_ex(ws_json, "focused", &focused);
+		json_object_object_get_ex(ws_json, "output", &out);
+		json_object_object_get_ex(ws_json, "urgent", &urgent);
+
+		wl_list_for_each(output, &bar->outputs, link) {
+			const char *ws_output = json_object_get_string(out);
+			if (strcmp(ws_output, output->name) == 0) {
+				struct swaybar_workspace *ws =
+					calloc(1, sizeof(struct swaybar_workspace));
+				ws->num = json_object_get_int(num);
+				ws->name = strdup(json_object_get_string(name));
+				ws->visible = json_object_get_boolean(visible);
+				ws->focused = json_object_get_boolean(focused);
+				if (ws->focused) {
+					if (bar->focused_output) {
+						bar->focused_output->focused = false;
+					}
+					bar->focused_output = output;
+					output->focused = true;
+				}
+				ws->urgent = json_object_get_boolean(urgent);
+				wl_list_insert(&output->workspaces, &ws->link);
+			}
+		}
+	}
+	free(res);
+}
+
 static void ipc_get_outputs(struct swaybar *bar) {
 	uint32_t len = 0;
 	char *res = ipc_single_command(bar->ipc_socketfd,
@@ -218,16 +277,18 @@ static void ipc_get_outputs(struct swaybar *bar) {
 			}
 		}
 	}
+	json_object_put(outputs);
 	free(res);
 }
 
-void ipc_get_config(struct swaybar *bar, const char *bar_id) {
+void ipc_initialize(struct swaybar *bar, const char *bar_id) {
 	uint32_t len = strlen(bar_id);
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_BAR_CONFIG, bar_id, &len);
 	ipc_parse_config(bar->config, res);
 	free(res);
 	ipc_get_outputs(bar);
+	// TODO: subscribe to stuff
 }
 
 void handle_ipc_event(struct swaybar *bar) {

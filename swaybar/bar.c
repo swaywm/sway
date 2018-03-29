@@ -72,6 +72,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 		output->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 1);
 		output->index = index++;
+		wl_list_init(&output->workspaces);
 		wl_list_insert(&bar->outputs, &output->link);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		bar->layer_shell = wl_registry_bind(
@@ -96,7 +97,7 @@ void bar_setup(struct swaybar *bar,
 
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
-	ipc_get_config(bar, bar_id);
+	ipc_initialize(bar, bar_id);
 
 	assert(bar->display = wl_display_connect(NULL));
 
@@ -113,6 +114,7 @@ void bar_setup(struct swaybar *bar,
 			if (coutput->index != output->index) {
 				continue;
 			}
+			output->name = strdup(coutput->name);
 			assert(output->surface = wl_compositor_create_surface(
 					bar->compositor));
 			output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
@@ -123,9 +125,12 @@ void bar_setup(struct swaybar *bar,
 					&layer_surface_listener, output);
 			zwlr_layer_surface_v1_set_anchor(output->layer_surface,
 					bar->config->position);
-			render_frame(bar, output);
 			break;
 		}
+	}
+	ipc_get_workspaces(bar);
+	wl_list_for_each(output, &bar->outputs, link) {
+		render_frame(bar, output);
 	}
 }
 

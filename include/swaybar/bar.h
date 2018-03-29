@@ -30,6 +30,8 @@ struct swaybar_output {
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
 
+	struct wl_list workspaces;
+
 	char *name;
 	size_t index;
 	bool focused;
@@ -39,9 +41,19 @@ struct swaybar_output {
 	struct pool_buffer *current_buffer;
 };
 
+struct swaybar_workspace {
+	struct wl_list link;
+	int num;
+	char *name;
+	bool focused;
+	bool visible;
+	bool urgent;
+};
+
+// TODO: Rename stuff to match wlroots conventions (init/create/etc)
 void bar_setup(struct swaybar *bar,
-		const char *socket_path,
-		const char *bar_id);
+	const char *socket_path,
+	const char *bar_id);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 
