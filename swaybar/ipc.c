@@ -352,7 +352,7 @@ void ipc_bar_init(struct bar *bar, const char *bar_id) {
 		}
 
 		// add bar to the output
-		struct output *bar_output = new_output(name);
+		struct output *bar_output = sway_container_output_create(name);
 		bar_output->idx = i;
 		list_add(bar->outputs, bar_output);
 	}

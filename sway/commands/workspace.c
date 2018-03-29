@@ -17,15 +17,15 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 
 	int output_location = -1;
 
-	swayc_t *current_container = config->handler_context.current_container;
-	swayc_t *old_workspace = NULL, *old_output = NULL;
+	struct sway_container *current_container = config->handler_context.current_container;
+	struct sway_container *old_workspace = NULL, *old_output = NULL;
 	if (current_container) {
 		if (current_container->type == C_WORKSPACE) {
 			old_workspace = current_container;
 		} else {
-			old_workspace = swayc_parent_by_type(current_container, C_WORKSPACE);
+			old_workspace = sway_container_parent(current_container, C_WORKSPACE);
 		}
-		old_output = swayc_parent_by_type(current_container, C_OUTPUT);
+		old_output = sway_container_parent(current_container, C_OUTPUT);
 	}
 
 	for (int i = 0; i < argc; ++i) {
@@ -57,7 +57,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
 		}
-		swayc_t *ws = NULL;
+		struct sway_container *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (!(ws = workspace_by_number(argv[1]))) {
 				char *name = join_args(argv + 1, argc - 1);
@@ -92,7 +92,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		workspace_switch(ws);
 		current_container =
 			sway_seat_get_focus(config->handler_context.seat);
-		swayc_t *new_output = swayc_parent_by_type(current_container, C_OUTPUT);
+		struct sway_container *new_output = sway_container_parent(current_container, C_OUTPUT);
 
 		if (config->mouse_warping && old_output != new_output) {
 			// TODO: Warp mouse

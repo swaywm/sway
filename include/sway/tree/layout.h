@@ -39,7 +39,7 @@ struct sway_container *add_sibling(struct sway_container *parent,
 
 struct sway_container *remove_child(struct sway_container *child);
 
-enum swayc_layouts default_layout(struct sway_container *output);
+enum sway_container_layout default_layout(struct sway_container *output);
 
 void sort_workspaces(struct sway_container *output);
 

@@ -17,7 +17,7 @@ struct sway_seat;
  * This enum is in order. A container will never be inside of a container below
  * it on this list.
  */
-enum swayc_types {
+enum sway_container_type {
 	C_ROOT,
 	C_OUTPUT,
 	C_WORKSPACE,
@@ -27,7 +27,7 @@ enum swayc_types {
 	C_TYPES,
 };
 
-enum swayc_layouts {
+enum sway_container_layout {
 	L_NONE,
 	L_HORIZ,
 	L_VERT,
@@ -39,7 +39,7 @@ enum swayc_layouts {
 	L_LAYOUTS,
 };
 
-enum swayc_border_types {
+enum sway_container_border {
 	B_NONE,
 	B_PIXEL,
 	B_NORMAL,
@@ -65,10 +65,10 @@ struct sway_container {
 
 	char *name;
 
-	enum swayc_types type;
-	enum swayc_layouts layout;
-	enum swayc_layouts prev_layout;
-	enum swayc_layouts workspace_layout;
+	enum sway_container_type type;
+	enum sway_container_layout layout;
+	enum sway_container_layout prev_layout;
+	enum sway_container_layout workspace_layout;
 
     // TODO convert to layout coordinates
 	double x, y;
@@ -87,53 +87,61 @@ struct sway_container {
 	} events;
 };
 
-void swayc_descendants_of_type(struct sway_container *root,
-		enum swayc_types type,
+// TODO only one container create function and pass the type?
+struct sway_container *sway_container_output_create(
+		struct sway_output *sway_output);
+
+struct sway_container *sway_container_workspace_create(
+		struct sway_container *output, const char *name);
+
+struct sway_container *sway_container_view_create(
+		struct sway_container *sibling, struct sway_view *sway_view);
+
+struct sway_container *sway_container_output_destroy(
+		struct sway_container *output);
+
+struct sway_container *sway_container_view_destroy(struct sway_container *view);
+
+struct sway_container *sway_container_set_layout(
+		struct sway_container *container, enum sway_container_layout layout);
+
+void sway_container_descendents(struct sway_container *root,
+		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data);
 
-// TODO only one container create function and pass the type?
-struct sway_container *new_output(struct sway_output *sway_output);
-
-struct sway_container *new_workspace(struct sway_container *output,
-		const char *name);
-
-struct sway_container *new_view(struct sway_container *sibling,
-		struct sway_view *sway_view);
-
-struct sway_container *destroy_output(struct sway_container *output);
-struct sway_container *destroy_view(struct sway_container *view);
-
+// XXX: what is this?
 struct sway_container *next_view_sibling(struct sway_seat *seat);
 
 /**
  * Finds a container based on test criteria. Returns the first container that
  * passes the test.
  */
-struct sway_container *swayc_by_test(struct sway_container *container,
+struct sway_container *sway_container_find(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
 /**
- * Finds a parent container with the given swayc_type.
+ * Finds a parent container with the given struct sway_containerype.
  */
-struct sway_container *swayc_parent_by_type(struct sway_container *container,
-		enum swayc_types type);
+struct sway_container *sway_container_parent(struct sway_container *container,
+		enum sway_container_type type);
 
 /**
- * Maps a container's children over a function.
+ * Run a function for each child.
  */
-void container_map(struct sway_container *container,
+void sway_container_for_each(struct sway_container *container,
 		void (*f)(struct sway_container *view, void *data), void *data);
 
-struct sway_container *swayc_at(struct sway_container *parent, double lx,
-		double ly, struct wlr_surface **surface, double *sx, double *sy);
+/**
+ * Find a container at the given coordinates.
+ */
+struct sway_container *sway_container_at(struct sway_container *parent,
+		double lx, double ly, struct wlr_surface **surface,
+		double *sx, double *sy);
 
 /**
  * Apply the function for each child of the container breadth first.
  */
-void container_for_each_bfs(struct sway_container *con, void (*f)(struct
-			sway_container *con, void *data), void *data);
-
-struct sway_container *swayc_change_layout(struct sway_container *container,
-		enum swayc_layouts layout);
+void sway_container_for_each_bfs(struct sway_container *container,
+		void (*f)(struct sway_container *container, void *data), void *data);
 
 #endif

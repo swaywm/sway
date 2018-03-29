@@ -10,7 +10,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if ((error = checkarg(argc, "layout", EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}
-	swayc_t *parent = config->handler_context.current_container;
+	struct sway_container *parent = config->handler_context.current_container;
 
 	// TODO: floating
 	/*
@@ -28,7 +28,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if (strcasecmp(argv[0], "default") == 0) {
 		swayc_change_layout(parent, parent->prev_layout);
 		if (parent->layout == L_NONE) {
-			swayc_t *output = swayc_parent_by_type(parent, C_OUTPUT);
+			struct sway_container *output = sway_container_parent(parent, C_OUTPUT);
 			swayc_change_layout(parent, default_layout(output));
 		}
 	} else {

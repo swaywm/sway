@@ -71,7 +71,7 @@ struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *container);
 
 struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
-		enum swayc_types type);
+		enum sway_container_type type);
 
 void sway_seat_set_config(struct sway_seat *seat, struct seat_config *seat_config);
 

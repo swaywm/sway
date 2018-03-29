@@ -49,11 +49,11 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 	if (!assert_xwayland(view)) {
 		return;
 	}
-	swayc_t *output = swayc_parent_by_type(view->swayc, C_OUTPUT);
+	struct sway_container *output = sway_container_parent(view->swayc, C_OUTPUT);
 	if (!sway_assert(output, "view must be within tree to set position")) {
 		return;
 	}
-	swayc_t *root = swayc_parent_by_type(output, C_ROOT);
+	struct sway_container *root = sway_container_parent(output, C_ROOT);
 	if (!sway_assert(root, "output must be within tree to set position")) {
 		return;
 	}
@@ -114,7 +114,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	swayc_t *parent = destroy_view(sway_surface->view->swayc);
+	struct sway_container *parent = sway_container_view_destroy(sway_surface->view->swayc);
 	if (parent) {
 		arrange_windows(parent, -1, -1);
 	}
@@ -132,7 +132,7 @@ static void handle_unmap_notify(struct wl_listener *listener, void *data) {
 	}
 
 	// take it out of the tree
-	swayc_t *parent = destroy_view(sway_surface->view->swayc);
+	struct sway_container *parent = sway_container_view_destroy(sway_surface->view->swayc);
 	if (parent) {
 		arrange_windows(parent, -1, -1);
 	}
@@ -155,12 +155,12 @@ static void handle_map_notify(struct wl_listener *listener, void *data) {
 			&sway_surface->view->unmanaged_view_link);
 	} else {
 		struct sway_view *view = sway_surface->view;
-		destroy_view(view->swayc);
+		sway_container_view_destroy(view->swayc);
 
-		swayc_t *parent = root_container.children->items[0];
+		struct sway_container *parent = root_container.children->items[0];
 		parent = parent->children->items[0]; // workspace
 
-		swayc_t *cont = new_view(parent, view);
+		struct sway_container *cont = sway_container_view_create(parent, view);
 		view->swayc = cont;
 
 		arrange_windows(cont->parent, -1, -1);
@@ -238,8 +238,8 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	swayc_t *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	swayc_t *cont = new_view(focus, sway_view);
+	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *cont = sway_container_view_create(focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);

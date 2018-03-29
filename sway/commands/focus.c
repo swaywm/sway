@@ -32,7 +32,7 @@ static bool parse_movement_direction(const char *name,
 }
 
 struct cmd_results *cmd_focus(int argc, char **argv) {
-	swayc_t *con = config->handler_context.current_container;
+	struct sway_container *con = config->handler_context.current_container;
 	struct sway_seat *seat = config->handler_context.seat;
 	if (con->type < C_WORKSPACE) {
 		return cmd_results_new(CMD_FAILURE, "focus",
@@ -51,7 +51,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 				"Expected 'focus <direction|parent|child|mode_toggle>' or 'focus output <direction|name>'");
 	}
 
-	swayc_t *next_focus = get_swayc_in_direction(con, seat, direction);
+	struct sway_container *next_focus = get_swayc_in_direction(con, seat, direction);
 	if (next_focus) {
 		sway_seat_set_focus(seat, next_focus);
 	}

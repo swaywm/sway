@@ -49,8 +49,8 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 		}
 	}
 
-	swayc_t *swayc =
-		swayc_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
+	struct sway_container *swayc =
+		sway_container_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
 	if (swayc) {
 		wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 		wlr_seat_pointer_notify_motion(seat, time, sx, sy);
@@ -87,8 +87,8 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	if (event->button == BTN_LEFT) {
 		struct wlr_surface *surface = NULL;
 		double sx, sy;
-		swayc_t *swayc =
-			swayc_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
+		struct sway_container *swayc =
+			sway_container_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
 
 		sway_seat_set_focus(cursor->seat, swayc);
 	}

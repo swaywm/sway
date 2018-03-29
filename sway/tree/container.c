@@ -33,48 +33,15 @@ static list_t *get_bfs_queue() {
 	return bfs_queue;
 }
 
-static void notify_new_container(swayc_t *container) {
+static void notify_new_container(struct sway_container *container) {
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 	ipc_event_window(container, "new");
 }
 
-swayc_t *swayc_by_test(swayc_t *container,
-		bool (*test)(swayc_t *view, void *data), void *data) {
-	if (!container->children) {
-		return NULL;
-	}
-	// TODO: floating windows
-	for (int i = 0; i < container->children->length; ++i) {
-		swayc_t *child = container->children->items[i];
-		if (test(child, data)) {
-			return child;
-		} else {
-			swayc_t *res = swayc_by_test(child, test, data);
-			if (res) {
-				return res;
-			}
-		}
-	}
-	return NULL;
-}
-
-void swayc_descendants_of_type(swayc_t *root, enum swayc_types type,
-		void (*func)(swayc_t *item, void *data), void *data) {
-	for (int i = 0; i < root->children->length; ++i) {
-		swayc_t *item = root->children->items[i];
-		if (item->type == type) {
-			func(item, data);
-		}
-		if (item->children && item->children->length) {
-			swayc_descendants_of_type(item, type, func, data);
-		}
-	}
-}
-
-static swayc_t *new_swayc(enum swayc_types type) {
+static struct sway_container *new_swayc(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
-	swayc_t *c = calloc(1, sizeof(swayc_t));
+	struct sway_container *c = calloc(1, sizeof(struct sway_container));
 	if (!c) {
 		return NULL;
 	}
@@ -91,7 +58,7 @@ static swayc_t *new_swayc(enum swayc_types type) {
 	return c;
 }
 
-static void free_swayc(swayc_t *cont) {
+static void free_swayc(struct sway_container *cont) {
 	if (!sway_assert(cont, "free_swayc passed NULL")) {
 		return;
 	}
@@ -119,7 +86,7 @@ static void free_swayc(swayc_t *cont) {
 	free(cont);
 }
 
-swayc_t *new_output(struct sway_output *sway_output) {
+struct sway_container *sway_container_output_create(struct sway_output *sway_output) {
 	struct wlr_box size;
 	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
 		&size.height);
@@ -154,7 +121,7 @@ swayc_t *new_output(struct sway_output *sway_output) {
 		return NULL;
 	}
 
-	swayc_t *output = new_swayc(C_OUTPUT);
+	struct sway_container *output = new_swayc(C_OUTPUT);
 	output->sway_output = sway_output;
 	output->name = strdup(name);
 	if (output->name == NULL) {
@@ -169,7 +136,7 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
-	swayc_t *ws = new_workspace(output, ws_name);
+	struct sway_container *ws = sway_container_workspace_create(output, ws_name);
 	// Set each seat's focus if not already set
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
@@ -183,12 +150,12 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	return output;
 }
 
-swayc_t *new_workspace(swayc_t *output, const char *name) {
-	if (!sway_assert(output, "new_workspace called with null output")) {
+struct sway_container *sway_container_workspace_create(struct sway_container *output, const char *name) {
+	if (!sway_assert(output, "sway_container_workspace_create called with null output")) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
-	swayc_t *workspace = new_swayc(C_WORKSPACE);
+	struct sway_container *workspace = new_swayc(C_WORKSPACE);
 
 	workspace->x = output->x;
 	workspace->y = output->y;
@@ -205,12 +172,12 @@ swayc_t *new_workspace(swayc_t *output, const char *name) {
 	return workspace;
 }
 
-swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
-	if (!sway_assert(sibling, "new_view called with NULL sibling/parent")) {
+struct sway_container *sway_container_view_create(struct sway_container *sibling, struct sway_view *sway_view) {
+	if (!sway_assert(sibling, "sway_container_view_create called with NULL sibling/parent")) {
 		return NULL;
 	}
 	const char *title = view_get_title(sway_view);
-	swayc_t *swayc = new_swayc(C_VIEW);
+	struct sway_container *swayc = new_swayc(C_VIEW);
 	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d %s",
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
@@ -230,8 +197,8 @@ swayc_t *new_view(swayc_t *sibling, struct sway_view *sway_view) {
 	return swayc;
 }
 
-swayc_t *destroy_output(swayc_t *output) {
-	if (!sway_assert(output, "null output passed to destroy_output")) {
+struct sway_container *sway_container_output_destroy(struct sway_container *output) {
+	if (!sway_assert(output, "null output passed to sway_container_output_destroy")) {
 		return NULL;
 	}
 
@@ -243,7 +210,7 @@ swayc_t *destroy_output(swayc_t *output) {
 			int p = root_container.children->items[0] == output;
 			// Move workspace from this output to another output
 			while (output->children->length) {
-				swayc_t *child = output->children->items[0];
+				struct sway_container *child = output->children->items[0];
 				remove_child(child);
 				add_child(root_container.children->items[p], child);
 			}
@@ -262,12 +229,12 @@ swayc_t *destroy_output(swayc_t *output) {
 	return &root_container;
 }
 
-swayc_t *destroy_view(swayc_t *view) {
+struct sway_container *sway_container_view_destroy(struct sway_container *view) {
 	if (!view) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
-	swayc_t *parent = view->parent;
+	struct sway_container *parent = view->parent;
 	free_swayc(view);
 
 	// TODO WLR: Destroy empty containers
@@ -279,7 +246,52 @@ swayc_t *destroy_view(swayc_t *view) {
 	return parent;
 }
 
-swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
+struct sway_container *swayc_change_layout(struct sway_container *container, enum sway_container_layout layout) {
+	if (container->type == C_WORKSPACE) {
+		container->workspace_layout = layout;
+		if (layout == L_HORIZ || layout == L_VERT) {
+			container->layout = layout;
+		}
+	} else {
+		container->layout = layout;
+	}
+	return container;
+}
+
+void sway_container_descendents(struct sway_container *root, enum sway_container_type type,
+		void (*func)(struct sway_container *item, void *data), void *data) {
+	for (int i = 0; i < root->children->length; ++i) {
+		struct sway_container *item = root->children->items[i];
+		if (item->type == type) {
+			func(item, data);
+		}
+		if (item->children && item->children->length) {
+			sway_container_descendents(item, type, func, data);
+		}
+	}
+}
+
+struct sway_container *sway_container_find(struct sway_container *container,
+		bool (*test)(struct sway_container *view, void *data), void *data) {
+	if (!container->children) {
+		return NULL;
+	}
+	// TODO: floating windows
+	for (int i = 0; i < container->children->length; ++i) {
+		struct sway_container *child = container->children->items[i];
+		if (test(child, data)) {
+			return child;
+		} else {
+			struct sway_container *res = sway_container_find(child, test, data);
+			if (res) {
+				return res;
+			}
+		}
+	}
+	return NULL;
+}
+
+struct sway_container *sway_container_parent(struct sway_container *container, enum sway_container_type type) {
 	if (!sway_assert(container, "container is NULL")) {
 		return NULL;
 	}
@@ -292,7 +304,29 @@ swayc_t *swayc_parent_by_type(swayc_t *container, enum swayc_types type) {
 	return container;
 }
 
-swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
+void sway_container_for_each(struct sway_container *container, void (*f)(struct sway_container *view, void *data), void *data) {
+	if (container) {
+		int i;
+		if (container->children)  {
+			for (i = 0; i < container->children->length; ++i) {
+				struct sway_container *child = container->children->items[i];
+				sway_container_for_each(child, f, data);
+			}
+		}
+		// TODO
+		/*
+		if (container->floating) {
+			for (i = 0; i < container->floating->length; ++i) {
+				struct sway_container *child = container->floating->items[i];
+				container_map(child, f, data);
+			}
+		}
+		*/
+		f(container, data);
+	}
+}
+
+struct sway_container *sway_container_at(struct sway_container *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	list_t *queue = get_bfs_queue();
 	if (!queue) {
@@ -301,13 +335,13 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 
 	list_add(queue, parent);
 
-	swayc_t *swayc = NULL;
+	struct sway_container *swayc = NULL;
 	while (queue->length) {
 		swayc = queue->items[0];
 		list_del(queue, 0);
 		if (swayc->type == C_VIEW) {
 			struct sway_view *sview = swayc->sway_view;
-			swayc_t *soutput = swayc_parent_by_type(swayc, C_OUTPUT);
+			struct sway_container *soutput = sway_container_parent(swayc, C_OUTPUT);
 			struct wlr_box *output_box =
 				wlr_output_layout_get_box(
 					root_container.sway_root->output_layout,
@@ -377,29 +411,7 @@ swayc_t *swayc_at(swayc_t *parent, double lx, double ly,
 	return NULL;
 }
 
-void container_map(swayc_t *container, void (*f)(swayc_t *view, void *data), void *data) {
-	if (container) {
-		int i;
-		if (container->children)  {
-			for (i = 0; i < container->children->length; ++i) {
-				swayc_t *child = container->children->items[i];
-				container_map(child, f, data);
-			}
-		}
-		// TODO
-		/*
-		if (container->floating) {
-			for (i = 0; i < container->floating->length; ++i) {
-				swayc_t *child = container->floating->items[i];
-				container_map(child, f, data);
-			}
-		}
-		*/
-		f(container, data);
-	}
-}
-
-void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
+void sway_container_for_each_bfs(struct sway_container *con, void (*f)(struct sway_container *con, void *data),
 		void *data) {
 	list_t *queue = get_bfs_queue();
 	if (!queue) {
@@ -413,7 +425,7 @@ void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
 
 	list_add(queue, con);
 
-	swayc_t *current = NULL;
+	struct sway_container *current = NULL;
 	while (queue->length) {
 		current = queue->items[0];
 		list_del(queue, 0);
@@ -421,16 +433,4 @@ void container_for_each_bfs(swayc_t *con, void (*f)(swayc_t *con, void *data),
 		// TODO floating containers
 		list_cat(queue, current->children);
 	}
-}
-
-swayc_t *swayc_change_layout(swayc_t *container, enum swayc_layouts layout) {
-	if (container->type == C_WORKSPACE) {
-		container->workspace_layout = layout;
-		if (layout == L_HORIZ || layout == L_VERT) {
-			container->layout = layout;
-		}
-	} else {
-		container->layout = layout;
-	}
-	return container;
 }

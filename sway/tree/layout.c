@@ -14,7 +14,7 @@
 #include "list.h"
 #include "log.h"
 
-swayc_t root_container;
+struct sway_container root_container;
 
 static void output_layout_change_notify(struct wl_listener *listener, void *data) {
 	struct wlr_box *layout_box = wlr_output_layout_get_box(
@@ -23,7 +23,7 @@ static void output_layout_change_notify(struct wl_listener *listener, void *data
 	root_container.height = layout_box->height;
 
 	for (int i = 0 ; i < root_container.children->length; ++i) {
-		swayc_t *output_container = root_container.children->items[i];
+		struct sway_container *output_container = root_container.children->items[i];
 		if (output_container->type != C_OUTPUT) {
 			continue;
 		}
@@ -62,9 +62,9 @@ void init_layout(void) {
 		&root_container.sway_root->output_layout_change);
 }
 
-static int index_child(const swayc_t *child) {
+static int index_child(const struct sway_container *child) {
 	// TODO handle floating
-	swayc_t *parent = child->parent;
+	struct sway_container *parent = child->parent;
 	int i, len;
 	len = parent->children->length;
 	for (i = 0; i < len; ++i) {
@@ -79,16 +79,16 @@ static int index_child(const swayc_t *child) {
 	return i;
 }
 
-swayc_t *add_sibling(swayc_t *fixed, swayc_t *active) {
+struct sway_container *add_sibling(struct sway_container *fixed, struct sway_container *active) {
 	// TODO handle floating
-	swayc_t *parent = fixed->parent;
+	struct sway_container *parent = fixed->parent;
 	int i = index_child(fixed);
 	list_insert(parent->children, i + 1, active);
 	active->parent = parent;
 	return active->parent;
 }
 
-void add_child(swayc_t *parent, swayc_t *child) {
+void add_child(struct sway_container *parent, struct sway_container *child) {
 	wlr_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
 			child, child->type, child->width, child->height,
 			parent, parent->type, parent->width, parent->height);
@@ -102,9 +102,9 @@ void add_child(swayc_t *parent, swayc_t *child) {
 	*/
 }
 
-swayc_t *remove_child(swayc_t *child) {
+struct sway_container *remove_child(struct sway_container *child) {
 	int i;
-	swayc_t *parent = child->parent;
+	struct sway_container *parent = child->parent;
 	for (i = 0; i < parent->children->length; ++i) {
 		if (parent->children->items[i] == child) {
 			list_del(parent->children, i);
@@ -115,7 +115,7 @@ swayc_t *remove_child(swayc_t *child) {
 	return parent;
 }
 
-enum swayc_layouts default_layout(swayc_t *output) {
+enum sway_container_layout default_layout(struct sway_container *output) {
 	/* TODO WLR
 	if (config->default_layout != L_NONE) {
 		//return config->default_layout;
@@ -129,8 +129,8 @@ enum swayc_layouts default_layout(swayc_t *output) {
 }
 
 static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
-	swayc_t *a = *(void **)_a;
-	swayc_t *b = *(void **)_b;
+	struct sway_container *a = *(void **)_a;
+	struct sway_container *b = *(void **)_b;
 	int retval = 0;
 
 	if (isdigit(a->name[0]) && isdigit(b->name[0])) {
@@ -146,21 +146,21 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	return retval;
 }
 
-void sort_workspaces(swayc_t *output) {
+void sort_workspaces(struct sway_container *output) {
 	list_stable_sort(output->children, sort_workspace_cmp_qsort);
 }
 
-static void apply_horiz_layout(swayc_t *container, const double x,
+static void apply_horiz_layout(struct sway_container *container, const double x,
 				const double y, const double width,
 				const double height, const int start,
 				const int end);
 
-static void apply_vert_layout(swayc_t *container, const double x,
+static void apply_vert_layout(struct sway_container *container, const double x,
 				const double y, const double width,
 				const double height, const int start,
 				const int end);
 
-void arrange_windows(swayc_t *container, double width, double height) {
+void arrange_windows(struct sway_container *container, double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
 		width = container->width;
@@ -181,7 +181,7 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	case C_ROOT:
 		// TODO: wlr_output_layout probably
 		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *output = container->children->items[i];
+			struct sway_container *output = container->children->items[i];
 			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 					output->name, output->x, output->y);
 			arrange_windows(output, -1, -1);
@@ -197,13 +197,13 @@ void arrange_windows(swayc_t *container, double width, double height) {
 		}
 		// arrange all workspaces:
 		for (i = 0; i < container->children->length; ++i) {
-			swayc_t *child = container->children->items[i];
+			struct sway_container *child = container->children->items[i];
 			arrange_windows(child, -1, -1);
 		}
 		return;
 	case C_WORKSPACE:
 		{
-			swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+			struct sway_container *output = sway_container_parent(container, C_OUTPUT);
 			struct wlr_box *area = &output->sway_output->usable_area;
 			wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 					area->width, area->height, area->x, area->y);
@@ -252,14 +252,14 @@ void arrange_windows(swayc_t *container, double width, double height) {
 	}
 }
 
-static void apply_horiz_layout(swayc_t *container,
+static void apply_horiz_layout(struct sway_container *container,
 		const double x, const double y,
 		const double width, const double height,
 		const int start, const int end) {
 	double scale = 0;
 	// Calculate total width
 	for (int i = start; i < end; ++i) {
-		double *old_width = &((swayc_t *)container->children->items[i])->width;
+		double *old_width = &((struct sway_container *)container->children->items[i])->width;
 		if (*old_width <= 0) {
 			if (end - start > 1) {
 				*old_width = width / (end - start - 1);
@@ -276,7 +276,7 @@ static void apply_horiz_layout(swayc_t *container,
 	if (scale > 0.1) {
 		wlr_log(L_DEBUG, "Arranging %p horizontally", container);
 		for (int i = start; i < end; ++i) {
-			swayc_t *child = container->children->items[i];
+			struct sway_container *child = container->children->items[i];
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, width, scale);
@@ -301,7 +301,7 @@ static void apply_horiz_layout(swayc_t *container,
 	}
 }
 
-void apply_vert_layout(swayc_t *container,
+void apply_vert_layout(struct sway_container *container,
 		const double x, const double y,
 		const double width, const double height, const int start,
 		const int end) {
@@ -309,7 +309,7 @@ void apply_vert_layout(swayc_t *container,
 	double scale = 0;
 	// Calculate total height
 	for (i = start; i < end; ++i) {
-		double *old_height = &((swayc_t *)container->children->items[i])->height;
+		double *old_height = &((struct sway_container *)container->children->items[i])->height;
 		if (*old_height <= 0) {
 			if (end - start > 1) {
 				*old_height = height / (end - start - 1);
@@ -326,7 +326,7 @@ void apply_vert_layout(swayc_t *container,
 	if (scale > 0.1) {
 		wlr_log(L_DEBUG, "Arranging %p vertically", container);
 		for (i = start; i < end; ++i) {
-			swayc_t *child = container->children->items[i];
+			struct sway_container *child = container->children->items[i];
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, height, scale);
@@ -354,15 +354,15 @@ void apply_vert_layout(swayc_t *container,
 /**
  * Get swayc in the direction of newly entered output.
  */
-static swayc_t *get_swayc_in_output_direction(swayc_t *output,
+static struct sway_container *get_swayc_in_output_direction(struct sway_container *output,
 		enum movement_direction dir, struct sway_seat *seat) {
 	if (!output) {
 		return NULL;
 	}
 
-	swayc_t *ws = sway_seat_get_focus_inactive(seat, output);
+	struct sway_container *ws = sway_seat_get_focus_inactive(seat, output);
 	if (ws->type != C_WORKSPACE) {
-		ws = swayc_parent_by_type(ws, C_WORKSPACE);
+		ws = sway_container_parent(ws, C_WORKSPACE);
 	}
 
 	if (ws == NULL) {
@@ -380,9 +380,9 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 			return ws->children->items[0];
 		case MOVE_UP:
 		case MOVE_DOWN: {
-			swayc_t *focused = sway_seat_get_focus_inactive(seat, ws);
+			struct sway_container *focused = sway_seat_get_focus_inactive(seat, ws);
 			if (focused && focused->parent) {
-				swayc_t *parent = focused->parent;
+				struct sway_container *parent = focused->parent;
 				if (parent->layout == L_VERT) {
 					if (dir == MOVE_UP) {
 						// get child furthest down on new output
@@ -404,13 +404,13 @@ static swayc_t *get_swayc_in_output_direction(swayc_t *output,
 	return ws;
 }
 
-static void get_layout_center_position(swayc_t *container, int *x, int *y) {
+static void get_layout_center_position(struct sway_container *container, int *x, int *y) {
 	// FIXME view coords are inconsistently referred to in layout/output systems
 	if (container->type == C_OUTPUT) {
 		*x = container->x + container->width/2;
 		*y = container->y + container->height/2;
 	} else {
-		swayc_t *output = swayc_parent_by_type(container, C_OUTPUT);
+		struct sway_container *output = sway_container_parent(container, C_OUTPUT);
 		if (container->type == C_WORKSPACE) {
 			// Workspace coordinates are actually wrong/arbitrary, but should
 			// be same as output.
@@ -444,12 +444,12 @@ static bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out
 	return true;
 }
 
-static swayc_t *sway_output_from_wlr(struct wlr_output *output) {
+static struct sway_container *sway_output_from_wlr(struct wlr_output *output) {
 	if (output == NULL) {
 		return NULL;
 	}
 	for (int i = 0; i < root_container.children->length; ++i) {
-		swayc_t *o = root_container.children->items[i];
+		struct sway_container *o = root_container.children->items[i];
 		if (o->type == C_OUTPUT && o->sway_output->wlr_output == output) {
 			return o;
 		}
@@ -457,13 +457,13 @@ static swayc_t *sway_output_from_wlr(struct wlr_output *output) {
 	return NULL;
 }
 
-static swayc_t *get_swayc_in_direction_under(swayc_t *container,
-		enum movement_direction dir, struct sway_seat *seat, swayc_t *limit) {
+static struct sway_container *get_swayc_in_direction_under(struct sway_container *container,
+		enum movement_direction dir, struct sway_seat *seat, struct sway_container *limit) {
 	if (dir == MOVE_CHILD) {
 		return sway_seat_get_focus_inactive(seat, container);
 	}
 
-	swayc_t *parent = container->parent;
+	struct sway_container *parent = container->parent;
 	if (dir == MOVE_PARENT) {
 		if (parent->type == C_OUTPUT) {
 			return NULL;
@@ -496,9 +496,9 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 	/*
 	if (container->type == C_VIEW && swayc_is_fullscreen(container)) {
 		wlr_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
-		container = swayc_parent_by_type(container, C_OUTPUT);
+		container = sway_container_parent(container, C_OUTPUT);
 		get_layout_center_position(container, &abs_pos);
-		swayc_t *output = swayc_adjacent_output(container, dir, &abs_pos, true);
+		struct sway_container *output = swayc_adjacent_output(container, dir, &abs_pos, true);
 		return get_swayc_in_output_direction(output, dir);
 	}
 	if (container->type == C_WORKSPACE && container->fullscreen) {
@@ -507,7 +507,7 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 	}
 	*/
 
-	swayc_t *wrap_candidate = NULL;
+	struct sway_container *wrap_candidate = NULL;
 	while (true) {
 		// Test if we can even make a difference here
 		bool can_move = false;
@@ -525,12 +525,12 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 			struct wlr_output *wlr_adjacent =
 				wlr_output_layout_adjacent_output(layout, wlr_dir,
 					container->sway_output->wlr_output, lx, ly);
-			swayc_t *adjacent = sway_output_from_wlr(wlr_adjacent);
+			struct sway_container *adjacent = sway_output_from_wlr(wlr_adjacent);
 
 			if (!adjacent || adjacent == container) {
 				return wrap_candidate;
 			}
-			swayc_t *next = get_swayc_in_output_direction(adjacent, dir, seat);
+			struct sway_container *next = get_swayc_in_output_direction(adjacent, dir, seat);
 			if (next == NULL) {
 				return NULL;
 			}
@@ -587,7 +587,7 @@ static swayc_t *get_swayc_in_direction_under(swayc_t *container,
 	}
 }
 
-swayc_t *get_swayc_in_direction(swayc_t *container, struct sway_seat *seat,
+struct sway_container *get_swayc_in_direction(struct sway_container *container, struct sway_seat *seat,
 		enum movement_direction dir) {
 	return get_swayc_in_direction_under(container, dir, seat, NULL);
 }
