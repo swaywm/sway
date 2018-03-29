@@ -13,33 +13,39 @@
 
 static const int ws_horizontal_padding = 5;
 static const double ws_vertical_padding = 1.5;
-static const int ws_spacing = 1;
+static const double border_width = 1;
 
 static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 		struct swaybar_config *config, const char *mode, double x,
 		uint32_t height) {
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
-			1, true, "⚡ %s", mode);
-	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
+			1, true, "%s", mode);
+	uint32_t ideal_height = text_height + ws_vertical_padding * 2
+		+ border_width * 2;
 	if (height < ideal_height) {
 		height = ideal_height;
 	}
+	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
 
 	cairo_set_source_u32(cairo, config->colors.binding_mode.background);
-	cairo_rectangle(cairo, x, 0, text_width + ws_horizontal_padding * 2 - 1,
-			height + ws_vertical_padding * 2);
+	cairo_rectangle(cairo, x, 0, width, height);
 	cairo_fill(cairo);
 
 	cairo_set_source_u32(cairo, config->colors.binding_mode.border);
-	cairo_rectangle(cairo, x, 0, text_width + ws_horizontal_padding * 2 - 1,
-			height + ws_vertical_padding * 2);
-	cairo_stroke(cairo);
+	cairo_rectangle(cairo, x, 0, width, border_width);
+	cairo_fill(cairo);
+	cairo_rectangle(cairo, x, 0, border_width, height);
+	cairo_fill(cairo);
+	cairo_rectangle(cairo, x + width - border_width, 0, border_width, height);
+	cairo_fill(cairo);
+	cairo_rectangle(cairo, x, height - border_width, width, border_width);
+	cairo_fill(cairo);
 
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, config->colors.binding_mode.text);
-	cairo_move_to(cairo, (int)x + ws_horizontal_padding, (int)floor(text_y));
-	pango_printf(cairo, config->font, 1, true, "⚡ %s", mode);
+	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
+	pango_printf(cairo, config->font, 1, true, "%s", mode);
 	return ideal_height;
 }
 
@@ -78,26 +84,33 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
 			1, true, "%s", name);
-	uint32_t ideal_height = ws_vertical_padding * 2 + text_height;
+	uint32_t ideal_height = ws_vertical_padding * 2 + text_height
+		+ border_width * 2;
 	if (height < ideal_height) {
 		height = ideal_height;
 	}
-	uint32_t width = ws_horizontal_padding * 2 + text_width;
+	uint32_t width = ws_horizontal_padding * 2 + text_width + border_width * 2;
 
 	cairo_set_source_u32(cairo, box_colors.background);
-	cairo_rectangle(cairo, *x, 0, width - 1, height);
+	cairo_rectangle(cairo, *x, 0, width, height);
 	cairo_fill(cairo);
 
 	cairo_set_source_u32(cairo, box_colors.border);
-	cairo_rectangle(cairo, *x, 0, width - 1, height);
-	cairo_stroke(cairo);
+	cairo_rectangle(cairo, *x, 0, width, border_width);
+	cairo_fill(cairo);
+	cairo_rectangle(cairo, *x, 0, border_width, height);
+	cairo_fill(cairo);
+	cairo_rectangle(cairo, *x + width - border_width, 0, border_width, height);
+	cairo_fill(cairo);
+	cairo_rectangle(cairo, *x, height - border_width, width, border_width);
+	cairo_fill(cairo);
 
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, box_colors.text);
-	cairo_move_to(cairo, (int)*x + ws_horizontal_padding, (int)floor(text_y));
+	cairo_move_to(cairo, *x + width / 2 - text_width / 2, (int)floor(text_y));
 	pango_printf(cairo, config->font, 1, true, "%s", name);
 
-	*x += width + ws_spacing;
+	*x += width;
 	return ideal_height;
 }
 
@@ -167,6 +180,7 @@ void render_frame(struct swaybar *bar,
 
 		cairo_set_source_surface(shm, recorder, 0.0, 0.0);
 		cairo_paint(shm);
+
 		wl_surface_attach(output->surface,
 				output->current_buffer->buffer, 0, 0);
 		wl_surface_damage(output->surface, 0, 0, output->width, output->height);

@@ -48,58 +48,76 @@ static void ipc_parse_colors(
 	json_object_object_get_ex(colors, "binding_mode_bg", &binding_mode_bg);
 	json_object_object_get_ex(colors, "binding_mode_text", &binding_mode_text);
 	if (background) {
-		config->colors.background = parse_color(json_object_get_string(background));
+		config->colors.background = parse_color(
+				json_object_get_string(background));
 	}
 	if (statusline) {
-		config->colors.statusline = parse_color(json_object_get_string(statusline));
+		config->colors.statusline = parse_color(
+				json_object_get_string(statusline));
 	}
 	if (separator) {
-		config->colors.separator = parse_color(json_object_get_string(separator));
+		config->colors.separator = parse_color(
+				json_object_get_string(separator));
 	}
 	if (focused_background) {
-		config->colors.focused_background = parse_color(json_object_get_string(focused_background));
+		config->colors.focused_background = parse_color(
+				json_object_get_string(focused_background));
 	}
 	if (focused_statusline) {
-		config->colors.focused_statusline = parse_color(json_object_get_string(focused_statusline));
+		config->colors.focused_statusline = parse_color(
+				json_object_get_string(focused_statusline));
 	}
 	if (focused_separator) {
-		config->colors.focused_separator = parse_color(json_object_get_string(focused_separator));
+		config->colors.focused_separator = parse_color(
+				json_object_get_string(focused_separator));
 	}
 	if (focused_workspace_border) {
-		config->colors.focused_workspace.border = parse_color(json_object_get_string(focused_workspace_border));
+		config->colors.focused_workspace.border = parse_color(
+				json_object_get_string(focused_workspace_border));
 	}
 	if (focused_workspace_bg) {
-		config->colors.focused_workspace.background = parse_color(json_object_get_string(focused_workspace_bg));
+		config->colors.focused_workspace.background = parse_color(
+				json_object_get_string(focused_workspace_bg));
 	}
 	if (focused_workspace_text) {
-		config->colors.focused_workspace.text = parse_color(json_object_get_string(focused_workspace_text));
+		config->colors.focused_workspace.text = parse_color(
+				json_object_get_string(focused_workspace_text));
 	}
 	if (active_workspace_border) {
-		config->colors.active_workspace.border = parse_color(json_object_get_string(active_workspace_border));
+		config->colors.active_workspace.border = parse_color(
+				json_object_get_string(active_workspace_border));
 	}
 	if (active_workspace_bg) {
-		config->colors.active_workspace.background = parse_color(json_object_get_string(active_workspace_bg));
+		config->colors.active_workspace.background = parse_color(
+				json_object_get_string(active_workspace_bg));
 	}
 	if (active_workspace_text) {
-		config->colors.active_workspace.text = parse_color(json_object_get_string(active_workspace_text));
+		config->colors.active_workspace.text = parse_color(
+				json_object_get_string(active_workspace_text));
 	}
 	if (inactive_workspace_border) {
-		config->colors.inactive_workspace.border = parse_color(json_object_get_string(inactive_workspace_border));
+		config->colors.inactive_workspace.border = parse_color(
+				json_object_get_string(inactive_workspace_border));
 	}
 	if (inactive_workspace_bg) {
-		config->colors.inactive_workspace.background = parse_color(json_object_get_string(inactive_workspace_bg));
+		config->colors.inactive_workspace.background = parse_color(
+				json_object_get_string(inactive_workspace_bg));
 	}
 	if (inactive_workspace_text) {
-		config->colors.inactive_workspace.text = parse_color(json_object_get_string(inactive_workspace_text));
+		config->colors.inactive_workspace.text = parse_color(
+				json_object_get_string(inactive_workspace_text));
 	}
 	if (binding_mode_border) {
-		config->colors.binding_mode.border = parse_color(json_object_get_string(binding_mode_border));
+		config->colors.binding_mode.border = parse_color(
+				json_object_get_string(binding_mode_border));
 	}
 	if (binding_mode_bg) {
-		config->colors.binding_mode.background = parse_color(json_object_get_string(binding_mode_bg));
+		config->colors.binding_mode.background = parse_color(
+				json_object_get_string(binding_mode_bg));
 	}
 	if (binding_mode_text) {
-		config->colors.binding_mode.text = parse_color(json_object_get_string(binding_mode_text));
+		config->colors.binding_mode.text = parse_color(
+				json_object_get_string(binding_mode_text));
 	}
 }
 
@@ -306,14 +324,13 @@ bool handle_ipc_event(struct swaybar *bar) {
 		ipc_get_workspaces(bar);
 		break;
 	case IPC_EVENT_MODE: {
-		// TODO: interpret "pango_markup" field
 		json_object *result = json_tokener_parse(resp->payload);
 		if (!result) {
 			free_ipc_response(resp);
 			wlr_log(L_ERROR, "failed to parse payload as json");
 			return false;
 		}
-		json_object *json_change;
+		json_object *json_change, *json_pango_markup;
 		if (json_object_object_get_ex(result, "change", &json_change)) {
 			const char *change = json_object_get_string(json_change);
 			free(bar->config->mode);
@@ -327,6 +344,11 @@ bool handle_ipc_event(struct swaybar *bar) {
 			json_object_put(result);
 			free_ipc_response(resp);
 			return false;
+		}
+		if (json_object_object_get_ex(result,
+					"pango_markup", &json_pango_markup)) {
+			bar->config->mode_pango_markup = json_object_get_boolean(
+					json_pango_markup);
 		}
 		json_object_put(result);
 		break;

@@ -24,6 +24,7 @@ struct swaybar_config {
 	char *font;
 	char *sep_symbol;
 	char *mode;
+	bool mode_pango_markup;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
 	bool wrap_scroll;

@@ -41,6 +41,7 @@ struct swaybar_config *init_config() {
 
 	/* colors */
 	config->colors.background = 0x000000FF;
+	config->colors.focused_background = 0x000000FF;
 	config->colors.statusline = 0xFFFFFFFF;
 	config->colors.separator = 0x666666FF;
 
