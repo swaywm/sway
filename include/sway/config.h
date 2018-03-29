@@ -356,7 +356,7 @@ struct sway_config {
 		struct input_config *input_config;
 		struct seat_config *seat_config;
 		struct sway_seat *seat;
-		swayc_t *current_container;
+		struct sway_container *current_container;
 	} handler_context;
 };
 
@@ -416,7 +416,8 @@ void output_get_identifier(char *identifier, size_t len,
 	struct sway_output *output);
 struct output_config *new_output_config(const char *name);
 void merge_output_config(struct output_config *dst, struct output_config *src);
-void apply_output_config(struct output_config *oc, swayc_t *output);
+void apply_output_config(struct output_config *oc,
+		struct sway_container *output);
 void free_output_config(struct output_config *oc);
 
 /**

@@ -31,12 +31,12 @@ char *extract_crit_tokens(list_t *tokens, const char *criteria);
 
 // Returns list of criteria that match given container. These criteria have
 // been set with `for_window` commands and have an associated cmdlist.
-list_t *criteria_for(swayc_t *cont);
+list_t *criteria_for(struct sway_container *cont);
 
 // Returns a list of all containers that match the given list of tokens.
 list_t *container_for_crit_tokens(list_t *tokens);
 
 // Returns true if any criteria in the given list matches this container
-bool criteria_any(swayc_t *cont, list_t *criteria);
+bool criteria_any(struct sway_container *cont, list_t *criteria);
 
 #endif

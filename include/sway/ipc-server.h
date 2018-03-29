@@ -12,6 +12,6 @@ void ipc_terminate(void);
 
 struct sockaddr_un *ipc_user_sockaddr(void);
 
-void ipc_event_window(swayc_t *window, const char *change);
+void ipc_event_window(struct sway_container *window, const char *change);
 
 #endif

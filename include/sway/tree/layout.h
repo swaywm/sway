@@ -34,7 +34,8 @@ void init_layout(void);
 
 void add_child(struct sway_container *parent, struct sway_container *child);
 
-swayc_t *add_sibling(swayc_t *parent, swayc_t *child);
+struct sway_container *add_sibling(struct sway_container *parent,
+		struct sway_container *child);
 
 struct sway_container *remove_child(struct sway_container *child);
 
@@ -45,7 +46,7 @@ void sort_workspaces(struct sway_container *output);
 void arrange_windows(struct sway_container *container,
 		double width, double height);
 
-swayc_t *get_swayc_in_direction(swayc_t *container,
-		struct sway_seat *seat, enum movement_direction dir);
+struct sway_container *get_swayc_in_direction(struct sway_container
+		*container, struct sway_seat *seat, enum movement_direction dir);
 
 #endif
