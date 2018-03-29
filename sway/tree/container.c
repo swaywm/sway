@@ -165,8 +165,8 @@ swayc_t *new_output(struct sway_output *sway_output) {
 	}
 
 	apply_output_config(oc, output);
-
 	add_child(&root_container, output);
+	load_swaybars();
 
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);

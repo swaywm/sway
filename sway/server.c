@@ -8,6 +8,8 @@
 #include <wlr/render/gles2.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_screenshooter.h>
+#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_wl_shell.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
@@ -45,9 +47,11 @@ bool server_init(struct sway_server *server) {
 
 	server->compositor = wlr_compositor_create(
 			server->wl_display, server->renderer);
-
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
+
+	wlr_screenshooter_create(server->wl_display);
+	wlr_gamma_control_manager_create(server->wl_display);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);

@@ -141,3 +141,98 @@ cleanup:
 	free_bar_config(bar);
 	return NULL;
 }
+
+void invoke_swaybar(struct bar_config *bar) {
+	// Pipe to communicate errors
+	int filedes[2];
+	if (pipe(filedes) == -1) {
+		wlr_log(L_ERROR, "Pipe setup failed! Cannot fork into bar");
+		return;
+	}
+
+	bar->pid = fork();
+	if (bar->pid == 0) {
+		close(filedes[0]);
+
+		// run custom swaybar
+		size_t len = snprintf(NULL, 0, "%s -b %s",
+				bar->swaybar_command ? bar->swaybar_command : "swaybar",
+				bar->id);
+		char *command = malloc(len + 1);
+		if (!command) {
+			const char msg[] = "Unable to allocate swaybar command string";
+			size_t len = sizeof(msg);
+			if (write(filedes[1], &len, sizeof(int))) {};
+			if (write(filedes[1], msg, len)) {};
+			close(filedes[1]);
+			exit(1);
+		}
+		snprintf(command, len + 1, "%s -b %s",
+				bar->swaybar_command ? bar->swaybar_command : "swaybar",
+				bar->id);
+		char *const cmd[] = { "sh", "-c", command, NULL, };
+		close(filedes[1]);
+		execvp(cmd[0], cmd);
+		exit(1);
+	}
+	close(filedes[0]);
+	ssize_t len;
+	if (read(filedes[1], &len, sizeof(int)) == sizeof(int)) {
+		char *buf = malloc(len);
+		if(!buf) {
+			wlr_log(L_ERROR, "Cannot allocate error string");
+			return;
+		}
+		if (read(filedes[1], buf, len)) {
+			wlr_log(L_ERROR, "%s", buf);
+		}
+		free(buf);
+	}
+	close(filedes[1]);
+}
+
+static void terminate_swaybar(pid_t pid) {
+	int ret = kill(pid, SIGTERM);
+	if (ret != 0) {
+		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
+	}
+}
+
+static bool active_output(const char *name) {
+	swayc_t *cont = NULL;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		cont = root_container.children->items[i];
+		if (cont->type == C_OUTPUT && strcasecmp(name, cont->name) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void load_swaybars() {
+	for (int i = 0; i < config->bars->length; ++i) {
+		struct bar_config *bar = config->bars->items[i];
+		bool apply = false;
+		if (bar->outputs) {
+			for (int j = 0; j < bar->outputs->length; ++j) {
+				char *o = bar->outputs->items[j];
+				if (!strcmp(o, "*") || active_output(o)) {
+					apply = true;
+					break;
+				}
+			}
+		} else {
+			apply = true;
+		}
+		if (apply) {
+			if (bar->pid != 0) {
+				terminate_swaybar(bar->pid);
+			}
+			wlr_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
+			invoke_swaybar(bar);
+		}
+	}
+}

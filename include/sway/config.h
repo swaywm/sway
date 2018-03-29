@@ -420,6 +420,7 @@ struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
 /* Bar stuff */
 void load_swaybars();
+void invoke_swaybar(struct bar_config *bar);
 void terminate_swaybg(pid_t pid);
 struct bar_config *default_bar_config(void);
 void free_bar_config(struct bar_config *bar);
