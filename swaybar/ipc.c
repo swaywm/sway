@@ -306,6 +306,7 @@ bool handle_ipc_event(struct swaybar *bar) {
 		ipc_get_workspaces(bar);
 		break;
 	case IPC_EVENT_MODE: {
+		// TODO: interpret "pango_markup" field
 		json_object *result = json_tokener_parse(resp->payload);
 		if (!result) {
 			free_ipc_response(resp);
