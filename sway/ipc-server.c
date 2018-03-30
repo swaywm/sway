@@ -279,7 +279,7 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 	}
 }
 
-void ipc_event_window(swayc_t *window, const char *change) {
+void ipc_event_window(struct sway_container *window, const char *change) {
 	wlr_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -400,7 +400,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *outputs = json_object_new_array();
 		for (int i = 0; i < root_container.children->length; ++i) {
-			swayc_t *container = root_container.children->items[i];
+			struct sway_container *container = root_container.children->items[i];
 			if (container->type == C_OUTPUT) {
 				json_object_array_add(outputs,
 					ipc_json_describe_container(container));

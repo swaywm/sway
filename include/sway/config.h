@@ -10,8 +10,8 @@
 #include <xkbcommon/xkbcommon.h>
 #include <time.h>
 #include "list.h"
-#include "layout.h"
-#include "container.h"
+#include "tree/layout.h"
+#include "tree/container.h"
 
 /**
  * Describes a variable created via the `set` command.
@@ -299,8 +299,8 @@ struct sway_config {
 	char *floating_scroll_down_cmd;
 	char *floating_scroll_left_cmd;
 	char *floating_scroll_right_cmd;
-	enum swayc_layouts default_orientation;
-	enum swayc_layouts default_layout;
+	enum sway_container_layout default_orientation;
+	enum sway_container_layout default_layout;
 	char *font;
 	int font_height;
 
@@ -324,8 +324,8 @@ struct sway_config {
 	list_t *config_chain;
 	const char *current_config;
 
-	enum swayc_border_types border;
-	enum swayc_border_types floating_border;
+	enum sway_container_border border;
+	enum sway_container_border floating_border;
 	int border_thickness;
 	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
@@ -356,7 +356,7 @@ struct sway_config {
 		struct input_config *input_config;
 		struct seat_config *seat_config;
 		struct sway_seat *seat;
-		swayc_t *current_container;
+		struct sway_container *current_container;
 	} handler_context;
 };
 
@@ -416,7 +416,8 @@ void output_get_identifier(char *identifier, size_t len,
 	struct sway_output *output);
 struct output_config *new_output_config(const char *name);
 void merge_output_config(struct output_config *dst, struct output_config *src);
-void apply_output_config(struct output_config *oc, swayc_t *output);
+void apply_output_config(struct output_config *oc,
+		struct sway_container *output);
 void free_output_config(struct output_config *oc);
 
 /**
