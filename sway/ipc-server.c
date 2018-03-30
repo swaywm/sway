@@ -379,22 +379,23 @@ void ipc_client_disconnect(struct ipc_client *client) {
 }
 
 static void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
-	if (workspace->type == C_WORKSPACE) {
-		json_object *workspace_json = ipc_json_describe_container(workspace);
-		// override the default focused indicator because
-		// it's set differently for the get_workspaces reply
-		struct sway_seat *seat =
-			sway_input_manager_get_default_seat(input_manager);
-		swayc_t *focused_ws = sway_seat_get_focus(seat);
-		if (focused_ws->type != C_WORKSPACE) {
-			focused_ws = swayc_parent_by_type(focused_ws, C_WORKSPACE);
-		}
-		bool focused = workspace == focused_ws;
-		json_object_object_del(workspace_json, "focused");
-		json_object_object_add(workspace_json, "focused",
-				json_object_new_boolean(focused));
-		json_object_array_add((json_object *)data, workspace_json);
+	if (workspace->type != C_WORKSPACE) {
+		return;
 	}
+	json_object *workspace_json = ipc_json_describe_container(workspace);
+	// override the default focused indicator because
+	// it's set differently for the get_workspaces reply
+	struct sway_seat *seat =
+		sway_input_manager_get_default_seat(input_manager);
+	swayc_t *focused_ws = sway_seat_get_focus(seat);
+	if (focused_ws->type != C_WORKSPACE) {
+		focused_ws = swayc_parent_by_type(focused_ws, C_WORKSPACE);
+	}
+	bool focused = workspace == focused_ws;
+	json_object_object_del(workspace_json, "focused");
+	json_object_object_add(workspace_json, "focused",
+			json_object_new_boolean(focused));
+	json_object_array_add((json_object *)data, workspace_json);
 }
 
 void ipc_client_handle_command(struct ipc_client *client) {
