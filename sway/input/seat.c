@@ -8,6 +8,7 @@
 #include "sway/input/keyboard.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "log.h"
 
@@ -331,6 +332,9 @@ void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *containe
 		if (last_ws) {
 			wlr_log(L_DEBUG, "sending workspace event");
 			ipc_event_workspace(last_ws, container, "focus");
+			if (last_ws->children->length == 0) {
+				container_workspace_destroy(last_ws);
+			}
 		}
 	}
 
