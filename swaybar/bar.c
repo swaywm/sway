@@ -91,6 +91,13 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = handle_global_remove,
 };
 
+static void render_all_frames(struct swaybar *bar) {
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		render_frame(bar, output);
+	}
+}
+
 void bar_setup(struct swaybar *bar,
 		const char *socket_path, const char *bar_id) {
 	bar_init(bar);
@@ -133,16 +140,7 @@ void bar_setup(struct swaybar *bar,
 		}
 	}
 	ipc_get_workspaces(bar);
-	wl_list_for_each(output, &bar->outputs, link) {
-		render_frame(bar, output);
-	}
-}
-
-static void render_all_frames(struct swaybar *bar) {
-	struct swaybar_output *output;
-	wl_list_for_each(output, &bar->outputs, link) {
-		render_frame(bar, output);
-	}
+	render_all_frames(bar);
 }
 
 static void display_in(int fd, short mask, void *_bar) {
