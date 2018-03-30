@@ -271,9 +271,8 @@ renderer_end:
 static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_frame);
-	struct wlr_output *wlr_output = data;
 
-	if (!wlr_output->enabled) {
+	if (!output->wlr_output->enabled) {
 		return;
 	}
 
