@@ -113,4 +113,8 @@ void view_close(struct sway_view *view);
 
 void view_update_outputs(struct sway_view *view, const struct wlr_box *before);
 
+void view_damage_whole(struct sway_view *view);
+
+void view_damage_from(struct sway_view *view);
+
 #endif

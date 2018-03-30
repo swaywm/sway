@@ -14,10 +14,10 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
- static bool assert_xwayland(struct sway_view *view) {
-	 return sway_assert(view->type == SWAY_XWAYLAND_VIEW && view->wlr_xwayland_surface,
-		 "Expected xwayland view!");
- }
+static bool assert_xwayland(struct sway_view *view) {
+	return sway_assert(view->type == SWAY_XWAYLAND_VIEW,
+		"Expected xwayland view!");
+}
 
 static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	if (!assert_xwayland(view)) {
@@ -99,6 +99,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// TODO: Let floating views do whatever
 	view->width = sway_surface->pending_width;
 	view->height = sway_surface->pending_height;
+	view_damage_from(view);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -117,7 +118,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, unmap);
-  
+	view_damage_whole(sway_surface->view);
 	wl_list_remove(&sway_surface->view->unmanaged_view_link);
 	wl_list_init(&sway_surface->view->unmanaged_view_link);
 	container_view_destroy(sway_surface->view->swayc);
@@ -150,6 +151,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		arrange_windows(cont->parent, -1, -1);
 		sway_input_manager_set_focus(input_manager, cont);
 	}
+
+	view_damage_whole(sway_surface->view);
 }
 
 static void handle_configure_request(struct wl_listener *listener, void *data) {

@@ -1,9 +1,10 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "log.h"
+#include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
-#include "log.h"
 
 const char *view_get_title(struct sway_view *view) {
 	if (view->iface.get_prop) {
@@ -104,4 +105,19 @@ struct sway_container *container_view_destroy(struct sway_container *view) {
 	struct sway_container *parent = container_destroy(view);
 	arrange_windows(parent, -1, -1);
 	return parent;
+}
+
+void view_damage_whole(struct sway_view *view) {
+	struct sway_container *cont = NULL;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		cont = root_container.children->items[i];
+		if (cont->type == C_OUTPUT) {
+			output_damage_whole_view(cont->sway_output, view);
+		}
+	}
+}
+
+void view_damage_from(struct sway_view *view) {
+	// TODO
+	view_damage_whole(view);
 }
