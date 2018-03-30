@@ -77,7 +77,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
 	free(sway_surface->view);
 	free(sway_surface);
-	container_arrange_windows(parent, -1, -1);
+	arrange_windows(parent, -1, -1);
 }
 
 void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
@@ -136,6 +136,6 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	struct sway_container *cont = container_view_create(focus, sway_view);
 	sway_view->swayc = cont;
 
-	container_arrange_windows(cont->parent, -1, -1);
+	arrange_windows(cont->parent, -1, -1);
 	sway_input_manager_set_focus(input_manager, cont);
 }

@@ -264,7 +264,7 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 static void handle_output_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
-	container_arrange_windows(output->swayc, -1, -1);
+	arrange_windows(output->swayc, -1, -1);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -307,5 +307,5 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->mode.notify = handle_output_mode;
 
 	arrange_layers(output);
-	container_arrange_windows(&root_container, -1, -1);
+	arrange_windows(&root_container, -1, -1);
 }

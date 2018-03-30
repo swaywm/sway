@@ -42,7 +42,7 @@ static void output_layout_change_notify(struct wl_listener *listener,
 		output_container->height = output_box->height;
 	}
 
-	container_arrange_windows(&root_container, -1, -1);
+	arrange_windows(&root_container, -1, -1);
 }
 
 void layout_init(void) {
@@ -167,7 +167,7 @@ static void apply_vert_layout(struct sway_container *container, const double x,
 				const double height, const int start,
 				const int end);
 
-void container_arrange_windows(struct sway_container *container,
+void arrange_windows(struct sway_container *container,
 		double width, double height) {
 	int i;
 	if (width == -1 || height == -1) {
@@ -192,7 +192,7 @@ void container_arrange_windows(struct sway_container *container,
 			struct sway_container *output = container->children->items[i];
 			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 					output->name, output->x, output->y);
-			container_arrange_windows(output, -1, -1);
+			arrange_windows(output, -1, -1);
 		}
 		return;
 	case C_OUTPUT:
@@ -206,7 +206,7 @@ void container_arrange_windows(struct sway_container *container,
 		// arrange all workspaces:
 		for (i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
-			container_arrange_windows(child, -1, -1);
+			arrange_windows(child, -1, -1);
 		}
 		return;
 	case C_WORKSPACE:
@@ -294,9 +294,9 @@ static void apply_horiz_layout(struct sway_container *container,
 
 			if (i == end - 1) {
 				double remaining_width = x + width - child_x;
-				container_arrange_windows(child, remaining_width, height);
+				arrange_windows(child, remaining_width, height);
 			} else {
-				container_arrange_windows(child, child->width * scale, height);
+				arrange_windows(child, child->width * scale, height);
 			}
 			child_x += child->width;
 		}
@@ -345,9 +345,9 @@ void apply_vert_layout(struct sway_container *container,
 
 			if (i == end - 1) {
 				double remaining_height = y + height - child_y;
-				container_arrange_windows(child, width, remaining_height);
+				arrange_windows(child, width, remaining_height);
 			} else {
-				container_arrange_windows(child, width, child->height * scale);
+				arrange_windows(child, width, child->height * scale);
 			}
 			child_y += child->height;
 		}

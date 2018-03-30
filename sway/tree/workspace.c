@@ -247,6 +247,6 @@ bool workspace_switch(struct sway_container *workspace) {
 	}
 	sway_seat_set_focus(seat, next);
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	container_arrange_windows(output, -1, -1);
+	arrange_windows(output, -1, -1);
 	return true;
 }

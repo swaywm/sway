@@ -116,7 +116,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
 	if (parent) {
-		container_arrange_windows(parent, -1, -1);
+		arrange_windows(parent, -1, -1);
 	}
 
 	free(sway_surface->view);
@@ -134,7 +134,7 @@ static void handle_unmap_notify(struct wl_listener *listener, void *data) {
 	// take it out of the tree
 	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
 	if (parent) {
-		container_arrange_windows(parent, -1, -1);
+		arrange_windows(parent, -1, -1);
 	}
 
 	sway_surface->view->swayc = NULL;
@@ -163,7 +163,7 @@ static void handle_map_notify(struct wl_listener *listener, void *data) {
 		struct sway_container *cont = container_view_create(parent, view);
 		view->swayc = cont;
 
-		container_arrange_windows(cont->parent, -1, -1);
+		arrange_windows(cont->parent, -1, -1);
 		sway_input_manager_set_focus(input_manager, cont);
 	}
 }
@@ -242,6 +242,6 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	struct sway_container *cont = container_view_create(focus, sway_view);
 	sway_view->swayc = cont;
 
-	container_arrange_windows(cont->parent, -1, -1);
+	arrange_windows(cont->parent, -1, -1);
 	sway_input_manager_set_focus(input_manager, cont);
 }
