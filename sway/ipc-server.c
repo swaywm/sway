@@ -538,8 +538,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		if (!buf[0]) {
 			// Send list of configured bar IDs
 			json_object *bars = json_object_new_array();
-			int i;
-			for (i = 0; i < config->bars->length; ++i) {
+			for (int i = 0; i < config->bars->length; ++i) {
 				struct bar_config *bar = config->bars->items[i];
 				json_object_array_add(bars, json_object_new_string(bar->id));
 			}
@@ -549,8 +548,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		} else {
 			// Send particular bar's details
 			struct bar_config *bar = NULL;
-			int i;
-			for (i = 0; i < config->bars->length; ++i) {
+			for (int i = 0; i < config->bars->length; ++i) {
 				bar = config->bars->items[i];
 				if (strcmp(buf, bar->id) == 0) {
 					break;
