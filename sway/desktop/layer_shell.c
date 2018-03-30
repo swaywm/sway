@@ -4,12 +4,13 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
 #include "sway/layers.h"
-#include "sway/tree/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/layout.h"
 
 static void apply_exclusive(struct wlr_box *usable_area,
 		uint32_t anchor, int32_t exclusive,
@@ -210,20 +211,26 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		} else {
 			// TODO DAMAGE from surface damage
 		}
+		wlr_output_damage_add_box(output->damage, &old_geo);
+		wlr_output_damage_add_box(output->damage, &layer->geo);
 	}
 }
 
-static void unmap(struct wlr_layer_surface *layer_surface) {
-	// TODO DAMAGE
+static void unmap(struct sway_layer_surface *sway_layer) {
+	struct wlr_output *wlr_output = sway_layer->layer_surface->output;
+	if (wlr_output != NULL) {
+		struct sway_output *output = wlr_output->data;
+		wlr_output_damage_add_box(output->damage, &sway_layer->geo);
+	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_layer_surface *sway_layer = wl_container_of(
-			listener, sway_layer, destroy);
+	struct sway_layer_surface *sway_layer = wl_container_of(listener,
+			sway_layer, destroy);
 	wlr_log(L_DEBUG, "Layer surface destroyed (%s)",
 			sway_layer->layer_surface->namespace);
 	if (sway_layer->layer_surface->mapped) {
-		unmap(sway_layer->layer_surface);
+		unmap(sway_layer);
 	}
 	wl_list_remove(&sway_layer->link);
 	wl_list_remove(&sway_layer->destroy.link);
@@ -239,13 +246,16 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
-	// TODO DAMAGE
+	struct sway_layer_surface *sway_layer = wl_container_of(listener,
+			sway_layer, map);
+	struct sway_output *output = sway_layer->layer_surface->output->data;
+	wlr_output_damage_add_box(output->damage, &sway_layer->geo);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer = wl_container_of(
 			listener, sway_layer, unmap);
-	unmap(sway_layer->layer_surface);
+	unmap(sway_layer);
 }
 
 void handle_layer_shell_surface(struct wl_listener *listener, void *data) {

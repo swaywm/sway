@@ -6,16 +6,16 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include "log.h"
 #include "sway/config.h"
-#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/tree/layout.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/ipc-server.h"
 #include "log.h"
 
 static list_t *bfs_queue;
@@ -58,13 +58,14 @@ static struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-static void container_destroy(struct sway_container *cont) {
+struct sway_container *container_destroy(struct sway_container *cont) {
 	if (cont == NULL) {
-		return;
+		return NULL;
 	}
 
 	wl_signal_emit(&cont->events.destroy, cont);
 
+	struct sway_container *parent = cont->parent;
 	if (cont->children) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
@@ -77,13 +78,14 @@ static void container_destroy(struct sway_container *cont) {
 		list_foreach(cont->marks, free);
 		list_free(cont->marks);
 	}
-	if (cont->parent) {
-		container_remove_child(cont);
+	if (parent) {
+		parent = container_remove_child(cont);
 	}
 	if (cont->name) {
 		free(cont->name);
 	}
 	free(cont);
+	return parent;
 }
 
 struct sway_container *container_output_create(
@@ -200,57 +202,6 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 	}
 	notify_new_container(swayc);
 	return swayc;
-}
-
-struct sway_container *container_output_destroy(struct sway_container *output) {
-	if (!sway_assert(output,
-				"null output passed to container_output_destroy")) {
-		return NULL;
-	}
-
-	if (output->children->length > 0) {
-		// TODO save workspaces when there are no outputs.
-		// TODO also check if there will ever be no outputs except for exiting
-		// program
-		if (root_container.children->length > 1) {
-			int p = root_container.children->items[0] == output;
-			// Move workspace from this output to another output
-			while (output->children->length) {
-				struct sway_container *child = output->children->items[0];
-				container_remove_child(child);
-				container_add_child(root_container.children->items[p], child);
-			}
-			container_sort_workspaces(root_container.children->items[p]);
-			arrange_windows(root_container.children->items[p],
-				-1, -1);
-		}
-	}
-
-	wl_list_remove(&output->sway_output->frame.link);
-	wl_list_remove(&output->sway_output->destroy.link);
-	wl_list_remove(&output->sway_output->mode.link);
-
-	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
-	container_destroy(output);
-
-	return &root_container;
-}
-
-struct sway_container *container_view_destroy(struct sway_container *view) {
-	if (!view) {
-		return NULL;
-	}
-	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
-	struct sway_container *parent = view->parent;
-	container_destroy(view);
-
-	// TODO WLR: Destroy empty containers
-	/*
-	if (parent && parent->type == C_CONTAINER) {
-		return destroy_container(parent);
-	}
-	*/
-	return parent;
 }
 
 struct sway_container *container_set_layout(struct sway_container *container,
@@ -437,4 +388,15 @@ void container_for_each_descendant_bfs(struct sway_container *con,
 		// TODO floating containers
 		list_cat(queue, current->children);
 	}
+}
+
+bool container_has_anscestor(struct sway_container *descendant,
+		struct sway_container *anscestor) {
+	while (descendant->type != C_ROOT) {
+		descendant = descendant->parent;
+		if (descendant == anscestor) {
+			return true;
+		}
+	}
+	return false;
 }

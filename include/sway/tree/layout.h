@@ -39,6 +39,11 @@ struct sway_container *container_add_sibling(struct sway_container *parent,
 
 struct sway_container *container_remove_child(struct sway_container *child);
 
+struct sway_container *container_reap_empty(struct sway_container *container);
+
+void container_move_to(struct sway_container* container,
+		struct sway_container* destination);
+
 enum sway_container_layout container_get_default_layout(struct sway_container *output);
 
 void container_sort_workspaces(struct sway_container *output);

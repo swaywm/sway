@@ -8,6 +8,7 @@ sway_sources = files(
 	'input/keyboard.c',
 	'commands/bar.c',
 	'commands/bind.c',
+	'commands/default_orientation.c',
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',
@@ -81,6 +82,7 @@ sway_sources = files(
 	'security.c',
 	'tree/container.c',
 	'tree/layout.c',
+	'tree/output.c',
 	'tree/view.c',
 	'tree/workspace.c',
 )

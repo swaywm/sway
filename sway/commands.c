@@ -149,6 +149,7 @@ static struct cmd_handler bar_colors_handlers[] = {
 
 /* Config-time only commands. Keep alphabetized */
 static struct cmd_handler config_handlers[] = {
+	{ "default_orientation", cmd_default_orientation },
 	{ "set", cmd_set },
 	{ "swaybg_command", cmd_swaybg_command },
 };

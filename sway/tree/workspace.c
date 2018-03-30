@@ -6,9 +6,10 @@
 #include <stdio.h>
 #include <strings.h>
 #include "stringop.h"
-#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
+#include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
 #include "util.h"
@@ -202,7 +203,48 @@ struct sway_container *workspace_create(const char *name) {
 		sway_seat_get_focus_inactive(seat, &root_container);
 	parent = focus;
 	parent = container_parent(parent, C_OUTPUT);
-	return container_workspace_create(parent, name);
+	struct sway_container *new_ws = container_workspace_create(parent, name);
+	ipc_event_workspace(NULL, new_ws, "init");
+	return new_ws;
+}
+
+struct sway_container *container_workspace_destroy(
+		struct sway_container *workspace) {
+	if (!sway_assert(workspace, "cannot destroy null workspace")) {
+		return NULL;
+	}
+
+	// Do not destroy this if it's the last workspace on this output
+	struct sway_container *output = container_parent(workspace, C_OUTPUT);
+	if (output && output->children->length == 1) {
+		return NULL;
+	}
+
+	struct sway_container *parent = workspace->parent;
+	if (workspace->children->length == 0) {
+		// destroy the WS if there are no children (TODO check for floating)
+		wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+		ipc_event_workspace(workspace, NULL, "empty");
+	} else {
+		// Move children to a different workspace on this output
+		struct sway_container *new_workspace = NULL;
+		// TODO move floating
+		for (int i = 0; i < output->children->length; i++) {
+			if (output->children->items[i] != workspace) {
+				new_workspace = output->children->items[i];
+				break;
+			}
+		}
+
+		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
+			workspace->name, new_workspace->name);
+		for (int i = 0; i < workspace->children->length; i++) {
+			container_move_to(workspace->children->items[i], new_workspace);
+		}
+	}
+
+	container_destroy(workspace);
+	return parent;
 }
 
 /**
@@ -342,4 +384,14 @@ bool workspace_switch(struct sway_container *workspace) {
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
 	arrange_windows(output, -1, -1);
 	return true;
+}
+
+bool workspace_is_visible(struct sway_container *ws) {
+	struct sway_container *output = container_parent(ws, C_OUTPUT);
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = sway_seat_get_focus_inactive(seat, output);
+	if (focus->type != C_WORKSPACE) {
+		focus = container_parent(focus, C_WORKSPACE);
+	}
+	return focus == ws;
 }

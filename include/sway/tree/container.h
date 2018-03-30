@@ -99,7 +99,12 @@ struct sway_container *container_view_create(
 
 struct sway_container *container_output_destroy(struct sway_container *output);
 
+struct sway_container *container_workspace_destroy(
+		struct sway_container *workspace);
+
 struct sway_container *container_view_destroy(struct sway_container *view);
+
+struct sway_container *container_destroy(struct sway_container *cont);
 
 struct sway_container *container_set_layout(struct sway_container *container,
 		enum sway_container_layout layout);
@@ -139,5 +144,8 @@ void container_for_each_descendant_bfs(struct sway_container *container,
  */
 void container_for_each_descendant_dfs(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
+
+bool container_has_anscestor(struct sway_container *descendant,
+		struct sway_container *anscestor);
 
 #endif
