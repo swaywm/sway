@@ -435,7 +435,7 @@ list_t *container_for_crit_tokens(list_t *tokens) {
 	struct list_tokens list_tokens =
 		(struct list_tokens){create_list(), tokens};
 
-	sway_container_for_each(&root_container,
+	container_for_each(&root_container,
 		(void (*)(struct sway_container *, void *))container_match_add,
 		&list_tokens);
 

@@ -70,10 +70,10 @@ struct sway_container {
 	enum sway_container_layout prev_layout;
 	enum sway_container_layout workspace_layout;
 
-    // TODO convert to layout coordinates
+	// TODO convert to layout coordinates
 	double x, y;
 
-    // does not include borders or gaps.
+	// does not include borders or gaps.
 	double width, height;
 
 	list_t *children;
@@ -122,22 +122,16 @@ struct sway_container *container_parent(struct sway_container *container,
 		enum sway_container_type type);
 
 /**
- * Run a function for each child.
- */
-void sway_container_for_each(struct sway_container *container,
-		void (*f)(struct sway_container *view, void *data), void *data);
-
-/**
  * Find a container at the given coordinates.
  */
-struct sway_container *sway_container_at(struct sway_container *parent,
+struct sway_container *container_at(struct sway_container *parent,
 		double lx, double ly, struct wlr_surface **surface,
 		double *sx, double *sy);
 
 /**
  * Apply the function for each child of the container breadth first.
  */
-void sway_container_for_each_bfs(struct sway_container *container,
+void container_for_each(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 #endif

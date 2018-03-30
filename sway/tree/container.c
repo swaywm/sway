@@ -38,7 +38,7 @@ static void notify_new_container(struct sway_container *container) {
 	ipc_event_window(container, "new");
 }
 
-static struct sway_container *new_swayc(enum sway_container_type type) {
+static struct sway_container *container_create(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
 	struct sway_container *c = calloc(1, sizeof(struct sway_container));
@@ -122,7 +122,7 @@ struct sway_container *container_output_create(
 		return NULL;
 	}
 
-	struct sway_container *output = new_swayc(C_OUTPUT);
+	struct sway_container *output = container_create(C_OUTPUT);
 	output->sway_output = sway_output;
 	output->name = strdup(name);
 	if (output->name == NULL) {
@@ -151,14 +151,14 @@ struct sway_container *container_output_create(
 	return output;
 }
 
-struct sway_container *container_workspace_create(struct sway_container
-		*output, const char *name) {
+struct sway_container *container_workspace_create(
+		struct sway_container *output, const char *name) {
 	if (!sway_assert(output,
 				"container_workspace_create called with null output")) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
-	struct sway_container *workspace = new_swayc(C_WORKSPACE);
+	struct sway_container *workspace = container_create(C_WORKSPACE);
 
 	workspace->x = output->x;
 	workspace->y = output->y;
@@ -182,7 +182,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		return NULL;
 	}
 	const char *title = view_get_title(sway_view);
-	struct sway_container *swayc = new_swayc(C_VIEW);
+	struct sway_container *swayc = container_create(C_VIEW);
 	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d %s",
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
@@ -314,30 +314,7 @@ struct sway_container *container_parent(struct sway_container *container,
 	return container;
 }
 
-void sway_container_for_each(struct sway_container *container,
-		void (*f)(struct sway_container *view, void *data), void *data) {
-	if (container) {
-		int i;
-		if (container->children)  {
-			for (i = 0; i < container->children->length; ++i) {
-				struct sway_container *child = container->children->items[i];
-				sway_container_for_each(child, f, data);
-			}
-		}
-		// TODO
-		/*
-		if (container->floating) {
-			for (i = 0; i < container->floating->length; ++i) {
-				struct sway_container *child = container->floating->items[i];
-				container_map(child, f, data);
-			}
-		}
-		*/
-		f(container, data);
-	}
-}
-
-struct sway_container *sway_container_at(struct sway_container *parent,
+struct sway_container *container_at(struct sway_container *parent,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	list_t *queue = get_bfs_queue();
@@ -423,7 +400,7 @@ struct sway_container *sway_container_at(struct sway_container *parent,
 	return NULL;
 }
 
-void sway_container_for_each_bfs(struct sway_container *con,
+void container_for_each(struct sway_container *con,
 		void (*f)(struct sway_container *con, void *data), void *data) {
 	list_t *queue = get_bfs_queue();
 	if (!queue) {

@@ -130,7 +130,7 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
 
-	sway_container_for_each_bfs(&root_container, collect_focus_iter, seat);
+	container_for_each(&root_container, collect_focus_iter, seat);
 
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);
