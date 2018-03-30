@@ -30,7 +30,7 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 			1, config->pango_markup, "%s", status->text);
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	if (height < ideal_height) {
-		height = ideal_height;
+		return ideal_height;
 	}
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_move_to(cairo, width - text_width - margin, (int)floor(text_y));
@@ -70,7 +70,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2
 		+ border_width * 2;
 	if (height < ideal_height) {
-		height = ideal_height;
+		return ideal_height;
 	}
 	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
 
@@ -133,7 +133,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	uint32_t ideal_height = ws_vertical_padding * 2 + text_height
 		+ border_width * 2;
 	if (height < ideal_height) {
-		height = ideal_height;
+		return ideal_height;
 	}
 	uint32_t width = ws_horizontal_padding * 2 + text_width + border_width * 2;
 
