@@ -76,5 +76,6 @@ struct status_line *status_line_init(char *cmd) {
 void status_line_free(struct status_line *status) {
 	close(status->read_fd);
 	close(status->write_fd);
+	kill(status->pid, SIGTERM);
 	free(status);
 }

@@ -204,8 +204,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	if (wlr_output != NULL) {
 		struct sway_output *output = wlr_output->data;
 		struct wlr_box old_geo = layer->geo;
-		arrange_layers(output);
 		if (memcmp(&old_geo, &layer->geo, sizeof(struct wlr_box)) != 0) {
+			arrange_layers(output);
 			// TODO DAMAGE apply whole surface from previous and new geos
 		} else {
 			// TODO DAMAGE from surface damage

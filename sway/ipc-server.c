@@ -242,33 +242,10 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 }
 
 static void ipc_send_event(const char *json_string, enum ipc_command_type event) {
-	static struct {
-		enum ipc_command_type event;
-		enum ipc_feature feature;
-	} security_mappings[] = {
-		{ IPC_EVENT_WORKSPACE, IPC_FEATURE_EVENT_WORKSPACE },
-		{ IPC_EVENT_OUTPUT, IPC_FEATURE_EVENT_OUTPUT },
-		{ IPC_EVENT_MODE, IPC_FEATURE_EVENT_MODE },
-		{ IPC_EVENT_WINDOW, IPC_FEATURE_EVENT_WINDOW },
-		{ IPC_EVENT_BINDING, IPC_FEATURE_EVENT_BINDING },
-		{ IPC_EVENT_INPUT, IPC_FEATURE_EVENT_INPUT }
-	};
-
-	uint32_t security_mask = 0;
-	for (size_t i = 0; i < sizeof(security_mappings) / sizeof(security_mappings[0]); ++i) {
-		if (security_mappings[i].event == event) {
-			security_mask = security_mappings[i].feature;
-			break;
-		}
-	}
-
 	int i;
 	struct ipc_client *client;
 	for (i = 0; i < ipc_client_list->length; i++) {
 		client = ipc_client_list->items[i];
-		if (!(client->security_policy & security_mask)) {
-			continue;
-		}
 		if ((client->subscribed_events & event_mask(event)) == 0) {
 			continue;
 		}
