@@ -119,9 +119,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	free(sway_surface);
 }
 
-static void handle_unmap_notify(struct wl_listener *listener, void *data) {
+static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
-		wl_container_of(listener, sway_surface, unmap_notify);
+		wl_container_of(listener, sway_surface, unmap);
 
 	wl_list_remove(&sway_surface->view->unmanaged_view_link);
 	wl_list_init(&sway_surface->view->unmanaged_view_link);
@@ -136,10 +136,10 @@ static void handle_unmap_notify(struct wl_listener *listener, void *data) {
 	sway_surface->view->surface = NULL;
 }
 
-static void handle_map_notify(struct wl_listener *listener, void *data) {
+static void handle_map(struct wl_listener *listener, void *data) {
 	// TODO put the view back into the tree
 	struct sway_xwayland_surface *sway_surface =
-		wl_container_of(listener, sway_surface, map_notify);
+		wl_container_of(listener, sway_surface, map);
 	struct wlr_xwayland_surface *xsurface = data;
 
 	sway_surface->view->surface = xsurface->surface;
@@ -221,11 +221,11 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 		&sway_surface->request_configure);
 	sway_surface->request_configure.notify = handle_configure_request;
 
-	wl_signal_add(&xsurface->events.unmap_notify, &sway_surface->unmap_notify);
-	sway_surface->unmap_notify.notify = handle_unmap_notify;
+	wl_signal_add(&xsurface->events.unmap, &sway_surface->unmap);
+	sway_surface->unmap.notify = handle_unmap;
 
-	wl_signal_add(&xsurface->events.map_notify, &sway_surface->map_notify);
-	sway_surface->map_notify.notify = handle_map_notify;
+	wl_signal_add(&xsurface->events.map, &sway_surface->map);
+	sway_surface->map.notify = handle_map;
 
-	handle_map_notify(&sway_surface->map_notify, xsurface);
+	handle_map(&sway_surface->map, xsurface);
 }
