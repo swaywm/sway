@@ -79,6 +79,34 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	view_damage_from(view);
 }
 
+static void handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_xdg_surface_v6 *sway_surface =
+		wl_container_of(listener, sway_surface, unmap);
+	view_damage_whole(sway_surface->view);
+	container_view_destroy(sway_surface->view->swayc);
+	sway_surface->view->swayc = NULL;
+	sway_surface->view->surface = NULL;
+}
+
+static void handle_map(struct wl_listener *listener, void *data) {
+	struct sway_xdg_surface_v6 *sway_surface =
+		wl_container_of(listener, sway_surface, map);
+	struct sway_view *view = sway_surface->view;
+
+	sway_surface->view->surface = view->wlr_xdg_surface_v6->surface;
+
+	container_view_destroy(view->swayc);
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *cont = container_view_create(focus, view);
+	view->swayc = cont;
+	arrange_windows(cont->parent, -1, -1);
+	sway_input_manager_set_focus(input_manager, cont);
+
+	view_damage_whole(sway_surface->view);
+}
+
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_xdg_surface =
 		wl_container_of(listener, sway_xdg_surface, destroy);
@@ -122,7 +150,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.close = close;
 	sway_view->wlr_xdg_surface_v6 = xdg_surface;
 	sway_view->sway_xdg_surface_v6 = sway_surface;
-	sway_view->surface = xdg_surface->surface;
 	sway_surface->view = sway_view;
 
 	// TODO:
@@ -133,15 +160,12 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	sway_surface->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit, &sway_surface->commit);
 
+	sway_surface->map.notify = handle_map;
+	wl_signal_add(&xdg_surface->events.map, &sway_surface->map);
+
+	sway_surface->unmap.notify = handle_unmap;
+	wl_signal_add(&xdg_surface->events.unmap, &sway_surface->unmap);
+
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &sway_surface->destroy);
-
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = container_view_create(focus, sway_view);
-	sway_view->swayc = cont;
-
-	arrange_windows(cont->parent, -1, -1);
-
-	sway_input_manager_set_focus(input_manager, cont);
 }

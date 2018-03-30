@@ -127,7 +127,6 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
-	// TODO put the view back into the tree
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, map);
 	struct wlr_xwayland_surface *xsurface = data;
@@ -193,7 +192,6 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	sway_view->iface.close = close_view;
 	sway_view->wlr_xwayland_surface = xsurface;
 	sway_view->sway_xwayland_surface = sway_surface;
-	sway_view->surface = xsurface->surface;
 	sway_surface->view = sway_view;
 
 	wl_list_init(&sway_view->unmanaged_view_link);

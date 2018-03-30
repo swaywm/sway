@@ -15,6 +15,8 @@ struct sway_xdg_surface_v6 {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener map;
+	struct wl_listener unmap;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
@@ -28,8 +30,8 @@ struct sway_xwayland_surface {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_configure;
-	struct wl_listener unmap;
 	struct wl_listener map;
+	struct wl_listener unmap;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
