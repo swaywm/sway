@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include "log.h"
 #include "sway/ipc-json.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -26,7 +26,7 @@ json_object *ipc_json_get_version() {
 	return version;
 }
 
-static json_object *ipc_json_create_rect(swayc_t *c) {
+static json_object *ipc_json_create_rect(struct sway_container *c) {
 	json_object *rect = json_object_new_object();
 
 	json_object_object_add(rect, "x", json_object_new_int((int32_t)c->x));
@@ -37,7 +37,7 @@ static json_object *ipc_json_create_rect(swayc_t *c) {
 	return rect;
 }
 
-static void ipc_json_describe_root(swayc_t *root, json_object *object) {
+static void ipc_json_describe_root(struct sway_container *root, json_object *object) {
 	json_object_object_add(object, "type", json_object_new_string("root"));
 	json_object_object_add(object, "layout", json_object_new_string("splith"));
 }
@@ -64,7 +64,7 @@ static const char *ipc_json_get_output_transform(enum wl_output_transform transf
 	return NULL;
 }
 
-static void ipc_json_describe_output(swayc_t *container, json_object *object) {
+static void ipc_json_describe_output(struct sway_container *container, json_object *object) {
 	struct wlr_output *wlr_output = container->sway_output->wlr_output;
 	json_object_object_add(object, "type", json_object_new_string("output"));
 	json_object_object_add(object, "active", json_object_new_boolean(true));
@@ -95,7 +95,7 @@ static void ipc_json_describe_output(swayc_t *container, json_object *object) {
 	json_object_object_add(object, "modes", modes_array);
 }
 
-static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object) {
+static void ipc_json_describe_workspace(struct sway_container *workspace, json_object *object) {
 	int num = (isdigit(workspace->name[0])) ? atoi(workspace->name) : -1;
 
 	json_object_object_add(object, "num", json_object_new_int(num));
@@ -103,11 +103,11 @@ static void ipc_json_describe_workspace(swayc_t *workspace, json_object *object)
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
 }
 
-static void ipc_json_describe_view(swayc_t *c, json_object *object) {
+static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
 	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
 }
 
-json_object *ipc_json_describe_container(swayc_t *c) {
+json_object *ipc_json_describe_container(struct sway_container *c) {
 	if (!(sway_assert(c, "Container must not be null."))) {
 		return NULL;
 	}
@@ -148,7 +148,7 @@ json_object *ipc_json_describe_container(swayc_t *c) {
 	return object;
 }
 
-json_object *ipc_json_describe_container_recursive(swayc_t *c) {
+json_object *ipc_json_describe_container_recursive(struct sway_container *c) {
 	json_object *object = ipc_json_describe_container(c);
 	int i;
 

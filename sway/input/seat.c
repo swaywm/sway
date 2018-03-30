@@ -1,14 +1,14 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "log.h"
 
 static void seat_device_destroy(struct sway_seat_device *seat_device) {
@@ -38,7 +38,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	struct sway_seat_container *seat_con =
 		wl_container_of(listener, seat_con, destroy);
 	struct sway_seat *seat = seat_con->seat;
-	swayc_t *con = seat_con->container;
+	struct sway_container *con = seat_con->container;
 
 	bool is_focus = (sway_seat_get_focus(seat) == con);
 
@@ -47,7 +47,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	if  (is_focus) {
 		// pick next focus
 		sway_seat_set_focus(seat, NULL);
-		swayc_t *next = sway_seat_get_focus_inactive(seat, con->parent);
+		struct sway_container *next = sway_seat_get_focus_inactive(seat, con->parent);
 		if (next == NULL) {
 			next = con->parent;
 		}
@@ -60,7 +60,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 }
 
 static struct sway_seat_container *seat_container_from_container(
-		struct sway_seat *seat, swayc_t *con) {
+		struct sway_seat *seat, struct sway_container *con) {
 	if (con->type < C_WORKSPACE) {
 		// these don't get seat containers ever
 		return NULL;
@@ -90,11 +90,11 @@ static struct sway_seat_container *seat_container_from_container(
 
 static void handle_new_container(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = wl_container_of(listener, seat, new_container);
-	swayc_t *con = data;
+	struct sway_container *con = data;
 	seat_container_from_container(seat, con);
 }
 
-static void collect_focus_iter(swayc_t *con, void *data) {
+static void collect_focus_iter(struct sway_container *con, void *data) {
 	struct sway_seat *seat = data;
 	if (con->type > C_WORKSPACE) {
 		return;
@@ -131,7 +131,7 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
 
-	container_for_each_bfs(&root_container, collect_focus_iter, seat);
+	container_for_each_descendant_dfs(&root_container, collect_focus_iter, seat);
 
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);
@@ -167,7 +167,7 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device);
-	swayc_t *focus = sway_seat_get_focus(seat);
+	struct sway_container *focus = sway_seat_get_focus(seat);
 	if (focus && focus->type == C_VIEW) {
 		// force notify reenter to pick up the new configuration
 		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
@@ -271,7 +271,7 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 	}
 
 	for (int i = 0; i < root_container.children->length; ++i) {
-		swayc_t *output_container = root_container.children->items[i];
+		struct sway_container *output_container = root_container.children->items[i];
 		struct wlr_output *output =
 			output_container->sway_output->wlr_output;
 		bool result =
@@ -290,8 +290,8 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
-	swayc_t *last_focus = sway_seat_get_focus(seat);
+void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *container) {
+	struct sway_container *last_focus = sway_seat_get_focus(seat);
 
 	if (container && last_focus == container) {
 		return;
@@ -324,10 +324,9 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 	}
 
 	if (last_focus) {
-		swayc_t *last_ws = last_focus;
+		struct sway_container *last_ws = last_focus;
 		if (last_ws && last_ws->type != C_WORKSPACE) {
-			last_ws = swayc_parent_by_type(
-				last_focus, C_WORKSPACE);
+			last_ws = container_parent(last_focus, C_WORKSPACE);
 		}
 		if (last_ws) {
 			wlr_log(L_DEBUG, "sending workspace event");
@@ -344,9 +343,9 @@ void sway_seat_set_focus(struct sway_seat *seat, swayc_t *container) {
 	seat->has_focus = (container != NULL);
 }
 
-swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container) {
+struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat, struct sway_container *container) {
 	struct sway_seat_container *current = NULL;
-	swayc_t *parent = NULL;
+	struct sway_container *parent = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
 		parent = current->container->parent;
 
@@ -365,21 +364,21 @@ swayc_t *sway_seat_get_focus_inactive(struct sway_seat *seat, swayc_t *container
 	return NULL;
 }
 
-swayc_t *sway_seat_get_focus(struct sway_seat *seat) {
+struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
 	}
 	return sway_seat_get_focus_inactive(seat, &root_container);
 }
 
-swayc_t *sway_seat_get_focus_by_type(struct sway_seat *seat,
-		enum swayc_types type) {
-	swayc_t *focus = sway_seat_get_focus_inactive(seat, &root_container);
+struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
+		enum sway_container_type type) {
+	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
 	if (focus->type == type) {
 		return focus;
 	}
 
-	return swayc_parent_by_type(focus, type);
+	return container_parent(focus, type);
 }
 
 void sway_seat_set_config(struct sway_seat *seat,

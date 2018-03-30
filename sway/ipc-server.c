@@ -257,7 +257,8 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 	}
 }
 
-void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
+void ipc_event_workspace(struct sway_container *old,
+		struct sway_container *new, const char *change) {
 	wlr_log(L_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -282,7 +283,7 @@ void ipc_event_workspace(swayc_t *old, swayc_t *new, const char *change) {
 	json_object_put(obj);
 }
 
-void ipc_event_window(swayc_t *window, const char *change) {
+void ipc_event_window(struct sway_container *window, const char *change) {
 	wlr_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -378,7 +379,8 @@ void ipc_client_disconnect(struct ipc_client *client) {
 	free(client);
 }
 
-static void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
+static void ipc_get_workspaces_callback(struct sway_container *workspace,
+		void *data) {
 	if (workspace->type != C_WORKSPACE) {
 		return;
 	}
@@ -387,9 +389,9 @@ static void ipc_get_workspaces_callback(swayc_t *workspace, void *data) {
 	// it's set differently for the get_workspaces reply
 	struct sway_seat *seat =
 		sway_input_manager_get_default_seat(input_manager);
-	swayc_t *focused_ws = sway_seat_get_focus(seat);
+	struct sway_container *focused_ws = sway_seat_get_focus(seat);
 	if (focused_ws->type != C_WORKSPACE) {
-		focused_ws = swayc_parent_by_type(focused_ws, C_WORKSPACE);
+		focused_ws = container_parent(focused_ws, C_WORKSPACE);
 	}
 	bool focused = workspace == focused_ws;
 	json_object_object_del(workspace_json, "focused");
@@ -441,7 +443,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *outputs = json_object_new_array();
 		for (int i = 0; i < root_container.children->length; ++i) {
-			swayc_t *container = root_container.children->items[i];
+			struct sway_container *container = root_container.children->items[i];
 			if (container->type == C_OUTPUT) {
 				json_object_array_add(outputs,
 					ipc_json_describe_container(container));
@@ -456,7 +458,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_WORKSPACES:
 	{
 		json_object *workspaces = json_object_new_array();
-		container_map(&root_container, ipc_get_workspaces_callback, workspaces);
+		container_for_each_descendant_dfs(&root_container,
+				ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(workspaces); // free

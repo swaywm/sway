@@ -202,7 +202,7 @@ void invoke_swaybar(struct bar_config *bar) {
 }
 
 static bool active_output(const char *name) {
-	swayc_t *cont = NULL;
+	struct sway_container *cont = NULL;
 	for (int i = 0; i < root_container.children->length; ++i) {
 		cont = root_container.children->items[i];
 		if (cont->type == C_OUTPUT && strcasecmp(name, cont->name) == 0) {

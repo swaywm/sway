@@ -6,8 +6,8 @@
 #include <unistd.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/container.h"
-#include "sway/workspace.h"
+#include "sway/tree/container.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
 
