@@ -11,6 +11,7 @@
 #include "sway/output.h"
 #include "sway/tree/view.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
 
@@ -119,6 +120,42 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	}
 	child->parent = NULL;
 	return parent;
+}
+
+struct sway_container *container_reap_empty(struct sway_container *container) {
+	if (!sway_assert(container, "reaping null container")) {
+		return NULL;
+	}
+	while (container->children->length == 0 && container->type == C_CONTAINER) {
+		wlr_log(L_DEBUG, "Container: Destroying container '%p'", container);
+		struct sway_container *parent = container->parent;
+		container_destroy(container);
+		container = parent;
+	}
+	return container;
+}
+
+void container_move_to(struct sway_container* container,
+		struct sway_container* destination) {
+	if (container == destination
+			|| container_has_anscestor(container, destination)) {
+		return;
+	}
+	struct sway_container *old_parent = container_remove_child(container);
+	container->width = container->height = 0;
+	struct sway_container *new_parent =
+		container_add_sibling(destination, container);
+	if (destination->type == C_WORKSPACE) {
+		// If the workspace only has one child after adding one, it
+		// means that the workspace was just initialized.
+		// TODO: Consider floating views in this test
+		if (destination->children->length == 1) {
+			ipc_event_workspace(NULL, destination, "init");
+		}
+	}
+	old_parent = container_reap_empty(old_parent);
+	arrange_windows(old_parent, -1, -1);
+	arrange_windows(new_parent, -1, -1);
 }
 
 enum sway_container_layout container_get_default_layout(
