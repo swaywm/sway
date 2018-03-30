@@ -32,7 +32,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 		int32_t scale, bool markup, const char *fmt, ...) {
-	char *buf = malloc(2048);
+	static char buf[2048];
 
 	va_list args;
 	va_start(args, fmt);
@@ -45,12 +45,11 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	pango_cairo_update_layout(cairo, layout);
 	pango_layout_get_pixel_size(layout, width, height);
 	g_object_unref(layout);
-	free(buf);
 }
 
 void pango_printf(cairo_t *cairo, const char *font,
 		int32_t scale, bool markup, const char *fmt, ...) {
-	char *buf = malloc(2048);
+	static char buf[2048];
 
 	va_list args;
 	va_start(args, fmt);
@@ -63,5 +62,4 @@ void pango_printf(cairo_t *cairo, const char *font,
 	pango_cairo_update_layout(cairo, layout);
 	pango_cairo_show_layout(cairo, layout);
 	g_object_unref(layout);
-	free(buf);
 }
