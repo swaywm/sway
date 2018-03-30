@@ -120,14 +120,14 @@ void terminate_swaybg(pid_t pid) {
 	}
 }
 
-void apply_output_config(struct output_config *oc, struct sway_container *output) {
+void apply_output_config(struct output_config *oc, swayc_t *output) {
 	assert(output->type == C_OUTPUT);
 
 	struct wlr_output *wlr_output = output->sway_output->wlr_output;
 	if (oc && oc->enabled == 0) {
 		wlr_output_layout_remove(root_container.sway_root->output_layout,
 			wlr_output);
-		container_output_destroy(output);
+		destroy_output(output);
 		return;
 	}
 

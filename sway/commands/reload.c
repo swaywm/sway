@@ -1,6 +1,6 @@
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/tree/layout.h"
+#include "sway/layout.h"
 
 struct cmd_results *cmd_reload(int argc, char **argv) {
 	struct cmd_results *error = NULL;

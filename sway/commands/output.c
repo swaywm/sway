@@ -296,7 +296,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	char identifier[128];
 	bool all = strcmp(output->name, "*") == 0;
 	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *cont = root_container.children->items[i];
+		swayc_t *cont = root_container.children->items[i];
 		if (cont->type != C_OUTPUT) {
 			continue;
 		}

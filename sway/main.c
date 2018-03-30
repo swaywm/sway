@@ -18,7 +18,7 @@
 #include <wlr/util/log.h>
 #include "sway/config.h"
 #include "sway/server.h"
-#include "sway/tree/layout.h"
+#include "sway/layout.h"
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
 #include "readline.h"
@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
 
 	wlr_log(L_INFO, "Starting sway version " SWAY_VERSION);
 
-	layout_init();
+	init_layout();
 
 	if (!server_init(&server)) {
 		return 1;
