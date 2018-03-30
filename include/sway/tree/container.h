@@ -131,7 +131,7 @@ struct sway_container *container_at(struct sway_container *parent,
 /**
  * Apply the function for each child of the container breadth first.
  */
-void container_for_each(struct sway_container *container,
+void container_for_each_descendent(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 #endif

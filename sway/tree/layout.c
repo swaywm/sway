@@ -592,7 +592,7 @@ static struct sway_container *get_swayc_in_direction_under(
 				}
 			} else {
 				wlr_log(L_DEBUG,
-					"%s cont %d-%p dir %i sibling %d: %p", __func__, idx,
+					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, parent->children->items[desired]);
 				return parent->children->items[desired];
 			}

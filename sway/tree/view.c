@@ -45,7 +45,7 @@ void view_set_size(struct sway_view *view, int width, int height) {
 	}
 }
 
-// TODO make view coordinates
+// TODO make view coordinates in layout coordinates
 void view_set_position(struct sway_view *view, double ox, double oy) {
 	if (view->iface.set_position) {
 		struct wlr_box box = {

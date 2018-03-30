@@ -154,7 +154,7 @@ struct sway_container *container_output_create(
 struct sway_container *container_workspace_create(
 		struct sway_container *output, const char *name) {
 	if (!sway_assert(output,
-				"container_workspace_create called with null output")) {
+			"container_workspace_create called with null output")) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
@@ -178,7 +178,7 @@ struct sway_container *container_workspace_create(
 struct sway_container *container_view_create(struct sway_container *sibling,
 		struct sway_view *sway_view) {
 	if (!sway_assert(sibling,
-				"container_view_create called with NULL sibling/parent")) {
+			"container_view_create called with NULL sibling/parent")) {
 		return NULL;
 	}
 	const char *title = view_get_title(sway_view);
@@ -400,7 +400,7 @@ struct sway_container *container_at(struct sway_container *parent,
 	return NULL;
 }
 
-void container_for_each(struct sway_container *con,
+void container_for_each_descendent(struct sway_container *con,
 		void (*f)(struct sway_container *con, void *data), void *data) {
 	list_t *queue = get_bfs_queue();
 	if (!queue) {
