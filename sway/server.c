@@ -1,19 +1,19 @@
 #define _POSIX_C_SOURCE 200112L
-#include <stdlib.h>
+#include <assert.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/wlr_renderer.h>
-#include <wlr/render/gles2.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_screenshooter.h>
-#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
-#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/server.h"
@@ -42,11 +42,12 @@ bool server_init(struct sway_server *server) {
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 	server->backend = wlr_backend_autocreate(server->wl_display);
 
-	server->renderer = wlr_gles2_renderer_create(server->backend);
+	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
+	assert(renderer);
+
 	wl_display_init_shm(server->wl_display);
 
-	server->compositor = wlr_compositor_create(
-			server->wl_display, server->renderer);
+	server->compositor = wlr_compositor_create(server->wl_display, renderer);
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
@@ -95,8 +96,7 @@ bool server_init(struct sway_server *server) {
 }
 
 void server_fini(struct sway_server *server) {
-	// TODO WLR: tear down more stuff
-	wlr_backend_destroy(server->backend);
+	// TODO
 }
 
 void server_run(struct sway_server *server) {

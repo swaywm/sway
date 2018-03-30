@@ -18,7 +18,6 @@ struct sway_server {
 	const char *socket;
 
 	struct wlr_backend *backend;
-	struct wlr_renderer *renderer;
 
 	struct wlr_compositor *compositor;
 	struct wlr_data_device_manager *data_device_manager;
