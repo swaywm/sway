@@ -198,7 +198,6 @@ static void render_layer(struct sway_output *output,
 
 static void render_output(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
-	wlr_log(L_DEBUG, "render");
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
@@ -210,7 +209,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
-	// TODO
+	// TODO: don't damage the whole output here
 	int width, height;
 	wlr_output_transformed_resolution(wlr_output, &width, &height);
 	pixman_region32_union_rect(damage, damage, 0, 0, width, height);
