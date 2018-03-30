@@ -9,6 +9,7 @@ struct sway_cursor {
 	struct wlr_xcursor_manager *xcursor_manager;
 
 	double x, y;
+	struct wl_client *image_client;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;
