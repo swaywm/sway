@@ -266,7 +266,7 @@ struct sway_container *container_set_layout(struct sway_container *container,
 	return container;
 }
 
-void container_descendents(struct sway_container *root,
+void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data) {
 	for (int i = 0; i < root->children->length; ++i) {
@@ -275,7 +275,7 @@ void container_descendents(struct sway_container *root,
 			func(item, data);
 		}
 		if (item->children && item->children->length) {
-			container_descendents(item, type, func, data);
+			container_descendants(item, type, func, data);
 		}
 	}
 }
@@ -400,7 +400,22 @@ struct sway_container *container_at(struct sway_container *parent,
 	return NULL;
 }
 
-void container_for_each_descendent(struct sway_container *con,
+void container_for_each_descendant_dfs(struct sway_container *container,
+		void (*f)(struct sway_container *container, void *data),
+		void *data) {
+	if (container) {
+		if (container->children)  {
+			for (int i = 0; i < container->children->length; ++i) {
+				struct sway_container *child =
+					container->children->items[i];
+				container_for_each_descendant_dfs(child, f, data);
+			}
+		}
+		f(container, data);
+	}
+}
+
+void container_for_each_descendant_bfs(struct sway_container *con,
 		void (*f)(struct sway_container *con, void *data), void *data) {
 	list_t *queue = get_bfs_queue();
 	if (!queue) {

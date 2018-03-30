@@ -228,7 +228,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 		.output = soutput,
 		.now = &now,
 	};
-	container_descendents(workspace, C_VIEW, output_frame_view, &rdata);
+	container_descendants(workspace, C_VIEW, output_frame_view, &rdata);
 
 	// render unmanaged views on top
 	struct sway_view *view;

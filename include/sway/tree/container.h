@@ -104,7 +104,7 @@ struct sway_container *container_view_destroy(struct sway_container *view);
 struct sway_container *container_set_layout(struct sway_container *container,
 		enum sway_container_layout layout);
 
-void container_descendents(struct sway_container *root,
+void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data);
 
@@ -131,7 +131,13 @@ struct sway_container *container_at(struct sway_container *parent,
 /**
  * Apply the function for each child of the container breadth first.
  */
-void container_for_each_descendent(struct sway_container *container,
+void container_for_each_descendant_bfs(struct sway_container *container,
+		void (*f)(struct sway_container *container, void *data), void *data);
+
+/**
+ * Apply the function for each child of the container depth first.
+ */
+void container_for_each_descendant_dfs(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 #endif
