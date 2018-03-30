@@ -41,6 +41,9 @@ static void rotate_child_position(double *sx, double *sy, double sw, double sh,
 static void render_surface(struct wlr_surface *surface,
 		struct wlr_output *wlr_output, struct timespec *when,
 		double lx, double ly, float rotation) {
+	struct wlr_renderer *renderer =
+		wlr_backend_get_renderer(wlr_output->backend);
+
 	if (!wlr_surface_has_buffer(surface)) {
 		return;
 	}
@@ -65,8 +68,8 @@ static void render_surface(struct wlr_surface *surface,
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &render_box, surface->current->transform,
 			0, wlr_output->transform_matrix);
-		wlr_render_texture_with_matrix(server.renderer, surface->texture,
-			matrix, 1.0f); // TODO: configurable alpha
+		wlr_render_texture_with_matrix(renderer, surface->texture, matrix,
+			1.0f); // TODO: configurable alpha
 
 		wlr_surface_send_frame_done(surface, when);
 	}
@@ -192,15 +195,14 @@ static void render_layer(struct sway_output *output,
 	}
 }
 
-static void output_frame_notify(struct wl_listener *listener, void *data) {
+static void handle_output_frame(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
-	struct sway_server *server = soutput->server;
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+	struct wlr_renderer *renderer =
+		wlr_backend_get_renderer(wlr_output->backend);
 
-	int buffer_age = -1;
-	wlr_output_make_current(wlr_output, &buffer_age);
-	wlr_renderer_begin(server->renderer, wlr_output->width, wlr_output->height);
+	wlr_output_make_current(wlr_output, NULL);
+	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
 
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	wlr_renderer_clear(renderer, clear_color);
@@ -218,7 +220,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
+	struct sway_container *focus =
+		sway_seat_get_focus_inactive(seat, soutput->swayc);
 	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
 			focus :
 			container_parent(focus, C_WORKSPACE));
@@ -248,7 +251,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	render_layer(soutput, output_box, &now,
 			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
-	wlr_renderer_end(server->renderer);
+	wlr_renderer_end(renderer);
 	wlr_output_swap_buffers(wlr_output, &now, NULL);
 	soutput->last_frame = now;
 }
@@ -306,7 +309,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	sway_input_manager_configure_xcursor(input_manager);
 
 	wl_signal_add(&wlr_output->events.frame, &output->frame);
-	output->frame.notify = output_frame_notify;
+	output->frame.notify = handle_output_frame;
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_output_destroy;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
