@@ -131,8 +131,8 @@ struct sway_container *container_output_create(
 	}
 
 	apply_output_config(oc, output);
-
 	container_add_child(&root_container, output);
+	load_swaybars();
 
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);

@@ -1,61 +1,30 @@
 #ifndef _SWAYBAR_STATUS_LINE_H
 #define _SWAYBAR_STATUS_LINE_H
-
 #include <stdint.h>
+#include <stdio.h>
 #include <stdbool.h>
-
-#include "list.h"
 #include "bar.h"
 
-typedef enum {UNDEF, TEXT, I3BAR} command_protocol;
+enum status_protocol {
+	PROTOCOL_UNDEF,
+	PROTOCOL_TEXT,
+	PROTOCOL_I3BAR,
+};
 
 struct status_line {
-	list_t *block_line;
-	const char *text_line;
-	command_protocol protocol;
-	bool click_events;
+	pid_t pid;
+	int read_fd, write_fd;
+	FILE *read, *write;
+
+	enum status_protocol protocol;
+	const char *text;
+
+	char *buffer;
+	size_t buffer_size;
 };
 
-struct status_block {
-	char *full_text, *short_text, *align;
-	bool urgent;
-	uint32_t color;
-	int min_width;
-	char *name, *instance;
-	bool separator;
-	int separator_block_width;
-	bool markup;
-	// Airblader features
-	uint32_t background;
-	uint32_t border;
-	int border_top;
-	int border_bottom;
-	int border_left;
-	int border_right;
+struct status_line *status_line_init(char *cmd);
+void status_line_free(struct status_line *status);
+bool handle_status_readable(struct status_line *status);
 
-	// Set during rendering
-	int x;
-	int width;
-};
-
-/**
- * Initialize status line struct.
- */
-struct status_line *init_status_line();
-
-/**
- * handle status line activity.
- */
-bool handle_status_line(struct bar *bar);
-
-/**
- * Handle mouse clicks.
- */
-bool status_line_mouse_event(struct bar *bar, int x, int y, uint32_t button);
-
-/**
- * Free status line struct.
- */
-void free_status_line(struct status_line *line);
-
-#endif /* _SWAYBAR_STATUS_LINE_H */
+#endif

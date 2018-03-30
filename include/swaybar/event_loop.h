@@ -1,6 +1,5 @@
 #ifndef _SWAYBAR_EVENT_LOOP_H
 #define _SWAYBAR_EVENT_LOOP_H
-
 #include <stdbool.h>
 #include <time.h>
 
@@ -23,4 +22,5 @@ bool remove_timer(timer_t timer);
 void event_loop_poll();
 
 void init_event_loop();
-#endif /*_SWAYBAR_EVENT_LOOP_H */
+
+#endif

@@ -156,7 +156,6 @@ void arrange_layers(struct sway_output *output) {
 	struct wlr_box usable_area = { 0 };
 	wlr_output_effective_resolution(output->wlr_output,
 			&usable_area.width, &usable_area.height);
-	struct wlr_box usable_area_before = output->usable_area;
 
 	// Arrange exclusive surfaces from top->bottom
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
@@ -167,11 +166,11 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area, true);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 			&usable_area, true);
-	memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
 
-	if (memcmp(&usable_area_before,
-			&usable_area, sizeof(struct wlr_box)) != 0) {
-		wlr_log(L_DEBUG, "arrange");
+	if (memcmp(&usable_area, &output->usable_area,
+				sizeof(struct wlr_box)) != 0) {
+		wlr_log(L_DEBUG, "Usable area changed, rearranging output");
+		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
 		arrange_windows(output->swayc, -1, -1);
 	}
 
@@ -193,20 +192,8 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer =
 		wl_container_of(listener, sway_layer, output_destroy);
 	wl_list_remove(&sway_layer->output_destroy.link);
-	wl_list_remove(&sway_layer->output_mode.link);
-	wl_list_remove(&sway_layer->output_transform.link);
 	sway_layer->layer_surface->output = NULL;
 	wlr_layer_surface_close(sway_layer->layer_surface);
-}
-
-static void handle_output_mode(struct wl_listener *listener, void *data) {
-	struct wlr_output *output = data;
-	arrange_layers((struct sway_output *)output->data);
-}
-
-static void handle_output_transform(struct wl_listener *listener, void *data) {
-	struct wlr_output *output = data;
-	arrange_layers((struct sway_output *)output->data);
 }
 
 static void handle_surface_commit(struct wl_listener *listener, void *data) {
@@ -233,6 +220,8 @@ static void unmap(struct wlr_layer_surface *layer_surface) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer = wl_container_of(
 			listener, sway_layer, destroy);
+	wlr_log(L_DEBUG, "Layer surface destroyed (%s)",
+			sway_layer->layer_surface->namespace);
 	if (sway_layer->layer_surface->mapped) {
 		unmap(sway_layer->layer_surface);
 	}
@@ -243,12 +232,10 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->surface_commit.link);
 	if (sway_layer->layer_surface->output != NULL) {
 		wl_list_remove(&sway_layer->output_destroy.link);
-		wl_list_remove(&sway_layer->output_mode.link);
-		wl_list_remove(&sway_layer->output_transform.link);
 	}
 	struct sway_output *output = sway_layer->layer_surface->output->data;
-	arrange_layers(output);
 	free(sway_layer);
+	arrange_layers(output);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -288,14 +275,6 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	sway_layer->output_destroy.notify = handle_output_destroy;
 	wl_signal_add(&layer_surface->output->events.destroy,
 		&sway_layer->output_destroy);
-
-	sway_layer->output_mode.notify = handle_output_mode;
-	wl_signal_add(&layer_surface->output->events.mode,
-		&sway_layer->output_mode);
-
-	sway_layer->output_transform.notify = handle_output_transform;
-	wl_signal_add(&layer_surface->output->events.transform,
-		&sway_layer->output_transform);
 
 	sway_layer->destroy.notify = handle_destroy;
 	wl_signal_add(&layer_surface->events.destroy, &sway_layer->destroy);

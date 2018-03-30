@@ -1,17 +1,18 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
-
 #define PID_WORKSPACE_TIMEOUT 60
-
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
-#include <time.h>
 #include "list.h"
 #include "tree/layout.h"
 #include "tree/container.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
+
+// TODO: Refactor this shit
 
 /**
  * Describes a variable created via the `set` command.
@@ -152,24 +153,13 @@ struct bar_config {
 	char *id;
 	uint32_t modifier;
 	list_t *outputs;
-	//enum desktop_shell_panel_position position; // TODO
+	char *position;
 	list_t *bindings;
 	char *status_command;
 	bool pango_markup;
 	char *swaybar_command;
 	char *font;
 	int height; // -1 not defined
-
-#ifdef ENABLE_TRAY
-	// Tray
-	char *tray_output;
-	char *icon_theme;
-	uint32_t tray_padding;
-	uint32_t activate_button;
-	uint32_t context_button;
-	uint32_t secondary_button;
-#endif
-
 	bool workspace_buttons;
 	bool wrap_scroll;
 	char *separator_symbol;
@@ -292,6 +282,7 @@ struct sway_config {
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;
+	char *swaybg_command;
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
@@ -420,11 +411,6 @@ void apply_output_config(struct output_config *oc,
 		struct sway_container *output);
 void free_output_config(struct output_config *oc);
 
-/**
- * Updates the list of active bar modifiers
- */
-void update_active_bar_modifiers(void);
-
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
@@ -433,27 +419,17 @@ int sway_binding_cmp_keys(const void *a, const void *b);
 void free_sway_binding(struct sway_binding *sb);
 struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
-int sway_mouse_binding_cmp(const void *a, const void *b);
-int sway_mouse_binding_cmp_qsort(const void *a, const void *b);
-int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
-void free_sway_mouse_binding(struct sway_mouse_binding *smb);
-
+/* Bar stuff */
 void load_swaybars();
+void invoke_swaybar(struct bar_config *bar);
 void terminate_swaybg(pid_t pid);
-
-/**
- * Allocate and initialize default bar configuration.
- */
 struct bar_config *default_bar_config(void);
+void free_bar_config(struct bar_config *bar);
 
-/**
- * Global config singleton.
- */
+/* Global config singleton. */
 extern struct sway_config *config;
 
-/**
- * Config file currently being read.
- */
+/* Config file currently being read */
 extern const char *current_config_path;
 
 #endif

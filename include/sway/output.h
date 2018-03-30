@@ -21,6 +21,7 @@ struct sway_output {
 	struct wl_listener frame;
 	struct wl_listener destroy;
 	struct wl_listener mode;
+	struct wl_listener transform;
 
 	pid_t bg_pid;
 };

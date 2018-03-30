@@ -74,6 +74,9 @@ void free_cmd_results(struct cmd_results *results);
  */
 const char *cmd_results_to_json(struct cmd_results *results);
 
+struct cmd_results *add_color(const char *name,
+		char *buffer, const char *color);
+
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
 sway_cmd cmd_assign;
@@ -138,6 +141,7 @@ sway_cmd cmd_splith;
 sway_cmd cmd_splitt;
 sway_cmd cmd_splitv;
 sway_cmd cmd_sticky;
+sway_cmd cmd_swaybg_command;
 sway_cmd cmd_unmark;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;

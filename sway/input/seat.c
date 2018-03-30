@@ -6,6 +6,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/tree/view.h"
 #include "log.h"
@@ -309,15 +310,27 @@ void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *containe
 		if (container->type == C_VIEW) {
 			struct sway_view *view = container->sway_view;
 			view_set_activated(view, true);
-			struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+			struct wlr_keyboard *keyboard =
+				wlr_seat_get_keyboard(seat->wlr_seat);
 			if (keyboard) {
-				wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
-						keyboard->keycodes, keyboard->num_keycodes,
-						&keyboard->modifiers);
+				wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+						view->surface, keyboard->keycodes,
+						keyboard->num_keycodes, &keyboard->modifiers);
 			} else {
-				wlr_seat_keyboard_notify_enter(seat->wlr_seat, view->surface,
-						NULL, 0, NULL);
+				wlr_seat_keyboard_notify_enter(
+						seat->wlr_seat, view->surface, NULL, 0, NULL);
 			}
+		}
+	}
+
+	if (last_focus) {
+		struct sway_container *last_ws = last_focus;
+		if (last_ws && last_ws->type != C_WORKSPACE) {
+			last_ws = container_parent(last_focus, C_WORKSPACE);
+		}
+		if (last_ws) {
+			wlr_log(L_DEBUG, "sending workspace event");
+			ipc_event_workspace(last_ws, container, "focus");
 		}
 	}
 

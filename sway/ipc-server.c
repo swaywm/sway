@@ -21,6 +21,7 @@
 #include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "list.h"
 #include "log.h"
 
@@ -241,33 +242,10 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 }
 
 static void ipc_send_event(const char *json_string, enum ipc_command_type event) {
-	static struct {
-		enum ipc_command_type event;
-		enum ipc_feature feature;
-	} security_mappings[] = {
-		{ IPC_EVENT_WORKSPACE, IPC_FEATURE_EVENT_WORKSPACE },
-		{ IPC_EVENT_OUTPUT, IPC_FEATURE_EVENT_OUTPUT },
-		{ IPC_EVENT_MODE, IPC_FEATURE_EVENT_MODE },
-		{ IPC_EVENT_WINDOW, IPC_FEATURE_EVENT_WINDOW },
-		{ IPC_EVENT_BINDING, IPC_FEATURE_EVENT_BINDING },
-		{ IPC_EVENT_INPUT, IPC_FEATURE_EVENT_INPUT }
-	};
-
-	uint32_t security_mask = 0;
-	for (size_t i = 0; i < sizeof(security_mappings) / sizeof(security_mappings[0]); ++i) {
-		if (security_mappings[i].event == event) {
-			security_mask = security_mappings[i].feature;
-			break;
-		}
-	}
-
 	int i;
 	struct ipc_client *client;
 	for (i = 0; i < ipc_client_list->length; i++) {
 		client = ipc_client_list->items[i];
-		if (!(client->security_policy & security_mask)) {
-			continue;
-		}
 		if ((client->subscribed_events & event_mask(event)) == 0) {
 			continue;
 		}
@@ -279,6 +257,32 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 	}
 }
 
+void ipc_event_workspace(struct sway_container *old,
+		struct sway_container *new, const char *change) {
+	wlr_log(L_DEBUG, "Sending workspace::%s event", change);
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string(change));
+	if (strcmp("focus", change) == 0) {
+		if (old) {
+			json_object_object_add(obj, "old",
+					ipc_json_describe_container_recursive(old));
+		} else {
+			json_object_object_add(obj, "old", NULL);
+		}
+	}
+
+	if (new) {
+		json_object_object_add(obj, "current",
+				ipc_json_describe_container_recursive(new));
+	} else {
+		json_object_object_add(obj, "current", NULL);
+	}
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_WORKSPACE);
+	json_object_put(obj);
+}
+
 void ipc_event_window(struct sway_container *window, const char *change) {
 	wlr_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
@@ -287,8 +291,26 @@ void ipc_event_window(struct sway_container *window, const char *change) {
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_WINDOW);
+	json_object_put(obj);
+}
 
-	json_object_put(obj); // free
+void ipc_event_barconfig_update(struct bar_config *bar) {
+	wlr_log(L_DEBUG, "Sending barconfig_update event");
+	json_object *json = ipc_json_describe_bar_config(bar);
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_BARCONFIG_UPDATE);
+	json_object_put(json);
+}
+
+void ipc_event_mode(const char *mode) {
+	wlr_log(L_DEBUG, "Sending mode::%s event", mode);
+	json_object *obj = json_object_new_object();
+	json_object_object_add(obj, "change", json_object_new_string(mode));
+
+	const char *json_string = json_object_to_json_string(obj);
+	ipc_send_event(json_string, IPC_EVENT_MODE);
+	json_object_put(obj);
 }
 
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
@@ -357,6 +379,27 @@ void ipc_client_disconnect(struct ipc_client *client) {
 	free(client);
 }
 
+static void ipc_get_workspaces_callback(struct sway_container *workspace,
+		void *data) {
+	if (workspace->type != C_WORKSPACE) {
+		return;
+	}
+	json_object *workspace_json = ipc_json_describe_container(workspace);
+	// override the default focused indicator because
+	// it's set differently for the get_workspaces reply
+	struct sway_seat *seat =
+		sway_input_manager_get_default_seat(input_manager);
+	struct sway_container *focused_ws = sway_seat_get_focus(seat);
+	if (focused_ws->type != C_WORKSPACE) {
+		focused_ws = container_parent(focused_ws, C_WORKSPACE);
+	}
+	bool focused = workspace == focused_ws;
+	json_object_object_del(workspace_json, "focused");
+	json_object_object_add(workspace_json, "focused",
+			json_object_new_boolean(focused));
+	json_object_array_add((json_object *)data, workspace_json);
+}
+
 void ipc_client_handle_command(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
@@ -412,6 +455,17 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_WORKSPACES:
+	{
+		json_object *workspaces = json_object_new_array();
+		container_for_each_descendant_dfs(&root_container,
+				ipc_get_workspaces_callback, workspaces);
+		const char *json_string = json_object_to_json_string(workspaces);
+		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		json_object_put(workspaces); // free
+		goto exit_cleanup;
+	}
+
 	case IPC_SUBSCRIBE:
 	{
 		// TODO: Check if they're permitted to use these events
@@ -446,7 +500,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		json_object_put(request);
-
 		ipc_send_reply(client, "{\"success\": true}", 17);
 		goto exit_cleanup;
 	}
@@ -480,6 +533,41 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(version);
 		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(version); // free
+		goto exit_cleanup;
+	}
+
+	case IPC_GET_BAR_CONFIG:
+	{
+		if (!buf[0]) {
+			// Send list of configured bar IDs
+			json_object *bars = json_object_new_array();
+			for (int i = 0; i < config->bars->length; ++i) {
+				struct bar_config *bar = config->bars->items[i];
+				json_object_array_add(bars, json_object_new_string(bar->id));
+			}
+			const char *json_string = json_object_to_json_string(bars);
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+			json_object_put(bars); // free
+		} else {
+			// Send particular bar's details
+			struct bar_config *bar = NULL;
+			for (int i = 0; i < config->bars->length; ++i) {
+				bar = config->bars->items[i];
+				if (strcmp(buf, bar->id) == 0) {
+					break;
+				}
+				bar = NULL;
+			}
+			if (!bar) {
+				const char *error = "{ \"success\": false, \"error\": \"No bar with that ID\" }";
+				ipc_send_reply(client, error, (uint32_t)strlen(error));
+				goto exit_cleanup;
+			}
+			json_object *json = ipc_json_describe_bar_config(bar);
+			const char *json_string = json_object_to_json_string(json);
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+			json_object_put(json); // free
+		}
 		goto exit_cleanup;
 	}
 

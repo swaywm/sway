@@ -9,6 +9,7 @@
 #include "sway/input/seat.h"
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 json_object *ipc_json_get_version() {
 	int major = 0, minor = 0, patch = 0;
@@ -197,4 +198,137 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		json_object_new_string(describe_device_type(device)));
 
 	return object;
+}
+
+json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
+	if (!sway_assert(bar, "Bar must not be NULL")) {
+		return NULL;
+	}
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "id", json_object_new_string(bar->id));
+	json_object_object_add(json, "mode", json_object_new_string(bar->mode));
+	json_object_object_add(json, "hidden_state",
+			json_object_new_string(bar->hidden_state));
+	json_object_object_add(json, "position",
+			json_object_new_string(bar->position));
+	json_object_object_add(json, "status_command",
+			json_object_new_string(bar->status_command));
+	json_object_object_add(json, "font",
+			json_object_new_string((bar->font) ? bar->font : config->font));
+	if (bar->separator_symbol) {
+		json_object_object_add(json, "separator_symbol",
+				json_object_new_string(bar->separator_symbol));
+	}
+	json_object_object_add(json, "bar_height",
+			json_object_new_int(bar->height));
+	json_object_object_add(json, "wrap_scroll",
+			json_object_new_boolean(bar->wrap_scroll));
+	json_object_object_add(json, "workspace_buttons",
+			json_object_new_boolean(bar->workspace_buttons));
+	json_object_object_add(json, "strip_workspace_numbers",
+			json_object_new_boolean(bar->strip_workspace_numbers));
+	json_object_object_add(json, "binding_mode_indicator",
+			json_object_new_boolean(bar->binding_mode_indicator));
+	json_object_object_add(json, "verbose",
+			json_object_new_boolean(bar->verbose));
+	json_object_object_add(json, "pango_markup",
+			json_object_new_boolean(bar->pango_markup));
+
+	json_object *colors = json_object_new_object();
+	json_object_object_add(colors, "background",
+			json_object_new_string(bar->colors.background));
+	json_object_object_add(colors, "statusline",
+			json_object_new_string(bar->colors.statusline));
+	json_object_object_add(colors, "separator",
+			json_object_new_string(bar->colors.separator));
+
+	if (bar->colors.focused_background) {
+		json_object_object_add(colors, "focused_background",
+				json_object_new_string(bar->colors.focused_background));
+	} else {
+		json_object_object_add(colors, "focused_background",
+				json_object_new_string(bar->colors.background));
+	}
+
+	if (bar->colors.focused_statusline) {
+		json_object_object_add(colors, "focused_statusline",
+				json_object_new_string(bar->colors.focused_statusline));
+	} else {
+		json_object_object_add(colors, "focused_statusline",
+				json_object_new_string(bar->colors.statusline));
+	}
+
+	if (bar->colors.focused_separator) {
+		json_object_object_add(colors, "focused_separator",
+				json_object_new_string(bar->colors.focused_separator));
+	} else {
+		json_object_object_add(colors, "focused_separator",
+				json_object_new_string(bar->colors.separator));
+	}
+
+	json_object_object_add(colors, "focused_workspace_border",
+			json_object_new_string(bar->colors.focused_workspace_border));
+	json_object_object_add(colors, "focused_workspace_bg",
+			json_object_new_string(bar->colors.focused_workspace_bg));
+	json_object_object_add(colors, "focused_workspace_text",
+			json_object_new_string(bar->colors.focused_workspace_text));
+
+	json_object_object_add(colors, "inactive_workspace_border",
+			json_object_new_string(bar->colors.inactive_workspace_border));
+	json_object_object_add(colors, "inactive_workspace_bg",
+			json_object_new_string(bar->colors.inactive_workspace_bg));
+	json_object_object_add(colors, "inactive_workspace_text",
+			json_object_new_string(bar->colors.inactive_workspace_text));
+
+	json_object_object_add(colors, "active_workspace_border",
+			json_object_new_string(bar->colors.active_workspace_border));
+	json_object_object_add(colors, "active_workspace_bg",
+			json_object_new_string(bar->colors.active_workspace_bg));
+	json_object_object_add(colors, "active_workspace_text",
+			json_object_new_string(bar->colors.active_workspace_text));
+
+	json_object_object_add(colors, "urgent_workspace_border",
+			json_object_new_string(bar->colors.urgent_workspace_border));
+	json_object_object_add(colors, "urgent_workspace_bg",
+			json_object_new_string(bar->colors.urgent_workspace_bg));
+	json_object_object_add(colors, "urgent_workspace_text",
+			json_object_new_string(bar->colors.urgent_workspace_text));
+
+	if (bar->colors.binding_mode_border) {
+		json_object_object_add(colors, "binding_mode_border",
+				json_object_new_string(bar->colors.binding_mode_border));
+	} else {
+		json_object_object_add(colors, "binding_mode_border",
+				json_object_new_string(bar->colors.urgent_workspace_border));
+	}
+
+	if (bar->colors.binding_mode_bg) {
+		json_object_object_add(colors, "binding_mode_bg",
+				json_object_new_string(bar->colors.binding_mode_bg));
+	} else {
+		json_object_object_add(colors, "binding_mode_bg",
+				json_object_new_string(bar->colors.urgent_workspace_bg));
+	}
+
+	if (bar->colors.binding_mode_text) {
+		json_object_object_add(colors, "binding_mode_text",
+				json_object_new_string(bar->colors.binding_mode_text));
+	} else {
+		json_object_object_add(colors, "binding_mode_text",
+				json_object_new_string(bar->colors.urgent_workspace_text));
+	}
+
+	json_object_object_add(json, "colors", colors);
+
+	// Add outputs if defined
+	if (bar->outputs && bar->outputs->length > 0) {
+		json_object *outputs = json_object_new_array();
+		for (int i = 0; i < bar->outputs->length; ++i) {
+			const char *name = bar->outputs->items[i];
+			json_object_array_add(outputs, json_object_new_string(name));
+		}
+		json_object_object_add(json, "outputs", outputs);
+	}
+	return json;
 }

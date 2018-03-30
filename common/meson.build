@@ -1,5 +1,7 @@
 deps = [
 	cairo,
+	pango,
+	pangocairo,
 	wlroots
 ]
 
@@ -14,6 +16,7 @@ lib_sway_common = static_library(
 		'ipc-client.c',
 		'log.c',
 		'list.c',
+		'pango.c',
 		'readline.c',
 		'stringop.c',
 		'util.c'

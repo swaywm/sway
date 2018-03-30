@@ -268,6 +268,12 @@ static void handle_output_mode(struct wl_listener *listener, void *data) {
 	arrange_windows(output->swayc, -1, -1);
 }
 
+static void handle_output_transform(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, transform);
+	arrange_layers(output);
+	arrange_windows(output->swayc, -1, -1);
+}
+
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
@@ -306,6 +312,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->destroy.notify = handle_output_destroy;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	output->mode.notify = handle_output_mode;
+	wl_signal_add(&wlr_output->events.transform, &output->transform);
+	output->transform.notify = handle_output_transform;
 
 	arrange_layers(output);
 	arrange_windows(&root_container, -1, -1);
