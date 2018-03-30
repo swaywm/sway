@@ -154,12 +154,10 @@ static void handle_map_notify(struct wl_listener *listener, void *data) {
 		struct sway_view *view = sway_surface->view;
 		container_view_destroy(view->swayc);
 
-		struct sway_container *parent = root_container.children->items[0];
-		parent = parent->children->items[0]; // workspace
-
-		struct sway_container *cont = container_view_create(parent, view);
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+		struct sway_container *cont = container_view_create(focus, view);
 		view->swayc = cont;
-
 		arrange_windows(cont->parent, -1, -1);
 		sway_input_manager_set_focus(input_manager, cont);
 	}
