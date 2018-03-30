@@ -150,7 +150,8 @@ static void handle_map_notify(struct wl_listener *listener, void *data) {
 	sway_surface->view->surface = xsurface->surface;
 
 	// put it back into the tree
-	if (xsurface->override_redirect) {
+	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
+			xsurface->override_redirect) {
 		wl_list_insert(&root_container.sway_root->unmanaged_views,
 			&sway_surface->view->unmanaged_view_link);
 	} else {
@@ -230,18 +231,5 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.map_notify, &sway_surface->map_notify);
 	sway_surface->map_notify.notify = handle_map_notify;
 
-	if (wlr_xwayland_surface_is_unmanaged(xsurface)) {
-		// these don't get a container in the tree
-		wl_list_insert(&root_container.sway_root->unmanaged_views,
-			&sway_view->unmanaged_view_link);
-		return;
-	}
-
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = container_view_create(focus, sway_view);
-	sway_view->swayc = cont;
-
-	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
+	handle_map_notify(&sway_surface->map_notify, xsurface);
 }
