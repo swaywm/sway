@@ -3,6 +3,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "log.h"
 
 const char *view_get_title(struct sway_view *view) {
 	if (view->iface.get_prop) {
@@ -93,4 +94,14 @@ void view_update_outputs(struct sway_view *view, const struct wlr_box *before) {
 			wlr_surface_send_enter(view->surface, layout_output->output);
 		}
 	}
+}
+
+struct sway_container *container_view_destroy(struct sway_container *view) {
+	if (!view) {
+		return NULL;
+	}
+	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
+	struct sway_container *parent = container_destroy(view);
+	arrange_windows(parent, -1, -1);
+	return parent;
 }
