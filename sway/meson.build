@@ -8,6 +8,7 @@ sway_sources = files(
 	'input/keyboard.c',
 	'commands/bar.c',
 	'commands/bind.c',
+	'commands/default_orientation.c',
 	'commands/exit.c',
 	'commands/exec.c',
 	'commands/exec_always.c',

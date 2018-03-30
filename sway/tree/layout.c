@@ -160,12 +160,11 @@ void container_move_to(struct sway_container* container,
 
 enum sway_container_layout container_get_default_layout(
 		struct sway_container *output) {
-	/* TODO WLR
 	if (config->default_layout != L_NONE) {
-		//return config->default_layout;
+		return config->default_layout;
 	} else if (config->default_orientation != L_NONE) {
 		return config->default_orientation;
-	} else */if (output->width >= output->height) {
+	} else if (output->width >= output->height) {
 		return L_HORIZ;
 	} else {
 		return L_VERT;
