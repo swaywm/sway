@@ -28,8 +28,8 @@ struct sway_xwayland_surface {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_configure;
-	struct wl_listener unmap_notify;
-	struct wl_listener map_notify;
+	struct wl_listener unmap;
+	struct wl_listener map;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
