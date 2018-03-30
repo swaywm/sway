@@ -278,7 +278,7 @@ struct sway_input_manager *sway_input_manager_create(
 }
 
 bool sway_input_manager_has_focus(struct sway_input_manager *input,
-		swayc_t *container) {
+		struct sway_container *container) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
 		if (sway_seat_get_focus(seat) == container) {
@@ -290,7 +290,7 @@ bool sway_input_manager_has_focus(struct sway_input_manager *input,
 }
 
 void sway_input_manager_set_focus(struct sway_input_manager *input,
-		swayc_t *container) {
+		struct sway_container *container) {
 	struct sway_seat *seat ;
 	wl_list_for_each(seat, &input->seats, link) {
 		sway_seat_set_focus(seat, container);

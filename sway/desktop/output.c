@@ -11,14 +11,14 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include "log.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
-#include "sway/layout.h"
+#include "sway/tree/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
@@ -145,7 +145,7 @@ struct render_data {
 	struct timespec *now;
 };
 
-static void output_frame_view(swayc_t *view, void *data) {
+static void output_frame_view(struct sway_container *view, void *data) {
 	struct render_data *rdata = data;
 	struct sway_output *output = rdata->output;
 	struct timespec *now = rdata->now;
@@ -219,16 +219,16 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	swayc_t *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
-	swayc_t *workspace = (focus->type == C_WORKSPACE ?
+	struct sway_container *focus = sway_seat_get_focus_inactive(seat, soutput->swayc);
+	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
 			focus :
-			swayc_parent_by_type(focus, C_WORKSPACE));
+			container_parent(focus, C_WORKSPACE));
 
 	struct render_data rdata = {
 		.output = soutput,
 		.now = &now,
 	};
-	swayc_descendants_of_type(workspace, C_VIEW, output_frame_view, &rdata);
+	container_descendents(workspace, C_VIEW, output_frame_view, &rdata);
 
 	// render unmanaged views on top
 	struct sway_view *view;
@@ -259,7 +259,7 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_output *wlr_output = data;
 	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
 
-	destroy_output(output->swayc);
+	container_output_destroy(output->swayc);
 }
 
 static void handle_output_mode(struct wl_listener *listener, void *data) {
@@ -287,7 +287,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wlr_output_set_mode(wlr_output, mode);
 	}
 
-	output->swayc = new_output(output);
+	output->swayc = container_output_create(output);
 	if (!output->swayc) {
 		free(output);
 		return;

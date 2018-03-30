@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <pcre.h>
 #include "sway/criteria.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/config.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
@@ -272,7 +272,7 @@ static int regex_cmp(const char *item, const pcre *regex) {
 }
 
 // test a single view if it matches list of criteria tokens (all of them).
-static bool criteria_test(swayc_t *cont, list_t *tokens) {
+static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 	if (cont->type != C_VIEW) {
 		return false;
 	}
@@ -398,7 +398,7 @@ void free_criteria(struct criteria *crit) {
 	free(crit);
 }
 
-bool criteria_any(swayc_t *cont, list_t *criteria) {
+bool criteria_any(struct sway_container *cont, list_t *criteria) {
 	for (int i = 0; i < criteria->length; i++) {
 		struct criteria *bc = criteria->items[i];
 		if (criteria_test(cont, bc->tokens)) {
@@ -408,7 +408,7 @@ bool criteria_any(swayc_t *cont, list_t *criteria) {
 	return false;
 }
 
-list_t *criteria_for(swayc_t *cont) {
+list_t *criteria_for(struct sway_container *cont) {
 	list_t *criteria = config->criteria, *matches = create_list();
 	for (int i = 0; i < criteria->length; i++) {
 		struct criteria *bc = criteria->items[i];
@@ -424,7 +424,7 @@ struct list_tokens {
 	list_t *tokens;
 };
 
-static void container_match_add(swayc_t *container,
+static void container_match_add(struct sway_container *container,
 		struct list_tokens *list_tokens) {
 	if (criteria_test(container, list_tokens->tokens)) {
 		list_add(list_tokens->list, container);
@@ -435,8 +435,8 @@ list_t *container_for_crit_tokens(list_t *tokens) {
 	struct list_tokens list_tokens =
 		(struct list_tokens){create_list(), tokens};
 
-	container_map(&root_container,
-		(void (*)(swayc_t *, void *))container_match_add,
+	container_for_each_descendent(&root_container,
+		(void (*)(struct sway_container *, void *))container_match_add,
 		&list_tokens);
 
 	// TODO look in the scratchpad
