@@ -81,7 +81,6 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 			&full_area.width, &full_area.height);
 	wl_list_for_each(sway_layer, list, link) {
 		struct wlr_layer_surface *layer = sway_layer->layer_surface;
-		wlr_log(L_DEBUG, "arranging layer %p %s", sway_layer, layer->namespace);
 		struct wlr_layer_surface_state *state = &layer->current;
 		if (exclusive != (state->exclusive_zone > 0)) {
 			continue;
@@ -167,10 +166,11 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area, true);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 			&usable_area, true);
-	memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
 
 	if (memcmp(&usable_area, &output->usable_area,
 				sizeof(struct wlr_box)) != 0) {
+		wlr_log(L_DEBUG, "Usable area changed, rearranging output");
+		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
 		arrange_windows(output->swayc, -1, -1);
 	}
 
@@ -204,8 +204,8 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	if (wlr_output != NULL) {
 		struct sway_output *output = wlr_output->data;
 		struct wlr_box old_geo = layer->geo;
+		arrange_layers(output);
 		if (memcmp(&old_geo, &layer->geo, sizeof(struct wlr_box)) != 0) {
-			arrange_layers(output);
 			// TODO DAMAGE apply whole surface from previous and new geos
 		} else {
 			// TODO DAMAGE from surface damage
@@ -236,7 +236,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = sway_layer->layer_surface->output->data;
 	free(sway_layer);
 	arrange_layers(output);
-	arrange_windows(output->swayc, -1, -1);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
