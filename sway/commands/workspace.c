@@ -4,7 +4,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/seat.h"
-#include "sway/tree/workspace.h"
+#include "sway/workspace.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
@@ -17,15 +17,15 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 
 	int output_location = -1;
 
-	struct sway_container *current_container = config->handler_context.current_container;
-	struct sway_container *old_workspace = NULL, *old_output = NULL;
+	swayc_t *current_container = config->handler_context.current_container;
+	swayc_t *old_workspace = NULL, *old_output = NULL;
 	if (current_container) {
 		if (current_container->type == C_WORKSPACE) {
 			old_workspace = current_container;
 		} else {
-			old_workspace = container_parent(current_container, C_WORKSPACE);
+			old_workspace = swayc_parent_by_type(current_container, C_WORKSPACE);
 		}
-		old_output = container_parent(current_container, C_OUTPUT);
+		old_output = swayc_parent_by_type(current_container, C_OUTPUT);
 	}
 
 	for (int i = 0; i < argc; ++i) {
@@ -57,7 +57,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
 		}
-		struct sway_container *ws = NULL;
+		swayc_t *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (!(ws = workspace_by_number(argv[1]))) {
 				char *name = join_args(argv + 1, argc - 1);
@@ -92,7 +92,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		workspace_switch(ws);
 		current_container =
 			sway_seat_get_focus(config->handler_context.seat);
-		struct sway_container *new_output = container_parent(current_container, C_OUTPUT);
+		swayc_t *new_output = swayc_parent_by_type(current_container, C_OUTPUT);
 
 		if (config->mouse_warping && old_output != new_output) {
 			// TODO: Warp mouse

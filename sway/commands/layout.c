@@ -1,8 +1,8 @@
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
-#include "sway/tree/container.h"
-#include "sway/tree/layout.h"
+#include "sway/container.h"
+#include "sway/layout.h"
 #include "log.h"
 
 struct cmd_results *cmd_layout(int argc, char **argv) {
@@ -10,7 +10,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if ((error = checkarg(argc, "layout", EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}
-	struct sway_container *parent = config->handler_context.current_container;
+	swayc_t *parent = config->handler_context.current_container;
 
 	// TODO: floating
 	/*
@@ -26,10 +26,10 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	// TODO: stacks and tabs
 
 	if (strcasecmp(argv[0], "default") == 0) {
-		container_set_layout(parent, parent->prev_layout);
+		swayc_change_layout(parent, parent->prev_layout);
 		if (parent->layout == L_NONE) {
-			struct sway_container *output = container_parent(parent, C_OUTPUT);
-			container_set_layout(parent, container_get_default_layout(output));
+			swayc_t *output = swayc_parent_by_type(parent, C_OUTPUT);
+			swayc_change_layout(parent, default_layout(output));
 		}
 	} else {
 		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
@@ -37,15 +37,15 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		}
 
 		if (strcasecmp(argv[0], "splith") == 0) {
-			container_set_layout(parent, L_HORIZ);
+			swayc_change_layout(parent, L_HORIZ);
 		} else if (strcasecmp(argv[0], "splitv") == 0) {
-			container_set_layout(parent, L_VERT);
+			swayc_change_layout(parent, L_VERT);
 		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
 			if (parent->layout == L_HORIZ && (parent->workspace_layout == L_NONE
 					|| parent->workspace_layout == L_HORIZ)) {
-				container_set_layout(parent, L_VERT);
+				swayc_change_layout(parent, L_VERT);
 			} else {
-				container_set_layout(parent, L_HORIZ);
+				swayc_change_layout(parent, L_HORIZ);
 			}
 		}
 	}

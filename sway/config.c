@@ -24,7 +24,7 @@
 #include "sway/input/seat.h"
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/tree/layout.h"
+#include "sway/layout.h"
 #include "readline.h"
 #include "stringop.h"
 #include "list.h"

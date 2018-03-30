@@ -7,7 +7,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
 #include "sway/layers.h"
-#include "sway/tree/layout.h"
+#include "sway/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
 
