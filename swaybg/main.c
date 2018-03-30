@@ -300,6 +300,7 @@ int main(int argc, const char **argv) {
 			ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
 			ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
 			ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
+	zwlr_layer_surface_v1_set_exclusive_zone(state.layer_surface, -1);
 	zwlr_layer_surface_v1_add_listener(state.layer_surface,
 			&layer_surface_listener, &state);
 	state.run_display = true;
