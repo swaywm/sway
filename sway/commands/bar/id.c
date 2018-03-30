@@ -11,10 +11,8 @@ struct cmd_results *bar_cmd_id(int argc, char **argv) {
 
 	const char *name = argv[0];
 	const char *oldname = config->current_bar->id;
-
 	// check if id is used by a previously defined bar
-	int i;
-	for (i = 0; i < config->bars->length; ++i) {
+	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *find = config->bars->items[i];
 		if (strcmp(name, find->id) == 0 && config->current_bar != find) {
 			return cmd_results_new(CMD_FAILURE, "id",
@@ -27,7 +25,6 @@ struct cmd_results *bar_cmd_id(int argc, char **argv) {
 
 	// free old bar id
 	free(config->current_bar->id);
-
 	config->current_bar->id = strdup(name);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
