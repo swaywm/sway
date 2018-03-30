@@ -25,10 +25,12 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 
+	struct sway_container *focus = NULL;
+
 	// check for unmanaged views first
 	struct sway_view *view;
 	wl_list_for_each_reverse(view, &root_container.sway_root->unmanaged_views,
-		unmanaged_view_link) {
+			unmanaged_view_link) {
 		if (view->type == SWAY_XWAYLAND_VIEW) {
 			struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 			struct wlr_box box = {
@@ -39,19 +41,34 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 			};
 
 			if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
+				focus = view->swayc;
 				surface = xsurface->surface;
 				sx = cursor->x - box.x;
 				sy = cursor->y - box.y;
-				wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-				wlr_seat_pointer_notify_motion(seat, time, sx, sy);
-				return;
+				break;
 			}
 		}
 	}
 
-	struct sway_container *swayc =
-		container_at(&root_container, cursor->x, cursor->y, &surface, &sx, &sy);
-	if (swayc) {
+	// then check for managed views
+	if (focus == NULL) {
+		focus = container_at(&root_container, cursor->x, cursor->y, &surface,
+			&sx, &sy);
+	}
+
+	// reset cursor if switching between clients
+	struct wl_client *client = NULL;
+	if (focus) {
+		client = wl_resource_get_client(surface->resource);
+	}
+	if (client != cursor->image_client) {
+		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
+			"left_ptr", cursor->cursor);
+		cursor->image_client = client;
+	}
+
+	// send pointer enter/leave
+	if (focus) {
 		wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 		wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 	} else {
@@ -145,7 +162,24 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, request_set_cursor);
 	struct wlr_seat_pointer_request_set_cursor_event *event = data;
-	wlr_log(L_DEBUG, "TODO: handle request set cursor event: %p", event);
+
+	struct wl_client *focused_client = NULL;
+	struct wlr_surface *focused_surface =
+		cursor->seat->wlr_seat->pointer_state.focused_surface;
+	if (focused_surface != NULL) {
+		focused_client = wl_resource_get_client(focused_surface->resource);
+	}
+
+	// TODO: check cursor mode
+	if (focused_client == NULL ||
+			event->seat_client->client != focused_client) {
+		wlr_log(L_DEBUG, "denying request to set cursor from unfocused client");
+		return;
+	}
+
+	wlr_cursor_set_surface(cursor->cursor, event->surface, event->hotspot_x,
+		event->hotspot_y);
+	cursor->image_client = focused_client;
 }
 
 void sway_cursor_destroy(struct sway_cursor *cursor) {
