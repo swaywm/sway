@@ -1,8 +1,8 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
-#include "sway/container.h"
-#include "sway/layout.h"
-#include "sway/view.h"
+#include "sway/tree/container.h"
+#include "sway/tree/layout.h"
+#include "sway/tree/view.h"
 
 const char *view_get_title(struct sway_view *view) {
 	if (view->iface.get_prop) {
@@ -45,6 +45,7 @@ void view_set_size(struct sway_view *view, int width, int height) {
 	}
 }
 
+// TODO make view coordinates in layout coordinates
 void view_set_position(struct sway_view *view, double ox, double oy) {
 	if (view->iface.set_position) {
 		struct wlr_box box = {

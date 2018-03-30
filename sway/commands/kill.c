@@ -2,11 +2,11 @@
 #include "log.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/view.h"
+#include "sway/tree/view.h"
 #include "sway/commands.h"
 
 struct cmd_results *cmd_kill(int argc, char **argv) {
-	enum swayc_types type = config->handler_context.current_container->type;
+	enum sway_container_type type = config->handler_context.current_container->type;
 	if (type != C_VIEW && type != C_CONTAINER) {
 		return cmd_results_new(CMD_INVALID, NULL,
 				"Can only kill views and containers with this command");
