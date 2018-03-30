@@ -187,8 +187,7 @@ static void render_layer(struct sway_output *output,
 	wl_list_for_each(sway_layer, layer, link) {
 		struct wlr_layer_surface *layer = sway_layer->layer_surface;
 		render_surface(layer->surface, output->wlr_output, when,
-				sway_layer->geo.x + output_layout_box->x,
-				sway_layer->geo.y + output_layout_box->y, 0);
+				sway_layer->geo.x, sway_layer->geo.y, 0);
 		wlr_surface_send_frame_done(layer->surface, when);
 	}
 }
