@@ -108,10 +108,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_surface->commit.link);
 	wl_list_remove(&sway_surface->destroy.link);
 	wl_list_remove(&sway_surface->request_configure.link);
-	if (xsurface->override_redirect) {
-		if (xsurface->mapped) {
-			wl_list_remove(&sway_surface->view->unmanaged_view_link);
-		}
+	if (xsurface->override_redirect && xsurface->mapped) {
+		wl_list_remove(&sway_surface->view->unmanaged_view_link);
+		wl_list_init(&sway_surface->view->unmanaged_view_link);
 	}
 
 	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
@@ -127,8 +126,9 @@ static void handle_unmap_notify(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, unmap_notify);
 	struct wlr_xwayland_surface *xsurface = data;
-	if (xsurface->override_redirect) {
+	if (xsurface->override_redirect && xsurface->mapped) {
 		wl_list_remove(&sway_surface->view->unmanaged_view_link);
+		wl_list_init(&sway_surface->view->unmanaged_view_link);
 	}
 
 	// take it out of the tree
