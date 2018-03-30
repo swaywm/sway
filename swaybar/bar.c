@@ -46,7 +46,7 @@ static void layer_surface_configure(void *data,
 static void layer_surface_closed(void *_output,
 		struct zwlr_layer_surface_v1 *surface) {
 	// TODO: Deal with hotplugging
-	struct swaybar_output *output = output;
+	struct swaybar_output *output = _output;
 	zwlr_layer_surface_v1_destroy(output->layer_surface);
 	wl_surface_destroy(output->surface);
 }
