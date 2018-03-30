@@ -197,13 +197,14 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
 	struct wlr_output *wlr_output = data;
 	struct sway_server *server = soutput->server;
-	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
-	wlr_renderer_clear(renderer, clear_color);
 
 	int buffer_age = -1;
 	wlr_output_make_current(wlr_output, &buffer_age);
 	wlr_renderer_begin(server->renderer, wlr_output->width, wlr_output->height);
+
+	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+	wlr_renderer_clear(renderer, clear_color);
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
