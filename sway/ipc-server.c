@@ -398,6 +398,14 @@ static void ipc_get_workspaces_callback(struct sway_container *workspace,
 	json_object_object_add(workspace_json, "focused",
 			json_object_new_boolean(focused));
 	json_object_array_add((json_object *)data, workspace_json);
+
+	focused_ws = sway_seat_get_focus_inactive(seat, workspace->parent);
+	if (focused_ws->type != C_WORKSPACE) {
+		focused_ws = container_parent(focused_ws, C_WORKSPACE);
+	}
+	bool visible = workspace == focused_ws;
+	json_object_object_add(workspace_json, "visible",
+			json_object_new_boolean(visible));
 }
 
 void ipc_client_handle_command(struct ipc_client *client) {

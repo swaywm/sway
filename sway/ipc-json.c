@@ -66,19 +66,42 @@ static const char *ipc_json_get_output_transform(enum wl_output_transform transf
 
 static void ipc_json_describe_output(struct sway_container *container, json_object *object) {
 	struct wlr_output *wlr_output = container->sway_output->wlr_output;
-	json_object_object_add(object, "type", json_object_new_string("output"));
-	json_object_object_add(object, "active", json_object_new_boolean(true));
-	json_object_object_add(object, "primary", json_object_new_boolean(false));
-	json_object_object_add(object, "layout", json_object_new_string("output"));
-	json_object_object_add(object, "make", json_object_new_string(wlr_output->make));
-	json_object_object_add(object, "model", json_object_new_string(wlr_output->model));
-	json_object_object_add(object, "serial", json_object_new_string(wlr_output->serial));
-	json_object_object_add(object, "scale", json_object_new_double(wlr_output->scale));
-	json_object_object_add(object, "refresh", json_object_new_int(wlr_output->refresh));
+	json_object_object_add(object, "type",
+			json_object_new_string("output"));
+	json_object_object_add(object, "active",
+			json_object_new_boolean(true));
+	json_object_object_add(object, "primary",
+			json_object_new_boolean(false));
+	json_object_object_add(object, "layout",
+			json_object_new_string("output"));
+	json_object_object_add(object, "make",
+			json_object_new_string(wlr_output->make));
+	json_object_object_add(object, "model",
+			json_object_new_string(wlr_output->model));
+	json_object_object_add(object, "serial",
+			json_object_new_string(wlr_output->serial));
+	json_object_object_add(object, "scale",
+			json_object_new_double(wlr_output->scale));
+	json_object_object_add(object, "refresh",
+			json_object_new_int(wlr_output->refresh));
 	json_object_object_add(object, "transform",
-		json_object_new_string(ipc_json_get_output_transform(wlr_output->transform)));
-	// TODO WLR need to set "current_workspace" to the currently focused
-	// workspace in a way that makes sense with multiseat
+		json_object_new_string(
+			ipc_json_get_output_transform(wlr_output->transform)));
+
+	struct sway_seat *seat = sway_input_manager_get_default_seat(input_manager);
+	const char *ws = NULL;
+	if (seat) {
+		struct sway_container *focus =
+			sway_seat_get_focus_inactive(seat, container);
+		if (focus && focus->type != C_WORKSPACE) {
+			focus = container_parent(focus, C_WORKSPACE);
+		}
+		if (focus) {
+			ws = focus->name;
+		}
+	}
+	json_object_object_add(object, "current_workspace",
+			json_object_new_string(ws));
 
 	json_object *modes_array = json_object_new_array();
 	struct wlr_output_mode *mode;
@@ -95,16 +118,20 @@ static void ipc_json_describe_output(struct sway_container *container, json_obje
 	json_object_object_add(object, "modes", modes_array);
 }
 
-static void ipc_json_describe_workspace(struct sway_container *workspace, json_object *object) {
-	int num = (isdigit(workspace->name[0])) ? atoi(workspace->name) : -1;
+static void ipc_json_describe_workspace(struct sway_container *workspace,
+		json_object *object) {
+	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
 
 	json_object_object_add(object, "num", json_object_new_int(num));
-	json_object_object_add(object, "output", (workspace->parent) ? json_object_new_string(workspace->parent->name) : NULL);
+	json_object_object_add(object, "output", workspace->parent ?
+			json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
+	json_object_object_add(object, "urgent", json_object_new_boolean(false));
 }
 
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
-	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
+	json_object_object_add(object, "name",
+			c->name ? json_object_new_string(c->name) : NULL);
 }
 
 json_object *ipc_json_describe_container(struct sway_container *c) {
@@ -118,28 +145,26 @@ json_object *ipc_json_describe_container(struct sway_container *c) {
 	json_object *object = json_object_new_object();
 
 	json_object_object_add(object, "id", json_object_new_int((int)c->id));
-	json_object_object_add(object, "name", (c->name) ? json_object_new_string(c->name) : NULL);
+	json_object_object_add(object, "name",
+			c->name ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
-	json_object_object_add(object, "focused", json_object_new_boolean(focused));
+	json_object_object_add(object, "focused",
+			json_object_new_boolean(focused));
 
 	switch (c->type) {
 	case C_ROOT:
 		ipc_json_describe_root(c, object);
 		break;
-
 	case C_OUTPUT:
 		ipc_json_describe_output(c, object);
 		break;
-
 	case C_CONTAINER:
 	case C_VIEW:
 		ipc_json_describe_view(c, object);
 		break;
-
 	case C_WORKSPACE:
 		ipc_json_describe_workspace(c, object);
 		break;
-
 	case C_TYPES:
 	default:
 		break;
