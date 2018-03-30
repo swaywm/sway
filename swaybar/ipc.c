@@ -188,7 +188,7 @@ static void ipc_parse_config(
 			json_object *output = json_object_array_get_idx(outputs, i);
 			const char *name = json_object_get_string(output);
 			if (strcmp("*", name) == 0) {
-				// TODO: do we need to clear out the list here or something
+				config->all_outputs = true;
 				break;
 			}
 			struct config_output *coutput = calloc(
@@ -197,6 +197,8 @@ static void ipc_parse_config(
 			coutput->index = SIZE_MAX;
 			wl_list_insert(&config->outputs, &coutput->link);
 		}
+	} else {
+		config->all_outputs = true;
 	}
 
 	if (colors) {
@@ -279,7 +281,7 @@ static void ipc_get_outputs(struct swaybar *bar) {
 		if (!active) {
 			continue;
 		}
-		if (wl_list_empty(&bar->config->outputs)) {
+		if (bar->config->all_outputs) {
 			struct config_output *coutput = calloc(
 					1, sizeof(struct config_output));
 			coutput->name = strdup(name);

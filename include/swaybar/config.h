@@ -30,6 +30,7 @@ struct swaybar_config {
 	bool wrap_scroll;
 	bool workspace_buttons;
 	struct wl_list outputs;
+	bool all_outputs;
 	int height;
 
 	struct {
