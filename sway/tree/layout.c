@@ -110,9 +110,11 @@ struct sway_container *container_reap_empty(struct sway_container *container) {
 	while (container->children->length == 0) {
 		if (container->type == C_WORKSPACE) {
 			if (!workspace_is_visible(container)) {
+				struct sway_container *parent = container->parent;
 				container_workspace_destroy(container);
+				return parent;
 			}
-			break;
+			return container;
 		} else if (container->type == C_CONTAINER) {
 			struct sway_container *parent = container->parent;
 			container_destroy(container);

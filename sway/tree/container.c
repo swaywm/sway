@@ -79,7 +79,7 @@ struct sway_container *container_destroy(struct sway_container *cont) {
 		list_free(cont->marks);
 	}
 	if (parent) {
-		container_remove_child(cont);
+		parent = container_remove_child(cont);
 	}
 	if (cont->name) {
 		free(cont->name);
