@@ -6,18 +6,19 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_matrix.h>
-#include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include "log.h"
-#include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
-#include "sway/tree/layout.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/container.h"
+#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 
 /**
@@ -145,13 +146,13 @@ static void render_wl_shell_surface(struct wlr_wl_shell_surface *surface,
 
 struct render_data {
 	struct sway_output *output;
-	struct timespec *now;
+	struct timespec *when;
 };
 
-static void output_frame_view(struct sway_container *view, void *data) {
+static void render_view(struct sway_container *view, void *data) {
 	struct render_data *rdata = data;
 	struct sway_output *output = rdata->output;
-	struct timespec *now = rdata->now;
+	struct timespec *when = rdata->when;
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct sway_view *sway_view = view->sway_view;
 	struct wlr_surface *surface = sway_view->surface;
@@ -164,18 +165,18 @@ static void output_frame_view(struct sway_container *view, void *data) {
 	case SWAY_XDG_SHELL_V6_VIEW: {
 		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry.x;
 		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry.y;
-		render_surface(surface, wlr_output, now,
+		render_surface(surface, wlr_output, when,
 			view->x - window_offset_x, view->y - window_offset_y, 0);
 		render_xdg_v6_popups(sway_view->wlr_xdg_surface_v6, wlr_output,
-			now, view->x - window_offset_x, view->y - window_offset_y, 0);
+			when, view->x - window_offset_x, view->y - window_offset_y, 0);
 		break;
 	}
 	case SWAY_WL_SHELL_VIEW:
 		render_wl_shell_surface(sway_view->wlr_wl_shell_surface, wlr_output,
-			now, view->x, view->y, 0, false);
+			when, view->x, view->y, 0, false);
 		break;
 	case SWAY_XWAYLAND_VIEW:
-		render_surface(surface, wlr_output, now, view->x, view->y, 0);
+		render_surface(surface, wlr_output, when, view->x, view->y, 0);
 		break;
 	default:
 		break;
@@ -195,82 +196,132 @@ static void render_layer(struct sway_output *output,
 	}
 }
 
-static void handle_output_frame(struct wl_listener *listener, void *data) {
-	struct sway_output *soutput = wl_container_of(listener, soutput, frame);
-	struct wlr_output *wlr_output = data;
+static void render_output(struct sway_output *output, struct timespec *when,
+		pixman_region32_t *damage) {
+	struct wlr_output *wlr_output = output->wlr_output;
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 
-	wlr_output_make_current(wlr_output, NULL);
 	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
+
+	if (!pixman_region32_not_empty(damage)) {
+		// Output isn't damaged but needs buffer swap
+		goto renderer_end;
+	}
+
+	// TODO: don't damage the whole output here
+	int width, height;
+	wlr_output_transformed_resolution(wlr_output, &width, &height);
+	pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	wlr_renderer_clear(renderer, clear_color);
 
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-
 	struct wlr_output_layout *layout = root_container.sway_root->output_layout;
-	const struct wlr_box *output_box = wlr_output_layout_get_box(
-			layout, wlr_output);
+	const struct wlr_box *output_box =
+			wlr_output_layout_get_box(layout, wlr_output);
 
-	render_layer(soutput, output_box, &now,
-			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-	render_layer(soutput, output_box, &now,
-			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+	render_layer(output, output_box, when,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+	render_layer(output, output_box, when,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
-		sway_seat_get_focus_inactive(seat, soutput->swayc);
+		sway_seat_get_focus_inactive(seat, output->swayc);
 	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
 			focus :
 			container_parent(focus, C_WORKSPACE));
 
 	struct render_data rdata = {
-		.output = soutput,
-		.now = &now,
+		.output = output,
+		.when = when,
 	};
-	container_descendants(workspace, C_VIEW, output_frame_view, &rdata);
+	container_descendants(workspace, C_VIEW, render_view, &rdata);
 
 	// render unmanaged views on top
 	struct sway_view *view;
 	wl_list_for_each(view, &root_container.sway_root->unmanaged_views,
 			unmanaged_view_link) {
 		if (view->type == SWAY_XWAYLAND_VIEW) {
-			// the only kind of unamanged view right now is xwayland override redirect
+			// the only kind of unamanged view right now is xwayland override
+			// redirect
 			int view_x = view->wlr_xwayland_surface->x;
 			int view_y = view->wlr_xwayland_surface->y;
-			render_surface(view->surface, wlr_output, &soutput->last_frame,
+			render_surface(view->surface, wlr_output, &output->last_frame,
 					view_x, view_y, 0);
 		}
 	}
 
 	// TODO: Consider revising this when fullscreen windows are supported
-	render_layer(soutput, output_box, &now,
-			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
-	render_layer(soutput, output_box, &now,
-			&soutput->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	render_layer(output, output_box, when,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	render_layer(output, output_box, when,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
+renderer_end:
 	wlr_renderer_end(renderer);
-	wlr_output_swap_buffers(wlr_output, &now, NULL);
-	soutput->last_frame = now;
+	if (!wlr_output_damage_swap_buffers(output->damage, when, damage)) {
+		return;
+	}
+	output->last_frame = *when;
 }
 
-static void handle_output_destroy(struct wl_listener *listener, void *data) {
-	struct sway_output *output = wl_container_of(listener, output, destroy);
-	struct wlr_output *wlr_output = data;
-	wlr_log(L_DEBUG, "Output %p %s removed", wlr_output, wlr_output->name);
+static void damage_handle_frame(struct wl_listener *listener, void *data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, damage_frame);
 
+	if (!output->wlr_output->enabled) {
+		return;
+	}
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	bool needs_swap;
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	if (!wlr_output_damage_make_current(output->damage, &needs_swap, &damage)) {
+		return;
+	}
+
+	if (needs_swap) {
+		render_output(output, &now, &damage);
+	}
+
+	pixman_region32_fini(&damage);
+
+	// TODO: send frame done events here instead of inside render_surface
+}
+
+void output_damage_whole(struct sway_output *output) {
+	wlr_output_damage_add_whole(output->damage);
+}
+
+void output_damage_whole_view(struct sway_output *output,
+		struct sway_view *view) {
+	// TODO
+	output_damage_whole(output);
+}
+
+static void damage_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output =
+		wl_container_of(listener, output, damage_destroy);
 	container_output_destroy(output->swayc);
 }
 
-static void handle_output_mode(struct wl_listener *listener, void *data) {
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, destroy);
+	container_output_destroy(output->swayc);
+}
+
+static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
 	arrange_windows(output->swayc, -1, -1);
 }
 
-static void handle_output_transform(struct wl_listener *listener, void *data) {
+static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
 	arrange_layers(output);
 	arrange_windows(output->swayc, -1, -1);
@@ -295,6 +346,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wlr_output_set_mode(wlr_output, mode);
 	}
 
+	output->damage = wlr_output_damage_create(wlr_output);
+
 	output->swayc = container_output_create(output);
 	if (!output->swayc) {
 		free(output);
@@ -308,14 +361,17 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	sway_input_manager_configure_xcursor(input_manager);
 
-	wl_signal_add(&wlr_output->events.frame, &output->frame);
-	output->frame.notify = handle_output_frame;
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
-	output->destroy.notify = handle_output_destroy;
+	output->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
-	output->mode.notify = handle_output_mode;
+	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.transform, &output->transform);
-	output->transform.notify = handle_output_transform;
+	output->transform.notify = handle_transform;
+
+	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
+	output->damage_frame.notify = damage_handle_frame;
+	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
+	output->damage_destroy.notify = damage_handle_destroy;
 
 	arrange_layers(output);
 	arrange_windows(&root_container, -1, -1);

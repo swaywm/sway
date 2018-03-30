@@ -67,6 +67,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// TODO: Let floating views do whatever
 	view->width = sway_surface->pending_width;
 	view->height = sway_surface->pending_height;
+	view_damage_from(view);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {

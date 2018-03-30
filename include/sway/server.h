@@ -25,7 +25,6 @@ struct sway_server {
 	struct sway_input_manager *input;
 
 	struct wl_listener new_output;
-	struct wl_listener output_frame;
 
 	struct wlr_layer_shell *layer_shell;
 	struct wl_listener layer_shell_surface;
