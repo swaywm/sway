@@ -1,8 +1,11 @@
 #define _XOPEN_SOURCE 500
+#include <ctype.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
+#include "stringop.h"
 #include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -22,18 +25,108 @@ void next_name_map(struct sway_container *ws, void *data) {
 	++count;
 }
 
+static bool workspace_valid_on_output(const char *output_name,
+		const char *ws_name) {
+	int i;
+	for (i = 0; i < config->workspace_outputs->length; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcasecmp(wso->workspace, ws_name) == 0) {
+			if (strcasecmp(wso->output, output_name) != 0) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 char *workspace_next_name(const char *output_name) {
 	wlr_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
-	int count = 0;
-	next_name_map(&root_container, &count);
-	++count;
-	int len = snprintf(NULL, 0, "%d", count);
-	char *name = malloc(len + 1);
-	if (!sway_assert(name, "Failed to allocate workspace name")) {
+	int l = 1;
+	// Scan all workspace bindings to find the next available workspace name,
+	// if none are found/available then default to a number
+	struct sway_mode *mode = config->current_mode;
+
+	// TODO: iterate over keycode bindings too
+	int order = INT_MAX;
+	char *target = NULL;
+	for (int i = 0; i < mode->keysym_bindings->length; ++i) {
+		struct sway_binding *binding = mode->keysym_bindings->items[i];
+		char *cmdlist = strdup(binding->command);
+		char *dup = cmdlist;
+		char *name = NULL;
+
+		// workspace n
+		char *cmd = argsep(&cmdlist, " ");
+		if (cmdlist) {
+			name = argsep(&cmdlist, ",;");
+		}
+
+		if (strcmp("workspace", cmd) == 0 && name) {
+			wlr_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
+			char *_target = strdup(name);
+			strip_quotes(_target);
+			while (isspace(*_target)) {
+				memmove(_target, _target+1, strlen(_target+1));
+			}
+
+			// Make sure that the command references an actual workspace
+			// not a command about workspaces
+			if (strcmp(_target, "next") == 0 ||
+				strcmp(_target, "prev") == 0 ||
+				strcmp(_target, "next_on_output") == 0 ||
+				strcmp(_target, "prev_on_output") == 0 ||
+				strcmp(_target, "number") == 0 ||
+				strcmp(_target, "back_and_forth") == 0 ||
+				strcmp(_target, "current") == 0)
+			{
+				free(_target);
+				free(dup);
+				continue;
+			}
+
+			// Make sure that the workspace doesn't already exist
+			if (workspace_by_name(_target)) {
+				free(_target);
+				free(dup);
+				continue;
+			}
+
+			// make sure that the workspace can appear on the given
+			// output
+			if (!workspace_valid_on_output(output_name, _target)) {
+				free(_target);
+				free(dup);
+				continue;
+			}
+
+			if (binding->order < order) {
+				order = binding->order;
+				free(target);
+				target = _target;
+				wlr_log(L_DEBUG, "Workspace: Found free name %s", _target);
+			}
+		}
+		free(dup);
+	}
+	if (target != NULL) {
+		return target;
+	}
+	// As a fall back, get the current number of active workspaces
+	// and return that + 1 for the next workspace's name
+	int ws_num = root_container.children->length;
+	if (ws_num >= 10) {
+		l = 2;
+	} else if (ws_num >= 100) {
+		l = 3;
+	}
+	char *name = malloc(l + 1);
+	if (!name) {
+		wlr_log(L_ERROR, "Could not allocate workspace name");
 		return NULL;
 	}
-	snprintf(name, len + 1, "%d", count);
+	sprintf(name, "%d", ws_num++);
 	return name;
 }
 
