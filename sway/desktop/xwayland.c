@@ -109,29 +109,18 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_surface->destroy.link);
 	wl_list_remove(&sway_surface->request_configure.link);
 	wl_list_remove(&sway_surface->view->unmanaged_view_link);
-
-	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
-	if (parent) {
-		arrange_windows(parent, -1, -1);
-	}
-
-	free(sway_surface->view);
-	free(sway_surface);
+	container_view_destroy(sway_surface->view->swayc);
+	sway_surface->view->swayc = NULL;
+	sway_surface->view->surface = NULL;
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, unmap);
-
+  
 	wl_list_remove(&sway_surface->view->unmanaged_view_link);
 	wl_list_init(&sway_surface->view->unmanaged_view_link);
-
-	// take it out of the tree
-	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
-	if (parent) {
-		arrange_windows(parent, -1, -1);
-	}
-
+	container_view_destroy(sway_surface->view->swayc);
 	sway_surface->view->swayc = NULL;
 	sway_surface->view->surface = NULL;
 }

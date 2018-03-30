@@ -83,10 +83,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_xdg_surface, destroy);
 	wl_list_remove(&sway_xdg_surface->commit.link);
 	wl_list_remove(&sway_xdg_surface->destroy.link);
-	struct sway_container *parent = container_view_destroy(sway_xdg_surface->view->swayc);
+	container_view_destroy(sway_xdg_surface->view->swayc);
 	free(sway_xdg_surface->view);
 	free(sway_xdg_surface);
-	arrange_windows(parent, -1, -1);
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
