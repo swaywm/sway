@@ -20,7 +20,11 @@ static void cursor_update_position(struct sway_cursor *cursor) {
 	cursor->y = y;
 }
 
-static struct sway_container *cursor_at(struct sway_cursor *cursor,
+/**
+ * Returns the container at the cursor's position. If the container is a view,
+ * stores the surface at the cursor's position in `*surface`.
+ */
+static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	// check for unmanaged views first
 	struct wl_list *unmanaged = &root_container.sway_root->unmanaged_views;
@@ -55,13 +59,18 @@ static struct sway_container *cursor_at(struct sway_cursor *cursor,
 	struct sway_output *output = wlr_output->data;
 
 	// find the focused workspace on the output for this seat
-	struct sway_container *workspace =
+	struct sway_container *workspace_cont =
 		sway_seat_get_focus_inactive(cursor->seat, output->swayc);
-	if (workspace->type != C_WORKSPACE) {
-		workspace = container_parent(workspace, C_WORKSPACE);
+	if (workspace_cont != NULL && workspace_cont->type != C_WORKSPACE) {
+		workspace_cont = container_parent(workspace_cont, C_WORKSPACE);
+	}
+	if (workspace_cont == NULL) {
+		return output->swayc;
 	}
 
-	return container_at(workspace, cursor->x, cursor->y, surface, sx, sy);
+	struct sway_container *view_cont = container_at(workspace_cont,
+		cursor->x, cursor->y, surface, sx, sy);
+	return view_cont != NULL ? view_cont : workspace_cont;
 }
 
 static void cursor_send_pointer_motion(struct sway_cursor *cursor,
@@ -69,9 +78,10 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_container *cont = cursor_at(cursor, &surface, &sx, &sy);
+	struct sway_container *cont =
+		container_at_cursor(cursor, &surface, &sx, &sy);
 
-	if (cont) {
+	if (cont != NULL && surface != NULL) {
 		wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 		wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 	} else {
@@ -105,8 +115,9 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	if (event->button == BTN_LEFT) {
 		struct wlr_surface *surface = NULL;
 		double sx, sy;
-		struct sway_container *swayc = cursor_at(cursor, &surface, &sx, &sy);
-		sway_seat_set_focus(cursor->seat, swayc);
+		struct sway_container *cont =
+			container_at_cursor(cursor, &surface, &sx, &sy);
+		sway_seat_set_focus(cursor->seat, cont);
 	}
 
 	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat, event->time_msec,

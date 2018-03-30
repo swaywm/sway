@@ -390,7 +390,7 @@ static void ipc_get_workspaces_callback(struct sway_container *workspace,
 	struct sway_seat *seat =
 		sway_input_manager_get_default_seat(input_manager);
 	struct sway_container *focused_ws = sway_seat_get_focus(seat);
-	if (focused_ws->type != C_WORKSPACE) {
+	if (focused_ws != NULL && focused_ws->type != C_WORKSPACE) {
 		focused_ws = container_parent(focused_ws, C_WORKSPACE);
 	}
 	bool focused = workspace == focused_ws;
