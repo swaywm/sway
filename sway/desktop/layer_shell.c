@@ -238,11 +238,12 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->unmap.link);
 	wl_list_remove(&sway_layer->surface_commit.link);
 	if (sway_layer->layer_surface->output != NULL) {
+		struct sway_output *output = sway_layer->layer_surface->output->data;
+		arrange_layers(output);
+
 		wl_list_remove(&sway_layer->output_destroy.link);
 	}
-	struct sway_output *output = sway_layer->layer_surface->output->data;
 	free(sway_layer);
-	arrange_layers(output);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
