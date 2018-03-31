@@ -178,7 +178,6 @@ static void config_defaults(struct sway_config *config) {
 	config->active = false;
 	config->failed = false;
 	config->auto_back_and_forth = false;
-	config->seamless_mouse = true;
 	config->reading = false;
 	config->show_marks = true;
 
