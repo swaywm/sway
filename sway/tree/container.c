@@ -58,7 +58,7 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-struct sway_container *container_destroy(struct sway_container *cont) {
+static struct sway_container *_container_destroy(struct sway_container *cont) {
 	if (cont == NULL) {
 		return NULL;
 	}
@@ -87,6 +87,11 @@ struct sway_container *container_destroy(struct sway_container *cont) {
 	}
 	free(cont);
 	return parent;
+}
+
+struct sway_container *container_destroy(struct sway_container *cont) {
+	cont = _container_destroy(cont);
+	return container_reap_empty(cont->parent);
 }
 
 struct sway_container *container_output_create(

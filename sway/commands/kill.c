@@ -19,7 +19,6 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 		break;
 	case C_CONTAINER:
 		con = container_destroy(con);
-		con = container_reap_empty(con);
 		arrange_windows(con, -1, -1);
 		break;
 	case C_VIEW:
