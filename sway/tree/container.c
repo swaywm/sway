@@ -71,8 +71,8 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 		// container_remove_child, which removes child from this container
 		while (cont->children != NULL && cont->children->length != 0) {
 			struct sway_container *child = cont->children->items[0];
-			container_remove_child(child);
 			container_destroy(child);
+			list_del(cont->children, 0);
 		}
 	}
 	if (cont->marks) {
