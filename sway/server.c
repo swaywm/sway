@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
@@ -77,6 +78,18 @@ bool server_init(struct sway_server *server) {
 		&server->xwayland_ready);
 	// TODO: call server_ready now if xwayland is not enabled
 	server->xwayland_ready.notify = server_ready;
+
+	// TODO: configurable cursor theme and size
+	server->xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
+	wlr_xcursor_manager_load(server->xcursor_manager, 1);
+	struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
+		server->xcursor_manager, "left_ptr", 1);
+	if (xcursor != NULL) {
+		struct wlr_xcursor_image *image = xcursor->images[0];
+		wlr_xwayland_set_cursor(server->xwayland, image->buffer,
+			image->width * 4, image->width, image->height, image->hotspot_x,
+			image->hotspot_y);
+	}
 
 	server->wl_shell = wlr_wl_shell_create(server->wl_display);
 	wl_signal_add(&server->wl_shell->events.new_surface,
