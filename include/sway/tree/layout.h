@@ -54,4 +54,7 @@ void arrange_windows(struct sway_container *container,
 struct sway_container *container_get_in_direction(struct sway_container
 		*container, struct sway_seat *seat, enum movement_direction dir);
 
+struct sway_container *container_split(struct sway_container *child,
+		enum sway_container_layout layout);
+
 #endif

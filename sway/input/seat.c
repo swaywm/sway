@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#include <assert.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -378,24 +379,7 @@ void sway_seat_set_focus(struct sway_seat *seat,
 }
 
 struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat, struct sway_container *container) {
-	struct sway_seat_container *current = NULL;
-	struct sway_container *parent = NULL;
-	wl_list_for_each(current, &seat->focus_stack, link) {
-		parent = current->container->parent;
-
-		if (current->container == container) {
-			return current->container;
-		}
-
-		while (parent) {
-			if (parent == container) {
-				return current->container;
-			}
-			parent = parent->parent;
-		}
-	}
-
-	return NULL;
+	return sway_seat_get_focus_by_type(seat, container, C_TYPES);
 }
 
 struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
@@ -406,13 +390,25 @@ struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
 }
 
 struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
-		enum sway_container_type type) {
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	if (focus->type == type) {
-		return focus;
+		struct sway_container *container, enum sway_container_type type) {
+	struct sway_seat_container *current = NULL;
+	struct sway_container *parent = NULL;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		parent = current->container->parent;
+
+		if (current->container == container) {
+			return current->container;
+		}
+
+		while (parent) {
+			if (parent == container && (type == C_TYPES || current->container->type == type)) {
+				return current->container;
+			}
+			parent = parent->parent;
+		}
 	}
 
-	return container_parent(focus, type);
+	return NULL;
 }
 
 void sway_seat_set_config(struct sway_seat *seat,

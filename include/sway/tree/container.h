@@ -87,6 +87,8 @@ struct sway_container {
 	} events;
 };
 
+struct sway_container *container_create(enum sway_container_type type);
+
 // TODO only one container create function and pass the type?
 struct sway_container *container_output_create(
 		struct sway_output *sway_output);

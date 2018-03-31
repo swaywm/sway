@@ -163,6 +163,10 @@ static struct cmd_handler command_handlers[] = {
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "reload", cmd_reload },
+	{ "split", cmd_split },
+	{ "splith", cmd_splith },
+	{ "splitt", cmd_splitt },
+	{ "splitv", cmd_splitv },
 };
 
 static int handler_compare(const void *_a, const void *_b) {

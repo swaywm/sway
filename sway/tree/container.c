@@ -38,7 +38,7 @@ static void notify_new_container(struct sway_container *container) {
 	ipc_event_window(container, "new");
 }
 
-static struct sway_container *container_create(enum sway_container_type type) {
+struct sway_container *container_create(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
 	struct sway_container *c = calloc(1, sizeof(struct sway_container));
@@ -66,13 +66,14 @@ struct sway_container *container_destroy(struct sway_container *cont) {
 	wl_signal_emit(&cont->events.destroy, cont);
 
 	struct sway_container *parent = cont->parent;
-	if (cont->children) {
+	if (cont->children != NULL) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
-		while (cont->children->length) {
+		while (cont->children->length != 0) {
 			container_destroy(cont->children->items[0]);
 		}
 		list_free(cont->children);
+		cont->children = NULL;
 	}
 	if (cont->marks) {
 		list_foreach(cont->marks, free);
