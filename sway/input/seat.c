@@ -259,11 +259,11 @@ void sway_seat_remove_device(struct sway_seat *seat,
 
 void sway_seat_configure_xcursor(struct sway_seat *seat) {
 	// TODO configure theme and size
-	const char *cursor_theme = "default";
+	const char *cursor_theme = NULL;
 
 	if (!seat->cursor->xcursor_manager) {
 		seat->cursor->xcursor_manager =
-			wlr_xcursor_manager_create("default", 24);
+			wlr_xcursor_manager_create(cursor_theme, 24);
 		if (sway_assert(seat->cursor->xcursor_manager,
 					"Cannot create XCursor manager for theme %s",
 					cursor_theme)) {

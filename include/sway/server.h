@@ -33,6 +33,7 @@ struct sway_server {
 	struct wl_listener xdg_shell_v6_surface;
 
 	struct wlr_xwayland *xwayland;
+	struct wlr_xcursor_manager *xcursor_manager;
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
 
