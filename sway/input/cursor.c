@@ -125,7 +125,10 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	container_at_cursor(cursor, &surface, &sx, &sy);
+	struct sway_container *c = container_at_cursor(cursor, &surface, &sx, &sy);
+	if (c && config->focus_follows_mouse) {
+		sway_seat_set_focus(cursor->seat, c);
+	}
 
 	// reset cursor if switching between clients
 	struct wl_client *client = NULL;
@@ -170,33 +173,31 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
 	struct wlr_event_pointer_button *event = data;
 
-	if (event->button == BTN_LEFT) {
-		struct wlr_surface *surface = NULL;
-		double sx, sy;
-		struct sway_container *cont =
-			container_at_cursor(cursor, &surface, &sx, &sy);
-		// Avoid moving keyboard focus from a surface that accepts it to one
-		// that does not unless the change would move us to a new workspace.
-		//
-		// This prevents, for example, losing focus when clicking on swaybar.
-		//
-		// TODO: Replace this condition with something like
-		// !surface_accepts_keyboard_input
-		if (surface && cont && cont->type != C_VIEW) {
-			struct sway_container *new_ws = cont;
-			if (new_ws && new_ws->type != C_WORKSPACE) {
-				new_ws = container_parent(new_ws, C_WORKSPACE);
-			}
-			struct sway_container *old_ws = sway_seat_get_focus(cursor->seat);
-			if (old_ws && old_ws->type != C_WORKSPACE) {
-				old_ws = container_parent(old_ws, C_WORKSPACE);
-			}
-			if (new_ws != old_ws) {
-				sway_seat_set_focus(cursor->seat, cont);
-			}
-		} else {
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	struct sway_container *cont =
+		container_at_cursor(cursor, &surface, &sx, &sy);
+	// Avoid moving keyboard focus from a surface that accepts it to one
+	// that does not unless the change would move us to a new workspace.
+	//
+	// This prevents, for example, losing focus when clicking on swaybar.
+	//
+	// TODO: Replace this condition with something like
+	// !surface_accepts_keyboard_input
+	if (surface && cont && cont->type != C_VIEW) {
+		struct sway_container *new_ws = cont;
+		if (new_ws && new_ws->type != C_WORKSPACE) {
+			new_ws = container_parent(new_ws, C_WORKSPACE);
+		}
+		struct sway_container *old_ws = sway_seat_get_focus(cursor->seat);
+		if (old_ws && old_ws->type != C_WORKSPACE) {
+			old_ws = container_parent(old_ws, C_WORKSPACE);
+		}
+		if (new_ws != old_ws) {
 			sway_seat_set_focus(cursor->seat, cont);
 		}
+	} else {
+		sway_seat_set_focus(cursor->seat, cont);
 	}
 
 	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat, event->time_msec,

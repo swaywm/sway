@@ -98,6 +98,7 @@ static struct cmd_handler handlers[] = {
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
+	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
 	{ "mode", cmd_mode },
