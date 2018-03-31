@@ -58,6 +58,31 @@ static void seat_container_destroy(struct sway_seat_container *seat_con) {
 	free(seat_con);
 }
 
+static void seat_send_focus(struct sway_seat *seat,
+		struct sway_container *con) {
+	if (con->type != C_VIEW) {
+		return;
+	}
+	struct sway_view *view = con->sway_view;
+	if (view->type == SWAY_XWAYLAND_VIEW) {
+		struct wlr_xwayland *xwayland =
+			seat->input->server->xwayland;
+		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+	}
+	view_set_activated(view, true);
+	struct wlr_keyboard *keyboard =
+		wlr_seat_get_keyboard(seat->wlr_seat);
+	if (keyboard) {
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+				view->surface, keyboard->keycodes,
+				keyboard->num_keycodes, &keyboard->modifiers);
+	} else {
+		wlr_seat_keyboard_notify_enter(
+				seat->wlr_seat, view->surface, NULL, 0, NULL);
+	}
+
+}
+
 static void handle_seat_container_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_seat_container *seat_con =
@@ -74,7 +99,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 
 	seat_container_destroy(seat_con);
 
-	if (set_focus && con->type != C_WORKSPACE) {
+	if (set_focus) {
 		struct sway_container *next_focus = NULL;
 		while (next_focus == NULL) {
 			next_focus = sway_seat_get_focus_by_type(seat, parent, C_VIEW);
@@ -86,7 +111,13 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 			}
 		}
 
-		sway_seat_set_focus(seat, next_focus);
+		// the structure change might have caused it to move up to the top of
+		// the focus stack without sending focus notifications to the view
+		if (sway_seat_get_focus(seat) == next_focus) {
+			seat_send_focus(seat, next_focus);
+		} else {
+			sway_seat_set_focus(seat, next_focus);
+		}
 	}
 }
 
@@ -321,37 +352,11 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-static void seat_send_focus(struct sway_seat *seat,
-		struct sway_container *con) {
-	if (con->type != C_VIEW) {
-		return;
-	}
-	struct sway_view *view = con->sway_view;
-	if (view->type == SWAY_XWAYLAND_VIEW) {
-		struct wlr_xwayland *xwayland =
-			seat->input->server->xwayland;
-		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
-	}
-	view_set_activated(view, true);
-	struct wlr_keyboard *keyboard =
-		wlr_seat_get_keyboard(seat->wlr_seat);
-	if (keyboard) {
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-				view->surface, keyboard->keycodes,
-				keyboard->num_keycodes, &keyboard->modifiers);
-	} else {
-		wlr_seat_keyboard_notify_enter(
-				seat->wlr_seat, view->surface, NULL, 0, NULL);
-	}
-
-}
-
 void sway_seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
 	struct sway_container *last_focus = sway_seat_get_focus(seat);
 
 	if (container && last_focus == container) {
-		seat_send_focus(seat, container);
 		return;
 	}
 
