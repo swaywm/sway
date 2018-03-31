@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE
 #include <fcntl.h>
+#include <json-c/json.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -9,35 +10,78 @@
 #include "swaybar/status_line.h"
 #include "readline.h"
 
+void status_error(struct status_line *status, const char *text) {
+	close(status->read_fd);
+	close(status->write_fd);
+	status->protocol = PROTOCOL_ERROR;
+	status->text = text;
+}
+
 bool handle_status_readable(struct status_line *status) {
-	char *line = read_line_buffer(status->read,
-			status->buffer, status->buffer_size);
+	char *line;
 	switch (status->protocol) {
+	case PROTOCOL_ERROR:
+		return false;
 	case PROTOCOL_I3BAR:
-		// TODO
+		if (i3bar_readable(status) > 0) {
+			return true;
+		}
 		break;
 	case PROTOCOL_TEXT:
-		status->text = line;
+		line = read_line_buffer(status->read,
+				status->text_state.buffer, status->text_state.buffer_size);
+		if (!line) {
+			status_error(status, "[error reading from status command]");
+		} else {
+			status->text = line;
+		}
 		return true;
 	case PROTOCOL_UNDEF:
+		line = read_line_buffer(status->read,
+				status->text_state.buffer, status->text_state.buffer_size);
 		if (!line) {
+			status_error(status, "[error reading from status command]");
 			return false;
 		}
 		if (line[0] == '{') {
-			// TODO: JSON
+			json_object *proto = json_tokener_parse(line);
+			if (proto) {
+				json_object *version;
+				if (json_object_object_get_ex(proto, "version", &version)
+							&& json_object_get_int(version) == 1) {
+					wlr_log(L_DEBUG, "Switched to i3bar protocol.");
+					status->protocol = PROTOCOL_I3BAR;
+				}
+				json_object *click_events;
+				if (json_object_object_get_ex(
+							proto, "click_events", &click_events)
+						&& json_object_get_boolean(click_events)) {
+					wlr_log(L_DEBUG, "Enabled click events.");
+					status->i3bar_state.click_events = true;
+					const char *events_array = "[\n";
+					write(status->write_fd, events_array, strlen(events_array));
+				}
+				json_object_put(proto);
+			}
+
+			status->protocol = PROTOCOL_I3BAR;
+			free(status->text_state.buffer);
+			status->i3bar_state.buffer_size = 4096;
+			status->i3bar_state.buffer =
+				malloc(status->i3bar_state.buffer_size);
 		} else {
-			status->text = line;
 			status->protocol = PROTOCOL_TEXT;
+			status->text = line;
 		}
-		return false;
+		return true;
 	}
 	return false;
 }
 
 struct status_line *status_line_init(char *cmd) {
 	struct status_line *status = calloc(1, sizeof(struct status_line));
-	status->buffer_size = 4096;
-	status->buffer = malloc(status->buffer_size);
+	status->text_state.buffer_size = 8192;
+	status->text_state.buffer = malloc(status->text_state.buffer_size);
 
 	int pipe_read_fd[2];
 	int pipe_write_fd[2];
