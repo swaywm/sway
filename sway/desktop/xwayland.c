@@ -143,8 +143,11 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		struct sway_view *view = sway_surface->view;
 		container_view_destroy(view->swayc);
 
+		wlr_xwayland_surface_set_maximized(xsurface, true);
+
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+		struct sway_container *focus = sway_seat_get_focus_inactive(seat,
+			&root_container);
 		struct sway_container *cont = container_view_create(focus, view);
 		view->swayc = cont;
 		arrange_windows(cont->parent, -1, -1);
