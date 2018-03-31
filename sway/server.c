@@ -110,7 +110,6 @@ bool server_init(struct sway_server *server) {
 	}
 
 	input_manager = sway_input_manager_create(server);
-
 	return true;
 }
 

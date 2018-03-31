@@ -291,7 +291,8 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *container) {
+void sway_seat_set_focus(struct sway_seat *seat,
+		struct sway_container *container) {
 	struct sway_container *last_focus = sway_seat_get_focus(seat);
 
 	if (container && last_focus == container) {
@@ -311,6 +312,11 @@ void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *containe
 		if (container->type == C_VIEW) {
 			struct sway_view *view = container->sway_view;
 			view_set_activated(view, true);
+			if (view->type == SWAY_XWAYLAND_VIEW) {
+				struct wlr_xwayland *xwayland =
+					seat->input->server->xwayland;
+				wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+			}
 			struct wlr_keyboard *keyboard =
 				wlr_seat_get_keyboard(seat->wlr_seat);
 			if (keyboard) {
