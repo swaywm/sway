@@ -243,14 +243,25 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	struct sway_view *view;
 	wl_list_for_each(view, &root_container.sway_root->unmanaged_views,
 			unmanaged_view_link) {
-		if (view->type == SWAY_XWAYLAND_VIEW) {
-			// the only kind of unamanged view right now is xwayland override
-			// redirect
-			int view_x = view->wlr_xwayland_surface->x;
-			int view_y = view->wlr_xwayland_surface->y;
-			render_surface(view->surface, wlr_output, &output->last_frame,
-					view_x, view_y, 0);
+		if (view->type != SWAY_XWAYLAND_VIEW) {
+			continue;
 		}
+
+		struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+
+		const struct wlr_box view_box = {
+			.x = xsurface->x,
+			.y = xsurface->y,
+			.width = xsurface->width,
+			.height = xsurface->height,
+		};
+		struct wlr_box intersection;
+		if (!wlr_box_intersection(&view_box, output_box, &intersection)) {
+			continue;
+		}
+
+		render_surface(view->surface, wlr_output, &output->last_frame,
+			view_box.x - output_box->x, view_box.y - output_box->y, 0);
 	}
 
 	// TODO: Consider revising this when fullscreen windows are supported
