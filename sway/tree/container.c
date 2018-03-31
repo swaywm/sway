@@ -69,11 +69,11 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 	if (cont->children != NULL) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
-		while (cont->children->length != 0) {
-			container_destroy(cont->children->items[0]);
+		while (cont->children != NULL && cont->children->length != 0) {
+			struct sway_container *child = cont->children->items[0];
+			container_remove_child(child);
+			container_destroy(child);
 		}
-		list_free(cont->children);
-		cont->children = NULL;
 	}
 	if (cont->marks) {
 		list_foreach(cont->marks, free);
@@ -85,13 +85,17 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 	if (cont->name) {
 		free(cont->name);
 	}
+	list_free(cont->children);
+	cont->children = NULL;
 	free(cont);
 	return parent;
 }
 
 struct sway_container *container_destroy(struct sway_container *cont) {
-	cont = _container_destroy(cont);
-	return container_reap_empty(cont->parent);
+	struct sway_container *parent = _container_destroy(cont);
+	parent = container_reap_empty(parent);
+	arrange_windows(&root_container, -1, -1);
+	return parent;
 }
 
 struct sway_container *container_output_create(
@@ -409,7 +413,8 @@ bool find_child_func(struct sway_container *con, void *data) {
 
 bool container_has_child(struct sway_container *con,
 		struct sway_container *child) {
-	if (child->type == C_VIEW || child->children->length == 0) {
+	if (child == NULL || child->type == C_VIEW ||
+			child->children->length == 0) {
 		return false;
 	}
 	return container_find(con, find_child_func, child);

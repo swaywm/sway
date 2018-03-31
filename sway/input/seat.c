@@ -94,6 +94,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 
 	// TODO handle workspace switch in the seat?
 	bool set_focus =
+		focus != NULL &&
 		(focus == con || container_has_child(con, focus)) &&
 		con->type != C_WORKSPACE;
 
@@ -103,12 +104,13 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 		struct sway_container *next_focus = NULL;
 		while (next_focus == NULL) {
 			next_focus = sway_seat_get_focus_by_type(seat, parent, C_VIEW);
-			parent = parent->parent;
 
 			if (next_focus == NULL && parent->type == C_WORKSPACE) {
 				next_focus = parent;
 				break;
 			}
+
+			parent = parent->parent;
 		}
 
 		// the structure change might have caused it to move up to the top of
@@ -440,7 +442,8 @@ struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
 	wl_list_for_each(current, &seat->focus_stack, link) {
 		parent = current->container->parent;
 
-		if (current->container == container) {
+		if (current->container == container &&
+				(type == C_TYPES || container->type == type)) {
 			return current->container;
 		}
 

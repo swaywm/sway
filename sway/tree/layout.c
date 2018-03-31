@@ -106,11 +106,11 @@ void container_add_child(struct sway_container *parent,
 }
 
 struct sway_container *container_reap_empty(struct sway_container *container) {
-	if (!sway_assert(container, "reaping null container")) {
+	if (container == NULL) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "reaping %p %s", container, container->name);
-	while (container != &root_container && container->children->length == 0) {
+	while (container->type != C_VIEW && container != &root_container && container->children->length == 0) {
 		if (container->type == C_WORKSPACE) {
 			if (!workspace_is_visible(container)) {
 				struct sway_container *parent = container->parent;
