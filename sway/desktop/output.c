@@ -247,11 +247,13 @@ static void render_output(struct sway_output *output, struct timespec *when,
 			continue;
 		}
 
+		struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+
 		const struct wlr_box view_box = {
-			.x = view->wlr_xwayland_surface->x,
-			.y = view->wlr_xwayland_surface->y,
-			.width = view->wlr_xwayland_surface->width,
-			.height = view->wlr_xwayland_surface->height,
+			.x = xsurface->x,
+			.y = xsurface->y,
+			.width = xsurface->width,
+			.height = xsurface->height,
 		};
 		struct wlr_box intersection;
 		if (!wlr_box_intersection(&view_box, output_box, &intersection)) {

@@ -41,7 +41,7 @@ static void set_size(struct sway_view *view, int width, int height) {
 	view->sway_xwayland_surface->pending_height = height;
 
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	wlr_xwayland_surface_configure(xsurface, view->swayc->x, view->swayc->y,
+	wlr_xwayland_surface_configure(xsurface, xsurface->x, xsurface->y,
 		width, height);
 }
 
@@ -151,7 +151,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view_damage_whole(sway_surface->view);
 }
 
-static void handle_configure_request(struct wl_listener *listener, void *data) {
+static void handle_request_configure(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, request_configure);
 	struct wlr_xwayland_surface_configure_event *ev = data;
@@ -206,7 +206,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&xsurface->events.request_configure,
 		&sway_surface->request_configure);
-	sway_surface->request_configure.notify = handle_configure_request;
+	sway_surface->request_configure.notify = handle_request_configure;
 
 	wl_signal_add(&xsurface->events.unmap, &sway_surface->unmap);
 	sway_surface->unmap.notify = handle_unmap;

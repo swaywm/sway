@@ -50,21 +50,23 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	struct wl_list *unmanaged = &root_container.sway_root->unmanaged_views;
 	struct sway_view *view;
 	wl_list_for_each_reverse(view, unmanaged, unmanaged_view_link) {
-		if (view->type == SWAY_XWAYLAND_VIEW) {
-			struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-			struct wlr_box box = {
-				.x = xsurface->x,
-				.y = xsurface->y,
-				.width = xsurface->width,
-				.height = xsurface->height,
-			};
+		if (view->type != SWAY_XWAYLAND_VIEW) {
+			continue;
+		}
 
-			if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
-				*surface = xsurface->surface;
-				*sx = cursor->x - box.x;
-				*sy = cursor->y - box.y;
-				return NULL;
-			}
+		struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+		struct wlr_box box = {
+			.x = xsurface->x,
+			.y = xsurface->y,
+			.width = xsurface->width,
+			.height = xsurface->height,
+		};
+
+		if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
+			*surface = xsurface->surface;
+			*sx = cursor->x - box.x;
+			*sy = cursor->y - box.y;
+			return NULL;
 		}
 	}
 
