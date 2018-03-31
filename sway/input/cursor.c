@@ -182,7 +182,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 		//
 		// TODO: Replace this condition with something like
 		// !surface_accepts_keyboard_input
-		if (surface && cont->type != C_VIEW) {
+		if (surface && cont && cont->type != C_VIEW) {
 			struct sway_container *new_ws = cont;
 			if (new_ws && new_ws->type != C_WORKSPACE) {
 				new_ws = container_parent(new_ws, C_WORKSPACE);
