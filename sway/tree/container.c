@@ -401,3 +401,16 @@ bool container_has_anscestor(struct sway_container *descendant,
 	}
 	return false;
 }
+
+bool find_child_func(struct sway_container *con, void *data) {
+	struct sway_container *child = data;
+	return con == child;
+}
+
+bool container_has_child(struct sway_container *con,
+		struct sway_container *child) {
+	if (child->type == C_VIEW || child->children->length == 0) {
+		return false;
+	}
+	return container_find(con, find_child_func, child);
+}

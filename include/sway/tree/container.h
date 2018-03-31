@@ -150,4 +150,7 @@ void container_for_each_descendant_dfs(struct sway_container *container,
 bool container_has_anscestor(struct sway_container *descendant,
 		struct sway_container *anscestor);
 
+bool container_has_child(struct sway_container *con,
+		struct sway_container *child);
+
 #endif
