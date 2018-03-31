@@ -89,9 +89,17 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color,
 	}
 }
 
+static void block_hotspot_callback(struct swaybar_output *output,
+			int x, int y, uint32_t button, void *data) {
+	struct i3bar_block *block = data;
+	struct status_line *status = output->bar->status;
+	i3bar_block_send_click(status, block, x, y, button);
+}
+
 static uint32_t render_status_block(cairo_t *cairo,
-		struct swaybar_config *config, struct i3bar_block *block,
-		double *x, uint32_t height, bool focused, bool edge) {
+		struct swaybar_config *config, struct swaybar_output *output,
+		struct i3bar_block *block, double *x,
+		uint32_t height, bool focused, bool edge) {
 	static const int margin = 3;
 	if (!block->full_text || !*block->full_text) {
 		return 0;
@@ -139,7 +147,15 @@ static uint32_t render_status_block(cairo_t *cairo,
 		*x -= margin;
 	}
 
-	// TODO: Create hotspot here
+	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
+	hotspot->x = *x;
+	hotspot->y = 0;
+	hotspot->width = width;
+	hotspot->height = height;
+	hotspot->callback = block_hotspot_callback;
+	hotspot->destroy = free;
+	hotspot->data = block;
+	wl_list_insert(&output->hotspots, &hotspot->link);
 
 	double pos = *x;
 	if (block->background) {
@@ -208,13 +224,14 @@ static uint32_t render_status_block(cairo_t *cairo,
 }
 
 static uint32_t render_status_line_i3bar(cairo_t *cairo,
-		struct swaybar_config *config, struct status_line *status,
-		bool focused, double *x, uint32_t width, uint32_t height) {
+		struct swaybar_config *config, struct swaybar_output *output,
+		struct status_line *status, bool focused,
+		double *x, uint32_t width, uint32_t height) {
 	struct i3bar_block *block;
 	uint32_t max_height = 0;
 	bool edge = true;
 	wl_list_for_each_reverse(block, &status->blocks, link) {
-		uint32_t h = render_status_block(cairo, config,
+		uint32_t h = render_status_block(cairo, config, output,
 				block, x, height, focused, edge);
 		max_height = h > max_height ? h : max_height;
 		edge = false;
@@ -223,8 +240,9 @@ static uint32_t render_status_line_i3bar(cairo_t *cairo,
 }
 
 static uint32_t render_status_line(cairo_t *cairo,
-		struct swaybar_config *config, struct status_line *status,
-		bool focused, double *x, uint32_t width, uint32_t height) {
+		struct swaybar_config *config, struct swaybar_output *output,
+		struct status_line *status, bool focused,
+		double *x, uint32_t width, uint32_t height) {
 	switch (status->protocol) {
 	case PROTOCOL_ERROR:
 		return render_status_line_error(cairo,
@@ -233,8 +251,8 @@ static uint32_t render_status_line(cairo_t *cairo,
 		return render_status_line_text(cairo,
 				config, status->text, focused, x, width, height);
 	case PROTOCOL_I3BAR:
-		return render_status_line_i3bar(cairo,
-				config, status, focused, x, width, height);
+		return render_status_line_i3bar(cairo, config, output, status,
+				focused, x, width, height);
 	case PROTOCOL_UNDEF:
 		return 0;
 	}
@@ -344,8 +362,8 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;
 	hotspot->y = 0;
-	hotspot->height = height;
 	hotspot->width = width;
+	hotspot->height = height;
 	hotspot->callback = workspace_hotspot_callback;
 	hotspot->destroy = free;
 	hotspot->data = strdup(name);
@@ -391,7 +409,7 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 	}
 	x = output->width;
 	if (bar->status) {
-		uint32_t h = render_status_line(cairo, config, bar->status,
+		uint32_t h = render_status_line(cairo, config, output, bar->status,
 				output->focused, &x, output->width, output->height);
 		max_height = h > max_height ? h : max_height;
 	}

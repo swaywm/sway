@@ -186,3 +186,25 @@ bool i3bar_handle_readable(struct status_line *status) {
 	state->buffer_index = cur - state->buffer;
 	return redraw;
 }
+
+void i3bar_block_send_click(struct status_line *status,
+		struct i3bar_block *block, int x, int y, uint32_t button) {
+	wlr_log(L_DEBUG, "block %s clicked", block->name ? block->name : "(nil)");
+	if (!block->name || !status->i3bar_state.click_events) {
+		return;
+	}
+
+	struct json_object *event_json = json_object_new_object();
+	json_object_object_add(event_json, "name",
+			json_object_new_string(block->name));
+	if (block->instance) {
+		json_object_object_add(event_json, "instance",
+				json_object_new_string(block->instance));
+	}
+
+	json_object_object_add(event_json, "button", json_object_new_int(button));
+	json_object_object_add(event_json, "x", json_object_new_int(x));
+	json_object_object_add(event_json, "y", json_object_new_int(y));
+	dprintf(status->write_fd, "%s\n", json_object_to_json_string(event_json));
+	json_object_put(event_json);
+}
