@@ -8,6 +8,14 @@
 #include "swaybar/ipc.h"
 #include "ipc-client.h"
 
+void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
+	const char *fmt = "workspace \"%s\"";
+	uint32_t size = snprintf(NULL, 0, fmt, ws);
+	char command[size];
+	snprintf(command, size, fmt, ws);
+	ipc_single_command(bar->ipc_socketfd, IPC_COMMAND, command, &size);
+}
+
 char *parse_font(const char *font) {
 	char *new_font = NULL;
 	if (strncmp("pango:", font, 6) == 0) {

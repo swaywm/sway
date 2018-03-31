@@ -24,6 +24,7 @@
 #include "swaybar/ipc.h"
 #include "ipc-client.h"
 #include "list.h"
+#include "log.h"
 #include "pango.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -67,6 +68,13 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaybar *bar = data;
 	struct swaybar_pointer *pointer = &bar->pointer;
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		if (output->surface == surface) {
+			pointer->current = output;
+			break;
+		}
+	}
 	wl_surface_attach(pointer->cursor_surface,
 			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
 	wl_pointer_set_cursor(wl_pointer, serial, pointer->cursor_surface,
@@ -77,12 +85,12 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 
 static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface) {
-	// Who cares
+	struct swaybar *bar = data;
+	bar->pointer.current = NULL;
 }
 
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
-	wlr_log(L_DEBUG, "motion");
 	// TODO
 }
 
@@ -94,8 +102,36 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 
 static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, uint32_t axis, wl_fixed_t value) {
-	wlr_log(L_DEBUG, "axis");
-	// TODO
+	struct swaybar *bar = data;
+	struct swaybar_output *output = bar->pointer.current;
+	if (!output) {
+		return;
+	}
+	double amt = wl_fixed_to_double(value);
+	if (!bar->config->wrap_scroll) {
+		int i = 0;
+		struct swaybar_workspace *ws = NULL;
+		wl_list_for_each(ws, &output->workspaces, link) {
+			if (ws->focused) {
+				break;
+			}
+			++i;
+		}
+		int len = wl_list_length(&output->workspaces);
+		if (!sway_assert(i != len, "axis with null workspace")) {
+			return;
+		}
+		if (i == 0 && amt > 0) {
+			return; // Do not wrap
+		}
+		if (i == len - 1 && amt < 0) {
+			return; // Do not wrap
+		}
+	}
+
+	const char *workspace_name =
+		amt < 0 ?  "prev_on_output" : "next_on_output";
+	ipc_send_workspace_command(bar, workspace_name);
 }
 
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
