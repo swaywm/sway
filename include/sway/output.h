@@ -24,6 +24,7 @@ struct sway_output {
 	struct wl_listener destroy;
 	struct wl_listener mode;
 	struct wl_listener transform;
+	struct wl_listener scale;
 
 	struct wl_listener damage_destroy;
 	struct wl_listener damage_frame;

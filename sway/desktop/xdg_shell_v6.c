@@ -82,29 +82,14 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_surface =
 		wl_container_of(listener, sway_surface, unmap);
-	view_damage_whole(sway_surface->view);
-	container_view_destroy(sway_surface->view->swayc);
-	sway_surface->view->swayc = NULL;
-	sway_surface->view->surface = NULL;
+	view_unmap(sway_surface->view);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_surface =
 		wl_container_of(listener, sway_surface, map);
 	struct sway_view *view = sway_surface->view;
-
-	sway_surface->view->surface = view->wlr_xdg_surface_v6->surface;
-
-	container_view_destroy(view->swayc);
-
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = container_view_create(focus, view);
-	view->swayc = cont;
-	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
-
-	view_damage_whole(sway_surface->view);
+	view_map(view, view->wlr_xdg_surface_v6->surface);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -112,8 +97,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_xdg_surface, destroy);
 	wl_list_remove(&sway_xdg_surface->commit.link);
 	wl_list_remove(&sway_xdg_surface->destroy.link);
-	container_view_destroy(sway_xdg_surface->view->swayc);
-	free(sway_xdg_surface->view);
+	wl_list_remove(&sway_xdg_surface->map.link);
+	wl_list_remove(&sway_xdg_surface->unmap.link);
+	view_destroy(sway_xdg_surface->view);
 	free(sway_xdg_surface);
 }
 
@@ -138,23 +124,21 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *sway_view = calloc(1, sizeof(struct sway_view));
-	if (!sway_assert(sway_view, "Failed to allocate view!")) {
+	struct sway_view *view = view_create(SWAY_XDG_SHELL_V6_VIEW);
+	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	sway_view->type = SWAY_XDG_SHELL_V6_VIEW;
-	sway_view->iface.get_prop = get_prop;
-	sway_view->iface.set_size = set_size;
-	sway_view->iface.set_position = set_position;
-	sway_view->iface.set_activated = set_activated;
-	sway_view->iface.close = close;
-	sway_view->wlr_xdg_surface_v6 = xdg_surface;
-	sway_view->sway_xdg_surface_v6 = sway_surface;
-	sway_surface->view = sway_view;
+	view->iface.get_prop = get_prop;
+	view->iface.set_size = set_size;
+	view->iface.set_position = set_position;
+	view->iface.set_activated = set_activated;
+	view->iface.close = close;
+	view->wlr_xdg_surface_v6 = xdg_surface;
+	view->sway_xdg_surface_v6 = sway_surface;
+	sway_surface->view = view;
 
 	// TODO:
 	// - Look up pid and open on appropriate workspace
-	// - Set new view to maximized so it behaves nicely
 	// - Criteria
 
 	sway_surface->commit.notify = handle_commit;

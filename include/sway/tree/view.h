@@ -4,6 +4,8 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/xwayland.h>
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 
 struct sway_container;
 struct sway_view;
@@ -94,8 +96,12 @@ struct sway_view {
 	} iface;
 
 	// only used for unmanaged views (shell specific)
-	struct wl_list unmanaged_view_link; // sway_root::unmanaged views
+	struct wl_list unmanaged_view_link; // sway_root::unmanaged_views
 };
+
+struct sway_view *view_create(enum sway_view_type type);
+
+void view_destroy(struct sway_view *view);
 
 const char *view_get_title(struct sway_view *view);
 
@@ -113,7 +119,12 @@ void view_set_activated(struct sway_view *view, bool activated);
 
 void view_close(struct sway_view *view);
 
-void view_update_outputs(struct sway_view *view, const struct wlr_box *before);
+void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
+
+void view_map_unmanaged(struct sway_view *view,
+	struct wlr_surface *wlr_surface);
+
+void view_unmap(struct sway_view *view);
 
 void view_damage_whole(struct sway_view *view);
 

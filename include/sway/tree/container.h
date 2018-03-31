@@ -70,9 +70,8 @@ struct sway_container {
 	enum sway_container_layout prev_layout;
 	enum sway_container_layout workspace_layout;
 
-	// TODO convert to layout coordinates
+	// in output-local coordinates
 	double x, y;
-
 	// does not include borders or gaps.
 	double width, height;
 

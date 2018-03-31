@@ -75,15 +75,13 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_surface, destroy);
 	wl_list_remove(&sway_surface->commit.link);
 	wl_list_remove(&sway_surface->destroy.link);
-	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
-	free(sway_surface->view);
+	view_destroy(sway_surface->view);
 	free(sway_surface);
-	arrange_windows(parent, -1, -1);
 }
 
 void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(
-			listener, server, wl_shell_surface);
+	struct sway_server *server = wl_container_of(listener, server,
+		wl_shell_surface);
 	struct wlr_wl_shell_surface *shell_surface = data;
 
 	if (shell_surface->state == WLR_WL_SHELL_SURFACE_STATE_POPUP) {
@@ -103,20 +101,18 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *sway_view = calloc(1, sizeof(struct sway_view));
-	if (!sway_assert(sway_view, "Failed to allocate view!")) {
+	struct sway_view *view = view_create(SWAY_WL_SHELL_VIEW);
+	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	sway_view->type = SWAY_WL_SHELL_VIEW;
-	sway_view->iface.get_prop = get_prop;
-	sway_view->iface.set_size = set_size;
-	sway_view->iface.set_position = set_position;
-	sway_view->iface.set_activated = set_activated;
-	sway_view->iface.close = close;
-	sway_view->wlr_wl_shell_surface = shell_surface;
-	sway_view->sway_wl_shell_surface = sway_surface;
-	sway_view->surface = shell_surface->surface;
-	sway_surface->view = sway_view;
+	view->iface.get_prop = get_prop;
+	view->iface.set_size = set_size;
+	view->iface.set_position = set_position;
+	view->iface.set_activated = set_activated;
+	view->iface.close = close;
+	view->wlr_wl_shell_surface = shell_surface;
+	view->sway_wl_shell_surface = sway_surface;
+	sway_surface->view = view;
 
 	// TODO:
 	// - Wire up listeners
@@ -132,11 +128,5 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&shell_surface->events.destroy, &sway_surface->destroy);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = container_view_create(focus, sway_view);
-	sway_view->swayc = cont;
-
-	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
+	view_map(view, shell_surface->surface);
 }

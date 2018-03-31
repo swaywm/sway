@@ -39,6 +39,32 @@ static void rotate_child_position(double *sx, double *sy, double sw, double sh,
 	}
 }
 
+/**
+ * Checks whether a surface at (lx, ly) intersects an output. If `box` is not
+ * NULL, it populates it with the surface box in the output, in output-local
+ * coordinates.
+ */
+static bool surface_intersect_output(struct wlr_surface *surface,
+		struct wlr_output_layout *output_layout, struct wlr_output *wlr_output,
+		double lx, double ly, float rotation, struct wlr_box *box) {
+	double ox = lx, oy = ly;
+	wlr_output_layout_output_coords(output_layout, wlr_output, &ox, &oy);
+
+	if (box != NULL) {
+		box->x = ox * wlr_output->scale;
+		box->y = oy * wlr_output->scale;
+		box->width = surface->current->width * wlr_output->scale;
+		box->height = surface->current->height * wlr_output->scale;
+	}
+
+	struct wlr_box layout_box = {
+		.x = lx, .y = ly,
+		.width = surface->current->width, .height = surface->current->height,
+	};
+	wlr_box_rotated_bounds(&layout_box, rotation, &layout_box);
+	return wlr_output_layout_intersects(output_layout, wlr_output, &layout_box);
+}
+
 static void render_surface(struct wlr_surface *surface,
 		struct wlr_output *wlr_output, struct timespec *when,
 		double lx, double ly, float rotation) {
@@ -48,29 +74,21 @@ static void render_surface(struct wlr_surface *surface,
 	if (!wlr_surface_has_buffer(surface)) {
 		return;
 	}
-	struct wlr_output_layout *layout = root_container.sway_root->output_layout;
-	int width = surface->current->width;
-	int height = surface->current->height;
-	int render_width = width * wlr_output->scale;
-	int render_height = height * wlr_output->scale;
-	int owidth, oheight;
-	wlr_output_effective_resolution(wlr_output, &owidth, &oheight);
 
-	// FIXME: view coords are inconsistently assumed to be in output or layout coords
-	struct wlr_box layout_box = {
-		.x = lx + wlr_output->lx, .y = ly + wlr_output->ly,
-		.width = render_width, .height = render_height,
-	};
-	if (wlr_output_layout_intersects(layout, wlr_output, &layout_box)) {
-		struct wlr_box render_box = {
-			.x = lx, .y = ly,
-			.width = render_width, .height = render_height
-		};
+	struct wlr_output_layout *layout = root_container.sway_root->output_layout;
+
+	struct wlr_box box;
+	bool intersects = surface_intersect_output(surface, layout, wlr_output,
+		lx, ly, rotation, &box);
+	if (intersects) {
 		float matrix[9];
-		wlr_matrix_project_box(matrix, &render_box, surface->current->transform,
-			0, wlr_output->transform_matrix);
-		wlr_render_texture_with_matrix(renderer, surface->texture, matrix,
-			1.0f); // TODO: configurable alpha
+		enum wl_output_transform transform =
+			wlr_output_transform_invert(surface->current->transform);
+		wlr_matrix_project_box(matrix, &box, transform, rotation,
+			wlr_output->transform_matrix);
+
+		// TODO: configurable alpha
+		wlr_render_texture_with_matrix(renderer, surface->texture, matrix, 1.0f);
 
 		wlr_surface_send_frame_done(surface, when);
 	}
@@ -80,9 +98,8 @@ static void render_surface(struct wlr_surface *surface,
 		struct wlr_surface_state *state = subsurface->surface->current;
 		double sx = state->subsurface_position.x;
 		double sy = state->subsurface_position.y;
-		double sw = state->buffer_width / state->scale;
-		double sh = state->buffer_height / state->scale;
-		rotate_child_position(&sx, &sy, sw, sh, width, height, rotation);
+		rotate_child_position(&sx, &sy, state->width, state->height,
+			surface->current->width, surface->current->height, rotation);
 
 		render_surface(subsurface->surface, wlr_output, when,
 			lx + sx, ly + sy, rotation);
@@ -338,6 +355,12 @@ static void handle_transform(struct wl_listener *listener, void *data) {
 	arrange_windows(output->swayc, -1, -1);
 }
 
+static void handle_scale(struct wl_listener *listener, void *data) {
+	struct sway_output *output = wl_container_of(listener, output, scale);
+	arrange_layers(output);
+	arrange_windows(output->swayc, -1, -1);
+}
+
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
@@ -378,6 +401,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.transform, &output->transform);
 	output->transform.notify = handle_transform;
+	wl_signal_add(&wlr_output->events.scale, &output->scale);
+	output->scale.notify = handle_scale;
 
 	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
 	output->damage_frame.notify = damage_handle_frame;
