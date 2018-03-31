@@ -8,7 +8,9 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_gamma_control.h>
+#include <wlr/types/wlr_linux_dmabuf.h>
 #include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_wl_shell.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -54,6 +56,7 @@ bool server_init(struct sway_server *server) {
 
 	wlr_screenshooter_create(server->wl_display);
 	wlr_gamma_control_manager_create(server->wl_display);
+	wlr_primary_selection_device_manager_create(server->wl_display);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
@@ -67,6 +70,11 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_shell_v6->events.new_surface,
 		&server->xdg_shell_v6_surface);
 	server->xdg_shell_v6_surface.notify = handle_xdg_shell_v6_surface;
+
+	server->wl_shell = wlr_wl_shell_create(server->wl_display);
+	wl_signal_add(&server->wl_shell->events.new_surface,
+		&server->wl_shell_surface);
+	server->wl_shell_surface.notify = handle_wl_shell_surface;
 
 	// TODO make xwayland optional
 	server->xwayland =
@@ -91,10 +99,8 @@ bool server_init(struct sway_server *server) {
 			image->hotspot_y);
 	}
 
-	server->wl_shell = wlr_wl_shell_create(server->wl_display);
-	wl_signal_add(&server->wl_shell->events.new_surface,
-		&server->wl_shell_surface);
-	server->wl_shell_surface.notify = handle_wl_shell_surface;
+	struct wlr_egl *egl = wlr_backend_get_egl(server->backend);
+	wlr_linux_dmabuf_create(server->wl_display, egl);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
