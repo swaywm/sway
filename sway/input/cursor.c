@@ -30,16 +30,8 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
 			sway_layer->layer_surface->surface;
 		double _sx = ox - sway_layer->geo.x;
 		double _sy = oy - sway_layer->geo.y;
-		struct wlr_box box = {
-			.x = sway_layer->geo.x,
-			.y = sway_layer->geo.y,
-			.width = wlr_surface->current->width,
-			.height = wlr_surface->current->height,
-		};
 		// TODO: Test popups/subsurfaces
-		if (wlr_box_contains_point(&box, ox, oy) &&
-				pixman_region32_contains_point(
-					&wlr_surface->current->input, _sx, _sy, NULL)) {
+		if (wlr_surface_point_accepts_input(wlr_surface, _sx, _sy)) {
 			*sx = _sx;
 			*sy = _sy;
 			return wlr_surface;

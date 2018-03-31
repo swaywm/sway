@@ -290,8 +290,6 @@ struct sway_container *container_at(struct sway_container *parent,
 			double oy = ly - output_box->y;
 			double view_sx = ox - swayc->x;
 			double view_sy = oy - swayc->y;
-			int width = swayc->sway_view->surface->current->width;
-			int height = swayc->sway_view->surface->current->height;
 
 			switch (sview->type) {
 				case SWAY_WL_SHELL_VIEW:
@@ -333,11 +331,8 @@ struct sway_container *container_at(struct sway_container *parent,
 				return swayc;
 			}
 
-			if (view_sx > 0 && view_sx < width &&
-					view_sy > 0 && view_sy < height &&
-					pixman_region32_contains_point(
-						&sview->surface->current->input,
-						view_sx, view_sy, NULL)) {
+			if (wlr_surface_point_accepts_input(
+						sview->surface, view_sx, view_sy)) {
 				*sx = view_sx;
 				*sy = view_sy;
 				*surface = swayc->sway_view->surface;
