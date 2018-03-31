@@ -63,6 +63,7 @@ sway_sources = files(
 	'commands/input/xkb_options.c',
 	'commands/input/xkb_rules.c',
 	'commands/input/xkb_variant.c',
+	'commands/mouse_warping.c',
 	'commands/output.c',
 	'commands/reload.c',
 	'commands/workspace.c',

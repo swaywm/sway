@@ -333,14 +333,28 @@ void sway_seat_set_focus(struct sway_seat *seat,
 	if (last_focus) {
 		struct sway_container *last_ws = last_focus;
 		if (last_ws && last_ws->type != C_WORKSPACE) {
-			last_ws = container_parent(last_focus, C_WORKSPACE);
+			last_ws = container_parent(last_ws, C_WORKSPACE);
 		}
 		if (last_ws) {
-			wlr_log(L_DEBUG, "sending workspace event");
 			ipc_event_workspace(last_ws, container, "focus");
 			if (last_ws->children->length == 0) {
 				container_workspace_destroy(last_ws);
 			}
+		}
+		struct sway_container *last_output = last_focus;
+		if (last_output && last_output->type != C_OUTPUT) {
+			last_output = container_parent(last_output, C_OUTPUT);
+		}
+		struct sway_container *new_output = container;
+		if (new_output && new_output->type != C_OUTPUT) {
+			new_output = container_parent(new_output, C_OUTPUT);
+		}
+		if (new_output != last_output && config->mouse_warping) {
+			struct wlr_output *output = new_output->sway_output->wlr_output;
+			// TODO: Change container coords to layout coords
+			double x = container->x + output->lx + container->width / 2.0;
+			double y = container->y + output->ly + container->height / 2.0;
+			wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
 		}
 	}
 
