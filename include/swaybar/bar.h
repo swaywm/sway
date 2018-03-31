@@ -2,7 +2,6 @@
 #define _SWAYBAR_BAR_H
 #include <wayland-client.h>
 #include "pool-buffer.h"
-#include "list.h"
 
 struct swaybar_config;
 struct swaybar_output;
@@ -14,6 +13,16 @@ struct swaybar_pointer {
 	struct wl_cursor_image *cursor_image;
 	struct wl_surface *cursor_surface;
 	struct swaybar_output *current;
+	int x, y;
+};
+
+struct swaybar_hotspot {
+	struct wl_list link;
+	int x, y, width, height;
+	void (*callback)(struct swaybar_output *output,
+			int x, int y, uint32_t button, void *data);
+	void (*destroy)(void *data);
+	void *data;
 };
 
 struct swaybar {
@@ -42,6 +51,7 @@ struct swaybar_output {
 	struct zwlr_layer_surface_v1 *layer_surface;
 
 	struct wl_list workspaces;
+	struct wl_list hotspots;
 
 	char *name;
 	size_t index;
@@ -61,7 +71,6 @@ struct swaybar_workspace {
 	bool urgent;
 };
 
-// TODO: Rename stuff to match wlroots conventions (init/create/etc)
 void bar_setup(struct swaybar *bar,
 	const char *socket_path,
 	const char *bar_id);

@@ -34,12 +34,6 @@ static void bar_init(struct swaybar *bar) {
 	wl_list_init(&bar->outputs);
 }
 
-struct swaybar_output *new_output(const char *name) {
-	struct swaybar_output *output = malloc(sizeof(struct swaybar_output));
-	output->name = strdup(name);
-	return output;
-}
-
 static void layer_surface_configure(void *data,
 		struct zwlr_layer_surface_v1 *surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
@@ -91,20 +85,39 @@ static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
 
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
-	// TODO
+	struct swaybar *bar = data;
+	bar->pointer.x = wl_fixed_to_int(surface_x);
+	bar->pointer.y = wl_fixed_to_int(surface_y);
 }
 
 static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
-	wlr_log(L_DEBUG, "button");
-	// TODO
+	struct swaybar *bar = data;
+	struct swaybar_pointer *pointer = &bar->pointer;
+	struct swaybar_output *output = pointer->current;
+	if (!sway_assert(output, "button with no active output")) {
+		return;
+	}
+	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
+		return;
+	}
+	struct swaybar_hotspot *hotspot;
+	wl_list_for_each(hotspot, &output->hotspots, link) {
+		if (pointer->x >= hotspot->x
+				&& pointer->y >= hotspot->y
+				&& pointer->x < hotspot->x + hotspot->width
+				&& pointer->y < hotspot->y + hotspot->height) {
+			hotspot->callback(output, pointer->x, pointer->y,
+					button, hotspot->data);
+		}
+	}
 }
 
 static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, uint32_t axis, wl_fixed_t value) {
 	struct swaybar *bar = data;
 	struct swaybar_output *output = bar->pointer.current;
-	if (!output) {
+	if (!sway_assert(output, "axis with no active output")) {
 		return;
 	}
 	double amt = wl_fixed_to_double(value);
@@ -206,6 +219,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 				&wl_output_interface, 1);
 		output->index = index++;
 		wl_list_init(&output->workspaces);
+		wl_list_init(&output->hotspots);
 		wl_list_insert(&bar->outputs, &output->link);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		bar->layer_shell = wl_registry_bind(
