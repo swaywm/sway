@@ -156,8 +156,8 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
-static void handle_cursor_motion_absolute(struct wl_listener *listener,
-		void *data) {
+static void handle_cursor_motion_absolute(
+		struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_event_pointer_motion_absolute *event = data;
