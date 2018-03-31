@@ -120,6 +120,9 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	return NULL;
 }
 
+void _sway_seat_set_focus(struct sway_seat *seat,
+		struct sway_container *container, bool warp);
+
 static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 		uint32_t time) {
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
@@ -127,7 +130,7 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	double sx, sy;
 	struct sway_container *c = container_at_cursor(cursor, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse) {
-		sway_seat_set_focus(cursor->seat, c);
+		_sway_seat_set_focus(cursor->seat, c, false);
 	}
 
 	// reset cursor if switching between clients
