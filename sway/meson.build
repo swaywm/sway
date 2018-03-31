@@ -13,6 +13,7 @@ sway_sources = files(
 	'commands/exec.c',
 	'commands/exec_always.c',
 	'commands/focus.c',
+	'commands/focus_follows_mouse.c',
 	'commands/kill.c',
 	'commands/include.c',
 	'commands/input.c',

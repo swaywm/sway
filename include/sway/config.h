@@ -304,7 +304,6 @@ struct sway_config {
 	bool reloading;
 	bool reading;
 	bool auto_back_and_forth;
-	bool seamless_mouse;
 	bool show_marks;
 
 	bool edge_gaps;
