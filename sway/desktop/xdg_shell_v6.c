@@ -67,6 +67,14 @@ static void close(struct sway_view *view) {
 	}
 }
 
+static const struct sway_view_impl view_impl = {
+	.get_prop = get_prop,
+	.set_size = set_size,
+	.set_position = set_position,
+	.set_activated = set_activated,
+	.close = close,
+};
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_surface_v6 *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
@@ -124,15 +132,10 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_XDG_SHELL_V6_VIEW);
+	struct sway_view *view = view_create(SWAY_XDG_SHELL_V6_VIEW, &view_impl);
 	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	view->iface.get_prop = get_prop;
-	view->iface.set_size = set_size;
-	view->iface.set_position = set_position;
-	view->iface.set_activated = set_activated;
-	view->iface.close = close;
 	view->wlr_xdg_surface_v6 = xdg_surface;
 	view->sway_xdg_surface_v6 = sway_surface;
 	sway_surface->view = view;

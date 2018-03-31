@@ -81,12 +81,20 @@ static void set_activated(struct sway_view *view, bool activated) {
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
-static void close_view(struct sway_view *view) {
+static void _close(struct sway_view *view) {
 	if (!assert_xwayland(view)) {
 		return;
 	}
 	wlr_xwayland_surface_close(view->wlr_xwayland_surface);
 }
+
+static const struct sway_view_impl view_impl = {
+	.get_prop = get_prop,
+	.set_size = set_size,
+	.set_position = set_position,
+	.set_activated = set_activated,
+	.close = _close,
+};
 
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
@@ -159,15 +167,10 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_XWAYLAND_VIEW);
+	struct sway_view *view = view_create(SWAY_XWAYLAND_VIEW, &view_impl);
 	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	view->iface.get_prop = get_prop;
-	view->iface.set_size = set_size;
-	view->iface.set_position = set_position;
-	view->iface.set_activated = set_activated;
-	view->iface.close = close_view;
 	view->wlr_xwayland_surface = xsurface;
 	view->sway_xwayland_surface = sway_surface;
 	sway_surface->view = view;

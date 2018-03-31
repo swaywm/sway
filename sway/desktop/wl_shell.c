@@ -47,10 +47,6 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 	view->swayc->y = oy;
 }
 
-static void set_activated(struct sway_view *view, bool activated) {
-	// no way to activate wl_shell
-}
-
 static void close(struct sway_view *view) {
 	if (!assert_wl_shell(view)) {
 		return;
@@ -58,6 +54,13 @@ static void close(struct sway_view *view) {
 
 	wl_client_destroy(view->wlr_wl_shell_surface->client);
 }
+
+static const struct sway_view_impl view_impl = {
+	.get_prop = get_prop,
+	.set_size = set_size,
+	.set_position = set_position,
+	.close = close,
+};
 
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_surface *sway_surface =
@@ -101,15 +104,10 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_WL_SHELL_VIEW);
+	struct sway_view *view = view_create(SWAY_WL_SHELL_VIEW, &view_impl);
 	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	view->iface.get_prop = get_prop;
-	view->iface.set_size = set_size;
-	view->iface.set_position = set_position;
-	view->iface.set_activated = set_activated;
-	view->iface.close = close;
 	view->wlr_wl_shell_surface = shell_surface;
 	view->sway_wl_shell_surface = sway_surface;
 	sway_surface->view = view;

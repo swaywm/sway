@@ -66,10 +66,23 @@ enum sway_view_prop {
 	VIEW_PROP_INSTANCE,
 };
 
+struct sway_view_impl {
+	const char *(*get_prop)(struct sway_view *view,
+			enum sway_view_prop prop);
+	void (*set_size)(struct sway_view *view,
+			int width, int height);
+	void (*set_position)(struct sway_view *view,
+			double ox, double oy);
+	void (*set_activated)(struct sway_view *view, bool activated);
+	void (*close)(struct sway_view *view);
+};
+
 struct sway_view {
 	enum sway_view_type type;
-	struct sway_container *swayc;
-	struct wlr_surface *surface;
+	const struct sway_view_impl *impl;
+
+	struct sway_container *swayc; // NULL for unmanaged views
+	struct wlr_surface *surface; // NULL for unmapped views
 	int width, height;
 
 	union {
@@ -84,22 +97,12 @@ struct sway_view {
 		struct sway_wl_shell_surface *sway_wl_shell_surface;
 	};
 
-	struct {
-		const char *(*get_prop)(struct sway_view *view,
-				enum sway_view_prop prop);
-		void (*set_size)(struct sway_view *view,
-				int width, int height);
-		void (*set_position)(struct sway_view *view,
-				double ox, double oy);
-		void (*set_activated)(struct sway_view *view, bool activated);
-		void (*close)(struct sway_view *view);
-	} iface;
-
 	// only used for unmanaged views (shell specific)
 	struct wl_list unmanaged_view_link; // sway_root::unmanaged_views
 };
 
-struct sway_view *view_create(enum sway_view_type type);
+struct sway_view *view_create(enum sway_view_type type,
+	const struct sway_view_impl *impl);
 
 void view_destroy(struct sway_view *view);
 
