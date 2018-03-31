@@ -63,7 +63,7 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 				*surface = xsurface->surface;
 				*sx = cursor->x - box.x;
 				*sy = cursor->y - box.y;
-				return view->swayc;
+				return NULL;
 			}
 		}
 	}
