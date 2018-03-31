@@ -57,38 +57,41 @@ static void free_mode(struct sway_mode *mode) {
 void free_config(struct sway_config *config) {
 	config_clear_handler_context(config);
 
-	int i;
-
 	if (!config) {
 		return;
 	}
 
 	// TODO: handle all currently unhandled lists as we add implementations
 	if (config->symbols) {
-		for (i = 0; i < config->symbols->length; i++) {
+		for (int i = 0; i < config->symbols->length; ++i) {
 			free_sway_variable(config->symbols->items[i]);
 		}
 		list_free(config->symbols);
 	}
 	if (config->modes) {
-		for (i = 0; i < config->modes->length; i++) {
+		for (int i = 0; i < config->modes->length; ++i) {
 			free_mode(config->modes->items[i]);
 		}
 		list_free(config->modes);
 	}
-	list_free(config->bars);
+	if (config->bars) {
+		for (int i = 0; i < config->bars->length; ++i) {
+			free_bar_config(config->bars->items[i]);
+		}
+		list_free(config->bars);
+	}
 	list_free(config->cmd_queue);
 	list_free(config->workspace_outputs);
 	list_free(config->pid_workspaces);
 	list_free(config->output_configs);
 	if (config->input_configs) {
-		for (i = 0; i < config->input_configs->length; i++) {
+		for (int i = 0; i < config->input_configs->length; i++) {
 			free_input_config(config->input_configs->items[i]);
 		}
 		list_free(config->input_configs);
 	}
 	if (config->seat_configs) {
-		for (i = 0; i < config->seat_configs->length; i++) {
+		for (int i = 0; i < config->seat_configs->length; i++) {
 			free_seat_config(config->seat_configs->items[i]);
 		}
 		list_free(config->seat_configs);
