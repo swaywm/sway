@@ -1,6 +1,5 @@
 executable(
-	'swaybar',
-	[
+	'swaybar', [
 		'bar.c',
 		'config.c',
 		'event_loop.c',
@@ -20,6 +19,7 @@ executable(
 		pangocairo,
 		rt,
 		wayland_client,
+		wayland_cursor,
 		wlroots,
 	],
 	link_with: [lib_sway_common, lib_sway_client],

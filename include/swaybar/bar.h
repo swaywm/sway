@@ -8,14 +8,24 @@ struct swaybar_config;
 struct swaybar_output;
 struct swaybar_workspace;
 
+struct swaybar_pointer {
+	struct wl_pointer *pointer;
+	struct wl_cursor_theme *cursor_theme;
+	struct wl_cursor_image *cursor_image;
+	struct wl_surface *cursor_surface;
+	struct swaybar_output *current;
+};
+
 struct swaybar {
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct wl_shm *shm;
+	struct wl_seat *seat;
 
 	struct swaybar_config *config;
 	struct swaybar_output *focused_output;
+	struct swaybar_pointer pointer;
 	struct status_line *status;
 
 	int ipc_event_socketfd;
