@@ -9,7 +9,13 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 #include <wlr/util/log.h>
+#ifdef __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#else
+#include <linux/input-event-codes.h>
+#endif
 #include "swaybar/render.h"
 #include "swaybar/config.h"
 #include "swaybar/event_loop.h"
@@ -18,6 +24,7 @@
 #include "swaybar/ipc.h"
 #include "ipc-client.h"
 #include "list.h"
+#include "log.h"
 #include "pango.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -25,12 +32,6 @@
 static void bar_init(struct swaybar *bar) {
 	bar->config = init_config();
 	wl_list_init(&bar->outputs);
-}
-
-struct swaybar_output *new_output(const char *name) {
-	struct swaybar_output *output = malloc(sizeof(struct swaybar_output));
-	output->name = strdup(name);
-	return output;
 }
 
 static void layer_surface_configure(void *data,
@@ -56,12 +57,156 @@ struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
+static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
+		uint32_t serial, struct wl_surface *surface,
+		wl_fixed_t surface_x, wl_fixed_t surface_y) {
+	struct swaybar *bar = data;
+	struct swaybar_pointer *pointer = &bar->pointer;
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		if (output->surface == surface) {
+			pointer->current = output;
+			break;
+		}
+	}
+	wl_surface_attach(pointer->cursor_surface,
+			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
+	wl_pointer_set_cursor(wl_pointer, serial, pointer->cursor_surface,
+			pointer->cursor_image->hotspot_x,
+			pointer->cursor_image->hotspot_y);
+	wl_surface_commit(pointer->cursor_surface);
+}
+
+static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
+		uint32_t serial, struct wl_surface *surface) {
+	struct swaybar *bar = data;
+	bar->pointer.current = NULL;
+}
+
+static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
+		uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+	struct swaybar *bar = data;
+	bar->pointer.x = wl_fixed_to_int(surface_x);
+	bar->pointer.y = wl_fixed_to_int(surface_y);
+}
+
+static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
+		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
+	struct swaybar *bar = data;
+	struct swaybar_pointer *pointer = &bar->pointer;
+	struct swaybar_output *output = pointer->current;
+	if (!sway_assert(output, "button with no active output")) {
+		return;
+	}
+	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
+		return;
+	}
+	struct swaybar_hotspot *hotspot;
+	wl_list_for_each(hotspot, &output->hotspots, link) {
+		if (pointer->x >= hotspot->x
+				&& pointer->y >= hotspot->y
+				&& pointer->x < hotspot->x + hotspot->width
+				&& pointer->y < hotspot->y + hotspot->height) {
+			hotspot->callback(output, pointer->x, pointer->y,
+					button, hotspot->data);
+		}
+	}
+}
+
+static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
+		uint32_t time, uint32_t axis, wl_fixed_t value) {
+	struct swaybar *bar = data;
+	struct swaybar_output *output = bar->pointer.current;
+	if (!sway_assert(output, "axis with no active output")) {
+		return;
+	}
+	double amt = wl_fixed_to_double(value);
+	if (!bar->config->wrap_scroll) {
+		int i = 0;
+		struct swaybar_workspace *ws = NULL;
+		wl_list_for_each(ws, &output->workspaces, link) {
+			if (ws->focused) {
+				break;
+			}
+			++i;
+		}
+		int len = wl_list_length(&output->workspaces);
+		if (!sway_assert(i != len, "axis with null workspace")) {
+			return;
+		}
+		if (i == 0 && amt > 0) {
+			return; // Do not wrap
+		}
+		if (i == len - 1 && amt < 0) {
+			return; // Do not wrap
+		}
+	}
+
+	const char *workspace_name =
+		amt < 0 ?  "prev_on_output" : "next_on_output";
+	ipc_send_workspace_command(bar, workspace_name);
+}
+
+static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
+	// Who cares
+}
+
+static void wl_pointer_axis_source(void *data, struct wl_pointer *wl_pointer,
+		uint32_t axis_source) {
+	// Who cares
+}
+
+static void wl_pointer_axis_stop(void *data, struct wl_pointer *wl_pointer,
+		uint32_t time, uint32_t axis) {
+	// Who cares
+}
+
+static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
+		uint32_t axis, int32_t discrete) {
+	// Who cares
+}
+
+struct wl_pointer_listener pointer_listener = {
+	.enter = wl_pointer_enter,
+	.leave = wl_pointer_leave,
+	.motion = wl_pointer_motion,
+	.button = wl_pointer_button,
+	.axis = wl_pointer_axis,
+	.frame = wl_pointer_frame,
+	.axis_source = wl_pointer_axis_source,
+	.axis_stop = wl_pointer_axis_stop,
+	.axis_discrete = wl_pointer_axis_discrete,
+};
+
+static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
+		enum wl_seat_capability caps) {
+	struct swaybar *bar = data;
+	if ((caps & WL_SEAT_CAPABILITY_POINTER)) {
+		bar->pointer.pointer = wl_seat_get_pointer(wl_seat);
+		wl_pointer_add_listener(bar->pointer.pointer, &pointer_listener, bar);
+	}
+}
+
+static void seat_handle_name(void *data, struct wl_seat *wl_seat,
+		const char *name) {
+	// Who cares
+}
+
+const struct wl_seat_listener seat_listener = {
+	.capabilities = seat_handle_capabilities,
+	.name = seat_handle_name,
+};
+
 static void handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	struct swaybar *bar = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		bar->compositor = wl_registry_bind(registry, name,
 				&wl_compositor_interface, 1);
+	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
+		bar->seat = wl_registry_bind(registry, name,
+				&wl_seat_interface, 1);
+		wl_seat_add_listener(bar->seat, &seat_listener, bar);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		bar->shm = wl_registry_bind(registry, name,
 				&wl_shm_interface, 1);
@@ -74,6 +219,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 				&wl_output_interface, 1);
 		output->index = index++;
 		wl_list_init(&output->workspaces);
+		wl_list_init(&output->hotspots);
 		wl_list_insert(&bar->outputs, &output->link);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		bar->layer_shell = wl_registry_bind(
@@ -116,6 +262,15 @@ void bar_setup(struct swaybar *bar,
 	wl_registry_add_listener(registry, &registry_listener, bar);
 	wl_display_roundtrip(bar->display);
 	assert(bar->compositor && bar->layer_shell && bar->shm);
+	struct swaybar_pointer *pointer = &bar->pointer;
+
+	assert(pointer->cursor_theme = wl_cursor_theme_load(NULL, 16, bar->shm));
+	struct wl_cursor *cursor;
+	assert(cursor = wl_cursor_theme_get_cursor(
+				pointer->cursor_theme, "left_ptr"));
+	pointer->cursor_image = cursor->images[0];
+	assert(pointer->cursor_surface =
+			wl_compositor_create_surface(bar->compositor));
 
 	// TODO: we might not necessarily be meant to do all of the outputs
 	struct swaybar_output *output;

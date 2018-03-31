@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <limits.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -8,6 +9,7 @@
 #include "pool-buffer.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -108,9 +110,14 @@ static const char *strip_workspace_number(const char *ws_name) {
 	return ws_name;
 }
 
+static void workspace_hotspot_callback(struct swaybar_output *output,
+			int x, int y, uint32_t button, void *data) {
+	ipc_send_workspace_command(output->bar, (const char *)data);
+}
+
 static uint32_t render_workspace_button(cairo_t *cairo,
-		struct swaybar_config *config, struct swaybar_workspace *ws,
-		double *x, uint32_t height) {
+		struct swaybar_output *output, struct swaybar_config *config,
+		struct swaybar_workspace *ws, double *x, uint32_t height) {
 	const char *name = ws->name;
 	if (config->strip_workspace_numbers) {
 		name = strip_workspace_number(ws->name);
@@ -156,8 +163,18 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	cairo_move_to(cairo, *x + width / 2 - text_width / 2, (int)floor(text_y));
 	pango_printf(cairo, config->font, 1, true, "%s", name);
 
+	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
+	hotspot->x = *x;
+	hotspot->y = 0;
+	hotspot->height = height;
+	hotspot->width = width;
+	hotspot->callback = workspace_hotspot_callback;
+	hotspot->destroy = free;
+	hotspot->data = strdup(name);
+	wl_list_insert(&output->hotspots, &hotspot->link);
+
 	*x += width;
-	return ideal_height;
+	return height;
 }
 
 static uint32_t render_to_cairo(cairo_t *cairo,
@@ -184,8 +201,8 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 	if (config->workspace_buttons) {
 		struct swaybar_workspace *ws;
 		wl_list_for_each_reverse(ws, &output->workspaces, link) {
-			uint32_t h = render_workspace_button(
-					cairo, config, ws, &x, output->height);
+			uint32_t h = render_workspace_button(cairo,
+					output, config, ws, &x, output->height);
 			max_height = h > max_height ? h : max_height;
 		}
 	}
@@ -203,8 +220,16 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 	return max_height > output->height ? max_height : output->height;
 }
 
-void render_frame(struct swaybar *bar,
-		struct swaybar_output *output) {
+void render_frame(struct swaybar *bar, struct swaybar_output *output) {
+	struct swaybar_hotspot *hotspot, *tmp;
+	wl_list_for_each_safe(hotspot, tmp, &output->hotspots, link) {
+		if (hotspot->destroy) {
+			hotspot->destroy(hotspot->data);
+		}
+		wl_list_remove(&hotspot->link);
+		free(hotspot);
+	}
+
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
 	cairo_t *cairo = cairo_create(recorder);
