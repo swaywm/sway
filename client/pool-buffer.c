@@ -57,7 +57,7 @@ static struct pool_buffer *create_buffer(struct wl_shm *shm,
 
 	char *name;
 	int fd = create_pool_file(size, &name);
-	assert(fd);
+	assert(fd != -1);
 	void *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
 	buf->buffer = wl_shm_pool_create_buffer(pool, 0,
