@@ -9,8 +9,10 @@
 #include "list.h"
 #include "log.h"
 #include "sway/input/cursor.h"
+#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/view.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 static void cursor_update_position(struct sway_cursor *cursor) {
 	double x = cursor->cursor->x;
@@ -20,9 +22,35 @@ static void cursor_update_position(struct sway_cursor *cursor) {
 	cursor->y = y;
 }
 
+static struct wlr_surface *layer_surface_at(struct sway_output *output,
+		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
+	struct sway_layer_surface *sway_layer;
+	wl_list_for_each_reverse(sway_layer, layer, link) {
+		struct wlr_surface *wlr_surface =
+			sway_layer->layer_surface->surface;
+		double _sx = ox - sway_layer->geo.x;
+		double _sy = oy - sway_layer->geo.y;
+		struct wlr_box box = {
+			.x = sway_layer->geo.x,
+			.y = sway_layer->geo.y,
+			.width = wlr_surface->current->width,
+			.height = wlr_surface->current->height,
+		};
+		// TODO: Test popups/subsurfaces
+		if (wlr_box_contains_point(&box, ox, oy) &&
+				pixman_region32_contains_point(
+					&wlr_surface->current->input, _sx, _sy, NULL)) {
+			*sx = _sx;
+			*sy = _sy;
+			return wlr_surface;
+		}
+	}
+	return NULL;
+}
+
 /**
- * Returns the container at the cursor's position. If the container is a view,
- * stores the surface at the cursor's position in `*surface`.
+ * Returns the container at the cursor's position. If there is a surface at that
+ * location, it is stored in **surface (it may not be a view).
  */
 static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		struct wlr_surface **surface, double *sx, double *sy) {
@@ -57,20 +85,47 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
+	double ox = cursor->x, oy = cursor->y;
+	wlr_output_layout_output_coords(output_layout, wlr_output, &ox, &oy);
 
 	// find the focused workspace on the output for this seat
-	struct sway_container *workspace_cont =
+	struct sway_container *ws =
 		sway_seat_get_focus_inactive(cursor->seat, output->swayc);
-	if (workspace_cont != NULL && workspace_cont->type != C_WORKSPACE) {
-		workspace_cont = container_parent(workspace_cont, C_WORKSPACE);
+	if (ws && ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
 	}
-	if (workspace_cont == NULL) {
+	if (!ws) {
 		return output->swayc;
 	}
 
-	struct sway_container *view_cont = container_at(workspace_cont,
-		cursor->x, cursor->y, surface, sx, sy);
-	return view_cont != NULL ? view_cont : workspace_cont;
+	if ((*surface = layer_surface_at(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
+				ox, oy, sx, sy))) {
+		return ws;
+	}
+	if ((*surface = layer_surface_at(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
+				ox, oy, sx, sy))) {
+		return ws;
+	}
+
+	struct sway_container *c;
+	if ((c = container_at(ws, cursor->x, cursor->y, surface, sx, sy))) {
+		return c;
+	}
+
+	if ((*surface = layer_surface_at(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
+				ox, oy, sx, sy))) {
+		return ws;
+	}
+	if ((*surface = layer_surface_at(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
+				ox, oy, sx, sy))) {
+		return ws;
+	}
+
+	return NULL;
 }
 
 static void cursor_send_pointer_motion(struct sway_cursor *cursor,
@@ -78,8 +133,7 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_container *cont =
-		container_at_cursor(cursor, &surface, &sx, &sy);
+	container_at_cursor(cursor, &surface, &sx, &sy);
 
 	// reset cursor if switching between clients
 	struct wl_client *client = NULL;
@@ -93,7 +147,7 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	}
 
 	// send pointer enter/leave
-	if (cont != NULL && surface != NULL) {
+	if (surface != NULL) {
 		wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 		wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 	} else {
