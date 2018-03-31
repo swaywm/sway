@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/tree/container.h"
 #include "sway/input/seat.h"
@@ -291,7 +292,7 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-void _sway_seat_set_focus(struct sway_seat *seat,
+void sway_seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
 	struct sway_container *last_focus = sway_seat_get_focus(seat);
 
@@ -351,12 +352,14 @@ void _sway_seat_set_focus(struct sway_seat *seat,
 		}
 		if (new_output && last_output && new_output != last_output
 				&& config->mouse_warping && warp) {
-			wlr_log(L_DEBUG, "warpin the mouse baby");
 			struct wlr_output *output = new_output->sway_output->wlr_output;
-			// TODO: Change container coords to layout coords
 			double x = container->x + output->lx + container->width / 2.0;
 			double y = container->y + output->ly + container->height / 2.0;
-			wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
+			if (!wlr_output_layout_contains_point(
+					root_container.sway_root->output_layout,
+					output, seat->cursor->cursor->x, seat->cursor->cursor->y)) {
+				wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
+			}
 		}
 	}
 
@@ -371,7 +374,7 @@ void _sway_seat_set_focus(struct sway_seat *seat,
 
 void sway_seat_set_focus(struct sway_seat *seat,
 		struct sway_container *container) {
-	_sway_seat_set_focus(seat, container, true);
+	sway_seat_set_focus_warp(seat, container, true);
 }
 
 struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat, struct sway_container *container) {
