@@ -56,6 +56,9 @@ void sway_seat_configure_xcursor(struct sway_seat *seat);
 
 void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *container);
 
+void sway_seat_set_focus_warp(struct sway_seat *seat,
+		struct sway_container *container, bool warp);
+
 struct sway_container *sway_seat_get_focus(struct sway_seat *seat);
 
 /**

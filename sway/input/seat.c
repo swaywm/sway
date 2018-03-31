@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 700
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/tree/container.h"
 #include "sway/input/seat.h"
@@ -291,8 +292,8 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-void sway_seat_set_focus(struct sway_seat *seat,
-		struct sway_container *container) {
+void sway_seat_set_focus_warp(struct sway_seat *seat,
+		struct sway_container *container, bool warp) {
 	struct sway_container *last_focus = sway_seat_get_focus(seat);
 
 	if (container && last_focus == container) {
@@ -333,13 +334,31 @@ void sway_seat_set_focus(struct sway_seat *seat,
 	if (last_focus) {
 		struct sway_container *last_ws = last_focus;
 		if (last_ws && last_ws->type != C_WORKSPACE) {
-			last_ws = container_parent(last_focus, C_WORKSPACE);
+			last_ws = container_parent(last_ws, C_WORKSPACE);
 		}
 		if (last_ws) {
-			wlr_log(L_DEBUG, "sending workspace event");
 			ipc_event_workspace(last_ws, container, "focus");
 			if (last_ws->children->length == 0) {
 				container_workspace_destroy(last_ws);
+			}
+		}
+		struct sway_container *last_output = last_focus;
+		if (last_output && last_output->type != C_OUTPUT) {
+			last_output = container_parent(last_output, C_OUTPUT);
+		}
+		struct sway_container *new_output = container;
+		if (new_output && new_output->type != C_OUTPUT) {
+			new_output = container_parent(new_output, C_OUTPUT);
+		}
+		if (new_output && last_output && new_output != last_output
+				&& config->mouse_warping && warp) {
+			struct wlr_output *output = new_output->sway_output->wlr_output;
+			double x = container->x + output->lx + container->width / 2.0;
+			double y = container->y + output->ly + container->height / 2.0;
+			if (!wlr_output_layout_contains_point(
+					root_container.sway_root->output_layout,
+					output, seat->cursor->cursor->x, seat->cursor->cursor->y)) {
+				wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
 			}
 		}
 	}
@@ -351,6 +370,11 @@ void sway_seat_set_focus(struct sway_seat *seat,
 	}
 
 	seat->has_focus = (container != NULL);
+}
+
+void sway_seat_set_focus(struct sway_seat *seat,
+		struct sway_container *container) {
+	sway_seat_set_focus_warp(seat, container, true);
 }
 
 struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat, struct sway_container *container) {
