@@ -38,7 +38,7 @@ struct i3bar_block {
 	struct wl_list link;
 	char *full_text, *short_text, *align;
 	bool urgent;
-	uint32_t color;
+	uint32_t *color;
 	int min_width;
 	char *name, *instance;
 	bool separator;
@@ -68,8 +68,8 @@ struct status_line {
 
 struct status_line *status_line_init(char *cmd);
 void status_line_free(struct status_line *status);
-bool handle_status_readable(struct status_line *status);
-int i3bar_readable(struct status_line *status);
+bool status_handle_readable(struct status_line *status);
+bool i3bar_handle_readable(struct status_line *status);
 void status_error(struct status_line *status, const char *text);
 
 #endif

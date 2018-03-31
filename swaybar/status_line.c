@@ -17,13 +17,13 @@ void status_error(struct status_line *status, const char *text) {
 	status->text = text;
 }
 
-bool handle_status_readable(struct status_line *status) {
+bool status_handle_readable(struct status_line *status) {
 	char *line;
 	switch (status->protocol) {
 	case PROTOCOL_ERROR:
 		return false;
 	case PROTOCOL_I3BAR:
-		if (i3bar_readable(status) > 0) {
+		if (i3bar_handle_readable(status) > 0) {
 			return true;
 		}
 		break;
@@ -66,6 +66,7 @@ bool handle_status_readable(struct status_line *status) {
 
 			status->protocol = PROTOCOL_I3BAR;
 			free(status->text_state.buffer);
+			wl_list_init(&status->blocks);
 			status->i3bar_state.buffer_size = 4096;
 			status->i3bar_state.buffer =
 				malloc(status->i3bar_state.buffer_size);
