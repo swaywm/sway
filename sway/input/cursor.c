@@ -175,7 +175,13 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 		double sx, sy;
 		struct sway_container *cont =
 			container_at_cursor(cursor, &surface, &sx, &sy);
-		sway_seat_set_focus(cursor->seat, cont);
+		// TODO: Actually test if the surface accepts keyboard input, rather
+		// than assuming it does not
+		// Layer surfaces with keyboard_interactive=true will change how this
+		// works, for example.
+		if (!surface || cont->type == C_VIEW) {
+			sway_seat_set_focus(cursor->seat, cont);
+		}
 	}
 
 	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat, event->time_msec,
