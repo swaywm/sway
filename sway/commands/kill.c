@@ -14,6 +14,7 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 	case C_ROOT:
 	case C_OUTPUT:
 	case C_WORKSPACE:
+	case C_TYPES:
 		return cmd_results_new(CMD_INVALID, NULL,
 				"Can only kill views and containers with this command");
 		break;
@@ -23,8 +24,6 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 		break;
 	case C_VIEW:
 		view_close(con->sway_view);
-		break;
-	default:
 		break;
 	}
 
