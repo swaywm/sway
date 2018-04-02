@@ -323,7 +323,7 @@ void ipc_initialize(struct swaybar *bar, const char *bar_id) {
 			IPC_SUBSCRIBE, subscribe, &len));
 }
 
-bool handle_ipc_event(struct swaybar *bar) {
+bool handle_ipc_readable(struct swaybar *bar) {
 	struct ipc_response *resp = ipc_recv_response(bar->ipc_event_socketfd);
 	if (!resp) {
 		return false;

@@ -97,8 +97,8 @@ static void keyboard_execute_command(struct sway_keyboard *keyboard,
 	config->handler_context.seat = keyboard->seat_device->sway_seat;
 	struct cmd_results *results = execute_command(binding->command, NULL);
 	if (results->status != CMD_SUCCESS) {
-		wlr_log(L_DEBUG, "could not run command for binding: %s",
-			binding->command);
+		wlr_log(L_DEBUG, "could not run command for binding: %s (%s)",
+			binding->command, results->error);
 	}
 	free_cmd_results(results);
 }
@@ -428,7 +428,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct xkb_rule_names rules;
 	memset(&rules, 0, sizeof(rules));
 	struct input_config *input_config =
-		keyboard->seat_device->input_device->config;
+		input_device_get_config(keyboard->seat_device->input_device);
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 

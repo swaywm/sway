@@ -8,7 +8,6 @@ struct sway_seat_device {
 	struct sway_seat *sway_seat;
 	struct sway_input_device *input_device;
 	struct sway_keyboard *keyboard;
-	struct seat_attachment_config *attachment_config;
 	struct wl_list link; // sway_seat::devices
 };
 
@@ -23,7 +22,6 @@ struct sway_seat_container {
 
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
-	struct seat_config *config;
 	struct sway_cursor *cursor;
 	struct sway_input_manager *input;
 
@@ -38,28 +36,28 @@ struct sway_seat {
 	struct wl_list link; // input_manager::seats
 };
 
-struct sway_seat *sway_seat_create(struct sway_input_manager *input,
+struct sway_seat *seat_create(struct sway_input_manager *input,
 		const char *seat_name);
 
-void sway_seat_destroy(struct sway_seat *seat);
+void seat_destroy(struct sway_seat *seat);
 
-void sway_seat_add_device(struct sway_seat *seat,
+void seat_add_device(struct sway_seat *seat,
 		struct sway_input_device *device);
 
-void sway_seat_configure_device(struct sway_seat *seat,
+void seat_configure_device(struct sway_seat *seat,
 		struct sway_input_device *device);
 
-void sway_seat_remove_device(struct sway_seat *seat,
+void seat_remove_device(struct sway_seat *seat,
 		struct sway_input_device *device);
 
-void sway_seat_configure_xcursor(struct sway_seat *seat);
+void seat_configure_xcursor(struct sway_seat *seat);
 
-void sway_seat_set_focus(struct sway_seat *seat, struct sway_container *container);
+void seat_set_focus(struct sway_seat *seat, struct sway_container *container);
 
-void sway_seat_set_focus_warp(struct sway_seat *seat,
+void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp);
 
-struct sway_container *sway_seat_get_focus(struct sway_seat *seat);
+struct sway_container *seat_get_focus(struct sway_seat *seat);
 
 /**
  * Return the last container to be focused for the seat (or the most recently
@@ -70,12 +68,14 @@ struct sway_container *sway_seat_get_focus(struct sway_seat *seat);
  * is destroyed, or focus moves to a container with children and we need to
  * descend into the next leaf in focus order.
  */
-struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat,
+struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *container);
 
-struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
+struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		enum sway_container_type type);
 
-void sway_seat_set_config(struct sway_seat *seat, struct seat_config *seat_config);
+void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
+
+struct seat_config *seat_get_config(struct sway_seat *seat);
 
 #endif

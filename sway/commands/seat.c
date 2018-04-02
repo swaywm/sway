@@ -14,7 +14,8 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 		free_seat_config(config->handler_context.seat_config);
 		config->handler_context.seat_config = new_seat_config(argv[0]);
 		if (!config->handler_context.seat_config) {
-			return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+			return cmd_results_new(CMD_FAILURE, NULL,
+					"Couldn't allocate config");
 		}
 		wlr_log(L_DEBUG, "entering seat block: %s", argv[0]);
 		return cmd_results_new(CMD_BLOCK_SEAT, NULL, NULL);
@@ -28,7 +29,8 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 	if (!has_context) {
 		config->handler_context.seat_config = new_seat_config(argv[0]);
 		if (!config->handler_context.seat_config) {
-			return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
+			return cmd_results_new(CMD_FAILURE, NULL,
+					"Couldn't allocate config");
 		}
 	}
 
@@ -41,7 +43,10 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 	} else if (strcasecmp("fallback", argv[1]) == 0) {
 		res = seat_cmd_fallback(argc_new, argv_new);
 	} else {
-		res = cmd_results_new(CMD_INVALID, "seat <name>", "Unknown command %s", argv[1]);
+		res =
+			cmd_results_new(CMD_INVALID,
+				"seat <name>", "Unknown command %s",
+				argv[1]);
 	}
 
 	if (!has_context) {

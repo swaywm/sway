@@ -33,6 +33,23 @@ static list_t *get_bfs_queue() {
 	return bfs_queue;
 }
 
+const char *container_type_to_str(enum sway_container_type type) {
+	switch (type) {
+	case C_ROOT:
+		return "C_ROOT";
+	case C_OUTPUT:
+		return "C_OUTPUT";
+	case C_WORKSPACE:
+		return "C_WORKSPACE";
+	case C_CONTAINER:
+		return "C_CONTAINER";
+	case C_VIEW:
+		return "C_VIEW";
+	default:
+		return "C_UNKNOWN";
+	}
+}
+
 static void notify_new_container(struct sway_container *container) {
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 	ipc_event_window(container, "new");
@@ -54,6 +71,7 @@ static struct sway_container *container_create(enum sway_container_type type) {
 	}
 
 	wl_signal_init(&c->events.destroy);
+	wl_signal_init(&c->events.reparent);
 
 	return c;
 }
@@ -144,7 +162,7 @@ struct sway_container *container_output_create(
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		if (!seat->has_focus) {
-			sway_seat_set_focus(seat, ws);
+			seat_set_focus(seat, ws);
 		}
 	}
 

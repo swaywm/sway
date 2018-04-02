@@ -139,7 +139,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat,
+	struct sway_container *focus = seat_get_focus_inactive(seat,
 		&root_container);
 	struct sway_container *cont = container_view_create(focus, view);
 
@@ -147,7 +147,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
+	input_manager_set_focus(input_manager, cont);
 
 	view_damage_whole(view);
 	view_update_outputs(view, NULL);

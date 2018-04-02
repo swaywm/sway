@@ -11,9 +11,6 @@ enum movement_direction {
 	MOVE_DOWN,
 	MOVE_PARENT,
 	MOVE_CHILD,
-	MOVE_NEXT,
-	MOVE_PREV,
-	MOVE_FIRST
 };
 
 struct sway_container;
@@ -32,7 +29,8 @@ struct sway_root {
 
 void layout_init(void);
 
-void container_add_child(struct sway_container *parent, struct sway_container *child);
+void container_add_child(struct sway_container *parent,
+		struct sway_container *child);
 
 struct sway_container *container_add_sibling(struct sway_container *parent,
 		struct sway_container *child);
@@ -44,7 +42,11 @@ struct sway_container *container_reap_empty(struct sway_container *container);
 void container_move_to(struct sway_container* container,
 		struct sway_container* destination);
 
-enum sway_container_layout container_get_default_layout(struct sway_container *output);
+void container_move(struct sway_container *container,
+		enum movement_direction dir, int move_amt);
+
+enum sway_container_layout container_get_default_layout(
+		struct sway_container *output);
 
 void container_sort_workspaces(struct sway_container *output);
 

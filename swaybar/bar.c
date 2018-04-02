@@ -308,14 +308,14 @@ static void display_in(int fd, short mask, void *_bar) {
 
 static void ipc_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
-	if (handle_ipc_event(bar)) {
+	if (handle_ipc_readable(bar)) {
 		render_all_frames(bar);
 	}
 }
 
 static void status_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
-	if (handle_status_readable(bar->status)) {
+	if (status_handle_readable(bar->status)) {
 		render_all_frames(bar);
 	}
 }

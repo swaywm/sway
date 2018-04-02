@@ -377,6 +377,7 @@ void free_config(struct sway_config *config);
 void config_clear_handler_context(struct sway_config *config);
 
 void free_sway_variable(struct sway_variable *var);
+
 /**
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
@@ -385,44 +386,68 @@ char *do_var_replacement(char *str);
 struct cmd_results *check_security_config();
 
 int input_identifier_cmp(const void *item, const void *data);
+
 struct input_config *new_input_config(const char* identifier);
+
 void merge_input_config(struct input_config *dst, struct input_config *src);
+
 struct input_config *copy_input_config(struct input_config *ic);
+
 void free_input_config(struct input_config *ic);
+
 void apply_input_config(struct input_config *input);
 
 int seat_name_cmp(const void *item, const void *data);
+
 struct seat_config *new_seat_config(const char* name);
+
 void merge_seat_config(struct seat_config *dst, struct seat_config *src);
+
 struct seat_config *copy_seat_config(struct seat_config *seat);
+
 void free_seat_config(struct seat_config *ic);
+
 struct seat_attachment_config *seat_attachment_config_new();
+
 struct seat_attachment_config *seat_config_get_attachment(
 		struct seat_config *seat_config, char *identifier);
+
 void apply_seat_config(struct seat_config *seat);
 
 int output_name_cmp(const void *item, const void *data);
+
 void output_get_identifier(char *identifier, size_t len,
 	struct sway_output *output);
+
 struct output_config *new_output_config(const char *name);
+
 void merge_output_config(struct output_config *dst, struct output_config *src);
+
 void apply_output_config(struct output_config *oc,
 		struct sway_container *output);
+
 void free_output_config(struct output_config *oc);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
+
 int sway_binding_cmp_qsort(const void *a, const void *b);
+
 int sway_binding_cmp_keys(const void *a, const void *b);
+
 void free_sway_binding(struct sway_binding *sb);
+
 struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
-/* Bar stuff */
 void load_swaybars();
+
 void invoke_swaybar(struct bar_config *bar);
+
 void terminate_swaybg(pid_t pid);
+
 struct bar_config *default_bar_config(void);
+
 void free_bar_config(struct bar_config *bar);
 
 /* Global config singleton. */

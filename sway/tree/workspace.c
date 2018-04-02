@@ -158,7 +158,7 @@ static bool _workspace_by_name(struct sway_container *view, void *data) {
 struct sway_container *workspace_by_name(const char *name) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *current_workspace = NULL, *current_output = NULL;
-	struct sway_container *focus = sway_seat_get_focus(seat);
+	struct sway_container *focus = seat_get_focus(seat);
 	if (focus) {
 		current_workspace = container_parent(focus, C_WORKSPACE);
 		current_output = container_parent(focus, C_OUTPUT);
@@ -200,7 +200,7 @@ struct sway_container *workspace_create(const char *name) {
 	// Otherwise create a new one
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
-		sway_seat_get_focus_inactive(seat, &root_container);
+		seat_get_focus_inactive(seat, &root_container);
 	parent = focus;
 	parent = container_parent(parent, C_OUTPUT);
 	struct sway_container *new_ws = container_workspace_create(parent, name);
@@ -260,7 +260,7 @@ struct sway_container *workspace_output_prev_next_impl(
 	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, output);
+	struct sway_container *focus = seat_get_focus_inactive(seat, output);
 	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
 			focus :
 			container_parent(focus, C_WORKSPACE));
@@ -345,13 +345,13 @@ bool workspace_switch(struct sway_container *workspace) {
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
-		sway_seat_get_focus_inactive(seat, &root_container);
+		seat_get_focus_inactive(seat, &root_container);
 	if (!seat || !focus) {
 		return false;
 	}
 	struct sway_container *active_ws = focus;
 	if (active_ws->type != C_WORKSPACE) {
-		container_parent(focus, C_WORKSPACE);
+		active_ws = container_parent(focus, C_WORKSPACE);
 	}
 
 	if (config->auto_back_and_forth
@@ -376,11 +376,11 @@ bool workspace_switch(struct sway_container *workspace) {
 
 	wlr_log(L_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
-	struct sway_container *next = sway_seat_get_focus_inactive(seat, workspace);
+	struct sway_container *next = seat_get_focus_inactive(seat, workspace);
 	if (next == NULL) {
 		next = workspace;
 	}
-	sway_seat_set_focus(seat, next);
+	seat_set_focus(seat, next);
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
 	arrange_windows(output, -1, -1);
 	return true;
@@ -389,7 +389,7 @@ bool workspace_switch(struct sway_container *workspace) {
 bool workspace_is_visible(struct sway_container *ws) {
 	struct sway_container *output = container_parent(ws, C_OUTPUT);
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, output);
+	struct sway_container *focus = seat_get_focus_inactive(seat, output);
 	if (focus->type != C_WORKSPACE) {
 		focus = container_parent(focus, C_WORKSPACE);
 	}

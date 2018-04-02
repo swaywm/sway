@@ -245,10 +245,13 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
-		sway_seat_get_focus_inactive(seat, output->swayc);
-	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
-			focus :
-			container_parent(focus, C_WORKSPACE));
+		seat_get_focus_inactive(seat, output->swayc);
+	if (!focus) {
+		// We've never been to this output before
+		focus = output->swayc->children->items[0];
+	}
+	struct sway_container *workspace = focus->type == C_WORKSPACE ?
+			focus : container_parent(focus, C_WORKSPACE);
 
 	struct render_data rdata = {
 		.output = output,
@@ -393,7 +396,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wl_list_init(&output->layers[i]);
 	}
 
-	sway_input_manager_configure_xcursor(input_manager);
+	input_manager_configure_xcursor(input_manager);
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;

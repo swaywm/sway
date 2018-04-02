@@ -85,7 +85,7 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 
 	// find the focused workspace on the output for this seat
 	struct sway_container *ws =
-		sway_seat_get_focus_inactive(cursor->seat, output->swayc);
+		seat_get_focus_inactive(cursor->seat, output->swayc);
 	if (ws && ws->type != C_WORKSPACE) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
@@ -130,7 +130,7 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	double sx, sy;
 	struct sway_container *c = container_at_cursor(cursor, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse) {
-		sway_seat_set_focus_warp(cursor->seat, c, false);
+		seat_set_focus_warp(cursor->seat, c, false);
 	}
 
 	// reset cursor if switching between clients
@@ -192,15 +192,15 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 		if (new_ws && new_ws->type != C_WORKSPACE) {
 			new_ws = container_parent(new_ws, C_WORKSPACE);
 		}
-		struct sway_container *old_ws = sway_seat_get_focus(cursor->seat);
+		struct sway_container *old_ws = seat_get_focus(cursor->seat);
 		if (old_ws && old_ws->type != C_WORKSPACE) {
 			old_ws = container_parent(old_ws, C_WORKSPACE);
 		}
 		if (new_ws != old_ws) {
-			sway_seat_set_focus(cursor->seat, cont);
+			seat_set_focus(cursor->seat, cont);
 		}
 	} else {
-		sway_seat_set_focus(cursor->seat, cont);
+		seat_set_focus(cursor->seat, cont);
 	}
 
 	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat, event->time_msec,
