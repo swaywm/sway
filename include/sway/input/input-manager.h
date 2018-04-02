@@ -14,7 +14,6 @@ extern struct sway_input_manager *input_manager;
 struct sway_input_device {
 	char *identifier;
 	struct wlr_input_device *wlr_device;
-	struct input_config *config;
 	struct wl_list link;
 	struct wl_listener device_destroy;
 };
@@ -49,7 +48,12 @@ struct sway_seat *input_manager_get_default_seat(
 struct sway_seat *input_manager_get_seat(struct sway_input_manager *input,
 		const char *seat_name);
 
-/** Gets the last seat the user interacted with */
+/**
+ * Gets the last seat the user interacted with
+ */
 struct sway_seat *input_manager_current_seat(struct sway_input_manager *input);
+
+struct input_config *input_device_get_config(struct sway_input_device *device);
+
 
 #endif

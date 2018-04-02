@@ -95,7 +95,7 @@ static bool input_has_seat_configuration(struct sway_input_manager *input) {
 static void input_manager_libinput_config_pointer(
 		struct sway_input_device *input_device) {
 	struct wlr_input_device *wlr_device = input_device->wlr_device;
-	struct input_config *ic = input_device->config;
+	struct input_config *ic = input_device_get_config(input_device);
 	struct libinput_device *libinput_device;
 
 	if (!ic || !wlr_input_device_is_libinput(wlr_device)) {
@@ -196,7 +196,6 @@ static void handle_device_destroy(struct wl_listener *listener, void *data) {
 
 	wl_list_remove(&input_device->link);
 	wl_list_remove(&input_device->device_destroy.link);
-	free_input_config(input_device->config);
 	free(input_device->identifier);
 	free(input_device);
 }
@@ -218,16 +217,6 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	wlr_log(L_DEBUG, "adding device: '%s'",
 		input_device->identifier);
-
-	// find config
-	for (int i = 0; i < config->input_configs->length; ++i) {
-		struct input_config *input_config = config->input_configs->items[i];
-		if (strcmp(input_config->identifier, input_device->identifier) == 0) {
-			free_input_config(input_device->config);
-			input_device->config = copy_input_config(input_config);
-			break;
-		}
-	}
 
 	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 		input_manager_libinput_config_pointer(input_device);
@@ -320,9 +309,6 @@ void input_manager_apply_input_config(struct sway_input_manager *input,
 	struct sway_input_device *input_device = NULL;
 	wl_list_for_each(input_device, &input->devices, link) {
 		if (strcmp(input_device->identifier, input_config->identifier) == 0) {
-			free_input_config(input_device->config);
-			input_device->config = copy_input_config(input_config);
-
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 				input_manager_libinput_config_pointer(input_device);
 			}
@@ -409,4 +395,16 @@ struct sway_seat *input_manager_get_default_seat(
 		}
 	}
 	return seat;
+}
+
+struct input_config *input_device_get_config(struct sway_input_device *device) {
+	struct input_config *input_config = NULL;
+	for (int i = 0; i < config->input_configs->length; ++i) {
+		input_config = config->input_configs->items[i];
+		if (strcmp(input_config->identifier, device->identifier) == 0) {
+			return input_config;
+		}
+	}
+
+	return NULL;
 }
