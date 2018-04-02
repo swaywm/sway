@@ -182,4 +182,11 @@ void container_create_notify(struct sway_container *container);
 
 void container_damage_whole(struct sway_container *container);
 
+bool container_reap_empty(struct sway_container *con);
+
+struct sway_container *container_reap_empty_recursive(
+		struct sway_container *con);
+
+struct sway_container *container_flatten(struct sway_container *container);
+
 #endif

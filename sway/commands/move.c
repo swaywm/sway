@@ -82,6 +82,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 				config->handler_context.seat, ws);
 		container_move_to(current, focus);
 		seat_set_focus(config->handler_context.seat, old_parent);
+		container_reap_empty(old_parent);
+		container_reap_empty(focus->parent);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcasecmp(argv[1], "to") == 0
 			&& strcasecmp(argv[2], "output") == 0) {
@@ -109,6 +111,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		struct sway_container *old_parent = current->parent;
 		container_move_to(current, focus);
 		seat_set_focus(config->handler_context.seat, old_parent);
+		container_reap_empty(old_parent);
+		container_reap_empty(focus->parent);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	return cmd_results_new(CMD_INVALID, "move", expected_syntax);

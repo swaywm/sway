@@ -208,7 +208,7 @@ static void container_root_finish(struct sway_container *con) {
 	wlr_log(L_ERROR, "TODO: destroy the root container");
 }
 
-static bool container_reap_empty(struct sway_container *con) {
+bool container_reap_empty(struct sway_container *con) {
 	switch (con->type) {
 	case C_ROOT:
 	case C_OUTPUT:
@@ -225,14 +225,6 @@ static bool container_reap_empty(struct sway_container *con) {
 		if (con->children->length == 0) {
 			_container_destroy(con);
 			return true;
-		} else if (con->children->length == 1) {
-			struct sway_container *child = con->children->items[0];
-			if (child->type == C_CONTAINER) {
-				container_remove_child(child);
-				container_replace_child(con, child);
-				_container_destroy(con);
-				return true;
-			}
 		}
 	case C_VIEW:
 		break;
@@ -243,6 +235,29 @@ static bool container_reap_empty(struct sway_container *con) {
 	}
 
 	return false;
+}
+
+struct sway_container *container_reap_empty_recursive(
+		struct sway_container *con) {
+	while (con) {
+		struct sway_container *next = con->parent;
+		if (!container_reap_empty(con)) {
+			break;
+		}
+		con = next;
+	}
+	return con;
+}
+
+struct sway_container *container_flatten(struct sway_container *container) {
+	while (container->type == C_CONTAINER && container->children->length == 1) {
+		struct sway_container *child = container->children->items[0];
+		struct sway_container *parent = container->parent;
+		container_replace_child(container, child);
+		container_destroy(container);
+		container = parent;
+	}
+	return container;
 }
 
 struct sway_container *container_destroy(struct sway_container *con) {
@@ -283,18 +298,7 @@ struct sway_container *container_destroy(struct sway_container *con) {
 			break;
 	}
 
-	struct sway_container *tmp = parent;
-	while (parent) {
-		tmp = parent->parent;
-
-		if (!container_reap_empty(parent)) {
-			break;
-		}
-
-		parent = tmp;
-	}
-
-	return tmp;
+	return container_reap_empty_recursive(parent);
 }
 
 static void container_close_func(struct sway_container *container, void *data) {
