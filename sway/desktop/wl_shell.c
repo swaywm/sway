@@ -30,28 +30,18 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void set_size(struct sway_view *view, int width, int height) {
+static void configure(struct sway_view *view, double ox, double oy, int width,
+		int height) {
 	if (!assert_wl_shell(view)) {
 		return;
 	}
+	view_update_position(view, ox, oy);
 	view->sway_wl_shell_surface->pending_width = width;
 	view->sway_wl_shell_surface->pending_height = height;
 	wlr_wl_shell_surface_configure(view->wlr_wl_shell_surface, 0, width, height);
 }
 
-static void set_position(struct sway_view *view, double ox, double oy) {
-	if (!assert_wl_shell(view)) {
-		return;
-	}
-	view->swayc->x = ox;
-	view->swayc->y = oy;
-}
-
-static void set_activated(struct sway_view *view, bool activated) {
-	// no way to activate wl_shell
-}
-
-static void close(struct sway_view *view) {
+static void _close(struct sway_view *view) {
 	if (!assert_wl_shell(view)) {
 		return;
 	}
@@ -59,14 +49,20 @@ static void close(struct sway_view *view) {
 	wl_client_destroy(view->wlr_wl_shell_surface->client);
 }
 
+static const struct sway_view_impl view_impl = {
+	.get_prop = get_prop,
+	.configure = configure,
+	.close = _close,
+};
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_surface *sway_surface =
 		wl_container_of(listener, sway_surface, commit);
 	struct sway_view *view = sway_surface->view;
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
-	view->width = sway_surface->pending_width;
-	view->height = sway_surface->pending_height;
+	view_update_size(view, sway_surface->pending_width,
+		sway_surface->pending_height);
 	view_damage_from(view);
 }
 
@@ -75,15 +71,13 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_surface, destroy);
 	wl_list_remove(&sway_surface->commit.link);
 	wl_list_remove(&sway_surface->destroy.link);
-	struct sway_container *parent = container_view_destroy(sway_surface->view->swayc);
-	free(sway_surface->view);
+	view_destroy(sway_surface->view);
 	free(sway_surface);
-	arrange_windows(parent, -1, -1);
 }
 
 void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
-	struct sway_server *server = wl_container_of(
-			listener, server, wl_shell_surface);
+	struct sway_server *server = wl_container_of(listener, server,
+		wl_shell_surface);
 	struct wlr_wl_shell_surface *shell_surface = data;
 
 	if (shell_surface->state == WLR_WL_SHELL_SURFACE_STATE_POPUP) {
@@ -103,20 +97,13 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *sway_view = calloc(1, sizeof(struct sway_view));
-	if (!sway_assert(sway_view, "Failed to allocate view!")) {
+	struct sway_view *view = view_create(SWAY_WL_SHELL_VIEW, &view_impl);
+	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	sway_view->type = SWAY_WL_SHELL_VIEW;
-	sway_view->iface.get_prop = get_prop;
-	sway_view->iface.set_size = set_size;
-	sway_view->iface.set_position = set_position;
-	sway_view->iface.set_activated = set_activated;
-	sway_view->iface.close = close;
-	sway_view->wlr_wl_shell_surface = shell_surface;
-	sway_view->sway_wl_shell_surface = sway_surface;
-	sway_view->surface = shell_surface->surface;
-	sway_surface->view = sway_view;
+	view->wlr_wl_shell_surface = shell_surface;
+	view->sway_wl_shell_surface = sway_surface;
+	sway_surface->view = view;
 
 	// TODO:
 	// - Wire up listeners
@@ -132,11 +119,5 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	sway_surface->destroy.notify = handle_destroy;
 	wl_signal_add(&shell_surface->events.destroy, &sway_surface->destroy);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = container_view_create(focus, sway_view);
-	sway_view->swayc = cont;
-
-	arrange_windows(cont->parent, -1, -1);
-	input_manager_set_focus(input_manager, cont);
+	view_map(view, shell_surface->surface);
 }

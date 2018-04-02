@@ -57,7 +57,7 @@ void layout_init(void) {
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
 	root_container.sway_root->output_layout = wlr_output_layout_create();
-	wl_list_init(&root_container.sway_root->unmanaged_views);
+	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
 	wl_signal_init(&root_container.sway_root->events.new_container);
 
 	root_container.sway_root->output_layout_change.notify =
@@ -287,7 +287,7 @@ void arrange_windows(struct sway_container *container,
 		{
 			container->width = width;
 			container->height = height;
-			view_set_size(container->sway_view,
+			view_configure(container->sway_view, container->x, container->y,
 				container->width, container->height);
 			wlr_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f",
 					container->width, container->height,
@@ -348,7 +348,8 @@ static void apply_horiz_layout(struct sway_container *container,
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, width, scale);
-			view_set_position(child->sway_view, child_x, y);
+			view_configure(child->sway_view, child_x, y, child->width,
+				child->height);
 
 			if (i == end - 1) {
 				double remaining_width = x + width - child_x;
@@ -399,7 +400,8 @@ void apply_vert_layout(struct sway_container *container,
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, height, scale);
-			view_set_position(child->sway_view, x, child_y);
+			view_configure(child->sway_view, x, child_y, child->width,
+				child->height);
 
 			if (i == end - 1) {
 				double remaining_height = y + height - child_y;

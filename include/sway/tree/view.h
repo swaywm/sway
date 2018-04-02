@@ -4,6 +4,8 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/xwayland.h>
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 
 struct sway_container;
 struct sway_view;
@@ -37,6 +39,13 @@ struct sway_xwayland_surface {
 	int pending_width, pending_height;
 };
 
+struct sway_xwayland_unmanaged {
+	struct wlr_xwayland_surface *wlr_xwayland_surface;
+	struct wl_list link;
+
+	struct wl_listener destroy;
+};
+
 struct sway_wl_shell_surface {
 	struct sway_view *view;
 
@@ -64,10 +73,21 @@ enum sway_view_prop {
 	VIEW_PROP_INSTANCE,
 };
 
+struct sway_view_impl {
+	const char *(*get_prop)(struct sway_view *view,
+			enum sway_view_prop prop);
+	void (*configure)(struct sway_view *view, double ox, double oy, int width,
+		int height);
+	void (*set_activated)(struct sway_view *view, bool activated);
+	void (*close)(struct sway_view *view);
+};
+
 struct sway_view {
 	enum sway_view_type type;
-	struct sway_container *swayc;
-	struct wlr_surface *surface;
+	const struct sway_view_impl *impl;
+
+	struct sway_container *swayc; // NULL for unmanaged views
+	struct wlr_surface *surface; // NULL for unmapped views
 	int width, height;
 
 	union {
@@ -82,20 +102,14 @@ struct sway_view {
 		struct sway_wl_shell_surface *sway_wl_shell_surface;
 	};
 
-	struct {
-		const char *(*get_prop)(struct sway_view *view,
-				enum sway_view_prop prop);
-		void (*set_size)(struct sway_view *view,
-				int width, int height);
-		void (*set_position)(struct sway_view *view,
-				double ox, double oy);
-		void (*set_activated)(struct sway_view *view, bool activated);
-		void (*close)(struct sway_view *view);
-	} iface;
-
 	// only used for unmanaged views (shell specific)
-	struct wl_list unmanaged_view_link; // sway_root::unmanaged views
+	struct wl_list unmanaged_view_link; // sway_root::unmanaged_views
 };
+
+struct sway_view *view_create(enum sway_view_type type,
+	const struct sway_view_impl *impl);
+
+void view_destroy(struct sway_view *view);
 
 const char *view_get_title(struct sway_view *view);
 
@@ -105,18 +119,25 @@ const char *view_get_class(struct sway_view *view);
 
 const char *view_get_instance(struct sway_view *view);
 
-void view_set_size(struct sway_view *view, int width, int height);
-
-void view_set_position(struct sway_view *view, double ox, double oy);
+void view_configure(struct sway_view *view, double ox, double oy, int width,
+	int height);
 
 void view_set_activated(struct sway_view *view, bool activated);
 
 void view_close(struct sway_view *view);
 
-void view_update_outputs(struct sway_view *view, const struct wlr_box *before);
-
 void view_damage_whole(struct sway_view *view);
 
 void view_damage_from(struct sway_view *view);
+
+// view implementation
+
+void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
+
+void view_unmap(struct sway_view *view);
+
+void view_update_position(struct sway_view *view, double ox, double oy);
+
+void view_update_size(struct sway_view *view, int width, int height);
 
 #endif
