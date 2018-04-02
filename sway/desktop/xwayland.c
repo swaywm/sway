@@ -14,6 +14,33 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *sway_surface =
+		wl_container_of(listener, sway_surface, destroy);
+	wl_list_remove(&sway_surface->destroy.link);
+	wl_list_remove(&sway_surface->link);
+	free(sway_surface);
+}
+
+static void create_unmanaged(struct wlr_xwayland_surface *xsurface) {
+	struct sway_xwayland_unmanaged *sway_surface =
+		calloc(1, sizeof(struct sway_xwayland_unmanaged));
+	if (!sway_assert(sway_surface, "Failed to allocate surface")) {
+		return;
+	}
+
+	sway_surface->wlr_xwayland_surface = xsurface;
+
+	wl_signal_add(&xsurface->events.destroy, &sway_surface->destroy);
+	sway_surface->destroy.notify = unmanaged_handle_destroy;
+
+	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
+		&sway_surface->link);
+
+	// TODO: damage tracking
+}
+
+
 static bool assert_xwayland(struct sway_view *view) {
 	return sway_assert(view->type == SWAY_XWAYLAND_VIEW,
 		"Expected xwayland view!");
@@ -33,22 +60,13 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void set_size(struct sway_view *view, int width, int height) {
+static void configure(struct sway_view *view, double ox, double oy, int width,
+		int height) {
 	if (!assert_xwayland(view)) {
 		return;
 	}
-	view->sway_xwayland_surface->pending_width = width;
-	view->sway_xwayland_surface->pending_height = height;
-
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	wlr_xwayland_surface_configure(xsurface, xsurface->x, xsurface->y,
-		width, height);
-}
 
-static void set_position(struct sway_view *view, double ox, double oy) {
-	if (!assert_xwayland(view)) {
-		return;
-	}
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 	if (!sway_assert(output, "view must be within tree to set position")) {
 		return;
@@ -64,13 +82,12 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 		return;
 	}
 
-	view->swayc->x = ox;
-	view->swayc->y = oy;
+	view_update_position(view, ox, oy);
 
-	wlr_xwayland_surface_configure(view->wlr_xwayland_surface,
-		ox + loutput->x, oy + loutput->y,
-		view->wlr_xwayland_surface->width,
-		view->wlr_xwayland_surface->height);
+	view->sway_xwayland_surface->pending_width = width;
+	view->sway_xwayland_surface->pending_height = height;
+	wlr_xwayland_surface_configure(xsurface, ox + loutput->x, oy + loutput->y,
+		width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -81,12 +98,19 @@ static void set_activated(struct sway_view *view, bool activated) {
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
-static void close_view(struct sway_view *view) {
+static void _close(struct sway_view *view) {
 	if (!assert_xwayland(view)) {
 		return;
 	}
 	wlr_xwayland_surface_close(view->wlr_xwayland_surface);
 }
+
+static const struct sway_view_impl view_impl = {
+	.get_prop = get_prop,
+	.configure = configure,
+	.set_activated = set_activated,
+	.close = _close,
+};
 
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
@@ -94,64 +118,38 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = sway_surface->view;
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
-	view->width = sway_surface->pending_width;
-	view->height = sway_surface->pending_height;
+	view_update_size(view, sway_surface->pending_width,
+		sway_surface->pending_height);
 	view_damage_from(view);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, destroy);
-
 	wl_list_remove(&sway_surface->commit.link);
 	wl_list_remove(&sway_surface->destroy.link);
 	wl_list_remove(&sway_surface->request_configure.link);
-	wl_list_remove(&sway_surface->view->unmanaged_view_link);
-	container_view_destroy(sway_surface->view->swayc);
-	sway_surface->view->swayc = NULL;
-	sway_surface->view->surface = NULL;
+	wl_list_remove(&sway_surface->map.link);
+	wl_list_remove(&sway_surface->unmap.link);
+	view_destroy(sway_surface->view);
+	free(sway_surface);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, unmap);
-	view_damage_whole(sway_surface->view);
-	wl_list_remove(&sway_surface->view->unmanaged_view_link);
-	wl_list_init(&sway_surface->view->unmanaged_view_link);
-	container_view_destroy(sway_surface->view->swayc);
-	sway_surface->view->swayc = NULL;
-	sway_surface->view->surface = NULL;
+	view_unmap(sway_surface->view);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_surface *sway_surface =
 		wl_container_of(listener, sway_surface, map);
 	struct wlr_xwayland_surface *xsurface = data;
-
-	sway_surface->view->surface = xsurface->surface;
+	struct sway_view *view = sway_surface->view;
 
 	// put it back into the tree
-	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
-			xsurface->override_redirect) {
-		wl_list_remove(&sway_surface->view->unmanaged_view_link);
-		wl_list_insert(&root_container.sway_root->unmanaged_views,
-			&sway_surface->view->unmanaged_view_link);
-	} else {
-		struct sway_view *view = sway_surface->view;
-		container_view_destroy(view->swayc);
-
-		wlr_xwayland_surface_set_maximized(xsurface, true);
-
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *focus = seat_get_focus_inactive(seat,
-			&root_container);
-		struct sway_container *cont = container_view_create(focus, view);
-		view->swayc = cont;
-		arrange_windows(cont->parent, -1, -1);
-		input_manager_set_focus(input_manager, cont);
-	}
-
-	view_damage_whole(sway_surface->view);
+	wlr_xwayland_surface_set_maximized(xsurface, true);
+	view_map(view, xsurface->surface);
 }
 
 static void handle_request_configure(struct wl_listener *listener, void *data) {
@@ -171,34 +169,32 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 			listener, server, xwayland_surface);
 	struct wlr_xwayland_surface *xsurface = data;
 
+	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
+			xsurface->override_redirect) {
+		wlr_log(L_DEBUG, "New xwayland unmanaged surface");
+		create_unmanaged(xsurface);
+		return;
+	}
+
 	wlr_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
-			xsurface->title, xsurface->class);
+		xsurface->title, xsurface->class);
 
 	struct sway_xwayland_surface *sway_surface =
 		calloc(1, sizeof(struct sway_xwayland_surface));
-	if (!sway_assert(sway_surface, "Failed to allocate surface!")) {
+	if (!sway_assert(sway_surface, "Failed to allocate surface")) {
 		return;
 	}
 
-	struct sway_view *sway_view = calloc(1, sizeof(struct sway_view));
-	if (!sway_assert(sway_view, "Failed to allocate view!")) {
+	struct sway_view *view = view_create(SWAY_XWAYLAND_VIEW, &view_impl);
+	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
-	sway_view->type = SWAY_XWAYLAND_VIEW;
-	sway_view->iface.get_prop = get_prop;
-	sway_view->iface.set_size = set_size;
-	sway_view->iface.set_position = set_position;
-	sway_view->iface.set_activated = set_activated;
-	sway_view->iface.close = close_view;
-	sway_view->wlr_xwayland_surface = xsurface;
-	sway_view->sway_xwayland_surface = sway_surface;
-	sway_surface->view = sway_view;
-
-	wl_list_init(&sway_view->unmanaged_view_link);
+	view->wlr_xwayland_surface = xsurface;
+	view->sway_xwayland_surface = sway_surface;
+	sway_surface->view = view;
 
 	// TODO:
 	// - Look up pid and open on appropriate workspace
-	// - Set new view to maximized so it behaves nicely
 	// - Criteria
 
 	wl_signal_add(&xsurface->surface->events.commit, &sway_surface->commit);
