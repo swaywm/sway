@@ -83,7 +83,8 @@ static struct sway_input_device *input_sway_device_from_wlr(
 static bool input_has_seat_configuration(struct sway_input_manager *input) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
-		if (seat->config) {
+		struct seat_config *seat_config = seat_get_config(seat);
+		if (seat_config) {
 			return true;
 		}
 	}
@@ -225,11 +226,13 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	struct seat_config *seat_config = seat_get_config(seat);
+
 	bool added = false;
 	wl_list_for_each(seat, &input->seats, link) {
-		bool has_attachment = seat->config &&
-			(seat_config_get_attachment(seat->config, input_device->identifier) ||
-			 seat_config_get_attachment(seat->config, "*"));
+		bool has_attachment = config &&
+			(seat_config_get_attachment(seat_config, input_device->identifier) ||
+			 seat_config_get_attachment(seat_config, "*"));
 
 		if (has_attachment) {
 			seat_add_device(seat, input_device);
@@ -239,7 +242,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	if (!added) {
 		wl_list_for_each(seat, &input->seats, link) {
-			if (seat->config && seat->config->fallback == 1) {
+			if (seat_config && seat_config->fallback == 1) {
 				seat_add_device(seat, input_device);
 				added = true;
 			}
@@ -326,7 +329,7 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 		return;
 	}
 
-	seat_set_config(seat, seat_config);
+	seat_apply_config(seat, seat_config);
 
 	// for every device, try to add it to a seat and if no seat has it
 	// attached, add it to the fallback seats.
@@ -335,11 +338,12 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 		list_t *seat_list = create_list();
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &input->seats, link) {
-			if (!seat->config) {
+			struct seat_config *seat_config = seat_get_config(seat);
+			if (!seat_config) {
 				continue;
 			}
-			if (seat_config_get_attachment(seat->config, "*") ||
-					seat_config_get_attachment(seat->config,
+			if (seat_config_get_attachment(seat_config, "*") ||
+					seat_config_get_attachment(seat_config,
 						input_device->identifier)) {
 				list_add(seat_list, seat);
 			}
@@ -362,7 +366,8 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 			}
 		} else {
 			wl_list_for_each(seat, &input->seats, link) {
-				if (seat->config && seat->config->fallback == 1) {
+				struct seat_config *seat_config = seat_get_config(seat);
+				if (seat_config && seat_config->fallback == 1) {
 					seat_add_device(seat, input_device);
 				} else {
 					seat_remove_device(seat, input_device);

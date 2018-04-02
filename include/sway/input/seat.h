@@ -23,7 +23,6 @@ struct sway_seat_container {
 
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
-	struct seat_config *config;
 	struct sway_cursor *cursor;
 	struct sway_input_manager *input;
 
@@ -76,6 +75,8 @@ struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		enum sway_container_type type);
 
-void seat_set_config(struct sway_seat *seat, struct seat_config *seat_config);
+void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
+
+struct seat_config *seat_get_config(struct sway_seat *seat);
 
 #endif

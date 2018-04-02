@@ -199,9 +199,11 @@ void seat_configure_device(struct sway_seat *seat,
 		return;
 	}
 
-	if (seat->config) {
+	struct seat_config *seat_config = seat_get_config(seat);
+
+	if (seat_config) {
 		seat_device->attachment_config =
-			seat_config_get_attachment(seat->config, input_device->identifier);
+			seat_config_get_attachment(seat_config, input_device->identifier);
 	}
 
 	switch (input_device->wlr_device->type) {
@@ -415,12 +417,8 @@ struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 	return container_parent(focus, type);
 }
 
-void seat_set_config(struct sway_seat *seat,
+void seat_apply_config(struct sway_seat *seat,
 		struct seat_config *seat_config) {
-	// clear configs
-	free_seat_config(seat->config);
-	seat->config = NULL;
-
 	struct sway_seat_device *seat_device = NULL;
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_device->attachment_config = NULL;
@@ -430,10 +428,19 @@ void seat_set_config(struct sway_seat *seat,
 		return;
 	}
 
-	// add configs
-	seat->config = copy_seat_config(seat_config);
-
 	wl_list_for_each(seat_device, &seat->devices, link) {
 		seat_configure_device(seat, seat_device->input_device);
 	}
+}
+
+struct seat_config *seat_get_config(struct sway_seat *seat) {
+	struct seat_config *seat_config = NULL;
+	for (int i = 0; i < config->seat_configs->length; ++i ) {
+		seat_config = config->seat_configs->items[i];
+		if (strcmp(seat->wlr_seat->name, seat_config->name) == 0) {
+			return seat_config;
+		}
+	}
+
+	return NULL;
 }
