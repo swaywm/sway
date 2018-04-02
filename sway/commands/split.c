@@ -25,29 +25,8 @@ static struct cmd_results *_do_split(int argc, char **argv, int layout) {
 	}
 
 	struct sway_container *focused = config->handler_context.current_container;
-
-	// TODO floating: dont split
-
-	/* Case that focus is on an workspace with 0/1 children.change its layout */
-	if (focused->type == C_WORKSPACE && focused->children->length <= 1) {
-		wlr_log(L_DEBUG, "changing workspace layout");
-		container_set_layout(focused, layout);
-	} else if (focused->type != C_WORKSPACE &&
-			focused->parent->children->length == 1) {
-		/* Case of no siblings. change parent layout */
-		wlr_log(L_DEBUG, "changing container layout");
-		container_set_layout(focused->parent, layout);
-	} else {
-		// regular case where new split container is build around focused
-		// container or in case of workspace, container inherits its children
-		wlr_log(L_DEBUG,
-			"Adding new container around current focused container");
-		wlr_log(L_INFO, "FOCUSED SIZE: %.f %.f",
-			focused->width, focused->height);
-
-		struct sway_container *parent = container_split(focused, layout);
-		arrange_windows(parent, -1, -1);
-	}
+	struct sway_container *parent = container_split(focused, layout);
+	arrange_windows(parent, -1, -1);
 
 	// TODO borders: update borders
 

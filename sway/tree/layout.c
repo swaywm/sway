@@ -405,7 +405,12 @@ void apply_vert_layout(struct sway_container *container,
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, height, scale);
-			view_set_position(child->sway_view, x, child_y);
+			if (child->type == C_VIEW) {
+				view_set_position(child->sway_view, x, child_y);
+			} else {
+				child->x = x;
+				child->y = child_y;
+			}
 
 			if (i == end - 1) {
 				double remaining_height = y + height - child_y;
@@ -691,34 +696,33 @@ struct sway_container *container_split(struct sway_container *child,
 	wlr_log(L_DEBUG, "creating container %p around %p", cont, child);
 
 	cont->prev_layout = L_NONE;
-	cont->layout = layout;
 	cont->width = child->width;
 	cont->height = child->height;
 	cont->x = child->x;
 	cont->y = child->y;
 
-	/* Container inherits all of workspaces children, layout and whatnot */
 	if (child->type == C_WORKSPACE) {
+		struct sway_seat *seat = sway_input_manager_get_default_seat(input_manager);
 		struct sway_container *workspace = child;
-		// reorder focus
-		int i;
-		for (i = 0; i < workspace->children->length; ++i) {
-			((struct sway_container *)workspace->children->items[i])->parent =
-				cont;
+		bool set_focus = (sway_seat_get_focus(seat) == workspace);
+
+		while (workspace->children->length) {
+			struct sway_container *ws_child = workspace->children->items[0];
+			container_remove_child(ws_child);
+			container_add_child(cont, ws_child);
 		}
 
-		// Swap children
-		list_t  *tmp_list  = workspace->children;
-		workspace->children = cont->children;
-		cont->children = tmp_list;
-		// add container to workspace chidren
 		container_add_child(workspace, cont);
-		// give them proper layouts
-		cont->layout = workspace->workspace_layout;
-		cont->prev_layout = workspace->prev_layout;
-	} else { // Or is built around container
+		container_set_layout(workspace, layout);
+
+		if (set_focus) {
+			sway_seat_set_focus(seat, cont);
+		}
+	} else {
+		cont->layout = layout;
 		container_replace_child(child, cont);
 		container_add_child(cont, child);
 	}
+
 	return cont;
 }
