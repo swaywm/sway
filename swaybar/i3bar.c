@@ -30,9 +30,7 @@ static bool i3bar_parse_json(struct status_line *status, const char *text) {
 		status_error(status, "[failed to parse i3bar json]");
 		return false;
 	}
-	if (json_object_array_length(results) < 1) {
-		return true;
-	}
+	wlr_log(L_DEBUG, "Got i3bar json: '%s'", text);
 	for (size_t i = 0; i < json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
