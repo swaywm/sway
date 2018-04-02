@@ -4,7 +4,7 @@
 #include "swaybar/bar.h"
 
 void ipc_initialize(struct swaybar *bar, const char *bar_id);
-bool handle_ipc_event(struct swaybar *bar);
+bool handle_ipc_readable(struct swaybar *bar);
 void ipc_get_workspaces(struct swaybar *bar);
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws);
 

@@ -3,6 +3,7 @@ executable(
 		'bar.c',
 		'config.c',
 		'event_loop.c',
+		'i3bar.c',
 		'ipc.c',
 		'main.c',
 		'render.c',

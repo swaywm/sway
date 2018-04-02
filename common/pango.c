@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "log.h"
 
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 		const char *text, int32_t scale, bool markup) {
@@ -13,7 +14,13 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	PangoAttrList *attrs;
 	if (markup) {
 		char *buf;
-		pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, NULL);
+		GError *error = NULL;
+		if (!sway_assert(pango_parse_markup(
+					text, -1, 0, &attrs, &buf, NULL, &error),
+				"pango_parse_markup '%s' -> error %s", text,
+				error ? error->message : NULL)) {
+			return NULL;
+		}
 		pango_layout_set_markup(layout, buf, -1);
 		free(buf);
 	} else {

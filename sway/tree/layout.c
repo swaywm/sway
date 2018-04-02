@@ -274,8 +274,8 @@ void arrange_windows(struct sway_container *container,
 			struct wlr_box *area = &output->sway_output->usable_area;
 			wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 					area->width, area->height, area->x, area->y);
-			container->width = area->width;
-			container->height = area->height;
+			container->width = width = area->width;
+			container->height = height = area->height;
 			container->x = x = area->x;
 			container->y = y = area->y;
 			wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
