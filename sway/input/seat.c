@@ -202,13 +202,6 @@ void seat_configure_device(struct sway_seat *seat,
 		return;
 	}
 
-	struct seat_config *seat_config = seat_get_config(seat);
-
-	if (seat_config) {
-		seat_device->attachment_config =
-			seat_config_get_attachment(seat_config, input_device->identifier);
-	}
-
 	switch (input_device->wlr_device->type) {
 		case WLR_INPUT_DEVICE_POINTER:
 			seat_configure_pointer(seat, seat_device);
@@ -426,9 +419,6 @@ struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 void seat_apply_config(struct sway_seat *seat,
 		struct seat_config *seat_config) {
 	struct sway_seat_device *seat_device = NULL;
-	wl_list_for_each(seat_device, &seat->devices, link) {
-		seat_device->attachment_config = NULL;
-	}
 
 	if (!seat_config) {
 		return;

@@ -8,7 +8,6 @@ struct sway_seat_device {
 	struct sway_seat *sway_seat;
 	struct sway_input_device *input_device;
 	struct sway_keyboard *keyboard;
-	struct seat_attachment_config *attachment_config;
 	struct wl_list link; // sway_seat::devices
 };
 
