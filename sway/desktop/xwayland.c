@@ -14,6 +14,33 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *sway_surface =
+		wl_container_of(listener, sway_surface, destroy);
+	wl_list_remove(&sway_surface->destroy.link);
+	wl_list_remove(&sway_surface->link);
+	free(sway_surface);
+}
+
+static void create_unmanaged(struct wlr_xwayland_surface *xsurface) {
+	struct sway_xwayland_unmanaged *sway_surface =
+		calloc(1, sizeof(struct sway_xwayland_unmanaged));
+	if (!sway_assert(sway_surface, "Failed to allocate surface")) {
+		return;
+	}
+
+	sway_surface->wlr_xwayland_surface = xsurface;
+
+	wl_signal_add(&xsurface->events.destroy, &sway_surface->destroy);
+	sway_surface->destroy.notify = unmanaged_handle_destroy;
+
+	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
+		&sway_surface->link);
+
+	// TODO: damage tracking
+}
+
+
 static bool assert_xwayland(struct sway_view *view) {
 	return sway_assert(view->type == SWAY_XWAYLAND_VIEW,
 		"Expected xwayland view!");
@@ -121,13 +148,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_view *view = sway_surface->view;
 
 	// put it back into the tree
-	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
-			xsurface->override_redirect) {
-		view_map_unmanaged(view, xsurface->surface);
-	} else {
-		wlr_xwayland_surface_set_maximized(xsurface, true);
-		view_map(view, xsurface->surface);
-	}
+	wlr_xwayland_surface_set_maximized(xsurface, true);
+	view_map(view, xsurface->surface);
 }
 
 static void handle_request_configure(struct wl_listener *listener, void *data) {
@@ -147,12 +169,19 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 			listener, server, xwayland_surface);
 	struct wlr_xwayland_surface *xsurface = data;
 
+	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
+			xsurface->override_redirect) {
+		wlr_log(L_DEBUG, "New xwayland unmanaged surface");
+		create_unmanaged(xsurface);
+		return;
+	}
+
 	wlr_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
-			xsurface->title, xsurface->class);
+		xsurface->title, xsurface->class);
 
 	struct sway_xwayland_surface *sway_surface =
 		calloc(1, sizeof(struct sway_xwayland_surface));
-	if (!sway_assert(sway_surface, "Failed to allocate surface!")) {
+	if (!sway_assert(sway_surface, "Failed to allocate surface")) {
 		return;
 	}
 

@@ -15,7 +15,6 @@ struct sway_view *view_create(enum sway_view_type type,
 	}
 	view->type = type;
 	view->impl = impl;
-	wl_list_init(&view->unmanaged_view_link);
 	return view;
 }
 
@@ -27,10 +26,8 @@ void view_destroy(struct sway_view *view) {
 	if (view->surface != NULL) {
 		view_unmap(view);
 	}
-	if (view->swayc != NULL) {
-		container_view_destroy(view->swayc);
-	}
 
+	container_view_destroy(view->swayc);
 	free(view);
 }
 
@@ -106,15 +103,10 @@ void view_damage_from(struct sway_view *view) {
 }
 
 static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
-	struct sway_container *cont = container_parent(view->swayc, C_OUTPUT);
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
-	struct wlr_output_layout *output_layout =
-		root_container.sway_root->output_layout;
-	struct wlr_box *output_box = wlr_output_layout_get_box(output_layout,
-		cont->sway_output->wlr_output);
-
-	box->x = output_box->x + view->swayc->x;
-	box->y = output_box->y + view->swayc->y;
+	box->x = output->x + view->swayc->x;
+	box->y = output->y + view->swayc->y;
 	box->width = view->width;
 	box->height = view->height;
 }
@@ -161,32 +153,12 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view_update_outputs(view, NULL);
 }
 
-void view_map_unmanaged(struct sway_view *view,
-		struct wlr_surface *wlr_surface) {
-	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
-		return;
-	}
-
-	view->surface = wlr_surface;
-	view->swayc = NULL;
-
-	wl_list_insert(&root_container.sway_root->unmanaged_views,
-		&view->unmanaged_view_link);
-
-	view_damage_whole(view);
-	// TODO: make this work for unmanaged views
-	//view_update_outputs(view, NULL);
-}
-
 void view_unmap(struct sway_view *view) {
 	if (!sway_assert(view->surface != NULL, "cannot unmap unmapped view")) {
 		return;
 	}
 
 	view_damage_whole(view);
-
-	wl_list_remove(&view->unmanaged_view_link);
-	wl_list_init(&view->unmanaged_view_link);
 
 	container_view_destroy(view->swayc);
 

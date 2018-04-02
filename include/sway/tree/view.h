@@ -39,6 +39,13 @@ struct sway_xwayland_surface {
 	int pending_width, pending_height;
 };
 
+struct sway_xwayland_unmanaged {
+	struct wlr_xwayland_surface *wlr_xwayland_surface;
+	struct wl_list link;
+
+	struct wl_listener destroy;
+};
+
 struct sway_wl_shell_surface {
 	struct sway_view *view;
 
@@ -126,9 +133,6 @@ void view_damage_from(struct sway_view *view);
 // view implementation
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
-
-void view_map_unmanaged(struct sway_view *view,
-	struct wlr_surface *wlr_surface);
 
 void view_unmap(struct sway_view *view);
 

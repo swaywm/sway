@@ -23,7 +23,7 @@ struct sway_root {
 
 	struct wl_listener output_layout_change;
 
-	struct wl_list unmanaged_views; // sway_view::unmanaged_view_link
+	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
 
 	struct {
 		struct wl_signal new_container;

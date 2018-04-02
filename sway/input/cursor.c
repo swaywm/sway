@@ -47,14 +47,15 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
 static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	// check for unmanaged views first
-	struct wl_list *unmanaged = &root_container.sway_root->unmanaged_views;
-	struct sway_view *view;
-	wl_list_for_each_reverse(view, unmanaged, unmanaged_view_link) {
-		if (view->type != SWAY_XWAYLAND_VIEW) {
+	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
+	struct sway_xwayland_unmanaged *sway_surface;
+	wl_list_for_each_reverse(sway_surface, unmanaged, link) {
+		struct wlr_xwayland_surface *xsurface =
+			sway_surface->wlr_xwayland_surface;
+		if (xsurface->surface == NULL) {
 			continue;
 		}
 
-		struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 		struct wlr_box box = {
 			.x = xsurface->x,
 			.y = xsurface->y,

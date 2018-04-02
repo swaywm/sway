@@ -257,14 +257,14 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	container_descendants(workspace, C_VIEW, render_view, &rdata);
 
 	// render unmanaged views on top
-	struct sway_view *view;
-	wl_list_for_each(view, &root_container.sway_root->unmanaged_views,
-			unmanaged_view_link) {
-		if (view->type != SWAY_XWAYLAND_VIEW) {
+	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
+	struct sway_xwayland_unmanaged *sway_surface;
+	wl_list_for_each(sway_surface, unmanaged, link) {
+		struct wlr_xwayland_surface *xsurface =
+			sway_surface->wlr_xwayland_surface;
+		if (xsurface->surface == NULL) {
 			continue;
 		}
-
-		struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
 		const struct wlr_box view_box = {
 			.x = xsurface->x,
@@ -277,7 +277,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 			continue;
 		}
 
-		render_surface(view->surface, wlr_output, &output->last_frame,
+		render_surface(xsurface->surface, wlr_output, &output->last_frame,
 			view_box.x - output_box->x, view_box.y - output_box->y, 0);
 	}
 
