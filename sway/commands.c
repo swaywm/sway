@@ -340,7 +340,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				// without criteria, the command acts upon the focused
 				// container
 				config->handler_context.current_container =
-					sway_seat_get_focus_inactive(seat, &root_container);
+					seat_get_focus_inactive(seat, &root_container);
 				if (!sway_assert(config->handler_context.current_container,
 						"could not get focus-inactive for root container")) {
 					return NULL;

@@ -92,7 +92,7 @@ static void ipc_json_describe_output(struct sway_container *container, json_obje
 	const char *ws = NULL;
 	if (seat) {
 		struct sway_container *focus =
-			sway_seat_get_focus_inactive(seat, container);
+			seat_get_focus_inactive(seat, container);
 		if (focus && focus->type != C_WORKSPACE) {
 			focus = container_parent(focus, C_WORKSPACE);
 		}
@@ -140,7 +140,7 @@ json_object *ipc_json_describe_container(struct sway_container *c) {
 	}
 
 	struct sway_seat *seat = sway_input_manager_get_default_seat(input_manager);
-	bool focused = sway_seat_get_focus(seat) == c;
+	bool focused = seat_get_focus(seat) == c;
 
 	json_object *object = json_object_new_object();
 

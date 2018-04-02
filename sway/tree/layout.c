@@ -404,7 +404,7 @@ static struct sway_container *get_swayc_in_output_direction(
 		return NULL;
 	}
 
-	struct sway_container *ws = sway_seat_get_focus_inactive(seat, output);
+	struct sway_container *ws = seat_get_focus_inactive(seat, output);
 	if (ws->type != C_WORKSPACE) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
@@ -425,7 +425,7 @@ static struct sway_container *get_swayc_in_output_direction(
 		case MOVE_UP:
 		case MOVE_DOWN: {
 			struct sway_container *focused =
-				sway_seat_get_focus_inactive(seat, ws);
+				seat_get_focus_inactive(seat, ws);
 			if (focused && focused->parent) {
 				struct sway_container *parent = focused->parent;
 				if (parent->layout == L_VERT) {
@@ -509,7 +509,7 @@ static struct sway_container *get_swayc_in_direction_under(
 		struct sway_container *container, enum movement_direction dir,
 		struct sway_seat *seat, struct sway_container *limit) {
 	if (dir == MOVE_CHILD) {
-		return sway_seat_get_focus_inactive(seat, container);
+		return seat_get_focus_inactive(seat, container);
 	}
 
 	struct sway_container *parent = container->parent;
@@ -589,7 +589,7 @@ static struct sway_container *get_swayc_in_direction_under(
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
-				return sway_seat_get_focus_inactive(seat, next);
+				return seat_get_focus_inactive(seat, next);
 			} else {
 				return next;
 			}
