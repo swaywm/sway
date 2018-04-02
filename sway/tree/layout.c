@@ -106,8 +106,10 @@ struct sway_container *container_reap_empty(struct sway_container *container) {
 	if (!sway_assert(container, "reaping null container")) {
 		return NULL;
 	}
-	wlr_log(L_DEBUG, "reaping %p %s", container, container->name);
-	while (container != &root_container && container->children->length == 0) {
+	wlr_log(L_DEBUG, "Reaping %p %s '%s'", container,
+			container_type_to_str(container->type), container->name);
+	while (container->type != C_ROOT && container->type != C_OUTPUT
+			&& container->children->length == 0) {
 		if (container->type == C_WORKSPACE) {
 			if (!workspace_is_visible(container)) {
 				struct sway_container *parent = container->parent;
@@ -138,20 +140,44 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	return container_reap_empty(parent);
 }
 
-void container_move_to(struct sway_container* container,
-		struct sway_container* destination) {
+void container_move_to(struct sway_container *container,
+		struct sway_container *destination) {
 	if (container == destination
 			|| container_has_anscestor(container, destination)) {
 		return;
 	}
 	struct sway_container *old_parent = container_remove_child(container);
 	container->width = container->height = 0;
-	struct sway_container *new_parent =
-		container_add_sibling(destination, container);
+	struct sway_container *new_parent;
+	if (destination->type == C_VIEW) {
+		new_parent = container_add_sibling(destination, container);
+	} else {
+		new_parent = destination;
+		container_add_child(destination, container);
+	}
+	wl_signal_emit(&container->events.reparent, old_parent);
+	if (container->type == C_WORKSPACE) {
+		struct sway_seat *seat = input_manager_get_default_seat(
+				input_manager);
+		if (old_parent->children->length == 0) {
+			char *ws_name = workspace_next_name(old_parent->name);
+			struct sway_container *ws =
+				container_workspace_create(old_parent, ws_name);
+			free(ws_name);
+			seat_set_focus(seat, ws);
+		}
+		container_sort_workspaces(new_parent);
+		seat_set_focus(seat, new_parent);
+	}
 	if (old_parent) {
 		arrange_windows(old_parent, -1, -1);
 	}
 	arrange_windows(new_parent, -1, -1);
+}
+
+void container_move(struct sway_container *container,
+		enum movement_direction dir, int move_amt) {
+	// TODO
 }
 
 enum sway_container_layout container_get_default_layout(
@@ -520,26 +546,6 @@ static struct sway_container *get_swayc_in_direction_under(
 			return parent;
 		}
 	}
-
-	if (dir == MOVE_PREV || dir == MOVE_NEXT) {
-		int focused_idx = index_child(container);
-		if (focused_idx == -1) {
-			return NULL;
-		} else {
-			int desired = (focused_idx + (dir == MOVE_NEXT ? 1 : -1)) %
-				parent->children->length;
-			if (desired < 0) {
-				desired += parent->children->length;
-			}
-			return parent->children->items[desired];
-		}
-	}
-
-	// If moving to an adjacent output we need a starting position (since this
-	// output might border to multiple outputs).
-	//struct wlc_point abs_pos;
-	//get_layout_center_position(container, &abs_pos);
-
 
 	// TODO WLR fullscreen
 	/*

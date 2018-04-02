@@ -20,10 +20,6 @@ static bool parse_movement_direction(const char *name,
 		*out = MOVE_PARENT;
 	} else if (strcasecmp(name, "child") == 0) {
 		*out = MOVE_CHILD;
-	} else if (strcasecmp(name, "next") == 0) {
-		*out = MOVE_NEXT;
-	} else if (strcasecmp(name, "prev") == 0) {
-		*out = MOVE_PREV;
 	} else {
 		return false;
 	}
@@ -51,7 +47,8 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 				"Expected 'focus <direction|parent|child|mode_toggle>' or 'focus output <direction|name>'");
 	}
 
-	struct sway_container *next_focus = container_get_in_direction(con, seat, direction);
+	struct sway_container *next_focus = container_get_in_direction(
+			con, seat, direction);
 	if (next_focus) {
 		seat_set_focus(seat, next_focus);
 	}
