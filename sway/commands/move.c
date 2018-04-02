@@ -106,7 +106,9 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			// We've never been to this output before
 			focus = destination->children->items[0];
 		}
+		struct sway_container *old_parent = current->parent;
 		container_move_to(current, focus);
+		sway_seat_set_focus(config->handler_context.seat, old_parent);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	return cmd_results_new(CMD_INVALID, "move", expected_syntax);
@@ -149,7 +151,8 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		char *inv;
 		move_amt = (int)strtol(argv[1], &inv, 10);
 		if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
-			move_amt = 10;
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Invalid distance specified");
 		}
 	}
 
