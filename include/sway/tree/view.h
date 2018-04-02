@@ -69,10 +69,8 @@ enum sway_view_prop {
 struct sway_view_impl {
 	const char *(*get_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
-	void (*set_size)(struct sway_view *view,
-			int width, int height);
-	void (*set_position)(struct sway_view *view,
-			double ox, double oy);
+	void (*configure)(struct sway_view *view, double ox, double oy, int width,
+		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*close)(struct sway_view *view);
 };
@@ -114,13 +112,18 @@ const char *view_get_class(struct sway_view *view);
 
 const char *view_get_instance(struct sway_view *view);
 
-void view_set_size(struct sway_view *view, int width, int height);
-
-void view_set_position(struct sway_view *view, double ox, double oy);
+void view_configure(struct sway_view *view, double ox, double oy, int width,
+	int height);
 
 void view_set_activated(struct sway_view *view, bool activated);
 
 void view_close(struct sway_view *view);
+
+void view_damage_whole(struct sway_view *view);
+
+void view_damage_from(struct sway_view *view);
+
+// view implementation
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
@@ -129,8 +132,8 @@ void view_map_unmanaged(struct sway_view *view,
 
 void view_unmap(struct sway_view *view);
 
-void view_damage_whole(struct sway_view *view);
+void view_update_position(struct sway_view *view, double ox, double oy);
 
-void view_damage_from(struct sway_view *view);
+void view_update_size(struct sway_view *view, int width, int height);
 
 #endif

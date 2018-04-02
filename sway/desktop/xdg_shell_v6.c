@@ -30,21 +30,16 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void set_size(struct sway_view *view, int width, int height) {
+static void configure(struct sway_view *view, double ox, double oy, int width,
+		int height) {
 	if (!assert_xdg(view)) {
 		return;
 	}
+
+	view_update_position(view, ox, oy);
 	view->sway_xdg_surface_v6->pending_width = width;
 	view->sway_xdg_surface_v6->pending_height = height;
 	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
-}
-
-static void set_position(struct sway_view *view, double ox, double oy) {
-	if (!assert_xdg(view)) {
-		return;
-	}
-	view->swayc->x = ox;
-	view->swayc->y = oy;
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -57,7 +52,7 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
-static void close(struct sway_view *view) {
+static void _close(struct sway_view *view) {
 	if (!assert_xdg(view)) {
 		return;
 	}
@@ -69,10 +64,9 @@ static void close(struct sway_view *view) {
 
 static const struct sway_view_impl view_impl = {
 	.get_prop = get_prop,
-	.set_size = set_size,
-	.set_position = set_position,
+	.configure = configure,
 	.set_activated = set_activated,
-	.close = close,
+	.close = _close,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -82,8 +76,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Store this for restoration when moving to floating plane
 	// TODO: Let floating views do whatever
-	view->width = sway_surface->pending_width;
-	view->height = sway_surface->pending_height;
+	view_update_size(view, sway_surface->pending_width,
+		sway_surface->pending_height);
 	view_damage_from(view);
 }
 

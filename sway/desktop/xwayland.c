@@ -33,22 +33,13 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void set_size(struct sway_view *view, int width, int height) {
+static void configure(struct sway_view *view, double ox, double oy, int width,
+		int height) {
 	if (!assert_xwayland(view)) {
 		return;
 	}
-	view->sway_xwayland_surface->pending_width = width;
-	view->sway_xwayland_surface->pending_height = height;
-
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	wlr_xwayland_surface_configure(xsurface, xsurface->x, xsurface->y,
-		width, height);
-}
 
-static void set_position(struct sway_view *view, double ox, double oy) {
-	if (!assert_xwayland(view)) {
-		return;
-	}
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 	if (!sway_assert(output, "view must be within tree to set position")) {
 		return;
@@ -64,13 +55,12 @@ static void set_position(struct sway_view *view, double ox, double oy) {
 		return;
 	}
 
-	view->swayc->x = ox;
-	view->swayc->y = oy;
+	view_update_position(view, ox, oy);
 
-	wlr_xwayland_surface_configure(view->wlr_xwayland_surface,
-		ox + loutput->x, oy + loutput->y,
-		view->wlr_xwayland_surface->width,
-		view->wlr_xwayland_surface->height);
+	view->sway_xwayland_surface->pending_width = width;
+	view->sway_xwayland_surface->pending_height = height;
+	wlr_xwayland_surface_configure(xsurface, ox + loutput->x, oy + loutput->y,
+		width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -90,8 +80,7 @@ static void _close(struct sway_view *view) {
 
 static const struct sway_view_impl view_impl = {
 	.get_prop = get_prop,
-	.set_size = set_size,
-	.set_position = set_position,
+	.configure = configure,
 	.set_activated = set_activated,
 	.close = _close,
 };
@@ -102,8 +91,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = sway_surface->view;
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
-	view->width = sway_surface->pending_width;
-	view->height = sway_surface->pending_height;
+	view_update_size(view, sway_surface->pending_width,
+		sway_surface->pending_height);
 	view_damage_from(view);
 }
 

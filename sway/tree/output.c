@@ -29,6 +29,7 @@ struct sway_container *container_output_destroy(struct sway_container *output) {
 	wl_list_remove(&output->sway_output->destroy.link);
 	wl_list_remove(&output->sway_output->mode.link);
 	wl_list_remove(&output->sway_output->transform.link);
+	wl_list_remove(&output->sway_output->scale.link);
 
 	wl_list_remove(&output->sway_output->damage_destroy.link);
 	wl_list_remove(&output->sway_output->damage_frame.link);

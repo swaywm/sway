@@ -30,24 +30,18 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void set_size(struct sway_view *view, int width, int height) {
+static void configure(struct sway_view *view, double ox, double oy, int width,
+		int height) {
 	if (!assert_wl_shell(view)) {
 		return;
 	}
+	view_update_position(view, ox, oy);
 	view->sway_wl_shell_surface->pending_width = width;
 	view->sway_wl_shell_surface->pending_height = height;
 	wlr_wl_shell_surface_configure(view->wlr_wl_shell_surface, 0, width, height);
 }
 
-static void set_position(struct sway_view *view, double ox, double oy) {
-	if (!assert_wl_shell(view)) {
-		return;
-	}
-	view->swayc->x = ox;
-	view->swayc->y = oy;
-}
-
-static void close(struct sway_view *view) {
+static void _close(struct sway_view *view) {
 	if (!assert_wl_shell(view)) {
 		return;
 	}
@@ -57,9 +51,8 @@ static void close(struct sway_view *view) {
 
 static const struct sway_view_impl view_impl = {
 	.get_prop = get_prop,
-	.set_size = set_size,
-	.set_position = set_position,
-	.close = close,
+	.configure = configure,
+	.close = _close,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -68,8 +61,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = sway_surface->view;
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
-	view->width = sway_surface->pending_width;
-	view->height = sway_surface->pending_height;
+	view_update_size(view, sway_surface->pending_width,
+		sway_surface->pending_height);
 	view_damage_from(view);
 }
 
