@@ -229,9 +229,12 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
 		sway_seat_get_focus_inactive(seat, output->swayc);
-	struct sway_container *workspace = (focus->type == C_WORKSPACE ?
-			focus :
-			container_parent(focus, C_WORKSPACE));
+	if (!focus) {
+		// We've never been to this output before
+		focus = output->swayc->children->items[0];
+	}
+	struct sway_container *workspace = focus->type == C_WORKSPACE ?
+			focus : container_parent(focus, C_WORKSPACE);
 
 	struct render_data rdata = {
 		.output = output,

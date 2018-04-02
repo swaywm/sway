@@ -351,7 +351,7 @@ bool workspace_switch(struct sway_container *workspace) {
 	}
 	struct sway_container *active_ws = focus;
 	if (active_ws->type != C_WORKSPACE) {
-		container_parent(focus, C_WORKSPACE);
+		active_ws = container_parent(focus, C_WORKSPACE);
 	}
 
 	if (config->auto_back_and_forth

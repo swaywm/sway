@@ -162,6 +162,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "focus", cmd_focus },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
+	{ "move", cmd_move },
 	{ "reload", cmd_reload },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },

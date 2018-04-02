@@ -84,11 +84,20 @@ struct sway_container {
 
 	struct {
 		struct wl_signal destroy;
+		// Raised after the tree updates, but before arrange_windows
+		// Passed the previous parent
+		struct wl_signal reparent;
 	} events;
 };
 
 // TODO make private and use the container-specific create functions
 struct sway_container *container_create(enum sway_container_type type);
+
+const char *container_type_to_str(enum sway_container_type type);
+
+// TODO only one container create function and pass the type?
+struct sway_container *container_output_create(
+		struct sway_output *sway_output);
 
 /**
  * Create a new container container. A container container can be a a child of
