@@ -76,6 +76,7 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 			strcasecmp(argv[0], "toggle") == 0) {
 		struct sway_container *focused =
 			config->handler_context.current_container;
+
 		if (focused->parent->layout == L_VERT) {
 			_do_split(argc - 1, argv + 1, L_HORIZ);
 		} else {

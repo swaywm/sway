@@ -101,8 +101,6 @@ void container_add_child(struct sway_container *parent,
 			parent, parent->type, parent->width, parent->height);
 	list_add(parent->children, child);
 	child->parent = parent;
-	// TODO: set focus for this container?
-	sway_input_manager_set_focus(input_manager, child);
 }
 
 struct sway_container *container_reap_empty(struct sway_container *container) {
@@ -632,7 +630,8 @@ struct sway_container *container_get_in_direction(
 						wrap_candidate = parent->children->items[0];
 					}
 					if (config->force_focus_wrapping) {
-						 return sway_seat_get_focus_by_type(seat, wrap_candidate, C_VIEW);
+						 return sway_seat_get_focus_by_type(seat,
+								 wrap_candidate, C_VIEW);
 					}
 				}
 			} else {

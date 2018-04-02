@@ -92,7 +92,6 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	struct sway_container *parent = con->parent;
 	struct sway_container *focus = sway_seat_get_focus(seat);
 
-	// TODO handle workspace switch in the seat?
 	bool set_focus =
 		focus != NULL &&
 		(focus == con || container_has_child(con, focus)) &&

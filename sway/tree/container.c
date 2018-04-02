@@ -424,7 +424,7 @@ bool container_has_anscestor(struct sway_container *descendant,
 	return false;
 }
 
-bool find_child_func(struct sway_container *con, void *data) {
+static bool find_child_func(struct sway_container *con, void *data) {
 	struct sway_container *child = data;
 	return con == child;
 }
