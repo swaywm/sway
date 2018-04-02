@@ -364,7 +364,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	}
 
 	if (last_focus && last_focus->type == C_VIEW &&
-			!sway_input_manager_has_focus(seat->input, last_focus)) {
+			!input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
 		view_set_activated(view, false);
 	}

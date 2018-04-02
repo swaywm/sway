@@ -370,7 +370,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wl_list_init(&output->layers[i]);
 	}
 
-	sway_input_manager_configure_xcursor(input_manager);
+	input_manager_configure_xcursor(input_manager);
 
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;

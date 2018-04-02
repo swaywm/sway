@@ -27,24 +27,23 @@ struct sway_input_manager {
 	struct wl_listener new_input;
 };
 
-struct sway_input_manager *sway_input_manager_create(
-		struct sway_server *server);
+struct sway_input_manager *input_manager_create(struct sway_server *server);
 
-bool sway_input_manager_has_focus(struct sway_input_manager *input,
+bool input_manager_has_focus(struct sway_input_manager *input,
 		struct sway_container *container);
 
-void sway_input_manager_set_focus(struct sway_input_manager *input,
+void input_manager_set_focus(struct sway_input_manager *input,
 		struct sway_container *container);
 
-void sway_input_manager_configure_xcursor(struct sway_input_manager *input);
+void input_manager_configure_xcursor(struct sway_input_manager *input);
 
-void sway_input_manager_apply_input_config(struct sway_input_manager *input,
+void input_manager_apply_input_config(struct sway_input_manager *input,
 		struct input_config *input_config);
 
-void sway_input_manager_apply_seat_config(struct sway_input_manager *input,
+void input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config);
 
-struct sway_seat *sway_input_manager_get_default_seat(
+struct sway_seat *input_manager_get_default_seat(
 		struct sway_input_manager *input);
 
 struct sway_seat *input_manager_get_seat(struct sway_input_manager *input,

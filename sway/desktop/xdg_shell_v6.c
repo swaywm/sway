@@ -102,7 +102,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_container *cont = container_view_create(focus, view);
 	view->swayc = cont;
 	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
+	input_manager_set_focus(input_manager, cont);
 
 	view_damage_whole(sway_surface->view);
 }

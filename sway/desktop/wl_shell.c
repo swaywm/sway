@@ -138,5 +138,5 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
+	input_manager_set_focus(input_manager, cont);
 }
