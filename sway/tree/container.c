@@ -162,7 +162,7 @@ struct sway_container *container_output_create(
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		if (!seat->has_focus) {
-			sway_seat_set_focus(seat, ws);
+			seat_set_focus(seat, ws);
 		}
 	}
 

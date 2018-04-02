@@ -25,7 +25,7 @@ static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	free(seat_device);
 }
 
-void sway_seat_destroy(struct sway_seat *seat) {
+void seat_destroy(struct sway_seat *seat) {
 	struct sway_seat_device *seat_device, *next;
 	wl_list_for_each_safe(seat_device, next, &seat->devices, link) {
 		seat_device_destroy(seat_device);
@@ -42,18 +42,19 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	struct sway_seat *seat = seat_con->seat;
 	struct sway_container *con = seat_con->container;
 
-	bool is_focus = (sway_seat_get_focus(seat) == con);
+	bool is_focus = (seat_get_focus(seat) == con);
 
 	wl_list_remove(&seat_con->link);
 
 	if  (is_focus) {
 		// pick next focus
-		sway_seat_set_focus(seat, NULL);
-		struct sway_container *next = sway_seat_get_focus_inactive(seat, con->parent);
+		seat_set_focus(seat, NULL);
+		struct sway_container *next =
+			seat_get_focus_inactive(seat, con->parent);
 		if (next == NULL) {
 			next = con->parent;
 		}
-		sway_seat_set_focus(seat, next);
+		seat_set_focus(seat, next);
 	}
 
 	wl_list_remove(&seat_con->destroy.link);
@@ -110,7 +111,7 @@ static void collect_focus_iter(struct sway_container *con, void *data) {
 	wl_list_insert(&seat->focus_stack, &seat_con->link);
 }
 
-struct sway_seat *sway_seat_create(struct sway_input_manager *input,
+struct sway_seat *seat_create(struct sway_input_manager *input,
 		const char *seat_name) {
 	struct sway_seat *seat = calloc(1, sizeof(struct sway_seat));
 	if (!seat) {
@@ -133,7 +134,8 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
 
-	container_for_each_descendant_dfs(&root_container, collect_focus_iter, seat);
+	container_for_each_descendant_dfs(&root_container,
+		collect_focus_iter, seat);
 
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);
@@ -147,7 +149,7 @@ struct sway_seat *sway_seat_create(struct sway_input_manager *input,
 		WL_SEAT_CAPABILITY_POINTER |
 		WL_SEAT_CAPABILITY_TOUCH);
 
-	sway_seat_configure_xcursor(seat);
+	seat_configure_xcursor(seat);
 
 	wl_list_insert(&input->seats, &seat->link);
 
@@ -165,11 +167,12 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	if (!seat_device->keyboard) {
 		sway_keyboard_create(seat, seat_device);
 	}
-	struct wlr_keyboard *wlr_keyboard = seat_device->input_device->wlr_device->keyboard;
+	struct wlr_keyboard *wlr_keyboard =
+		seat_device->input_device->wlr_device->keyboard;
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device);
-	struct sway_container *focus = sway_seat_get_focus(seat);
+	struct sway_container *focus = seat_get_focus(seat);
 	if (focus && focus->type == C_VIEW) {
 		// force notify reenter to pick up the new configuration
 		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
@@ -179,7 +182,7 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	}
 }
 
-static struct sway_seat_device *sway_seat_get_device(struct sway_seat *seat,
+static struct sway_seat_device *seat_get_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
 	struct sway_seat_device *seat_device = NULL;
 	wl_list_for_each(seat_device, &seat->devices, link) {
@@ -191,17 +194,12 @@ static struct sway_seat_device *sway_seat_get_device(struct sway_seat *seat,
 	return NULL;
 }
 
-void sway_seat_configure_device(struct sway_seat *seat,
+void seat_configure_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
 	struct sway_seat_device *seat_device =
-		sway_seat_get_device(seat, input_device);
+		seat_get_device(seat, input_device);
 	if (!seat_device) {
 		return;
-	}
-
-	if (seat->config) {
-		seat_device->attachment_config =
-			seat_config_get_attachment(seat->config, input_device->identifier);
 	}
 
 	switch (input_device->wlr_device->type) {
@@ -219,10 +217,10 @@ void sway_seat_configure_device(struct sway_seat *seat,
 	}
 }
 
-void sway_seat_add_device(struct sway_seat *seat,
+void seat_add_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
-	if (sway_seat_get_device(seat, input_device)) {
-		sway_seat_configure_device(seat, input_device);
+	if (seat_get_device(seat, input_device)) {
+		seat_configure_device(seat, input_device);
 		return;
 	}
 
@@ -240,13 +238,13 @@ void sway_seat_add_device(struct sway_seat *seat,
 	seat_device->input_device = input_device;
 	wl_list_insert(&seat->devices, &seat_device->link);
 
-	sway_seat_configure_device(seat, input_device);
+	seat_configure_device(seat, input_device);
 }
 
-void sway_seat_remove_device(struct sway_seat *seat,
+void seat_remove_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
 	struct sway_seat_device *seat_device =
-		sway_seat_get_device(seat, input_device);
+		seat_get_device(seat, input_device);
 
 	if (!seat_device) {
 		return;
@@ -258,7 +256,7 @@ void sway_seat_remove_device(struct sway_seat *seat,
 	seat_device_destroy(seat_device);
 }
 
-void sway_seat_configure_xcursor(struct sway_seat *seat) {
+void seat_configure_xcursor(struct sway_seat *seat) {
 	// TODO configure theme and size
 	const char *cursor_theme = NULL;
 
@@ -273,7 +271,8 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 	}
 
 	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *output_container = root_container.children->items[i];
+		struct sway_container *output_container =
+			root_container.children->items[i];
 		struct wlr_output *output =
 			output_container->sway_output->wlr_output;
 		bool result =
@@ -292,9 +291,9 @@ void sway_seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-void sway_seat_set_focus_warp(struct sway_seat *seat,
+void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
-	struct sway_container *last_focus = sway_seat_get_focus(seat);
+	struct sway_container *last_focus = seat_get_focus(seat);
 
 	if (container && last_focus == container) {
 		return;
@@ -364,7 +363,7 @@ void sway_seat_set_focus_warp(struct sway_seat *seat,
 	}
 
 	if (last_focus && last_focus->type == C_VIEW &&
-			!sway_input_manager_has_focus(seat->input, last_focus)) {
+			!input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
 		view_set_activated(view, false);
 	}
@@ -372,12 +371,13 @@ void sway_seat_set_focus_warp(struct sway_seat *seat,
 	seat->has_focus = (container != NULL);
 }
 
-void sway_seat_set_focus(struct sway_seat *seat,
+void seat_set_focus(struct sway_seat *seat,
 		struct sway_container *container) {
-	sway_seat_set_focus_warp(seat, container, true);
+	seat_set_focus_warp(seat, container, true);
 }
 
-struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat, struct sway_container *container) {
+struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
+		struct sway_container *container) {
 	struct sway_seat_container *current = NULL;
 	struct sway_container *parent = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
@@ -398,16 +398,17 @@ struct sway_container *sway_seat_get_focus_inactive(struct sway_seat *seat, stru
 	return NULL;
 }
 
-struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
+struct sway_container *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
 	}
-	return sway_seat_get_focus_inactive(seat, &root_container);
+	return seat_get_focus_inactive(seat, &root_container);
 }
 
-struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
+struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		enum sway_container_type type) {
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
 	if (focus->type == type) {
 		return focus;
 	}
@@ -415,25 +416,27 @@ struct sway_container *sway_seat_get_focus_by_type(struct sway_seat *seat,
 	return container_parent(focus, type);
 }
 
-void sway_seat_set_config(struct sway_seat *seat,
+void seat_apply_config(struct sway_seat *seat,
 		struct seat_config *seat_config) {
-	// clear configs
-	free_seat_config(seat->config);
-	seat->config = NULL;
-
 	struct sway_seat_device *seat_device = NULL;
-	wl_list_for_each(seat_device, &seat->devices, link) {
-		seat_device->attachment_config = NULL;
-	}
 
 	if (!seat_config) {
 		return;
 	}
 
-	// add configs
-	seat->config = copy_seat_config(seat_config);
-
 	wl_list_for_each(seat_device, &seat->devices, link) {
-		sway_seat_configure_device(seat, seat_device->input_device);
+		seat_configure_device(seat, seat_device->input_device);
 	}
+}
+
+struct seat_config *seat_get_config(struct sway_seat *seat) {
+	struct seat_config *seat_config = NULL;
+	for (int i = 0; i < config->seat_configs->length; ++i ) {
+		seat_config = config->seat_configs->items[i];
+		if (strcmp(seat->wlr_seat->name, seat_config->name) == 0) {
+			return seat_config;
+		}
+	}
+
+	return NULL;
 }
