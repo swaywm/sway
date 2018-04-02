@@ -230,11 +230,10 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct seat_config *seat_config = seat_get_config(seat);
-
 	bool added = false;
 	wl_list_for_each(seat, &input->seats, link) {
-		bool has_attachment = config &&
+		struct seat_config *seat_config = seat_get_config(seat);
+		bool has_attachment = seat_config &&
 			(seat_config_get_attachment(seat_config, input_device->identifier) ||
 			 seat_config_get_attachment(seat_config, "*"));
 
@@ -246,6 +245,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	if (!added) {
 		wl_list_for_each(seat, &input->seats, link) {
+			struct seat_config *seat_config = seat_get_config(seat);
 			if (seat_config && seat_config->fallback == 1) {
 				seat_add_device(seat, input_device);
 				added = true;
