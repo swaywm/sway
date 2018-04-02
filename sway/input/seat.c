@@ -49,7 +49,8 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	if  (is_focus) {
 		// pick next focus
 		seat_set_focus(seat, NULL);
-		struct sway_container *next = seat_get_focus_inactive(seat, con->parent);
+		struct sway_container *next =
+			seat_get_focus_inactive(seat, con->parent);
 		if (next == NULL) {
 			next = con->parent;
 		}
@@ -133,7 +134,8 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
 
-	container_for_each_descendant_dfs(&root_container, collect_focus_iter, seat);
+	container_for_each_descendant_dfs(&root_container,
+		collect_focus_iter, seat);
 
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);
@@ -165,7 +167,8 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	if (!seat_device->keyboard) {
 		sway_keyboard_create(seat, seat_device);
 	}
-	struct wlr_keyboard *wlr_keyboard = seat_device->input_device->wlr_device->keyboard;
+	struct wlr_keyboard *wlr_keyboard =
+		seat_device->input_device->wlr_device->keyboard;
 	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device);
@@ -275,7 +278,8 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 	}
 
 	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *output_container = root_container.children->items[i];
+		struct sway_container *output_container =
+			root_container.children->items[i];
 		struct wlr_output *output =
 			output_container->sway_output->wlr_output;
 		bool result =
@@ -379,7 +383,8 @@ void seat_set_focus(struct sway_seat *seat,
 	seat_set_focus_warp(seat, container, true);
 }
 
-struct sway_container *seat_get_focus_inactive(struct sway_seat *seat, struct sway_container *container) {
+struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
+		struct sway_container *container) {
 	struct sway_seat_container *current = NULL;
 	struct sway_container *parent = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
@@ -409,7 +414,8 @@ struct sway_container *seat_get_focus(struct sway_seat *seat) {
 
 struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		enum sway_container_type type) {
-	struct sway_container *focus = seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
 	if (focus->type == type) {
 		return focus;
 	}

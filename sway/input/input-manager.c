@@ -92,7 +92,8 @@ static bool input_has_seat_configuration(struct sway_input_manager *input) {
 	return false;
 }
 
-static void input_manager_libinput_config_pointer(struct sway_input_device *input_device) {
+static void input_manager_libinput_config_pointer(
+		struct sway_input_device *input_device) {
 	struct wlr_input_device *wlr_device = input_device->wlr_device;
 	struct input_config *ic = input_device->config;
 	struct libinput_device *libinput_device;
@@ -102,22 +103,27 @@ static void input_manager_libinput_config_pointer(struct sway_input_device *inpu
 	}
 
 	libinput_device = wlr_libinput_get_device_handle(wlr_device);
-	wlr_log(L_DEBUG, "input_manager_libinput_config_pointer(%s)", ic->identifier);
+	wlr_log(L_DEBUG, "input_manager_libinput_config_pointer(%s)",
+		ic->identifier);
 
 	if (ic->accel_profile != INT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_profile(%d)",
 			ic->identifier, ic->accel_profile);
-		libinput_device_config_accel_set_profile(libinput_device, ic->accel_profile);
+		libinput_device_config_accel_set_profile(libinput_device,
+			ic->accel_profile);
 	}
 	if (ic->click_method != INT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) click_set_method(%d)",
 			ic->identifier, ic->click_method);
-		libinput_device_config_click_set_method(libinput_device, ic->click_method);
+		libinput_device_config_click_set_method(libinput_device,
+			ic->click_method);
 	}
 	if (ic->drag_lock != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_drag_lock_enabled(%d)",
+		wlr_log(L_DEBUG,
+			"libinput_config_pointer(%s) tap_set_drag_lock_enabled(%d)",
 			ic->identifier, ic->click_method);
-		libinput_device_config_tap_set_drag_lock_enabled(libinput_device, ic->drag_lock);
+		libinput_device_config_tap_set_drag_lock_enabled(libinput_device,
+			ic->drag_lock);
 	}
 	if (ic->dwt != INT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) dwt_set_enabled(%d)",
@@ -125,34 +131,43 @@ static void input_manager_libinput_config_pointer(struct sway_input_device *inpu
 		libinput_device_config_dwt_set_enabled(libinput_device, ic->dwt);
 	}
 	if (ic->left_handed != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) left_handed_set_enabled(%d)",
+		wlr_log(L_DEBUG,
+			"libinput_config_pointer(%s) left_handed_set_enabled(%d)",
 			ic->identifier, ic->left_handed);
-		libinput_device_config_left_handed_set(libinput_device, ic->left_handed);
+		libinput_device_config_left_handed_set(libinput_device,
+			ic->left_handed);
 	}
 	if (ic->middle_emulation != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) middle_emulation_set_enabled(%d)",
+		wlr_log(L_DEBUG,
+			"libinput_config_pointer(%s) middle_emulation_set_enabled(%d)",
 			ic->identifier, ic->middle_emulation);
-		libinput_device_config_middle_emulation_set_enabled(libinput_device, ic->middle_emulation);
+		libinput_device_config_middle_emulation_set_enabled(libinput_device,
+			ic->middle_emulation);
 	}
 	if (ic->natural_scroll != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) natural_scroll_set_enabled(%d)",
+		wlr_log(L_DEBUG,
+			"libinput_config_pointer(%s) natural_scroll_set_enabled(%d)",
 			ic->identifier, ic->natural_scroll);
-		libinput_device_config_scroll_set_natural_scroll_enabled(libinput_device, ic->natural_scroll);
+		libinput_device_config_scroll_set_natural_scroll_enabled(
+			libinput_device, ic->natural_scroll);
 	}
 	if (ic->pointer_accel != FLT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_speed(%f)",
 			ic->identifier, ic->pointer_accel);
-		libinput_device_config_accel_set_speed(libinput_device, ic->pointer_accel);
+		libinput_device_config_accel_set_speed(libinput_device,
+			ic->pointer_accel);
 	}
 	if (ic->scroll_method != INT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) scroll_set_method(%d)",
 			ic->identifier, ic->scroll_method);
-		libinput_device_config_scroll_set_method(libinput_device, ic->scroll_method);
+		libinput_device_config_scroll_set_method(libinput_device,
+			ic->scroll_method);
 	}
 	if (ic->send_events != INT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) send_events_set_mode(%d)",
 			ic->identifier, ic->send_events);
-		libinput_device_config_send_events_set_mode(libinput_device, ic->send_events);
+		libinput_device_config_send_events_set_mode(libinput_device,
+			ic->send_events);
 	}
 	if (ic->tap != INT_MIN) {
 		wlr_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_enabled(%d)",

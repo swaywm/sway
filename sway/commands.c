@@ -75,20 +75,20 @@ void apply_input_config(struct input_config *input) {
 	input_manager_apply_input_config(input_manager, input);
 }
 
-void apply_seat_config(struct seat_config *seat) {
+void apply_seat_config(struct seat_config *seat_config) {
 	int i;
-	i = list_seq_find(config->seat_configs, seat_name_cmp, seat->name);
+	i = list_seq_find(config->seat_configs, seat_name_cmp, seat_config->name);
 	if (i >= 0) {
 		// merge existing config
 		struct seat_config *sc = config->seat_configs->items[i];
-		merge_seat_config(sc, seat);
-		free_seat_config(seat);
-		seat = sc;
+		merge_seat_config(sc, seat_config);
+		free_seat_config(seat_config);
+		seat_config = sc;
 	} else {
-		list_add(config->seat_configs, seat);
+		list_add(config->seat_configs, seat_config);
 	}
 
-	input_manager_apply_seat_config(input_manager, seat);
+	input_manager_apply_seat_config(input_manager, seat_config);
 }
 
 /* Keep alphabetized */
