@@ -230,7 +230,7 @@ static uint32_t render_status_line_i3bar(cairo_t *cairo,
 	uint32_t max_height = 0;
 	bool edge = true;
 	struct i3bar_block *block;
-	wl_list_for_each_reverse(block, &status->blocks, link) {
+	wl_list_for_each(block, &status->blocks, link) {
 		uint32_t h = render_status_block(cairo, config, output,
 				block, x, height, focused, edge);
 		max_height = h > max_height ? h : max_height;
