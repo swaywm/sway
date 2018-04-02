@@ -78,10 +78,10 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		}
 		free(ws_name);
 		struct sway_container *old_parent = current->parent;
-		struct sway_container *focus = sway_seat_get_focus_inactive(
+		struct sway_container *focus = seat_get_focus_inactive(
 				config->handler_context.seat, ws);
 		container_move_to(current, focus);
-		sway_seat_set_focus(config->handler_context.seat, old_parent);
+		seat_set_focus(config->handler_context.seat, old_parent);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcasecmp(argv[1], "to") == 0
 			&& strcasecmp(argv[2], "output") == 0) {
@@ -100,7 +100,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			return cmd_results_new(CMD_FAILURE, "move workspace",
 				"Can't find output with name/direction '%s'", argv[3]);
 		}
-		struct sway_container *focus = sway_seat_get_focus_inactive(
+		struct sway_container *focus = seat_get_focus_inactive(
 				config->handler_context.seat, destination);
 		if (!focus) {
 			// We've never been to this output before
@@ -108,7 +108,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		}
 		struct sway_container *old_parent = current->parent;
 		container_move_to(current, focus);
-		sway_seat_set_focus(config->handler_context.seat, old_parent);
+		seat_set_focus(config->handler_context.seat, old_parent);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	return cmd_results_new(CMD_INVALID, "move", expected_syntax);

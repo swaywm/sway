@@ -158,17 +158,17 @@ void container_move_to(struct sway_container *container,
 	}
 	wl_signal_emit(&container->events.reparent, old_parent);
 	if (container->type == C_WORKSPACE) {
-		struct sway_seat *seat = sway_input_manager_get_default_seat(
+		struct sway_seat *seat = input_manager_get_default_seat(
 				input_manager);
 		if (old_parent->children->length == 0) {
 			char *ws_name = workspace_next_name(old_parent->name);
 			struct sway_container *ws =
 				container_workspace_create(old_parent, ws_name);
 			free(ws_name);
-			sway_seat_set_focus(seat, ws);
+			seat_set_focus(seat, ws);
 		}
 		container_sort_workspaces(new_parent);
-		sway_seat_set_focus(seat, new_parent);
+		seat_set_focus(seat, new_parent);
 	}
 	if (old_parent) {
 		arrange_windows(old_parent, -1, -1);
@@ -275,8 +275,8 @@ void arrange_windows(struct sway_container *container,
 			struct wlr_box *area = &output->sway_output->usable_area;
 			wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 					area->width, area->height, area->x, area->y);
-			container->width = area->width;
-			container->height = area->height;
+			container->width = width = area->width;
+			container->height = height = area->height;
 			container->x = x = area->x;
 			container->y = y = area->y;
 			wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
@@ -441,7 +441,7 @@ static struct sway_container *get_swayc_in_output_direction(
 		return NULL;
 	}
 
-	struct sway_container *ws = sway_seat_get_focus_inactive(seat, output);
+	struct sway_container *ws = seat_get_focus_inactive(seat, output);
 	if (ws->type != C_WORKSPACE) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
@@ -462,7 +462,7 @@ static struct sway_container *get_swayc_in_output_direction(
 		case MOVE_UP:
 		case MOVE_DOWN: {
 			struct sway_container *focused =
-				sway_seat_get_focus_inactive(seat, ws);
+				seat_get_focus_inactive(seat, ws);
 			if (focused && focused->parent) {
 				struct sway_container *parent = focused->parent;
 				if (parent->layout == L_VERT) {
@@ -546,7 +546,7 @@ struct sway_container *container_get_in_direction(
 		struct sway_container *container, struct sway_seat *seat,
 		enum movement_direction dir) {
 	if (dir == MOVE_CHILD) {
-		return sway_seat_get_focus_inactive(seat, container);
+		return seat_get_focus_inactive(seat, container);
 	}
 
 	struct sway_container *parent = container->parent;
@@ -605,7 +605,7 @@ struct sway_container *container_get_in_direction(
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
-				return sway_seat_get_focus_by_type(seat, next, C_VIEW);
+				return seat_get_focus_by_type(seat, next, C_VIEW);
 			} else {
 				return next;
 			}
@@ -635,7 +635,7 @@ struct sway_container *container_get_in_direction(
 						wrap_candidate = parent->children->items[0];
 					}
 					if (config->force_focus_wrapping) {
-						 return sway_seat_get_focus_by_type(seat,
+						 return seat_get_focus_by_type(seat,
 								 wrap_candidate, C_VIEW);
 					}
 				}
@@ -643,7 +643,7 @@ struct sway_container *container_get_in_direction(
 				wlr_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, parent->children->items[desired]);
-				return sway_seat_get_focus_by_type(seat,
+				return seat_get_focus_by_type(seat,
 						parent->children->items[desired], C_VIEW);
 			}
 		}
@@ -702,9 +702,9 @@ struct sway_container *container_split(struct sway_container *child,
 	cont->y = child->y;
 
 	if (child->type == C_WORKSPACE) {
-		struct sway_seat *seat = sway_input_manager_get_default_seat(input_manager);
+		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		struct sway_container *workspace = child;
-		bool set_focus = (sway_seat_get_focus(seat) == workspace);
+		bool set_focus = (seat_get_focus(seat) == workspace);
 
 		while (workspace->children->length) {
 			struct sway_container *ws_child = workspace->children->items[0];
@@ -716,7 +716,7 @@ struct sway_container *container_split(struct sway_container *child,
 		container_set_layout(workspace, layout);
 
 		if (set_focus) {
-			sway_seat_set_focus(seat, cont);
+			seat_set_focus(seat, cont);
 		}
 	} else {
 		cont->layout = layout;

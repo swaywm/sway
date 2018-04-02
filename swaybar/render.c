@@ -18,10 +18,33 @@ static const int ws_horizontal_padding = 5;
 static const double ws_vertical_padding = 1.5;
 static const double border_width = 1;
 
+static uint32_t render_status_line_error(cairo_t *cairo,
+		struct swaybar_config *config, const char *error,
+		double *x, uint32_t width, uint32_t height) {
+	if (!error) {
+		return 0;
+	}
+	cairo_set_source_u32(cairo, 0xFF0000FF);
+	static const int margin = 3;
+	int text_width, text_height;
+	get_text_size(cairo, config->font,
+			&text_width, &text_height, 1, false, "%s", error);
+	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
+	if (height < ideal_height) {
+		return ideal_height;
+	}
+	*x -= text_width + margin;
+	double text_y = height / 2.0 - text_height / 2.0;
+	cairo_move_to(cairo, *x, (int)floor(text_y));
+	pango_printf(cairo, config->font, 1, false, "%s", error);
+	*x -= margin;
+	return ideal_height;
+}
+
 static uint32_t render_status_line_text(cairo_t *cairo,
-		struct swaybar_config *config, struct status_line *status,
-		bool focused, uint32_t width, uint32_t height) {
-	if (!status->text) {
+		struct swaybar_config *config, const char *text,
+		bool focused, double *x, uint32_t width, uint32_t height) {
+	if (!text) {
 		return 0;
 	}
 	cairo_set_source_u32(cairo, focused ?
@@ -29,38 +52,211 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 	static const int margin = 3;
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
-			1, config->pango_markup, "%s", status->text);
+			1, config->pango_markup, "%s", text);
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	if (height < ideal_height) {
 		return ideal_height;
 	}
+	*x -= text_width + margin;
 	double text_y = height / 2.0 - text_height / 2.0;
-	cairo_move_to(cairo, width - text_width - margin, (int)floor(text_y));
-	pango_printf(cairo, config->font, 1, config->pango_markup,
-			"%s", status->text);
+	cairo_move_to(cairo, *x, (int)floor(text_y));
+	pango_printf(cairo, config->font, 1, config->pango_markup, "%s", text);
+	*x -= margin;
+	return ideal_height;
+}
+
+static void render_sharp_line(cairo_t *cairo, uint32_t color,
+		double x, double y, double width, double height) {
+	cairo_set_source_u32(cairo, color);
+	if (width > 1 && height > 1) {
+		cairo_rectangle(cairo, x, y, width, height);
+		cairo_fill(cairo);
+	} else {
+		if (width == 1) {
+			x += 0.5;
+			height += y;
+			width = x;
+		}
+		if (height == 1) {
+			y += 0.5;
+			width += x;
+			height = y;
+		}
+		cairo_move_to(cairo, x, y);
+		cairo_set_line_width(cairo, 1.0);
+		cairo_line_to(cairo, width, height);
+		cairo_stroke(cairo);
+	}
+}
+
+static void block_hotspot_callback(struct swaybar_output *output,
+			int x, int y, uint32_t button, void *data) {
+	struct i3bar_block *block = data;
+	struct status_line *status = output->bar->status;
+	i3bar_block_send_click(status, block, x, y, button);
+}
+
+static uint32_t render_status_block(cairo_t *cairo,
+		struct swaybar_config *config, struct swaybar_output *output,
+		struct i3bar_block *block, double *x,
+		uint32_t height, bool focused, bool edge) {
+	static const int margin = 3;
+	if (!block->full_text || !*block->full_text) {
+		return 0;
+	}
+
+	int text_width, text_height;
+	get_text_size(cairo, config->font, &text_width, &text_height,
+			1, block->markup, "%s", block->full_text);
+	int width = text_width;
+	if (width < block->min_width) {
+		width = block->min_width;
+	}
+	double block_width = width;
+	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
+	if (height < ideal_height) {
+		return ideal_height;
+	}
+
+	*x -= width;
+	if (block->border && block->border_left > 0) {
+		*x -= (block->border_left + margin);
+		block_width += block->border_left + margin;
+	}
+	if (block->border && block->border_right > 0) {
+		*x -= (block->border_right + margin);
+		block_width += block->border_right + margin;
+	}
+
+	int sep_width;
+	if (!edge) {
+		if (config->sep_symbol) {
+			int _height;
+			get_text_size(cairo, config->font, &sep_width, &_height,
+					1, false, "%s", config->sep_symbol);
+			uint32_t _ideal_height = _height + ws_vertical_padding * 2;
+			if (height < _ideal_height) {
+				return _height;
+			}
+			if (sep_width > block->separator_block_width) {
+				block->separator_block_width = sep_width + margin * 2;
+			}
+		}
+		*x -= block->separator_block_width;
+	} else {
+		*x -= margin;
+	}
+
+	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
+	hotspot->x = *x;
+	hotspot->y = 0;
+	hotspot->width = width;
+	hotspot->height = height;
+	hotspot->callback = block_hotspot_callback;
+	hotspot->destroy = NULL;
+	hotspot->data = block;
+	wl_list_insert(&output->hotspots, &hotspot->link);
+
+	double pos = *x;
+	if (block->background) {
+		cairo_set_source_u32(cairo, block->background);
+		cairo_rectangle(cairo, pos - 0.5, 1, block_width, height);
+		cairo_fill(cairo);
+	}
+
+	if (block->border && block->border_top > 0) {
+		render_sharp_line(cairo, block->border,
+				pos - 0.5, 1, block_width, block->border_top);
+	}
+	if (block->border && block->border_bottom > 0) {
+		render_sharp_line(cairo, block->border,
+				pos - 0.5, height - 1 - block->border_bottom,
+				block_width, block->border_bottom);
+	}
+	if (block->border != 0 && block->border_left > 0) {
+		render_sharp_line(cairo, block->border,
+				pos - 0.5, 1, block->border_left, height);
+		pos += block->border_left + margin;
+	}
+
+	double offset = 0;
+	if (strncmp(block->align, "left", 5) == 0) {
+		offset = pos;
+	} else if (strncmp(block->align, "right", 5) == 0) {
+		offset = pos + width - text_width;
+	} else if (strncmp(block->align, "center", 6) == 0) {
+		offset = pos + (width - text_width) / 2;
+	}
+	cairo_move_to(cairo, offset, height / 2.0 - text_height / 2.0);
+	uint32_t color = block->color ?  *block->color : config->colors.statusline;
+	cairo_set_source_u32(cairo, color);
+	pango_printf(cairo, config->font, 1, block->markup, "%s", block->full_text);
+	pos += width;
+
+	if (block->border && block->border_right > 0) {
+		pos += margin;
+		render_sharp_line(cairo, block->border,
+				pos - 0.5, 1, block->border_right, height);
+		pos += block->border_right;
+	}
+
+	if (!edge && block->separator) {
+		if (focused) {
+			cairo_set_source_u32(cairo, config->colors.focused_separator);
+		} else {
+			cairo_set_source_u32(cairo, config->colors.separator);
+		}
+		if (config->sep_symbol) {
+			offset = pos + (block->separator_block_width - sep_width) / 2;
+			cairo_move_to(cairo, offset, margin);
+			pango_printf(cairo, config->font, 1, false,
+					"%s", config->sep_symbol);
+		} else {
+			cairo_set_line_width(cairo, 1);
+			cairo_move_to(cairo,
+					pos + block->separator_block_width / 2, margin);
+			cairo_line_to(cairo,
+					pos + block->separator_block_width / 2, height - margin);
+			cairo_stroke(cairo);
+		}
+	}
 	return ideal_height;
 }
 
 static uint32_t render_status_line_i3bar(cairo_t *cairo,
-		struct swaybar_config *config, struct status_line *status,
-		bool focused, uint32_t width, uint32_t height) {
-	// TODO
-	return 0;
+		struct swaybar_config *config, struct swaybar_output *output,
+		struct status_line *status, bool focused,
+		double *x, uint32_t width, uint32_t height) {
+	uint32_t max_height = 0;
+	bool edge = true;
+	struct i3bar_block *block;
+	wl_list_for_each(block, &status->blocks, link) {
+		uint32_t h = render_status_block(cairo, config, output,
+				block, x, height, focused, edge);
+		max_height = h > max_height ? h : max_height;
+		edge = false;
+	}
+	return max_height;
 }
 
 static uint32_t render_status_line(cairo_t *cairo,
-		struct swaybar_config *config, struct status_line *status,
-		bool focused, uint32_t width, uint32_t height) {
+		struct swaybar_config *config, struct swaybar_output *output,
+		struct status_line *status, bool focused,
+		double *x, uint32_t width, uint32_t height) {
 	switch (status->protocol) {
+	case PROTOCOL_ERROR:
+		return render_status_line_error(cairo,
+				config, status->text, x, width, height);
 	case PROTOCOL_TEXT:
 		return render_status_line_text(cairo,
-				config, status, focused, width, height);
+				config, status->text, focused, x, width, height);
 	case PROTOCOL_I3BAR:
-		return render_status_line_i3bar(cairo,
-				config, status, focused, width, height);
-	default:
+		return render_status_line_i3bar(cairo, config, output, status,
+				focused, x, width, height);
+	case PROTOCOL_UNDEF:
 		return 0;
 	}
+	return 0;
 }
 
 static uint32_t render_binding_mode_indicator(cairo_t *cairo,
@@ -166,8 +362,8 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;
 	hotspot->y = 0;
-	hotspot->height = height;
 	hotspot->width = width;
+	hotspot->height = height;
 	hotspot->callback = workspace_hotspot_callback;
 	hotspot->destroy = free;
 	hotspot->data = strdup(name);
@@ -180,6 +376,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 static uint32_t render_to_cairo(cairo_t *cairo,
 		struct swaybar *bar, struct swaybar_output *output) {
 	struct swaybar_config *config = bar->config;
+	wlr_log(L_DEBUG, "output %p", output);
 
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	if (output->focused) {
@@ -211,9 +408,10 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 				cairo, config, config->mode, x, output->height);
 		max_height = h > max_height ? h : max_height;
 	}
+	x = output->width;
 	if (bar->status) {
-		uint32_t h = render_status_line(cairo, config, bar->status,
-				output->focused, output->width, output->height);
+		uint32_t h = render_status_line(cairo, config, output, bar->status,
+				output->focused, &x, output->width, output->height);
 		max_height = h > max_height ? h : max_height;
 	}
 

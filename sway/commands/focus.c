@@ -36,7 +36,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	}
 
 	if (argc == 0) {
-		sway_seat_set_focus(seat, con);
+		seat_set_focus(seat, con);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 
@@ -50,7 +50,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	struct sway_container *next_focus = container_get_in_direction(
 			con, seat, direction);
 	if (next_focus) {
-		sway_seat_set_focus(seat, next_focus);
+		seat_set_focus(seat, next_focus);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

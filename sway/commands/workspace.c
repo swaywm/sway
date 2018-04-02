@@ -91,7 +91,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 		workspace_switch(ws);
 		current_container =
-			sway_seat_get_focus(config->handler_context.seat);
+			seat_get_focus(config->handler_context.seat);
 		struct sway_container *new_output = container_parent(current_container, C_OUTPUT);
 
 		if (config->mouse_warping && old_output != new_output) {

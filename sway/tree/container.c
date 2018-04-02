@@ -89,8 +89,8 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 		// container_remove_child, which removes child from this container
 		while (cont->children != NULL && cont->children->length != 0) {
 			struct sway_container *child = cont->children->items[0];
+			container_remove_child(child);
 			container_destroy(child);
-			list_del(cont->children, 0);
 		}
 	}
 	if (cont->marks) {
@@ -172,7 +172,7 @@ struct sway_container *container_output_create(
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		if (!seat->has_focus) {
-			sway_seat_set_focus(seat, ws);
+			seat_set_focus(seat, ws);
 		}
 	}
 

@@ -428,7 +428,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct xkb_rule_names rules;
 	memset(&rules, 0, sizeof(rules));
 	struct input_config *input_config =
-		keyboard->seat_device->input_device->config;
+		input_device_get_config(keyboard->seat_device->input_device);
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 

@@ -133,10 +133,10 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&shell_surface->events.destroy, &sway_surface->destroy);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = sway_seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *focus = seat_get_focus_inactive(seat, &root_container);
 	struct sway_container *cont = container_view_create(focus, sway_view);
 	sway_view->swayc = cont;
 
 	arrange_windows(cont->parent, -1, -1);
-	sway_input_manager_set_focus(input_manager, cont);
+	input_manager_set_focus(input_manager, cont);
 }
