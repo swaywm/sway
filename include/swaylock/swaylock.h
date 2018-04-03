@@ -15,18 +15,25 @@ struct swaylock_args {
 	bool show_indicator;
 };
 
+struct swaylock_password {
+	size_t size;
+	size_t len;
+	char *buffer;
+};
+
 struct swaylock_state {
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct wl_shm *shm;
-	struct wl_list contexts;
+	struct wl_list surfaces;
 	struct swaylock_args args;
+	struct swaylock_password password;
 	struct swaylock_xkb xkb;
 	bool run_display;
 };
 
-struct swaylock_context {
+struct swaylock_surface {
 	cairo_surface_t *image;
 	struct swaylock_state *state;
 	struct wl_output *output;
@@ -37,5 +44,9 @@ struct swaylock_context {
 	uint32_t width, height;
 	struct wl_list link;
 };
+
+void swaylock_handle_key(struct swaylock_state *state,
+		xkb_keysym_t keysym, uint32_t codepoint);
+void render_frame(struct swaylock_surface *surface);
 
 #endif

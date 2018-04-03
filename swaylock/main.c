@@ -32,39 +32,22 @@ static void daemonize() {
 	}
 }
 
-static void render_frame(struct swaylock_context *context) {
-	struct swaylock_state *state = context->state;
-	context->current_buffer = get_next_buffer(state->shm,
-			context->buffers, context->width, context->height);
-	cairo_t *cairo = context->current_buffer->cairo;
-	if (state->args.mode == BACKGROUND_MODE_SOLID_COLOR) {
-		cairo_set_source_u32(cairo, state->args.color);
-		cairo_paint(cairo);
-	} else {
-		render_background_image(cairo, context->image,
-				state->args.mode, context->width, context->height);
-	}
-	wl_surface_attach(context->surface, context->current_buffer->buffer, 0, 0);
-	wl_surface_damage(context->surface, 0, 0, context->width, context->height);
-	wl_surface_commit(context->surface);
-}
-
 static void layer_surface_configure(void *data,
-		struct zwlr_layer_surface_v1 *surface,
+		struct zwlr_layer_surface_v1 *layer_surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
-	struct swaylock_context *context = data;
-	context->width = width;
-	context->height = height;
-	zwlr_layer_surface_v1_ack_configure(surface, serial);
-	render_frame(context);
+	struct swaylock_surface *surface = data;
+	surface->width = width;
+	surface->height = height;
+	zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
+	render_frame(surface);
 }
 
 static void layer_surface_closed(void *data,
-		struct zwlr_layer_surface_v1 *surface) {
-	struct swaylock_context *context = data;
-	zwlr_layer_surface_v1_destroy(context->layer_surface);
-	wl_surface_destroy(context->surface);
-	context->state->run_display = false;
+		struct zwlr_layer_surface_v1 *layer_surface) {
+	struct swaylock_surface *surface = data;
+	zwlr_layer_surface_v1_destroy(surface->layer_surface);
+	wl_surface_destroy(surface->surface);
+	surface->state->run_display = false;
 }
 
 static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
@@ -89,12 +72,12 @@ static void handle_global(void *data, struct wl_registry *registry,
 		state->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
-		struct swaylock_context *context =
-			calloc(1, sizeof(struct swaylock_context));
-		context->state = state;
-		context->output = wl_registry_bind(registry, name,
+		struct swaylock_surface *surface =
+			calloc(1, sizeof(struct swaylock_surface));
+		surface->state = state;
+		surface->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 1);
-		wl_list_insert(&state->contexts, &context->link);
+		wl_list_insert(&state->surfaces, &surface->link);
 	}
 }
 
@@ -198,7 +181,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	wl_list_init(&state.contexts);
+	wl_list_init(&state.surfaces);
 	state.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	assert(state.display = wl_display_connect(NULL));
 
@@ -207,33 +190,33 @@ int main(int argc, char **argv) {
 	wl_display_roundtrip(state.display);
 	assert(state.compositor && state.layer_shell && state.shm);
 
-	if (wl_list_empty(&state.contexts)) {
+	if (wl_list_empty(&state.surfaces)) {
 		wlr_log(L_DEBUG, "Exiting - no outputs to show on.");
 		return 0;
 	}
 
-	struct swaylock_context *context;
-	wl_list_for_each(context, &state.contexts, link) {
-		assert(context->surface =
+	struct swaylock_surface *surface;
+	wl_list_for_each(surface, &state.surfaces, link) {
+		assert(surface->surface =
 				wl_compositor_create_surface(state.compositor));
 
-		context->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-				state.layer_shell, context->surface, context->output,
+		surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+				state.layer_shell, surface->surface, surface->output,
 				ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "lockscreen");
-		assert(context->layer_surface);
+		assert(surface->layer_surface);
 
-		zwlr_layer_surface_v1_set_size(context->layer_surface, 0, 0);
-		zwlr_layer_surface_v1_set_anchor(context->layer_surface,
+		zwlr_layer_surface_v1_set_size(surface->layer_surface, 0, 0);
+		zwlr_layer_surface_v1_set_anchor(surface->layer_surface,
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
 				ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
-		zwlr_layer_surface_v1_set_exclusive_zone(context->layer_surface, -1);
+		zwlr_layer_surface_v1_set_exclusive_zone(surface->layer_surface, -1);
 		zwlr_layer_surface_v1_set_keyboard_interactivity(
-				context->layer_surface, true);
-		zwlr_layer_surface_v1_add_listener(context->layer_surface,
-				&layer_surface_listener, context);
-		wl_surface_commit(context->surface);
+				surface->layer_surface, true);
+		zwlr_layer_surface_v1_add_listener(surface->layer_surface,
+				&layer_surface_listener, surface);
+		wl_surface_commit(surface->surface);
 		wl_display_roundtrip(state.display);
 	}
 

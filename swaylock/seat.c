@@ -73,7 +73,9 @@ static void keyboard_key(void *data, struct wl_keyboard *wl_keyboard,
 	uint32_t keycode = key_state == WL_KEYBOARD_KEY_STATE_PRESSED ?
 		key + 8 : 0;
 	uint32_t codepoint = xkb_state_key_get_utf32(state->xkb.state, keycode);
-	wlr_log(L_DEBUG, "%c %d", codepoint, sym);
+	if (key_state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		swaylock_handle_key(state, sym, codepoint);
+	}
 }
 
 static void keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,

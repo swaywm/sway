@@ -1,6 +1,8 @@
 executable(
 	'swaylock', [
 		'main.c',
+		'password.c',
+		'render.c',
 		'seat.c'
 	],
 	include_directories: [sway_inc],
