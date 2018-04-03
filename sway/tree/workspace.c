@@ -87,6 +87,24 @@ char *workspace_next_name(const char *output_name) {
 				continue;
 			}
 
+			// If the command is workspace number <name>, isolate the name
+			if (strncmp(_target, "number ", strlen("number ")) == 0) {
+				size_t length = strlen(_target) - strlen("number ") + 1;
+				char *temp = malloc(length);
+				strncpy(temp, _target + strlen("number "), length - 1);
+				temp[length - 1] = '\0';
+				free(_target);
+				_target = temp;
+				wlr_log(L_DEBUG, "Isolated name from workspace number: '%s'", _target);
+
+				// Make sure the workspace number doesn't already exist
+				if (workspace_by_number(_target)) {
+					free(_target);
+					free(dup);
+					continue;
+				}
+			}
+
 			// Make sure that the workspace doesn't already exist
 			if (workspace_by_name(_target)) {
 				free(_target);
