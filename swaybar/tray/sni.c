@@ -7,6 +7,7 @@
 #include <dbus/dbus.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include "config.h"
 #include "swaybar/tray/dbus.h"
 #include "swaybar/tray/sni.h"
 #include "swaybar/tray/icon.h"

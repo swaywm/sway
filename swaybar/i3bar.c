@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
+#include "config.h"
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 

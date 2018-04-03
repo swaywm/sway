@@ -6,6 +6,7 @@
 #include <dbus/dbus.h>
 #include <wayland-util.h>
 #include "cairo.h"
+#include "config.h"
 #include "swaybar/bar.h"
 #include "swaybar/tray/tray.h"
 #include "swaybar/tray/dbus.h"

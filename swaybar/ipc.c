@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <json-c/json.h>
 #include <wlr/util/log.h>
+#include "config.h"
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
 #include "ipc-client.h"

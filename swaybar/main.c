@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <getopt.h>
 #include <wlr/util/log.h>
+#include "config.h"
 #include "swaybar/bar.h"
 #include "ipc-client.h"
 

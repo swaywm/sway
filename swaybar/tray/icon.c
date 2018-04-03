@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
+#include "config.h"
 #include "swaybar/tray/icon.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"

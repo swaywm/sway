@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <time.h>
 #include <dbus/dbus.h>
+#include "config.h"
 #include "swaybar/tray/dbus.h"
 #include "swaybar/event_loop.h"
 #include "log.h"

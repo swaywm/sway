@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <string.h>
+#include "config.h"
 #include "swaybar/config.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 

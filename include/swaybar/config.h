@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-client.h>
+#include "config.h"
 #include "util.h"
 
 struct box_colors {

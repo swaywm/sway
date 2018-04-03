@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <dbus/dbus.h>
+#include "config.h"
 #include "swaybar/tray/dbus.h"
 #include "list.h"
 #include "log.h"

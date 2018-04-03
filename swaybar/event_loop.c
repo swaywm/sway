@@ -5,6 +5,7 @@
 #include <strings.h>
 #include <poll.h>
 #include <time.h>
+#include "config.h"
 #include "swaybar/event_loop.h"
 #include "list.h"
 
