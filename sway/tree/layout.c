@@ -47,6 +47,19 @@ static void output_layout_change_notify(struct wl_listener *listener,
 	arrange_windows(&root_container, -1, -1);
 }
 
+struct sway_container *container_set_layout(struct sway_container *container,
+		enum sway_container_layout layout) {
+	if (container->type == C_WORKSPACE) {
+		container->workspace_layout = layout;
+		if (layout == L_HORIZ || layout == L_VERT) {
+			container->layout = layout;
+		}
+	} else {
+		container->layout = layout;
+	}
+	return container;
+}
+
 void layout_init(void) {
 	root_container.id = 0; // normally assigned in new_swayc()
 	root_container.type = C_ROOT;

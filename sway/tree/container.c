@@ -441,19 +441,6 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 	return swayc;
 }
 
-struct sway_container *container_set_layout(struct sway_container *container,
-		enum sway_container_layout layout) {
-	if (container->type == C_WORKSPACE) {
-		container->workspace_layout = layout;
-		if (layout == L_HORIZ || layout == L_VERT) {
-			container->layout = layout;
-		}
-	} else {
-		container->layout = layout;
-	}
-	return container;
-}
-
 void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data) {

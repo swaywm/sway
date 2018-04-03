@@ -132,10 +132,6 @@ struct sway_container *container_destroy(struct sway_container *container);
 
 struct sway_container *container_close(struct sway_container *container);
 
-// TODO move to layout.c
-struct sway_container *container_set_layout(struct sway_container *container,
-		enum sway_container_layout layout);
-
 // TODO rename to container_descendants_for_each()
 void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
