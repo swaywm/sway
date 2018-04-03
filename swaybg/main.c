@@ -47,6 +47,7 @@ struct swaybg_state {
 
 	bool run_display;
 	uint32_t width, height;
+	int32_t scale;
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
 };
@@ -74,52 +75,53 @@ static void render_image(struct swaybg_state *state) {
 	cairo_surface_t *image = state->context.image;
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
-	int wwidth = state->width;
-	int wheight = state->height;
+	int buffer_width = state->width * state->scale;
+	int buffer_height = state->height * state->scale;
 
 	switch (state->args->mode) {
 	case BACKGROUND_MODE_STRETCH:
-		cairo_scale(cairo, (double)wwidth / width, (double)wheight / height);
+		cairo_scale(cairo, (double)buffer_width / width,
+			(double)buffer_height / height);
 		cairo_set_source_surface(cairo, image, 0, 0);
 		break;
 	case BACKGROUND_MODE_FILL: {
-		double window_ratio = (double)wwidth / wheight;
+		double window_ratio = (double)buffer_width / buffer_height;
 		double bg_ratio = width / height;
 
 		if (window_ratio > bg_ratio) {
-			double scale = (double)wwidth / width;
+			double scale = (double)buffer_width / width;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					0, (double)wheight / 2 / scale - height / 2);
+					0, (double)buffer_height / 2 / scale - height / 2);
 		} else {
-			double scale = (double)wheight / height;
+			double scale = (double)buffer_height / height;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					(double)wwidth / 2 / scale - width / 2, 0);
+					(double)buffer_width / 2 / scale - width / 2, 0);
 		}
 		break;
 	}
 	case BACKGROUND_MODE_FIT: {
-		double window_ratio = (double)wwidth / wheight;
+		double window_ratio = (double)buffer_width / buffer_height;
 		double bg_ratio = width / height;
 
 		if (window_ratio > bg_ratio) {
-			double scale = (double)wheight / height;
+			double scale = (double)buffer_height / height;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					(double)wwidth / 2 / scale - width / 2, 0);
+					(double)buffer_width / 2 / scale - width / 2, 0);
 		} else {
-			double scale = (double)wwidth / width;
+			double scale = (double)buffer_width / width;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					0, (double)wheight / 2 / scale - height / 2);
+					0, (double)buffer_height / 2 / scale - height / 2);
 		}
 		break;
 	}
 	case BACKGROUND_MODE_CENTER:
 		cairo_set_source_surface(cairo, image,
-				(double)wwidth / 2 - width / 2,
-				(double)wheight / 2 - height / 2);
+				(double)buffer_width / 2 - width / 2,
+				(double)buffer_height / 2 - height / 2);
 		break;
 	case BACKGROUND_MODE_TILE: {
 		cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
@@ -135,8 +137,8 @@ static void render_image(struct swaybg_state *state) {
 }
 
 static void render_frame(struct swaybg_state *state) {
-	state->current_buffer = get_next_buffer(state->shm,
-			state->buffers, state->width, state->height);
+	state->current_buffer = get_next_buffer(state->shm, state->buffers,
+		state->width * state->scale, state->height * state->scale);
 	cairo_t *cairo = state->current_buffer->cairo;
 
 	switch (state->args->mode) {
@@ -149,6 +151,7 @@ static void render_frame(struct swaybg_state *state) {
 		break;
 	}
 
+	wl_surface_set_buffer_scale(state->surface, state->scale);
 	wl_surface_attach(state->surface, state->current_buffer->buffer, 0, 0);
 	wl_surface_damage(state->surface, 0, 0, state->width, state->height);
 	wl_surface_commit(state->surface);
@@ -212,12 +215,42 @@ struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
+static void output_geometry(void *data, struct wl_output *output, int32_t x,
+		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
+		const char *make, const char *model, int32_t transform) {
+	// Who cares
+}
+
+static void output_mode(void *data, struct wl_output *output, uint32_t flags,
+		int32_t width, int32_t height, int32_t refresh) {
+	// Who cares
+}
+
+static void output_done(void *data, struct wl_output *output) {
+	// Who cares
+}
+
+static void output_scale(void *data, struct wl_output *output, int32_t factor) {
+	struct swaybg_state *state = data;
+	state->scale = factor;
+	if (state->run_display) {
+		render_frame(state);
+	}
+}
+
+struct wl_output_listener output_listener = {
+	.geometry = output_geometry,
+	.mode = output_mode,
+	.done = output_done,
+	.scale = output_scale,
+};
+
 static void handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	struct swaybg_state *state = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		state->compositor = wl_registry_bind(registry, name,
-				&wl_compositor_interface, 1);
+				&wl_compositor_interface, 3);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		state->shm = wl_registry_bind(registry, name,
 				&wl_shm_interface, 1);
@@ -225,7 +258,8 @@ static void handle_global(void *data, struct wl_registry *registry,
 		static int output_idx = 0;
 		if (output_idx == state->args->output_idx) {
 			state->output = wl_registry_bind(registry, name,
-					&wl_output_interface, 1);
+					&wl_output_interface, 3);
+			wl_output_add_listener(state->output, &output_listener, state);
 		}
 		output_idx++;
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
@@ -286,6 +320,9 @@ int main(int argc, const char **argv) {
 	wl_registry_add_listener(registry, &registry_listener, &state);
 	wl_display_roundtrip(state.display);
 	assert(state.compositor && state.layer_shell && state.output && state.shm);
+
+	// Second roundtrip to get output properties
+	wl_display_roundtrip(state.display);
 
 	assert(state.surface = wl_compositor_create_surface(state.compositor));
 
