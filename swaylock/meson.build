@@ -1,6 +1,8 @@
 executable(
-	'swaylock',
-	'main.c',
+	'swaylock', [
+		'main.c',
+		'seat.c'
+	],
 	include_directories: [sway_inc],
 	dependencies: [
 		cairo,
