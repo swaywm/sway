@@ -278,6 +278,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 			sway_layer, map);
 	struct sway_output *output = sway_layer->layer_surface->output->data;
 	wlr_output_damage_add_box(output->damage, &sway_layer->geo);
+	wlr_surface_send_enter(sway_layer->layer_surface->surface,
+		sway_layer->layer_surface->output);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
