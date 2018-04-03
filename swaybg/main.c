@@ -43,6 +43,7 @@ struct swaybg_state {
 
 	struct wl_output *output;
 	struct wl_surface *surface;
+	struct wl_region *input_region;
 	struct zwlr_layer_surface_v1 *layer_surface;
 
 	bool run_display;
@@ -204,6 +205,7 @@ static void layer_surface_closed(void *data,
 	struct swaybg_state *state = data;
 	zwlr_layer_surface_v1_destroy(state->layer_surface);
 	wl_surface_destroy(state->surface);
+	wl_region_destroy(state->input_region);
 	state->run_display = false;
 }
 
@@ -288,6 +290,9 @@ int main(int argc, const char **argv) {
 	assert(state.compositor && state.layer_shell && state.output && state.shm);
 
 	assert(state.surface = wl_compositor_create_surface(state.compositor));
+
+	assert(state.input_region = wl_compositor_create_region(state.compositor));
+	wl_surface_set_input_region(state.surface, state.input_region);
 
 	state.layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			state.layer_shell, state.surface, state.output,
