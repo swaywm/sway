@@ -77,7 +77,7 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-struct sway_container *container_finish(struct sway_container *cont) {
+static struct sway_container *container_finish(struct sway_container *cont) {
 	if (cont == NULL) {
 		return NULL;
 	}
