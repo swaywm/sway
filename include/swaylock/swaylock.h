@@ -52,6 +52,7 @@ struct swaylock_surface {
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
 	uint32_t width, height;
+	int32_t scale;
 	struct wl_list link;
 };
 

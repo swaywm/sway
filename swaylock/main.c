@@ -56,12 +56,42 @@ static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
+static void output_geometry(void *data, struct wl_output *output, int32_t x,
+		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
+		const char *make, const char *model, int32_t transform) {
+	// Who cares
+}
+
+static void output_mode(void *data, struct wl_output *output, uint32_t flags,
+		int32_t width, int32_t height, int32_t refresh) {
+	// Who cares
+}
+
+static void output_done(void *data, struct wl_output *output) {
+	// Who cares
+}
+
+static void output_scale(void *data, struct wl_output *output, int32_t factor) {
+	struct swaylock_surface *surface = data;
+	surface->scale = factor;
+	if (surface->state->run_display) {
+		render_frames(surface->state);
+	}
+}
+
+struct wl_output_listener output_listener = {
+	.geometry = output_geometry,
+	.mode = output_mode,
+	.done = output_done,
+	.scale = output_scale,
+};
+
 static void handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	struct swaylock_state *state = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		state->compositor = wl_registry_bind(registry, name,
-				&wl_compositor_interface, 1);
+				&wl_compositor_interface, 3);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		state->shm = wl_registry_bind(registry, name,
 				&wl_shm_interface, 1);
@@ -80,7 +110,8 @@ static void handle_global(void *data, struct wl_registry *registry,
 			calloc(1, sizeof(struct swaylock_surface));
 		surface->state = state;
 		surface->output = wl_registry_bind(registry, name,
-				&wl_output_interface, 1);
+				&wl_output_interface, 3);
+		wl_output_add_listener(surface->output, &output_listener, surface);
 		wl_list_insert(&state->surfaces, &surface->link);
 	}
 }

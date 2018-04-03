@@ -9,28 +9,32 @@
 void render_frame(struct swaylock_surface *surface) {
 	struct swaylock_state *state = surface->state;
 	surface->current_buffer = get_next_buffer(state->shm,
-			surface->buffers, surface->width, surface->height);
+			surface->buffers,
+			surface->width * surface->scale,
+			surface->height * surface->scale);
 	cairo_t *cairo = surface->current_buffer->cairo;
 	cairo_identity_matrix(cairo);
+
+	int buffer_width = surface->width * surface->scale;
+	int buffer_height = surface->height * surface->scale;
 	if (state->args.mode == BACKGROUND_MODE_SOLID_COLOR) {
 		cairo_set_source_u32(cairo, state->args.color);
 		cairo_paint(cairo);
 	} else {
-		// TODO: hidpi
 		render_background_image(cairo, surface->image,
-				state->args.mode, surface->width, surface->height, 1);
+				state->args.mode, buffer_width, buffer_height);
 	}
 	cairo_identity_matrix(cairo);
 
-	const int ARC_RADIUS = 50;
-	const int ARC_THICKNESS = 10;
-	const float TYPE_INDICATOR_RANGE = M_PI / 3.0f;
-	const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
+	int ARC_RADIUS = 50 * surface->scale;
+	int ARC_THICKNESS = 10 * surface->scale;
+	float TYPE_INDICATOR_RANGE = M_PI / 3.0f;
+	float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f * surface->scale;
+
 	if (state->args.show_indicator && state->auth_state != AUTH_STATE_IDLE) {
 		// Draw circle
 		cairo_set_line_width(cairo, ARC_THICKNESS);
-		cairo_arc(cairo, surface->width / 2, surface->height / 2,
-				ARC_RADIUS, 0, 2 * M_PI);
+		cairo_arc(cairo, buffer_width / 2, buffer_height / 2, ARC_RADIUS, 0, 2 * M_PI);
 		switch (state->auth_state) {
 		case AUTH_STATE_INPUT:
 		case AUTH_STATE_BACKSPACE: {
@@ -74,9 +78,9 @@ void render_frame(struct swaylock_surface *surface) {
 			cairo_text_extents_t extents;
 			double x, y;
 			cairo_text_extents(cairo, text, &extents);
-			x = (surface->width / 2) -
+			x = (buffer_width / 2) -
 				(extents.width / 2 + extents.x_bearing);
-			y = (surface->height / 2) -
+			y = (buffer_height / 2) -
 				(extents.height / 2 + extents.y_bearing);
 
 			cairo_move_to(cairo, x, y);
@@ -91,7 +95,7 @@ void render_frame(struct swaylock_surface *surface) {
 			static double highlight_start = 0;
 			highlight_start +=
 				(rand() % (int)(M_PI * 100)) / 100.0 + M_PI * 0.5;
-			cairo_arc(cairo, surface->width / 2, surface->height / 2,
+			cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 					ARC_RADIUS, highlight_start,
 					highlight_start + TYPE_INDICATOR_RANGE);
 			if (state->auth_state == AUTH_STATE_INPUT) {
@@ -103,12 +107,12 @@ void render_frame(struct swaylock_surface *surface) {
 
 			// Draw borders
 			cairo_set_source_rgb(cairo, 0, 0, 0);
-			cairo_arc(cairo, surface->width / 2, surface->height / 2,
+			cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 					ARC_RADIUS, highlight_start,
 					highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
 			cairo_stroke(cairo);
 
-			cairo_arc(cairo, surface->width / 2, surface->height / 2,
+			cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 					ARC_RADIUS, highlight_start + TYPE_INDICATOR_RANGE,
 					highlight_start + TYPE_INDICATOR_RANGE +
 						TYPE_INDICATOR_BORDER_THICKNESS);
@@ -117,17 +121,18 @@ void render_frame(struct swaylock_surface *surface) {
 
 		// Draw inner + outer border of the circle
 		cairo_set_source_rgb(cairo, 0, 0, 0);
-		cairo_set_line_width(cairo, 2.0);
-		cairo_arc(cairo, surface->width / 2, surface->height / 2,
+		cairo_set_line_width(cairo, 2.0 * surface->scale);
+		cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 				ARC_RADIUS - ARC_THICKNESS / 2, 0, 2 * M_PI);
 		cairo_stroke(cairo);
-		cairo_arc(cairo, surface->width / 2, surface->height / 2,
+		cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 				ARC_RADIUS + ARC_THICKNESS / 2, 0, 2 * M_PI);
 		cairo_stroke(cairo);
 	}
 
+	wl_surface_set_buffer_scale(surface->surface, surface->scale);
 	wl_surface_attach(surface->surface, surface->current_buffer->buffer, 0, 0);
-	wl_surface_damage(surface->surface, 0, 0, surface->width, surface->height);
+	wl_surface_damage(surface->surface, 0, 0, buffer_width, buffer_height);
 	wl_surface_commit(surface->surface);
 	wl_display_roundtrip(state->display);
 }
