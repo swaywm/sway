@@ -424,11 +424,18 @@ void seat_set_focus(struct sway_seat *seat,
 
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface *layer) {
-	if (!layer) {
+	if (!layer && seat->focused_layer) {
 		seat->focused_layer = NULL;
+		struct sway_container *c = seat_get_focus(seat);
+		if (c) {
+			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", c,
+					container_type_to_str(c->type), c->name);
+			// Hack to get seat to re-focus the return value of get_focus
+			seat_set_focus(seat, c->parent);
+			seat_set_focus(seat, c);
+		}
 		return;
-	}
-	if (seat->focused_layer == layer) {
+	} else if (!layer || seat->focused_layer == layer) {
 		return;
 	}
 	if (seat->has_focus) {
