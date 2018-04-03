@@ -19,10 +19,14 @@
 
 struct sway_container root_container;
 
-static void output_layout_change_notify(struct wl_listener *listener,
+static void output_layout_handle_change(struct wl_listener *listener,
 		void *data) {
-	struct wlr_box *layout_box = wlr_output_layout_get_box(
-		root_container.sway_root->output_layout, NULL);
+	struct wlr_output_layout *output_layout =
+		root_container.sway_root->output_layout;
+	const struct wlr_box *layout_box =
+		wlr_output_layout_get_box(output_layout, NULL);
+	root_container.x = layout_box->x;
+	root_container.y = layout_box->y;
 	root_container.width = layout_box->width;
 	root_container.height = layout_box->height;
 
@@ -34,8 +38,8 @@ static void output_layout_change_notify(struct wl_listener *listener,
 		}
 		struct sway_output *output = output_container->sway_output;
 
-		struct wlr_box *output_box = wlr_output_layout_get_box(
-			root_container.sway_root->output_layout, output->wlr_output);
+		const struct wlr_box *output_box =
+			wlr_output_layout_get_box(output_layout, output->wlr_output);
 		if (!output_box) {
 			continue;
 		}
@@ -62,7 +66,7 @@ void layout_init(void) {
 	wl_signal_init(&root_container.sway_root->events.new_container);
 
 	root_container.sway_root->output_layout_change.notify =
-		output_layout_change_notify;
+		output_layout_handle_change;
 	wl_signal_add(&root_container.sway_root->output_layout->events.change,
 		&root_container.sway_root->output_layout_change);
 }
