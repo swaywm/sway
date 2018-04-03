@@ -112,8 +112,43 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 struct sway_container *container_destroy(struct sway_container *cont) {
 	struct sway_container *parent = _container_destroy(cont);
 	parent = container_reap_empty(parent);
-	arrange_windows(&root_container, -1, -1);
 	return parent;
+}
+
+static void container_close_func(struct sway_container *container, void *data) {
+	if (container->type == C_VIEW) {
+		view_close(container->sway_view);
+	}
+}
+
+struct sway_container *container_close(struct sway_container *con) {
+	if (!sway_assert(con != NULL, "container_close called with a NULL container")) {
+		return NULL;
+	}
+
+	switch (con->type) {
+		case C_TYPES:
+			wlr_log(L_ERROR, "tried to close an invalid container");
+			break;
+		case C_ROOT:
+			wlr_log(L_ERROR, "tried to close the root container");
+			break;
+		case C_OUTPUT:
+			container_output_destroy(con);
+			break;
+		case C_WORKSPACE:
+			container_workspace_destroy(con);
+			break;
+		case C_CONTAINER:
+			container_for_each_descendant_dfs(con, container_close_func, NULL);
+			break;
+		case C_VIEW:
+			view_close(con->sway_view);
+			break;
+
+	}
+
+	return con->parent;
 }
 
 struct sway_container *container_output_create(

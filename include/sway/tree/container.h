@@ -134,6 +134,8 @@ struct sway_container *container_workspace_destroy(struct sway_container *contai
 struct sway_container *container_output_destroy(struct sway_container *container);
 struct sway_container *container_view_destroy(struct sway_container *container);
 
+struct sway_container *container_close(struct sway_container *container);
+
 // TODO move to layout.c
 struct sway_container *container_set_layout(struct sway_container *container,
 		enum sway_container_layout layout);

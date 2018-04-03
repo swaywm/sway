@@ -19,11 +19,8 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 				"Can only kill views and containers with this command");
 		break;
 	case C_CONTAINER:
-		con = container_destroy(con);
-		arrange_windows(con, -1, -1);
-		break;
 	case C_VIEW:
-		view_close(con->sway_view);
+		container_close(con);
 		break;
 	}
 

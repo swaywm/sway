@@ -110,7 +110,7 @@ struct sway_container *container_reap_empty(struct sway_container *container) {
 	wlr_log(L_DEBUG, "Reaping %p %s '%s'", container,
 			container_type_to_str(container->type), container->name);
 	while (container->type != C_ROOT && container->type != C_OUTPUT
-			&& container->children->length == 0) {
+			&& container->children && container->children->length == 0) {
 		if (container->type == C_WORKSPACE) {
 			if (!workspace_is_visible(container)) {
 				struct sway_container *parent = container->parent;

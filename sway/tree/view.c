@@ -84,7 +84,7 @@ struct sway_container *container_view_destroy(struct sway_container *view) {
 	}
 	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
 	struct sway_container *parent = container_destroy(view);
-	arrange_windows(parent, -1, -1);
+	arrange_windows(&root_container, -1, -1);
 	return parent;
 }
 
