@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200809L
-#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -283,8 +282,6 @@ void arrange_windows(struct sway_container *container,
 			container->children->length);
 		break;
 	case L_VERT:
-		assert(container);
-		assert(container->children);
 		apply_vert_layout(container, x, y, width, height, 0,
 			container->children->length);
 		break;
@@ -357,7 +354,6 @@ void apply_vert_layout(struct sway_container *container,
 		const double x, const double y,
 		const double width, const double height, const int start,
 		const int end) {
-	assert(container);
 	int i;
 	double scale = 0;
 	// Calculate total height
