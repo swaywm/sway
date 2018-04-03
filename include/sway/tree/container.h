@@ -128,11 +128,12 @@ struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
 
 // TODO don't return the parent on destroy
-void container_destroy(struct sway_container *container);
+struct sway_container *container_destroy(struct sway_container *container);
 
-struct sway_container *container_workspace_destroy(struct sway_container *container);
+// TODO make me private
+struct sway_container *container_finish(struct sway_container *cont);
+
 struct sway_container *container_output_destroy(struct sway_container *container);
-void container_view_destroy(struct sway_container *container);
 
 struct sway_container *container_close(struct sway_container *container);
 

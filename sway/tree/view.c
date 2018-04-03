@@ -27,8 +27,7 @@ void view_destroy(struct sway_view *view) {
 		view_unmap(view);
 	}
 
-	container_view_destroy(view->swayc);
-	free(view);
+	container_destroy(view->swayc);
 }
 
 const char *view_get_title(struct sway_view *view) {
@@ -76,14 +75,6 @@ void view_close(struct sway_view *view) {
 	if (view->impl->close) {
 		view->impl->close(view);
 	}
-}
-
-void container_view_destroy(struct sway_container *view) {
-	if (!view) {
-		return;
-	}
-	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
-	container_destroy(view);
 }
 
 void view_damage_whole(struct sway_view *view) {
@@ -158,7 +149,7 @@ void view_unmap(struct sway_view *view) {
 
 	view_damage_whole(view);
 
-	container_view_destroy(view->swayc);
+	container_destroy(view->swayc);
 
 	view->swayc = NULL;
 	view->surface = NULL;

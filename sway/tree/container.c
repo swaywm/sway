@@ -77,7 +77,7 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-static struct sway_container *container_finish(struct sway_container *cont) {
+struct sway_container *container_finish(struct sway_container *cont) {
 	if (cont == NULL) {
 		return NULL;
 	}
@@ -91,7 +91,7 @@ static struct sway_container *container_finish(struct sway_container *cont) {
 		while (cont->children != NULL && cont->children->length != 0) {
 			struct sway_container *child = cont->children->items[0];
 			container_remove_child(child);
-			container_destroy(child);
+			container_finish(child);
 		}
 	}
 	if (cont->marks) {
@@ -109,6 +109,45 @@ static struct sway_container *container_finish(struct sway_container *cont) {
 	free(cont);
 	return parent;
 }
+static struct sway_container *container_workspace_destroy(
+		struct sway_container *workspace) {
+	if (!sway_assert(workspace, "cannot destroy null workspace")) {
+		return NULL;
+	}
+
+	// Do not destroy this if it's the last workspace on this output
+	struct sway_container *output = container_parent(workspace, C_OUTPUT);
+	if (output && output->children->length == 1) {
+		return NULL;
+	}
+
+	struct sway_container *parent = workspace->parent;
+	if (workspace->children->length == 0) {
+		// destroy the WS if there are no children (TODO check for floating)
+		wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+		ipc_event_workspace(workspace, NULL, "empty");
+	} else {
+		// Move children to a different workspace on this output
+		struct sway_container *new_workspace = NULL;
+		// TODO move floating
+		for (int i = 0; i < output->children->length; i++) {
+			if (output->children->items[i] != workspace) {
+				new_workspace = output->children->items[i];
+				break;
+			}
+		}
+
+		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
+			workspace->name, new_workspace->name);
+		for (int i = 0; i < workspace->children->length; i++) {
+			container_move_to(workspace->children->items[i], new_workspace);
+		}
+	}
+
+	container_finish(workspace);
+	return parent;
+}
+
 
 static void reap_empty_func(struct sway_container *con, void *data) {
 	switch (con->type) {
@@ -146,18 +185,46 @@ struct sway_container *container_reap_empty(struct sway_container *container) {
 	return parent;
 }
 
+static void container_root_finish(struct sway_container *con) {
+	wlr_log(L_ERROR, "TODO: destroy the root container");
+}
 
-void container_destroy(struct sway_container *cont) {
-	if (cont == NULL) {
-		return;
+struct sway_container *container_destroy(struct sway_container *con) {
+	if (con == NULL) {
+		return NULL;
 	}
 
-	if (cont->children != NULL && cont->children->length) {
-		assert(false && "dont destroy containers with children");
+	struct sway_container *anscestor = NULL;
+
+	switch (con->type) {
+		case C_ROOT:
+			container_root_finish(con);
+			break;
+		case C_OUTPUT:
+			anscestor = container_output_destroy(con);
+			break;
+		case C_WORKSPACE:
+			anscestor = container_workspace_destroy(con);
+			break;
+		case C_CONTAINER:
+			if (con->children != NULL && con->children->length) {
+				assert(false && "dont destroy container containers with children");
+			}
+			container_finish(con);
+			// TODO return parent to arrange maybe?
+			break;
+		case C_VIEW:
+			container_finish(con);
+			// TODO return parent to arrange maybe?
+			break;
+		case C_TYPES:
+			wlr_log(L_ERROR, "tried to destroy an invalid container");
+			break;
 	}
 
-	container_finish(cont);
 	container_reap_empty(&root_container);
+
+	return anscestor;
 }
 
 static void container_close_func(struct sway_container *container, void *data) {

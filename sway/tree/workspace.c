@@ -208,45 +208,6 @@ struct sway_container *workspace_create(const char *name) {
 	return new_ws;
 }
 
-struct sway_container *container_workspace_destroy(
-		struct sway_container *workspace) {
-	if (!sway_assert(workspace, "cannot destroy null workspace")) {
-		return NULL;
-	}
-
-	// Do not destroy this if it's the last workspace on this output
-	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	if (output && output->children->length == 1) {
-		return NULL;
-	}
-
-	struct sway_container *parent = workspace->parent;
-	if (workspace->children->length == 0) {
-		// destroy the WS if there are no children (TODO check for floating)
-		wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
-		ipc_event_workspace(workspace, NULL, "empty");
-	} else {
-		// Move children to a different workspace on this output
-		struct sway_container *new_workspace = NULL;
-		// TODO move floating
-		for (int i = 0; i < output->children->length; i++) {
-			if (output->children->items[i] != workspace) {
-				new_workspace = output->children->items[i];
-				break;
-			}
-		}
-
-		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
-			workspace->name, new_workspace->name);
-		for (int i = 0; i < workspace->children->length; i++) {
-			container_move_to(workspace->children->items[i], new_workspace);
-		}
-	}
-
-	container_destroy(workspace);
-	return parent;
-}
-
 /**
  * Get the previous or next workspace on the specified output. Wraps around at
  * the end and beginning.  If next is false, the previous workspace is returned,
