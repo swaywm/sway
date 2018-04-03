@@ -149,7 +149,7 @@ void container_move_to(struct sway_container *container,
 		if (old_parent->children->length == 0) {
 			char *ws_name = workspace_next_name(old_parent->name);
 			struct sway_container *ws =
-				container_workspace_create(old_parent, ws_name);
+				workspace_create(old_parent, ws_name);
 			free(ws_name);
 			seat_set_focus(seat, ws);
 		}

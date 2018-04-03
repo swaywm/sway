@@ -51,7 +51,7 @@ const char *container_type_to_str(enum sway_container_type type) {
 	}
 }
 
-static void notify_new_container(struct sway_container *container) {
+void container_create_notify(struct sway_container *container) {
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 	ipc_event_window(container, "new");
 }
@@ -312,7 +312,7 @@ struct sway_container *container_close(struct sway_container *con) {
 	return parent;
 }
 
-struct sway_container *container_output_create(
+struct sway_container *output_create(
 		struct sway_output *sway_output) {
 	struct wlr_box size;
 	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
@@ -363,7 +363,7 @@ struct sway_container *container_output_create(
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
 	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
-	struct sway_container *ws = container_workspace_create(output, ws_name);
+	struct sway_container *ws = workspace_create(output, ws_name);
 	// Set each seat's focus if not already set
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input_manager->seats, link) {
@@ -373,60 +373,8 @@ struct sway_container *container_output_create(
 	}
 
 	free(ws_name);
-	notify_new_container(output);
+	container_create_notify(output);
 	return output;
-}
-
-static struct sway_container *get_workspace_initial_output(const char *name) {
-	struct sway_container *parent;
-	// Search for workspace<->output pair
-	int e = config->workspace_outputs->length;
-	for (int i = 0; i < config->workspace_outputs->length; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcasecmp(wso->workspace, name) == 0) {
-			// Find output to use if it exists
-			e = root_container.children->length;
-			for (i = 0; i < e; ++i) {
-				parent = root_container.children->items[i];
-				if (strcmp(parent->name, wso->output) == 0) {
-					return parent;
-				}
-			}
-			break;
-		}
-	}
-	// Otherwise put it on the focused output
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus =
-		seat_get_focus_inactive(seat, &root_container);
-	parent = focus;
-	parent = container_parent(parent, C_OUTPUT);
-	return parent;
-}
-
-struct sway_container *container_workspace_create(struct sway_container *output,
-		const char *name) {
-	if (output == NULL) {
-		output = get_workspace_initial_output(name);
-	}
-
-	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
-	struct sway_container *workspace = container_create(C_WORKSPACE);
-
-	workspace->x = output->x;
-	workspace->y = output->y;
-	workspace->width = output->width;
-	workspace->height = output->height;
-	workspace->name = !name ? NULL : strdup(name);
-	workspace->prev_layout = L_NONE;
-	workspace->layout = container_get_default_layout(output);
-	workspace->workspace_layout = workspace->layout;
-
-	container_add_child(output, workspace);
-	container_sort_workspaces(output);
-	notify_new_container(workspace);
-
-	return workspace;
 }
 
 struct sway_container *container_view_create(struct sway_container *sibling,
@@ -452,7 +400,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		// Regular case, create as sibling of current container
 		container_add_sibling(sibling, swayc);
 	}
-	notify_new_container(swayc);
+	container_create_notify(swayc);
 	return swayc;
 }
 

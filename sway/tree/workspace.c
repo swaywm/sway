@@ -14,6 +14,58 @@
 #include "log.h"
 #include "util.h"
 
+static struct sway_container *get_workspace_initial_output(const char *name) {
+	struct sway_container *parent;
+	// Search for workspace<->output pair
+	int e = config->workspace_outputs->length;
+	for (int i = 0; i < config->workspace_outputs->length; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcasecmp(wso->workspace, name) == 0) {
+			// Find output to use if it exists
+			e = root_container.children->length;
+			for (i = 0; i < e; ++i) {
+				parent = root_container.children->items[i];
+				if (strcmp(parent->name, wso->output) == 0) {
+					return parent;
+				}
+			}
+			break;
+		}
+	}
+	// Otherwise put it on the focused output
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
+	parent = focus;
+	parent = container_parent(parent, C_OUTPUT);
+	return parent;
+}
+
+struct sway_container *workspace_create(struct sway_container *output,
+		const char *name) {
+	if (output == NULL) {
+		output = get_workspace_initial_output(name);
+	}
+
+	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
+	struct sway_container *workspace = container_create(C_WORKSPACE);
+
+	workspace->x = output->x;
+	workspace->y = output->y;
+	workspace->width = output->width;
+	workspace->height = output->height;
+	workspace->name = !name ? NULL : strdup(name);
+	workspace->prev_layout = L_NONE;
+	workspace->layout = container_get_default_layout(output);
+	workspace->workspace_layout = workspace->layout;
+
+	container_add_child(output, workspace);
+	container_sort_workspaces(output);
+	container_create_notify(workspace);
+
+	return workspace;
+}
+
 char *prev_workspace_name = NULL;
 struct workspace_by_number_data {
 	int len;
@@ -292,7 +344,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		struct sway_container *new_ws = workspace_by_name(prev_workspace_name);
 		workspace = new_ws ?
 			new_ws :
-			container_workspace_create(NULL, prev_workspace_name);
+			workspace_create(NULL, prev_workspace_name);
 	}
 
 	if (!prev_workspace_name || (strcmp(prev_workspace_name, active_ws->name)

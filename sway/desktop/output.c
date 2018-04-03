@@ -396,7 +396,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	output->damage = wlr_output_damage_create(wlr_output);
 
-	output->swayc = container_output_create(output);
+	output->swayc = output_create(output);
 	if (!output->swayc) {
 		free(output);
 		return;

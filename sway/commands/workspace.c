@@ -61,7 +61,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (!(ws = workspace_by_number(argv[1]))) {
 				char *name = join_args(argv + 1, argc - 1);
-				ws = container_workspace_create(NULL, name);
+				ws = workspace_create(NULL, name);
 				free(name);
 			}
 		} else if (strcasecmp(argv[0], "next") == 0) {
@@ -80,12 +80,12 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				ws = old_workspace;
 			} else if (prev_workspace_name
 					&& !(ws = workspace_by_name(prev_workspace_name))) {
-				ws = container_workspace_create(NULL, prev_workspace_name);
+				ws = workspace_create(NULL, prev_workspace_name);
 			}
 		} else {
 			char *name = join_args(argv, argc);
 			if (!(ws = workspace_by_name(name))) {
-				ws = container_workspace_create(NULL, name);
+				ws = workspace_create(NULL, name);
 			}
 			free(name);
 		}
