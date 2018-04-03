@@ -182,6 +182,9 @@ static struct sway_container *container_workspace_destroy(
 	}
 
 	_container_destroy(workspace);
+
+	output_damage_whole(output->sway_output);
+
 	return parent;
 }
 
