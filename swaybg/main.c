@@ -75,52 +75,53 @@ static void render_image(struct swaybg_state *state) {
 	cairo_surface_t *image = state->context.image;
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
-	int wwidth = state->width * state->scale;
-	int wheight = state->height * state->scale;
+	int buffer_width = state->width * state->scale;
+	int buffer_height = state->height * state->scale;
 
 	switch (state->args->mode) {
 	case BACKGROUND_MODE_STRETCH:
-		cairo_scale(cairo, (double)wwidth / width, (double)wheight / height);
+		cairo_scale(cairo, (double)buffer_width / width,
+			(double)buffer_height / height);
 		cairo_set_source_surface(cairo, image, 0, 0);
 		break;
 	case BACKGROUND_MODE_FILL: {
-		double window_ratio = (double)wwidth / wheight;
+		double window_ratio = (double)buffer_width / buffer_height;
 		double bg_ratio = width / height;
 
 		if (window_ratio > bg_ratio) {
-			double scale = (double)wwidth / width;
+			double scale = (double)buffer_width / width;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					0, (double)wheight / 2 / scale - height / 2);
+					0, (double)buffer_height / 2 / scale - height / 2);
 		} else {
-			double scale = (double)wheight / height;
+			double scale = (double)buffer_height / height;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					(double)wwidth / 2 / scale - width / 2, 0);
+					(double)buffer_width / 2 / scale - width / 2, 0);
 		}
 		break;
 	}
 	case BACKGROUND_MODE_FIT: {
-		double window_ratio = (double)wwidth / wheight;
+		double window_ratio = (double)buffer_width / buffer_height;
 		double bg_ratio = width / height;
 
 		if (window_ratio > bg_ratio) {
-			double scale = (double)wheight / height;
+			double scale = (double)buffer_height / height;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					(double)wwidth / 2 / scale - width / 2, 0);
+					(double)buffer_width / 2 / scale - width / 2, 0);
 		} else {
-			double scale = (double)wwidth / width;
+			double scale = (double)buffer_width / width;
 			cairo_scale(cairo, scale, scale);
 			cairo_set_source_surface(cairo, image,
-					0, (double)wheight / 2 / scale - height / 2);
+					0, (double)buffer_height / 2 / scale - height / 2);
 		}
 		break;
 	}
 	case BACKGROUND_MODE_CENTER:
 		cairo_set_source_surface(cairo, image,
-				(double)wwidth / 2 - width / 2,
-				(double)wheight / 2 - height / 2);
+				(double)buffer_width / 2 - width / 2,
+				(double)buffer_height / 2 - height / 2);
 		break;
 	case BACKGROUND_MODE_TILE: {
 		cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
