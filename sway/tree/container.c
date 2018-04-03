@@ -77,7 +77,7 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-static struct sway_container *_container_destroy(struct sway_container *cont) {
+static struct sway_container *container_finish(struct sway_container *cont) {
 	if (cont == NULL) {
 		return NULL;
 	}
@@ -124,13 +124,13 @@ static void reap_empty_func(struct sway_container *con, void *data) {
 			break;
 		case C_CONTAINER:
 			if (con->children->length == 0) {
-				_container_destroy(con);
+				container_finish(con);
 			} else if (con->children->length == 1) {
 				struct sway_container *only_child = con->children->items[0];
 				if (only_child->type == C_CONTAINER) {
 					container_remove_child(only_child);
 					container_replace_child(con, only_child);
-					_container_destroy(con);
+					container_finish(con);
 				}
 			}
 		case C_VIEW:
@@ -146,6 +146,7 @@ struct sway_container *container_reap_empty(struct sway_container *container) {
 	return parent;
 }
 
+
 void container_destroy(struct sway_container *cont) {
 	if (cont == NULL) {
 		return;
@@ -155,7 +156,7 @@ void container_destroy(struct sway_container *cont) {
 		assert(false && "dont destroy containers with children");
 	}
 
-	_container_destroy(cont);
+	container_finish(cont);
 	container_reap_empty(&root_container);
 }
 
