@@ -91,12 +91,10 @@ struct sway_container {
 	} events;
 };
 
-// TODO make private and use the container-specific create functions
 struct sway_container *container_create(enum sway_container_type type);
 
 const char *container_type_to_str(enum sway_container_type type);
 
-// TODO only one container create function and pass the type?
 struct sway_container *container_output_create(
 		struct sway_output *sway_output);
 
@@ -123,16 +121,13 @@ struct sway_container *container_workspace_create(struct sway_container *output,
  * or a container container and are rendered in the order and structure of
  * how they are attached to the tree.
  */
-// TODO view containers should be created in a detached state.
 struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
 
-// TODO don't return the parent on destroy
 struct sway_container *container_destroy(struct sway_container *container);
 
 struct sway_container *container_close(struct sway_container *container);
 
-// TODO rename to container_descendants_for_each()
 void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data);
@@ -147,7 +142,6 @@ struct sway_container *container_find(struct sway_container *container,
 /**
  * Finds a parent container with the given struct sway_containerype.
  */
-// TODO rename to container_parent_of_type()
 struct sway_container *container_parent(struct sway_container *container,
 		enum sway_container_type type);
 
