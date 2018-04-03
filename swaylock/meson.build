@@ -12,6 +12,7 @@ executable(
 		math,
 		pango,
 		pangocairo,
+		xkbcommon,
 		wayland_client,
 		wlroots,
 	],
