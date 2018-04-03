@@ -362,7 +362,7 @@ struct sway_container *container_output_create(
 	return output;
 }
 
-static struct sway_container *workspace_get_initial_output(const char *name) {
+static struct sway_container *get_workspace_initial_output(const char *name) {
 	struct sway_container *parent;
 	// Search for workspace<->output pair
 	int i, e = config->workspace_outputs->length;
@@ -392,7 +392,7 @@ static struct sway_container *workspace_get_initial_output(const char *name) {
 struct sway_container *container_workspace_create(struct sway_container *output,
 		const char *name) {
 	if (output == NULL) {
-		output = workspace_get_initial_output(name);
+		output = get_workspace_initial_output(name);
 	}
 
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
