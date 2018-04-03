@@ -28,7 +28,8 @@ cairo_surface_t *load_background_image(const char *path) {
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(path, &err);
 	if (!pixbuf) {
-		wlr_log(L_ERROR, "Failed to load background image.");
+		wlr_log(L_ERROR, "Failed to load background image (%s).",
+				err->message);
 		return false;
 	}
 	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);

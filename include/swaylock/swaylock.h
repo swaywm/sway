@@ -9,6 +9,14 @@
 #include "swaylock/seat.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
+enum auth_state {
+    AUTH_STATE_IDLE,
+    AUTH_STATE_INPUT,
+    AUTH_STATE_BACKSPACE,
+    AUTH_STATE_VALIDATING,
+    AUTH_STATE_INVALID,
+};
+
 struct swaylock_args {
 	uint32_t color;
 	enum background_mode mode;
@@ -30,6 +38,7 @@ struct swaylock_state {
 	struct swaylock_args args;
 	struct swaylock_password password;
 	struct swaylock_xkb xkb;
+	enum auth_state auth_state;
 	bool run_display;
 };
 
@@ -48,5 +57,6 @@ struct swaylock_surface {
 void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint);
 void render_frame(struct swaylock_surface *surface);
+void render_frames(struct swaylock_state *state);
 
 #endif

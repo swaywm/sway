@@ -133,6 +133,7 @@ int main(int argc, char **argv) {
 		.color = 0xFFFFFFFF,
 		.show_indicator = true,
 	};
+	cairo_surface_t *background_image = NULL;
 	state.args = args;
 	wlr_log_init(L_DEBUG, NULL);
 
@@ -150,8 +151,13 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case 'i':
-			// TODO
-			return 1;
+			// TODO: Multiple background images (bleh)
+			background_image = load_background_image(optarg);
+			if (!background_image) {
+				return 1;
+			}
+			state.args.mode = BACKGROUND_MODE_FILL;
+			break;
 		case 's':
 			state.args.mode = parse_background_mode(optarg);
 			if (state.args.mode == BACKGROUND_MODE_INVALID) {
@@ -159,7 +165,7 @@ int main(int argc, char **argv) {
 			}
 			break;
 		case 't':
-			// TODO
+			state.args.mode = BACKGROUND_MODE_TILE;
 			break;
 		case 'v':
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
@@ -197,6 +203,8 @@ int main(int argc, char **argv) {
 
 	struct swaylock_surface *surface;
 	wl_list_for_each(surface, &state.surfaces, link) {
+		surface->image = background_image;
+
 		assert(surface->surface =
 				wl_compositor_create_surface(state.compositor));
 

@@ -50,21 +50,23 @@ static bool attempt_password(struct swaylock_password *pw) {
 		wlr_log(L_ERROR, "pam_end failed");
 		goto fail;
 	}
-	// PAM freed this
+	// PAM frees this
 	pw->buffer = NULL;
 	pw->len = pw->size = 0;
 	return true;
 fail:
-	// PAM freed this
+	// PAM frees this
 	pw->buffer = NULL;
 	pw->len = pw->size = 0;
 	return false;
 }
 
-static void backspace(struct swaylock_password *pw) {
+static bool backspace(struct swaylock_password *pw) {
 	if (pw->len != 0) {
 		pw->buffer[--pw->len] = 0;
+		return true;
 	}
+	return false;
 }
 
 static void append_ch(struct swaylock_password *pw, uint32_t codepoint) {
@@ -97,17 +99,27 @@ void swaylock_handle_key(struct swaylock_state *state,
 	switch (keysym) {
 		case XKB_KEY_KP_Enter: /* fallthrough */
 		case XKB_KEY_Return:
+			state->auth_state = AUTH_STATE_VALIDATING;
+			render_frames(state);
 			if (attempt_password(&state->password)) {
 				exit(0);
 			}
+			state->auth_state = AUTH_STATE_INVALID;
+			render_frames(state);
 			break;
 		case XKB_KEY_BackSpace:
-			backspace(&state->password);
+			if (backspace(&state->password)) {
+				state->auth_state = AUTH_STATE_BACKSPACE;
+				render_frames(state);
+			}
 			break;
 		default:
 			if (codepoint) {
 				append_ch(&state->password, codepoint);
+				state->auth_state = AUTH_STATE_INPUT;
+				render_frames(state);
 			}
 			break;
 	}
+	// TODO: Expire state in a few seconds
 }
