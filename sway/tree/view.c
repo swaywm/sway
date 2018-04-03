@@ -78,14 +78,12 @@ void view_close(struct sway_view *view) {
 	}
 }
 
-struct sway_container *container_view_destroy(struct sway_container *view) {
+void container_view_destroy(struct sway_container *view) {
 	if (!view) {
-		return NULL;
+		return;
 	}
 	wlr_log(L_DEBUG, "Destroying view '%s'", view->name);
-	struct sway_container *parent = container_destroy(view);
-	arrange_windows(&root_container, -1, -1);
-	return parent;
+	container_destroy(view);
 }
 
 void view_damage_whole(struct sway_view *view) {
@@ -164,6 +162,8 @@ void view_unmap(struct sway_view *view) {
 
 	view->swayc = NULL;
 	view->surface = NULL;
+
+	arrange_windows(&root_container, -1, -1);
 }
 
 void view_update_position(struct sway_view *view, double ox, double oy) {

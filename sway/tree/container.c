@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -109,10 +110,53 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 	return parent;
 }
 
-struct sway_container *container_destroy(struct sway_container *cont) {
-	struct sway_container *parent = _container_destroy(cont);
-	parent = container_reap_empty(parent);
+static void reap_empty_func(struct sway_container *con, void *data) {
+	switch (con->type) {
+		case C_TYPES:
+		case C_ROOT:
+		case C_OUTPUT:
+			// dont reap these
+			break;
+		case C_WORKSPACE:
+			if (!workspace_is_visible(con) && con->children->length == 0) {
+				container_workspace_destroy(con);
+			}
+			break;
+		case C_CONTAINER:
+			if (con->children->length == 0) {
+				_container_destroy(con);
+			} else if (con->children->length == 1) {
+				struct sway_container *only_child = con->children->items[0];
+				if (only_child->type == C_CONTAINER) {
+					container_remove_child(only_child);
+					container_replace_child(con, only_child);
+					_container_destroy(con);
+				}
+			}
+		case C_VIEW:
+			break;
+	}
+}
+
+struct sway_container *container_reap_empty(struct sway_container *container) {
+	struct sway_container *parent = container->parent;
+
+	container_for_each_descendant_dfs(container, reap_empty_func, NULL);
+
 	return parent;
+}
+
+void container_destroy(struct sway_container *cont) {
+	if (cont == NULL) {
+		return;
+	}
+
+	if (cont->children != NULL && cont->children->length) {
+		assert(false && "dont destroy containers with children");
+	}
+
+	_container_destroy(cont);
+	container_reap_empty(&root_container);
 }
 
 static void container_close_func(struct sway_container *container, void *data) {
@@ -125,6 +169,8 @@ struct sway_container *container_close(struct sway_container *con) {
 	if (!sway_assert(con != NULL, "container_close called with a NULL container")) {
 		return NULL;
 	}
+
+	struct sway_container *parent = con->parent;
 
 	switch (con->type) {
 		case C_TYPES:
@@ -148,7 +194,7 @@ struct sway_container *container_close(struct sway_container *con) {
 
 	}
 
-	return con->parent;
+	return parent;
 }
 
 struct sway_container *container_output_create(

@@ -103,32 +103,6 @@ void container_add_child(struct sway_container *parent,
 	child->parent = parent;
 }
 
-struct sway_container *container_reap_empty(struct sway_container *container) {
-	if (container == NULL) {
-		return NULL;
-	}
-	wlr_log(L_DEBUG, "Reaping %p %s '%s'", container,
-			container_type_to_str(container->type), container->name);
-	while (container->type != C_ROOT && container->type != C_OUTPUT
-			&& container->children && container->children->length == 0) {
-		if (container->type == C_WORKSPACE) {
-			if (!workspace_is_visible(container)) {
-				struct sway_container *parent = container->parent;
-				container_workspace_destroy(container);
-				return parent;
-			}
-			return container;
-		} else if (container->type == C_CONTAINER) {
-			struct sway_container *parent = container->parent;
-			container_destroy(container);
-			container = parent;
-		} else {
-			container = container->parent;
-		}
-	}
-	return container;
-}
-
 struct sway_container *container_remove_child(struct sway_container *child) {
 	struct sway_container *parent = child->parent;
 	for (int i = 0; i < parent->children->length; ++i) {
@@ -309,6 +283,8 @@ void arrange_windows(struct sway_container *container,
 			container->children->length);
 		break;
 	case L_VERT:
+		assert(container);
+		assert(container->children);
 		apply_vert_layout(container, x, y, width, height, 0,
 			container->children->length);
 		break;
@@ -381,6 +357,7 @@ void apply_vert_layout(struct sway_container *container,
 		const double x, const double y,
 		const double width, const double height, const int start,
 		const int end) {
+	assert(container);
 	int i;
 	double scale = 0;
 	// Calculate total height
