@@ -250,13 +250,14 @@ static void drop_permissions(bool keep_caps) {
 }
 
 int main(int argc, char **argv) {
-	static int verbose = 0, debug = 0, validate = 0;
+	static int verbose = 0, debug = 0, validate = 0, headless = 0;
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"config", required_argument, NULL, 'c'},
 		{"validate", no_argument, NULL, 'C'},
 		{"debug", no_argument, NULL, 'd'},
+		{"headless", no_argument, NULL, 'H'},
 		{"version", no_argument, NULL, 'v'},
 		{"verbose", no_argument, NULL, 'V'},
 		{"get-socketpath", no_argument, NULL, 'p'},
@@ -272,6 +273,7 @@ int main(int argc, char **argv) {
 		"  -c, --config <config>  Specify a config file.\n"
 		"  -C, --validate         Check the validity of the config file, then exit.\n"
 		"  -d, --debug            Enables full logging, including debug information.\n"
+		"  -H, --headless         Starts sway with the headless backend.\n"
 		"  -v, --version          Show the version number and quit.\n"
 		"  -V, --verbose          Enables more verbose logging.\n"
 		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
@@ -288,7 +290,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdvVc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCHdvVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -305,6 +307,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'd': // debug
 			debug = 1;
+			break;
+		case 'H':
+			headless = 1;
 			break;
 		case 'v': // version
 			fprintf(stdout, "sway version " SWAY_VERSION "\n");
@@ -384,7 +389,7 @@ int main(int argc, char **argv) {
 
 	layout_init();
 
-	if (!server_init(&server)) {
+	if (!server_init(&server, headless)) {
 		return 1;
 	}
 

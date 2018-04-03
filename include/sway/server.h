@@ -43,7 +43,7 @@ struct sway_server {
 
 struct sway_server server;
 
-bool server_init(struct sway_server *server);
+bool server_init(struct sway_server *server, bool headless);
 void server_fini(struct sway_server *server);
 void server_run(struct sway_server *server);
 

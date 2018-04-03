@@ -5,6 +5,7 @@
 #include <wayland-server.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
+#include <wlr/backend/headless.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_gamma_control.h>
@@ -38,12 +39,60 @@ static void server_ready(struct wl_listener *listener, void *data) {
 	}
 }
 
-bool server_init(struct sway_server *server) {
+static size_t parse_outputs_env(const char *name) {
+	const char *outputs_str = getenv(name);
+	if (outputs_str == NULL) {
+		return 1;
+	}
+
+	char *end;
+	int outputs = (int)strtol(outputs_str, &end, 10);
+	if (*end || outputs < 0) {
+		wlr_log(L_ERROR, "%s specified with invalid integer, ignoring", name);
+		return 1;
+	}
+
+	return outputs;
+}
+
+static struct wlr_backend *create_headless_backend(struct wl_display *display) {
+	const char *outputs_env = "SWAY_HEADLESS_OUTPUTS";
+	const char *outputs_str = getenv(outputs_env);
+	int outputs = 1;
+
+	if (outputs_str != NULL) {
+		char *end;
+		outputs = (int)strtol(outputs_str, &end, 10);
+		if (*end || outputs < 0) {
+			outputs = 1;
+		}
+	}
+
+	struct wlr_backend *backend = wlr_headless_backend_create(display);
+
+	if (backend == NULL) {
+		return NULL;
+	}
+
+	for (int i = 0; i < outputs; ++i) {
+		wlr_headless_add_output(backend, 1280, 720);
+	}
+
+	return backend;
+}
+
+bool server_init(struct sway_server *server, bool headless) {
 	wlr_log(L_DEBUG, "Initializing Wayland server");
 
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display);
+
+	if (headless) {
+		server->backend = create_headless_backend(server->wl_display);
+	} else {
+		server->backend = wlr_backend_autocreate(server->wl_display);
+	}
+	assert(server->backend);
 
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
 	assert(renderer);
