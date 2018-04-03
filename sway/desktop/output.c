@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>
+#include <strings.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
@@ -20,6 +21,16 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+
+struct sway_container *output_by_name(const char *name) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		if (strcasecmp(output->name, name) == 0){
+			return output;
+		}
+	}
+	return NULL;
+}
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
