@@ -133,8 +133,6 @@ struct sway_container *container_destroy(struct sway_container *container);
 // TODO make me private
 struct sway_container *container_finish(struct sway_container *cont);
 
-struct sway_container *container_output_destroy(struct sway_container *container);
-
 struct sway_container *container_close(struct sway_container *container);
 
 // TODO move to layout.c

@@ -338,12 +338,12 @@ void output_damage_whole_view(struct sway_output *output,
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_destroy);
-	container_output_destroy(output->swayc);
+	container_destroy(output->swayc);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
-	container_output_destroy(output->swayc);
+	container_destroy(output->swayc);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
