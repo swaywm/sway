@@ -118,7 +118,7 @@ void run_as_ipc_client(char *command, char *socket_path) {
 static void log_env() {
 	const char *log_vars[] = {
 		"PATH",
-		"LD_LOAD_PATH",
+		"LD_LIBRARY_PATH",
 		"LD_PRELOAD_PATH",
 		"LD_LIBRARY_PATH",
 		"SWAY_CURSOR_THEME",

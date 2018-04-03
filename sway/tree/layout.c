@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -103,7 +104,7 @@ void container_add_child(struct sway_container *parent,
 }
 
 struct sway_container *container_reap_empty(struct sway_container *container) {
-	if (!sway_assert(container, "reaping null container")) {
+	if (container == NULL) {
 		return NULL;
 	}
 	wlr_log(L_DEBUG, "Reaping %p %s '%s'", container,
@@ -137,7 +138,7 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 		}
 	}
 	child->parent = NULL;
-	return container_reap_empty(parent);
+	return parent;
 }
 
 void container_move_to(struct sway_container *container,
@@ -348,8 +349,14 @@ static void apply_horiz_layout(struct sway_container *container,
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, width, scale);
-			view_configure(child->sway_view, child_x, y, child->width,
-				child->height);
+
+			if (child->type == C_VIEW) {
+				view_configure(child->sway_view, child_x, y, child->width,
+					child->height);
+			} else {
+				child->x = child_x;
+				child->y = y;
+			}
 
 			if (i == end - 1) {
 				double remaining_width = x + width - child_x;
@@ -400,8 +407,13 @@ void apply_vert_layout(struct sway_container *container,
 			wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, height, scale);
-			view_configure(child->sway_view, x, child_y, child->width,
-				child->height);
+			if (child->type == C_VIEW) {
+				view_configure(child->sway_view, x, child_y, child->width,
+					child->height);
+			} else {
+				child->x = x;
+				child->y = child_y;
+			}
 
 			if (i == end - 1) {
 				double remaining_height = y + height - child_y;
@@ -533,9 +545,9 @@ static struct sway_container *sway_output_from_wlr(struct wlr_output *output) {
 	return NULL;
 }
 
-static struct sway_container *get_swayc_in_direction_under(
-		struct sway_container *container, enum movement_direction dir,
-		struct sway_seat *seat, struct sway_container *limit) {
+struct sway_container *container_get_in_direction(
+		struct sway_container *container, struct sway_seat *seat,
+		enum movement_direction dir) {
 	if (dir == MOVE_CHILD) {
 		return seat_get_focus_inactive(seat, container);
 	}
@@ -567,7 +579,6 @@ static struct sway_container *get_swayc_in_direction_under(
 
 	struct sway_container *wrap_candidate = NULL;
 	while (true) {
-		// Test if we can even make a difference here
 		bool can_move = false;
 		int desired;
 		int idx = index_child(container);
@@ -597,7 +608,7 @@ static struct sway_container *get_swayc_in_direction_under(
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
-				return seat_get_focus_inactive(seat, next);
+				return seat_get_focus_by_type(seat, next, C_VIEW);
 			} else {
 				return next;
 			}
@@ -627,21 +638,23 @@ static struct sway_container *get_swayc_in_direction_under(
 						wrap_candidate = parent->children->items[0];
 					}
 					if (config->force_focus_wrapping) {
-						return wrap_candidate;
+						 return seat_get_focus_by_type(seat,
+								 wrap_candidate, C_VIEW);
 					}
 				}
 			} else {
 				wlr_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, parent->children->items[desired]);
-				return parent->children->items[desired];
+				return seat_get_focus_by_type(seat,
+						parent->children->items[desired], C_VIEW);
 			}
 		}
 
 		if (!can_move) {
 			container = parent;
 			parent = parent->parent;
-			if (!parent || container == limit) {
+			if (!parent) {
 				// wrapping is the last chance
 				return wrap_candidate;
 			}
@@ -649,8 +662,70 @@ static struct sway_container *get_swayc_in_direction_under(
 	}
 }
 
-struct sway_container *container_get_in_direction(
-		struct sway_container *container, struct sway_seat *seat,
-		enum movement_direction dir) {
-	return get_swayc_in_direction_under(container, dir, seat, NULL);
+struct sway_container *container_replace_child(struct sway_container *child,
+		struct sway_container *new_child) {
+	struct sway_container *parent = child->parent;
+	if (parent == NULL) {
+		return NULL;
+	}
+	int i = index_child(child);
+
+	// TODO floating
+	parent->children->items[i] = new_child;
+	new_child->parent = parent;
+	child->parent = NULL;
+
+	// Set geometry for new child
+	new_child->x = child->x;
+	new_child->y = child->y;
+	new_child->width = child->width;
+	new_child->height = child->height;
+
+	// reset geometry for child
+	child->width = 0;
+	child->height = 0;
+
+	return parent;
+}
+
+struct sway_container *container_split(struct sway_container *child,
+		enum sway_container_layout layout) {
+	// TODO floating: cannot split a floating container
+	if (!sway_assert(child, "child cannot be null")) {
+		return NULL;
+	}
+	struct sway_container *cont = container_create(C_CONTAINER);
+
+	wlr_log(L_DEBUG, "creating container %p around %p", cont, child);
+
+	cont->prev_layout = L_NONE;
+	cont->width = child->width;
+	cont->height = child->height;
+	cont->x = child->x;
+	cont->y = child->y;
+
+	if (child->type == C_WORKSPACE) {
+		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+		struct sway_container *workspace = child;
+		bool set_focus = (seat_get_focus(seat) == workspace);
+
+		while (workspace->children->length) {
+			struct sway_container *ws_child = workspace->children->items[0];
+			container_remove_child(ws_child);
+			container_add_child(cont, ws_child);
+		}
+
+		container_add_child(workspace, cont);
+		container_set_layout(workspace, layout);
+
+		if (set_focus) {
+			seat_set_focus(seat, cont);
+		}
+	} else {
+		cont->layout = layout;
+		container_replace_child(child, cont);
+		container_add_child(cont, child);
+	}
+
+	return cont;
 }

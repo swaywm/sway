@@ -55,7 +55,7 @@ static void notify_new_container(struct sway_container *container) {
 	ipc_event_window(container, "new");
 }
 
-static struct sway_container *container_create(enum sway_container_type type) {
+struct sway_container *container_create(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
 	struct sway_container *c = calloc(1, sizeof(struct sway_container));
@@ -76,7 +76,7 @@ static struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-struct sway_container *container_destroy(struct sway_container *cont) {
+static struct sway_container *_container_destroy(struct sway_container *cont) {
 	if (cont == NULL) {
 		return NULL;
 	}
@@ -84,13 +84,14 @@ struct sway_container *container_destroy(struct sway_container *cont) {
 	wl_signal_emit(&cont->events.destroy, cont);
 
 	struct sway_container *parent = cont->parent;
-	if (cont->children) {
+	if (cont->children != NULL) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
-		while (cont->children->length) {
-			container_destroy(cont->children->items[0]);
+		while (cont->children != NULL && cont->children->length != 0) {
+			struct sway_container *child = cont->children->items[0];
+			container_remove_child(child);
+			container_destroy(child);
 		}
-		list_free(cont->children);
 	}
 	if (cont->marks) {
 		list_foreach(cont->marks, free);
@@ -102,7 +103,16 @@ struct sway_container *container_destroy(struct sway_container *cont) {
 	if (cont->name) {
 		free(cont->name);
 	}
+	list_free(cont->children);
+	cont->children = NULL;
 	free(cont);
+	return parent;
+}
+
+struct sway_container *container_destroy(struct sway_container *cont) {
+	struct sway_container *parent = _container_destroy(cont);
+	parent = container_reap_empty(parent);
+	arrange_windows(&root_container, -1, -1);
 	return parent;
 }
 
@@ -412,4 +422,18 @@ bool container_has_anscestor(struct sway_container *descendant,
 		}
 	}
 	return false;
+}
+
+static bool find_child_func(struct sway_container *con, void *data) {
+	struct sway_container *child = data;
+	return con == child;
+}
+
+bool container_has_child(struct sway_container *con,
+		struct sway_container *child) {
+	if (child == NULL || child->type == C_VIEW ||
+			child->children->length == 0) {
+		return false;
+	}
+	return container_find(con, find_child_func, child);
 }
