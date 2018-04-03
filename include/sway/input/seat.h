@@ -32,6 +32,9 @@ struct sway_seat {
 	// If the focused layer is set, views cannot receive keyboard focus
 	struct wlr_layer_surface *focused_layer;
 
+	// If exclusive_client is set, no other clients will receive input events
+	struct wl_client *exclusive_client;
+
 	struct wl_listener focus_destroy;
 	struct wl_listener new_container;
 
@@ -87,5 +90,7 @@ struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
 
 struct seat_config *seat_get_config(struct sway_seat *seat);
+
+bool seat_allow_input(struct sway_seat *seat, struct wlr_surface *surface);
 
 #endif

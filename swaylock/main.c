@@ -19,6 +19,7 @@
 #include "pool-buffer.h"
 #include "cairo.h"
 #include "util.h"
+#include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static void daemonize() {
@@ -71,6 +72,9 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		state->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);
+	} else if (strcmp(interface, zwlr_input_inhibit_manager_v1_interface.name) == 0) {
+		state->input_inhibit_manager = wl_registry_bind(
+				registry, name, &zwlr_input_inhibit_manager_v1_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
 		struct swaylock_surface *surface =
 			calloc(1, sizeof(struct swaylock_surface));
@@ -187,6 +191,10 @@ int main(int argc, char **argv) {
 	wl_registry_add_listener(registry, &registry_listener, &state);
 	wl_display_roundtrip(state.display);
 	assert(state.compositor && state.layer_shell && state.shm);
+	if (!state.input_inhibit_manager) {
+		wlr_log(L_ERROR, "Compositor does not support the input inhibitor "
+				"protocol, refusing to run insecurely");
+	}
 
 	if (wl_list_empty(&state.surfaces)) {
 		wlr_log(L_DEBUG, "Exiting - no outputs to show on.");
@@ -219,6 +227,8 @@ int main(int argc, char **argv) {
 		wl_surface_commit(surface->surface);
 		wl_display_roundtrip(state.display);
 	}
+
+	zwlr_input_inhibit_manager_v1_get_inhibitor(state.input_inhibit_manager);
 
 	state.run_display = true;
 	while (wl_display_dispatch(state.display) != -1 && state.run_display) {

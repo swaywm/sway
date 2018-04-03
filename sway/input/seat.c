@@ -1,5 +1,7 @@
 #define _XOPEN_SOURCE 700
+#define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#include <time.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -9,6 +11,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/ipc-server.h"
+#include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -350,6 +353,11 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
+bool seat_allow_input(struct sway_seat *seat, struct wlr_surface *surface) {
+	struct wl_client *client = wl_resource_get_client(surface->resource);
+	return !seat->exclusive_client || seat->exclusive_client == client;
+}
+
 void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
 	if (seat->focused_layer) {
@@ -370,6 +378,12 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 		wl_list_remove(&seat_con->link);
 		wl_list_insert(&seat->focus_stack, &seat_con->link);
+
+		if (container->type == C_VIEW && !seat_allow_input(
+					seat, container->sway_view->surface)) {
+			wlr_log(L_DEBUG, "Refusing to set focus, input is inhibited");
+			return;
+		}
 
 		if (container->type == C_VIEW) {
 			seat_send_focus(seat, container);
@@ -426,13 +440,13 @@ void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface *layer) {
 	if (!layer && seat->focused_layer) {
 		seat->focused_layer = NULL;
-		struct sway_container *c = seat_get_focus(seat);
-		if (c) {
-			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", c,
-					container_type_to_str(c->type), c->name);
+		struct sway_container *previous = seat_get_focus(seat);
+		if (previous) {
+			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", previous,
+					container_type_to_str(previous->type), previous->name);
 			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, c->parent);
-			seat_set_focus(seat, c);
+			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, previous);
 		}
 		return;
 	} else if (!layer || seat->focused_layer == layer) {
@@ -462,7 +476,47 @@ void seat_set_focus_layer(struct sway_seat *seat,
 
 void seat_set_exclusive_client(struct sway_seat *seat,
 		struct wl_client *client) {
-	// TODO
+	if (!client) {
+		seat->exclusive_client = client;
+		// Triggers a refocus of the topmost surface layer if necessary
+		// TODO: Make layer surface focus per-output based on cursor position
+		for (int i = 0; i < root_container.children->length; ++i) {
+			struct sway_container *output = root_container.children->items[i];
+			if (!sway_assert(output->type == C_OUTPUT,
+						"root container has non-output child")) {
+				continue;
+			}
+			arrange_layers(output->sway_output);
+		}
+		return;
+	}
+	if (seat->focused_layer) {
+		if (wl_resource_get_client(seat->focused_layer->resource) != client) {
+			seat_set_focus_layer(seat, NULL);
+		}
+	}
+	if (seat->has_focus) {
+		struct sway_container *focus = seat_get_focus(seat);
+		if (focus->type == C_VIEW && wl_resource_get_client(
+					focus->sway_view->surface->resource) != client) {
+			seat_set_focus(seat, NULL);
+		}
+	}
+	if (seat->wlr_seat->pointer_state.focused_client) {
+		if (seat->wlr_seat->pointer_state.focused_client->client != client) {
+			wlr_seat_pointer_clear_focus(seat->wlr_seat);
+		}
+	}
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	struct wlr_touch_point *point;
+	wl_list_for_each(point, &seat->wlr_seat->touch_state.touch_points, link) {
+		if (point->client->client != client) {
+			wlr_seat_touch_point_clear_focus(seat->wlr_seat,
+					now.tv_nsec / 1000, point->touch_id);
+		}
+	}
+	seat->exclusive_client = client;
 }
 
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
