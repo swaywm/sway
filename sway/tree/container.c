@@ -77,21 +77,21 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-static struct sway_container *container_finish(struct sway_container *cont) {
+static void _container_destroy(struct sway_container *cont) {
 	if (cont == NULL) {
-		return NULL;
+		return;
 	}
 
 	wl_signal_emit(&cont->events.destroy, cont);
 
 	struct sway_container *parent = cont->parent;
-	if (cont->children != NULL) {
+	if (cont->children != NULL && cont->children->length) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
-		while (cont->children != NULL && cont->children->length != 0) {
+		while (cont->children != NULL) {
 			struct sway_container *child = cont->children->items[0];
 			container_remove_child(child);
-			container_finish(child);
+			_container_destroy(child);
 		}
 	}
 	if (cont->marks) {
@@ -107,7 +107,6 @@ static struct sway_container *container_finish(struct sway_container *cont) {
 	list_free(cont->children);
 	cont->children = NULL;
 	free(cont);
-	return parent;
 }
 
 static struct sway_container *container_output_destroy(
@@ -143,7 +142,7 @@ static struct sway_container *container_output_destroy(
 	wl_list_remove(&output->sway_output->damage_frame.link);
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
-	container_finish(output);
+	_container_destroy(output);
 	return &root_container;
 }
 
@@ -182,7 +181,7 @@ static struct sway_container *container_workspace_destroy(
 		}
 	}
 
-	container_finish(workspace);
+	_container_destroy(workspace);
 	return parent;
 }
 
@@ -204,14 +203,14 @@ static bool container_reap_empty(struct sway_container *con) {
 		break;
 	case C_CONTAINER:
 		if (con->children->length == 0) {
-			container_finish(con);
+			_container_destroy(con);
 			return true;
 		} else if (con->children->length == 1) {
 			struct sway_container *child = con->children->items[0];
 			if (child->type == C_CONTAINER) {
 				container_remove_child(child);
 				container_replace_child(con, child);
-				container_finish(con);
+				_container_destroy(con);
 				return true;
 			}
 		}
@@ -252,12 +251,12 @@ struct sway_container *container_destroy(struct sway_container *con) {
 					container_remove_child(child);
 					container_add_child(parent, child);
 				}
-				container_finish(con);
+				_container_destroy(con);
 			}
-			container_finish(con);
+			_container_destroy(con);
 			break;
 		case C_VIEW:
-			container_finish(con);
+			_container_destroy(con);
 			break;
 		case C_TYPES:
 			wlr_log(L_ERROR, "container_destroy called on an invalid "
