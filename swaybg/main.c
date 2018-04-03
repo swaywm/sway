@@ -7,19 +7,11 @@
 #include <time.h>
 #include <wayland-client.h>
 #include <wlr/util/log.h>
+#include "background-image.h"
 #include "pool-buffer.h"
 #include "cairo.h"
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
-
-enum background_mode {
-	BACKGROUND_MODE_STRETCH,
-	BACKGROUND_MODE_FILL,
-	BACKGROUND_MODE_FIT,
-	BACKGROUND_MODE_CENTER,
-	BACKGROUND_MODE_TILE,
-	BACKGROUND_MODE_SOLID_COLOR,
-};
 
 struct swaybg_args {
 	int output_idx;
@@ -71,85 +63,16 @@ bool is_valid_color(const char *color) {
 	return true;
 }
 
-static void render_image(struct swaybg_state *state) {
-	cairo_t *cairo = state->current_buffer->cairo;
-	cairo_surface_t *image = state->context.image;
-	double width = cairo_image_surface_get_width(image);
-	double height = cairo_image_surface_get_height(image);
-	int buffer_width = state->width * state->scale;
-	int buffer_height = state->height * state->scale;
-
-	switch (state->args->mode) {
-	case BACKGROUND_MODE_STRETCH:
-		cairo_scale(cairo, (double)buffer_width / width,
-			(double)buffer_height / height);
-		cairo_set_source_surface(cairo, image, 0, 0);
-		break;
-	case BACKGROUND_MODE_FILL: {
-		double window_ratio = (double)buffer_width / buffer_height;
-		double bg_ratio = width / height;
-
-		if (window_ratio > bg_ratio) {
-			double scale = (double)buffer_width / width;
-			cairo_scale(cairo, scale, scale);
-			cairo_set_source_surface(cairo, image,
-					0, (double)buffer_height / 2 / scale - height / 2);
-		} else {
-			double scale = (double)buffer_height / height;
-			cairo_scale(cairo, scale, scale);
-			cairo_set_source_surface(cairo, image,
-					(double)buffer_width / 2 / scale - width / 2, 0);
-		}
-		break;
-	}
-	case BACKGROUND_MODE_FIT: {
-		double window_ratio = (double)buffer_width / buffer_height;
-		double bg_ratio = width / height;
-
-		if (window_ratio > bg_ratio) {
-			double scale = (double)buffer_height / height;
-			cairo_scale(cairo, scale, scale);
-			cairo_set_source_surface(cairo, image,
-					(double)buffer_width / 2 / scale - width / 2, 0);
-		} else {
-			double scale = (double)buffer_width / width;
-			cairo_scale(cairo, scale, scale);
-			cairo_set_source_surface(cairo, image,
-					0, (double)buffer_height / 2 / scale - height / 2);
-		}
-		break;
-	}
-	case BACKGROUND_MODE_CENTER:
-		cairo_set_source_surface(cairo, image,
-				(double)buffer_width / 2 - width / 2,
-				(double)buffer_height / 2 - height / 2);
-		break;
-	case BACKGROUND_MODE_TILE: {
-		cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
-		cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
-		cairo_set_source(cairo, pattern);
-		break;
-	}
-	case BACKGROUND_MODE_SOLID_COLOR:
-		assert(0);
-		break;
-	}
-	cairo_paint(cairo);
-}
-
 static void render_frame(struct swaybg_state *state) {
 	state->current_buffer = get_next_buffer(state->shm, state->buffers,
 		state->width * state->scale, state->height * state->scale);
 	cairo_t *cairo = state->current_buffer->cairo;
-
-	switch (state->args->mode) {
-	case BACKGROUND_MODE_SOLID_COLOR:
+	if (state->args->mode == BACKGROUND_MODE_SOLID_COLOR) {
 		cairo_set_source_u32(cairo, state->context.color);
 		cairo_paint(cairo);
-		break;
-	default:
-		render_image(state);
-		break;
+	} else {
+		render_background_image(cairo, state->context.image,
+				state->args->mode, state->width, state->height, state->scale);
 	}
 
 	wl_surface_set_buffer_scale(state->surface, state->scale);
@@ -163,31 +86,7 @@ static bool prepare_context(struct swaybg_state *state) {
 		state->context.color = parse_color(state->args->path);
 		return is_valid_color(state->args->path);
 	}
-#ifdef HAVE_GDK_PIXBUF
-	GError *err = NULL;
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(state->args->path, &err);
-	if (!pixbuf) {
-		wlr_log(L_ERROR, "Failed to load background image.");
-		return false;
-	}
-	state->context.image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
-	g_object_unref(pixbuf);
-#else
-	state->context.image = cairo_image_surface_create_from_png(
-			state->args->path);
-#endif //HAVE_GDK_PIXBUF
-	if (!state->context.image) {
-		wlr_log(L_ERROR, "Failed to read background image.");
-		return false;
-	}
-	if (cairo_surface_status(state->context.image) != CAIRO_STATUS_SUCCESS) {
-		wlr_log(L_ERROR, "Failed to read background image: %s."
-#ifndef HAVE_GDK_PIXBUF
-				"\nSway was compiled without gdk_pixbuf support, so only"
-				"\nPNG images can be loaded. This is the likely cause."
-#endif //HAVE_GDK_PIXBUF
-				, cairo_status_to_string(
-				cairo_surface_status(state->context.image)));
+	if (!(state->context.image = load_background_image(state->args->path))) {
 		return false;
 	}
 	return true;

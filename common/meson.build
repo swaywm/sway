@@ -1,17 +1,7 @@
-deps = [
-	cairo,
-	pango,
-	pangocairo,
-	wlroots
-]
-
-if gdk_pixbuf.found()
-	deps += [gdk_pixbuf]
-endif
-
 lib_sway_common = static_library(
 	'sway-common',
 	files(
+		'background-image.c',
 		'cairo.c',
 		'ipc-client.c',
 		'log.c',
@@ -21,6 +11,12 @@ lib_sway_common = static_library(
 		'stringop.c',
 		'util.c'
 	),
-	dependencies: deps,
+	dependencies: [
+		cairo,
+		gdk_pixbuf,
+		pango,
+		pangocairo,
+		wlroots
+	],
 	include_directories: sway_inc
 )
