@@ -460,6 +460,11 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	}
 }
 
+void seat_set_exclusive_client(struct sway_seat *seat,
+		struct wl_client *client) {
+	// TODO
+}
+
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *container) {
 	return seat_get_focus_by_type(seat, container, C_TYPES);

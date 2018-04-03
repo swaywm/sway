@@ -64,6 +64,9 @@ void seat_set_focus_warp(struct sway_seat *seat,
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface *layer);
 
+void seat_set_exclusive_client(struct sway_seat *seat,
+		struct wl_client *client);
+
 struct sway_container *seat_get_focus(struct sway_seat *seat);
 
 /**
