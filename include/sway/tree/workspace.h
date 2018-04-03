@@ -7,8 +7,6 @@ extern char *prev_workspace_name;
 
 char *workspace_next_name(const char *output_name);
 
-struct sway_container *workspace_create(const char *name);
-
 bool workspace_switch(struct sway_container *workspace);
 
 struct sway_container *workspace_by_number(const char* name);

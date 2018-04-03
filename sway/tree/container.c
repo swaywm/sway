@@ -110,7 +110,8 @@ struct sway_container *container_finish(struct sway_container *cont) {
 	return parent;
 }
 
-static struct sway_container *container_output_destroy(struct sway_container *output) {
+static struct sway_container *container_output_destroy(
+		struct sway_container *output) {
 	if (!sway_assert(output, "cannot destroy null output")) {
 		return NULL;
 	}
@@ -245,7 +246,8 @@ struct sway_container *container_destroy(struct sway_container *con) {
 			break;
 		case C_CONTAINER:
 			if (con->children != NULL && con->children->length) {
-				assert(false && "dont destroy container containers with children");
+				assert(false &&
+					"dont destroy container containers with children");
 			}
 			container_finish(con);
 			// TODO return parent to arrange maybe?
@@ -271,7 +273,8 @@ static void container_close_func(struct sway_container *container, void *data) {
 }
 
 struct sway_container *container_close(struct sway_container *con) {
-	if (!sway_assert(con != NULL, "container_close called with a NULL container")) {
+	if (!sway_assert(con != NULL,
+				"container_close called with a NULL container")) {
 		return NULL;
 	}
 
@@ -359,12 +362,39 @@ struct sway_container *container_output_create(
 	return output;
 }
 
-struct sway_container *container_workspace_create(
-		struct sway_container *output, const char *name) {
-	if (!sway_assert(output,
-			"container_workspace_create called with null output")) {
-		return NULL;
+static struct sway_container *workspace_get_initial_output(const char *name) {
+	struct sway_container *parent;
+	// Search for workspace<->output pair
+	int i, e = config->workspace_outputs->length;
+	for (i = 0; i < e; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcasecmp(wso->workspace, name) == 0) {
+			// Find output to use if it exists
+			e = root_container.children->length;
+			for (i = 0; i < e; ++i) {
+				parent = root_container.children->items[i];
+				if (strcmp(parent->name, wso->output) == 0) {
+					return parent;
+				}
+			}
+			break;
+		}
 	}
+	// Otherwise put it on the focused output
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
+	parent = focus;
+	parent = container_parent(parent, C_OUTPUT);
+	return parent;
+}
+
+struct sway_container *container_workspace_create(struct sway_container *output,
+		const char *name) {
+	if (output == NULL) {
+		output = workspace_get_initial_output(name);
+	}
+
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
 	struct sway_container *workspace = container_create(C_WORKSPACE);
 
@@ -380,6 +410,7 @@ struct sway_container *container_workspace_create(
 	container_add_child(output, workspace);
 	container_sort_workspaces(output);
 	notify_new_container(workspace);
+
 	return workspace;
 }
 

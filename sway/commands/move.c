@@ -74,7 +74,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			ws = workspace_by_name(ws_name);
 		}
 		if (!ws) {
-			ws = workspace_create(ws_name ? ws_name : num_name);
+			ws = container_workspace_create(NULL, ws_name ? ws_name : num_name);
 		}
 		free(ws_name);
 		struct sway_container *old_parent = current->parent;

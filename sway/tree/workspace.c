@@ -179,35 +179,6 @@ struct sway_container *workspace_by_name(const char *name) {
 	}
 }
 
-struct sway_container *workspace_create(const char *name) {
-	struct sway_container *parent;
-	// Search for workspace<->output pair
-	int i, e = config->workspace_outputs->length;
-	for (i = 0; i < e; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcasecmp(wso->workspace, name) == 0) {
-			// Find output to use if it exists
-			e = root_container.children->length;
-			for (i = 0; i < e; ++i) {
-				parent = root_container.children->items[i];
-				if (strcmp(parent->name, wso->output) == 0) {
-					return container_workspace_create(parent, name);
-				}
-			}
-			break;
-		}
-	}
-	// Otherwise create a new one
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus =
-		seat_get_focus_inactive(seat, &root_container);
-	parent = focus;
-	parent = container_parent(parent, C_OUTPUT);
-	struct sway_container *new_ws = container_workspace_create(parent, name);
-	ipc_event_workspace(NULL, new_ws, "init");
-	return new_ws;
-}
-
 /**
  * Get the previous or next workspace on the specified output. Wraps around at
  * the end and beginning.  If next is false, the previous workspace is returned,
@@ -319,7 +290,9 @@ bool workspace_switch(struct sway_container *workspace) {
 			&& active_ws == workspace
 			&& prev_workspace_name) {
 		struct sway_container *new_ws = workspace_by_name(prev_workspace_name);
-		workspace = new_ws ? new_ws : workspace_create(prev_workspace_name);
+		workspace = new_ws ?
+			new_ws :
+			container_workspace_create(NULL, prev_workspace_name);
 	}
 
 	if (!prev_workspace_name || (strcmp(prev_workspace_name, active_ws->name)
