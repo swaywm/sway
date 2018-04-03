@@ -8,11 +8,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wlr/util/log.h>
+#include <xkbcommon/xkbcommon.h>
 #include "background-image.h"
 #include "pool-buffer.h"
 #include "cairo.h"
@@ -25,6 +27,59 @@ struct swaylock_args {
 	bool show_indicator;
 };
 
+enum mod_bit {
+	MOD_SHIFT = 1<<0,
+	MOD_CAPS = 1<<1,
+	MOD_CTRL = 1<<2,
+	MOD_ALT = 1<<3,
+	MOD_MOD2 = 1<<4,
+	MOD_MOD3 = 1<<5,
+	MOD_LOGO = 1<<6,
+	MOD_MOD5 = 1<<7,
+};
+
+enum mask {
+	MASK_SHIFT,
+	MASK_CAPS,
+	MASK_CTRL,
+	MASK_ALT,
+	MASK_MOD2,
+	MASK_MOD3,
+	MASK_LOGO,
+	MASK_MOD5,
+	MASK_LAST
+};
+
+const char *XKB_MASK_NAMES[MASK_LAST] = {
+	XKB_MOD_NAME_SHIFT,
+	XKB_MOD_NAME_CAPS,
+	XKB_MOD_NAME_CTRL,
+	XKB_MOD_NAME_ALT,
+	"Mod2",
+	"Mod3",
+	XKB_MOD_NAME_LOGO,
+	"Mod5",
+};
+
+const enum mod_bit XKB_MODS[MASK_LAST] = {
+	MOD_SHIFT,
+	MOD_CAPS,
+	MOD_CTRL,
+	MOD_ALT,
+	MOD_MOD2,
+	MOD_MOD3,
+	MOD_LOGO,
+	MOD_MOD5
+};
+
+struct swaylock_xkb {
+	uint32_t modifiers;
+	struct xkb_state *state;
+	struct xkb_context *context;
+	struct xkb_keymap *keymap;
+	xkb_mod_mask_t masks[MASK_LAST];
+};
+
 struct swaylock_state {
 	struct wl_display *display;
 	struct wl_compositor *compositor;
@@ -32,6 +87,7 @@ struct swaylock_state {
 	struct wl_shm *shm;
 	struct wl_list contexts;
 	struct swaylock_args args;
+	struct swaylock_xkb xkb;
 	bool run_display;
 };
 
@@ -100,7 +156,29 @@ static struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 
 static void keyboard_keymap(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t format, int32_t fd, uint32_t size) {
-	// TODO
+	struct swaylock_state *state = data;
+	if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+		close(fd);
+		wlr_log(L_ERROR, "Unknown keymap format %d, aborting", format);
+		exit(1);
+	}
+	char *map_shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+	if (map_shm == MAP_FAILED) {
+		close(fd);
+		wlr_log(L_ERROR, "Unable to initialize keymap shm, aborting");
+		exit(1);
+	}
+	struct xkb_keymap *keymap = xkb_keymap_new_from_string(
+			state->xkb.context, map_shm, XKB_KEYMAP_FORMAT_TEXT_V1, 0);
+	munmap(map_shm, size);
+	close(fd);
+	assert(keymap);
+	struct xkb_state *xkb_state = xkb_state_new(keymap);
+	assert(xkb_state);
+	xkb_keymap_unref(state->xkb.keymap);
+	xkb_state_unref(state->xkb.state);
+	state->xkb.keymap = keymap;
+	state->xkb.state = xkb_state;
 }
 
 static void keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
@@ -114,14 +192,30 @@ static void keyboard_leave(void *data, struct wl_keyboard *wl_keyboard,
 }
 
 static void keyboard_key(void *data, struct wl_keyboard *wl_keyboard,
-		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
-	// TODO
+		uint32_t serial, uint32_t time, uint32_t key, uint32_t _key_state) {
+	struct swaylock_state *state = data;
+	enum wl_keyboard_key_state key_state = _key_state;
+	xkb_keysym_t sym = xkb_state_key_get_one_sym(state->xkb.state, key + 8);
+	uint32_t keycode = key_state == WL_KEYBOARD_KEY_STATE_PRESSED ?
+		key + 8 : 0;
+	uint32_t codepoint = xkb_state_key_get_utf32(state->xkb.state, keycode);
+	wlr_log(L_DEBUG, "%c %d", codepoint, sym);
 }
 
 static void keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
 		uint32_t mods_locked, uint32_t group) {
-	// TODO
+	struct swaylock_state *state = data;
+	xkb_state_update_mask(state->xkb.state,
+			mods_depressed, mods_latched, mods_locked, 0, 0, group);
+	xkb_mod_mask_t mask = xkb_state_serialize_mods(state->xkb.state,
+			XKB_STATE_MODS_DEPRESSED | XKB_STATE_MODS_LATCHED);
+	state->xkb.modifiers = 0;
+	for (uint32_t i = 0; i < MASK_LAST; ++i) {
+		if (mask & state->xkb.masks[i]) {
+			state->xkb.modifiers |= XKB_MODS[i];
+		}
+	}
 }
 
 static void keyboard_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
@@ -345,7 +439,7 @@ int main(int argc, char **argv) {
 	}
 
 	wl_list_init(&state.contexts);
-
+	state.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	assert(state.display = wl_display_connect(NULL));
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
