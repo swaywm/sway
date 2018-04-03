@@ -149,12 +149,12 @@ void view_unmap(struct sway_view *view) {
 
 	view_damage_whole(view);
 
-	container_destroy(view->swayc);
+	struct sway_container *parent = container_destroy(view->swayc);
 
 	view->swayc = NULL;
 	view->surface = NULL;
 
-	arrange_windows(&root_container, -1, -1);
+	arrange_windows(parent, -1, -1);
 }
 
 void view_update_position(struct sway_view *view, double ox, double oy) {

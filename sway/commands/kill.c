@@ -10,19 +10,7 @@ struct cmd_results *cmd_kill(int argc, char **argv) {
 	struct sway_container *con =
 		config->handler_context.current_container;
 
-	switch (con->type) {
-	case C_ROOT:
-	case C_OUTPUT:
-	case C_WORKSPACE:
-	case C_TYPES:
-		return cmd_results_new(CMD_INVALID, NULL,
-				"Can only kill views and containers with this command");
-		break;
-	case C_CONTAINER:
-	case C_VIEW:
-		container_close(con);
-		break;
-	}
+	container_close(con);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

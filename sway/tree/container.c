@@ -186,45 +186,44 @@ static struct sway_container *container_workspace_destroy(
 	return parent;
 }
 
-
-static void reap_empty_func(struct sway_container *con, void *data) {
-	switch (con->type) {
-		case C_TYPES:
-		case C_ROOT:
-		case C_OUTPUT:
-			// dont reap these
-			break;
-		case C_WORKSPACE:
-			if (!workspace_is_visible(con) && con->children->length == 0) {
-				container_workspace_destroy(con);
-			}
-			break;
-		case C_CONTAINER:
-			if (con->children->length == 0) {
-				container_finish(con);
-			} else if (con->children->length == 1) {
-				struct sway_container *only_child = con->children->items[0];
-				if (only_child->type == C_CONTAINER) {
-					container_remove_child(only_child);
-					container_replace_child(con, only_child);
-					container_finish(con);
-				}
-			}
-		case C_VIEW:
-			break;
-	}
-}
-
-struct sway_container *container_reap_empty(struct sway_container *container) {
-	struct sway_container *parent = container->parent;
-
-	container_for_each_descendant_dfs(container, reap_empty_func, NULL);
-
-	return parent;
-}
-
 static void container_root_finish(struct sway_container *con) {
 	wlr_log(L_ERROR, "TODO: destroy the root container");
+}
+
+static bool container_reap_empty(struct sway_container *con) {
+	switch (con->type) {
+	case C_ROOT:
+	case C_OUTPUT:
+		// dont reap these
+		break;
+	case C_WORKSPACE:
+		if (!workspace_is_visible(con) && con->children->length == 0) {
+			container_workspace_destroy(con);
+			return true;
+		}
+		break;
+	case C_CONTAINER:
+		if (con->children->length == 0) {
+			container_finish(con);
+			return true;
+		} else if (con->children->length == 1) {
+			struct sway_container *child = con->children->items[0];
+			if (child->type == C_CONTAINER) {
+				container_remove_child(child);
+				container_replace_child(con, child);
+				container_finish(con);
+				return true;
+			}
+		}
+	case C_VIEW:
+		break;
+	case C_TYPES:
+		sway_assert(false, "container_reap_empty called on an invalid "
+			"container");
+		break;
+	}
+
+	return false;
 }
 
 struct sway_container *container_destroy(struct sway_container *con) {
@@ -232,38 +231,52 @@ struct sway_container *container_destroy(struct sway_container *con) {
 		return NULL;
 	}
 
-	struct sway_container *anscestor = NULL;
+	struct sway_container *parent = con->parent;
 
 	switch (con->type) {
 		case C_ROOT:
 			container_root_finish(con);
 			break;
 		case C_OUTPUT:
-			anscestor = container_output_destroy(con);
+			// dont try to reap the root after this
+			container_output_destroy(con);
 			break;
 		case C_WORKSPACE:
-			anscestor = container_workspace_destroy(con);
+			// dont try to reap the output after this
+			container_workspace_destroy(con);
 			break;
 		case C_CONTAINER:
-			if (con->children != NULL && con->children->length) {
-				assert(false &&
-					"dont destroy container containers with children");
+			if (con->children->length) {
+				for (int i = 0; i < con->children->length; ++i) {
+					struct sway_container *child = con->children->items[0];
+					container_remove_child(child);
+					container_add_child(parent, child);
+				}
+				container_finish(con);
 			}
 			container_finish(con);
-			// TODO return parent to arrange maybe?
 			break;
 		case C_VIEW:
 			container_finish(con);
-			// TODO return parent to arrange maybe?
 			break;
 		case C_TYPES:
-			wlr_log(L_ERROR, "tried to destroy an invalid container");
+			wlr_log(L_ERROR, "container_destroy called on an invalid "
+				"container");
 			break;
 	}
 
-	container_reap_empty(&root_container);
+	struct sway_container *tmp = parent;
+	while (parent) {
+		tmp = parent->parent;
 
-	return anscestor;
+		if (!container_reap_empty(parent)) {
+			break;
+		}
+
+		parent = tmp;
+	}
+
+	return tmp;
 }
 
 static void container_close_func(struct sway_container *container, void *data) {
@@ -274,23 +287,23 @@ static void container_close_func(struct sway_container *container, void *data) {
 
 struct sway_container *container_close(struct sway_container *con) {
 	if (!sway_assert(con != NULL,
-				"container_close called with a NULL container")) {
+			"container_close called with a NULL container")) {
 		return NULL;
 	}
 
 	struct sway_container *parent = con->parent;
 
 	switch (con->type) {
-		case C_TYPES:
-		case C_ROOT:
-		case C_OUTPUT:
-		case C_WORKSPACE:
-		case C_CONTAINER:
-			container_for_each_descendant_dfs(con, container_close_func, NULL);
-			break;
-		case C_VIEW:
-			view_close(con->sway_view);
-			break;
+	case C_TYPES:
+	case C_ROOT:
+	case C_OUTPUT:
+	case C_WORKSPACE:
+	case C_CONTAINER:
+		container_for_each_descendant_dfs(con, container_close_func, NULL);
+		break;
+	case C_VIEW:
+		view_close(con->sway_view);
+		break;
 
 	}
 
@@ -365,8 +378,8 @@ struct sway_container *container_output_create(
 static struct sway_container *get_workspace_initial_output(const char *name) {
 	struct sway_container *parent;
 	// Search for workspace<->output pair
-	int i, e = config->workspace_outputs->length;
-	for (i = 0; i < e; ++i) {
+	int e = config->workspace_outputs->length;
+	for (int i = 0; i < config->workspace_outputs->length; ++i) {
 		struct workspace_output *wso = config->workspace_outputs->items[i];
 		if (strcasecmp(wso->workspace, name) == 0) {
 			// Find output to use if it exists

@@ -174,7 +174,7 @@ enum sway_container_layout container_get_default_layout(
 	}
 
 	if (!sway_assert(con != NULL,
-			"container_get_default_layout must be called on an attached "
+			"container_get_default_layout must be called on an attached"
 			" container below the root container")) {
 		return 0;
 	}
