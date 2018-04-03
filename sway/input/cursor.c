@@ -180,13 +180,18 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	double sx, sy;
 	struct sway_container *cont =
 		container_at_cursor(cursor, &surface, &sx, &sy);
+	if (surface && wlr_surface_is_layer_surface(surface)) {
+		struct wlr_layer_surface *layer =
+			wlr_layer_surface_from_wlr_surface(surface);
+		if (layer->current.keyboard_interactive) {
+			seat_set_focus_layer(cursor->seat, layer);
+			return;
+		}
+	}
 	// Avoid moving keyboard focus from a surface that accepts it to one
 	// that does not unless the change would move us to a new workspace.
 	//
 	// This prevents, for example, losing focus when clicking on swaybar.
-	//
-	// TODO: Replace this condition with something like
-	// !surface_accepts_keyboard_input
 	if (surface && cont && cont->type != C_VIEW) {
 		struct sway_container *new_ws = cont;
 		if (new_ws && new_ws->type != C_WORKSPACE) {
