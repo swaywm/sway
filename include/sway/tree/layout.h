@@ -55,9 +55,8 @@ void container_move_to(struct sway_container* container,
 void container_move(struct sway_container *container,
 		enum movement_direction dir, int move_amt);
 
-// TODO move to output.c
 enum sway_container_layout container_get_default_layout(
-		struct sway_container *output);
+		struct sway_container *con);
 
 // TODO move to output.c
 void container_sort_workspaces(struct sway_container *output);

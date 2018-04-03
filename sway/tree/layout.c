@@ -168,12 +168,22 @@ void container_move(struct sway_container *container,
 }
 
 enum sway_container_layout container_get_default_layout(
-		struct sway_container *output) {
+		struct sway_container *con) {
+	if (con->type != C_OUTPUT) {
+		con = container_parent(con, C_OUTPUT);
+	}
+
+	if (!sway_assert(con != NULL,
+			"container_get_default_layout must be called on an attached "
+			" container below the root container")) {
+		return 0;
+	}
+
 	if (config->default_layout != L_NONE) {
 		return config->default_layout;
 	} else if (config->default_orientation != L_NONE) {
 		return config->default_orientation;
-	} else if (output->width >= output->height) {
+	} else if (con->width >= con->height) {
 		return L_HORIZ;
 	} else {
 		return L_VERT;

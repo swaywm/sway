@@ -405,7 +405,7 @@ struct sway_container *container_workspace_create(struct sway_container *output,
 	workspace->name = !name ? NULL : strdup(name);
 	workspace->prev_layout = L_NONE;
 	workspace->layout = container_get_default_layout(output);
-	workspace->workspace_layout = container_get_default_layout(output);
+	workspace->workspace_layout = workspace->layout;
 
 	container_add_child(output, workspace);
 	container_sort_workspaces(output);
