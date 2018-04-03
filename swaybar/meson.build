@@ -1,20 +1,32 @@
-executable(
-	'swaybar', [
-		'bar.c',
-		'config.c',
-		'event_loop.c',
-		'i3bar.c',
-		'ipc.c',
-		'main.c',
-		'render.c',
-		'status_line.c',
-	],
+sources = [
+	'bar.c',
+	'config.c',
+	'event_loop.c',
+	'i3bar.c',
+	'ipc.c',
+	'main.c',
+	'render.c',
+	'status_line.c'
+]
+
+if enable_tray and libdbus.found()
+	sources += [
+		'tray/dbus.c',
+		'tray/icon.c',
+		'tray/sni.c',
+		'tray/sni_watcher.c',
+		'tray/tray.c'
+	]
+endif
+
+executable('swaybar', sources,
 	include_directories: [sway_inc],
 	dependencies: [
 		cairo,
 		client_protos,
 		gdk_pixbuf,
 		jsonc,
+		libdbus,
 		math,
 		pango,
 		pangocairo,

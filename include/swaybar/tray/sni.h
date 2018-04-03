@@ -2,13 +2,17 @@
 #define _SWAYBAR_SNI_H
 
 #include <stdbool.h>
-#include <client/cairo.h>
+#include <wayland-client.h>
+#include "cairo.h"
 
 struct StatusNotifierItem {
+	struct wl_list link;
 	/* Name registered to sni watcher */
 	char *name;
 	/* Unique bus name, needed for determining signal origins */
 	char *unique_name;
+	/* Object path, useful for items not registerd by well known name */
+	char *object_path;
 	bool kde_special_snowflake;
 
 	cairo_surface_t *image;
@@ -17,6 +21,7 @@ struct StatusNotifierItem {
 
 /* Each output holds an sni_icon_ref of each item to render */
 struct sni_icon_ref {
+	struct wl_list link;
 	cairo_surface_t *icon;
 	struct StatusNotifierItem *ref;
 };
@@ -31,20 +36,12 @@ void sni_icon_ref_free(struct sni_icon_ref *sni_ref);
  * May return `NULL` if `name` is not valid.
  */
 struct StatusNotifierItem *sni_create(const char *name);
-
 /**
- * `item` must be a struct StatusNotifierItem *
- * `str` must be a NUL terminated char *
- *
- * Returns 0 if `item` has a name of `str`
+ * Same as sni_create, but takes an object path and unique name instead of
+ * well-known name.
  */
-int sni_str_cmp(const void *item, const void *str);
-
-/**
- * Returns 0 if `item` has a unique name of `str` or if
- * `item->unique_name == NULL`
- */
-int sni_uniq_cmp(const void *item, const void *str);
+struct StatusNotifierItem *sni_create_from_obj_path(const char *unique_name,
+		const char *object_path);
 
 /**
  * Gets an icon for the given item if found.

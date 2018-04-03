@@ -33,6 +33,12 @@ struct swaybar_config {
 	bool all_outputs;
 	int height;
 
+#ifdef ENABLE_TRAY
+	// TODO TRAY
+	// output, render, buttons
+	uint32_t tray_padding;
+#endif
+
 	struct {
 		uint32_t background;
 		uint32_t statusline;

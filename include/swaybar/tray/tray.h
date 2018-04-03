@@ -8,25 +8,25 @@
 #include "swaybar/bar.h"
 #include "list.h"
 
-extern struct tray *tray;
-
 struct tray {
-	list_t *items;
+	struct swaybar *bar;
+	struct wl_list items;
 };
 
 /**
  * Processes a mouse event on the bar
- */
+ * TODO TRAY mouse
 void tray_mouse_event(struct output *output, int x, int y,
 		uint32_t button, uint32_t state);
+*/
 
-uint32_t tray_render(struct output *output, struct config *config);
-
-void tray_upkeep(struct bar *bar);
+uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output,
+		struct swaybar_config *config, struct swaybar_workspace *ws,
+		double *pos, uint32_t height);
 
 /**
  * Initializes the tray with D-Bus
  */
-void init_tray(struct bar *bar);
+void init_tray(struct swaybar *bar);
 
 #endif /* _SWAYBAR_TRAY_H */

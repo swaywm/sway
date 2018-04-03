@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <client/cairo.h>
+#include "cairo.h"
 
 /**
  * Returns the image found by `name` that is closest to `size`

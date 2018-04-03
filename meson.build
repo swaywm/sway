@@ -19,6 +19,8 @@ datadir = get_option('datadir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
 
+enable_tray = get_option('enable_tray')
+
 jsonc          = dependency('json-c', version: '>=0.13')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots', fallback: ['wlroots', 'wlroots'])
@@ -35,6 +37,7 @@ gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: false)
 pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 libinput       = dependency('libinput')
+libdbus        = dependency('dbus-1', required: false)
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git = find_program('git', required: false)
@@ -44,6 +47,10 @@ conf_data = configuration_data()
 
 if gdk_pixbuf.found()
 	conf_data.set('HAVE_GDK_PIXBUF', true)
+endif
+
+if enable_tray and libdbus.found()
+	conf_data.set('ENABLE_TRAY', true)
 endif
 
 if a2x.found()

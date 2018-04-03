@@ -16,6 +16,11 @@
 #else
 #include <linux/input-event-codes.h>
 #endif
+#include "config.h"
+#ifdef ENABLE_TRAY
+#include "swaybar/tray/dbus.h"
+#include "swaybar/tray/tray.h"
+#endif
 #include "swaybar/render.h"
 #include "swaybar/config.h"
 #include "swaybar/event_loop.h"
@@ -296,6 +301,9 @@ void bar_setup(struct swaybar *bar,
 	}
 	ipc_get_workspaces(bar);
 	render_all_frames(bar);
+#ifdef ENABLE_TRAY
+	init_tray(bar);
+#endif
 }
 
 static void display_in(int fd, short mask, void *_bar) {
@@ -328,6 +336,9 @@ void bar_run(struct swaybar *bar) {
 	}
 	while (1) {
 		event_loop_poll();
+#ifdef ENABLE_TRAY
+		dispatch_dbus();
+#endif
 	}
 }
 
