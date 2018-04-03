@@ -121,5 +121,4 @@ void swaylock_handle_key(struct swaylock_state *state,
 			}
 			break;
 	}
-	// TODO: Expire state in a few seconds
 }

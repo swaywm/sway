@@ -93,15 +93,7 @@ static const struct wl_registry_listener registry_listener = {
 
 static struct swaylock_state state;
 
-static void sigalarm_handler(int sig) {
-	signal(SIGALRM, SIG_IGN);
-	// TODO: Hide typing indicator
-	signal(SIGALRM, sigalarm_handler);
-}
-
 int main(int argc, char **argv) {
-	signal(SIGALRM, sigalarm_handler);
-
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"color", required_argument, NULL, 'c'},
