@@ -352,8 +352,11 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 
 void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
-	struct sway_container *last_focus = seat_get_focus(seat);
+	if (seat->focused_layer) {
+		return;
+	}
 
+	struct sway_container *last_focus = seat_get_focus(seat);
 	if (container && last_focus == container) {
 		return;
 	}
@@ -417,6 +420,37 @@ void seat_set_focus_warp(struct sway_seat *seat,
 void seat_set_focus(struct sway_seat *seat,
 		struct sway_container *container) {
 	seat_set_focus_warp(seat, container, true);
+}
+
+void seat_set_focus_layer(struct sway_seat *seat,
+		struct wlr_layer_surface *layer) {
+	if (!layer) {
+		seat->focused_layer = NULL;
+		return;
+	}
+	if (seat->focused_layer == layer) {
+		return;
+	}
+	if (seat->has_focus) {
+		struct sway_container *focus = seat_get_focus(seat);
+		if (focus->type == C_VIEW) {
+			wlr_seat_keyboard_clear_focus(seat->wlr_seat);
+			view_set_activated(focus->sway_view, false);
+		}
+	}
+	if (layer->layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
+		seat->focused_layer = layer;
+	}
+	struct wlr_keyboard *keyboard =
+		wlr_seat_get_keyboard(seat->wlr_seat);
+	if (keyboard) {
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+				layer->surface, keyboard->keycodes,
+				keyboard->num_keycodes, &keyboard->modifiers);
+	} else {
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+				layer->surface, NULL, 0, NULL);
+	}
 }
 
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,

@@ -1,6 +1,7 @@
 #ifndef _SWAY_INPUT_SEAT_H
 #define _SWAY_INPUT_SEAT_H
 
+#include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_seat.h>
 #include "sway/input/input-manager.h"
 
@@ -27,6 +28,9 @@ struct sway_seat {
 
 	bool has_focus;
 	struct wl_list focus_stack; // list of containers in focus order
+
+	// If the focused layer is set, views cannot receive keyboard focus
+	struct wlr_layer_surface *focused_layer;
 
 	struct wl_listener focus_destroy;
 	struct wl_listener new_container;
@@ -56,6 +60,9 @@ void seat_set_focus(struct sway_seat *seat, struct sway_container *container);
 
 void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp);
+
+void seat_set_focus_layer(struct sway_seat *seat,
+		struct wlr_layer_surface *layer);
 
 struct sway_container *seat_get_focus(struct sway_seat *seat);
 
