@@ -223,6 +223,9 @@ static void handle_global(void *data, struct wl_registry *registry,
 		output->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 1);
 		output->index = index++;
+#ifdef ENABLE_TRAY
+		wl_list_init(&output->item_refs);
+#endif
 		wl_list_init(&output->workspaces);
 		wl_list_init(&output->hotspots);
 		wl_list_insert(&bar->outputs, &output->link);
