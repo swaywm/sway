@@ -299,7 +299,8 @@ void bar_setup(struct swaybar *bar,
 		bar->status = status_line_init(bar->config->status_command);
 	}
 
-	assert(bar->display = wl_display_connect(NULL));
+	bar->display = wl_display_connect(NULL);
+	assert(bar->display);
 
 	struct wl_registry *registry = wl_display_get_registry(bar->display);
 	wl_registry_add_listener(registry, &registry_listener, bar);
@@ -317,14 +318,15 @@ void bar_setup(struct swaybar *bar,
 		}
 	}
 
-	assert(pointer->cursor_theme = wl_cursor_theme_load(
-				NULL, 16 * (max_scale * 2), bar->shm));
+	pointer->cursor_theme = wl_cursor_theme_load(
+				NULL, 16 * (max_scale * 2), bar->shm);
+	assert(pointer->cursor_theme);
 	struct wl_cursor *cursor;
-	assert(cursor = wl_cursor_theme_get_cursor(
-				pointer->cursor_theme, "left_ptr"));
+	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
+	assert(cursor);
 	pointer->cursor_image = cursor->images[0];
-	assert(pointer->cursor_surface =
-			wl_compositor_create_surface(bar->compositor));
+	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
+	assert(pointer->cursor_surface);
 
 	// TODO: we might not necessarily be meant to do all of the outputs
 	wl_list_for_each(output, &bar->outputs, link) {
@@ -334,8 +336,8 @@ void bar_setup(struct swaybar *bar,
 				continue;
 			}
 			output->name = strdup(coutput->name);
-			assert(output->surface = wl_compositor_create_surface(
-					bar->compositor));
+			output->surface = wl_compositor_create_surface(bar->compositor);
+			assert(output->surface);
 			output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 					bar->layer_shell, output->surface, output->output,
 					ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");
