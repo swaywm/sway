@@ -101,9 +101,6 @@ struct sway_view {
 		struct sway_xwayland_surface *sway_xwayland_surface;
 		struct sway_wl_shell_surface *sway_wl_shell_surface;
 	};
-
-	// only used for unmanaged views (shell specific)
-	struct wl_list unmanaged_view_link; // sway_root::unmanaged_views
 };
 
 struct sway_view *view_create(enum sway_view_type type,
