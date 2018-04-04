@@ -20,12 +20,12 @@ static const double BORDER_WIDTH = 1;
 
 static uint32_t render_status_line_error(cairo_t *cairo,
 		struct swaybar_output *output, struct swaybar_config *config,
-		const char *error, double *x, uint32_t width, uint32_t height) {
+		const char *error, double *x, uint32_t width, uint32_t surface_height) {
 	if (!error) {
 		return 0;
 	}
 
-	height *= output->scale;
+	uint32_t height = surface_height * output->scale;
 
 	cairo_set_source_u32(cairo, 0xFF0000FF);
 
@@ -37,7 +37,7 @@ static uint32_t render_status_line_error(cairo_t *cairo,
 			&text_width, &text_height, output->scale, false, "%s", error);
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
-	if (height < ideal_height / output->scale) {
+	if (height < ideal_height) {
 		return ideal_height / output->scale;
 	}
 	*x -= text_width + margin;
@@ -52,12 +52,12 @@ static uint32_t render_status_line_error(cairo_t *cairo,
 static uint32_t render_status_line_text(cairo_t *cairo,
 		struct swaybar_output *output, struct swaybar_config *config,
 		const char *text, bool focused, double *x,
-		uint32_t width, uint32_t height) {
+		uint32_t width, uint32_t surface_height) {
 	if (!text) {
 		return 0;
 	}
 
-	height *= output->scale;
+	uint32_t height = surface_height * output->scale;
 
 	cairo_set_source_u32(cairo, focused ?
 			config->colors.focused_statusline : config->colors.statusline);
@@ -70,7 +70,7 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 	int margin = 3 * output->scale;
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
-	if (height < ideal_height / output->scale) {
+	if (height < ideal_height) {
 		return ideal_height / output->scale;
 	}
 
@@ -117,12 +117,12 @@ static void block_hotspot_callback(struct swaybar_output *output,
 static uint32_t render_status_block(cairo_t *cairo,
 		struct swaybar_config *config, struct swaybar_output *output,
 		struct i3bar_block *block, double *x,
-		uint32_t height, bool focused, bool edge) {
+		uint32_t surface_height, bool focused, bool edge) {
 	if (!block->full_text || !*block->full_text) {
 		return 0;
 	}
 
-	height *= output->scale;
+	uint32_t height = surface_height * output->scale;
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
@@ -138,7 +138,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 
 	double block_width = width;
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
-	if (height < ideal_height / output->scale) {
+	if (height < ideal_height) {
 		return ideal_height / output->scale;
 	}
 
@@ -256,13 +256,13 @@ static uint32_t render_status_block(cairo_t *cairo,
 static uint32_t render_status_line_i3bar(cairo_t *cairo,
 		struct swaybar_config *config, struct swaybar_output *output,
 		struct status_line *status, bool focused,
-		double *x, uint32_t width, uint32_t height) {
+		double *x, uint32_t width, uint32_t surface_height) {
 	uint32_t max_height = 0;
 	bool edge = true;
 	struct i3bar_block *block;
 	wl_list_for_each(block, &status->blocks, link) {
 		uint32_t h = render_status_block(cairo, config, output,
-				block, x, height, focused, edge);
+				block, x, surface_height, focused, edge);
 		max_height = h > max_height ? h : max_height;
 		edge = false;
 	}
@@ -272,17 +272,17 @@ static uint32_t render_status_line_i3bar(cairo_t *cairo,
 static uint32_t render_status_line(cairo_t *cairo,
 		struct swaybar_config *config, struct swaybar_output *output,
 		struct status_line *status, bool focused,
-		double *x, uint32_t width, uint32_t height) {
+		double *x, uint32_t width, uint32_t surface_height) {
 	switch (status->protocol) {
 	case PROTOCOL_ERROR:
-		return render_status_line_error(cairo,
-				output, config, status->text, x, width, height);
+		return render_status_line_error(cairo, output, config,
+				status->text, x, width, surface_height);
 	case PROTOCOL_TEXT:
-		return render_status_line_text(cairo,
-				output, config, status->text, focused, x, width, height);
+		return render_status_line_text(cairo, output, config,
+				status->text, focused, x, width, surface_height);
 	case PROTOCOL_I3BAR:
-		return render_status_line_i3bar(cairo, config, output, status,
-				focused, x, width, height);
+		return render_status_line_i3bar(cairo, config, output,
+				status, focused, x, width, surface_height);
 	case PROTOCOL_UNDEF:
 		return 0;
 	}
@@ -291,9 +291,9 @@ static uint32_t render_status_line(cairo_t *cairo,
 
 static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 		struct swaybar_output *output, struct swaybar_config *config,
-		const char *mode, double x, uint32_t height) {
+		const char *mode, double x, uint32_t surface_height) {
 
-	height *= output->scale;
+	uint32_t height = surface_height * output->scale;
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
@@ -305,7 +305,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2
 		+ border_width * 2;
-	if (height < ideal_height / output->scale) {
+	if (height < ideal_height) {
 		return ideal_height / output->scale;
 	}
 	uint32_t width = text_width + ws_horizontal_padding * 2 + border_width * 2;
@@ -351,7 +351,7 @@ static void workspace_hotspot_callback(struct swaybar_output *output,
 
 static uint32_t render_workspace_button(cairo_t *cairo,
 		struct swaybar_output *output, struct swaybar_config *config,
-		struct swaybar_workspace *ws, double *x, uint32_t height) {
+		struct swaybar_workspace *ws, double *x, uint32_t surface_height) {
 	const char *name = ws->name;
 	if (config->strip_workspace_numbers) {
 		name = strip_workspace_number(ws->name);
@@ -368,7 +368,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 		box_colors = config->colors.inactive_workspace;
 	}
 
-	height *= output->scale;
+	uint32_t height = surface_height *output->scale;
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
@@ -380,7 +380,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 
 	uint32_t ideal_height = ws_vertical_padding * 2 + text_height
 		+ border_width * 2;
-	if (height < ideal_height / output->scale) {
+	if (height < ideal_height) {
 		return ideal_height / output->scale;
 	}
 
