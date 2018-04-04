@@ -123,11 +123,13 @@ void terminate_swaybg(pid_t pid) {
 void apply_output_config(struct output_config *oc, struct sway_container *output) {
 	assert(output->type == C_OUTPUT);
 
+	struct wlr_output_layout *output_layout =
+		root_container.sway_root->output_layout;
 	struct wlr_output *wlr_output = output->sway_output->wlr_output;
+
 	if (oc && oc->enabled == 0) {
-		wlr_output_layout_remove(root_container.sway_root->output_layout,
-			wlr_output);
 		container_output_destroy(output);
+		wlr_output_layout_remove(output_layout, wlr_output);
 		return;
 	}
 
@@ -148,11 +150,9 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
 		wlr_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
-		wlr_output_layout_add(root_container.sway_root->output_layout,
-			wlr_output, oc->x, oc->y);
+		wlr_output_layout_add(output_layout, wlr_output, oc->x, oc->y);
 	} else {
-		wlr_output_layout_add_auto(root_container.sway_root->output_layout,
-			wlr_output);
+		wlr_output_layout_add_auto(output_layout, wlr_output);
 	}
 
 	if (!oc || !oc->background) {
