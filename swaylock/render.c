@@ -1,5 +1,7 @@
-#include <wayland-client.h>
+#define _POSIX_C_SOURCE 199506L
 #include <math.h>
+#include <stdlib.h>
+#include <wayland-client.h>
 #include "cairo.h"
 #include "background-image.h"
 #include "swaylock/swaylock.h"
