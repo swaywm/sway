@@ -204,8 +204,6 @@ static void render_view(struct sway_container *view, void *data) {
 	case SWAY_VIEW_XWAYLAND:
 		render_surface(surface, wlr_output, when, view->x, view->y, 0, alpha);
 		break;
-	default:
-		break;
 	}
 }
 

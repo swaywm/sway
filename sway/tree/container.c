@@ -412,9 +412,17 @@ struct sway_container *container_at(struct sway_container *parent,
 			double view_sx = ox - swayc->x;
 			double view_sy = oy - swayc->y;
 
+			double _sx, _sy;
+			struct wlr_surface *_surface;
 			switch (sview->type) {
 			case SWAY_VIEW_XWAYLAND:
+				_surface = wlr_surface_surface_at(sview->surface,
+					view_sx, view_sy, &_sx, &_sy);
+				break;
 			case SWAY_VIEW_WL_SHELL:
+				_surface = wlr_wl_shell_surface_surface_at(
+					sview->wlr_wl_shell_surface,
+					view_sx, view_sy, &_sx, &_sy);
 				break;
 			case SWAY_VIEW_XDG_SHELL_V6:
 				// the top left corner of the sway container is the
@@ -422,38 +430,15 @@ struct sway_container *container_at(struct sway_container *parent,
 				view_sx += sview->wlr_xdg_surface_v6->geometry.x;
 				view_sy += sview->wlr_xdg_surface_v6->geometry.y;
 
-				// check for popups
-				double popup_sx, popup_sy;
-				struct wlr_xdg_surface_v6 *popup =
-					wlr_xdg_surface_v6_popup_at(sview->wlr_xdg_surface_v6,
-							view_sx, view_sy, &popup_sx, &popup_sy);
-
-				if (popup) {
-					*sx = view_sx - popup_sx;
-					*sy = view_sy - popup_sy;
-					*surface = popup->surface;
-					return swayc;
-				}
+				_surface = wlr_xdg_surface_v6_surface_at(
+					sview->wlr_xdg_surface_v6,
+					view_sx, view_sy, &_sx, &_sy);
 				break;
 			}
-
-			// check for subsurfaces
-			double sub_x, sub_y;
-			struct wlr_subsurface *subsurface =
-				wlr_surface_subsurface_at(sview->surface,
-						view_sx, view_sy, &sub_x, &sub_y);
-			if (subsurface) {
-				*sx = view_sx - sub_x;
-				*sy = view_sy - sub_y;
-				*surface = subsurface->surface;
-				return swayc;
-			}
-
-			if (wlr_surface_point_accepts_input(
-						sview->surface, view_sx, view_sy)) {
-				*sx = view_sx;
-				*sy = view_sy;
-				*surface = swayc->sway_view->surface;
+			if (_surface) {
+				*sx = _sx;
+				*sy = _sy;
+				*surface = _surface;
 				return swayc;
 			}
 		} else {
