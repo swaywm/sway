@@ -294,18 +294,10 @@ struct sway_container *container_close(struct sway_container *con) {
 
 	struct sway_container *parent = con->parent;
 
-	switch (con->type) {
-	case C_TYPES:
-	case C_ROOT:
-	case C_OUTPUT:
-	case C_WORKSPACE:
-	case C_CONTAINER:
-		container_for_each_descendant_dfs(con, container_close_func, NULL);
-		break;
-	case C_VIEW:
+	if (con->type == C_VIEW) {
 		view_close(con->sway_view);
-		break;
-
+	} else {
+		container_for_each_descendant_dfs(con, container_close_func, NULL);
 	}
 
 	return parent;
