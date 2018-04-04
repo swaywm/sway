@@ -253,7 +253,6 @@ struct sway_container *container_destroy(struct sway_container *con) {
 					container_remove_child(child);
 					container_add_child(parent, child);
 				}
-				_container_destroy(con);
 			}
 			_container_destroy(con);
 			break;
