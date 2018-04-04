@@ -146,7 +146,7 @@ static void cursor_send_pointer_motion(struct sway_cursor *cursor,
 
 	// send pointer enter/leave
 	if (surface != NULL) {
-		if (seat_allow_input(cursor->seat, surface)) {
+		if (seat_is_input_allowed(cursor->seat, surface)) {
 			wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 			wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 		}

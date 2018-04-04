@@ -91,6 +91,6 @@ void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
 
 struct seat_config *seat_get_config(struct sway_seat *seat);
 
-bool seat_allow_input(struct sway_seat *seat, struct wlr_surface *surface);
+bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 #endif

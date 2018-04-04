@@ -353,7 +353,8 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 		seat->cursor->cursor->y);
 }
 
-bool seat_allow_input(struct sway_seat *seat, struct wlr_surface *surface) {
+bool seat_is_input_allowed(struct sway_seat *seat,
+		struct wlr_surface *surface) {
 	struct wl_client *client = wl_resource_get_client(surface->resource);
 	return !seat->exclusive_client || seat->exclusive_client == client;
 }
@@ -379,7 +380,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		wl_list_remove(&seat_con->link);
 		wl_list_insert(&seat->focus_stack, &seat_con->link);
 
-		if (container->type == C_VIEW && !seat_allow_input(
+		if (container->type == C_VIEW && !seat_is_input_allowed(
 					seat, container->sway_view->surface)) {
 			wlr_log(L_DEBUG, "Refusing to set focus, input is inhibited");
 			return;
