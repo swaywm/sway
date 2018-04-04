@@ -51,8 +51,14 @@ const char *container_type_to_str(enum sway_container_type type) {
 }
 
 void container_create_notify(struct sway_container *container) {
+	// TODO send ipc event type based on the container type
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 	ipc_event_window(container, "new");
+}
+
+static void container_close_notify(struct sway_container *container) {
+	// TODO send ipc event type based on the container type
+	ipc_event_window(container, "close");
 }
 
 struct sway_container *container_create(enum sway_container_type type) {
@@ -82,6 +88,7 @@ static void _container_destroy(struct sway_container *cont) {
 	}
 
 	wl_signal_emit(&cont->events.destroy, cont);
+	container_close_notify(cont);
 
 	struct sway_container *parent = cont->parent;
 	if (cont->children != NULL && cont->children->length) {
