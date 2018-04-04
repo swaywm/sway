@@ -188,7 +188,7 @@ static void render_view(struct sway_container *view, void *data) {
 	}
 
 	switch (sway_view->type) {
-	case SWAY_XDG_SHELL_V6_VIEW: {
+	case SWAY_VIEW_XDG_SHELL_V6: {
 		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry.x;
 		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry.y;
 		render_surface(surface, wlr_output, when,
@@ -197,13 +197,12 @@ static void render_view(struct sway_container *view, void *data) {
 			when, view->x - window_offset_x, view->y - window_offset_y, 0, alpha);
 		break;
 	}
-	case SWAY_WL_SHELL_VIEW:
+	case SWAY_VIEW_WL_SHELL:
 		render_wl_shell_surface(sway_view->wlr_wl_shell_surface, wlr_output,
 			when, view->x, view->y, 0, alpha, false);
 		break;
-	case SWAY_XWAYLAND_VIEW:
-		render_surface(surface, wlr_output, when, view->x, view->y,
-			0, alpha);
+	case SWAY_VIEW_XWAYLAND:
+		render_surface(surface, wlr_output, when, view->x, view->y, 0, alpha);
 		break;
 	default:
 		break;

@@ -59,11 +59,9 @@ struct sway_wl_shell_surface {
 };
 
 enum sway_view_type {
-	SWAY_WL_SHELL_VIEW,
-	SWAY_XDG_SHELL_V6_VIEW,
-	SWAY_XWAYLAND_VIEW,
-	// Keep last
-	SWAY_VIEW_TYPES,
+	SWAY_VIEW_WL_SHELL,
+	SWAY_VIEW_XDG_SHELL_V6,
+	SWAY_VIEW_XWAYLAND,
 };
 
 enum sway_view_prop {

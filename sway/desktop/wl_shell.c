@@ -12,7 +12,7 @@
 #include "log.h"
 
 static bool assert_wl_shell(struct sway_view *view) {
-	return sway_assert(view->type == SWAY_WL_SHELL_VIEW,
+	return sway_assert(view->type == SWAY_VIEW_WL_SHELL,
 		"Expecting wl_shell view!");
 }
 
@@ -97,7 +97,7 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_WL_SHELL_VIEW, &view_impl);
+	struct sway_view *view = view_create(SWAY_VIEW_WL_SHELL, &view_impl);
 	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}
