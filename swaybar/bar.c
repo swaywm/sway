@@ -69,11 +69,19 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 			break;
 		}
 	}
+	int max_scale = 1;
+	struct swaybar_output *_output;
+	wl_list_for_each(_output, &bar->outputs, link) {
+		if (_output->scale > max_scale) {
+			max_scale = _output->scale;
+		}
+	}
+	wl_surface_set_buffer_scale(pointer->cursor_surface, max_scale);
 	wl_surface_attach(pointer->cursor_surface,
 			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
 	wl_pointer_set_cursor(wl_pointer, serial, pointer->cursor_surface,
-			pointer->cursor_image->hotspot_x,
-			pointer->cursor_image->hotspot_y);
+			pointer->cursor_image->hotspot_x / max_scale,
+			pointer->cursor_image->hotspot_y / max_scale);
 	wl_surface_commit(pointer->cursor_surface);
 }
 
@@ -103,10 +111,12 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 	}
 	struct swaybar_hotspot *hotspot;
 	wl_list_for_each(hotspot, &output->hotspots, link) {
-		if (pointer->x >= hotspot->x
-				&& pointer->y >= hotspot->y
-				&& pointer->x < hotspot->x + hotspot->width
-				&& pointer->y < hotspot->y + hotspot->height) {
+		double x = pointer->x * output->scale;
+		double y = pointer->y * output->scale;
+		if (x >= hotspot->x
+				&& y >= hotspot->y
+				&& x < hotspot->x + hotspot->width
+				&& y < hotspot->y + hotspot->height) {
 			hotspot->callback(output, pointer->x, pointer->y,
 					button, hotspot->data);
 		}
@@ -197,12 +207,43 @@ const struct wl_seat_listener seat_listener = {
 	.name = seat_handle_name,
 };
 
+static void output_geometry(void *data, struct wl_output *output, int32_t x,
+		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
+		const char *make, const char *model, int32_t transform) {
+	// Who cares
+}
+
+static void output_mode(void *data, struct wl_output *output, uint32_t flags,
+		int32_t width, int32_t height, int32_t refresh) {
+	// Who cares
+}
+
+static void output_done(void *data, struct wl_output *output) {
+	// Who cares
+}
+
+static void output_scale(void *data, struct wl_output *wl_output,
+		int32_t factor) {
+	struct swaybar_output *output = data;
+	output->scale = factor;
+	if (output->surface) {
+		render_frame(output->bar, output);
+	}
+}
+
+struct wl_output_listener output_listener = {
+	.geometry = output_geometry,
+	.mode = output_mode,
+	.done = output_done,
+	.scale = output_scale,
+};
+
 static void handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 	struct swaybar *bar = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		bar->compositor = wl_registry_bind(registry, name,
-				&wl_compositor_interface, 1);
+				&wl_compositor_interface, 3);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		bar->seat = wl_registry_bind(registry, name,
 				&wl_seat_interface, 1);
@@ -216,7 +257,9 @@ static void handle_global(void *data, struct wl_registry *registry,
 			calloc(1, sizeof(struct swaybar_output));
 		output->bar = bar;
 		output->output = wl_registry_bind(registry, name,
-				&wl_output_interface, 1);
+				&wl_output_interface, 3);
+		wl_output_add_listener(output->output, &output_listener, output);
+		output->scale = 1;
 		output->index = index++;
 		wl_list_init(&output->workspaces);
 		wl_list_init(&output->hotspots);
@@ -256,24 +299,36 @@ void bar_setup(struct swaybar *bar,
 		bar->status = status_line_init(bar->config->status_command);
 	}
 
-	assert(bar->display = wl_display_connect(NULL));
+	bar->display = wl_display_connect(NULL);
+	assert(bar->display);
 
 	struct wl_registry *registry = wl_display_get_registry(bar->display);
 	wl_registry_add_listener(registry, &registry_listener, bar);
 	wl_display_roundtrip(bar->display);
 	assert(bar->compositor && bar->layer_shell && bar->shm);
+	wl_display_roundtrip(bar->display);
+
 	struct swaybar_pointer *pointer = &bar->pointer;
 
-	assert(pointer->cursor_theme = wl_cursor_theme_load(NULL, 16, bar->shm));
+	int max_scale = 1;
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		if (output->scale > max_scale) {
+			max_scale = output->scale;
+		}
+	}
+
+	pointer->cursor_theme = wl_cursor_theme_load(
+				NULL, 24 * max_scale, bar->shm);
+	assert(pointer->cursor_theme);
 	struct wl_cursor *cursor;
-	assert(cursor = wl_cursor_theme_get_cursor(
-				pointer->cursor_theme, "left_ptr"));
+	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
+	assert(cursor);
 	pointer->cursor_image = cursor->images[0];
-	assert(pointer->cursor_surface =
-			wl_compositor_create_surface(bar->compositor));
+	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
+	assert(pointer->cursor_surface);
 
 	// TODO: we might not necessarily be meant to do all of the outputs
-	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		struct config_output *coutput;
 		wl_list_for_each(coutput, &bar->config->outputs, link) {
@@ -281,8 +336,8 @@ void bar_setup(struct swaybar *bar,
 				continue;
 			}
 			output->name = strdup(coutput->name);
-			assert(output->surface = wl_compositor_create_surface(
-					bar->compositor));
+			output->surface = wl_compositor_create_surface(bar->compositor);
+			assert(output->surface);
 			output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 					bar->layer_shell, output->surface, output->output,
 					ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");

@@ -58,6 +58,7 @@ struct swaybar_output {
 	bool focused;
 
 	uint32_t width, height;
+	int32_t scale;
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
 };

@@ -7,6 +7,8 @@
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
@@ -187,6 +189,31 @@ void arrange_layers(struct sway_output *output) {
 			&usable_area, false);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 			&usable_area, false);
+
+	// Find topmost keyboard interactive layer, if such a layer exists
+	uint32_t layers_above_shell[] = {
+		ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
+		ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+	};
+	size_t nlayers = sizeof(layers_above_shell) / sizeof(layers_above_shell[0]);
+	struct sway_layer_surface *layer, *topmost = NULL;
+	for (size_t i = 0; i < nlayers; ++i) {
+		wl_list_for_each_reverse(layer,
+				&output->layers[layers_above_shell[i]], link) {
+			if (layer->layer_surface->current.keyboard_interactive) {
+				topmost = layer;
+				break;
+			}
+		}
+		if (topmost != NULL) {
+			break;
+		}
+	}
+
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		seat_set_focus_layer(seat, topmost ? topmost->layer_surface : NULL);
+	}
 }
 
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
@@ -251,6 +278,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 			sway_layer, map);
 	struct sway_output *output = sway_layer->layer_surface->output->data;
 	wlr_output_damage_add_box(output->damage, &sway_layer->geo);
+	wlr_surface_send_enter(sway_layer->layer_surface->surface,
+		sway_layer->layer_surface->output);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {

@@ -57,10 +57,7 @@ static void rotate_child_position(double *sx, double *sy, double sw, double sh,
  */
 static bool surface_intersect_output(struct wlr_surface *surface,
 		struct wlr_output_layout *output_layout, struct wlr_output *wlr_output,
-		double lx, double ly, float rotation, struct wlr_box *box) {
-	double ox = lx, oy = ly;
-	wlr_output_layout_output_coords(output_layout, wlr_output, &ox, &oy);
-
+		double ox, double oy, float rotation, struct wlr_box *box) {
 	if (box != NULL) {
 		box->x = ox * wlr_output->scale;
 		box->y = oy * wlr_output->scale;
@@ -69,7 +66,7 @@ static bool surface_intersect_output(struct wlr_surface *surface,
 	}
 
 	struct wlr_box layout_box = {
-		.x = lx, .y = ly,
+		.x = wlr_output->lx + ox, .y = wlr_output->ly + oy,
 		.width = surface->current->width, .height = surface->current->height,
 	};
 	wlr_box_rotated_bounds(&layout_box, rotation, &layout_box);
@@ -78,7 +75,7 @@ static bool surface_intersect_output(struct wlr_surface *surface,
 
 static void render_surface(struct wlr_surface *surface,
 		struct wlr_output *wlr_output, struct timespec *when,
-		double lx, double ly, float rotation) {
+		double ox, double oy, float rotation) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 
@@ -90,7 +87,7 @@ static void render_surface(struct wlr_surface *surface,
 
 	struct wlr_box box;
 	bool intersects = surface_intersect_output(surface, layout, wlr_output,
-		lx, ly, rotation, &box);
+		ox, oy, rotation, &box);
 	if (intersects) {
 		float matrix[9];
 		enum wl_output_transform transform =
@@ -113,7 +110,7 @@ static void render_surface(struct wlr_surface *surface,
 			surface->current->width, surface->current->height, rotation);
 
 		render_surface(subsurface->surface, wlr_output, when,
-			lx + sx, ly + sy, rotation);
+			ox + sx, oy + sy, rotation);
 	}
 }
 
@@ -211,9 +208,7 @@ static void render_view(struct sway_container *view, void *data) {
 	}
 }
 
-static void render_layer(struct sway_output *output,
-		const struct wlr_box *output_layout_box,
-		struct timespec *when,
+static void render_layer(struct sway_output *output, struct timespec *when,
 		struct wl_list *layer) {
 	struct sway_layer_surface *sway_layer;
 	wl_list_for_each(sway_layer, layer, link) {
@@ -245,14 +240,15 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	wlr_renderer_clear(renderer, clear_color);
 
-	struct wlr_output_layout *layout = root_container.sway_root->output_layout;
+	struct wlr_output_layout *output_layout =
+		root_container.sway_root->output_layout;
 	const struct wlr_box *output_box =
-			wlr_output_layout_get_box(layout, wlr_output);
+		wlr_output_layout_get_box(output_layout, wlr_output);
 
-	render_layer(output, output_box, when,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-	render_layer(output, output_box, when,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+	render_layer(output, when,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+	render_layer(output, when,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
@@ -262,7 +258,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		focus = output->swayc->children->items[0];
 	}
 	struct sway_container *workspace = focus->type == C_WORKSPACE ?
-			focus : container_parent(focus, C_WORKSPACE);
+		focus : container_parent(focus, C_WORKSPACE);
 
 	struct render_data rdata = {
 		.output = output,
@@ -296,10 +292,10 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	}
 
 	// TODO: Consider revising this when fullscreen windows are supported
-	render_layer(output, output_box, when,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
-	render_layer(output, output_box, when,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	render_layer(output, when,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	render_layer(output, when,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 renderer_end:
 	wlr_renderer_end(renderer);

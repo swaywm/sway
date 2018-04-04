@@ -59,7 +59,11 @@ bool status_handle_readable(struct status_line *status) {
 					wlr_log(L_DEBUG, "Enabled click events.");
 					status->i3bar_state.click_events = true;
 					const char *events_array = "[\n";
-					write(status->write_fd, events_array, strlen(events_array));
+					ssize_t len = strlen(events_array);
+					if (write(status->write_fd, events_array, len) != len) {
+						status_error(status,
+								"[failed to write to status command]");
+					}
 				}
 				json_object_put(proto);
 			}
