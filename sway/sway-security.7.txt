@@ -92,7 +92,7 @@ policies. These features are:
 	Permission to take screenshots or record the screen.
 
 By default, no permissions are granted (though saner defaults are provided in
-/etc/sway/config.d/security). You can use the following configuration options to control
+/etc/sway/security.d/00-defaults). You can use the following configuration options to control
 a program's access:
 
 **permit** <executable> <features...>::
