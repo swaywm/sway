@@ -160,8 +160,11 @@ struct sway_container *container_output_create(
 		return NULL;
 	}
 
-	apply_output_config(oc, output);
+	// Insert the child before applying config so that the container coordinates
+	// get updated
 	container_add_child(&root_container, output);
+	apply_output_config(oc, output);
+
 	load_swaybars();
 
 	// Create workspace
