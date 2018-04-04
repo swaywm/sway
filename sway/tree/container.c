@@ -51,12 +51,12 @@ const char *container_type_to_str(enum sway_container_type type) {
 }
 
 void container_create_notify(struct sway_container *container) {
-	if (container->type != C_VIEW || container->type != C_CONTAINER) {
-		return;
-	}
 	// TODO send ipc event type based on the container type
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
-	ipc_event_window(container, "new");
+
+	if (container->type == C_VIEW || container->type == C_CONTAINER) {
+		ipc_event_window(container, "new");
+	}
 }
 
 static void container_close_notify(struct sway_container *container) {
