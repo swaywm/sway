@@ -88,6 +88,7 @@ sway_sources = files(
 	'tree/layout.c',
 	'tree/view.c',
 	'tree/workspace.c',
+	'tree/output.c',
 )
 
 sway_deps = [
