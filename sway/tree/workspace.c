@@ -14,6 +14,58 @@
 #include "log.h"
 #include "util.h"
 
+static struct sway_container *get_workspace_initial_output(const char *name) {
+	struct sway_container *parent;
+	// Search for workspace<->output pair
+	int e = config->workspace_outputs->length;
+	for (int i = 0; i < config->workspace_outputs->length; ++i) {
+		struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcasecmp(wso->workspace, name) == 0) {
+			// Find output to use if it exists
+			e = root_container.children->length;
+			for (i = 0; i < e; ++i) {
+				parent = root_container.children->items[i];
+				if (strcmp(parent->name, wso->output) == 0) {
+					return parent;
+				}
+			}
+			break;
+		}
+	}
+	// Otherwise put it on the focused output
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
+	parent = focus;
+	parent = container_parent(parent, C_OUTPUT);
+	return parent;
+}
+
+struct sway_container *workspace_create(struct sway_container *output,
+		const char *name) {
+	if (output == NULL) {
+		output = get_workspace_initial_output(name);
+	}
+
+	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
+	struct sway_container *workspace = container_create(C_WORKSPACE);
+
+	workspace->x = output->x;
+	workspace->y = output->y;
+	workspace->width = output->width;
+	workspace->height = output->height;
+	workspace->name = !name ? NULL : strdup(name);
+	workspace->prev_layout = L_NONE;
+	workspace->layout = container_get_default_layout(output);
+	workspace->workspace_layout = workspace->layout;
+
+	container_add_child(output, workspace);
+	container_sort_workspaces(output);
+	container_create_notify(workspace);
+
+	return workspace;
+}
+
 char *prev_workspace_name = NULL;
 struct workspace_by_number_data {
 	int len;
@@ -197,74 +249,6 @@ struct sway_container *workspace_by_name(const char *name) {
 	}
 }
 
-struct sway_container *workspace_create(const char *name) {
-	struct sway_container *parent;
-	// Search for workspace<->output pair
-	int i, e = config->workspace_outputs->length;
-	for (i = 0; i < e; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcasecmp(wso->workspace, name) == 0) {
-			// Find output to use if it exists
-			e = root_container.children->length;
-			for (i = 0; i < e; ++i) {
-				parent = root_container.children->items[i];
-				if (strcmp(parent->name, wso->output) == 0) {
-					return container_workspace_create(parent, name);
-				}
-			}
-			break;
-		}
-	}
-	// Otherwise create a new one
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus =
-		seat_get_focus_inactive(seat, &root_container);
-	parent = focus;
-	parent = container_parent(parent, C_OUTPUT);
-	struct sway_container *new_ws = container_workspace_create(parent, name);
-	ipc_event_workspace(NULL, new_ws, "init");
-	return new_ws;
-}
-
-struct sway_container *container_workspace_destroy(
-		struct sway_container *workspace) {
-	if (!sway_assert(workspace, "cannot destroy null workspace")) {
-		return NULL;
-	}
-
-	// Do not destroy this if it's the last workspace on this output
-	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	if (output && output->children->length == 1) {
-		return NULL;
-	}
-
-	struct sway_container *parent = workspace->parent;
-	if (workspace->children->length == 0) {
-		// destroy the WS if there are no children (TODO check for floating)
-		wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
-		ipc_event_workspace(workspace, NULL, "empty");
-	} else {
-		// Move children to a different workspace on this output
-		struct sway_container *new_workspace = NULL;
-		// TODO move floating
-		for (int i = 0; i < output->children->length; i++) {
-			if (output->children->items[i] != workspace) {
-				new_workspace = output->children->items[i];
-				break;
-			}
-		}
-
-		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
-			workspace->name, new_workspace->name);
-		for (int i = 0; i < workspace->children->length; i++) {
-			container_move_to(workspace->children->items[i], new_workspace);
-		}
-	}
-
-	container_destroy(workspace);
-	return parent;
-}
-
 /**
  * Get the previous or next workspace on the specified output. Wraps around at
  * the end and beginning.  If next is false, the previous workspace is returned,
@@ -376,7 +360,9 @@ bool workspace_switch(struct sway_container *workspace) {
 			&& active_ws == workspace
 			&& prev_workspace_name) {
 		struct sway_container *new_ws = workspace_by_name(prev_workspace_name);
-		workspace = new_ws ? new_ws : workspace_create(prev_workspace_name);
+		workspace = new_ws ?
+			new_ws :
+			workspace_create(NULL, prev_workspace_name);
 	}
 
 	if (!prev_workspace_name || (strcmp(prev_workspace_name, active_ws->name)

@@ -1,51 +1,73 @@
+#define _POSIX_C_SOURCE 200809L
+#include <string.h>
 #include <strings.h>
-#include "sway/tree/container.h"
-#include "sway/tree/layout.h"
 #include "sway/output.h"
+#include "sway/tree/output.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 
-struct sway_container *container_output_destroy(struct sway_container *output) {
-	if (!sway_assert(output, "cannot destroy null output")) {
+struct sway_container *output_create(
+		struct sway_output *sway_output) {
+	struct wlr_box size;
+	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
+		&size.height);
+
+	const char *name = sway_output->wlr_output->name;
+	char identifier[128];
+	output_get_identifier(identifier, sizeof(identifier), sway_output);
+
+	struct output_config *oc = NULL, *all = NULL;
+	for (int i = 0; i < config->output_configs->length; ++i) {
+		struct output_config *cur = config->output_configs->items[i];
+
+		if (strcasecmp(name, cur->name) == 0 ||
+				strcasecmp(identifier, cur->name) == 0) {
+			wlr_log(L_DEBUG, "Matched output config for %s", name);
+			oc = cur;
+		}
+		if (strcasecmp("*", cur->name) == 0) {
+			wlr_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			all = cur;
+		}
+
+		if (oc && all) {
+			break;
+		}
+	}
+	if (!oc) {
+		oc = all;
+	}
+
+	if (oc && !oc->enabled) {
 		return NULL;
 	}
 
-	if (output->children->length > 0) {
-		// TODO save workspaces when there are no outputs.
-		// TODO also check if there will ever be no outputs except for exiting
-		// program
-		if (root_container.children->length > 1) {
-			int p = root_container.children->items[0] == output;
-			// Move workspace from this output to another output
-			while (output->children->length) {
-				struct sway_container *child = output->children->items[0];
-				container_remove_child(child);
-				container_add_child(root_container.children->items[p], child);
-			}
-			container_sort_workspaces(root_container.children->items[p]);
-			arrange_windows(root_container.children->items[p],
-				-1, -1);
+	struct sway_container *output = container_create(C_OUTPUT);
+	output->sway_output = sway_output;
+	output->name = strdup(name);
+	if (output->name == NULL) {
+		container_destroy(output);
+		return NULL;
+	}
+
+	apply_output_config(oc, output);
+	container_add_child(&root_container, output);
+	load_swaybars();
+
+	// Create workspace
+	char *ws_name = workspace_next_name(output->name);
+	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
+	struct sway_container *ws = workspace_create(output, ws_name);
+	// Set each seat's focus if not already set
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		if (!seat->has_focus) {
+			seat_set_focus(seat, ws);
 		}
 	}
 
-	wl_list_remove(&output->sway_output->destroy.link);
-	wl_list_remove(&output->sway_output->mode.link);
-	wl_list_remove(&output->sway_output->transform.link);
-	wl_list_remove(&output->sway_output->scale.link);
-
-	wl_list_remove(&output->sway_output->damage_destroy.link);
-	wl_list_remove(&output->sway_output->damage_frame.link);
-
-	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
-	container_destroy(output);
-	return &root_container;
+	free(ws_name);
+	container_create_notify(output);
+	return output;
 }
 
-struct sway_container *output_by_name(const char *name) {
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *output = root_container.children->items[i];
-		if (strcasecmp(output->name, name) == 0){
-			return output;
-		}
-	}
-	return NULL;
-}

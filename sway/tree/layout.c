@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200809L
-#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
@@ -50,6 +49,19 @@ static void output_layout_handle_change(struct wl_listener *listener,
 	}
 
 	arrange_windows(&root_container, -1, -1);
+}
+
+struct sway_container *container_set_layout(struct sway_container *container,
+		enum sway_container_layout layout) {
+	if (container->type == C_WORKSPACE) {
+		container->workspace_layout = layout;
+		if (layout == L_HORIZ || layout == L_VERT) {
+			container->layout = layout;
+		}
+	} else {
+		container->layout = layout;
+	}
+	return container;
 }
 
 void layout_init(void) {
@@ -107,32 +119,6 @@ void container_add_child(struct sway_container *parent,
 	child->parent = parent;
 }
 
-struct sway_container *container_reap_empty(struct sway_container *container) {
-	if (container == NULL) {
-		return NULL;
-	}
-	wlr_log(L_DEBUG, "Reaping %p %s '%s'", container,
-			container_type_to_str(container->type), container->name);
-	while (container->type != C_ROOT && container->type != C_OUTPUT
-			&& container->children->length == 0) {
-		if (container->type == C_WORKSPACE) {
-			if (!workspace_is_visible(container)) {
-				struct sway_container *parent = container->parent;
-				container_workspace_destroy(container);
-				return parent;
-			}
-			return container;
-		} else if (container->type == C_CONTAINER) {
-			struct sway_container *parent = container->parent;
-			container_destroy(container);
-			container = parent;
-		} else {
-			container = container->parent;
-		}
-	}
-	return container;
-}
-
 struct sway_container *container_remove_child(struct sway_container *child) {
 	struct sway_container *parent = child->parent;
 	for (int i = 0; i < parent->children->length; ++i) {
@@ -167,7 +153,7 @@ void container_move_to(struct sway_container *container,
 		if (old_parent->children->length == 0) {
 			char *ws_name = workspace_next_name(old_parent->name);
 			struct sway_container *ws =
-				container_workspace_create(old_parent, ws_name);
+				workspace_create(old_parent, ws_name);
 			free(ws_name);
 			seat_set_focus(seat, ws);
 		}
@@ -186,12 +172,22 @@ void container_move(struct sway_container *container,
 }
 
 enum sway_container_layout container_get_default_layout(
-		struct sway_container *output) {
+		struct sway_container *con) {
+	if (con->type != C_OUTPUT) {
+		con = container_parent(con, C_OUTPUT);
+	}
+
+	if (!sway_assert(con != NULL,
+			"container_get_default_layout must be called on an attached"
+			" container below the root container")) {
+		return 0;
+	}
+
 	if (config->default_layout != L_NONE) {
 		return config->default_layout;
 	} else if (config->default_orientation != L_NONE) {
 		return config->default_orientation;
-	} else if (output->width >= output->height) {
+	} else if (con->width >= con->height) {
 		return L_HORIZ;
 	} else {
 		return L_VERT;

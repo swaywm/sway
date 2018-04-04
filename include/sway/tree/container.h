@@ -91,13 +91,11 @@ struct sway_container {
 	} events;
 };
 
-// TODO make private and use the container-specific create functions
 struct sway_container *container_create(enum sway_container_type type);
 
 const char *container_type_to_str(enum sway_container_type type);
 
-// TODO only one container create function and pass the type?
-struct sway_container *container_output_create(
+struct sway_container *output_create(
 		struct sway_output *sway_output);
 
 /**
@@ -110,35 +108,26 @@ struct sway_container *container_container_create();
  * Create a new output. Outputs are children of the root container and have no
  * order in the tree structure.
  */
-struct sway_container *container_output_create(struct sway_output *sway_output);
+struct sway_container *output_create(struct sway_output *sway_output);
 
 /**
  * Create a new workspace container. Workspaces are children of an output
  * container and are ordered alphabetically by name.
  */
-struct sway_container *container_workspace_create(struct sway_container *output, const char *name);
+struct sway_container *workspace_create(struct sway_container *output, const char *name);
 
 /*
  * Create a new view container. A view can be a child of a workspace container
  * or a container container and are rendered in the order and structure of
  * how they are attached to the tree.
  */
-// TODO view containers should be created in a detached state.
 struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
 
-// TODO don't return the parent on destroy
 struct sway_container *container_destroy(struct sway_container *container);
 
-struct sway_container *container_workspace_destroy(struct sway_container *container);
-struct sway_container *container_output_destroy(struct sway_container *container);
-struct sway_container *container_view_destroy(struct sway_container *container);
+struct sway_container *container_close(struct sway_container *container);
 
-// TODO move to layout.c
-struct sway_container *container_set_layout(struct sway_container *container,
-		enum sway_container_layout layout);
-
-// TODO rename to container_descendants_for_each()
 void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data);
@@ -153,7 +142,6 @@ struct sway_container *container_find(struct sway_container *container,
 /**
  * Finds a parent container with the given struct sway_containerype.
  */
-// TODO rename to container_parent_of_type()
 struct sway_container *container_parent(struct sway_container *container,
 		enum sway_container_type type);
 
@@ -189,5 +177,7 @@ bool container_has_anscestor(struct sway_container *container,
  */
 bool container_has_child(struct sway_container *con,
 		struct sway_container *child);
+
+void container_create_notify(struct sway_container *container);
 
 #endif

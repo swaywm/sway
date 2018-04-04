@@ -28,8 +28,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if (strcasecmp(argv[0], "default") == 0) {
 		container_set_layout(parent, parent->prev_layout);
 		if (parent->layout == L_NONE) {
-			struct sway_container *output = container_parent(parent, C_OUTPUT);
-			container_set_layout(parent, container_get_default_layout(output));
+			container_set_layout(parent, container_get_default_layout(parent));
 		}
 	} else {
 		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {

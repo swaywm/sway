@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>
+#include <strings.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
@@ -20,6 +21,16 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+
+struct sway_container *output_by_name(const char *name) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		if (strcasecmp(output->name, name) == 0) {
+			return output;
+		}
+	}
+	return NULL;
+}
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
@@ -334,12 +345,12 @@ void output_damage_whole_view(struct sway_output *output,
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_destroy);
-	container_output_destroy(output->swayc);
+	container_destroy(output->swayc);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
-	container_output_destroy(output->swayc);
+	container_destroy(output->swayc);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
@@ -381,7 +392,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	output->damage = wlr_output_damage_create(wlr_output);
 
-	output->swayc = container_output_create(output);
+	output->swayc = output_create(output);
 	if (!output->swayc) {
 		free(output);
 		return;

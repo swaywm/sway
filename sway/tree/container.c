@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +7,6 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_wl_shell.h>
-#include "log.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -50,7 +50,7 @@ const char *container_type_to_str(enum sway_container_type type) {
 	}
 }
 
-static void notify_new_container(struct sway_container *container) {
+void container_create_notify(struct sway_container *container) {
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 	ipc_event_window(container, "new");
 }
@@ -76,21 +76,21 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-static struct sway_container *_container_destroy(struct sway_container *cont) {
+static void _container_destroy(struct sway_container *cont) {
 	if (cont == NULL) {
-		return NULL;
+		return;
 	}
 
 	wl_signal_emit(&cont->events.destroy, cont);
 
 	struct sway_container *parent = cont->parent;
-	if (cont->children != NULL) {
+	if (cont->children != NULL && cont->children->length) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
-		while (cont->children != NULL && cont->children->length != 0) {
+		while (cont->children != NULL) {
 			struct sway_container *child = cont->children->items[0];
 			container_remove_child(child);
-			container_destroy(child);
+			_container_destroy(child);
 		}
 	}
 	if (cont->marks) {
@@ -106,106 +106,200 @@ static struct sway_container *_container_destroy(struct sway_container *cont) {
 	list_free(cont->children);
 	cont->children = NULL;
 	free(cont);
+}
+
+static struct sway_container *container_output_destroy(
+		struct sway_container *output) {
+	if (!sway_assert(output, "cannot destroy null output")) {
+		return NULL;
+	}
+
+	if (output->children->length > 0) {
+		// TODO save workspaces when there are no outputs.
+		// TODO also check if there will ever be no outputs except for exiting
+		// program
+		if (root_container.children->length > 1) {
+			int p = root_container.children->items[0] == output;
+			// Move workspace from this output to another output
+			while (output->children->length) {
+				struct sway_container *child = output->children->items[0];
+				container_remove_child(child);
+				container_add_child(root_container.children->items[p], child);
+			}
+			container_sort_workspaces(root_container.children->items[p]);
+			arrange_windows(root_container.children->items[p],
+				-1, -1);
+		}
+	}
+
+	wl_list_remove(&output->sway_output->destroy.link);
+	wl_list_remove(&output->sway_output->mode.link);
+	wl_list_remove(&output->sway_output->transform.link);
+	wl_list_remove(&output->sway_output->scale.link);
+
+	wl_list_remove(&output->sway_output->damage_destroy.link);
+	wl_list_remove(&output->sway_output->damage_frame.link);
+
+	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
+	_container_destroy(output);
+	return &root_container;
+}
+
+static struct sway_container *container_workspace_destroy(
+		struct sway_container *workspace) {
+	if (!sway_assert(workspace, "cannot destroy null workspace")) {
+		return NULL;
+	}
+
+	// Do not destroy this if it's the last workspace on this output
+	struct sway_container *output = container_parent(workspace, C_OUTPUT);
+	if (output && output->children->length == 1) {
+		return NULL;
+	}
+
+	struct sway_container *parent = workspace->parent;
+	if (workspace->children->length == 0) {
+		// destroy the WS if there are no children (TODO check for floating)
+		wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+		ipc_event_workspace(workspace, NULL, "empty");
+	} else {
+		// Move children to a different workspace on this output
+		struct sway_container *new_workspace = NULL;
+		// TODO move floating
+		for (int i = 0; i < output->children->length; i++) {
+			if (output->children->items[i] != workspace) {
+				new_workspace = output->children->items[i];
+				break;
+			}
+		}
+
+		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
+			workspace->name, new_workspace->name);
+		for (int i = 0; i < workspace->children->length; i++) {
+			container_move_to(workspace->children->items[i], new_workspace);
+		}
+	}
+
+	_container_destroy(workspace);
+
+	output_damage_whole(output->sway_output);
+
 	return parent;
 }
 
-struct sway_container *container_destroy(struct sway_container *cont) {
-	struct sway_container *parent = _container_destroy(cont);
-	parent = container_reap_empty(parent);
-	arrange_windows(&root_container, -1, -1);
-	return parent;
+static void container_root_finish(struct sway_container *con) {
+	wlr_log(L_ERROR, "TODO: destroy the root container");
 }
 
-struct sway_container *container_output_create(
-		struct sway_output *sway_output) {
-	struct wlr_box size;
-	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
-		&size.height);
-
-	const char *name = sway_output->wlr_output->name;
-	char identifier[128];
-	output_get_identifier(identifier, sizeof(identifier), sway_output);
-
-	struct output_config *oc = NULL, *all = NULL;
-	for (int i = 0; i < config->output_configs->length; ++i) {
-		struct output_config *cur = config->output_configs->items[i];
-
-		if (strcasecmp(name, cur->name) == 0 ||
-				strcasecmp(identifier, cur->name) == 0) {
-			wlr_log(L_DEBUG, "Matched output config for %s", name);
-			oc = cur;
+static bool container_reap_empty(struct sway_container *con) {
+	switch (con->type) {
+	case C_ROOT:
+	case C_OUTPUT:
+		// dont reap these
+		break;
+	case C_WORKSPACE:
+		if (!workspace_is_visible(con) && con->children->length == 0) {
+			container_workspace_destroy(con);
+			return true;
 		}
-		if (strcasecmp("*", cur->name) == 0) {
-			wlr_log(L_DEBUG, "Matched wildcard output config for %s", name);
-			all = cur;
+		break;
+	case C_CONTAINER:
+		if (con->children->length == 0) {
+			_container_destroy(con);
+			return true;
+		} else if (con->children->length == 1) {
+			struct sway_container *child = con->children->items[0];
+			if (child->type == C_CONTAINER) {
+				container_remove_child(child);
+				container_replace_child(con, child);
+				_container_destroy(con);
+				return true;
+			}
 		}
+	case C_VIEW:
+		break;
+	case C_TYPES:
+		sway_assert(false, "container_reap_empty called on an invalid "
+			"container");
+		break;
+	}
 
-		if (oc && all) {
+	return false;
+}
+
+struct sway_container *container_destroy(struct sway_container *con) {
+	if (con == NULL) {
+		return NULL;
+	}
+
+	struct sway_container *parent = con->parent;
+
+	switch (con->type) {
+		case C_ROOT:
+			container_root_finish(con);
+			break;
+		case C_OUTPUT:
+			// dont try to reap the root after this
+			container_output_destroy(con);
+			break;
+		case C_WORKSPACE:
+			// dont try to reap the output after this
+			container_workspace_destroy(con);
+			break;
+		case C_CONTAINER:
+			if (con->children->length) {
+				for (int i = 0; i < con->children->length; ++i) {
+					struct sway_container *child = con->children->items[0];
+					container_remove_child(child);
+					container_add_child(parent, child);
+				}
+			}
+			_container_destroy(con);
+			break;
+		case C_VIEW:
+			_container_destroy(con);
+			break;
+		case C_TYPES:
+			wlr_log(L_ERROR, "container_destroy called on an invalid "
+				"container");
+			break;
+	}
+
+	struct sway_container *tmp = parent;
+	while (parent) {
+		tmp = parent->parent;
+
+		if (!container_reap_empty(parent)) {
 			break;
 		}
-	}
-	if (!oc) {
-		oc = all;
-	}
 
-	if (oc && !oc->enabled) {
-		return NULL;
+		parent = tmp;
 	}
 
-	struct sway_container *output = container_create(C_OUTPUT);
-	output->sway_output = sway_output;
-	output->name = strdup(name);
-	if (output->name == NULL) {
-		container_destroy(output);
-		return NULL;
-	}
-
-	// Insert the child before applying config so that the container coordinates
-	// get updated
-	container_add_child(&root_container, output);
-	apply_output_config(oc, output);
-
-	load_swaybars();
-
-	// Create workspace
-	char *ws_name = workspace_next_name(output->name);
-	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
-	struct sway_container *ws = container_workspace_create(output, ws_name);
-	// Set each seat's focus if not already set
-	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input_manager->seats, link) {
-		if (!seat->has_focus) {
-			seat_set_focus(seat, ws);
-		}
-	}
-
-	free(ws_name);
-	notify_new_container(output);
-	return output;
+	return tmp;
 }
 
-struct sway_container *container_workspace_create(
-		struct sway_container *output, const char *name) {
-	if (!sway_assert(output,
-			"container_workspace_create called with null output")) {
+static void container_close_func(struct sway_container *container, void *data) {
+	if (container->type == C_VIEW) {
+		view_close(container->sway_view);
+	}
+}
+
+struct sway_container *container_close(struct sway_container *con) {
+	if (!sway_assert(con != NULL,
+			"container_close called with a NULL container")) {
 		return NULL;
 	}
-	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
-	struct sway_container *workspace = container_create(C_WORKSPACE);
 
-	workspace->x = output->x;
-	workspace->y = output->y;
-	workspace->width = output->width;
-	workspace->height = output->height;
-	workspace->name = !name ? NULL : strdup(name);
-	workspace->prev_layout = L_NONE;
-	workspace->layout = container_get_default_layout(output);
-	workspace->workspace_layout = container_get_default_layout(output);
+	struct sway_container *parent = con->parent;
 
-	container_add_child(output, workspace);
-	container_sort_workspaces(output);
-	notify_new_container(workspace);
-	return workspace;
+	if (con->type == C_VIEW) {
+		view_close(con->sway_view);
+	} else {
+		container_for_each_descendant_dfs(con, container_close_func, NULL);
+	}
+
+	return parent;
 }
 
 struct sway_container *container_view_create(struct sway_container *sibling,
@@ -231,21 +325,8 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		// Regular case, create as sibling of current container
 		container_add_sibling(sibling, swayc);
 	}
-	notify_new_container(swayc);
+	container_create_notify(swayc);
 	return swayc;
-}
-
-struct sway_container *container_set_layout(struct sway_container *container,
-		enum sway_container_layout layout) {
-	if (container->type == C_WORKSPACE) {
-		container->workspace_layout = layout;
-		if (layout == L_HORIZ || layout == L_VERT) {
-			container->layout = layout;
-		}
-	} else {
-		container->layout = layout;
-	}
-	return container;
 }
 
 void container_descendants(struct sway_container *root,
