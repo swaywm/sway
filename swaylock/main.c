@@ -216,7 +216,8 @@ int main(int argc, char **argv) {
 
 	wl_list_init(&state.surfaces);
 	state.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	assert(state.display = wl_display_connect(NULL));
+	state.display = wl_display_connect(NULL);
+	assert(state.display);
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
@@ -236,8 +237,8 @@ int main(int argc, char **argv) {
 	wl_list_for_each(surface, &state.surfaces, link) {
 		surface->image = background_image;
 
-		assert(surface->surface =
-				wl_compositor_create_surface(state.compositor));
+		surface->surface = wl_compositor_create_surface(state.compositor);
+		assert(surface->surface);
 
 		surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 				state.layer_shell, surface->surface, surface->output,

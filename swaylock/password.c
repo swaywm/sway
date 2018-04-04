@@ -103,7 +103,8 @@ void swaylock_handle_key(struct swaylock_state *state,
 			render_frames(state);
 			wl_display_roundtrip(state->display);
 			if (attempt_password(&state->password)) {
-				exit(0);
+				state->run_display = false;
+				break;
 			}
 			state->auth_state = AUTH_STATE_INVALID;
 			render_frames(state);
