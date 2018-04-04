@@ -13,6 +13,9 @@
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
+#ifdef ENABLE_TRAY
+#include "swaybar/tray/tray.h"
+#endif
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static const int ws_horizontal_padding = 5;
@@ -410,6 +413,9 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 		max_height = h > max_height ? h : max_height;
 	}
 	x = output->width;
+#ifdef ENABLE_TRAY
+	render_tray(cairo, output, config, &x, output->height);
+#endif
 	if (bar->status) {
 		uint32_t h = render_status_line(cairo, config, output, bar->status,
 				output->focused, &x, output->width, output->height);
@@ -420,7 +426,7 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 }
 
 void render_frame(struct swaybar *bar, struct swaybar_output *output) {
-	struct swaybar_hotspot *hotspot, *tmp;
+		struct swaybar_hotspot *hotspot, *tmp;
 	wl_list_for_each_safe(hotspot, tmp, &output->hotspots, link) {
 		if (hotspot->destroy) {
 			hotspot->destroy(hotspot->data);

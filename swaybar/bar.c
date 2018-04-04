@@ -253,6 +253,9 @@ void bar_setup(struct swaybar *bar,
 		const char *socket_path, const char *bar_id) {
 	bar_init(bar);
 	init_event_loop();
+#ifdef ENABLE_TRAY
+	init_tray(bar);
+#endif
 
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
@@ -301,9 +304,6 @@ void bar_setup(struct swaybar *bar,
 	}
 	ipc_get_workspaces(bar);
 	render_all_frames(bar);
-#ifdef ENABLE_TRAY
-	init_tray(bar);
-#endif
 }
 
 static void display_in(int fd, short mask, void *_bar) {

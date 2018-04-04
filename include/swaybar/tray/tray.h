@@ -21,8 +21,7 @@ void tray_mouse_event(struct output *output, int x, int y,
 */
 
 uint32_t render_tray(cairo_t *cairo, struct swaybar_output *output,
-		struct swaybar_config *config, struct swaybar_workspace *ws,
-		double *pos, uint32_t height);
+		struct swaybar_config *config, double *pos, uint32_t height);
 
 /**
  * Initializes the tray with D-Bus

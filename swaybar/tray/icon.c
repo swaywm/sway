@@ -16,50 +16,6 @@
 #include "stringop.h"
 #include "log.h"
 
-/* Finds all themes that the given theme inherits */
-static list_t *find_inherits(const char *theme_dir) {
-	const char inherits[] = "Inherits";
-	const char index_name[] = "/index.theme";
-	list_t *themes = create_list();
-	FILE *index = NULL;
-	char *path = malloc(strlen(theme_dir) + sizeof(index_name));
-	if (!path) {
-		goto fail;
-	}
-	if (!themes) {
-		goto fail;
-	}
-
-	strcpy(path, theme_dir);
-	strcat(path, index_name);
-
-	index = fopen(path, "r");
-	if (!index) {
-		goto fail;
-	}
-
-	char *buf = NULL;
-	size_t n = 0;
-	while (!feof(index) && getline(&buf, &n, index) != -1) {
-		if (n <= sizeof(inherits) + 1) {
-			continue;
-		}
-		if (strncmp(inherits, buf, sizeof(inherits) - 1) == 0) {
-			char *themestr = buf + sizeof(inherits);
-			themes = split_string(themestr, ",");
-			break;
-		}
-	}
-	free(buf);
-
-fail:
-	free(path);
-	if (index) {
-		fclose(index);
-	}
-	return themes;
-}
-
 static bool isdir(const char *path) {
 	struct stat statbuf;
 	if (stat(path, &statbuf) != -1) {
@@ -159,6 +115,64 @@ fail:
 	free(icon_dir);
 	wlr_log(L_ERROR, "Could not find dir for theme: %s", theme);
 	return NULL;
+}
+
+/* Finds all themes that the given theme inherits */
+static list_t *find_inherits(const char *theme_dir) {
+	const char inherits[] = "Inherits";
+	const char index_name[] = "/index.theme";
+	list_t *themes = create_list();
+	FILE *index = NULL;
+	char *path = malloc(strlen(theme_dir) + sizeof(index_name));
+	if (!path) {
+		goto fail;
+	}
+	if (!themes) {
+		goto fail;
+	}
+
+	strcpy(path, theme_dir);
+	strcat(path, index_name);
+
+	index = fopen(path, "r");
+	if (!index) {
+		goto fail;
+	}
+
+	char *buf = NULL;
+	char *themestr = NULL;
+	size_t n = 0;
+	while (!feof(index) && getline(&buf, &n, index) != -1) {
+		if (n <= sizeof(inherits) + 1) {
+			continue;
+		}
+		if (strncmp(inherits, buf, sizeof(inherits) - 1) == 0) {
+			themestr = buf + sizeof(inherits);
+			int len = strlen(themestr);
+			if (themestr[len-1] == '\n') {
+				themestr[len-1] = '\0';
+			}
+			break;
+		}
+	}
+	if (themestr) {
+		char *token = strtok(themestr, ",");
+		while(token) {
+			char *dir = find_theme_dir(token);
+			if (dir) {
+				list_add(themes,dir);
+			}
+			token = strtok(NULL, ",");
+		}
+	}
+	free(buf);
+
+fail:
+	free(path);
+	if (index) {
+		fclose(index);
+	}
+	return themes;
 }
 
 /**
