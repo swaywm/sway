@@ -134,7 +134,6 @@ void render_frame(struct swaylock_surface *surface) {
 	wl_surface_attach(surface->surface, surface->current_buffer->buffer, 0, 0);
 	wl_surface_damage(surface->surface, 0, 0, buffer_width, buffer_height);
 	wl_surface_commit(surface->surface);
-	wl_display_roundtrip(state->display);
 }
 
 void render_frames(struct swaylock_state *state) {
