@@ -51,12 +51,18 @@ const char *container_type_to_str(enum sway_container_type type) {
 }
 
 void container_create_notify(struct sway_container *container) {
+	if (container->type != C_VIEW || container->type != C_CONTAINER) {
+		return;
+	}
 	// TODO send ipc event type based on the container type
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 	ipc_event_window(container, "new");
 }
 
 static void container_close_notify(struct sway_container *container) {
+	if (container == NULL) {
+		return;
+	}
 	// TODO send ipc event type based on the container type
 	ipc_event_window(container, "close");
 }
@@ -522,8 +528,8 @@ static bool find_child_func(struct sway_container *con, void *data) {
 
 bool container_has_child(struct sway_container *con,
 		struct sway_container *child) {
-	if (child == NULL || child->type == C_VIEW ||
-			child->children->length == 0) {
+	if (con == NULL || con->type == C_VIEW ||
+			con->children->length == 0) {
 		return false;
 	}
 	return container_find(con, find_child_func, child);

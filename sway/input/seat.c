@@ -467,22 +467,18 @@ struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
 
 struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		struct sway_container *container, enum sway_container_type type) {
-	struct sway_seat_container *current = NULL;
-	struct sway_container *parent = NULL;
-	wl_list_for_each(current, &seat->focus_stack, link) {
-		parent = current->container->parent;
+	if (container->type == C_VIEW || container->children->length == 0) {
+		return container;
+	}
 
-		if (current->container == container &&
-				(type == C_TYPES || container->type == type)) {
-			return current->container;
+	struct sway_seat_container *current = NULL;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (type != C_TYPES && container->type != type) {
+			continue;
 		}
 
-		while (parent) {
-			if (parent == container && (type == C_TYPES ||
-						current->container->type == type)) {
-				return current->container;
-			}
-			parent = parent->parent;
+		if (container_has_child(container, current->container)) {
+			return current->container;
 		}
 	}
 
