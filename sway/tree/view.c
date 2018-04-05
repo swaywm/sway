@@ -161,8 +161,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	view_damage_whole(view);
 	view_update_outputs(view, NULL);
-
-	// TODO: create view children for subsurfaces
 }
 
 void view_unmap(struct sway_view *view) {
