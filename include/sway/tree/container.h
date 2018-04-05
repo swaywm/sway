@@ -97,8 +97,7 @@ struct sway_container *container_create(enum sway_container_type type);
 
 const char *container_type_to_str(enum sway_container_type type);
 
-struct sway_container *output_create(
-		struct sway_output *sway_output);
+struct sway_container *output_create(struct sway_output *sway_output);
 
 /**
  * Create a new container container. A container container can be a a child of
@@ -116,7 +115,8 @@ struct sway_container *output_create(struct sway_output *sway_output);
  * Create a new workspace container. Workspaces are children of an output
  * container and are ordered alphabetically by name.
  */
-struct sway_container *workspace_create(struct sway_container *output, const char *name);
+struct sway_container *workspace_create(struct sway_container *output,
+		const char *name);
 
 /*
  * Create a new view container. A view can be a child of a workspace container
@@ -181,5 +181,7 @@ bool container_has_child(struct sway_container *con,
 		struct sway_container *child);
 
 void container_create_notify(struct sway_container *container);
+
+void container_damage_whole(struct sway_container *container);
 
 #endif

@@ -341,8 +341,8 @@ void output_damage_whole_view(struct sway_output *output,
 	output_damage_whole(output);
 }
 
-void output_damage_whole_surface(struct sway_output *output,
-		struct wlr_surface *surface, double ox, double oy) {
+void output_damage_whole_rect(struct sway_output *output,
+		double ox, double oy, int width, int height) {
 	// TODO
 	output_damage_whole(output);
 }
