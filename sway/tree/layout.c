@@ -729,3 +729,24 @@ struct sway_container *container_split(struct sway_container *child,
 
 	return cont;
 }
+
+void container_recursive_resize(struct sway_container *container,
+		double amount, enum resize_edge edge) {
+	bool layout_match = true;
+	wlr_log(L_DEBUG, "Resizing %p with amount: %f", container, amount);
+	if (edge == RESIZE_EDGE_LEFT || edge == RESIZE_EDGE_RIGHT) {
+		container->width += amount;
+		layout_match = container->layout == L_HORIZ;
+	} else if (edge == RESIZE_EDGE_TOP || edge == RESIZE_EDGE_BOTTOM) {
+		container->height += amount;
+		layout_match = container->layout == L_VERT;
+	}
+	if (container->children) {
+		for (int i = 0; i < container->children->length; i++) {
+			struct sway_container *child = container->children->items[i];
+			double amt = layout_match ?
+				amount / container->children->length : amount;
+			container_recursive_resize(child, amt, edge);
+		}
+	}
+}
