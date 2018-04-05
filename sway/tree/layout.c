@@ -638,16 +638,16 @@ struct sway_container *container_get_in_direction(
 						wrap_candidate = parent->children->items[0];
 					}
 					if (config->force_focus_wrapping) {
-						 return seat_get_focus_by_type(seat,
-								 wrap_candidate, C_VIEW);
+						 return wrap_candidate;
 					}
 				}
 			} else {
+				struct sway_container *desired_con = parent->children->items[desired];
 				wlr_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
-					container, dir, desired, parent->children->items[desired]);
-				return seat_get_focus_by_type(seat,
-						parent->children->items[desired], C_VIEW);
+					container, dir, desired, desired_con);
+				struct sway_container *next = seat_get_focus_by_type(seat, desired_con, C_VIEW);
+				return next;
 			}
 		}
 

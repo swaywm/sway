@@ -123,7 +123,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 
 static struct sway_seat_container *seat_container_from_container(
 		struct sway_seat *seat, struct sway_container *con) {
-	if (con->type < C_WORKSPACE) {
+	if (con->type == C_ROOT || con->type == C_OUTPUT) {
 		// these don't get seat containers ever
 		return NULL;
 	}
@@ -473,7 +473,7 @@ struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 
 	struct sway_seat_container *current = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
-		if (type != C_TYPES && container->type != type) {
+		if (current->container->type != type && type != C_TYPES) {
 			continue;
 		}
 
