@@ -34,6 +34,34 @@ static void bar_init(struct swaybar *bar) {
 	wl_list_init(&bar->outputs);
 }
 
+static void swaybar_output_free(struct swaybar_output *output) {
+	if (!output) {
+		return;
+	}
+	wlr_log(L_DEBUG, "Removing output %s", output->name);
+	zwlr_layer_surface_v1_destroy(output->layer_surface);
+	wl_surface_destroy(output->surface);
+	wl_output_destroy(output->output);
+	destroy_buffer(&output->buffers[0]);
+	destroy_buffer(&output->buffers[1]);
+	struct swaybar_workspace *ws, *ws_tmp;
+	wl_list_for_each_safe(ws, ws_tmp, &output->workspaces, link) {
+		wl_list_remove(&ws->link);
+		free(ws->name);
+		free(ws);
+	}
+	struct swaybar_hotspot *hotspot, *hotspot_tmp;
+	wl_list_for_each_safe(hotspot, hotspot_tmp, &output->hotspots, link) {
+		if (hotspot->destroy) {
+			hotspot->destroy(hotspot->data);
+		}
+		free(hotspot);
+	}
+	wl_list_remove(&output->link);
+	free(output->name);
+	free(output);
+}
+
 static void layer_surface_configure(void *data,
 		struct zwlr_layer_surface_v1 *surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
@@ -46,10 +74,8 @@ static void layer_surface_configure(void *data,
 
 static void layer_surface_closed(void *_output,
 		struct zwlr_layer_surface_v1 *surface) {
-	// TODO: Deal with hotplugging
 	struct swaybar_output *output = _output;
-	zwlr_layer_surface_v1_destroy(output->layer_surface);
-	wl_surface_destroy(output->surface);
+	swaybar_output_free(output);
 }
 
 struct zwlr_layer_surface_v1_listener layer_surface_listener = {
@@ -261,6 +287,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 		wl_output_add_listener(output->output, &output_listener, output);
 		output->scale = 1;
 		output->index = index++;
+		output->wl_name = name;
 		wl_list_init(&output->workspaces);
 		wl_list_init(&output->hotspots);
 		wl_list_insert(&bar->outputs, &output->link);
@@ -272,7 +299,14 @@ static void handle_global(void *data, struct wl_registry *registry,
 
 static void handle_global_remove(void *data, struct wl_registry *registry,
 		uint32_t name) {
-	// who cares
+	struct swaybar *bar = data;
+	struct swaybar_output *output, *tmp;
+	wl_list_for_each_safe(output, tmp, &bar->outputs, link) {
+		if (output->wl_name == name) {
+			swaybar_output_free(output);
+			break;
+		}
+	}
 }
 
 static const struct wl_registry_listener registry_listener = {

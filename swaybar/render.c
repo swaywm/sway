@@ -421,8 +421,6 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 static uint32_t render_to_cairo(cairo_t *cairo,
 		struct swaybar *bar, struct swaybar_output *output) {
 	struct swaybar_config *config = bar->config;
-	wlr_log(L_DEBUG, "output %p", output);
-
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	if (output->focused) {
 		cairo_set_source_u32(cairo, config->colors.focused_background);

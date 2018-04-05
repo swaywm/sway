@@ -367,5 +367,5 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		return false;
 	}
 	free_ipc_response(resp);
-	return true;
+	return false;
 }
