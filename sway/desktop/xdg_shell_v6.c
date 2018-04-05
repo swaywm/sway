@@ -11,6 +11,66 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+static const struct sway_view_child_impl popup_impl;
+
+static void popup_destroy(struct sway_view_child *child) {
+	if (!sway_assert(child->impl == &popup_impl,
+			"Expected an xdg_shell_v6 popup")) {
+		return;
+	}
+	struct sway_xdg_popup_v6 *popup = (struct sway_xdg_popup_v6 *)child;
+	wl_list_remove(&popup->new_popup.link);
+	wl_list_remove(&popup->unmap.link);
+	wl_list_remove(&popup->destroy.link);
+	free(popup);
+}
+
+static const struct sway_view_child_impl popup_impl = {
+	.destroy = popup_destroy,
+};
+
+static struct sway_xdg_popup_v6 *popup_create(
+	struct wlr_xdg_popup_v6 *wlr_popup, struct sway_view *view);
+
+static void popup_handle_new_popup(struct wl_listener *listener, void *data) {
+	struct sway_xdg_popup_v6 *popup =
+		wl_container_of(listener, popup, new_popup);
+	struct wlr_xdg_popup_v6 *wlr_popup = data;
+	popup_create(wlr_popup, popup->child.view);
+}
+
+static void popup_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_xdg_popup_v6 *popup = wl_container_of(listener, popup, unmap);
+	view_child_destroy(&popup->child);
+}
+
+static void popup_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xdg_popup_v6 *popup = wl_container_of(listener, popup, destroy);
+	view_child_destroy(&popup->child);
+}
+
+static struct sway_xdg_popup_v6 *popup_create(
+		struct wlr_xdg_popup_v6 *wlr_popup, struct sway_view *view) {
+	struct wlr_xdg_surface_v6 *xdg_surface = wlr_popup->base;
+
+	struct sway_xdg_popup_v6 *popup =
+		calloc(1, sizeof(struct sway_xdg_popup_v6));
+	if (popup == NULL) {
+		return NULL;
+	}
+	view_child_init(&popup->child, &popup_impl, view, xdg_surface->surface);
+
+	wl_signal_add(&xdg_surface->events.new_popup, &popup->new_popup);
+	popup->new_popup.notify = popup_handle_new_popup;
+	wl_signal_add(&xdg_surface->events.unmap, &popup->unmap);
+	popup->unmap.notify = popup_handle_unmap;
+	wl_signal_add(&xdg_surface->events.destroy, &popup->destroy);
+	popup->destroy.notify = popup_handle_destroy;
+
+	return popup;
+}
+
+
 static struct sway_xdg_shell_v6_view *xdg_shell_v6_view_from_view(
 		struct sway_view *view) {
 	if (!sway_assert(view->type == SWAY_VIEW_XDG_SHELL_V6,
@@ -76,6 +136,7 @@ static void destroy(struct sway_view *view) {
 	}
 	wl_list_remove(&xdg_shell_v6_view->commit.link);
 	wl_list_remove(&xdg_shell_v6_view->destroy.link);
+	wl_list_remove(&xdg_shell_v6_view->new_popup.link);
 	wl_list_remove(&xdg_shell_v6_view->map.link);
 	wl_list_remove(&xdg_shell_v6_view->unmap.link);
 	free(xdg_shell_v6_view);
@@ -98,6 +159,13 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	view_update_size(view, xdg_shell_v6_view->pending_width,
 		xdg_shell_v6_view->pending_height);
 	view_damage_from(view);
+}
+
+static void handle_new_popup(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
+		wl_container_of(listener, xdg_shell_v6_view, new_popup);
+	struct wlr_xdg_popup_v6 *wlr_popup = data;
+	popup_create(wlr_popup, &xdg_shell_v6_view->view);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -150,6 +218,10 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	xdg_shell_v6_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
 		&xdg_shell_v6_view->commit);
+
+	xdg_shell_v6_view->new_popup.notify = handle_new_popup;
+	wl_signal_add(&xdg_surface->events.new_popup,
+		&xdg_shell_v6_view->new_popup);
 
 	xdg_shell_v6_view->map.notify = handle_map;
 	wl_signal_add(&xdg_surface->events.map, &xdg_shell_v6_view->map);

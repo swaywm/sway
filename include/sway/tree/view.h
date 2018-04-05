@@ -60,6 +60,7 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -120,6 +121,16 @@ struct sway_view_child {
 	struct wl_listener surface_new_subsurface;
 	struct wl_listener surface_destroy;
 	struct wl_listener view_unmap;
+};
+
+struct sway_xdg_popup_v6 {
+	struct sway_view_child child;
+
+	struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+
+	struct wl_listener new_popup;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
 };
 
 const char *view_get_title(struct sway_view *view);

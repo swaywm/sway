@@ -176,6 +176,8 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_container *parent = container_destroy(view->swayc);
 
+	wl_list_remove(&view->surface_new_subsurface.link);
+
 	view->swayc = NULL;
 	view->surface = NULL;
 
