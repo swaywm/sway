@@ -12,15 +12,17 @@
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screenshooter.h>
-#include <wlr/types/wlr_wl_shell.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_output.h>
+#include <wlr/types/wlr_wl_shell.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/server.h"
 #include "sway/input/input-manager.h"
+#include "sway/server.h"
+#include "sway/tree/layout.h"
 
 static void server_ready(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
@@ -60,6 +62,9 @@ bool server_init(struct sway_server *server) {
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
+
+	wlr_xdg_output_manager_create(server->wl_display,
+			root_container.sway_root->output_layout);
 
 	server->layer_shell = wlr_layer_shell_create(server->wl_display);
 	wl_signal_add(&server->layer_shell->events.new_surface,
