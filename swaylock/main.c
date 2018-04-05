@@ -23,12 +23,34 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static void daemonize() {
+	int fds[2];
+	if (pipe(fds) != 0) {
+		wlr_log(L_ERROR, "Failed to pipe");
+		exit(1);
+	}
 	if (fork() == 0) {
+		close(fds[0]);
 		int devnull = open("/dev/null", O_RDWR);
 		dup2(STDOUT_FILENO, devnull);
 		dup2(STDERR_FILENO, devnull);
-		chdir("/");
+		uint8_t success = 0;
+		if (chdir("/") != 0) {
+			write(fds[1], &success, 1);
+			exit(1);
+		}
+		success = 1;
+		if (write(fds[1], &success, 1) != 1) {
+			exit(1);
+		}
+		close(fds[1]);
 	} else {
+		close(fds[1]);
+		uint8_t success;
+		if (read(fds[0], &success, 1) != 1 || !success) {
+			wlr_log(L_ERROR, "Failed to daemonize");
+			exit(1);
+		}
+		close(fds[0]);
 		exit(0);
 	}
 }
