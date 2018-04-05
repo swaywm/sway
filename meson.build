@@ -11,6 +11,7 @@ project(
 
 add_project_arguments('-Wno-unused-parameter', language: 'c')
 add_project_arguments('-Wno-unused-function', language: 'c')
+add_project_arguments('-Wno-unused-result', language: 'c')
 
 cc = meson.get_compiler('c')
 
