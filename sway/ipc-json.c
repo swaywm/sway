@@ -132,6 +132,7 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
 	json_object_object_add(object, "name",
 			c->name ? json_object_new_string(c->name) : NULL);
+	json_object_object_add(object, "type", json_object_new_string("con"));
 }
 
 json_object *ipc_json_describe_container(struct sway_container *c) {
