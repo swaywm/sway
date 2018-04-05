@@ -14,30 +14,65 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
-static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_xwayland_unmanaged *sway_surface =
-		wl_container_of(listener, sway_surface, destroy);
-	wl_list_remove(&sway_surface->destroy.link);
-	wl_list_remove(&sway_surface->link);
-	free(sway_surface);
+static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, commit);
+	// TODO: damage tracking
 }
 
-static void create_unmanaged(struct wlr_xwayland_surface *xsurface) {
-	struct sway_xwayland_unmanaged *sway_surface =
+static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, map);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
+		&surface->link);
+	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
+	surface->commit.notify = unmanaged_handle_commit;
+	// TODO: damage tracking
+}
+
+static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, unmap);
+	wl_list_remove(&surface->link);
+	wl_list_remove(&surface->commit.link);
+	// TODO: damage tracking
+}
+
+static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, destroy);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	if (xsurface->mapped) {
+		unmanaged_handle_unmap(&surface->unmap, xsurface);
+	}
+	wl_list_remove(&surface->map.link);
+	wl_list_remove(&surface->unmap.link);
+	wl_list_remove(&surface->destroy.link);
+	free(surface);
+}
+
+static struct sway_xwayland_unmanaged *create_unmanaged(
+		struct wlr_xwayland_surface *xsurface) {
+	struct sway_xwayland_unmanaged *surface =
 		calloc(1, sizeof(struct sway_xwayland_unmanaged));
-	if (!sway_assert(sway_surface, "Failed to allocate surface")) {
-		return;
+	if (surface == NULL) {
+		wlr_log(L_ERROR, "Allocation failed");
+		return NULL;
 	}
 
-	sway_surface->wlr_xwayland_surface = xsurface;
+	surface->wlr_xwayland_surface = xsurface;
 
-	wl_signal_add(&xsurface->events.destroy, &sway_surface->destroy);
-	sway_surface->destroy.notify = unmanaged_handle_destroy;
+	wl_signal_add(&xsurface->events.map, &surface->map);
+	surface->map.notify = unmanaged_handle_map;
+	wl_signal_add(&xsurface->events.unmap, &surface->unmap);
+	surface->unmap.notify = unmanaged_handle_unmap;
+	wl_signal_add(&xsurface->events.destroy, &surface->destroy);
+	surface->destroy.notify = unmanaged_handle_destroy;
 
-	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
-		&sway_surface->link);
+	unmanaged_handle_map(&surface->map, xsurface);
 
-	// TODO: damage tracking
+	return surface;
 }
 
 
@@ -127,6 +162,7 @@ static const struct sway_view_impl view_impl = {
 	.configure = configure,
 	.set_activated = set_activated,
 	.close = _close,
+	.destroy = destroy,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {

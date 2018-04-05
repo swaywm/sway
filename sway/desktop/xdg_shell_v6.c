@@ -147,6 +147,7 @@ static const struct sway_view_impl view_impl = {
 	.configure = configure,
 	.set_activated = set_activated,
 	.close = _close,
+	.destroy = destroy,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {

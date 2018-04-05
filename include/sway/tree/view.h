@@ -87,6 +87,9 @@ struct sway_xwayland_unmanaged {
 	struct wlr_xwayland_surface *wlr_xwayland_surface;
 	struct wl_list link;
 
+	struct wl_listener commit;
+	struct wl_listener map;
+	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
 
