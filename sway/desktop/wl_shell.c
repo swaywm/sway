@@ -11,13 +11,17 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
-static bool assert_wl_shell(struct sway_view *view) {
-	return sway_assert(view->type == SWAY_VIEW_WL_SHELL,
-		"Expecting wl_shell view!");
+static struct sway_wl_shell_view *wl_shell_view_from_view(
+		struct sway_view *view) {
+	if (!sway_assert(view->type == SWAY_VIEW_WL_SHELL,
+			"Expected wl_shell view")) {
+		return NULL;
+	}
+	return (struct sway_wl_shell_view *)view;
 }
 
 static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
-	if (!assert_wl_shell(view)) {
+	if (wl_shell_view_from_view(view) == NULL) {
 		return NULL;
 	}
 	switch (prop) {
@@ -32,21 +36,32 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 
 static void configure(struct sway_view *view, double ox, double oy, int width,
 		int height) {
-	if (!assert_wl_shell(view)) {
+	struct sway_wl_shell_view *wl_shell_view = wl_shell_view_from_view(view);
+	if (wl_shell_view == NULL) {
 		return;
 	}
 	view_update_position(view, ox, oy);
-	view->sway_wl_shell_surface->pending_width = width;
-	view->sway_wl_shell_surface->pending_height = height;
+	wl_shell_view->pending_width = width;
+	wl_shell_view->pending_height = height;
 	wlr_wl_shell_surface_configure(view->wlr_wl_shell_surface, 0, width, height);
 }
 
 static void _close(struct sway_view *view) {
-	if (!assert_wl_shell(view)) {
+	if (wl_shell_view_from_view(view) == NULL) {
 		return;
 	}
 
 	wl_client_destroy(view->wlr_wl_shell_surface->client);
+}
+
+static void destroy(struct sway_view *view) {
+	struct sway_wl_shell_view *wl_shell_view = wl_shell_view_from_view(view);
+	if (wl_shell_view == NULL) {
+		return;
+	}
+	wl_list_remove(&wl_shell_view->commit.link);
+	wl_list_remove(&wl_shell_view->destroy.link);
+	free(wl_shell_view);
 }
 
 static const struct sway_view_impl view_impl = {
@@ -56,23 +71,20 @@ static const struct sway_view_impl view_impl = {
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
-	struct sway_wl_shell_surface *sway_surface =
-		wl_container_of(listener, sway_surface, commit);
-	struct sway_view *view = sway_surface->view;
+	struct sway_wl_shell_view *wl_shell_view =
+		wl_container_of(listener, wl_shell_view, commit);
+	struct sway_view *view = &wl_shell_view->view;
 	// NOTE: We intentionally discard the view's desired width here
 	// TODO: Let floating views do whatever
-	view_update_size(view, sway_surface->pending_width,
-		sway_surface->pending_height);
+	view_update_size(view, wl_shell_view->pending_width,
+		wl_shell_view->pending_height);
 	view_damage_from(view);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_wl_shell_surface *sway_surface =
-		wl_container_of(listener, sway_surface, destroy);
-	wl_list_remove(&sway_surface->commit.link);
-	wl_list_remove(&sway_surface->destroy.link);
-	view_destroy(sway_surface->view);
-	free(sway_surface);
+	struct sway_wl_shell_view *wl_shell_view =
+		wl_container_of(listener, wl_shell_view, destroy);
+	view_destroy(&wl_shell_view->view);
 }
 
 void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
@@ -82,42 +94,37 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 
 	if (shell_surface->state == WLR_WL_SHELL_SURFACE_STATE_POPUP) {
 		// popups don't get views
+		wlr_log(L_DEBUG, "New wl_shell popup");
 		return;
 	}
 
-	// TODO make transient windows floating
+	// TODO: make transient windows floating
 
 	wlr_log(L_DEBUG, "New wl_shell toplevel title='%s' app_id='%s'",
 			shell_surface->title, shell_surface->class);
 	wlr_wl_shell_surface_ping(shell_surface);
 
-	struct sway_wl_shell_surface *sway_surface =
-		calloc(1, sizeof(struct sway_wl_shell_surface));
-	if (!sway_assert(sway_surface, "Failed to allocate surface!")) {
+	struct sway_wl_shell_view *wl_shell_view =
+		calloc(1, sizeof(struct sway_wl_shell_view));
+	if (!sway_assert(wl_shell_view, "Failed to allocate view")) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_VIEW_WL_SHELL, &view_impl);
-	if (!sway_assert(view, "Failed to allocate view")) {
-		return;
-	}
-	view->wlr_wl_shell_surface = shell_surface;
-	view->sway_wl_shell_surface = sway_surface;
-	sway_surface->view = view;
+	view_init(&wl_shell_view->view, SWAY_VIEW_WL_SHELL, &view_impl);
+	wl_shell_view->view.wlr_wl_shell_surface = shell_surface;
 
 	// TODO:
 	// - Wire up listeners
-	// - Handle popups
 	// - Look up pid and open on appropriate workspace
 	// - Set new view to maximized so it behaves nicely
 	// - Criteria
 
-	sway_surface->commit.notify = handle_commit;
+	wl_shell_view->commit.notify = handle_commit;
 	wl_signal_add(&shell_surface->surface->events.commit,
-		&sway_surface->commit);
+		&wl_shell_view->commit);
 
-	sway_surface->destroy.notify = handle_destroy;
-	wl_signal_add(&shell_surface->events.destroy, &sway_surface->destroy);
+	wl_shell_view->destroy.notify = handle_destroy;
+	wl_signal_add(&shell_surface->events.destroy, &wl_shell_view->destroy);
 
-	view_map(view, shell_surface->surface);
+	view_map(&wl_shell_view->view, shell_surface->surface);
 }

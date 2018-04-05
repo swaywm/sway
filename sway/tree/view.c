@@ -7,15 +7,10 @@
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 
-struct sway_view *view_create(enum sway_view_type type,
+void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
-	struct sway_view *view = calloc(1, sizeof(struct sway_view));
-	if (view == NULL) {
-		return NULL;
-	}
 	view->type = type;
 	view->impl = impl;
-	return view;
 }
 
 void view_destroy(struct sway_view *view) {
@@ -28,6 +23,12 @@ void view_destroy(struct sway_view *view) {
 	}
 
 	container_destroy(view->swayc);
+
+	if (view->impl->destroy) {
+		view->impl->destroy(view);
+	} else {
+		free(view);
+	}
 }
 
 const char *view_get_title(struct sway_view *view) {

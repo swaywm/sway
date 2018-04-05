@@ -8,55 +8,6 @@
 #include "sway/input/seat.h"
 
 struct sway_container;
-struct sway_view;
-
-struct sway_xdg_surface_v6 {
-	struct sway_view *view;
-
-	struct wl_listener commit;
-	struct wl_listener request_move;
-	struct wl_listener request_resize;
-	struct wl_listener request_maximize;
-	struct wl_listener map;
-	struct wl_listener unmap;
-	struct wl_listener destroy;
-
-	int pending_width, pending_height;
-};
-
-struct sway_xwayland_surface {
-	struct sway_view *view;
-
-	struct wl_listener commit;
-	struct wl_listener request_move;
-	struct wl_listener request_resize;
-	struct wl_listener request_maximize;
-	struct wl_listener request_configure;
-	struct wl_listener map;
-	struct wl_listener unmap;
-	struct wl_listener destroy;
-
-	int pending_width, pending_height;
-};
-
-struct sway_xwayland_unmanaged {
-	struct wlr_xwayland_surface *wlr_xwayland_surface;
-	struct wl_list link;
-
-	struct wl_listener destroy;
-};
-
-struct sway_wl_shell_surface {
-	struct sway_view *view;
-
-	struct wl_listener commit;
-	struct wl_listener request_move;
-	struct wl_listener request_resize;
-	struct wl_listener request_maximize;
-	struct wl_listener destroy;
-
-	int pending_width, pending_height;
-};
 
 enum sway_view_type {
 	SWAY_VIEW_WL_SHELL,
@@ -78,6 +29,7 @@ struct sway_view_impl {
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*close)(struct sway_view *view);
+	void (*destroy)(struct sway_view *view);
 };
 
 struct sway_view {
@@ -93,18 +45,55 @@ struct sway_view {
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
-
-	union {
-		struct sway_xdg_surface_v6 *sway_xdg_surface_v6;
-		struct sway_xwayland_surface *sway_xwayland_surface;
-		struct sway_wl_shell_surface *sway_wl_shell_surface;
-	};
 };
 
-struct sway_view *view_create(enum sway_view_type type,
-	const struct sway_view_impl *impl);
+struct sway_xdg_shell_v6_view {
+	struct sway_view view;
 
-void view_destroy(struct sway_view *view);
+	struct wl_listener commit;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
+	struct wl_listener request_maximize;
+	struct wl_listener map;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
+
+	int pending_width, pending_height;
+};
+
+struct sway_xwayland_view {
+	struct sway_view view;
+
+	struct wl_listener commit;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
+	struct wl_listener request_maximize;
+	struct wl_listener request_configure;
+	struct wl_listener map;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
+
+	int pending_width, pending_height;
+};
+
+struct sway_xwayland_unmanaged {
+	struct wlr_xwayland_surface *wlr_xwayland_surface;
+	struct wl_list link;
+
+	struct wl_listener destroy;
+};
+
+struct sway_wl_shell_view {
+	struct sway_view view;
+
+	struct wl_listener commit;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
+	struct wl_listener request_maximize;
+	struct wl_listener destroy;
+
+	int pending_width, pending_height;
+};
 
 const char *view_get_title(struct sway_view *view);
 
@@ -126,6 +115,11 @@ void view_damage_whole(struct sway_view *view);
 void view_damage_from(struct sway_view *view);
 
 // view implementation
+
+void view_init(struct sway_view *view, enum sway_view_type type,
+	const struct sway_view_impl *impl);
+
+void view_destroy(struct sway_view *view);
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
