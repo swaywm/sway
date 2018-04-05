@@ -523,7 +523,5 @@ void container_damage_whole(struct sway_container *con) {
 	if (output->type != C_OUTPUT) {
 		output = container_parent(output, C_OUTPUT);
 	}
-
-	output_damage_whole_rect(output->sway_output, con->x, con->y, con->width,
-		con->height);
+	output_damage_whole_container(output->sway_output, con);
 }
