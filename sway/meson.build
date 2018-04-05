@@ -8,6 +8,7 @@ sway_sources = files(
 	'ipc-server.c',
 	'security.c',
 
+	'desktop/desktop.c',
 	'desktop/output.c',
 	'desktop/layer_shell.c',
 	'desktop/wl_shell.c',

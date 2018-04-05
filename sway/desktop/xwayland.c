@@ -2,17 +2,18 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
-#include <wlr/xwayland.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/xwayland.h>
+#include "log.h"
+#include "sway/desktop.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
+#include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
-#include "sway/server.h"
 #include "sway/tree/view.h"
-#include "sway/output.h"
-#include "sway/input/seat.h"
-#include "sway/input/input-manager.h"
-#include "log.h"
 
 static void unmanaged_handle_request_configure(struct wl_listener *listener,
 		void *data) {
@@ -27,7 +28,9 @@ static void unmanaged_handle_request_configure(struct wl_listener *listener,
 static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, commit);
-	// TODO: damage tracking
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	desktop_damage_from_surface(xsurface->surface, xsurface->x, xsurface->y);
+	// TODO: handle window motion
 }
 
 static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
@@ -38,15 +41,16 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 		&surface->link);
 	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
 	surface->commit.notify = unmanaged_handle_commit;
-	// TODO: damage tracking
+	desktop_damage_whole_surface(xsurface->surface, xsurface->x, xsurface->y);
 }
 
 static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, unmap);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	desktop_damage_whole_surface(xsurface->surface, xsurface->x, xsurface->y);
 	wl_list_remove(&surface->link);
 	wl_list_remove(&surface->commit.link);
-	// TODO: damage tracking
 }
 
 static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {

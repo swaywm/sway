@@ -37,6 +37,9 @@ void output_damage_whole(struct sway_output *output);
 void output_damage_whole_view(struct sway_output *output,
 	struct sway_view *view);
 
+void output_damage_whole_surface(struct sway_output *output,
+	struct wlr_surface *surface, double ox, double oy);
+
 struct sway_container *output_by_name(const char *name);
 
 #endif

@@ -341,6 +341,12 @@ void output_damage_whole_view(struct sway_output *output,
 	output_damage_whole(output);
 }
 
+void output_damage_whole_surface(struct sway_output *output,
+		struct wlr_surface *surface, double ox, double oy) {
+	// TODO
+	output_damage_whole(output);
+}
+
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_destroy);
