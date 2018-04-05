@@ -267,17 +267,14 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	// render unmanaged views on top
 	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
-	struct sway_xwayland_unmanaged *sway_surface;
-	wl_list_for_each(sway_surface, unmanaged, link) {
+	struct sway_xwayland_unmanaged *unmanaged_surface;
+	wl_list_for_each(unmanaged_surface, unmanaged, link) {
 		struct wlr_xwayland_surface *xsurface =
-			sway_surface->wlr_xwayland_surface;
-		if (xsurface->surface == NULL) {
-			continue;
-		}
+			unmanaged_surface->wlr_xwayland_surface;
 
 		const struct wlr_box view_box = {
-			.x = xsurface->x,
-			.y = xsurface->y,
+			.x = unmanaged_surface->lx,
+			.y = unmanaged_surface->ly,
 			.width = xsurface->width,
 			.height = xsurface->height,
 		};

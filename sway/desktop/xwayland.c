@@ -29,19 +29,35 @@ static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, commit);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
-	desktop_damage_from_surface(xsurface->surface, xsurface->x, xsurface->y);
-	// TODO: handle window motion
+
+	if (xsurface->x != surface->lx || xsurface->y != surface->ly) {
+		// Surface has moved
+		desktop_damage_whole_surface(xsurface->surface,
+			surface->lx, surface->ly);
+		surface->lx = xsurface->x;
+		surface->ly = xsurface->y;
+		desktop_damage_whole_surface(xsurface->surface,
+			surface->lx, surface->ly);
+	} else {
+		desktop_damage_from_surface(xsurface->surface,
+			xsurface->x, xsurface->y);
+	}
 }
 
 static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, map);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+
 	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
 		&surface->link);
+
 	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
 	surface->commit.notify = unmanaged_handle_commit;
-	desktop_damage_whole_surface(xsurface->surface, xsurface->x, xsurface->y);
+
+	surface->lx = xsurface->x;
+	surface->ly = xsurface->y;
+	desktop_damage_whole_surface(xsurface->surface, surface->lx, surface->ly);
 }
 
 static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
