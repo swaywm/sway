@@ -14,6 +14,16 @@
 #include "sway/input/input-manager.h"
 #include "log.h"
 
+static void unmanaged_handle_request_configure(struct wl_listener *listener,
+		void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, request_configure);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	struct wlr_xwayland_surface_configure_event *ev = data;
+	wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
+		ev->width, ev->height);
+}
+
 static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, commit);
@@ -63,6 +73,9 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 
 	surface->wlr_xwayland_surface = xsurface;
 
+	wl_signal_add(&xsurface->events.request_configure,
+		&surface->request_configure);
+	surface->request_configure.notify = unmanaged_handle_request_configure;
 	wl_signal_add(&xsurface->events.map, &surface->map);
 	surface->map.notify = unmanaged_handle_map;
 	wl_signal_add(&xsurface->events.unmap, &surface->unmap);
