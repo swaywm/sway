@@ -75,7 +75,7 @@ static bool surface_intersect_output(struct wlr_surface *surface,
 
 static void render_surface(struct wlr_surface *surface,
 		struct wlr_output *wlr_output, struct timespec *when,
-		double ox, double oy, float rotation) {
+		double ox, double oy, float rotation, float alpha) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 
@@ -95,8 +95,8 @@ static void render_surface(struct wlr_surface *surface,
 		wlr_matrix_project_box(matrix, &box, transform, rotation,
 			wlr_output->transform_matrix);
 
-		// TODO: configurable alpha
-		wlr_render_texture_with_matrix(renderer, surface->texture, matrix, 1.0f);
+		wlr_render_texture_with_matrix(renderer, surface->texture,
+			matrix, alpha);
 
 		wlr_surface_send_frame_done(surface, when);
 	}
@@ -110,13 +110,13 @@ static void render_surface(struct wlr_surface *surface,
 			surface->current->width, surface->current->height, rotation);
 
 		render_surface(subsurface->surface, wlr_output, when,
-			ox + sx, oy + sy, rotation);
+			ox + sx, oy + sy, rotation, alpha);
 	}
 }
 
 static void render_xdg_v6_popups(struct wlr_xdg_surface_v6 *surface,
 		struct wlr_output *wlr_output, struct timespec *when, double base_x,
-		double base_y, float rotation) {
+		double base_y, float rotation, float alpha) {
 	double width = surface->surface->current->width;
 	double height = surface->surface->current->height;
 
@@ -136,19 +136,19 @@ static void render_xdg_v6_popups(struct wlr_xdg_surface_v6 *surface,
 			width, height, rotation);
 
 		render_surface(popup->surface, wlr_output, when,
-			base_x + popup_sx, base_y + popup_sy, rotation);
+			base_x + popup_sx, base_y + popup_sy, rotation, alpha);
 		render_xdg_v6_popups(popup, wlr_output, when,
-			base_x + popup_sx, base_y + popup_sy, rotation);
+			base_x + popup_sx, base_y + popup_sy, rotation, alpha);
 	}
 }
 
 static void render_wl_shell_surface(struct wlr_wl_shell_surface *surface,
 		struct wlr_output *wlr_output, struct timespec *when,
-		double lx, double ly, float rotation,
+		double lx, double ly, float rotation, float alpha,
 		bool is_child) {
 	if (is_child || surface->state != WLR_WL_SHELL_SURFACE_STATE_POPUP) {
 		render_surface(surface->surface, wlr_output, when,
-			lx, ly, rotation);
+			lx, ly, rotation, alpha);
 
 		double width = surface->surface->current->width;
 		double height = surface->surface->current->height;
@@ -164,7 +164,7 @@ static void render_wl_shell_surface(struct wlr_wl_shell_surface *surface,
 				width, height, rotation);
 
 			render_wl_shell_surface(popup, wlr_output, when,
-				lx + popup_x, ly + popup_y, rotation, true);
+				lx + popup_x, ly + popup_y, rotation, alpha, true);
 		}
 	}
 }
@@ -181,6 +181,7 @@ static void render_view(struct sway_container *view, void *data) {
 	struct wlr_output *wlr_output = output->wlr_output;
 	struct sway_view *sway_view = view->sway_view;
 	struct wlr_surface *surface = sway_view->surface;
+	float alpha = sway_view->swayc->alpha;
 
 	if (!surface) {
 		return;
@@ -191,17 +192,18 @@ static void render_view(struct sway_container *view, void *data) {
 		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry.x;
 		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry.y;
 		render_surface(surface, wlr_output, when,
-			view->x - window_offset_x, view->y - window_offset_y, 0);
+			view->x - window_offset_x, view->y - window_offset_y, 0, alpha);
 		render_xdg_v6_popups(sway_view->wlr_xdg_surface_v6, wlr_output,
-			when, view->x - window_offset_x, view->y - window_offset_y, 0);
+			when, view->x - window_offset_x, view->y - window_offset_y, 0, alpha);
 		break;
 	}
 	case SWAY_WL_SHELL_VIEW:
 		render_wl_shell_surface(sway_view->wlr_wl_shell_surface, wlr_output,
-			when, view->x, view->y, 0, false);
+			when, view->x, view->y, 0, alpha, false);
 		break;
 	case SWAY_XWAYLAND_VIEW:
-		render_surface(surface, wlr_output, when, view->x, view->y, 0);
+		render_surface(surface, wlr_output, when, view->x, view->y,
+			0, alpha);
 		break;
 	default:
 		break;
@@ -214,7 +216,7 @@ static void render_layer(struct sway_output *output, struct timespec *when,
 	wl_list_for_each(sway_layer, layer, link) {
 		struct wlr_layer_surface *layer = sway_layer->layer_surface;
 		render_surface(layer->surface, output->wlr_output, when,
-				sway_layer->geo.x, sway_layer->geo.y, 0);
+				sway_layer->geo.x, sway_layer->geo.y, 0, 1.0f);
 		wlr_surface_send_frame_done(layer->surface, when);
 	}
 }
@@ -288,7 +290,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		}
 
 		render_surface(xsurface->surface, wlr_output, &output->last_frame,
-			view_box.x - output_box->x, view_box.y - output_box->y, 0);
+			view_box.x - output_box->x, view_box.y - output_box->y, 0, 1.0f);
 	}
 
 	// TODO: Consider revising this when fullscreen windows are supported

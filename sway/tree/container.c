@@ -72,6 +72,8 @@ struct sway_container *container_create(enum sway_container_type type) {
 	c->layout = L_NONE;
 	c->workspace_layout = L_NONE;
 	c->type = type;
+	c->alpha = 1.0f;
+
 	if (type != C_VIEW) {
 		c->children = create_list();
 	}
