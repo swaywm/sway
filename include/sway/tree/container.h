@@ -83,6 +83,8 @@ struct sway_container {
 
 	list_t *marks; // list of char*
 
+	float alpha;
+
 	struct {
 		struct wl_signal destroy;
 		// Raised after the tree updates, but before arrange_windows

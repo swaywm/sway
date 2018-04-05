@@ -7,6 +7,7 @@
 #include <libinput.h>
 #include <math.h>
 #include <wlr/backend/libinput.h>
+#include <wlr/types/wlr_input_inhibitor.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -263,6 +264,32 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	input_device->device_destroy.notify = handle_device_destroy;
 }
 
+static void handle_inhibit_activate(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input_manager = wl_container_of(
+			listener, input_manager, inhibit_activate);
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		seat_set_exclusive_client(seat, input_manager->inhibit->active_client);
+	}
+}
+
+static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input_manager = wl_container_of(
+			listener, input_manager, inhibit_deactivate);
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		seat_set_exclusive_client(seat, NULL);
+		struct sway_container *previous = seat_get_focus(seat);
+		if (previous) {
+			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", previous,
+					container_type_to_str(previous->type), previous->name);
+			// Hack to get seat to re-focus the return value of get_focus
+			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, previous);
+		}
+	}
+}
+
 struct sway_input_manager *input_manager_create(
 		struct sway_server *server) {
 	struct sway_input_manager *input =
@@ -280,6 +307,14 @@ struct sway_input_manager *input_manager_create(
 
 	input->new_input.notify = handle_new_input;
 	wl_signal_add(&server->backend->events.new_input, &input->new_input);
+
+	input->inhibit = wlr_input_inhibit_manager_create(server->wl_display);
+	input->inhibit_activate.notify = handle_inhibit_activate;
+	wl_signal_add(&input->inhibit->events.activate,
+			&input->inhibit_activate);
+	input->inhibit_deactivate.notify = handle_inhibit_deactivate;
+	wl_signal_add(&input->inhibit->events.deactivate,
+			&input->inhibit_deactivate);
 
 	return input;
 }

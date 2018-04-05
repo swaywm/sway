@@ -413,6 +413,10 @@ The default colors are:
 	However, any mark that starts with an underscore will not be drawn even if the
 	option is on. The default option is _on_.
 
+**opacity** <value>::
+	Set the opacity of the window between 0 (completely transparent) and 1
+	(completely opaque).
+
 **unmark** <identifier>::
 	**Unmark** will remove _identifier_ from the list of current marks on a window. If
 	no _identifier_ is specified, then **unmark** will remove all marks.

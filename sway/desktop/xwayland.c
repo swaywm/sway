@@ -42,7 +42,7 @@ static void create_unmanaged(struct wlr_xwayland_surface *xsurface) {
 
 
 static bool assert_xwayland(struct sway_view *view) {
-	return sway_assert(view->type == SWAY_XWAYLAND_VIEW,
+	return sway_assert(view->type == SWAY_VIEW_XWAYLAND,
 		"Expected xwayland view!");
 }
 
@@ -185,7 +185,7 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_XWAYLAND_VIEW, &view_impl);
+	struct sway_view *view = view_create(SWAY_VIEW_XWAYLAND, &view_impl);
 	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}

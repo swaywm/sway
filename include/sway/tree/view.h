@@ -59,11 +59,9 @@ struct sway_wl_shell_surface {
 };
 
 enum sway_view_type {
-	SWAY_WL_SHELL_VIEW,
-	SWAY_XDG_SHELL_V6_VIEW,
-	SWAY_XWAYLAND_VIEW,
-	// Keep last
-	SWAY_VIEW_TYPES,
+	SWAY_VIEW_WL_SHELL,
+	SWAY_VIEW_XDG_SHELL_V6,
+	SWAY_VIEW_XWAYLAND,
 };
 
 enum sway_view_prop {
@@ -101,9 +99,6 @@ struct sway_view {
 		struct sway_xwayland_surface *sway_xwayland_surface;
 		struct sway_wl_shell_surface *sway_wl_shell_surface;
 	};
-
-	// only used for unmanaged views (shell specific)
-	struct wl_list unmanaged_view_link; // sway_root::unmanaged_views
 };
 
 struct sway_view *view_create(enum sway_view_type type,
