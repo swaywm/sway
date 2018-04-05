@@ -49,6 +49,7 @@ struct swaybar_output {
 	struct wl_output *output;
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
+	uint32_t wl_name;
 
 	struct wl_list workspaces;
 	struct wl_list hotspots;

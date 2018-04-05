@@ -79,7 +79,7 @@ static struct pool_buffer *create_buffer(struct wl_shm *shm,
 	return buf;
 }
 
-static void destroy_buffer(struct pool_buffer *buffer) {
+void destroy_buffer(struct pool_buffer *buffer) {
 	if (buffer->buffer) {
 		wl_buffer_destroy(buffer->buffer);
 	}
