@@ -12,7 +12,7 @@
 #include "log.h"
 
 static bool assert_xdg(struct sway_view *view) {
-	return sway_assert(view->type == SWAY_XDG_SHELL_V6_VIEW,
+	return sway_assert(view->type == SWAY_VIEW_XDG_SHELL_V6,
 			"Expected xdg shell v6 view!");
 }
 
@@ -126,7 +126,7 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_view *view = view_create(SWAY_XDG_SHELL_V6_VIEW, &view_impl);
+	struct sway_view *view = view_create(SWAY_VIEW_XDG_SHELL_V6, &view_impl);
 	if (!sway_assert(view, "Failed to allocate view")) {
 		return;
 	}

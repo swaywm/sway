@@ -66,7 +66,7 @@ static void seat_send_focus(struct sway_seat *seat,
 		return;
 	}
 	struct sway_view *view = con->sway_view;
-	if (view->type == SWAY_XWAYLAND_VIEW) {
+	if (view->type == SWAY_VIEW_XWAYLAND) {
 		struct wlr_xwayland *xwayland =
 			seat->input->server->xwayland;
 		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
