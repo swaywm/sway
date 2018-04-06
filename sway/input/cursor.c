@@ -116,7 +116,16 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		return ws;
 	}
 
-	return NULL;
+	c = seat_get_focus_inactive(cursor->seat, output->swayc);
+	if (c) {
+		return c;
+	}
+	if (!c && output->swayc->children->length) {
+		c = output->swayc->children->items[0];
+		return c;
+	}
+
+	return output->swayc;
 }
 
 static void cursor_send_pointer_motion(struct sway_cursor *cursor,
