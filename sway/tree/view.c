@@ -102,6 +102,15 @@ static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
 	box->height = view->height;
 }
 
+void view_for_each_surface(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (view->impl->for_each_surface) {
+		view->impl->for_each_surface(view, iterator, user_data);
+	} else {
+		wlr_surface_for_each_surface(view->surface, iterator, user_data);
+	}
+}
+
 static void view_subsurface_create(struct sway_view *view,
 	struct wlr_subsurface *subsurface);
 
@@ -114,6 +123,18 @@ static void view_handle_surface_new_subsurface(struct wl_listener *listener,
 		wl_container_of(listener, view, surface_new_subsurface);
 	struct wlr_subsurface *subsurface = data;
 	view_subsurface_create(view, subsurface);
+}
+
+static void surface_send_enter_iterator(struct wlr_surface *surface,
+		int x, int y, void *data) {
+	struct wlr_output *wlr_output = data;
+	wlr_surface_send_enter(surface, wlr_output);
+}
+
+static void surface_send_leave_iterator(struct wlr_surface *surface,
+		int x, int y, void *data) {
+	struct wlr_output *wlr_output = data;
+	wlr_surface_send_leave(surface, wlr_output);
 }
 
 static void view_handle_container_reparent(struct wl_listener *listener,
@@ -137,11 +158,11 @@ static void view_handle_container_reparent(struct wl_listener *listener,
 	}
 
 	if (old_output != NULL) {
-		wlr_surface_send_leave(view->surface,
+		view_for_each_surface(view, surface_send_leave_iterator,
 			old_output->sway_output->wlr_output);
 	}
 	if (new_output != NULL) {
-		wlr_surface_send_enter(view->surface,
+		view_for_each_surface(view, surface_send_enter_iterator,
 			new_output->sway_output->wlr_output);
 	}
 }
@@ -282,6 +303,14 @@ void view_child_init(struct sway_view_child *child,
 	child->surface_destroy.notify = view_child_handle_surface_destroy;
 	wl_signal_add(&view->events.unmap, &child->view_unmap);
 	child->view_unmap.notify = view_child_handle_view_unmap;
+
+	struct sway_container *output = child->view->swayc->parent;
+	if (output != NULL) {
+		if (output->type != C_OUTPUT) {
+			output = container_parent(output, C_OUTPUT);
+		}
+		wlr_surface_send_enter(child->surface, output->sway_output->wlr_output);
+	}
 
 	view_init_subsurfaces(child->view, surface);
 
