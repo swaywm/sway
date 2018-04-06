@@ -951,6 +951,14 @@ struct sway_container *container_split(struct sway_container *child,
 	if (!sway_assert(child, "child cannot be null")) {
 		return NULL;
 	}
+	if (child->type == C_WORKSPACE && child->children->length == 0) {
+		// Special case: this just behaves like splitt
+		child->prev_layout = child->layout;
+		child->layout = layout;
+		arrange_windows(child, -1, -1);
+		return child;
+	}
+
 	struct sway_container *cont = container_create(C_CONTAINER);
 
 	wlr_log(L_DEBUG, "creating container %p around %p", cont, child);
