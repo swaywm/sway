@@ -30,10 +30,7 @@ struct cmd_results *cmd_opacity(int argc, char **argv) {
 	}
 
 	con->alpha = opacity;
-
-	if (con->type == C_VIEW) {
-		view_damage_whole(con->sway_view);
-	}
+	container_damage_whole(con);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

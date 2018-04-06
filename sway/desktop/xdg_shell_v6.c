@@ -169,7 +169,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// TODO: Let floating views do whatever
 	view_update_size(view, xdg_shell_v6_view->pending_width,
 		xdg_shell_v6_view->pending_height);
-	view_damage_from(view);
+	view_damage(view, false);
 }
 
 static void handle_new_popup(struct wl_listener *listener, void *data) {

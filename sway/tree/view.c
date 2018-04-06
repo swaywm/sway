@@ -79,18 +79,13 @@ void view_close(struct sway_view *view) {
 	}
 }
 
-void view_damage_whole(struct sway_view *view) {
+void view_damage(struct sway_view *view, bool whole) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
 		if (cont->type == C_OUTPUT) {
-			output_damage_whole_view(cont->sway_output, view);
+			output_damage_view(cont->sway_output, view, whole);
 		}
 	}
-}
-
-void view_damage_from(struct sway_view *view) {
-	// TODO
-	view_damage_whole(view);
 }
 
 static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
@@ -191,7 +186,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	arrange_windows(cont->parent, -1, -1);
 	input_manager_set_focus(input_manager, cont);
 
-	view_damage_whole(view);
+	view_damage(view, true);
 	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
@@ -202,7 +197,7 @@ void view_unmap(struct sway_view *view) {
 
 	wl_signal_emit(&view->events.unmap, view);
 
-	view_damage_whole(view);
+	view_damage(view, true);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 	wl_list_remove(&view->container_reparent.link);
@@ -220,10 +215,10 @@ void view_update_position(struct sway_view *view, double ox, double oy) {
 		return;
 	}
 
-	view_damage_whole(view);
+	view_damage(view, true);
 	view->swayc->x = ox;
 	view->swayc->y = oy;
-	view_damage_whole(view);
+	view_damage(view, true);
 }
 
 void view_update_size(struct sway_view *view, int width, int height) {
@@ -231,10 +226,10 @@ void view_update_size(struct sway_view *view, int width, int height) {
 		return;
 	}
 
-	view_damage_whole(view);
+	view_damage(view, true);
 	view->width = width;
 	view->height = height;
-	view_damage_whole(view);
+	view_damage(view, true);
 }
 
 
@@ -253,7 +248,7 @@ static void view_child_handle_surface_commit(struct wl_listener *listener,
 	struct sway_view_child *child =
 		wl_container_of(listener, child, surface_commit);
 	// TODO: only accumulate damage from the child
-	view_damage_from(child->view);
+	view_damage(child->view, false);
 }
 
 static void view_child_handle_surface_new_subsurface(
@@ -315,12 +310,12 @@ void view_child_init(struct sway_view_child *child,
 	view_init_subsurfaces(child->view, surface);
 
 	// TODO: only damage the whole child
-	view_damage_whole(child->view);
+	view_damage(child->view, true);
 }
 
 void view_child_destroy(struct sway_view_child *child) {
 	// TODO: only damage the whole child
-	view_damage_whole(child->view);
+	view_damage(child->view, true);
 
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);

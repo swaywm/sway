@@ -229,33 +229,39 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, layer, surface_commit);
 	struct wlr_layer_surface *layer_surface = layer->layer_surface;
 	struct wlr_output *wlr_output = layer_surface->output;
-	if (wlr_output != NULL) {
-		struct sway_output *output = wlr_output->data;
-		struct wlr_box old_geo = layer->geo;
-		arrange_layers(output);
-		if (memcmp(&old_geo, &layer->geo, sizeof(struct wlr_box)) != 0) {
-			// TODO DAMAGE apply whole surface from previous and new geos
-		} else {
-			// TODO DAMAGE from surface damage
-		}
-		wlr_output_damage_add_box(output->damage, &old_geo);
-		wlr_output_damage_add_box(output->damage, &layer->geo);
+	if (wlr_output == NULL) {
+		return;
+	}
+
+	struct sway_output *output = wlr_output->data;
+	struct wlr_box old_geo = layer->geo;
+	arrange_layers(output);
+	if (memcmp(&old_geo, &layer->geo, sizeof(struct wlr_box)) != 0) {
+		output_damage_surface(output, old_geo.x, old_geo.y,
+			layer_surface->surface, true);
+		output_damage_surface(output, layer->geo.x, layer->geo.y,
+			layer_surface->surface, true);
+	} else {
+		output_damage_surface(output, layer->geo.x, layer->geo.y,
+			layer_surface->surface, false);
 	}
 }
 
 static void unmap(struct sway_layer_surface *sway_layer) {
 	struct wlr_output *wlr_output = sway_layer->layer_surface->output;
-	if (wlr_output != NULL) {
-		struct sway_output *output = wlr_output->data;
-		wlr_output_damage_add_box(output->damage, &sway_layer->geo);
+	if (wlr_output == NULL) {
+		return;
 	}
+	struct sway_output *output = wlr_output->data;
+	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
+		sway_layer->layer_surface->surface, true);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_layer_surface *sway_layer = wl_container_of(listener,
-			sway_layer, destroy);
+	struct sway_layer_surface *sway_layer =
+		wl_container_of(listener, sway_layer, destroy);
 	wlr_log(L_DEBUG, "Layer surface destroyed (%s)",
-			sway_layer->layer_surface->namespace);
+		sway_layer->layer_surface->namespace);
 	if (sway_layer->layer_surface->mapped) {
 		unmap(sway_layer);
 	}
@@ -277,7 +283,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer = wl_container_of(listener,
 			sway_layer, map);
 	struct sway_output *output = sway_layer->layer_surface->output->data;
-	wlr_output_damage_add_box(output->damage, &sway_layer->geo);
+	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
+		sway_layer->layer_surface->surface, true);
+	// TODO: send enter to subsurfaces and popups
 	wlr_surface_send_enter(sway_layer->layer_surface->surface,
 		sway_layer->layer_surface->output);
 }
