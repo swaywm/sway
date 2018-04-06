@@ -107,6 +107,7 @@ void container_insert_child(struct sway_container *parent,
 	if (old_parent) {
 		container_remove_child(child);
 	}
+	wlr_log(L_DEBUG, "Inserting id:%zd at index %d", child->id, i);
 	list_insert(parent->children, i, child);
 	child->parent = parent;
 	wl_signal_emit(&child->events.reparent, old_parent);
@@ -229,23 +230,24 @@ static enum movement_direction invert_movement(enum movement_direction dir) {
 	case MOVE_UP:
 		return MOVE_DOWN;
 	case MOVE_DOWN:
-		return MOVE_LEFT;
+		return MOVE_UP;
 	default:
 		sway_assert(0, "This function expects left|right|up|down");
 		return MOVE_LEFT;
 	}
 }
 
+static int move_offs(enum movement_direction move_dir) {
+	return move_dir == MOVE_LEFT || move_dir == MOVE_UP ? -1 : 1;
+}
+
 /* Gets the index of the most extreme member based on the movement offset */
-static int container_limit(struct sway_container *container, int offs) {
+static int container_limit(struct sway_container *container,
+		enum movement_direction move_dir) {
 	if (container->children->length == 0) {
 		return 0;
 	}
-	return offs < 0 ? 0 : container->children->length - 1;
-}
-
-static int move_offs(enum movement_direction move_dir) {
-	return move_dir == MOVE_LEFT || move_dir == MOVE_UP ? -1 : 1;
+	return move_offs(move_dir) < 0 ? 0 : container->children->length - 1;
 }
 
 static void workspace_rejigger(struct sway_container *ws,
@@ -301,7 +303,7 @@ void container_move(struct sway_container *container,
 				container_type_to_str(current->type), current->name);
 
 		int index = index_child(current);
-		int limit = container_limit(parent, offs);
+		int limit = container_limit(parent, move_dir);
 
 		switch (current->type) {
 		case C_OUTPUT: {
@@ -402,9 +404,11 @@ void container_move(struct sway_container *container,
 		case C_WORKSPACE: // Note: only in the case of moving between outputs
 		case C_CONTAINER:
 			if (is_parallel(sibling->layout, move_dir)) {
-				int limit = container_limit(sibling, move_dir);
-				wlr_log(L_DEBUG, "Reparenting container (paralell)");
+				int limit = container_limit(sibling, invert_movement(move_dir));
 				limit = limit != 0 ? limit + 1 : limit; // Convert to index
+				wlr_log(L_DEBUG,
+						"Reparenting container (parallel) to index %d "
+						"(move dir: %d)", limit, move_dir);
 				container_insert_child(sibling, container, limit);
 				container->width = container->height = 0;
 				arrange_windows(sibling, -1, -1);
@@ -421,8 +425,10 @@ void container_move(struct sway_container *container,
 					sibling = focus_inactive;
 					continue;
 				} else if (sibling->children->length) {
+					wlr_log(L_DEBUG, "No focus-inactive, adding arbitrarily");
 					container_add_sibling(sibling->children->items[0], container);
 				} else {
+					wlr_log(L_DEBUG, "No kiddos, adding container alone");
 					container_add_child(sibling, container);
 				}
 				container->width = container->height = 0;
