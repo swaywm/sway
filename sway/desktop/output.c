@@ -267,17 +267,14 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	// render unmanaged views on top
 	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
-	struct sway_xwayland_unmanaged *sway_surface;
-	wl_list_for_each(sway_surface, unmanaged, link) {
+	struct sway_xwayland_unmanaged *unmanaged_surface;
+	wl_list_for_each(unmanaged_surface, unmanaged, link) {
 		struct wlr_xwayland_surface *xsurface =
-			sway_surface->wlr_xwayland_surface;
-		if (xsurface->surface == NULL) {
-			continue;
-		}
+			unmanaged_surface->wlr_xwayland_surface;
 
 		const struct wlr_box view_box = {
-			.x = xsurface->x,
-			.y = xsurface->y,
+			.x = unmanaged_surface->lx,
+			.y = unmanaged_surface->ly,
 			.width = xsurface->width,
 			.height = xsurface->height,
 		};
@@ -335,8 +332,20 @@ void output_damage_whole(struct sway_output *output) {
 	wlr_output_damage_add_whole(output->damage);
 }
 
+void output_damage_whole_surface(struct sway_output *output,
+		double ox, double oy, struct wlr_surface *surface) {
+	// TODO
+	output_damage_whole(output);
+}
+
 void output_damage_whole_view(struct sway_output *output,
 		struct sway_view *view) {
+	// TODO
+	output_damage_whole(output);
+}
+
+void output_damage_whole_container(struct sway_output *output,
+		struct sway_container *con) {
 	// TODO
 	output_damage_whole(output);
 }

@@ -514,9 +514,16 @@ static bool find_child_func(struct sway_container *con, void *data) {
 
 bool container_has_child(struct sway_container *con,
 		struct sway_container *child) {
-	if (con == NULL || con->type == C_VIEW ||
-			con->children->length == 0) {
+	if (con == NULL || con->type == C_VIEW || con->children->length == 0) {
 		return false;
 	}
 	return container_find(con, find_child_func, child);
+}
+
+void container_damage_whole(struct sway_container *con) {
+	struct sway_container *output = con;
+	if (output->type != C_OUTPUT) {
+		output = container_parent(output, C_OUTPUT);
+	}
+	output_damage_whole_container(output->sway_output, con);
 }

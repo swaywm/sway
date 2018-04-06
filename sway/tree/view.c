@@ -11,6 +11,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	view->type = type;
 	view->impl = impl;
+	wl_signal_init(&view->events.unmap);
 }
 
 void view_destroy(struct sway_view *view) {
@@ -123,6 +124,20 @@ static void view_update_outputs(struct sway_view *view,
 	}
 }
 
+static void view_subsurface_create(struct sway_view *view,
+	struct wlr_subsurface *subsurface);
+
+static void view_init_subsurfaces(struct sway_view *view,
+	struct wlr_surface *surface);
+
+static void view_handle_surface_new_subsurface(struct wl_listener *listener,
+		void *data) {
+	struct sway_view *view =
+		wl_container_of(listener, view, surface_new_subsurface);
+	struct wlr_subsurface *subsurface = data;
+	view_subsurface_create(view, subsurface);
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
@@ -136,6 +151,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view->surface = wlr_surface;
 	view->swayc = cont;
 
+	view_init_subsurfaces(view, wlr_surface);
+	wl_signal_add(&wlr_surface->events.new_subsurface,
+		&view->surface_new_subsurface);
+	view->surface_new_subsurface.notify = view_handle_surface_new_subsurface;
+
 	arrange_windows(cont->parent, -1, -1);
 	input_manager_set_focus(input_manager, cont);
 
@@ -148,9 +168,13 @@ void view_unmap(struct sway_view *view) {
 		return;
 	}
 
+	wl_signal_emit(&view->events.unmap, view);
+
 	view_damage_whole(view);
 
 	struct sway_container *parent = container_destroy(view->swayc);
+
+	wl_list_remove(&view->surface_new_subsurface.link);
 
 	view->swayc = NULL;
 	view->surface = NULL;
@@ -184,4 +208,92 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	view->height = height;
 	view_update_outputs(view, &box);
 	view_damage_whole(view);
+}
+
+
+static void view_subsurface_create(struct sway_view *view,
+		struct wlr_subsurface *subsurface) {
+	struct sway_view_child *child = calloc(1, sizeof(struct sway_view_child));
+	if (child == NULL) {
+		wlr_log(L_ERROR, "Allocation failed");
+		return;
+	}
+	view_child_init(child, NULL, view, subsurface->surface);
+}
+
+static void view_child_handle_surface_commit(struct wl_listener *listener,
+		void *data) {
+	struct sway_view_child *child =
+		wl_container_of(listener, child, surface_commit);
+	// TODO: only accumulate damage from the child
+	view_damage_from(child->view);
+}
+
+static void view_child_handle_surface_new_subsurface(
+		struct wl_listener *listener, void *data) {
+	struct sway_view_child *child =
+		wl_container_of(listener, child, surface_new_subsurface);
+	struct wlr_subsurface *subsurface = data;
+	view_subsurface_create(child->view, subsurface);
+}
+
+static void view_child_handle_surface_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_view_child *child =
+		wl_container_of(listener, child, surface_destroy);
+	view_child_destroy(child);
+}
+
+static void view_child_handle_view_unmap(struct wl_listener *listener,
+		void *data) {
+	struct sway_view_child *child =
+		wl_container_of(listener, child, view_unmap);
+	view_child_destroy(child);
+}
+
+static void view_init_subsurfaces(struct sway_view *view,
+		struct wlr_surface *surface) {
+	struct wlr_subsurface *subsurface;
+	wl_list_for_each(subsurface, &surface->subsurface_list, parent_link) {
+		view_subsurface_create(view, subsurface);
+	}
+}
+
+void view_child_init(struct sway_view_child *child,
+		const struct sway_view_child_impl *impl, struct sway_view *view,
+		struct wlr_surface *surface) {
+	child->impl = impl;
+	child->view = view;
+	child->surface = surface;
+
+	wl_signal_add(&surface->events.commit, &child->surface_commit);
+	child->surface_commit.notify = view_child_handle_surface_commit;
+	wl_signal_add(&surface->events.new_subsurface,
+		&child->surface_new_subsurface);
+	child->surface_new_subsurface.notify =
+		view_child_handle_surface_new_subsurface;
+	wl_signal_add(&surface->events.destroy, &child->surface_destroy);
+	child->surface_destroy.notify = view_child_handle_surface_destroy;
+	wl_signal_add(&view->events.unmap, &child->view_unmap);
+	child->view_unmap.notify = view_child_handle_view_unmap;
+
+	view_init_subsurfaces(child->view, surface);
+
+	// TODO: only damage the whole child
+	view_damage_whole(child->view);
+}
+
+void view_child_destroy(struct sway_view_child *child) {
+	// TODO: only damage the whole child
+	view_damage_whole(child->view);
+
+	wl_list_remove(&child->surface_commit.link);
+	wl_list_remove(&child->surface_destroy.link);
+	wl_list_remove(&child->view_unmap.link);
+
+	if (child->impl && child->impl->destroy) {
+		child->impl->destroy(child);
+	} else {
+		free(child);
+	}
 }

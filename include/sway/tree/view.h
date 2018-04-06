@@ -45,6 +45,12 @@ struct sway_view {
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
+
+	struct {
+		struct wl_signal unmap;
+	} events;
+
+	struct wl_listener surface_new_subsurface;
 };
 
 struct sway_xdg_shell_v6_view {
@@ -54,6 +60,7 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -80,6 +87,12 @@ struct sway_xwayland_unmanaged {
 	struct wlr_xwayland_surface *wlr_xwayland_surface;
 	struct wl_list link;
 
+	int lx, ly;
+
+	struct wl_listener request_configure;
+	struct wl_listener commit;
+	struct wl_listener map;
+	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
 
@@ -93,6 +106,37 @@ struct sway_wl_shell_view {
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
+};
+
+struct sway_view_child;
+
+struct sway_view_child_impl {
+	void (*destroy)(struct sway_view_child *child);
+};
+
+/**
+ * A view child is a surface in the view tree, such as a subsurface or a popup.
+ */
+struct sway_view_child {
+	const struct sway_view_child_impl *impl;
+
+	struct sway_view *view;
+	struct wlr_surface *surface;
+
+	struct wl_listener surface_commit;
+	struct wl_listener surface_new_subsurface;
+	struct wl_listener surface_destroy;
+	struct wl_listener view_unmap;
+};
+
+struct sway_xdg_popup_v6 {
+	struct sway_view_child child;
+
+	struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+
+	struct wl_listener new_popup;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
 };
 
 const char *view_get_title(struct sway_view *view);
@@ -128,5 +172,11 @@ void view_unmap(struct sway_view *view);
 void view_update_position(struct sway_view *view, double ox, double oy);
 
 void view_update_size(struct sway_view *view, int width, int height);
+
+void view_child_init(struct sway_view_child *child,
+	const struct sway_view_child_impl *impl, struct sway_view *view,
+	struct wlr_surface *surface);
+
+void view_child_destroy(struct sway_view_child *child);
 
 #endif

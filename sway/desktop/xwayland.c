@@ -2,42 +2,110 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
-#include <wlr/xwayland.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/xwayland.h>
+#include "log.h"
+#include "sway/desktop.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
+#include "sway/output.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
-#include "sway/server.h"
 #include "sway/tree/view.h"
-#include "sway/output.h"
-#include "sway/input/seat.h"
-#include "sway/input/input-manager.h"
-#include "log.h"
 
-static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_xwayland_unmanaged *sway_surface =
-		wl_container_of(listener, sway_surface, destroy);
-	wl_list_remove(&sway_surface->destroy.link);
-	wl_list_remove(&sway_surface->link);
-	free(sway_surface);
+static void unmanaged_handle_request_configure(struct wl_listener *listener,
+		void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, request_configure);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	struct wlr_xwayland_surface_configure_event *ev = data;
+	wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
+		ev->width, ev->height);
 }
 
-static void create_unmanaged(struct wlr_xwayland_surface *xsurface) {
-	struct sway_xwayland_unmanaged *sway_surface =
-		calloc(1, sizeof(struct sway_xwayland_unmanaged));
-	if (!sway_assert(sway_surface, "Failed to allocate surface")) {
-		return;
+static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, commit);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+
+	if (xsurface->x != surface->lx || xsurface->y != surface->ly) {
+		// Surface has moved
+		desktop_damage_whole_surface(xsurface->surface,
+			surface->lx, surface->ly);
+		surface->lx = xsurface->x;
+		surface->ly = xsurface->y;
+		desktop_damage_whole_surface(xsurface->surface,
+			surface->lx, surface->ly);
+	} else {
+		desktop_damage_from_surface(xsurface->surface,
+			xsurface->x, xsurface->y);
 	}
+}
 
-	sway_surface->wlr_xwayland_surface = xsurface;
-
-	wl_signal_add(&xsurface->events.destroy, &sway_surface->destroy);
-	sway_surface->destroy.notify = unmanaged_handle_destroy;
+static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, map);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
 	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
-		&sway_surface->link);
+		&surface->link);
 
-	// TODO: damage tracking
+	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
+	surface->commit.notify = unmanaged_handle_commit;
+
+	surface->lx = xsurface->x;
+	surface->ly = xsurface->y;
+	desktop_damage_whole_surface(xsurface->surface, surface->lx, surface->ly);
+}
+
+static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, unmap);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	desktop_damage_whole_surface(xsurface->surface, xsurface->x, xsurface->y);
+	wl_list_remove(&surface->link);
+	wl_list_remove(&surface->commit.link);
+}
+
+static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_unmanaged *surface =
+		wl_container_of(listener, surface, destroy);
+	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
+	if (xsurface->mapped) {
+		unmanaged_handle_unmap(&surface->unmap, xsurface);
+	}
+	wl_list_remove(&surface->map.link);
+	wl_list_remove(&surface->unmap.link);
+	wl_list_remove(&surface->destroy.link);
+	free(surface);
+}
+
+static struct sway_xwayland_unmanaged *create_unmanaged(
+		struct wlr_xwayland_surface *xsurface) {
+	struct sway_xwayland_unmanaged *surface =
+		calloc(1, sizeof(struct sway_xwayland_unmanaged));
+	if (surface == NULL) {
+		wlr_log(L_ERROR, "Allocation failed");
+		return NULL;
+	}
+
+	surface->wlr_xwayland_surface = xsurface;
+
+	wl_signal_add(&xsurface->events.request_configure,
+		&surface->request_configure);
+	surface->request_configure.notify = unmanaged_handle_request_configure;
+	wl_signal_add(&xsurface->events.map, &surface->map);
+	surface->map.notify = unmanaged_handle_map;
+	wl_signal_add(&xsurface->events.unmap, &surface->unmap);
+	surface->unmap.notify = unmanaged_handle_unmap;
+	wl_signal_add(&xsurface->events.destroy, &surface->destroy);
+	surface->destroy.notify = unmanaged_handle_destroy;
+
+	unmanaged_handle_map(&surface->map, xsurface);
+
+	return surface;
 }
 
 
@@ -127,6 +195,7 @@ static const struct sway_view_impl view_impl = {
 	.configure = configure,
 	.set_activated = set_activated,
 	.close = _close,
+	.destroy = destroy,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -138,12 +207,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	view_update_size(view, xwayland_view->pending_width,
 		xwayland_view->pending_height);
 	view_damage_from(view);
-}
-
-static void handle_destroy(struct wl_listener *listener, void *data) {
-	struct sway_xwayland_view *xwayland_view =
-		wl_container_of(listener, xwayland_view, destroy);
-	view_destroy(&xwayland_view->view);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -167,6 +230,17 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// Put it back into the tree
 	wlr_xwayland_surface_set_maximized(xsurface, true);
 	view_map(view, xsurface->surface);
+}
+
+static void handle_destroy(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, destroy);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (xsurface->mapped) {
+		handle_unmap(&xwayland_view->unmap, xsurface);
+	}
+	view_destroy(&xwayland_view->view);
 }
 
 static void handle_request_configure(struct wl_listener *listener, void *data) {
