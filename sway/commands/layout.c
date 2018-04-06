@@ -49,7 +49,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		}
 	}
 
-	arrange_windows(parent, parent->box.width, parent->box.height);
+	arrange_windows(parent, parent->width, parent->height);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
