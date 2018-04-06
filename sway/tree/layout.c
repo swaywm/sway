@@ -308,14 +308,11 @@ void container_move(struct sway_container *container,
 		case C_OUTPUT: {
 			enum wlr_direction wlr_dir;
 			sway_dir_to_wlr(move_dir, &wlr_dir);
-			double ref_x = current->x + current->width / 2;
-			double ref_y = current->y + current->height / 2;
-			ref_x += current->sway_output->swayc->x;
-			ref_y += current->sway_output->swayc->y;
+			double ref_lx = current->x + current->width / 2;
+			double ref_ly = current->y + current->height / 2;
 			struct wlr_output *next = wlr_output_layout_adjacent_output(
 				root_container.sway_root->output_layout, wlr_dir,
-				current->sway_output->wlr_output,
-				current->x, current->y);
+				current->sway_output->wlr_output, ref_lx, ref_ly);
 			if (!next) {
 				wlr_log(L_DEBUG, "Hit edge of output, nowhere else to go");
 				return;
