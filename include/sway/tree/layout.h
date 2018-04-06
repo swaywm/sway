@@ -1,7 +1,7 @@
 #ifndef _SWAY_LAYOUT_H
 #define _SWAY_LAYOUT_H
-
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/render/wlr_texture.h>
 #include "sway/tree/container.h"
 
 enum movement_direction {
@@ -28,6 +28,8 @@ struct sway_root {
 	struct wl_listener output_layout_change;
 
 	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
+
+	struct wlr_texture *debug_tree;
 
 	struct {
 		struct wl_signal new_container;

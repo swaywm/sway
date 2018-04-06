@@ -17,6 +17,7 @@
 #endif
 #include <wlr/util/log.h>
 #include "sway/config.h"
+#include "sway/debug.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 #include "sway/ipc-server.h"
@@ -288,7 +289,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdvVc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdDvVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -305,6 +306,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'd': // debug
 			debug = 1;
+			break;
+		case 'D': // extended debug options
+			enable_debug_tree = true;
 			break;
 		case 'v': // version
 			fprintf(stdout, "sway version " SWAY_VERSION "\n");

@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include "sway/debug.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
 #include "sway/input/seat.h"
@@ -432,6 +433,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	}
 
 	seat->has_focus = (container != NULL);
+
+	update_debug_tree();
 }
 
 void seat_set_focus(struct sway_seat *seat,

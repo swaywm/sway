@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "sway/debug.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/output.h"
@@ -431,6 +432,11 @@ void container_move(struct sway_container *container,
 		return;
 	}
 
+	if (old_parent) {
+		seat_set_focus(config->handler_context.seat, old_parent);
+		seat_set_focus(config->handler_context.seat, container);
+	}
+
 	struct sway_container *last_ws = old_parent;
 	struct sway_container *next_ws = container->parent;
 	if (last_ws && last_ws->type != C_WORKSPACE) {
@@ -594,6 +600,8 @@ void arrange_windows(struct sway_container *container,
 		break;
 	}
 	container_damage_whole(container);
+	// TODO: Make this less shitty
+	update_debug_tree();
 }
 
 static void apply_horiz_layout(struct sway_container *container,

@@ -4,6 +4,7 @@ sway_sources = files(
 	'commands.c',
 	'config.c',
 	'criteria.c',
+	'debug-tree.c',
 	'ipc-json.c',
 	'ipc-server.c',
 	'security.c',
@@ -102,10 +103,13 @@ sway_sources = files(
 )
 
 sway_deps = [
+	cairo,
+	gdk_pixbuf,
 	jsonc,
 	libcap,
 	libinput,
 	math,
+	pango,
 	pcre,
 	pixman,
 	server_protos,
