@@ -6,6 +6,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "sway/tree/container.h"
+#include "sway/tree/workspace.h"
 #include "sway/input/seat.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
@@ -398,7 +399,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 		if (last_ws) {
 			ipc_event_workspace(last_ws, container, "focus");
-			if (last_ws->children->length == 0) {
+			if (!workspace_is_visible(last_ws)
+					&& last_ws->children->length == 0) {
 				container_destroy(last_ws);
 			}
 		}

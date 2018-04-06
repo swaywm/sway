@@ -216,6 +216,7 @@ static bool container_reap_empty(struct sway_container *con) {
 		break;
 	case C_WORKSPACE:
 		if (!workspace_is_visible(con) && con->children->length == 0) {
+			wlr_log(L_DEBUG, "Destroying workspace via reaper");
 			container_workspace_destroy(con);
 			return true;
 		}
