@@ -331,11 +331,17 @@ void container_move(struct sway_container *container,
 		}
 		case C_WORKSPACE:
 			if (!is_parallel(current->layout, move_dir)) {
-				if (current->children->length != 1) {
-					// Special case
+				if (current->children->length > 2) {
 					wlr_log(L_DEBUG, "Rejiggering the workspace (%d kiddos)",
 							current->children->length);
 					workspace_rejigger(current, container, move_dir);
+				} else if (current->children->length == 2) {
+					wlr_log(L_DEBUG, "Changing workspace layout");
+					container_set_layout(current,
+						move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ?
+						L_HORIZ : L_VERT);
+					container_insert_child(current, container, offs < 0 ? 0 : 1);
+					arrange_windows(current, -1, -1);
 				}
 				return;
 			} else {
