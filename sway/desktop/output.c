@@ -1,8 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <stdlib.h>
-#include <time.h>
 #include <strings.h>
+#include <time.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
@@ -12,6 +12,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include <wlr/util/region.h>
 #include "log.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -95,13 +96,13 @@ static bool get_surface_box(struct root_geometry *geo,
 }
 
 static void output_surface_for_each_surface(struct wlr_surface *surface,
-		double ox, double oy, float rotation, struct root_geometry *geo,
+		double ox, double oy, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	geo->x = ox;
 	geo->y = oy;
 	geo->width = surface->current->width;
 	geo->height = surface->current->height;
-	geo->rotation = rotation;
+	geo->rotation = 0;
 
 	wlr_surface_for_each_surface(surface, iterator, user_data);
 }
@@ -174,14 +175,14 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 }
 
 static void render_surface(struct sway_output *output, struct timespec *when,
-		struct wlr_surface *surface, double ox, double oy, float rotation) {
+		struct wlr_surface *surface, double ox, double oy) {
 	struct render_data data = {
 		.output = output,
 		.when = when,
 		.alpha = 1.0f,
 	};
 
-	output_surface_for_each_surface(surface, ox, oy, rotation, &data.root_geo,
+	output_surface_for_each_surface(surface, ox, oy, &data.root_geo,
 		render_surface_iterator, &data);
 }
 
@@ -204,7 +205,7 @@ static void render_layer(struct sway_output *output, struct timespec *when,
 		struct wlr_layer_surface *wlr_layer_surface =
 			layer_surface->layer_surface;
 		render_surface(output, when, wlr_layer_surface->surface,
-			layer_surface->geo.x, layer_surface->geo.y, 0);
+			layer_surface->geo.x, layer_surface->geo.y);
 	}
 }
 
@@ -241,6 +242,11 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
+	// TODO: don't damage the whole output
+	int width, height;
+	wlr_output_transformed_resolution(wlr_output, &width, &height);
+	pixman_region32_union_rect(damage, damage, 0, 0, width, height);
+
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	wlr_renderer_clear(renderer, clear_color);
 
@@ -270,7 +276,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 			unmanaged_surface->wlr_xwayland_surface;
 		double ox = unmanaged_surface->lx - output->swayc->x;
 		double oy = unmanaged_surface->ly - output->swayc->y;
-		render_surface(output, when, xsurface->surface, ox, oy, 0);
+		render_surface(output, when, xsurface->surface, ox, oy);
 	}
 
 	// TODO: consider revising this when fullscreen windows are supported
@@ -318,22 +324,93 @@ void output_damage_whole(struct sway_output *output) {
 	wlr_output_damage_add_whole(output->damage);
 }
 
+struct damage_data {
+	struct root_geometry root_geo;
+	struct sway_output *output;
+	bool whole;
+};
+
+static void damage_surface_iterator(struct wlr_surface *surface, int sx, int sy,
+		void *_data) {
+	struct damage_data *data = _data;
+	struct sway_output *output = data->output;
+	float rotation = data->root_geo.rotation;
+	bool whole = data->whole;
+
+	if (!wlr_surface_has_buffer(surface)) {
+		return;
+	}
+
+	struct wlr_box box;
+	bool intersects = get_surface_box(&data->root_geo, data->output, surface,
+		sx, sy, &box);
+	if (!intersects) {
+		return;
+	}
+
+	scale_box(&box, output->wlr_output->scale);
+
+	if (whole) {
+		wlr_box_rotated_bounds(&box, rotation, &box);
+		wlr_output_damage_add_box(output->damage, &box);
+	} else {
+		int center_x = box.x + box.width/2;
+		int center_y = box.y + box.height/2;
+
+		pixman_region32_t damage;
+		pixman_region32_init(&damage);
+		pixman_region32_copy(&damage, &surface->current->surface_damage);
+		wlr_region_scale(&damage, &damage, output->wlr_output->scale);
+		if (ceil(output->wlr_output->scale) > surface->current->scale) {
+			// When scaling up a surface, it'll become blurry so we need to
+			// expand the damage region
+			wlr_region_expand(&damage, &damage,
+				ceil(output->wlr_output->scale) - surface->current->scale);
+		}
+		pixman_region32_translate(&damage, box.x, box.y);
+		wlr_region_rotated_bounds(&damage, &damage, rotation,
+			center_x, center_y);
+		wlr_output_damage_add(output->damage, &damage);
+		pixman_region32_fini(&damage);
+	}
+}
+
 void output_damage_surface(struct sway_output *output, double ox, double oy,
 		struct wlr_surface *surface, bool whole) {
-	// TODO
-	output_damage_whole(output);
+	struct damage_data data = {
+		.output = output,
+		.whole = whole,
+	};
+
+	output_surface_for_each_surface(surface, ox, oy, &data.root_geo,
+		damage_surface_iterator, &data);
 }
 
 void output_damage_view(struct sway_output *output, struct sway_view *view,
 		bool whole) {
-	// TODO
-	output_damage_whole(output);
+	if (!sway_assert(view->swayc != NULL, "expected a view in the tree")) {
+		return;
+	}
+
+	struct damage_data data = {
+		.output = output,
+		.whole = whole,
+	};
+
+	output_view_for_each_surface(view, &data.root_geo,
+		damage_surface_iterator, &data);
 }
 
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
-	// TODO
-	output_damage_whole(output);
+	float scale = output->wlr_output->scale;
+	struct wlr_box box = {
+		.x = con->x * scale,
+		.y = con->y * scale,
+		.width = con->width * scale,
+		.height = con->height * scale,
+	};
+	wlr_output_damage_add_box(output->damage, &box);
 }
 
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
