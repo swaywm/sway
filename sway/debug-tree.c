@@ -91,7 +91,7 @@ void update_debug_tree() {
 		break;
 	}
 
-	struct sway_container *focus;
+	struct sway_container *focus = NULL;
 	if (seat != NULL) {
 		focus = seat_get_focus(seat);
 	}

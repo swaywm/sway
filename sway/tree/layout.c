@@ -250,6 +250,9 @@ static int container_limit(struct sway_container *container,
 	return move_offs(move_dir) < 0 ? 0 : container->children->length - 1;
 }
 
+/* Takes one child, sets it aside, wraps the rest of the children in a new
+ * container, switches the layout of the workspace, and drops the child back in.
+ * In other words, rejigger it. */
 static void workspace_rejigger(struct sway_container *ws,
 		struct sway_container *child, enum movement_direction move_dir) {
 	struct sway_container *original_parent = child->parent;
@@ -311,8 +314,8 @@ void container_move(struct sway_container *container,
 			sway_dir_to_wlr(move_dir, &wlr_dir);
 			double ref_x = current->x + current->width / 2;
 			double ref_y = current->y + current->height / 2;
-			ref_x += current->sway_output->wlr_output->lx;
-			ref_y += current->sway_output->wlr_output->ly;
+			ref_x += current->sway_output->swayc->x;
+			ref_y += current->sway_output->swayc->y;
 			struct wlr_output *next = wlr_output_layout_adjacent_output(
 				root_container.sway_root->output_layout, wlr_dir,
 				current->sway_output->wlr_output,
