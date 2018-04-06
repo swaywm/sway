@@ -364,8 +364,8 @@ void container_move(struct sway_container *container,
 						return;
 					}
 				} else {
-					wlr_log(L_DEBUG, "Selecting sibling");
 					sibling = parent->children->items[index + offs];
+					wlr_log(L_DEBUG, "Selecting sibling id:%zd", sibling->id);
 				}
 			} else {
 				wlr_log(L_DEBUG, "Moving up to find a parallel container");
@@ -419,9 +419,12 @@ void container_move(struct sway_container *container,
 				container_remove_child(container);
 				struct sway_container *focus_inactive = seat_get_focus_inactive(
 						config->handler_context.seat, sibling);
-				wlr_log(L_DEBUG, "Focus inactive: %zd", focus_inactive ?
-						focus_inactive->id : 0);
 				if (focus_inactive) {
+					while (focus_inactive->parent != sibling) {
+						focus_inactive = focus_inactive->parent;
+					}
+					wlr_log(L_DEBUG, "Focus inactive: id:%zd",
+							focus_inactive->id);
 					sibling = focus_inactive;
 					continue;
 				} else if (sibling->children->length) {

@@ -38,8 +38,18 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
-	cairo_rectangle(cairo, x, y, text_width, text_height);
+	cairo_rectangle(cairo, x + 2, y, text_width - 2, text_height);
 	cairo_set_source_u32(cairo, 0xFFFFFFE0);
+	cairo_fill(cairo);
+	int height = text_height;
+	if (container->children) {
+		for (int i = 0; i < container->children->length; ++i) {
+			struct sway_container *child = container->children->items[i];
+			height += draw_container(cairo, child, focus, x + 10, y + height);
+		}
+	}
+	cairo_set_source_u32(cairo, 0xFFFFFFE0);
+	cairo_rectangle(cairo, x, y, 2, height);
 	cairo_fill(cairo);
 	cairo_move_to(cairo, x, y);
 	if (focus == container) {
@@ -51,13 +61,6 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
-	int height = text_height;
-	if (container->children) {
-		for (int i = 0; i < container->children->length; ++i) {
-			struct sway_container *child = container->children->items[i];
-			height += draw_container(cairo, child, focus, x + 10, y + height);
-		}
-	}
 	return height;
 }
 
