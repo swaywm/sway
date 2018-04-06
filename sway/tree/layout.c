@@ -334,9 +334,12 @@ void container_move(struct sway_container *container,
 		}
 		case C_WORKSPACE:
 			if (!is_parallel(current->layout, move_dir)) {
-				// Special case
-				wlr_log(L_DEBUG, "Rejiggering the workspace");
-				workspace_rejigger(current, container, move_dir);
+				if (current->children->length != 1) {
+					// Special case
+					wlr_log(L_DEBUG, "Rejiggering the workspace (%d kiddos)",
+							current->children->length);
+					workspace_rejigger(current, container, move_dir);
+				}
 				return;
 			} else {
 				wlr_log(L_DEBUG, "Selecting output");

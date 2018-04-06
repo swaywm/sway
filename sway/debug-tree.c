@@ -38,6 +38,7 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
+	cairo_save(cairo);
 	cairo_rectangle(cairo, x + 2, y, text_width - 2, text_height);
 	cairo_set_source_u32(cairo, 0xFFFFFFE0);
 	cairo_fill(cairo);
@@ -45,17 +46,21 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 	if (container->children) {
 		for (int i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
+			if (child->parent == container) {
+				cairo_set_source_u32(cairo, 0x000000FF);
+			} else {
+				cairo_set_source_u32(cairo, 0xFF0000FF);
+			}
 			height += draw_container(cairo, child, focus, x + 10, y + height);
 		}
 	}
 	cairo_set_source_u32(cairo, 0xFFFFFFE0);
 	cairo_rectangle(cairo, x, y, 2, height);
 	cairo_fill(cairo);
+	cairo_restore(cairo);
 	cairo_move_to(cairo, x, y);
 	if (focus == container) {
-		cairo_set_source_u32(cairo, 0xFF0000FF);
-	} else {
-		cairo_set_source_u32(cairo, 0x000000FF);
+		cairo_set_source_u32(cairo, 0x0000FFFF);
 	}
 	pango_printf(cairo, "monospace", 1, false, "%s id:%zd '%s' %s %dx%d@%d,%d",
 		container_type_to_str(container->type), container->id, container->name,
@@ -95,6 +100,7 @@ void update_debug_tree() {
 	if (seat != NULL) {
 		focus = seat_get_focus(seat);
 	}
+	cairo_set_source_u32(cairo, 0x000000FF);
 	draw_container(cairo, &root_container, focus, 0, 0);
 
 	cairo_surface_flush(surface);
