@@ -68,12 +68,10 @@ struct sway_container {
 	enum sway_container_layout prev_layout;
 	enum sway_container_layout workspace_layout;
 
-	// For C_ROOT, this has no meaning
-	// For C_OUTPUT, this is the output position in layout coordinates
-	// For other types, this is the position in output-local coordinates
-	double x, y;
-	// does not include borders or gaps.
-	double width, height;
+	// For C_ROOT, this is the extents of the whole layout box.
+	// For C_OUTPUT, this is the output position in layout coordinates.
+	// For other types, this is the position in output-local coordinates.
+	struct wlr_box box;
 
 	list_t *children;
 
