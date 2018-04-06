@@ -50,10 +50,10 @@ struct sway_container *workspace_create(struct sway_container *output,
 	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
 	struct sway_container *workspace = container_create(C_WORKSPACE);
 
-	workspace->box.x = output->box.x;
-	workspace->box.y = output->box.y;
-	workspace->box.width = output->box.width;
-	workspace->box.height = output->box.height;
+	workspace->x = output->x;
+	workspace->y = output->y;
+	workspace->width = output->width;
+	workspace->height = output->height;
 	workspace->name = !name ? NULL : strdup(name);
 	workspace->prev_layout = L_NONE;
 	workspace->layout = container_get_default_layout(output);

@@ -415,8 +415,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		if (new_output && last_output && new_output != last_output
 				&& config->mouse_warping && warp) {
 			struct wlr_output *output = new_output->sway_output->wlr_output;
-			int x = container->box.x + output->lx + container->box.width / 2;
-			int y = container->box.y + output->ly + container->box.height / 2;
+			double x = container->x + output->lx + container->width / 2.0;
+			double y = container->y + output->ly + container->height / 2.0;
 			if (!wlr_output_layout_contains_point(
 					root_container.sway_root->output_layout,
 					output, seat->cursor->cursor->x, seat->cursor->cursor->y)) {

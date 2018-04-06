@@ -96,8 +96,8 @@ void view_damage_from(struct sway_view *view) {
 static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
-	box->x = output->box.x + view->swayc->box.x;
-	box->y = output->box.y + view->swayc->box.y;
+	box->x = output->x + view->swayc->x;
+	box->y = output->y + view->swayc->y;
 	box->width = view->width;
 	box->height = view->height;
 }
@@ -216,13 +216,13 @@ void view_unmap(struct sway_view *view) {
 }
 
 void view_update_position(struct sway_view *view, double ox, double oy) {
-	if (view->swayc->box.x == ox && view->swayc->box.y == oy) {
+	if (view->swayc->x == ox && view->swayc->y == oy) {
 		return;
 	}
 
 	view_damage_whole(view);
-	view->swayc->box.x = ox;
-	view->swayc->box.y = oy;
+	view->swayc->x = ox;
+	view->swayc->y = oy;
 	view_damage_whole(view);
 }
 

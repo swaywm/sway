@@ -333,8 +333,8 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 	// Setup values
 	swayc->sway_view = sway_view;
 	swayc->name = title ? strdup(title) : NULL;
-	swayc->box.width = 0;
-	swayc->box.height = 0;
+	swayc->width = 0;
+	swayc->height = 0;
 
 	if (sibling->type == C_WORKSPACE) {
 		// Case of focused workspace, just create as child of it
@@ -418,8 +418,8 @@ struct sway_container *container_at(struct sway_container *parent,
 					soutput->sway_output->wlr_output);
 			double ox = lx - output_box->x;
 			double oy = ly - output_box->y;
-			double view_sx = ox - swayc->box.x;
-			double view_sy = oy - swayc->box.y;
+			double view_sx = ox - swayc->x;
+			double view_sy = oy - swayc->y;
 
 			double _sx, _sy;
 			struct wlr_surface *_surface;

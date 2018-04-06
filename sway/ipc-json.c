@@ -47,10 +47,10 @@ json_object *ipc_json_get_version() {
 static json_object *ipc_json_create_rect(struct sway_container *c) {
 	json_object *rect = json_object_new_object();
 
-	json_object_object_add(rect, "x", json_object_new_int(c->box.x));
-	json_object_object_add(rect, "y", json_object_new_int(c->box.y));
-	json_object_object_add(rect, "width", json_object_new_int(c->box.width));
-	json_object_object_add(rect, "height", json_object_new_int(c->box.height));
+	json_object_object_add(rect, "x", json_object_new_int((int32_t)c->x));
+	json_object_object_add(rect, "y", json_object_new_int((int32_t)c->y));
+	json_object_object_add(rect, "width", json_object_new_int((int32_t)c->width));
+	json_object_object_add(rect, "height", json_object_new_int((int32_t)c->height));
 
 	return rect;
 }

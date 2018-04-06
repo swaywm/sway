@@ -192,22 +192,17 @@ static void render_view(struct sway_container *view, void *data) {
 		int window_offset_x = view->sway_view->wlr_xdg_surface_v6->geometry.x;
 		int window_offset_y = view->sway_view->wlr_xdg_surface_v6->geometry.y;
 		render_surface(surface, wlr_output, when,
-			view->box.x - window_offset_x,
-			view->box.y - window_offset_y,
-			0, alpha);
-		render_xdg_v6_popups(sway_view->wlr_xdg_surface_v6, wlr_output, when,
-			view->box.x - window_offset_x,
-			view->box.y - window_offset_y,
-			0, alpha);
+			view->x - window_offset_x, view->y - window_offset_y, 0, alpha);
+		render_xdg_v6_popups(sway_view->wlr_xdg_surface_v6, wlr_output,
+			when, view->x - window_offset_x, view->y - window_offset_y, 0, alpha);
 		break;
 	}
 	case SWAY_VIEW_WL_SHELL:
 		render_wl_shell_surface(sway_view->wlr_wl_shell_surface, wlr_output,
-			when, view->box.x, view->box.y, 0, alpha, false);
+			when, view->x, view->y, 0, alpha, false);
 		break;
 	case SWAY_VIEW_XWAYLAND:
-		render_surface(surface, wlr_output, when,
-				view->box.x, view->box.y, 0, alpha);
+		render_surface(surface, wlr_output, when, view->x, view->y, 0, alpha);
 		break;
 	}
 }
