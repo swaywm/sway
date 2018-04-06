@@ -61,8 +61,7 @@ enum sway_container_layout container_get_default_layout(
 
 void container_sort_workspaces(struct sway_container *output);
 
-void arrange_windows(struct sway_container *container,
-		double width, double height);
+void arrange_windows(struct sway_container *container, int width, int height);
 
 struct sway_container *container_get_in_direction(struct sway_container
 		*container, struct sway_seat *seat, enum movement_direction dir);

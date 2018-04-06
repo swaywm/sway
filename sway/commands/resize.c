@@ -48,11 +48,11 @@ static enum resize_axis parse_resize_axis(const char *axis) {
 }
 
 static int parallel_coord(struct sway_container *c, enum resize_axis a) {
-	return a == RESIZE_AXIS_HORIZONTAL ? c->x : c->y;
+	return a == RESIZE_AXIS_HORIZONTAL ? c->box.x : c->box.y;
 }
 
 static int parallel_size(struct sway_container *c, enum resize_axis a) {
-	return a == RESIZE_AXIS_HORIZONTAL ? c->width : c->height;
+	return a == RESIZE_AXIS_HORIZONTAL ? c->box.width : c->box.height;
 }
 
 static void resize_tiled(int amount, enum resize_axis axis) {
@@ -196,10 +196,10 @@ static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {
 		float pct = amount / 100.0f;
 		switch (axis) {
 		case RESIZE_AXIS_HORIZONTAL:
-			amount = (float)current->width * pct;
+			amount = (float)current->box.width * pct;
 			break;
 		case RESIZE_AXIS_VERTICAL:
-			amount = (float)current->height * pct;
+			amount = (float)current->box.height * pct;
 			break;
 		default:
 			sway_assert(0, "invalid resize axis");

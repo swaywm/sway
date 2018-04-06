@@ -95,7 +95,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		}
 		struct sway_container *source = container_parent(current, C_OUTPUT);
 		struct sway_container *destination = output_in_direction(argv[3],
-				source->sway_output->wlr_output, current->x, current->y);
+				source->sway_output->wlr_output,
+				current->box.x, current->box.y);
 		if (!destination) {
 			return cmd_results_new(CMD_FAILURE, "move workspace",
 				"Can't find output with name/direction '%s'", argv[3]);
@@ -124,8 +125,8 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}
 	struct sway_container *source = container_parent(current, C_OUTPUT);
-	int center_x = current->width / 2 + current->x,
-		center_y = current->height / 2 + current->y;
+	int center_x = current->box.width / 2 + current->box.x,
+		center_y = current->box.height / 2 + current->box.y;
 	struct sway_container *destination = output_in_direction(argv[3],
 			source->sway_output->wlr_output, center_x, center_y);
 	if (!destination) {
