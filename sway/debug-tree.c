@@ -34,7 +34,7 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 		struct sway_container *focus, int x, int y) {
 	int text_width, text_height;
 	get_text_size(cairo, "monospace", &text_width, &text_height,
-		1, false, "%s id:%zd '%s' %s %dx%d@%d,%d",
+		1, false, "%s id:%zd '%s' %s %.fx%.f@%.f,%.f",
 		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
@@ -62,7 +62,7 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 	if (focus == container) {
 		cairo_set_source_u32(cairo, 0x0000FFFF);
 	}
-	pango_printf(cairo, "monospace", 1, false, "%s id:%zd '%s' %s %dx%d@%d,%d",
+	pango_printf(cairo, "monospace", 1, false, "%s id:%zd '%s' %s %.fx%.f@%.f,%.f",
 		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
