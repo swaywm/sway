@@ -66,6 +66,10 @@ struct root_geometry {
 static bool get_surface_box(struct root_geometry *geo,
 		struct sway_output *output, struct wlr_surface *surface, int sx, int sy,
 		struct wlr_box *surface_box) {
+	if (!wlr_surface_has_buffer(surface)) {
+		return false;
+	}
+
 	int sw = surface->current->width;
 	int sh = surface->current->height;
 
@@ -95,7 +99,7 @@ static bool get_surface_box(struct root_geometry *geo,
 	return wlr_box_intersection(&output_box, &rotated_box, &intersection);
 }
 
-static void output_surface_for_each_surface(struct wlr_surface *surface,
+static void surface_for_each_surface(struct wlr_surface *surface,
 		double ox, double oy, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	geo->x = ox;
@@ -119,6 +123,34 @@ static void output_view_for_each_surface(struct sway_view *view,
 	view_for_each_surface(view, iterator, user_data);
 }
 
+static void layer_for_each_surface(struct wl_list *layer_surfaces,
+		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
+		void *user_data) {
+	struct sway_layer_surface *layer_surface;
+	wl_list_for_each(layer_surface, layer_surfaces, link) {
+		struct wlr_layer_surface *wlr_layer_surface =
+			layer_surface->layer_surface;
+		surface_for_each_surface(wlr_layer_surface->surface,
+			layer_surface->geo.x, layer_surface->geo.y, geo, iterator,
+			user_data);
+	}
+}
+
+static void unmanaged_for_each_surface(struct wl_list *unmanaged,
+		struct sway_output *output, struct root_geometry *geo,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	struct sway_xwayland_unmanaged *unmanaged_surface;
+	wl_list_for_each(unmanaged_surface, unmanaged, link) {
+		struct wlr_xwayland_surface *xsurface =
+			unmanaged_surface->wlr_xwayland_surface;
+		double ox = unmanaged_surface->lx - output->swayc->x;
+		double oy = unmanaged_surface->ly - output->swayc->y;
+
+		surface_for_each_surface(xsurface->surface, ox, oy, geo,
+			iterator, user_data);
+	}
+}
+
 static void scale_box(struct wlr_box *box, float scale) {
 	box->x *= scale;
 	box->y *= scale;
@@ -129,7 +161,6 @@ static void scale_box(struct wlr_box *box, float scale) {
 struct render_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
-	struct timespec *when;
 	float alpha;
 };
 
@@ -137,7 +168,6 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		void *_data) {
 	struct render_data *data = _data;
 	struct wlr_output *wlr_output = data->output->wlr_output;
-	struct timespec *when = data->when;
 	float rotation = data->root_geo.rotation;
 	float alpha = data->alpha;
 
@@ -169,59 +199,52 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 
 	wlr_render_texture_with_matrix(renderer, surface->texture,
 		matrix, alpha);
-
-	// TODO: don't send the frame done event now
-	wlr_surface_send_frame_done(surface, when);
 }
 
-static void render_surface(struct sway_output *output, struct timespec *when,
-		struct wlr_surface *surface, double ox, double oy) {
-	struct render_data data = {
-		.output = output,
-		.when = when,
-		.alpha = 1.0f,
-	};
-
-	output_surface_for_each_surface(surface, ox, oy, &data.root_geo,
-		render_surface_iterator, &data);
-}
-
-static void render_view(struct sway_output *output, struct timespec *when,
-		struct sway_view *view) {
-	struct render_data data = {
-		.output = output,
-		.when = when,
-		.alpha = view->swayc->alpha,
-	};
-
-	output_view_for_each_surface(view, &data.root_geo,
-		render_surface_iterator, &data);
-}
-
-static void render_layer(struct sway_output *output, struct timespec *when,
+static void render_layer(struct sway_output *output,
 		struct wl_list *layer_surfaces) {
-	struct sway_layer_surface *layer_surface;
-	wl_list_for_each(layer_surface, layer_surfaces, link) {
-		struct wlr_layer_surface *wlr_layer_surface =
-			layer_surface->layer_surface;
-		render_surface(output, when, wlr_layer_surface->surface,
-			layer_surface->geo.x, layer_surface->geo.y);
-	}
+	struct render_data data = { .output = output, .alpha = 1.0f };
+	layer_for_each_surface(layer_surfaces, &data.root_geo,
+		render_surface_iterator, &data);
 }
 
-struct render_view_data {
-	struct sway_output *output;
-	struct timespec *when;
-};
+static void render_unmanaged(struct sway_output *output,
+		struct wl_list *unmanaged) {
+	struct render_data data = { .output = output, .alpha = 1.0f };
+	unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
+		render_surface_iterator, &data);
+}
 
-static void render_view_iterator(struct sway_container *con, void *_data) {
-	struct render_view_data *data = _data;
-
+static void render_container_iterator(struct sway_container *con,
+		void *_data) {
+	struct sway_output *output = _data;
 	if (!sway_assert(con->type == C_VIEW, "expected a view")) {
 		return;
 	}
+	struct render_data data = { .output = output, .alpha = con->alpha };
+	output_view_for_each_surface(con->sway_view, &data.root_geo,
+		render_surface_iterator, &data);
+}
 
-	render_view(data->output, data->when, con->sway_view);
+static void render_container(struct sway_output *output,
+		struct sway_container *con) {
+	container_descendants(con, C_VIEW, render_container_iterator, output);
+}
+
+static struct sway_container *output_get_active_workspace(
+		struct sway_output *output) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, output->swayc);
+	if (!focus) {
+		// We've never been to this output before
+		focus = output->swayc->children->items[0];
+	}
+	struct sway_container *workspace = focus;
+	if (workspace->type != C_WORKSPACE) {
+		workspace = container_parent(workspace, C_WORKSPACE);
+	}
+	return workspace;
 }
 
 static void render_output(struct sway_output *output, struct timespec *when,
@@ -250,40 +273,17 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	wlr_renderer_clear(renderer, clear_color);
 
-	render_layer(output, when,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-	render_layer(output, when,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-	// Render all views in the current workspace
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus =
-		seat_get_focus_inactive(seat, output->swayc);
-	if (!focus) {
-		// We've never been to this output before
-		focus = output->swayc->children->items[0];
-	}
-	struct sway_container *workspace = focus->type == C_WORKSPACE ?
-		focus : container_parent(focus, C_WORKSPACE);
-	struct render_view_data data = { .output = output, .when = when };
-	container_descendants(workspace, C_VIEW, render_view_iterator, &data);
+	struct sway_container *workspace = output_get_active_workspace(output);
+	render_container(output, workspace);
 
-	// Render unmanaged views on top
-	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
-	struct sway_xwayland_unmanaged *unmanaged_surface;
-	wl_list_for_each(unmanaged_surface, unmanaged, link) {
-		struct wlr_xwayland_surface *xsurface =
-			unmanaged_surface->wlr_xwayland_surface;
-		double ox = unmanaged_surface->lx - output->swayc->x;
-		double oy = unmanaged_surface->ly - output->swayc->y;
-		render_surface(output, when, xsurface->surface, ox, oy);
-	}
+	render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
 
 	// TODO: consider revising this when fullscreen windows are supported
-	render_layer(output, when,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
-	render_layer(output, when,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 renderer_end:
 	if (root_container.sway_root->debug_tree) {
@@ -296,6 +296,74 @@ renderer_end:
 		return;
 	}
 	output->last_frame = *when;
+}
+
+struct send_frame_done_data {
+	struct root_geometry root_geo;
+	struct sway_output *output;
+	struct timespec *when;
+};
+
+static void send_frame_done_iterator(struct wlr_surface *surface,
+		int sx, int sy, void *_data) {
+	struct send_frame_done_data *data = _data;
+
+	bool intersects = get_surface_box(&data->root_geo, data->output, surface,
+		sx, sy, NULL);
+	if (intersects) {
+		wlr_surface_send_frame_done(surface, data->when);
+	}
+}
+
+static void send_frame_done_layer(struct send_frame_done_data *data,
+		struct wl_list *layer_surfaces) {
+	layer_for_each_surface(layer_surfaces, &data->root_geo,
+		send_frame_done_iterator, data);
+}
+
+static void send_frame_done_unmanaged(struct send_frame_done_data *data,
+		struct wl_list *unmanaged) {
+	unmanaged_for_each_surface(unmanaged, data->output, &data->root_geo,
+		send_frame_done_iterator, data);
+}
+
+static void send_frame_done_container_iterator(struct sway_container *con,
+		void *_data) {
+	struct send_frame_done_data *data = _data;
+	if (!sway_assert(con->type == C_VIEW, "expected a view")) {
+		return;
+	}
+	output_view_for_each_surface(con->sway_view, &data->root_geo,
+		send_frame_done_iterator, data);
+}
+
+static void send_frame_done_container(struct send_frame_done_data *data,
+		struct sway_container *con) {
+	container_descendants(con, C_VIEW,
+		send_frame_done_container_iterator, data);
+}
+
+static void send_frame_done(struct sway_output *output, struct timespec *when) {
+	struct send_frame_done_data data = {
+		.output = output,
+		.when = when,
+	};
+
+	send_frame_done_layer(&data,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+	send_frame_done_layer(&data,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+
+	struct sway_container *workspace = output_get_active_workspace(output);
+	send_frame_done_container(&data, workspace);
+
+	send_frame_done_unmanaged(&data,
+		&root_container.sway_root->xwayland_unmanaged);
+
+	send_frame_done_layer(&data,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	send_frame_done_layer(&data,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 }
 
 static void damage_handle_frame(struct wl_listener *listener, void *data) {
@@ -322,7 +390,8 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 
 	pixman_region32_fini(&damage);
 
-	// TODO: send frame done events here instead of inside render_surface
+	// Send frame done to all visible surfaces
+	send_frame_done(output, &now);
 }
 
 void output_damage_whole(struct sway_output *output) {
@@ -341,10 +410,6 @@ static void damage_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	struct sway_output *output = data->output;
 	float rotation = data->root_geo.rotation;
 	bool whole = data->whole;
-
-	if (!wlr_surface_has_buffer(surface)) {
-		return;
-	}
 
 	struct wlr_box box;
 	bool intersects = get_surface_box(&data->root_geo, data->output, surface,
@@ -387,7 +452,7 @@ void output_damage_surface(struct sway_output *output, double ox, double oy,
 		.whole = whole,
 	};
 
-	output_surface_for_each_surface(surface, ox, oy, &data.root_geo,
+	surface_for_each_surface(surface, ox, oy, &data.root_geo,
 		damage_surface_iterator, &data);
 }
 
