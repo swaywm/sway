@@ -244,10 +244,7 @@ static int move_offs(enum movement_direction move_dir) {
 /* Gets the index of the most extreme member based on the movement offset */
 static int container_limit(struct sway_container *container,
 		enum movement_direction move_dir) {
-	if (container->children->length == 0) {
-		return 0;
-	}
-	return move_offs(move_dir) < 0 ? 0 : container->children->length - 1;
+	return move_offs(move_dir) < 0 ? 0 : container->children->length;
 }
 
 /* Takes one child, sets it aside, wraps the rest of the children in a new
@@ -306,7 +303,6 @@ void container_move(struct sway_container *container,
 				container_type_to_str(current->type), current->name);
 
 		int index = index_child(current);
-		int limit = container_limit(parent, move_dir);
 
 		switch (current->type) {
 		case C_OUTPUT: {
@@ -350,7 +346,8 @@ void container_move(struct sway_container *container,
 		case C_CONTAINER:
 		case C_VIEW:
 			if (is_parallel(parent->layout, move_dir)) {
-				if (index == limit) {
+				if ((index == parent->children->length - 1 && offs > 0)
+						|| (index == 0 && offs < 0)) {
 					if (current->parent == container->parent) {
 						wlr_log(L_DEBUG, "Hit limit, selecting parent");
 						current = current->parent;
@@ -408,7 +405,7 @@ void container_move(struct sway_container *container,
 		case C_CONTAINER:
 			if (is_parallel(sibling->layout, move_dir)) {
 				int limit = container_limit(sibling, invert_movement(move_dir));
-				limit = limit != 0 ? limit + 1 : limit; // Convert to index
+				wlr_log(L_DEBUG, "limit: %d", limit);
 				wlr_log(L_DEBUG,
 						"Reparenting container (parallel) to index %d "
 						"(move dir: %d)", limit, move_dir);
