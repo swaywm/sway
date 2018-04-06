@@ -401,6 +401,17 @@ void output_damage_view(struct sway_output *output, struct sway_view *view,
 		damage_surface_iterator, &data);
 }
 
+static void output_damage_whole_container_iterator(struct sway_container *con,
+		void *data) {
+	struct sway_output *output = data;
+
+	if (!sway_assert(con->type != C_VIEW, "expected a view")) {
+		return;
+	}
+
+	output_damage_view(output, con->sway_view, true);
+}
+
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	float scale = output->wlr_output->scale;
@@ -411,6 +422,9 @@ void output_damage_whole_container(struct sway_output *output,
 		.height = con->height * scale,
 	};
 	wlr_output_damage_add_box(output->damage, &box);
+
+	container_descendants(con, C_VIEW, output_damage_whole_container_iterator,
+		output);
 }
 
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
