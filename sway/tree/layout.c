@@ -403,7 +403,6 @@ void container_move(struct sway_container *container,
 			int limit = container_limit(sibling, move_dir);
 			wlr_log(L_DEBUG, "Reparenting container (paralell)");
 			limit = limit != 0 ? limit + 1 : limit; // Convert to index
-			wlr_log(L_DEBUG, "Reparenting container (paralell) %d", limit);
 			container_remove_child(container);
 			container_insert_child(sibling, container, limit);
 			container->width = container->height = 0;
@@ -430,6 +429,18 @@ void container_move(struct sway_container *container,
 		sway_assert(0, "Not expecting to see container of type %s here",
 				container_type_to_str(sibling->type));
 		return;
+	}
+
+	struct sway_container *last_ws = old_parent;
+	struct sway_container *next_ws = container->parent;
+	if (last_ws && last_ws->type != C_WORKSPACE) {
+		last_ws = container_parent(last_ws, C_WORKSPACE);
+	}
+	if (next_ws && next_ws->type != C_WORKSPACE) {
+		next_ws = container_parent(next_ws, C_WORKSPACE);
+	}
+	if (last_ws && next_ws && last_ws != next_ws) {
+		ipc_event_workspace(last_ws, container, "focus");
 	}
 }
 
