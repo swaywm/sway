@@ -34,12 +34,12 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 		struct sway_container *focus, int x, int y) {
 	int text_width, text_height;
 	get_text_size(cairo, "monospace", &text_width, &text_height,
-		1, false, "%s '%s' %s %dx%d@%d,%d",
-		container_type_to_str(container->type), container->name,
+		1, false, "%s id:%zd '%s' %s %dx%d@%d,%d",
+		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
 	cairo_rectangle(cairo, x, y, text_width, text_height);
-	cairo_set_source_u32(cairo, 0xFFFFFFFF);
+	cairo_set_source_u32(cairo, 0xFFFFFFE0);
 	cairo_fill(cairo);
 	cairo_move_to(cairo, x, y);
 	if (focus == container) {
@@ -47,8 +47,8 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 	} else {
 		cairo_set_source_u32(cairo, 0x000000FF);
 	}
-	pango_printf(cairo, "monospace", 1, false, "%s '%s' %s %dx%d@%d,%d",
-		container_type_to_str(container->type), container->name,
+	pango_printf(cairo, "monospace", 1, false, "%s id:%zd '%s' %s %dx%d@%d,%d",
+		container_type_to_str(container->type), container->id, container->name,
 		layout_to_str(container->layout),
 		container->width, container->height, container->x, container->y);
 	int height = text_height;

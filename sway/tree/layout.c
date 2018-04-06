@@ -381,53 +381,61 @@ void container_move(struct sway_container *container,
 	int index = index_child(container);
 	struct sway_container *old_parent = container->parent;
 
-	switch (sibling->type) {
-	case C_VIEW:
-		if (sibling->parent == container->parent) {
-			wlr_log(L_DEBUG, "Swapping siblings");
-			sibling->parent->children->items[index + offs] = container;
-			sibling->parent->children->items[index] = sibling;
-			arrange_windows(sibling->parent, -1, -1);
-		} else {
-			wlr_log(L_DEBUG, "Promoting to sibling of cousin");
-			container_insert_child(sibling->parent, container,
-					index_child(sibling) + (offs > 0 ? 0 : 1));
-			container->width = container->height = 0;
-			arrange_windows(sibling->parent, -1, -1);
-			arrange_windows(old_parent, -1, -1);
-		}
-		break;
-	case C_WORKSPACE: // Note: only in the case of moving between outputs
-	case C_CONTAINER:
-		if (is_parallel(sibling->layout, move_dir)) {
-			int limit = container_limit(sibling, move_dir);
-			wlr_log(L_DEBUG, "Reparenting container (paralell)");
-			limit = limit != 0 ? limit + 1 : limit; // Convert to index
-			container_insert_child(sibling, container, limit);
-			container->width = container->height = 0;
-			arrange_windows(sibling, -1, -1);
-			arrange_windows(old_parent, -1, -1);
-		} else {
-			wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
-			container_remove_child(container);
-			struct sway_container *focus_inactive = seat_get_focus_inactive(
-					config->handler_context.seat, sibling);
-			if (focus_inactive) {
-				container_add_sibling(focus_inactive, container);
-			} else if (sibling->children->length) {
-				container_add_sibling(sibling->children->items[0], container);
+	while (sibling) {
+		switch (sibling->type) {
+		case C_VIEW:
+			if (sibling->parent == container->parent) {
+				wlr_log(L_DEBUG, "Swapping siblings");
+				sibling->parent->children->items[index + offs] = container;
+				sibling->parent->children->items[index] = sibling;
+				arrange_windows(sibling->parent, -1, -1);
 			} else {
-				container_add_child(sibling, container);
+				wlr_log(L_DEBUG, "Promoting to sibling of cousin");
+				container_insert_child(sibling->parent, container,
+						index_child(sibling) + (offs > 0 ? 0 : 1));
+				container->width = container->height = 0;
+				arrange_windows(sibling->parent, -1, -1);
+				arrange_windows(old_parent, -1, -1);
 			}
-			container->width = container->height = 0;
-			arrange_windows(sibling, -1, -1);
-			arrange_windows(old_parent, -1, -1);
+			sibling = NULL;
+			break;
+		case C_WORKSPACE: // Note: only in the case of moving between outputs
+		case C_CONTAINER:
+			if (is_parallel(sibling->layout, move_dir)) {
+				int limit = container_limit(sibling, move_dir);
+				wlr_log(L_DEBUG, "Reparenting container (paralell)");
+				limit = limit != 0 ? limit + 1 : limit; // Convert to index
+				container_insert_child(sibling, container, limit);
+				container->width = container->height = 0;
+				arrange_windows(sibling, -1, -1);
+				arrange_windows(old_parent, -1, -1);
+				sibling = NULL;
+			} else {
+				wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
+				container_remove_child(container);
+				struct sway_container *focus_inactive = seat_get_focus_inactive(
+						config->handler_context.seat, sibling);
+				wlr_log(L_DEBUG, "Focus inactive: %zd", focus_inactive ?
+						focus_inactive->id : 0);
+				if (focus_inactive) {
+					sibling = focus_inactive;
+					continue;
+				} else if (sibling->children->length) {
+					container_add_sibling(sibling->children->items[0], container);
+				} else {
+					container_add_child(sibling, container);
+				}
+				container->width = container->height = 0;
+				arrange_windows(sibling, -1, -1);
+				arrange_windows(old_parent, -1, -1);
+				sibling = NULL;
+			}
+			break;
+		default:
+			sway_assert(0, "Not expecting to see container of type %s here",
+					container_type_to_str(sibling->type));
+			return;
 		}
-		break;
-	default:
-		sway_assert(0, "Not expecting to see container of type %s here",
-				container_type_to_str(sibling->type));
-		return;
 	}
 
 	if (old_parent) {
