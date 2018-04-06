@@ -11,6 +11,25 @@
 #include <wlr/types/wlr_output.h>
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+static const char *ipc_json_layout_description(enum sway_container_layout l) {
+	switch (l) {
+	case L_VERT:
+		return "splitv";
+	case L_HORIZ:
+		return "splith";
+	case L_TABBED:
+		return "tabbed";
+	case L_STACKED:
+		return "stacked";
+	case L_FLOATING:
+		return "floating";
+	case L_NONE:
+	case L_LAYOUTS:
+		break;
+	}
+	return "none";
+}
+
 json_object *ipc_json_get_version() {
 	int major = 0, minor = 0, patch = 0;
 	json_object *version = json_object_new_object();
@@ -115,7 +134,9 @@ static void ipc_json_describe_output(struct sway_container *container, json_obje
 			json_object_new_int(mode->refresh));
 		json_object_array_add(modes_array, mode_object);
 	}
+
 	json_object_object_add(object, "modes", modes_array);
+	json_object_object_add(object, "layout", json_object_new_string("output"));
 }
 
 static void ipc_json_describe_workspace(struct sway_container *workspace,
@@ -127,12 +148,23 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 			json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
+
+	const char *layout = ipc_json_layout_description(workspace->workspace_layout);
+	json_object_object_add(object, "layout", json_object_new_string(layout));
 }
 
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
 	json_object_object_add(object, "name",
 			c->name ? json_object_new_string(c->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("con"));
+
+	if (c->parent) {
+		enum sway_container_layout layout = (c->parent->type == C_CONTAINER) ?
+			c->parent->layout : c->layout;
+
+		json_object_object_add(object, "layout",
+			json_object_new_string(ipc_json_layout_description(layout)));
+	}
 }
 
 json_object *ipc_json_describe_container(struct sway_container *c) {

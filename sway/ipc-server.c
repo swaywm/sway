@@ -241,10 +241,19 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 	return 0;
 }
 
+static bool ipc_has_event_listeners(enum ipc_command_type event) {
+	for (int i = 0; i < ipc_client_list->length; i++) {
+		struct ipc_client *client = ipc_client_list->items[i];
+		if ((client->subscribed_events & event_mask(event)) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static void ipc_send_event(const char *json_string, enum ipc_command_type event) {
-	int i;
 	struct ipc_client *client;
-	for (i = 0; i < ipc_client_list->length; i++) {
+	for (int i = 0; i < ipc_client_list->length; i++) {
 		client = ipc_client_list->items[i];
 		if ((client->subscribed_events & event_mask(event)) == 0) {
 			continue;
@@ -259,6 +268,9 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 
 void ipc_event_workspace(struct sway_container *old,
 		struct sway_container *new, const char *change) {
+	if (!ipc_has_event_listeners(IPC_EVENT_WORKSPACE)) {
+		return;
+	}
 	wlr_log(L_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -284,6 +296,9 @@ void ipc_event_workspace(struct sway_container *old,
 }
 
 void ipc_event_window(struct sway_container *window, const char *change) {
+	if (!ipc_has_event_listeners(IPC_EVENT_WINDOW)) {
+		return;
+	}
 	wlr_log(L_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
@@ -295,6 +310,9 @@ void ipc_event_window(struct sway_container *window, const char *change) {
 }
 
 void ipc_event_barconfig_update(struct bar_config *bar) {
+	if (!ipc_has_event_listeners(IPC_EVENT_BARCONFIG_UPDATE)) {
+		return;
+	}
 	wlr_log(L_DEBUG, "Sending barconfig_update event");
 	json_object *json = ipc_json_describe_bar_config(bar);
 
@@ -304,6 +322,9 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 }
 
 void ipc_event_mode(const char *mode) {
+	if (!ipc_has_event_listeners(IPC_EVENT_MODE)) {
+		return;
+	}
 	wlr_log(L_DEBUG, "Sending mode::%s event", mode);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(mode));
