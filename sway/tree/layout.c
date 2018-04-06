@@ -103,12 +103,13 @@ static int index_child(const struct sway_container *child) {
 
 void container_insert_child(struct sway_container *parent,
 		struct sway_container *child, int i) {
-	struct sway_container *old_parent = NULL;
+	struct sway_container *old_parent = child->parent;
+	if (old_parent) {
+		container_remove_child(child);
+	}
 	list_insert(parent->children, i, child);
 	child->parent = parent;
-	if (old_parent && old_parent != parent) {
-		wl_signal_emit(&child->events.reparent, old_parent);
-	}
+	wl_signal_emit(&child->events.reparent, old_parent);
 }
 
 struct sway_container *container_add_sibling(struct sway_container *fixed,
@@ -123,9 +124,7 @@ struct sway_container *container_add_sibling(struct sway_container *fixed,
 	int i = index_child(fixed);
 	list_insert(parent->children, i + 1, active);
 	active->parent = parent;
-	if (old_parent && old_parent != parent) {
-		wl_signal_emit(&active->events.reparent, old_parent);
-	}
+	wl_signal_emit(&active->events.reparent, old_parent);
 	return active->parent;
 }
 
@@ -268,6 +267,7 @@ static void workspace_rejigger(struct sway_container *ws,
 
 	container_flatten(ws);
 	container_reap_empty_recursive(original_parent);
+	wl_signal_emit(&child->events.reparent, original_parent);
 	arrange_windows(ws, -1, -1);
 }
 
@@ -287,6 +287,7 @@ void container_move(struct sway_container *container,
 	if (parent != container_flatten(parent)) {
 		// Special case: we were the last one in this container, so flatten it
 		// and leave
+		update_debug_tree();
 		return;
 	}
 
@@ -353,7 +354,6 @@ void container_move(struct sway_container *container,
 								"promoting descendant to sibling");
 						// Special case
 						struct sway_container *old_parent = container->parent;
-						container_remove_child(container);
 						container_insert_child(current->parent, container,
 								index + (offs < 0 ? 0 : 1));
 						container->width = container->height = 0;
@@ -390,7 +390,6 @@ void container_move(struct sway_container *container,
 			arrange_windows(sibling->parent, -1, -1);
 		} else {
 			wlr_log(L_DEBUG, "Promoting to sibling of cousin");
-			container_remove_child(container);
 			container_insert_child(sibling->parent, container,
 					index_child(sibling) + (offs > 0 ? 0 : 1));
 			container->width = container->height = 0;
@@ -404,7 +403,6 @@ void container_move(struct sway_container *container,
 			int limit = container_limit(sibling, move_dir);
 			wlr_log(L_DEBUG, "Reparenting container (paralell)");
 			limit = limit != 0 ? limit + 1 : limit; // Convert to index
-			container_remove_child(container);
 			container_insert_child(sibling, container, limit);
 			container->width = container->height = 0;
 			arrange_windows(sibling, -1, -1);
