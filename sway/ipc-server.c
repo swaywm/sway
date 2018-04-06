@@ -1172,7 +1172,7 @@ void ipc_event_binding_keyboard(struct sway_binding *sb) {
 				json_object *str = json_object_new_string(buffer);
 				json_object_array_add(symbols, str);
 				if (i == 0) {
-					symbol = str;
+					symbol = json_object_new_string(buffer);
 				}
 			}
 		}
