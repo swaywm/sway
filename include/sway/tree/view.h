@@ -28,6 +28,8 @@ struct sway_view_impl {
 	void (*configure)(struct sway_view *view, double ox, double oy, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
+	void (*for_each_surface)(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
@@ -158,6 +160,9 @@ void view_close(struct sway_view *view);
 void view_damage_whole(struct sway_view *view);
 
 void view_damage_from(struct sway_view *view);
+
+void view_for_each_surface(struct sway_view *view,
+	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation
 

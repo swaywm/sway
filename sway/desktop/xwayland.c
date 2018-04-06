@@ -58,6 +58,9 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	surface->lx = xsurface->x;
 	surface->ly = xsurface->y;
 	desktop_damage_whole_surface(xsurface->surface, surface->lx, surface->ly);
+
+	// TODO: we don't send surface enter/leave events to xwayland unmanaged
+	// surfaces, but xwayland doesn't support HiDPI anyway
 }
 
 static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {

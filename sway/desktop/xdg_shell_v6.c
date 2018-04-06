@@ -118,6 +118,15 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+static void for_each_surface(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (xdg_shell_v6_view_from_view(view) == NULL) {
+		return;
+	}
+	wlr_xdg_surface_v6_for_each_surface(view->wlr_xdg_surface_v6, iterator,
+		user_data);
+}
+
 static void _close(struct sway_view *view) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return;
@@ -146,6 +155,7 @@ static const struct sway_view_impl view_impl = {
 	.get_prop = get_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.for_each_surface = for_each_surface,
 	.close = _close,
 	.destroy = destroy,
 };
