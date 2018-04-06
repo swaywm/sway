@@ -102,28 +102,6 @@ static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
 	box->height = view->height;
 }
 
-static void view_update_outputs(struct sway_view *view,
-		const struct wlr_box *before) {
-	struct wlr_box box;
-	view_get_layout_box(view, &box);
-
-	struct wlr_output_layout *output_layout =
-		root_container.sway_root->output_layout;
-	struct wlr_output_layout_output *layout_output;
-	wl_list_for_each(layout_output, &output_layout->outputs, link) {
-		bool intersected = before != NULL && wlr_output_layout_intersects(
-			output_layout, layout_output->output, before);
-		bool intersects = wlr_output_layout_intersects(output_layout,
-			layout_output->output, &box);
-		if (intersected && !intersects) {
-			wlr_surface_send_leave(view->surface, layout_output->output);
-		}
-		if (!intersected && intersects) {
-			wlr_surface_send_enter(view->surface, layout_output->output);
-		}
-	}
-}
-
 static void view_subsurface_create(struct sway_view *view,
 	struct wlr_subsurface *subsurface);
 
@@ -136,6 +114,36 @@ static void view_handle_surface_new_subsurface(struct wl_listener *listener,
 		wl_container_of(listener, view, surface_new_subsurface);
 	struct wlr_subsurface *subsurface = data;
 	view_subsurface_create(view, subsurface);
+}
+
+static void view_handle_container_reparent(struct wl_listener *listener,
+		void *data) {
+	struct sway_view *view =
+		wl_container_of(listener, view, container_reparent);
+	struct sway_container *old_parent = data;
+
+	struct sway_container *old_output = old_parent;
+	if (old_output != NULL && old_output->type != C_OUTPUT) {
+		old_output = container_parent(old_output, C_OUTPUT);
+	}
+
+	struct sway_container *new_output = view->swayc->parent;
+	if (new_output != NULL && new_output->type != C_OUTPUT) {
+		new_output = container_parent(new_output, C_OUTPUT);
+	}
+
+	if (old_output == new_output) {
+		return;
+	}
+
+	if (old_output != NULL) {
+		wlr_surface_send_leave(view->surface,
+			old_output->sway_output->wlr_output);
+	}
+	if (new_output != NULL) {
+		wlr_surface_send_enter(view->surface,
+			new_output->sway_output->wlr_output);
+	}
 }
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
@@ -156,11 +164,14 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		&view->surface_new_subsurface);
 	view->surface_new_subsurface.notify = view_handle_surface_new_subsurface;
 
+	wl_signal_add(&view->swayc->events.reparent, &view->container_reparent);
+	view->container_reparent.notify = view_handle_container_reparent;
+
 	arrange_windows(cont->parent, -1, -1);
 	input_manager_set_focus(input_manager, cont);
 
 	view_damage_whole(view);
-	view_update_outputs(view, NULL);
+	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
 void view_unmap(struct sway_view *view) {
@@ -172,9 +183,10 @@ void view_unmap(struct sway_view *view) {
 
 	view_damage_whole(view);
 
-	struct sway_container *parent = container_destroy(view->swayc);
-
 	wl_list_remove(&view->surface_new_subsurface.link);
+	wl_list_remove(&view->container_reparent.link);
+
+	struct sway_container *parent = container_destroy(view->swayc);
 
 	view->swayc = NULL;
 	view->surface = NULL;
@@ -187,12 +199,9 @@ void view_update_position(struct sway_view *view, double ox, double oy) {
 		return;
 	}
 
-	struct wlr_box box;
-	view_get_layout_box(view, &box);
 	view_damage_whole(view);
 	view->swayc->x = ox;
 	view->swayc->y = oy;
-	view_update_outputs(view, &box);
 	view_damage_whole(view);
 }
 
@@ -201,12 +210,9 @@ void view_update_size(struct sway_view *view, int width, int height) {
 		return;
 	}
 
-	struct wlr_box box;
-	view_get_layout_box(view, &box);
 	view_damage_whole(view);
 	view->width = width;
 	view->height = height;
-	view_update_outputs(view, &box);
 	view_damage_whole(view);
 }
 
