@@ -228,6 +228,9 @@ static void apply_vert_layout(struct sway_container *container, const double x,
 
 void arrange_windows(struct sway_container *container,
 		double width, double height) {
+	if (config->reloading) {
+		return;
+	}
 	int i;
 	if (width == -1 || height == -1) {
 		width = container->width;
@@ -246,7 +249,6 @@ void arrange_windows(struct sway_container *container,
 	double x = 0, y = 0;
 	switch (container->type) {
 	case C_ROOT:
-		// TODO: wlr_output_layout probably
 		for (i = 0; i < container->children->length; ++i) {
 			struct sway_container *output = container->children->items[i];
 			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
