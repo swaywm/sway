@@ -242,19 +242,13 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 }
 
 static bool ipc_has_event_listeners(enum ipc_command_type event) {
-	bool has_listeners = false;
-
-	struct ipc_client *client;
 	for (int i = 0; i < ipc_client_list->length; i++) {
-		client = ipc_client_list->items[i];
+		struct ipc_client *client = ipc_client_list->items[i];
 		if ((client->subscribed_events & event_mask(event)) == 0) {
-			continue;
+			return true;
 		}
-		has_listeners = true;
-		break;
 	}
-
-	return has_listeners;
+	return false;
 }
 
 static void ipc_send_event(const char *json_string, enum ipc_command_type event) {
