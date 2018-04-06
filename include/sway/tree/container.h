@@ -24,6 +24,7 @@ enum sway_container_type {
 	C_CONTAINER,
 	C_VIEW,
 
+	// Keep last
 	C_TYPES,
 };
 
@@ -34,9 +35,6 @@ enum sway_container_layout {
 	L_STACKED,
 	L_TABBED,
 	L_FLOATING,
-
-	// Keep last
-	L_LAYOUTS,
 };
 
 enum sway_container_border {

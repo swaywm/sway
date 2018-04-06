@@ -24,7 +24,6 @@ static const char *ipc_json_layout_description(enum sway_container_layout l) {
 	case L_FLOATING:
 		return "floating";
 	case L_NONE:
-	case L_LAYOUTS:
 		break;
 	}
 	return "none";
