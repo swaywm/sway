@@ -251,6 +251,7 @@ static void workspace_rejigger(struct sway_container *ws,
 	container_flatten(ws);
 	container_reap_empty_recursive(original_parent);
 	wl_signal_emit(&child->events.reparent, original_parent);
+	container_create_notify(new_parent);
 	arrange_windows(ws, -1, -1);
 }
 
