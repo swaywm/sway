@@ -12,6 +12,7 @@
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screenshooter.h>
+#include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_output.h>
 #include <wlr/types/wlr_wl_shell.h>
@@ -103,6 +104,12 @@ bool server_init(struct sway_server *server) {
 			image->width * 4, image->width, image->height, image->hotspot_x,
 			image->hotspot_y);
 	}
+
+	// TODO: Integration with sway borders
+	struct wlr_server_decoration_manager *deco_manager =
+		wlr_server_decoration_manager_create(server->wl_display);
+	wlr_server_decoration_manager_set_default_mode(
+		deco_manager, WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
 
 	struct wlr_egl *egl = wlr_backend_get_egl(server->backend);
 	wlr_linux_dmabuf_create(server->wl_display, egl);
