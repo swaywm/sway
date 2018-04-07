@@ -56,7 +56,7 @@ Installa queste dipendenze:
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
