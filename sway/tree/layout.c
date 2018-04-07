@@ -872,7 +872,7 @@ struct sway_container *container_get_in_direction(
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
-				return seat_get_focus_by_type(seat, next, C_VIEW);
+				return seat_get_focus_inactive_view(seat, next);
 			} else {
 				return next;
 			}
@@ -910,7 +910,7 @@ struct sway_container *container_get_in_direction(
 				wlr_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, desired_con);
-				struct sway_container *next = seat_get_focus_by_type(seat, desired_con, C_VIEW);
+				struct sway_container *next = seat_get_focus_inactive_view(seat, desired_con);
 				return next;
 			}
 		}
