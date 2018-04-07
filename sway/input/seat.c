@@ -84,7 +84,6 @@ static void seat_send_focus(struct sway_seat *seat,
 		wlr_seat_keyboard_notify_enter(
 				seat->wlr_seat, view->surface, NULL, 0, NULL);
 	}
-
 }
 
 static void handle_seat_container_destroy(struct wl_listener *listener,
@@ -405,23 +404,29 @@ void seat_set_focus_warp(struct sway_seat *seat,
 				container_destroy(last_ws);
 			}
 		}
-		struct sway_container *last_output = last_focus;
-		if (last_output && last_output->type != C_OUTPUT) {
-			last_output = container_parent(last_output, C_OUTPUT);
-		}
-		struct sway_container *new_output = container;
-		if (new_output && new_output->type != C_OUTPUT) {
-			new_output = container_parent(new_output, C_OUTPUT);
-		}
-		if (new_output && last_output && new_output != last_output
-				&& config->mouse_warping && warp) {
-			struct wlr_output *output = new_output->sway_output->wlr_output;
-			double x = container->x + output->lx + container->width / 2.0;
-			double y = container->y + output->ly + container->height / 2.0;
-			if (!wlr_output_layout_contains_point(
-					root_container.sway_root->output_layout,
-					output, seat->cursor->cursor->x, seat->cursor->cursor->y)) {
-				wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
+
+		if (config->mouse_warping && warp) {
+			struct sway_container *last_output = last_focus;
+			if (last_output && last_output->type != C_OUTPUT) {
+				last_output = container_parent(last_output, C_OUTPUT);
+			}
+			struct sway_container *new_output = container;
+			if (new_output && new_output->type != C_OUTPUT) {
+				new_output = container_parent(new_output, C_OUTPUT);
+			}
+			if (new_output && last_output && new_output != last_output) {
+				double x = new_output->x + container->x +
+					container->width / 2.0;
+				double y = new_output->y + container->y +
+					container->height / 2.0;
+				struct wlr_output *wlr_output =
+					new_output->sway_output->wlr_output;
+				if (!wlr_output_layout_contains_point(
+						root_container.sway_root->output_layout,
+						wlr_output, seat->cursor->cursor->x,
+						seat->cursor->cursor->y)) {
+					wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
+				}
 			}
 		}
 	}
@@ -442,6 +447,29 @@ void seat_set_focus(struct sway_seat *seat,
 	seat_set_focus_warp(seat, container, true);
 }
 
+void seat_set_focus_surface(struct sway_seat *seat,
+		struct wlr_surface *surface) {
+	if (seat->focused_layer != NULL) {
+		return;
+	}
+	if (seat->has_focus) {
+		struct sway_container *focus = seat_get_focus(seat);
+		if (focus->type == C_VIEW) {
+			wlr_seat_keyboard_clear_focus(seat->wlr_seat);
+			view_set_activated(focus->sway_view, false);
+		}
+		seat->has_focus = false;
+	}
+	struct wlr_keyboard *keyboard =
+		wlr_seat_get_keyboard(seat->wlr_seat);
+	if (keyboard) {
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat, surface,
+			keyboard->keycodes, keyboard->num_keycodes, &keyboard->modifiers);
+	} else {
+		wlr_seat_keyboard_notify_enter(seat->wlr_seat, surface, NULL, 0, NULL);
+	}
+}
+
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface *layer) {
 	if (!layer && seat->focused_layer) {
@@ -458,25 +486,9 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	} else if (!layer || seat->focused_layer == layer) {
 		return;
 	}
-	if (seat->has_focus) {
-		struct sway_container *focus = seat_get_focus(seat);
-		if (focus->type == C_VIEW) {
-			wlr_seat_keyboard_clear_focus(seat->wlr_seat);
-			view_set_activated(focus->sway_view, false);
-		}
-	}
+	seat_set_focus_surface(seat, layer->surface);
 	if (layer->layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
 		seat->focused_layer = layer;
-	}
-	struct wlr_keyboard *keyboard =
-		wlr_seat_get_keyboard(seat->wlr_seat);
-	if (keyboard) {
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-				layer->surface, keyboard->keycodes,
-				keyboard->num_keycodes, &keyboard->modifiers);
-	} else {
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-				layer->surface, NULL, 0, NULL);
 	}
 }
 

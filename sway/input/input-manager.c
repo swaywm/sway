@@ -333,7 +333,7 @@ bool input_manager_has_focus(struct sway_input_manager *input,
 
 void input_manager_set_focus(struct sway_input_manager *input,
 		struct sway_container *container) {
-	struct sway_seat *seat ;
+	struct sway_seat *seat;
 	wl_list_for_each(seat, &input->seats, link) {
 		seat_set_focus(seat, container);
 	}
