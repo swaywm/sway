@@ -410,7 +410,7 @@ static void output_damage_whole_container_iterator(struct sway_container *con,
 		void *data) {
 	struct sway_output *output = data;
 
-	if (!sway_assert(con->type != C_VIEW, "expected a view")) {
+	if (!sway_assert(con->type == C_VIEW, "expected a view")) {
 		return;
 	}
 
