@@ -30,26 +30,7 @@ static void output_layout_handle_change(struct wl_listener *listener,
 	root_container.width = layout_box->width;
 	root_container.height = layout_box->height;
 
-	for (int i = 0 ; i < root_container.children->length; ++i) {
-		struct sway_container *output_container =
-			root_container.children->items[i];
-		if (output_container->type != C_OUTPUT) {
-			continue;
-		}
-		struct sway_output *output = output_container->sway_output;
-
-		const struct wlr_box *output_box =
-			wlr_output_layout_get_box(output_layout, output->wlr_output);
-		if (!output_box) {
-			continue;
-		}
-		output_container->x = output_box->x;
-		output_container->y = output_box->y;
-		output_container->width = output_box->width;
-		output_container->height = output_box->height;
-	}
-
-	arrange_windows(&root_container, -1, -1);
+	arrange_windows(&root_container, layout_box->width, layout_box->height);
 }
 
 struct sway_container *container_set_layout(struct sway_container *container,
@@ -551,19 +532,19 @@ void arrange_windows(struct sway_container *container,
 	case C_ROOT:
 		for (i = 0; i < container->children->length; ++i) {
 			struct sway_container *output = container->children->items[i];
+			const struct wlr_box *output_box = wlr_output_layout_get_box(
+				container->sway_root->output_layout,
+				output->sway_output->wlr_output);
+			output->x = output_box->x;
+			output->y = output_box->y;
+			output->width = output_box->width;
+			output->height = output_box->height;
 			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 					output->name, output->x, output->y);
-			arrange_windows(output, -1, -1);
+			arrange_windows(output, output_box->width, output_box->height);
 		}
 		return;
 	case C_OUTPUT:
-		{
-			int _width, _height;
-			wlr_output_effective_resolution(
-					container->sway_output->wlr_output, &_width, &_height);
-			width = container->width = _width;
-			height = container->height = _height;
-		}
 		// arrange all workspaces:
 		for (i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
