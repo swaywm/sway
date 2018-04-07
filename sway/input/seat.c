@@ -106,6 +106,20 @@ static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 	return NULL;
 }
 
+void seat_focus_inactive_children_for_each(struct sway_seat *seat,
+		struct sway_container *container,
+		void (*f)(struct sway_container *container, void *data), void *data) {
+	struct sway_seat_container *current = NULL;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (current->container->parent == NULL) {
+			continue;
+		}
+		if (current->container->parent == container) {
+			f(current->container, data);
+		}
+	}
+}
+
 struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 		struct sway_container *container) {
 	return seat_get_focus_by_type(seat, container, C_VIEW);
