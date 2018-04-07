@@ -143,9 +143,7 @@ static void destroy(struct sway_view *view) {
 	if (xdg_shell_v6_view == NULL) {
 		return;
 	}
-	wl_list_remove(&xdg_shell_v6_view->commit.link);
 	wl_list_remove(&xdg_shell_v6_view->destroy.link);
-	wl_list_remove(&xdg_shell_v6_view->new_popup.link);
 	wl_list_remove(&xdg_shell_v6_view->map.link);
 	wl_list_remove(&xdg_shell_v6_view->unmap.link);
 	free(xdg_shell_v6_view);
@@ -169,7 +167,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// TODO: Let floating views do whatever
 	view_update_size(view, xdg_shell_v6_view->pending_width,
 		xdg_shell_v6_view->pending_height);
-	view_damage_from(view);
+	view_damage(view, false);
 }
 
 static void handle_new_popup(struct wl_listener *listener, void *data) {
@@ -182,14 +180,28 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, unmap);
+
 	view_unmap(&xdg_shell_v6_view->view);
+
+	wl_list_remove(&xdg_shell_v6_view->commit.link);
+	wl_list_remove(&xdg_shell_v6_view->new_popup.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, map);
 	struct sway_view *view = &xdg_shell_v6_view->view;
+	struct wlr_xdg_surface_v6 *xdg_surface = view->wlr_xdg_surface_v6;
+
 	view_map(view, view->wlr_xdg_surface_v6->surface);
+
+	xdg_shell_v6_view->commit.notify = handle_commit;
+	wl_signal_add(&xdg_surface->surface->events.commit,
+		&xdg_shell_v6_view->commit);
+
+	xdg_shell_v6_view->new_popup.notify = handle_new_popup;
+	wl_signal_add(&xdg_surface->events.new_popup,
+		&xdg_shell_v6_view->new_popup);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -225,14 +237,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	// TODO:
 	// - Look up pid and open on appropriate workspace
 	// - Criteria
-
-	xdg_shell_v6_view->commit.notify = handle_commit;
-	wl_signal_add(&xdg_surface->surface->events.commit,
-		&xdg_shell_v6_view->commit);
-
-	xdg_shell_v6_view->new_popup.notify = handle_new_popup;
-	wl_signal_add(&xdg_surface->events.new_popup,
-		&xdg_shell_v6_view->new_popup);
 
 	xdg_shell_v6_view->map.notify = handle_map;
 	wl_signal_add(&xdg_surface->events.map, &xdg_shell_v6_view->map);

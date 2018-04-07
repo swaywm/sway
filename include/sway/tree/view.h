@@ -157,9 +157,7 @@ void view_set_activated(struct sway_view *view, bool activated);
 
 void view_close(struct sway_view *view);
 
-void view_damage_whole(struct sway_view *view);
-
-void view_damage_from(struct sway_view *view);
+void view_damage(struct sway_view *view, bool whole);
 
 void view_for_each_surface(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);

@@ -34,11 +34,11 @@ struct sway_output {
 
 void output_damage_whole(struct sway_output *output);
 
-void output_damage_whole_surface(struct sway_output *output,
-	double ox, double oy, struct wlr_surface *surface);
+void output_damage_surface(struct sway_output *output, double ox, double oy,
+	struct wlr_surface *surface, bool whole);
 
-void output_damage_whole_view(struct sway_output *output,
-	struct sway_view *view);
+void output_damage_view(struct sway_output *output, struct sway_view *view,
+	bool whole);
 
 void output_damage_whole_container(struct sway_output *output,
 	struct sway_container *con);

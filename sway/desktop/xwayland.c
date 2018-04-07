@@ -32,15 +32,15 @@ static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 
 	if (xsurface->x != surface->lx || xsurface->y != surface->ly) {
 		// Surface has moved
-		desktop_damage_whole_surface(xsurface->surface,
-			surface->lx, surface->ly);
+		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
+			true);
 		surface->lx = xsurface->x;
 		surface->ly = xsurface->y;
-		desktop_damage_whole_surface(xsurface->surface,
-			surface->lx, surface->ly);
+		desktop_damage_surface(xsurface->surface, surface->lx, surface->ly,
+			true);
 	} else {
-		desktop_damage_from_surface(xsurface->surface,
-			xsurface->x, xsurface->y);
+		desktop_damage_surface(xsurface->surface, xsurface->x, xsurface->y,
+			false);
 	}
 }
 
@@ -57,7 +57,7 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 
 	surface->lx = xsurface->x;
 	surface->ly = xsurface->y;
-	desktop_damage_whole_surface(xsurface->surface, surface->lx, surface->ly);
+	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly, true);
 
 	// TODO: we don't send surface enter/leave events to xwayland unmanaged
 	// surfaces, but xwayland doesn't support HiDPI anyway
@@ -67,7 +67,7 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, unmap);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
-	desktop_damage_whole_surface(xsurface->surface, xsurface->x, xsurface->y);
+	desktop_damage_surface(xsurface->surface, xsurface->x, xsurface->y, true);
 	wl_list_remove(&surface->link);
 	wl_list_remove(&surface->commit.link);
 }
@@ -209,7 +209,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// TODO: Let floating views do whatever
 	view_update_size(view, xwayland_view->pending_width,
 		xwayland_view->pending_height);
-	view_damage_from(view);
+	view_damage(view, false);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
