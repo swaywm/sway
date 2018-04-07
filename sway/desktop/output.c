@@ -294,6 +294,11 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 renderer_end:
+	if (root_container.sway_root->debug_tree) {
+		wlr_render_texture(renderer, root_container.sway_root->debug_tree,
+			wlr_output->transform_matrix, 0, 0, 1);
+	}
+
 	wlr_renderer_end(renderer);
 	if (!wlr_output_damage_swap_buffers(output->damage, when, damage)) {
 		return;
