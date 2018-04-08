@@ -14,14 +14,6 @@
 #include "sway/tree/view.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
-static void cursor_update_position(struct sway_cursor *cursor) {
-	double x = cursor->cursor->x;
-	double y = cursor->cursor->y;
-
-	cursor->x = x;
-	cursor->y = y;
-}
-
 static struct wlr_surface *layer_surface_at(struct sway_output *output,
 		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
 	struct sway_layer_surface *sway_layer;
@@ -53,8 +45,8 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		struct wlr_xwayland_surface *xsurface =
 			unmanaged_surface->wlr_xwayland_surface;
 
-		double _sx = cursor->x - unmanaged_surface->lx;
-		double _sy = cursor->y - unmanaged_surface->ly;
+		double _sx = cursor->cursor->x - unmanaged_surface->lx;
+		double _sy = cursor->cursor->y - unmanaged_surface->ly;
 		if (wlr_surface_point_accepts_input(xsurface->surface, _sx, _sy)) {
 			*surface = xsurface->surface;
 			*sx = _sx;
@@ -67,12 +59,13 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	struct wlr_output_layout *output_layout =
 		root_container.sway_root->output_layout;
 	struct wlr_output *wlr_output =
-		wlr_output_layout_output_at(output_layout, cursor->x, cursor->y);
+		wlr_output_layout_output_at(output_layout,
+				cursor->cursor->x, cursor->cursor->y);
 	if (wlr_output == NULL) {
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
-	double ox = cursor->x, oy = cursor->y;
+	double ox = cursor->cursor->x, oy = cursor->cursor->y;
 	wlr_output_layout_output_coords(output_layout, wlr_output, &ox, &oy);
 
 	// find the focused workspace on the output for this seat
@@ -97,7 +90,8 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	}
 
 	struct sway_container *c;
-	if ((c = container_at(ws, cursor->x, cursor->y, surface, sx, sy))) {
+	if ((c = container_at(ws, cursor->cursor->x, cursor->cursor->y,
+					surface, sx, sy))) {
 		return c;
 	}
 
@@ -124,8 +118,7 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	return output->swayc;
 }
 
-static void cursor_send_pointer_motion(struct sway_cursor *cursor,
-		uint32_t time) {
+void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time) {
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
@@ -161,7 +154,6 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
-	cursor_update_position(cursor);
 	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
@@ -171,7 +163,6 @@ static void handle_cursor_motion_absolute(
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
-	cursor_update_position(cursor);
 	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
@@ -254,15 +245,12 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 			(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
 		wlr_cursor_warp_absolute(cursor->cursor, event->device,
 			event->x, event->y);
-		cursor_update_position(cursor);
 		cursor_send_pointer_motion(cursor, event->time_msec);
 	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
 		wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, -1);
-		cursor_update_position(cursor);
 		cursor_send_pointer_motion(cursor, event->time_msec);
 	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
 		wlr_cursor_warp_absolute(cursor->cursor, event->device, -1, event->y);
-		cursor_update_position(cursor);
 		cursor_send_pointer_motion(cursor, event->time_msec);
 	}
 }

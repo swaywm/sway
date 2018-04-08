@@ -8,7 +8,6 @@ struct sway_cursor {
 	struct wlr_cursor *cursor;
 	struct wlr_xcursor_manager *xcursor_manager;
 
-	double x, y;
 	struct wl_client *image_client;
 
 	struct wl_listener motion;
@@ -30,5 +29,6 @@ struct sway_cursor {
 
 void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
+void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time);
 
 #endif
