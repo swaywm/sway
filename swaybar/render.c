@@ -352,7 +352,6 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 		struct swaybar_output *output, struct swaybar_config *config,
 		struct swaybar_workspace *ws, double *x, uint32_t surface_height) {
 	const char *name = ws->name;
-	const char *whole_name = ws->name;
 	if (config->strip_workspace_numbers) {
 		name = strip_workspace_number(ws->name);
 	}
@@ -412,7 +411,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	hotspot->height = height;
 	hotspot->callback = workspace_hotspot_callback;
 	hotspot->destroy = free;
-	hotspot->data = strdup(whole_name);
+	hotspot->data = strdup(ws->name);
 	wl_list_insert(&output->hotspots, &hotspot->link);
 
 	*x += width;
