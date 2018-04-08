@@ -413,8 +413,21 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	if (container) {
 		struct sway_seat_container *seat_con =
 			seat_container_from_container(seat, container);
-		if (!seat_con) {
+		if (seat_con == NULL) {
 			return;
+		}
+
+		// put all the anscestors of this container on top of the focus stack
+		struct sway_seat_container *parent =
+				seat_container_from_container(seat,
+					seat_con->container->parent);
+		while (parent) {
+			wl_list_remove(&parent->link);
+			wl_list_insert(&seat->focus_stack, &parent->link);
+
+			parent =
+				seat_container_from_container(seat,
+					parent->container->parent);
 		}
 
 		wl_list_remove(&seat_con->link);
