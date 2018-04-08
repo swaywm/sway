@@ -1,6 +1,6 @@
 #ifndef _SWAY_INPUT_CURSOR_H
 #define _SWAY_INPUT_CURSOR_H
-
+#include <stdint.h>
 #include "sway/input/seat.h"
 
 struct sway_cursor {
@@ -22,6 +22,8 @@ struct sway_cursor {
 
 	struct wl_listener tool_axis;
 	struct wl_listener tool_tip;
+	struct wl_listener tool_button;
+	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;
 };
