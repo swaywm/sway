@@ -11,6 +11,7 @@
 static struct cmd_results *do_split(int layout) {
 	struct sway_container *con = config->handler_context.current_container;
 	struct sway_container *parent = container_split(con, layout);
+	container_create_notify(parent);
 	arrange_windows(parent, -1, -1);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

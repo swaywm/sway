@@ -273,7 +273,7 @@ static int regex_cmp(const char *item, const pcre *regex) {
 
 // test a single view if it matches list of criteria tokens (all of them).
 static bool criteria_test(struct sway_container *cont, list_t *tokens) {
-	if (cont->type != C_VIEW) {
+	if (cont->type != C_CONTAINER && cont->type != C_VIEW) {
 		return false;
 	}
 	int matches = 0;

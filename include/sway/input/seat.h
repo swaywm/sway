@@ -87,8 +87,20 @@ struct sway_container *seat_get_focus(struct sway_seat *seat);
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *container);
 
-struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
-		struct sway_container *container, enum sway_container_type type);
+/**
+ * Descend into the focus stack to find the focus-inactive view. Useful for
+ * container placement when they change position in the tree.
+ */
+struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
+		struct sway_container *container);
+
+/**
+ * Iterate over the focus-inactive children of the container calling the
+ * function on each.
+ */
+void seat_focus_inactive_children_for_each(struct sway_seat *seat,
+		struct sway_container *container,
+		void (*f)(struct sway_container *container, void *data), void *data);
 
 void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
 

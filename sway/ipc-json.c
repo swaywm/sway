@@ -166,6 +166,11 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	}
 }
 
+static void focus_inactive_children_iterator(struct sway_container *c, void *data) {
+	json_object *focus = data;
+	json_object_array_add(focus, json_object_new_int(c->id));
+}
+
 json_object *ipc_json_describe_container(struct sway_container *c) {
 	if (!(sway_assert(c, "Container must not be null."))) {
 		return NULL;
@@ -182,6 +187,11 @@ json_object *ipc_json_describe_container(struct sway_container *c) {
 	json_object_object_add(object, "rect", ipc_json_create_rect(c));
 	json_object_object_add(object, "focused",
 			json_object_new_boolean(focused));
+
+	json_object *focus = json_object_new_array();
+	seat_focus_inactive_children_for_each(seat, c,
+		focus_inactive_children_iterator, focus);
+	json_object_object_add(object, "focus", focus);
 
 	switch (c->type) {
 	case C_ROOT:

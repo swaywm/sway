@@ -251,6 +251,7 @@ static void workspace_rejigger(struct sway_container *ws,
 	container_flatten(ws);
 	container_reap_empty_recursive(original_parent);
 	wl_signal_emit(&child->events.reparent, original_parent);
+	container_create_notify(new_parent);
 	arrange_windows(ws, -1, -1);
 }
 
@@ -872,7 +873,7 @@ struct sway_container *container_get_in_direction(
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
-				return seat_get_focus_by_type(seat, next, C_VIEW);
+				return seat_get_focus_inactive_view(seat, next);
 			} else {
 				return next;
 			}
@@ -910,7 +911,7 @@ struct sway_container *container_get_in_direction(
 				wlr_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, desired_con);
-				struct sway_container *next = seat_get_focus_by_type(seat, desired_con, C_VIEW);
+				struct sway_container *next = seat_get_focus_inactive_view(seat, desired_con);
 				return next;
 			}
 		}
