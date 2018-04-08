@@ -179,10 +179,8 @@ static void handle_cursor_motion_absolute(
 	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
-static void handle_cursor_button(struct wl_listener *listener, void *data) {
-	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
-	struct wlr_event_pointer_button *event = data;
-
+static void dispatch_cursor_button(struct sway_cursor *cursor,
+		uint32_t time_msec, uint32_t button, enum wlr_button_state state) {
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 	struct sway_container *cont =
@@ -215,8 +213,15 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 		seat_set_focus(cursor->seat, cont);
 	}
 
-	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat, event->time_msec,
-		event->button, event->state);
+	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
+			time_msec, button, state);
+}
+
+static void handle_cursor_button(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
+	struct wlr_event_pointer_button *event = data;
+	dispatch_cursor_button(cursor,
+			event->time_msec, event->button, event->state);
 }
 
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
@@ -248,13 +253,53 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis);
 	struct wlr_event_tablet_tool_axis *event = data;
-	wlr_log(L_DEBUG, "TODO: handle tool axis event: %p", event);
+
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
+			(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+		wlr_cursor_warp_absolute(cursor->cursor, event->device,
+			event->x, event->y);
+		cursor_update_position(cursor);
+		cursor_send_pointer_motion(cursor, event->time_msec);
+	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
+		wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, -1);
+		cursor_update_position(cursor);
+		cursor_send_pointer_motion(cursor, event->time_msec);
+	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+		wlr_cursor_warp_absolute(cursor->cursor, event->device, -1, event->y);
+		cursor_update_position(cursor);
+		cursor_send_pointer_motion(cursor, event->time_msec);
+	}
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_tip);
 	struct wlr_event_tablet_tool_tip *event = data;
-	wlr_log(L_DEBUG, "TODO: handle tool tip event: %p", event);
+	dispatch_cursor_button(cursor, event->time_msec,
+			BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
+				WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+}
+
+static void handle_tool_button(struct wl_listener *listener, void *data) {
+	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_button);
+	struct wlr_event_tablet_tool_button *event = data;
+	// TODO: the user may want to configure which tool buttons are mapped to
+	// which simulated pointer buttons
+	switch (event->state) {
+	case WLR_BUTTON_PRESSED:
+		if (cursor->tool_buttons == 0) {
+			dispatch_cursor_button(cursor,
+					event->time_msec, BTN_RIGHT, event->state);
+		}
+		cursor->tool_buttons++;
+		break;
+	case WLR_BUTTON_RELEASED:
+		if (cursor->tool_buttons == 1) {
+			dispatch_cursor_button(cursor,
+					event->time_msec, BTN_RIGHT, event->state);
+		}
+		cursor->tool_buttons--;
+		break;
+	}
 }
 
 static void handle_request_set_cursor(struct wl_listener *listener,
@@ -332,12 +377,18 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		&cursor->touch_motion);
 	cursor->touch_motion.notify = handle_touch_motion;
 
+	// TODO: tablet protocol support
+	// Note: We should emulate pointer events for clients that don't support the
+	// tablet protocol when the time comes
 	wl_signal_add(&wlr_cursor->events.tablet_tool_axis,
 		&cursor->tool_axis);
 	cursor->tool_axis.notify = handle_tool_axis;
 
 	wl_signal_add(&wlr_cursor->events.tablet_tool_tip, &cursor->tool_tip);
 	cursor->tool_tip.notify = handle_tool_tip;
+
+	wl_signal_add(&wlr_cursor->events.tablet_tool_button, &cursor->tool_button);
+	cursor->tool_button.notify = handle_tool_button;
 
 	wl_signal_add(&seat->wlr_seat->events.request_set_cursor,
 			&cursor->request_set_cursor);

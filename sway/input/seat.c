@@ -245,6 +245,12 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 	}
 }
 
+static void seat_configure_tablet_tool(struct sway_seat *seat,
+		struct sway_seat_device *sway_device) {
+	wlr_cursor_attach_input_device(seat->cursor->cursor,
+		sway_device->input_device->wlr_device);
+}
+
 static struct sway_seat_device *seat_get_device(struct sway_seat *seat,
 		struct sway_input_device *input_device) {
 	struct sway_seat_device *seat_device = NULL;
@@ -272,9 +278,11 @@ void seat_configure_device(struct sway_seat *seat,
 		case WLR_INPUT_DEVICE_KEYBOARD:
 			seat_configure_keyboard(seat, seat_device);
 			break;
-		case WLR_INPUT_DEVICE_TOUCH:
-		case WLR_INPUT_DEVICE_TABLET_PAD:
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
+			seat_configure_tablet_tool(seat, seat_device);
+			break;
+		case WLR_INPUT_DEVICE_TABLET_PAD:
+		case WLR_INPUT_DEVICE_TOUCH:
 			wlr_log(L_DEBUG, "TODO: configure other devices");
 			break;
 	}
