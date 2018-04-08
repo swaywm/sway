@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -219,10 +220,38 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	return seat;
 }
 
+static void seat_apply_input_config(struct sway_seat *seat,
+		struct sway_seat_device *sway_device) {
+	struct input_config *ic = input_device_get_config(
+			sway_device->input_device);
+	if (!ic) {
+		return;
+	}
+	wlr_log(L_DEBUG, "Applying input config to %s",
+			sway_device->input_device->identifier);
+	if (ic->mapped_output) {
+		struct sway_container *output = NULL;
+		for (int i = 0; i < root_container.children->length; ++i) {
+			struct sway_container *_output = root_container.children->items[i];
+			if (strcasecmp(_output->name, ic->mapped_output) == 0) {
+				output = _output;
+				break;
+			}
+		}
+		if (output) {
+			wlr_cursor_map_input_to_output(seat->cursor->cursor,
+				sway_device->input_device->wlr_device,
+				output->sway_output->wlr_output);
+			wlr_log(L_DEBUG, "Mapped to output %s", output->name);
+		}
+	}
+}
+
 static void seat_configure_pointer(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
+	seat_apply_input_config(seat, sway_device);
 }
 
 static void seat_configure_keyboard(struct sway_seat *seat,
@@ -249,6 +278,7 @@ static void seat_configure_tablet_tool(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
+	seat_apply_input_config(seat, sway_device);
 }
 
 static struct sway_seat_device *seat_get_device(struct sway_seat *seat,
