@@ -192,6 +192,7 @@ sway_cmd input_cmd_drag_lock;
 sway_cmd input_cmd_dwt;
 sway_cmd input_cmd_events;
 sway_cmd input_cmd_left_handed;
+sway_cmd input_cmd_map_to_output;
 sway_cmd input_cmd_middle_emulation;
 sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;

@@ -52,7 +52,7 @@ struct sway_mode {
 };
 
 /**
- * libinput options for input devices
+ * options for input devices
  */
 struct input_config {
 	char *identifier;
@@ -74,6 +74,8 @@ struct input_config {
 	char *xkb_options;
 	char *xkb_rules;
 	char *xkb_variant;
+
+	char *mapped_output;
 
 	bool capturable;
 	struct wlr_box region;

@@ -88,6 +88,10 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		free(dst->xkb_variant);
 		dst->xkb_variant = strdup(src->xkb_variant);
 	}
+	if (src->mapped_output) {
+		free(dst->mapped_output);
+		dst->mapped_output = strdup(src->mapped_output);
+	}
 }
 
 struct input_config *copy_input_config(struct input_config *ic) {
