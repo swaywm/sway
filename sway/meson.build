@@ -52,6 +52,7 @@ sway_sources = files(
 	'commands/split.c',
 	'commands/swaybg_command.c',
 	'commands/workspace.c',
+	'commands/ws_auto_back_and_forth.c',
 
 	'commands/bar/activate_button.c',
 	'commands/bar/binding_mode_indicator.c',

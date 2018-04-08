@@ -106,6 +106,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
 	{ "workspace", cmd_workspace },
+	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
 static struct cmd_handler bar_handlers[] = {
