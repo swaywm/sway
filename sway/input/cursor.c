@@ -52,17 +52,13 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	wl_list_for_each_reverse(unmanaged_surface, unmanaged, link) {
 		struct wlr_xwayland_surface *xsurface =
 			unmanaged_surface->wlr_xwayland_surface;
-		struct wlr_box box = {
-			.x = unmanaged_surface->lx,
-			.y = unmanaged_surface->ly,
-			.width = xsurface->width,
-			.height = xsurface->height,
-		};
 
-		if (wlr_box_contains_point(&box, cursor->x, cursor->y)) {
+		double _sx = cursor->x - unmanaged_surface->lx;
+		double _sy = cursor->y - unmanaged_surface->ly;
+		if (wlr_surface_point_accepts_input(xsurface->surface, _sx, _sy)) {
 			*surface = xsurface->surface;
-			*sx = cursor->x - box.x;
-			*sy = cursor->y - box.y;
+			*sx = _sx;
+			*sy = _sy;
 			return NULL;
 		}
 	}
