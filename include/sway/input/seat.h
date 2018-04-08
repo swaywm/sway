@@ -95,7 +95,8 @@ struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 		struct sway_container *container);
 
 /**
- * Iterate over the focus-inactive children of the container calling the function on each.
+ * Iterate over the focus-inactive children of the container calling the
+ * function on each.
  */
 void seat_focus_inactive_children_for_each(struct sway_seat *seat,
 		struct sway_container *container,
