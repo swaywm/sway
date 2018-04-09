@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
 #include <strings.h>
 #include <wlr/types/wlr_output.h>
@@ -63,18 +64,29 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 					"Can only move containers and views.");
 		}
 		struct sway_container *ws;
-		const char *num_name = NULL;
 		char *ws_name = NULL;
 		if (argc == 5 && strcasecmp(argv[3], "number") == 0) {
 			// move "container to workspace number x"
-			num_name = argv[4];
-			ws = workspace_by_number(num_name);
+			ws_name = strdup(argv[4]);
+			ws = workspace_by_number(ws_name);
 		} else {
 			ws_name = join_args(argv + 3, argc - 3);
 			ws = workspace_by_name(ws_name);
 		}
+
+		if (config->auto_back_and_forth && prev_workspace_name) {
+			// auto back and forth move
+			struct sway_container *curr_ws = container_parent(current, C_WORKSPACE);
+			if (curr_ws->name && strcmp(curr_ws->name, ws_name) == 0) {
+				// if target workspace is the current one
+				free(ws_name);
+				ws_name = strdup(prev_workspace_name);
+				ws = workspace_by_name(ws_name);
+			}
+		}
+
 		if (!ws) {
-			ws = workspace_create(NULL, ws_name ? ws_name : num_name);
+			ws = workspace_create(NULL, ws_name);
 		}
 		free(ws_name);
 		struct sway_container *old_parent = current->parent;
