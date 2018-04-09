@@ -125,9 +125,12 @@ bool i3bar_handle_readable(struct status_line *status) {
 			status_error(status, "[failed to allocate buffer]");
 			return -1;
 		}
+		state->current_node += new_buffer - state->buffer;
+		cur += new_buffer - state->buffer;
 		state->buffer = new_buffer;
 	}
 
+	cur[n] = '\0';
 	bool redraw = false;
 	while (*cur) {
 		if (state->nodes[state->depth] == JSON_NODE_STRING) {
