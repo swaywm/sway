@@ -113,8 +113,9 @@ bool i3bar_handle_readable(struct status_line *status) {
 	char *cur = &state->buffer[state->buffer_index];
 	ssize_t n = read(status->read_fd, cur,
 			state->buffer_size - state->buffer_index);
-	if (n == 0) {
-		return 0;
+	if (n == -1) {
+		status_error(status, "[failed to read from status command]");
+		return false;
 	}
 
 	if (n == (ssize_t)(state->buffer_size - state->buffer_index)) {
@@ -123,7 +124,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 		if (!new_buffer) {
 			free(state->buffer);
 			status_error(status, "[failed to allocate buffer]");
-			return -1;
+			return true;
 		}
 		state->current_node += new_buffer - state->buffer;
 		cur += new_buffer - state->buffer;
