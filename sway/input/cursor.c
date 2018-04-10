@@ -166,7 +166,7 @@ static void handle_cursor_motion_absolute(
 	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
-static void dispatch_cursor_button(struct sway_cursor *cursor,
+void dispatch_cursor_button(struct sway_cursor *cursor,
 		uint32_t time_msec, uint32_t button, enum wlr_button_state state) {
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
