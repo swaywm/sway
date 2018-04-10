@@ -328,6 +328,13 @@ The default colors are:
 	the named seat, and _}_ on its own line will close the block.
 	See **sway-input**(5) for details.
 
+**seat** <seat_name> cursor <move|set> <x> <y>::
+	Move cursor relatively to current position or set to absolute screen position.
+	A value of 0 causes the axis to be ignored in both commands.
+
+**seat** <seat_name> cursor <press|release> <left|right|1|2|3...>::
+	Simulate press of mouse button specified by left, right, or numerical code.
+
 **kill**::
 	Kills (force-closes) the currently-focused container and all of its children.
 
