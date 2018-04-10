@@ -331,7 +331,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
 		ipc_get_workspaces(bar);
-		return true;
+		break;
 	case IPC_EVENT_MODE: {
 		json_object *result = json_tokener_parse(resp->payload);
 		if (!result) {
@@ -367,5 +367,5 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		return false;
 	}
 	free_ipc_response(resp);
-	return false;
+	return true;
 }
