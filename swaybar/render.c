@@ -154,15 +154,15 @@ static uint32_t render_status_block(cairo_t *cairo,
 		block_width += block->border_right + margin;
 	}
 
-	int sep_width;
+	int sep_width, sep_height;
 	if (!edge) {
 		if (config->sep_symbol) {
-			int _height;
-			get_text_size(cairo, config->font, &sep_width, &_height,
+			get_text_size(cairo, config->font, &sep_width, &sep_height,
 					output->scale, false, "%s", config->sep_symbol);
-			uint32_t _ideal_height = _height + ws_vertical_padding * 2;
-			if ((uint32_t)_height < _ideal_height / output->scale) {
-				return _height / output->scale;
+			uint32_t _ideal_surface_height = ws_vertical_padding * 2
+				+ sep_height;
+			if (_ideal_surface_height > surface_height) {
+				return _ideal_surface_height;
 			}
 			if (sep_width > block->separator_block_width) {
 				block->separator_block_width = sep_width + margin * 2;
@@ -240,7 +240,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 		}
 		if (config->sep_symbol) {
 			offset = pos + (block->separator_block_width - sep_width) / 2;
-			cairo_move_to(cairo, offset, margin);
+			cairo_move_to(cairo, offset, height / 2.0 - sep_height / 2.0);
 			pango_printf(cairo, config->font, output->scale, false,
 					"%s", config->sep_symbol);
 		} else {
