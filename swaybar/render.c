@@ -159,9 +159,9 @@ static uint32_t render_status_block(cairo_t *cairo,
 		if (config->sep_symbol) {
 			get_text_size(cairo, config->font, &sep_width, &sep_height,
 					output->scale, false, "%s", config->sep_symbol);
-			uint32_t _ideal_surface_height = ws_vertical_padding * 2
-				+ sep_height;
-			if (_ideal_surface_height > surface_height) {
+			uint32_t _ideal_height = sep_height + ws_vertical_padding * 2;
+			uint32_t _ideal_surface_height = _ideal_height / output->scale;
+			if (surface_height < _ideal_surface_height) {
 				return _ideal_surface_height;
 			}
 			if (sep_width > block->separator_block_width) {
