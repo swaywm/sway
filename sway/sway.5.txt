@@ -362,7 +362,7 @@ The default colors are:
 **output** <name> <position|pos> <X,Y>::
 	Configures the specified output to be arranged at the given position.
 
-**output** <name> <scale> <I>::
+**output** <name> scale <I>::
 	Configures the specified output to be scaled up by the specified integer
 	scaling factor (usually 2 for HiDPI screens).
 
