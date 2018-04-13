@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 2
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,13 +14,31 @@ static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 static const size_t ipc_header_size = sizeof(ipc_magic)+8;
 
 char *get_socketpath(void) {
-	FILE *fp = popen("sway --get-socketpath", "r");
-	if (!fp) {
-		return NULL;
+	const char *swaysock = getenv("SWAYSOCK");
+	if (swaysock) {
+		return strdup(swaysock);
 	}
-	char *line = read_line(fp);
-	pclose(fp);
-	return line;
+	FILE *fp = popen("sway --get-socketpath 2>/dev/null", "r");
+	if (fp) {
+		char *line = read_line(fp);
+		pclose(fp);
+		if (line && *line) {
+			return line;
+		}
+	}
+	const char *i3sock = getenv("I3SOCK");
+	if (i3sock) {
+		return strdup(i3sock);
+	}
+	fp = popen("i3 --get-socketpath 2>/dev/null", "r");
+	if (fp) {
+		char *line = read_line(fp);
+		pclose(fp);
+		if (line && *line) {
+			return line;
+		}
+	}
+	return NULL;
 }
 
 int ipc_open_socket(const char *socket_path) {
@@ -79,7 +97,7 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 error_2:
 	free(response);
 error_1:
-	sway_log(L_ERROR, "Unable to allocate memory for IPC response");
+	wlr_log(L_ERROR, "Unable to allocate memory for IPC response");
 	return NULL;
 }
 

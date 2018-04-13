@@ -1,7 +1,3 @@
-CMakeCache.txt
-CMakeFiles
-Makefile
-cmake_install.cmake
 install_manifest.txt
 *.swp
 *.o
@@ -12,3 +8,5 @@ build/
 .lvimrc
 config-debug
 wayland-*-protocol.*
+/subprojects/wlroots
+subprojects

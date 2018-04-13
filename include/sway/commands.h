@@ -1,12 +1,7 @@
 #ifndef _SWAY_COMMANDS_H
 #define _SWAY_COMMANDS_H
-#include <stdbool.h>
-#include <json-c/json.h>
-#include <wlc/wlc.h>
-#include "config.h"
 
-// Container that a called command should act upon. Only valid in command functions.
-extern swayc_t *current_container;
+#include "config.h"
 
 /**
  * Indicates the result of a command's execution.
@@ -22,6 +17,7 @@ enum cmd_status {
 	CMD_BLOCK_BAR,
 	CMD_BLOCK_BAR_COLORS,
 	CMD_BLOCK_INPUT,
+	CMD_BLOCK_SEAT,
 	CMD_BLOCK_COMMANDS,
 	CMD_BLOCK_IPC,
 	CMD_BLOCK_IPC_EVENTS,
@@ -46,18 +42,13 @@ enum expected_args {
 	EXPECTED_EQUAL_TO
 };
 
-struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val);
-struct cmd_results *add_color(const char*, char*, const char*);
-void input_cmd_apply(struct input_config *input);
-void hide_view_in_scratchpad(swayc_t *sp_view);
-
-swayc_t *sp_view;
-int sp_index;
+struct cmd_results *checkarg(int argc, const char *name,
+		enum expected_args type, int val);
 
 /**
- * Parse and handles a command.
+ * Parse and executes a command.
  */
-struct cmd_results *handle_command(char *command, enum command_context context);
+struct cmd_results *execute_command(char *command,  struct sway_seat *seat);
 /**
  * Parse and handles a command during config file loading.
  *
@@ -68,7 +59,6 @@ struct cmd_results *config_command(char *command, enum cmd_status block);
  * Parses a command policy rule.
  */
 struct cmd_results *config_commands_command(char *exec);
-
 /**
  * Allocates a cmd_results object.
  */
@@ -84,11 +74,8 @@ void free_cmd_results(struct cmd_results *results);
  */
 const char *cmd_results_to_json(struct cmd_results *results);
 
-void remove_view_from_scratchpad(swayc_t *);
-
-/**
- * Actual command function signatures for individual .c files in commands/ directory.
- */
+struct cmd_results *add_color(const char *name,
+		char *buffer, const char *color);
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
@@ -108,6 +95,7 @@ sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
 sway_cmd cmd_default_border;
 sway_cmd cmd_default_floating_border;
+sway_cmd cmd_default_orientation;
 sway_cmd cmd_exec;
 sway_cmd cmd_exec_always;
 sway_cmd cmd_exit;
@@ -126,6 +114,7 @@ sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
 sway_cmd cmd_include;
 sway_cmd cmd_input;
+sway_cmd cmd_seat;
 sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
 sway_cmd cmd_layout;
@@ -134,10 +123,10 @@ sway_cmd cmd_mark;
 sway_cmd cmd_mode;
 sway_cmd cmd_mouse_warping;
 sway_cmd cmd_move;
+sway_cmd cmd_opacity;
 sway_cmd cmd_new_float;
 sway_cmd cmd_new_window;
 sway_cmd cmd_no_focus;
-sway_cmd cmd_orientation;
 sway_cmd cmd_output;
 sway_cmd cmd_permit;
 sway_cmd cmd_reject;
@@ -153,6 +142,7 @@ sway_cmd cmd_splith;
 sway_cmd cmd_splitt;
 sway_cmd cmd_splitv;
 sway_cmd cmd_sticky;
+sway_cmd cmd_swaybg_command;
 sway_cmd cmd_unmark;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;
@@ -195,17 +185,28 @@ sway_cmd bar_colors_cmd_statusline;
 sway_cmd bar_colors_cmd_focused_statusline;
 sway_cmd bar_colors_cmd_urgent_workspace;
 
+sway_cmd input_cmd_seat;
 sway_cmd input_cmd_accel_profile;
 sway_cmd input_cmd_click_method;
 sway_cmd input_cmd_drag_lock;
 sway_cmd input_cmd_dwt;
 sway_cmd input_cmd_events;
 sway_cmd input_cmd_left_handed;
+sway_cmd input_cmd_map_to_output;
 sway_cmd input_cmd_middle_emulation;
 sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+sway_cmd input_cmd_xkb_layout;
+sway_cmd input_cmd_xkb_model;
+sway_cmd input_cmd_xkb_options;
+sway_cmd input_cmd_xkb_rules;
+sway_cmd input_cmd_xkb_variant;
+
+sway_cmd seat_cmd_attach;
+sway_cmd seat_cmd_fallback;
+sway_cmd seat_cmd_cursor;
 
 sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;

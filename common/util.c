@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <wlc/wlc.h>
 #include <xkbcommon/xkbcommon-names.h>
+#include <wlr/types/wlr_keyboard.h>
 #include "log.h"
 #include "readline.h"
 #include "util.h"
@@ -29,16 +29,16 @@ static struct modifier_key {
 	char *name;
 	uint32_t mod;
 } modifiers[] = {
-	{ XKB_MOD_NAME_SHIFT, WLC_BIT_MOD_SHIFT },
-	{ XKB_MOD_NAME_CAPS, WLC_BIT_MOD_CAPS },
-	{ XKB_MOD_NAME_CTRL, WLC_BIT_MOD_CTRL },
-	{ "Ctrl", WLC_BIT_MOD_CTRL },
-	{ XKB_MOD_NAME_ALT, WLC_BIT_MOD_ALT },
-	{ "Alt", WLC_BIT_MOD_ALT },
-	{ XKB_MOD_NAME_NUM, WLC_BIT_MOD_MOD2 },
-	{ "Mod3", WLC_BIT_MOD_MOD3 },
-	{ XKB_MOD_NAME_LOGO, WLC_BIT_MOD_LOGO },
-	{ "Mod5", WLC_BIT_MOD_MOD5 },
+	{ XKB_MOD_NAME_SHIFT, WLR_MODIFIER_SHIFT },
+	{ XKB_MOD_NAME_CAPS, WLR_MODIFIER_CAPS },
+	{ XKB_MOD_NAME_CTRL, WLR_MODIFIER_CTRL },
+	{ "Ctrl", WLR_MODIFIER_CTRL },
+	{ XKB_MOD_NAME_ALT, WLR_MODIFIER_ALT },
+	{ "Alt", WLR_MODIFIER_ALT },
+	{ XKB_MOD_NAME_NUM, WLR_MODIFIER_MOD2 },
+	{ "Mod3", WLR_MODIFIER_MOD3 },
+	{ XKB_MOD_NAME_LOGO, WLR_MODIFIER_LOGO },
+	{ "Mod5", WLR_MODIFIER_MOD5 },
 };
 
 uint32_t get_modifier_mask_by_name(const char *name) {
@@ -113,7 +113,7 @@ uint32_t parse_color(const char *color) {
 
 	int len = strlen(color);
 	if (len != 6 && len != 8) {
-		sway_log(L_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
+		wlr_log(L_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
 		return 0xFFFFFFFF;
 	}
 	uint32_t res = (uint32_t)strtoul(color, NULL, 16);

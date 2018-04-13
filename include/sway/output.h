@@ -1,25 +1,48 @@
 #ifndef _SWAY_OUTPUT_H
 #define _SWAY_OUTPUT_H
+#include <time.h>
+#include <unistd.h>
+#include <wayland-server.h>
+#include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_output.h>
+#include "sway/tree/view.h"
 
-#include "container.h"
-#include "focus.h"
+struct sway_server;
+struct sway_container;
 
-// Position is absolute coordinates on the edge where the adjacent output
-// should be searched for.
-swayc_t *output_by_name(const char* name, const struct wlc_point *abs_pos);
-swayc_t *swayc_opposite_output(enum movement_direction dir, const struct wlc_point *abs_pos);
-swayc_t *swayc_adjacent_output(swayc_t *output, enum movement_direction dir, const struct wlc_point *abs_pos, bool pick_closest);
+struct sway_output {
+	struct wlr_output *wlr_output;
+	struct sway_container *swayc;
+	struct sway_server *server;
 
-// Place absolute coordinates for given container into given wlc_point.
-void get_absolute_position(swayc_t *container, struct wlc_point *point);
+	struct wl_list layers[4]; // sway_layer_surface::link
+	struct wlr_box usable_area;
 
-// Place absolute coordinates for the center point of given container into
-// given wlc_point.
-void get_absolute_center_position(swayc_t *container, struct wlc_point *point);
+	struct timespec last_frame;
+	struct wlr_output_damage *damage;
 
-// stable sort workspaces on this output
-void sort_workspaces(swayc_t *output);
+	struct wl_listener destroy;
+	struct wl_listener mode;
+	struct wl_listener transform;
+	struct wl_listener scale;
 
-void output_get_scaled_size(wlc_handle handle, struct wlc_size *size);
+	struct wl_listener damage_destroy;
+	struct wl_listener damage_frame;
+
+	pid_t bg_pid;
+};
+
+void output_damage_whole(struct sway_output *output);
+
+void output_damage_surface(struct sway_output *output, double ox, double oy,
+	struct wlr_surface *surface, bool whole);
+
+void output_damage_view(struct sway_output *output, struct sway_view *view,
+	bool whole);
+
+void output_damage_whole_container(struct sway_output *output,
+	struct sway_container *con);
+
+struct sway_container *output_by_name(const char *name);
 
 #endif

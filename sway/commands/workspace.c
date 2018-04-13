@@ -3,8 +3,8 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/input_state.h"
-#include "sway/workspace.h"
+#include "sway/input/seat.h"
+#include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
@@ -16,6 +16,17 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 	}
 
 	int output_location = -1;
+
+	struct sway_container *current_container = config->handler_context.current_container;
+	struct sway_container *old_workspace = NULL, *old_output = NULL;
+	if (current_container) {
+		if (current_container->type == C_WORKSPACE) {
+			old_workspace = current_container;
+		} else {
+			old_workspace = container_parent(current_container, C_WORKSPACE);
+		}
+		old_output = container_parent(current_container, C_OUTPUT);
+	}
 
 	for (int i = 0; i < argc; ++i) {
 		if (strcasecmp(argv[i], "output") == 0) {
@@ -40,52 +51,51 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			free(old); // workspaces can only be assigned to a single output
 			list_del(config->workspace_outputs, i);
 		}
-		sway_log(L_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
+		wlr_log(L_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
 		list_add(config->workspace_outputs, wso);
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
 		}
-		swayc_t *ws = NULL;
+		struct sway_container *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (!(ws = workspace_by_number(argv[1]))) {
 				char *name = join_args(argv + 1, argc - 1);
-				ws = workspace_create(name);
+				ws = workspace_create(NULL, name);
 				free(name);
 			}
 		} else if (strcasecmp(argv[0], "next") == 0) {
-			ws = workspace_next();
+			ws = workspace_next(old_workspace);
 		} else if (strcasecmp(argv[0], "prev") == 0) {
-			ws = workspace_prev();
+			ws = workspace_prev(old_workspace);
 		} else if (strcasecmp(argv[0], "next_on_output") == 0) {
-			ws = workspace_output_next();
+			ws = workspace_output_next(old_output);
 		} else if (strcasecmp(argv[0], "prev_on_output") == 0) {
-			ws = workspace_output_prev();
+			ws = workspace_output_prev(old_output);
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
 			// if auto_back_and_forth is enabled, workspace_switch will swap
 			// the workspaces. If we created prev_workspace here, workspace_switch
 			// would put us back on original workspace.
 			if (config->auto_back_and_forth) {
-				ws = swayc_active_workspace();
-			} else if (prev_workspace_name && !(ws = workspace_by_name(prev_workspace_name))) {
-				ws = workspace_create(prev_workspace_name);
+				ws = old_workspace;
+			} else if (prev_workspace_name
+					&& !(ws = workspace_by_name(prev_workspace_name))) {
+				ws = workspace_create(NULL, prev_workspace_name);
 			}
 		} else {
 			char *name = join_args(argv, argc);
 			if (!(ws = workspace_by_name(name))) {
-				ws = workspace_create(name);
+				ws = workspace_create(NULL, name);
 			}
 			free(name);
 		}
-		swayc_t *old_output = swayc_active_output();
 		workspace_switch(ws);
-		swayc_t *new_output = swayc_active_output();
+		current_container =
+			seat_get_focus(config->handler_context.seat);
+		struct sway_container *new_output = container_parent(current_container, C_OUTPUT);
 
 		if (config->mouse_warping && old_output != new_output) {
-			swayc_t *focused = get_focused_view(ws);
-			if (focused && focused->type == C_VIEW) {
-				center_pointer_on(focused);
-			}
+			// TODO: Warp mouse
 		}
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

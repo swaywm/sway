@@ -1,49 +1,24 @@
-#define _XOPEN_SOURCE 700
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-names.h>
-#include <wlc/wlc.h>
-#include <wlc/wlc-render.h>
-#include <stdio.h>
+#define _XOPEN_SOURCE 500
+#include <ctype.h>
+#include <stdarg.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 #include <strings.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <wordexp.h>
-#include <libgen.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <limits.h>
-#include <float.h>
-#include <libinput.h>
-#include "sway/layout.h"
-#include "sway/focus.h"
-#include "sway/workspace.h"
+#include <stdio.h>
+#include <json-c/json.h>
 #include "sway/commands.h"
-#include "sway/container.h"
-#include "sway/output.h"
-#include "sway/handlers.h"
-#include "sway/input_state.h"
+#include "sway/config.h"
 #include "sway/criteria.h"
-#include "sway/ipc-server.h"
 #include "sway/security.h"
-#include "sway/input.h"
-#include "sway/border.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "stringop.h"
-#include "sway.h"
-#include "util.h"
-#include "list.h"
 #include "log.h"
 
 struct cmd_handler {
 	char *command;
 	sway_cmd *handle;
 };
-
-int sp_index = 0;
-
-swayc_t *current_container = NULL;
 
 // Returns error object, or NULL if check succeeds.
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
@@ -84,24 +59,7 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 	return error;
 }
 
-void hide_view_in_scratchpad(swayc_t *sp_view) {
-	if (sp_view == NULL) {
-		return;
-	}
-
-	wlc_view_set_mask(sp_view->handle, 0);
-	sp_view->visible = false;
-	swayc_t *ws = sp_view->parent;
-	remove_child(sp_view);
-	if (swayc_active_workspace() != ws && ws->floating->length == 0 && ws->children->length == 0) {
-		destroy_workspace(ws);
-	} else {
-		arrange_windows(ws, -1, -1);
-	}
-	set_focused_container(container_under_pointer());
-}
-
-void input_cmd_apply(struct input_config *input) {
+void apply_input_config(struct input_config *input) {
 	int i;
 	i = list_seq_find(config->input_configs, input_identifier_cmp, input->identifier);
 	if (i >= 0) {
@@ -114,111 +72,41 @@ void input_cmd_apply(struct input_config *input) {
 		list_add(config->input_configs, input);
 	}
 
-	current_input_config = input;
-
-	if (input->identifier) {
-		// Try to find the input device and apply configuration now. If
-		// this is during startup then there will be no container and config
-		// will be applied during normal "new input" event from wlc.
-		struct libinput_device *device = NULL;
-		for (int i = 0; i < input_devices->length; ++i) {
-			device = input_devices->items[i];
-			char* dev_identifier = libinput_dev_unique_id(device);
-			if (!dev_identifier) {
-				break;
-			}
-			int match = dev_identifier && strcmp(dev_identifier, input->identifier) == 0;
-			free(dev_identifier);
-			if (match) {
-				apply_input_config(input, device);
-				break;
-			}
-		}
-	}
+	input_manager_apply_input_config(input_manager, input);
 }
 
-void remove_view_from_scratchpad(swayc_t *view) {
+void apply_seat_config(struct seat_config *seat_config) {
 	int i;
-	for (i = 0; i < scratchpad->length; i++) {
-		if (scratchpad->items[i] == view) {
-			if (sp_index == 0) {
-				sp_index = scratchpad->length - 1;
-			} else {
-				sp_index--;
-			}
-			list_del(scratchpad, sp_index);
-			sp_view = NULL;
-		}
+	i = list_seq_find(config->seat_configs, seat_name_cmp, seat_config->name);
+	if (i >= 0) {
+		// merge existing config
+		struct seat_config *sc = config->seat_configs->items[i];
+		merge_seat_config(sc, seat_config);
+		free_seat_config(seat_config);
+		seat_config = sc;
+	} else {
+		list_add(config->seat_configs, seat_config);
 	}
+
+	input_manager_apply_seat_config(input_manager, seat_config);
 }
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
-	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
-	{ "border", cmd_border },
-	{ "client.background", cmd_client_background },
-	{ "client.focused", cmd_client_focused },
-	{ "client.focused_inactive", cmd_client_focused_inactive },
-	{ "client.placeholder", cmd_client_placeholder },
-	{ "client.unfocused", cmd_client_unfocused },
-	{ "client.urgent", cmd_client_urgent },
-	{ "clipboard", cmd_clipboard },
-	{ "commands", cmd_commands },
-	{ "debuglog", cmd_debuglog },
-	{ "default_border", cmd_default_border },
-	{ "default_floating_border", cmd_default_floating_border },
-	{ "default_orientation", cmd_orientation },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
-	{ "exit", cmd_exit },
-	{ "floating", cmd_floating },
-	{ "floating_maximum_size", cmd_floating_maximum_size },
-	{ "floating_minimum_size", cmd_floating_minimum_size },
-	{ "floating_modifier", cmd_floating_mod },
-	{ "floating_scroll", cmd_floating_scroll },
-	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
-	{ "font", cmd_font },
-	{ "for_window", cmd_for_window },
-	{ "force_focus_wrapping", cmd_force_focus_wrapping },
-	{ "fullscreen", cmd_fullscreen },
-	{ "gaps", cmd_gaps },
-	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
-	{ "ipc", cmd_ipc },
-	{ "kill", cmd_kill },
-	{ "layout", cmd_layout },
-	{ "log_colors", cmd_log_colors },
-	{ "mark", cmd_mark },
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
-	{ "move", cmd_move },
-	{ "new_float", cmd_new_float },
-	{ "new_window", cmd_new_window },
-	{ "no_focus", cmd_no_focus },
 	{ "output", cmd_output },
-	{ "permit", cmd_permit },
-	{ "reject", cmd_reject },
-	{ "reload", cmd_reload },
-	{ "resize", cmd_resize },
-	{ "scratchpad", cmd_scratchpad },
-	{ "seamless_mouse", cmd_seamless_mouse },
-	{ "set", cmd_set },
-	{ "show_marks", cmd_show_marks },
-	{ "smart_gaps", cmd_smart_gaps },
-	{ "split", cmd_split },
-	{ "splith", cmd_splith },
-	{ "splitt", cmd_splitt },
-	{ "splitv", cmd_splitv },
-	{ "sticky", cmd_sticky },
-	{ "unmark", cmd_unmark },
+	{ "seat", cmd_seat },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
-	{ "workspace_layout", cmd_workspace_layout },
 };
 
 static struct cmd_handler bar_handlers[] = {
@@ -248,54 +136,6 @@ static struct cmd_handler bar_handlers[] = {
 	{ "wrap_scroll", bar_cmd_wrap_scroll },
 };
 
-/**
- * Check and add color to buffer.
- *
- * return error object, or NULL if color is valid.
- */
-struct cmd_results *add_color(const char *name, char *buffer, const char *color) {
-	int len = strlen(color);
-	if (len != 7 && len != 9) {
-		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
-	}
-
-	if (color[0] != '#') {
-		return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
-	}
-
-	int i;
-	for (i = 1; i < len; ++i) {
-		if (!isxdigit(color[i])) {
-			return cmd_results_new(CMD_INVALID, name, "Invalid color definition %s", color);
-		}
-	}
-
-	// copy color to buffer
-	strncpy(buffer, color, len);
-	// add default alpha channel if color was defined without it
-	if (len == 7) {
-		buffer[7] = 'f';
-		buffer[8] = 'f';
-	}
-	buffer[9] = '\0';
-
-	return NULL;
-}
-
-static struct cmd_handler input_handlers[] = {
-	{ "accel_profile", input_cmd_accel_profile },
-	{ "click_method", input_cmd_click_method },
-	{ "drag_lock", input_cmd_drag_lock },
-	{ "dwt", input_cmd_dwt },
-	{ "events", input_cmd_events },
-	{ "left_handed", input_cmd_left_handed },
-	{ "middle_emulation", input_cmd_middle_emulation },
-	{ "natural_scroll", input_cmd_natural_scroll },
-	{ "pointer_accel", input_cmd_pointer_accel },
-	{ "scroll_method", input_cmd_scroll_method },
-	{ "tap", input_cmd_tap },
-};
-
 static struct cmd_handler bar_colors_handlers[] = {
 	{ "active_workspace", bar_colors_cmd_active_workspace },
 	{ "background", bar_colors_cmd_background },
@@ -310,26 +150,27 @@ static struct cmd_handler bar_colors_handlers[] = {
 	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
 };
 
-static struct cmd_handler ipc_handlers[] = {
-	{ "*", cmd_ipc_cmd },
-	{ "bar-config", cmd_ipc_cmd },
-	{ "command", cmd_ipc_cmd },
-	{ "events", cmd_ipc_events },
-	{ "inputs", cmd_ipc_cmd },
-	{ "marks", cmd_ipc_cmd },
-	{ "outputs", cmd_ipc_cmd },
-	{ "tree", cmd_ipc_cmd },
-	{ "workspaces", cmd_ipc_cmd },
+/* Config-time only commands. Keep alphabetized */
+static struct cmd_handler config_handlers[] = {
+	{ "default_orientation", cmd_default_orientation },
+	{ "set", cmd_set },
+	{ "swaybg_command", cmd_swaybg_command },
 };
 
-static struct cmd_handler ipc_event_handlers[] = {
-	{ "*", cmd_ipc_event_cmd },
-	{ "binding", cmd_ipc_event_cmd },
-	{ "input", cmd_ipc_event_cmd },
-	{ "mode", cmd_ipc_event_cmd },
-	{ "output", cmd_ipc_event_cmd },
-	{ "window", cmd_ipc_event_cmd },
-	{ "workspace", cmd_ipc_event_cmd },
+/* Runtime-only commands. Keep alphabetized */
+static struct cmd_handler command_handlers[] = {
+	{ "exit", cmd_exit },
+	{ "focus", cmd_focus },
+	{ "kill", cmd_kill },
+	{ "layout", cmd_layout },
+	{ "move", cmd_move },
+	{ "opacity", cmd_opacity },
+	{ "reload", cmd_reload },
+	{ "resize", cmd_resize },
+	{ "split", cmd_split },
+	{ "splith", cmd_splith },
+	{ "splitt", cmd_splitt },
+	{ "splitv", cmd_splitv },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -338,42 +179,90 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
+// must be in order for the bsearch
+static struct cmd_handler input_handlers[] = {
+	{ "accel_profile", input_cmd_accel_profile },
+	{ "click_method", input_cmd_click_method },
+	{ "drag_lock", input_cmd_drag_lock },
+	{ "dwt", input_cmd_dwt },
+	{ "events", input_cmd_events },
+	{ "left_handed", input_cmd_left_handed },
+	{ "map_to_output", input_cmd_map_to_output },
+	{ "middle_emulation", input_cmd_middle_emulation },
+	{ "natural_scroll", input_cmd_natural_scroll },
+	{ "pointer_accel", input_cmd_pointer_accel },
+	{ "scroll_method", input_cmd_scroll_method },
+	{ "tap", input_cmd_tap },
+	{ "xkb_layout", input_cmd_xkb_layout },
+	{ "xkb_model", input_cmd_xkb_model },
+	{ "xkb_options", input_cmd_xkb_options },
+	{ "xkb_rules", input_cmd_xkb_rules },
+	{ "xkb_variant", input_cmd_xkb_variant },
+};
+
+// must be in order for the bsearch
+static struct cmd_handler seat_handlers[] = {
+	{ "attach", seat_cmd_attach },
+	{ "cursor", seat_cmd_cursor },
+	{ "fallback", seat_cmd_fallback },
+};
+
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_INPUT);
+	wlr_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
+
+	bool config_loading = config->reading || !config->active;
+
 	if (block == CMD_BLOCK_BAR) {
-		res = bsearch(&d, bar_handlers,
-			sizeof(bar_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_BAR_COLORS){
-		res = bsearch(&d, bar_colors_handlers,
-			sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
+		return bsearch(&d, bar_handlers,
+				sizeof(bar_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_BAR_COLORS) {
+		return bsearch(&d, bar_colors_handlers,
+				sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
 	} else if (block == CMD_BLOCK_INPUT) {
-		res = bsearch(&d, input_handlers,
-			sizeof(input_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_IPC) {
-		res = bsearch(&d, ipc_handlers,
-			sizeof(ipc_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_IPC_EVENTS) {
-		res = bsearch(&d, ipc_event_handlers,
-			sizeof(ipc_event_handlers) / sizeof(struct cmd_handler),
-			sizeof(struct cmd_handler), handler_compare);
-	} else {
-		res = bsearch(&d, handlers,
+		return bsearch(&d, input_handlers,
+				sizeof(input_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	} else if (block == CMD_BLOCK_SEAT) {
+		return bsearch(&d, seat_handlers,
+				sizeof(seat_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+	}
+
+	if (!config_loading) {
+		res = bsearch(&d, command_handlers,
+				sizeof(command_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+
+		if (res) {
+			return res;
+		}
+	}
+
+	if (config->reading) {
+		res = bsearch(&d, config_handlers,
+				sizeof(config_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+
+		if (res) {
+			return res;
+		}
+	}
+
+	res = bsearch(&d, handlers,
 			sizeof(handlers) / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
-	}
+
 	return res;
 }
 
-struct cmd_results *handle_command(char *_exec, enum command_context context) {
+struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
-	// error string we could e.g. concatonate all errors there.)
+	// error string we could e.g. concatenate all errors there.)
 	struct cmd_results *results = NULL;
 	char *exec = strdup(_exec);
 	char *head = exec;
@@ -381,10 +270,22 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 	char *cmd;
 	list_t *containers = NULL;
 
+	if (seat == NULL) {
+		// passing a NULL seat means we just pick the default seat
+		seat = input_manager_get_default_seat(input_manager);
+		if (!sway_assert(seat, "could not find a seat to run the command on")) {
+			return NULL;
+		}
+	}
+
+	config->handler_context.seat = seat;
+
 	head = exec;
 	do {
 		// Extract criteria (valid for this command list only).
+		bool has_criteria = false;
 		if (*head == '[') {
+			has_criteria = true;
 			++head;
 			char *criteria_string = argsep(&head, "]");
 			if (head) {
@@ -393,13 +294,14 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				char *error;
 
 				if ((error = extract_crit_tokens(tokens, criteria_string))) {
+					wlr_log(L_DEBUG, "criteria string parse error: %s", error);
 					results = cmd_results_new(CMD_INVALID, criteria_string,
 						"Can't parse criteria string: %s", error);
 					free(error);
 					free(tokens);
 					goto cleanup;
 				}
-				containers = container_for(tokens);
+				containers = container_for_crit_tokens(tokens);
 
 				free(tokens);
 			} else {
@@ -419,10 +321,10 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 			cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
-				sway_log(L_INFO, "Ignoring empty command.");
+				wlr_log(L_INFO, "Ignoring empty command.");
 				continue;
 			}
-			sway_log(L_INFO, "Handling command '%s'", cmd);
+			wlr_log(L_INFO, "Handling command '%s'", cmd);
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
@@ -443,31 +345,16 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 				free_argv(argc, argv);
 				goto cleanup;
 			}
-			if (!(get_command_policy_mask(argv[0]) & context)) {
-				if (results) {
-					free_cmd_results(results);
-				}
-				results = cmd_results_new(CMD_INVALID, cmd,
-						"Permission denied for %s via %s", cmd,
-						command_policy_str(context));
-				free_argv(argc, argv);
-				goto cleanup;
-			}
-			int i = 0;
-			do {
-				if (!containers) {
-					current_container = get_focused_container(&root_container);
-				} else if (containers->length == 0) {
-					if (results) {
-						free_cmd_results(results);
-					}
-					results = cmd_results_new(CMD_FAILURE, argv[0], "No matching container");
-					goto cleanup;
-				} else {
-					current_container = (swayc_t *)containers->items[i];
-				}
-				sway_log(L_INFO, "Running on container '%s'", current_container->name);
 
+			if (!has_criteria) {
+				// without criteria, the command acts upon the focused
+				// container
+				config->handler_context.current_container =
+					seat_get_focus_inactive(seat, &root_container);
+				if (!sway_assert(config->handler_context.current_container,
+						"could not get focus-inactive for root container")) {
+					return NULL;
+				}
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status != CMD_SUCCESS) {
 					free_argv(argc, argv);
@@ -478,35 +365,39 @@ struct cmd_results *handle_command(char *_exec, enum command_context context) {
 					goto cleanup;
 				}
 				free_cmd_results(res);
-				++i;
-			} while(containers && i < containers->length);
-
+			} else {
+				for (int i = 0; i < containers->length; ++i) {
+					config->handler_context.current_container = containers->items[i];
+					struct cmd_results *res = handler->handle(argc-1, argv+1);
+					if (res->status != CMD_SUCCESS) {
+						free_argv(argc, argv);
+						if (results) {
+							free_cmd_results(results);
+						}
+						results = res;
+						goto cleanup;
+					}
+					free_cmd_results(res);
+				}
+			}
 			free_argv(argc, argv);
 		} while(cmdlist);
-
-		if (containers) {
-			list_free(containers);
-			containers = NULL;
-		}
 	} while(head);
-	cleanup:
+cleanup:
 	free(exec);
-	if (containers) {
-		free(containers);
-	}
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	return results;
 }
 
-// this is like handle_command above, except:
+// this is like execute_command above, except:
 // 1) it ignores empty commands (empty lines)
 // 2) it does variable substitution
 // 3) it doesn't split commands (because the multiple commands are supposed to
 //	  be chained together)
-// 4) handle_command handles all state internally while config_command has some
-//	  state handled outside (notably the block mode, in read_config)
+// 4) execute_command handles all state internally while config_command has
+// some state handled outside (notably the block mode, in read_config)
 struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	struct cmd_results *results = NULL;
 	int argc;
@@ -516,7 +407,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 		goto cleanup;
 	}
 
-	sway_log(L_INFO, "handling config command '%s'", exec);
+	wlr_log(L_INFO, "handling config command '%s'", exec);
 	// Endblock
 	if (**argv == '}') {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
@@ -530,12 +421,13 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	}
 	int i;
 	// Var replacement, for all but first argument of set
+	// TODO commands
 	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 		argv[i] = do_var_replacement(argv[i]);
 		unescape_string(argv[i]);
 	}
-	/* Strip quotes for first argument.
-	 * TODO This part needs to be handled much better */
+	// Strip quotes for first argument.
+	// TODO This part needs to be handled much better
 	if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
 		strip_quotes(argv[1]);
 	}
@@ -619,7 +511,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	policy->context = context;
 
-	sway_log(L_INFO, "Set command policy for %s to %d",
+	wlr_log(L_INFO, "Set command policy for %s to %d",
 			policy->command, policy->context);
 
 	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -629,10 +521,11 @@ cleanup:
 	return results;
 }
 
-struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, const char *format, ...) {
+struct cmd_results *cmd_results_new(enum cmd_status status,
+		const char *input, const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	if (!results) {
-		sway_log(L_ERROR, "Unable to allocate command results");
+		wlr_log(L_ERROR, "Unable to allocate command results");
 		return NULL;
 	}
 	results->status = status;
@@ -669,16 +562,51 @@ void free_cmd_results(struct cmd_results *results) {
 const char *cmd_results_to_json(struct cmd_results *results) {
 	json_object *result_array = json_object_new_array();
 	json_object *root = json_object_new_object();
-	json_object_object_add(root, "success", json_object_new_boolean(results->status == CMD_SUCCESS));
+	json_object_object_add(root, "success",
+			json_object_new_boolean(results->status == CMD_SUCCESS));
 	if (results->input) {
-		json_object_object_add(root, "input", json_object_new_string(results->input));
+		json_object_object_add(
+				root, "input", json_object_new_string(results->input));
 	}
 	if (results->error) {
-		json_object_object_add(root, "error", json_object_new_string(results->error));
+		json_object_object_add(
+				root, "error", json_object_new_string(results->error));
 	}
 	json_object_array_add(result_array, root);
 	const char *json = json_object_to_json_string(result_array);
 	free(result_array);
 	free(root);
 	return json;
+}
+
+/**
+ * Check and add color to buffer.
+ *
+ * return error object, or NULL if color is valid.
+ */
+struct cmd_results *add_color(const char *name,
+		char *buffer, const char *color) {
+	int len = strlen(color);
+	if (len != 7 && len != 9) {
+		return cmd_results_new(CMD_INVALID, name,
+				"Invalid color definition %s", color);
+	}
+	if (color[0] != '#') {
+		return cmd_results_new(CMD_INVALID, name,
+				"Invalid color definition %s", color);
+	}
+	for (int i = 1; i < len; ++i) {
+		if (!isxdigit(color[i])) {
+			return cmd_results_new(CMD_INVALID, name,
+					"Invalid color definition %s", color);
+		}
+	}
+	strncpy(buffer, color, len);
+	// add default alpha channel if color was defined without it
+	if (len == 7) {
+		buffer[7] = 'f';
+		buffer[8] = 'f';
+	}
+	buffer[9] = '\0';
+	return NULL;
 }

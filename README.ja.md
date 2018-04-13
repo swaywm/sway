@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "**S**irCmpwn's **Way**land compositor"は**開発中**の
 i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
@@ -38,7 +38,7 @@ Swayは沢山のディストリビューションで提供されています。"
 
 次の依存パッケージをインストールしてください:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -46,7 +46,7 @@ Swayは沢山のディストリビューションで提供されています。"
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -60,11 +60,9 @@ _\*\*swaylockでのみ必要です_
 
 次のコマンドを実行してください:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 logindを使用しているシステムでは、バイナリにいくつかのケーパビリティを設定する必要があります:
 

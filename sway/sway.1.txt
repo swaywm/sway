@@ -1,5 +1,5 @@
 /////
-vim:set ts=4 sw=4 tw=82 noet:
+vim:set ft=asciidoc ts=4 sw=4 tw=82 noet:
 /////
 :quotes.~:
 
@@ -92,27 +92,6 @@ The following environment variables have an effect on sway:
 
 *SWAYSOCK*::
 	Specifies the path to the sway IPC socket.
-
-*WLC_DRM_DEVICE*::
-	Specifies the device to use in DRM mode.
-
-*WLC_SHM*::
-	Set 1 to force EGL clients to use shared memory.
-
-*WLC_OUTPUTS*::
-	Number of fake outputs to use when running in X11 mode.
-
-*WLC_XWAYLAND*::
-	Set to 0 to disable Xwayland support.
-
-*WLC_LIBINPUT*::
-	Set to 1 to force libinput (even in X11 mode).
-
-*WLC_REPEAT_DELAY*::
-	Configures the keyboard repeat delay.
-
-*WLC_REPEAT_RATE*::
-	Configures the keyboard repeat rate.
 
 *XKB_DEFAULT_RULES*, *XKB_DEFAULT_MODEL*, *XKB_DEFAULT_LAYOUT*, *XKB_DEFAULT_VARIANT*, *XKB_DEFAULT_OPTIONS*::
 	Configures the xkb keyboard settings. See xkeyboard-config(7).

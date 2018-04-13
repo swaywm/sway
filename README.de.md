@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Mit fosspay spenden](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 Der Fortschritt dieser Übersetzung kann [hier](https://github.com/swaywm/sway/issues/1318) 
 eingesehen werden.
@@ -52,7 +52,7 @@ schau im IRC-Channel vorbei oder schreibe eine e-Mail an sir@cmpwn.com (nur engl
 
 Abhängigkeiten:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -60,7 +60,7 @@ Abhängigkeiten:
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -74,11 +74,9 @@ _\*\*Nur erforderlich für swaylock_
 
 Führe diese Befehle aus:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 In Systemen mit logind musst du `sway` einige Capabilities geben:
 

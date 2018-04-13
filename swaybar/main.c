@@ -4,21 +4,20 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include <wlr/util/log.h>
 #include "swaybar/bar.h"
 #include "ipc-client.h"
-#include "log.h"
 
-/* global bar state */
-struct bar swaybar;
-
-void sway_terminate(int exit_code) {
-	bar_teardown(&swaybar);
-	exit(exit_code);
-}
+static struct swaybar swaybar;
 
 void sig_handler(int signal) {
 	bar_teardown(&swaybar);
 	exit(0);
+}
+
+void sway_terminate(int code) {
+	bar_teardown(&swaybar);
+	exit(code);
 }
 
 int main(int argc, char **argv) {
@@ -75,20 +74,23 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (!bar_id) {
-		sway_abort("No bar_id passed. Provide --bar_id or let sway start swaybar");
+	if (debug) {
+		wlr_log_init(L_DEBUG, NULL);
+	} else {
+		wlr_log_init(L_ERROR, NULL);
 	}
 
-	if (debug) {
-		init_log(L_DEBUG);
-	} else {
-		init_log(L_ERROR);
+	if (!bar_id) {
+		wlr_log(L_ERROR, "No bar_id passed. "
+				"Provide --bar_id or let sway start swaybar");
+		return 1;
 	}
 
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
-			sway_abort("Unable to retrieve socket path");
+			wlr_log(L_ERROR, "Unable to retrieve socket path");
+			return 1;
 		}
 	}
 
@@ -100,9 +102,6 @@ int main(int argc, char **argv) {
 	free(bar_id);
 
 	bar_run(&swaybar);
-
-	// gracefully shutdown swaybar and status_command
 	bar_teardown(&swaybar);
-
 	return 0;
 }

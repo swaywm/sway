@@ -1,387 +1,166 @@
-#define _XOPEN_SOURCE 500
-#include "wayland-swaylock-client-protocol.h"
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-names.h>
-#include <security/pam_appl.h>
-#include <json-c/json.h>
+#define _XOPEN_SOURCE 700
+#define _POSIX_C_SOURCE 200112L
+#include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <getopt.h>
-#include <signal.h>
-#include <stdbool.h>
+#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
-#include "client/window.h"
-#include "client/registry.h"
-#include "client/cairo.h"
+#include <wayland-client.h>
+#include <wlr/util/log.h>
+#include "swaylock/seat.h"
 #include "swaylock/swaylock.h"
-#include "ipc-client.h"
-#include "log.h"
+#include "background-image.h"
+#include "pool-buffer.h"
+#include "cairo.h"
 #include "util.h"
+#include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-struct registry *registry;
-struct render_data render_data;
-struct lock_config *config;
-bool show_indicator = true;
-
-void wl_dispatch_events() {
-	wl_display_flush(registry->display);
-	if (wl_display_dispatch(registry->display) == -1) {
-		sway_log(L_ERROR, "failed to run wl_display_dispatch");
+static void daemonize() {
+	int fds[2];
+	if (pipe(fds) != 0) {
+		wlr_log(L_ERROR, "Failed to pipe");
 		exit(1);
 	}
-}
-
-void sigalarm_handler(int sig) {
-	signal(SIGALRM, SIG_IGN);
-	// Hide typing indicator
-	render_data.auth_state = AUTH_STATE_IDLE;
-	render(&render_data, config);
-	wl_display_flush(registry->display);
-	signal(SIGALRM, sigalarm_handler);
-}
-
-void sway_terminate(int exit_code) {
-	int i;
-	for (i = 0; i < render_data.surfaces->length; ++i) {
-		struct window *window = render_data.surfaces->items[i];
-		window_teardown(window);
-	}
-	list_free(render_data.surfaces);
-	if (registry) {
-		registry_teardown(registry);
-	}
-	exit(exit_code);
-}
-
-char *password;
-int password_size;
-enum line_source line_source = LINE_SOURCE_DEFAULT;
-
-struct lock_config *init_config() {
-	struct lock_config *config = calloc(1, sizeof(struct lock_config));
-
-	config->font = strdup("sans-serif");
-	config->colors.text = 0x000000FF;
-
-	config->colors.line = 0x000000FF;
-	config->colors.separator = 0x000000FF;
-
-	config->colors.input_cursor = 0x33DB00FF;
-	config->colors.backspace_cursor = 0xDB3300FF;
-
-	config->colors.normal.inner_ring = 0x000000BF;
-	config->colors.normal.outer_ring = 0x337D00FF;
-
-	config->colors.validating.inner_ring = 0x0072FFBF;
-	config->colors.validating.outer_ring = 0x3300FAFF;
-
-	config->colors.invalid.inner_ring = 0xFA0000BF;
-	config->colors.invalid.outer_ring = 0x7D3300FF;
-
-	config->radius = 50;
-	config->thickness = 10;
-
-	return config;
-}
-
-void free_config(struct lock_config *config) {
-	free(config->font);
-	free(config);
-}
-
-int function_conversation(int num_msg, const struct pam_message **msg,
-		struct pam_response **resp, void *appdata_ptr) {
-
-	const char* msg_style_names[] = {
-		NULL,
-		"PAM_PROMPT_ECHO_OFF",
-		"PAM_PROMPT_ECHO_ON",
-		"PAM_ERROR_MSG",
-		"PAM_TEXT_INFO",
-	};
-
-	/* PAM expects an array of responses, one for each message */
-	struct pam_response *pam_reply = calloc(num_msg, sizeof(struct pam_response));
-	*resp = pam_reply;
-
-	for(int i=0; i<num_msg; ++i) {
-		sway_log(L_DEBUG, "msg[%d]: (%s) %s", i,
-				msg_style_names[msg[i]->msg_style],
-				msg[i]->msg);
-
-		switch (msg[i]->msg_style) {
-		case PAM_PROMPT_ECHO_OFF:
-		case PAM_PROMPT_ECHO_ON:
-			pam_reply[i].resp = password;
-			break;
-
-		case PAM_ERROR_MSG:
-		case PAM_TEXT_INFO:
-			break;
+	if (fork() == 0) {
+		close(fds[0]);
+		int devnull = open("/dev/null", O_RDWR);
+		dup2(STDOUT_FILENO, devnull);
+		dup2(STDERR_FILENO, devnull);
+		uint8_t success = 0;
+		if (chdir("/") != 0) {
+			write(fds[1], &success, 1);
+			exit(1);
 		}
-	}
-
-	return PAM_SUCCESS;
-}
-
-/**
- * Note: PAM will free() 'password' during the process
- */
-bool verify_password() {
-	struct passwd *passwd = getpwuid(getuid());
-	char *username = passwd->pw_name;
-
-	const struct pam_conv local_conversation = { function_conversation, NULL };
-	pam_handle_t *local_auth_handle = NULL;
-	int pam_err;
-	if ((pam_err = pam_start("swaylock", username, &local_conversation, &local_auth_handle)) != PAM_SUCCESS) {
-		sway_abort("PAM returned %d\n", pam_err);
-	}
-	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
-		return false;
-	}
-	if ((pam_err = pam_end(local_auth_handle, pam_err)) != PAM_SUCCESS) {
-		return false;
-	}
-	return true;
-}
-
-void notify_key(enum wl_keyboard_key_state state, xkb_keysym_t sym, uint32_t code, uint32_t codepoint) {
-	int redraw_screen = 0;
-	char *password_realloc;
-	int i;
-
-	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		switch (sym) {
-		case XKB_KEY_KP_Enter:
-		case XKB_KEY_Return:
-			render_data.auth_state = AUTH_STATE_VALIDATING;
-
-			render(&render_data, config);
-			// Make sure our render call will actually be displayed on the screen
-			wl_dispatch_events();
-
-			if (verify_password()) {
-				exit(0);
-			}
-
-			render_data.auth_state = AUTH_STATE_INVALID;
-			redraw_screen = 1;
-
-			password_size = 1024;
-			password = malloc(password_size);
-			password[0] = '\0';
-			break;
-		case XKB_KEY_BackSpace:
-			i = strlen(password);
-			if (i > 0) {
-				password[i - 1] = '\0';
-				render_data.auth_state = AUTH_STATE_BACKSPACE;
-				redraw_screen = 1;
-			}
-			break;
-		case XKB_KEY_Control_L:
-		case XKB_KEY_Control_R:
-		case XKB_KEY_Shift_L:
-		case XKB_KEY_Shift_R:
-		case XKB_KEY_Caps_Lock:
-		case XKB_KEY_Shift_Lock:
-		case XKB_KEY_Meta_L:
-		case XKB_KEY_Meta_R:
-		case XKB_KEY_Alt_L:
-		case XKB_KEY_Alt_R:
-		case XKB_KEY_Super_L:
-		case XKB_KEY_Super_R:
-		case XKB_KEY_Hyper_L:
-		case XKB_KEY_Hyper_R:
-			break; // don't draw screen on modifier keys
-		case XKB_KEY_Escape:
-		case XKB_KEY_u:
-		case XKB_KEY_U:
-			// clear password buffer on ctrl-u (or escape for i3lock compatibility)
-			if (sym == XKB_KEY_Escape || xkb_state_mod_name_is_active(registry->input->xkb.state,
-					XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) > 0) {
-				render_data.auth_state = AUTH_STATE_BACKSPACE;
-				redraw_screen = 1;
-
-				password_size = 1024;
-				free(password);
-				password = malloc(password_size);
-				password[0] = '\0';
-				break;
-			}
-			/* fallthrough */
-		default:
-			render_data.auth_state = AUTH_STATE_INPUT;
-			redraw_screen = 1;
-			i = strlen(password);
-			if (i + 1 == password_size) {
-				password_size += 1024;
-				password_realloc = realloc(password, password_size);
-				// reset password if realloc fails.
-				if (password_realloc == NULL) {
-					password_size = 1024;
-					free(password);
-					password = malloc(password_size);
-					password[0] = '\0';
-					break;
-				} else {
-					password = password_realloc;
-				}
-			}
-			password[i] = (char)codepoint;
-			password[i + 1] = '\0';
-			break;
+		success = 1;
+		if (write(fds[1], &success, 1) != 1) {
+			exit(1);
 		}
-		if (redraw_screen) {
-			render(&render_data, config);
-			wl_dispatch_events();
-			// Hide the indicator after a couple of seconds
-			alarm(5);
+		close(fds[1]);
+	} else {
+		close(fds[1]);
+		uint8_t success;
+		if (read(fds[0], &success, 1) != 1 || !success) {
+			wlr_log(L_ERROR, "Failed to daemonize");
+			exit(1);
 		}
+		close(fds[0]);
+		exit(0);
 	}
 }
 
-void render_color(struct window *window, uint32_t color) {
-	cairo_set_source_u32(window->cairo, color);
-	cairo_paint(window->cairo);
+static void layer_surface_configure(void *data,
+		struct zwlr_layer_surface_v1 *layer_surface,
+		uint32_t serial, uint32_t width, uint32_t height) {
+	struct swaylock_surface *surface = data;
+	surface->width = width;
+	surface->height = height;
+	zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
+	render_frame(surface);
 }
 
-void render_image(struct window *window, cairo_surface_t *image, enum scaling_mode scaling_mode) {
-	double width = cairo_image_surface_get_width(image);
-	double height = cairo_image_surface_get_height(image);
-	int wwidth = window->width * window->scale;
-	int wheight = window->height * window->scale;
-
-	switch (scaling_mode) {
-	case SCALING_MODE_STRETCH:
-		cairo_scale(window->cairo,
-				(double) wwidth / width,
-				(double) wheight / height);
-		cairo_set_source_surface(window->cairo, image, 0, 0);
-		break;
-	case SCALING_MODE_FILL:
-	{
-		double window_ratio = (double) wwidth / wheight;
-		double bg_ratio = width / height;
-
-		if (window_ratio > bg_ratio) {
-			double scale = (double) wwidth / width;
-			cairo_scale(window->cairo, scale, scale);
-			cairo_set_source_surface(window->cairo, image,
-					0,
-					(double) wheight/2 / scale - height/2);
-		} else {
-			double scale = (double) wheight / height;
-			cairo_scale(window->cairo, scale, scale);
-			cairo_set_source_surface(window->cairo, image,
-					(double) wwidth/2 / scale - width/2,
-					0);
-		}
-		break;
-	}
-	case SCALING_MODE_FIT:
-	{
-		double window_ratio = (double) wwidth / wheight;
-		double bg_ratio = width / height;
-
-		if (window_ratio > bg_ratio) {
-			double scale = (double) wheight / height;
-			cairo_scale(window->cairo, scale, scale);
-			cairo_set_source_surface(window->cairo, image,
-					(double) wwidth/2 / scale - width/2,
-					0);
-		} else {
-			double scale = (double) wwidth / width;
-			cairo_scale(window->cairo, scale, scale);
-			cairo_set_source_surface(window->cairo, image,
-					0,
-					(double) wheight/2 / scale - height/2);
-		}
-		break;
-	}
-	case SCALING_MODE_CENTER:
-		cairo_set_source_surface(window->cairo, image,
-				(double) wwidth/2 - width/2,
-				(double) wheight/2 - height/2);
-		break;
-	case SCALING_MODE_TILE:
-	{
-		cairo_pattern_t *pattern = cairo_pattern_create_for_surface(image);
-		cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
-		cairo_set_source(window->cairo, pattern);
-		break;
-	}
-	}
-
-	cairo_paint(window->cairo);
+static void layer_surface_closed(void *data,
+		struct zwlr_layer_surface_v1 *layer_surface) {
+	struct swaylock_surface *surface = data;
+	zwlr_layer_surface_v1_destroy(surface->layer_surface);
+	wl_surface_destroy(surface->surface);
+	surface->state->run_display = false;
 }
 
-cairo_surface_t *load_image(char *image_path) {
-	cairo_surface_t *image = NULL;
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+	.configure = layer_surface_configure,
+	.closed = layer_surface_closed,
+};
 
-#ifdef WITH_GDK_PIXBUF
-	GError *err = NULL;
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, &err);
-	if (!pixbuf) {
-		sway_abort("Failed to load background image: %s", err->message);
-	}
-	image = gdk_cairo_image_surface_create_from_pixbuf(pixbuf);
-	g_object_unref(pixbuf);
-#else
-	image = cairo_image_surface_create_from_png(image_path);
-#endif //WITH_GDK_PIXBUF
-	if (!image) {
-		sway_abort("Failed to read background image.");
-	}
-
-	return image;
+static void output_geometry(void *data, struct wl_output *output, int32_t x,
+		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
+		const char *make, const char *model, int32_t transform) {
+	// Who cares
 }
+
+static void output_mode(void *data, struct wl_output *output, uint32_t flags,
+		int32_t width, int32_t height, int32_t refresh) {
+	// Who cares
+}
+
+static void output_done(void *data, struct wl_output *output) {
+	// Who cares
+}
+
+static void output_scale(void *data, struct wl_output *output, int32_t factor) {
+	struct swaylock_surface *surface = data;
+	surface->scale = factor;
+	if (surface->state->run_display) {
+		render_frames(surface->state);
+	}
+}
+
+struct wl_output_listener output_listener = {
+	.geometry = output_geometry,
+	.mode = output_mode,
+	.done = output_done,
+	.scale = output_scale,
+};
+
+static void handle_global(void *data, struct wl_registry *registry,
+		uint32_t name, const char *interface, uint32_t version) {
+	struct swaylock_state *state = data;
+	if (strcmp(interface, wl_compositor_interface.name) == 0) {
+		state->compositor = wl_registry_bind(registry, name,
+				&wl_compositor_interface, 3);
+	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
+		state->shm = wl_registry_bind(registry, name,
+				&wl_shm_interface, 1);
+	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
+		struct wl_seat *seat = wl_registry_bind(
+				registry, name, &wl_seat_interface, 1);
+		wl_seat_add_listener(seat, &seat_listener, state);
+	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+		state->layer_shell = wl_registry_bind(
+				registry, name, &zwlr_layer_shell_v1_interface, 1);
+	} else if (strcmp(interface, zwlr_input_inhibit_manager_v1_interface.name) == 0) {
+		state->input_inhibit_manager = wl_registry_bind(
+				registry, name, &zwlr_input_inhibit_manager_v1_interface, 1);
+	} else if (strcmp(interface, wl_output_interface.name) == 0) {
+		struct swaylock_surface *surface =
+			calloc(1, sizeof(struct swaylock_surface));
+		surface->state = state;
+		surface->output = wl_registry_bind(registry, name,
+				&wl_output_interface, 3);
+		wl_output_add_listener(surface->output, &output_listener, surface);
+		wl_list_insert(&state->surfaces, &surface->link);
+	}
+}
+
+static void handle_global_remove(void *data, struct wl_registry *registry,
+		uint32_t name) {
+	// who cares
+}
+
+static const struct wl_registry_listener registry_listener = {
+	.global = handle_global,
+	.global_remove = handle_global_remove,
+};
+
+static struct swaylock_state state;
 
 int main(int argc, char **argv) {
-	const char *scaling_mode_str = "fit", *socket_path = NULL;
-	int i;
-	void *images = NULL;
-	config = init_config();
-
-	render_data.num_images = 0;
-	render_data.color_set = 0;
-	render_data.color = 0xFFFFFFFF;
-	render_data.auth_state = AUTH_STATE_IDLE;
-
-	init_log(L_INFO);
-	// Install SIGALARM handler (for hiding the typing indicator)
-	signal(SIGALRM, sigalarm_handler);
-
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
 		{"color", required_argument, NULL, 'c'},
 		{"image", required_argument, NULL, 'i'},
-		{"scaling", required_argument, NULL, 0},
+		{"scaling", required_argument, NULL, 's'},
 		{"tiling", no_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
 		{"socket", required_argument, NULL, 'p'},
 		{"no-unlock-indicator", no_argument, NULL, 'u'},
 		{"daemonize", no_argument, NULL, 'f'},
-		{"font", required_argument, NULL, 0},
-		{"line-uses-ring", no_argument, NULL, 'r'},
-		{"line-uses-inside", no_argument, NULL, 's'},
-		{"textcolor", required_argument, NULL, 0},
-		{"insidevercolor", required_argument, NULL, 0},
-		{"insidewrongcolor", required_argument, NULL, 0},
-		{"insidecolor", required_argument, NULL, 0},
-		{"ringvercolor", required_argument, NULL, 0},
-		{"ringwrongcolor", required_argument, NULL, 0},
-		{"ringcolor", required_argument, NULL, 0},
-		{"linecolor", required_argument, NULL, 0},
-		{"separatorcolor", required_argument, NULL, 0},
-		{"keyhlcolor", required_argument, NULL, 0},
-		{"bshlcolor", required_argument, NULL, 0},
-		{"indicator-radius", required_argument, NULL, 0},
-		{"indicator-thickness", required_argument, NULL, 0},
 		{0, 0, 0, 0}
 	};
 
@@ -390,415 +169,124 @@ int main(int argc, char **argv) {
 		"\n"
 		"  -h, --help                     Show help message and quit.\n"
 		"  -c, --color <rrggbb[aa]>       Turn the screen into the given color instead of white.\n"
-		"  --scaling                      Scaling mode: stretch, fill, fit, center, tile.\n"
+		"  -s, --scaling                  Scaling mode: stretch, fill, fit, center, tile.\n"
 		"  -t, --tiling                   Same as --scaling=tile.\n"
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
-		"  -f, --daemonize                Detach from the controlling terminal.\n"
-		"  --socket <socket>              Use the specified socket.\n"
-		"  For more information see `man swaylock`\n";
+		"  -f, --daemonize                Detach from the controlling terminal.\n" 
+		"  --socket <socket>              Use the specified socket.\n";
 
-
-	registry = registry_poll();
+	struct swaylock_args args = {
+		.mode = BACKGROUND_MODE_SOLID_COLOR,
+		.color = 0xFFFFFFFF,
+		.show_indicator = true,
+	};
+	cairo_surface_t *background_image = NULL;
+	state.args = args;
+	wlr_log_init(L_DEBUG, NULL);
 
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hc:i:srtvuf", long_options, &option_index);
+		c = getopt_long(argc, argv, "hc:i:s:tvuf", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
-		case 'c':
-		{
-			render_data.color = parse_color(optarg);
-			render_data.color_set = 1;
+		case 'c': {
+			state.args.color = parse_color(optarg);
+			state.args.mode = BACKGROUND_MODE_SOLID_COLOR;
 			break;
 		}
 		case 'i':
-		{
-			char *image_path = strchr(optarg, ':');
-			if (image_path == NULL) {
-				if (render_data.num_images == 0) {
-					// Provided image without output
-					render_data.image = load_image(optarg);
-					render_data.num_images = -1;
-				} else {
-					sway_log(L_ERROR, "output must be defined for all --images or no --images");
-					exit(EXIT_FAILURE);
-				}
-			} else {
-				// Provided image for all outputs
-				if (render_data.num_images == 0) {
-					images = calloc(registry->outputs->length, sizeof(char*) * 2);
-				} else if (render_data.num_images == -1) {
-					sway_log(L_ERROR, "output must be defined for all --images or no --images");
-					exit(EXIT_FAILURE);
-				}
-
-				image_path[0] = '\0';
-				((char**) images)[render_data.num_images * 2] = optarg;
-				((char**) images)[render_data.num_images++ * 2 + 1] = ++image_path;
+			// TODO: Multiple background images (bleh)
+			background_image = load_background_image(optarg);
+			if (!background_image) {
+				return 1;
 			}
-			break;
-		}
-		case 't':
-			scaling_mode_str = "tile";
-			break;
-		case 'p':
-			socket_path = optarg;
-			break;
-		case 'v':
-			fprintf(stdout, "swaylock version " SWAY_VERSION "\n");
-			exit(EXIT_SUCCESS);
-			break;
-		case 'u':
-			show_indicator = false;
-			break;
-		case 'f': {
-			pid_t t = fork();
-			if (t == -1) {
-				sway_log(L_ERROR, "daemon call failed");
-				exit(EXIT_FAILURE);
-			} else if (t > 0) {
-				exit(0);
-			}
-			break;
-		}
-		case 'r':
-			if (line_source != LINE_SOURCE_DEFAULT) {
-				sway_log(L_ERROR, "line source options conflict");
-				exit(EXIT_FAILURE);
-			}
-			line_source = LINE_SOURCE_RING;
+			state.args.mode = BACKGROUND_MODE_FILL;
 			break;
 		case 's':
-			if (line_source != LINE_SOURCE_DEFAULT) {
-				sway_log(L_ERROR, "line source options conflict");
-				exit(EXIT_FAILURE);
+			state.args.mode = parse_background_mode(optarg);
+			if (state.args.mode == BACKGROUND_MODE_INVALID) {
+				return 1;
 			}
-			line_source = LINE_SOURCE_INSIDE;
 			break;
-		case 0:
-			if (strcmp(long_options[option_index].name, "font") == 0) {
-				free(config->font);
-				config->font = strdup(optarg);
-			} else if (strcmp(long_options[option_index].name, "scaling") == 0) {
-				scaling_mode_str = optarg;
-			} else if (strcmp(long_options[option_index].name, "textcolor") == 0) {
-				config->colors.text = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "insidevercolor") == 0) {
-				config->colors.validating.inner_ring = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "insidewrongcolor") == 0) {
-				config->colors.invalid.inner_ring = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "insidecolor") == 0) {
-				config->colors.normal.inner_ring = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "ringvercolor") == 0) {
-				config->colors.validating.outer_ring = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "ringwrongcolor") == 0) {
-				config->colors.invalid.outer_ring = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "ringcolor") == 0) {
-				config->colors.normal.outer_ring = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "linecolor") == 0) {
-				config->colors.line = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "separatorcolor") == 0) {
-				config->colors.separator = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "keyhlcolor") == 0) {
-				config->colors.input_cursor = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "bshlcolor") == 0) {
-				config->colors.backspace_cursor = parse_color(optarg);
-			} else if (strcmp(long_options[option_index].name, "indicator-radius") == 0) {
-				config->radius = atoi(optarg);
-			} else if (strcmp(long_options[option_index].name, "indicator-thickness") == 0) {
-				config->thickness = atoi(optarg);
-			}
+		case 't':
+			state.args.mode = BACKGROUND_MODE_TILE;
+			break;
+		case 'v':
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n",
+					SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
+#else
+			fprintf(stdout, "version unknown\n");
+#endif
+			return 0;
+		case 'u':
+			state.args.show_indicator = false;
+			break;
+		case 'f':
+			daemonize();
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
-			exit(EXIT_FAILURE);
+			return 1;
 		}
 	}
 
-	render_data.scaling_mode = SCALING_MODE_STRETCH;
-	if (strcmp(scaling_mode_str, "stretch") == 0) {
-		render_data.scaling_mode = SCALING_MODE_STRETCH;
-	} else if (strcmp(scaling_mode_str, "fill") == 0) {
-		render_data.scaling_mode = SCALING_MODE_FILL;
-	} else if (strcmp(scaling_mode_str, "fit") == 0) {
-		render_data.scaling_mode = SCALING_MODE_FIT;
-	} else if (strcmp(scaling_mode_str, "center") == 0) {
-		render_data.scaling_mode = SCALING_MODE_CENTER;
-	} else if (strcmp(scaling_mode_str, "tile") == 0) {
-		render_data.scaling_mode = SCALING_MODE_TILE;
-	} else {
-		sway_abort("Unsupported scaling mode: %s", scaling_mode_str);
+	wl_list_init(&state.surfaces);
+	state.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	state.display = wl_display_connect(NULL);
+	assert(state.display);
+
+	struct wl_registry *registry = wl_display_get_registry(state.display);
+	wl_registry_add_listener(registry, &registry_listener, &state);
+	wl_display_roundtrip(state.display);
+	assert(state.compositor && state.layer_shell && state.shm);
+	if (!state.input_inhibit_manager) {
+		wlr_log(L_ERROR, "Compositor does not support the input inhibitor "
+				"protocol, refusing to run insecurely");
 	}
 
-	password_size = 1024;
-	password = malloc(password_size);
-	password[0] = '\0';
-	render_data.surfaces = create_list();
-	if (!socket_path) {
-		socket_path = get_socketpath();
-		if (!socket_path) {
-			sway_abort("Unable to retrieve socket path");
-		}
+	if (wl_list_empty(&state.surfaces)) {
+		wlr_log(L_DEBUG, "Exiting - no outputs to show on.");
+		return 0;
 	}
 
-	if (!registry) {
-		sway_abort("Unable to connect to wayland compositor");
+	struct swaylock_surface *surface;
+	wl_list_for_each(surface, &state.surfaces, link) {
+		surface->image = background_image;
+
+		surface->surface = wl_compositor_create_surface(state.compositor);
+		assert(surface->surface);
+
+		surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+				state.layer_shell, surface->surface, surface->output,
+				ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "lockscreen");
+		assert(surface->layer_surface);
+
+		zwlr_layer_surface_v1_set_size(surface->layer_surface, 0, 0);
+		zwlr_layer_surface_v1_set_anchor(surface->layer_surface,
+				ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+				ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+				ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
+				ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
+		zwlr_layer_surface_v1_set_exclusive_zone(surface->layer_surface, -1);
+		zwlr_layer_surface_v1_set_keyboard_interactivity(
+				surface->layer_surface, true);
+		zwlr_layer_surface_v1_add_listener(surface->layer_surface,
+				&layer_surface_listener, surface);
+		wl_surface_commit(surface->surface);
+		wl_display_roundtrip(state.display);
 	}
 
-	if (!registry->swaylock) {
-		sway_abort("swaylock requires the compositor to support the swaylock extension.");
+	zwlr_input_inhibit_manager_v1_get_inhibitor(state.input_inhibit_manager);
+
+	state.run_display = true;
+	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
+		// This space intentionally left blank
 	}
-
-	if (registry->pointer) {
-		// We don't want swaylock to have a pointer
-		wl_pointer_destroy(registry->pointer);
-		registry->pointer = NULL;
-	}
-
-	for (i = 0; i < registry->outputs->length; ++i) {
-		struct output_state *output = registry->outputs->items[i];
-		struct window *window = window_setup(registry,
-				output->width, output->height, output->scale, true);
-		if (!window) {
-			sway_abort("Failed to create surfaces.");
-		}
-		list_add(render_data.surfaces, window);
-	}
-
-	registry->input->notify = notify_key;
-
-	// Different background for the output
-	if (render_data.num_images >= 1) {
-		char **displays_paths = images;
-		render_data.images = calloc(registry->outputs->length, sizeof(cairo_surface_t*));
-
-		int socketfd = ipc_open_socket(socket_path);
-		uint32_t len = 0;
-		char *outputs = ipc_single_command(socketfd, IPC_GET_OUTPUTS, "", &len);
-		struct json_object *json_outputs = json_tokener_parse(outputs);
-
-		for (i = 0; i < registry->outputs->length; ++i) {
-			if (displays_paths[i * 2] != NULL) {
-				for (int j = 0;; ++j) {
-					if (j >= json_object_array_length(json_outputs)) {
-						sway_log(L_ERROR, "%s is not an extant output", displays_paths[i * 2]);
-						exit(EXIT_FAILURE);
-					}
-
-					struct json_object *dsp_name, *at_j = json_object_array_get_idx(json_outputs, j);
-					if (!json_object_object_get_ex(at_j, "name", &dsp_name)) {
-						sway_abort("output doesn't have a name field");
-					}
-					if (!strcmp(displays_paths[i * 2], json_object_get_string(dsp_name))) {
-						render_data.images[j] = load_image(displays_paths[i * 2 + 1]);
-						break;
-					}
-				}
-			}
-		}
-
-		json_object_put(json_outputs);
-		close(socketfd);
-		free(displays_paths);
-	}
-
-	render(&render_data, config);
-	bool locked = false;
-	while (wl_display_dispatch(registry->display) != -1) {
-		if (!locked) {
-			for (i = 0; i < registry->outputs->length; ++i) {
-				struct output_state *output = registry->outputs->items[i];
-				struct window *window = render_data.surfaces->items[i];
-				lock_set_lock_surface(registry->swaylock, output->output, window->surface);
-			}
-			locked = true;
-		}
-	}
-
-	// Free surfaces
-	if (render_data.num_images == -1) {
-		cairo_surface_destroy(render_data.image);
-	} else if (render_data.num_images >= 1) {
-		for (i = 0; i < registry->outputs->length; ++i) {
-			if (render_data.images[i] != NULL) {
-				cairo_surface_destroy(render_data.images[i]);
-			}
-		}
-		free(render_data.images);
-	}
-
-	for (i = 0; i < render_data.surfaces->length; ++i) {
-		struct window *window = render_data.surfaces->items[i];
-		window_teardown(window);
-	}
-	list_free(render_data.surfaces);
-	registry_teardown(registry);
-
-	free_config(config);
-
 	return 0;
-}
-
-void render(struct render_data *render_data, struct lock_config *config) {
-	int i;
-	for (i = 0; i < render_data->surfaces->length; ++i) {
-		sway_log(L_DEBUG, "Render surface %d of %d", i, render_data->surfaces->length);
-		struct window *window = render_data->surfaces->items[i];
-		if (!window_prerender(window) || !window->cairo) {
-			continue;
-		}
-		int wwidth = window->width * window->scale;
-		int wheight = window->height * window->scale;
-
-		cairo_save(window->cairo);
-		cairo_set_operator(window->cairo, CAIRO_OPERATOR_CLEAR);
-		cairo_paint(window->cairo);
-		cairo_restore(window->cairo);
-
-		// Reset the transformation matrix
-		cairo_identity_matrix(window->cairo);
-
-		if (render_data->num_images == 0 || render_data->color_set) {
-			render_color(window, render_data->color);
-		}
-
-		if (render_data->num_images == -1) {
-			// One background for all
-			render_image(window, render_data->image, render_data->scaling_mode);
-		} else if (render_data->num_images >= 1) {
-			// Different backgrounds
-			if (render_data->images[i] != NULL) {
-				render_image(window, render_data->images[i], render_data->scaling_mode);
-			}
-		}
-
-		// Reset the transformation matrix again
-		cairo_identity_matrix(window->cairo);
-
-		// Draw specific values (copied from i3)
-		const float TYPE_INDICATOR_RANGE = M_PI / 3.0f;
-		const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
-
-		// Add visual indicator
-		if (show_indicator && render_data->auth_state != AUTH_STATE_IDLE) {
-			// Draw circle
-			cairo_set_line_width(window->cairo, config->thickness);
-			cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, 0, 2 * M_PI);
-			switch (render_data->auth_state) {
-			case AUTH_STATE_INPUT:
-			case AUTH_STATE_BACKSPACE: {
-				cairo_set_source_u32(window->cairo, config->colors.normal.inner_ring);
-				cairo_fill_preserve(window->cairo);
-				cairo_set_source_u32(window->cairo, config->colors.normal.outer_ring);
-				cairo_stroke(window->cairo);
-			} break;
-			case AUTH_STATE_VALIDATING: {
-				cairo_set_source_u32(window->cairo, config->colors.validating.inner_ring);
-				cairo_fill_preserve(window->cairo);
-				cairo_set_source_u32(window->cairo, config->colors.validating.outer_ring);
-				cairo_stroke(window->cairo);
-			} break;
-			case AUTH_STATE_INVALID: {
-				cairo_set_source_u32(window->cairo, config->colors.invalid.inner_ring);
-				cairo_fill_preserve(window->cairo);
-				cairo_set_source_u32(window->cairo, config->colors.invalid.outer_ring);
-				cairo_stroke(window->cairo);
-			} break;
-			default: break;
-			}
-
-			// Draw a message
-			char *text = NULL;
-			cairo_set_source_u32(window->cairo, config->colors.text);
-			cairo_select_font_face(window->cairo, config->font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-			cairo_set_font_size(window->cairo, config->radius/3.0f);
-			switch (render_data->auth_state) {
-			case AUTH_STATE_VALIDATING:
-				text = "verifying";
-				break;
-			case AUTH_STATE_INVALID:
-				text = "wrong";
-				break;
-			default: break;
-			}
-
-			if (text) {
-				cairo_text_extents_t extents;
-				double x, y;
-
-				cairo_text_extents(window->cairo, text, &extents);
-				x = wwidth/2 - ((extents.width/2) + extents.x_bearing);
-				y = wheight/2 - ((extents.height/2) + extents.y_bearing);
-
-				cairo_move_to(window->cairo, x, y);
-				cairo_show_text(window->cairo, text);
-				cairo_close_path(window->cairo);
-				cairo_new_sub_path(window->cairo);
-			}
-
-			// Typing indicator: Highlight random part on keypress
-			if (render_data->auth_state == AUTH_STATE_INPUT || render_data->auth_state == AUTH_STATE_BACKSPACE) {
-				static double highlight_start = 0;
-				highlight_start += (rand() % (int)(M_PI * 100)) / 100.0 + M_PI * 0.5;
-				cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, highlight_start, highlight_start + TYPE_INDICATOR_RANGE);
-				if (render_data->auth_state == AUTH_STATE_INPUT) {
-					cairo_set_source_u32(window->cairo, config->colors.input_cursor);
-				} else {
-					cairo_set_source_u32(window->cairo, config->colors.backspace_cursor);
-				}
-				cairo_stroke(window->cairo);
-
-				// Draw borders
-				cairo_set_source_u32(window->cairo, config->colors.separator);
-				cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, highlight_start, highlight_start + TYPE_INDICATOR_BORDER_THICKNESS);
-				cairo_stroke(window->cairo);
-
-				cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius, highlight_start + TYPE_INDICATOR_RANGE, (highlight_start + TYPE_INDICATOR_RANGE) + TYPE_INDICATOR_BORDER_THICKNESS);
-				cairo_stroke(window->cairo);
-			}
-
-			switch(line_source) {
-			case LINE_SOURCE_RING:
-				switch(render_data->auth_state) {
-				case AUTH_STATE_VALIDATING:
-					cairo_set_source_u32(window->cairo, config->colors.validating.outer_ring);
-					break;
-				case AUTH_STATE_INVALID:
-					cairo_set_source_u32(window->cairo, config->colors.invalid.outer_ring);
-					break;
-				default:
-					cairo_set_source_u32(window->cairo, config->colors.normal.outer_ring);
-				}
-				break;
-			case LINE_SOURCE_INSIDE:
-				switch(render_data->auth_state) {
-				case AUTH_STATE_VALIDATING:
-					cairo_set_source_u32(window->cairo, config->colors.validating.inner_ring);
-					break;
-				case AUTH_STATE_INVALID:
-					cairo_set_source_u32(window->cairo, config->colors.invalid.inner_ring);
-					break;
-				default:
-					cairo_set_source_u32(window->cairo, config->colors.normal.inner_ring);
-					break;
-				}
-				break;
-			default:
-				cairo_set_source_u32(window->cairo, config->colors.line);
-				break;
-			}
-			// Draw inner + outer border of the circle
-			cairo_set_line_width(window->cairo, 2.0);
-			cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius - config->thickness/2, 0, 2*M_PI);
-			cairo_stroke(window->cairo);
-			cairo_arc(window->cairo, wwidth/2, wheight/2, config->radius + config->thickness/2, 0, 2*M_PI);
-			cairo_stroke(window->cairo);
-		}
-		window_render(window);
-	}
 }

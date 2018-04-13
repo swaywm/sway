@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Doe através do fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "**S**irCmpwn's **Way**land compositor" é um compositor [Wayland](http://wayland.freedesktop.org/)
 compatível com o i3. Leia o [FAQ](https://github.com/swaywm/sway/wiki). Participe do
@@ -54,7 +54,7 @@ visite o canal no IRC ou mande um email para sir@cmpwn.com (*em inglês*).
 
 Antes de iniciar a compilação, instale as dependências:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -62,7 +62,7 @@ Antes de iniciar a compilação, instale as dependências:
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -76,11 +76,9 @@ _\*\*Dependência apenas de swaylock_
 
 Para compilar, execute estes comandos:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Em sistemas com logind, configure as seguintes capacidades para o arquivo binário:
 

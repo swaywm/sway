@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "Ο Sway (**S**irCmpwn's **Way**land) είναι ένας **υπό ανάπτυξη** [Wayland](http://wayland.freedesktop.org/) διαχειριστής παραθύρων συμβατός με τον αντίστοιχο διαχειριστή παραθύρων i3 για τον X11.
 Διαβάστε τις [Συνήθεις Ερωτήσεις](https://github.com/swaywm/sway/wiki). Συνδεθείτε στο [κανάλι μας στο IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway στο
@@ -45,7 +45,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 
 Εγκατάσταση εξαρτήσεων:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -53,7 +53,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -67,11 +67,9 @@ _\*\*Απαιτείται μόνο για swaylock_
 
 Εκτελέστε αυτές τις εντολές:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Σε συστήματα με logind, χρειάζεται να ορίσετε μερικά δικαιώματα caps στο εκτελέσιμο αρχείο:
 

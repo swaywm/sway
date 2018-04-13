@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Пожертвовать через fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "**S**irCmpwn's **Way**land compositor" на данный момент **(в разработке)**
 i3-совместимый [Wayland](http://wayland.freedesktop.org/) композитор.
@@ -49,7 +49,7 @@ Sway доступен во многих дистрибутивах и наход
 
 Установите следующие пакеты:
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -57,7 +57,7 @@ Sway доступен во многих дистрибутивах и наход
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -74,11 +74,9 @@ _\*\*\*Требуется только для tray_
 
 Выполните следующие команды:
 
-	mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Если у вас logind:
 

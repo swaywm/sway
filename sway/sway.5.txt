@@ -43,6 +43,9 @@ The following commands may only be used in the configuration file.
 	Sets variable $name to _value_. You can use the new variable in the arguments
 	of future commands.
 
+**swaybg_command** <command>::
+	Executes custom bg command, default is _swaybg_.
+
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with **bindsym** or at runtime through **swaymsg**(1).
 
@@ -126,22 +129,21 @@ They are expected to be used with **bindsym** or at runtime through **swaymsg**(
 
 **resize** <shrink|grow> <width|height> [<amount>] [px|ppt]::
 	Resizes the currently focused container or view by _amount_. _amount_ is
-	optional: the default value is 10 (either px or ppt depending on the view
-	type). The [px|ppt] parameter is optional. _px_ specifies that _amount_ refers
-	to pixels; _ppt_ specifies that _amount_ refers to percentage points of the
-	current dimension. Floating views use px dimensions by default (but can use
-	ppt if specified); tiled views use ppt dimensions by default (but can use px
-	if specified).
+	optional: the default value is 10 (either px or ppt depending on the view type).
+	The [px|ppt] parameter is optional. _px_ specifies that _amount_ refers to pixels;
+	_ppt_ specifies that _amount_ refers to percentage points of the current
+	size. Floating views use px by default (but can use ppt if specified); tiled
+	views use ppt by default (but can use px if specified).
 
 **resize set** <width> [px] <height> [px]::
 	Sets the width and height of the currently focused container to _width_ pixels
 	and _height_ pixels. The [px] parameters are optional and have no effect. This
-	command only accepts pixel dimensions.
+	command only accepts a size in pixels.
 
 **resize set** <width|height> <amount> [px] [<width|height> <amount> [px]]::
 	Sets the _width_ and/or _height_ of the currently focused container to
 	_amount_. The [px] parameters are optional and have no effect. This command
-	only accepts pixel dimensions.
+	only accepts a size in pixels.
 
 **scratchpad show**::
 	Shows a window from the scratchpad. Repeatedly using this command will cycle
@@ -254,14 +256,14 @@ The default colors are:
 	*restart* is executed.
 
 **floating_maximum_size** <width> x <height>::
-	Specifies the maximum dimensions of floating windows.
-	Uses the container dimensions as default.
-	-1 x -1 will remove any restriction on dimensions.
+	Specifies the maximum size of floating windows.
+	Uses the container size as default.
+	-1 x -1 will remove any restriction on size.
 	0 x 0 has the same behavior as not setting any value.
 	If in conflict, this option has precedence over floating_minimum_size.
 
 **floating_minimum_size** <width> x <height>::
-	Specifies the minimum dimensions of floating windows.
+	Specifies the minimum size of floating windows.
 	Default parameters are 75 x 50.
 	-1 and 0 are invalid parameters, default will be used instead.
 
@@ -313,13 +315,25 @@ The default colors are:
 **hide_edge_borders** <none|vertical|horizontal|both|smart>::
 	Hide window borders adjacent to the screen edges. Default is _none_.
 
-**input** <input device> <block of commands>::
+**input** <input_device> <block of commands>::
 	Append _{_ to this command, the following lines will be commands to configure
 	the named input device, and _}_ on its own line will close the block.
 	+
 	**input * <block of commands>** may be used to match all input devices.
 	+
 	See **sway-input**(5) for details.
+
+**seat** <seat_name> <block of commands>::
+	Append _{_ to this command, the following lines will be commands to configure
+	the named seat, and _}_ on its own line will close the block.
+	See **sway-input**(5) for details.
+
+**seat** <seat_name> cursor <move|set> <x> <y>::
+	Move cursor relatively to current position or set to absolute screen position.
+	A value of 0 causes the axis to be ignored in both commands.
+
+**seat** <seat_name> cursor <press|release> <left|right|1|2|3...>::
+	Simulate press of mouse button specified by left, right, or numerical code.
 
 **kill**::
 	Kills (force-closes) the currently-focused container and all of its children.
@@ -349,27 +363,36 @@ The default colors are:
 	Prevents windows matching <criteria> from being focused automatically when
 	they're created. This does not apply to the first window in a workspace.
 
-**output** <name> <resolution|res> <WIDTHxHEIGHT>::
-	Configures the specified output to use the given resolution.
+**output** <name> mode|resolution|res <WIDTHxHEIGHT>[@<RATE>[Hz]]::
+	Configures the specified output to use the given mode. Modes are a combination
+	of width and height (in pixels) and a refresh rate that your display can be
+	configured to use. For a list of available modes, use swaymsg -t get_outputs.
 	+
-	_Note_: sway does not currently support setting the output mode. Your output's native
-	resolution will be used and the screen will be scaled from the resolution
-	specified to your native resolution.
+	Examples:
+	+
+	output HDMI-A-1 mode 1920x1080
+	+
+	output HDMI-A-1 mode 1920x1080@60Hz
 
-**output** <name> <position|pos> <X,Y>::
+**output** <name> position|pos <X,Y>::
 	Configures the specified output to be arranged at the given position.
 
-**output** <name> <scale> <I>::
+**output** <name> scale <I>::
 	Configures the specified output to be scaled up by the specified integer
-	scaling factor (usually 2 for HiDPI screens).
+	scaling factor (usually 2 for HiDPI screens). Fractional scaling is supported.
 
-**output** <name> <background|bg> <file> <mode>::
+**output** <name> background|bg <file> <mode>::
 	Sets the wallpaper for the given output to the specified file, using the given
 	scaling mode (one of "stretch", "fill", "fit", "center", "tile").
 
-**output** <name> <background|bg> <color> solid_color::
+**output** <name> background|bg <color> solid_color::
 	Sets the background of the given output to the specified color. _color_ should
 	be specified as an _#rrggbb_ (no alpha) color.
+
+**output** <name> transform <transform>::
+	Sets the background transform to the given value. Can be one of "90", "180",
+	"270" for rotation; or "flipped", "flipped-90", "flipped-180", "flipped-270"
+	to apply a rotation and flip, or "normal" to apply no transform.
 
 **output** <name> disable::
 	Disables the specified output.
@@ -377,7 +400,7 @@ The default colors are:
 **NOTES FOR THE OUTPUT COMMAND**::
 	You may combine output commands into one, like so:
 	+
-	output HDMI-A-1 res 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
+	output HDMI-A-1 mode 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
 	+
 	You can get a list of output names like so:
 	+
@@ -396,6 +419,10 @@ The default colors are:
 	If **show_marks** is on then marks will be showed in the window decoration.
 	However, any mark that starts with an underscore will not be drawn even if the
 	option is on. The default option is _on_.
+
+**opacity** <value>::
+	Set the opacity of the window between 0 (completely transparent) and 1
+	(completely opaque).
 
 **unmark** <identifier>::
 	**Unmark** will remove _identifier_ from the list of current marks on a window. If

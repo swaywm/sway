@@ -1,9 +1,13 @@
 #define _XOPEN_SOURCE 500
+#include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/tree/container.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -16,7 +20,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 
 	char *tmp = NULL;
 	if (strcmp((char*)*argv, "--no-startup-id") == 0) {
-		sway_log(L_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+		wlr_log(L_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		if ((error = checkarg(argc - 1, "exec_always", EXPECTED_MORE_THAN, 0))) {
 			return error;
 		}
@@ -31,11 +35,11 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	strncpy(cmd, tmp, sizeof(cmd));
 	cmd[sizeof(cmd) - 1] = 0;
 	free(tmp);
-	sway_log(L_DEBUG, "Executing %s", cmd);
+	wlr_log(L_DEBUG, "Executing %s", cmd);
 
 	int fd[2];
 	if (pipe(fd) != 0) {
-		sway_log(L_ERROR, "Unable to create pipe for fork");
+		wlr_log(L_ERROR, "Unable to create pipe for fork");
 	}
 
 	pid_t pid;
@@ -49,7 +53,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		setsid();
 		if ((*child = fork()) == 0) {
 			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
-			/* Not reached */
+			// Not reached
 		}
 		close(fd[0]);
 		ssize_t s = 0;
@@ -70,13 +74,9 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	close(fd[0]);
 	// cleanup child process
 	wait(0);
-	swayc_t *ws = swayc_active_workspace();
-	if (*child > 0 && ws) {
-		sway_log(L_DEBUG, "Child process created with pid %d for workspace %s", *child, ws->name);
-		struct pid_workspace *pw = malloc(sizeof(struct pid_workspace));
-		pw->pid = child;
-		pw->workspace = strdup(ws->name);
-		pid_workspace_add(pw);
+	if (*child > 0) {
+		wlr_log(L_DEBUG, "Child process created with pid %d", *child);
+		// TODO: add PID to active workspace
 	} else {
 		free(child);
 	}

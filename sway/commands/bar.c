@@ -1,9 +1,8 @@
-#include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "log.h"
 #include "util.h"
 
 struct cmd_results *cmd_bar(int argc, char **argv) {
@@ -27,7 +26,6 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 				return bar_cmd_hidden_state(argc-1, argv + 1);
 			}
 		}
-
 		return cmd_results_new(CMD_FAILURE, "bar", "Can only be used in config file.");
 	}
 
@@ -38,15 +36,15 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 	}
 
 	// set bar id
-	int i;
-	for (i = 0; i < config->bars->length; ++i) {
+	for (int i = 0; i < config->bars->length; ++i) {
 		if (bar == config->bars->items[i]) {
 			const int len = 5 + numlen(i); // "bar-" + i + \0
 			bar->id = malloc(len * sizeof(char));
 			if (bar->id) {
 				snprintf(bar->id, len, "bar-%d", i);
 			} else {
-				return cmd_results_new(CMD_FAILURE, "bar", "Unable to allocate bar ID");
+				return cmd_results_new(CMD_FAILURE,
+						"bar", "Unable to allocate bar ID");
 			}
 			break;
 		}
@@ -54,6 +52,6 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 	// Set current bar
 	config->current_bar = bar;
-	sway_log(L_DEBUG, "Configuring bar %s", bar->id);
+	wlr_log(L_DEBUG, "Configuring bar %s", bar->id);
 	return cmd_results_new(CMD_BLOCK_BAR, NULL, NULL);
 }

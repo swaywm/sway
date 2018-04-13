@@ -27,11 +27,8 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 	if (strcmp(old_mode, bar->mode) != 0) {
 		if (!config->reading) {
 			ipc_event_barconfig_update(bar);
-
-			// active bar modifiers might have changed.
-			update_active_bar_modifiers();
 		}
-		sway_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
+		wlr_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
 	}
 
 	// free old mode
@@ -47,13 +44,12 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 	if ((error = checkarg(argc, "mode", EXPECTED_LESS_THAN, 3))) {
 		return error;
 	}
-
 	if (config->reading && argc > 1) {
-		return cmd_results_new(CMD_INVALID, "mode", "Unexpected value %s in config mode", argv[1]);
+		return cmd_results_new(CMD_INVALID,
+				"mode", "Unexpected value %s in config mode", argv[1]);
 	}
 
 	const char *mode = argv[0];
-
 	if (config->reading) {
 		return bar_set_mode(config->current_bar, mode);
 	}
@@ -63,19 +59,16 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 		id = argv[1];
 	}
 
-	int i;
 	struct bar_config *bar;
-	for (i = 0; i < config->bars->length; ++i) {
+	for (int i = 0; i < config->bars->length; ++i) {
 		bar = config->bars->items[i];
 		if (id && strcmp(id, bar->id) == 0) {
 			return bar_set_mode(bar, mode);
 		}
-
 		error = bar_set_mode(bar, mode);
 		if (error) {
 			return error;
 		}
 	}
-
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

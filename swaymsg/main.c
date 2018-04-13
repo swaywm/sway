@@ -61,83 +61,112 @@ static void pretty_print_workspace(json_object *w) {
 	);
 }
 
-static void pretty_print_input(json_object *i) {
-	json_object *id, *name, *size, *caps;
-	json_object_object_get_ex(i, "identifier", &id);
-	json_object_object_get_ex(i, "name", &name);
-	json_object_object_get_ex(i, "size", &size);
-	json_object_object_get_ex(i, "capabilities", &caps);
-
-	printf( "Input device %s\n  Type: ", json_object_get_string(name));
-
+static const char *pretty_type_name(const char *name) {
+	// TODO these constants probably belong in the common lib
 	struct {
 		const char *a;
 		const char *b;
-	} cap_names[] = {
+	} type_names[] = {
 		{ "keyboard", "Keyboard" },
 		{ "pointer", "Mouse" },
-		{ "touch", "Touch" },
-		{ "tablet_tool", "Tablet tool" },
 		{ "tablet_pad", "Tablet pad" },
-		{ "gesture", "Gesture" },
-		{ "switch", "Switch" },
+		{ "tablet_tool", "Tablet tool" },
+		{ "touch", "Touch" },
 	};
 
-	size_t len = json_object_array_length(caps);
-	if (len == 0) {
-		printf("Unknown");
+	for (size_t i = 0; i < sizeof(type_names) / sizeof(type_names[0]); ++i) {
+		if (strcmp(type_names[i].a, name) == 0) {
+			return type_names[i].b;
+		}
 	}
 
-	json_object *cap;
-	for (size_t i = 0; i < len; ++i) {
-		cap = json_object_array_get_idx(caps, i);
-		const char *cap_s = json_object_get_string(cap);
-		const char *_name = NULL;
-		for (size_t j = 0; j < sizeof(cap_names) / sizeof(cap_names[0]); ++i) {
-			if (strcmp(cap_names[i].a, cap_s) == 0) {
-				_name = cap_names[i].b;
-				break;
-			}
-		}
-		printf("%s%s", _name ? _name : cap_s, len > 1 && i != len - 1 ? ", " : "");
-	}
-	printf("\n  Sway ID: %s\n", json_object_get_string(id));
-	if (size) {
-		json_object *width, *height;
-		json_object_object_get_ex(size, "width", &width);
-		json_object_object_get_ex(size, "height", &height);
-		printf("  Size: %lfmm x %lfmm\n",
-				json_object_get_double(width), json_object_get_double(height));
-	}
-	printf("\n");
+	return name;
+}
+
+static void pretty_print_input(json_object *i) {
+	json_object *id, *name, *type, *product, *vendor;
+	json_object_object_get_ex(i, "identifier", &id);
+	json_object_object_get_ex(i, "name", &name);
+	json_object_object_get_ex(i, "type", &type);
+	json_object_object_get_ex(i, "product", &product);
+	json_object_object_get_ex(i, "vendor", &vendor);
+
+	const char *fmt =
+		"Input device: %s\n"
+		"  Type: %s\n"
+		"  Identifier: %s\n"
+		"  Product ID: %d\n"
+		"  Vendor ID: %d\n\n";
+
+
+	printf(fmt, json_object_get_string(name),
+		pretty_type_name(json_object_get_string(type)),
+		json_object_get_string(id),
+		json_object_get_int(product),
+		json_object_get_int(vendor));
 }
 
 static void pretty_print_output(json_object *o) {
-	json_object *name, *rect, *focused, *active, *ws, *scale;
+	json_object *name, *rect, *focused, *active, *ws;
 	json_object_object_get_ex(o, "name", &name);
 	json_object_object_get_ex(o, "rect", &rect);
 	json_object_object_get_ex(o, "focused", &focused);
 	json_object_object_get_ex(o, "active", &active);
 	json_object_object_get_ex(o, "current_workspace", &ws);
+	json_object *make, *model, *serial, *scale, *refresh, *transform;
+	json_object_object_get_ex(o, "make", &make);
+	json_object_object_get_ex(o, "model", &model);
+	json_object_object_get_ex(o, "serial", &serial);
 	json_object_object_get_ex(o, "scale", &scale);
+	json_object_object_get_ex(o, "refresh", &refresh);
+	json_object_object_get_ex(o, "transform", &transform);
 	json_object *x, *y, *width, *height;
 	json_object_object_get_ex(rect, "x", &x);
 	json_object_object_get_ex(rect, "y", &y);
 	json_object_object_get_ex(rect, "width", &width);
 	json_object_object_get_ex(rect, "height", &height);
+	json_object *modes;
+	json_object_object_get_ex(o, "modes", &modes);
+
 	printf(
-		"Output %s%s%s\n"
-		"  Geometry: %dx%d @ %d,%d\n"
+		"Output %s '%s %s %s'%s%s\n"
+		"  Current mode: %dx%d @ %f Hz\n"
+		"  Position: %d,%d\n"
 		"  Scale factor: %dx\n"
-		"  Workspace: %s\n\n",
+		"  Transform: %s\n"
+		"  Workspace: %s\n",
 		json_object_get_string(name),
+		json_object_get_string(make),
+		json_object_get_string(model),
+		json_object_get_string(serial),
 		json_object_get_boolean(focused) ? " (focused)" : "",
 		!json_object_get_boolean(active) ? " (inactive)" : "",
 		json_object_get_int(width), json_object_get_int(height),
+		(float)json_object_get_int(refresh) / 1000,
 		json_object_get_int(x), json_object_get_int(y),
 		json_object_get_int(scale),
+		json_object_get_string(transform),
 		json_object_get_string(ws)
 	);
+
+	size_t modes_len = json_object_array_length(modes);
+	if (modes_len > 0) {
+		printf("  Available modes:\n");
+		for (size_t i = 0; i < modes_len; ++i) {
+			json_object *mode = json_object_array_get_idx(modes, i);
+
+			json_object *mode_width, *mode_height, *mode_refresh;
+			json_object_object_get_ex(mode, "width", &mode_width);
+			json_object_object_get_ex(mode, "height", &mode_height);
+			json_object_object_get_ex(mode, "refresh", &mode_refresh);
+
+			printf("    %dx%d @ %f Hz\n", json_object_get_int(mode_width),
+				json_object_get_int(mode_height),
+				(float)json_object_get_int(mode_refresh) / 1000);
+		}
+	}
+
+	printf("\n");
 }
 
 static void pretty_print_version(json_object *v) {
@@ -149,7 +178,7 @@ static void pretty_print_version(json_object *v) {
 static void pretty_print_clipboard(json_object *v) {
 	if (success(v, true)) {
 		if (json_object_is_type(v, json_type_array)) {
-			for (int i = 0; i < json_object_array_length(v); ++i) {
+			for (size_t i = 0; i < json_object_array_length(v); ++i) {
 				json_object *o = json_object_array_get_idx(v, i);
 				printf("%s\n", json_object_get_string(o));
 			}
@@ -225,7 +254,7 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
-	init_log(L_INFO);
+	wlr_log_init(L_INFO, NULL);
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -314,9 +343,11 @@ int main(int argc, char **argv) {
 	}
 	free(cmdtype);
 
-	char *command = strdup("");
+	char *command = NULL;
 	if (optind < argc) {
 		command = join_args(argv + optind, argc - optind);
+	} else {
+		command = strdup("");
 	}
 
 	int ret = 0;
@@ -341,7 +372,7 @@ int main(int argc, char **argv) {
 			} else {
 				pretty_print(type, obj);
 			}
-			free(obj);
+			json_object_put(obj);
 		}
 	}
 	close(socketfd);

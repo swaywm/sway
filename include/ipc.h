@@ -23,7 +23,6 @@ enum ipc_command_type {
 	IPC_EVENT_BINDING = ((1<<31) | 5),
 	IPC_EVENT_MODIFIER = ((1<<31) | 6),
 	IPC_EVENT_INPUT = ((1<<31) | 7),
-	IPC_SWAY_GET_PIXELS = 0x81
 };
 
 #endif

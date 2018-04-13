@@ -1,186 +1,198 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
 #include <strings.h>
-#include <wlc/wlc.h>
+#include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
+#include <wlr/util/log.h>
 #include "sway/commands.h"
-#include "sway/container.h"
-#include "sway/layout.h"
+#include "sway/input/seat.h"
 #include "sway/output.h"
-#include "sway/workspace.h"
-#include "list.h"
+#include "sway/tree/container.h"
+#include "sway/tree/layout.h"
+#include "sway/tree/workspace.h"
 #include "stringop.h"
+#include "list.h"
+
+static const char* expected_syntax = 
+	"Expected 'move <left|right|up|down> <[px] px>' or "
+	"'move <container|window> to workspace <name>' or "
+	"'move <container|window|workspace> to output <name|direction>' or "
+	"'move position mouse'";
+
+static struct sway_container *output_in_direction(const char *direction,
+		struct wlr_output *reference, int ref_ox, int ref_oy) {
+	int ref_lx = ref_ox + reference->lx,
+		ref_ly = ref_oy + reference->ly;
+	struct {
+		char *name;
+		enum wlr_direction direction;
+	} names[] = {
+		{ "up", WLR_DIRECTION_UP },
+		{ "down", WLR_DIRECTION_DOWN },
+		{ "left", WLR_DIRECTION_LEFT },
+		{ "right", WLR_DIRECTION_RIGHT },
+	};
+	for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+		if (strcasecmp(names[i].name, direction) == 0) {
+			struct wlr_output *adjacent = wlr_output_layout_adjacent_output(
+					root_container.sway_root->output_layout,
+					names[i].direction, reference, ref_lx, ref_ly);
+			if (adjacent) {
+				struct sway_output *sway_output = adjacent->data;
+				return sway_output->swayc;
+			}
+			break;
+		}
+	}
+	return output_by_name(direction);
+}
+
+static struct cmd_results *cmd_move_container(struct sway_container *current,
+		int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "move container/window",
+				EXPECTED_AT_LEAST, 4))) {
+		return error;
+	} else if (strcasecmp(argv[1], "to") == 0
+			&& strcasecmp(argv[2], "workspace") == 0) {
+		// move container to workspace x
+		if (current->type == C_WORKSPACE) {
+			// TODO: Wrap children in a container and move that
+			return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
+		} else if (current->type != C_CONTAINER && current->type != C_VIEW) {
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Can only move containers and views.");
+		}
+		struct sway_container *ws;
+		char *ws_name = NULL;
+		if (argc == 5 && strcasecmp(argv[3], "number") == 0) {
+			// move "container to workspace number x"
+			ws_name = strdup(argv[4]);
+			ws = workspace_by_number(ws_name);
+		} else {
+			ws_name = join_args(argv + 3, argc - 3);
+			ws = workspace_by_name(ws_name);
+		}
+
+		if (config->auto_back_and_forth && prev_workspace_name) {
+			// auto back and forth move
+			struct sway_container *curr_ws = container_parent(current, C_WORKSPACE);
+			if (curr_ws->name && strcmp(curr_ws->name, ws_name) == 0) {
+				// if target workspace is the current one
+				free(ws_name);
+				ws_name = strdup(prev_workspace_name);
+				ws = workspace_by_name(ws_name);
+			}
+		}
+
+		if (!ws) {
+			ws = workspace_create(NULL, ws_name);
+		}
+		free(ws_name);
+		struct sway_container *old_parent = current->parent;
+		struct sway_container *focus = seat_get_focus_inactive(
+				config->handler_context.seat, ws);
+		container_move_to(current, focus);
+		seat_set_focus(config->handler_context.seat, old_parent);
+		container_reap_empty(old_parent);
+		container_reap_empty(focus->parent);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	} else if (strcasecmp(argv[1], "to") == 0
+			&& strcasecmp(argv[2], "output") == 0) {
+		if (current->type == C_WORKSPACE) {
+			// TODO: Wrap children in a container and move that
+			return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
+		} else if (current->type != C_CONTAINER
+				&& current->type != C_VIEW) {
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Can only move containers and views.");
+		}
+		struct sway_container *source = container_parent(current, C_OUTPUT);
+		struct sway_container *destination = output_in_direction(argv[3],
+				source->sway_output->wlr_output, current->x, current->y);
+		if (!destination) {
+			return cmd_results_new(CMD_FAILURE, "move workspace",
+				"Can't find output with name/direction '%s'", argv[3]);
+		}
+		struct sway_container *focus = seat_get_focus_inactive(
+				config->handler_context.seat, destination);
+		if (!focus) {
+			// We've never been to this output before
+			focus = destination->children->items[0];
+		}
+		struct sway_container *old_parent = current->parent;
+		container_move_to(current, focus);
+		seat_set_focus(config->handler_context.seat, old_parent);
+		container_reap_empty(old_parent);
+		container_reap_empty(focus->parent);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	}
+	return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+}
+
+static struct cmd_results *cmd_move_workspace(struct sway_container *current,
+		int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "move workspace", EXPECTED_EQUAL_TO, 4))) {
+		return error;
+	} else if (strcasecmp(argv[1], "to") != 0
+			|| strcasecmp(argv[2], "output") != 0) {
+		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+	}
+	struct sway_container *source = container_parent(current, C_OUTPUT);
+	int center_x = current->width / 2 + current->x,
+		center_y = current->height / 2 + current->y;
+	struct sway_container *destination = output_in_direction(argv[3],
+			source->sway_output->wlr_output, center_x, center_y);
+	if (!destination) {
+		return cmd_results_new(CMD_FAILURE, "move workspace",
+			"Can't find output with name/direction '%s'", argv[3]);
+	}
+	if (current->type != C_WORKSPACE) {
+		current = container_parent(current, C_WORKSPACE);
+	}
+	container_move_to(current, destination);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
 
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	int move_amt = 10;
-
-	if (config->reading) return cmd_results_new(CMD_FAILURE, "move", "Can't be used in config file.");
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	const char* expected_syntax = "Expected 'move <left|right|up|down|next|prev|first> <[px] px>' or "
-		"'move <container|window> to workspace <name>' or "
-		"'move <container|window|workspace> to output <name|direction>' or "
-		"'move position mouse'";
-	swayc_t *view = current_container;
+	struct sway_container *current = config->handler_context.current_container;
 
-	if (argc == 2 || (argc == 3 && strcasecmp(argv[2], "px") == 0 )) {
+	if (argc == 2 || (argc == 3 && strcasecmp(argv[2], "px") == 0)) {
 		char *inv;
 		move_amt = (int)strtol(argv[1], &inv, 10);
 		if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
-			move_amt = 10;
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Invalid distance specified");
 		}
 	}
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_container(view, MOVE_LEFT, move_amt);
+		container_move(current, MOVE_LEFT, move_amt);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_container(view, MOVE_RIGHT, move_amt);
+		container_move(current, MOVE_RIGHT, move_amt);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_container(view, MOVE_UP, move_amt);
+		container_move(current, MOVE_UP, move_amt);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_container(view, MOVE_DOWN, move_amt);
-	} else if (strcasecmp(argv[0], "next") == 0) {
-		move_container(view, MOVE_NEXT, move_amt);
-	} else if (strcasecmp(argv[0], "prev") == 0) {
-		move_container(view, MOVE_PREV, move_amt);
-	} else if (strcasecmp(argv[0], "first") == 0) {
-		move_container(view, MOVE_FIRST, move_amt);
-	} else if (strcasecmp(argv[0], "container") == 0 || strcasecmp(argv[0], "window") == 0) {
-		// "move container ...
-		if ((error = checkarg(argc, "move container/window", EXPECTED_AT_LEAST, 4))) {
-			return error;
-		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "workspace") == 0) {
-			// move container to workspace x
-			if (view->type == C_WORKSPACE) {
-				if (!view->children || view->children->length == 0) {
-					return cmd_results_new(CMD_FAILURE, "move", "Cannot move an empty workspace");
-				}
-				view = new_container(view, view->workspace_layout);
-			} if (view->type != C_CONTAINER && view->type != C_VIEW) {
-				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
-			}
-
-			swayc_t *ws;
-			const char *num_name = NULL;
-			char *ws_name = NULL;
-			if (argc == 5 && strcasecmp(argv[3], "number") == 0) {
-				// move "container to workspace number x"
-				num_name = argv[4];
-				ws = workspace_by_number(num_name);
-			} else {
-				ws_name = join_args(argv + 3, argc - 3);
-				ws = workspace_by_name(ws_name);
-			}
-
-			if (ws == NULL) {
-				ws = workspace_create(ws_name ? ws_name : num_name);
-			}
-			if (ws_name) {
-				free(ws_name);
-			}
-			move_container_to(view, get_focused_container(ws));
-		} else if (strcasecmp(argv[1], "to") == 0 && strcasecmp(argv[2], "output") == 0) {
-			// move container to output x
-			swayc_t *output = NULL;
-			struct wlc_point abs_pos;
-			get_absolute_center_position(view, &abs_pos);
-			if (view->type == C_WORKSPACE) {
-				if (!view->children || view->children->length == 0) {
-					return cmd_results_new(CMD_FAILURE, "move", "Cannot move an empty workspace");
-				}
-				view = new_container(view, view->workspace_layout);
-			} else if (view->type != C_CONTAINER && view->type != C_VIEW) {
-				return cmd_results_new(CMD_FAILURE, "move", "Can only move containers and views.");
-			} else if (!(output = output_by_name(argv[3], &abs_pos))) {
-				return cmd_results_new(CMD_FAILURE, "move",
-					"Can't find output with name/direction '%s' @ (%i,%i)", argv[3], abs_pos.x, abs_pos.y);
-			}
-
-			swayc_t *container = get_focused_container(output);
-			if (container->is_floating) {
-				move_container_to(view, container->parent);
-			} else {
-				move_container_to(view, container);
-			}
-		} else {
-			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
-		}
+		container_move(current, MOVE_DOWN, move_amt);
+	} else if (strcasecmp(argv[0], "container") == 0
+			|| strcasecmp(argv[0], "window") == 0) {
+		return cmd_move_container(current, argc, argv);
 	} else if (strcasecmp(argv[0], "workspace") == 0) {
-		// move workspace (to output x)
-		swayc_t *output = NULL;
-		struct wlc_point abs_pos;
-		get_absolute_center_position(view, &abs_pos);
-		if ((error = checkarg(argc, "move workspace", EXPECTED_EQUAL_TO, 4))) {
-			return error;
-		} else if (strcasecmp(argv[1], "to") != 0 || strcasecmp(argv[2], "output") != 0) {
-			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
-		} else if (!(output = output_by_name(argv[3], &abs_pos))) {
-			return cmd_results_new(CMD_FAILURE, "move workspace",
-				"Can't find output with name/direction '%s' @ (%i,%i)", argv[3], abs_pos.x, abs_pos.y);
-		}
-		if (view->type == C_WORKSPACE) {
-			// This probably means we're moving an empty workspace, but
-			// that's fine.
-			move_workspace_to(view, output);
-		} else {
-			swayc_t *workspace = swayc_parent_by_type(view, C_WORKSPACE);
-			move_workspace_to(workspace, output);
-		}
-	} else if (strcasecmp(argv[0], "scratchpad") == 0 || (strcasecmp(argv[0], "to") == 0 && strcasecmp(argv[1], "scratchpad") == 0)) {
-		// move scratchpad ...
-		if (view->type != C_CONTAINER && view->type != C_VIEW) {
-			return cmd_results_new(CMD_FAILURE, "move scratchpad", "Can only move containers and views.");
-		}
-		swayc_t *view = current_container;
-		int i;
-		for (i = 0; i < scratchpad->length; i++) {
-			if (scratchpad->items[i] == view) {
-				hide_view_in_scratchpad(view);
-				sp_view = NULL;
-				return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-			}
-		}
-		list_add(scratchpad, view);
-		if (!view->is_floating) {
-			destroy_container(remove_child(view));
-		} else {
-			remove_child(view);
-		}
-		wlc_view_set_mask(view->handle, 0);
-		arrange_windows(swayc_active_workspace(), -1, -1);
-		swayc_t *focused = container_under_pointer();
-		if (focused == NULL) {
-			focused = swayc_active_workspace();
-		}
-		set_focused_container(focused);
+		return cmd_move_workspace(current, argc, argv);
+	} else if (strcasecmp(argv[0], "scratchpad") == 0
+			|| (strcasecmp(argv[0], "to") == 0
+				&& strcasecmp(argv[1], "scratchpad") == 0)) {
+		// TODO: scratchpad
+		return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
 	} else if (strcasecmp(argv[0], "position") == 0) {
-		if ((error = checkarg(argc, "move workspace", EXPECTED_EQUAL_TO, 2))) {
-			return error;
-		}
-		if (strcasecmp(argv[1], "mouse")) {
-			return cmd_results_new(CMD_INVALID, "move", expected_syntax);
-		}
-
-		if (view->is_floating) {
-			swayc_t *output = swayc_parent_by_type(view, C_OUTPUT);
-			struct wlc_geometry g;
-			wlc_view_get_visible_geometry(view->handle, &g);
-			const struct wlc_size *size = wlc_output_get_resolution(output->handle);
-
-			double x_pos, y_pos;
-			wlc_pointer_get_position_v2(&x_pos, &y_pos);
-
-			int32_t x = x_pos - g.size.w / 2;
-			int32_t y = y_pos - g.size.h / 2;
-
-			uint32_t w = size->w - g.size.w;
-			uint32_t h = size->h - g.size.h;
-
-			view->x = g.origin.x = MIN((int32_t)w, MAX(x, 0));
-			view->y = g.origin.y = MIN((int32_t)h, MAX(y, 0));
-
-			wlc_view_set_geometry(view->handle, 0, &g);
-		}
+		// TODO: floating
+		return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
 	} else {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}

@@ -4,13 +4,15 @@
 #include <stdbool.h>
 #include <pcre.h>
 #include "sway/criteria.h"
-#include "sway/container.h"
+#include "sway/tree/container.h"
 #include "sway/config.h"
+#include "sway/tree/view.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
 
 enum criteria_type { // *must* keep in sync with criteria_strings[]
+	CRIT_APP_ID,
 	CRIT_CLASS,
 	CRIT_CON_ID,
 	CRIT_CON_MARK,
@@ -27,6 +29,7 @@ enum criteria_type { // *must* keep in sync with criteria_strings[]
 };
 
 static const char * const criteria_strings[CRIT_LAST] = {
+	[CRIT_APP_ID] = "app_id",
 	[CRIT_CLASS] = "class",
 	[CRIT_CON_ID] = "con_id",
 	[CRIT_CON_MARK] = "con_mark",
@@ -100,8 +103,9 @@ static int countchr(char *str, char c) {
 // of buf.
 //
 // Returns error string or NULL if successful.
-static char *crit_tokens(int *argc, char ***buf, const char * const criteria_str) {
-	sway_log(L_DEBUG, "Parsing criteria: '%s'", criteria_str);
+static char *crit_tokens(int *argc, char ***buf,
+		const char * const criteria_str) {
+	wlr_log(L_DEBUG, "Parsing criteria: '%s'", criteria_str);
 	char *base = criteria_from(criteria_str);
 	char *head = base;
 	char *namep = head; // start of criteria name
@@ -247,13 +251,13 @@ char *extract_crit_tokens(list_t *tokens, const char * const criteria) {
 			free_crit_token(token);
 			goto ect_cleanup;
 		} else if (token->type == CRIT_URGENT || crit_is_focused(value)) {
-			sway_log(L_DEBUG, "%s -> \"%s\"", name, value);
+			wlr_log(L_DEBUG, "%s -> \"%s\"", name, value);
 			list_add(tokens, token);
 		} else if((error = generate_regex(&token->regex, value))) {
 			free_crit_token(token);
 			goto ect_cleanup;
 		} else {
-			sway_log(L_DEBUG, "%s -> /%s/", name, value);
+			wlr_log(L_DEBUG, "%s -> /%s/", name, value);
 			list_add(tokens, token);
 		}
 	}
@@ -268,8 +272,8 @@ static int regex_cmp(const char *item, const pcre *regex) {
 }
 
 // test a single view if it matches list of criteria tokens (all of them).
-static bool criteria_test(swayc_t *cont, list_t *tokens) {
-	if (cont->type != C_VIEW) {
+static bool criteria_test(struct sway_container *cont, list_t *tokens) {
+	if (cont->type != C_CONTAINER && cont->type != C_VIEW) {
 		return false;
 	}
 	int matches = 0;
@@ -277,94 +281,85 @@ static bool criteria_test(swayc_t *cont, list_t *tokens) {
 		struct crit_token *crit = tokens->items[i];
 		switch (crit->type) {
 		case CRIT_CLASS:
-			if (!cont->class) {
-				// ignore
-			} else if (crit_is_focused(crit->raw)) {
-				swayc_t *focused = get_focused_view(&root_container);
-				if (focused->class && strcmp(cont->class, focused->class) == 0) {
+			{
+				const char *class = view_get_class(cont->sway_view);
+				if (!class) {
+					break;
+				}
+				if (crit->regex && regex_cmp(class, crit->regex) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont->class, crit->regex) == 0) {
-				matches++;
+				break;
 			}
-			break;
-		case CRIT_CON_ID: {
-			char *endptr;
-			size_t crit_id = strtoul(crit->raw, &endptr, 10);
+		case CRIT_CON_ID:
+			{
+				char *endptr;
+				size_t crit_id = strtoul(crit->raw, &endptr, 10);
 
-			if (*endptr == 0 && cont->id == crit_id) {
-				++matches;
-			}
-			break;
-		}
-		case CRIT_CON_MARK:
-			if (crit->regex && cont->marks && (list_seq_find(cont->marks, (int (*)(const void *, const void *))regex_cmp, crit->regex) != -1)) {
-				// Make sure it isn't matching the NUL string
-				if ((strcmp(crit->raw, "") == 0) == (list_seq_find(cont->marks, (int (*)(const void *, const void *))strcmp, "") != -1)) {
+				if (*endptr == 0 && cont->id == crit_id) {
 					++matches;
 				}
+				break;
 			}
+		case CRIT_CON_MARK:
+			// TODO
 			break;
 		case CRIT_FLOATING:
-			if (cont->is_floating) {
-				matches++;
-			}
+			// TODO
 			break;
 		case CRIT_ID:
-			if (!cont->app_id) {
-				// ignore
-			} else if (crit->regex && regex_cmp(cont->app_id, crit->regex) == 0) {
-				matches++;
-			}
+			// TODO
 			break;
-		case CRIT_INSTANCE:
-			if (!cont->instance) {
-				// ignore
-			} else if (crit_is_focused(crit->raw)) {
-				swayc_t *focused = get_focused_view(&root_container);
-				if (focused->instance && strcmp(cont->instance, focused->instance) == 0) {
+		case CRIT_APP_ID:
+			{
+				const char *app_id = view_get_app_id(cont->sway_view);
+				if (!app_id) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(app_id, crit->regex) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont->instance, crit->regex) == 0) {
-				matches++;
+				break;
 			}
-			break;
+		case CRIT_INSTANCE:
+			{
+				const char *instance = view_get_instance(cont->sway_view);
+				if (!instance) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(instance, crit->regex) == 0) {
+					matches++;
+				}
+				break;
+			}
 		case CRIT_TILING:
-			if (!cont->is_floating) {
-				matches++;
-			}
+			// TODO
 			break;
 		case CRIT_TITLE:
-			if (!cont->name) {
-				// ignore
-			} else if (crit_is_focused(crit->raw)) {
-				swayc_t *focused = get_focused_view(&root_container);
-				if (focused->name && strcmp(cont->name, focused->name) == 0) {
+			{
+				const char *title = view_get_title(cont->sway_view);
+				if (!title) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(title, crit->regex) == 0) {
 					matches++;
 				}
-			} else if (crit->regex && regex_cmp(cont->name, crit->regex) == 0) {
-				matches++;
+				break;
 			}
-			break;
-		case CRIT_URGENT: // "latest" or "oldest"
+		case CRIT_URGENT:
+			// TODO "latest" or "oldest"
 			break;
 		case CRIT_WINDOW_ROLE:
+			// TODO
 			break;
 		case CRIT_WINDOW_TYPE:
-			// TODO wlc indeed exposes this information
+			// TODO
 			break;
-		case CRIT_WORKSPACE: ;
-			swayc_t *cont_ws = swayc_parent_by_type(cont, C_WORKSPACE);
-			if (!cont_ws || !cont_ws->name) {
-				// ignore
-			} else if (crit_is_focused(crit->raw)) {
-				swayc_t *focused_ws = swayc_active_workspace();
-				if (focused_ws->name && strcmp(cont_ws->name, focused_ws->name) == 0) {
-					matches++;
-				}
-			} else if (crit->regex && regex_cmp(cont_ws->name, crit->regex) == 0) {
-				matches++;
-			}
+		case CRIT_WORKSPACE:
+			// TODO
 			break;
 		default:
 			sway_abort("Invalid criteria type (%i)", crit->type);
@@ -403,7 +398,7 @@ void free_criteria(struct criteria *crit) {
 	free(crit);
 }
 
-bool criteria_any(swayc_t *cont, list_t *criteria) {
+bool criteria_any(struct sway_container *cont, list_t *criteria) {
 	for (int i = 0; i < criteria->length; i++) {
 		struct criteria *bc = criteria->items[i];
 		if (criteria_test(cont, bc->tokens)) {
@@ -413,7 +408,7 @@ bool criteria_any(swayc_t *cont, list_t *criteria) {
 	return false;
 }
 
-list_t *criteria_for(swayc_t *cont) {
+list_t *criteria_for(struct sway_container *cont) {
 	list_t *criteria = config->criteria, *matches = create_list();
 	for (int i = 0; i < criteria->length; i++) {
 		struct criteria *bc = criteria->items[i];
@@ -429,23 +424,22 @@ struct list_tokens {
 	list_t *tokens;
 };
 
-static void container_match_add(swayc_t *container, struct list_tokens *list_tokens) {
+static void container_match_add(struct sway_container *container,
+		struct list_tokens *list_tokens) {
 	if (criteria_test(container, list_tokens->tokens)) {
 		list_add(list_tokens->list, container);
 	}
 }
 
-list_t *container_for(list_t *tokens) {
-	struct list_tokens list_tokens = (struct list_tokens){create_list(), tokens};
+list_t *container_for_crit_tokens(list_t *tokens) {
+	struct list_tokens list_tokens =
+		(struct list_tokens){create_list(), tokens};
 
-	container_map(&root_container, (void (*)(swayc_t *, void *))container_match_add, &list_tokens);
+	container_for_each_descendant_dfs(&root_container,
+		(void (*)(struct sway_container *, void *))container_match_add,
+		&list_tokens);
+
+	// TODO look in the scratchpad
 	
-	for (int i = 0; i < scratchpad->length; ++i) {
-		swayc_t *c = scratchpad->items[i];
-		if (criteria_test(c, tokens)) {
-			list_add(list_tokens.list, c);
-		}
-	}
-
 	return list_tokens.list;
 }

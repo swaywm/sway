@@ -11,7 +11,9 @@ struct cmd_results *cmd_mouse_warping(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "none") == 0) {
 		config->mouse_warping = false;
 	} else {
-		return cmd_results_new(CMD_FAILURE, "mouse_warping", "Expected 'mouse_warping output|none'");
+		return cmd_results_new(CMD_FAILURE, "mouse_warping",
+				"Expected 'mouse_warping output|none'");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
+

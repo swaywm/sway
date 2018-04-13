@@ -1,18 +1,18 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
-
 #define PID_WORKSPACE_TIMEOUT 60
-
 #include <libinput.h>
 #include <stdint.h>
-#include <wlc/geometry.h>
-#include <wlc/wlc.h>
-#include <xkbcommon/xkbcommon.h>
+#include <string.h>
 #include <time.h>
-#include "wayland-desktop-shell-server-protocol.h"
+#include <wlr/types/wlr_box.h>
+#include <xkbcommon/xkbcommon.h>
 #include "list.h"
-#include "layout.h"
-#include "container.h"
+#include "tree/layout.h"
+#include "tree/container.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
+
+// TODO: Refactor this shit
 
 /**
  * Describes a variable created via the `set` command.
@@ -47,11 +47,12 @@ struct sway_mouse_binding {
  */
 struct sway_mode {
 	char *name;
-	list_t *bindings;
+	list_t *keysym_bindings;
+	list_t *keycode_bindings;
 };
 
 /**
- * libinput options for input devices
+ * options for input devices
  */
 struct input_config {
 	char *identifier;
@@ -68,8 +69,33 @@ struct input_config {
 	int send_events;
 	int tap;
 
+	char *xkb_layout;
+	char *xkb_model;
+	char *xkb_options;
+	char *xkb_rules;
+	char *xkb_variant;
+
+	char *mapped_output;
+
 	bool capturable;
-	struct wlc_geometry region;
+	struct wlr_box region;
+};
+
+/**
+ * Options for misc device configurations that happen in the seat block
+ */
+struct seat_attachment_config {
+	char *identifier;
+	// TODO other things are configured here for some reason
+};
+
+/**
+ * Options for multiseat and other misc device configurations
+ */
+struct seat_config {
+	char *name;
+	int fallback; // -1 means not set
+	list_t *attachments; // list of seat_attachment configs
 };
 
 /**
@@ -81,8 +107,11 @@ struct output_config {
 	char *name;
 	int enabled;
 	int width, height;
+	float refresh_rate;
 	int x, y;
-	int scale;
+	float scale;
+	int32_t transform;
+
 	char *background;
 	char *background_option;
 };
@@ -126,24 +155,13 @@ struct bar_config {
 	char *id;
 	uint32_t modifier;
 	list_t *outputs;
-	enum desktop_shell_panel_position position;
+	char *position;
 	list_t *bindings;
 	char *status_command;
 	bool pango_markup;
 	char *swaybar_command;
 	char *font;
 	int height; // -1 not defined
-
-#ifdef ENABLE_TRAY
-	// Tray
-	char *tray_output;
-	char *icon_theme;
-	uint32_t tray_padding;
-	uint32_t activate_button;
-	uint32_t context_button;
-	uint32_t secondary_button;
-#endif
-
 	bool workspace_buttons;
 	bool wrap_scroll;
 	char *separator_symbol;
@@ -260,11 +278,13 @@ struct sway_config {
 	list_t *pid_workspaces;
 	list_t *output_configs;
 	list_t *input_configs;
+	list_t *seat_configs;
 	list_t *criteria;
 	list_t *no_focus;
 	list_t *active_bar_modifiers;
 	struct sway_mode *current_mode;
 	struct bar_config *current_bar;
+	char *swaybg_command;
 	uint32_t floating_mod;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
@@ -272,8 +292,8 @@ struct sway_config {
 	char *floating_scroll_down_cmd;
 	char *floating_scroll_left_cmd;
 	char *floating_scroll_right_cmd;
-	enum swayc_layouts default_orientation;
-	enum swayc_layouts default_layout;
+	enum sway_container_layout default_orientation;
+	enum sway_container_layout default_layout;
 	char *font;
 	int font_height;
 
@@ -286,7 +306,6 @@ struct sway_config {
 	bool reloading;
 	bool reading;
 	bool auto_back_and_forth;
-	bool seamless_mouse;
 	bool show_marks;
 
 	bool edge_gaps;
@@ -297,8 +316,8 @@ struct sway_config {
 	list_t *config_chain;
 	const char *current_config;
 
-	enum swayc_border_types border;
-	enum swayc_border_types floating_border;
+	enum sway_container_border border;
+	enum sway_container_border floating_border;
 	int border_thickness;
 	int floating_border_thickness;
 	enum edge_border_types hide_edge_borders;
@@ -323,6 +342,14 @@ struct sway_config {
 	list_t *command_policies;
 	list_t *feature_policies;
 	list_t *ipc_policies;
+
+	// Context for command handlers
+	struct {
+		struct input_config *input_config;
+		struct seat_config *seat_config;
+		struct sway_seat *seat;
+		struct sway_container *current_container;
+	} handler_context;
 };
 
 void pid_workspace_add(struct pid_workspace *pw);
@@ -348,6 +375,11 @@ bool read_config(FILE *file, struct sway_config *config);
  * Free config struct
  */
 void free_config(struct sway_config *config);
+
+void config_clear_handler_context(struct sway_config *config);
+
+void free_sway_variable(struct sway_variable *var);
+
 /**
  * Does variable replacement for a string based on the config's currently loaded variables.
  */
@@ -356,51 +388,74 @@ char *do_var_replacement(char *str);
 struct cmd_results *check_security_config();
 
 int input_identifier_cmp(const void *item, const void *data);
+
+struct input_config *new_input_config(const char* identifier);
+
 void merge_input_config(struct input_config *dst, struct input_config *src);
-void apply_input_config(struct input_config *ic, struct libinput_device *dev);
+
+struct input_config *copy_input_config(struct input_config *ic);
+
 void free_input_config(struct input_config *ic);
 
-int output_name_cmp(const void *item, const void *data);
-void merge_output_config(struct output_config *dst, struct output_config *src);
-/** Sets up a WLC output handle based on a given output_config.
- */
-void apply_output_config(struct output_config *oc, swayc_t *output);
-void free_output_config(struct output_config *oc);
+void apply_input_config(struct input_config *input);
 
-/**
- * Updates the list of active bar modifiers
- */
-void update_active_bar_modifiers(void);
+int seat_name_cmp(const void *item, const void *data);
+
+struct seat_config *new_seat_config(const char* name);
+
+void merge_seat_config(struct seat_config *dst, struct seat_config *src);
+
+struct seat_config *copy_seat_config(struct seat_config *seat);
+
+void free_seat_config(struct seat_config *ic);
+
+struct seat_attachment_config *seat_attachment_config_new();
+
+struct seat_attachment_config *seat_config_get_attachment(
+		struct seat_config *seat_config, char *identifier);
+
+void apply_seat_config(struct seat_config *seat);
+
+int output_name_cmp(const void *item, const void *data);
+
+void output_get_identifier(char *identifier, size_t len,
+	struct sway_output *output);
+
+struct output_config *new_output_config(const char *name);
+
+void merge_output_config(struct output_config *dst, struct output_config *src);
+
+void apply_output_config(struct output_config *oc,
+		struct sway_container *output);
+
+void free_output_config(struct output_config *oc);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
+
 int sway_binding_cmp_qsort(const void *a, const void *b);
+
 int sway_binding_cmp_keys(const void *a, const void *b);
+
 void free_sway_binding(struct sway_binding *sb);
+
 struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
-int sway_mouse_binding_cmp(const void *a, const void *b);
-int sway_mouse_binding_cmp_qsort(const void *a, const void *b);
-int sway_mouse_binding_cmp_buttons(const void *a, const void *b);
-void free_sway_mouse_binding(struct sway_mouse_binding *smb);
-
 void load_swaybars();
+
+void invoke_swaybar(struct bar_config *bar);
+
 void terminate_swaybg(pid_t pid);
 
-/**
- * Allocate and initialize default bar configuration.
- */
 struct bar_config *default_bar_config(void);
 
-/**
- * Global config singleton.
- */
+void free_bar_config(struct bar_config *bar);
+
+/* Global config singleton. */
 extern struct sway_config *config;
 
-/**
- * Config file currently being read.
- */
+/* Config file currently being read */
 extern const char *current_config_path;
 
 #endif

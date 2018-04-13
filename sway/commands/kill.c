@@ -1,12 +1,16 @@
+#include <wlr/util/log.h>
+#include "log.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
+#include "sway/tree/view.h"
+#include "sway/tree/container.h"
 #include "sway/commands.h"
-#include "sway/container.h"
-#include "sway/focus.h"
 
 struct cmd_results *cmd_kill(int argc, char **argv) {
-	if (config->reading) return cmd_results_new(CMD_FAILURE, "kill", "Can't be used in config file.");
-	if (!config->active) return cmd_results_new(CMD_FAILURE, "kill", "Can only be used when sway is running.");
+	struct sway_container *con =
+		config->handler_context.current_container;
 
-	swayc_t *container = current_container;
-	close_views(container);
+	container_close(con);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

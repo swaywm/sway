@@ -1,4 +1,4 @@
-# sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Donate with fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
+# sway
 
 "**S**irCmpwn's **Way**land compositor" est un compositeur [Wayland](http://wayland.freedesktop.org/)
 compatible avec i3, **en cours de développement**.
@@ -47,7 +47,7 @@ IRC ou envoyez un e-mail à sir@cmpwn.com (en anglais seulement) pour des consei
 
 Installez les dépendances :
 
-* cmake
+* meson
 * [wlc](https://github.com/Cloudef/wlc)
 * wayland
 * xwayland
@@ -55,7 +55,7 @@ Installez les dépendances :
 * libcap
 * asciidoc
 * pcre
-* json-c <= 0.12.1
+* json-c >= 0.13
 * pango
 * cairo
 * gdk-pixbuf2 *
@@ -69,11 +69,9 @@ _\*\*Uniquement requis pour swaylock_
 
 Exécutez ces commandes :
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-    make
-    sudo make install
+    meson build
+    ninja -C build
+    sudo ninja -C build install
 
 Sur les systèmes avec logind, vous devez définir quelques caps sur le binaire :
 
