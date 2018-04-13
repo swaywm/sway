@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -18,9 +19,14 @@
 #include "background-image.h"
 #include "pool-buffer.h"
 #include "cairo.h"
+#include "log.h"
 #include "util.h"
 #include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+void sway_terminate(int exit_code) {
+	exit(exit_code);
+}
 
 static void daemonize() {
 	int fds[2];
@@ -235,6 +241,13 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 	}
+
+#ifdef __linux__
+	// Most non-linux platforms require root to mlock()
+	if (mlock(state.password.buffer, sizeof(state.password.buffer)) != 0) {
+		sway_abort("Unable to mlock() password memory.");
+	}
+#endif
 
 	wl_list_init(&state.surfaces);
 	state.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
