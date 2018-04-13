@@ -104,7 +104,7 @@ static void _container_destroy(struct sway_container *cont) {
 	if (cont->children != NULL && cont->children->length) {
 		// remove children until there are no more, container_destroy calls
 		// container_remove_child, which removes child from this container
-		while (cont->children != NULL) {
+		while (cont->children != NULL && cont->children->length > 0) {
 			struct sway_container *child = cont->children->items[0];
 			container_remove_child(child);
 			_container_destroy(child);
