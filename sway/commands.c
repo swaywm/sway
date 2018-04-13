@@ -601,7 +601,7 @@ struct cmd_results *add_color(const char *name,
 					"Invalid color definition %s", color);
 		}
 	}
-	strncpy(buffer, color, len);
+	strcpy(buffer, color);
 	// add default alpha channel if color was defined without it
 	if (len == 7) {
 		buffer[7] = 'f';
