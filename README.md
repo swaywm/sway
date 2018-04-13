@@ -9,21 +9,13 @@ Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the
 [IRC channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-**Notice**: Sway is currently *frozen* and no new features are being shipped
-until we finish integrating Sway and wlroots. Bug fixes are still going out.
-for more information, [see this
-article](https://drewdevault.com/2017/10/09/Future-of-sway.html). To follow
-wlroots integration status, [see this
-ticket](https://github.com/swaywm/sway/issues/1390).
+**Notice**: You are viewing the **unstable** and **unsupported** master branch
+of sway, where work is ongoing to port it to
+[wlroots](https://github.com/swaywm/wlroots). The supported branch is the 0.15
+branch, and end users are encouraged to use the stable releases cut from it.
 
-[![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
-
-If you'd like to support Sway development, you can contribute to [SirCmpwn's
-Patreon page](https://patreon.com/sircmpwn) or you can contribute to
-[bounties](https://github.com/swaywm/sway/issues/986) for specific features.
-Anyone is welcome to claim a bounty and you can make a bounty for any feature
-you wish, and Patreon is more useful for supporting the overall health and
-maintenance of Sway.
+If you'd like to support sway development, please contribute to [SirCmpwn's
+Patreon page](https://patreon.com/sircmpwn).
 
 ## Release Signatures
 
@@ -46,7 +38,7 @@ Sway is available in many distributions. Try installing the "sway" package for
 yours. If it's not available, check out [this wiki page](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 for information on installation for your distributions.
 
-If you're interested in packaging Sway for your distribution, stop by the IRC
+If you're interested in packaging sway for your distribution, stop by the IRC
 channel or shoot an email to sir@cmpwn.com for advice.
 
 ### Compiling from Source
@@ -100,4 +92,4 @@ Run `man 5 sway` for information on the configuration.
 ## Running
 
 Run `sway` from a TTY. Some display managers may work but are not supported by
-Sway (gdm is known to work fairly well).
+sway (gdm is known to work fairly well).
