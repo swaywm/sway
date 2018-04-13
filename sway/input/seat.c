@@ -491,6 +491,9 @@ void seat_set_focus_warp(struct sway_seat *seat,
 			ipc_event_workspace(last_ws, container, "focus");
 			if (!workspace_is_visible(last_ws)
 					&& last_ws->children->length == 0) {
+				if (last_ws == last_focus) {
+					last_focus = NULL;
+				}
 				container_destroy(last_ws);
 			}
 		}
