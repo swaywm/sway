@@ -113,8 +113,6 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	wl_signal_add(&xsurface->events.destroy, &surface->destroy);
 	surface->destroy.notify = unmanaged_handle_destroy;
 
-	unmanaged_handle_map(&surface->map, xsurface);
-
 	return surface;
 }
 
@@ -305,6 +303,4 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&xsurface->events.map, &xwayland_view->map);
 	xwayland_view->map.notify = handle_map;
-
-	handle_map(&xwayland_view->map, xsurface);
 }
