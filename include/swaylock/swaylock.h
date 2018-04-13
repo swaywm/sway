@@ -24,9 +24,8 @@ struct swaylock_args {
 };
 
 struct swaylock_password {
-	size_t size;
 	size_t len;
-	char *buffer;
+	char buffer[1024];
 };
 
 struct swaylock_state {
