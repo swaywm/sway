@@ -448,6 +448,21 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		return;
 	}
 
+	struct sway_container *last_output = last_focus;
+	if (last_output && last_output->type != C_OUTPUT) {
+		last_output = container_parent(last_output, C_OUTPUT);
+	}
+	struct sway_container *new_output = container;
+	if (new_output && new_output->type != C_OUTPUT) {
+		new_output = container_parent(new_output, C_OUTPUT);
+	}
+
+	// find new output's old workspace, which might have to be removed if empty
+	struct sway_container *new_output_last_ws = NULL;
+	if (last_output && new_output && last_output != new_output) {
+		new_output_last_ws = seat_get_focus_by_type(seat, new_output, C_WORKSPACE);
+	}
+
 	if (container) {
 		struct sway_seat_container *seat_con =
 			seat_container_from_container(seat, container);
@@ -482,6 +497,14 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
+	// clean up unfocused empty workspace on new output
+	if (new_output_last_ws) {
+		if (!workspace_is_visible(new_output_last_ws)
+			&& new_output_last_ws->children->length == 0) {
+			container_destroy(new_output_last_ws);
+		}
+	}
+
 	if (last_focus) {
 		struct sway_container *last_ws = last_focus;
 		if (last_ws && last_ws->type != C_WORKSPACE) {
@@ -499,14 +522,6 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 
 		if (config->mouse_warping && warp) {
-			struct sway_container *last_output = last_focus;
-			if (last_output && last_output->type != C_OUTPUT) {
-				last_output = container_parent(last_output, C_OUTPUT);
-			}
-			struct sway_container *new_output = container;
-			if (new_output && new_output->type != C_OUTPUT) {
-				new_output = container_parent(new_output, C_OUTPUT);
-			}
 			if (new_output && last_output && new_output != last_output) {
 				double x = new_output->x + container->x +
 					container->width / 2.0;
