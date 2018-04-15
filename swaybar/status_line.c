@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
 #include <fcntl.h>
 #include <json-c/json.h>
 #include <stdlib.h>
