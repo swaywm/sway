@@ -32,7 +32,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 
 	// Put argument into cmd array
 	char cmd[4096];
-	strncpy(cmd, tmp, sizeof(cmd));
+	strncpy(cmd, tmp, sizeof(cmd) - 1);
 	cmd[sizeof(cmd) - 1] = 0;
 	free(tmp);
 	wlr_log(L_DEBUG, "Executing %s", cmd);

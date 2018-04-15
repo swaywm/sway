@@ -288,8 +288,11 @@ void container_move(struct sway_container *container,
 
 		switch (current->type) {
 		case C_OUTPUT: {
-			enum wlr_direction wlr_dir;
-			sway_dir_to_wlr(move_dir, &wlr_dir);
+			enum wlr_direction wlr_dir = 0;
+			if (!sway_assert(sway_dir_to_wlr(move_dir, &wlr_dir),
+						"got invalid direction: %d", move_dir)) {
+				return;
+			}
 			double ref_lx = current->x + current->width / 2;
 			double ref_ly = current->y + current->height / 2;
 			struct wlr_output *next = wlr_output_layout_adjacent_output(

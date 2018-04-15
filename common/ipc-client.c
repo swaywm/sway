@@ -48,7 +48,7 @@ int ipc_open_socket(const char *socket_path) {
 		sway_abort("Unable to open Unix socket");
 	}
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 	addr.sun_path[sizeof(addr.sun_path) - 1] = 0;
 	int l = sizeof(struct sockaddr_un);
 	if (connect(socketfd, (struct sockaddr *)&addr, l) == -1) {
