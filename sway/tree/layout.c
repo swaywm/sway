@@ -572,7 +572,7 @@ void arrange_windows(struct sway_container *container,
 		return;
 	case C_WORKSPACE:
 		{
-			if (container->fullscreen) {
+			if (container->sway_workspace->fullscreen) {
 				return;
 			}
 			struct sway_container *output =
@@ -846,22 +846,6 @@ struct sway_container *container_get_in_direction(
 			return parent;
 		}
 	}
-
-	// TODO WLR fullscreen
-	/*
-	if (container->type == C_VIEW && swayc_is_fullscreen(container)) {
-		wlr_log(L_DEBUG, "Moving from fullscreen view, skipping to output");
-		container = container_parent(container, C_OUTPUT);
-		get_layout_center_position(container, &abs_pos);
-		struct sway_container *output =
-		swayc_adjacent_output(container, dir, &abs_pos, true);
-		return get_swayc_in_output_direction(output, dir);
-	}
-	if (container->type == C_WORKSPACE && container->fullscreen) {
-		sway_log(L_DEBUG, "Moving to fullscreen view");
-		return container->fullscreen;
-	}
-	*/
 
 	struct sway_container *wrap_candidate = NULL;
 	while (true) {

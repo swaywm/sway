@@ -7,6 +7,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 
 void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
@@ -90,10 +91,10 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 	view->is_fullscreen = fullscreen;
 
 	if (fullscreen) {
-		workspace->fullscreen = view;
+		workspace->sway_workspace->fullscreen = view;
 		view_configure(view, 0, 0, output->wlr_output->width, output->wlr_output->height);
 	} else {
-		workspace->fullscreen = NULL;
+		workspace->sway_workspace->fullscreen = NULL;
 		arrange_windows(workspace, -1, -1);
 	}
 
@@ -105,7 +106,7 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 void view_close(struct sway_view *view) {
 	if (view->is_fullscreen) {
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		ws->fullscreen = NULL;
+		ws->sway_workspace->fullscreen = NULL;
 	}
 
 	if (view->impl->close) {

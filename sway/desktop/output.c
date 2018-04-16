@@ -22,6 +22,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 
 struct sway_container *output_by_name(const char *name) {
 	for (int i = 0; i < root_container.children->length; ++i) {
@@ -275,9 +276,9 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 
-	if (workspace->fullscreen) {
+	if (workspace->sway_workspace->fullscreen) {
 		wlr_output_set_fullscreen_surface(wlr_output,
-				workspace->fullscreen->surface);
+				workspace->sway_workspace->fullscreen->surface);
 	} else {
 		wlr_output_set_fullscreen_surface(wlr_output, NULL);
 		render_layer(output,
