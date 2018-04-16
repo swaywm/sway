@@ -118,6 +118,14 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+static void set_fullscreen(struct sway_view *view, bool fullscreen) {
+	if (xdg_shell_v6_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
+	wlr_xdg_toplevel_v6_set_fullscreen(surface, fullscreen);
+}
+
 static void for_each_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
@@ -146,6 +154,7 @@ static void destroy(struct sway_view *view) {
 	wl_list_remove(&xdg_shell_v6_view->destroy.link);
 	wl_list_remove(&xdg_shell_v6_view->map.link);
 	wl_list_remove(&xdg_shell_v6_view->unmap.link);
+	wl_list_remove(&xdg_shell_v6_view->request_fullscreen.link);
 	free(xdg_shell_v6_view);
 }
 
@@ -153,6 +162,7 @@ static const struct sway_view_impl view_impl = {
 	.get_prop = get_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_fullscreen = set_fullscreen,
 	.for_each_surface = for_each_surface,
 	.close = _close,
 	.destroy = destroy,
@@ -210,6 +220,18 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	view_destroy(&xdg_shell_v6_view->view);
 }
 
+static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
+		wl_container_of(listener, xdg_shell_v6_view, request_fullscreen);
+	struct wlr_xdg_toplevel_v6_set_fullscreen_event *e = data;
+
+	if (xdg_shell_v6_view->view.wlr_xdg_surface_v6->role != WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL) {
+		return;
+	}
+
+	view_set_fullscreen(&xdg_shell_v6_view->view, e->fullscreen);
+}
+
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server,
 		xdg_shell_v6_surface);
@@ -246,4 +268,8 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 
 	xdg_shell_v6_view->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &xdg_shell_v6_view->destroy);
+
+	xdg_shell_v6_view->request_fullscreen.notify = handle_request_fullscreen;
+	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
+			&xdg_shell_v6_view->request_fullscreen);
 }

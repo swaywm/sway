@@ -137,6 +137,21 @@ void container_move_to(struct sway_container *container,
 			|| container_has_anscestor(container, destination)) {
 		return;
 	}
+
+	if (container->sway_view->is_fullscreen) {
+		struct sway_container *old_workspace = container;
+		if (old_workspace->type != C_WORKSPACE) {
+			old_workspace = container_parent(old_workspace, C_WORKSPACE);
+		}
+		struct sway_container *new_workspace = destination;
+		if (new_workspace->type != C_WORKSPACE) {
+			new_workspace = container_parent(new_workspace, C_WORKSPACE);
+		}
+		if (old_workspace != new_workspace) {
+			view_set_fullscreen(container->sway_view, false);
+		}
+	}
+
 	struct sway_container *old_parent = container_remove_child(container);
 	container->width = container->height = 0;
 	struct sway_container *new_parent;
@@ -557,6 +572,9 @@ void arrange_windows(struct sway_container *container,
 		return;
 	case C_WORKSPACE:
 		{
+			if (container->fullscreen) {
+				return;
+			}
 			struct sway_container *output =
 				container_parent(container, C_OUTPUT);
 			struct wlr_box *area = &output->sway_output->usable_area;

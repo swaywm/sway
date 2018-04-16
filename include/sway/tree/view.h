@@ -28,6 +28,7 @@ struct sway_view_impl {
 	void (*configure)(struct sway_view *view, double ox, double oy, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
+	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
@@ -41,6 +42,8 @@ struct sway_view {
 	struct sway_container *swayc; // NULL for unmanaged views
 	struct wlr_surface *surface; // NULL for unmapped views
 	int width, height;
+	int saved_width, saved_height;
+	bool is_fullscreen;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
@@ -63,6 +66,7 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener request_fullscreen;
 	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
@@ -79,6 +83,7 @@ struct sway_xwayland_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_configure;
+	struct wl_listener request_fullscreen;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -93,6 +98,7 @@ struct sway_xwayland_unmanaged {
 	int lx, ly;
 
 	struct wl_listener request_configure;
+	struct wl_listener request_fullscreen;
 	struct wl_listener commit;
 	struct wl_listener map;
 	struct wl_listener unmap;
@@ -106,6 +112,7 @@ struct sway_wl_shell_view {
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
+	struct wl_listener request_fullscreen;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;
@@ -154,6 +161,8 @@ void view_configure(struct sway_view *view, double ox, double oy, int width,
 	int height);
 
 void view_set_activated(struct sway_view *view, bool activated);
+
+void view_set_fullscreen(struct sway_view *view, bool fullscreen);
 
 void view_close(struct sway_view *view);
 

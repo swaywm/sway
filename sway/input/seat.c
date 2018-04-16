@@ -448,6 +448,20 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		return;
 	}
 
+	struct sway_container *last_workspace = last_focus;
+	if (last_workspace && last_workspace->type != C_WORKSPACE) {
+		last_workspace = container_parent(last_workspace, C_WORKSPACE);
+	}
+	struct sway_container *new_workspace = container;
+	if (new_workspace && new_workspace->type != C_WORKSPACE) {
+		new_workspace = container_parent(new_workspace, C_WORKSPACE);
+	}
+
+	if (last_workspace == new_workspace && last_workspace->fullscreen
+			&& !container->sway_view->is_fullscreen) {
+		return;
+	}
+
 	struct sway_container *last_output = last_focus;
 	if (last_output && last_output->type != C_OUTPUT) {
 		last_output = container_parent(last_output, C_OUTPUT);

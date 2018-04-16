@@ -2,6 +2,7 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "log.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
@@ -73,7 +74,46 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
+	if (view->is_fullscreen == fullscreen) {
+		return;
+	}
+
+	struct sway_container *container = container_parent(view->swayc, C_OUTPUT);
+	struct sway_output *output = container->sway_output;
+	struct sway_container *workspace = container_parent(view->swayc, C_WORKSPACE);
+
+	if (view->impl->set_fullscreen) {
+		view->impl->set_fullscreen(view, fullscreen);
+	}
+
+	if (fullscreen) {
+		view->swayc->saved_x = view->swayc->x;
+		view->swayc->saved_y = view->swayc->y;
+		view->saved_width = view->width;
+		view->saved_height = view->height;
+		view_configure(view, 0, 0, output->wlr_output->width, output->wlr_output->height);
+		workspace->fullscreen = view;
+	} else {
+		view_configure(view, view->swayc->saved_x, view->swayc->saved_y,
+				view->saved_width, view->saved_height);
+		workspace->fullscreen = NULL;
+	}
+
+	view->is_fullscreen = fullscreen;
+	output_damage_whole(output);
+
+	arrange_windows(workspace, -1, -1);
+
+	ipc_event_window(view->swayc, "fullscreen_mode");
+}
+
 void view_close(struct sway_view *view) {
+	if (view->is_fullscreen) {
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		ws->fullscreen = NULL;
+	}
+
 	if (view->impl->close) {
 		view->impl->close(view);
 	}

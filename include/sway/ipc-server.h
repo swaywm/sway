@@ -1,6 +1,7 @@
 #ifndef _SWAY_IPC_SERVER_H
 #define _SWAY_IPC_SERVER_H
 #include <sys/socket.h>
+#include "sway/config.h"
 #include "sway/tree/container.h"
 #include "ipc.h"
 

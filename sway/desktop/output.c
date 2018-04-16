@@ -273,17 +273,25 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 	wlr_renderer_clear(renderer, clear_color);
 
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
-
 	struct sway_container *workspace = output_get_active_workspace(output);
-	render_container(output, workspace);
 
-	render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
+	if (workspace->fullscreen) {
+		wlr_output_set_fullscreen_surface(wlr_output,
+				workspace->fullscreen->surface);
+	} else {
+		wlr_output_set_fullscreen_surface(wlr_output, NULL);
+		render_layer(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-	// TODO: consider revising this when fullscreen windows are supported
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+		render_container(output, workspace);
+
+		render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
+
+		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+		render_layer(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	}
 
 renderer_end:
 	if (root_container.sway_root->debug_tree) {
