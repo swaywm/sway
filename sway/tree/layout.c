@@ -138,7 +138,7 @@ void container_move_to(struct sway_container *container,
 		return;
 	}
 
-	if (container->sway_view->is_fullscreen) {
+	if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
 		struct sway_container *old_workspace = container;
 		if (old_workspace->type != C_WORKSPACE) {
 			old_workspace = container_parent(old_workspace, C_WORKSPACE);

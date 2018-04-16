@@ -42,7 +42,6 @@ struct sway_view {
 	struct sway_container *swayc; // NULL for unmanaged views
 	struct wlr_surface *surface; // NULL for unmapped views
 	int width, height;
-	int saved_width, saved_height;
 	bool is_fullscreen;
 
 	union {

@@ -25,15 +25,6 @@ static void unmanaged_handle_request_configure(struct wl_listener *listener,
 		ev->width, ev->height);
 }
 
-static void unmanaged_handle_request_fullscreen(struct wl_listener *listener,
-		void *data) {
-	struct sway_xwayland_view *xwayland_view =
-		wl_container_of(listener, xwayland_view, request_fullscreen);
-	struct sway_view *view = &xwayland_view->view;
-	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	view_set_fullscreen(view, xsurface->fullscreen);
-}
-
 static void unmanaged_handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, commit);
@@ -115,9 +106,6 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	wl_signal_add(&xsurface->events.request_configure,
 		&surface->request_configure);
 	surface->request_configure.notify = unmanaged_handle_request_configure;
-	wl_signal_add(&xsurface->events.request_fullscreen,
-		&surface->request_fullscreen);
-	surface->request_fullscreen.notify = unmanaged_handle_request_fullscreen;
 	wl_signal_add(&xsurface->events.map, &surface->map);
 	surface->map.notify = unmanaged_handle_map;
 	wl_signal_add(&xsurface->events.unmap, &surface->unmap);

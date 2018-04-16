@@ -287,11 +287,9 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		render_container(output, workspace);
 
 		render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
-
-		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
-		render_layer(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	}
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 renderer_end:
 	if (root_container.sway_root->debug_tree) {
