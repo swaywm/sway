@@ -112,6 +112,7 @@ struct sway_wl_shell_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
+	struct wl_listener set_state;
 	struct wl_listener destroy;
 
 	int pending_width, pending_height;

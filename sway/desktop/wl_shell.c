@@ -61,7 +61,13 @@ static void destroy(struct sway_view *view) {
 	}
 	wl_list_remove(&wl_shell_view->commit.link);
 	wl_list_remove(&wl_shell_view->destroy.link);
+	wl_list_remove(&wl_shell_view->request_fullscreen.link);
+	wl_list_remove(&wl_shell_view->set_state.link);
 	free(wl_shell_view);
+}
+
+static void set_fullscreen(struct sway_view *view, bool fullscreen) {
+	// TODO
 }
 
 static const struct sway_view_impl view_impl = {
@@ -69,6 +75,7 @@ static const struct sway_view_impl view_impl = {
 	.configure = configure,
 	.close = _close,
 	.destroy = destroy,
+	.set_fullscreen = set_fullscreen,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -86,6 +93,23 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_wl_shell_view *wl_shell_view =
 		wl_container_of(listener, wl_shell_view, destroy);
 	view_destroy(&wl_shell_view->view);
+}
+
+static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
+	struct sway_wl_shell_view *wl_shell_view =
+		wl_container_of(listener, wl_shell_view, request_fullscreen);
+	view_set_fullscreen(&wl_shell_view->view, true);
+}
+
+static void handle_set_state(struct wl_listener *listener, void *data) {
+	struct sway_wl_shell_view *wl_shell_view =
+		wl_container_of(listener, wl_shell_view, set_state);
+	struct sway_view *view = &wl_shell_view->view;
+	struct wlr_wl_shell_surface *surface = view->wlr_wl_shell_surface;
+	if (view->is_fullscreen &&
+			surface->state != WLR_WL_SHELL_SURFACE_STATE_FULLSCREEN) {
+		view_set_fullscreen(view, false);
+	}
 }
 
 void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
@@ -126,6 +150,13 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 
 	wl_shell_view->destroy.notify = handle_destroy;
 	wl_signal_add(&shell_surface->events.destroy, &wl_shell_view->destroy);
+
+	wl_shell_view->request_fullscreen.notify = handle_request_fullscreen;
+	wl_signal_add(&shell_surface->events.request_fullscreen,
+			&wl_shell_view->request_fullscreen);
+
+	wl_shell_view->set_state.notify = handle_set_state;
+	wl_signal_add(&shell_surface->events.set_state, &wl_shell_view->set_state);
 
 	view_map(&wl_shell_view->view, shell_surface->surface);
 

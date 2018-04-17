@@ -6,8 +6,11 @@
 #include "sway/tree/view.h"
 #include "sway/tree/layout.h"
 
-// fullscreen toggle|enable|disable
 struct cmd_results *cmd_fullscreen(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "fullscreen", EXPECTED_LESS_THAN, 2))) {
+		return error;
+	}
 	struct sway_container *container =
 		config->handler_context.current_container;
 	if (container->type != C_VIEW) {
@@ -25,7 +28,7 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 		wants_fullscreen = false;
 	} else {
 		return cmd_results_new(CMD_INVALID, "fullscreen",
-				"Expected 'fullscreen' or fullscreen <enable|disable|toggle>'");
+				"Expected 'fullscreen' or 'fullscreen <enable|disable|toggle>'");
 	}
 
 	view_set_fullscreen(view, wants_fullscreen);

@@ -91,13 +91,29 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 	view->is_fullscreen = fullscreen;
 
 	if (fullscreen) {
+		if (workspace->sway_workspace->fullscreen) {
+			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
+		}
 		workspace->sway_workspace->fullscreen = view;
-		view_configure(view, 0, 0, output->wlr_output->width, output->wlr_output->height);
+
+		struct sway_seat *seat;
+		struct sway_container *focus, *focus_ws;
+		wl_list_for_each(seat, &input_manager->seats, link) {
+			focus = seat_get_focus(seat);
+			focus_ws = focus;
+			if (focus_ws->type != C_WORKSPACE) {
+				focus_ws = container_parent(focus_ws, C_WORKSPACE);
+			}
+			seat_set_focus(seat, view->swayc);
+			if (focus_ws != workspace) {
+				seat_set_focus(seat, focus);
+			}
+		}
 	} else {
 		workspace->sway_workspace->fullscreen = NULL;
-		arrange_windows(workspace, -1, -1);
 	}
 
+	arrange_windows(workspace, -1, -1);
 	output_damage_whole(output);
 
 	ipc_event_window(view->swayc, "fullscreen_mode");

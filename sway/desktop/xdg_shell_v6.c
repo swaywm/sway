@@ -229,7 +229,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		wl_container_of(listener, xdg_shell_v6_view, request_fullscreen);
 	struct wlr_xdg_toplevel_v6_set_fullscreen_event *e = data;
 
-	if (xdg_shell_v6_view->view.wlr_xdg_surface_v6->role != WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL) {
+	if (!sway_assert(xdg_shell_v6_view->view.wlr_xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL,
+				"xdg_shell_v6 requested fullscreen of surface with role %i",
+				xdg_shell_v6_view->view.wlr_xdg_surface_v6->role)) {
 		return;
 	}
 
