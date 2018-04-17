@@ -104,11 +104,6 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 }
 
 void view_close(struct sway_view *view) {
-	if (view->is_fullscreen) {
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		ws->sway_workspace->fullscreen = NULL;
-	}
-
 	if (view->impl->close) {
 		view->impl->close(view);
 	}
@@ -231,6 +226,11 @@ void view_unmap(struct sway_view *view) {
 	}
 
 	wl_signal_emit(&view->events.unmap, view);
+
+	if (view->is_fullscreen) {
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		ws->sway_workspace->fullscreen = NULL;
+	}
 
 	view_damage(view, true);
 
