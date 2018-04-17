@@ -212,6 +212,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_v6_view->new_popup.notify = handle_new_popup;
 	wl_signal_add(&xdg_surface->events.new_popup,
 		&xdg_shell_v6_view->new_popup);
+
+	if (xdg_surface->toplevel->current.fullscreen) {
+		view_set_fullscreen(view, true);
+	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {

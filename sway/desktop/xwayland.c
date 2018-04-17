@@ -248,6 +248,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// Put it back into the tree
 	wlr_xwayland_surface_set_maximized(xsurface, true);
 	view_map(view, xsurface->surface);
+
+	if (xsurface->fullscreen) {
+		view_set_fullscreen(view, true);
+	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {

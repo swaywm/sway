@@ -128,4 +128,8 @@ void handle_wl_shell_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&shell_surface->events.destroy, &wl_shell_view->destroy);
 
 	view_map(&wl_shell_view->view, shell_surface->surface);
+
+	if (shell_surface->state == WLR_WL_SHELL_SURFACE_STATE_FULLSCREEN) {
+		view_set_fullscreen(&wl_shell_view->view, true);
+	}
 }
