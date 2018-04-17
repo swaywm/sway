@@ -229,7 +229,11 @@ static void render_container_iterator(struct sway_container *con,
 
 static void render_container(struct sway_output *output,
 		struct sway_container *con) {
-	container_descendants(con, C_VIEW, render_container_iterator, output);
+	if (con->type == C_VIEW) { // Happens if a view is fullscreened
+		render_container_iterator(con, output);
+	} else {
+		container_descendants(con, C_VIEW, render_container_iterator, output);
+	}
 }
 
 static struct sway_container *output_get_active_workspace(
@@ -277,10 +281,8 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	struct sway_container *workspace = output_get_active_workspace(output);
 
 	if (workspace->sway_workspace->fullscreen) {
-		wlr_output_set_fullscreen_surface(wlr_output,
-				workspace->sway_workspace->fullscreen->surface);
+		render_container(output, workspace->sway_workspace->fullscreen->swayc);
 	} else {
-		wlr_output_set_fullscreen_surface(wlr_output, NULL);
 		render_layer(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);

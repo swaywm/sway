@@ -598,10 +598,8 @@ void arrange_windows(struct sway_container *container,
 
 	if (container->type == C_WORKSPACE
 			&& container->sway_workspace->fullscreen) {
-		struct wlr_output *wlr_output
-			= container->parent->sway_output->wlr_output;
 		view_configure(container->sway_workspace->fullscreen, 0, 0,
-				wlr_output->width, wlr_output->height);
+				container->parent->width, container->parent->height);
 	}
 
 	double x = 0, y = 0;
