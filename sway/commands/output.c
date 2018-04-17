@@ -20,6 +20,25 @@ static char *bg_options[] = {
 	"tile",
 };
 
+static struct cmd_results *cmd_output_dpms(struct output_config *output,
+		int *i, int argc, char **argv) {
+
+	if (++*i >= argc) {
+		return cmd_results_new(CMD_INVALID, "output", "Missing dpms argument.");
+	}
+
+	char *value = argv[*i];
+	if (strcmp(value, "on") == 0) {
+		output->dpms_state = DPMS_ON;
+	} else if (strcmp(value, "off") == 0) {
+		output->dpms_state = DPMS_OFF;
+	} else {
+		return cmd_results_new(CMD_INVALID, "output",
+				"Invalid dpms state, valid states are on/off.");
+	}
+	return NULL;
+}
+
 static struct cmd_results *cmd_output_mode(struct output_config *output,
 		int *i, int argc, char **argv) {
 	if (++*i >= argc) {
@@ -263,6 +282,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		} else if (strcasecmp(command, "background") == 0 ||
 				strcasecmp(command, "bg") == 0) {
 			error = cmd_output_background(output, &i, argc, argv);
+		} else if (strcasecmp(command, "dpms") == 0) {
+			error = cmd_output_dpms(output, &i, argc, argv);
 		} else {
 			error = cmd_results_new(CMD_INVALID, "output",
 				"Invalid output subcommand: %s.", command);
@@ -285,10 +306,10 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	}
 
 	wlr_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %f transform %d) (bg %s %s)",
+		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
 		output->name, output->enabled, output->width, output->height,
 		output->refresh_rate, output->x, output->y, output->scale,
-		output->transform, output->background, output->background_option);
+		output->transform, output->background, output->background_option, output->dpms_state);
 
 	// Try to find the output container and apply configuration now. If
 	// this is during startup then there will be no container and config
