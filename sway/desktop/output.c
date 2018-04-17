@@ -469,6 +469,12 @@ void output_damage_view(struct sway_output *output, struct sway_view *view,
 		return;
 	}
 
+	struct sway_container *workspace = container_parent(view->swayc,
+			C_WORKSPACE);
+	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
+		return;
+	}
+
 	struct damage_data data = {
 		.output = output,
 		.whole = whole,
