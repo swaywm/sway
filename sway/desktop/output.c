@@ -280,11 +280,11 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 
+	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+
 	if (workspace->sway_workspace->fullscreen) {
 		render_container(output, workspace->sway_workspace->fullscreen->swayc);
 	} else {
-		render_layer(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 		render_container(output, workspace);
