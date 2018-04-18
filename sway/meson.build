@@ -90,6 +90,7 @@ sway_sources = files(
 	'commands/input/middle_emulation.c',
 	'commands/input/natural_scroll.c',
 	'commands/input/pointer_accel.c',
+	'commands/input/repeat.c',
 	'commands/input/scroll_method.c',
 	'commands/input/tap.c',
 	'commands/input/xkb_layout.c',
