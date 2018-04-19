@@ -45,6 +45,7 @@ enum sway_container_border {
 
 struct sway_root;
 struct sway_output;
+struct sway_workspace;
 struct sway_view;
 
 struct sway_container {
@@ -52,6 +53,7 @@ struct sway_container {
 		// TODO: Encapsulate state for other node types as well like C_CONTAINER
 		struct sway_root *sway_root;
 		struct sway_output *sway_output;
+		struct sway_workspace *sway_workspace;
 		struct sway_view *sway_view;
 	};
 

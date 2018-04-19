@@ -179,6 +179,14 @@ static void set_activated(struct sway_view *view, bool activated) {
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
+static void set_fullscreen(struct sway_view *view, bool fullscreen) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	wlr_xwayland_surface_set_fullscreen(surface, fullscreen);
+}
+
 static void _close(struct sway_view *view) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
@@ -193,6 +201,7 @@ static void destroy(struct sway_view *view) {
 	}
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_configure.link);
+	wl_list_remove(&xwayland_view->request_fullscreen.link);
 	wl_list_remove(&xwayland_view->map.link);
 	wl_list_remove(&xwayland_view->unmap.link);
 	free(xwayland_view);
@@ -202,6 +211,7 @@ static const struct sway_view_impl view_impl = {
 	.get_prop = get_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_fullscreen = set_fullscreen,
 	.close = _close,
 	.destroy = destroy,
 };
@@ -238,6 +248,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// Put it back into the tree
 	wlr_xwayland_surface_set_maximized(xsurface, true);
 	view_map(view, xsurface->surface);
+
+	if (xsurface->fullscreen) {
+		view_set_fullscreen(view, true);
+	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -261,6 +275,14 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 	// sure tiling windows always stay in place.
 	wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
 		ev->width, ev->height);
+}
+
+static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_fullscreen);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	view_set_fullscreen(view, xsurface->fullscreen);
 }
 
 void handle_xwayland_surface(struct wl_listener *listener, void *data) {
@@ -297,6 +319,10 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.request_configure,
 		&xwayland_view->request_configure);
 	xwayland_view->request_configure.notify = handle_request_configure;
+
+	wl_signal_add(&xsurface->events.request_fullscreen,
+		&xwayland_view->request_fullscreen);
+	xwayland_view->request_fullscreen.notify = handle_request_fullscreen;
 
 	wl_signal_add(&xsurface->events.unmap, &xwayland_view->unmap);
 	xwayland_view->unmap.notify = handle_unmap;

@@ -59,6 +59,13 @@ struct sway_container *workspace_create(struct sway_container *output,
 	workspace->layout = container_get_default_layout(output);
 	workspace->workspace_layout = workspace->layout;
 
+	struct sway_workspace *swayws = calloc(1, sizeof(struct sway_workspace));
+	if (!swayws) {
+		return NULL;
+	}
+	swayws->swayc = workspace;
+	workspace->sway_workspace = swayws;
+
 	container_add_child(output, workspace);
 	container_sort_workspaces(output);
 	container_create_notify(workspace);
