@@ -150,8 +150,8 @@ void container_add_child(struct sway_container *parent,
 			parent, parent->type, parent->width, parent->height);
 	struct sway_container *old_parent = child->parent;
 	list_add(parent->children, child);
-	container_handle_fullscreen_reparent(child, old_parent);
 	child->parent = parent;
+	container_handle_fullscreen_reparent(child, old_parent);
 }
 
 struct sway_container *container_remove_child(struct sway_container *child) {
