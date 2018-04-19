@@ -125,7 +125,8 @@ bool server_init(struct sway_server *server) {
 }
 
 void server_fini(struct sway_server *server) {
-	// TODO
+	// TODO: free sway-specific resources
+	wl_display_destroy(server->wl_display);
 }
 
 void server_run(struct sway_server *server) {
