@@ -280,6 +280,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	if (workspace->sway_workspace->fullscreen) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 		wlr_renderer_clear(renderer, clear_color);
+		// TODO: handle views smaller than the output
 		render_container(output, workspace->sway_workspace->fullscreen->swayc);
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
