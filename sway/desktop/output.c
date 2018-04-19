@@ -275,16 +275,18 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	wlr_output_transformed_resolution(wlr_output, &width, &height);
 	pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 
-	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
-	wlr_renderer_clear(renderer, clear_color);
-
 	struct sway_container *workspace = output_get_active_workspace(output);
 
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-
 	if (workspace->sway_workspace->fullscreen) {
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		wlr_renderer_clear(renderer, clear_color);
 		render_container(output, workspace->sway_workspace->fullscreen->swayc);
 	} else {
+		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+		wlr_renderer_clear(renderer, clear_color);
+
+		render_layer(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 		render_container(output, workspace);
