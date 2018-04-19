@@ -95,7 +95,7 @@ Libinput Configuration
 **input** <identifier> repeat_delay <milliseconds>::
 	Sets the amount of time a key must be held before it starts repeating.
 
-**input** <identifier> repeat_rate <milliseconds>::
+**input** <identifier> repeat_rate <characters per second>::
 	Sets the frequency of key repeats once the repeat_delay has passed.
 
 **input** <identifier> scroll_method <none|two_finger|edge|on_button_down>::
