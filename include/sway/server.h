@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
@@ -39,6 +40,11 @@ struct sway_server {
 
 	struct wlr_wl_shell *wl_shell;
 	struct wl_listener wl_shell_surface;
+
+	struct wlr_pointer_constraints_v1 *pointer_constraints;
+	struct wl_listener constraint_active;
+	struct wl_listener constraint_inactive;
+	struct wl_listener request_constraint;
 };
 
 struct sway_server server;

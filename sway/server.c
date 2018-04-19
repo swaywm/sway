@@ -21,6 +21,7 @@
 #include <wlr/xwayland.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
@@ -119,6 +120,17 @@ bool server_init(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
+
+	server->pointer_constraints = wlr_pointer_constraints_v1_create(server->wl_display);
+	server->constraint_inactive.notify = (wl_notify_func_t)cursor_handle_constraint_inactive;
+	wl_signal_add(&server->pointer_constraints->events.constraint_inactive,
+			&server->constraint_inactive);
+	server->constraint_active.notify = (wl_notify_func_t)cursor_handle_constraint_active;
+	wl_signal_add(&server->pointer_constraints->events.constraint_active,
+			&server->constraint_active);
+	server->request_constraint.notify = (wl_notify_func_t)cursor_handle_request_constraint;
+	wl_signal_add(&server->pointer_constraints->events.request_constraint,
+			&server->request_constraint);
 
 	input_manager = input_manager_create(server);
 	return true;

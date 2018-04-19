@@ -5,6 +5,7 @@
 #include <dev/evdev/input-event-codes.h>
 #endif
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "list.h"
 #include "log.h"
@@ -163,9 +164,11 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time) {
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
 	struct wlr_event_pointer_motion *event = data;
-	wlr_cursor_move(cursor->cursor, event->device,
-		event->delta_x, event->delta_y);
-	cursor_send_pointer_motion(cursor, event->time_msec);
+	if (!cursor->locked) {
+		wlr_cursor_move(cursor->cursor, event->device,
+			event->delta_x, event->delta_y);
+		cursor_send_pointer_motion(cursor, event->time_msec);
+	}
 }
 
 static void handle_cursor_motion_absolute(
@@ -173,8 +176,10 @@ static void handle_cursor_motion_absolute(
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
 	struct wlr_event_pointer_motion_absolute *event = data;
-	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
-	cursor_send_pointer_motion(cursor, event->time_msec);
+	if (!cursor->locked) {
+		wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
+		cursor_send_pointer_motion(cursor, event->time_msec);
+	}
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
@@ -252,17 +257,19 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis);
 	struct wlr_event_tablet_tool_axis *event = data;
 
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
-			(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
-		wlr_cursor_warp_absolute(cursor->cursor, event->device,
-			event->x, event->y);
-		cursor_send_pointer_motion(cursor, event->time_msec);
-	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
-		wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, -1);
-		cursor_send_pointer_motion(cursor, event->time_msec);
-	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
-		wlr_cursor_warp_absolute(cursor->cursor, event->device, -1, event->y);
-		cursor_send_pointer_motion(cursor, event->time_msec);
+	if (!cursor->locked) {
+		if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
+				(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+			wlr_cursor_warp_absolute(cursor->cursor, event->device,
+				event->x, event->y);
+			cursor_send_pointer_motion(cursor, event->time_msec);
+		} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
+			wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, -1);
+			cursor_send_pointer_motion(cursor, event->time_msec);
+		} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+			wlr_cursor_warp_absolute(cursor->cursor, event->device, -1, event->y);
+			cursor_send_pointer_motion(cursor, event->time_msec);
+		}
 	}
 }
 
@@ -320,6 +327,60 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	wlr_cursor_set_surface(cursor->cursor, event->surface, event->hotspot_x,
 		event->hotspot_y);
 	cursor->image_client = focused_client;
+}
+
+void cursor_handle_constraint_inactive(
+		struct wl_listener *listener,
+		struct wlr_pointer_constraint_v1 *constraint) {
+	struct sway_seat *seat = constraint->seat_client->seat->data;
+	struct sway_cursor *cursor = seat->cursor;
+
+	if (constraint->type == WLR_POINTER_CONSTRAINT_V1_CONFINED) {
+		wlr_cursor_map_to_region(cursor->cursor, NULL);
+		free(cursor->mapped_box);
+		cursor->mapped_box = NULL;
+	} else {
+		struct sway_view *view = constraint->surface->data;
+
+		seat->cursor->locked = false;
+		if (constraint->current.cursor_hint.valid) {
+			struct wlr_box view_box;
+			view_get_layout_box(view, &view_box);
+			wlr_cursor_warp(cursor->cursor, NULL,
+				view_box.x + constraint->current.cursor_hint.x,
+				view_box.y + constraint->current.cursor_hint.y);
+		}
+	}
+}
+
+void cursor_handle_constraint_active(
+		struct wl_listener *listener,
+		struct wlr_pointer_constraint_v1_activation *activation) {
+	struct wlr_box *box = activation->box;
+	struct wlr_pointer_constraint_v1 *constraint = activation->pointer_constraint;
+	struct sway_seat* seat = constraint->seat_client->seat->data;
+
+	if (constraint->type == WLR_POINTER_CONSTRAINT_V1_CONFINED) {
+		struct sway_view *view = constraint->surface->data;
+		if (!box) {
+			box = calloc(1, sizeof *box);
+			view_get_layout_box(view, box);
+		} else {
+			struct wlr_box view_box;
+			view_get_layout_box(view, &view_box);
+			box->x += view_box.x;
+			box->y += view_box.y;
+		}
+		seat->cursor->mapped_box = box;
+		wlr_cursor_map_to_region(seat->cursor->cursor, box);
+	} else {
+		seat->cursor->locked = true;
+	}
+}
+
+void cursor_handle_request_constraint(struct wl_listener *listener,
+		struct wlr_pointer_constraint_v1 *constraint) {
+	wlr_pointer_constraint_v1_accept(constraint);
 }
 
 void sway_cursor_destroy(struct sway_cursor *cursor) {

@@ -227,6 +227,8 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		free(seat);
 		return NULL;
 	}
+	seat->wlr_seat->data = seat;
+	seat->wlr_seat->pointer_constraints = input->server->pointer_constraints;
 
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {

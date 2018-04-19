@@ -134,7 +134,7 @@ void view_damage(struct sway_view *view, bool whole) {
 	}
 }
 
-static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
+void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
 	box->x = output->x + view->swayc->x;
@@ -219,6 +219,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	struct sway_container *cont = container_view_create(focus, view);
 
 	view->surface = wlr_surface;
+	wlr_surface->data = view;
 	view->swayc = cont;
 
 	view_init_subsurfaces(view, wlr_surface);
