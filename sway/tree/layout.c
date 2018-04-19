@@ -883,7 +883,7 @@ static struct sway_container *sway_output_from_wlr(struct wlr_output *output) {
 	return NULL;
 }
 
-static struct sway_container *container_get_in_direction_naive(
+struct sway_container *container_get_in_direction(
 		struct sway_container *container, struct sway_seat *seat,
 		enum movement_direction dir) {
 	struct sway_container *parent = container->parent;
@@ -935,6 +935,14 @@ static struct sway_container *container_get_in_direction_naive(
 				get_swayc_in_output_direction(adjacent, dir, seat);
 			if (next == NULL) {
 				return NULL;
+			}
+			struct sway_container *next_workspace = next;
+			if (next_workspace->type != C_WORKSPACE) {
+				next_workspace = container_parent(next_workspace, C_WORKSPACE);
+			}
+			sway_assert(next_workspace, "Next container has no workspace");
+			if (next_workspace->sway_workspace->fullscreen) {
+				return next_workspace->sway_workspace->fullscreen->swayc;
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
@@ -990,28 +998,6 @@ static struct sway_container *container_get_in_direction_naive(
 			}
 		}
 	}
-}
-
-struct sway_container *container_get_in_direction(
-		struct sway_container *container, struct sway_seat *seat,
-		enum movement_direction dir) {
-	struct sway_container *result = container_get_in_direction_naive(container,
-			seat, dir);
-	if (!result) {
-		return NULL;
-	}
-	struct sway_container *old_workspace = container;
-	if (old_workspace->type != C_WORKSPACE) {
-		old_workspace = container_parent(old_workspace, C_WORKSPACE);
-	}
-	struct sway_container *new_workspace = result;
-	if (new_workspace->type != C_WORKSPACE) {
-		new_workspace = container_parent(new_workspace, C_WORKSPACE);
-	}
-	if (old_workspace != new_workspace && new_workspace->sway_workspace->fullscreen) {
-		result = new_workspace->sway_workspace->fullscreen->swayc;
-	}
-	return result;
 }
 
 struct sway_container *container_replace_child(struct sway_container *child,
