@@ -213,7 +213,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xdg_surface->events.new_popup,
 		&xdg_shell_v6_view->new_popup);
 
-	if (xdg_surface->toplevel->current.fullscreen) {
+	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		view_set_fullscreen(view, true);
 	}
 }
