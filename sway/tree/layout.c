@@ -596,12 +596,6 @@ void arrange_windows(struct sway_container *container,
 		container->name, container->width, container->height, container->x,
 		container->y);
 
-	if (container->type == C_WORKSPACE
-			&& container->sway_workspace->fullscreen) {
-		view_configure(container->sway_workspace->fullscreen, 0, 0,
-				container->parent->width, container->parent->height);
-	}
-
 	double x = 0, y = 0;
 	switch (container->type) {
 	case C_ROOT:
@@ -628,9 +622,6 @@ void arrange_windows(struct sway_container *container,
 		return;
 	case C_WORKSPACE:
 		{
-			if (container->sway_workspace->fullscreen) {
-				return;
-			}
 			struct sway_container *output =
 				container_parent(container, C_OUTPUT);
 			struct wlr_box *area = &output->sway_output->usable_area;
@@ -642,6 +633,11 @@ void arrange_windows(struct sway_container *container,
 			container->y = y = area->y;
 			wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 					container->name, container->x, container->y);
+			if (container->sway_workspace->fullscreen) {
+				view_configure(container->sway_workspace->fullscreen, 0, 0,
+						output->width, output->height);
+				return;
+			}
 		}
 		// children are properly handled below
 		break;
