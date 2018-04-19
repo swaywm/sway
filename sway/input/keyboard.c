@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include "sway/input/seat.h"
@@ -479,7 +480,13 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	keyboard->keymap = keymap;
 	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
 
-	wlr_keyboard_set_repeat_info(wlr_device->keyboard, 25, 600);
+	if (input_config && input_config->repeat_delay != INT_MIN
+			&& input_config->repeat_rate != INT_MIN) {
+		wlr_keyboard_set_repeat_info(wlr_device->keyboard,
+				input_config->repeat_rate, input_config->repeat_delay);
+	} else {
+		wlr_keyboard_set_repeat_info(wlr_device->keyboard, 25, 600);
+	}
 	xkb_context_unref(context);
 	struct wlr_seat *seat = keyboard->seat_device->sway_seat->wlr_seat;
 	wlr_seat_set_keyboard(seat, wlr_device);
