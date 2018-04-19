@@ -55,6 +55,10 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		res = input_cmd_natural_scroll(argc_new, argv_new);
 	} else if (strcasecmp("pointer_accel", argv[1]) == 0) {
 		res = input_cmd_pointer_accel(argc_new, argv_new);
+	} else if (strcasecmp("repeat_delay", argv[1]) == 0) {
+		res = input_cmd_repeat_delay(argc_new, argv_new);
+	} else if (strcasecmp("repeat_rate", argv[1]) == 0) {
+		res = input_cmd_repeat_rate(argc_new, argv_new);
 	} else if (strcasecmp("scroll_method", argv[1]) == 0) {
 		res = input_cmd_scroll_method(argc_new, argv_new);
 	} else if (strcasecmp("tap", argv[1]) == 0) {
