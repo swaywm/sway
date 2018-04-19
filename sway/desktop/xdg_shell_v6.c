@@ -234,6 +234,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 				xdg_shell_v6_view->view.wlr_xdg_surface_v6->role)) {
 		return;
 	}
+	if (!xdg_shell_v6_view->view.wlr_xdg_surface_v6->mapped) {
+		return;
+	}
 
 	view_set_fullscreen(&xdg_shell_v6_view->view, e->fullscreen);
 }
