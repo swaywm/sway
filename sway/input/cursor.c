@@ -6,6 +6,7 @@
 #endif
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_idle.h>
 #include "list.h"
 #include "log.h"
 #include "sway/input/cursor.h"
@@ -151,6 +152,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time) {
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
@@ -161,6 +163,7 @@ static void handle_cursor_motion_absolute(
 		struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
@@ -206,6 +209,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_button *event = data;
 	dispatch_cursor_button(cursor,
 			event->time_msec, event->button, event->state);
@@ -213,6 +217,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_axis *event = data;
 	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
 		event->orientation, event->delta);
@@ -220,12 +225,14 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_down *event = data;
 	wlr_log(L_DEBUG, "TODO: handle touch down event: %p", event);
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_up);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_up *event = data;
 	wlr_log(L_DEBUG, "TODO: handle touch up event: %p", event);
 }
@@ -233,12 +240,14 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_motion *event = data;
 	wlr_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
 }
 
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_axis *event = data;
 
 	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
@@ -257,6 +266,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_tip);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_tip *event = data;
 	dispatch_cursor_button(cursor, event->time_msec,
 			BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
@@ -265,6 +275,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 
 static void handle_tool_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_button);
+	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_button *event = data;
 	// TODO: the user may want to configure which tool buttons are mapped to
 	// which simulated pointer buttons

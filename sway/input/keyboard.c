@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
+#include <wlr/types/wlr_idle.h>
 #include "sway/input/seat.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/input-manager.h"
@@ -329,6 +330,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
+	wlr_idle_notify_activity(keyboard->seat_device->sway_seat->input->server->idle, wlr_seat);
 	struct wlr_event_keyboard_key *event = data;
 
 	xkb_keycode_t keycode = event->keycode + 8;
