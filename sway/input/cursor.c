@@ -13,6 +13,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
 static struct wlr_surface *layer_surface_at(struct sway_output *output,
@@ -83,6 +84,16 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 				ox, oy, sx, sy))) {
 		return ws;
+	}
+	if (ws->sway_workspace->fullscreen) {
+		struct wlr_surface *wlr_surface = ws->sway_workspace->fullscreen->surface;
+		if (wlr_surface_point_accepts_input(wlr_surface, ox, oy)) {
+			*sx = ox;
+			*sy = oy;
+			*surface = wlr_surface;
+			return ws->sway_workspace->fullscreen->swayc;
+		}
+		return NULL;
 	}
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],

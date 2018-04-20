@@ -22,6 +22,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 
 struct sway_container *output_by_name(const char *name) {
 	for (int i = 0; i < root_container.children->length; ++i) {
@@ -228,7 +229,11 @@ static void render_container_iterator(struct sway_container *con,
 
 static void render_container(struct sway_output *output,
 		struct sway_container *con) {
-	container_descendants(con, C_VIEW, render_container_iterator, output);
+	if (con->type == C_VIEW) { // Happens if a view is fullscreened
+		render_container_iterator(con, output);
+	} else {
+		container_descendants(con, C_VIEW, render_container_iterator, output);
+	}
 }
 
 static struct sway_container *output_get_active_workspace(
@@ -270,19 +275,26 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	wlr_output_transformed_resolution(wlr_output, &width, &height);
 	pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 
-	float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
-	wlr_renderer_clear(renderer, clear_color);
-
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
-
 	struct sway_container *workspace = output_get_active_workspace(output);
-	render_container(output, workspace);
 
-	render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
+	if (workspace->sway_workspace->fullscreen) {
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		wlr_renderer_clear(renderer, clear_color);
+		// TODO: handle views smaller than the output
+		render_container(output, workspace->sway_workspace->fullscreen->swayc);
+	} else {
+		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+		wlr_renderer_clear(renderer, clear_color);
 
-	// TODO: consider revising this when fullscreen windows are supported
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+		render_layer(output,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+
+		render_container(output, workspace);
+
+		render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
+		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	}
 	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 renderer_end:
@@ -459,6 +471,12 @@ void output_damage_surface(struct sway_output *output, double ox, double oy,
 void output_damage_view(struct sway_output *output, struct sway_view *view,
 		bool whole) {
 	if (!sway_assert(view->swayc != NULL, "expected a view in the tree")) {
+		return;
+	}
+
+	struct sway_container *workspace = container_parent(view->swayc,
+			C_WORKSPACE);
+	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
 		return;
 	}
 

@@ -3,6 +3,13 @@
 
 #include "sway/tree/container.h"
 
+struct sway_view;
+
+struct sway_workspace {
+	struct sway_container *swayc;
+	struct sway_view *fullscreen;
+};
+
 extern char *prev_workspace_name;
 
 char *workspace_next_name(const char *output_name);

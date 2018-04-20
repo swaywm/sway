@@ -2,10 +2,12 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "log.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 
 void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
@@ -71,6 +73,50 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	if (view->impl->set_activated) {
 		view->impl->set_activated(view, activated);
 	}
+}
+
+void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
+	if (view->is_fullscreen == fullscreen) {
+		return;
+	}
+
+	struct sway_container *workspace = container_parent(view->swayc, C_WORKSPACE);
+	struct sway_container *container = container_parent(workspace, C_OUTPUT);
+	struct sway_output *output = container->sway_output;
+
+	if (view->impl->set_fullscreen) {
+		view->impl->set_fullscreen(view, fullscreen);
+	}
+
+	view->is_fullscreen = fullscreen;
+
+	if (fullscreen) {
+		if (workspace->sway_workspace->fullscreen) {
+			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
+		}
+		workspace->sway_workspace->fullscreen = view;
+
+		struct sway_seat *seat;
+		struct sway_container *focus, *focus_ws;
+		wl_list_for_each(seat, &input_manager->seats, link) {
+			focus = seat_get_focus(seat);
+			focus_ws = focus;
+			if (focus_ws->type != C_WORKSPACE) {
+				focus_ws = container_parent(focus_ws, C_WORKSPACE);
+			}
+			seat_set_focus(seat, view->swayc);
+			if (focus_ws != workspace) {
+				seat_set_focus(seat, focus);
+			}
+		}
+	} else {
+		workspace->sway_workspace->fullscreen = NULL;
+	}
+
+	arrange_windows(workspace, -1, -1);
+	output_damage_whole(output);
+
+	ipc_event_window(view->swayc, "fullscreen_mode");
 }
 
 void view_close(struct sway_view *view) {
@@ -196,6 +242,11 @@ void view_unmap(struct sway_view *view) {
 	}
 
 	wl_signal_emit(&view->events.unmap, view);
+
+	if (view->is_fullscreen) {
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		ws->sway_workspace->fullscreen = NULL;
+	}
 
 	view_damage(view, true);
 

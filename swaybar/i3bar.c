@@ -104,6 +104,7 @@ static bool i3bar_parse_json(struct status_line *status, const char *text) {
 			json_object_get_int(border_right) : 1;
 		wl_list_insert(&status->blocks, &block->link);
 	}
+	json_object_put(results);
 	return true;
 }
 

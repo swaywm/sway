@@ -18,6 +18,7 @@
 #include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 
 static void seat_device_destroy(struct sway_seat_device *seat_device) {
@@ -445,6 +446,21 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	struct sway_container *last_focus = seat_get_focus(seat);
 	if (container && last_focus == container) {
+		return;
+	}
+
+	struct sway_container *last_workspace = last_focus;
+	if (last_workspace && last_workspace->type != C_WORKSPACE) {
+		last_workspace = container_parent(last_workspace, C_WORKSPACE);
+	}
+	struct sway_container *new_workspace = container;
+	if (new_workspace && new_workspace->type != C_WORKSPACE) {
+		new_workspace = container_parent(new_workspace, C_WORKSPACE);
+	}
+
+	if (last_workspace && last_workspace == new_workspace
+			&& last_workspace->sway_workspace->fullscreen
+			&& !container->sway_view->is_fullscreen) {
 		return;
 	}
 
