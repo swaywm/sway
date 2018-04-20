@@ -1,6 +1,7 @@
 sway_sources = files(
 	'main.c',
 	'server.c',
+	'idle.c',
 	'commands.c',
 	'config.c',
 	'criteria.c',
@@ -54,6 +55,9 @@ sway_sources = files(
 	'commands/swaybg_command.c',
 	'commands/workspace.c',
 	'commands/ws_auto_back_and_forth.c',
+	'commands/idle_timeout.c',
+	'commands/lock_timeout.c',
+	'commands/swaylock_command.c',
 
 	'commands/bar/activate_button.c',
 	'commands/bar/binding_mode_indicator.c',
