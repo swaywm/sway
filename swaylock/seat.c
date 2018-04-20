@@ -88,6 +88,7 @@ static void keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
 	xkb_mod_mask_t mask = xkb_state_serialize_mods(state->xkb.state,
 			XKB_STATE_MODS_DEPRESSED | XKB_STATE_MODS_LATCHED);
 	state->xkb.modifiers = 0;
+	state->xkb.caps_lock = xkb_state_mod_name_is_active(state->xkb.state, XKB_MOD_NAME_CAPS, XKB_STATE_MODS_LOCKED);
 	for (uint32_t i = 0; i < MASK_LAST; ++i) {
 		if (mask & state->xkb.masks[i]) {
 			state->xkb.modifiers |= XKB_MODS[i];

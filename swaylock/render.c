@@ -43,6 +43,7 @@ void render_frame(struct swaylock_surface *surface) {
 		cairo_arc(cairo, buffer_width / 2, buffer_height / 2, arc_radius, 0, 2 * M_PI);
 		switch (state->auth_state) {
 		case AUTH_STATE_INPUT:
+		case AUTH_STATE_INPUT_NOP:
 		case AUTH_STATE_BACKSPACE: {
 			cairo_set_source_rgba(cairo, 0, 0, 0, 0.75);
 			cairo_fill_preserve(cairo);
@@ -61,6 +62,12 @@ void render_frame(struct swaylock_surface *surface) {
 			cairo_set_source_rgb(cairo, 125.0 / 255, 51.0 / 255, 0);
 			cairo_stroke(cairo);
 		} break;
+		case AUTH_STATE_CLEAR: {
+			cairo_set_source_rgba(cairo, 229.0/255, 164.0/255, 69.0/255, 0.75);
+			cairo_fill_preserve(cairo);
+			cairo_set_source_rgb(cairo, 229.0/255, 164.0/255, 69.0/255);
+			cairo_stroke(cairo);
+		} break;
 		default: break;
 		}
 
@@ -77,6 +84,15 @@ void render_frame(struct swaylock_surface *surface) {
 		case AUTH_STATE_INVALID:
 			text = "wrong";
 			break;
+		case AUTH_STATE_CLEAR:
+			text = "cleared";
+			break;
+		case AUTH_STATE_INPUT:
+		case AUTH_STATE_INPUT_NOP:
+			if (state->xkb.caps_lock) {
+				text = "Caps Lock";
+				cairo_set_source_rgb(cairo, 229.0/255, 164.0/255, 69.0/255);
+			}
 		default: break;
 		}
 
