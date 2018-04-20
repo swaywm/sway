@@ -19,7 +19,7 @@ void invoke_swaylock() {
 }
 
 static int handle_idle(void* data) {
-	wlr_log(L_ERROR, "Idle state");
+	wlr_log(L_DEBUG, "Idle state");
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
 		if (cont->type != C_OUTPUT) {
@@ -33,7 +33,7 @@ static int handle_idle(void* data) {
 }
 
 static int handle_resume(void *data) {
-	wlr_log(L_ERROR, "Active state");
+	wlr_log(L_DEBUG, "Active state");
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
 		if (cont->type != C_OUTPUT) {
