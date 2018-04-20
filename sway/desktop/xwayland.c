@@ -257,11 +257,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, destroy);
-	struct sway_view *view = &xwayland_view->view;
-	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (xsurface->mapped) {
-		handle_unmap(&xwayland_view->unmap, xsurface);
-	}
 	view_destroy(&xwayland_view->view);
 }
 
