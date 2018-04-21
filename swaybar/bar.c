@@ -418,7 +418,11 @@ static void ipc_in(int fd, short mask, void *_bar) {
 
 static void status_in(int fd, short mask, void *_bar) {
 	struct swaybar *bar = (struct swaybar *)_bar;
-	if (status_handle_readable(bar->status)) {
+	if (mask & (POLLHUP | POLLERR)) {
+		status_error(bar->status, "[error reading from status command]");
+		render_all_frames(bar);
+		remove_event(fd);
+	} else if (status_handle_readable(bar->status)) {
 		render_all_frames(bar);
 	}
 }
