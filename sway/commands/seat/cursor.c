@@ -11,7 +11,7 @@
 #include "sway/input/cursor.h"
 
 static struct cmd_results *press_or_release(struct sway_cursor *cursor,
-		char *action, char *button_str, uint32_t time);
+		char *action, char *button_str);
 
 static const char *expected_syntax = "Expected 'cursor <move> <x> <y>' or "
 					"'cursor <set> <x> <y>' or "
@@ -29,10 +29,6 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 
 	struct sway_cursor *cursor = seat->cursor;
 
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	uint32_t time = now.tv_nsec / 1000;
-
 	if (strcasecmp(argv[0], "move") == 0) {
 		if (argc < 3) {
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
@@ -40,7 +36,7 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 		int delta_x = strtol(argv[1], NULL, 10);
 		int delta_y = strtol(argv[2], NULL, 10);
 		wlr_cursor_move(cursor->cursor, NULL, delta_x, delta_y);
-		cursor_send_pointer_motion(cursor, time);
+		cursor_send_pointer_motion(cursor, 0);
 	} else if (strcasecmp(argv[0], "set") == 0) {
 		if (argc < 3) {
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
@@ -49,12 +45,12 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 		float x = strtof(argv[1], NULL) / root_container.width;
 		float y = strtof(argv[2], NULL) / root_container.height;
 		wlr_cursor_warp_absolute(cursor->cursor, NULL, x, y);
-		cursor_send_pointer_motion(cursor, time);
+		cursor_send_pointer_motion(cursor, 0);
 	} else {
 		if (argc < 2) {
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
 		}
-		if ((error = press_or_release(cursor, argv[0], argv[1], time))) {
+		if ((error = press_or_release(cursor, argv[0], argv[1]))) {
 			return error;
 		}
 	}
@@ -63,7 +59,7 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 }
 
 static struct cmd_results *press_or_release(struct sway_cursor *cursor,
-		char *action, char *button_str, uint32_t time) {
+		char *action, char *button_str) {
 	enum wlr_button_state state;
 	uint32_t button;
 	if (strcasecmp(action, "press") == 0) {
@@ -84,6 +80,6 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
 		}
 	}
-	dispatch_cursor_button(cursor, time, button, state);
+	dispatch_cursor_button(cursor, 0, button, state);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
