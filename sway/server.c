@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_linux_dmabuf.h>
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_primary_selection.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -131,6 +132,8 @@ bool server_init(struct sway_server *server) {
 	server->request_constraint.notify = (wl_notify_func_t)cursor_handle_request_constraint;
 	wl_signal_add(&server->pointer_constraints->events.request_constraint,
 			&server->request_constraint);
+
+	wlr_relative_pointer_manager_v1_create(server->wl_display);
 
 	input_manager = input_manager_create(server);
 	return true;

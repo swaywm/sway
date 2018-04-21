@@ -167,7 +167,11 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	if (!cursor->locked) {
 		wlr_cursor_move(cursor->cursor, event->device,
 			event->delta_x, event->delta_y);
-		cursor_send_pointer_motion(cursor, event->time_msec);
+		cursor_send_pointer_motion(cursor, event->time_usec / 1000);
+	} else {
+		wlr_seat_pointer_notify_relative_motion(cursor->seat->wlr_seat,
+			event->time_usec, event->delta_x, event->delta_y,
+			event->noaccel.delta_x, event->noaccel.delta_y);
 	}
 }
 
