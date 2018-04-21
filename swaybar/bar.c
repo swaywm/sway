@@ -401,23 +401,23 @@ void bar_setup(struct swaybar *bar,
 	render_all_frames(bar);
 }
 
-static void display_in(int fd, short mask, void *_bar) {
-	struct swaybar *bar = (struct swaybar *)_bar;
+static void display_in(int fd, short mask, void *data) {
+	struct swaybar *bar = data;
 	if (wl_display_dispatch(bar->display) == -1) {
 		bar_teardown(bar);
 		exit(0);
 	}
 }
 
-static void ipc_in(int fd, short mask, void *_bar) {
-	struct swaybar *bar = (struct swaybar *)_bar;
+static void ipc_in(int fd, short mask, void *data) {
+	struct swaybar *bar = data;
 	if (handle_ipc_readable(bar)) {
 		render_all_frames(bar);
 	}
 }
 
-static void status_in(int fd, short mask, void *_bar) {
-	struct swaybar *bar = (struct swaybar *)_bar;
+static void status_in(int fd, short mask, void *data) {
+	struct swaybar *bar = data;
 	if (mask & (POLLHUP | POLLERR)) {
 		status_error(bar->status, "[error reading from status command]");
 		render_all_frames(bar);
