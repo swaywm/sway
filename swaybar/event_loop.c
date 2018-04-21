@@ -72,24 +72,18 @@ void add_event(int fd, short mask,
 }
 
 bool remove_event(int fd) {
-	int index = -1;
+	/*
+	 * Instead of removing events immediately, we mark them for deletion
+	 * and clean them up later. This is so we can call remove_event inside
+	 * an event callback safely.
+	 */
 	for (int i = 0; i < event_loop.fds.length; ++i) {
 		if (event_loop.fds.items[i].fd == fd) {
-			index = i;
+			event_loop.fds.items[i].fd = -1;
+			return true;
 		}
 	}
-	if (index != -1) {
-		free(event_loop.items->items[index]);
-
-		--event_loop.fds.length;
-		memmove(&event_loop.fds.items[index], &event_loop.fds.items[index + 1],
-				sizeof(struct pollfd) * event_loop.fds.length - index);
-
-		list_del(event_loop.items, index);
-		return true;
-	} else {
-		return false;
-	}
+	return false;
 }
 
 static int timer_item_timer_cmp(const void *_timer_item, const void *_timer) {
@@ -118,8 +112,26 @@ void event_loop_poll() {
 		struct pollfd pfd = event_loop.fds.items[i];
 		struct event_item *item = (struct event_item *)event_loop.items->items[i];
 
-		if (pfd.revents & pfd.events) {
+		// Always send these events
+		unsigned events = pfd.events | POLLHUP | POLLERR;
+
+		if (pfd.revents & events) {
 			item->cb(pfd.fd, pfd.revents, item->data);
+		}
+	}
+
+	// Cleanup removed events
+	int end = 0;
+	int length = event_loop.fds.length;
+	for (int i = 0; i < length; ++i) {
+		if (event_loop.fds.items[i].fd == -1) {
+			free(event_loop.items->items[i]);
+			list_del(event_loop.items, i);
+			--event_loop.fds.length;
+		} else if (end != i) {
+			event_loop.fds.items[end++] = event_loop.fds.items[i];
+		} else {
+			end = i + 1;
 		}
 	}
 
