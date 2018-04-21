@@ -118,7 +118,10 @@ void event_loop_poll() {
 		struct pollfd pfd = event_loop.fds.items[i];
 		struct event_item *item = (struct event_item *)event_loop.items->items[i];
 
-		if (pfd.revents & pfd.events) {
+		// Always send these events
+		unsigned events = pfd.events | POLLHUP | POLLERR;
+
+		if (pfd.revents & events) {
 			item->cb(pfd.fd, pfd.revents, item->data);
 		}
 	}
