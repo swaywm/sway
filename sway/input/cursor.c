@@ -59,9 +59,8 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	// find the output the cursor is on
 	struct wlr_output_layout *output_layout =
 		root_container.sway_root->output_layout;
-	struct wlr_output *wlr_output =
-		wlr_output_layout_output_at(output_layout,
-				cursor->cursor->x, cursor->cursor->y);
+	struct wlr_output *wlr_output = wlr_output_layout_output_at(output_layout,
+		cursor->cursor->x, cursor->cursor->y);
 	if (wlr_output == NULL) {
 		return NULL;
 	}
