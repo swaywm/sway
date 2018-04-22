@@ -156,31 +156,56 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	if (!sway_assert(output, "axis with no active output")) {
 		return;
 	}
+
 	double amt = wl_fixed_to_double(value);
-	if (!bar->config->wrap_scroll) {
-		int i = 0;
-		struct swaybar_workspace *ws = NULL;
-		wl_list_for_each(ws, &output->workspaces, link) {
-			if (ws->focused) {
-				break;
-			}
-			++i;
-		}
-		int len = wl_list_length(&output->workspaces);
-		if (!sway_assert(i != len, "axis with null workspace")) {
-			return;
-		}
-		if (i == 0 && amt > 0) {
-			return; // Do not wrap
-		}
-		if (i == len - 1 && amt < 0) {
-			return; // Do not wrap
-		}
+	if (amt == 0.0) {
+		return;
 	}
 
-	const char *workspace_name =
-		amt < 0 ?  "prev_on_output" : "next_on_output";
-	ipc_send_workspace_command(bar, workspace_name);
+	struct swaybar_workspace *first = NULL;
+	struct swaybar_workspace *active = NULL;
+	struct swaybar_workspace *last;
+
+	struct swaybar_workspace *iter;
+	wl_list_for_each(iter, &output->workspaces, link) {
+		if (!first) {
+			first = iter;
+		}
+
+		if (iter->visible) {
+			active = iter;
+		}
+
+		last = iter;
+	}
+
+	if (!sway_assert(active, "axis with null workspace")) {
+		return;
+	}
+
+	struct swaybar_workspace *new;
+
+	if (amt > 0.0) {
+		if (active == first) {
+			if (!bar->config->wrap_scroll) {
+				return;
+			}
+			new = last;
+		}
+
+		new = wl_container_of(active->link.prev, new, link);
+	} else {
+		if (active == last) {
+			if (!bar->config->wrap_scroll) {
+				return;
+			}
+			new = first;
+		}
+
+		new = wl_container_of(active->link.next, new, link);
+	}
+
+	ipc_send_workspace_command(bar, new->name);
 }
 
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
