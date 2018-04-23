@@ -73,29 +73,15 @@ static struct cmd_results *cmd_output_position(struct output_config *output,
 
 	char *end;
 	output->x = strtol(argv[*i], &end, 10);
+	// Format is 1234 4321
+	if (++*i >= argc) {
+		return cmd_results_new(CMD_INVALID, "output",
+			"Missing position argument (y).");
+	}
+	output->y = strtol(argv[*i], &end, 10);
 	if (*end) {
-		// Format is 1234,4321
-		if (*end != ',') {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid position x.");
-		}
-		++end;
-		output->y = strtol(end, &end, 10);
-		if (*end) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid position y.");
-		}
-	} else {
-		// Format is 1234 4321 (legacy)
-		if (++*i >= argc) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Missing position argument (y).");
-		}
-		output->y = strtol(argv[*i], &end, 10);
-		if (*end) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid position y.");
-		}
+		return cmd_results_new(CMD_INVALID, "output",
+			"Invalid position y.");
 	}
 
 	return NULL;
