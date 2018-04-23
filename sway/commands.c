@@ -322,7 +322,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 		cmdlist += strspn(cmdlist, whitespace);
 		do {
 			// Split commands
-			cmd = argsep(&cmdlist, ";");
+			cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
 				wlr_log(L_INFO, "Ignoring empty command.");
