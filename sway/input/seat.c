@@ -19,6 +19,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/idle.h"
 #include "log.h"
 
 static void seat_device_destroy(struct sway_seat_device *seat_device) {
@@ -256,6 +257,8 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	seat_configure_xcursor(seat);
 
 	wl_list_insert(&input->seats, &seat->link);
+
+	idle_setup_seat(input->server, seat);
 
 	return seat;
 }

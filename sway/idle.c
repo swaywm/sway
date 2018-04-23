@@ -68,12 +68,28 @@ static const struct wlr_idle_timeout_listener lock_listener = {
 	.resumed = handle_nop,
 };
 
+void idle_setup_seat(struct sway_server *server, struct sway_seat *seat) {
+	if (server->idle == NULL) {
+		return;
+	}
+	if (config != NULL) {
+		wlr_log(L_DEBUG, "Setup idle timer %d", config->idle_timeout);
+		wlr_idle_listen(server->idle, config->idle_timeout * 1000, &idle_listener, seat->wlr_seat); 
+		wlr_log(L_DEBUG, "Setup lock timer %d", config->lock_timeout);
+		wlr_idle_listen(server->idle, config->lock_timeout * 1000, &lock_listener, seat->wlr_seat); 
+	} else {
+		wlr_log(L_ERROR, "Cant setup idle timers for seat since no config is available!");
+	}
+}
+
 bool idle_init(struct sway_server *server) {
 	wlr_log(L_DEBUG, "Initializing idle");
 	server->idle = wlr_idle_create(server->wl_display);
-	wlr_log(L_DEBUG, "Setup idle timer %d", config->idle_timeout);
-	wlr_idle_listen(server->idle, config->idle_timeout * 1000, &idle_listener); 
-	wlr_log(L_DEBUG, "Setup lock timer %d", config->lock_timeout);
-	wlr_idle_listen(server->idle, config->lock_timeout * 1000, &lock_listener); 
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		idle_setup_seat(server, seat);
+	}
+
 	return true;
 }
+
