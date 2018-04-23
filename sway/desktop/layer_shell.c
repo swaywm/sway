@@ -13,6 +13,7 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
+#include "log.h"
 
 static void apply_exclusive(struct wlr_box *usable_area,
 		uint32_t anchor, int32_t exclusive,
@@ -314,6 +315,27 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 		calloc(1, sizeof(struct sway_layer_surface));
 	if (!sway_layer) {
 		return;
+	}
+
+	if (!layer_surface->output) {
+		// Assign last active output
+		struct sway_container *output = NULL;
+		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+		if (seat) {
+			output = seat_get_focus_inactive(seat, &root_container);
+		}
+		if (!output) {
+			if (!sway_assert(root_container.children->length,
+						"cannot auto-assign output for layer")) {
+				wlr_layer_surface_close(layer_surface);
+				return;
+			}
+			output = root_container.children->items[0];
+		}
+		if (output->type != C_OUTPUT) {
+			output = container_parent(output, C_OUTPUT);
+		}
+		layer_surface->output = output->sway_output->wlr_output;
 	}
 
 	sway_layer->surface_commit.notify = handle_surface_commit;
