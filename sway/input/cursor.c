@@ -16,6 +16,12 @@
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+static uint32_t get_current_time_msec() {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return now.tv_nsec / 1000;
+}
+
 static struct wlr_surface *layer_surface_at(struct sway_output *output,
 		struct wl_list *layer, double ox, double oy, double *sx, double *sy) {
 	struct sway_layer_surface *sway_layer;
@@ -60,9 +66,8 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	// find the output the cursor is on
 	struct wlr_output_layout *output_layout =
 		root_container.sway_root->output_layout;
-	struct wlr_output *wlr_output =
-		wlr_output_layout_output_at(output_layout,
-				cursor->cursor->x, cursor->cursor->y);
+	struct wlr_output *wlr_output = wlr_output_layout_output_at(output_layout,
+		cursor->cursor->x, cursor->cursor->y);
 	if (wlr_output == NULL) {
 		return NULL;
 	}
@@ -130,7 +135,11 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	return output->swayc;
 }
 
-void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time) {
+void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec) {
+	if (time_msec == 0) {
+		time_msec = get_current_time_msec();
+	}
+
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
@@ -154,7 +163,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time) {
 	if (surface != NULL) {
 		if (seat_is_input_allowed(cursor->seat, surface)) {
 			wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-			wlr_seat_pointer_notify_motion(seat, time, sx, sy);
+			wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
 		}
 	} else {
 		wlr_seat_pointer_clear_focus(seat);
@@ -182,6 +191,10 @@ static void handle_cursor_motion_absolute(
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
 		uint32_t time_msec, uint32_t button, enum wlr_button_state state) {
+	if (time_msec == 0) {
+		time_msec = get_current_time_msec();
+	}
+
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 	struct sway_container *cont =

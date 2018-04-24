@@ -282,6 +282,11 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		wlr_renderer_clear(renderer, clear_color);
 		// TODO: handle views smaller than the output
 		render_container(output, workspace->sway_workspace->fullscreen->swayc);
+
+		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
+			render_unmanaged(output,
+					&root_container.sway_root->xwayland_unmanaged);
+		}
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 		wlr_renderer_clear(renderer, clear_color);

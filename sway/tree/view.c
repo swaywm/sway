@@ -327,7 +327,7 @@ static void view_child_handle_view_unmap(struct wl_listener *listener,
 static void view_init_subsurfaces(struct sway_view *view,
 		struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface;
-	wl_list_for_each(subsurface, &surface->subsurface_list, parent_link) {
+	wl_list_for_each(subsurface, &surface->subsurfaces, parent_link) {
 		view_subsurface_create(view, subsurface);
 	}
 }

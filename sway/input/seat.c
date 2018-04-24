@@ -553,9 +553,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 						wlr_output, seat->cursor->cursor->x,
 						seat->cursor->cursor->y)) {
 					wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
-					struct timespec now;
-					clock_gettime(CLOCK_MONOTONIC, &now);
-					cursor_send_pointer_motion(seat->cursor, now.tv_nsec / 1000);
+					cursor_send_pointer_motion(seat->cursor, 0);
 				}
 			}
 		}
@@ -565,6 +563,10 @@ void seat_set_focus_warp(struct sway_seat *seat,
 			!input_manager_has_focus(seat->input, last_focus)) {
 		struct sway_view *view = last_focus->sway_view;
 		view_set_activated(view, false);
+	}
+
+	if (last_workspace && last_workspace != new_workspace) {
+		cursor_send_pointer_motion(seat->cursor, 0);
 	}
 
 	seat->has_focus = (container != NULL);

@@ -1,3 +1,5 @@
+sysconfdir = get_option('sysconfdir')
+
 executable(
 	'swaylock', [
 		'main.c',
@@ -20,4 +22,9 @@ executable(
 	],
 	link_with: [lib_sway_common, lib_sway_client],
 	install: true
+)
+
+install_data(
+	'pam/swaylock',
+	install_dir: sysconfdir + '/pam.d/'
 )
