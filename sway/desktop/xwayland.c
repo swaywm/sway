@@ -266,10 +266,13 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface_configure_event *ev = data;
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	// TODO: floating windows are allowed to move around like this, but make
-	// sure tiling windows always stay in place.
-	wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
-		ev->width, ev->height);
+	if (!xsurface->mapped) {
+		wlr_xwayland_surface_configure(xsurface, ev->x, ev->y,
+			ev->width, ev->height);
+		return;
+	}
+	// TODO: Let floating views do whatever
+	configure(view, view->swayc->x, view->swayc->y, view->width, view->height);
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
