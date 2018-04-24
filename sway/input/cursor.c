@@ -261,22 +261,60 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
 }
 
+static double apply_mapping_from_coord(double low, double high, double value) {
+	if (value == -1) {
+		return value;
+	}
+
+	value = (value - low) / (high - low);
+	if (value < 0) {
+		return 0;
+	} else if (value > 1) {
+		return 1;
+	} else {
+		return value;
+	}
+}
+
+static void apply_mapping_from_region(struct wlr_input_device *device,
+		struct input_config_mapped_from_region *region, double *x, double *y) {
+	double x1 = region->x1, x2 = region->x2;
+	double y1 = region->y1, y2 = region->y2;
+
+	if (region->mm) {
+		if (device->width_mm == 0 || device->height_mm == 0) {
+			return;
+		}
+		x1 /= device->width_mm;
+		x2 /= device->width_mm;
+		y1 /= device->height_mm;
+		y2 /= device->height_mm;
+	}
+
+	*x = apply_mapping_from_coord(x1, x2, *x);
+	*y = apply_mapping_from_coord(y1, y2, *y);
+}
+
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis);
 	struct wlr_event_tablet_tool_axis *event = data;
+	struct sway_input_device *input_device = event->device->data;
 
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
-			(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
-		wlr_cursor_warp_absolute(cursor->cursor, event->device,
-			event->x, event->y);
-		cursor_send_pointer_motion(cursor, event->time_msec);
-	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
-		wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, -1);
-		cursor_send_pointer_motion(cursor, event->time_msec);
-	} else if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
-		wlr_cursor_warp_absolute(cursor->cursor, event->device, -1, event->y);
-		cursor_send_pointer_motion(cursor, event->time_msec);
+	double x = -1, y = -1;
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
+		x = event->x;
 	}
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+		y = event->y;
+	}
+
+	struct input_config *ic = input_device_get_config(input_device);
+	if (ic != NULL && ic->mapped_from_region != NULL) {
+		apply_mapping_from_region(event->device, ic->mapped_from_region, &x, &y);
+	}
+
+	wlr_cursor_warp_absolute(cursor->cursor, event->device, x, y);
+	cursor_send_pointer_motion(cursor, event->time_msec);
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {

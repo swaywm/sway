@@ -211,6 +211,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	if (!sway_assert(input_device, "could not allocate input device")) {
 		return;
 	}
+	device->data = input_device;
 
 	input_device->wlr_device = device;
 	input_device->identifier = get_device_identifier(device);

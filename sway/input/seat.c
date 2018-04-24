@@ -269,11 +269,11 @@ static void seat_apply_input_config(struct sway_seat *seat,
 	}
 	wlr_log(L_DEBUG, "Applying input config to %s",
 			sway_device->input_device->identifier);
-	if (ic->mapped_output) {
+	if (ic->mapped_to_output) {
 		struct sway_container *output = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
 			struct sway_container *_output = root_container.children->items[i];
-			if (strcasecmp(_output->name, ic->mapped_output) == 0) {
+			if (strcasecmp(_output->name, ic->mapped_to_output) == 0) {
 				output = _output;
 				break;
 			}
