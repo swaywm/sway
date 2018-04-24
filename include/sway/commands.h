@@ -117,6 +117,7 @@ sway_cmd cmd_input;
 sway_cmd cmd_seat;
 sway_cmd cmd_ipc;
 sway_cmd cmd_kill;
+sway_cmd cmd_lock;
 sway_cmd cmd_layout;
 sway_cmd cmd_log_colors;
 sway_cmd cmd_mark;
