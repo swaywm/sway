@@ -212,6 +212,9 @@ static void view_handle_container_reparent(struct wl_listener *listener,
 }
 
 static void view_execute_criteria(struct sway_view *view) {
+	if (!sway_assert(view->swayc, "cannot run criteria for unmanaged view")) {
+		return;
+	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *prior_workspace =
 		container_parent(view->swayc, C_WORKSPACE);
