@@ -355,14 +355,15 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 void container_descendants(struct sway_container *root,
 		enum sway_container_type type,
 		void (*func)(struct sway_container *item, void *data), void *data) {
+	if (!root->children || !root->children->length) {
+		return;
+	}
 	for (int i = 0; i < root->children->length; ++i) {
 		struct sway_container *item = root->children->items[i];
 		if (item->type == type) {
 			func(item, data);
 		}
-		if (item->children && item->children->length) {
-			container_descendants(item, type, func, data);
-		}
+		container_descendants(item, type, func, data);
 	}
 }
 
