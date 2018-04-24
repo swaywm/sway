@@ -162,9 +162,11 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
+	// last doesn't actually need initialization,
+	// but gcc (7.3.1) is too dumb to figure it out
 	struct swaybar_workspace *first = NULL;
 	struct swaybar_workspace *active = NULL;
-	struct swaybar_workspace *last;
+	struct swaybar_workspace *last = NULL;
 
 	struct swaybar_workspace *iter;
 	wl_list_for_each(iter, &output->workspaces, link) {
