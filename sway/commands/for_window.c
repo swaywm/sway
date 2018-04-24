@@ -14,7 +14,7 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 	// add command to a criteria/command pair that is run against views when they appear.
 	char *criteria = argv[0], *cmdlist = join_args(argv + 1, argc - 1);
 
-	struct criteria *crit = malloc(sizeof(struct criteria));
+	struct criteria *crit = calloc(sizeof(struct criteria), 1);
 	if (!crit) {
 		return cmd_results_new(CMD_FAILURE, "for_window", "Unable to allocate criteria");
 	}

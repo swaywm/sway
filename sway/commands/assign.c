@@ -22,7 +22,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	}
 
 	char *movecmd = "move container to workspace ";
-	int arglen = strlen(movecmd) + strlen(*argv) + 1;
+	size_t arglen = strlen(movecmd) + strlen(*argv) + 1;
 	char *cmdlist = calloc(1, arglen);
 	if (!cmdlist) {
 		return cmd_results_new(CMD_FAILURE, "assign", "Unable to allocate command list");
