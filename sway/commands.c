@@ -93,12 +93,14 @@ void apply_seat_config(struct seat_config *seat_config) {
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
+	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
+	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
 	{ "include", cmd_include },
 	{ "input", cmd_input },

@@ -26,6 +26,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',
 	'commands/default_orientation.c',
@@ -34,6 +35,7 @@ sway_sources = files(
 	'commands/exec_always.c',
 	'commands/focus.c',
 	'commands/focus_follows_mouse.c',
+	'commands/for_window.c',
 	'commands/fullscreen.c',
 	'commands/kill.c',
 	'commands/opacity.c',
