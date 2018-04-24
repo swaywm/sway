@@ -476,10 +476,11 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	// find new output's old workspace, which might have to be removed if empty
 	struct sway_container *new_output_last_ws = NULL;
 	if (last_output && new_output && last_output != new_output) {
-		new_output_last_ws = seat_get_focus_by_type(seat, new_output, C_WORKSPACE);
+		new_output_last_ws =
+			seat_get_focus_by_type(seat, new_output, C_WORKSPACE);
 	}
 
-	if (container) {
+	if (container && container->parent) {
 		struct sway_seat_container *seat_con =
 			seat_container_from_container(seat, container);
 		if (seat_con == NULL) {
@@ -488,8 +489,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 		// put all the anscestors of this container on top of the focus stack
 		struct sway_seat_container *parent =
-				seat_container_from_container(seat,
-					seat_con->container->parent);
+			seat_container_from_container(seat, container->parent);
 		while (parent) {
 			wl_list_remove(&parent->link);
 			wl_list_insert(&seat->focus_stack, &parent->link);
@@ -516,24 +516,24 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	// clean up unfocused empty workspace on new output
 	if (new_output_last_ws) {
 		if (!workspace_is_visible(new_output_last_ws)
-			&& new_output_last_ws->children->length == 0) {
+				&& new_output_last_ws->children->length == 0) {
+			if (last_workspace == new_output_last_ws) {
+				last_focus = NULL;
+				last_workspace = NULL;
+			}
 			container_destroy(new_output_last_ws);
 		}
 	}
 
 	if (last_focus) {
-		struct sway_container *last_ws = last_focus;
-		if (last_ws && last_ws->type != C_WORKSPACE) {
-			last_ws = container_parent(last_ws, C_WORKSPACE);
-		}
-		if (last_ws) {
-			ipc_event_workspace(last_ws, container, "focus");
-			if (!workspace_is_visible(last_ws)
-					&& last_ws->children->length == 0) {
-				if (last_ws == last_focus) {
+		if (last_workspace) {
+			ipc_event_workspace(last_workspace, container, "focus");
+			if (!workspace_is_visible(last_workspace)
+					&& last_workspace->children->length == 0) {
+				if (last_workspace == last_focus) {
 					last_focus = NULL;
 				}
-				container_destroy(last_ws);
+				container_destroy(last_workspace);
 			}
 		}
 
