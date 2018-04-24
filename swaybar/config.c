@@ -74,5 +74,11 @@ void free_config(struct swaybar_config *config) {
 	free(config->font);
 	free(config->mode);
 	free(config->sep_symbol);
+	struct config_output *coutput, *tmp;
+	wl_list_for_each_safe(coutput, tmp, &config->outputs, link) {
+		wl_list_remove(&coutput->link);
+		free(coutput->name);
+		free(coutput);
+	}
 	free(config);
 }

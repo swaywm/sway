@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 199309L
+#define _POSIX_C_SOURCE 200809L
 #include <fcntl.h>
 #include <json-c/json.h>
 #include <stdlib.h>
@@ -126,5 +126,17 @@ void status_line_free(struct status_line *status) {
 	close(status->read_fd);
 	close(status->write_fd);
 	kill(status->pid, SIGTERM);
+	switch (status->protocol) {
+	case PROTOCOL_I3BAR:;
+		struct i3bar_block *block, *tmp;
+		wl_list_for_each_safe(block, tmp, &status->blocks, link) {
+			i3bar_block_free(block);
+		}
+		free(status->i3bar_state.buffer);
+		break;
+	default:
+		free(status->text_state.buffer);
+		break;
+	}
 	free(status);
 }
