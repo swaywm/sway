@@ -27,6 +27,7 @@ enum mask {
 
 struct swaylock_xkb {
 	uint32_t modifiers;
+	bool caps_lock;
 	struct xkb_state *state;
 	struct xkb_context *context;
 	struct xkb_keymap *keymap;
