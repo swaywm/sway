@@ -7,6 +7,14 @@
 #include <sway/server.h>
 #include <sway/output.h>
 #include <sway/config.h>
+#include <wlr/config.h>
+#ifdef WLR_HAS_SYSTEMD
+	#include <systemd/sd-bus.h>
+	#include <systemd/sd-login.h>
+#elif defined(WLR_HAS_ELOGIND)
+	#include <elogind/sd-bus.h>
+	#include <elogind/sd-login.h>
+#endif
 
 void invoke_swaylock() {
 	int pid = fork();
@@ -17,6 +25,37 @@ void invoke_swaylock() {
 	}
 	wlr_log(L_DEBUG, "Spawned swaylock %d", pid);
 }
+
+#if defined(WLR_HAS_SYSTEMD) || defined(WLR_HAS_ELOGIND)
+static int prepare_for_sleep(sd_bus_message *msg, void *userdata, sd_bus_error *ret_error) {
+	wlr_log(L_INFO, "PrepareForSleep signal received");
+	invoke_swaylock();
+	return 0;
+}
+
+void setup_sleep_listener(struct sway_server *server) {
+	struct sd_bus *bus;
+	int ret = sd_bus_default_system(&bus);
+	if (ret < 0) {
+		wlr_log(L_ERROR, "Failed to open D-Bus connection: %s", strerror(-ret));
+		return;
+	}
+
+	char str[256];
+	const char *fmt = "type='signal',"
+		"sender='org.freedesktop.login1',"
+		"interface='org.freedesktop.login1.%s',"
+		"member='%s',"
+		"path='%s'";
+
+	snprintf(str, sizeof(str), fmt, "Manager", "PrepareForSleep", "/org/freedesktop/login1");
+	ret = sd_bus_add_match(bus, NULL, str, prepare_for_sleep, NULL);
+	if (ret < 0) {
+		wlr_log(L_ERROR, "Failed to add D-Bus match: %s", strerror(-ret));
+		return;
+	}
+}
+#endif
 
 static int handle_idle(void* data) {
 	wlr_log(L_DEBUG, "Idle state");
@@ -89,6 +128,9 @@ bool idle_init(struct sway_server *server) {
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		idle_setup_seat(server, seat);
 	}
+#if defined(WLR_HAS_SYSTEMD) || defined(WLR_HAS_ELOGIND)
+	setup_sleep_listener(server);
+#endif
 
 	return true;
 }
