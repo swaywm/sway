@@ -51,9 +51,11 @@ bool have_lock() {
 		struct sway_layer_surface *sway_layer;
 		wl_list_for_each_reverse(sway_layer, layers, link) {
 			struct wlr_layer_surface *surface = sway_layer->layer_surface;
-			if (!strcmp("lockscreen", surface->namespace))
-				wlr_log(L_DEBUG, "Lockscreen found!");
-			return true;
+			if (surface != NULL && surface->namespace != NULL) {
+				if (!strcmp("lockscreen", surface->namespace))
+					wlr_log(L_DEBUG, "Lockscreen found!");
+				return true;
+			}
 		}
 	}
 
