@@ -73,5 +73,6 @@ void status_line_free(struct status_line *status);
 bool i3bar_handle_readable(struct status_line *status);
 void i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, uint32_t button);
+void i3bar_block_free(struct i3bar_block *block);
 
 #endif

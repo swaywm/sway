@@ -29,7 +29,7 @@ struct swaybar_config {
 	bool binding_mode_indicator;
 	bool wrap_scroll;
 	bool workspace_buttons;
-	struct wl_list outputs;
+	struct wl_list outputs; // config_output::link
 	bool all_outputs;
 	int height;
 

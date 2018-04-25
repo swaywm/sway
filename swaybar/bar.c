@@ -25,13 +25,21 @@
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
-#include "pango.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static void bar_init(struct swaybar *bar) {
 	bar->config = init_config();
 	wl_list_init(&bar->outputs);
+}
+
+void free_workspaces(struct wl_list *list) {
+	struct swaybar_workspace *ws, *tmp;
+	wl_list_for_each_safe(ws, tmp, list, link) {
+		wl_list_remove(&ws->link);
+		free(ws->name);
+		free(ws);
+	}
 }
 
 static void swaybar_output_free(struct swaybar_output *output) {
@@ -44,12 +52,7 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	wl_output_destroy(output->output);
 	destroy_buffer(&output->buffers[0]);
 	destroy_buffer(&output->buffers[1]);
-	struct swaybar_workspace *ws, *ws_tmp;
-	wl_list_for_each_safe(ws, ws_tmp, &output->workspaces, link) {
-		wl_list_remove(&ws->link);
-		free(ws->name);
-		free(ws);
-	}
+	free_workspaces(&output->workspaces);
 	struct swaybar_hotspot *hotspot, *hotspot_tmp;
 	wl_list_for_each_safe(hotspot, hotspot_tmp, &output->hotspots, link) {
 		if (hotspot->destroy) {
@@ -162,9 +165,11 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
+	// last doesn't actually need initialization,
+	// but gcc (7.3.1) is too dumb to figure it out
 	struct swaybar_workspace *first = NULL;
 	struct swaybar_workspace *active = NULL;
-	struct swaybar_workspace *last;
+	struct swaybar_workspace *last = NULL;
 
 	struct swaybar_workspace *iter;
 	wl_list_for_each(iter, &output->workspaces, link) {
@@ -466,9 +471,7 @@ void bar_run(struct swaybar *bar) {
 static void free_outputs(struct wl_list *list) {
 	struct swaybar_output *output, *tmp;
 	wl_list_for_each_safe(output, tmp, list, link) {
-		wl_list_remove(&output->link);
-		free(output->name);
-		free(output);
+		swaybar_output_free(output);
 	}
 }
 

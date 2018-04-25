@@ -105,11 +105,39 @@ void swaylock_handle_key(struct swaylock_state *state,
 			state->auth_state = AUTH_STATE_INVALID;
 			render_frames(state);
 			break;
+		case XKB_KEY_Delete:
 		case XKB_KEY_BackSpace:
 			if (backspace(&state->password)) {
 				state->auth_state = AUTH_STATE_BACKSPACE;
-				render_frames(state);
+			} else {
+				state->auth_state = AUTH_STATE_CLEAR;
 			}
+			render_frames(state);
+			break;
+		case XKB_KEY_Escape: 
+			clear_password_buffer(&state->password);
+			state->auth_state = AUTH_STATE_CLEAR;
+			render_frames(state);
+			break;
+		case XKB_KEY_Caps_Lock:
+			/* The state is getting active after this
+			 * so we need to manually toggle it */
+			state->xkb.caps_lock = !state->xkb.caps_lock;
+			state->auth_state = AUTH_STATE_INPUT_NOP;
+			render_frames(state);
+			break;
+		case XKB_KEY_Shift_L:
+		case XKB_KEY_Shift_R:
+		case XKB_KEY_Control_L:
+		case XKB_KEY_Control_R:
+		case XKB_KEY_Meta_L:
+		case XKB_KEY_Meta_R:
+		case XKB_KEY_Alt_L:
+		case XKB_KEY_Alt_R:
+		case XKB_KEY_Super_L:
+		case XKB_KEY_Super_R:
+			state->auth_state = AUTH_STATE_INPUT_NOP;
+			render_frames(state);
 			break;
 		default:
 			if (codepoint) {

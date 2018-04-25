@@ -79,4 +79,6 @@ void bar_setup(struct swaybar *bar,
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 
+void free_workspaces(struct wl_list *list);
+
 #endif
