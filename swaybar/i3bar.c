@@ -7,7 +7,7 @@
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 
-static void i3bar_block_free(struct i3bar_block *block) {
+void i3bar_block_free(struct i3bar_block *block) {
 	if (!block) {
 		return;
 	}
@@ -18,6 +18,7 @@ static void i3bar_block_free(struct i3bar_block *block) {
 	free(block->name);
 	free(block->instance);
 	free(block->color);
+	free(block);
 }
 
 static bool i3bar_parse_json(struct status_line *status, const char *text) {

@@ -216,15 +216,6 @@ static void ipc_parse_config(
 	json_object_put(bar_config);
 }
 
-static void free_workspaces(struct wl_list *list) {
-	struct swaybar_workspace *ws, *tmp;
-	wl_list_for_each_safe(ws, tmp, list, link) {
-		wl_list_remove(&ws->link);
-		free(ws->name);
-		free(ws);
-	}
-}
-
 void ipc_get_workspaces(struct swaybar *bar) {
 	bar->focused_output = NULL;
 	struct swaybar_output *output;
@@ -290,8 +281,8 @@ static void ipc_get_outputs(struct swaybar *bar) {
 			continue;
 		}
 		if (bar->config->all_outputs) {
-			struct config_output *coutput = calloc(
-					1, sizeof(struct config_output));
+			struct config_output *coutput =
+				calloc(1, sizeof(struct config_output));
 			coutput->name = strdup(name);
 			coutput->index = i;
 			wl_list_insert(&bar->config->outputs, &coutput->link);
