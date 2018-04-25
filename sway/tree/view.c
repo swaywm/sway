@@ -2,8 +2,11 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "log.h"
+#include "sway/criteria.h"
+#include "sway/commands.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/input/seat.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -208,6 +211,31 @@ static void view_handle_container_reparent(struct wl_listener *listener,
 	}
 }
 
+static void view_execute_criteria(struct sway_view *view) {
+	if (!sway_assert(view->swayc, "cannot run criteria for unmapped view")) {
+		return;
+	}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *prior_workspace =
+		container_parent(view->swayc, C_WORKSPACE);
+	list_t *criteria = criteria_for(view->swayc);
+	for (int i = 0; i < criteria->length; i++) {
+		struct criteria *crit = criteria->items[i];
+		wlr_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
+				crit->crit_raw, view, crit->cmdlist);
+		struct cmd_results *res = execute_command(crit->cmdlist, NULL);
+		if (res->status != CMD_SUCCESS) {
+			wlr_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+		}
+		free_cmd_results(res);
+		// view must be focused for commands to affect it,
+		// so always refocus in-between command lists
+		seat_set_focus(seat, view->swayc);
+	}
+	list_free(criteria);
+	seat_set_focus(seat, seat_get_focus_inactive(seat, prior_workspace));
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
@@ -234,6 +262,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	view_damage(view, true);
 	view_handle_container_reparent(&view->container_reparent, NULL);
+
+	view_execute_criteria(view);
 }
 
 void view_unmap(struct sway_view *view) {

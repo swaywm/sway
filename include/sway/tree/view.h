@@ -39,7 +39,7 @@ struct sway_view {
 	enum sway_view_type type;
 	const struct sway_view_impl *impl;
 
-	struct sway_container *swayc; // NULL for unmanaged views
+	struct sway_container *swayc; // NULL for unmapped views
 	struct wlr_surface *surface; // NULL for unmapped views
 	int width, height;
 	bool is_fullscreen;
