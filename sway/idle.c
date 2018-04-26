@@ -9,13 +9,9 @@
 #include <sway/layers.h>
 #include <sway/config.h>
 #include <wlr/config.h>
-#ifdef WLR_HAS_SYSTEMD
-#include <systemd/sd-bus.h>
-#include <systemd/sd-login.h>
-#elif defined(WLR_HAS_ELOGIND)
-#include <elogind/sd-bus.h>
-#include <elogind/sd-login.h>
-#endif
+#include <wlr/backend/session.h>
+#include <wlr/backend/multi.h>
+
 
 void invoke_swaylock() {
 	int pid = fork();
@@ -26,8 +22,6 @@ void invoke_swaylock() {
 	}
 	wlr_log(L_DEBUG, "Spawned swaylock %d", pid);
 }
-
-#if defined(WLR_HAS_SYSTEMD) || defined(WLR_HAS_ELOGIND)
 
 bool have_lock() {
 	if (root_container.children == NULL)
@@ -73,38 +67,23 @@ static int cleanup_inhibit(void *data) {
 	return 0;
 }
 
-static int prepare_for_sleep(sd_bus_message *msg, void *userdata, sd_bus_error *ret_error) {
-	struct sway_server *server = userdata;
-
+static void prepare_for_sleep(struct wlr_session *session, void *data) {
+	struct sway_server *server = data;
 	wlr_log(L_INFO, "PrepareForSleep signal received");
-	if(inhibit_cnt > 4 || have_lock()) {
-		wlr_log(L_INFO, "Already have lock, no inhibit");
+	if(have_lock()) {
+		wlr_log(L_INFO, "Have lock, no inhibit");
 		cleanup_inhibit(NULL);
-		return 0;
+		return;
+	}
+	if(inhibit_cnt > 4) {
+		wlr_log(L_INFO, "Reached inhibit retry limit, no inhibit");
+		cleanup_inhibit(NULL);
+		return;
 	}
 
 	wlr_log(L_INFO, "No lock, will inhibit");
 
-	struct sd_bus *bus;
-	int ret = sd_bus_default_system(&bus);
-	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to open D-Bus connection: %s", strerror(-ret));
-		return 0;
-	}
-
-	ret = sd_bus_call_method(bus, "org.freedesktop.login1",
-			"/org/freedesktop/login1", "org.freedesktop.login1.Manager", "Inhibit",
-			ret_error, &msg, "ssss", "sleep", "sway-idle", "Setup Up Lock Screen", "delay");
-	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to send Inhibit signal: %s",
-				strerror(-ret));
-	} else {
-		ret = sd_bus_message_read(msg, "h", &fd);
-		if (ret < 0) {
-			wlr_log(L_ERROR, "Failed to parse D-Bus response for Inhibit: %s", strerror(-ret));
-		}
-	}
-
+	wlr_session_inhibit_sleep(session);
 	if (!inhibit_cnt) {
 		invoke_swaylock();
 
@@ -115,32 +94,22 @@ static int prepare_for_sleep(sd_bus_message *msg, void *userdata, sd_bus_error *
 	inhibit_cnt++;
 
 	wlr_log(L_ERROR, "Inhibit done %d", inhibit_cnt);
-	return 0;
+	return;
 }
 
 void setup_sleep_listener(struct sway_server *server) {
-	struct sd_bus *bus;
-	int ret = sd_bus_default_system(&bus);
-	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to open D-Bus connection: %s", strerror(-ret));
-		return;
+
+
+	struct wlr_session *session = NULL;
+	if (wlr_backend_is_multi(server->backend)) {
+		session = wlr_multi_get_session(server->backend);
+	}
+	if (!session) {
+		wlr_log(L_INFO, "No supported session found, skipping sleep litener setup");
 	}
 
-	char str[256];
-	const char *fmt = "type='signal',"
-		"sender='org.freedesktop.login1',"
-		"interface='org.freedesktop.login1.%s',"
-		"member='%s',"
-		"path='%s'";
-
-	snprintf(str, sizeof(str), fmt, "Manager", "PrepareForSleep", "/org/freedesktop/login1");
-	ret = sd_bus_add_match(bus, NULL, str, prepare_for_sleep, server);
-	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to add D-Bus match: %s", strerror(-ret));
-		return;
-	}
+	wlr_session_prepare_for_sleep_listen(session, prepare_for_sleep, server);
 }
-#endif
 
 static int handle_idle(void* data) {
 	wlr_log(L_DEBUG, "Idle state");
@@ -206,9 +175,7 @@ void idle_setup_seat(struct sway_server *server, struct sway_seat *seat) {
 		if (config->lock_timeout > 0) {
 			wlr_log(L_DEBUG, "Setup lock timer %d", config->lock_timeout);
 			wlr_idle_listen(server->idle, config->lock_timeout * 1000, &lock_listener, seat->wlr_seat);
-#if defined(WLR_HAS_SYSTEMD) || defined(WLR_HAS_ELOGIND)
 			setup_sleep_listener(server);
-#endif
 		} else {
 			wlr_log(L_INFO, "Lock timeout set to 0, will disable auto lock");
 		}
