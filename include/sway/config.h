@@ -51,6 +51,12 @@ struct sway_mode {
 	list_t *keycode_bindings;
 };
 
+struct input_config_mapped_from_region {
+	double x1, y1;
+	double x2, y2;
+	bool mm;
+};
+
 /**
  * options for input devices
  */
@@ -77,7 +83,8 @@ struct input_config {
 	char *xkb_rules;
 	char *xkb_variant;
 
-	char *mapped_output;
+	struct input_config_mapped_from_region *mapped_from_region;
+	char *mapped_to_output;
 
 	bool capturable;
 	struct wlr_box region;

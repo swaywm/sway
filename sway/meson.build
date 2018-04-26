@@ -90,6 +90,7 @@ sway_sources = files(
 	'commands/input/dwt.c',
 	'commands/input/events.c',
 	'commands/input/left_handed.c',
+	'commands/input/map_from_region.c',
 	'commands/input/map_to_output.c',
 	'commands/input/middle_emulation.c',
 	'commands/input/natural_scroll.c',

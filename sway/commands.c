@@ -191,6 +191,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "dwt", input_cmd_dwt },
 	{ "events", input_cmd_events },
 	{ "left_handed", input_cmd_left_handed },
+	{ "map_from_region", input_cmd_map_from_region },
 	{ "map_to_output", input_cmd_map_to_output },
 	{ "middle_emulation", input_cmd_middle_emulation },
 	{ "natural_scroll", input_cmd_natural_scroll },

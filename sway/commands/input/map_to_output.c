@@ -20,7 +20,7 @@ struct cmd_results *input_cmd_map_to_output(int argc, char **argv) {
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);
 
-	new_config->mapped_output = strdup(argv[0]);
+	new_config->mapped_to_output = strdup(argv[0]);
 	apply_input_config(new_config);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
