@@ -49,9 +49,6 @@ struct sway_container *container_remove_child(struct sway_container *child);
 struct sway_container *container_replace_child(struct sway_container *child,
 		struct sway_container *new_child);
 
-struct sway_container *container_set_layout(struct sway_container *container,
-		enum sway_container_layout layout);
-
 void container_move_to(struct sway_container* container,
 		struct sway_container* destination);
 

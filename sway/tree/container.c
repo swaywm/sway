@@ -78,7 +78,6 @@ struct sway_container *container_create(enum sway_container_type type) {
 	}
 	c->id = next_id++;
 	c->layout = L_NONE;
-	c->workspace_layout = L_NONE;
 	c->type = type;
 	c->alpha = 1.0f;
 

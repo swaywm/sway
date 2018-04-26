@@ -33,19 +33,6 @@ static void output_layout_handle_change(struct wl_listener *listener,
 	arrange_windows(&root_container, layout_box->width, layout_box->height);
 }
 
-struct sway_container *container_set_layout(struct sway_container *container,
-		enum sway_container_layout layout) {
-	if (container->type == C_WORKSPACE) {
-		container->workspace_layout = layout;
-		if (layout == L_HORIZ || layout == L_VERT) {
-			container->layout = layout;
-		}
-	} else {
-		container->layout = layout;
-	}
-	return container;
-}
-
 void layout_init(void) {
 	root_container.id = 0; // normally assigned in new_swayc()
 	root_container.type = C_ROOT;
@@ -305,8 +292,8 @@ static void workspace_rejigger(struct sway_container *ws,
 
 	int index = move_offs(move_dir);
 	container_insert_child(ws, child, index < 0 ? 0 : 1);
-	container_set_layout(ws,
-			move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT);
+	ws->layout =
+		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
 
 	container_flatten(ws);
 	container_reap_empty_recursive(original_parent);
@@ -387,9 +374,9 @@ void container_move(struct sway_container *container,
 					workspace_rejigger(current, container, move_dir);
 				} else if (current->children->length == 2) {
 					wlr_log(L_DEBUG, "Changing workspace layout");
-					container_set_layout(current,
+					current->layout =
 						move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ?
-						L_HORIZ : L_VERT);
+						L_HORIZ : L_VERT;
 					container_insert_child(current, container, offs < 0 ? 0 : 1);
 					arrange_windows(current, -1, -1);
 				}
@@ -1066,7 +1053,7 @@ struct sway_container *container_split(struct sway_container *child,
 
 		container_add_child(workspace, cont);
 		enum sway_container_layout old_layout = workspace->layout;
-		container_set_layout(workspace, layout);
+		workspace->layout = layout;
 		cont->layout = old_layout;
 
 		if (set_focus) {
