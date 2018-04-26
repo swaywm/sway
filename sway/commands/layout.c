@@ -26,9 +26,9 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	// TODO: stacks and tabs
 
 	if (strcasecmp(argv[0], "default") == 0) {
-		container_set_layout(parent, parent->prev_layout);
+		parent->layout = parent->prev_layout;
 		if (parent->layout == L_NONE) {
-			container_set_layout(parent, container_get_default_layout(parent));
+			parent->layout = container_get_default_layout(parent);
 		}
 	} else {
 		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
@@ -36,15 +36,14 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		}
 
 		if (strcasecmp(argv[0], "splith") == 0) {
-			container_set_layout(parent, L_HORIZ);
+			parent->layout = L_HORIZ;
 		} else if (strcasecmp(argv[0], "splitv") == 0) {
-			container_set_layout(parent, L_VERT);
+			parent->layout = L_VERT;
 		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
-			if (parent->layout == L_HORIZ && (parent->workspace_layout == L_NONE
-					|| parent->workspace_layout == L_HORIZ)) {
-				container_set_layout(parent, L_VERT);
+			if (parent->layout == L_HORIZ) {
+				parent->layout = L_VERT;
 			} else {
-				container_set_layout(parent, L_HORIZ);
+				parent->layout = L_HORIZ;
 			}
 		}
 	}
