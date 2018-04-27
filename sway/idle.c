@@ -66,7 +66,7 @@ void cleanup_inhibit() {
 	fd = -1;
 	inhibit_cnt=0;
 	wlr_log(L_DEBUG, "Cleanup inhibit");
-	return 0;
+	return;
 }
 
 static int check_for_lock(void *data) {
