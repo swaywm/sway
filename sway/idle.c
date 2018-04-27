@@ -86,6 +86,7 @@ static void prepare_for_sleep(struct wlr_session *session, void *data) {
 	wlr_log(L_INFO, "No lock, will inhibit");
 
 	fd = wlr_session_inhibit_sleep(session);
+	wlr_log(L_DEBUG, "Inhibit lock fd %d", fd);
 	if (!inhibit_cnt) {
 		invoke_swaylock();
 
@@ -95,7 +96,7 @@ static void prepare_for_sleep(struct wlr_session *session, void *data) {
 	}
 	inhibit_cnt++;
 
-	wlr_log(L_ERROR, "Inhibit done %d", inhibit_cnt);
+	wlr_log(L_DEBUG, "Inhibit done %d", inhibit_cnt);
 	return;
 }
 
