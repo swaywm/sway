@@ -17,7 +17,7 @@
 
 static void terminate_swaybar(pid_t pid) {
 	wlr_log(L_DEBUG, "Terminating swaybar %d", pid);
-	int ret = kill(pid, SIGTERM);
+	int ret = kill(-pid, SIGTERM);
 	if (ret != 0) {
 		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
 	} else {
@@ -163,6 +163,7 @@ void invoke_swaybar(struct bar_config *bar) {
 
 	bar->pid = fork();
 	if (bar->pid == 0) {
+		setpgid(0, 0);
 		close(filedes[0]);
 
 		// run custom swaybar
