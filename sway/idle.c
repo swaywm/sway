@@ -60,43 +60,52 @@ bool have_lock() {
 static int fd = -1;
 static int inhibit_cnt=0;
 
-static int cleanup_inhibit(void *data) {
+void cleanup_inhibit() {
+	if (fd >= 0) 
+		close(fd);  //Release lock
 	fd = -1;
 	inhibit_cnt=0;
 	wlr_log(L_DEBUG, "Cleanup inhibit");
 	return 0;
 }
 
+static int check_for_lock(void *data) {
+	struct sway_server *server = data;
+	if(have_lock()) { //If we for some reason already have a lockscreen
+		wlr_log(L_INFO, "Got lock, will release inhibit lock");
+		cleanup_inhibit();
+		return 0;
+	}
+
+	if(inhibit_cnt > 4) {
+		wlr_log(L_INFO, "Reached inhibit timeout, releasing lock");
+		cleanup_inhibit();
+		return 0;
+	}
+
+	inhibit_cnt++;
+	struct wl_event_source *source = wl_event_loop_add_timer(server->wl_event_loop, check_for_lock, server);
+    wl_event_source_timer_update(source, 100);
+	return 0;
+}
+
 static void prepare_for_sleep(struct wlr_session *session, void *data) {
 	struct sway_server *server = data;
 	wlr_log(L_INFO, "PrepareForSleep signal received");
-	if(have_lock()) {
-		wlr_log(L_INFO, "Have lock, no inhibit");
-		if (fd >= 0) 
-			close(fd);  //Release lock
-		cleanup_inhibit(NULL);
-		return;
-	}
-	if(inhibit_cnt > 4) {
-		wlr_log(L_INFO, "Reached inhibit retry limit, no inhibit");
-		cleanup_inhibit(NULL);
+	if(have_lock()) { //If we for some reason already have a lockscreen
+		wlr_log(L_INFO, "Already have lock, no inhibit");
+		cleanup_inhibit();
 		return;
 	}
 
-	wlr_log(L_INFO, "No lock, will inhibit");
 
+	wlr_log(L_DEBUG, "Trying to inhibit sleep");
 	fd = wlr_session_inhibit_sleep(session);
-	wlr_log(L_DEBUG, "Inhibit lock fd %d", fd);
-	if (!inhibit_cnt) {
-		invoke_swaylock();
-
-		// 3 seconds should be well enough for 5 inhibits to be over and done
-		struct wl_event_source *source = wl_event_loop_add_timer(server->wl_event_loop, cleanup_inhibit, NULL);
-		wl_event_source_timer_update(source, 3000);
+	invoke_swaylock();
+	if (fd>=0) {
+		struct wl_event_source *source = wl_event_loop_add_timer(server->wl_event_loop, check_for_lock, server);
+		wl_event_source_timer_update(source, 100);
 	}
-	inhibit_cnt++;
-
-	wlr_log(L_DEBUG, "Inhibit done %d", inhibit_cnt);
 	return;
 }
 
