@@ -17,7 +17,7 @@
 
 static void terminate_swaybar(pid_t pid) {
 	wlr_log(L_DEBUG, "Terminating swaybar %d", pid);
-	int ret = kill(pid, SIGTERM);
+	int ret = kill(-pid, SIGTERM);
 	if (ret != 0) {
 		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
 	} else {
@@ -163,6 +163,7 @@ void invoke_swaybar(struct bar_config *bar) {
 
 	bar->pid = fork();
 	if (bar->pid == 0) {
+		setpgid(0, 0);
 		close(filedes[0]);
 
 		// run custom swaybar
@@ -172,9 +173,9 @@ void invoke_swaybar(struct bar_config *bar) {
 		char *command = malloc(len + 1);
 		if (!command) {
 			const char msg[] = "Unable to allocate swaybar command string";
-			size_t len = sizeof(msg);
-			if (write(filedes[1], &len, sizeof(int))) {};
-			if (write(filedes[1], msg, len)) {};
+			size_t msg_len = sizeof(msg);
+			if (write(filedes[1], &msg_len, sizeof(int))) {};
+			if (write(filedes[1], msg, msg_len)) {};
 			close(filedes[1]);
 			exit(1);
 		}
