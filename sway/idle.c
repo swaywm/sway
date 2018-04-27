@@ -57,11 +57,11 @@ bool have_lock() {
 	return false;
 }
 
-static int fd = 0;
+static int fd = -1;
 static int inhibit_cnt=0;
 
 static int cleanup_inhibit(void *data) {
-	fd = 0;
+	fd = -1;
 	inhibit_cnt=0;
 	wlr_log(L_DEBUG, "Cleanup inhibit");
 	return 0;
@@ -72,6 +72,8 @@ static void prepare_for_sleep(struct wlr_session *session, void *data) {
 	wlr_log(L_INFO, "PrepareForSleep signal received");
 	if(have_lock()) {
 		wlr_log(L_INFO, "Have lock, no inhibit");
+		if (fd >= 0) 
+			close(fd);  //Release lock
 		cleanup_inhibit(NULL);
 		return;
 	}
@@ -83,7 +85,7 @@ static void prepare_for_sleep(struct wlr_session *session, void *data) {
 
 	wlr_log(L_INFO, "No lock, will inhibit");
 
-	wlr_session_inhibit_sleep(session);
+	fd = wlr_session_inhibit_sleep(session);
 	if (!inhibit_cnt) {
 		invoke_swaylock();
 
