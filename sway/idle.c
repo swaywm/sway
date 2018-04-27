@@ -92,15 +92,13 @@ static int check_for_lock(void *data) {
 static void prepare_for_sleep(struct wlr_session *session, void *data) {
 	struct sway_server *server = data;
 	wlr_log(L_INFO, "PrepareForSleep signal received");
+	fd = wlr_session_inhibit_sleep(session);
 	if(have_lock()) { //If we for some reason already have a lockscreen
 		wlr_log(L_INFO, "Already have lock, no inhibit");
 		cleanup_inhibit();
 		return;
 	}
 
-
-	wlr_log(L_DEBUG, "Trying to inhibit sleep");
-	fd = wlr_session_inhibit_sleep(session);
 	invoke_swaylock();
 	if (fd>=0) {
 		struct wl_event_source *source = wl_event_loop_add_timer(server->wl_event_loop, check_for_lock, server);
