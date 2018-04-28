@@ -102,12 +102,15 @@ static struct cmd_handler handlers[] = {
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
+	{ "idle_timeout", cmd_idle_timeout },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
+	{ "lock_timeout", cmd_lock_timeout },
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
+	{ "swaylock_command", cmd_swaylock_command },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
@@ -166,6 +169,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "focus", cmd_focus },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
+	{ "lock", cmd_lock },
 	{ "move", cmd_move },
 	{ "opacity", cmd_opacity },
 	{ "reload", cmd_reload },
@@ -423,7 +427,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 	struct cmd_handler *handler = find_handler(argv[0], block);
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
-		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command %d", block);
 		goto cleanup;
 	}
 	int i;

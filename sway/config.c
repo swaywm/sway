@@ -155,6 +155,9 @@ static void config_defaults(struct sway_config *config) {
 	config->floating_mod = 0;
 	config->dragging_key = BTN_LEFT;
 	config->resizing_key = BTN_RIGHT;
+	config->idle_timeout = 600;
+	config->lock_timeout = 300;
+	config->swaylock_command = strdup("swaylock -c 000000");
 	if (!(config->floating_scroll_up_cmd = strdup(""))) goto cleanup;
 	if (!(config->floating_scroll_down_cmd = strdup(""))) goto cleanup;
 	if (!(config->floating_scroll_left_cmd = strdup(""))) goto cleanup;

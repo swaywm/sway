@@ -18,6 +18,7 @@
 #include <wlr/util/log.h>
 #include "sway/config.h"
 #include "sway/debug.h"
+#include "sway/idle.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 #include "sway/ipc-server.h"
@@ -413,6 +414,7 @@ int main(int argc, char **argv) {
 	// TODO: wait for server to be ready
 	// TODO: consume config->cmd_queue
 	config->active = true;
+	idle_init(&server);
 
 	if (!terminate_request) {
 		server_run(&server);

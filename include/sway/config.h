@@ -305,6 +305,9 @@ struct sway_config {
 	enum sway_container_layout default_layout;
 	char *font;
 	int font_height;
+	uint32_t idle_timeout;
+	uint32_t lock_timeout;
+	char *swaylock_command;
 
 	// Flags
 	bool focus_follows_mouse;
