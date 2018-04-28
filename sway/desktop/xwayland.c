@@ -280,6 +280,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		wl_container_of(listener, xwayland_view, request_fullscreen);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
 	view_set_fullscreen(view, xsurface->fullscreen);
 }
 
@@ -309,7 +312,6 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	// TODO:
 	// - Look up pid and open on appropriate workspace
-	// - Criteria
 
 	wl_signal_add(&xsurface->events.destroy, &xwayland_view->destroy);
 	xwayland_view->destroy.notify = handle_destroy;
