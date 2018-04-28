@@ -23,7 +23,7 @@ void invoke_swaylock() {
 	wlr_log(L_DEBUG, "Spawned swaylock %d", pid);
 }
 
-bool have_lock() {
+bool have_lock(void *data) {
 	if (root_container.children == NULL)
 		return false;
 	if (root_container.children->items == NULL)
@@ -57,60 +57,9 @@ bool have_lock() {
 	return false;
 }
 
-static int lock_fd = -1;
-static int ongoing_fd = -1;
-static int inhibit_cnt=0;
-
-void release_lock() {
-	wlr_log(L_INFO, "Release lock %d", ongoing_fd);
-	if (ongoing_fd >= 0) 
-		close(ongoing_fd);
-	ongoing_fd = -1;
-	inhibit_cnt=0;
-	return;
-}
-
-static int check_for_lockscreen(void *data) {
-	struct sway_server *server = data;
-	if(have_lock()) { //If we for some reason already have a lockscreen
-		wlr_log(L_DEBUG, "Got lock, will release inhibit lock");
-		release_lock();
-		return 0;
-	}
-
-	if(inhibit_cnt > 4) {
-		wlr_log(L_DEBUG, "Reached inhibit timeout, releasing lock");
-		release_lock();
-		return 0;
-	}
-
-	inhibit_cnt++;
-	struct wl_event_source *source = wl_event_loop_add_timer(server->wl_event_loop, check_for_lockscreen, server);
-	wl_event_source_timer_update(source, 100);
-	return 0;
-}
-
-static void prepare_for_sleep(struct wlr_session *session, bool going_down, void *data) {
-	struct sway_server *server = data;
-	wlr_log(L_DEBUG, "PrepareForSleep signal received %d", going_down);
-	if (!going_down) {
-		lock_fd = wlr_session_aquire_sleep_lock(session);
-		wlr_log(L_DEBUG, "Got new lock %d", lock_fd);
-		return;
-	}
-	ongoing_fd = lock_fd;
-	if(have_lock()) { //If we for some reason already have a lockscreen
-		wlr_log(L_DEBUG, "Already have lock, no action");
-		release_lock();
-		return;
-	}
-	wlr_log(L_INFO, "Starting lockscreen, holding lock %d", ongoing_fd);
+static void prepare_for_sleep(struct wlr_session *session, void *data) {
+	wlr_log(L_DEBUG, "PrepareForSleep signal received");
 	invoke_swaylock();
-	if (ongoing_fd>=0) {
-		struct wl_event_source *source = wl_event_loop_add_timer(server->wl_event_loop, check_for_lockscreen, server);
-		wl_event_source_timer_update(source, 100);
-	}
-	return;
 }
 
 void setup_sleep_listener(struct sway_server *server) {
@@ -122,9 +71,7 @@ void setup_sleep_listener(struct sway_server *server) {
 		wlr_log(L_INFO, "No supported session found, skipping sleep litener setup");
 	}
 
-	wlr_session_prepare_for_sleep_listen(session, prepare_for_sleep, server);
-	lock_fd = wlr_session_aquire_sleep_lock(session);
-	wlr_log(L_DEBUG, "Got initial lock %d", lock_fd);
+	wlr_session_prepare_for_sleep_listen(session, prepare_for_sleep, have_lock, server);
 }
 
 static int handle_idle(void* data) {
