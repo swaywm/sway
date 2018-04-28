@@ -1,8 +1,8 @@
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
 #include "log.h"
 
 struct cmd_results *cmd_layout(int argc, char **argv) {
@@ -48,7 +48,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		}
 	}
 
-	arrange_windows(parent, parent->width, parent->height);
+	arrange_children_of(parent);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

@@ -7,6 +7,7 @@
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/input/seat.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -78,14 +79,14 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
-void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
+// Set fullscreen, but without IPC events or arranging windows.
+void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 	if (view->is_fullscreen == fullscreen) {
 		return;
 	}
 
-	struct sway_container *workspace = container_parent(view->swayc, C_WORKSPACE);
-	struct sway_container *container = container_parent(workspace, C_OUTPUT);
-	struct sway_output *output = container->sway_output;
+	struct sway_container *workspace =
+		container_parent(view->swayc, C_WORKSPACE);
 
 	if (view->impl->set_fullscreen) {
 		view->impl->set_fullscreen(view, fullscreen);
@@ -98,6 +99,8 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 		}
 		workspace->sway_workspace->fullscreen = view;
+		view->swayc->saved_width = view->swayc->width;
+		view->swayc->saved_height = view->swayc->height;
 
 		struct sway_seat *seat;
 		struct sway_container *focus, *focus_ws;
@@ -114,11 +117,22 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 		}
 	} else {
 		workspace->sway_workspace->fullscreen = NULL;
+		view->swayc->width = view->swayc->saved_width;
+		view->swayc->height = view->swayc->saved_height;
+	}
+}
+
+void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
+	if (view->is_fullscreen == fullscreen) {
+		return;
 	}
 
-	arrange_windows(workspace, -1, -1);
-	output_damage_whole(output);
+	view_set_fullscreen_raw(view, fullscreen);
 
+	struct sway_container *workspace =
+		container_parent(view->swayc, C_WORKSPACE);
+	arrange_workspace(workspace);
+	output_damage_whole(workspace->parent->sway_output);
 	ipc_event_window(view->swayc, "fullscreen_mode");
 }
 
@@ -257,7 +271,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	wl_signal_add(&view->swayc->events.reparent, &view->container_reparent);
 	view->container_reparent.notify = view_handle_container_reparent;
 
-	arrange_windows(cont->parent, -1, -1);
+	arrange_children_of(cont->parent);
 	input_manager_set_focus(input_manager, cont);
 
 	view_damage(view, true);
@@ -288,7 +302,7 @@ void view_unmap(struct sway_view *view) {
 	view->swayc = NULL;
 	view->surface = NULL;
 
-	arrange_windows(parent, -1, -1);
+	arrange_children_of(parent);
 }
 
 void view_update_position(struct sway_view *view, double ox, double oy) {

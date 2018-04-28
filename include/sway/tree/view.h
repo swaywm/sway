@@ -162,6 +162,8 @@ void view_configure(struct sway_view *view, double ox, double oy, int width,
 
 void view_set_activated(struct sway_view *view, bool activated);
 
+void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen);
+
 void view_set_fullscreen(struct sway_view *view, bool fullscreen);
 
 void view_close(struct sway_view *view);

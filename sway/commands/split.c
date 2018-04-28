@@ -1,8 +1,8 @@
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -12,7 +12,7 @@ static struct cmd_results *do_split(int layout) {
 	struct sway_container *con = config->handler_context.current_container;
 	struct sway_container *parent = container_split(con, layout);
 	container_create_notify(parent);
-	arrange_windows(parent, -1, -1);
+	arrange_children_of(parent);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

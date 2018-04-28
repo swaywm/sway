@@ -19,6 +19,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -534,19 +535,19 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
-	arrange_windows(output->swayc, -1, -1);
+	arrange_output(output->swayc);
 }
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
 	arrange_layers(output);
-	arrange_windows(output->swayc, -1, -1);
+	arrange_output(output->swayc);
 }
 
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	arrange_layers(output);
-	arrange_windows(output->swayc, -1, -1);
+	arrange_output(output->swayc);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -598,5 +599,5 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->damage_destroy.notify = damage_handle_destroy;
 
 	arrange_layers(output);
-	arrange_windows(&root_container, -1, -1);
+	arrange_root();
 }
