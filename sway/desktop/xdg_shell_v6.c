@@ -228,13 +228,15 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, request_fullscreen);
 	struct wlr_xdg_toplevel_v6_set_fullscreen_event *e = data;
+	struct wlr_xdg_surface_v6 *xdg_surface =
+		xdg_shell_v6_view->view.wlr_xdg_surface_v6;
 
-	if (!sway_assert(xdg_shell_v6_view->view.wlr_xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL,
+	if (!sway_assert(xdg_surface->role == WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL,
 				"xdg_shell_v6 requested fullscreen of surface with role %i",
-				xdg_shell_v6_view->view.wlr_xdg_surface_v6->role)) {
+				xdg_surface->role)) {
 		return;
 	}
-	if (!xdg_shell_v6_view->view.wlr_xdg_surface_v6->mapped) {
+	if (!xdg_surface->mapped) {
 		return;
 	}
 
@@ -267,7 +269,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 
 	// TODO:
 	// - Look up pid and open on appropriate workspace
-	// - Criteria
 
 	xdg_shell_v6_view->map.notify = handle_map;
 	wl_signal_add(&xdg_surface->events.map, &xdg_shell_v6_view->map);
