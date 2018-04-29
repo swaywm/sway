@@ -1,4 +1,3 @@
-#include <wlr/types/wlr_wl_shell.h>
 #include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"

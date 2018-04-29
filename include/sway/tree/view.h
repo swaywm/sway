@@ -10,7 +10,6 @@
 struct sway_container;
 
 enum sway_view_type {
-	SWAY_VIEW_WL_SHELL,
 	SWAY_VIEW_XDG_SHELL_V6,
 	SWAY_VIEW_XDG_SHELL,
 	SWAY_VIEW_XWAYLAND,
@@ -137,20 +136,6 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-};
-
-struct sway_wl_shell_view {
-	struct sway_view view;
-
-	struct wl_listener commit;
-	struct wl_listener request_move;
-	struct wl_listener request_resize;
-	struct wl_listener request_maximize;
-	struct wl_listener request_fullscreen;
-	struct wl_listener set_state;
-	struct wl_listener destroy;
-
-	int pending_width, pending_height;
 };
 
 struct sway_view_child;
