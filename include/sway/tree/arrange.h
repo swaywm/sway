@@ -3,8 +3,6 @@
 
 struct sway_container;
 
-void arrange_windows(struct sway_container *container);
-
 // Determine the root container's geometry, then iterate to everything below
 void arrange_root(void);
 

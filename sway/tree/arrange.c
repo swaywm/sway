@@ -17,30 +17,6 @@
 
 struct sway_container root_container;
 
-void arrange_windows(struct sway_container *container) {
-	switch (container->type) {
-	case C_ROOT:
-		arrange_root();
-		break;
-	case C_OUTPUT:
-		arrange_output(container);
-		break;
-	case C_WORKSPACE:
-		arrange_workspace(container);
-		break;
-	case C_CONTAINER:
-		arrange_children_of(container);
-		break;
-	case C_VIEW:
-		// ignore
-		break;
-	case C_TYPES:
-		sway_assert(
-				false, "Called arrange_windows() with container type C_TYPES");
-		break;
-	}
-}
-
 void arrange_root() {
 	if (config->reloading) {
 		return;
