@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#include <math.h>
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
@@ -262,18 +263,11 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 }
 
 static double apply_mapping_from_coord(double low, double high, double value) {
-	if (value == -1) {
+	if (isnan(value)) {
 		return value;
 	}
 
-	value = (value - low) / (high - low);
-	if (value < 0) {
-		return 0;
-	} else if (value > 1) {
-		return 1;
-	} else {
-		return value;
-	}
+	return (value - low) / (high - low);
 }
 
 static void apply_mapping_from_region(struct wlr_input_device *device,
@@ -300,7 +294,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct wlr_event_tablet_tool_axis *event = data;
 	struct sway_input_device *input_device = event->device->data;
 
-	double x = -1, y = -1;
+	double x = NAN, y = NAN;
 	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
 		x = event->x;
 	}
