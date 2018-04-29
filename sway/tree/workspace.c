@@ -9,6 +9,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
@@ -392,7 +393,7 @@ bool workspace_switch(struct sway_container *workspace) {
 	}
 	seat_set_focus(seat, next);
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	arrange_windows(output, -1, -1);
+	arrange_output(output);
 	return true;
 }
 

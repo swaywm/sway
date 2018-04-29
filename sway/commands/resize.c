@@ -6,7 +6,7 @@
 #include <strings.h>
 #include <wlr/util/log.h>
 #include "sway/commands.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/arrange.h"
 #include "log.h"
 
 static const int MIN_SANE_W = 100, MIN_SANE_H = 60;
@@ -182,7 +182,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		}
 	}
 
-	arrange_windows(parent->parent, -1, -1);
+	arrange_children_of(parent->parent);
 }
 
 static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {

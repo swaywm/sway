@@ -13,6 +13,7 @@
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -143,8 +144,7 @@ static struct sway_container *container_output_destroy(
 				container_add_child(root_container.children->items[p], child);
 			}
 			container_sort_workspaces(root_container.children->items[p]);
-			arrange_windows(root_container.children->items[p],
-				-1, -1);
+			arrange_output(root_container.children->items[p]);
 		}
 	}
 

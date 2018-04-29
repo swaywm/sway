@@ -105,6 +105,7 @@ sway_sources = files(
 	'commands/input/xkb_rules.c',
 	'commands/input/xkb_variant.c',
 
+	'tree/arrange.c',
 	'tree/container.c',
 	'tree/layout.c',
 	'tree/view.c',

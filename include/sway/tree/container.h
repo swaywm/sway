@@ -75,6 +75,7 @@ struct sway_container {
 	double x, y;
 	// does not include borders or gaps.
 	double width, height;
+	double saved_width, saved_height;
 
 	list_t *children;
 

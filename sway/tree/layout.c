@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "sway/debug.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/output.h"
@@ -21,16 +22,7 @@ struct sway_container root_container;
 
 static void output_layout_handle_change(struct wl_listener *listener,
 		void *data) {
-	struct wlr_output_layout *output_layout =
-		root_container.sway_root->output_layout;
-	const struct wlr_box *layout_box =
-		wlr_output_layout_get_box(output_layout, NULL);
-	root_container.x = layout_box->x;
-	root_container.y = layout_box->y;
-	root_container.width = layout_box->width;
-	root_container.height = layout_box->height;
-
-	arrange_windows(&root_container, layout_box->width, layout_box->height);
+	arrange_root();
 }
 
 void layout_init(void) {
@@ -91,13 +83,15 @@ static void container_handle_fullscreen_reparent(struct sway_container *viewcon,
 
 	// Mark the new workspace as fullscreen
 	if (new_workspace->sway_workspace->fullscreen) {
-		view_set_fullscreen(new_workspace->sway_workspace->fullscreen, false);
+		view_set_fullscreen_raw(
+				new_workspace->sway_workspace->fullscreen, false);
 	}
 	new_workspace->sway_workspace->fullscreen = view;
 	// Resize view to new output dimensions
-	struct sway_output *output = new_workspace->parent->sway_output;
-	view_configure(view, 0, 0,
-			output->wlr_output->width, output->wlr_output->height);
+	struct sway_container *output = new_workspace->parent;
+	view_configure(view, 0, 0, output->width, output->height);
+	view->swayc->width = output->width;
+	view->swayc->height = output->height;
 }
 
 void container_insert_child(struct sway_container *parent,
@@ -166,6 +160,7 @@ void container_move_to(struct sway_container *container,
 	}
 	struct sway_container *old_parent = container_remove_child(container);
 	container->width = container->height = 0;
+	container->saved_width = container->saved_height = 0;
 	struct sway_container *new_parent;
 	if (destination->type == C_VIEW) {
 		new_parent = container_add_sibling(destination, container);
@@ -188,9 +183,9 @@ void container_move_to(struct sway_container *container,
 		seat_set_focus(seat, new_parent);
 	}
 	if (old_parent) {
-		arrange_windows(old_parent, -1, -1);
+		arrange_children_of(old_parent);
 	}
-	arrange_windows(new_parent, -1, -1);
+	arrange_children_of(new_parent);
 	// If view was moved to a fullscreen workspace, refocus the fullscreen view
 	struct sway_container *new_workspace = container;
 	if (new_workspace->type != C_WORKSPACE) {
@@ -299,7 +294,7 @@ static void workspace_rejigger(struct sway_container *ws,
 	container_reap_empty_recursive(original_parent);
 	wl_signal_emit(&child->events.reparent, original_parent);
 	container_create_notify(new_parent);
-	arrange_windows(ws, -1, -1);
+	arrange_workspace(ws);
 }
 
 void container_move(struct sway_container *container,
@@ -378,7 +373,7 @@ void container_move(struct sway_container *container,
 						move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ?
 						L_HORIZ : L_VERT;
 					container_insert_child(current, container, offs < 0 ? 0 : 1);
-					arrange_windows(current, -1, -1);
+					arrange_workspace(current);
 				}
 				return;
 			} else {
@@ -402,8 +397,8 @@ void container_move(struct sway_container *container,
 						container_insert_child(current->parent, container,
 								index + (offs < 0 ? 0 : 1));
 						container->width = container->height = 0;
-						arrange_windows(current->parent, -1, -1);
-						arrange_windows(old_parent, -1, -1);
+						arrange_children_of(current->parent);
+						arrange_children_of(old_parent);
 						return;
 					}
 				} else {
@@ -433,14 +428,14 @@ void container_move(struct sway_container *container,
 				wlr_log(L_DEBUG, "Swapping siblings");
 				sibling->parent->children->items[index + offs] = container;
 				sibling->parent->children->items[index] = sibling;
-				arrange_windows(sibling->parent, -1, -1);
+				arrange_children_of(sibling->parent);
 			} else {
 				wlr_log(L_DEBUG, "Promoting to sibling of cousin");
 				container_insert_child(sibling->parent, container,
 						index_child(sibling) + (offs > 0 ? 0 : 1));
 				container->width = container->height = 0;
-				arrange_windows(sibling->parent, -1, -1);
-				arrange_windows(old_parent, -1, -1);
+				arrange_children_of(sibling->parent);
+				arrange_children_of(old_parent);
 			}
 			sibling = NULL;
 			break;
@@ -454,8 +449,8 @@ void container_move(struct sway_container *container,
 						"(move dir: %d)", limit, move_dir);
 				container_insert_child(sibling, container, limit);
 				container->width = container->height = 0;
-				arrange_windows(sibling, -1, -1);
-				arrange_windows(old_parent, -1, -1);
+				arrange_children_of(sibling);
+				arrange_children_of(old_parent);
 				sibling = NULL;
 			} else {
 				wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
@@ -478,8 +473,8 @@ void container_move(struct sway_container *container,
 					container_add_child(sibling, container);
 				}
 				container->width = container->height = 0;
-				arrange_windows(sibling, -1, -1);
-				arrange_windows(old_parent, -1, -1);
+				arrange_children_of(sibling);
+				arrange_children_of(old_parent);
 				sibling = NULL;
 			}
 			break;
@@ -551,234 +546,6 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 
 void container_sort_workspaces(struct sway_container *output) {
 	list_stable_sort(output->children, sort_workspace_cmp_qsort);
-}
-
-static void apply_horiz_layout(struct sway_container *container, const double x,
-				const double y, const double width,
-				const double height, const int start,
-				const int end);
-
-static void apply_vert_layout(struct sway_container *container, const double x,
-				const double y, const double width,
-				const double height, const int start,
-				const int end);
-
-void arrange_windows(struct sway_container *container,
-		double width, double height) {
-	if (config->reloading) {
-		return;
-	}
-	int i;
-	if (width == -1 || height == -1) {
-		width = container->width;
-		height = container->height;
-	}
-	// pixels are indivisible. if we don't round the pixels, then the view
-	// calculations will be off (e.g. 50.5 + 50.5 = 101, but in reality it's
-	// 50 + 50 = 100). doing it here cascades properly to all width/height/x/y.
-	width = floor(width);
-	height = floor(height);
-
-	wlr_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", container,
-		container->name, container->width, container->height, container->x,
-		container->y);
-
-	double x = 0, y = 0;
-	switch (container->type) {
-	case C_ROOT:
-		for (i = 0; i < container->children->length; ++i) {
-			struct sway_container *output = container->children->items[i];
-			const struct wlr_box *output_box = wlr_output_layout_get_box(
-				container->sway_root->output_layout,
-				output->sway_output->wlr_output);
-			output->x = output_box->x;
-			output->y = output_box->y;
-			output->width = output_box->width;
-			output->height = output_box->height;
-			wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
-					output->name, output->x, output->y);
-			arrange_windows(output, output_box->width, output_box->height);
-		}
-		return;
-	case C_OUTPUT:
-		// arrange all workspaces:
-		for (i = 0; i < container->children->length; ++i) {
-			struct sway_container *child = container->children->items[i];
-			arrange_windows(child, -1, -1);
-		}
-		return;
-	case C_WORKSPACE:
-		{
-			struct sway_container *output =
-				container_parent(container, C_OUTPUT);
-			struct wlr_box *area = &output->sway_output->usable_area;
-			wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
-					area->width, area->height, area->x, area->y);
-			container->width = width = area->width;
-			container->height = height = area->height;
-			container->x = x = area->x;
-			container->y = y = area->y;
-			wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
-					container->name, container->x, container->y);
-			if (container->sway_workspace->fullscreen) {
-				view_configure(container->sway_workspace->fullscreen, 0, 0,
-						output->width, output->height);
-				return;
-			}
-		}
-		// children are properly handled below
-		break;
-	case C_VIEW:
-		{
-			container->width = width;
-			container->height = height;
-			view_configure(container->sway_view, container->x, container->y,
-				container->width, container->height);
-			wlr_log(L_DEBUG, "Set view to %.f x %.f @ %.f, %.f",
-					container->width, container->height,
-					container->x, container->y);
-		}
-		return;
-	default:
-		container->width = width;
-		container->height = height;
-		x = container->x;
-		y = container->y;
-		break;
-	}
-
-	switch (container->layout) {
-	case L_HORIZ:
-		apply_horiz_layout(container, x, y, width, height, 0,
-			container->children->length);
-		break;
-	case L_VERT:
-		apply_vert_layout(container, x, y, width, height, 0,
-			container->children->length);
-		break;
-	default:
-		wlr_log(L_DEBUG, "TODO: arrange layout type %d", container->layout);
-		apply_horiz_layout(container, x, y, width, height, 0,
-			container->children->length);
-		break;
-	}
-	container_damage_whole(container);
-	// TODO: Make this less shitty
-	update_debug_tree();
-}
-
-static void apply_horiz_layout(struct sway_container *container,
-		const double x, const double y,
-		const double width, const double height,
-		const int start, const int end) {
-	double scale = 0;
-	// Calculate total width
-	for (int i = start; i < end; ++i) {
-		double *old_width =
-			&((struct sway_container *)container->children->items[i])->width;
-		if (*old_width <= 0) {
-			if (end - start > 1) {
-				*old_width = width / (end - start - 1);
-			} else {
-				*old_width = width;
-			}
-		}
-		scale += *old_width;
-	}
-	scale = width / scale;
-
-	// Resize windows
-	double child_x = x;
-	if (scale > 0.1) {
-		wlr_log(L_DEBUG, "Arranging %p horizontally", container);
-		for (int i = start; i < end; ++i) {
-			struct sway_container *child = container->children->items[i];
-			wlr_log(L_DEBUG,
-				"Calculating arrangement for %p:%d (will scale %f by %f)",
-				child, child->type, width, scale);
-
-			if (child->type == C_VIEW) {
-				view_configure(child->sway_view, child_x, y, child->width,
-					child->height);
-			} else {
-				child->x = child_x;
-				child->y = y;
-			}
-
-			if (i == end - 1) {
-				double remaining_width = x + width - child_x;
-				arrange_windows(child, remaining_width, height);
-			} else {
-				arrange_windows(child, child->width * scale, height);
-			}
-			child_x += child->width;
-		}
-
-		// update focused view border last because it may
-		// depend on the title bar geometry of its siblings.
-		/* TODO WLR
-		if (focused && container->children->length > 1) {
-			update_container_border(focused);
-		}
-		*/
-	}
-}
-
-void apply_vert_layout(struct sway_container *container,
-		const double x, const double y,
-		const double width, const double height, const int start,
-		const int end) {
-	int i;
-	double scale = 0;
-	// Calculate total height
-	for (i = start; i < end; ++i) {
-		double *old_height =
-			&((struct sway_container *)container->children->items[i])->height;
-		if (*old_height <= 0) {
-			if (end - start > 1) {
-				*old_height = height / (end - start - 1);
-			} else {
-				*old_height = height;
-			}
-		}
-		scale += *old_height;
-	}
-	scale = height / scale;
-
-	// Resize
-	double child_y = y;
-	if (scale > 0.1) {
-		wlr_log(L_DEBUG, "Arranging %p vertically", container);
-		for (i = start; i < end; ++i) {
-			struct sway_container *child = container->children->items[i];
-			wlr_log(L_DEBUG,
-				"Calculating arrangement for %p:%d (will scale %f by %f)",
-				child, child->type, height, scale);
-			if (child->type == C_VIEW) {
-				view_configure(child->sway_view, x, child_y, child->width,
-					child->height);
-			} else {
-				child->x = x;
-				child->y = child_y;
-			}
-
-			if (i == end - 1) {
-				double remaining_height = y + height - child_y;
-				arrange_windows(child, width, remaining_height);
-			} else {
-				arrange_windows(child, width, child->height * scale);
-			}
-			child_y += child->height;
-		}
-
-		// update focused view border last because it may
-		// depend on the title bar geometry of its siblings.
-		/* TODO WLR
-		if (focused && container->children->length > 1) {
-			update_container_border(focused);
-		}
-		*/
-	}
 }
 
 /**
@@ -1026,7 +793,7 @@ struct sway_container *container_split(struct sway_container *child,
 		// Special case: this just behaves like splitt
 		child->prev_layout = child->layout;
 		child->layout = layout;
-		arrange_windows(child, -1, -1);
+		arrange_children_of(child);
 		return child;
 	}
 
