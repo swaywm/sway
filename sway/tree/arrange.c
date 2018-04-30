@@ -174,12 +174,7 @@ void arrange_children_of(struct sway_container *parent) {
 	}
 	if (workspace->sway_workspace->fullscreen) {
 		// Just arrange the fullscreen view and jump out
-		struct sway_container *view =
-			workspace->sway_workspace->fullscreen->swayc;
-		view_configure(view->sway_view, 0, 0,
-				workspace->parent->width, workspace->parent->height);
-		view->width = workspace->parent->width;
-		view->height = workspace->parent->height;
+		view_autoconfigure(workspace->sway_workspace->fullscreen);
 		return;
 	}
 
@@ -204,8 +199,7 @@ void arrange_children_of(struct sway_container *parent) {
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
 		if (child->type == C_VIEW) {
-			view_configure(child->sway_view, child->x, child->y,
-					child->width, child->height);
+			view_autoconfigure(child->sway_view);
 		} else {
 			arrange_children_of(child);
 		}

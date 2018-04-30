@@ -40,7 +40,6 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 	if (wl_shell_view == NULL) {
 		return;
 	}
-	view_update_position(view, ox, oy);
 	wl_shell_view->pending_width = width;
 	wl_shell_view->pending_height = height;
 	wlr_wl_shell_surface_configure(view->wlr_wl_shell_surface, 0, width, height);

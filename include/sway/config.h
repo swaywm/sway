@@ -204,11 +204,11 @@ struct bar_config {
 };
 
 struct border_colors {
-	uint32_t border;
-	uint32_t background;
-	uint32_t text;
-	uint32_t indicator;
-	uint32_t child_border;
+	float border[4];
+	float background[4];
+	float text[4];
+	float indicator[4];
+	float child_border[4];
 };
 
 enum edge_border_types {
@@ -338,7 +338,7 @@ struct sway_config {
 		struct border_colors unfocused;
 		struct border_colors urgent;
 		struct border_colors placeholder;
-		uint32_t background;
+		float background[4];
 	} border_colors;
 
 	// floating view

@@ -163,8 +163,6 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 		return;
 	}
 
-	view_update_position(view, ox, oy);
-
 	xwayland_view->pending_width = width;
 	xwayland_view->pending_height = height;
 	wlr_xwayland_surface_configure(xsurface, ox + loutput->x, oy + loutput->y,
