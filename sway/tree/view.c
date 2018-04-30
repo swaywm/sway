@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <wayland-server.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "log.h"
 #include "sway/criteria.h"
@@ -71,6 +72,51 @@ void view_configure(struct sway_view *view, double ox, double oy, int width,
 	if (view->impl->configure) {
 		view->impl->configure(view, ox, oy, width, height);
 	}
+}
+
+/**
+ * Configure the view's position and size based on the swayc's position and
+ * size, taking borders into consideration.
+ */
+void view_autoconfigure(struct sway_view *view) {
+	if (!sway_assert(view->swayc,
+				"Called view_autoconfigure() on a view without a swayc")) {
+		return;
+	}
+
+	if (view->is_fullscreen) {
+		struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+		view_configure(view, 0, 0, output->width, output->height);
+		view->x = view->y = 0;
+		return;
+	}
+
+	double x, y, width, height;
+	switch (view->border) {
+		case B_NONE:
+			x = view->swayc->x;
+			y = view->swayc->y;
+			width = view->swayc->width;
+			height = view->swayc->height;
+			break;
+		case B_PIXEL:
+			x = view->swayc->x + view->border_thickness;
+			y = view->swayc->y + view->border_thickness;
+			width = view->swayc->width - view->border_thickness * 2;
+			height = view->swayc->height - view->border_thickness * 2;
+			break;
+		case B_NORMAL:
+			// TODO: Size the title bar by checking the font
+			x = view->swayc->x + view->border_thickness;
+			y = view->swayc->y + 20;
+			width = view->swayc->width - view->border_thickness * 2;
+			height = view->swayc->height - view->border_thickness - 20;
+			break;
+	}
+
+	view->x = x;
+	view->y = y;
+	view_configure(view, x, y, width, height);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -262,6 +308,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	view->surface = wlr_surface;
 	view->swayc = cont;
+	view->border = config->border;
+	view->border_thickness = config->border_thickness;
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
@@ -305,23 +353,13 @@ void view_unmap(struct sway_view *view) {
 	arrange_children_of(parent);
 }
 
-void view_update_position(struct sway_view *view, double ox, double oy) {
-	if (view->swayc->x == ox && view->swayc->y == oy) {
-		return;
-	}
-
-	view_damage(view, true);
-	view->swayc->x = ox;
-	view->swayc->y = oy;
-	view_damage(view, true);
-}
-
 void view_update_size(struct sway_view *view, int width, int height) {
 	if (view->width == width && view->height == height) {
 		return;
 	}
 
 	view_damage(view, true);
+	// Should we update the swayc width/height here too?
 	view->width = width;
 	view->height = height;
 	view_damage(view, true);

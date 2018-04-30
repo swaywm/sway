@@ -97,8 +97,13 @@ static struct cmd_handler handlers[] = {
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },
 	{ "bindsym", cmd_bindsym },
+	{ "client.focused", cmd_client_focused },
+	{ "client.focused_inactive", cmd_client_focused_inactive },
+	{ "client.unfocused", cmd_client_unfocused },
+	{ "client.urgent", cmd_client_urgent },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
+	{ "default_border", cmd_default_border },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
@@ -162,6 +167,7 @@ static struct cmd_handler config_handlers[] = {
 
 /* Runtime-only commands. Keep alphabetized */
 static struct cmd_handler command_handlers[] = {
+	{ "border", cmd_border },
 	{ "exit", cmd_exit },
 	{ "focus", cmd_focus },
 	{ "kill", cmd_kill },

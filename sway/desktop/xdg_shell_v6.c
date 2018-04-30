@@ -102,7 +102,6 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 		return;
 	}
 
-	view_update_position(view, ox, oy);
 	xdg_shell_v6_view->pending_width = width;
 	xdg_shell_v6_view->pending_height = height;
 	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
