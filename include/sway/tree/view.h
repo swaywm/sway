@@ -197,6 +197,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
 void view_unmap(struct sway_view *view);
 
+void view_update_position(struct sway_view *view, double ox, double oy);
+
 void view_update_size(struct sway_view *view, int width, int height);
 
 void view_child_init(struct sway_view_child *child,
