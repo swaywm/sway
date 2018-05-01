@@ -240,6 +240,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->y + 1;
 	box.width = con->sway_view->border_thickness;
 	box.height = con->height - 1;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -248,6 +249,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->y + 1;
 	box.width = con->sway_view->border_thickness;
 	box.height = con->height - 1;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -256,6 +258,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->y + con->height - con->sway_view->border_thickness;
 	box.width = con->width;
 	box.height = con->sway_view->border_thickness;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -265,6 +268,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->y;
 	box.width = con->width;
 	box.height = 1;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -273,6 +277,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->sway_view->y - 1;
 	box.width = con->width - con->sway_view->border_thickness * 2;
 	box.height = 1;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -282,6 +287,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->y + 1;
 	box.width = con->width - con->sway_view->border_thickness * 2;
 	box.height = con->sway_view->y - con->y - 2;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -306,6 +312,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	box.y = con->y;
 	box.width = con->sway_view->border_thickness;
 	box.height = con->height;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -314,6 +321,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	box.y = con->y;
 	box.width = con->sway_view->border_thickness;
 	box.height = con->height;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -322,6 +330,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	box.y = con->y;
 	box.width = con->width;
 	box.height = con->sway_view->border_thickness;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
@@ -330,6 +339,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	box.y = con->y + con->height - con->sway_view->border_thickness;
 	box.width = con->width;
 	box.height = con->sway_view->border_thickness;
+	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 }
