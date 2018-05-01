@@ -455,6 +455,16 @@ struct sway_container *container_at(struct sway_container *parent,
 				*surface = _surface;
 				return swayc;
 			}
+			// Check the view's decorations
+			struct wlr_box swayc_box = {
+				.x = swayc->x,
+				.y = swayc->y,
+				.width = swayc->width,
+				.height = swayc->height,
+			};
+			if (wlr_box_contains_point(&swayc_box, ox, oy)) {
+				return swayc;
+			}
 		} else {
 			list_cat(queue, swayc->children);
 		}
