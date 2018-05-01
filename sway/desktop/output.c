@@ -245,6 +245,11 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			output->wlr_output->transform_matrix);
 
 	// Child border - right edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_HORIZ) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
 	box.x = con->x + con->width - con->sway_view->border_thickness;
 	box.y = con->y + 1;
 	box.width = con->sway_view->border_thickness;
@@ -254,6 +259,11 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			output->wlr_output->transform_matrix);
 
 	// Child border - bottom edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_VERT) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
 	box.x = con->x;
 	box.y = con->y + con->height - con->sway_view->border_thickness;
 	box.width = con->width;
@@ -317,6 +327,11 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 			output->wlr_output->transform_matrix);
 
 	// Child border - right edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_HORIZ) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
 	box.x = con->x + con->width - con->sway_view->border_thickness;
 	box.y = con->y;
 	box.width = con->sway_view->border_thickness;
@@ -335,6 +350,11 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 			output->wlr_output->transform_matrix);
 
 	// Child border - bottom edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_VERT) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
 	box.x = con->x;
 	box.y = con->y + con->height - con->sway_view->border_thickness;
 	box.width = con->width;
