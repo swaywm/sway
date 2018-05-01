@@ -116,8 +116,8 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 static void output_view_for_each_surface(struct sway_view *view,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
-	geo->x = view->swayc->x;
-	geo->y = view->swayc->y;
+	geo->x = view->x;
+	geo->y = view->y;
 	geo->width = view->surface->current->width;
 	geo->height = view->surface->current->height;
 	geo->rotation = 0; // TODO
@@ -217,23 +217,228 @@ static void render_unmanaged(struct sway_output *output,
 		render_surface_iterator, &data);
 }
 
-static void render_container_iterator(struct sway_container *con,
-		void *_data) {
-	struct sway_output *output = _data;
-	if (!sway_assert(con->type == C_VIEW, "expected a view")) {
-		return;
+static void render_view(struct sway_view *view, struct sway_output *output) {
+	struct render_data data = { .output = output, .alpha = view->swayc->alpha };
+	output_view_for_each_surface(
+			view, &data.root_geo, render_surface_iterator, &data);
+}
+
+/**
+ * Render decorations for a view with "border normal".
+ */
+static void render_container_simple_border_normal(struct sway_output *output,
+		struct sway_container *con, struct border_colors *colors) {
+	struct wlr_renderer *renderer =
+		wlr_backend_get_renderer(output->wlr_output->backend);
+	struct wlr_box box;
+	float color[4];
+	color[3] = con->alpha;
+
+	// Child border - left edge
+	memcpy(&color, colors->child_border, sizeof(float) * 3);
+	box.x = con->x;
+	box.y = con->y + 1;
+	box.width = con->sway_view->border_thickness;
+	box.height = con->height - 1;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Child border - right edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_HORIZ) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
 	}
-	struct render_data data = { .output = output, .alpha = con->alpha };
-	output_view_for_each_surface(con->sway_view, &data.root_geo,
-		render_surface_iterator, &data);
+	box.x = con->x + con->width - con->sway_view->border_thickness;
+	box.y = con->y + 1;
+	box.width = con->sway_view->border_thickness;
+	box.height = con->height - 1;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Child border - bottom edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_VERT) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
+	box.x = con->x;
+	box.y = con->y + con->height - con->sway_view->border_thickness;
+	box.width = con->width;
+	box.height = con->sway_view->border_thickness;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Single pixel bar above title
+	memcpy(&color, colors->border, sizeof(float) * 3);
+	box.x = con->x;
+	box.y = con->y;
+	box.width = con->width;
+	box.height = 1;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Single pixel bar below title
+	box.x = con->x + con->sway_view->border_thickness;
+	box.y = con->sway_view->y - 1;
+	box.width = con->width - con->sway_view->border_thickness * 2;
+	box.height = 1;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Title background
+	memcpy(&color, colors->background, sizeof(float) * 3);
+	box.x = con->x + con->sway_view->border_thickness;
+	box.y = con->y + 1;
+	box.width = con->width - con->sway_view->border_thickness * 2;
+	box.height = con->sway_view->y - con->y - 2;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Title text
+	// TODO
+}
+
+/**
+ * Render decorations for a view with "border pixel".
+ */
+static void render_container_simple_border_pixel(struct sway_output *output,
+		struct sway_container *con, struct border_colors *colors) {
+	struct wlr_renderer *renderer =
+		wlr_backend_get_renderer(output->wlr_output->backend);
+	struct wlr_box box;
+	float color[4];
+	color[3] = con->alpha;
+
+	// Child border - left edge
+	memcpy(&color, colors->child_border, sizeof(float) * 3);
+	box.x = con->x;
+	box.y = con->y;
+	box.width = con->sway_view->border_thickness;
+	box.height = con->height;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Child border - right edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_HORIZ) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
+	box.x = con->x + con->width - con->sway_view->border_thickness;
+	box.y = con->y;
+	box.width = con->sway_view->border_thickness;
+	box.height = con->height;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Child border - top edge
+	box.x = con->x;
+	box.y = con->y;
+	box.width = con->width;
+	box.height = con->sway_view->border_thickness;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+
+	// Child border - bottom edge
+	if (con->parent->children->length == 1 && con->parent->layout == L_VERT) {
+		memcpy(&color, colors->indicator, sizeof(float) * 3);
+	} else {
+		memcpy(&color, colors->child_border, sizeof(float) * 3);
+	}
+	box.x = con->x;
+	box.y = con->y + con->height - con->sway_view->border_thickness;
+	box.width = con->width;
+	box.height = con->sway_view->border_thickness;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_render_rect(renderer, &box, color,
+			output->wlr_output->transform_matrix);
+}
+
+static void render_container(struct sway_output *output,
+		struct sway_container *con);
+
+/**
+ * Render a container's children using a L_HORIZ or L_VERT layout.
+ *
+ * Wrap child views in borders and leave child containers borderless because
+ * they'll apply their own borders to their children.
+ */
+static void render_container_simple(struct sway_output *output,
+		struct sway_container *con) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+
+	for (int i = 0; i < con->children->length; ++i) {
+		struct sway_container *child = con->children->items[i];
+
+		if (child->type == C_VIEW) {
+			if (child->sway_view->border != B_NONE) {
+				struct border_colors *colors;
+				if (focus == child) {
+					colors = &config->border_colors.focused;
+				} else if (seat_get_focus_inactive(seat, con) == child) {
+					colors = &config->border_colors.focused_inactive;
+				} else {
+					colors = &config->border_colors.unfocused;
+				}
+
+				if (child->sway_view->border == B_NORMAL) {
+					render_container_simple_border_normal(output, child,
+							colors);
+				} else {
+					render_container_simple_border_pixel(output, child, colors);
+				}
+			}
+			render_view(child->sway_view, output);
+		} else {
+			render_container(output, child);
+		}
+	}
+}
+
+/**
+ * Render a container's children using the L_TABBED layout.
+ */
+static void render_container_tabbed(struct sway_output *output,
+		struct sway_container *con) {
+	// TODO
+}
+
+/**
+ * Render a container's children using the L_STACKED layout.
+ */
+static void render_container_stacked(struct sway_output *output,
+		struct sway_container *con) {
+	// TODO
 }
 
 static void render_container(struct sway_output *output,
 		struct sway_container *con) {
-	if (con->type == C_VIEW) { // Happens if a view is fullscreened
-		render_container_iterator(con, output);
-	} else {
-		container_descendants(con, C_VIEW, render_container_iterator, output);
+	switch (con->layout) {
+	case L_NONE:
+	case L_HORIZ:
+	case L_VERT:
+		render_container_simple(output, con);
+		break;
+	case L_STACKED:
+		render_container_stacked(output, con);
+		break;
+	case L_TABBED:
+		render_container_tabbed(output, con);
+		break;
+	case L_FLOATING:
+		// TODO
+		break;
 	}
 }
 
@@ -282,7 +487,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 		wlr_renderer_clear(renderer, clear_color);
 		// TODO: handle views smaller than the output
-		render_container(output, workspace->sway_workspace->fullscreen->swayc);
+		render_view(workspace->sway_workspace->fullscreen, output);
 
 		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output,

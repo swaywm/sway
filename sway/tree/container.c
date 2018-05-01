@@ -423,8 +423,8 @@ struct sway_container *container_at(struct sway_container *parent,
 					soutput->sway_output->wlr_output);
 			double ox = lx - output_box->x;
 			double oy = ly - output_box->y;
-			double view_sx = ox - swayc->x;
-			double view_sy = oy - swayc->y;
+			double view_sx = ox - sview->x;
+			double view_sy = oy - sview->y;
 
 			double _sx, _sy;
 			struct wlr_surface *_surface;
@@ -453,6 +453,16 @@ struct sway_container *container_at(struct sway_container *parent,
 				*sx = _sx;
 				*sy = _sy;
 				*surface = _surface;
+				return swayc;
+			}
+			// Check the view's decorations
+			struct wlr_box swayc_box = {
+				.x = swayc->x,
+				.y = swayc->y,
+				.width = swayc->width,
+				.height = swayc->height,
+			};
+			if (wlr_box_contains_point(&swayc_box, ox, oy)) {
 				return swayc;
 			}
 		} else {

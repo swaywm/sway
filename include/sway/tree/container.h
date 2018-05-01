@@ -72,8 +72,8 @@ struct sway_container {
 	// For C_ROOT, this has no meaning
 	// For C_OUTPUT, this is the output position in layout coordinates
 	// For other types, this is the position in output-local coordinates
+	// Includes borders
 	double x, y;
-	// does not include borders or gaps.
 	double width, height;
 	double saved_width, saved_height;
 

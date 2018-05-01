@@ -41,8 +41,15 @@ struct sway_view {
 
 	struct sway_container *swayc; // NULL for unmapped views
 	struct wlr_surface *surface; // NULL for unmapped views
+
+	// Geometry of the view itself (excludes borders)
+	double x, y;
 	int width, height;
+
 	bool is_fullscreen;
+
+	enum sway_container_border border;
+	int border_thickness;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
@@ -159,6 +166,12 @@ const char *view_get_instance(struct sway_view *view);
 
 void view_configure(struct sway_view *view, double ox, double oy, int width,
 	int height);
+
+/**
+ * Configure the view's position and size based on the swayc's position and
+ * size, taking borders into consideration.
+ */
+void view_autoconfigure(struct sway_view *view);
 
 void view_set_activated(struct sway_view *view, bool activated);
 
