@@ -255,6 +255,9 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 		return;
 	}
 	struct sway_output *output = wlr_output->data;
+	if (output == NULL) {
+		return;
+	}
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
 }
@@ -274,9 +277,11 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->surface_commit.link);
 	if (sway_layer->layer_surface->output != NULL) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
-		arrange_layers(output);
-
+		if (output != NULL) {
+			arrange_layers(output);
+		}
 		wl_list_remove(&sway_layer->output_destroy.link);
+		sway_layer->layer_surface->output = NULL;
 	}
 	free(sway_layer);
 }
