@@ -130,11 +130,11 @@ static void destroy_removed_seats(struct sway_config *old_config,
 	}
 }
 
-static void set_color(float (*dest)[4], uint32_t color) {
-	(*dest)[0] = ((color >> 16) & 0xff) / 255.0;
-	(*dest)[1] = ((color >> 8) & 0xff) / 255.0;
-	(*dest)[2] = (color & 0xff) / 255.0;
-	(*dest)[3] = 1.0;
+static void set_color(float dest[static 4], uint32_t color) {
+	dest[0] = ((color >> 16) & 0xff) / 255.0;
+	dest[1] = ((color >> 8) & 0xff) / 255.0;
+	dest[2] = (color & 0xff) / 255.0;
+	dest[3] = 1.0;
 }
 
 static void config_defaults(struct sway_config *config) {
@@ -205,38 +205,38 @@ static void config_defaults(struct sway_config *config) {
 	config->hide_edge_borders = E_NONE;
 
 	// border colors
-	set_color(&config->border_colors.focused.border, 0x4C7899);
-	set_color(&config->border_colors.focused.border, 0x4C7899);
-	set_color(&config->border_colors.focused.background, 0x285577);
-	set_color(&config->border_colors.focused.text, 0xFFFFFF);
-	set_color(&config->border_colors.focused.indicator, 0x2E9EF4);
-	set_color(&config->border_colors.focused.child_border, 0x285577);
+	set_color(config->border_colors.focused.border, 0x4C7899);
+	set_color(config->border_colors.focused.border, 0x4C7899);
+	set_color(config->border_colors.focused.background, 0x285577);
+	set_color(config->border_colors.focused.text, 0xFFFFFF);
+	set_color(config->border_colors.focused.indicator, 0x2E9EF4);
+	set_color(config->border_colors.focused.child_border, 0x285577);
 
-	set_color(&config->border_colors.focused_inactive.border, 0x333333);
-	set_color(&config->border_colors.focused_inactive.background, 0x5F676A);
-	set_color(&config->border_colors.focused_inactive.text, 0xFFFFFF);
-	set_color(&config->border_colors.focused_inactive.indicator, 0x484E50);
-	set_color(&config->border_colors.focused_inactive.child_border, 0x5F676A);
+	set_color(config->border_colors.focused_inactive.border, 0x333333);
+	set_color(config->border_colors.focused_inactive.background, 0x5F676A);
+	set_color(config->border_colors.focused_inactive.text, 0xFFFFFF);
+	set_color(config->border_colors.focused_inactive.indicator, 0x484E50);
+	set_color(config->border_colors.focused_inactive.child_border, 0x5F676A);
 
-	set_color(&config->border_colors.unfocused.border, 0x333333);
-	set_color(&config->border_colors.unfocused.background, 0x222222);
-	set_color(&config->border_colors.unfocused.text, 0x888888);
-	set_color(&config->border_colors.unfocused.indicator, 0x292D2E);
-	set_color(&config->border_colors.unfocused.child_border, 0x222222);
+	set_color(config->border_colors.unfocused.border, 0x333333);
+	set_color(config->border_colors.unfocused.background, 0x222222);
+	set_color(config->border_colors.unfocused.text, 0x888888);
+	set_color(config->border_colors.unfocused.indicator, 0x292D2E);
+	set_color(config->border_colors.unfocused.child_border, 0x222222);
 
-	set_color(&config->border_colors.urgent.border, 0x2F343A);
-	set_color(&config->border_colors.urgent.background, 0x900000);
-	set_color(&config->border_colors.urgent.text, 0xFFFFFF);
-	set_color(&config->border_colors.urgent.indicator, 0x900000);
-	set_color(&config->border_colors.urgent.child_border, 0x900000);
+	set_color(config->border_colors.urgent.border, 0x2F343A);
+	set_color(config->border_colors.urgent.background, 0x900000);
+	set_color(config->border_colors.urgent.text, 0xFFFFFF);
+	set_color(config->border_colors.urgent.indicator, 0x900000);
+	set_color(config->border_colors.urgent.child_border, 0x900000);
 
-	set_color(&config->border_colors.placeholder.border, 0x000000);
-	set_color(&config->border_colors.placeholder.background, 0x0C0C0C);
-	set_color(&config->border_colors.placeholder.text, 0xFFFFFF);
-	set_color(&config->border_colors.placeholder.indicator, 0x000000);
-	set_color(&config->border_colors.placeholder.child_border, 0x0C0C0C);
+	set_color(config->border_colors.placeholder.border, 0x000000);
+	set_color(config->border_colors.placeholder.background, 0x0C0C0C);
+	set_color(config->border_colors.placeholder.text, 0xFFFFFF);
+	set_color(config->border_colors.placeholder.indicator, 0x000000);
+	set_color(config->border_colors.placeholder.child_border, 0x0C0C0C);
 
-	set_color(&config->border_colors.background, 0xFFFFFF);
+	set_color(config->border_colors.background, 0xFFFFFF);
 
 	// Security
 	if (!(config->command_policies = create_list())) goto cleanup;

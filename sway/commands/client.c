@@ -3,7 +3,7 @@
 #include "sway/config.h"
 #include "sway/tree/container.h"
 
-static bool parse_color(char *hexstring, float (*dest)[4]) {
+static bool parse_color(char *hexstring, float dest[static 4]) {
 	if (hexstring[0] != '#') {
 		return false;
 	}
@@ -20,10 +20,10 @@ static bool parse_color(char *hexstring, float (*dest)[4]) {
 		return false;
 	}
 
-	(*dest)[0] = ((decimal >> 16) & 0xff) / 255.0;
-	(*dest)[1] = ((decimal >> 8) & 0xff) / 255.0;
-	(*dest)[2] = (decimal & 0xff) / 255.0;
-	(*dest)[3] = 1.0;
+	dest[0] = ((decimal >> 16) & 0xff) / 255.0;
+	dest[1] = ((decimal >> 8) & 0xff) / 255.0;
+	dest[2] = (decimal & 0xff) / 255.0;
+	dest[3] = 1.0;
 	return true;
 }
 
@@ -34,27 +34,27 @@ static struct cmd_results *handle_command(int argc, char **argv,
 		return error;
 	}
 
-	if (!parse_color(argv[0], &class->border)) {
+	if (!parse_color(argv[0], class->border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse border color");
 	}
 
-	if (!parse_color(argv[1], &class->background)) {
+	if (!parse_color(argv[1], class->background)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse background color");
 	}
 
-	if (!parse_color(argv[2], &class->text)) {
+	if (!parse_color(argv[2], class->text)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse text color");
 	}
 
-	if (!parse_color(argv[3], &class->indicator)) {
+	if (!parse_color(argv[3], class->indicator)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse indicator color");
 	}
 
-	if (!parse_color(argv[4], &class->child_border)) {
+	if (!parse_color(argv[4], class->child_border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse child border color");
 	}
