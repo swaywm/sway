@@ -55,8 +55,8 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		if ((*child = fork()) == 0) {
 			// Acquire the current PATH
 			char *path = getenv("PATH");
-			const char *extra_path = ":" INSTLIBDIR;
-			const size_t extra_size = sizeof(INSTLIBDIR) + 1;
+			const char *extra_path = ":" SWAY_LIBEXECDIR;
+			const size_t extra_size = sizeof(SWAY_LIBEXECDIR) + 1;
 
 			if (!path) {
 				size_t n = confstr(_CS_PATH, NULL, 0);

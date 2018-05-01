@@ -19,12 +19,13 @@ is_freebsd = host_machine.system().startswith('freebsd')
 datadir = get_option('datadir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
-instlibdir = get_option('instlibdir')
+libexecdir = get_option('libexecdir')
 
-if instlibdir == ''
-  instlibdir = join_paths(prefix, 'lib/sway')
+if libexecdir == ''
+	libexecdir = 'lib'
 endif
-add_project_arguments('-DINSTLIBDIR="/@0@"'.format(instlibdir), language : 'c')
+sway_libexecdir = join_paths(prefix, libexecdir, 'sway')
+add_project_arguments('-DSWAY_LIBEXECDIR="/@0@"'.format(sway_libexecdir), language : 'c')
 
 
 jsonc          = dependency('json-c', version: '>=0.13')
