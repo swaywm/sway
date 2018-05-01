@@ -74,10 +74,6 @@ void view_configure(struct sway_view *view, double ox, double oy, int width,
 	}
 }
 
-/**
- * Configure the view's position and size based on the swayc's position and
- * size, taking borders into consideration.
- */
 void view_autoconfigure(struct sway_view *view) {
 	if (!sway_assert(view->swayc,
 				"Called view_autoconfigure() on a view without a swayc")) {
@@ -93,25 +89,25 @@ void view_autoconfigure(struct sway_view *view) {
 
 	double x, y, width, height;
 	switch (view->border) {
-		case B_NONE:
-			x = view->swayc->x;
-			y = view->swayc->y;
-			width = view->swayc->width;
-			height = view->swayc->height;
-			break;
-		case B_PIXEL:
-			x = view->swayc->x + view->border_thickness;
-			y = view->swayc->y + view->border_thickness;
-			width = view->swayc->width - view->border_thickness * 2;
-			height = view->swayc->height - view->border_thickness * 2;
-			break;
-		case B_NORMAL:
-			// TODO: Size the title bar by checking the font
-			x = view->swayc->x + view->border_thickness;
-			y = view->swayc->y + 20;
-			width = view->swayc->width - view->border_thickness * 2;
-			height = view->swayc->height - view->border_thickness - 20;
-			break;
+	case B_NONE:
+		x = view->swayc->x;
+		y = view->swayc->y;
+		width = view->swayc->width;
+		height = view->swayc->height;
+		break;
+	case B_PIXEL:
+		x = view->swayc->x + view->border_thickness;
+		y = view->swayc->y + view->border_thickness;
+		width = view->swayc->width - view->border_thickness * 2;
+		height = view->swayc->height - view->border_thickness * 2;
+		break;
+	case B_NORMAL:
+		// TODO: Size the title bar by checking the font
+		x = view->swayc->x + view->border_thickness;
+		y = view->swayc->y + 20;
+		width = view->swayc->width - view->border_thickness * 2;
+		height = view->swayc->height - view->border_thickness - 20;
+		break;
 	}
 
 	view->x = x;

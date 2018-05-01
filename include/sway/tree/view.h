@@ -167,6 +167,10 @@ const char *view_get_instance(struct sway_view *view);
 void view_configure(struct sway_view *view, double ox, double oy, int width,
 	int height);
 
+/**
+ * Configure the view's position and size based on the swayc's position and
+ * size, taking borders into consideration.
+ */
 void view_autoconfigure(struct sway_view *view);
 
 void view_set_activated(struct sway_view *view, bool activated);
