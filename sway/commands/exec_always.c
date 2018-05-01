@@ -51,7 +51,41 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if ((pid = fork()) == 0) {
 		// Fork child process again
 		setsid();
+
 		if ((*child = fork()) == 0) {
+			// Acquire the current PATH
+			char *path = getenv("PATH");
+			const char *extra_path = ":/usr/lib/sway";
+			const size_t extra_size = sizeof("/usr/lib/sway") + 1;
+
+			if (!path) {
+				size_t n = confstr(_CS_PATH, NULL, 0);
+				path = malloc(n + extra_size);
+				if (!path) {
+					return cmd_results_new(CMD_FAILURE, "exec_always", "Unable to allocate PATH");
+				}
+				confstr(_CS_PATH, path, n);
+
+			} else {
+				size_t n = strlen(path) + 1;
+				char *tmp = malloc(n + extra_size);
+				if (!tmp) {
+					return cmd_results_new(CMD_FAILURE, "exec_always", "Unable to allocate PATH");
+				}
+
+				strncpy(tmp, path, n);
+				path = tmp;
+			}
+
+			// Append /usr/lib/sway to PATH
+			strcat(path, extra_path);
+			if (!setenv("PATH", path, 1)) {
+				free(path);
+				return cmd_results_new(CMD_FAILURE, "exec_always", "Unable to set PATH");
+			}
+			free(path);
+
+			// Execute the command
 			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
 			// Not reached
 		}
