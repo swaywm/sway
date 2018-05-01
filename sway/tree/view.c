@@ -346,7 +346,11 @@ void view_unmap(struct sway_view *view) {
 	view->swayc = NULL;
 	view->surface = NULL;
 
-	arrange_children_of(parent);
+	if (parent->type == C_OUTPUT) {
+		arrange_output(parent);
+	} else {
+		arrange_children_of(parent);
+	}
 }
 
 void view_update_position(struct sway_view *view, double ox, double oy) {
