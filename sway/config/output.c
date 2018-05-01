@@ -131,6 +131,7 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		container_destroy(output);
 		wlr_output_layout_remove(root_container.sway_root->output_layout,
 			wlr_output);
+		wlr_output_destroy(wlr_output);
 		return;
 	}
 
