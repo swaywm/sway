@@ -1,6 +1,8 @@
 #include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 
@@ -36,6 +38,11 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	}
 
 	view_autoconfigure(view);
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	if (seat->cursor) {
+		cursor_send_pointer_motion(seat->cursor, 0);
+	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
