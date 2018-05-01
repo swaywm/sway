@@ -349,6 +349,19 @@ void view_unmap(struct sway_view *view) {
 	arrange_children_of(parent);
 }
 
+void view_update_position(struct sway_view *view, double ox, double oy) {
+	if (view->swayc->x == ox && view->swayc->y == oy) {
+		return;
+	}
+
+	// TODO: Only allow this if the view is floating (this function will only be
+	// called in response to wayland clients wanting to reposition themselves).
+	view_damage(view, true);
+	view->swayc->x = ox;
+	view->swayc->y = oy;
+	view_damage(view, true);
+}
+
 void view_update_size(struct sway_view *view, int width, int height) {
 	if (view->width == width && view->height == height) {
 		return;
