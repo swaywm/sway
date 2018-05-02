@@ -8,7 +8,7 @@ static bool parse_color(char *hexstring, float dest[static 4]) {
 		return false;
 	}
 
-	if (strlen(hexstring) != 7) {
+	if (strlen(hexstring) != 7 && strlen(hexstring) != 9) {
 		return false;
 	}
 
@@ -20,10 +20,15 @@ static bool parse_color(char *hexstring, float dest[static 4]) {
 		return false;
 	}
 
-	dest[0] = ((decimal >> 16) & 0xff) / 255.0;
-	dest[1] = ((decimal >> 8) & 0xff) / 255.0;
-	dest[2] = (decimal & 0xff) / 255.0;
-	dest[3] = 1.0;
+	if (strlen(hexstring) == 6) {
+		// Add alpha
+		decimal = (decimal << 8) | 0xff;
+	}
+
+	dest[0] = ((decimal >> 24) & 0xff) / 255.0;
+	dest[1] = ((decimal >> 16) & 0xff) / 255.0;
+	dest[2] = ((decimal >> 8) & 0xff) / 255.0;
+	dest[3] = (decimal & 0xff) / 255.0;
 	return true;
 }
 
