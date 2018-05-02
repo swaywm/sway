@@ -88,6 +88,9 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 
 	double x, y, width, height;
+
+	x = y = width = height = 0;
+
 	switch (view->border) {
 	case B_NONE:
 		x = view->swayc->x;
