@@ -103,11 +103,12 @@ void view_autoconfigure(struct sway_view *view) {
 		height = view->swayc->height - view->border_thickness * 2;
 		break;
 	case B_NORMAL:
-		// TODO: Size the title bar by checking the font
+		// Height is: border + title height + border + view height + border
 		x = view->swayc->x + view->border_thickness;
-		y = view->swayc->y + 20;
+		y = view->swayc->y + config->font_height + view->border_thickness * 2;
 		width = view->swayc->width - view->border_thickness * 2;
-		height = view->swayc->height - view->border_thickness - 20;
+		height = view->swayc->height - config->font_height
+			- view->border_thickness * 3;
 		break;
 	}
 

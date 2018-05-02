@@ -227,7 +227,8 @@ static void render_view(struct sway_view *view, struct sway_output *output) {
  * Render decorations for a view with "border normal".
  */
 static void render_container_simple_border_normal(struct sway_output *output,
-		struct sway_container *con, struct border_colors *colors) {
+		struct sway_container *con, struct border_colors *colors,
+		struct wlr_texture *title_texture) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(output->wlr_output->backend);
 	struct wlr_box box;
@@ -306,7 +307,14 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			output->wlr_output->transform_matrix);
 
 	// Title text
-	// TODO
+	if (title_texture) {
+		double x = (con->x + con->sway_view->border_thickness)
+			* output->wlr_output->scale;
+		double y = (con->y + con->sway_view->border_thickness)
+			* output->wlr_output->scale;
+		wlr_render_texture(renderer, title_texture,
+				output->wlr_output->transform_matrix, x, y, 1);
+	}
 }
 
 /**
@@ -390,17 +398,21 @@ static void render_container_simple(struct sway_output *output,
 		if (child->type == C_VIEW) {
 			if (child->sway_view->border != B_NONE) {
 				struct border_colors *colors;
+				struct wlr_texture *title_texture;
 				if (focus == child) {
 					colors = &config->border_colors.focused;
+					title_texture = child->title_focused;
 				} else if (seat_get_focus_inactive(seat, con) == child) {
 					colors = &config->border_colors.focused_inactive;
+					title_texture = child->title_focused_inactive;
 				} else {
 					colors = &config->border_colors.unfocused;
+					title_texture = child->title_unfocused;
 				}
 
 				if (child->sway_view->border == B_NORMAL) {
 					render_container_simple_border_normal(output, child,
-							colors);
+							colors, title_texture);
 				} else {
 					render_container_simple_border_pixel(output, child, colors);
 				}

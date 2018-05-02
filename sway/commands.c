@@ -106,6 +106,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec_always", cmd_exec_always },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "for_window", cmd_for_window },
+	{ "font", cmd_font },
 	{ "fullscreen", cmd_fullscreen },
 	{ "include", cmd_include },
 	{ "input", cmd_input },

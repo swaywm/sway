@@ -206,7 +206,7 @@ struct bar_config {
 struct border_colors {
 	float border[4];
 	float background[4];
-	float text[4];
+	uint32_t text; /**< uint32_t because that's the format that cairo uses */
 	float indicator[4];
 	float child_border[4];
 };
@@ -460,6 +460,8 @@ void terminate_swaybg(pid_t pid);
 struct bar_config *default_bar_config(void);
 
 void free_bar_config(struct bar_config *bar);
+
+int get_font_text_height(char *font);
 
 /* Global config singleton. */
 extern struct sway_config *config;
