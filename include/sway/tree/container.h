@@ -18,15 +18,14 @@ struct sway_seat;
  * it on this list.
  */
 enum sway_container_type {
-	C_ROOT,
-	C_OUTPUT,
-	C_WORKSPACE,
-	C_CONTAINER,
-	C_VIEW,
-
-	// Keep last
-	C_TYPES,
+	C_ROOT = 1 << 0,
+	C_OUTPUT = 1 << 1,
+	C_WORKSPACE = 1 << 2,
+	C_CONTAINER = 1 << 3,
+	C_VIEW = 1 << 4,
 };
+
+#define C_ALL (C_ROOT | C_OUTPUT | C_WORKSPACE | C_CONTAINER | C_VIEW)
 
 enum sway_container_layout {
 	L_NONE,

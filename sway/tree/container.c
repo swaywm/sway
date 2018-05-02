@@ -46,8 +46,6 @@ const char *container_type_to_str(enum sway_container_type type) {
 		return "C_CONTAINER";
 	case C_VIEW:
 		return "C_VIEW";
-	default:
-		return "C_UNKNOWN";
 	}
 }
 
@@ -231,10 +229,6 @@ bool container_reap_empty(struct sway_container *con) {
 		}
 	case C_VIEW:
 		break;
-	case C_TYPES:
-		sway_assert(false, "container_reap_empty called on an invalid "
-			"container");
-		break;
 	}
 
 	return false;
@@ -294,10 +288,6 @@ struct sway_container *container_destroy(struct sway_container *con) {
 			break;
 		case C_VIEW:
 			_container_destroy(con);
-			break;
-		case C_TYPES:
-			wlr_log(L_ERROR, "container_destroy called on an invalid "
-				"container");
 			break;
 	}
 
@@ -392,9 +382,6 @@ struct sway_container *container_find(struct sway_container *container,
 struct sway_container *container_parent(struct sway_container *container,
 		enum sway_container_type type) {
 	if (!sway_assert(container, "container is NULL")) {
-		return NULL;
-	}
-	if (!sway_assert(type < C_TYPES && type >= C_ROOT, "invalid type")) {
 		return NULL;
 	}
 	do {

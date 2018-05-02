@@ -90,14 +90,14 @@ static void seat_send_focus(struct sway_seat *seat,
 }
 
 static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
-		struct sway_container *container, enum sway_container_type type) {
+		struct sway_container *container, unsigned int types) {
 	if (container->type == C_VIEW || container->children->length == 0) {
 		return container;
 	}
 
 	struct sway_seat_container *current = NULL;
 	wl_list_for_each(current, &seat->focus_stack, link) {
-		if (current->container->type != type && type != C_TYPES) {
+		if ((current->container->type & types) == 0) {
 			continue;
 		}
 
@@ -128,6 +128,11 @@ struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 	return seat_get_focus_by_type(seat, container, C_VIEW);
 }
 
+struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
+		struct sway_container *container) {
+	return seat_get_focus_by_type(seat, container, C_ALL);
+}
+
 static void handle_seat_container_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_seat_container *seat_con =
@@ -147,7 +152,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	if (set_focus) {
 		struct sway_container *next_focus = NULL;
 		while (next_focus == NULL) {
-			next_focus = seat_get_focus_by_type(seat, parent, C_VIEW);
+			next_focus = seat_get_focus_inactive_view(seat, parent);
 
 			if (next_focus == NULL && parent->type == C_WORKSPACE) {
 				next_focus = parent;
@@ -665,11 +670,6 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 		}
 	}
 	seat->exclusive_client = client;
-}
-
-struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
-		struct sway_container *container) {
-	return seat_get_focus_by_type(seat, container, C_TYPES);
 }
 
 struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {

@@ -410,9 +410,8 @@ void container_move(struct sway_container *container,
 				current = current->parent;
 			}
 			break;
-		default:
-			sway_assert(0, "Not expecting to see container of type %s here",
-					container_type_to_str(current->type));
+		case C_ROOT:
+			sway_assert(false, "Not expecting to see a root container here");
 			return;
 		}
 	}
@@ -478,8 +477,9 @@ void container_move(struct sway_container *container,
 				sibling = NULL;
 			}
 			break;
-		default:
-			sway_assert(0, "Not expecting to see container of type %s here",
+		case C_OUTPUT:
+		case C_ROOT:
+			sway_assert(false, "Not expecting to see container of type %s here",
 					container_type_to_str(sibling->type));
 			return;
 		}
