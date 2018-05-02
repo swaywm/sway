@@ -44,7 +44,8 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
  * Returns the container at the cursor's position. If there is a surface at that
  * location, it is stored in **surface (it may not be a view).
  */
-static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
+static struct sway_container *container_at_coords(
+		struct sway_seat *seat, double x, double y,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	// check for unmanaged views first
 	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
@@ -53,8 +54,8 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		struct wlr_xwayland_surface *xsurface =
 			unmanaged_surface->wlr_xwayland_surface;
 
-		double _sx = cursor->cursor->x - unmanaged_surface->lx;
-		double _sy = cursor->cursor->y - unmanaged_surface->ly;
+		double _sx = x - unmanaged_surface->lx;
+		double _sy = y - unmanaged_surface->ly;
 		if (wlr_surface_point_accepts_input(xsurface->surface, _sx, _sy)) {
 			*surface = xsurface->surface;
 			*sx = _sx;
@@ -66,18 +67,17 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	// find the output the cursor is on
 	struct wlr_output_layout *output_layout =
 		root_container.sway_root->output_layout;
-	struct wlr_output *wlr_output = wlr_output_layout_output_at(output_layout,
-		cursor->cursor->x, cursor->cursor->y);
+	struct wlr_output *wlr_output = wlr_output_layout_output_at(
+			output_layout, x, y);
 	if (wlr_output == NULL) {
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
-	double ox = cursor->cursor->x, oy = cursor->cursor->y;
+	double ox = x, oy = y;
 	wlr_output_layout_output_coords(output_layout, wlr_output, &ox, &oy);
 
 	// find the focused workspace on the output for this seat
-	struct sway_container *ws =
-		seat_get_focus_inactive(cursor->seat, output->swayc);
+	struct sway_container *ws = seat_get_focus_inactive(seat, output->swayc);
 	if (ws && ws->type != C_WORKSPACE) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
@@ -107,8 +107,7 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 	}
 
 	struct sway_container *c;
-	if ((c = container_at(ws, cursor->cursor->x, cursor->cursor->y,
-					surface, sx, sy))) {
+	if ((c = container_at(ws, x, y, surface, sx, sy))) {
 		return c;
 	}
 
@@ -123,7 +122,7 @@ static struct sway_container *container_at_cursor(struct sway_cursor *cursor,
 		return ws;
 	}
 
-	c = seat_get_focus_inactive(cursor->seat, output->swayc);
+	c = seat_get_focus_inactive(seat, output->swayc);
 	if (c) {
 		return c;
 	}
@@ -143,7 +142,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec) 
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_container *c = container_at_cursor(cursor, &surface, &sx, &sy);
+	struct sway_container *c = container_at_coords(cursor->seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse) {
 		seat_set_focus_warp(cursor->seat, c, false);
 	}
@@ -195,8 +195,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_container *cont =
-		container_at_cursor(cursor, &surface, &sx, &sy);
+	struct sway_container *cont = container_at_coords(cursor->seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (surface && wlr_surface_is_layer_surface(surface)) {
 		struct wlr_layer_surface *layer =
 			wlr_layer_surface_from_wlr_surface(surface);
@@ -246,20 +246,58 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
 	struct wlr_event_touch_down *event = data;
-	wlr_log(L_DEBUG, "TODO: handle touch down event: %p", event);
+
+	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	struct wlr_surface *surface = NULL;
+
+	double lx, ly;
+	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
+			event->x, event->y, &lx, &ly);
+	double sx, sy;
+	container_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+
+	if (!surface) {
+		return;
+	}
+
+	// TODO: fall back to cursor simulation if client has not bound to touch
+	if (seat_is_input_allowed(cursor->seat, surface)) {
+		wlr_seat_touch_notify_down(seat, surface, event->time_msec,
+				event->touch_id, sx, sy);
+	}
 }
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_up);
 	struct wlr_event_touch_up *event = data;
-	wlr_log(L_DEBUG, "TODO: handle touch up event: %p", event);
+	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	// TODO: fall back to cursor simulation if client has not bound to touch
+	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
 }
 
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
 	struct wlr_event_touch_motion *event = data;
-	wlr_log(L_DEBUG, "TODO: handle touch motion event: %p", event);
+
+	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	struct wlr_surface *surface = NULL;
+
+	double lx, ly;
+	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
+			event->x, event->y, &lx, &ly);
+	double sx, sy;
+	container_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+
+	if (!surface) {
+		return;
+	}
+
+	// TODO: fall back to cursor simulation if client has not bound to touch
+	if (seat_is_input_allowed(cursor->seat, surface)) {
+		wlr_seat_touch_notify_motion(
+				seat, event->time_msec, event->touch_id, sx, sy);
+	}
 }
 
 static double apply_mapping_from_coord(double low, double high, double value) {
