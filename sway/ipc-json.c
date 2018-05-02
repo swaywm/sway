@@ -207,9 +207,6 @@ json_object *ipc_json_describe_container(struct sway_container *c) {
 	case C_WORKSPACE:
 		ipc_json_describe_workspace(c, object);
 		break;
-	case C_TYPES:
-	default:
-		break;
 	}
 
 	return object;
