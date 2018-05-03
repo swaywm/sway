@@ -206,7 +206,7 @@ struct bar_config {
 struct border_colors {
 	float border[4];
 	float background[4];
-	uint32_t text; /**< uint32_t because that's the format that cairo uses */
+	uint32_t text; // uint32_t because that's the format that cairo uses
 	float indicator[4];
 	float child_border[4];
 };
