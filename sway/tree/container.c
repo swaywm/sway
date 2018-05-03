@@ -585,9 +585,10 @@ static void update_title_texture(struct sway_container *con,
 	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
 			class->background[2], class->background[3]);
 	cairo_paint(cairo);
-	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	PangoContext *pango = pango_cairo_create_context(cairo);
-	cairo_set_source_u32(cairo, class->text);
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
+	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
+			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, 0);
 
 	pango_printf(cairo, config->font, output->sway_output->wlr_output->scale,

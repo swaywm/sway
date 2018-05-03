@@ -64,7 +64,7 @@ static struct cmd_results *handle_command(int argc, char **argv,
 				"Unable to parse background color");
 	}
 
-	if (!parse_color_int(argv[2], &class->text)) {
+	if (!parse_color_float(argv[2], class->text)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse text color");
 	}

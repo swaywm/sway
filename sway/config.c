@@ -210,31 +210,31 @@ static void config_defaults(struct sway_config *config) {
 	set_color(config->border_colors.focused.border, 0x4C7899);
 	set_color(config->border_colors.focused.border, 0x4C7899);
 	set_color(config->border_colors.focused.background, 0x285577);
-	config->border_colors.focused.text = 0xFFFFFFFF;
+	set_color(config->border_colors.focused.text, 0xFFFFFFFF);
 	set_color(config->border_colors.focused.indicator, 0x2E9EF4);
 	set_color(config->border_colors.focused.child_border, 0x285577);
 
 	set_color(config->border_colors.focused_inactive.border, 0x333333);
 	set_color(config->border_colors.focused_inactive.background, 0x5F676A);
-	config->border_colors.focused_inactive.text = 0xFFFFFFFF;
+	set_color(config->border_colors.focused_inactive.text, 0xFFFFFFFF);
 	set_color(config->border_colors.focused_inactive.indicator, 0x484E50);
 	set_color(config->border_colors.focused_inactive.child_border, 0x5F676A);
 
 	set_color(config->border_colors.unfocused.border, 0x333333);
 	set_color(config->border_colors.unfocused.background, 0x222222);
-	config->border_colors.unfocused.text = 0x888888FF;
+	set_color(config->border_colors.unfocused.text, 0xFFFFFFFF);
 	set_color(config->border_colors.unfocused.indicator, 0x292D2E);
 	set_color(config->border_colors.unfocused.child_border, 0x222222);
 
 	set_color(config->border_colors.urgent.border, 0x2F343A);
 	set_color(config->border_colors.urgent.background, 0x900000);
-	config->border_colors.urgent.text = 0xFFFFFFFF;
+	set_color(config->border_colors.urgent.text, 0xFFFFFFFF);
 	set_color(config->border_colors.urgent.indicator, 0x900000);
 	set_color(config->border_colors.urgent.child_border, 0x900000);
 
 	set_color(config->border_colors.placeholder.border, 0x000000);
 	set_color(config->border_colors.placeholder.background, 0x0C0C0C);
-	config->border_colors.placeholder.text = 0xFFFFFFFF;
+	set_color(config->border_colors.placeholder.text, 0xFFFFFFFF);
 	set_color(config->border_colors.placeholder.indicator, 0x000000);
 	set_color(config->border_colors.placeholder.child_border, 0x0C0C0C);
 
