@@ -2,6 +2,7 @@
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/tree/arrange.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -13,6 +14,9 @@ struct cmd_results *cmd_font(int argc, char **argv) {
 	char *font = join_args(argv, argc);
 	free(config->font);
 	config->font = strdup(font);
-	config->font_height = get_font_text_height(font);
+	config_find_font_height(true);
+	if (!config->reading) {
+		arrange_root();
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

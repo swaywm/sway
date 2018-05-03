@@ -132,17 +132,6 @@ static void destroy_removed_seats(struct sway_config *old_config,
 	}
 }
 
-int get_font_text_height(char *font) {
-	cairo_t *cairo = cairo_create(NULL);
-	int text_height;
-	get_text_size(cairo, font, NULL, &text_height, 1, false,
-			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-			"abcdefghijklmnopqrstuvwxyz"
-			"!@#$%^&*([{|");
-	cairo_destroy(cairo);
-	return text_height;
-}
-
 static void set_color(float dest[static 4], uint32_t color) {
 	dest[0] = ((color >> 16) & 0xff) / 255.0;
 	dest[1] = ((color >> 8) & 0xff) / 255.0;
@@ -182,7 +171,7 @@ static void config_defaults(struct sway_config *config) {
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	if (!(config->font = strdup("monospace 10"))) goto cleanup;
-	config->font_height = get_font_text_height(config->font);
+	config->font_height = 0;
 
 	// floating view
 	config->floating_maximum_width = 0;
@@ -739,4 +728,21 @@ char *do_var_replacement(char *str) {
 int workspace_output_cmp_workspace(const void *a, const void *b) {
 	const struct workspace_output *wsa = a, *wsb = b;
 	return lenient_strcmp(wsa->workspace, wsb->workspace);
+}
+
+static void find_font_height_iterator(struct sway_container *container,
+		void *data) {
+	bool *recalculate = data;
+	if (*recalculate) {
+		container_calculate_title_height(container);
+	}
+	if (container->title_height > config->font_height) {
+		config->font_height = container->title_height;
+	}
+}
+
+void config_find_font_height(bool recalculate) {
+	config->font_height = 0;
+	container_for_each_descendant_dfs(&root_container,
+			find_font_height_iterator, &recalculate);
 }

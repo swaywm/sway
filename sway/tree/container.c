@@ -348,7 +348,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
-	swayc->name = title ? strdup(title) : NULL;
+	container_update_title(swayc, title);
 	swayc->width = 0;
 	swayc->height = 0;
 
@@ -610,4 +610,55 @@ void container_update_title_textures(struct sway_container *container) {
 			&config->border_colors.unfocused);
 	update_title_texture(container, &container->title_urgent,
 			&config->border_colors.urgent);
+}
+
+void container_calculate_title_height(struct sway_container *container) {
+	if (!container->name) {
+		container->title_height = 0;
+		return;
+	}
+	cairo_t *cairo = cairo_create(NULL);
+	int height;
+	get_text_size(cairo, config->font, NULL, &height, 1, false,
+			"%s", container->name);
+	cairo_destroy(cairo);
+	container->title_height = height;
+}
+
+static void container_notify_child_title_changed(
+		struct sway_container *container) {
+	if (!container || container->type != C_CONTAINER) {
+		return;
+	}
+	if (container->layout != L_TABBED && container->layout != L_STACKED) {
+		return;
+	}
+	if (container->name) {
+		free(container->name);
+	}
+	// TODO: iterate children and concatenate their titles
+	container->name = strdup("");
+	container_calculate_title_height(container);
+	container_update_title_textures(container);
+	container_notify_child_title_changed(container->parent);
+}
+
+void container_update_title(struct sway_container *container,
+		const char *new_title) {
+	if (container->name && strcmp(container->name, new_title) == 0) {
+		return;
+	}
+	if (container->name) {
+		free(container->name);
+	}
+	container->name = strdup(new_title);
+	container_calculate_title_height(container);
+	container_update_title_textures(container);
+	container_notify_child_title_changed(container->parent);
+
+	size_t prev_max_height = config->font_height;
+	config_find_font_height(false);
+	if (config->font_height != prev_max_height) {
+		arrange_root();
+	}
 }

@@ -304,7 +304,7 @@ struct sway_config {
 	enum sway_container_layout default_orientation;
 	enum sway_container_layout default_layout;
 	char *font;
-	int font_height;
+	size_t font_height;
 
 	// Flags
 	bool focus_follows_mouse;
@@ -461,7 +461,12 @@ struct bar_config *default_bar_config(void);
 
 void free_bar_config(struct bar_config *bar);
 
-int get_font_text_height(char *font);
+/**
+ * Updates the value of config->font_height based on the max title height
+ * reported by each container. If recalculate is true, the containers will
+ * recalculate their heights before reporting.
+ */
+void config_find_font_height(bool recalculate);
 
 /* Global config singleton. */
 extern struct sway_config *config;

@@ -89,6 +89,7 @@ struct sway_container {
 	struct wlr_texture *title_focused_inactive;
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
+	size_t title_height;
 
 	struct {
 		struct wl_signal destroy;
@@ -197,5 +198,13 @@ struct sway_container *container_reap_empty_recursive(
 struct sway_container *container_flatten(struct sway_container *container);
 
 void container_update_title_textures(struct sway_container *container);
+
+/**
+ * Calculate the container's title_height property.
+ */
+void container_calculate_title_height(struct sway_container *container);
+
+void container_update_title(struct sway_container *container,
+		const char *new_title);
 
 #endif
