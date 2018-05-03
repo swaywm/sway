@@ -219,14 +219,16 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "resize",
 				"Can only resize views/containers");
 	}
+
+	struct cmd_results *error;
+	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+
 	if (strcasecmp(argv[0], "set") == 0) {
 		// TODO
 		//return cmd_resize_set(argc - 1, &argv[1]);
 		return cmd_results_new(CMD_INVALID, "resize", "resize set unimplemented");
-	}
-	struct cmd_results *error;
-	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
-		return error;
 	}
 
 	// TODO: resize grow|shrink left|right|up|down
