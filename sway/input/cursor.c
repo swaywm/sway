@@ -264,6 +264,8 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	if (seat_is_input_allowed(cursor->seat, surface)) {
 		wlr_seat_touch_notify_down(seat, surface, event->time_msec,
 				event->touch_id, sx, sy);
+		cursor->image_client = NULL;
+		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	}
 }
 
