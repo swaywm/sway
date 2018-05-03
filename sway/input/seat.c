@@ -263,18 +263,27 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 
 static void seat_apply_input_config(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
+	const char *mapped_to_output = NULL;
+
 	struct input_config *ic = input_device_get_config(
 			sway_device->input_device);
-	if (!ic) {
-		return;
-	}
-	wlr_log(L_DEBUG, "Applying input config to %s",
+	if (ic != NULL) {
+		wlr_log(L_DEBUG, "Applying input config to %s",
 			sway_device->input_device->identifier);
-	if (ic->mapped_to_output) {
+
+		mapped_to_output = ic->mapped_to_output;
+	}
+
+	if (mapped_to_output == NULL) {
+		mapped_to_output = sway_device->input_device->wlr_device->output_name;
+	}
+	if (mapped_to_output != NULL) {
+		wlr_log(L_DEBUG, "Mapping input device %s to output %s",
+			sway_device->input_device->identifier, mapped_to_output);
 		struct sway_container *output = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
 			struct sway_container *_output = root_container.children->items[i];
-			if (strcasecmp(_output->name, ic->mapped_to_output) == 0) {
+			if (strcasecmp(_output->name, mapped_to_output) == 0) {
 				output = _output;
 				break;
 			}
