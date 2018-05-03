@@ -576,8 +576,19 @@ static void update_title_texture(struct sway_container *con,
 		return;
 	}
 
-	int width = con->width * output->sway_output->wlr_output->scale;
-	int height = config->font_height * output->sway_output->wlr_output->scale;
+	double scale = output->sway_output->wlr_output->scale;
+	int width = 0;
+	int height = config->font_height * scale;
+
+	cairo_t *c = cairo_create(NULL);
+	get_text_size(c, config->font, &width, NULL, scale, false, "%s", con->name);
+	cairo_destroy(c);
+
+	int borders = (con->type == C_VIEW ? con->sway_view->border_thickness :
+			config->border_thickness) * 2 * scale;
+	if (width > con->width * scale - borders) {
+		width = con->width * scale - borders;
+	}
 
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
@@ -591,8 +602,7 @@ static void update_title_texture(struct sway_container *con,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, 0);
 
-	pango_printf(cairo, config->font, output->sway_output->wlr_output->scale,
-			false, "%s", con->name);
+	pango_printf(cairo, config->font, scale, false, "%s", con->name);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
