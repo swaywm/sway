@@ -7,6 +7,8 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include "cairo.h"
+#include "pango.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -119,6 +121,13 @@ static void _container_destroy(struct sway_container *cont) {
 	}
 	if (cont->name) {
 		free(cont->name);
+	}
+	if (cont->title_focused) {
+		// If one is set then all of these are set
+		wlr_texture_destroy(cont->title_focused);
+		wlr_texture_destroy(cont->title_focused_inactive);
+		wlr_texture_destroy(cont->title_unfocused);
+		wlr_texture_destroy(cont->title_urgent);
 	}
 	list_free(cont->children);
 	cont->children = NULL;
@@ -339,7 +348,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
-	swayc->name = title ? strdup(title) : NULL;
+	container_update_title(swayc, title ? title : "");
 	swayc->width = 0;
 	swayc->height = 0;
 
@@ -545,4 +554,116 @@ void container_damage_whole(struct sway_container *con) {
 		output = container_parent(output, C_OUTPUT);
 	}
 	output_damage_whole_container(output->sway_output, con);
+}
+
+static void update_title_texture(struct sway_container *con,
+		struct wlr_texture **texture, struct border_colors *class) {
+	if (!sway_assert(con->type == C_CONTAINER || con->type == C_VIEW,
+			"Unexpected type %s", container_type_to_str(con->type))) {
+		return;
+	}
+	if (!con->width) {
+		return;
+	}
+	struct sway_container *output = container_parent(con, C_OUTPUT);
+	if (!output) {
+		return;
+	}
+	if (*texture) {
+		wlr_texture_destroy(*texture);
+	}
+	if (!con->name) {
+		return;
+	}
+
+	int width = con->width * output->sway_output->wlr_output->scale;
+	int height = config->font_height * output->sway_output->wlr_output->scale;
+
+	cairo_surface_t *surface = cairo_image_surface_create(
+			CAIRO_FORMAT_ARGB32, width, height);
+	cairo_t *cairo = cairo_create(surface);
+	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
+			class->background[2], class->background[3]);
+	cairo_paint(cairo);
+	PangoContext *pango = pango_cairo_create_context(cairo);
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
+	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
+			class->text[2], class->text[3]);
+	cairo_move_to(cairo, 0, 0);
+
+	pango_printf(cairo, config->font, output->sway_output->wlr_output->scale,
+			false, "%s", con->name);
+
+	cairo_surface_flush(surface);
+	unsigned char *data = cairo_image_surface_get_data(surface);
+	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	struct wlr_renderer *renderer = wlr_backend_get_renderer(
+			output->sway_output->wlr_output->backend);
+	*texture = wlr_texture_from_pixels(
+			renderer, WL_SHM_FORMAT_ARGB8888, stride, width, height, data);
+	cairo_surface_destroy(surface);
+	g_object_unref(pango);
+	cairo_destroy(cairo);
+}
+
+void container_update_title_textures(struct sway_container *container) {
+	update_title_texture(container, &container->title_focused,
+			&config->border_colors.focused);
+	update_title_texture(container, &container->title_focused_inactive,
+			&config->border_colors.focused_inactive);
+	update_title_texture(container, &container->title_unfocused,
+			&config->border_colors.unfocused);
+	update_title_texture(container, &container->title_urgent,
+			&config->border_colors.urgent);
+}
+
+void container_calculate_title_height(struct sway_container *container) {
+	if (!container->name) {
+		container->title_height = 0;
+		return;
+	}
+	cairo_t *cairo = cairo_create(NULL);
+	int height;
+	get_text_size(cairo, config->font, NULL, &height, 1, false,
+			"%s", container->name);
+	cairo_destroy(cairo);
+	container->title_height = height;
+}
+
+static void container_notify_child_title_changed(
+		struct sway_container *container) {
+	if (!container || container->type != C_CONTAINER) {
+		return;
+	}
+	if (container->layout != L_TABBED && container->layout != L_STACKED) {
+		return;
+	}
+	if (container->name) {
+		free(container->name);
+	}
+	// TODO: iterate children and concatenate their titles
+	container->name = strdup("");
+	container_calculate_title_height(container);
+	container_update_title_textures(container);
+	container_notify_child_title_changed(container->parent);
+}
+
+void container_update_title(struct sway_container *container,
+		const char *new_title) {
+	if (container->name && strcmp(container->name, new_title) == 0) {
+		return;
+	}
+	if (container->name) {
+		free(container->name);
+	}
+	container->name = strdup(new_title);
+	container_calculate_title_height(container);
+	container_update_title_textures(container);
+	container_notify_child_title_changed(container->parent);
+
+	size_t prev_max_height = config->font_height;
+	config_find_font_height(false);
+	if (config->font_height != prev_max_height) {
+		arrange_root();
+	}
 }

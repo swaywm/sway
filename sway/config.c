@@ -25,6 +25,8 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/layout.h"
+#include "cairo.h"
+#include "pango.h"
 #include "readline.h"
 #include "stringop.h"
 #include "list.h"
@@ -169,7 +171,7 @@ static void config_defaults(struct sway_config *config) {
 	config->default_layout = L_NONE;
 	config->default_orientation = L_NONE;
 	if (!(config->font = strdup("monospace 10"))) goto cleanup;
-	//config->font_height = get_font_text_height(config->font);
+	config->font_height = 0;
 
 	// floating view
 	config->floating_maximum_width = 0;
@@ -208,31 +210,31 @@ static void config_defaults(struct sway_config *config) {
 	set_color(config->border_colors.focused.border, 0x4C7899);
 	set_color(config->border_colors.focused.border, 0x4C7899);
 	set_color(config->border_colors.focused.background, 0x285577);
-	set_color(config->border_colors.focused.text, 0xFFFFFF);
+	set_color(config->border_colors.focused.text, 0xFFFFFFFF);
 	set_color(config->border_colors.focused.indicator, 0x2E9EF4);
 	set_color(config->border_colors.focused.child_border, 0x285577);
 
 	set_color(config->border_colors.focused_inactive.border, 0x333333);
 	set_color(config->border_colors.focused_inactive.background, 0x5F676A);
-	set_color(config->border_colors.focused_inactive.text, 0xFFFFFF);
+	set_color(config->border_colors.focused_inactive.text, 0xFFFFFFFF);
 	set_color(config->border_colors.focused_inactive.indicator, 0x484E50);
 	set_color(config->border_colors.focused_inactive.child_border, 0x5F676A);
 
 	set_color(config->border_colors.unfocused.border, 0x333333);
 	set_color(config->border_colors.unfocused.background, 0x222222);
-	set_color(config->border_colors.unfocused.text, 0x888888);
+	set_color(config->border_colors.unfocused.text, 0xFFFFFFFF);
 	set_color(config->border_colors.unfocused.indicator, 0x292D2E);
 	set_color(config->border_colors.unfocused.child_border, 0x222222);
 
 	set_color(config->border_colors.urgent.border, 0x2F343A);
 	set_color(config->border_colors.urgent.background, 0x900000);
-	set_color(config->border_colors.urgent.text, 0xFFFFFF);
+	set_color(config->border_colors.urgent.text, 0xFFFFFFFF);
 	set_color(config->border_colors.urgent.indicator, 0x900000);
 	set_color(config->border_colors.urgent.child_border, 0x900000);
 
 	set_color(config->border_colors.placeholder.border, 0x000000);
 	set_color(config->border_colors.placeholder.background, 0x0C0C0C);
-	set_color(config->border_colors.placeholder.text, 0xFFFFFF);
+	set_color(config->border_colors.placeholder.text, 0xFFFFFFFF);
 	set_color(config->border_colors.placeholder.indicator, 0x000000);
 	set_color(config->border_colors.placeholder.child_border, 0x0C0C0C);
 
@@ -726,4 +728,21 @@ char *do_var_replacement(char *str) {
 int workspace_output_cmp_workspace(const void *a, const void *b) {
 	const struct workspace_output *wsa = a, *wsb = b;
 	return lenient_strcmp(wsa->workspace, wsb->workspace);
+}
+
+static void find_font_height_iterator(struct sway_container *container,
+		void *data) {
+	bool *recalculate = data;
+	if (*recalculate) {
+		container_calculate_title_height(container);
+	}
+	if (container->title_height > config->font_height) {
+		config->font_height = container->title_height;
+	}
+}
+
+void config_find_font_height(bool recalculate) {
+	config->font_height = 0;
+	container_for_each_descendant_dfs(&root_container,
+			find_font_height_iterator, &recalculate);
 }

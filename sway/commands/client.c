@@ -3,7 +3,10 @@
 #include "sway/config.h"
 #include "sway/tree/container.h"
 
-static bool parse_color(char *hexstring, float dest[static 4]) {
+/**
+ * Parse the hex string into an integer.
+ */
+static bool parse_color_int(char *hexstring, uint32_t *dest) {
 	if (hexstring[0] != '#') {
 		return false;
 	}
@@ -25,6 +28,18 @@ static bool parse_color(char *hexstring, float dest[static 4]) {
 		decimal = (decimal << 8) | 0xff;
 	}
 
+	*dest = decimal;
+	return true;
+}
+
+/**
+ * Parse the hex string into a float value.
+ */
+static bool parse_color_float(char *hexstring, float dest[static 4]) {
+	uint32_t decimal;
+	if (!parse_color_int(hexstring, &decimal)) {
+		return false;
+	}
 	dest[0] = ((decimal >> 24) & 0xff) / 255.0;
 	dest[1] = ((decimal >> 16) & 0xff) / 255.0;
 	dest[2] = ((decimal >> 8) & 0xff) / 255.0;
@@ -39,27 +54,27 @@ static struct cmd_results *handle_command(int argc, char **argv,
 		return error;
 	}
 
-	if (!parse_color(argv[0], class->border)) {
+	if (!parse_color_float(argv[0], class->border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse border color");
 	}
 
-	if (!parse_color(argv[1], class->background)) {
+	if (!parse_color_float(argv[1], class->background)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse background color");
 	}
 
-	if (!parse_color(argv[2], class->text)) {
+	if (!parse_color_float(argv[2], class->text)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse text color");
 	}
 
-	if (!parse_color(argv[3], class->indicator)) {
+	if (!parse_color_float(argv[3], class->indicator)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse indicator color");
 	}
 
-	if (!parse_color(argv[4], class->child_border)) {
+	if (!parse_color_float(argv[4], class->child_border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse child border color");
 	}
