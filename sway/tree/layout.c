@@ -234,6 +234,7 @@ static bool is_parallel(enum sway_container_layout layout,
 		enum movement_direction dir) {
 	switch (layout) {
 	case L_TABBED:
+		return dir == MOVE_LEFT || dir == MOVE_RIGHT;
 	case L_STACKED:
 	case L_HORIZ:
 		return dir == MOVE_LEFT || dir == MOVE_RIGHT;

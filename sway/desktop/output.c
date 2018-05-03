@@ -228,11 +228,19 @@ static void render_view(struct sway_view *view, struct sway_output *output) {
  */
 static void render_container_simple_border_normal(struct sway_output *output,
 		struct sway_container *con, struct border_colors *colors,
-		struct wlr_texture *title_texture) {
+		struct wlr_texture *title_texture, int iteration) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(output->wlr_output->backend);
 	struct wlr_box box;
 	float color[4];
+	size_t num_tabs;
+
+	if (con->parent->layout == L_TABBED) {
+		num_tabs = con->parent->children->length;
+	}
+	else {
+		num_tabs = 1;
+	}
 
 	// Child border - left edge
 	memcpy(&color, colors->child_border, sizeof(float) * 4);
@@ -278,18 +286,18 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x;
+	box.x = con->x + iteration * (con->width / num_tabs);
 	box.y = con->y;
-	box.width = con->width;
+	box.width = con->width / num_tabs;
 	box.height = 1;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
 	// Single pixel bar below title
-	box.x = con->x + con->sway_view->border_thickness;
+	box.x = con->x + iteration * (con->width / num_tabs);
 	box.y = con->sway_view->y - 1;
-	box.width = con->width - con->sway_view->border_thickness * 2;
+	box.width = con->width / num_tabs;
 	box.height = 1;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
@@ -298,9 +306,9 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	// Title background
 	memcpy(&color, colors->background, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x + con->sway_view->border_thickness;
+	box.x = con->x + iteration * (con->width / num_tabs);
 	box.y = con->y + 1;
-	box.width = con->width - con->sway_view->border_thickness * 2;
+	box.width = con->width / num_tabs;
 	box.height = con->sway_view->y - con->y - 2;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
@@ -325,7 +333,6 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	struct wlr_box box;
 	float color[4];
 
-	// Child border - left edge
 	memcpy(&color, colors->child_border, sizeof(float) * 4);
 	color[3] *= con->alpha;
 	box.x = con->x;
@@ -410,7 +417,7 @@ static void render_container_simple(struct sway_output *output,
 
 				if (child->sway_view->border == B_NORMAL) {
 					render_container_simple_border_normal(output, child,
-							colors, title_texture);
+							colors, title_texture, 0);
 				} else {
 					render_container_simple_border_pixel(output, child, colors);
 				}
@@ -427,7 +434,53 @@ static void render_container_simple(struct sway_output *output,
  */
 static void render_container_tabbed(struct sway_output *output,
 		struct sway_container *con) {
-	// TODO
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+
+	for (int i = 0; i < con->children->length; ++i) {
+		struct sway_container *child = con->children->items[i];
+
+		if (child->type == C_VIEW) {
+			if (child->sway_view->border != B_NONE) {
+				struct border_colors *colors;
+				struct wlr_texture *title_texture;
+				if (focus == child) {
+					colors = &config->border_colors.focused;
+					title_texture = child->title_focused;
+
+					if (child->sway_view->border == B_NORMAL) {
+						render_container_simple_border_normal(output, child,
+								colors, title_texture, i);
+					} else {
+						render_container_simple_border_pixel(output, child, colors);
+					}
+					render_view(child->sway_view, output);
+				} else if (seat_get_focus_inactive(seat, con) == child) {
+					colors = &config->border_colors.focused_inactive;
+					title_texture = child->title_focused_inactive;
+					if (child->sway_view->border == B_NORMAL) {
+						render_container_simple_border_normal(output, child,
+								colors, title_texture, i);
+					} else {
+						render_container_simple_border_pixel(output, child, colors);
+					}
+					render_view(child->sway_view, output);
+				} else {
+					colors = &config->border_colors.unfocused;
+					title_texture = child->title_unfocused;
+					if (child->sway_view->border == B_NORMAL) {
+						render_container_simple_border_normal(output, child,
+								colors, title_texture, i);
+					} else {
+						render_container_simple_border_pixel(output, child, colors);
+					}
+				}
+			}
+		}
+		else {
+			render_container(output, child);
+		}
+	}
 }
 
 /**

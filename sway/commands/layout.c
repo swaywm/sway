@@ -25,6 +25,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 
 	// TODO: stacks and tabs
 
+
 	if (strcasecmp(argv[0], "default") == 0) {
 		parent->layout = parent->prev_layout;
 		if (parent->layout == L_NONE) {
@@ -33,6 +34,10 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	} else {
 		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
 			parent->prev_layout = parent->layout;
+		}
+
+		if (strcasecmp(argv[0], "tabbed") == 0) {
+			parent->layout = L_TABBED;
 		}
 
 		if (strcasecmp(argv[0], "splith") == 0) {
