@@ -348,7 +348,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
-	container_update_title(swayc, title);
+	container_update_title(swayc, title ? title : "");
 	swayc->width = 0;
 	swayc->height = 0;
 
