@@ -818,6 +818,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		}
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+		wlr_renderer_clear(renderer, clear_color);
 
 		int nrects;
 		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
