@@ -348,7 +348,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
-	container_update_title(swayc, title ? title : "");
+	container_update_title(swayc, title);
 	swayc->width = 0;
 	swayc->height = 0;
 
@@ -660,9 +660,14 @@ static void container_notify_child_title_changed(
 
 void container_update_title(struct sway_container *container,
 		const char *new_title) {
+	if (!new_title) {
+		new_title = "";
+	}
+
 	if (container->name && strcmp(container->name, new_title) == 0) {
 		return;
 	}
+
 	if (container->name) {
 		free(container->name);
 	}
