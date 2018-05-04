@@ -3,9 +3,11 @@
 #include "sway/commands.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
+#include "sway/tree/view.h"
 #include "list.h"
 
 struct cmd_results *cmd_floating(int argc, char **argv) {
@@ -38,6 +40,17 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 				container, C_WORKSPACE);
 		container_remove_child(container);
 		container_add_floating(workspace, container);
+
+		struct sway_output *output = workspace->parent->sway_output;
+		output_damage_whole_container(output, container);
+		// Reset to sane size and position
+		container->width = 640;
+		container->height = 480;
+		container->x = workspace->width / 2 - container->width / 2;
+		container->y = workspace->height / 2 - container->height / 2;
+		view_autoconfigure(container->sway_view);
+		output_damage_whole_container(output, container);
+
 		seat_set_focus(config->handler_context.seat, container);
 		arrange_workspace(workspace);
 	} else if (container->is_floating && !wants_floating) {
