@@ -142,16 +142,51 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	}
 
 	struct sway_container *parent = child->parent;
-	for (int i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == child) {
-			list_del(parent->children, i);
-			break;
+	if (!child->is_floating) {
+		for (int i = 0; i < parent->children->length; ++i) {
+			if (parent->children->items[i] == child) {
+				list_del(parent->children, i);
+				break;
+			}
 		}
+	} else {
+		if (!sway_assert(parent->type == C_WORKSPACE && child->type == C_VIEW,
+					"Found floating non-view and/or in non-workspace")) {
+			return parent;
+		}
+		struct sway_workspace *ws = parent->sway_workspace;
+		for (int i = 0; i < ws->floating->length; ++i) {
+			if (ws->floating->items[i] == child) {
+				list_del(ws->floating, i);
+				break;
+			}
+		}
+		child->is_floating = false;
 	}
 	child->parent = NULL;
 	container_notify_subtree_changed(parent);
 
 	return parent;
+}
+
+void container_add_floating(struct sway_container *workspace,
+		struct sway_container *child) {
+	if (!sway_assert(workspace->type == C_WORKSPACE && child->type == C_VIEW,
+				"Attempted to float non-view and/or in non-workspace")) {
+		return;
+	}
+	if (!sway_assert(!child->parent,
+				"child already has a parent (invalid call)")) {
+		return;
+	}
+	if (!sway_assert(!child->is_floating,
+				"child is already floating (invalid state)")) {
+		return;
+	}
+	struct sway_workspace *ws = workspace->sway_workspace;
+	list_add(ws->floating, child);
+	child->parent = workspace;
+	child->is_floating = true;
 }
 
 void container_move_to(struct sway_container *container,

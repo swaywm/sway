@@ -8,6 +8,7 @@ struct sway_view;
 struct sway_workspace {
 	struct sway_container *swayc;
 	struct sway_view *fullscreen;
+	list_t *floating;
 };
 
 extern char *prev_workspace_name;

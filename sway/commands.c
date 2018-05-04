@@ -110,7 +110,6 @@ static struct cmd_handler handlers[] = {
 	{ "font", cmd_font },
 	{ "for_window", cmd_for_window },
 	{ "force_focus_wrapping", cmd_force_focus_wrapping },
-	{ "fullscreen", cmd_fullscreen },
 	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
@@ -176,7 +175,9 @@ static struct cmd_handler config_handlers[] = {
 static struct cmd_handler command_handlers[] = {
 	{ "border", cmd_border },
 	{ "exit", cmd_exit },
+	{ "floating", cmd_floating },
 	{ "focus", cmd_focus },
+	{ "fullscreen", cmd_fullscreen },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
 	{ "mark", cmd_mark },
