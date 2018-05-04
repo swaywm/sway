@@ -457,9 +457,6 @@ static void render_container(struct sway_output *output,
 	case L_TABBED:
 		render_container_tabbed(output, con);
 		break;
-	case L_FLOATING:
-		// TODO
-		break;
 	}
 }
 
@@ -524,6 +521,8 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 		render_container(output, workspace);
 
+		// TODO: iterate over all floating views of all active workspaces and
+		// render them in layout space
 		for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
 			struct sway_container *c =
 				workspace->sway_workspace->floating->items[0];
@@ -606,6 +605,12 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	send_frame_done_container(&data, workspace);
+
+	for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
+		struct sway_container *c =
+			workspace->sway_workspace->floating->items[0];
+		send_frame_done_container_iterator(c, &data);
+	}
 
 	send_frame_done_unmanaged(&data,
 		&root_container.sway_root->xwayland_unmanaged);
