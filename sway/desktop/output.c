@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <time.h>
 #include <wayland-server.h>
+#include <wlr/render/multi.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_matrix.h>
@@ -191,6 +192,13 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		return;
 	}
 
+	struct wlr_texture *texture =
+		wlr_multi_texture_get_child(surface->texture, renderer);
+	if (!sway_assert(texture != NULL,
+			"expected the texture to be uploaded to the output renderer")) {
+		return;
+	}
+
 	scale_box(&box, wlr_output->scale);
 
 	float matrix[9];
@@ -199,8 +207,7 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
-	wlr_render_texture_with_matrix(renderer, surface->texture,
-		matrix, alpha);
+	wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
 }
 
 static void render_layer(struct sway_output *output,
