@@ -12,6 +12,7 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
+#include "list.h"
 #include "log.h"
 #include "util.h"
 
@@ -64,6 +65,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 		return NULL;
 	}
 	swayws->swayc = workspace;
+	swayws->floating = create_list();
 	workspace->sway_workspace = swayws;
 
 	container_add_child(output, workspace);
