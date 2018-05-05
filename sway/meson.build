@@ -60,6 +60,7 @@ sway_sources = files(
 	'commands/set.c',
 	'commands/split.c',
 	'commands/swaybg_command.c',
+	'commands/title_format.c',
 	'commands/workspace.c',
 	'commands/ws_auto_back_and_forth.c',
 

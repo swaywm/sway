@@ -348,7 +348,6 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
-	container_update_title(swayc, title);
 	swayc->width = 0;
 	swayc->height = 0;
 
@@ -572,7 +571,7 @@ static void update_title_texture(struct sway_container *con,
 	if (*texture) {
 		wlr_texture_destroy(*texture);
 	}
-	if (!con->name) {
+	if (!con->formatted_title) {
 		return;
 	}
 
@@ -581,7 +580,8 @@ static void update_title_texture(struct sway_container *con,
 	int height = config->font_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
-	get_text_size(c, config->font, &width, NULL, scale, false, "%s", con->name);
+	get_text_size(c, config->font, &width, NULL, scale, false,
+			"%s", con->formatted_title);
 	cairo_destroy(c);
 
 	cairo_surface_t *surface = cairo_image_surface_create(
@@ -596,7 +596,7 @@ static void update_title_texture(struct sway_container *con,
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, 0);
 
-	pango_printf(cairo, config->font, scale, false, "%s", con->name);
+	pango_printf(cairo, config->font, scale, false, "%s", con->formatted_title);
 
 	cairo_surface_flush(surface);
 	unsigned char *data = cairo_image_surface_get_data(surface);
@@ -622,57 +622,31 @@ void container_update_title_textures(struct sway_container *container) {
 }
 
 void container_calculate_title_height(struct sway_container *container) {
-	if (!container->name) {
+	if (!container->formatted_title) {
 		container->title_height = 0;
 		return;
 	}
 	cairo_t *cairo = cairo_create(NULL);
 	int height;
 	get_text_size(cairo, config->font, NULL, &height, 1, false,
-			"%s", container->name);
+			"%s", container->formatted_title);
 	cairo_destroy(cairo);
 	container->title_height = height;
 }
 
-static void container_notify_child_title_changed(
-		struct sway_container *container) {
+void container_notify_child_title_changed(struct sway_container *container) {
 	if (!container || container->type != C_CONTAINER) {
 		return;
 	}
 	if (container->layout != L_TABBED && container->layout != L_STACKED) {
 		return;
 	}
-	if (container->name) {
-		free(container->name);
+	if (container->formatted_title) {
+		free(container->formatted_title);
 	}
 	// TODO: iterate children and concatenate their titles
-	container->name = strdup("");
+	container->formatted_title = strdup("");
 	container_calculate_title_height(container);
 	container_update_title_textures(container);
 	container_notify_child_title_changed(container->parent);
-}
-
-void container_update_title(struct sway_container *container,
-		const char *new_title) {
-	if (!new_title) {
-		new_title = "";
-	}
-
-	if (container->name && strcmp(container->name, new_title) == 0) {
-		return;
-	}
-
-	if (container->name) {
-		free(container->name);
-	}
-	container->name = strdup(new_title);
-	container_calculate_title_height(container);
-	container_update_title_textures(container);
-	container_notify_child_title_changed(container->parent);
-
-	size_t prev_max_height = config->font_height;
-	config_find_font_height(false);
-	if (config->font_height != prev_max_height) {
-		arrange_root();
-	}
 }
