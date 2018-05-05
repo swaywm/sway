@@ -203,7 +203,6 @@ void arrange_children_of(struct sway_container *parent) {
 		} else {
 			arrange_children_of(child);
 		}
-		container_update_title_textures(child);
 	}
 	container_damage_whole(parent);
 	update_debug_tree();
