@@ -11,9 +11,9 @@
 # Configures enabled compositor features for specific programs
 permit * fullscreen keyboard mouse
 permit @prefix@/bin/swaylock lock
-permit @prefix@/bin/swaybg background
 permit @prefix@/bin/swaygrab screenshot
-permit @prefix@/bin/swaybar panel
+permit @sway_libexecdir@/swaybg  background
+permit @sway_libexecdir@/swaybar panel
 
 # Configures enabled IPC features for specific programs
 ipc @prefix@/bin/swaymsg {
@@ -24,7 +24,7 @@ ipc @prefix@/bin/swaymsg {
     }
 }
 
-ipc @prefix@/bin/swaybar {
+ipc @sway_libexecdir@/swaybar {
     bar-config enabled
     outputs enabled
     workspaces enabled

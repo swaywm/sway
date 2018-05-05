@@ -24,5 +24,6 @@ executable(
 		wlroots,
 	],
 	link_with: [lib_sway_common, lib_sway_client],
-	install: true
+	install: true,
+	install_dir: sway_libexecdir
 )
