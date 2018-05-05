@@ -223,7 +223,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	view_update_size(view, xwayland_view->pending_width,
 		xwayland_view->pending_height);
 	view_damage(view, false);
-	container_update_title(view->swayc, view->wlr_xwayland_surface->title);
+	view_update_title(view, false);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
