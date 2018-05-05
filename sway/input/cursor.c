@@ -222,7 +222,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			seat_set_focus(cursor->seat, cont);
 		}
 	} else {
-		seat_set_focus(cursor->seat, cont);
+		if (cont && cont->parent->layout != L_TABBED) {
+			seat_set_focus(cursor->seat, cont);
+		}
 	}
 
 	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
