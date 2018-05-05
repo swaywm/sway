@@ -305,6 +305,7 @@ struct sway_config {
 	enum sway_container_layout default_layout;
 	char *font;
 	size_t font_height;
+	bool pango_markup;
 
 	// Flags
 	bool focus_follows_mouse;
