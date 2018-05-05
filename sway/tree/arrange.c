@@ -164,7 +164,7 @@ static void apply_tabbed_layout(struct sway_container *parent) {
 	if (!num_children) {
 		return;
 	}
-	for (size_t i=0; i < num_children; ++i) {
+	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
 		child->x = parent->x;
 		child->y = parent->y;

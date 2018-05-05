@@ -228,18 +228,15 @@ static void render_view(struct sway_view *view, struct sway_output *output) {
  */
 static void render_container_simple_border_normal(struct sway_output *output,
 		struct sway_container *con, struct border_colors *colors,
-		struct wlr_texture *title_texture, int iteration) {
+		struct wlr_texture *title_texture, int depth) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(output->wlr_output->backend);
 	struct wlr_box box;
 	float color[4];
-	size_t num_tabs;
+	size_t num_tabs = 1;
 
 	if (con->parent->layout == L_TABBED) {
 		num_tabs = con->parent->children->length;
-	}
-	else {
-		num_tabs = 1;
 	}
 
 	// Child border - left edge
@@ -286,7 +283,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x + iteration * (con->width / num_tabs);
+	box.x = con->x + depth * (con->width / num_tabs);
 	box.y = con->y;
 	box.width = con->width / num_tabs;
 	box.height = 1;
@@ -295,7 +292,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			output->wlr_output->transform_matrix);
 
 	// Single pixel bar below title
-	box.x = con->x + iteration * (con->width / num_tabs);
+	box.x = con->x + depth * (con->width / num_tabs);
 	box.y = con->sway_view->y - 1;
 	box.width = con->width / num_tabs;
 	box.height = 1;
@@ -306,7 +303,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	// Title background
 	memcpy(&color, colors->background, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x + iteration * (con->width / num_tabs);
+	box.x = con->x + depth * (con->width / num_tabs);
 	box.y = con->y + 1;
 	box.width = con->width / num_tabs;
 	box.height = con->sway_view->y - con->y - 2;
@@ -476,8 +473,7 @@ static void render_container_tabbed(struct sway_output *output,
 					}
 				}
 			}
-		}
-		else {
+		} else {
 			render_container(output, child);
 		}
 	}

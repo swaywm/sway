@@ -11,13 +11,11 @@ struct cmd_results *cmd_default_orientation(int argc, char **argv) {
 		config->default_orientation = L_HORIZ;
 	} else if (strcasecmp(argv[0], "vertical") == 0) {
 		config->default_orientation = L_VERT;
-	} else if (strcasecmp(argv[0], "tabbed") == 0) {
-		config->default_orientation = L_TABBED;
 	} else if (strcasecmp(argv[0], "auto") == 0) {
 		// Do nothing
 	} else {
 		return cmd_results_new(CMD_INVALID, "default_orientation",
-				"Expected 'orientation <horizontal|vertical|tabbed|auto>'");
+				"Expected 'orientation <horizontal|vertical|auto>'");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
