@@ -547,12 +547,13 @@ bool container_has_child(struct sway_container *con,
 	return container_find(con, find_child_func, child);
 }
 
-void container_damage_whole(struct sway_container *con) {
-	struct sway_container *output = con;
-	if (output->type != C_OUTPUT) {
-		output = container_parent(output, C_OUTPUT);
+void container_damage_whole(struct sway_container *container) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *cont = root_container.children->items[i];
+		if (cont->type == C_OUTPUT) {
+			output_damage_whole_container(cont->sway_output, container);
+		}
 	}
-	output_damage_whole_container(output->sway_output, con);
 }
 
 static void update_title_texture(struct sway_container *con,

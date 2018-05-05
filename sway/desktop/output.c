@@ -784,8 +784,8 @@ void output_damage_surface(struct sway_output *output, double ox, double oy,
 		damage_surface_iterator, &data);
 }
 
-void output_damage_view(struct sway_output *output, struct sway_view *view,
-		bool whole) {
+static void output_damage_view(struct sway_output *output,
+		struct sway_view *view, bool whole) {
 	if (!sway_assert(view->swayc != NULL, "expected a view in the tree")) {
 		return;
 	}
@@ -803,6 +803,11 @@ void output_damage_view(struct sway_output *output, struct sway_view *view,
 
 	output_view_for_each_surface(view, &data.root_geo,
 		damage_surface_iterator, &data);
+}
+
+void output_damage_from_view(struct sway_output *output,
+		struct sway_view *view) {
+	output_damage_view(output, view, false);
 }
 
 static void output_damage_whole_container_iterator(struct sway_container *con,
@@ -827,8 +832,12 @@ void output_damage_whole_container(struct sway_output *output,
 	};
 	wlr_output_damage_add_box(output->damage, &box);
 
-	container_descendants(con, C_VIEW, output_damage_whole_container_iterator,
-		output);
+	if (con->type == C_VIEW) {
+		output_damage_whole_container_iterator(con, output);
+	} else {
+		container_descendants(con, C_VIEW,
+			output_damage_whole_container_iterator, output);
+	}
 }
 
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {

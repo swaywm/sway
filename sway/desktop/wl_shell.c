@@ -85,7 +85,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// TODO: Let floating views do whatever
 	view_update_size(view, wl_shell_view->pending_width,
 		wl_shell_view->pending_height);
-	view_damage(view, false);
+	view_damage_from(view);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
