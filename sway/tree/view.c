@@ -501,10 +501,10 @@ void view_child_destroy(struct sway_view_child *child) {
 static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
 		const char *title = view_get_title(view);
-		if (buffer) {
+		if (buffer && title) {
 			strcpy(buffer, title);
 		}
-		return strlen(title);
+		return title ? strlen(title) : 0;
 	}
 	const char *title = view_get_title(view);
 	const char *class = view_get_class(view);
