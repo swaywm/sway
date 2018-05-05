@@ -32,7 +32,7 @@ static void pretty_print_cmd(json_object *r) {
 	if (!success(r, true)) {
 		json_object *error;
 		if (!json_object_object_get_ex(r, "error", &error)) {
-			printf("An unknkown error occured");
+			printf("An unknkown error occurred");
 		} else {
 			printf("Error: %s\n", json_object_get_string(error));
 		}

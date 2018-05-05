@@ -182,6 +182,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "splith", cmd_splith },
 	{ "splitt", cmd_splitt },
 	{ "splitv", cmd_splitv },
+	{ "title_format", cmd_title_format },
 };
 
 static int handler_compare(const void *_a, const void *_b) {

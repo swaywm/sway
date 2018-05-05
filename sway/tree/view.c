@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
@@ -65,6 +66,18 @@ const char *view_get_instance(struct sway_view *view) {
 		return view->impl->get_prop(view, VIEW_PROP_INSTANCE);
 	}
 	return NULL;
+}
+
+const char *view_get_type(struct sway_view *view) {
+	switch(view->type) {
+	case SWAY_VIEW_WL_SHELL:
+		return "wl_shell";
+	case SWAY_VIEW_XDG_SHELL_V6:
+		return "xdg_shell_v6";
+	case SWAY_VIEW_XWAYLAND:
+		return "xwayland";
+	}
+	return "unknown";
 }
 
 void view_configure(struct sway_view *view, double ox, double oy, int width,
@@ -348,6 +361,11 @@ void view_unmap(struct sway_view *view) {
 	view->swayc = NULL;
 	view->surface = NULL;
 
+	if (view->title_format) {
+		free(view->title_format);
+		view->title_format = NULL;
+	}
+
 	if (parent->type == C_OUTPUT) {
 		arrange_output(parent);
 	} else {
@@ -474,4 +492,114 @@ void view_child_destroy(struct sway_view_child *child) {
 	} else {
 		free(child);
 	}
+}
+
+/**
+ * Calculate and return the length of the formatted title.
+ * If buffer is not NULL, also populate the buffer with the formatted title.
+ */
+static size_t parse_title_format(struct sway_view *view, char *buffer) {
+	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
+		const char *title = view_get_title(view);
+		if (buffer && title) {
+			strcpy(buffer, title);
+		}
+		return title ? strlen(title) : 0;
+	}
+	const char *title = view_get_title(view);
+	const char *class = view_get_class(view);
+	const char *instance = view_get_instance(view);
+	const char *shell = view_get_type(view);
+	size_t title_len = title ? strlen(title) : 0;
+	size_t class_len = class ? strlen(class) : 0;
+	size_t instance_len = instance ? strlen(instance) : 0;
+	size_t shell_len = shell ? strlen(shell) : 0;
+
+	size_t len = 0;
+	char *format = view->title_format;
+	char *next = strchr(format, '%');
+	while (next) {
+		if (buffer) {
+			// Copy everything up to the %
+			strncat(buffer, format, next - format);
+		}
+		len += next - format;
+		format = next;
+
+		if (strncmp(next, "%title", 6) == 0) {
+			if (buffer && title) {
+				strcat(buffer, title);
+			}
+			len += title_len;
+			format += 6;
+		} else if (strncmp(next, "%class", 6) == 0) {
+			if (buffer && class) {
+				strcat(buffer, class);
+			}
+			len += class_len;
+			format += 6;
+		} else if (strncmp(next, "%instance", 9) == 0) {
+			if (buffer && instance) {
+				strcat(buffer, instance);
+			}
+			len += instance_len;
+			format += 9;
+		} else if (strncmp(next, "%shell", 6) == 0) {
+			if (buffer) {
+				strcat(buffer, shell);
+			}
+			len += shell_len;
+			format += 6;
+		} else {
+			if (buffer) {
+				strcat(buffer, "%");
+			}
+			++format;
+			++len;
+		}
+		next = strchr(format, '%');
+	}
+	if (buffer) {
+		strcat(buffer, format);
+	}
+	len += strlen(format);
+
+	return len;
+}
+
+void view_update_title(struct sway_view *view, bool force) {
+	if (!view->swayc) {
+		return;
+	}
+	const char *title = view_get_title(view);
+
+	if (!force) {
+		if (title && view->swayc->name && strcmp(title, view->swayc->name) == 0) {
+			return;
+		}
+		if (!title && !view->swayc->name) {
+			return;
+		}
+	}
+
+	free(view->swayc->name);
+	free(view->swayc->formatted_title);
+	if (title) {
+		size_t len = parse_title_format(view, NULL);
+		char *buffer = calloc(len + 1, 1);
+		if (!sway_assert(buffer, "Unable to allocate title string")) {
+			return;
+		}
+		parse_title_format(view, buffer);
+
+		view->swayc->name = strdup(title);
+		view->swayc->formatted_title = buffer;
+	} else {
+		view->swayc->name = NULL;
+		view->swayc->formatted_title = NULL;
+	}
+	container_calculate_title_height(view->swayc);
+	container_update_title_textures(view->swayc);
+	container_notify_child_title_changed(view->swayc->parent);
+	config_update_font_height(false);
 }
