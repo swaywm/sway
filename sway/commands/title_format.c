@@ -2,7 +2,6 @@
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "log.h"
 #include "stringop.h"
@@ -25,7 +24,6 @@ struct cmd_results *cmd_title_format(int argc, char **argv) {
 	}
 	view->title_format = format;
 	view_update_title(view, true);
-	config_find_font_height(true);
-	arrange_root();
+	config_update_font_height(true);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

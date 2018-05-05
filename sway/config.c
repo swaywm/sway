@@ -24,6 +24,7 @@
 #include "sway/input/seat.h"
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "cairo.h"
 #include "pango.h"
@@ -741,8 +742,14 @@ static void find_font_height_iterator(struct sway_container *container,
 	}
 }
 
-void config_find_font_height(bool recalculate) {
+void config_update_font_height(bool recalculate) {
+	size_t prev_max_height = config->font_height;
 	config->font_height = 0;
+
 	container_for_each_descendant_dfs(&root_container,
 			find_font_height_iterator, &recalculate);
+
+	if (config->font_height != prev_max_height) {
+		arrange_root();
+	}
 }

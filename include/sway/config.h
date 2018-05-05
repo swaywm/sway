@@ -465,8 +465,11 @@ void free_bar_config(struct bar_config *bar);
  * Updates the value of config->font_height based on the max title height
  * reported by each container. If recalculate is true, the containers will
  * recalculate their heights before reporting.
+ *
+ * If the height has changed, all containers will be rearranged to take on the
+ * new size.
  */
-void config_find_font_height(bool recalculate);
+void config_update_font_height(bool recalculate);
 
 /* Global config singleton. */
 extern struct sway_config *config;

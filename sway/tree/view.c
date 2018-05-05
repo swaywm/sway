@@ -601,10 +601,5 @@ void view_update_title(struct sway_view *view, bool force) {
 	container_calculate_title_height(view->swayc);
 	container_update_title_textures(view->swayc);
 	container_notify_child_title_changed(view->swayc->parent);
-
-	size_t prev_max_height = config->font_height;
-	config_find_font_height(false);
-	if (config->font_height != prev_max_height) {
-		arrange_root();
-	}
+	config_update_font_height(false);
 }
