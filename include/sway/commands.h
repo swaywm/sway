@@ -144,6 +144,7 @@ sway_cmd cmd_splitt;
 sway_cmd cmd_splitv;
 sway_cmd cmd_sticky;
 sway_cmd cmd_swaybg_command;
+sway_cmd cmd_title_format;
 sway_cmd cmd_unmark;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;

@@ -48,6 +48,7 @@ struct sway_view {
 
 	bool is_fullscreen;
 
+	char *title_format;
 	enum sway_container_border border;
 	int border_thickness;
 
@@ -164,6 +165,8 @@ const char *view_get_class(struct sway_view *view);
 
 const char *view_get_instance(struct sway_view *view);
 
+const char *view_get_type(struct sway_view *view);
+
 void view_configure(struct sway_view *view, double ox, double oy, int width,
 	int height);
 
@@ -206,5 +209,12 @@ void view_child_init(struct sway_view_child *child,
 	struct wlr_surface *surface);
 
 void view_child_destroy(struct sway_view_child *child);
+
+/**
+ * Re-read the view's title property and update any relevant title bars.
+ * The force argument makes it recreate the title bars even if the title hasn't
+ * changed.
+ */
+void view_update_title(struct sway_view *view, bool force);
 
 #endif

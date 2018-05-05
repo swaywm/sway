@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
@@ -65,6 +66,18 @@ const char *view_get_instance(struct sway_view *view) {
 		return view->impl->get_prop(view, VIEW_PROP_INSTANCE);
 	}
 	return NULL;
+}
+
+const char *view_get_type(struct sway_view *view) {
+	switch(view->type) {
+	case SWAY_VIEW_WL_SHELL:
+		return "wl_shell";
+	case SWAY_VIEW_XDG_SHELL_V6:
+		return "xdg_shell_v6";
+	case SWAY_VIEW_XWAYLAND:
+		return "xwayland";
+	}
+	return "unknown";
 }
 
 void view_configure(struct sway_view *view, double ox, double oy, int width,
@@ -348,6 +361,11 @@ void view_unmap(struct sway_view *view) {
 	view->swayc = NULL;
 	view->surface = NULL;
 
+	if (view->title_format) {
+		free(view->title_format);
+		view->title_format = NULL;
+	}
+
 	if (parent->type == C_OUTPUT) {
 		arrange_output(parent);
 	} else {
@@ -473,5 +491,129 @@ void view_child_destroy(struct sway_view_child *child) {
 		child->impl->destroy(child);
 	} else {
 		free(child);
+	}
+}
+
+static char *parse_title_format(struct sway_view *view) {
+	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
+		return strdup(view_get_title(view));
+	}
+	const char *title = view_get_title(view);
+	const char *class = view_get_class(view);
+	const char *instance = view_get_instance(view);
+	const char *shell = view_get_type(view);
+	size_t title_len = title ? strlen(title) : 0;
+	size_t class_len = class ? strlen(class) : 0;
+	size_t instance_len = instance ? strlen(instance) : 0;
+	size_t shell_len = shell ? strlen(shell) : 0;
+
+	// First, determine the length
+	size_t len = 0;
+	char *format = view->title_format;
+	char *next = strchr(format, '%');
+	while (next) {
+		len += next - format;
+		format = next;
+
+		if (strncmp(next, "%title", 6) == 0) {
+			len += title_len;
+			format += 6;
+		} else if (strncmp(next, "%class", 6) == 0) {
+			len += class_len;
+			format += 6;
+		} else if (strncmp(next, "%instance", 9) == 0) {
+			len += instance_len;
+			format += 9;
+		} else if (strncmp(next, "%shell", 6) == 0) {
+			len += shell_len;
+			format += 6;
+		} else {
+			++format;
+			++len;
+		}
+		next = strchr(format, '%');
+	}
+	len += strlen(format);
+
+	char *buffer = calloc(len + 1, 1);
+	if (!sway_assert(buffer, "Unable to allocate title string")) {
+		return NULL;
+	}
+
+	// Now build the title
+	format = view->title_format;
+	next = strchr(format, '%');
+	while (next) {
+		// Copy everything up to the %
+		strncat(buffer, format, next - format);
+		format = next;
+
+		if (strncmp(next, "%title", 6) == 0) {
+			if (title) {
+				strcat(buffer, title);
+			}
+			format += 6;
+		} else if (strncmp(next, "%class", 6) == 0) {
+			if (class) {
+				strcat(buffer, class);
+			}
+			format += 6;
+		} else if (strncmp(next, "%instance", 9) == 0) {
+			if (instance) {
+				strcat(buffer, instance);
+			}
+			format += 9;
+		} else if (strncmp(next, "%shell", 6) == 0) {
+			strcat(buffer, shell);
+			format += 6;
+		} else {
+			strcat(buffer, "%");
+			++format;
+		}
+		next = strchr(format, '%');
+	}
+	strcat(buffer, format);
+
+	return buffer;
+}
+
+void view_update_title(struct sway_view *view, bool force) {
+	if (!view->swayc) {
+		return;
+	}
+	const char *title = view_get_title(view);
+
+	if (!force) {
+		if (title && view->swayc->name && strcmp(title, view->swayc->name) == 0) {
+			return;
+		}
+		if (!title && !view->swayc->name) {
+			return;
+		}
+	}
+
+	if (title) {
+		if (view->swayc->name) {
+			free(view->swayc->name);
+		}
+		if (view->swayc->formatted_title) {
+			free(view->swayc->formatted_title);
+		}
+		view->swayc->name = strdup(title);
+		view->swayc->formatted_title = parse_title_format(view);
+	} else {
+		free(view->swayc->name);
+		free(view->swayc->formatted_title);
+		view->swayc->name = NULL;
+		view->swayc->formatted_title = NULL;
+	}
+	container_calculate_title_height(view->swayc);
+	container_update_title_textures(view->swayc);
+	container_notify_child_title_changed(view->swayc->parent);
+
+	size_t prev_max_height = config->font_height;
+	config_find_font_height(false);
+	if (config->font_height != prev_max_height) {
+		arrange_root();
 	}
 }

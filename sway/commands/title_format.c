@@ -1,0 +1,31 @@
+#define _POSIX_C_SOURCE 200809L
+#include <string.h>
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/tree/arrange.h"
+#include "sway/tree/view.h"
+#include "log.h"
+#include "stringop.h"
+
+struct cmd_results *cmd_title_format(int argc, char **argv) {
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "title_format", EXPECTED_AT_LEAST, 1))) {
+		return error;
+	}
+	struct sway_container *container =
+		config->handler_context.current_container;
+	if (container->type != C_VIEW) {
+		return cmd_results_new(CMD_INVALID, "title_format",
+				"Only views can have a title_format");
+	}
+	struct sway_view *view = container->sway_view;
+	char *format = join_args(argv, argc);
+	if (view->title_format) {
+		free(view->title_format);
+	}
+	view->title_format = strdup(format);
+	view_update_title(view, true);
+	config_find_font_height(true);
+	arrange_root();
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}

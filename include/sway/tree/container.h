@@ -63,7 +63,8 @@ struct sway_container {
 	 */
 	size_t id;
 
-	char *name;
+	char *name;            // The view's title (unformatted)
+	char *formatted_title; // The title displayed in the title bar
 
 	enum sway_container_type type;
 	enum sway_container_layout layout;
@@ -204,7 +205,6 @@ void container_update_title_textures(struct sway_container *container);
  */
 void container_calculate_title_height(struct sway_container *container);
 
-void container_update_title(struct sway_container *container,
-		const char *new_title);
+void container_notify_child_title_changed(struct sway_container *container);
 
 #endif
