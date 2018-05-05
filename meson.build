@@ -121,6 +121,7 @@ config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))
 config.set('datadir', join_paths(prefix, datadir))
 config.set('prefix', prefix)
+config.set('sway_libexecdir', sway_libexecdir)
 
 configure_file(
 	configuration: config,
