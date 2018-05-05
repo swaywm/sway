@@ -11,7 +11,6 @@
 #include "log.h"
 #include "stringop.h"
 
-
 struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (!config->active) return cmd_results_new(CMD_DEFER, NULL, NULL);
@@ -52,44 +51,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if ((pid = fork()) == 0) {
 		// Fork child process again
 		setsid();
-
 		if ((*child = fork()) == 0) {
-			// Acquire the current PATH
-			char *path = getenv("PATH");
-			const char *extra_path = ":" SWAY_LIBEXECDIR;
-			const size_t extra_size = sizeof(SWAY_LIBEXECDIR) + 1;
-
-			if (!path) {
-				size_t n = confstr(_CS_PATH, NULL, 0);
-				path = malloc(n + extra_size);
-				if (!path) {
-					wlr_log(L_ERROR, "exec_always: Unable to allocate PATH");
-					exit(EXIT_FAILURE);
-				}
-				confstr(_CS_PATH, path, n);
-
-			} else {
-				size_t n = strlen(path) + 1;
-				char *tmp = malloc(n + extra_size);
-				if (!tmp) {
-					wlr_log(L_ERROR, "exec_always: Unable to allocate PATH");
-					exit(EXIT_FAILURE);
-				}
-
-				strncpy(tmp, path, n);
-				path = tmp;
-			}
-
-			// Append /usr/lib/sway to PATH
-			strcat(path, extra_path);
-			if (setenv("PATH", path, 1) == -1) {
-				free(path);
-				wlr_log(L_ERROR, "exec_always: Unable to set PATH");
-				exit(EXIT_FAILURE);
-			}
-			free(path);
-
-			// Execute the command
 			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
 			// Not reached
 		}
