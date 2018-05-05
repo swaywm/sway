@@ -82,7 +82,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 
 			// Append /usr/lib/sway to PATH
 			strcat(path, extra_path);
-			if (!setenv("PATH", path, 1)) {
+			if (setenv("PATH", path, 1) == -1) {
 				free(path);
 				wlr_log(L_ERROR, "exec_always: Unable to set PATH");
 				exit(EXIT_FAILURE);
