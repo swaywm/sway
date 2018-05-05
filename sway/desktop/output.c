@@ -163,14 +163,38 @@ static void scale_box(struct wlr_box *box, float scale) {
 struct render_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
+	pixman_region32_t *damage;
 	float alpha;
 };
+
+static void scissor_output(struct wlr_output *wlr_output,
+		pixman_box32_t *rect) {
+	struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+	assert(renderer);
+
+	struct wlr_box box = {
+		.x = rect->x1,
+		.y = rect->y1,
+		.width = rect->x2 - rect->x1,
+		.height = rect->y2 - rect->y1,
+	};
+
+	int ow, oh;
+	wlr_output_transformed_resolution(wlr_output, &ow, &oh);
+
+	enum wl_output_transform transform =
+		wlr_output_transform_invert(wlr_output->transform);
+	wlr_box_transform(&box, transform, ow, oh, &box);
+
+	wlr_renderer_scissor(renderer, &box);
+}
 
 static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		void *_data) {
 	struct render_data *data = _data;
 	struct wlr_output *wlr_output = data->output->wlr_output;
 	float rotation = data->root_geo.rotation;
+	pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
 
 	if (!wlr_surface_has_buffer(surface)) {
@@ -184,6 +208,18 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		return;
 	}
 
+	scale_box(&box, wlr_output->scale);
+
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	pixman_region32_union_rect(&damage, &damage, box.x, box.y,
+		box.width, box.height);
+	pixman_region32_intersect(&damage, &damage, output_damage);
+	bool damaged = pixman_region32_not_empty(&damage);
+	if (!damaged) {
+		goto damage_finish;
+	}
+
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 	if (!sway_assert(renderer != NULL,
@@ -191,34 +227,53 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		return;
 	}
 
-	scale_box(&box, wlr_output->scale);
-
 	float matrix[9];
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current->transform);
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
-	wlr_render_texture_with_matrix(renderer, surface->texture,
-		matrix, alpha);
+	int nrects;
+	pixman_box32_t *rects = pixman_region32_rectangles(&damage, &nrects);
+	for (int i = 0; i < nrects; ++i) {
+		scissor_output(wlr_output, &rects[i]);
+		wlr_render_texture_with_matrix(renderer, surface->texture, matrix,
+			alpha);
+	}
+
+damage_finish:
+	pixman_region32_fini(&damage);
 }
 
 static void render_layer(struct sway_output *output,
-		struct wl_list *layer_surfaces) {
-	struct render_data data = { .output = output, .alpha = 1.0f };
+		pixman_region32_t *damage, struct wl_list *layer_surfaces) {
+	struct render_data data = {
+		.output = output,
+		.damage = damage,
+		.alpha = 1.0f,
+	};
 	layer_for_each_surface(layer_surfaces, &data.root_geo,
 		render_surface_iterator, &data);
 }
 
 static void render_unmanaged(struct sway_output *output,
-		struct wl_list *unmanaged) {
-	struct render_data data = { .output = output, .alpha = 1.0f };
+		pixman_region32_t *damage, struct wl_list *unmanaged) {
+	struct render_data data = {
+		.output = output,
+		.damage = damage,
+		.alpha = 1.0f,
+	};
 	unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
 		render_surface_iterator, &data);
 }
 
-static void render_view(struct sway_view *view, struct sway_output *output) {
-	struct render_data data = { .output = output, .alpha = view->swayc->alpha };
+static void render_view(struct sway_view *view, struct sway_output *output,
+		pixman_region32_t *damage) {
+	struct render_data data = {
+		.output = output,
+		.damage = damage,
+		.alpha = view->swayc->alpha,
+	};
 	output_view_for_each_surface(
 			view, &data.root_geo, render_surface_iterator, &data);
 }
@@ -381,7 +436,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 }
 
 static void render_container(struct sway_output *output,
-		struct sway_container *con);
+	pixman_region32_t *damage, struct sway_container *con);
 
 /**
  * Render a container's children using a L_HORIZ or L_VERT layout.
@@ -390,7 +445,7 @@ static void render_container(struct sway_output *output,
  * they'll apply their own borders to their children.
  */
 static void render_container_simple(struct sway_output *output,
-		struct sway_container *con) {
+		pixman_region32_t *damage, struct sway_container *con) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focus(seat);
 
@@ -419,9 +474,9 @@ static void render_container_simple(struct sway_output *output,
 					render_container_simple_border_pixel(output, child, colors);
 				}
 			}
-			render_view(child->sway_view, output);
+			render_view(child->sway_view, output, damage);
 		} else {
-			render_container(output, child);
+			render_container(output, damage, child);
 		}
 	}
 }
@@ -430,7 +485,7 @@ static void render_container_simple(struct sway_output *output,
  * Render a container's children using the L_TABBED layout.
  */
 static void render_container_tabbed(struct sway_output *output,
-		struct sway_container *con) {
+		pixman_region32_t *damage, struct sway_container *con) {
 	// TODO
 }
 
@@ -438,23 +493,23 @@ static void render_container_tabbed(struct sway_output *output,
  * Render a container's children using the L_STACKED layout.
  */
 static void render_container_stacked(struct sway_output *output,
-		struct sway_container *con) {
+		pixman_region32_t *damage, struct sway_container *con) {
 	// TODO
 }
 
 static void render_container(struct sway_output *output,
-		struct sway_container *con) {
+		pixman_region32_t *damage, struct sway_container *con) {
 	switch (con->layout) {
 	case L_NONE:
 	case L_HORIZ:
 	case L_VERT:
-		render_container_simple(output, con);
+		render_container_simple(output, damage, con);
 		break;
 	case L_STACKED:
-		render_container_stacked(output, con);
+		render_container_stacked(output, damage, con);
 		break;
 	case L_TABBED:
-		render_container_tabbed(output, con);
+		render_container_tabbed(output, damage, con);
 		break;
 	case L_FLOATING:
 		// TODO
@@ -496,37 +551,51 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
-	// TODO: don't damage the whole output
-	int width, height;
-	wlr_output_transformed_resolution(wlr_output, &width, &height);
-	pixman_region32_union_rect(damage, damage, 0, 0, width, height);
+	wlr_renderer_clear(renderer, (float[]){1, 1, 0, 0});
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 
 	if (workspace->sway_workspace->fullscreen) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
-		wlr_renderer_clear(renderer, clear_color);
+
+		int nrects;
+		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			scissor_output(wlr_output, &rects[i]);
+			wlr_renderer_clear(renderer, clear_color);
+		}
+
 		// TODO: handle views smaller than the output
-		render_view(workspace->sway_workspace->fullscreen, output);
+		render_view(workspace->sway_workspace->fullscreen, output, damage);
 
 		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
-			render_unmanaged(output,
-					&root_container.sway_root->xwayland_unmanaged);
+			render_unmanaged(output, damage,
+				&root_container.sway_root->xwayland_unmanaged);
 		}
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
-		wlr_renderer_clear(renderer, clear_color);
 
-		render_layer(output,
-				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+		int nrects;
+		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			scissor_output(wlr_output, &rects[i]);
+			wlr_renderer_clear(renderer, clear_color);
+		}
 
-		render_container(output, workspace);
+		render_layer(output, damage,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+		render_layer(output, damage,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-		render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
-		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+		render_container(output, damage, workspace);
+
+		render_unmanaged(output, damage,
+			&root_container.sway_root->xwayland_unmanaged);
+		render_layer(output, damage,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
-	render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	render_layer(output, damage,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 
 renderer_end:
 	if (root_container.sway_root->debug_tree) {
@@ -534,6 +603,7 @@ renderer_end:
 			wlr_output->transform_matrix, 0, 0, 1);
 	}
 
+	wlr_renderer_scissor(renderer, NULL);
 	wlr_renderer_end(renderer);
 	if (!wlr_output_damage_swap_buffers(output->damage, when, damage)) {
 		return;
