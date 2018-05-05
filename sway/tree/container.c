@@ -621,6 +621,7 @@ void container_update_title_textures(struct sway_container *container) {
 			&config->border_colors.unfocused);
 	update_title_texture(container, &container->title_urgent,
 			&config->border_colors.urgent);
+	container_damage_whole(container);
 }
 
 void container_calculate_title_height(struct sway_container *container) {
