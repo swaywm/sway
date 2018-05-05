@@ -23,7 +23,7 @@ struct cmd_results *cmd_title_format(int argc, char **argv) {
 	if (view->title_format) {
 		free(view->title_format);
 	}
-	view->title_format = strdup(format);
+	view->title_format = format;
 	view_update_title(view, true);
 	config_find_font_height(true);
 	arrange_root();
