@@ -374,7 +374,7 @@ The default colors are:
 	+
 	output HDMI-A-1 mode 1920x1080@60Hz
 
-**output** <name> position|pos <X,Y>::
+**output** <name> position|pos <X> <Y>::
 	Configures the specified output to be arranged at the given position.
 
 **output** <name> scale <I>::
