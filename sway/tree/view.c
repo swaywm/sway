@@ -494,9 +494,17 @@ void view_child_destroy(struct sway_view_child *child) {
 	}
 }
 
-static char *parse_title_format(struct sway_view *view) {
+/**
+ * Calculate and return the length of the formatted title.
+ * If buffer is not NULL, also populate the buffer with the formatted title.
+ */
+static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
-		return strdup(view_get_title(view));
+		const char *title = view_get_title(view);
+		if (buffer) {
+			strcpy(buffer, title);
+		}
+		return strlen(title);
 	}
 	const char *title = view_get_title(view);
 	const char *class = view_get_class(view);
@@ -507,74 +515,56 @@ static char *parse_title_format(struct sway_view *view) {
 	size_t instance_len = instance ? strlen(instance) : 0;
 	size_t shell_len = shell ? strlen(shell) : 0;
 
-	// First, determine the length
 	size_t len = 0;
 	char *format = view->title_format;
 	char *next = strchr(format, '%');
 	while (next) {
+		if (buffer) {
+			// Copy everything up to the %
+			strncat(buffer, format, next - format);
+		}
 		len += next - format;
 		format = next;
 
 		if (strncmp(next, "%title", 6) == 0) {
+			if (buffer && title) {
+				strcat(buffer, title);
+			}
 			len += title_len;
 			format += 6;
 		} else if (strncmp(next, "%class", 6) == 0) {
+			if (buffer && class) {
+				strcat(buffer, class);
+			}
 			len += class_len;
 			format += 6;
 		} else if (strncmp(next, "%instance", 9) == 0) {
+			if (buffer && instance) {
+				strcat(buffer, instance);
+			}
 			len += instance_len;
 			format += 9;
 		} else if (strncmp(next, "%shell", 6) == 0) {
+			if (buffer) {
+				strcat(buffer, shell);
+			}
 			len += shell_len;
 			format += 6;
 		} else {
+			if (buffer) {
+				strcat(buffer, "%");
+			}
 			++format;
 			++len;
 		}
 		next = strchr(format, '%');
 	}
+	if (buffer) {
+		strcat(buffer, format);
+	}
 	len += strlen(format);
 
-	char *buffer = calloc(len + 1, 1);
-	if (!sway_assert(buffer, "Unable to allocate title string")) {
-		return NULL;
-	}
-
-	// Now build the title
-	format = view->title_format;
-	next = strchr(format, '%');
-	while (next) {
-		// Copy everything up to the %
-		strncat(buffer, format, next - format);
-		format = next;
-
-		if (strncmp(next, "%title", 6) == 0) {
-			if (title) {
-				strcat(buffer, title);
-			}
-			format += 6;
-		} else if (strncmp(next, "%class", 6) == 0) {
-			if (class) {
-				strcat(buffer, class);
-			}
-			format += 6;
-		} else if (strncmp(next, "%instance", 9) == 0) {
-			if (instance) {
-				strcat(buffer, instance);
-			}
-			format += 9;
-		} else if (strncmp(next, "%shell", 6) == 0) {
-			strcat(buffer, shell);
-			format += 6;
-		} else {
-			strcat(buffer, "%");
-			++format;
-		}
-		next = strchr(format, '%');
-	}
-	strcat(buffer, format);
-
-	return buffer;
+	return len;
 }
 
 void view_update_title(struct sway_view *view, bool force) {
@@ -592,18 +582,19 @@ void view_update_title(struct sway_view *view, bool force) {
 		}
 	}
 
+	free(view->swayc->name);
+	free(view->swayc->formatted_title);
 	if (title) {
-		if (view->swayc->name) {
-			free(view->swayc->name);
+		size_t len = parse_title_format(view, NULL);
+		char *buffer = calloc(len + 1, 1);
+		if (!sway_assert(buffer, "Unable to allocate title string")) {
+			return;
 		}
-		if (view->swayc->formatted_title) {
-			free(view->swayc->formatted_title);
-		}
+		parse_title_format(view, buffer);
+
 		view->swayc->name = strdup(title);
-		view->swayc->formatted_title = parse_title_format(view);
+		view->swayc->formatted_title = buffer;
 	} else {
-		free(view->swayc->name);
-		free(view->swayc->formatted_title);
 		view->swayc->name = NULL;
 		view->swayc->formatted_title = NULL;
 	}
