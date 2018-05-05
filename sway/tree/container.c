@@ -584,12 +584,6 @@ static void update_title_texture(struct sway_container *con,
 	get_text_size(c, config->font, &width, NULL, scale, false, "%s", con->name);
 	cairo_destroy(c);
 
-	int borders = (con->type == C_VIEW ? con->sway_view->border_thickness :
-			config->border_thickness) * 2 * scale;
-	if (width > con->width * scale - borders) {
-		width = con->width * scale - borders;
-	}
-
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cairo = cairo_create(surface);

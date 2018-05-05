@@ -308,12 +308,10 @@ static void render_container_simple_border_normal(struct sway_output *output,
 
 	// Title text
 	if (title_texture) {
-		double x = (con->x + con->sway_view->border_thickness)
-			* output->wlr_output->scale;
-		double y = (con->y + con->sway_view->border_thickness)
-			* output->wlr_output->scale;
+		wlr_renderer_scissor(renderer, &box);
 		wlr_render_texture(renderer, title_texture,
-				output->wlr_output->transform_matrix, x, y, 1);
+				output->wlr_output->transform_matrix, box.x, box.y, 1);
+		wlr_renderer_scissor(renderer, NULL);
 	}
 }
 
