@@ -51,7 +51,7 @@ bool server_init(struct sway_server *server) {
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
 	assert(renderer);
 
-	wlr_renderer_init_wl_shm(renderer, server->wl_display);
+	wlr_renderer_init_wl_display(renderer, server->wl_display);
 
 	server->compositor = wlr_compositor_create(server->wl_display, renderer);
 	server->data_device_manager =
