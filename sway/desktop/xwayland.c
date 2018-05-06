@@ -126,7 +126,7 @@ static struct sway_xwayland_view *xwayland_view_from_view(
 	return (struct sway_xwayland_view *)view;
 }
 
-static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
+static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return NULL;
 	}
@@ -135,8 +135,26 @@ static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
 		return view->wlr_xwayland_surface->title;
 	case VIEW_PROP_CLASS:
 		return view->wlr_xwayland_surface->class;
+	case VIEW_PROP_INSTANCE:
+		return view->wlr_xwayland_surface->instance;
 	default:
 		return NULL;
+	}
+}
+
+static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return 0;
+	}
+	switch (prop) {
+	case VIEW_PROP_X11_WINDOW_ID:
+		return view->wlr_xwayland_surface->window_id;
+	case VIEW_PROP_WINDOW_TYPE:
+		return *view->wlr_xwayland_surface->window_type;
+	case VIEW_PROP_WINDOW_ROLE:
+		return 0;
+	default:
+		return 0;
 	}
 }
 
@@ -200,13 +218,17 @@ static void destroy(struct sway_view *view) {
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_configure.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->set_title.link);
+	wl_list_remove(&xwayland_view->set_class.link);
+	wl_list_remove(&xwayland_view->set_window_type.link);
 	wl_list_remove(&xwayland_view->map.link);
 	wl_list_remove(&xwayland_view->unmap.link);
 	free(xwayland_view);
 }
 
 static const struct sway_view_impl view_impl = {
-	.get_prop = get_prop,
+	.get_string_prop = get_string_prop,
+	.get_int_prop = get_int_prop,
 	.configure = configure,
 	.set_activated = set_activated,
 	.set_fullscreen = set_fullscreen,
@@ -223,7 +245,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	view_update_size(view, xwayland_view->pending_width,
 		xwayland_view->pending_height);
 	view_damage(view, false);
-	view_update_title(view, false);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -285,6 +306,40 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	view_set_fullscreen(view, xsurface->fullscreen);
 }
 
+static void handle_set_title(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_title);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface) {
+		return;
+	}
+	view_update_title(view, false);
+	view_execute_criteria(view);
+}
+
+static void handle_set_class(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_class);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface) {
+		return;
+	}
+	view_execute_criteria(view);
+}
+
+static void handle_set_window_type(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_window_type);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface) {
+		return;
+	}
+	view_execute_criteria(view);
+}
+
 void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server,
 		xwayland_surface);
@@ -322,6 +377,16 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.request_fullscreen,
 		&xwayland_view->request_fullscreen);
 	xwayland_view->request_fullscreen.notify = handle_request_fullscreen;
+
+	wl_signal_add(&xsurface->events.set_title, &xwayland_view->set_title);
+	xwayland_view->set_title.notify = handle_set_title;
+
+	wl_signal_add(&xsurface->events.set_class, &xwayland_view->set_class);
+	xwayland_view->set_class.notify = handle_set_class;
+
+	wl_signal_add(&xsurface->events.set_window_type,
+			&xwayland_view->set_window_type);
+	xwayland_view->set_window_type.notify = handle_set_window_type;
 
 	wl_signal_add(&xsurface->events.unmap, &xwayland_view->unmap);
 	xwayland_view->unmap.notify = handle_unmap;

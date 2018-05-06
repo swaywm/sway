@@ -287,7 +287,7 @@ static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 					break;
 				}
 				if (crit->regex && regex_cmp(class, crit->regex) == 0) {
-					matches++;
+					++matches;
 				}
 				break;
 			}
@@ -308,8 +308,16 @@ static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 			// TODO
 			break;
 		case CRIT_ID:
-			// TODO
-			break;
+			{
+				char *endptr;
+				size_t crit_id = strtoul(crit->raw, &endptr, 10);
+
+				if (*endptr == 0
+						&& view_get_x11_window_id(cont->sway_view) == crit_id) {
+					++matches;
+				}
+				break;
+			}
 		case CRIT_APP_ID:
 			{
 				const char *app_id = view_get_app_id(cont->sway_view);
@@ -318,7 +326,7 @@ static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 				}
 
 				if (crit->regex && regex_cmp(app_id, crit->regex) == 0) {
-					matches++;
+					++matches;
 				}
 				break;
 			}
@@ -330,12 +338,13 @@ static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 				}
 
 				if (crit->regex && regex_cmp(instance, crit->regex) == 0) {
-					matches++;
+					++matches;
 				}
 				break;
 			}
 		case CRIT_TILING:
 			// TODO
+			++matches;
 			break;
 		case CRIT_TITLE:
 			{
@@ -345,7 +354,7 @@ static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 				}
 
 				if (crit->regex && regex_cmp(title, crit->regex) == 0) {
-					matches++;
+					++matches;
 				}
 				break;
 			}
@@ -359,8 +368,13 @@ static bool criteria_test(struct sway_container *cont, list_t *tokens) {
 			// TODO
 			break;
 		case CRIT_WORKSPACE:
-			// TODO
-			break;
+			{
+				struct sway_container *ws = container_parent(cont, C_WORKSPACE);
+				if (ws && strcmp(ws->name, crit->raw) == 0) {
+					++matches;
+				}
+				break;
+			}
 		default:
 			sway_abort("Invalid criteria type (%i)", crit->type);
 			break;
@@ -440,6 +454,6 @@ list_t *container_for_crit_tokens(list_t *tokens) {
 		&list_tokens);
 
 	// TODO look in the scratchpad
-	
+
 	return list_tokens.list;
 }

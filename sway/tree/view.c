@@ -3,6 +3,7 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "list.h"
 #include "log.h"
 #include "sway/criteria.h"
 #include "sway/commands.h"
@@ -19,6 +20,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	view->type = type;
 	view->impl = impl;
+	view->executed_criteria = create_list();
 	wl_signal_init(&view->events.unmap);
 }
 
@@ -31,6 +33,8 @@ void view_destroy(struct sway_view *view) {
 		view_unmap(view);
 	}
 
+	list_free(view->executed_criteria);
+
 	container_destroy(view->swayc);
 
 	if (view->impl->destroy) {
@@ -41,31 +45,52 @@ void view_destroy(struct sway_view *view) {
 }
 
 const char *view_get_title(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_TITLE);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_TITLE);
 	}
 	return NULL;
 }
 
 const char *view_get_app_id(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_APP_ID);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_APP_ID);
 	}
 	return NULL;
 }
 
 const char *view_get_class(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_CLASS);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_CLASS);
 	}
 	return NULL;
 }
 
 const char *view_get_instance(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_INSTANCE);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_INSTANCE);
 	}
 	return NULL;
+}
+
+uint32_t view_get_x11_window_id(struct sway_view *view) {
+	if (view->impl->get_int_prop) {
+		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
+	}
+	return 0;
+}
+
+uint32_t view_get_window_type(struct sway_view *view) {
+	if (view->impl->get_int_prop) {
+		return view->impl->get_int_prop(view, VIEW_PROP_WINDOW_TYPE);
+	}
+	return 0;
+}
+
+uint32_t view_get_window_role(struct sway_view *view) {
+	if (view->impl->get_int_prop) {
+		return view->impl->get_int_prop(view, VIEW_PROP_WINDOW_ROLE);
+	}
+	return 0;
 }
 
 const char *view_get_type(struct sway_view *view) {
@@ -282,8 +307,19 @@ static void view_handle_container_reparent(struct wl_listener *listener,
 	}
 }
 
-static void view_execute_criteria(struct sway_view *view) {
-	if (!sway_assert(view->swayc, "cannot run criteria for unmapped view")) {
+static bool view_has_executed_criteria(struct sway_view *view,
+		struct criteria *criteria) {
+	for (int i = 0; i < view->executed_criteria->length; ++i) {
+		struct criteria *item = view->executed_criteria->items[i];
+		if (item == criteria) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void view_execute_criteria(struct sway_view *view) {
+	if (!view->swayc) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
@@ -292,8 +328,14 @@ static void view_execute_criteria(struct sway_view *view) {
 	list_t *criteria = criteria_for(view->swayc);
 	for (int i = 0; i < criteria->length; i++) {
 		struct criteria *crit = criteria->items[i];
-		wlr_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
+		wlr_log(L_DEBUG, "Checking criteria %s", crit->crit_raw);
+		if (view_has_executed_criteria(view, crit)) {
+			wlr_log(L_DEBUG, "Criteria already executed");
+			continue;
+		}
+		wlr_log(L_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				crit->crit_raw, view, crit->cmdlist);
+		list_add(view->executed_criteria, crit);
 		struct cmd_results *res = execute_command(crit->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {
 			wlr_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
@@ -336,6 +378,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view_damage(view, true);
 	view_handle_container_reparent(&view->container_reparent, NULL);
 
+	view_update_title(view, false);
 	view_execute_criteria(view);
 }
 
