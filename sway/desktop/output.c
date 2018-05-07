@@ -224,22 +224,6 @@ static void render_view(struct sway_view *view, struct sway_output *output) {
 }
 
 /**
- * Select a color to use to render a border based on focus.
- */
-static struct border_colors *select_focus_color(char *name) {
-	struct border_colors *colors;
-	if (strcmp(name, "focused") == 0) {
-		return colors = &config->border_colors.focused;
-	} else if (strcmp(name, "inactive") == 0) {
-		return colors = &config->border_colors.focused_inactive;
-	} else if (strcmp(name, "unfocused") == 0) {
-		return colors =&config->border_colors.unfocused;
-	} else {
-		return NULL;
-	}
-}
-
-/**
  * Get all title textures from children of a parent.
  */
 static struct wlr_texture **get_title_textures(struct sway_container *con) { 
@@ -335,13 +319,13 @@ static void render_container_top_tabbed_border_normal(struct sway_output *output
 
 	int index_tabs = con->parent->children->length - 1;
 	int index_left_of_focus = focus_number - 1;
-	struct border_colors *unfocused = select_focus_color("unfocused");
+	struct border_colors *unfocused = &config->border_colors.unfocused;
 	struct border_colors *focus_color;
 
 	if (active) {
-		focus_color = select_focus_color("focused");
+		focus_color = &config->border_colors.focused;
 	} else {
-		focus_color = select_focus_color("inactive");
+		focus_color = &config->border_colors.focused_inactive;
 	}
 
 	if (index_left_of_focus >= 0) {
@@ -483,7 +467,7 @@ static void render_container_tabbed_border_normal(struct sway_output *output,
 		struct sway_container *con, struct wlr_texture **title_texture,
 		int depth, bool active) {
 
-	struct border_colors *focused_color = select_focus_color("focused");
+	struct border_colors *focused_color = &config->border_colors.focused;
 	render_container_simple_border_normal(output, con, focused_color,
 			NULL, false);
 	render_container_top_tabbed_border_normal(output, con, title_texture,
@@ -511,13 +495,13 @@ static void render_container_simple(struct sway_output *output,
 				struct border_colors *colors;
 				struct wlr_texture *title_texture;
 				if (focus == child) {
-					colors = select_focus_color("focused");
+					colors = &config->border_colors.focused;
 					title_texture = child->title_focused;
 				} else if (seat_get_focus_inactive(seat, con) == child) {
-					colors = select_focus_color("inactive");
+					colors = &config->border_colors.focused_inactive;
 					title_texture = child->title_focused_inactive;
 				} else {
-					colors = select_focus_color("unfocused");
+					colors = &config->border_colors.unfocused;
 					title_texture = child->title_unfocused;
 				}
 
