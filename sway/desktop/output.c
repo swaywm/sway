@@ -748,28 +748,28 @@ static void damage_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 
 	scale_box(&box, output->wlr_output->scale);
 
+	int center_x = box.x + box.width/2;
+	int center_y = box.y + box.height/2;
+
+	pixman_region32_t damage;
+	pixman_region32_init(&damage);
+	pixman_region32_copy(&damage, &surface->current->surface_damage);
+	wlr_region_scale(&damage, &damage, output->wlr_output->scale);
+	if (ceil(output->wlr_output->scale) > surface->current->scale) {
+		// When scaling up a surface, it'll become blurry so we need to
+		// expand the damage region
+		wlr_region_expand(&damage, &damage,
+			ceil(output->wlr_output->scale) - surface->current->scale);
+	}
+	pixman_region32_translate(&damage, box.x, box.y);
+	wlr_region_rotated_bounds(&damage, &damage, rotation,
+		center_x, center_y);
+	wlr_output_damage_add(output->damage, &damage);
+	pixman_region32_fini(&damage);
+
 	if (whole) {
 		wlr_box_rotated_bounds(&box, rotation, &box);
 		wlr_output_damage_add_box(output->damage, &box);
-	} else {
-		int center_x = box.x + box.width/2;
-		int center_y = box.y + box.height/2;
-
-		pixman_region32_t damage;
-		pixman_region32_init(&damage);
-		pixman_region32_copy(&damage, &surface->current->surface_damage);
-		wlr_region_scale(&damage, &damage, output->wlr_output->scale);
-		if (ceil(output->wlr_output->scale) > surface->current->scale) {
-			// When scaling up a surface, it'll become blurry so we need to
-			// expand the damage region
-			wlr_region_expand(&damage, &damage,
-				ceil(output->wlr_output->scale) - surface->current->scale);
-		}
-		pixman_region32_translate(&damage, box.x, box.y);
-		wlr_region_rotated_bounds(&damage, &damage, rotation,
-			center_x, center_y);
-		wlr_output_damage_add(output->damage, &damage);
-		pixman_region32_fini(&damage);
 	}
 }
 
