@@ -311,7 +311,7 @@ static void handle_set_title(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, set_title);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (!xsurface) {
+	if (!xsurface->mapped) {
 		return;
 	}
 	view_update_title(view, false);
@@ -323,7 +323,7 @@ static void handle_set_class(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, set_class);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (!xsurface) {
+	if (!xsurface->mapped) {
 		return;
 	}
 	view_execute_criteria(view);
@@ -334,7 +334,7 @@ static void handle_set_window_type(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, set_window_type);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (!xsurface) {
+	if (!xsurface->mapped) {
 		return;
 	}
 	view_execute_criteria(view);
