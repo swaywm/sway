@@ -84,7 +84,7 @@ bool server_init(struct sway_server *server) {
 
 	// TODO make xwayland optional
 	server->xwayland =
-		wlr_xwayland_create(server->wl_display, server->compositor);
+		wlr_xwayland_create(server->wl_display, server->compositor, false);
 	wl_signal_add(&server->xwayland->events.new_surface,
 		&server->xwayland_surface);
 	server->xwayland_surface.notify = handle_xwayland_surface;
