@@ -462,7 +462,7 @@ static void render_container_top_tabbed_border_normal(struct sway_output *output
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
-	// Single pixel wide vertical line tab separator on the left
+	// Tab separator on the left
 	box.x = con->x + depth * tab_width;
 	box.y = con->y + 1; 
 	box.width = con->sway_view->border_thickness;
@@ -471,7 +471,7 @@ static void render_container_top_tabbed_border_normal(struct sway_output *output
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
-	// Single pixel wide verticl line tab separator on the right
+	// Tab separator on the right
 	box.x = con->x + (depth + 1) * tab_width - con->sway_view->border_thickness;
 	box.y = con->y + 1; 
 	box.width = con->sway_view->border_thickness;
