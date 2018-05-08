@@ -47,12 +47,16 @@
         or manipulate a buffer prior to the first layer_surface.configure call
         must also be treated as errors.
 
+        You may pass NULL for output to allow the compositor to decide which
+        output to use. Generally this will be the one that the user most
+        recently interacted with.
+
         Clients can specify a namespace that defines the purpose of the layer
         surface.
       </description>
       <arg name="id" type="new_id" interface="zwlr_layer_surface_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
-      <arg name="output" type="object" interface="wl_output"/>
+      <arg name="output" type="object" interface="wl_output" allow-null="true"/>
       <arg name="layer" type="uint" enum="layer" summary="layer to add this surface to"/>
       <arg name="namespace" type="string" summary="namespace for the layer surface"/>
     </request>

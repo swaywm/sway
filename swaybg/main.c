@@ -113,7 +113,7 @@ static void layer_surface_closed(void *data,
 	state->run_display = false;
 }
 
-struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.configure = layer_surface_configure,
 	.closed = layer_surface_closed,
 };
@@ -141,7 +141,7 @@ static void output_scale(void *data, struct wl_output *output, int32_t factor) {
 	}
 }
 
-struct wl_output_listener output_listener = {
+static const struct wl_output_listener output_listener = {
 	.geometry = output_geometry,
 	.mode = output_mode,
 	.done = output_done,
@@ -203,7 +203,8 @@ int main(int argc, const char **argv) {
 		return 1;
 	}
 
-	assert(state.display = wl_display_connect(NULL));
+	state.display = wl_display_connect(NULL);
+	assert(state.display);
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
@@ -213,9 +214,11 @@ int main(int argc, const char **argv) {
 	// Second roundtrip to get output properties
 	wl_display_roundtrip(state.display);
 
-	assert(state.surface = wl_compositor_create_surface(state.compositor));
+	state.surface = wl_compositor_create_surface(state.compositor);
+	assert(state.surface);
 
-	assert(state.input_region = wl_compositor_create_region(state.compositor));
+	state.input_region = wl_compositor_create_region(state.compositor);
+	assert(state.input_region);
 	wl_surface_set_input_region(state.surface, state.input_region);
 
 	state.layer_surface = zwlr_layer_shell_v1_get_layer_surface(
