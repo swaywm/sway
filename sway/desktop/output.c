@@ -439,42 +439,42 @@ static void render_container_top_tabbed_border_normal(struct sway_output *output
 		wlr_backend_get_renderer(output->wlr_output->backend);
 	struct wlr_box box;
 	float color[4];
-	float num_tabs = con->parent->children->length;
-	float tab_width = con->width / num_tabs;
+	double num_tabs = con->parent->children->length;
+	double tab_width = con->width / num_tabs;
 
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x + depth * tab_width;
+	box.x = floor(con->x + depth * tab_width);
 	box.y = con->y;
-	box.width = con->width / num_tabs + 1;
+	box.width = ceil(con->width / num_tabs);
 	box.height = 1;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
 	// Single pixel bar below title
-	box.x = con->x + depth*tab_width;
+	box.x = floor(con->x + depth*tab_width);
 	box.y = con->sway_view->y - 1;
-	box.width = con->width / num_tabs + 1;
+	box.width = ceil(con->width / num_tabs);
 	box.height = 1;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
 	// Tab separator on the left
-	box.x = con->x + depth * tab_width;
+	box.x = floor(con->x + depth * tab_width);
 	box.y = con->y + 1; 
-	box.width = con->sway_view->border_thickness;
+	box.width = ceil(con->sway_view->border_thickness);
 	box.height = con->sway_view->y - con->y - 2;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
 			output->wlr_output->transform_matrix);
 
 	// Tab separator on the right
-	box.x = con->x + (depth + 1) * tab_width - con->sway_view->border_thickness;
+	box.x = floor(con->x + (depth + 1) * tab_width - con->sway_view->border_thickness);
 	box.y = con->y + 1; 
-	box.width = con->sway_view->border_thickness;
+	box.width = ceil(con->sway_view->border_thickness);
 	box.height = con->sway_view->y - con->y - 2;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
@@ -483,9 +483,9 @@ static void render_container_top_tabbed_border_normal(struct sway_output *output
 	// Title background
 	memcpy(&color, colors->background, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x + con->sway_view->border_thickness + depth * tab_width;
+	box.x = floor(con->x + con->sway_view->border_thickness + depth * tab_width);
 	box.y = con->y + 1;
-	box.width = con->width / num_tabs - con->sway_view->border_thickness * 2 + 1;
+	box.width = ceil(con->width / num_tabs - con->sway_view->border_thickness * 2);
 	box.height = con->sway_view->y - con->y - 2;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_render_rect(renderer, &box, color,
