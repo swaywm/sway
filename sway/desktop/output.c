@@ -308,7 +308,11 @@ static void render_container_simple_border_normal(struct sway_output *output,
 
 	// Title text
 	if (title_texture) {
-		wlr_renderer_scissor(renderer, &box);
+		struct wlr_box scissor_box;
+		wlr_box_transform(&box,
+				wlr_output_transform_invert(output->wlr_output->transform),
+				output->swayc->width, output->swayc->height, &scissor_box);
+		wlr_renderer_scissor(renderer, &scissor_box);
 		wlr_render_texture(renderer, title_texture,
 				output->wlr_output->transform_matrix, box.x, box.y, 1);
 		wlr_renderer_scissor(renderer, NULL);
