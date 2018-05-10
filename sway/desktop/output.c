@@ -191,17 +191,14 @@ static void scissor_output(struct wlr_output *wlr_output,
 
 static void render_texture(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, struct wlr_texture *texture,
-		const struct wlr_box *_box, const float matrix[static 9], float alpha) {
+		const struct wlr_box *box, const float matrix[static 9], float alpha) {
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 
-	struct wlr_box box = *_box;
-	scale_box(&box, wlr_output->scale);
-
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
-	pixman_region32_union_rect(&damage, &damage, box.x, box.y,
-		box.width, box.height);
+	pixman_region32_union_rect(&damage, &damage, box->x, box->y,
+		box->width, box->height);
 	pixman_region32_intersect(&damage, &damage, output_damage);
 	bool damaged = pixman_region32_not_empty(&damage);
 	if (!damaged) {
@@ -237,6 +234,8 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	if (!intersects) {
 		return;
 	}
+
+	scale_box(&box, wlr_output->scale);
 
 	float matrix[9];
 	enum wl_output_transform transform =
@@ -384,7 +383,11 @@ static void render_container_simple_border_normal(struct sway_output *output,
 
 	// Title text
 	if (title_texture) {
-		struct wlr_box texture_box = { .x = box.x, .y = box.y };
+		float output_scale = output->wlr_output->scale;
+		struct wlr_box texture_box = {
+			.x = box.x * output_scale,
+			.y = box.y * output_scale,
+		};
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
 
@@ -392,8 +395,8 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		wlr_matrix_project_box(matrix, &texture_box, WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		render_texture(output->wlr_output, output_damage, title_texture, &box,
-			matrix, 1.0);
+		render_texture(output->wlr_output, output_damage, title_texture,
+			&texture_box, matrix, 1.0);
 	}
 }
 
@@ -566,7 +569,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
-	//wlr_renderer_clear(renderer, (float[]){1, 1, 0, 0});
+	//wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 
