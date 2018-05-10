@@ -453,7 +453,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 }
 
 static void render_container(struct sway_output *output,
-	pixman_region32_t *damage, struct sway_container *con);
+	pixman_region32_t *damage, struct sway_container *con, bool parent_focused);
 
 /**
  * Render a container's children using a L_HORIZ or L_VERT layout.
@@ -462,7 +462,8 @@ static void render_container(struct sway_output *output,
  * they'll apply their own borders to their children.
  */
 static void render_container_simple(struct sway_output *output,
-		pixman_region32_t *damage, struct sway_container *con) {
+		pixman_region32_t *damage, struct sway_container *con,
+		bool parent_focused) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focus(seat);
 
@@ -473,7 +474,7 @@ static void render_container_simple(struct sway_output *output,
 			if (child->sway_view->border != B_NONE) {
 				struct border_colors *colors;
 				struct wlr_texture *title_texture;
-				if (focus == child) {
+				if (focus == child || parent_focused) {
 					colors = &config->border_colors.focused;
 					title_texture = child->title_focused;
 				} else if (seat_get_focus_inactive(seat, con) == child) {
@@ -494,7 +495,8 @@ static void render_container_simple(struct sway_output *output,
 			}
 			render_view(child->sway_view, output, damage);
 		} else {
-			render_container(output, damage, child);
+			render_container(output, damage, child,
+					parent_focused || focus == child);
 		}
 	}
 }
@@ -516,12 +518,13 @@ static void render_container_stacked(struct sway_output *output,
 }
 
 static void render_container(struct sway_output *output,
-		pixman_region32_t *damage, struct sway_container *con) {
+		pixman_region32_t *damage, struct sway_container *con,
+		bool parent_focused) {
 	switch (con->layout) {
 	case L_NONE:
 	case L_HORIZ:
 	case L_VERT:
-		render_container_simple(output, damage, con);
+		render_container_simple(output, damage, con, parent_focused);
 		break;
 	case L_STACKED:
 		render_container_stacked(output, damage, con);
@@ -605,7 +608,9 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-		render_container(output, damage, workspace);
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		struct sway_container *focus = seat_get_focus(seat);
+		render_container(output, damage, workspace, focus == workspace);
 
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
