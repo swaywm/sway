@@ -530,6 +530,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		if (container->type == C_VIEW) {
 			seat_send_focus(seat, container);
 		}
+		container_damage_whole(container);
 	}
 
 	// clean up unfocused empty workspace on new output
@@ -573,6 +574,10 @@ void seat_set_focus_warp(struct sway_seat *seat,
 				}
 			}
 		}
+	}
+
+	if (last_focus) {
+		container_damage_whole(last_focus);
 	}
 
 	if (last_focus && last_focus->type == C_VIEW &&
