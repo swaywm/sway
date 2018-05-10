@@ -421,6 +421,8 @@ struct sway_container *container_at(struct sway_container *parent,
 
 	list_add(queue, parent);
 
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus_inactive(seat, parent);
 	struct sway_container *swayc = NULL;
 	while (queue->length) {
 		swayc = queue->items[0];
@@ -460,21 +462,54 @@ struct sway_container *container_at(struct sway_container *parent,
 					view_sx, view_sy, &_sx, &_sy);
 				break;
 			}
-			if (_surface) {
-				*sx = _sx;
-				*sy = _sy;
-				*surface = _surface;
-				return swayc;
-			}
 			// Check the view's decorations
 			struct wlr_box swayc_box = {
 				.x = swayc->x,
 				.y = swayc->y,
 				.width = swayc->width,
-				.height = swayc->height,
+				.height = swayc->height
 			};
-			if (wlr_box_contains_point(&swayc_box, ox, oy)) {
-				return swayc;
+			// Check which tab the mouse is on
+			int depth;
+			int num_tabs = swayc->parent->children->length;
+			double tab_width = swayc->width / num_tabs;
+			struct wlr_box tab_box = {
+				.y = swayc->y,
+				.width = swayc->width / num_tabs,
+				.height = swayc->sway_view->y - swayc->y
+			};
+			switch (swayc->parent->layout) {
+			case L_NONE:
+			case L_HORIZ:
+			case L_VERT:
+				if (_surface) {
+					*sx = _sx;
+					*sy = _sy;
+					*surface = _surface;
+					return swayc;
+				}
+				if (wlr_box_contains_point(&swayc_box, ox, oy)) {
+					return swayc;
+				}
+				break;
+			case L_TABBED:
+				for (depth = 0; depth < num_tabs; ++depth) {
+					tab_box.x = swayc->x + depth * tab_width;
+					*sx = _sx;
+					*sy = _sy;
+					*surface = _surface;
+					if (wlr_box_contains_point(&tab_box, ox, oy)) {
+						return swayc->parent->children->items[depth];
+					}
+				}
+				if (focus == swayc) {
+					return swayc;
+				}
+				break;
+			case L_STACKED:
+				break;
+			case L_FLOATING:
+				break;
 			}
 		} else {
 			list_cat(queue, swayc->children);
