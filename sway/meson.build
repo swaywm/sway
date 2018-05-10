@@ -40,6 +40,7 @@ sway_sources = files(
 	'commands/focus_follows_mouse.c',
 	'commands/font.c',
 	'commands/for_window.c',
+	'commands/floating.c',
 	'commands/fullscreen.c',
 	'commands/kill.c',
 	'commands/opacity.c',

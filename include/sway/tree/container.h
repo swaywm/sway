@@ -34,7 +34,6 @@ enum sway_container_layout {
 	L_VERT,
 	L_STACKED,
 	L_TABBED,
-	L_FLOATING,
 };
 
 enum sway_container_border {
@@ -69,6 +68,9 @@ struct sway_container {
 	enum sway_container_type type;
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_layout;
+
+	// Saves us from searching the list of children/floating in the parent
+	bool is_floating;
 
 	// For C_ROOT, this has no meaning
 	// For C_OUTPUT, this is the output position in layout coordinates

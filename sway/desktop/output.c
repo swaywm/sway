@@ -383,6 +383,34 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 static void render_container(struct sway_output *output,
 		struct sway_container *con);
 
+static void render_view_with_border(struct sway_output *output,
+		struct sway_container *view) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+	if (view->sway_view->border != B_NONE) {
+		struct border_colors *colors;
+		struct wlr_texture *title_texture;
+		if (focus == view) {
+			colors = &config->border_colors.focused;
+			title_texture = view->title_focused;
+		} else if (seat_get_focus_inactive(seat, view->parent) == view) {
+			colors = &config->border_colors.focused_inactive;
+			title_texture = view->title_focused_inactive;
+		} else {
+			colors = &config->border_colors.unfocused;
+			title_texture = view->title_unfocused;
+		}
+
+		if (view->sway_view->border == B_NORMAL) {
+			render_container_simple_border_normal(output, view,
+					colors, title_texture);
+		} else {
+			render_container_simple_border_pixel(output, view, colors);
+		}
+	}
+	render_view(view->sway_view, output);
+}
+
 /**
  * Render a container's children using a L_HORIZ or L_VERT layout.
  *
@@ -391,35 +419,10 @@ static void render_container(struct sway_output *output,
  */
 static void render_container_simple(struct sway_output *output,
 		struct sway_container *con) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
-
 	for (int i = 0; i < con->children->length; ++i) {
 		struct sway_container *child = con->children->items[i];
-
 		if (child->type == C_VIEW) {
-			if (child->sway_view->border != B_NONE) {
-				struct border_colors *colors;
-				struct wlr_texture *title_texture;
-				if (focus == child) {
-					colors = &config->border_colors.focused;
-					title_texture = child->title_focused;
-				} else if (seat_get_focus_inactive(seat, con) == child) {
-					colors = &config->border_colors.focused_inactive;
-					title_texture = child->title_focused_inactive;
-				} else {
-					colors = &config->border_colors.unfocused;
-					title_texture = child->title_unfocused;
-				}
-
-				if (child->sway_view->border == B_NORMAL) {
-					render_container_simple_border_normal(output, child,
-							colors, title_texture);
-				} else {
-					render_container_simple_border_pixel(output, child, colors);
-				}
-			}
-			render_view(child->sway_view, output);
+			render_view_with_border(output, child);
 		} else {
 			render_container(output, child);
 		}
@@ -455,9 +458,6 @@ static void render_container(struct sway_output *output,
 		break;
 	case L_TABBED:
 		render_container_tabbed(output, con);
-		break;
-	case L_FLOATING:
-		// TODO
 		break;
 	}
 }
@@ -522,6 +522,14 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
 		render_container(output, workspace);
+
+		// TODO: iterate over all floating views of all active workspaces and
+		// render them in layout space
+		for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
+			struct sway_container *c =
+				workspace->sway_workspace->floating->items[0];
+			render_view_with_border(output, c);
+		}
 
 		render_unmanaged(output, &root_container.sway_root->xwayland_unmanaged);
 		render_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
@@ -599,6 +607,12 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	send_frame_done_container(&data, workspace);
+
+	for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
+		struct sway_container *c =
+			workspace->sway_workspace->floating->items[0];
+		send_frame_done_container_iterator(c, &data);
+	}
 
 	send_frame_done_unmanaged(&data,
 		&root_container.sway_root->xwayland_unmanaged);
