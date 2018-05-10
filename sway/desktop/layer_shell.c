@@ -180,9 +180,6 @@ void arrange_layers(struct sway_output *output) {
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom
-	usable_area.x = usable_area.y = 0;
-	wlr_output_effective_resolution(output->wlr_output,
-			&usable_area.width, &usable_area.height);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 			&usable_area, false);
 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
