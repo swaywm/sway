@@ -280,8 +280,7 @@ static void unescape(char *value) {
 	char *readhead = value;
 	char *writehead = copy;
 	while (*readhead) {
-		if (*readhead == '\\' &&
-				(*(readhead + 1) == '"' || *(readhead + 1) == '\\')) {
+		if (*readhead == '\\' && *(readhead + 1) == '"') {
 			// skip the slash
 			++readhead;
 		}
