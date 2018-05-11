@@ -199,11 +199,11 @@ void view_close(struct sway_view *view) {
 	}
 }
 
-void view_damage(struct sway_view *view, bool whole) {
+void view_damage_from(struct sway_view *view) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
 		if (cont->type == C_OUTPUT) {
-			output_damage_view(cont->sway_output, view, whole);
+			output_damage_from_view(cont->sway_output, view);
 		}
 	}
 }
@@ -333,7 +333,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	arrange_children_of(cont->parent);
 	input_manager_set_focus(input_manager, cont);
 
-	view_damage(view, true);
+	container_damage_whole(cont);
 	view_handle_container_reparent(&view->container_reparent, NULL);
 
 	view_execute_criteria(view);
@@ -351,7 +351,7 @@ void view_unmap(struct sway_view *view) {
 		ws->sway_workspace->fullscreen = NULL;
 	}
 
-	view_damage(view, true);
+	container_damage_whole(view->swayc);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 	wl_list_remove(&view->container_reparent.link);
@@ -380,10 +380,10 @@ void view_update_position(struct sway_view *view, double ox, double oy) {
 
 	// TODO: Only allow this if the view is floating (this function will only be
 	// called in response to wayland clients wanting to reposition themselves).
-	view_damage(view, true);
+	container_damage_whole(view->swayc);
 	view->swayc->x = ox;
 	view->swayc->y = oy;
-	view_damage(view, true);
+	container_damage_whole(view->swayc);
 }
 
 void view_update_size(struct sway_view *view, int width, int height) {
@@ -391,11 +391,11 @@ void view_update_size(struct sway_view *view, int width, int height) {
 		return;
 	}
 
-	view_damage(view, true);
+	container_damage_whole(view->swayc);
 	// Should we update the swayc width/height here too?
 	view->width = width;
 	view->height = height;
-	view_damage(view, true);
+	container_damage_whole(view->swayc);
 }
 
 
@@ -414,7 +414,7 @@ static void view_child_handle_surface_commit(struct wl_listener *listener,
 	struct sway_view_child *child =
 		wl_container_of(listener, child, surface_commit);
 	// TODO: only accumulate damage from the child
-	view_damage(child->view, false);
+	view_damage_from(child->view);
 }
 
 static void view_child_handle_surface_new_subsurface(
@@ -476,12 +476,16 @@ void view_child_init(struct sway_view_child *child,
 	view_init_subsurfaces(child->view, surface);
 
 	// TODO: only damage the whole child
-	view_damage(child->view, true);
+	if (child->view->swayc) {
+		container_damage_whole(child->view->swayc);
+	}
 }
 
 void view_child_destroy(struct sway_view_child *child) {
 	// TODO: only damage the whole child
-	view_damage(child->view, true);
+	if (child->view->swayc) {
+		container_damage_whole(child->view->swayc);
+	}
 
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);

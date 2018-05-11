@@ -65,27 +65,49 @@ static void seat_container_destroy(struct sway_seat_container *seat_con) {
 	free(seat_con);
 }
 
-static void seat_send_focus(struct sway_seat *seat,
-		struct sway_container *con) {
-	if (con->type != C_VIEW) {
-		return;
-	}
-	struct sway_view *view = con->sway_view;
-	if (view->type == SWAY_VIEW_XWAYLAND) {
-		struct wlr_xwayland *xwayland =
-			seat->input->server->xwayland;
-		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
-	}
-	view_set_activated(view, true);
-	struct wlr_keyboard *keyboard =
-		wlr_seat_get_keyboard(seat->wlr_seat);
-	if (keyboard) {
-		wlr_seat_keyboard_notify_enter(seat->wlr_seat,
-				view->surface, keyboard->keycodes,
-				keyboard->num_keycodes, &keyboard->modifiers);
+/**
+ * Activate all views within this container recursively.
+ */
+static void seat_send_activate(struct sway_container *con,
+		struct sway_seat *seat) {
+	if (con->type == C_VIEW) {
+		if (!seat_is_input_allowed(seat, con->sway_view->surface)) {
+			wlr_log(L_DEBUG, "Refusing to set focus, input is inhibited");
+			return;
+		}
+		view_set_activated(con->sway_view, true);
 	} else {
-		wlr_seat_keyboard_notify_enter(
-				seat->wlr_seat, view->surface, NULL, 0, NULL);
+		for (int i = 0; i < con->children->length; ++i) {
+			struct sway_container *child = con->children->items[i];
+			seat_send_activate(child, seat);
+		}
+	}
+}
+
+/**
+ * If con is a view, set it as active and enable keyboard input.
+ * If con is a container, set all child views as active and don't enable
+ * keyboard input on any.
+ */
+static void seat_send_focus(struct sway_container *con,
+		struct sway_seat *seat) {
+	seat_send_activate(con, seat);
+
+	if (con->type == C_VIEW
+			&& seat_is_input_allowed(seat, con->sway_view->surface)) {
+		if (con->sway_view->type == SWAY_VIEW_XWAYLAND) {
+			struct wlr_xwayland *xwayland = seat->input->server->xwayland;
+			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+		}
+		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+		if (keyboard) {
+			wlr_seat_keyboard_notify_enter(seat->wlr_seat,
+					con->sway_view->surface, keyboard->keycodes,
+					keyboard->num_keycodes, &keyboard->modifiers);
+		} else {
+			wlr_seat_keyboard_notify_enter(
+					seat->wlr_seat, con->sway_view->surface, NULL, 0, NULL);
+		}
 	}
 }
 
@@ -160,7 +182,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 		// the structure change might have caused it to move up to the top of
 		// the focus stack without sending focus notifications to the view
 		if (seat_get_focus(seat) == next_focus) {
-			seat_send_focus(seat, next_focus);
+			seat_send_focus(next_focus, seat);
 		} else {
 			seat_set_focus(seat, next_focus);
 		}
@@ -457,6 +479,20 @@ bool seat_is_input_allowed(struct sway_seat *seat,
 	return !seat->exclusive_client || seat->exclusive_client == client;
 }
 
+// Unfocus the container and any children (eg. when leaving `focus parent`)
+static void seat_send_unfocus(struct sway_container *container,
+		struct sway_seat *seat) {
+	if (container->type == C_VIEW) {
+		wlr_seat_keyboard_clear_focus(seat->wlr_seat);
+		view_set_activated(container->sway_view, false);
+	} else {
+		for (int i = 0; i < container->children->length; ++i) {
+			struct sway_container *child = container->children->items[i];
+			seat_send_unfocus(child, seat);
+		}
+	}
+}
+
 void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
 	if (seat->focused_layer) {
@@ -521,15 +557,12 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		wl_list_remove(&seat_con->link);
 		wl_list_insert(&seat->focus_stack, &seat_con->link);
 
-		if (container->type == C_VIEW && !seat_is_input_allowed(
-					seat, container->sway_view->surface)) {
-			wlr_log(L_DEBUG, "Refusing to set focus, input is inhibited");
-			return;
+		if (last_focus) {
+			seat_send_unfocus(last_focus, seat);
 		}
 
-		if (container->type == C_VIEW) {
-			seat_send_focus(seat, container);
-		}
+		seat_send_focus(container, seat);
+		container_damage_whole(container);
 	}
 
 	// clean up unfocused empty workspace on new output
@@ -575,10 +608,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
-	if (last_focus && last_focus->type == C_VIEW &&
-			!input_manager_has_focus(seat->input, last_focus)) {
-		struct sway_view *view = last_focus->sway_view;
-		view_set_activated(view, false);
+	if (last_focus) {
+		container_damage_whole(last_focus);
 	}
 
 	if (last_workspace && last_workspace != new_workspace) {
@@ -602,10 +633,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 	}
 	if (seat->has_focus) {
 		struct sway_container *focus = seat_get_focus(seat);
-		if (focus->type == C_VIEW) {
-			wlr_seat_keyboard_clear_focus(seat->wlr_seat);
-			view_set_activated(focus->sway_view, false);
-		}
+		seat_send_unfocus(focus, seat);
 		seat->has_focus = false;
 	}
 	struct wlr_keyboard *keyboard =

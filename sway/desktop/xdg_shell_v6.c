@@ -177,7 +177,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	view_update_size(view, xdg_shell_v6_view->pending_width,
 		xdg_shell_v6_view->pending_height);
 	view_update_title(view, false);
-	view_damage(view, false);
+	view_damage_from(view);
 }
 
 static void handle_new_popup(struct wl_listener *listener, void *data) {

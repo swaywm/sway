@@ -184,7 +184,7 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen);
 
 void view_close(struct sway_view *view);
 
-void view_damage(struct sway_view *view, bool whole);
+void view_damage_from(struct sway_view *view);
 
 void view_for_each_surface(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
