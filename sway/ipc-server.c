@@ -546,6 +546,19 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_SEATS:
+	{
+		json_object *seats = json_object_new_array();
+		struct sway_seat *seat = NULL;
+		wl_list_for_each(seat, &input_manager->seats, link) {
+			json_object_array_add(seats, ipc_json_describe_seat(seat));
+		}
+		const char *json_string = json_object_to_json_string(seats);
+		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		json_object_put(seats); // free
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_TREE:
 	{
 		json_object *tree =

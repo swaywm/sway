@@ -14,6 +14,7 @@ enum ipc_command_type {
 	IPC_GET_VERSION = 7,
 	IPC_GET_INPUTS = 8,
 	IPC_GET_CLIPBOARD = 9,
+	IPC_GET_SEATS = 10,
 	// Events send from sway to clients. Events have the highest bits set.
 	IPC_EVENT_WORKSPACE = ((1<<31) | 0),
 	IPC_EVENT_OUTPUT = ((1<<31) | 1),

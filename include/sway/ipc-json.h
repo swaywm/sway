@@ -9,6 +9,7 @@ json_object *ipc_json_get_version();
 json_object *ipc_json_describe_container(struct sway_container *c);
 json_object *ipc_json_describe_container_recursive(struct sway_container *c);
 json_object *ipc_json_describe_input(struct sway_input_device *device);
+json_object *ipc_json_describe_seat(struct sway_seat *seat);
 json_object *ipc_json_describe_bar_config(struct bar_config *bar);
 
 #endif

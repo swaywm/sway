@@ -106,6 +106,35 @@ static void pretty_print_input(json_object *i) {
 		json_object_get_int(vendor));
 }
 
+static void pretty_print_seat(json_object *i) {
+	json_object *name, *capabilities, *devices;
+	json_object_object_get_ex(i, "name", &name);
+	json_object_object_get_ex(i, "capabilities", &capabilities);
+	json_object_object_get_ex(i, "devices", &devices);
+
+	const char *fmt =
+		"Seat: %s\n"
+		"  Capabilities: %d\n";
+
+	printf(fmt, json_object_get_string(name),
+		json_object_get_int(capabilities));
+
+	size_t devices_len = json_object_array_length(devices);
+	if (devices_len > 0) {
+		printf("  Devices:\n");
+		for (size_t i = 0; i < devices_len; ++i) {
+			json_object *device = json_object_array_get_idx(devices, i);
+
+			json_object *device_name;
+			json_object_object_get_ex(device, "name", &device_name);
+
+			printf("    %s\n", json_object_get_string(device_name));
+		}
+	}
+
+	printf("\n");
+}
+
 static void pretty_print_output(json_object *o) {
 	json_object *name, *rect, *focused, *active, *ws;
 	json_object_object_get_ex(o, "name", &name);
@@ -211,7 +240,8 @@ static void pretty_print_clipboard(json_object *v) {
 static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
-			type != IPC_GET_VERSION && type != IPC_GET_CLIPBOARD) {
+			type != IPC_GET_VERSION && type != IPC_GET_CLIPBOARD &&
+			type != IPC_GET_SEATS) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
@@ -243,6 +273,9 @@ static void pretty_print(int type, json_object *resp) {
 			break;
 		case IPC_GET_OUTPUTS:
 			pretty_print_output(obj);
+			break;
+		case IPC_GET_SEATS:
+			pretty_print_seat(obj);
 			break;
 		}
 	}
@@ -324,6 +357,8 @@ int main(int argc, char **argv) {
 		type = IPC_COMMAND;
 	} else if (strcasecmp(cmdtype, "get_workspaces") == 0) {
 		type = IPC_GET_WORKSPACES;
+	} else if (strcasecmp(cmdtype, "get_seats") == 0) {
+		type = IPC_GET_SEATS;
 	} else if (strcasecmp(cmdtype, "get_inputs") == 0) {
 		type = IPC_GET_INPUTS;
 	} else if (strcasecmp(cmdtype, "get_outputs") == 0) {
