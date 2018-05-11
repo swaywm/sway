@@ -90,12 +90,14 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		}
 		free(ws_name);
 		struct sway_container *old_parent = current->parent;
-		struct sway_container *focus = seat_get_focus_inactive(
+		struct sway_container *destination = seat_get_focus_inactive(
 				config->handler_context.seat, ws);
-		container_move_to(current, focus);
-		seat_set_focus(config->handler_context.seat, old_parent);
+		container_move_to(current, destination);
+		struct sway_container *focus = seat_get_focus_inactive(
+				config->handler_context.seat, old_parent);
+		seat_set_focus(config->handler_context.seat, focus);
 		container_reap_empty(old_parent);
-		container_reap_empty(focus->parent);
+		container_reap_empty(destination->parent);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcasecmp(argv[1], "to") == 0
 			&& strcasecmp(argv[2], "output") == 0) {
