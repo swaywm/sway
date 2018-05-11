@@ -562,20 +562,20 @@ static void render_container_tabbed(struct sway_output *output,
 		if (child->type == C_VIEW) {
 			struct border_colors *colors;
 			struct wlr_texture *title_texture;
-			if (child->sway_view->border != B_NONE) {
-				if (focus == child) {
-					colors = &config->border_colors.focused;
-					title_texture = child->title_focused;
-					active_child = child;
-				} else if (seat_get_focus_inactive(seat, con) == child) {
-					colors= &config->border_colors.focused_inactive;
-					title_texture = child->title_focused_inactive;
-					active_child = child;
-				} else {
-					colors = &config->border_colors.unfocused;
-					title_texture = child->title_unfocused;
-				}
+			if (focus == child) {
+				colors = &config->border_colors.focused;
+				title_texture = child->title_focused;
+				active_child = child;
+			} else if (seat_get_focus_inactive(seat, con) == child) {
+				colors= &config->border_colors.focused_inactive;
+				title_texture = child->title_focused_inactive;
+				active_child = child;
+			} else {
+				colors = &config->border_colors.unfocused;
+				title_texture = child->title_unfocused;
+			}
 
+			if (child->sway_view->border != B_NONE) {
 				render_container_top_tabbed_border_normal(output, child, colors,
 						title_texture, i);
 			}
