@@ -190,19 +190,128 @@ static bool generate_regex(pcre **regex, char *value) {
 	return true;
 }
 
+enum criteria_token {
+	T_APP_ID,
+	T_CLASS,
+	T_CON_ID,
+	T_CON_MARK,
+	T_FLOATING,
+	T_ID,
+	T_INSTANCE,
+	T_TILING,
+	T_TITLE,
+	T_URGENT,
+	T_WINDOW_ROLE,
+	T_WINDOW_TYPE,
+	T_WORKSPACE,
+
+	T_INVALID,
+};
+
+static enum criteria_token token_from_name(char *name) {
+	if (strcmp(name, "app_id") == 0) {
+		return T_APP_ID;
+	} else if (strcmp(name, "class") == 0) {
+		return T_CLASS;
+	} else if (strcmp(name, "con_id") == 0) {
+		return T_CON_ID;
+	} else if (strcmp(name, "con_mark") == 0) {
+		return T_CON_MARK;
+	} else if (strcmp(name, "id") == 0) {
+		return T_ID;
+	} else if (strcmp(name, "instance") == 0) {
+		return T_INSTANCE;
+	} else if (strcmp(name, "title") == 0) {
+		return T_TITLE;
+	} else if (strcmp(name, "urgent") == 0) {
+		return T_URGENT;
+	} else if (strcmp(name, "window_role") == 0) {
+		return T_WINDOW_ROLE;
+	} else if (strcmp(name, "window_type") == 0) {
+		return T_WINDOW_TYPE;
+	} else if (strcmp(name, "workspace") == 0) {
+		return T_WORKSPACE;
+	}
+	return T_INVALID;
+}
+
+/**
+ * Get a property of the focused view.
+ *
+ * Note that we are taking the focused view at the time of criteria parsing, not
+ * at the time of execution. This is because __focused__ only makes sense when
+ * using criteria via IPC. Using __focused__ in config is not useful because
+ * criteria is only executed once per view.
+ */
+static char *get_focused_prop(enum criteria_token token) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+
+	if (!focus || focus->type != C_VIEW) {
+		return NULL;
+	}
+	struct sway_view *view = focus->sway_view;
+	const char *value = NULL;
+
+	switch (token) {
+	case T_APP_ID:
+		value = view_get_app_id(view);
+		break;
+	case T_CLASS:
+		value = view_get_class(view);
+		break;
+	case T_INSTANCE:
+		value = view_get_instance(view);
+		break;
+	case T_TITLE:
+		value = view_get_class(view);
+		break;
+	case T_WINDOW_ROLE:
+		value = view_get_class(view);
+		break;
+	case T_WORKSPACE:
+		{
+			struct sway_container *ws = container_parent(focus, C_WORKSPACE);
+			if (ws) {
+				value = ws->name;
+			}
+		}
+		break;
+	case T_CON_ID: // These do not support __focused__
+	case T_CON_MARK:
+	case T_FLOATING:
+	case T_ID:
+	case T_TILING:
+	case T_URGENT:
+	case T_WINDOW_TYPE:
+	case T_INVALID:
+		break;
+	}
+	if (value) {
+		return strdup(value);
+	}
+	return NULL;
+}
+
 static bool parse_token(struct criteria *criteria, char *name, char *value) {
+	enum criteria_token token = token_from_name(name);
+	if (token == T_INVALID) {
+		const char *fmt = "Token '%s' is not recognized";
+		int len = strlen(fmt) + strlen(name) - 1;
+		error = malloc(len);
+		snprintf(error, len, fmt, name);
+		return false;
+	}
+
+	char *effective_value = NULL;
+	if (value && strcmp(value, "__focused__") == 0) {
+		effective_value = get_focused_prop(token);
+	} else if (value) {
+		effective_value = strdup(value);
+	}
+
 	// Require value, unless token is floating or tiled
-	if (!value && (strcmp(name, "title") == 0
-			|| strcmp(name, "app_id") == 0
-			|| strcmp(name, "class") == 0
-			|| strcmp(name, "instance") == 0
-			|| strcmp(name, "con_id") == 0
-			|| strcmp(name, "con_mark") == 0
-			|| strcmp(name, "window_role") == 0
-			|| strcmp(name, "window_type") == 0
-			|| strcmp(name, "id") == 0
-			|| strcmp(name, "urgent") == 0
-			|| strcmp(name, "workspace") == 0)) {
+	if (!effective_value && token != T_FLOATING && token != T_TILING) {
 		const char *fmt = "Token '%s' requires a value";
 		int len = strlen(fmt) + strlen(name) - 1;
 		error = malloc(len);
@@ -210,53 +319,64 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		return false;
 	}
 
-	if (strcmp(name, "title") == 0) {
-		generate_regex(&criteria->title, value);
-	} else if (strcmp(name, "app_id") == 0) {
-		generate_regex(&criteria->app_id, value);
-	} else if (strcmp(name, "class") == 0) {
-		generate_regex(&criteria->class, value);
-	} else if (strcmp(name, "instance") == 0) {
-		generate_regex(&criteria->instance, value);
-	} else if (strcmp(name, "con_id") == 0) {
-		char *endptr;
-		criteria->con_id = strtoul(value, &endptr, 10);
+	char *endptr = NULL;
+	switch (token) {
+	case T_TITLE:
+		generate_regex(&criteria->title, effective_value);
+		break;
+	case T_APP_ID:
+		generate_regex(&criteria->app_id, effective_value);
+		break;
+	case T_CLASS:
+		generate_regex(&criteria->class, effective_value);
+		break;
+	case T_INSTANCE:
+		generate_regex(&criteria->instance, effective_value);
+		break;
+	case T_CON_ID:
+		criteria->con_id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'con_id' should be numeric");
 		}
-	} else if (strcmp(name, "con_mark") == 0) {
-		generate_regex(&criteria->con_mark, value);
-	} else if (strcmp(name, "window_role") == 0) {
-		generate_regex(&criteria->window_role, value);
-	} else if (strcmp(name, "window_type") == 0) {
+		break;
+	case T_CON_MARK:
+		generate_regex(&criteria->con_mark, effective_value);
+		break;
+	case T_WINDOW_ROLE:
+		generate_regex(&criteria->window_role, effective_value);
+		break;
+	case T_WINDOW_TYPE:
 		// TODO: This is a string but will be stored as an enum or integer
-	} else if (strcmp(name, "id") == 0) {
-		char *endptr;
-		criteria->id = strtoul(value, &endptr, 10);
+		break;
+	case T_ID:
+		criteria->id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'id' should be numeric");
 		}
-	} else if (strcmp(name, "floating") == 0) {
+		break;
+	case T_FLOATING:
 		criteria->floating = true;
-	} else if (strcmp(name, "tiling") == 0) {
+		break;
+	case T_TILING:
 		criteria->tiling = true;
-	} else if (strcmp(name, "urgent") == 0) {
-		if (strcmp(value, "latest") == 0) {
+		break;
+	case T_URGENT:
+		if (strcmp(effective_value, "latest") == 0) {
 			criteria->urgent = 'l';
-		} else if (strcmp(value, "oldest") == 0) {
+		} else if (strcmp(effective_value, "oldest") == 0) {
 			criteria->urgent = 'o';
 		} else {
 			error =
 				strdup("The value for 'urgent' must be 'latest' or 'oldest'");
 		}
-	} else if (strcmp(name, "workspace") == 0) {
-		criteria->workspace = strdup(value);
-	} else {
-		const char *fmt = "Token '%s' is not recognized";
-		int len = strlen(fmt) + strlen(name) - 1;
-		error = malloc(len);
-		snprintf(error, len, fmt, name);
+		break;
+	case T_WORKSPACE:
+		criteria->workspace = strdup(effective_value);
+		break;
+	case T_INVALID:
+		break;
 	}
+	free(effective_value);
 
 	if (error) {
 		return false;
