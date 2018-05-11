@@ -100,6 +100,9 @@ void view_autoconfigure(struct sway_view *view) {
 		return;
 	}
 
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	int other_views = ws->children->length - 1;
+
 	double x, y, width, height;
 	x = y = width = height = 0;
 	switch (view->border) {
@@ -110,18 +113,51 @@ void view_autoconfigure(struct sway_view *view) {
 		height = view->swayc->height;
 		break;
 	case B_PIXEL:
-		x = view->swayc->x + view->border_thickness;
-		y = view->swayc->y + view->border_thickness;
-		width = view->swayc->width - view->border_thickness * 2;
-		height = view->swayc->height - view->border_thickness * 2;
+		if (view->swayc->layout > L_VERT
+				|| config->hide_edge_borders == E_NONE
+				|| config->hide_edge_borders == E_HORIZONTAL
+				|| (config->hide_edge_borders == E_SMART && other_views)) {
+			x = view->swayc->x + view->border_thickness;
+			width = view->swayc->width - view->border_thickness * 2;
+		} else {
+			x = view->swayc->x;
+			width = view->swayc->width;
+		}
+		if (view->swayc->layout > L_VERT
+				|| config->hide_edge_borders == E_NONE
+				|| config->hide_edge_borders == E_VERTICAL
+				|| (config->hide_edge_borders == E_SMART && other_views)) {
+			y = view->swayc->y + view->border_thickness;
+			height = view->swayc->height - view->border_thickness * 2;
+		} else {
+			y = view->swayc->y;
+			height = view->swayc->height;
+		}
 		break;
 	case B_NORMAL:
-		// Height is: border + title height + border + view height + border
-		x = view->swayc->x + view->border_thickness;
-		y = view->swayc->y + config->font_height + view->border_thickness * 2;
-		width = view->swayc->width - view->border_thickness * 2;
-		height = view->swayc->height - config->font_height
-			- view->border_thickness * 3;
+		if (view->swayc->layout > L_VERT
+				|| config->hide_edge_borders == E_NONE
+				|| config->hide_edge_borders == E_HORIZONTAL
+				|| (config->hide_edge_borders == E_SMART && other_views)) {
+			x = view->swayc->x + view->border_thickness;
+			width = view->swayc->width - view->border_thickness * 2;
+		} else {
+			x = view->swayc->x;
+			width = view->swayc->width;
+		}
+		if (view->swayc->layout > L_VERT
+				|| config->hide_edge_borders == E_NONE
+				|| config->hide_edge_borders == E_VERTICAL
+				|| (config->hide_edge_borders == E_SMART && other_views)) {
+			// Height is: border + title height + border + view height + border
+			y = view->swayc->y + config->font_height
+				+ view->border_thickness * 2;
+			height = view->swayc->height - config->font_height
+				- view->border_thickness * 3;
+		} else {
+			y = view->swayc->y;
+			height = view->swayc->height;
+		}
 		break;
 	}
 

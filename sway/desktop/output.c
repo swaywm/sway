@@ -14,6 +14,7 @@
 #include <wlr/types/wlr_wl_shell.h>
 #include <wlr/util/region.h>
 #include "log.h"
+#include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -321,82 +322,96 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	struct wlr_box box;
 	float color[4];
 
-	// Child border - left edge
-	memcpy(&color, colors->child_border, sizeof(float) * 4);
-	color[3] *= con->alpha;
-	box.x = con->x;
-	box.y = con->y + 1;
-	box.width = con->sway_view->border_thickness;
-	box.height = con->height - 1;
-	render_rect(output->wlr_output, output_damage, &box, color);
+	struct sway_container *workspace = container_parent(con, C_WORKSPACE);
+	int other_views = workspace->children->length - 1;
 
-	// Child border - right edge
-	if (con->parent->children->length == 1 && con->parent->layout == L_HORIZ) {
-		memcpy(&color, colors->indicator, sizeof(float) * 4);
-	} else {
+	if (config->hide_edge_borders != E_VERTICAL
+			&& config->hide_edge_borders != E_BOTH
+			&& (config->hide_edge_borders != E_SMART || other_views)) {
+		// Child border - left edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
+		color[3] *= con->alpha;
+		box.x = con->x;
+		box.y = con->y + 1;
+		box.width = con->sway_view->border_thickness;
+		box.height = con->height - 1;
+		render_rect(output->wlr_output, output_damage, &box, color);
+
+		// Child border - right edge
+		if (con->parent->children->length == 1
+				&& con->parent->layout == L_HORIZ) {
+			memcpy(&color, colors->indicator, sizeof(float) * 4);
+		} else {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+		}
+		color[3] *= con->alpha;
+		box.x = con->x + con->width - con->sway_view->border_thickness;
+		box.y = con->y + 1;
+		box.width = con->sway_view->border_thickness;
+		box.height = con->height - 1;
+		render_rect(output->wlr_output, output_damage, &box, color);
 	}
-	color[3] *= con->alpha;
-	box.x = con->x + con->width - con->sway_view->border_thickness;
-	box.y = con->y + 1;
-	box.width = con->sway_view->border_thickness;
-	box.height = con->height - 1;
-	render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Child border - bottom edge
-	if (con->parent->children->length == 1 && con->parent->layout == L_VERT) {
-		memcpy(&color, colors->indicator, sizeof(float) * 4);
-	} else {
-		memcpy(&color, colors->child_border, sizeof(float) * 4);
-	}
-	color[3] *= con->alpha;
-	box.x = con->x;
-	box.y = con->y + con->height - con->sway_view->border_thickness;
-	box.width = con->width;
-	box.height = con->sway_view->border_thickness;
-	render_rect(output->wlr_output, output_damage, &box, color);
+	if (config->hide_edge_borders != E_HORIZONTAL
+			&& config->hide_edge_borders != E_BOTH
+			&& (config->hide_edge_borders != E_SMART || other_views)) {
+		// Child border - bottom edge
+		if (con->parent->children->length == 1
+				&& con->parent->layout == L_VERT) {
+			memcpy(&color, colors->indicator, sizeof(float) * 4);
+		} else {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+		}
+		color[3] *= con->alpha;
+		box.x = con->x;
+		box.y = con->y + con->height - con->sway_view->border_thickness;
+		box.width = con->width;
+		box.height = con->sway_view->border_thickness;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Single pixel bar above title
-	memcpy(&color, colors->border, sizeof(float) * 4);
-	color[3] *= con->alpha;
-	box.x = con->x;
-	box.y = con->y;
-	box.width = con->width;
-	box.height = 1;
-	render_rect(output->wlr_output, output_damage, &box, color);
+		// Single pixel bar above title
+		memcpy(&color, colors->border, sizeof(float) * 4);
+		color[3] *= con->alpha;
+		box.x = con->x;
+		box.y = con->y;
+		box.width = con->width;
+		box.height = 1;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Single pixel bar below title
-	box.x = con->x + con->sway_view->border_thickness;
-	box.y = con->sway_view->y - 1;
-	box.width = con->width - con->sway_view->border_thickness * 2;
-	box.height = 1;
-	render_rect(output->wlr_output, output_damage, &box, color);
+		// Single pixel bar below title
+		box.x = con->x + con->sway_view->border_thickness;
+		box.y = con->sway_view->y - 1;
+		box.width = con->width - con->sway_view->border_thickness * 2;
+		box.height = 1;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Title background
-	memcpy(&color, colors->background, sizeof(float) * 4);
-	color[3] *= con->alpha;
-	box.x = con->x + con->sway_view->border_thickness;
-	box.y = con->y + 1;
-	box.width = con->width - con->sway_view->border_thickness * 2;
-	box.height = con->sway_view->y - con->y - 2;
-	render_rect(output->wlr_output, output_damage, &box, color);
+		// Title background
+		memcpy(&color, colors->background, sizeof(float) * 4);
+		color[3] *= con->alpha;
+		box.x = con->x + con->sway_view->border_thickness;
+		box.y = con->y + 1;
+		box.width = con->width - con->sway_view->border_thickness * 2;
+		box.height = con->sway_view->y - con->y - 2;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Title text
-	if (title_texture) {
-		float output_scale = output->wlr_output->scale;
-		struct wlr_box texture_box = {
-			.x = box.x * output_scale,
-			.y = box.y * output_scale,
-		};
-		wlr_texture_get_size(title_texture,
-			&texture_box.width, &texture_box.height);
+		// Title text
+		if (title_texture) {
+			float output_scale = output->wlr_output->scale;
+			struct wlr_box texture_box = {
+				.x = box.x * output_scale,
+				.y = box.y * output_scale,
+			};
+			wlr_texture_get_size(title_texture,
+				&texture_box.width, &texture_box.height);
 
-		float matrix[9];
-		wlr_matrix_project_box(matrix, &texture_box, WL_OUTPUT_TRANSFORM_NORMAL,
-			0.0, output->wlr_output->transform_matrix);
+			float matrix[9];
+			wlr_matrix_project_box(matrix, &texture_box,
+				WL_OUTPUT_TRANSFORM_NORMAL,
+				0.0, output->wlr_output->transform_matrix);
 
-		render_texture(output->wlr_output, output_damage, title_texture,
-			&texture_box, matrix, 1.0);
+			render_texture(output->wlr_output, output_damage, title_texture,
+				&texture_box, matrix, 1.0);
+		}
 	}
 }
 
@@ -409,47 +424,60 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	struct wlr_box box;
 	float color[4];
 
-	// Child border - left edge
-	memcpy(&color, colors->child_border, sizeof(float) * 4);
-	color[3] *= con->alpha;
-	box.x = con->x;
-	box.y = con->y;
-	box.width = con->sway_view->border_thickness;
-	box.height = con->height;
-	render_rect(output->wlr_output, output_damage, &box, color);
+	struct sway_container *workspace = container_parent(con, C_WORKSPACE);
+	int other_views = workspace->children->length - 1;
 
-	// Child border - right edge
-	if (con->parent->children->length == 1 && con->parent->layout == L_HORIZ) {
-		memcpy(&color, colors->indicator, sizeof(float) * 4);
-	} else {
+	if (config->hide_edge_borders != E_VERTICAL
+			&& config->hide_edge_borders != E_BOTH
+			&& (config->hide_edge_borders != E_SMART || other_views)) {
+		// Child border - left edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
-	}
-	color[3] *= con->alpha;
-	box.x = con->x + con->width - con->sway_view->border_thickness;
-	box.y = con->y;
-	box.width = con->sway_view->border_thickness;
-	box.height = con->height;
-	render_rect(output->wlr_output, output_damage, &box, color);
+		color[3] *= con->alpha;
+		box.x = con->x;
+		box.y = con->y;
+		box.width = con->sway_view->border_thickness;
+		box.height = con->height;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Child border - top edge
-	box.x = con->x;
-	box.y = con->y;
-	box.width = con->width;
-	box.height = con->sway_view->border_thickness;
-	render_rect(output->wlr_output, output_damage, &box, color);
-
-	// Child border - bottom edge
-	if (con->parent->children->length == 1 && con->parent->layout == L_VERT) {
-		memcpy(&color, colors->indicator, sizeof(float) * 4);
-	} else {
-		memcpy(&color, colors->child_border, sizeof(float) * 4);
+		// Child border - right edge
+		if (con->parent->children->length == 1
+				&& con->parent->layout == L_HORIZ) {
+			memcpy(&color, colors->indicator, sizeof(float) * 4);
+		} else {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+		}
+		color[3] *= con->alpha;
+		box.x = con->x + con->width - con->sway_view->border_thickness;
+		box.y = con->y;
+		box.width = con->sway_view->border_thickness;
+		box.height = con->height;
+		render_rect(output->wlr_output, output_damage, &box, color);
 	}
-	color[3] *= con->alpha;
-	box.x = con->x;
-	box.y = con->y + con->height - con->sway_view->border_thickness;
-	box.width = con->width;
-	box.height = con->sway_view->border_thickness;
-	render_rect(output->wlr_output, output_damage, &box, color);
+
+	if (config->hide_edge_borders != E_HORIZONTAL
+			&& config->hide_edge_borders != E_BOTH
+			&& (config->hide_edge_borders != E_SMART || other_views)) {
+		// Child border - top edge
+		box.x = con->x;
+		box.y = con->y;
+		box.width = con->width;
+		box.height = con->sway_view->border_thickness;
+		render_rect(output->wlr_output, output_damage, &box, color);
+
+		// Child border - bottom edge
+		if (con->parent->children->length == 1
+				&& con->parent->layout == L_VERT) {
+			memcpy(&color, colors->indicator, sizeof(float) * 4);
+		} else {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+		}
+		color[3] *= con->alpha;
+		box.x = con->x;
+		box.y = con->y + con->height - con->sway_view->border_thickness;
+		box.width = con->width;
+		box.height = con->sway_view->border_thickness;
+		render_rect(output->wlr_output, output_damage, &box, color);
+	}
 }
 
 static void render_container(struct sway_output *output,
