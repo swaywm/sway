@@ -40,7 +40,6 @@ libpam         = cc.find_library('pam')
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git = find_program('git', required: false)
-a2x = find_program('a2x', required: false)
 
 conf_data = configuration_data()
 
@@ -48,31 +47,25 @@ if gdk_pixbuf.found()
 	conf_data.set('HAVE_GDK_PIXBUF', true)
 endif
 
-if a2x.found()
+scdoc = find_program('scdoc', required: false)
+
+if scdoc.found()
+	sh = find_program('sh')
 	mandir = get_option('mandir')
 	man_files = [
-		'sway/sway.1.txt',
-		'sway/sway.5.txt',
-		'sway/sway-bar.5.txt',
-		'sway/sway-input.5.txt',
-		'sway/sway-security.7.txt',
-		'swaymsg/swaymsg.1.txt',
+		'sway/sway.1.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
 		section = filename.split('.')[-2]
+		output = '@0@.@1@'.format(topic, section)
 
 		custom_target(
-			'man-@0@-@1@'.format(topic, section),
+			output,
 			input: filename,
-			output: '@BASENAME@',
+			output: output,
 			command: [
-				a2x,
-				'--no-xmllint',
-				'--doctype', 'manpage',
-				'--format', 'manpage',
-				'--destination-dir', meson.current_build_dir(),
-				'@INPUT@'
+				sh, '-c', '@0@ < @INPUT@ > @1@'.format(scdoc.path(), output)
 			],
 			install: true,
 			install_dir: '@0@/man@1@'.format(mandir, section)
