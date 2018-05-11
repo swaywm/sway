@@ -15,12 +15,12 @@ struct cmd_results *cmd_default_border(int argc, char **argv) {
 		config->border = B_NORMAL;
 	} else if (strcmp(argv[0], "pixel") == 0) {
 		config->border = B_PIXEL;
-		if (argc == 2) {
-			config->border_thickness = atoi(argv[1]);
-		}
 	} else {
 		return cmd_results_new(CMD_INVALID, "default_border",
-				"Expected 'default_border <none|normal|pixel>' or 'default_border pixel <px>'");
+				"Expected 'default_border <none|normal|pixel>' or 'default_border <normal|pixel> <px>'");
+	}
+	if (argc == 2) {
+		config->border_thickness = atoi(argv[1]);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
