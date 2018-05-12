@@ -11,381 +11,435 @@
 #include "list.h"
 #include "log.h"
 
-bool criteria_is_empty(struct criteria *criteria) {
-	return !criteria->title
-		&& !criteria->app_id
-		&& !criteria->class
-		&& !criteria->instance
-		&& !criteria->con_mark
-		&& !criteria->con_id
-		&& !criteria->id
-		&& !criteria->window_role
-		&& !criteria->window_type
-		&& !criteria->floating
-		&& !criteria->tiling
-		&& !criteria->urgent
-		&& !criteria->workspace;
-}
-
-void criteria_destroy(struct criteria *criteria) {
-	pcre_free(criteria->title);
-	pcre_free(criteria->app_id);
-	pcre_free(criteria->class);
-	pcre_free(criteria->instance);
-	pcre_free(criteria->con_mark);
-	pcre_free(criteria->window_role);
-	free(criteria->workspace);
-
-	free(criteria->raw);
-	free(criteria);
-}
-
-static int regex_cmp(const char *item, const pcre *regex) {
-	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
-}
-
-static bool criteria_matches_view(struct criteria *criteria,
-		struct sway_view *view) {
-	if (criteria->title) {
-		const char *title = view_get_title(view);
-		if (!title || regex_cmp(title, criteria->title) != 0) {
-			return false;
-		}
-	}
-
-	if (criteria->app_id) {
-		const char *app_id = view_get_app_id(view);
-		if (!app_id || regex_cmp(app_id, criteria->app_id) != 0) {
-			return false;
-		}
-	}
-
-	if (criteria->class) {
-		const char *class = view_get_class(view);
-		if (!class || regex_cmp(class, criteria->class) != 0) {
-			return false;
-		}
-	}
-
-	if (criteria->instance) {
-		const char *instance = view_get_instance(view);
-		if (!instance || regex_cmp(instance, criteria->instance) != 0) {
-			return false;
-		}
-	}
-
-	if (criteria->con_mark) {
-		// TODO
-		return false;
-	}
-
-	if (criteria->con_id) { // Internal ID
-		if (!view->swayc || view->swayc->id != criteria->con_id) {
-			return false;
-		}
-	}
-
-	if (criteria->id) { // X11 window ID
-		uint32_t x11_window_id = view_get_x11_window_id(view);
-		if (!x11_window_id || x11_window_id != criteria->id) {
-			return false;
-		}
-	}
-
-	if (criteria->window_role) {
-		// TODO
-	}
-
-	if (criteria->window_type) {
-		uint32_t type = view_get_window_type(view);
-		if (!type || type != criteria->window_type) {
-			return false;
-		}
-	}
-
-	if (criteria->floating) {
-		// TODO
-		return false;
-	}
-
-	if (criteria->tiling) {
-		// TODO
-	}
-
-	if (criteria->urgent) {
-		// TODO
-		return false;
-	}
-
-	if (criteria->workspace) {
-		if (!view->swayc) {
-			return false;
-		}
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		if (!ws || strcmp(ws->name, criteria->workspace) != 0) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-list_t *criteria_for_view(struct sway_view *view, enum criteria_type types) {
-	list_t *criterias = config->criteria;
-	list_t *matches = create_list();
-	for (int i = 0; i < criterias->length; ++i) {
-		struct criteria *criteria = criterias->items[i];
-		if ((criteria->type & types) && criteria_matches_view(criteria, view)) {
-			list_add(matches, criteria);
-		}
-	}
-	return matches;
-}
-
-struct match_data {
-	struct criteria *criteria;
-	list_t *matches;
+enum criteria_type { // *must* keep in sync with criteria_strings[]
+	CRIT_APP_ID,
+	CRIT_CLASS,
+	CRIT_CON_ID,
+	CRIT_CON_MARK,
+	CRIT_FLOATING,
+	CRIT_ID,
+	CRIT_INSTANCE,
+	CRIT_TILING,
+	CRIT_TITLE,
+	CRIT_URGENT,
+	CRIT_WINDOW_ROLE,
+	CRIT_WINDOW_TYPE,
+	CRIT_WORKSPACE,
+	CRIT_LAST
 };
 
-static void criteria_get_views_iterator(struct sway_container *container,
-		void *data) {
-	struct match_data *match_data = data;
-	if (container->type == C_VIEW) {
-		if (criteria_matches_view(match_data->criteria, container->sway_view)) {
-			list_add(match_data->matches, container->sway_view);
+static const char * const criteria_strings[CRIT_LAST] = {
+	[CRIT_APP_ID] = "app_id",
+	[CRIT_CLASS] = "class",
+	[CRIT_CON_ID] = "con_id",
+	[CRIT_CON_MARK] = "con_mark",
+	[CRIT_FLOATING] = "floating",
+	[CRIT_ID] = "id",
+	[CRIT_INSTANCE] = "instance",
+	[CRIT_TILING] = "tiling",
+	[CRIT_TITLE] = "title",
+	[CRIT_URGENT] = "urgent", // either "latest" or "oldest" ...
+	[CRIT_WINDOW_ROLE] = "window_role",
+	[CRIT_WINDOW_TYPE] = "window_type",
+	[CRIT_WORKSPACE] = "workspace"
+};
+
+/**
+ * A single criteria token (ie. value/regex pair),
+ * e.g. 'class="some class regex"'.
+ */
+struct crit_token {
+	enum criteria_type type;
+	pcre *regex;
+	char *raw;
+};
+
+static void free_crit_token(struct crit_token *crit) {
+	pcre_free(crit->regex);
+	free(crit->raw);
+	free(crit);
+}
+
+static void free_crit_tokens(list_t *crit_tokens) {
+	for (int i = 0; i < crit_tokens->length; i++) {
+		free_crit_token(crit_tokens->items[i]);
+	}
+	list_free(crit_tokens);
+}
+
+// Extracts criteria string from its brackets. Returns new (duplicate)
+// substring.
+static char *criteria_from(const char *arg) {
+	char *criteria = NULL;
+	if (*arg == '[') {
+		criteria = strdup(arg + 1);
+	} else {
+		criteria = strdup(arg);
+	}
+
+	int last = strlen(criteria) - 1;
+	if (criteria[last] == ']') {
+		criteria[last] = '\0';
+	}
+	return criteria;
+}
+
+// Return instances of c found in str.
+static int countchr(char *str, char c) {
+	int found = 0;
+	for (int i = 0; str[i]; i++) {
+		if (str[i] == c) {
+			++found;
 		}
 	}
+	return found;
 }
 
-list_t *criteria_get_views(struct criteria *criteria) {
-	list_t *matches = create_list();
-	struct match_data data = {
-		.criteria = criteria,
-		.matches = matches,
-	};
-	container_for_each_descendant_dfs(&root_container,
-		criteria_get_views_iterator, &data);
-	return matches;
-}
+// criteria_str is e.g. '[class="some class regex" instance="instance name"]'.
+//
+// Will create array of pointers in buf, where first is duplicate of given
+// string (must be freed) and the rest are pointers to names and values in the
+// base string (every other, naturally). argc will be populated with the length
+// of buf.
+//
+// Returns error string or NULL if successful.
+static char *crit_tokens(int *argc, char ***buf,
+		const char * const criteria_str) {
+	wlr_log(L_DEBUG, "Parsing criteria: '%s'", criteria_str);
+	char *base = criteria_from(criteria_str);
+	char *head = base;
+	char *namep = head; // start of criteria name
+	char *valp = NULL; // start of value
 
-// The error pointer is used for parsing functions, and saves having to pass it
-// as an argument in several places.
-char *error = NULL;
+	// We're going to place EOS markers where we need to and fill up an array
+	// of pointers to the start of each token (either name or value).
+	int pairs = countchr(base, '=');
+	int max_tokens = pairs * 2 + 1; // this gives us at least enough slots
+
+	char **argv = *buf = calloc(max_tokens, sizeof(char*));
+	argv[0] = base; // this needs to be freed by caller
+	bool quoted = true;
+
+	*argc = 1; // uneven = name, even = value
+	while (*head && *argc < max_tokens) {
+		if (namep != head && *(head - 1) == '\\') {
+			// escaped character: don't try to parse this
+		} else if (*head == '=' && namep != head) {
+			if (*argc % 2 != 1) {
+				// we're not expecting a name
+				return strdup("Unable to parse criteria: "
+					"Found out of place equal sign");
+			} else {
+				// name ends here
+				char *end = head; // don't want to rewind the head
+				while (*(end - 1) == ' ') {
+					--end;
+				}
+				*end = '\0';
+				if (*(namep) == ' ') {
+					namep = strrchr(namep, ' ') + 1;
+				}
+				argv[*argc] = namep;
+				*argc += 1;
+			}
+		} else if (*head == '"') {
+			if (*argc % 2 != 0) {
+				// we're not expecting a value
+				return strdup("Unable to parse criteria: "
+					"Found quoted value where it was not expected");
+			} else if (!valp) { // value starts here
+				valp = head + 1;
+				quoted = true;
+			} else {
+				// value ends here
+				argv[*argc] = valp;
+				*argc += 1;
+				*head = '\0';
+				valp = NULL;
+				namep = head + 1;
+			}
+		} else if (*argc % 2 == 0 && *head != ' ') {
+			// parse unquoted values
+			if (!valp) {
+				quoted = false;
+				valp = head;  // value starts here
+			}
+		} else if (valp && !quoted && *head == ' ') {
+			// value ends here
+			argv[*argc] = valp;
+			*argc += 1;
+			*head = '\0';
+			valp = NULL;
+			namep = head + 1;
+		}
+		head++;
+	}
+
+	// catch last unquoted value if needed
+	if (valp && !quoted && !*head) {
+		argv[*argc] = valp;
+		*argc += 1;
+	}
+
+	return NULL;
+}
 
 // Returns error string on failure or NULL otherwise.
-static bool generate_regex(pcre **regex, char *value) {
+static char *parse_criteria_name(enum criteria_type *type, char *name) {
+	*type = CRIT_LAST;
+	for (int i = 0; i < CRIT_LAST; i++) {
+		if (strcmp(criteria_strings[i], name) == 0) {
+			*type = (enum criteria_type) i;
+			break;
+		}
+	}
+	if (*type == CRIT_LAST) {
+		const char *fmt = "Criteria type '%s' is invalid or unsupported.";
+		int len = strlen(name) + strlen(fmt) - 1;
+		char *error = malloc(len);
+		snprintf(error, len, fmt, name);
+		return error;
+	} else if (*type == CRIT_URGENT || *type == CRIT_WINDOW_ROLE ||
+			*type == CRIT_WINDOW_TYPE) {
+		// (we're just being helpful here)
+		const char *fmt = "\"%s\" criteria currently unsupported, "
+			"no window will match this";
+		int len = strlen(fmt) + strlen(name) - 1;
+		char *error = malloc(len);
+		snprintf(error, len, fmt, name);
+		return error;
+	}
+	return NULL;
+}
+
+// Returns error string on failure or NULL otherwise.
+static char *generate_regex(pcre **regex, char *value) {
 	const char *reg_err;
 	int offset;
 
 	*regex = pcre_compile(value, PCRE_UTF8 | PCRE_UCP, &reg_err, &offset, NULL);
 
 	if (!*regex) {
-		const char *fmt = "Regex compilation for '%s' failed: %s";
+		const char *fmt = "Regex compilation (for '%s') failed: %s";
 		int len = strlen(fmt) + strlen(value) + strlen(reg_err) - 3;
-		error = malloc(len);
+		char *error = malloc(len);
 		snprintf(error, len, fmt, value, reg_err);
-		return false;
+		return error;
 	}
-
-	return true;
-}
-
-static bool parse_token(struct criteria *criteria, char *name, char *value) {
-	// Require value, unless token is floating or tiled
-	if (!value && (strcmp(name, "title") == 0
-			|| strcmp(name, "app_id") == 0
-			|| strcmp(name, "class") == 0
-			|| strcmp(name, "instance") == 0
-			|| strcmp(name, "con_id") == 0
-			|| strcmp(name, "con_mark") == 0
-			|| strcmp(name, "window_role") == 0
-			|| strcmp(name, "window_type") == 0
-			|| strcmp(name, "id") == 0
-			|| strcmp(name, "urgent") == 0
-			|| strcmp(name, "workspace") == 0)) {
-		const char *fmt = "Token '%s' requires a value";
-		int len = strlen(fmt) + strlen(name) - 1;
-		error = malloc(len);
-		snprintf(error, len, fmt, name);
-		return false;
-	}
-
-	if (strcmp(name, "title") == 0) {
-		generate_regex(&criteria->title, value);
-	} else if (strcmp(name, "app_id") == 0) {
-		generate_regex(&criteria->app_id, value);
-	} else if (strcmp(name, "class") == 0) {
-		generate_regex(&criteria->class, value);
-	} else if (strcmp(name, "instance") == 0) {
-		generate_regex(&criteria->instance, value);
-	} else if (strcmp(name, "con_id") == 0) {
-		char *endptr;
-		criteria->con_id = strtoul(value, &endptr, 10);
-		if (*endptr != 0) {
-			error = strdup("The value for 'con_id' should be numeric");
-		}
-	} else if (strcmp(name, "con_mark") == 0) {
-		generate_regex(&criteria->con_mark, value);
-	} else if (strcmp(name, "window_role") == 0) {
-		generate_regex(&criteria->window_role, value);
-	} else if (strcmp(name, "window_type") == 0) {
-		// TODO: This is a string but will be stored as an enum or integer
-	} else if (strcmp(name, "id") == 0) {
-		char *endptr;
-		criteria->id = strtoul(value, &endptr, 10);
-		if (*endptr != 0) {
-			error = strdup("The value for 'id' should be numeric");
-		}
-	} else if (strcmp(name, "floating") == 0) {
-		criteria->floating = true;
-	} else if (strcmp(name, "tiling") == 0) {
-		criteria->tiling = true;
-	} else if (strcmp(name, "urgent") == 0) {
-		if (strcmp(value, "latest") == 0) {
-			criteria->urgent = 'l';
-		} else if (strcmp(value, "oldest") == 0) {
-			criteria->urgent = 'o';
-		} else {
-			error =
-				strdup("The value for 'urgent' must be 'latest' or 'oldest'");
-		}
-	} else if (strcmp(name, "workspace") == 0) {
-		criteria->workspace = strdup(value);
-	} else {
-		const char *fmt = "Token '%s' is not recognized";
-		int len = strlen(fmt) + strlen(name) - 1;
-		error = malloc(len);
-		snprintf(error, len, fmt, name);
-	}
-
-	if (error) {
-		return false;
-	}
-
-	return true;
-}
-
-static void skip_spaces(char **head) {
-	while (**head == ' ') {
-		++*head;
-	}
-}
-
-// Remove escaping slashes from value
-static void unescape(char *value) {
-	if (!strchr(value, '\\')) {
-		return;
-	}
-	char *copy = calloc(strlen(value) + 1, 1);
-	char *readhead = value;
-	char *writehead = copy;
-	while (*readhead) {
-		if (*readhead == '\\' && *(readhead + 1) == '"') {
-			// skip the slash
-			++readhead;
-		}
-		*writehead = *readhead;
-		++writehead;
-		++readhead;
-	}
-	strcpy(value, copy);
-	free(copy);
-}
-
-/**
- * Parse a raw criteria string such as [class="foo" instance="bar"] into a
- * criteria struct.
- *
- * If errors are found, NULL will be returned and the error argument will be
- * populated with an error string.
- */
-struct criteria *criteria_parse(char *raw, char **error_arg) {
-	free(error);
-	error = NULL;
-
-	char *head = raw;
-	skip_spaces(&head);
-	if (*head != '[') {
-		*error_arg = strdup("No criteria");
-		return NULL;
-	}
-	++head;
-
-	struct criteria *criteria = calloc(sizeof(struct criteria), 1);
-	char *name = NULL, *value = NULL;
-	bool in_quotes = false;
-
-	while (*head && *head != ']') {
-		skip_spaces(&head);
-		// Parse token name
-		char *namestart = head;
-		while ((*head >= 'a' && *head <= 'z') || *head == '_') {
-			++head;
-		}
-		name = calloc(head - namestart + 1, 1);
-		strncpy(name, namestart, head - namestart);
-		// Parse token value
-		skip_spaces(&head);
-		value = NULL;
-		if (*head == '=') {
-			++head;
-			skip_spaces(&head);
-			if (*head == '"') {
-				in_quotes = true;
-				++head;
-			}
-			char *valuestart = head;
-			if (in_quotes) {
-				while (*head && (*head != '"' || *(head - 1) == '\\')) {
-					++head;
-				}
-				if (!*head) {
-					*error_arg = strdup("Quote mismatch in criteria");
-					goto cleanup;
-				}
-			} else {
-				while (*head && *head != ' ' && *head != ']') {
-					++head;
-				}
-			}
-			value = calloc(head - valuestart + 1, 1);
-			strncpy(value, valuestart, head - valuestart);
-			if (in_quotes) {
-				++head;
-				in_quotes = false;
-			}
-			unescape(value);
-		}
-		wlr_log(L_DEBUG, "Found pair: %s=%s", name, value);
-		if (!parse_token(criteria, name, value)) {
-			*error_arg = error;
-			goto cleanup;
-		}
-		skip_spaces(&head);
-		free(name);
-		free(value);
-		name = NULL;
-		value = NULL;
-	}
-	if (*head != ']') {
-		*error_arg = strdup("No closing brace found in criteria");
-		goto cleanup;
-	}
-
-	if (criteria_is_empty(criteria)) {
-		*error_arg = strdup("Criteria is empty");
-		goto cleanup;
-	}
-
-	++head;
-	int len = head - raw;
-	criteria->raw = calloc(len + 1, 1);
-	strncpy(criteria->raw, raw, len);
-	return criteria;
-
-cleanup:
-	free(name);
-	free(value);
-	criteria_destroy(criteria);
 	return NULL;
+}
+
+// Test whether the criterion corresponds to the currently focused window
+static bool crit_is_focused(const char *value) {
+	return !strcmp(value, "focused") || !strcmp(value, "__focused__");
+}
+
+// Populate list with crit_tokens extracted from criteria string, returns error
+// string or NULL if successful.
+char *extract_crit_tokens(list_t *tokens, const char * const criteria) {
+	int argc;
+	char **argv = NULL, *error = NULL;
+	if ((error = crit_tokens(&argc, &argv, criteria))) {
+		goto ect_cleanup;
+	}
+	for (int i = 1; i + 1 < argc; i += 2) {
+		char* name = argv[i], *value = argv[i + 1];
+		struct crit_token *token = calloc(1, sizeof(struct crit_token));
+		token->raw = strdup(value);
+
+		if ((error = parse_criteria_name(&token->type, name))) {
+			free_crit_token(token);
+			goto ect_cleanup;
+		} else if (token->type == CRIT_URGENT || crit_is_focused(value)) {
+			wlr_log(L_DEBUG, "%s -> \"%s\"", name, value);
+			list_add(tokens, token);
+		} else if((error = generate_regex(&token->regex, value))) {
+			free_crit_token(token);
+			goto ect_cleanup;
+		} else {
+			wlr_log(L_DEBUG, "%s -> /%s/", name, value);
+			list_add(tokens, token);
+		}
+	}
+ect_cleanup:
+	free(argv[0]); // base string
+	free(argv);
+	return error;
+}
+
+static int regex_cmp(const char *item, const pcre *regex) {
+	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+}
+
+// test a single view if it matches list of criteria tokens (all of them).
+static bool criteria_test(struct sway_container *cont, list_t *tokens) {
+	if (cont->type != C_CONTAINER && cont->type != C_VIEW) {
+		return false;
+	}
+	int matches = 0;
+	for (int i = 0; i < tokens->length; i++) {
+		struct crit_token *crit = tokens->items[i];
+		switch (crit->type) {
+		case CRIT_CLASS:
+			{
+				const char *class = view_get_class(cont->sway_view);
+				if (!class) {
+					break;
+				}
+				if (crit->regex && regex_cmp(class, crit->regex) == 0) {
+					matches++;
+				}
+				break;
+			}
+		case CRIT_CON_ID:
+			{
+				char *endptr;
+				size_t crit_id = strtoul(crit->raw, &endptr, 10);
+
+				if (*endptr == 0 && cont->id == crit_id) {
+					++matches;
+				}
+				break;
+			}
+		case CRIT_CON_MARK:
+			// TODO
+			break;
+		case CRIT_FLOATING:
+			// TODO
+			break;
+		case CRIT_ID:
+			// TODO
+			break;
+		case CRIT_APP_ID:
+			{
+				const char *app_id = view_get_app_id(cont->sway_view);
+				if (!app_id) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(app_id, crit->regex) == 0) {
+					matches++;
+				}
+				break;
+			}
+		case CRIT_INSTANCE:
+			{
+				const char *instance = view_get_instance(cont->sway_view);
+				if (!instance) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(instance, crit->regex) == 0) {
+					matches++;
+				}
+				break;
+			}
+		case CRIT_TILING:
+			// TODO
+			break;
+		case CRIT_TITLE:
+			{
+				const char *title = view_get_title(cont->sway_view);
+				if (!title) {
+					break;
+				}
+
+				if (crit->regex && regex_cmp(title, crit->regex) == 0) {
+					matches++;
+				}
+				break;
+			}
+		case CRIT_URGENT:
+			// TODO "latest" or "oldest"
+			break;
+		case CRIT_WINDOW_ROLE:
+			// TODO
+			break;
+		case CRIT_WINDOW_TYPE:
+			// TODO
+			break;
+		case CRIT_WORKSPACE:
+			// TODO
+			break;
+		default:
+			sway_abort("Invalid criteria type (%i)", crit->type);
+			break;
+		}
+	}
+	return matches == tokens->length;
+}
+
+int criteria_cmp(const void *a, const void *b) {
+	if (a == b) {
+		return 0;
+	} else if (!a) {
+		return -1;
+	} else if (!b) {
+		return 1;
+	}
+	const struct criteria *crit_a = a, *crit_b = b;
+	int cmp = lenient_strcmp(crit_a->cmdlist, crit_b->cmdlist);
+	if (cmp != 0) {
+		return cmp;
+	}
+	return lenient_strcmp(crit_a->crit_raw, crit_b->crit_raw);
+}
+
+void free_criteria(struct criteria *crit) {
+	if (crit->tokens) {
+		free_crit_tokens(crit->tokens);
+	}
+	if (crit->cmdlist) {
+		free(crit->cmdlist);
+	}
+	if (crit->crit_raw) {
+		free(crit->crit_raw);
+	}
+	free(crit);
+}
+
+bool criteria_any(struct sway_container *cont, list_t *criteria) {
+	for (int i = 0; i < criteria->length; i++) {
+		struct criteria *bc = criteria->items[i];
+		if (criteria_test(cont, bc->tokens)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+list_t *criteria_for(struct sway_container *cont) {
+	list_t *criteria = config->criteria, *matches = create_list();
+	for (int i = 0; i < criteria->length; i++) {
+		struct criteria *bc = criteria->items[i];
+		if (criteria_test(cont, bc->tokens)) {
+			list_add(matches, bc);
+		}
+	}
+	return matches;
+}
+
+struct list_tokens {
+	list_t *list;
+	list_t *tokens;
+};
+
+static void container_match_add(struct sway_container *container,
+		struct list_tokens *list_tokens) {
+	if (criteria_test(container, list_tokens->tokens)) {
+		list_add(list_tokens->list, container);
+	}
+}
+
+list_t *container_for_crit_tokens(list_t *tokens) {
+	struct list_tokens list_tokens =
+		(struct list_tokens){create_list(), tokens};
+
+	container_for_each_descendant_dfs(&root_container,
+		(void (*)(struct sway_container *, void *))container_match_add,
+		&list_tokens);
+
+	// TODO look in the scratchpad
+	
+	return list_tokens.list;
 }

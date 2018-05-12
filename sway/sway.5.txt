@@ -485,15 +485,10 @@ Mark all Firefox windows with "Browser":
 
 Currently supported attributes:
 
-**app_id**::
-	Compare value against the app id. Can be a regular expression. If value is
-	__focused__, then the app id must be the same as that of the currently
-	focused window.
-
 **class**::
-	Compare value against the window class. Can be a regular expression. If
-	value is __focused__, then the window class must be the same as that of the
-	currently focused window.
+	Compare value against the window class. Can be a regular expression. If value
+	is _focused_, then the window class must be the same as that of the currently
+	focused window.
 
 **con_id**::
 	Compare against the internal container ID, which you can find via IPC.
@@ -505,38 +500,20 @@ Currently supported attributes:
 	Matches against floating windows.
 
 **id**::
-	Compare value against the X11 window id. Must be numeric.
+	Compare value against the app id. Can be a regular expression.
 
-**instance**::
-	Compare value against the window instance. Can be a regular expression. If
-	value is __focused__, then the window instance must be the same as that of
-	the currently focused window.
+**title**::
+	Compare against the window title. Can be a regular expression. If value is
+	_focused_ then the window title must be the same as that of the currently
+	focused window.
 
 **tiling**::
 	Matches against tiling windows.
 
-**title**::
-	Compare against the window title. Can be a regular expression. If value is
-	__focused__, then the window title must be the same as that of the currently
-	focused window.
-
-**urgent**::
-	Compares the urgent state of the window. Can be "latest" or "oldest".
-
-**window_role**::
-	Compare against the window role (WM_WINDOW_ROLE). Can be a regular
-	expression. If value is __focused__, then the window role must be the same
-	as that of the currently focused window.
-
-**window_type**::
-	Compare against the window type (_NET_WM_WINDOW_TYPE). Possible values are
-	normal, dialog, utility, toolbar, splash, menu, dropdown_menu, popup_menu,
-	tooltip and notification.
-
 **workspace**::
-	Compare against the workspace name for this view. Can be a regular
-	expression. If the value is __focused__, then all the views on the currently
-	focused workspace matches.
+	Compare against the workspace name for this view. Can be a regular expression.
+	If the value is _focused_, then all the views on the currently focused workspace
+	matches.
 
 See Also
 --------

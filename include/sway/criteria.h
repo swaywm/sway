@@ -1,61 +1,42 @@
 #ifndef _SWAY_CRITERIA_H
 #define _SWAY_CRITERIA_H
 
-#include <pcre.h>
+#include "tree/container.h"
 #include "list.h"
-#include "tree/view.h"
 
-enum criteria_type {
-	CT_COMMAND = 1 << 0,
-	CT_ASSIGN_OUTPUT = 1 << 1,
-	CT_ASSIGN_WORKSPACE = 1 << 2,
-};
-
+/**
+ * Maps criteria (as a list of criteria tokens) to a command list.
+ *
+ * A list of tokens together represent a single criteria string (e.g.
+ * '[class="abc" title="xyz"]' becomes two criteria tokens).
+ *
+ * for_window: Views matching all criteria will have the bound command list
+ * executed on them.
+ *
+ * Set via `for_window <criteria> <cmd list>`.
+ */
 struct criteria {
-	enum criteria_type type;
-	char *raw; // entire criteria string (for logging)
-	char *cmdlist;
-	char *target; // workspace or output name for `assign` criteria
+	list_t *tokens; // struct crit_token, contains compiled regex.
+	char *crit_raw; // entire criteria string (for logging)
 
-	pcre *title;
-	pcre *app_id;
-	pcre *class;
-	pcre *instance;
-	pcre *con_mark;
-	uint32_t con_id; // internal ID
-	uint32_t id; // X11 window ID
-	pcre *window_role;
-	uint32_t window_type;
-	bool floating;
-	bool tiling;
-	char urgent; // 'l' for latest or 'o' for oldest
-	char *workspace;
+	char *cmdlist;
 };
 
-bool criteria_is_empty(struct criteria *criteria);
+int criteria_cmp(const void *item, const void *data);
+void free_criteria(struct criteria *crit);
 
-void criteria_destroy(struct criteria *criteria);
+// Pouplate list with crit_tokens extracted from criteria string, returns error
+// string or NULL if successful.
+char *extract_crit_tokens(list_t *tokens, const char *criteria);
 
-/**
- * Generate a criteria struct from a raw criteria string such as
- * [class="foo" instance="bar"] (brackets inclusive).
- *
- * The error argument is expected to be an address of a null pointer. If an
- * error is encountered, the function will return NULL and the pointer will be
- * changed to point to the error string. This string should be freed afterwards.
- */
-struct criteria *criteria_parse(char *raw, char **error);
+// Returns list of criteria that match given container. These criteria have
+// been set with `for_window` commands and have an associated cmdlist.
+list_t *criteria_for(struct sway_container *cont);
 
-/**
- * Compile a list of criterias matching the given view.
- *
- * Criteria types can be bitwise ORed.
- */
-list_t *criteria_for_view(struct sway_view *view, enum criteria_type types);
+// Returns a list of all containers that match the given list of tokens.
+list_t *container_for_crit_tokens(list_t *tokens);
 
-/**
- * Compile a list of views matching the given criteria.
- */
-list_t *criteria_get_views(struct criteria *criteria);
+// Returns true if any criteria in the given list matches this container
+bool criteria_any(struct sway_container *cont, list_t *criteria);
 
 #endif

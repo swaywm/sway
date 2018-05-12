@@ -12,7 +12,6 @@
 #include "sway/security.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
-#include "sway/tree/view.h"
 #include "stringop.h"
 #include "log.h"
 
@@ -284,7 +283,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	char *head = exec;
 	char *cmdlist;
 	char *cmd;
-	list_t *views = NULL;
+	list_t *containers = NULL;
 
 	if (seat == NULL) {
 		// passing a NULL seat means we just pick the default seat
@@ -301,18 +300,31 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 		// Extract criteria (valid for this command list only).
 		bool has_criteria = false;
 		if (*head == '[') {
-			char *error = NULL;
-			struct criteria *criteria = criteria_parse(head, &error);
-			if (!criteria) {
-				results = cmd_results_new(CMD_INVALID, head,
-					"%s", error);
-				free(error);
+			has_criteria = true;
+			++head;
+			char *criteria_string = argsep(&head, "]");
+			if (head) {
+				++head;
+				list_t *tokens = create_list();
+				char *error;
+
+				if ((error = extract_crit_tokens(tokens, criteria_string))) {
+					wlr_log(L_DEBUG, "criteria string parse error: %s", error);
+					results = cmd_results_new(CMD_INVALID, criteria_string,
+						"Can't parse criteria string: %s", error);
+					free(error);
+					free(tokens);
+					goto cleanup;
+				}
+				containers = container_for_crit_tokens(tokens);
+
+				free(tokens);
+			} else {
+				if (!results) {
+					results = cmd_results_new(CMD_INVALID, criteria_string, "Unmatched [");
+				}
 				goto cleanup;
 			}
-			views = criteria_get_views(criteria);
-			head += strlen(criteria->raw);
-			criteria_destroy(criteria);
-			has_criteria = true;
 			// Skip leading whitespace
 			head += strspn(head, whitespace);
 		}
@@ -369,9 +381,8 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				}
 				free_cmd_results(res);
 			} else {
-				for (int i = 0; i < views->length; ++i) {
-					struct sway_view *view = views->items[i];
-					config->handler_context.current_container = view->swayc;
+				for (int i = 0; i < containers->length; ++i) {
+					config->handler_context.current_container = containers->items[i];
 					struct cmd_results *res = handler->handle(argc-1, argv+1);
 					if (res->status != CMD_SUCCESS) {
 						free_argv(argc, argv);
@@ -389,7 +400,6 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	} while(head);
 cleanup:
 	free(exec);
-	free(views);
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
