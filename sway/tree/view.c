@@ -188,13 +188,15 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 		struct sway_container *focus, *focus_ws;
 		wl_list_for_each(seat, &input_manager->seats, link) {
 			focus = seat_get_focus(seat);
-			focus_ws = focus;
-			if (focus_ws->type != C_WORKSPACE) {
-				focus_ws = container_parent(focus_ws, C_WORKSPACE);
-			}
-			seat_set_focus(seat, view->swayc);
-			if (focus_ws != workspace) {
-				seat_set_focus(seat, focus);
+			if (focus) {
+				focus_ws = focus;
+				if (focus && focus_ws->type != C_WORKSPACE) {
+					focus_ws = container_parent(focus_ws, C_WORKSPACE);
+				}
+				seat_set_focus(seat, view->swayc);
+				if (focus_ws != workspace) {
+					seat_set_focus(seat, focus);
+				}
 			}
 		}
 	} else {
