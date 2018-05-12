@@ -417,10 +417,9 @@ static void unescape(char *value) {
  * criteria struct.
  *
  * If errors are found, NULL will be returned and the error argument will be
- * populated with an error string.
+ * populated with an error string. It is up to the caller to free the error.
  */
 struct criteria *criteria_parse(char *raw, char **error_arg) {
-	free(error);
 	error = NULL;
 
 	char *head = raw;
