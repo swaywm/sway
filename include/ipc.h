@@ -4,6 +4,7 @@
 #define event_mask(ev) (1 << (ev & 0x7F))
 
 enum ipc_command_type {
+	// i3 command types - see i3's I3_REPLY_TYPE constants
 	IPC_COMMAND = 0,
 	IPC_GET_WORKSPACES = 1,
 	IPC_SUBSCRIBE = 2,
@@ -12,10 +13,13 @@ enum ipc_command_type {
 	IPC_GET_MARKS = 5,
 	IPC_GET_BAR_CONFIG = 6,
 	IPC_GET_VERSION = 7,
-	IPC_GET_INPUTS = 8,
-	IPC_GET_CLIPBOARD = 9,
-	IPC_GET_SEATS = 10,
-	// Events send from sway to clients. Events have the highest bits set.
+
+	// sway-specific command types
+	IPC_GET_INPUTS = 100,
+	IPC_GET_CLIPBOARD = 101,
+	IPC_GET_SEATS = 102,
+
+	// Events sent from sway to clients. Events have the highest bits set.
 	IPC_EVENT_WORKSPACE = ((1<<31) | 0),
 	IPC_EVENT_OUTPUT = ((1<<31) | 1),
 	IPC_EVENT_MODE = ((1<<31) | 2),
