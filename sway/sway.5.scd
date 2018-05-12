@@ -56,8 +56,8 @@ The following commands may only be used in the configuration file.
 	arguments of future commands.
 
 *swaybg\_command* <command>
-	Executes custom bg _command_. Default is _swaybg_. Refer to **output**
-	below for more information.
+	Executes custom background _command_. Default is _swaybg_. Refer to
+	*output* below for more information.
 
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
@@ -197,7 +197,7 @@ runtime.
 	The available classes are:
 
 	*client.background*
-		Ignored (present for i3 compatability).
+		Ignored (present for i3 compatibility).
 
 	*client.focused*
 		The window that has focus.
@@ -206,7 +206,7 @@ runtime.
 		The most recently focused view within a container which is not focused.
 
 	*client.placeholder*
-		Ignored (present for i3 compatability).
+		Ignored (present for i3 compatibility).
 
 	*client.unfocused*
 		A view that does not have focus.
@@ -294,7 +294,7 @@ The default colors are:
 	Executes _shell command_ with sh.
 
 *exec\_always* <shell command>
-	Like exec, but the shell command will be executed _again_ after *reload*.
+	Like *exec*, but the shell command will be executed _again_ after *reload*.
 
 *floating\_maximum\_size* <width> x <height>
 	Specifies the maximum size of floating windows. -1 x -1 removes the upper
@@ -393,7 +393,7 @@ The default colors are:
 
 *mouse\_warping* output|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
-	move focus between them.
+	move focus between them. Default is _output_.
 
 *no\_focus* <criteria>
 	Prevents windows matching <criteria> from being focused automatically when
@@ -407,9 +407,9 @@ The default colors are:
 
 	Examples:
 
-	output HDMI-A-1 mode 1920x1080
+		output HDMI-A-1 mode 1920x1080
 
-	output HDMI-A-1 mode 1920x1080@60Hz
+		output HDMI-A-1 mode 1920x1080@60Hz
 
 *output* <name> position|pos <X,Y>
 	Places the specified output at the specific position in the global

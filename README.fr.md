@@ -61,7 +61,7 @@ Installez les dépendances :
 * pam **
 * imagemagick (requis pour la capture d'image avec swaygrab)
 * ffmpeg (requis pour la capture vidéo avec swaygrab)
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (requis pour man pages)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (requis pour les pages man)
 
 _\*Uniquement requis pour swaybar, swaybg, and swaylock_
 
