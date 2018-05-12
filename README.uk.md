@@ -60,7 +60,6 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * xwayland
 * libinput >= 1.6.0
 * libcap
-* asciidoc
 * pcre
 * json-c >= 0.13
 * pango
@@ -69,6 +68,7 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * pam **
 * imagemagick (для захоплення зображень за допомогою swaygrab)
 * ffmpeg (для захоплення відео за допомогою swaygrab)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Лише для swaybar, swaybg та swaylock_
 

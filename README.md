@@ -51,7 +51,6 @@ Install dependencies:
 * xwayland
 * libinput >= 1.6.0
 * libcap
-* asciidoc
 * pcre
 * json-c >= 0.13
 * pango
@@ -61,6 +60,7 @@ Install dependencies:
 * dbus >= 1.10 ***
 * imagemagick (required for image capture with swaygrab)
 * ffmpeg (required for video capture with swaygrab)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Only required for swaybar, swaybg, and swaylock_
 

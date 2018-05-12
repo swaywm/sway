@@ -44,7 +44,6 @@ Swayは沢山のディストリビューションで提供されています。"
 * xwayland
 * libinput >= 1.6.0
 * libcap
-* asciidoc
 * pcre
 * json-c >= 0.13
 * pango
@@ -53,6 +52,7 @@ Swayは沢山のディストリビューションで提供されています。"
 * pam **
 * imagemagick (swaygrabでスクリーンショットを撮るのに必要です)
 * ffmpeg (swaygrabで画面を録画するのに必要です)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です)
 
 _\*swaybar,swaybg,swaylockでのみ必要です_
 
