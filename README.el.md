@@ -51,7 +51,6 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * xwayland
 * libinput >= 1.6.0
 * libcap
-* asciidoc
 * pcre
 * json-c >= 0.13
 * pango
@@ -60,6 +59,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * pam **
 * imagemagick (αναγκαίο για καταγραφή εικόνας μέσω του swaygrab)
 * ffmpeg (αναγκαίο για καταγραφή video μέσω του swaygrab)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Απαιτείται μόνο για swaybar, swaybg, and swaylock_
 

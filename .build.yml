@@ -12,6 +12,7 @@ packages:
   - gdk-pixbuf2
   - libinput
   - libxkbcommon
+  - scdoc
 sources:
   - https://github.com/swaywm/sway
   - https://github.com/swaywm/wlroots

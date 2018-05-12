@@ -60,7 +60,6 @@ Antes de iniciar a compilação, instale as dependências:
 * xwayland
 * libinput >= 1.6.0
 * libcap
-* asciidoc
 * pcre
 * json-c >= 0.13
 * pango
@@ -69,6 +68,7 @@ Antes de iniciar a compilação, instale as dependências:
 * pam **
 * imagemagick (capturar imagem com o swaygrab)
 * ffmpeg (capturar vídeo com o swaygrab)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (man pages)
 
 _\*Dependência apenas de swaybar, swaybg, e swaylock_
 
