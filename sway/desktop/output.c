@@ -716,23 +716,23 @@ static void render_container_tabbed(struct sway_output *output,
 						child, colors, title_texture, i);
 				child->sway_view->border = border_type;
 				child->sway_view->border_thickness = border_thickness;
-				view_autoconfigure(child->sway_view);
 			} else if (border_type == B_PIXEL) {
 				render_container_tabbed_border_pixel(output, damage,
 						child, colors, i);
 				child->sway_view->border = border_type;
 				child->sway_view->border_thickness = border_thickness;
-				view_autoconfigure(child->sway_view);
 			} else {
 				child->sway_view->border = border_type;
 				child->sway_view->border_thickness = border_thickness;
-				view_autoconfigure(child->sway_view);
 			}
 		} else {
 			render_container(output, damage, child,
 					parent_focused || focus == child);
 		}
 	}
+
+	arrange_children_of(con);
+
 	if (active_child) {
 		render_container_border_outline_normal(output, damage, active_child,
 				focused_colors);
