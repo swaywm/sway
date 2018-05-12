@@ -79,13 +79,6 @@ uint32_t view_get_x11_window_id(struct sway_view *view) {
 	return 0;
 }
 
-const char *view_get_window_role(struct sway_view *view) {
-	if (view->impl->get_string_prop) {
-		return view->impl->get_string_prop(view, VIEW_PROP_WINDOW_ROLE);
-	}
-	return NULL;
-}
-
 uint32_t view_get_window_type(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_WINDOW_TYPE);
