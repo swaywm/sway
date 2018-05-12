@@ -176,6 +176,8 @@ const char *view_get_instance(struct sway_view *view);
 
 uint32_t view_get_x11_window_id(struct sway_view *view);
 
+const char *view_get_window_role(struct sway_view *view);
+
 uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_type(struct sway_view *view);
