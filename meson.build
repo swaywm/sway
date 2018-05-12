@@ -55,6 +55,7 @@ if scdoc.found()
 	man_files = [
 		'sway/sway.1.scd',
 		'sway/sway.5.scd',
+		'sway/sway-bar.5.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]

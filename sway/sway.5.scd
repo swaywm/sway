@@ -576,3 +576,7 @@ The following attributes may be matched with:
 	Compare against the workspace name for this view. Can be a regular
 	expression. If the value is \_\_focused\_\_, then all the views on the
 	currently focused workspace matches.
+
+# SEE ALSO
+
+*sway*(1) *sway-input*(5) *sway-bar*(5)
