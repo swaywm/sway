@@ -46,14 +46,14 @@ You can run sway directly from a tty, or via a Wayland-compatible login manager.
 
 sway searches for a config file in the following locations, in this order:
 
-- ~/.sway/config
-- $XDG\_CONFIG\_HOME/sway/config (suggested location)
-- ~/.i3/config
-- $XDG\_CONFIG\_HOME/i3/config
-- /etc/sway/config
-- /etc/i3/config
+. ~/.sway/config
+. $XDG\_CONFIG\_HOME/sway/config (suggested location)
+. ~/.i3/config
+. $XDG\_CONFIG\_HOME/i3/config
+. /etc/sway/config
+. /etc/i3/config
 
-If unset, $XDG\_CONFIG\_HOME defalts to *~/.config*.
+If unset, $XDG\_CONFIG\_HOME defaults to *~/.config*.
 
 An error is raised when no config file is found. The recommended default
 configuration is usually installed to */etc/sway/config*; you are encouraged to
