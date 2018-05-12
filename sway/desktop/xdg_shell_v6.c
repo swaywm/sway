@@ -20,7 +20,6 @@ static void popup_destroy(struct sway_view_child *child) {
 	}
 	struct sway_xdg_popup_v6 *popup = (struct sway_xdg_popup_v6 *)child;
 	wl_list_remove(&popup->new_popup.link);
-	wl_list_remove(&popup->unmap.link);
 	wl_list_remove(&popup->destroy.link);
 	free(popup);
 }
@@ -37,11 +36,6 @@ static void popup_handle_new_popup(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, popup, new_popup);
 	struct wlr_xdg_popup_v6 *wlr_popup = data;
 	popup_create(wlr_popup, popup->child.view);
-}
-
-static void popup_handle_unmap(struct wl_listener *listener, void *data) {
-	struct sway_xdg_popup_v6 *popup = wl_container_of(listener, popup, unmap);
-	view_child_destroy(&popup->child);
 }
 
 static void popup_handle_destroy(struct wl_listener *listener, void *data) {
@@ -62,8 +56,6 @@ static struct sway_xdg_popup_v6 *popup_create(
 
 	wl_signal_add(&xdg_surface->events.new_popup, &popup->new_popup);
 	popup->new_popup.notify = popup_handle_new_popup;
-	wl_signal_add(&xdg_surface->events.unmap, &popup->unmap);
-	popup->unmap.notify = popup_handle_unmap;
 	wl_signal_add(&xdg_surface->events.destroy, &popup->destroy);
 	popup->destroy.notify = popup_handle_destroy;
 

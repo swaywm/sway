@@ -82,10 +82,6 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_unmanaged *surface =
 		wl_container_of(listener, surface, destroy);
-	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
-	if (xsurface->mapped) {
-		unmanaged_handle_unmap(&surface->unmap, xsurface);
-	}
 	wl_list_remove(&surface->map.link);
 	wl_list_remove(&surface->unmap.link);
 	wl_list_remove(&surface->destroy.link);
