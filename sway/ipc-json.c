@@ -267,6 +267,31 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 	return object;
 }
 
+json_object *ipc_json_describe_seat(struct sway_seat *seat) {
+	if (!(sway_assert(seat, "Seat must not be null"))) {
+		return NULL;
+	}
+
+	json_object *object = json_object_new_object();
+	struct sway_container *focus = seat_get_focus(seat);
+
+	json_object_object_add(object, "name",
+		json_object_new_string(seat->wlr_seat->name));
+	json_object_object_add(object, "capabilities",
+		json_object_new_int(seat->wlr_seat->capabilities));
+	json_object_object_add(object, "focus",
+		json_object_new_int(focus ? focus->id : 0));
+
+	json_object *devices = json_object_new_array();
+	struct sway_seat_device *device = NULL;
+	wl_list_for_each(device, &seat->devices, link) {
+		json_object_array_add(devices, ipc_json_describe_input(device->input_device));
+	}
+	json_object_object_add(object, "devices", devices);
+
+	return object;
+}
+
 json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 	if (!sway_assert(bar, "Bar must not be NULL")) {
 		return NULL;

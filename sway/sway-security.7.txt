@@ -195,6 +195,9 @@ The following commands are available within this block:
 **outputs** <enabled|disabled>::
 	Controls GET_OUTPUTS.
 
+**seats** <enabled|disabled>::
+	Controls GET_SEATS.
+
 **tree** <enabled|disabled>::
 	Controls GET_TREE.
 

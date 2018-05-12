@@ -48,6 +48,9 @@ IPC Message Types
 *get_workspaces*::
 	Gets a JSON-encoded list of workspaces and their status.
 
+*get_seats*::
+	Gets a JSON-encoded list of current seats.
+
 *get_inputs*::
 	Gets a JSON-encoded list of current inputs.
 
