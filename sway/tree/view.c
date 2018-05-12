@@ -100,8 +100,11 @@ void view_autoconfigure(struct sway_view *view) {
 		return;
 	}
 
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int other_views = container_count_descendants_of_type(ws, C_VIEW) - 1;
+	int other_views = 1;
+	if (config->hide_edge_borders == E_SMART) {
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		other_views = container_count_descendants_of_type(ws, C_VIEW) - 1;
+	}
 
 	double x, y, width, height;
 	x = y = width = height = 0;
