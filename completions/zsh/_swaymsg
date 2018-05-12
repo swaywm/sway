@@ -15,6 +15,7 @@
 
 types=(
 'get_workspaces'
+'get_seats'
 'get_inputs'
 'get_outputs'
 'get_tree'
