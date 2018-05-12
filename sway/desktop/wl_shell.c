@@ -20,7 +20,7 @@ static struct sway_wl_shell_view *wl_shell_view_from_view(
 	return (struct sway_wl_shell_view *)view;
 }
 
-static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
+static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
 	if (wl_shell_view_from_view(view) == NULL) {
 		return NULL;
 	}
@@ -70,7 +70,7 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 }
 
 static const struct sway_view_impl view_impl = {
-	.get_prop = get_prop,
+	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.close = _close,
 	.destroy = destroy,
