@@ -1,89 +1,66 @@
-/////
-vim:set ts=4 sw=4 tw=82 noet:
-/////
-:quotes.~:
+swaymsg(1)
 
-swaymsg (1)
-===========
+# NAME
 
-Name
-----
 swaymsg - Send messages to a running instance of sway over the IPC socket.
 
-Synopsis
---------
-'swaymsg' [options] [message]
+# SYNOPSIS
 
-Options
--------
+_swaymsg_ [options...] [message]
 
-*-h, --help*::
+# OPTIONS
+
+*-h, --help*
 	Show help message and quit.
 
-*-q, \--quiet*::
+*-q, --quiet*
 	Sends the IPC message but does not print the response from sway.
 
-*-r, \--raw*::
+*-r, --raw*
 	Use raw output even if using a tty.
 
-*-s, --socket* <path>::
+*-s, --socket* <path>
 	Use the specified socket path. Otherwise, swaymsg will ask sway where the
 	socket is (which is the value of $SWAYSOCK, then of $I3SOCK).
 
-*-t, \--type* <type>::
+*-t, --type* <type>
 	Specify the type of IPC message. See below.
 
-*-v, \--version*::
+*-v, --version*
 	Print the version (of swaymsg) and quit.
 
-IPC Message Types
------------------
+# IPC MESSAGE TYPES
 
-*<command>*::
+*<command>*
 	The message is a sway command (the same commands you can bind to keybindings
 	in your sway config file). It will be executed immediately.
-	+
+
 	See **sway**(5) for a list of commands.
 
-*get_workspaces*::
+*get\_workspaces*
 	Gets a JSON-encoded list of workspaces and their status.
 
-*get_seats*::
-	Gets a JSON-encoded list of current seats.
-
-*get_inputs*::
+*get\_inputs*
 	Gets a JSON-encoded list of current inputs.
 
-*get_outputs*::
+*get\_outputs*
 	Gets a JSON-encoded list of current outputs.
 
-*get_tree*::
+*get\_tree*
 	Gets a JSON-encoded layout tree of all open windows, containers, outputs,
 	workspaces, and so on.
 
-*get_marks*::
+*get\_marks*
 	Get a JSON-encoded list of marks.
 
-*get_bar_config*::
+*get\_bar\_config*
 	Get a JSON-encoded configuration for swaybar.
 
-*get_version*::
+*get\_version*
 	Get JSON-encoded version information for the running instance of sway.
 
-*get_clipboard*::
+*get\_clipboard*
 	Get JSON-encoded information about the clipboard.
 	Returns the current clipboard mime-types if called without
 	arguments, otherwise returns the clipboard data in the requested
 	formats. Encodes the data using base64 for non-text mime types.
-
-Authors
--------
-
-Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
-source contributors. For more information about sway development, see
-<https://github.com/swaywm/sway>.
-
-See Also
---------
-
-**sway**(5)

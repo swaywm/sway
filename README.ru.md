@@ -55,7 +55,6 @@ Sway доступен во многих дистрибутивах и наход
 * xwayland
 * libinput >= 1.6.0
 * libcap
-* asciidoc
 * pcre
 * json-c >= 0.13
 * pango
@@ -65,6 +64,7 @@ Sway доступен во многих дистрибутивах и наход
 * dbus >= 1.10 ***
 * imagemagick (требуется для захвата изображений через swaygrab)
 * ffmpeg (требуется для захвата видео через swaygrab)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Требуется только для swaybar, swaybg и swaylock_
 

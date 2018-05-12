@@ -240,7 +240,7 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
 	struct wlr_event_pointer_axis *event = data;
 	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-		event->orientation, event->delta);
+		event->orientation, event->delta, event->delta_discrete, event->source);
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
