@@ -101,7 +101,7 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int other_views = ws->children->length - 1;
+	int other_views = container_count_descendants_of_type(ws, C_VIEW) - 1;
 
 	double x, y, width, height;
 	x = y = width = height = 0;
