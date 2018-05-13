@@ -83,6 +83,11 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_shell_v6_surface);
 	server->xdg_shell_v6_surface.notify = handle_xdg_shell_v6_surface;
 
+	server->xdg_shell = wlr_xdg_shell_create(server->wl_display);
+	wl_signal_add(&server->xdg_shell->events.new_surface,
+		&server->xdg_shell_surface);
+	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
+
 	server->wl_shell = wlr_wl_shell_create(server->wl_display);
 	wl_signal_add(&server->wl_shell->events.new_surface,
 		&server->wl_shell_surface);

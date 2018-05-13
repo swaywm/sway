@@ -12,6 +12,7 @@ struct sway_container;
 enum sway_view_type {
 	SWAY_VIEW_WL_SHELL,
 	SWAY_VIEW_XDG_SHELL_V6,
+	SWAY_VIEW_XDG_SHELL,
 	SWAY_VIEW_XWAYLAND,
 };
 
@@ -54,6 +55,7 @@ struct sway_view {
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+		struct wlr_xdg_surface *wlr_xdg_surface;
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
 		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
@@ -67,6 +69,22 @@ struct sway_view {
 };
 
 struct sway_xdg_shell_v6_view {
+	struct sway_view view;
+
+	struct wl_listener commit;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
+	struct wl_listener request_maximize;
+	struct wl_listener request_fullscreen;
+	struct wl_listener new_popup;
+	struct wl_listener map;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
+
+	int pending_width, pending_height;
+};
+
+struct sway_xdg_shell_view {
 	struct sway_view view;
 
 	struct wl_listener commit;
@@ -151,6 +169,15 @@ struct sway_xdg_popup_v6 {
 	struct sway_view_child child;
 
 	struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
+
+	struct wl_listener new_popup;
+	struct wl_listener destroy;
+};
+
+struct sway_xdg_popup {
+	struct sway_view_child child;
+
+	struct wlr_xdg_surface *wlr_xdg_surface;
 
 	struct wl_listener new_popup;
 	struct wl_listener destroy;

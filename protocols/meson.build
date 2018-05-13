@@ -35,6 +35,7 @@ client_protocols = [
 ]
 
 server_protocols = [
+	[wl_protocol_dir, 'stable/xdg-shell/xdg-shell.xml'],
 	[wl_protocol_dir, 'unstable/xdg-shell/xdg-shell-unstable-v6.xml'],
 	['wlr-layer-shell-unstable-v1.xml'],
 	['wlr-input-inhibitor-unstable-v1.xml']
