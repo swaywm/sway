@@ -153,7 +153,6 @@ struct sway_xdg_popup_v6 {
 	struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
 
 	struct wl_listener new_popup;
-	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
 
