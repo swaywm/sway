@@ -552,7 +552,8 @@ int container_count_descendants_of_type(struct sway_container *con,
 	int children = 0;
 	if (con->type == type) {
 		children++;
-	} else if (con->children) {
+	}
+	if (con->children) {
 		for (int i = 0; i < con->children->length; i++) {
 			struct sway_container *child = con->children->items[i];
 			children += container_count_descendants_of_type(child, type);
