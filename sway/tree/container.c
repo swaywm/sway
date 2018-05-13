@@ -7,6 +7,8 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include <wlr/types/wlr_xdg_shell_v6.h>
+#include <wlr/types/wlr_xdg_shell.h>
 #include "cairo.h"
 #include "pango.h"
 #include "sway/config.h"
@@ -457,6 +459,16 @@ struct sway_container *container_at(struct sway_container *parent,
 
 				_surface = wlr_xdg_surface_v6_surface_at(
 					sview->wlr_xdg_surface_v6,
+					view_sx, view_sy, &_sx, &_sy);
+				break;
+			case SWAY_VIEW_XDG_SHELL:
+				// the top left corner of the sway container is the
+				// coordinate of the top left corner of the window geometry
+				view_sx += sview->wlr_xdg_surface->geometry.x;
+				view_sy += sview->wlr_xdg_surface->geometry.y;
+
+				_surface = wlr_xdg_surface_surface_at(
+					sview->wlr_xdg_surface,
 					view_sx, view_sy, &_sx, &_sy);
 				break;
 			}
