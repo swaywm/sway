@@ -420,6 +420,7 @@ static void unescape(char *value) {
  * populated with an error string. It is up to the caller to free the error.
  */
 struct criteria *criteria_parse(char *raw, char **error_arg) {
+	*error_arg = NULL;
 	error = NULL;
 
 	char *head = raw;
