@@ -107,6 +107,12 @@ struct seat_config {
 	list_t *attachments; // list of seat_attachment configs
 };
 
+enum config_dpms {
+	DPMS_IGNORE,
+	DPMS_ON,
+	DPMS_OFF
+};
+
 /**
  * Size and position configuration for a particular output.
  *
@@ -123,6 +129,7 @@ struct output_config {
 
 	char *background;
 	char *background_option;
+	enum config_dpms dpms_state;
 };
 
 /**

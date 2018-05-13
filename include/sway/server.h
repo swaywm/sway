@@ -21,6 +21,7 @@ struct sway_server {
 
 	struct wlr_compositor *compositor;
 	struct wlr_data_device_manager *data_device_manager;
+	struct wlr_idle *idle;
 
 	struct sway_input_manager *input;
 

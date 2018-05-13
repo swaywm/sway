@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_output.h>
 #include <wlr/types/wlr_wl_shell.h>
+#include <wlr/types/wlr_idle.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
@@ -61,6 +62,7 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
+	server->idle = wlr_idle_create(server->wl_display);
 	wlr_screenshooter_create(server->wl_display);
 	wlr_gamma_control_manager_create(server->wl_display);
 	wlr_primary_selection_device_manager_create(server->wl_display);
