@@ -547,6 +547,21 @@ bool container_has_child(struct sway_container *con,
 	return container_find(con, find_child_func, child);
 }
 
+int container_count_descendants_of_type(struct sway_container *con,
+		enum sway_container_type type) {
+	int children = 0;
+	if (con->type == type) {
+		children++;
+	}
+	if (con->children) {
+		for (int i = 0; i < con->children->length; i++) {
+			struct sway_container *child = con->children->items[i];
+			children += container_count_descendants_of_type(child, type);
+		}
+	}
+	return children;
+}
+
 void container_damage_whole(struct sway_container *container) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];

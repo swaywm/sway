@@ -187,6 +187,9 @@ bool container_has_anscestor(struct sway_container *container,
 bool container_has_child(struct sway_container *con,
 		struct sway_container *child);
 
+int container_count_descendants_of_type(struct sway_container *con,
+		enum sway_container_type type);
+
 void container_create_notify(struct sway_container *container);
 
 void container_damage_whole(struct sway_container *container);
