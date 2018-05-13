@@ -77,19 +77,21 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	if (markup) {
 		char *buf;
 		GError *error = NULL;
-		bool result = pango_parse_markup(text, -1, 0, &attrs, &buf,
-				NULL, &error);
-		if (result) {
+		if (pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, &error)) {
+			pango_layout_set_markup(layout, buf, -1);
+			free(buf);
+		} else {
 			wlr_log(L_ERROR, "pango_parse_markup '%s' -> error %s", text,
 					error->message);
-			return NULL;
+			g_error_free(error);
+			markup = false; // fallback to plain text
 		}
-		pango_layout_set_markup(layout, text, -1);
-		free(buf);
-	} else {
+	}
+	if (!markup) {
 		attrs = pango_attr_list_new();
 		pango_layout_set_text(layout, text, -1);
 	}
+
 	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	PangoFontDescription *desc = pango_font_description_from_string(font);
 	pango_layout_set_font_description(layout, desc);
