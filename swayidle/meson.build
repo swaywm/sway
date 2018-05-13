@@ -7,6 +7,7 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: [
 		client_protos,
+		pixman,
 		wayland_client,
 		wayland_server,
 		wlroots,
