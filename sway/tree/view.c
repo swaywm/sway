@@ -400,7 +400,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
 	struct sway_container *cont = NULL;
 
 	// Check if there's any `assign` criteria for the view
