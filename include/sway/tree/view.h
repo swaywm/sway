@@ -10,7 +10,6 @@
 struct sway_container;
 
 enum sway_view_type {
-	SWAY_VIEW_WL_SHELL,
 	SWAY_VIEW_XDG_SHELL_V6,
 	SWAY_VIEW_XDG_SHELL,
 	SWAY_VIEW_XWAYLAND,
@@ -21,11 +20,15 @@ enum sway_view_prop {
 	VIEW_PROP_APP_ID,
 	VIEW_PROP_CLASS,
 	VIEW_PROP_INSTANCE,
+	VIEW_PROP_WINDOW_TYPE,
+	VIEW_PROP_WINDOW_ROLE,
+	VIEW_PROP_X11_WINDOW_ID,
 };
 
 struct sway_view_impl {
-	const char *(*get_prop)(struct sway_view *view,
+	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
+	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
 	void (*configure)(struct sway_view *view, double ox, double oy, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
@@ -56,6 +59,8 @@ struct sway_view {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+
+	list_t *executed_criteria;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
@@ -113,6 +118,9 @@ struct sway_xwayland_view {
 	struct wl_listener request_maximize;
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
+	struct wl_listener set_title;
+	struct wl_listener set_class;
+	struct wl_listener set_window_type;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -132,20 +140,6 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-};
-
-struct sway_wl_shell_view {
-	struct sway_view view;
-
-	struct wl_listener commit;
-	struct wl_listener request_move;
-	struct wl_listener request_resize;
-	struct wl_listener request_maximize;
-	struct wl_listener request_fullscreen;
-	struct wl_listener set_state;
-	struct wl_listener destroy;
-
-	int pending_width, pending_height;
 };
 
 struct sway_view_child;
@@ -194,6 +188,12 @@ const char *view_get_app_id(struct sway_view *view);
 const char *view_get_class(struct sway_view *view);
 
 const char *view_get_instance(struct sway_view *view);
+
+uint32_t view_get_x11_window_id(struct sway_view *view);
+
+const char *view_get_window_role(struct sway_view *view);
+
+uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_type(struct sway_view *view);
 
@@ -246,5 +246,11 @@ void view_child_destroy(struct sway_view_child *child);
  * changed.
  */
 void view_update_title(struct sway_view *view, bool force);
+
+/**
+ * Run any criteria that match the view and haven't been run on this view
+ * before.
+ */
+void view_execute_criteria(struct sway_view *view);
 
 #endif

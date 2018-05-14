@@ -6,7 +6,6 @@
 #include <strings.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_wl_shell.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include "cairo.h"
@@ -444,11 +443,6 @@ struct sway_container *container_at(struct sway_container *parent,
 			switch (sview->type) {
 			case SWAY_VIEW_XWAYLAND:
 				_surface = wlr_surface_surface_at(sview->surface,
-					view_sx, view_sy, &_sx, &_sy);
-				break;
-			case SWAY_VIEW_WL_SHELL:
-				_surface = wlr_wl_shell_surface_surface_at(
-					sview->wlr_wl_shell_surface,
 					view_sx, view_sy, &_sx, &_sy);
 				break;
 			case SWAY_VIEW_XDG_SHELL_V6:

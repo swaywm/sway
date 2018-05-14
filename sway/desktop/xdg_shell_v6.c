@@ -72,7 +72,7 @@ static struct sway_xdg_shell_v6_view *xdg_shell_v6_view_from_view(
 	return (struct sway_xdg_shell_v6_view *)view;
 }
 
-static const char *get_prop(struct sway_view *view, enum sway_view_prop prop) {
+static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return NULL;
 	}
@@ -150,7 +150,7 @@ static void destroy(struct sway_view *view) {
 }
 
 static const struct sway_view_impl view_impl = {
-	.get_prop = get_prop,
+	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
 	.set_fullscreen = set_fullscreen,

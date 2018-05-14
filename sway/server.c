@@ -8,15 +8,14 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_gamma_control.h>
-#include <wlr/types/wlr_linux_dmabuf.h>
+#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_linux_dmabuf.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_output.h>
-#include <wlr/types/wlr_wl_shell.h>
-#include <wlr/types/wlr_idle.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
@@ -87,11 +86,6 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_shell->events.new_surface,
 		&server->xdg_shell_surface);
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
-
-	server->wl_shell = wlr_wl_shell_create(server->wl_display);
-	wl_signal_add(&server->wl_shell->events.new_surface,
-		&server->wl_shell_surface);
-	server->wl_shell_surface.notify = handle_wl_shell_surface;
 
 	// TODO make xwayland optional
 	server->xwayland =
