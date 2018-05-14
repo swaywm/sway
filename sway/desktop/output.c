@@ -365,16 +365,14 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	if (con->sway_view->border_top) {
-		// Single pixel bar above title
-		memcpy(&color, colors->border, sizeof(float) * 4);
-		color[3] *= con->alpha;
-		box.x = con->x;
-		box.y = con->y;
-		box.width = con->width;
-		box.height = 1;
-		render_rect(output->wlr_output, output_damage, &box, color);
-	}
+	// Single pixel bar above title
+	memcpy(&color, colors->border, sizeof(float) * 4);
+	color[3] *= con->alpha;
+	box.x = con->x;
+	box.y = con->y;
+	box.width = con->width;
+	box.height = 1;
+	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Single pixel bar below title
 	memcpy(&color, colors->border, sizeof(float) * 4);
@@ -390,11 +388,11 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	color[3] *= con->alpha;
 	box.x = con->x
 		+ con->sway_view->border_thickness * con->sway_view->border_left;
-	box.y = con->y + con->sway_view->border_top;
+	box.y = con->y + 1;
 	box.width = con->width
 		- con->sway_view->border_thickness * con->sway_view->border_left
 		- con->sway_view->border_thickness * con->sway_view->border_right;
-	box.height = con->sway_view->y - con->y - (con->sway_view->border_top + 1);
+	box.height = con->sway_view->y - con->y - 2;
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Title text
