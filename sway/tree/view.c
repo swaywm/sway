@@ -3,6 +3,7 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "list.h"
 #include "log.h"
 #include "sway/criteria.h"
 #include "sway/commands.h"
@@ -21,6 +22,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	view->type = type;
 	view->impl = impl;
+	view->executed_criteria = create_list();
 	wl_signal_init(&view->events.unmap);
 }
 
@@ -33,6 +35,8 @@ void view_destroy(struct sway_view *view) {
 		view_unmap(view);
 	}
 
+	list_free(view->executed_criteria);
+
 	container_destroy(view->swayc);
 
 	if (view->impl->destroy) {
@@ -43,31 +47,52 @@ void view_destroy(struct sway_view *view) {
 }
 
 const char *view_get_title(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_TITLE);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_TITLE);
 	}
 	return NULL;
 }
 
 const char *view_get_app_id(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_APP_ID);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_APP_ID);
 	}
 	return NULL;
 }
 
 const char *view_get_class(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_CLASS);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_CLASS);
 	}
 	return NULL;
 }
 
 const char *view_get_instance(struct sway_view *view) {
-	if (view->impl->get_prop) {
-		return view->impl->get_prop(view, VIEW_PROP_INSTANCE);
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_INSTANCE);
 	}
 	return NULL;
+}
+
+uint32_t view_get_x11_window_id(struct sway_view *view) {
+	if (view->impl->get_int_prop) {
+		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
+	}
+	return 0;
+}
+
+const char *view_get_window_role(struct sway_view *view) {
+	if (view->impl->get_string_prop) {
+		return view->impl->get_string_prop(view, VIEW_PROP_WINDOW_ROLE);
+	}
+	return NULL;
+}
+
+uint32_t view_get_window_type(struct sway_view *view) {
+	if (view->impl->get_int_prop) {
+		return view->impl->get_int_prop(view, VIEW_PROP_WINDOW_TYPE);
+	}
+	return 0;
 }
 
 const char *view_get_type(struct sway_view *view) {
@@ -327,19 +352,36 @@ static void view_handle_container_reparent(struct wl_listener *listener,
 	}
 }
 
-static void view_execute_criteria(struct sway_view *view) {
-	if (!sway_assert(view->swayc, "cannot run criteria for unmapped view")) {
+static bool view_has_executed_criteria(struct sway_view *view,
+		struct criteria *criteria) {
+	for (int i = 0; i < view->executed_criteria->length; ++i) {
+		struct criteria *item = view->executed_criteria->items[i];
+		if (item == criteria) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void view_execute_criteria(struct sway_view *view) {
+	if (!view->swayc) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *prior_workspace =
 		container_parent(view->swayc, C_WORKSPACE);
-	list_t *criteria = criteria_for(view->swayc);
-	for (int i = 0; i < criteria->length; i++) {
-		struct criteria *crit = criteria->items[i];
-		wlr_log(L_DEBUG, "for_window '%s' matches new view %p, cmd: '%s'",
-				crit->crit_raw, view, crit->cmdlist);
-		struct cmd_results *res = execute_command(crit->cmdlist, NULL);
+	list_t *criterias = criteria_for_view(view, CT_COMMAND);
+	for (int i = 0; i < criterias->length; i++) {
+		struct criteria *criteria = criterias->items[i];
+		wlr_log(L_DEBUG, "Checking criteria %s", criteria->raw);
+		if (view_has_executed_criteria(view, criteria)) {
+			wlr_log(L_DEBUG, "Criteria already executed");
+			continue;
+		}
+		wlr_log(L_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
+				criteria->raw, view, criteria->cmdlist);
+		list_add(view->executed_criteria, criteria);
+		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {
 			wlr_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
 		}
@@ -348,7 +390,7 @@ static void view_execute_criteria(struct sway_view *view) {
 		// so always refocus in-between command lists
 		seat_set_focus(seat, view->swayc);
 	}
-	list_free(criteria);
+	list_free(criterias);
 	seat_set_focus(seat, seat_get_focus_inactive(seat, prior_workspace));
 }
 
@@ -358,9 +400,27 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus_inactive(seat,
-		&root_container);
-	struct sway_container *cont = container_view_create(focus, view);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *cont = NULL;
+
+	// Check if there's any `assign` criteria for the view
+	list_t *criterias = criteria_for_view(view,
+			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
+	if (criterias->length) {
+		struct criteria *criteria = criterias->items[0];
+		if (criteria->type == CT_ASSIGN_WORKSPACE) {
+			struct sway_container *workspace = workspace_by_name(criteria->target);
+			if (!workspace) {
+				workspace = workspace_create(NULL, criteria->target);
+			}
+			focus = seat_get_focus_inactive(seat, workspace);
+		} else {
+			// TODO: CT_ASSIGN_OUTPUT
+		}
+	}
+	free(criterias);
+	cont = container_view_create(focus, view);
 
 	view->surface = wlr_surface;
 	view->swayc = cont;
@@ -378,10 +438,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	arrange_children_of(cont->parent);
 	input_manager_set_focus(input_manager, cont);
 
+	view_update_title(view, false);
+	view_execute_criteria(view);
+
 	container_damage_whole(cont);
 	view_handle_container_reparent(&view->container_reparent, NULL);
-
-	view_execute_criteria(view);
 }
 
 void view_unmap(struct sway_view *view) {
