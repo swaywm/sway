@@ -152,14 +152,12 @@ void view_autoconfigure(struct sway_view *view) {
 	case B_NORMAL:
 		// Height is: border + title height + border + view height + border
 		x = view->swayc->x + view->border_thickness * view->border_left;
-		y = view->swayc->y + config->font_height
-			+ view->border_thickness * (view->border_top + 1);
+		y = view->swayc->y + config->font_height + view->border_thickness * 2;
 		width = view->swayc->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
 		height = view->swayc->height - config->font_height
-			- view->border_thickness * (view->border_top + 1)
-			- view->border_thickness * view->border_bottom;
+			- view->border_thickness * (2 + view->border_bottom);
 		break;
 	}
 
