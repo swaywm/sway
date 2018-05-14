@@ -97,8 +97,6 @@ uint32_t view_get_window_type(struct sway_view *view) {
 
 const char *view_get_type(struct sway_view *view) {
 	switch(view->type) {
-	case SWAY_VIEW_WL_SHELL:
-		return "wl_shell";
 	case SWAY_VIEW_XDG_SHELL_V6:
 		return "xdg_shell_v6";
 	case SWAY_VIEW_XDG_SHELL:

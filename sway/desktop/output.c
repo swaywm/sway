@@ -11,7 +11,6 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_surface.h>
-#include <wlr/types/wlr_wl_shell.h>
 #include <wlr/util/region.h>
 #include "log.h"
 #include "sway/config.h"
