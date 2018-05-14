@@ -20,6 +20,8 @@ datadir = get_option('datadir')
 sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
 
+swayidle_deps = []
+
 jsonc          = dependency('json-c', version: '>=0.13')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots', fallback: ['wlroots', 'wlroots'])
@@ -37,6 +39,8 @@ pixman         = dependency('pixman-1')
 libcap         = dependency('libcap')
 libinput       = dependency('libinput', version: '>=1.6.0')
 libpam         = cc.find_library('pam')
+systemd        = dependency('libsystemd', required: false)
+elogind        = dependency('libelogind', required: false)
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
 git = find_program('git', required: false)
@@ -45,6 +49,16 @@ conf_data = configuration_data()
 
 if gdk_pixbuf.found()
 	conf_data.set('HAVE_GDK_PIXBUF', true)
+endif
+
+if systemd.found()
+	conf_data.set('SWAY_IDLE_HAS_SYSTEMD', true)
+	swayidle_deps += systemd
+endif
+
+if elogind.found()
+	conf_data.set('SWAY_IDLE_HAS_ELOGIND', true)
+	swayidle_deps += elogind
 endif
 
 scdoc = find_program('scdoc', required: false)
@@ -59,6 +73,7 @@ if scdoc.found()
 		'sway/sway-input.5.scd',
 		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
+		'swayidle/swayidle.1.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
@@ -106,6 +121,7 @@ subdir('client')
 subdir('swaybg')
 subdir('swaybar')
 subdir('swaylock')
+subdir('swayidle')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))

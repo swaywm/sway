@@ -10,10 +10,11 @@ sway_sources = files(
 	'security.c',
 
 	'desktop/desktop.c',
-	'desktop/output.c',
 	'desktop/layer_shell.c',
+	'desktop/output.c',
 	'desktop/wl_shell.c',
 	'desktop/xdg_shell_v6.c',
+	'desktop/xdg_shell.c',
 	'desktop/xwayland.c',
 
 	'input/input-manager.c',

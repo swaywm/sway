@@ -14,6 +14,8 @@
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "sway/config.h"
+#include "pango.h"
 
 void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
@@ -74,6 +76,8 @@ const char *view_get_type(struct sway_view *view) {
 		return "wl_shell";
 	case SWAY_VIEW_XDG_SHELL_V6:
 		return "xdg_shell_v6";
+	case SWAY_VIEW_XDG_SHELL:
+		return "xdg_shell";
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
 	}
@@ -607,6 +611,19 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	return len;
 }
 
+static char *escape_title(char *buffer) {
+	int length = escape_markup_text(buffer, NULL, 0);
+	char *escaped_title = calloc(length + 1, sizeof(char));
+	int result = escape_markup_text(buffer, escaped_title, length);
+	if (result != length) {
+		wlr_log(L_ERROR, "Could not escape title: %s", buffer);
+		free(escaped_title);
+		return buffer;
+	}
+	free(buffer);
+	return escaped_title;
+}
+
 void view_update_title(struct sway_view *view, bool force) {
 	if (!view->swayc) {
 		return;
@@ -626,11 +643,15 @@ void view_update_title(struct sway_view *view, bool force) {
 	free(view->swayc->formatted_title);
 	if (title) {
 		size_t len = parse_title_format(view, NULL);
-		char *buffer = calloc(len + 1, 1);
+		char *buffer = calloc(len + 1, sizeof(char));
 		if (!sway_assert(buffer, "Unable to allocate title string")) {
 			return;
 		}
 		parse_title_format(view, buffer);
+		// now we have the title, but needs to be escaped when using pango markup
+		if (config->pango_markup) {
+			buffer = escape_title(buffer);
+		}
 
 		view->swayc->name = strdup(title);
 		view->swayc->formatted_title = buffer;

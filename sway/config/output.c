@@ -81,6 +81,9 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 		free(dst->background_option);
 		dst->background_option = strdup(src->background_option);
 	}
+	if (src->dpms_state != 0) {
+		dst->dpms_state = src->dpms_state;
+	}
 }
 
 static void set_mode(struct wlr_output *output, int width, int height,
@@ -202,6 +205,20 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		output->sway_output->bg_pid = fork();
 		if (output->sway_output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
+		}
+	}
+	if (oc && oc->dpms_state != DPMS_IGNORE) {
+		switch (oc->dpms_state) {
+		case DPMS_ON:
+			wlr_log(L_DEBUG, "Turning on screen");
+			wlr_output_enable(wlr_output, true);
+			break;
+		case DPMS_OFF:
+			wlr_log(L_DEBUG, "Turning off screen");
+			wlr_output_enable(wlr_output, false);
+			break;
+		case DPMS_IGNORE:
+			break;
 		}
 	}
 }

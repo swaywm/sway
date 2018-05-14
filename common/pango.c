@@ -8,6 +8,68 @@
 #include <string.h>
 #include "log.h"
 
+int escape_markup_text(const char *src, char *dest, int dest_length) {
+	int length = 0;
+
+	while (src[0]) {
+		switch (src[0]) {
+		case '&':
+			length += 5;
+			if (dest && dest_length - length >= 0) {
+				dest += sprintf(dest, "%s", "&amp;");
+			} else {
+				dest_length = -1;
+			}
+			break;
+		case '<':
+			length += 4;
+			if (dest && dest_length - length >= 0) {
+				dest += sprintf(dest, "%s", "&lt;");
+			} else {
+				dest_length = -1;
+			}
+			break;
+		case '>':
+			length += 4;
+			if (dest && dest_length - length >= 0) {
+				dest += sprintf(dest, "%s", "&gt;");
+			} else {
+				dest_length = -1;
+			}
+			break;
+		case '\'':
+			length += 6;
+			if (dest && dest_length - length >= 0) {
+				dest += sprintf(dest, "%s", "&apos;");
+			} else {
+				dest_length = -1;
+			}
+			break;
+		case '"':
+			length += 6;
+			if (dest && dest_length - length >= 0) {
+				dest += sprintf(dest, "%s", "&quot;");
+			} else {
+				dest_length = -1;
+			}
+			break;
+		default:
+			length += 1;
+			if (dest && dest_length - length >= 0) {
+				*(dest++) = *src;
+			} else {
+				dest_length = -1;
+			}
+		}
+		src++;
+	}
+	// if we could not fit the escaped string in dest, return -1
+	if (dest && dest_length == -1) {
+		return -1;
+	}
+	return length;
+}
+
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 		const char *text, int32_t scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
@@ -15,18 +77,21 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	if (markup) {
 		char *buf;
 		GError *error = NULL;
-		if (!sway_assert(pango_parse_markup(
-					text, -1, 0, &attrs, &buf, NULL, &error),
-				"pango_parse_markup '%s' -> error %s", text,
-				error ? error->message : NULL)) {
-			return NULL;
+		if (pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, &error)) {
+			pango_layout_set_markup(layout, buf, -1);
+			free(buf);
+		} else {
+			wlr_log(L_ERROR, "pango_parse_markup '%s' -> error %s", text,
+					error->message);
+			g_error_free(error);
+			markup = false; // fallback to plain text
 		}
-		pango_layout_set_markup(layout, buf, -1);
-		free(buf);
-	} else {
+	}
+	if (!markup) {
 		attrs = pango_attr_list_new();
 		pango_layout_set_text(layout, text, -1);
 	}
+
 	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	PangoFontDescription *desc = pango_font_description_from_string(font);
 	pango_layout_set_font_description(layout, desc);
