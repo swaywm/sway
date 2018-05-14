@@ -51,6 +51,10 @@ struct sway_view {
 	char *title_format;
 	enum sway_container_border border;
 	int border_thickness;
+	bool border_top;
+	bool border_bottom;
+	bool border_left;
+	bool border_right;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;

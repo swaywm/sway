@@ -93,8 +93,9 @@ void view_autoconfigure(struct sway_view *view) {
 		return;
 	}
 
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+
 	if (view->is_fullscreen) {
-		struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 		view_configure(view, 0, 0, output->width, output->height);
 		view->x = view->y = 0;
 		return;
@@ -104,6 +105,25 @@ void view_autoconfigure(struct sway_view *view) {
 	if (config->hide_edge_borders == E_SMART) {
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		other_views = container_count_descendants_of_type(ws, C_VIEW) - 1;
+	}
+
+	view->border_top = view->border_bottom = true;
+	view->border_left = view->border_right = true;
+	if (view->swayc->layout != L_FLOATING) {
+		if (config->hide_edge_borders == E_BOTH
+				|| config->hide_edge_borders == E_VERTICAL
+				|| (config->hide_edge_borders == E_SMART && !other_views)) {
+			view->border_left = view->swayc->x != 0;
+			int right_x = view->swayc->x + view->swayc->width;
+			view->border_right = right_x != output->width;
+		}
+		if (config->hide_edge_borders == E_BOTH
+				|| config->hide_edge_borders == E_HORIZONTAL
+				|| (config->hide_edge_borders == E_SMART && !other_views)) {
+			view->border_top = view->swayc->y != 0;
+			int bottom_y = view->swayc->y + view->swayc->height;
+			view->border_bottom = bottom_y != output->height;
+		}
 	}
 
 	double x, y, width, height;
@@ -116,51 +136,26 @@ void view_autoconfigure(struct sway_view *view) {
 		height = view->swayc->height;
 		break;
 	case B_PIXEL:
-		if (view->swayc->layout > L_VERT
-				|| config->hide_edge_borders == E_NONE
-				|| config->hide_edge_borders == E_HORIZONTAL
-				|| (config->hide_edge_borders == E_SMART && other_views)) {
-			x = view->swayc->x + view->border_thickness;
-			width = view->swayc->width - view->border_thickness * 2;
-		} else {
-			x = view->swayc->x;
-			width = view->swayc->width;
-		}
-		if (view->swayc->layout > L_VERT
-				|| config->hide_edge_borders == E_NONE
-				|| config->hide_edge_borders == E_VERTICAL
-				|| (config->hide_edge_borders == E_SMART && other_views)) {
-			y = view->swayc->y + view->border_thickness;
-			height = view->swayc->height - view->border_thickness * 2;
-		} else {
-			y = view->swayc->y;
-			height = view->swayc->height;
-		}
+		x = view->swayc->x + view->border_thickness * view->border_left;
+		y = view->swayc->y + view->border_thickness * view->border_top;
+		width = view->swayc->width
+			- view->border_thickness * view->border_left
+			- view->border_thickness * view->border_right;
+		height = view->swayc->height
+			- view->border_thickness * view->border_top
+			- view->border_thickness * view->border_bottom;
 		break;
 	case B_NORMAL:
-		if (view->swayc->layout > L_VERT
-				|| config->hide_edge_borders == E_NONE
-				|| config->hide_edge_borders == E_HORIZONTAL
-				|| (config->hide_edge_borders == E_SMART && other_views)) {
-			x = view->swayc->x + view->border_thickness;
-			width = view->swayc->width - view->border_thickness * 2;
-		} else {
-			x = view->swayc->x;
-			width = view->swayc->width;
-		}
-		if (view->swayc->layout > L_VERT
-				|| config->hide_edge_borders == E_NONE
-				|| config->hide_edge_borders == E_VERTICAL
-				|| (config->hide_edge_borders == E_SMART && other_views)) {
-			// Height is: border + title height + border + view height + border
-			y = view->swayc->y + config->font_height
-				+ view->border_thickness * 2;
-			height = view->swayc->height - config->font_height
-				- view->border_thickness * 3;
-		} else {
-			y = view->swayc->y;
-			height = view->swayc->height;
-		}
+		// Height is: border + title height + border + view height + border
+		x = view->swayc->x + view->border_thickness * view->border_left;
+		y = view->swayc->y + config->font_height
+			+ view->border_thickness * (view->border_top + 1);
+		width = view->swayc->width
+			- view->border_thickness * view->border_left
+			- view->border_thickness * view->border_right;
+		height = view->swayc->height - config->font_height
+			- view->border_thickness * (view->border_top + 1)
+			- view->border_thickness * view->border_bottom;
 		break;
 	}
 
