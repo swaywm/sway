@@ -407,8 +407,8 @@ int main(int argc, char *argv[]) {
 	wl_event_loop_add_fd(state.event_loop, wl_display_get_fd(state.display),
 			WL_EVENT_READABLE, display_event, NULL);
 
-	while (1) {
-		wl_event_loop_dispatch_idle(state.event_loop);
+	while (wl_event_loop_dispatch(state.event_loop, -1) != 1) {
+		// This space intentionally left blank
 	}
 
 	sway_terminate(0);
