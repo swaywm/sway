@@ -109,6 +109,7 @@ static struct cmd_handler handlers[] = {
 	{ "font", cmd_font },
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
+	{ "hide_cursor", cmd_hide_cursor },
 	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },

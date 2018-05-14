@@ -1,6 +1,8 @@
 #ifndef _SWAY_INPUT_CURSOR_H
 #define _SWAY_INPUT_CURSOR_H
 #include <stdint.h>
+#include <stdbool.h>
+#include <wlr/types/wlr_surface.h>
 #include "sway/input/seat.h"
 
 struct sway_cursor {
@@ -9,6 +11,8 @@ struct sway_cursor {
 	struct wlr_xcursor_manager *xcursor_manager;
 
 	struct wl_client *image_client;
+	struct wlr_surface *image_surface;
+	int hotspot_x, hotspot_y;
 
 	struct wl_listener motion;
 	struct wl_listener motion_absolute;
@@ -25,6 +29,9 @@ struct sway_cursor {
 	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;
+
+	struct wl_event_source *hide_source;
+	bool hidden;
 };
 
 void sway_cursor_destroy(struct sway_cursor *cursor);

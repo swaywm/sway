@@ -42,6 +42,7 @@ sway_sources = files(
 	'commands/font.c',
 	'commands/for_window.c',
 	'commands/fullscreen.c',
+	'commands/hide_cursor.c',
 	'commands/hide_edge_borders.c',
 	'commands/kill.c',
 	'commands/opacity.c',

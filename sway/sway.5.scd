@@ -342,6 +342,11 @@ The default colors are:
 	workspace (or current workspace), and _current_ changes gaps for the current
 	view or workspace.
 
+*hide\_cursor* <timeout>
+	Hides the cursor image after the specified _timeout_ (in milliseconds) has
+	elapsed with no activity on that cursor. A timeout of 0 disables hiding
+	the cursor.
+
 *hide\_edge\_borders* none|vertical|horizontal|both|smart
 	Hides window borders adjacent to the screen edges. Default is _none_.
 

@@ -208,6 +208,8 @@ static void config_defaults(struct sway_config *config) {
 	config->floating_border_thickness = 2;
 	config->hide_edge_borders = E_NONE;
 
+	config->hide_cursor_timeout = 0;
+
 	// border colors
 	set_color(config->border_colors.focused.border, 0x4C7899);
 	set_color(config->border_colors.focused.border, 0x4C7899);

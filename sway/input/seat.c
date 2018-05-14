@@ -244,6 +244,7 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	if (!seat) {
 		return NULL;
 	}
+	seat->input = input;
 
 	seat->wlr_seat = wlr_seat_create(input->server->wl_display, seat_name);
 	if (!sway_assert(seat->wlr_seat, "could not allocate seat")) {
@@ -268,7 +269,6 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		&seat->new_container);
 	seat->new_container.notify = handle_new_container;
 
-	seat->input = input;
 	wl_list_init(&seat->devices);
 
 	wlr_seat_set_capabilities(seat->wlr_seat,
