@@ -175,6 +175,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "focus", cmd_focus },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
+	{ "mark", cmd_mark },
 	{ "move", cmd_move },
 	{ "opacity", cmd_opacity },
 	{ "reload", cmd_reload },
@@ -185,6 +186,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "splitt", cmd_splitt },
 	{ "splitv", cmd_splitv },
 	{ "title_format", cmd_title_format },
+	{ "unmark", cmd_unmark },
 };
 
 static int handler_compare(const void *_a, const void *_b) {

@@ -60,7 +60,8 @@ struct sway_view {
 	bool border_left;
 	bool border_right;
 
-	list_t *executed_criteria;
+	list_t *executed_criteria; // struct criteria *
+	list_t *marks;             // char *
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
@@ -252,5 +253,18 @@ void view_update_title(struct sway_view *view, bool force);
  * before.
  */
 void view_execute_criteria(struct sway_view *view);
+
+/**
+ * Find any view that has the given mark and remove the mark from the view.
+ * Returns true if it matched a view.
+ */
+bool view_find_and_unmark(char *mark);
+
+/**
+ * Remove all marks from the view.
+ */
+void view_clear_marks(struct sway_view *view);
+
+bool view_has_mark(struct sway_view *view, char *mark);
 
 #endif

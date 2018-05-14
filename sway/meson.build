@@ -43,6 +43,7 @@ sway_sources = files(
 	'commands/fullscreen.c',
 	'commands/hide_edge_borders.c',
 	'commands/kill.c',
+	'commands/mark.c',
 	'commands/opacity.c',
 	'commands/include.c',
 	'commands/input.c',
@@ -62,6 +63,7 @@ sway_sources = files(
 	'commands/split.c',
 	'commands/swaybg_command.c',
 	'commands/title_format.c',
+	'commands/unmark.c',
 	'commands/workspace.c',
 	'commands/ws_auto_back_and_forth.c',
 
