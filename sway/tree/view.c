@@ -43,13 +43,10 @@ void view_destroy(struct sway_view *view) {
 	}
 	list_free(view->marks);
 
-	if (view->marks_focused) {
-		// If one is set then all of these are set
-		wlr_texture_destroy(view->marks_focused);
-		wlr_texture_destroy(view->marks_focused_inactive);
-		wlr_texture_destroy(view->marks_unfocused);
-		wlr_texture_destroy(view->marks_urgent);
-	}
+	wlr_texture_destroy(view->marks_focused);
+	wlr_texture_destroy(view->marks_focused_inactive);
+	wlr_texture_destroy(view->marks_unfocused);
+	wlr_texture_destroy(view->marks_urgent);
 
 	container_destroy(view->swayc);
 
@@ -802,6 +799,11 @@ static void update_marks_texture(struct sway_view *view,
 	}
 	char *buffer = calloc(len + 1, 1);
 	char *part = malloc(len + 1);
+
+	if (!sway_assert(buffer && part, "Unable to allocate memory")) {
+		free(buffer);
+		return;
+	}
 
 	for (int i = 0; i < view->marks->length; ++i) {
 		char *mark = view->marks->items[i];

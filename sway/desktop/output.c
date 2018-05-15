@@ -287,7 +287,6 @@ static void render_rect(struct wlr_output *wlr_output,
 		wlr_backend_get_renderer(wlr_output->backend);
 
 	struct wlr_box box = *_box;
-	scale_box(&box, wlr_output->scale);
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
@@ -313,6 +312,9 @@ damage_finish:
 
 /**
  * Render decorations for a view with "border normal".
+ *
+ * Care must be taken not to render over the same pixel multiple times,
+ * otherwise the colors will be incorrect when using opacity.
  */
 static void render_container_simple_border_normal(struct sway_output *output,
 		pixman_region32_t *output_damage,
@@ -320,19 +322,23 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		struct wlr_texture *title_texture, struct wlr_texture *marks_texture) {
 	struct wlr_box box;
 	float color[4];
+	struct sway_view *view = con->sway_view;
+	float output_scale = output->wlr_output->scale;
 
-	if (con->sway_view->border_left) {
+	if (view->border_left) {
 		// Child border - left edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
 		color[3] *= con->alpha;
 		box.x = con->x;
 		box.y = con->y + 1;
-		box.width = con->sway_view->border_thickness;
-		box.height = con->height - 1;
+		box.width = view->border_thickness;
+		box.height = con->height - 1
+			- view->border_thickness * view->border_bottom;
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	if (con->sway_view->border_right) {
+	if (view->border_right) {
 		// Child border - right edge
 		if (con->parent->children->length == 1
 				&& con->parent->layout == L_HORIZ) {
@@ -341,14 +347,16 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
 		color[3] *= con->alpha;
-		box.x = con->x + con->width - con->sway_view->border_thickness;
+		box.x = con->x + con->width - view->border_thickness;
 		box.y = con->y + 1;
-		box.width = con->sway_view->border_thickness;
-		box.height = con->height - 1;
+		box.width = view->border_thickness;
+		box.height = con->height - 1
+			- view->border_thickness * view->border_bottom;
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	if (con->sway_view->border_bottom) {
+	if (view->border_bottom) {
 		// Child border - bottom edge
 		if (con->parent->children->length == 1
 				&& con->parent->layout == L_VERT) {
@@ -358,9 +366,10 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		}
 		color[3] *= con->alpha;
 		box.x = con->x;
-		box.y = con->y + con->height - con->sway_view->border_thickness;
+		box.y = con->y + con->height - view->border_thickness;
 		box.width = con->width;
-		box.height = con->sway_view->border_thickness;
+		box.height = view->border_thickness;
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
@@ -371,58 +380,32 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	box.y = con->y;
 	box.width = con->width;
 	box.height = 1;
+	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Single pixel bar below title
 	memcpy(&color, colors->border, sizeof(float) * 4);
 	color[3] *= con->alpha;
-	box.x = con->x + con->sway_view->border_thickness;
-	box.y = con->sway_view->y - 1;
-	box.width = con->width - con->sway_view->border_thickness * 2;
+	box.x = con->x + view->border_thickness;
+	box.y = view->y - 1;
+	box.width = con->width - view->border_thickness * 2;
 	box.height = 1;
+	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Title background
-	memcpy(&color, colors->background, sizeof(float) * 4);
-	color[3] *= con->alpha;
-	box.x = con->x
-		+ con->sway_view->border_thickness * con->sway_view->border_left;
-	box.y = con->y + 1;
-	box.width = con->width
-		- con->sway_view->border_thickness * con->sway_view->border_left
-		- con->sway_view->border_thickness * con->sway_view->border_right;
-	box.height = con->sway_view->y - con->y - 2;
-	render_rect(output->wlr_output, output_damage, &box, color);
-
-	// Title text
-	if (title_texture) {
-		float output_scale = output->wlr_output->scale;
-		struct wlr_box texture_box = {
-			.x = box.x * output_scale,
-			.y = box.y * output_scale,
-		};
-		wlr_texture_get_size(title_texture,
-			&texture_box.width, &texture_box.height);
-
-		float matrix[9];
-		wlr_matrix_project_box(matrix, &texture_box,
-			WL_OUTPUT_TRANSFORM_NORMAL,
-			0.0, output->wlr_output->transform_matrix);
-
-		texture_box.width = box.width * output_scale;
-		render_texture(output->wlr_output, output_damage, title_texture,
-			&texture_box, matrix, 1.0);
-	}
+	// Setting these makes marks and title easier
+	size_t inner_x = con->x + view->border_thickness * view->border_left;
+	size_t inner_width = con->width - view->border_thickness * view->border_left
+		- view->border_thickness * view->border_right;
 
 	// Marks
+	size_t marks_width = 0;
 	if (config->show_marks && marks_texture) {
-		float output_scale = output->wlr_output->scale;
 		struct wlr_box texture_box;
 		wlr_texture_get_size(marks_texture,
 			&texture_box.width, &texture_box.height);
-		texture_box.x = (box.x + box.width) * output_scale - texture_box.width;
-		texture_box.y = (box.y + box.height)
-			* output_scale - texture_box.height;
+		texture_box.x = (inner_x + inner_width) * output_scale - texture_box.width;
+		texture_box.y = (con->y + view->border_thickness) * output_scale;
 
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &texture_box,
@@ -430,31 +413,85 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			0.0, output->wlr_output->transform_matrix);
 
 		render_texture(output->wlr_output, output_damage, marks_texture,
-			&texture_box, matrix, 1.0);
+			&texture_box, matrix, con->alpha);
+		marks_width = texture_box.width;
+	}
+
+	// Title text
+	size_t title_width = 0;
+	if (title_texture) {
+		struct wlr_box texture_box;
+		wlr_texture_get_size(title_texture,
+			&texture_box.width, &texture_box.height);
+		texture_box.x = inner_x * output_scale;
+		texture_box.y = (con->y + view->border_thickness) * output_scale;
+
+		float matrix[9];
+		wlr_matrix_project_box(matrix, &texture_box,
+			WL_OUTPUT_TRANSFORM_NORMAL,
+			0.0, output->wlr_output->transform_matrix);
+
+		if (inner_width * output_scale - marks_width < texture_box.width) {
+			texture_box.width = inner_width * output_scale - marks_width;
+		}
+		render_texture(output->wlr_output, output_damage, title_texture,
+			&texture_box, matrix, con->alpha);
+		title_width = texture_box.width;
+	}
+
+	// Title background - above the text
+	memcpy(&color, colors->background, sizeof(float) * 4);
+	color[3] *= con->alpha;
+	box.x = inner_x;
+	box.y = con->y + 1;
+	box.width = inner_width;
+	box.height = view->border_thickness - 1;
+	scale_box(&box, output_scale);
+	render_rect(output->wlr_output, output_damage, &box, color);
+
+	// Title background - below the text
+	box.y = (con->y + view->border_thickness + config->font_height)
+		* output_scale;
+	render_rect(output->wlr_output, output_damage, &box, color);
+
+	// Title background - filler between title and marks
+	box.width = inner_width * output_scale - title_width - marks_width;
+	if (box.width > 0) {
+		box.x = inner_x * output_scale + title_width;
+		box.y = (con->y + view->border_thickness) * output_scale;
+		box.height = config->font_height * output_scale;
+		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 }
 
 /**
  * Render decorations for a view with "border pixel".
+ *
+ * Care must be taken not to render over the same pixel multiple times,
+ * otherwise the colors will be incorrect when using opacity.
  */
 static void render_container_simple_border_pixel(struct sway_output *output,
 		pixman_region32_t *output_damage, struct sway_container *con,
 		struct border_colors *colors) {
 	struct wlr_box box;
 	float color[4];
+	struct sway_view *view = con->sway_view;
+	float output_scale = output->wlr_output->scale;
 
-	if (con->sway_view->border_left) {
+	if (view->border_left) {
 		// Child border - left edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
 		color[3] *= con->alpha;
 		box.x = con->x;
-		box.y = con->y;
-		box.width = con->sway_view->border_thickness;
-		box.height = con->height;
+		box.y = con->y + view->border_thickness * view->border_top;
+		box.width = view->border_thickness;
+		box.height = con->height - view->border_thickness
+			* (view->border_top + view->border_bottom);
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	if (con->sway_view->border_right) {
+	if (view->border_right) {
 		// Child border - right edge
 		if (con->parent->children->length == 1
 				&& con->parent->layout == L_HORIZ) {
@@ -463,25 +500,28 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
 		color[3] *= con->alpha;
-		box.x = con->x + con->width - con->sway_view->border_thickness;
-		box.y = con->y;
-		box.width = con->sway_view->border_thickness;
-		box.height = con->height;
+		box.x = con->x + con->width - view->border_thickness;
+		box.y = con->y + view->border_thickness * view->border_top;
+		box.width = view->border_thickness;
+		box.height = con->height - view->border_thickness
+			* (view->border_top + view->border_bottom);
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	if (con->sway_view->border_top) {
+	if (view->border_top) {
 		// Child border - top edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
 		color[3] *= con->alpha;
 		box.x = con->x;
 		box.y = con->y;
 		box.width = con->width;
-		box.height = con->sway_view->border_thickness;
+		box.height = view->border_thickness;
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	if (con->sway_view->border_bottom) {
+	if (view->border_bottom) {
 		// Child border - bottom edge
 		if (con->parent->children->length == 1
 				&& con->parent->layout == L_VERT) {
@@ -491,9 +531,10 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 		}
 		color[3] *= con->alpha;
 		box.x = con->x;
-		box.y = con->y + con->height - con->sway_view->border_thickness;
+		box.y = con->y + con->height - view->border_thickness;
 		box.width = con->width;
-		box.height = con->sway_view->border_thickness;
+		box.height = view->border_thickness;
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 }
