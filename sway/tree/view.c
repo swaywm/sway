@@ -786,15 +786,20 @@ static void update_marks_texture(struct sway_view *view,
 
 	size_t len = 0;
 	for (int i = 0; i < view->marks->length; ++i) {
-		len += strlen((char *)view->marks->items[i]) + 2;
+		char *mark = view->marks->items[i];
+		if (mark[0] != '_') {
+			len += strlen(mark) + 2;
+		}
 	}
 	char *buffer = calloc(len + 1, 1);
 	char *part = malloc(len + 1);
 
 	for (int i = 0; i < view->marks->length; ++i) {
 		char *mark = view->marks->items[i];
-		sprintf(part, "[%s]", mark);
-		strcat(buffer, part);
+		if (mark[0] != '_') {
+			sprintf(part, "[%s]", mark);
+			strcat(buffer, part);
+		}
 	}
 	free(part);
 
