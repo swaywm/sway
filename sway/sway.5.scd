@@ -174,7 +174,7 @@ runtime.
 	Assigns views matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
-	
+
 		for\_window <criteria> move container to workspace <workspace>
 
 *bindsym* <key combo> <command>
@@ -238,7 +238,7 @@ The default colors are:
 [- *class*
 :[ _border_
 :[ _background_
-:[ _text_ 
+:[ _text_
 :[ _indicator_
 :[ _child\_border_
 |[ *background*
@@ -451,10 +451,10 @@ You can get a list of output names with *swaymsg -t get\_outputs*. You may also
 match any output by using the output name "\*". Be sure to add this output
 config after the others, or it will be matched instead of the others.
 
-*show\_marks* on|off
-	If *show\_marks* is on, marks will be displayed in the window borders.
-	Any mark that starts with an underscore will not be drawn even if the
-	option is on. The default is _on_.
+*show\_marks* yes|no
+	If *show\_marks* is yes, marks will be displayed in the window borders.
+	Any mark that starts with an underscore will not be drawn even if
+	*show\_marks* is yes. The default is _yes_.
 
 *opacity* <value>
 	Set the opacity of the window between 0 (completely transparent) and 1
