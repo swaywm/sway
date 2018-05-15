@@ -592,6 +592,7 @@ static void update_title_texture(struct sway_container *con,
 	}
 	if (*texture) {
 		wlr_texture_destroy(*texture);
+		*texture = NULL;
 	}
 	if (!con->formatted_title) {
 		return;

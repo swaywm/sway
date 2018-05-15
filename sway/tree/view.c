@@ -779,6 +779,7 @@ static void update_marks_texture(struct sway_view *view,
 	}
 	if (*texture) {
 		wlr_texture_destroy(*texture);
+		*texture = NULL;
 	}
 	if (!view->marks->length) {
 		return;
