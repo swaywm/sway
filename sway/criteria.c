@@ -75,8 +75,16 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->con_mark) {
-		// TODO
-		return false;
+		bool exists = false;
+		for (int i = 0; i < view->marks->length; ++i) {
+			if (regex_cmp(view->marks->items[i], criteria->con_mark) == 0) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) {
+			return false;
+		}
 	}
 
 	if (criteria->con_id) { // Internal ID

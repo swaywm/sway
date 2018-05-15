@@ -23,6 +23,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
+	view->marks = create_list();
 	wl_signal_init(&view->events.unmap);
 }
 
@@ -36,6 +37,11 @@ void view_destroy(struct sway_view *view) {
 	}
 
 	list_free(view->executed_criteria);
+
+	for (int i = 0; i < view->marks->length; ++i) {
+		free(view->marks->items[i]);
+	}
+	list_free(view->marks);
 
 	container_destroy(view->swayc);
 
@@ -720,4 +726,47 @@ void view_update_title(struct sway_view *view, bool force) {
 	container_update_title_textures(view->swayc);
 	container_notify_child_title_changed(view->swayc->parent);
 	config_update_font_height(false);
+}
+
+static bool find_by_mark_iterator(struct sway_container *con,
+		void *data) {
+	char *mark = data;
+	return con->type == C_VIEW && view_has_mark(con->sway_view, mark);
+}
+
+bool view_find_and_unmark(char *mark) {
+	struct sway_container *container = container_find(&root_container,
+		find_by_mark_iterator, mark);
+	if (!container) {
+		return false;
+	}
+	struct sway_view *view = container->sway_view;
+
+	for (int i = 0; i < view->marks->length; ++i) {
+		char *view_mark = view->marks->items[i];
+		if (strcmp(view_mark, mark) == 0) {
+			free(view_mark);
+			list_del(view->marks, i);
+			return true;
+		}
+	}
+	return false;
+}
+
+void view_clear_marks(struct sway_view *view) {
+	for (int i = 0; i < view->marks->length; ++i) {
+		free(view->marks->items[i]);
+	}
+	list_free(view->marks);
+	view->marks = create_list();
+}
+
+bool view_has_mark(struct sway_view *view, char *mark) {
+	for (int i = 0; i < view->marks->length; ++i) {
+		char *item = view->marks->items[i];
+		if (strcmp(item, mark) == 0) {
+			return true;
+		}
+	}
+	return false;
 }

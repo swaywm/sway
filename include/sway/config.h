@@ -368,6 +368,7 @@ struct sway_config {
 		struct seat_config *seat_config;
 		struct sway_seat *seat;
 		struct sway_container *current_container;
+		bool using_criteria;
 	} handler_context;
 };
 

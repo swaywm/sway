@@ -175,6 +175,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "focus", cmd_focus },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
+	{ "mark", cmd_mark },
 	{ "move", cmd_move },
 	{ "opacity", cmd_opacity },
 	{ "reload", cmd_reload },
@@ -185,6 +186,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "splitt", cmd_splitt },
 	{ "splitv", cmd_splitv },
 	{ "title_format", cmd_title_format },
+	{ "unmark", cmd_unmark },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -300,7 +302,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	head = exec;
 	do {
 		// Extract criteria (valid for this command list only).
-		bool has_criteria = false;
+		config->handler_context.using_criteria = false;
 		if (*head == '[') {
 			char *error = NULL;
 			struct criteria *criteria = criteria_parse(head, &error);
@@ -313,7 +315,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			views = criteria_get_views(criteria);
 			head += strlen(criteria->raw);
 			criteria_destroy(criteria);
-			has_criteria = true;
+			config->handler_context.using_criteria = true;
 			// Skip leading whitespace
 			head += strspn(head, whitespace);
 		}
@@ -350,7 +352,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				goto cleanup;
 			}
 
-			if (!has_criteria) {
+			if (!config->handler_context.using_criteria) {
 				// without criteria, the command acts upon the focused
 				// container
 				config->handler_context.current_container =
