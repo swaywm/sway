@@ -57,7 +57,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 
 	view_find_and_unmark(mark);
 
-	if (!toggle || (toggle && !had_mark)) {
+	if (!toggle || !had_mark) {
 		list_add(view->marks, strdup(mark));
 	}
 
