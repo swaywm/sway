@@ -409,6 +409,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
+		texture_box.width = box.width * output_scale;
 		render_texture(output->wlr_output, output_damage, title_texture,
 			&texture_box, matrix, 1.0);
 	}
