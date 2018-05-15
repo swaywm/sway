@@ -317,7 +317,7 @@ damage_finish:
 static void render_container_simple_border_normal(struct sway_output *output,
 		pixman_region32_t *output_damage,
 		struct sway_container *con, struct border_colors *colors,
-		struct wlr_texture *title_texture) {
+		struct wlr_texture *title_texture, struct wlr_texture *marks_texture) {
 	struct wlr_box box;
 	float color[4];
 
@@ -413,6 +413,25 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		render_texture(output->wlr_output, output_damage, title_texture,
 			&texture_box, matrix, 1.0);
 	}
+
+	// Marks
+	if (config->show_marks && marks_texture) {
+		float output_scale = output->wlr_output->scale;
+		struct wlr_box texture_box;
+		wlr_texture_get_size(marks_texture,
+			&texture_box.width, &texture_box.height);
+		texture_box.x = (box.x + box.width) * output_scale - texture_box.width;
+		texture_box.y = (box.y + box.height)
+			* output_scale - texture_box.height;
+
+		float matrix[9];
+		wlr_matrix_project_box(matrix, &texture_box,
+			WL_OUTPUT_TRANSFORM_NORMAL,
+			0.0, output->wlr_output->transform_matrix);
+
+		render_texture(output->wlr_output, output_damage, marks_texture,
+			&texture_box, matrix, 1.0);
+	}
 }
 
 /**
@@ -501,20 +520,24 @@ static void render_container_simple(struct sway_output *output,
 			if (child->sway_view->border != B_NONE) {
 				struct border_colors *colors;
 				struct wlr_texture *title_texture;
+				struct wlr_texture *marks_texture;
 				if (focus == child || parent_focused) {
 					colors = &config->border_colors.focused;
 					title_texture = child->title_focused;
+					marks_texture = child->sway_view->marks_focused;
 				} else if (seat_get_focus_inactive(seat, con) == child) {
 					colors = &config->border_colors.focused_inactive;
 					title_texture = child->title_focused_inactive;
+					marks_texture = child->sway_view->marks_focused_inactive;
 				} else {
 					colors = &config->border_colors.unfocused;
 					title_texture = child->title_unfocused;
+					marks_texture = child->sway_view->marks_unfocused;
 				}
 
 				if (child->sway_view->border == B_NORMAL) {
 					render_container_simple_border_normal(output, damage,
-						child, colors, title_texture);
+						child, colors, title_texture, marks_texture);
 				} else {
 					render_container_simple_border_pixel(output, damage, child,
 						colors);

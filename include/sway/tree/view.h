@@ -63,6 +63,11 @@ struct sway_view {
 	list_t *executed_criteria; // struct criteria *
 	list_t *marks;             // char *
 
+	struct wlr_texture *marks_focused;
+	struct wlr_texture *marks_focused_inactive;
+	struct wlr_texture *marks_unfocused;
+	struct wlr_texture *marks_urgent;
+
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
 		struct wlr_xdg_surface *wlr_xdg_surface;
@@ -266,5 +271,7 @@ bool view_find_and_unmark(char *mark);
 void view_clear_marks(struct sway_view *view);
 
 bool view_has_mark(struct sway_view *view, char *mark);
+
+void view_update_marks_textures(struct sway_view *view);
 
 #endif

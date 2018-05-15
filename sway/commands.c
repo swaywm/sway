@@ -116,6 +116,7 @@ static struct cmd_handler handlers[] = {
 	{ "mouse_warping", cmd_mouse_warping },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
+	{ "show_marks", cmd_show_marks },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };

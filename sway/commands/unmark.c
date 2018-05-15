@@ -10,6 +10,7 @@
 static void remove_all_marks_iterator(struct sway_container *con, void *data) {
 	if (con->type == C_VIEW) {
 		view_clear_marks(con->sway_view);
+		view_update_marks_textures(con->sway_view);
 	}
 }
 
@@ -45,6 +46,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 	} else if (view && !mark) {
 		// Clear all marks from the given view
 		view_clear_marks(view);
+		view_update_marks_textures(view);
 	} else if (!view && mark) {
 		// Remove mark from whichever view has it
 		view_find_and_unmark(mark);

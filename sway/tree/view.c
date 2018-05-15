@@ -746,6 +746,7 @@ bool view_find_and_unmark(char *mark) {
 		if (strcmp(view_mark, mark) == 0) {
 			free(view_mark);
 			list_del(view->marks, i);
+			view_update_marks_textures(view);
 			return true;
 		}
 	}
@@ -768,4 +769,81 @@ bool view_has_mark(struct sway_view *view, char *mark) {
 		}
 	}
 	return false;
+}
+
+static void update_marks_texture(struct sway_view *view,
+		struct wlr_texture **texture, struct border_colors *class) {
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+	if (!output) {
+		return;
+	}
+	if (*texture) {
+		wlr_texture_destroy(*texture);
+	}
+	if (!view->marks->length) {
+		return;
+	}
+
+	size_t len = 0;
+	for (int i = 0; i < view->marks->length; ++i) {
+		len += strlen((char *)view->marks->items[i]) + 2;
+	}
+	char *buffer = calloc(len + 1, 1);
+	char *part = malloc(len + 1);
+
+	for (int i = 0; i < view->marks->length; ++i) {
+		char *mark = view->marks->items[i];
+		sprintf(part, "[%s]", mark);
+		strcat(buffer, part);
+	}
+	free(part);
+
+	double scale = output->sway_output->wlr_output->scale;
+	int width = 0;
+	int height = config->font_height * scale;
+
+	cairo_t *c = cairo_create(NULL);
+	get_text_size(c, config->font, &width, NULL, scale, false, "%s", buffer);
+	cairo_destroy(c);
+
+	cairo_surface_t *surface = cairo_image_surface_create(
+			CAIRO_FORMAT_ARGB32, width, height);
+	cairo_t *cairo = cairo_create(surface);
+	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
+			class->background[2], class->background[3]);
+	cairo_paint(cairo);
+	PangoContext *pango = pango_cairo_create_context(cairo);
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
+	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
+			class->text[2], class->text[3]);
+	cairo_move_to(cairo, 0, 0);
+
+	pango_printf(cairo, config->font, scale, false, "%s", buffer);
+
+	cairo_surface_flush(surface);
+	unsigned char *data = cairo_image_surface_get_data(surface);
+	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	struct wlr_renderer *renderer = wlr_backend_get_renderer(
+			output->sway_output->wlr_output->backend);
+	*texture = wlr_texture_from_pixels(
+			renderer, WL_SHM_FORMAT_ARGB8888, stride, width, height, data);
+	cairo_surface_destroy(surface);
+	g_object_unref(pango);
+	cairo_destroy(cairo);
+	free(buffer);
+}
+
+void view_update_marks_textures(struct sway_view *view) {
+	if (!config->show_marks) {
+		return;
+	}
+	update_marks_texture(view, &view->marks_focused,
+			&config->border_colors.focused);
+	update_marks_texture(view, &view->marks_focused_inactive,
+			&config->border_colors.focused_inactive);
+	update_marks_texture(view, &view->marks_unfocused,
+			&config->border_colors.unfocused);
+	update_marks_texture(view, &view->marks_urgent,
+			&config->border_colors.urgent);
+	container_damage_whole(view->swayc);
 }
