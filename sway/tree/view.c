@@ -43,6 +43,14 @@ void view_destroy(struct sway_view *view) {
 	}
 	list_free(view->marks);
 
+	if (view->marks_focused) {
+		// If one is set then all of these are set
+		wlr_texture_destroy(view->marks_focused);
+		wlr_texture_destroy(view->marks_focused_inactive);
+		wlr_texture_destroy(view->marks_unfocused);
+		wlr_texture_destroy(view->marks_urgent);
+	}
+
 	container_destroy(view->swayc);
 
 	if (view->impl->destroy) {
