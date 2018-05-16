@@ -365,8 +365,7 @@ void view_execute_criteria(struct sway_view *view) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *prior_workspace =
-		container_parent(view->swayc, C_WORKSPACE);
+	struct sway_container *prior_focus = seat_get_focus(seat);
 	list_t *criterias = criteria_for_view(view, CT_COMMAND);
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
@@ -388,7 +387,7 @@ void view_execute_criteria(struct sway_view *view) {
 		seat_set_focus(seat, view->swayc);
 	}
 	list_free(criterias);
-	seat_set_focus(seat, seat_get_focus_inactive(seat, prior_workspace));
+	seat_set_focus(seat, prior_focus);
 }
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
