@@ -16,6 +16,7 @@
 #include <sys/prctl.h>
 #endif
 #include <wlr/util/log.h>
+#include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/debug.h"
 #include "sway/server.h"
@@ -410,9 +411,18 @@ int main(int argc, char **argv) {
 
 	security_sanity_check();
 
-	// TODO: wait for server to be ready
-	// TODO: consume config->cmd_queue
 	config->active = true;
+	// Execute commands until there are none left
+	while (config->cmd_queue->length) {
+		char *line = config->cmd_queue->items[0];
+		struct cmd_results *res = execute_command(line, NULL);
+		if (res->status != CMD_SUCCESS) {
+			wlr_log(L_ERROR, "Error on line '%s': %s", line, res->error);
+		}
+		free_cmd_results(res);
+		free(line);
+		list_del(config->cmd_queue, 0);
+	}
 
 	if (!terminate_request) {
 		server_run(&server);

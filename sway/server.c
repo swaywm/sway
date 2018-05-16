@@ -19,27 +19,11 @@
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
-#include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 
-static void server_ready(struct wl_listener *listener, void *data) {
-	wlr_log(L_DEBUG, "Compositor is ready, executing cmds in queue");
-	// Execute commands until there are none left
-	config->active = true;
-	while (config->cmd_queue->length) {
-		char *line = config->cmd_queue->items[0];
-		struct cmd_results *res = execute_command(line, NULL);
-		if (res->status != CMD_SUCCESS) {
-			wlr_log(L_ERROR, "Error on line '%s': %s", line, res->error);
-		}
-		free_cmd_results(res);
-		free(line);
-		list_del(config->cmd_queue, 0);
-	}
-}
 
 bool server_init(struct sway_server *server) {
 	wlr_log(L_DEBUG, "Initializing Wayland server");
@@ -93,10 +77,6 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xwayland->events.new_surface,
 		&server->xwayland_surface);
 	server->xwayland_surface.notify = handle_xwayland_surface;
-	wl_signal_add(&server->xwayland->events.ready,
-		&server->xwayland_ready);
-	// TODO: call server_ready now if xwayland is not enabled
-	server->xwayland_ready.notify = server_ready;
 
 	// TODO: configurable cursor theme and size
 	server->xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
