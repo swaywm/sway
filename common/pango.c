@@ -71,7 +71,7 @@ int escape_markup_text(const char *src, char *dest, int dest_length) {
 }
 
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
-		const char *text, int32_t scale, bool markup) {
+		const char *text, double scale, bool markup) {
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs;
 	if (markup) {
@@ -103,7 +103,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 }
 
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
-		int32_t scale, bool markup, const char *fmt, ...) {
+		double scale, bool markup, const char *fmt, ...) {
 	static char buf[2048];
 
 	va_list args;
@@ -120,7 +120,7 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 }
 
 void pango_printf(cairo_t *cairo, const char *font,
-		int32_t scale, bool markup, const char *fmt, ...) {
+		double scale, bool markup, const char *fmt, ...) {
 	static char buf[2048];
 
 	va_list args;
