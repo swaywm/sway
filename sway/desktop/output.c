@@ -962,10 +962,15 @@ static void handle_transform(struct wl_listener *listener, void *data) {
 	arrange_output(output->swayc);
 }
 
+static void handle_scale_iterator(struct sway_container *view, void *data) {
+	view_update_marks_textures(view->sway_view);
+}
+
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	arrange_layers(output);
 	arrange_output(output->swayc);
+	container_descendants(output->swayc, C_VIEW, handle_scale_iterator, NULL);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
