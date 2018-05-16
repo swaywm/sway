@@ -340,6 +340,9 @@ void sig_handler(int signal) {
 }
 
 static int display_event(int fd, uint32_t mask, void *data) {
+	if (mask & WL_EVENT_HANGUP) {
+		sway_terminate(0);
+	}
 	wl_display_dispatch(state.display);
 	return 0;
 }
