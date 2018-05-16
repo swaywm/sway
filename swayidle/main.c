@@ -340,7 +340,13 @@ void sig_handler(int signal) {
 }
 
 static int display_event(int fd, uint32_t mask, void *data) {
-	wl_display_dispatch(state.display);
+	if (mask & WL_EVENT_HANGUP) {
+		sway_terminate(0);
+	}
+	if (wl_display_dispatch(state.display) < 0) {
+		wlr_log_errno(L_ERROR, "wl_display_dispatch failed, exiting");
+		sway_terminate(0);
+	};
 	return 0;
 }
 
