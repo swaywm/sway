@@ -62,6 +62,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	}
 
 	free(mark);
+	view_update_marks_textures(view);
 	view_execute_criteria(view);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

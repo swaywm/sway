@@ -60,6 +60,7 @@ sway_sources = files(
 	'commands/seat/cursor.c',
 	'commands/seat/fallback.c',
 	'commands/set.c',
+	'commands/show_marks.c',
 	'commands/split.c',
 	'commands/swaybg_command.c',
 	'commands/title_format.c',

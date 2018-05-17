@@ -123,13 +123,12 @@ static void _container_destroy(struct sway_container *cont) {
 	if (cont->name) {
 		free(cont->name);
 	}
-	if (cont->title_focused) {
-		// If one is set then all of these are set
-		wlr_texture_destroy(cont->title_focused);
-		wlr_texture_destroy(cont->title_focused_inactive);
-		wlr_texture_destroy(cont->title_unfocused);
-		wlr_texture_destroy(cont->title_urgent);
-	}
+
+	wlr_texture_destroy(cont->title_focused);
+	wlr_texture_destroy(cont->title_focused_inactive);
+	wlr_texture_destroy(cont->title_unfocused);
+	wlr_texture_destroy(cont->title_urgent);
+
 	list_free(cont->children);
 	cont->children = NULL;
 	free(cont);
@@ -592,6 +591,7 @@ static void update_title_texture(struct sway_container *con,
 	}
 	if (*texture) {
 		wlr_texture_destroy(*texture);
+		*texture = NULL;
 	}
 	if (!con->formatted_title) {
 		return;
