@@ -75,6 +75,33 @@ static void destroy_surface(struct swaylock_surface *surface) {
 	free(surface);
 }
 
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener;
+
+static void create_layer_surface(struct swaylock_surface *surface) {
+	struct swaylock_state *state = surface->state;
+
+	surface->surface = wl_compositor_create_surface(state->compositor);
+	assert(surface->surface);
+
+	surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+			state->layer_shell, surface->surface, surface->output,
+			ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "lockscreen");
+	assert(surface->layer_surface);
+
+	zwlr_layer_surface_v1_set_size(surface->layer_surface, 0, 0);
+	zwlr_layer_surface_v1_set_anchor(surface->layer_surface,
+			ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+			ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+			ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
+			ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
+	zwlr_layer_surface_v1_set_exclusive_zone(surface->layer_surface, -1);
+	zwlr_layer_surface_v1_set_keyboard_interactivity(
+			surface->layer_surface, true);
+	zwlr_layer_surface_v1_add_listener(surface->layer_surface,
+			&layer_surface_listener, surface);
+	wl_surface_commit(surface->surface);
+}
+
 static void layer_surface_configure(void *data,
 		struct zwlr_layer_surface_v1 *layer_surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
@@ -152,8 +179,14 @@ static void handle_global(void *data, struct wl_registry *registry,
 		surface->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 3);
 		surface->output_global_name = name;
+		surface->image = state->background_image;
 		wl_output_add_listener(surface->output, &output_listener, surface);
 		wl_list_insert(&state->surfaces, &surface->link);
+
+		if (state->run_display) {
+			create_layer_surface(surface);
+			wl_display_roundtrip(state->display);
+		}
 	}
 }
 
@@ -190,7 +223,7 @@ int main(int argc, char **argv) {
 		{0, 0, 0, 0}
 	};
 
-	const char *usage =
+	const char usage[] =
 		"Usage: swaylock [options...]\n"
 		"\n"
 		"  -h, --help                     Show help message and quit.\n"
@@ -203,13 +236,12 @@ int main(int argc, char **argv) {
 		"  -f, --daemonize                Detach from the controlling terminal.\n"
 		"  --socket <socket>              Use the specified socket.\n";
 
-	struct swaylock_args args = {
+	state.args = (struct swaylock_args){
 		.mode = BACKGROUND_MODE_SOLID_COLOR,
 		.color = 0xFFFFFFFF,
 		.show_indicator = true,
 	};
-	cairo_surface_t *background_image = NULL;
-	state.args = args;
+
 	wlr_log_init(L_DEBUG, NULL);
 
 	int c;
@@ -227,8 +259,8 @@ int main(int argc, char **argv) {
 		}
 		case 'i':
 			// TODO: Multiple background images (bleh)
-			background_image = load_background_image(optarg);
-			if (!background_image) {
+			state.background_image = load_background_image(optarg);
+			if (!state.background_image) {
 				return 1;
 			}
 			state.args.mode = BACKGROUND_MODE_FILL;
@@ -288,34 +320,13 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	zwlr_input_inhibit_manager_v1_get_inhibitor(state.input_inhibit_manager);
+
 	struct swaylock_surface *surface;
 	wl_list_for_each(surface, &state.surfaces, link) {
-		surface->image = background_image;
-
-		surface->surface = wl_compositor_create_surface(state.compositor);
-		assert(surface->surface);
-
-		surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-				state.layer_shell, surface->surface, surface->output,
-				ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "lockscreen");
-		assert(surface->layer_surface);
-
-		zwlr_layer_surface_v1_set_size(surface->layer_surface, 0, 0);
-		zwlr_layer_surface_v1_set_anchor(surface->layer_surface,
-				ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-				ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
-				ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
-				ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
-		zwlr_layer_surface_v1_set_exclusive_zone(surface->layer_surface, -1);
-		zwlr_layer_surface_v1_set_keyboard_interactivity(
-				surface->layer_surface, true);
-		zwlr_layer_surface_v1_add_listener(surface->layer_surface,
-				&layer_surface_listener, surface);
-		wl_surface_commit(surface->surface);
-		wl_display_roundtrip(state.display);
+		create_layer_surface(surface);
 	}
-
-	zwlr_input_inhibit_manager_v1_get_inhibitor(state.input_inhibit_manager);
+	wl_display_roundtrip(state.display);
 
 	state.run_display = true;
 	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
