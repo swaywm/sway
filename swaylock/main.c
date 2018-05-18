@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-client.h>
+#include <wordexp.h>
 #include <wlr/util/log.h>
 #include "swaylock/seat.h"
 #include "swaylock/swaylock.h"
@@ -20,9 +21,11 @@
 #include "pool-buffer.h"
 #include "cairo.h"
 #include "log.h"
+#include "stringop.h"
 #include "util.h"
 #include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "xdg-output-unstable-v1-client-protocol.h"
 
 void sway_terminate(int exit_code) {
 	exit(exit_code);
@@ -84,22 +87,23 @@ static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
-static void output_geometry(void *data, struct wl_output *output, int32_t x,
+static void handle_wl_output_geometry(void *data, struct wl_output *output, int32_t x,
 		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
 		const char *make, const char *model, int32_t transform) {
 	// Who cares
 }
 
-static void output_mode(void *data, struct wl_output *output, uint32_t flags,
+static void handle_wl_output_mode(void *data, struct wl_output *output, uint32_t flags,
 		int32_t width, int32_t height, int32_t refresh) {
 	// Who cares
 }
 
-static void output_done(void *data, struct wl_output *output) {
+static void handle_wl_output_done(void *data, struct wl_output *output) {
 	// Who cares
 }
 
-static void output_scale(void *data, struct wl_output *output, int32_t factor) {
+static void handle_wl_output_scale(void *data, struct wl_output *output,
+		int32_t factor) {
 	struct swaylock_surface *surface = data;
 	surface->scale = factor;
 	if (surface->state->run_display) {
@@ -107,11 +111,46 @@ static void output_scale(void *data, struct wl_output *output, int32_t factor) {
 	}
 }
 
-struct wl_output_listener output_listener = {
-	.geometry = output_geometry,
-	.mode = output_mode,
-	.done = output_done,
-	.scale = output_scale,
+struct wl_output_listener _wl_output_listener = {
+	.geometry = handle_wl_output_geometry,
+	.mode = handle_wl_output_mode,
+	.done = handle_wl_output_done,
+	.scale = handle_wl_output_scale,
+};
+
+static void handle_xdg_output_logical_size(void *data, struct zxdg_output_v1 *output,
+		int width, int height) {
+	// Who cares
+}
+
+static void handle_xdg_output_logical_position(void *data,
+		struct zxdg_output_v1 *output, int x, int y) {
+	// Who cares
+}
+
+static void handle_xdg_output_name(void *data, struct zxdg_output_v1 *output,
+		const char *name) {
+	wlr_log(L_DEBUG, "output name is %s", name);
+	struct swaylock_surface *surface = data;
+	surface->xdg_output = output;
+	surface->output_name = strdup(name);
+}
+
+static void handle_xdg_output_description(void *data, struct zxdg_output_v1 *output,
+		const char *description) {
+	// Who cares
+}
+
+static void handle_xdg_output_done(void *data, struct zxdg_output_v1 *output) {
+	// Who cares
+}
+
+struct zxdg_output_v1_listener _xdg_output_listener = {
+	.logical_position = handle_xdg_output_logical_position,
+	.logical_size = handle_xdg_output_logical_size,
+	.done = handle_xdg_output_done,
+	.name = handle_xdg_output_name,
+	.description = handle_xdg_output_description,
 };
 
 static void handle_global(void *data, struct wl_registry *registry,
@@ -133,13 +172,16 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, zwlr_input_inhibit_manager_v1_interface.name) == 0) {
 		state->input_inhibit_manager = wl_registry_bind(
 				registry, name, &zwlr_input_inhibit_manager_v1_interface, 1);
+	} else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0) {
+		state->zxdg_output_manager = wl_registry_bind(
+				registry, name, &zxdg_output_manager_v1_interface, 2);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
 		struct swaylock_surface *surface =
 			calloc(1, sizeof(struct swaylock_surface));
 		surface->state = state;
 		surface->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 3);
-		wl_output_add_listener(surface->output, &output_listener, surface);
+		wl_output_add_listener(surface->output, &_wl_output_listener, surface);
 		wl_list_insert(&state->surfaces, &surface->link);
 	}
 }
@@ -153,6 +195,53 @@ static const struct wl_registry_listener registry_listener = {
 	.global = handle_global,
 	.global_remove = handle_global_remove,
 };
+
+static cairo_surface_t *select_image(struct swaylock_state *state,
+		struct swaylock_surface *surface) {
+	struct swaylock_image *image;
+	cairo_surface_t *default_image = NULL;
+	wl_list_for_each(image, &state->images, link) {
+		if (lenient_strcmp(image->output_name, surface->output_name) == 0) {
+			return image->cairo_surface;
+		} else if (!image->output_name) {
+			default_image = image->cairo_surface;
+		}
+	}
+	return default_image;
+}
+
+static void load_image(char *arg, struct swaylock_state *state) {
+	// [<output>:]<path>
+	struct swaylock_image *image = malloc(sizeof(struct swaylock_image));
+	char *separator = strchr(arg, ':');
+	if (separator) {
+		*separator = '\0';
+		image->output_name = strdup(arg);
+		image->path = strdup(separator + 1);
+	} else {
+		image->output_name = NULL;
+		image->path = strdup(arg);
+	}
+
+	// Bash doesn't replace the ~ with $HOME if the output name is supplied
+	wordexp_t p;
+	if (wordexp(image->path, &p, 0) == 0) {
+		free(image->path);
+		image->path = strdup(p.we_wordv[0]);
+		wordfree(&p);
+	}
+
+	// Load the actual image
+	image->cairo_surface = load_background_image(image->path);
+	if (!image->cairo_surface) {
+		free(image);
+		return;
+	}
+	wl_list_insert(&state->images, &image->link);
+	state->args.mode = BACKGROUND_MODE_FILL;
+	wlr_log(L_DEBUG, "Loaded image %s for output %s",
+			image->path, image->output_name ? image->output_name : "*");
+}
 
 static struct swaylock_state state;
 
@@ -180,16 +269,15 @@ int main(int argc, char **argv) {
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
-		"  -f, --daemonize                Detach from the controlling terminal.\n" 
-		"  --socket <socket>              Use the specified socket.\n";
+		"  -f, --daemonize                Detach from the controlling terminal.\n";
 
 	struct swaylock_args args = {
 		.mode = BACKGROUND_MODE_SOLID_COLOR,
 		.color = 0xFFFFFFFF,
 		.show_indicator = true,
 	};
-	cairo_surface_t *background_image = NULL;
 	state.args = args;
+	wl_list_init(&state.images);
 	wlr_log_init(L_DEBUG, NULL);
 
 	int c;
@@ -206,12 +294,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case 'i':
-			// TODO: Multiple background images (bleh)
-			background_image = load_background_image(optarg);
-			if (!background_image) {
-				return 1;
-			}
-			state.args.mode = BACKGROUND_MODE_FILL;
+			load_image(optarg, &state);
 			break;
 		case 's':
 			state.args.mode = parse_background_mode(optarg);
@@ -261,6 +344,7 @@ int main(int argc, char **argv) {
 	if (!state.input_inhibit_manager) {
 		wlr_log(L_ERROR, "Compositor does not support the input inhibitor "
 				"protocol, refusing to run insecurely");
+		return 1;
 	}
 
 	if (wl_list_empty(&state.surfaces)) {
@@ -268,9 +352,23 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	if (state.zxdg_output_manager) {
+		struct swaylock_surface *surface;
+		wl_list_for_each(surface, &state.surfaces, link) {
+			surface->xdg_output = zxdg_output_manager_v1_get_xdg_output(
+						state.zxdg_output_manager, surface->output);
+			zxdg_output_v1_add_listener(
+					surface->xdg_output, &_xdg_output_listener, surface);
+		}
+		wl_display_roundtrip(state.display);
+	} else {
+		wlr_log(L_INFO, "Compositor does not support zxdg output manager, "
+				"images assigned to named outputs will not work");
+	}
+
 	struct swaylock_surface *surface;
 	wl_list_for_each(surface, &state.surfaces, link) {
-		surface->image = background_image;
+		surface->image = select_image(&state, surface);
 
 		surface->surface = wl_compositor_create_surface(state.compositor);
 		assert(surface->surface);
