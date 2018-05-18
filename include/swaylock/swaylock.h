@@ -48,6 +48,7 @@ struct swaylock_surface {
 	cairo_surface_t *image;
 	struct swaylock_state *state;
 	struct wl_output *output;
+	uint32_t output_global_name;
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
 	struct pool_buffer buffers[2];

@@ -61,6 +61,20 @@ static void daemonize() {
 	}
 }
 
+static void destroy_surface(struct swaylock_surface *surface) {
+	wl_list_remove(&surface->link);
+	if (surface->layer_surface != NULL) {
+		zwlr_layer_surface_v1_destroy(surface->layer_surface);
+	}
+	if (surface->surface != NULL) {
+		wl_surface_destroy(surface->surface);
+	}
+	destroy_buffer(&surface->buffers[0]);
+	destroy_buffer(&surface->buffers[1]);
+	wl_output_destroy(surface->output);
+	free(surface);
+}
+
 static void layer_surface_configure(void *data,
 		struct zwlr_layer_surface_v1 *layer_surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
@@ -74,9 +88,7 @@ static void layer_surface_configure(void *data,
 static void layer_surface_closed(void *data,
 		struct zwlr_layer_surface_v1 *layer_surface) {
 	struct swaylock_surface *surface = data;
-	zwlr_layer_surface_v1_destroy(surface->layer_surface);
-	wl_surface_destroy(surface->surface);
-	surface->state->run_display = false;
+	destroy_surface(surface);
 }
 
 static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
@@ -139,6 +151,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 		surface->state = state;
 		surface->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 3);
+		surface->output_global_name = name;
 		wl_output_add_listener(surface->output, &output_listener, surface);
 		wl_list_insert(&state->surfaces, &surface->link);
 	}
@@ -146,7 +159,14 @@ static void handle_global(void *data, struct wl_registry *registry,
 
 static void handle_global_remove(void *data, struct wl_registry *registry,
 		uint32_t name) {
-	// who cares
+	struct swaylock_state *state = data;
+	struct swaylock_surface *surface;
+	wl_list_for_each(surface, &state->surfaces, link) {
+		if (surface->output_global_name == name) {
+			destroy_surface(surface);
+			break;
+		}
+	}
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -180,7 +200,7 @@ int main(int argc, char **argv) {
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
-		"  -f, --daemonize                Detach from the controlling terminal.\n" 
+		"  -f, --daemonize                Detach from the controlling terminal.\n"
 		"  --socket <socket>              Use the specified socket.\n";
 
 	struct swaylock_args args = {
