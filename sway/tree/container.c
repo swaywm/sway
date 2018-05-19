@@ -73,6 +73,44 @@ static void container_close_notify(struct sway_container *container) {
 	}
 }
 
+static void container_update_textures_recursive(struct sway_container *con) {
+	container_update_title_textures(con);
+
+	if (con->type == C_VIEW) {
+		view_update_marks_textures(con->sway_view);
+	} else {
+		for (int i = 0; i < con->children->length; ++i) {
+			struct sway_container *child = con->children->items[i];
+			container_update_textures_recursive(child);
+		}
+	}
+}
+
+static void handle_reparent(struct wl_listener *listener,
+		void *data) {
+	struct sway_container *container =
+		wl_container_of(listener, container, reparent);
+	struct sway_container *old_parent = data;
+
+	struct sway_container *old_output = old_parent;
+	if (old_output != NULL && old_output->type != C_OUTPUT) {
+		old_output = container_parent(old_output, C_OUTPUT);
+	}
+
+	struct sway_container *new_output = container->parent;
+	if (new_output != NULL && new_output->type != C_OUTPUT) {
+		new_output = container_parent(new_output, C_OUTPUT);
+	}
+
+	if (old_output && new_output) {
+		float old_scale = old_output->sway_output->wlr_output->scale;
+		float new_scale = new_output->sway_output->wlr_output->scale;
+		if (old_scale != new_scale) {
+			container_update_textures_recursive(container);
+		}
+	}
+}
+
 struct sway_container *container_create(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
@@ -91,6 +129,9 @@ struct sway_container *container_create(enum sway_container_type type) {
 
 	wl_signal_init(&c->events.destroy);
 	wl_signal_init(&c->events.reparent);
+
+	wl_signal_add(&c->events.reparent, &c->reparent);
+	c->reparent.notify = handle_reparent;
 
 	return c;
 }
