@@ -784,23 +784,32 @@ static size_t concatenate_child_titles(struct sway_container *parent,
 			strcpy(buffer, "F[");
 			break;
 		case L_NONE:
-			strcpy(buffer, "?[");
+			strcpy(buffer, "D[");
 			break;
 		}
 	}
 
 	for (int i = 0; i < parent->children->length; ++i) {
 		if (i != 0) {
-			len += 2;
+			len += 1;
 			if (buffer) {
-				strcat(buffer, ", ");
+				strcat(buffer, " ");
 			}
 		}
 		struct sway_container *child = parent->children->items[i];
-		if (child->name) {
-			len += strlen(child->name);
+		const char *identifier = NULL;
+		if (child->type == C_VIEW) {
+			identifier = view_get_class(child->sway_view);
+			if (!identifier) {
+				identifier = view_get_app_id(child->sway_view);
+			}
+		} else {
+			identifier = child->name;
+		}
+		if (identifier) {
+			len += strlen(identifier);
 			if (buffer) {
-				strcat(buffer, child->name);
+				strcat(buffer, identifier);
 			}
 		} else {
 			len += 6;
