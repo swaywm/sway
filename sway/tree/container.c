@@ -455,6 +455,9 @@ struct sway_container *container_parent(struct sway_container *container,
 static struct sway_container *container_at_view(struct sway_container *swayc,
 		double ox, double oy,
 		struct wlr_surface **surface, double *sx, double *sy) {
+	if (!sway_assert(swayc->type == C_VIEW, "Expected a view")) {
+		return NULL;
+	}
 	struct sway_view *sview = swayc->sway_view;
 	double view_sx = ox - sview->x;
 	double view_sy = oy - sview->y;
