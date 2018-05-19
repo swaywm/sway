@@ -86,6 +86,13 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	if (!num_children) {
 		return;
 	}
+	size_t parent_height = parent->height;
+	size_t parent_offset = 0;
+	if (parent->parent->layout == L_TABBED) {
+		parent_offset = config->border_thickness * 2 + config->font_height;
+		parent_height -= parent_offset;
+	}
+
 	// Calculate total width of children
 	double total_width = 0;
 	for (size_t i = 0; i < num_children; ++i) {
@@ -111,9 +118,9 @@ static void apply_horiz_layout(struct sway_container *parent) {
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->width, scale);
 		child->x = child_x;
-		child->y = parent->y;
+		child->y = parent->y + parent_offset;
 		child->width = floor(child->width * scale);
-		child->height = parent->height;
+		child->height = parent_height;
 		child_x += child->width;
 	}
 	// Make last child use remaining width of parent
@@ -125,24 +132,31 @@ static void apply_vert_layout(struct sway_container *parent) {
 	if (!num_children) {
 		return;
 	}
+	size_t parent_height = parent->height;
+	size_t parent_offset = 0;
+	if (parent->parent->layout == L_TABBED) {
+		parent_offset = config->border_thickness * 2 + config->font_height;
+		parent_height -= parent_offset;
+	}
+
 	// Calculate total height of children
 	double total_height = 0;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
 		if (child->height <= 0) {
 			if (num_children > 1) {
-				child->height = parent->height / (num_children - 1);
+				child->height = parent_height / (num_children - 1);
 			} else {
-				child->height = parent->height;
+				child->height = parent_height;
 			}
 		}
 		total_height += child->height;
 	}
-	double scale = parent->height / total_height;
+	double scale = parent_height / total_height;
 
 	// Resize
 	wlr_log(L_DEBUG, "Arranging %p vertically", parent);
-	double child_y = parent->y;
+	double child_y = parent->y + parent_offset;
 	struct sway_container *child;
 	for (size_t i = 0; i < num_children; ++i) {
 		child = parent->children->items[i];
@@ -156,7 +170,20 @@ static void apply_vert_layout(struct sway_container *parent) {
 		child_y += child->height;
 	}
 	// Make last child use remaining height of parent
-	child->height = parent->y + parent->height - child->y;
+	child->height = parent->y + parent_offset + parent_height - child->y;
+}
+
+static void apply_tabbed_layout(struct sway_container *parent) {
+	if (!parent->children->length) {
+		return;
+	}
+	for (int i = 0; i < parent->children->length; ++i) {
+		struct sway_container *child = parent->children->items[i];
+		child->x = parent->x;
+		child->y = parent->y;
+		child->width = parent->width;
+		child->height = parent->height;
+	}
 }
 
 void arrange_children_of(struct sway_container *parent) {
@@ -188,6 +215,9 @@ void arrange_children_of(struct sway_container *parent) {
 		break;
 	case L_VERT:
 		apply_vert_layout(parent);
+		break;
+	case L_TABBED:
+		apply_tabbed_layout(parent);
 		break;
 	default:
 		wlr_log(L_DEBUG, "TODO: arrange layout type %d", parent->layout);

@@ -162,7 +162,7 @@ struct sway_container *container_parent(struct sway_container *container,
  * is a view and the view contains a surface at those coordinates.
  */
 struct sway_container *container_at(struct sway_container *container,
-		double lx, double ly, struct wlr_surface **surface,
+		double ox, double oy, struct wlr_surface **surface,
 		double *sx, double *sy);
 
 /**

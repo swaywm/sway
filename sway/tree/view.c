@@ -441,6 +441,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	input_manager_set_focus(input_manager, cont);
 
 	view_update_title(view, false);
+	container_notify_child_title_changed(view->swayc->parent);
 	view_execute_criteria(view);
 
 	container_damage_whole(cont);
