@@ -383,20 +383,20 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Single pixel bar below title
-	memcpy(&color, colors->border, sizeof(float) * 4);
-	color[3] *= con->alpha;
-	box.x = con->x + view->border_thickness;
-	box.y = view->y - 1;
-	box.width = con->width - view->border_thickness * 2;
-	box.height = 1;
-	scale_box(&box, output_scale);
-	render_rect(output->wlr_output, output_damage, &box, color);
-
 	// Setting these makes marks and title easier
 	size_t inner_x = con->x + view->border_thickness * view->border_left;
 	size_t inner_width = con->width - view->border_thickness * view->border_left
 		- view->border_thickness * view->border_right;
+
+	// Single pixel bar below title
+	memcpy(&color, colors->border, sizeof(float) * 4);
+	color[3] *= con->alpha;
+	box.x = inner_x;
+	box.y = view->y - 1;
+	box.width = inner_width;
+	box.height = 1;
+	scale_box(&box, output_scale);
+	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Marks
 	size_t marks_width = 0;
