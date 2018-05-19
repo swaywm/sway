@@ -865,3 +865,28 @@ void view_update_marks_textures(struct sway_view *view) {
 			&config->border_colors.urgent);
 	container_damage_whole(view->swayc);
 }
+
+bool view_is_visible(struct sway_view *view) {
+	if (!view->swayc) {
+		return false;
+	}
+	// Check view isn't in a tabbed or stacked container on an inactive tab
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *container = view->swayc;
+	while (container->type != C_WORKSPACE) {
+		if (container->parent->layout == L_TABBED ||
+				container->parent->layout == L_STACKED) {
+			if (seat_get_active_child(seat, container->parent) != container) {
+				return false;
+			}
+		}
+		container = container->parent;
+	}
+	// Check view isn't hidden by another fullscreen view
+	struct sway_container *workspace = container;
+	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
+		return false;
+	}
+	// Check the workspace is visible
+	return workspace_is_visible(workspace);
+}

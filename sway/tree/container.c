@@ -522,10 +522,7 @@ static struct sway_container *container_at_tabbed(struct sway_container *parent,
 	}
 
 	// Surfaces
-	struct sway_container *current = seat_get_focus_inactive(seat, parent);
-	while (current->parent != parent) {
-		current = current->parent;
-	}
+	struct sway_container *current = seat_get_active_child(seat, parent);
 
 	return container_at(current, ox, oy, surface, sx, sy);
 }

@@ -754,10 +754,7 @@ static void render_container_tabbed(struct sway_output *output,
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focus(seat);
-	struct sway_container *current = seat_get_focus_inactive(seat, con);
-	while (current->parent != con) {
-		current = current->parent;
-	}
+	struct sway_container *current = seat_get_active_child(seat, con);
 	struct border_colors *current_colors = NULL;
 
 	// Render tabs
@@ -1082,9 +1079,7 @@ static void output_damage_view(struct sway_output *output,
 		return;
 	}
 
-	struct sway_container *workspace = container_parent(view->swayc,
-			C_WORKSPACE);
-	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
+	if (!view_is_visible(view)) {
 		return;
 	}
 

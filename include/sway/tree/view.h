@@ -274,4 +274,10 @@ bool view_has_mark(struct sway_view *view, char *mark);
 
 void view_update_marks_textures(struct sway_view *view);
 
+/**
+ * Returns true if there's a possibility the view may be rendered on screen.
+ * Intended for damage tracking.
+ */
+bool view_is_visible(struct sway_view *view);
+
 #endif
