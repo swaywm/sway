@@ -98,6 +98,8 @@ struct sway_container {
 		// Passed the previous parent
 		struct wl_signal reparent;
 	} events;
+
+	struct wl_listener reparent;
 };
 
 struct sway_container *container_create(enum sway_container_type type);
