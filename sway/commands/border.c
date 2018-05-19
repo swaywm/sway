@@ -18,26 +18,53 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Only views can have borders");
 	}
-	struct sway_view *view = container->sway_view;
 
-	if (strcmp(argv[0], "none") == 0) {
-		view->border = B_NONE;
-	} else if (strcmp(argv[0], "normal") == 0) {
-		view->border = B_NORMAL;
-	} else if (strcmp(argv[0], "pixel") == 0) {
-		view->border = B_PIXEL;
-		if (argc == 2) {
-			view->border_thickness = atoi(argv[1]);
+	if (container->parent->layout != L_TABBED) {
+		struct sway_view *view = container->sway_view;
+		if (strcmp(argv[0], "none") == 0) {
+			view->border = B_NONE;
+		} else if (strcmp(argv[0], "normal") == 0) {
+			view->border = B_NORMAL;
+		} else if (strcmp(argv[0], "pixel") == 0) {
+			view->border = B_PIXEL;
+			if (argc == 2) {
+				view->border_thickness = atoi(argv[1]);
+			}
+		} else if (strcmp(argv[0], "toggle") == 0) {
+			view->border = (view->border + 1) % 3;
+		} else {
+			return cmd_results_new(CMD_INVALID, "border",
+					"Expected 'border <none|normal|pixel|toggle>' "
+					"or 'border pixel <px>'");
 		}
-	} else if (strcmp(argv[0], "toggle") == 0) {
-		view->border = (view->border + 1) % 3;
-	} else {
-		return cmd_results_new(CMD_INVALID, "border",
-				"Expected 'border <none|normal|pixel|toggle>' "
-				"or 'border pixel <px>'");
-	}
 
-	view_autoconfigure(view);
+		view_autoconfigure(view);
+	} else {
+		int depth;
+		int num_tabs = container->parent->children->length;
+
+		for (depth = 0; depth < num_tabs; ++depth) {
+			struct sway_container *child = container->parent->children->items[depth];
+			if (strcmp(argv[0], "none") == 0) {
+				child->sway_view->border = B_NONE;
+			} else if (strcmp(argv[0], "normal") == 0) {
+				child->sway_view->border = B_NORMAL;
+			} else if (strcmp(argv[0], "pixel") == 0) {
+				child->sway_view->border = B_PIXEL;
+				if (argc == 2) {
+					child->sway_view->border_thickness = atoi(argv[1]);
+				}
+			} else if (strcmp(argv[0], "toggle") == 0) {
+				child->sway_view->border = (child->sway_view->border + 1) % 3;
+			} else {
+				return cmd_results_new(CMD_INVALID, "border",
+						"Expected 'border <none|normal|pixel|toggle>' "
+						"or 'border pixel <px>'");
+			}
+
+			view_autoconfigure(child->sway_view);
+		}
+	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	if (seat->cursor) {
