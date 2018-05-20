@@ -709,37 +709,39 @@ static void render_tab_content(struct sway_output *output,
 	float output_scale = output->wlr_output->scale;
 	float color[4];
 
-	if (view->border_left) {
-		memcpy(&color, colors->child_border, sizeof(float) * 4);
-		color[3] *= con->alpha;
-		box.x = con->x;
-		box.y = con->y + config->border_thickness * 2 + config->font_height;
-		box.width = view->border_thickness;
-		box.height = view->height;
-		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, damage, &box, color);
-	}
+	if (view->border != B_NONE) {
+		if (view->border_left) {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+			color[3] *= con->alpha;
+			box.x = con->x;
+			box.y = con->y + config->border_thickness * 2 + config->font_height;
+			box.width = view->border_thickness;
+			box.height = view->height;
+			scale_box(&box, output_scale);
+			render_rect(output->wlr_output, damage, &box, color);
+		}
 
-	if (view->border_right) {
-		memcpy(&color, colors->child_border, sizeof(float) * 4);
-		color[3] *= con->alpha;
-		box.x = view->x + view->width;
-		box.y = con->y + config->border_thickness * 2 + config->font_height;
-		box.width = view->border_thickness;
-		box.height = view->height;
-		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, damage, &box, color);
-	}
+		if (view->border_right) {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+			color[3] *= con->alpha;
+			box.x = view->x + view->width;
+			box.y = con->y + config->border_thickness * 2 + config->font_height;
+			box.width = view->border_thickness;
+			box.height = view->height;
+			scale_box(&box, output_scale);
+			render_rect(output->wlr_output, damage, &box, color);
+		}
 
-	if (view->border_bottom) {
-		memcpy(&color, colors->child_border, sizeof(float) * 4);
-		color[3] *= con->alpha;
-		box.x = con->x;
-		box.y = view->y + view->height;
-		box.width = con->width;
-		box.height = view->border_thickness;
-		scale_box(&box, output_scale);
-		render_rect(output->wlr_output, damage, &box, color);
+		if (view->border_bottom) {
+			memcpy(&color, colors->child_border, sizeof(float) * 4);
+			color[3] *= con->alpha;
+			box.x = con->x;
+			box.y = view->y + view->height;
+			box.width = con->width;
+			box.height = view->border_thickness;
+			scale_box(&box, output_scale);
+			render_rect(output->wlr_output, damage, &box, color);
+		}
 	}
 }
 
