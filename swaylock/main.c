@@ -223,6 +223,23 @@ static void load_image(char *arg, struct swaylock_state *state) {
 		image->path = strdup(arg);
 	}
 
+	bool exists = false;
+	struct swaylock_image *iter_image;
+	wl_list_for_each(iter_image, &state->images, link) {
+		if (lenient_strcmp(iter_image->output_name, image->output_name) == 0) {
+			exists = true;
+			break;
+		}
+	}
+	if (exists) {
+		if (image->output_name) {
+			wlr_log(L_ERROR, "Multiple images defined for output %s",
+				image->output_name);
+		} else {
+			wlr_log(L_ERROR, "Multiple default images defined");
+		}
+	}
+
 	// Bash doesn't replace the ~ with $HOME if the output name is supplied
 	wordexp_t p;
 	if (wordexp(image->path, &p, 0) == 0) {
