@@ -212,7 +212,7 @@ static cairo_surface_t *select_image(struct swaylock_state *state,
 
 static void load_image(char *arg, struct swaylock_state *state) {
 	// [<output>:]<path>
-	struct swaylock_image *image = malloc(sizeof(struct swaylock_image));
+	struct swaylock_image *image = calloc(1, sizeof(struct swaylock_image));
 	char *separator = strchr(arg, ':');
 	if (separator) {
 		*separator = '\0';
