@@ -310,6 +310,13 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
+static void premultiply_alpha(float color[4], float opacity) {
+	color[3] *= opacity;
+	color[0] *= color[3];
+	color[1] *= color[3];
+	color[2] *= color[3];
+}
+
 /**
  * Render decorations for a view with "border normal".
  *
@@ -328,7 +335,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 	if (view->border_left) {
 		// Child border - left edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x;
 		box.y = con->y + 1;
 		box.width = view->border_thickness;
@@ -346,7 +353,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		} else {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x + con->width - view->border_thickness;
 		box.y = con->y + 1;
 		box.width = view->border_thickness;
@@ -364,7 +371,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 		} else {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x;
 		box.y = con->y + con->height - view->border_thickness;
 		box.width = con->width;
@@ -375,7 +382,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
-	color[3] *= con->alpha;
+	premultiply_alpha(color, con->alpha);
 	box.x = con->x;
 	box.y = con->y;
 	box.width = con->width;
@@ -390,7 +397,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 
 	// Single pixel bar below title
 	memcpy(&color, colors->border, sizeof(float) * 4);
-	color[3] *= con->alpha;
+	premultiply_alpha(color, con->alpha);
 	box.x = inner_x;
 	box.y = view->y - 1;
 	box.width = inner_width;
@@ -441,7 +448,7 @@ static void render_container_simple_border_normal(struct sway_output *output,
 
 	// Title background - above the text
 	memcpy(&color, colors->background, sizeof(float) * 4);
-	color[3] *= con->alpha;
+	premultiply_alpha(color, con->alpha);
 	box.x = inner_x;
 	box.y = con->y + 1;
 	box.width = inner_width;
@@ -481,7 +488,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	if (view->border_left) {
 		// Child border - left edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x;
 		box.y = con->y + view->border_thickness * view->border_top;
 		box.width = view->border_thickness;
@@ -499,7 +506,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 		} else {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x + con->width - view->border_thickness;
 		box.y = con->y + view->border_thickness * view->border_top;
 		box.width = view->border_thickness;
@@ -512,7 +519,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 	if (view->border_top) {
 		// Child border - top edge
 		memcpy(&color, colors->child_border, sizeof(float) * 4);
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x;
 		box.y = con->y;
 		box.width = con->width;
@@ -529,7 +536,7 @@ static void render_container_simple_border_pixel(struct sway_output *output,
 		} else {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 		}
-		color[3] *= con->alpha;
+		premultiply_alpha(color, con->alpha);
 		box.x = con->x;
 		box.y = con->y + con->height - view->border_thickness;
 		box.width = con->width;
