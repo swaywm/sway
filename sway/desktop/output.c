@@ -602,6 +602,7 @@ static void render_container_simple(struct sway_output *output,
 static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *parent, int child_index,
 		struct border_colors *colors, struct wlr_texture *title_texture) {
+	struct sway_container *con = parent->children->items[child_index];
 	float output_scale = output->wlr_output->scale;
 	float color[4];
 	struct wlr_box box;
@@ -615,6 +616,7 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
+	premultiply_alpha(color, con->alpha);
 	box.x = x;
 	box.y = parent->y;
 	box.width = tab_width;
@@ -665,6 +667,7 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 
 	// Title background - above the text
 	memcpy(&color, colors->background, sizeof(float) * 4);
+	premultiply_alpha(color, con->alpha);
 	box.x = x + 1;
 	box.y = parent->y + 1;
 	box.width = tab_width - 2;
@@ -707,7 +710,7 @@ static void render_tab_content(struct sway_output *output,
 	if (view->border != B_NONE) {
 		if (view->border_left) {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
-			color[3] *= con->alpha;
+			premultiply_alpha(color, con->alpha);
 			box.x = con->x;
 			box.y = con->y + config->border_thickness * 2 + config->font_height;
 			box.width = view->border_thickness;
@@ -718,7 +721,7 @@ static void render_tab_content(struct sway_output *output,
 
 		if (view->border_right) {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
-			color[3] *= con->alpha;
+			premultiply_alpha(color, con->alpha);
 			box.x = view->x + view->width;
 			box.y = con->y + config->border_thickness * 2 + config->font_height;
 			box.width = view->border_thickness;
@@ -729,7 +732,7 @@ static void render_tab_content(struct sway_output *output,
 
 		if (view->border_bottom) {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
-			color[3] *= con->alpha;
+			premultiply_alpha(color, con->alpha);
 			box.x = con->x;
 			box.y = view->y + view->height;
 			box.width = con->width;
