@@ -605,13 +605,11 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 	float output_scale = output->wlr_output->scale;
 	float color[4];
 	struct wlr_box box;
-	bool is_first = (child_index == 0);
-	bool is_last = (child_index == parent->children->length - 1);
 
 	int tab_width = parent->width / parent->children->length;
 	int x = parent->x + tab_width * child_index;
 	// Make last tab use the remaining width of the parent
-	if (is_last) {
+	if (child_index == parent->children->length - 1) {
 		tab_width = parent->width - tab_width * child_index;
 	}
 
@@ -625,13 +623,20 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 	render_rect(output->wlr_output, damage, &box, color);
 
 	// Single pixel bar below title
-	memcpy(&color, colors->border, sizeof(float) * 4);
-	box.x = x + config->border_thickness * is_first;
-	box.y = parent->y + config->border_thickness * 2 + config->font_height - 1;
-	box.width = tab_width - config->border_thickness * is_first
-		- config->border_thickness * is_last;
-	box.height = 1;
+	box.y = (parent->y + config->border_thickness * 2 + config->font_height - 1)
+		* output_scale;
+	render_rect(output->wlr_output, damage, &box, color);
+
+	// Single pixel bar on left
+	box.x = x;
+	box.y = parent->y + 1;
+	box.width = 1;
+	box.height = config->border_thickness * 2 + config->font_height - 2;
 	scale_box(&box, output_scale);
+	render_rect(output->wlr_output, damage, &box, color);
+
+	// Single pixel bar on right
+	box.x = (x + tab_width - 1) * output_scale;
 	render_rect(output->wlr_output, damage, &box, color);
 
 	// Title text
@@ -640,7 +645,7 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
-		texture_box.x = (x + config->border_thickness) * output_scale;
+		texture_box.x = (x + 1 + config->border_thickness) * output_scale;
 		texture_box.y = (parent->y + config->border_thickness) * output_scale;
 
 		float matrix[9];
@@ -648,7 +653,7 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		int available = (tab_width - config->border_thickness * 2)
+		int available = (tab_width - config->border_thickness * 2 - 2)
 			* output_scale;
 		if (texture_box.width > available) {
 			texture_box.width = available;
@@ -660,9 +665,9 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 
 	// Title background - above the text
 	memcpy(&color, colors->background, sizeof(float) * 4);
-	box.x = x + config->border_thickness;
+	box.x = x + 1;
 	box.y = parent->y + 1;
-	box.width = tab_width - config->border_thickness * 2;
+	box.width = tab_width - 2;
 	box.height = config->border_thickness - 1;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, damage, &box, color);
@@ -672,28 +677,18 @@ static void render_tab(struct sway_output *output, pixman_region32_t *damage,
 		* output_scale;
 	render_rect(output->wlr_output, damage, &box, color);
 
-	// Title background - left border
-	box.x = x;
-	box.y = parent->y + 1;
+	// Title background - left of text
+	box.x = x + 1;
+	box.y = parent->y + config->border_thickness;
 	box.width = config->border_thickness;
-	box.height = config->border_thickness * 2
-		+ config->font_height - 1 - !is_first;
-	scale_box(&box, output_scale);
-	render_rect(output->wlr_output, damage, &box, color);
-
-	// Title background - right border
-	box.x = x + tab_width - config->border_thickness;
-	box.y = parent->y + 1;
-	box.width = config->border_thickness;
-	box.height = config->border_thickness * 2
-		+ config->font_height - 1 - !is_last;
+	box.height = config->font_height;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, damage, &box, color);
 
 	// Title background - right of text
-	box.x = (x + config->border_thickness) * output_scale + title_width;
+	box.x = (x + 1 + config->border_thickness) * output_scale + title_width;
 	box.y = (parent->y + config->border_thickness) * output_scale;
-	box.width = (tab_width - config->border_thickness * 2) * output_scale
+	box.width = (tab_width - config->border_thickness - 2) * output_scale
 		- title_width;
 	box.height = config->font_height * output_scale;
 	render_rect(output->wlr_output, damage, &box, color);
