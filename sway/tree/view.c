@@ -182,11 +182,11 @@ void view_autoconfigure(struct sway_view *view) {
 	// area. We have to offset the surface y by the height of the title bar, and
 	// disable any top border because we'll always have the title bar.
 	if (view->swayc->parent->layout == L_TABBED) {
-		y_offset = config->border_thickness * 2 + config->font_height;
+		y_offset = container_titlebar_height();
 		view->border_top = 0;
 	} else if (view->swayc->parent->layout == L_STACKED) {
-		y_offset = config->border_thickness * 2 + config->font_height;
-		y_offset *= view->swayc->parent->children->length;
+		y_offset = container_titlebar_height()
+			* view->swayc->parent->children->length;
 		view->border_top = 0;
 	}
 
@@ -208,7 +208,7 @@ void view_autoconfigure(struct sway_view *view) {
 			- view->border_thickness * view->border_bottom;
 		break;
 	case B_NORMAL:
-		// Height is: border + title height + border + view height + border
+		// Height is: 1px border + 3px pad + title height + 3px pad + 1px border
 		x = view->swayc->x + view->border_thickness * view->border_left;
 		width = view->swayc->width
 			- view->border_thickness * view->border_left
@@ -218,10 +218,9 @@ void view_autoconfigure(struct sway_view *view) {
 			height = view->swayc->height - y_offset
 				- view->border_thickness * view->border_bottom;
 		} else {
-			y = view->swayc->y + config->font_height + view->border_thickness * 2
-				+ y_offset;
-			height = view->swayc->height - config->font_height
-				- view->border_thickness * (2 + view->border_bottom);
+			y = view->swayc->y + container_titlebar_height();
+			height = view->swayc->height - container_titlebar_height()
+				- view->border_thickness * view->border_bottom;
 		}
 		break;
 	}

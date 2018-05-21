@@ -11,6 +11,12 @@ extern struct sway_container root_container;
 struct sway_view;
 struct sway_seat;
 
+#define TITLEBAR_BORDER_THICKNESS 1
+
+// Padding includes titlebar border
+#define TITLEBAR_H_PADDING 3
+#define TITLEBAR_V_PADDING 4
+
 /**
  * Different kinds of containers.
  *
@@ -211,5 +217,10 @@ void container_update_title_textures(struct sway_container *container);
 void container_calculate_title_height(struct sway_container *container);
 
 void container_notify_child_title_changed(struct sway_container *container);
+
+/**
+ * Return the height of a regular title bar.
+ */
+size_t container_titlebar_height(void);
 
 #endif

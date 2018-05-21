@@ -510,7 +510,7 @@ static struct sway_container *container_at_tabbed(struct sway_container *parent,
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
 	// Tab titles
-	int title_height = config->border_thickness * 2 + config->font_height;
+	int title_height = container_titlebar_height();
 	if (oy < parent->y + title_height) {
 		int tab_width = parent->width / parent->children->length;
 		int child_index = (ox - parent->x) / tab_width;
@@ -533,8 +533,23 @@ static struct sway_container *container_at_tabbed(struct sway_container *parent,
 static struct sway_container *container_at_stacked(
 		struct sway_container *parent, double ox, double oy,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	// TODO
-	return NULL;
+	if (oy < parent->y || oy > parent->y + parent->height) {
+		return NULL;
+	}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+
+	// Title bars
+	int title_height = container_titlebar_height();
+	int child_index = (oy - parent->y) / title_height;
+	if (child_index < parent->children->length) {
+		struct sway_container *child = parent->children->items[child_index];
+		return seat_get_focus_inactive(seat, child);
+	}
+
+	// Surfaces
+	struct sway_container *current = seat_get_active_child(seat, parent);
+
+	return container_at(current, ox, oy, surface, sx, sy);
 }
 
 /**
@@ -846,4 +861,8 @@ void container_notify_child_title_changed(struct sway_container *container) {
 	container_calculate_title_height(container);
 	container_update_title_textures(container);
 	container_notify_child_title_changed(container->parent);
+}
+
+size_t container_titlebar_height() {
+	return config->font_height + TITLEBAR_V_PADDING * 2;
 }

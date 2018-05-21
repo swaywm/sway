@@ -86,12 +86,14 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	if (!num_children) {
 		return;
 	}
-	size_t parent_height = parent->height;
 	size_t parent_offset = 0;
 	if (parent->parent->layout == L_TABBED) {
-		parent_offset = config->border_thickness * 2 + config->font_height;
-		parent_height -= parent_offset;
+		parent_offset = container_titlebar_height();
+	} else if (parent->parent->layout == L_STACKED) {
+		parent_offset =
+			container_titlebar_height() * parent->parent->children->length;
 	}
+	size_t parent_height = parent->height - parent_offset;
 
 	// Calculate total width of children
 	double total_width = 0;
@@ -132,12 +134,14 @@ static void apply_vert_layout(struct sway_container *parent) {
 	if (!num_children) {
 		return;
 	}
-	size_t parent_height = parent->height;
 	size_t parent_offset = 0;
 	if (parent->parent->layout == L_TABBED) {
-		parent_offset = config->border_thickness * 2 + config->font_height;
-		parent_height -= parent_offset;
+		parent_offset = container_titlebar_height();
+	} else if (parent->parent->layout == L_STACKED) {
+		parent_offset =
+			container_titlebar_height() * parent->parent->children->length;
 	}
+	size_t parent_height = parent->height - parent_offset;
 
 	// Calculate total height of children
 	double total_height = 0;
@@ -186,6 +190,19 @@ static void apply_tabbed_layout(struct sway_container *parent) {
 	}
 }
 
+static void apply_stacked_layout(struct sway_container *parent) {
+	if (!parent->children->length) {
+		return;
+	}
+	for (int i = 0; i < parent->children->length; ++i) {
+		struct sway_container *child = parent->children->items[i];
+		child->x = parent->x;
+		child->y = parent->y;
+		child->width = parent->width;
+		child->height = parent->height;
+	}
+}
+
 void arrange_children_of(struct sway_container *parent) {
 	if (config->reloading) {
 		return;
@@ -218,6 +235,9 @@ void arrange_children_of(struct sway_container *parent) {
 		break;
 	case L_TABBED:
 		apply_tabbed_layout(parent);
+		break;
+	case L_STACKED:
+		apply_stacked_layout(parent);
 		break;
 	default:
 		wlr_log(L_DEBUG, "TODO: arrange layout type %d", parent->layout);
