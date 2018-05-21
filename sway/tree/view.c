@@ -141,9 +141,18 @@ void view_autoconfigure(struct sway_view *view) {
 
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 
-	int other_views = 1;
+	int other_views = 0;
 	if (config->hide_edge_borders == E_SMART) {
-		other_views = container_count_descendants_of_type(ws, C_VIEW) - 1;
+		struct sway_container *con = view->swayc;
+		while (con != output) {
+			if (con->layout != L_TABBED && con->layout != L_STACKED) {
+				other_views += con->children ? con->children->length - 1 : 0;
+				if (other_views > 0) {
+					break;
+				}
+			}
+			con = con->parent;
+		}
 	}
 
 	view->border_top = view->border_bottom = true;
