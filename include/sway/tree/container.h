@@ -221,6 +221,6 @@ void container_notify_child_title_changed(struct sway_container *container);
 /**
  * Return the height of a regular title bar.
  */
-size_t container_titlebar_height();
+size_t container_titlebar_height(void);
 
 #endif
