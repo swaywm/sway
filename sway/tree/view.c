@@ -139,9 +139,10 @@ void view_autoconfigure(struct sway_view *view) {
 		return;
 	}
 
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+
 	int other_views = 1;
 	if (config->hide_edge_borders == E_SMART) {
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		other_views = container_count_descendants_of_type(ws, C_VIEW) - 1;
 	}
 
@@ -151,16 +152,16 @@ void view_autoconfigure(struct sway_view *view) {
 		if (config->hide_edge_borders == E_BOTH
 				|| config->hide_edge_borders == E_VERTICAL
 				|| (config->hide_edge_borders == E_SMART && !other_views)) {
-			view->border_left = view->swayc->x != 0;
+			view->border_left = view->swayc->x != ws->x;
 			int right_x = view->swayc->x + view->swayc->width;
-			view->border_right = right_x != output->width;
+			view->border_right = right_x != ws->x + ws->width;
 		}
 		if (config->hide_edge_borders == E_BOTH
 				|| config->hide_edge_borders == E_HORIZONTAL
 				|| (config->hide_edge_borders == E_SMART && !other_views)) {
-			view->border_top = view->swayc->y != 0;
+			view->border_top = view->swayc->y != ws->y;
 			int bottom_y = view->swayc->y + view->swayc->height;
-			view->border_bottom = bottom_y != output->height;
+			view->border_bottom = bottom_y != ws->y + ws->height;
 		}
 	}
 
