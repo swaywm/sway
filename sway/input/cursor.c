@@ -147,10 +147,10 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	struct sway_container *c = container_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse && allow_refocusing) {
-		if (c->type == C_WORKSPACE) {
+		struct sway_container *focus = seat_get_focus(cursor->seat);
+		if (focus && c->type == C_WORKSPACE) {
 			// Only follow the mouse if it would move to a new output
 			// Otherwise we'll focus the workspace, which is probably wrong
-			struct sway_container *focus = seat_get_focus(cursor->seat);
 			if (focus->type != C_OUTPUT) {
 				focus = container_parent(focus, C_OUTPUT);
 			}
