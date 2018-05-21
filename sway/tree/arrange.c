@@ -88,10 +88,10 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	}
 	size_t parent_offset = 0;
 	if (parent->parent->layout == L_TABBED) {
-		parent_offset = config->font_height + 8;
+		parent_offset = container_titlebar_height();
 	} else if (parent->parent->layout == L_STACKED) {
-		parent_offset = (config->font_height + 8)
-			* parent->parent->children->length;
+		parent_offset =
+			container_titlebar_height() * parent->parent->children->length;
 	}
 	size_t parent_height = parent->height - parent_offset;
 
@@ -136,10 +136,10 @@ static void apply_vert_layout(struct sway_container *parent) {
 	}
 	size_t parent_offset = 0;
 	if (parent->parent->layout == L_TABBED) {
-		parent_offset = config->font_height + 8;
+		parent_offset = container_titlebar_height();
 	} else if (parent->parent->layout == L_STACKED) {
-		parent_offset = (config->font_height + 8)
-			* parent->parent->children->length;
+		parent_offset =
+			container_titlebar_height() * parent->parent->children->length;
 	}
 	size_t parent_height = parent->height - parent_offset;
 

@@ -510,7 +510,7 @@ static struct sway_container *container_at_tabbed(struct sway_container *parent,
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
 	// Tab titles
-	int title_height = config->border_thickness * 2 + config->font_height;
+	int title_height = container_titlebar_height();
 	if (oy < parent->y + title_height) {
 		int tab_width = parent->width / parent->children->length;
 		int child_index = (ox - parent->x) / tab_width;
@@ -846,4 +846,8 @@ void container_notify_child_title_changed(struct sway_container *container) {
 	container_calculate_title_height(container);
 	container_update_title_textures(container);
 	container_notify_child_title_changed(container->parent);
+}
+
+size_t container_titlebar_height() {
+	return config->font_height + TITLEBAR_V_PADDING * 2;
 }
