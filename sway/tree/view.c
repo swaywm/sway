@@ -167,32 +167,53 @@ void view_autoconfigure(struct sway_view *view) {
 
 	double x, y, width, height;
 	x = y = width = height = 0;
+	double y_offset = 0;
+
+	// In a tabbed or stacked container, the swayc's y is the top of the title
+	// area. We have to offset the surface y by the height of the title bar, and
+	// disable any top border because we'll always have the title bar.
+	if (view->swayc->parent->layout == L_TABBED) {
+		y_offset = config->border_thickness * 2 + config->font_height;
+		view->border_top = 0;
+	} else if (view->swayc->parent->layout == L_STACKED) {
+		y_offset = config->border_thickness * 2 + config->font_height;
+		y_offset *= view->swayc->parent->children->length;
+		view->border_top = 0;
+	}
+
 	switch (view->border) {
 	case B_NONE:
 		x = view->swayc->x;
-		y = view->swayc->y;
+		y = view->swayc->y + y_offset;
 		width = view->swayc->width;
-		height = view->swayc->height;
+		height = view->swayc->height - y_offset;
 		break;
 	case B_PIXEL:
 		x = view->swayc->x + view->border_thickness * view->border_left;
-		y = view->swayc->y + view->border_thickness * view->border_top;
+		y = view->swayc->y + view->border_thickness * view->border_top + y_offset;
 		width = view->swayc->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
-		height = view->swayc->height
+		height = view->swayc->height - y_offset
 			- view->border_thickness * view->border_top
 			- view->border_thickness * view->border_bottom;
 		break;
 	case B_NORMAL:
 		// Height is: border + title height + border + view height + border
 		x = view->swayc->x + view->border_thickness * view->border_left;
-		y = view->swayc->y + config->font_height + view->border_thickness * 2;
 		width = view->swayc->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
-		height = view->swayc->height - config->font_height
-			- view->border_thickness * (2 + view->border_bottom);
+		if (y_offset) {
+			y = view->swayc->y + y_offset;
+			height = view->swayc->height - y_offset
+				- view->border_thickness * view->border_bottom;
+		} else {
+			y = view->swayc->y + config->font_height + view->border_thickness * 2
+				+ y_offset;
+			height = view->swayc->height - config->font_height
+				- view->border_thickness * (2 + view->border_bottom);
+		}
 		break;
 	}
 
@@ -441,6 +462,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	input_manager_set_focus(input_manager, cont);
 
 	view_update_title(view, false);
+	container_notify_child_title_changed(view->swayc->parent);
 	view_execute_criteria(view);
 
 	container_damage_whole(cont);
@@ -863,4 +885,29 @@ void view_update_marks_textures(struct sway_view *view) {
 	update_marks_texture(view, &view->marks_urgent,
 			&config->border_colors.urgent);
 	container_damage_whole(view->swayc);
+}
+
+bool view_is_visible(struct sway_view *view) {
+	if (!view->swayc) {
+		return false;
+	}
+	// Check view isn't in a tabbed or stacked container on an inactive tab
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *container = view->swayc;
+	while (container->type != C_WORKSPACE) {
+		if (container->parent->layout == L_TABBED ||
+				container->parent->layout == L_STACKED) {
+			if (seat_get_active_child(seat, container->parent) != container) {
+				return false;
+			}
+		}
+		container = container->parent;
+	}
+	// Check view isn't hidden by another fullscreen view
+	struct sway_container *workspace = container;
+	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
+		return false;
+	}
+	// Check the workspace is visible
+	return workspace_is_visible(workspace);
 }

@@ -718,6 +718,18 @@ struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 	return seat_get_focus_by_type(seat, container, C_TYPES);
 }
 
+struct sway_container *seat_get_active_child(struct sway_seat *seat,
+		struct sway_container *container) {
+	struct sway_container *focus = seat_get_focus_inactive(seat, container);
+	if (!focus) {
+		return NULL;
+	}
+	while (focus->parent != container) {
+		focus = focus->parent;
+	}
+	return focus;
+}
+
 struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
