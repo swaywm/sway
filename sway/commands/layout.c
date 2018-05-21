@@ -41,6 +41,8 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			parent->layout = L_VERT;
 		} else if (strcasecmp(argv[0], "tabbed") == 0) {
 			parent->layout = L_TABBED;
+		} else if (strcasecmp(argv[0], "stacking") == 0) {
+			parent->layout = L_STACKED;
 		} else if (strcasecmp(argv[0], "toggle") == 0 && argc == 2 && strcasecmp(argv[1], "split") == 0) {
 			if (parent->layout == L_HORIZ) {
 				parent->layout = L_VERT;
