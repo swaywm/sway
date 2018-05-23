@@ -108,7 +108,7 @@ static struct sway_container *container_at_coords(
 	}
 
 	struct sway_container *c;
-	if ((c = container_at(ws, x, y, surface, sx, sy))) {
+	if ((c = container_at(ws, ox, oy, surface, sx, sy))) {
 		return c;
 	}
 
@@ -135,7 +135,8 @@ static struct sway_container *container_at_coords(
 	return output->swayc;
 }
 
-void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec) {
+void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
+		bool allow_refocusing) {
 	if (time_msec == 0) {
 		time_msec = get_current_time_msec();
 	}
@@ -145,8 +146,24 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec) 
 	double sx, sy;
 	struct sway_container *c = container_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
-	if (c && config->focus_follows_mouse) {
-		seat_set_focus_warp(cursor->seat, c, false);
+	if (c && config->focus_follows_mouse && allow_refocusing) {
+		struct sway_container *focus = seat_get_focus(cursor->seat);
+		if (focus && c->type == C_WORKSPACE) {
+			// Only follow the mouse if it would move to a new output
+			// Otherwise we'll focus the workspace, which is probably wrong
+			if (focus->type != C_OUTPUT) {
+				focus = container_parent(focus, C_OUTPUT);
+			}
+			struct sway_container *output = c;
+			if (output->type != C_OUTPUT) {
+				output = container_parent(c, C_OUTPUT);
+			}
+			if (output != focus) {
+				seat_set_focus_warp(cursor->seat, c, false);
+			}
+		} else {
+			seat_set_focus_warp(cursor->seat, c, false);
+		}
 	}
 
 	// reset cursor if switching between clients
@@ -177,7 +194,7 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
-	cursor_send_pointer_motion(cursor, event->time_msec);
+	cursor_send_pointer_motion(cursor, event->time_msec, true);
 }
 
 static void handle_cursor_motion_absolute(
@@ -187,7 +204,7 @@ static void handle_cursor_motion_absolute(
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
-	cursor_send_pointer_motion(cursor, event->time_msec);
+	cursor_send_pointer_motion(cursor, event->time_msec, true);
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
@@ -357,7 +374,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, x, y);
-	cursor_send_pointer_motion(cursor, event->time_msec);
+	cursor_send_pointer_motion(cursor, event->time_msec, true);
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {

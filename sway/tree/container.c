@@ -73,6 +73,44 @@ static void container_close_notify(struct sway_container *container) {
 	}
 }
 
+static void container_update_textures_recursive(struct sway_container *con) {
+	container_update_title_textures(con);
+
+	if (con->type == C_VIEW) {
+		view_update_marks_textures(con->sway_view);
+	} else {
+		for (int i = 0; i < con->children->length; ++i) {
+			struct sway_container *child = con->children->items[i];
+			container_update_textures_recursive(child);
+		}
+	}
+}
+
+static void handle_reparent(struct wl_listener *listener,
+		void *data) {
+	struct sway_container *container =
+		wl_container_of(listener, container, reparent);
+	struct sway_container *old_parent = data;
+
+	struct sway_container *old_output = old_parent;
+	if (old_output != NULL && old_output->type != C_OUTPUT) {
+		old_output = container_parent(old_output, C_OUTPUT);
+	}
+
+	struct sway_container *new_output = container->parent;
+	if (new_output != NULL && new_output->type != C_OUTPUT) {
+		new_output = container_parent(new_output, C_OUTPUT);
+	}
+
+	if (old_output && new_output) {
+		float old_scale = old_output->sway_output->wlr_output->scale;
+		float new_scale = new_output->sway_output->wlr_output->scale;
+		if (old_scale != new_scale) {
+			container_update_textures_recursive(container);
+		}
+	}
+}
+
 struct sway_container *container_create(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
@@ -91,6 +129,9 @@ struct sway_container *container_create(enum sway_container_type type) {
 
 	wl_signal_init(&c->events.destroy);
 	wl_signal_init(&c->events.reparent);
+
+	wl_signal_add(&c->events.reparent, &c->reparent);
+	c->reparent.notify = handle_reparent;
 
 	return c;
 }
@@ -411,79 +452,153 @@ struct sway_container *container_parent(struct sway_container *container,
 	return container;
 }
 
-struct sway_container *container_at(struct sway_container *parent,
-		double lx, double ly,
+static struct sway_container *container_at_view(struct sway_container *swayc,
+		double ox, double oy,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	list_t *queue = get_bfs_queue();
-	if (!queue) {
+	if (!sway_assert(swayc->type == C_VIEW, "Expected a view")) {
+		return NULL;
+	}
+	struct sway_view *sview = swayc->sway_view;
+	double view_sx = ox - sview->x;
+	double view_sy = oy - sview->y;
+
+	double _sx, _sy;
+	struct wlr_surface *_surface = NULL;
+	switch (sview->type) {
+	case SWAY_VIEW_XWAYLAND:
+		_surface = wlr_surface_surface_at(sview->surface,
+				view_sx, view_sy, &_sx, &_sy);
+		break;
+	case SWAY_VIEW_XDG_SHELL_V6:
+		// the top left corner of the sway container is the
+		// coordinate of the top left corner of the window geometry
+		view_sx += sview->wlr_xdg_surface_v6->geometry.x;
+		view_sy += sview->wlr_xdg_surface_v6->geometry.y;
+
+		_surface = wlr_xdg_surface_v6_surface_at(
+				sview->wlr_xdg_surface_v6,
+				view_sx, view_sy, &_sx, &_sy);
+		break;
+	case SWAY_VIEW_XDG_SHELL:
+		// the top left corner of the sway container is the
+		// coordinate of the top left corner of the window geometry
+		view_sx += sview->wlr_xdg_surface->geometry.x;
+		view_sy += sview->wlr_xdg_surface->geometry.y;
+
+		_surface = wlr_xdg_surface_surface_at(
+				sview->wlr_xdg_surface,
+				view_sx, view_sy, &_sx, &_sy);
+		break;
+	}
+	if (_surface) {
+		*sx = _sx;
+		*sy = _sy;
+		*surface = _surface;
+	}
+	return swayc;
+}
+
+/**
+ * container_at for a container with layout L_TABBED.
+ */
+static struct sway_container *container_at_tabbed(struct sway_container *parent,
+		double ox, double oy,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (oy < parent->y || oy > parent->y + parent->height) {
+		return NULL;
+	}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+
+	// Tab titles
+	int title_height = container_titlebar_height();
+	if (oy < parent->y + title_height) {
+		int tab_width = parent->width / parent->children->length;
+		int child_index = (ox - parent->x) / tab_width;
+		if (child_index >= parent->children->length) {
+			child_index = parent->children->length - 1;
+		}
+		struct sway_container *child = parent->children->items[child_index];
+		return seat_get_focus_inactive(seat, child);
+	}
+
+	// Surfaces
+	struct sway_container *current = seat_get_active_child(seat, parent);
+
+	return container_at(current, ox, oy, surface, sx, sy);
+}
+
+/**
+ * container_at for a container with layout L_STACKED.
+ */
+static struct sway_container *container_at_stacked(
+		struct sway_container *parent, double ox, double oy,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (oy < parent->y || oy > parent->y + parent->height) {
+		return NULL;
+	}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+
+	// Title bars
+	int title_height = container_titlebar_height();
+	int child_index = (oy - parent->y) / title_height;
+	if (child_index < parent->children->length) {
+		struct sway_container *child = parent->children->items[child_index];
+		return seat_get_focus_inactive(seat, child);
+	}
+
+	// Surfaces
+	struct sway_container *current = seat_get_active_child(seat, parent);
+
+	return container_at(current, ox, oy, surface, sx, sy);
+}
+
+/**
+ * container_at for a container with layout L_HORIZ or L_VERT.
+ */
+static struct sway_container *container_at_linear(struct sway_container *parent,
+		double ox, double oy,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	for (int i = 0; i < parent->children->length; ++i) {
+		struct sway_container *child = parent->children->items[i];
+		struct wlr_box box = {
+			.x = child->x,
+			.y = child->y,
+			.width = child->width,
+			.height = child->height,
+		};
+		if (wlr_box_contains_point(&box, ox, oy)) {
+			return container_at(child, ox, oy, surface, sx, sy);
+		}
+	}
+	return NULL;
+}
+
+struct sway_container *container_at(struct sway_container *parent,
+		double ox, double oy,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (!sway_assert(parent->type >= C_WORKSPACE,
+				"Expected workspace or deeper")) {
+		return NULL;
+	}
+	if (parent->type == C_VIEW) {
+		return container_at_view(parent, ox, oy, surface, sx, sy);
+	}
+	if (!parent->children->length) {
 		return NULL;
 	}
 
-	list_add(queue, parent);
-
-	struct sway_container *swayc = NULL;
-	while (queue->length) {
-		swayc = queue->items[0];
-		list_del(queue, 0);
-		if (swayc->type == C_VIEW) {
-			struct sway_view *sview = swayc->sway_view;
-			struct sway_container *soutput = container_parent(swayc, C_OUTPUT);
-			struct wlr_box *output_box =
-				wlr_output_layout_get_box(
-					root_container.sway_root->output_layout,
-					soutput->sway_output->wlr_output);
-			double ox = lx - output_box->x;
-			double oy = ly - output_box->y;
-			double view_sx = ox - sview->x;
-			double view_sy = oy - sview->y;
-
-			double _sx, _sy;
-			struct wlr_surface *_surface;
-			switch (sview->type) {
-			case SWAY_VIEW_XWAYLAND:
-				_surface = wlr_surface_surface_at(sview->surface,
-					view_sx, view_sy, &_sx, &_sy);
-				break;
-			case SWAY_VIEW_XDG_SHELL_V6:
-				// the top left corner of the sway container is the
-				// coordinate of the top left corner of the window geometry
-				view_sx += sview->wlr_xdg_surface_v6->geometry.x;
-				view_sy += sview->wlr_xdg_surface_v6->geometry.y;
-
-				_surface = wlr_xdg_surface_v6_surface_at(
-					sview->wlr_xdg_surface_v6,
-					view_sx, view_sy, &_sx, &_sy);
-				break;
-			case SWAY_VIEW_XDG_SHELL:
-				// the top left corner of the sway container is the
-				// coordinate of the top left corner of the window geometry
-				view_sx += sview->wlr_xdg_surface->geometry.x;
-				view_sy += sview->wlr_xdg_surface->geometry.y;
-
-				_surface = wlr_xdg_surface_surface_at(
-					sview->wlr_xdg_surface,
-					view_sx, view_sy, &_sx, &_sy);
-				break;
-			}
-			if (_surface) {
-				*sx = _sx;
-				*sy = _sy;
-				*surface = _surface;
-				return swayc;
-			}
-			// Check the view's decorations
-			struct wlr_box swayc_box = {
-				.x = swayc->x,
-				.y = swayc->y,
-				.width = swayc->width,
-				.height = swayc->height,
-			};
-			if (wlr_box_contains_point(&swayc_box, ox, oy)) {
-				return swayc;
-			}
-		} else {
-			list_cat(queue, swayc->children);
-		}
+	switch (parent->layout) {
+	case L_HORIZ:
+	case L_VERT:
+		return container_at_linear(parent, ox, oy, surface, sx, sy);
+	case L_TABBED:
+		return container_at_tabbed(parent, ox, oy, surface, sx, sy);
+	case L_STACKED:
+		return container_at_stacked(parent, ox, oy, surface, sx, sy);
+	case L_FLOATING:
+		return NULL; // TODO
+	case L_NONE:
+		return NULL;
 	}
 
 	return NULL;
@@ -658,19 +773,96 @@ void container_calculate_title_height(struct sway_container *container) {
 	container->title_height = height;
 }
 
+/**
+ * Calculate and return the length of the concatenated child titles.
+ * An example concatenated title is: V[Terminal, Firefox]
+ * If buffer is not NULL, also populate the buffer with the concatenated title.
+ */
+static size_t concatenate_child_titles(struct sway_container *parent,
+		char *buffer) {
+	size_t len = 2; // V[
+	if (buffer) {
+		switch (parent->layout) {
+		case L_VERT:
+			strcpy(buffer, "V[");
+			break;
+		case L_HORIZ:
+			strcpy(buffer, "H[");
+			break;
+		case L_TABBED:
+			strcpy(buffer, "T[");
+			break;
+		case L_STACKED:
+			strcpy(buffer, "S[");
+			break;
+		case L_FLOATING:
+			strcpy(buffer, "F[");
+			break;
+		case L_NONE:
+			strcpy(buffer, "D[");
+			break;
+		}
+	}
+
+	for (int i = 0; i < parent->children->length; ++i) {
+		if (i != 0) {
+			len += 1;
+			if (buffer) {
+				strcat(buffer, " ");
+			}
+		}
+		struct sway_container *child = parent->children->items[i];
+		const char *identifier = NULL;
+		if (child->type == C_VIEW) {
+			identifier = view_get_class(child->sway_view);
+			if (!identifier) {
+				identifier = view_get_app_id(child->sway_view);
+			}
+		} else {
+			identifier = child->name;
+		}
+		if (identifier) {
+			len += strlen(identifier);
+			if (buffer) {
+				strcat(buffer, identifier);
+			}
+		} else {
+			len += 6;
+			if (buffer) {
+				strcat(buffer, "(null)");
+			}
+		}
+	}
+
+	len += 1;
+	if (buffer) {
+		strcat(buffer, "]");
+	}
+	return len;
+}
+
 void container_notify_child_title_changed(struct sway_container *container) {
 	if (!container || container->type != C_CONTAINER) {
-		return;
-	}
-	if (container->layout != L_TABBED && container->layout != L_STACKED) {
 		return;
 	}
 	if (container->formatted_title) {
 		free(container->formatted_title);
 	}
-	// TODO: iterate children and concatenate their titles
-	container->formatted_title = strdup("");
+
+	size_t len = concatenate_child_titles(container, NULL);
+	char *buffer = calloc(len + 1, sizeof(char));
+	if (!sway_assert(buffer, "Unable to allocate title string")) {
+		return;
+	}
+	concatenate_child_titles(container, buffer);
+
+	container->name = buffer;
+	container->formatted_title = buffer;
 	container_calculate_title_height(container);
 	container_update_title_textures(container);
 	container_notify_child_title_changed(container->parent);
+}
+
+size_t container_titlebar_height() {
+	return config->font_height + TITLEBAR_V_PADDING * 2;
 }

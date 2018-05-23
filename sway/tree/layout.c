@@ -149,6 +149,8 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 		}
 	}
 	child->parent = NULL;
+	container_notify_child_title_changed(parent);
+
 	return parent;
 }
 
@@ -182,6 +184,8 @@ void container_move_to(struct sway_container *container,
 		container_sort_workspaces(new_parent);
 		seat_set_focus(seat, new_parent);
 	}
+	container_notify_child_title_changed(old_parent);
+	container_notify_child_title_changed(new_parent);
 	if (old_parent) {
 		arrange_children_of(old_parent);
 	}
@@ -234,9 +238,9 @@ static bool is_parallel(enum sway_container_layout layout,
 		enum movement_direction dir) {
 	switch (layout) {
 	case L_TABBED:
-	case L_STACKED:
 	case L_HORIZ:
 		return dir == MOVE_LEFT || dir == MOVE_RIGHT;
+	case L_STACKED:
 	case L_VERT:
 		return dir == MOVE_UP || dir == MOVE_DOWN;
 	default:
@@ -484,6 +488,9 @@ void container_move(struct sway_container *container,
 			return;
 		}
 	}
+
+	container_notify_child_title_changed(old_parent);
+	container_notify_child_title_changed(container->parent);
 
 	if (old_parent) {
 		seat_set_focus(config->handler_context.seat, old_parent);
@@ -831,6 +838,8 @@ struct sway_container *container_split(struct sway_container *child,
 		container_replace_child(child, cont);
 		container_add_child(cont, child);
 	}
+
+	container_notify_child_title_changed(cont);
 
 	return cont;
 }

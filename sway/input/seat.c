@@ -602,7 +602,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 						wlr_output, seat->cursor->cursor->x,
 						seat->cursor->cursor->y)) {
 					wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
-					cursor_send_pointer_motion(seat->cursor, 0);
+					cursor_send_pointer_motion(seat->cursor, 0, true);
 				}
 			}
 		}
@@ -613,7 +613,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	}
 
 	if (last_workspace && last_workspace != new_workspace) {
-		cursor_send_pointer_motion(seat->cursor, 0);
+		cursor_send_pointer_motion(seat->cursor, 0, true);
 	}
 
 	seat->has_focus = (container != NULL);
@@ -716,6 +716,18 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *container) {
 	return seat_get_focus_by_type(seat, container, C_TYPES);
+}
+
+struct sway_container *seat_get_active_child(struct sway_seat *seat,
+		struct sway_container *container) {
+	struct sway_container *focus = seat_get_focus_inactive(seat, container);
+	if (!focus) {
+		return NULL;
+	}
+	while (focus->parent != container) {
+		focus = focus->parent;
+	}
+	return focus;
 }
 
 struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {

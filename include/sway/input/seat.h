@@ -95,6 +95,12 @@ struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 		struct sway_container *container);
 
 /**
+ * Return the immediate child of container which was most recently focused.
+ */
+struct sway_container *seat_get_active_child(struct sway_seat *seat,
+		struct sway_container *container);
+
+/**
  * Iterate over the focus-inactive children of the container calling the
  * function on each.
  */
