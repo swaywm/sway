@@ -226,7 +226,6 @@ static void handle_global(void *data, struct wl_registry *registry,
 		surface->output = wl_registry_bind(registry, name,
 				&wl_output_interface, 3);
 		surface->output_global_name = name;
-		surface->image = state->background_image;
 		wl_output_add_listener(surface->output, &_wl_output_listener, surface);
 		wl_list_insert(&state->surfaces, &surface->link);
 

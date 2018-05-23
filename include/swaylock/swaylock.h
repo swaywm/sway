@@ -39,7 +39,6 @@ struct swaylock_state {
 	struct wl_list surfaces;
 	struct wl_list images;
 	struct swaylock_args args;
-	cairo_surface_t *background_image;
 	struct swaylock_password password;
 	struct swaylock_xkb xkb;
 	enum auth_state auth_state;
