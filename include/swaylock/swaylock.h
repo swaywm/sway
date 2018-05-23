@@ -10,13 +10,13 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 enum auth_state {
-    AUTH_STATE_IDLE,
-    AUTH_STATE_CLEAR,
-    AUTH_STATE_INPUT,
-    AUTH_STATE_INPUT_NOP,
-    AUTH_STATE_BACKSPACE,
-    AUTH_STATE_VALIDATING,
-    AUTH_STATE_INVALID,
+	AUTH_STATE_IDLE,
+	AUTH_STATE_CLEAR,
+	AUTH_STATE_INPUT,
+	AUTH_STATE_INPUT_NOP,
+	AUTH_STATE_BACKSPACE,
+	AUTH_STATE_VALIDATING,
+	AUTH_STATE_INVALID,
 };
 
 struct swaylock_args {
@@ -50,6 +50,7 @@ struct swaylock_surface {
 	cairo_surface_t *image;
 	struct swaylock_state *state;
 	struct wl_output *output;
+	uint32_t output_global_name;
 	struct zxdg_output_v1 *xdg_output;
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
