@@ -17,6 +17,9 @@ void render_frame(struct swaylock_surface *surface) {
 
 	int buffer_width = surface->width * surface->scale;
 	int buffer_height = surface->height * surface->scale;
+	if (buffer_width == 0 || buffer_height == 0) {
+		return; // not yet configured
+	}
 
 	surface->current_buffer = get_next_buffer(state->shm,
 			surface->buffers, buffer_width, buffer_height);
