@@ -12,6 +12,7 @@ project(
 add_project_arguments('-Wno-unused-parameter', language: 'c')
 add_project_arguments('-Wno-unused-function', language: 'c')
 add_project_arguments('-Wno-unused-result', language: 'c')
+add_project_arguments('-DSWAY_SRC_DIR="@0@"'.format(meson.source_root()), language: 'c')
 
 cc = meson.get_compiler('c')
 
