@@ -154,7 +154,7 @@ void container_move_to(struct sway_container *container,
 			|| container_has_ancestor(container, destination)) {
 		return;
 	}
-	if (container->is_floating) {
+	if (container_is_floating(container)) {
 		// TODO
 		return;
 	}
@@ -718,7 +718,7 @@ struct sway_container *container_get_in_direction(
 		enum movement_direction dir) {
 	struct sway_container *parent = container->parent;
 
-	if (container->is_floating) {
+	if (container_is_floating(container)) {
 		return NULL;
 	}
 

@@ -76,8 +76,6 @@ struct sway_container {
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_layout;
 
-	// Saves us from searching the list of children/floating in the parent
-	bool is_floating;
 	bool is_sticky;
 
 	// For C_ROOT, this has no meaning
@@ -243,8 +241,14 @@ void container_set_floating(struct sway_container *container, bool enable);
 void container_set_geometry_from_view(struct sway_container *container);
 
 /**
- * Determine if the given container is itself floating or has a floating
- * ancestor.
+ * Determine if the given container is itself floating.
+ * This will return false for any descendants of a floating container.
+ */
+bool container_is_floating(struct sway_container *container);
+
+/**
+ * Determine if the given container is itself floating or is a child of a
+ * floating container.
  */
 bool container_self_or_parent_floating(struct sway_container *container);
 

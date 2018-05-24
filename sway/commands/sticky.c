@@ -17,7 +17,7 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 	}
 	struct sway_container *container =
 		config->handler_context.current_container;
-	if (!container->is_floating) {
+	if (!container_is_floating(container)) {
 		return cmd_results_new(CMD_FAILURE, "sticky",
 			"Can't set sticky on a tiled container");
 	}

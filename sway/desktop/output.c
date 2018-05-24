@@ -1147,7 +1147,7 @@ void output_damage_whole_container(struct sway_output *output,
 		.width = con->width,
 		.height = con->height,
 	};
-	if (con->is_floating) {
+	if (container_is_floating(con)) {
 		box.x -= output->wlr_output->lx;
 		box.y -= output->wlr_output->ly;
 	}

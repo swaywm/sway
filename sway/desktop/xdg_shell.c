@@ -185,7 +185,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		view->natural_width = geometry->width;
 		view->natural_height = geometry->height;
 	}
-	if (view->swayc && view->swayc->is_floating) {
+	if (view->swayc && container_is_floating(view->swayc)) {
 		view_update_size(view, geometry->width, geometry->height);
 	} else {
 		view_update_size(view, xdg_shell_view->pending_width,

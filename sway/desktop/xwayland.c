@@ -163,7 +163,7 @@ static void configure(struct sway_view *view, double x, double y, int width,
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
 	double lx, ly;
-	if (view->swayc->is_floating) {
+	if (container_is_floating(view->swayc)) {
 		lx = x;
 		ly = y;
 	} else {
@@ -288,7 +288,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		view->natural_width = xsurface->width;
 		view->natural_height = xsurface->height;
 	}
-	if (view->swayc && view->swayc->is_floating) {
+	if (view->swayc && container_is_floating(view->swayc)) {
 		view_update_size(view, xsurface->width, xsurface->height);
 		view_update_position(view, xsurface->x, xsurface->y);
 	} else {

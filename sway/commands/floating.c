@@ -28,7 +28,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "disable") == 0) {
 		wants_floating = false;
 	} else if (strcasecmp(argv[0], "toggle") == 0) {
-		wants_floating = !container->is_floating;
+		wants_floating = !container_is_floating(container);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "floating",
 			"Expected 'floating <enable|disable|toggle>'");

@@ -924,7 +924,7 @@ static void configure_floating_view(struct sway_view *view) {
 }
 
 void container_set_floating(struct sway_container *container, bool enable) {
-	if (container->is_floating == enable) {
+	if (container_is_floating(container) == enable) {
 		return;
 	}
 
@@ -935,7 +935,6 @@ void container_set_floating(struct sway_container *container, bool enable) {
 	if (enable) {
 		container_remove_child(container);
 		container_add_child(workspace->sway_workspace->floating, container);
-		container->is_floating = true;
 		if (container->type == C_VIEW) {
 			configure_floating_view(container->sway_view);
 		}
@@ -950,7 +949,6 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		if (container->type == C_VIEW) {
 			view_set_maximized(container->sway_view, true);
 		}
-		container->is_floating = false;
 		container->is_sticky = false;
 		container_reap_empty_recursive(workspace->sway_workspace->floating);
 	}
@@ -962,7 +960,8 @@ void container_set_geometry_from_view(struct sway_container *container) {
 	if (!sway_assert(container->type == C_VIEW, "Expected a view")) {
 		return;
 	}
-	if (!sway_assert(container->is_floating, "Expected a floating view")) {
+	if (!sway_assert(container_is_floating(container),
+				"Expected a floating view")) {
 		return;
 	}
 	struct sway_view *view = container->sway_view;
@@ -977,9 +976,18 @@ void container_set_geometry_from_view(struct sway_container *container) {
 }
 
 bool container_self_or_parent_floating(struct sway_container *container) {
-	while (container->parent->type != C_WORKSPACE
-			&& container->parent->parent->type != C_WORKSPACE) {
-		container = container->parent;
+	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
+	if (!workspace) {
+		return false;
 	}
-	return container->is_floating;
+	return container_has_anscestor(container,
+			workspace->sway_workspace->floating);
+}
+
+bool container_is_floating(struct sway_container *container) {
+	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
+	if (!workspace) {
+		return false;
+	}
+	return container->parent == workspace->sway_workspace->floating;
 }

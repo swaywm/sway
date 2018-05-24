@@ -458,7 +458,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	}
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
-	if (focus->is_floating) {
+	if (container_is_floating(focus)) {
 		focus = focus->parent->parent;
 	}
 	free(criterias);
@@ -531,7 +531,7 @@ void view_unmap(struct sway_view *view) {
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {
-	if (!view->swayc->is_floating) {
+	if (!container_is_floating(view->swayc)) {
 		return;
 	}
 	container_damage_whole(view->swayc);
@@ -548,7 +548,7 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	container_damage_whole(view->swayc);
 	view->width = width;
 	view->height = height;
-	if (view->swayc->is_floating) {
+	if (container_is_floating(view->swayc)) {
 		container_set_geometry_from_view(view->swayc);
 	}
 	container_damage_whole(view->swayc);
@@ -904,15 +904,15 @@ bool view_is_visible(struct sway_view *view) {
 		container_parent(view->swayc, C_WORKSPACE);
 	// Determine if view is nested inside a floating container which is sticky.
 	// A simple floating view will have this ancestry:
-	// C_VIEW (is_floating=true) -> floating -> workspace
+	// C_VIEW -> floating -> workspace
 	// A more complex ancestry could be:
-	// C_VIEW -> C_CONTAINER (tabbed and is_floating) -> floating -> workspace
+	// C_VIEW -> C_CONTAINER (tabbed) -> floating -> workspace
 	struct sway_container *floater = view->swayc;
 	while (floater->parent->type != C_WORKSPACE
 			&& floater->parent->parent->type != C_WORKSPACE) {
 		floater = floater->parent;
 	}
-	bool is_sticky = floater->is_floating && floater->is_sticky;
+	bool is_sticky = container_is_floating(floater) && floater->is_sticky;
 	// Check view isn't in a tabbed or stacked container on an inactive tab
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *container = view->swayc;
