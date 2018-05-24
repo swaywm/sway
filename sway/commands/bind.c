@@ -11,7 +11,7 @@
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
-#include "util.h"
+#include "sway/input/keyboard.h"
 
 int binding_order = 0;
 

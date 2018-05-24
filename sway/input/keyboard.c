@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <limits.h>
+#include <strings.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include <wlr/types/wlr_idle.h>
@@ -8,6 +9,58 @@
 #include "sway/input/input-manager.h"
 #include "sway/commands.h"
 #include "log.h"
+
+static struct modifier_key {
+	char *name;
+	uint32_t mod;
+} modifiers[] = {
+	{ XKB_MOD_NAME_SHIFT, WLR_MODIFIER_SHIFT },
+	{ XKB_MOD_NAME_CAPS, WLR_MODIFIER_CAPS },
+	{ XKB_MOD_NAME_CTRL, WLR_MODIFIER_CTRL },
+	{ "Ctrl", WLR_MODIFIER_CTRL },
+	{ XKB_MOD_NAME_ALT, WLR_MODIFIER_ALT },
+	{ "Alt", WLR_MODIFIER_ALT },
+	{ XKB_MOD_NAME_NUM, WLR_MODIFIER_MOD2 },
+	{ "Mod3", WLR_MODIFIER_MOD3 },
+	{ XKB_MOD_NAME_LOGO, WLR_MODIFIER_LOGO },
+	{ "Mod5", WLR_MODIFIER_MOD5 },
+};
+
+uint32_t get_modifier_mask_by_name(const char *name) {
+	int i;
+	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
+		if (strcasecmp(modifiers[i].name, name) == 0) {
+			return modifiers[i].mod;
+		}
+	}
+
+	return 0;
+}
+
+const char *get_modifier_name_by_mask(uint32_t modifier) {
+	int i;
+	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
+		if (modifiers[i].mod == modifier) {
+			return modifiers[i].name;
+		}
+	}
+
+	return NULL;
+}
+
+int get_modifier_names(const char **names, uint32_t modifier_masks) {
+	int length = 0;
+	int i;
+	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
+		if ((modifier_masks & modifiers[i].mod) != 0) {
+			names[length] = modifiers[i].name;
+			++length;
+			modifier_masks ^= modifiers[i].mod;
+		}
+	}
+
+	return length;
+}
 
 static bool keysym_is_modifier(xkb_keysym_t keysym) {
 	switch (keysym) {

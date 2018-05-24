@@ -17,27 +17,6 @@ int wrap(int i, int max);
 int numlen(int n);
 
 /**
- * Get modifier mask from modifier name.
- *
- * Returns the modifer mask or 0 if the name isn't found.
- */
-uint32_t get_modifier_mask_by_name(const char *name);
-
-/**
- * Get modifier name from modifier mask.
- *
- * Returns the modifier name or NULL if it isn't found.
- */
-const char *get_modifier_name_by_mask(uint32_t modifier);
-
-/**
- * Get an array of modifier names from modifier_masks
- *
- * Populates the names array and return the number of names added.
- */
-int get_modifier_names(const char **names, uint32_t modifier_masks);
-
-/**
  * Get the pid of a parent process given the pid of a child process.
  *
  * Returns the parent pid or NULL if the parent pid cannot be determined.

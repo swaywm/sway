@@ -2,7 +2,7 @@
 #include "sway/commands.h"
 #include "log.h"
 #include "stringop.h"
-#include "util.h"
+#include "sway/input/keyboard.h"
 
 struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 	struct cmd_results *error = NULL;
