@@ -32,7 +32,7 @@ struct cmd_results *cmd_set(int argc, char **argv) {
 	}
 
 	if (argv[0][0] != '$') {
-		wlr_log(L_INFO, "Warning: variable '%s' doesn't start with $", argv[0]);
+		sway_log(L_INFO, "Warning: variable '%s' doesn't start with $", argv[0]);
 
 		size_t size = snprintf(NULL, 0, "$%s", argv[0]);
 		tmp = malloc(size + 1);

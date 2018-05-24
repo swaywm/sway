@@ -1106,7 +1106,7 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
-	wlr_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
+	sway_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	if (!output) {

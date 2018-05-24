@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
+#include "log.h"
 #include "swaylock/swaylock.h"
 #include "swaylock/seat.h"
 
@@ -34,13 +34,13 @@ static void keyboard_keymap(void *data, struct wl_keyboard *wl_keyboard,
 	struct swaylock_state *state = data;
 	if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
 		close(fd);
-		wlr_log(L_ERROR, "Unknown keymap format %d, aborting", format);
+		sway_log(L_ERROR, "Unknown keymap format %d, aborting", format);
 		exit(1);
 	}
 	char *map_shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
 	if (map_shm == MAP_FAILED) {
 		close(fd);
-		wlr_log(L_ERROR, "Unable to initialize keymap shm, aborting");
+		sway_log(L_ERROR, "Unable to initialize keymap shm, aborting");
 		exit(1);
 	}
 	struct xkb_keymap *keymap = xkb_keymap_new_from_string(

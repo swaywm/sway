@@ -47,7 +47,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		return error;
 	}
 	if ((config->reading && new_mode) || (!config->reading && !new_mode)) {
-		wlr_log(L_DEBUG, "Switching to mode `%s'",mode->name);
+		sway_log(L_DEBUG, "Switching to mode `%s'",mode->name);
 	}
 	// Set current mode
 	config->current_mode = mode;

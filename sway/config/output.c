@@ -90,7 +90,7 @@ static void set_mode(struct wlr_output *output, int width, int height,
 		float refresh_rate) {
 	int mhz = (int)(refresh_rate * 1000);
 	if (wl_list_empty(&output->modes)) {
-		wlr_log(L_DEBUG, "Assigning custom mode to %s", output->name);
+		sway_log(L_DEBUG, "Assigning custom mode to %s", output->name);
 		wlr_output_set_custom_mode(output, width, height, mhz);
 		return;
 	}
@@ -106,9 +106,9 @@ static void set_mode(struct wlr_output *output, int width, int height,
 		}
 	}
 	if (!best) {
-		wlr_log(L_ERROR, "Configured mode for %s not available", output->name);
+		sway_log(L_ERROR, "Configured mode for %s not available", output->name);
 	} else {
-		wlr_log(L_DEBUG, "Assigning configured mode to %s", output->name);
+		sway_log(L_DEBUG, "Assigning configured mode to %s", output->name);
 		wlr_output_set_mode(output, best);
 	}
 }
@@ -116,7 +116,7 @@ static void set_mode(struct wlr_output *output, int width, int height,
 void terminate_swaybg(pid_t pid) {
 	int ret = kill(pid, SIGTERM);
 	if (ret != 0) {
-		wlr_log(L_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
+		sway_log(L_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
@@ -142,22 +142,22 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 	}
 
 	if (oc && oc->width > 0 && oc->height > 0) {
-		wlr_log(L_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
+		sway_log(L_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
 	}
 	if (oc && oc->scale > 0) {
-		wlr_log(L_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
+		sway_log(L_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
 		wlr_output_set_scale(wlr_output, oc->scale);
 	}
 	if (oc && oc->transform >= 0) {
-		wlr_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
+		sway_log(L_DEBUG, "Set %s transform to %d", oc->name, oc->transform);
 		wlr_output_set_transform(wlr_output, oc->transform);
 	}
 
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
-		wlr_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
+		sway_log(L_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
 		wlr_output_layout_add(output_layout, wlr_output, oc->x, oc->y);
 	} else {
 		wlr_output_layout_add_auto(output_layout, wlr_output);
@@ -185,7 +185,7 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 			terminate_swaybg(output->sway_output->bg_pid);
 		}
 
-		wlr_log(L_DEBUG, "Setting background for output %d to %s",
+		sway_log(L_DEBUG, "Setting background for output %d to %s",
 				output_i, oc->background);
 
 		size_t len = snprintf(NULL, 0, "%s %d %s %s",
@@ -193,13 +193,13 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 				output_i, oc->background, oc->background_option);
 		char *command = malloc(len + 1);
 		if (!command) {
-			wlr_log(L_DEBUG, "Unable to allocate swaybg command");
+			sway_log(L_DEBUG, "Unable to allocate swaybg command");
 			return;
 		}
 		snprintf(command, len + 1, "%s %d %s %s",
 				config->swaybg_command ? config->swaybg_command : "swaybg",
 				output_i, oc->background, oc->background_option);
-		wlr_log(L_DEBUG, "-> %s", command);
+		sway_log(L_DEBUG, "-> %s", command);
 
 		char *const cmd[] = { "sh", "-c", command, NULL };
 		output->sway_output->bg_pid = fork();
@@ -210,11 +210,11 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 	if (oc && oc->dpms_state != DPMS_IGNORE) {
 		switch (oc->dpms_state) {
 		case DPMS_ON:
-			wlr_log(L_DEBUG, "Turning on screen");
+			sway_log(L_DEBUG, "Turning on screen");
 			wlr_output_enable(wlr_output, true);
 			break;
 		case DPMS_OFF:
-			wlr_log(L_DEBUG, "Turning off screen");
+			sway_log(L_DEBUG, "Turning off screen");
 			wlr_output_enable(wlr_output, false);
 			break;
 		case DPMS_IGNORE:

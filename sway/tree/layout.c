@@ -100,7 +100,7 @@ void container_insert_child(struct sway_container *parent,
 	if (old_parent) {
 		container_remove_child(child);
 	}
-	wlr_log(L_DEBUG, "Inserting id:%zd at index %d", child->id, i);
+	sway_log(L_DEBUG, "Inserting id:%zd at index %d", child->id, i);
 	list_insert(parent->children, i, child);
 	child->parent = parent;
 	container_handle_fullscreen_reparent(child, old_parent);
@@ -126,7 +126,7 @@ struct sway_container *container_add_sibling(struct sway_container *fixed,
 
 void container_add_child(struct sway_container *parent,
 		struct sway_container *child) {
-	wlr_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
+	sway_log(L_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
 			child, child->type, child->width, child->height,
 			parent, parent->type, parent->width, parent->height);
 	struct sway_container *old_parent = child->parent;
@@ -340,7 +340,7 @@ void container_move(struct sway_container *container,
 		}
 
 		parent = current->parent;
-		wlr_log(L_DEBUG, "Visiting %p %s '%s'", current,
+		sway_log(L_DEBUG, "Visiting %p %s '%s'", current,
 				container_type_to_str(current->type), current->name);
 
 		int index = index_child(current);
@@ -358,12 +358,12 @@ void container_move(struct sway_container *container,
 				root_container.sway_root->output_layout, wlr_dir,
 				current->sway_output->wlr_output, ref_lx, ref_ly);
 			if (!next) {
-				wlr_log(L_DEBUG, "Hit edge of output, nowhere else to go");
+				sway_log(L_DEBUG, "Hit edge of output, nowhere else to go");
 				return;
 			}
 			struct sway_output *next_output = next->data;
 			current = next_output->swayc;
-			wlr_log(L_DEBUG, "Selected next output (%s)", current->name);
+			sway_log(L_DEBUG, "Selected next output (%s)", current->name);
 			// Select workspace and get outta here
 			current = seat_get_focus_inactive(
 					config->handler_context.seat, current);
@@ -376,11 +376,11 @@ void container_move(struct sway_container *container,
 		case C_WORKSPACE:
 			if (!is_parallel(current->layout, move_dir)) {
 				if (current->children->length > 2) {
-					wlr_log(L_DEBUG, "Rejiggering the workspace (%d kiddos)",
+					sway_log(L_DEBUG, "Rejiggering the workspace (%d kiddos)",
 							current->children->length);
 					workspace_rejigger(current, container, move_dir);
 				} else if (current->children->length == 2) {
-					wlr_log(L_DEBUG, "Changing workspace layout");
+					sway_log(L_DEBUG, "Changing workspace layout");
 					current->layout =
 						move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ?
 						L_HORIZ : L_VERT;
@@ -389,7 +389,7 @@ void container_move(struct sway_container *container,
 				}
 				return;
 			} else {
-				wlr_log(L_DEBUG, "Selecting output");
+				sway_log(L_DEBUG, "Selecting output");
 				current = current->parent;
 			}
 			break;
@@ -399,10 +399,10 @@ void container_move(struct sway_container *container,
 				if ((index == parent->children->length - 1 && offs > 0)
 						|| (index == 0 && offs < 0)) {
 					if (current->parent == container->parent) {
-						wlr_log(L_DEBUG, "Hit limit, selecting parent");
+						sway_log(L_DEBUG, "Hit limit, selecting parent");
 						current = current->parent;
 					} else {
-						wlr_log(L_DEBUG, "Hit limit, "
+						sway_log(L_DEBUG, "Hit limit, "
 								"promoting descendant to sibling");
 						// Special case
 						struct sway_container *old_parent = container->parent;
@@ -415,10 +415,10 @@ void container_move(struct sway_container *container,
 					}
 				} else {
 					sibling = parent->children->items[index + offs];
-					wlr_log(L_DEBUG, "Selecting sibling id:%zd", sibling->id);
+					sway_log(L_DEBUG, "Selecting sibling id:%zd", sibling->id);
 				}
 			} else {
-				wlr_log(L_DEBUG, "Moving up to find a parallel container");
+				sway_log(L_DEBUG, "Moving up to find a parallel container");
 				current = current->parent;
 			}
 			break;
@@ -437,12 +437,12 @@ void container_move(struct sway_container *container,
 		switch (sibling->type) {
 		case C_VIEW:
 			if (sibling->parent == container->parent) {
-				wlr_log(L_DEBUG, "Swapping siblings");
+				sway_log(L_DEBUG, "Swapping siblings");
 				sibling->parent->children->items[index + offs] = container;
 				sibling->parent->children->items[index] = sibling;
 				arrange_children_of(sibling->parent);
 			} else {
-				wlr_log(L_DEBUG, "Promoting to sibling of cousin");
+				sway_log(L_DEBUG, "Promoting to sibling of cousin");
 				container_insert_child(sibling->parent, container,
 						index_child(sibling) + (offs > 0 ? 0 : 1));
 				container->width = container->height = 0;
@@ -455,8 +455,8 @@ void container_move(struct sway_container *container,
 		case C_CONTAINER:
 			if (is_parallel(sibling->layout, move_dir)) {
 				int limit = container_limit(sibling, invert_movement(move_dir));
-				wlr_log(L_DEBUG, "limit: %d", limit);
-				wlr_log(L_DEBUG,
+				sway_log(L_DEBUG, "limit: %d", limit);
+				sway_log(L_DEBUG,
 						"Reparenting container (parallel) to index %d "
 						"(move dir: %d)", limit, move_dir);
 				container_insert_child(sibling, container, limit);
@@ -465,7 +465,7 @@ void container_move(struct sway_container *container,
 				arrange_children_of(old_parent);
 				sibling = NULL;
 			} else {
-				wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
+				sway_log(L_DEBUG, "Reparenting container (perpendicular)");
 				container_remove_child(container);
 				struct sway_container *focus_inactive = seat_get_focus_inactive(
 						config->handler_context.seat, sibling);
@@ -473,15 +473,15 @@ void container_move(struct sway_container *container,
 					while (focus_inactive->parent != sibling) {
 						focus_inactive = focus_inactive->parent;
 					}
-					wlr_log(L_DEBUG, "Focus inactive: id:%zd",
+					sway_log(L_DEBUG, "Focus inactive: id:%zd",
 							focus_inactive->id);
 					sibling = focus_inactive;
 					continue;
 				} else if (sibling->children->length) {
-					wlr_log(L_DEBUG, "No focus-inactive, adding arbitrarily");
+					sway_log(L_DEBUG, "No focus-inactive, adding arbitrarily");
 					container_add_sibling(sibling->children->items[0], container);
 				} else {
-					wlr_log(L_DEBUG, "No kiddos, adding container alone");
+					sway_log(L_DEBUG, "No kiddos, adding container alone");
 					container_add_child(sibling, container);
 				}
 				container->width = container->height = 0;
@@ -579,7 +579,7 @@ static struct sway_container *get_swayc_in_output_direction(
 	}
 
 	if (ws == NULL) {
-		wlr_log(L_ERROR, "got an output without a workspace");
+		sway_log(L_ERROR, "got an output without a workspace");
 		return NULL;
 	}
 
@@ -750,7 +750,7 @@ struct sway_container *container_get_in_direction(
 				}
 			} else {
 				struct sway_container *desired_con = parent->children->items[desired];
-				wlr_log(L_DEBUG,
+				sway_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, desired_con);
 				struct sway_container *next = seat_get_focus_inactive_view(seat, desired_con);
@@ -814,7 +814,7 @@ struct sway_container *container_split(struct sway_container *child,
 
 	struct sway_container *cont = container_create(C_CONTAINER);
 
-	wlr_log(L_DEBUG, "creating container %p around %p", cont, child);
+	sway_log(L_DEBUG, "creating container %p around %p", cont, child);
 
 	cont->prev_layout = L_NONE;
 	cont->width = child->width;
@@ -855,7 +855,7 @@ struct sway_container *container_split(struct sway_container *child,
 void container_recursive_resize(struct sway_container *container,
 		double amount, enum resize_edge edge) {
 	bool layout_match = true;
-	wlr_log(L_DEBUG, "Resizing %p with amount: %f", container, amount);
+	sway_log(L_DEBUG, "Resizing %p with amount: %f", container, amount);
 	if (edge == RESIZE_EDGE_LEFT || edge == RESIZE_EDGE_RIGHT) {
 		container->width += amount;
 		layout_match = container->layout == L_HORIZ;

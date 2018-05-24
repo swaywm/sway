@@ -222,12 +222,12 @@ static struct cmd_results *cmd_output_background(struct output_config *output,
 				if (src) {
 					sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
 				} else {
-					wlr_log(L_ERROR,
+					sway_log(L_ERROR,
 						"Unable to allocate background source");
 				}
 				free(conf);
 			} else {
-				wlr_log(L_ERROR, "Unable to allocate background source");
+				sway_log(L_ERROR, "Unable to allocate background source");
 			}
 		}
 		if (!src || access(src, F_OK) == -1) {
@@ -257,7 +257,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	struct output_config *output = new_output_config(argv[0]);
 	if (!output) {
-		wlr_log(L_ERROR, "Failed to allocate output config");
+		sway_log(L_ERROR, "Failed to allocate output config");
 		return NULL;
 	}
 
@@ -305,7 +305,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		list_add(config->output_configs, output);
 	}
 
-	wlr_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
+	sway_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
 		output->name, output->enabled, output->width, output->height,
 		output->refresh_rate, output->x, output->y, output->scale,

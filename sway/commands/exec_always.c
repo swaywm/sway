@@ -20,7 +20,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 
 	char *tmp = NULL;
 	if (strcmp((char*)*argv, "--no-startup-id") == 0) {
-		wlr_log(L_INFO, "exec switch '--no-startup-id' not supported, ignored.");
+		sway_log(L_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		if ((error = checkarg(argc - 1, "exec_always", EXPECTED_MORE_THAN, 0))) {
 			return error;
 		}
@@ -35,11 +35,11 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	strncpy(cmd, tmp, sizeof(cmd) - 1);
 	cmd[sizeof(cmd) - 1] = 0;
 	free(tmp);
-	wlr_log(L_DEBUG, "Executing %s", cmd);
+	sway_log(L_DEBUG, "Executing %s", cmd);
 
 	int fd[2];
 	if (pipe(fd) != 0) {
-		wlr_log(L_ERROR, "Unable to create pipe for fork");
+		sway_log(L_ERROR, "Unable to create pipe for fork");
 	}
 
 	pid_t pid;
@@ -75,7 +75,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	// cleanup child process
 	wait(0);
 	if (*child > 0) {
-		wlr_log(L_DEBUG, "Child process created with pid %d", *child);
+		sway_log(L_DEBUG, "Child process created with pid %d", *child);
 		// TODO: add PID to active workspace
 	} else {
 		free(child);

@@ -48,7 +48,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 		output = get_workspace_initial_output(name);
 	}
 
-	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
+	sway_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
 	struct sway_container *workspace = container_create(C_WORKSPACE);
 
 	workspace->x = output->x;
@@ -101,7 +101,7 @@ static bool workspace_valid_on_output(const char *output_name,
 }
 
 char *workspace_next_name(const char *output_name) {
-	wlr_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
+	sway_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
 	int l = 1;
 	// Scan all workspace bindings to find the next available workspace name,
@@ -124,7 +124,7 @@ char *workspace_next_name(const char *output_name) {
 		}
 
 		if (strcmp("workspace", cmd) == 0 && name) {
-			wlr_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
+			sway_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
 			char *_target = strdup(name);
 			strip_quotes(_target);
 			while (isspace(*_target)) {
@@ -154,7 +154,7 @@ char *workspace_next_name(const char *output_name) {
 				temp[length - 1] = '\0';
 				free(_target);
 				_target = temp;
-				wlr_log(L_DEBUG, "Isolated name from workspace number: '%s'", _target);
+				sway_log(L_DEBUG, "Isolated name from workspace number: '%s'", _target);
 
 				// Make sure the workspace number doesn't already exist
 				if (workspace_by_number(_target)) {
@@ -183,7 +183,7 @@ char *workspace_next_name(const char *output_name) {
 				order = binding->order;
 				free(target);
 				target = _target;
-				wlr_log(L_DEBUG, "Workspace: Found free name %s", _target);
+				sway_log(L_DEBUG, "Workspace: Found free name %s", _target);
 			}
 		}
 		free(dup);
@@ -201,7 +201,7 @@ char *workspace_next_name(const char *output_name) {
 	}
 	char *name = malloc(l + 1);
 	if (!name) {
-		wlr_log(L_ERROR, "Could not allocate workspace name");
+		sway_log(L_ERROR, "Could not allocate workspace name");
 		return NULL;
 	}
 	sprintf(name, "%d", ws_num++);
@@ -377,7 +377,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		free(prev_workspace_name);
 		prev_workspace_name = malloc(strlen(active_ws->name) + 1);
 		if (!prev_workspace_name) {
-			wlr_log(L_ERROR, "Unable to allocate previous workspace name");
+			sway_log(L_ERROR, "Unable to allocate previous workspace name");
 			return false;
 		}
 		strcpy(prev_workspace_name, active_ws->name);
@@ -385,7 +385,7 @@ bool workspace_switch(struct sway_container *workspace) {
 
 	// TODO: Deal with sticky containers
 
-	wlr_log(L_DEBUG, "Switching to workspace %p:%s",
+	sway_log(L_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
 	struct sway_container *next = seat_get_focus_inactive(seat, workspace);
 	if (next == NULL) {

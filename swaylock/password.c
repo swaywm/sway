@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <wlr/util/log.h>
+#include "log.h"
 #include <xkbcommon/xkbcommon.h>
 #include "swaylock/swaylock.h"
 #include "swaylock/seat.h"
@@ -53,15 +53,15 @@ static bool attempt_password(struct swaylock_password *pw) {
 	// TODO: only call pam_start once. keep the same handle the whole time
 	if ((pam_err = pam_start("swaylock", username,
 					&local_conversation, &local_auth_handle)) != PAM_SUCCESS) {
-		wlr_log(L_ERROR, "PAM returned error %d", pam_err);
+		sway_log(L_ERROR, "PAM returned error %d", pam_err);
 	}
 	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
-		wlr_log(L_ERROR, "pam_authenticate failed");
+		sway_log(L_ERROR, "pam_authenticate failed");
 		goto fail;
 	}
 	// TODO: only call pam_end once we succeed at authing. refresh tokens beforehand
 	if ((pam_err = pam_end(local_auth_handle, pam_err)) != PAM_SUCCESS) {
-		wlr_log(L_ERROR, "pam_end failed");
+		sway_log(L_ERROR, "pam_end failed");
 		goto fail;
 	}
 	clear_password_buffer(pw);

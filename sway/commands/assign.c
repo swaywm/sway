@@ -44,7 +44,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	criteria->target = join_args(argv, target_len);
 
 	list_add(config->criteria, criteria);
-	wlr_log(L_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,
+	sway_log(L_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,
 			criteria->target);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

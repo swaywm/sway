@@ -16,10 +16,10 @@
 #include "log.h"
 
 static void terminate_swaybar(pid_t pid) {
-	wlr_log(L_DEBUG, "Terminating swaybar %d", pid);
+	sway_log(L_DEBUG, "Terminating swaybar %d", pid);
 	int ret = kill(-pid, SIGTERM);
 	if (ret != 0) {
-		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
+		sway_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
@@ -157,7 +157,7 @@ void invoke_swaybar(struct bar_config *bar) {
 	// Pipe to communicate errors
 	int filedes[2];
 	if (pipe(filedes) == -1) {
-		wlr_log(L_ERROR, "Pipe setup failed! Cannot fork into bar");
+		sway_log(L_ERROR, "Pipe setup failed! Cannot fork into bar");
 		return;
 	}
 
@@ -187,17 +187,17 @@ void invoke_swaybar(struct bar_config *bar) {
 		execvp(cmd[0], cmd);
 		exit(1);
 	}
-	wlr_log(L_DEBUG, "Spawned swaybar %d", bar->pid);
+	sway_log(L_DEBUG, "Spawned swaybar %d", bar->pid);
 	close(filedes[0]);
 	ssize_t len;
 	if (read(filedes[1], &len, sizeof(int)) == sizeof(int)) {
 		char *buf = malloc(len);
 		if(!buf) {
-			wlr_log(L_ERROR, "Cannot allocate error string");
+			sway_log(L_ERROR, "Cannot allocate error string");
 			return;
 		}
 		if (read(filedes[1], buf, len)) {
-			wlr_log(L_ERROR, "%s", buf);
+			sway_log(L_ERROR, "%s", buf);
 		}
 		free(buf);
 	}
@@ -234,7 +234,7 @@ void load_swaybars() {
 			if (bar->pid != 0) {
 				terminate_swaybar(bar->pid);
 			}
-			wlr_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
+			sway_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
 			invoke_swaybar(bar);
 		}
 	}

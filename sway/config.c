@@ -270,12 +270,12 @@ static char *get_config_path(void) {
 		char *home = getenv("HOME");
 		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
 		if (!config_home) {
-			wlr_log(L_ERROR, "Unable to allocate $HOME/.config");
+			sway_log(L_ERROR, "Unable to allocate $HOME/.config");
 		} else {
 			strcpy(config_home, home);
 			strcat(config_home, "/.config");
 			setenv("XDG_CONFIG_HOME", config_home, 1);
-			wlr_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+			sway_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
 			free(config_home);
 		}
 	}
@@ -301,7 +301,7 @@ static char *get_config_path(void) {
 const char *current_config_path;
 
 static bool load_config(const char *path, struct sway_config *config) {
-	wlr_log(L_INFO, "Loading config from %s", path);
+	sway_log(L_INFO, "Loading config from %s", path);
 	current_config_path = path;
 
 	struct stat sb;
@@ -310,13 +310,13 @@ static bool load_config(const char *path, struct sway_config *config) {
 	}
 
 	if (path == NULL) {
-		wlr_log(L_ERROR, "Unable to find a config file!");
+		sway_log(L_ERROR, "Unable to find a config file!");
 		return false;
 	}
 
 	FILE *f = fopen(path, "r");
 	if (!f) {
-		wlr_log(L_ERROR, "Unable to open %s for reading", path);
+		sway_log(L_ERROR, "Unable to open %s for reading", path);
 		return false;
 	}
 
@@ -324,7 +324,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 	fclose(f);
 
 	if (!config_load_success) {
-		wlr_log(L_ERROR, "Error(s) loading config!");
+		sway_log(L_ERROR, "Error(s) loading config!");
 	}
 
 	current_config_path = NULL;
@@ -347,7 +347,7 @@ bool load_main_config(const char *file, bool is_active) {
 
 	config_defaults(config);
 	if (is_active) {
-		wlr_log(L_DEBUG, "Performing configuration file reload");
+		sway_log(L_DEBUG, "Performing configuration file reload");
 		config->reloading = true;
 		config->active = true;
 	}
@@ -363,7 +363,7 @@ bool load_main_config(const char *file, bool is_active) {
 	/*
 	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
 	if (!dir) {
-		wlr_log(L_ERROR,
+		sway_log(L_ERROR,
 			"%s does not exist, sway will have no security configuration"
 			" and will probably be broken", SYSCONFDIR "/sway/security.d");
 	} else {
@@ -392,7 +392,7 @@ bool load_main_config(const char *file, bool is_active) {
 			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 ||
 					(((s.st_mode & 0777) != 0644) &&
 					(s.st_mode & 0777) != 0444)) {
-				wlr_log(L_ERROR,
+				sway_log(L_ERROR,
 					"Refusing to load %s - it must be owned by root "
 					"and mode 644 or 444", _path);
 				success = false;
@@ -430,7 +430,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 		len = len + strlen(parent_dir) + 2;
 		full_path = malloc(len * sizeof(char));
 		if (!full_path) {
-			wlr_log(L_ERROR,
+			sway_log(L_ERROR,
 				"Unable to allocate full path to included config");
 			return false;
 		}
@@ -441,7 +441,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	free(full_path);
 
 	if (real_path == NULL) {
-		wlr_log(L_DEBUG, "%s not found.", path);
+		sway_log(L_DEBUG, "%s not found.", path);
 		return false;
 	}
 
@@ -450,7 +450,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	for (j = 0; j < config->config_chain->length; ++j) {
 		char *old_path = config->config_chain->items[j];
 		if (strcmp(real_path, old_path) == 0) {
-			wlr_log(L_DEBUG,
+			sway_log(L_DEBUG,
 				"%s already included once, won't be included again.",
 				real_path);
 			free(real_path);
@@ -504,7 +504,7 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	// restore wd
 	if (chdir(wd) < 0) {
 		free(wd);
-		wlr_log(L_ERROR, "failed to restore working directory");
+		sway_log(L_ERROR, "failed to restore working directory");
 		return false;
 	}
 
@@ -546,13 +546,13 @@ bool read_config(FILE *file, struct sway_config *config) {
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			wlr_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number,
+			sway_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number,
 				line, res->error, config->current_config);
 			success = false;
 			break;
 
 		case CMD_DEFER:
-			wlr_log(L_DEBUG, "Deferring command `%s'", line);
+			sway_log(L_DEBUG, "Deferring command `%s'", line);
 			list_add(config->cmd_queue, strdup(line));
 			break;
 
@@ -560,7 +560,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_MODE;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -568,7 +568,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_INPUT;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -576,7 +576,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_SEAT;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -584,7 +584,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_BAR;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -592,7 +592,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_BAR) {
 				block = CMD_BLOCK_BAR_COLORS;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -600,7 +600,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_COMMANDS;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -608,7 +608,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_END) {
 				block = CMD_BLOCK_IPC;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
@@ -616,56 +616,56 @@ bool read_config(FILE *file, struct sway_config *config) {
 			if (block == CMD_BLOCK_IPC) {
 				block = CMD_BLOCK_IPC_EVENTS;
 			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+				sway_log(L_ERROR, "Invalid block '%s'", line);
 			}
 			break;
 
 		case CMD_BLOCK_END:
 			switch(block) {
 			case CMD_BLOCK_MODE:
-				wlr_log(L_DEBUG, "End of mode block");
+				sway_log(L_DEBUG, "End of mode block");
 				config->current_mode = config->modes->items[0];
 				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_INPUT:
-				wlr_log(L_DEBUG, "End of input block");
+				sway_log(L_DEBUG, "End of input block");
 				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_SEAT:
-				wlr_log(L_DEBUG, "End of seat block");
+				sway_log(L_DEBUG, "End of seat block");
 				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_BAR:
-				wlr_log(L_DEBUG, "End of bar block");
+				sway_log(L_DEBUG, "End of bar block");
 				config->current_bar = NULL;
 				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_BAR_COLORS:
-				wlr_log(L_DEBUG, "End of bar colors block");
+				sway_log(L_DEBUG, "End of bar colors block");
 				block = CMD_BLOCK_BAR;
 				break;
 
 			case CMD_BLOCK_COMMANDS:
-				wlr_log(L_DEBUG, "End of commands block");
+				sway_log(L_DEBUG, "End of commands block");
 				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_IPC:
-				wlr_log(L_DEBUG, "End of IPC block");
+				sway_log(L_DEBUG, "End of IPC block");
 				block = CMD_BLOCK_END;
 				break;
 
 			case CMD_BLOCK_IPC_EVENTS:
-				wlr_log(L_DEBUG, "End of IPC events block");
+				sway_log(L_DEBUG, "End of IPC events block");
 				block = CMD_BLOCK_IPC;
 				break;
 
 			case CMD_BLOCK_END:
-				wlr_log(L_ERROR, "Unmatched }");
+				sway_log(L_ERROR, "Unmatched }");
 				break;
 
 			default:;
@@ -699,7 +699,7 @@ char *do_var_replacement(char *str) {
 				int vvlen = strlen(var->value);
 				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
 				if (!newstr) {
-					wlr_log(L_ERROR,
+					sway_log(L_ERROR,
 						"Unable to allocate replacement "
 						"during variable expansion");
 					break;

@@ -13,7 +13,7 @@ struct cmd_results *cmd_swaybg_command(int argc, char **argv) {
 		free(config->swaybg_command);
 	}
 	config->swaybg_command = join_args(argv, argc);
-	wlr_log(L_DEBUG, "Using custom swaybg command: %s",
+	sway_log(L_DEBUG, "Using custom swaybg command: %s",
 			config->swaybg_command);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

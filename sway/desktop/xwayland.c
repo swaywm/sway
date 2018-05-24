@@ -93,7 +93,7 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	struct sway_xwayland_unmanaged *surface =
 		calloc(1, sizeof(struct sway_xwayland_unmanaged));
 	if (surface == NULL) {
-		wlr_log(L_ERROR, "Allocation failed");
+		sway_log(L_ERROR, "Allocation failed");
 		return NULL;
 	}
 
@@ -341,12 +341,12 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
 			xsurface->override_redirect) {
-		wlr_log(L_DEBUG, "New xwayland unmanaged surface");
+		sway_log(L_DEBUG, "New xwayland unmanaged surface");
 		create_unmanaged(xsurface);
 		return;
 	}
 
-	wlr_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
+	sway_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
 		xsurface->title, xsurface->class);
 
 	struct sway_xwayland_view *xwayland_view =

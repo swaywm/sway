@@ -24,7 +24,7 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 	criteria->cmdlist = join_args(argv + 1, argc - 1);
 
 	list_add(config->criteria, criteria);
-	wlr_log(L_DEBUG, "for_window: '%s' -> '%s' added", criteria->raw, criteria->cmdlist);
+	sway_log(L_DEBUG, "for_window: '%s' -> '%s' added", criteria->raw, criteria->cmdlist);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

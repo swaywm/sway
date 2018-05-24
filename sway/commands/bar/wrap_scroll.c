@@ -13,11 +13,11 @@ struct cmd_results *bar_cmd_wrap_scroll(int argc, char **argv) {
 	}
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->wrap_scroll = true;
-		wlr_log(L_DEBUG, "Enabling wrap scroll on bar: %s",
+		sway_log(L_DEBUG, "Enabling wrap scroll on bar: %s",
 				config->current_bar->id);
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->wrap_scroll = false;
-		wlr_log(L_DEBUG, "Disabling wrap scroll on bar: %s",
+		sway_log(L_DEBUG, "Disabling wrap scroll on bar: %s",
 				config->current_bar->id);
 	} else {
 		return cmd_results_new(CMD_INVALID,
