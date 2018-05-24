@@ -187,9 +187,17 @@ void container_move_to(struct sway_container *container,
 	container_notify_child_title_changed(old_parent);
 	container_notify_child_title_changed(new_parent);
 	if (old_parent) {
-		arrange_children_of(old_parent);
+		if (old_parent->type == C_OUTPUT) {
+			arrange_output(old_parent);
+		} else {
+			arrange_children_of(old_parent);
+		}
 	}
-	arrange_children_of(new_parent);
+	if (new_parent->type == C_OUTPUT) {
+		arrange_output(new_parent);
+	} else {
+		arrange_children_of(new_parent);
+	}
 	// If view was moved to a fullscreen workspace, refocus the fullscreen view
 	struct sway_container *new_workspace = container;
 	if (new_workspace->type != C_WORKSPACE) {
