@@ -40,6 +40,7 @@ enum sway_container_layout {
 	L_VERT,
 	L_STACKED,
 	L_TABBED,
+	L_FLOATING,
 };
 
 enum sway_container_border {
@@ -74,10 +75,6 @@ struct sway_container {
 	enum sway_container_type type;
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_layout;
-
-	// Allow the container to be automatically removed if it's empty. True by
-	// default, false for the magic floating container that each workspace has.
-	bool reapable;
 
 	// Saves us from searching the list of children/floating in the parent
 	bool is_floating;

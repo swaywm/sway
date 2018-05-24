@@ -22,6 +22,8 @@ static const char *ipc_json_layout_description(enum sway_container_layout l) {
 		return "tabbed";
 	case L_STACKED:
 		return "stacked";
+	case L_FLOATING:
+		return "floating";
 	case L_NONE:
 		break;
 	}

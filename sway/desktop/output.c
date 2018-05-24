@@ -754,6 +754,8 @@ static void render_container(struct sway_output *output,
 	case L_TABBED:
 		render_container_tabbed(output, damage, con, parent_focused);
 		break;
+	case L_FLOATING:
+		sway_assert(false, "Didn't expect to see floating here");
 	}
 }
 

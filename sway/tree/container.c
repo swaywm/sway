@@ -123,7 +123,6 @@ struct sway_container *container_create(enum sway_container_type type) {
 	c->layout = L_NONE;
 	c->type = type;
 	c->alpha = 1.0f;
-	c->reapable = true;
 
 	if (type != C_VIEW) {
 		c->children = create_list();
@@ -280,7 +279,8 @@ static void container_root_finish(struct sway_container *con) {
 }
 
 bool container_reap_empty(struct sway_container *con) {
-	if (!con->reapable) {
+	if (con->layout == L_FLOATING) {
+		// Don't reap the magical floating container that each workspace has
 		return false;
 	}
 	switch (con->type) {
@@ -618,6 +618,9 @@ struct sway_container *container_at(struct sway_container *parent,
 		return container_at_tabbed(parent, ox, oy, surface, sx, sy);
 	case L_STACKED:
 		return container_at_stacked(parent, ox, oy, surface, sx, sy);
+	case L_FLOATING:
+		sway_assert(false, "Didn't expect to see floating here");
+		return NULL;
 	case L_NONE:
 		return NULL;
 	}
@@ -841,6 +844,9 @@ static size_t get_tree_representation(struct sway_container *parent, char *buffe
 		break;
 	case L_STACKED:
 		lenient_strcat(buffer, "S[");
+		break;
+	case L_FLOATING:
+		strcpy(buffer, "F[");
 		break;
 	case L_NONE:
 		lenient_strcat(buffer, "D[");

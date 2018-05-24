@@ -67,7 +67,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 	swayws->swayc = workspace;
 	swayws->floating = container_create(C_CONTAINER);
 	swayws->floating->parent = swayws->swayc;
-	swayws->floating->reapable = false;
+	swayws->floating->layout = L_FLOATING;
 	workspace->sway_workspace = swayws;
 
 	container_add_child(output, workspace);
