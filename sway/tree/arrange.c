@@ -177,29 +177,24 @@ static void apply_vert_layout(struct sway_container *parent) {
 	child->height = parent->y + parent_offset + parent_height - child->y;
 }
 
-static void apply_tabbed_layout(struct sway_container *parent) {
+static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 	if (!parent->children->length) {
 		return;
 	}
+	size_t parent_offset = 0;
+	if (parent->parent->layout == L_TABBED) {
+		parent_offset = container_titlebar_height();
+	} else if (parent->parent->layout == L_STACKED) {
+		parent_offset =
+			container_titlebar_height() * parent->parent->children->length;
+	}
+	size_t parent_height = parent->height - parent_offset;
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
 		child->x = parent->x;
-		child->y = parent->y;
+		child->y = parent->y + parent_offset;
 		child->width = parent->width;
-		child->height = parent->height;
-	}
-}
-
-static void apply_stacked_layout(struct sway_container *parent) {
-	if (!parent->children->length) {
-		return;
-	}
-	for (int i = 0; i < parent->children->length; ++i) {
-		struct sway_container *child = parent->children->items[i];
-		child->x = parent->x;
-		child->y = parent->y;
-		child->width = parent->width;
-		child->height = parent->height;
+		child->height = parent_height;
 	}
 }
 
@@ -234,10 +229,8 @@ void arrange_children_of(struct sway_container *parent) {
 		apply_vert_layout(parent);
 		break;
 	case L_TABBED:
-		apply_tabbed_layout(parent);
-		break;
 	case L_STACKED:
-		apply_stacked_layout(parent);
+		apply_tabbed_or_stacked_layout(parent);
 		break;
 	default:
 		wlr_log(L_DEBUG, "TODO: arrange layout type %d", parent->layout);
