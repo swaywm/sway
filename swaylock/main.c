@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wordexp.h>
-#include <wlr/util/log.h>
 #include "swaylock/seat.h"
 #include "swaylock/swaylock.h"
 #include "background-image.h"

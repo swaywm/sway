@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
-#include <wlr/util/log.h>
 #ifdef __FreeBSD__
 #include <dev/evdev/input-event-codes.h>
 #else

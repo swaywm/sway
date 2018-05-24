@@ -1,11 +1,24 @@
 #ifndef _SWAY_LOG_H
 #define _SWAY_LOG_H
 
-#include <wlr/util/log.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+
+typedef enum {
+	L_SILENT = 0,
+	L_ERROR = 1,
+	L_INFO = 2,
+	L_DEBUG = 3,
+	L_LAST,
+} log_importance_t;
+
+#ifdef __GNUC__
+#define ATTRIB_PRINTF(start, end) __attribute__((format(printf, start, end)))
+#else
+#define ATTRIB_PRINTF(start, end)
+#endif
 
 void _sway_abort(const char *filename, ...) ATTRIB_PRINTF(1, 2);
 #define sway_abort(FMT, ...) \

@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
 #include "log.h"

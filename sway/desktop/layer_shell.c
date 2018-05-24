@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
-#include <wlr/util/log.h>
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
