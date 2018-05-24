@@ -22,6 +22,7 @@
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/tree/view.h"
 #include "list.h"
 #include "log.h"
 
@@ -429,6 +430,16 @@ static void ipc_get_workspaces_callback(struct sway_container *workspace,
 			json_object_new_boolean(visible));
 }
 
+static void ipc_get_marks_callback(struct sway_container *con, void *data) {
+	json_object *marks = (json_object *)data;
+	if (con->type == C_VIEW && con->sway_view->marks) {
+		for (int i = 0; i < con->sway_view->marks->length; ++i) {
+			char *mark = (char *)con->sway_view->marks->items[i];
+			json_object_array_add(marks, json_object_new_string(mark));
+		}
+	}
+}
+
 void ipc_client_handle_command(struct ipc_client *client) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
 		return;
@@ -566,6 +577,17 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json_string = json_object_to_json_string(tree);
 		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(tree);
+		goto exit_cleanup;
+	}
+
+	case IPC_GET_MARKS:
+	{
+		json_object *marks = json_object_new_array();
+		container_descendants(&root_container, C_VIEW, ipc_get_marks_callback,
+				marks);
+		const char *json_string = json_object_to_json_string(marks);
+		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		json_object_put(marks);
 		goto exit_cleanup;
 	}
 
