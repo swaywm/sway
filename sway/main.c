@@ -251,6 +251,7 @@ static void drop_permissions(bool keep_caps) {
 #endif
 }
 
+void wlr_log_init(log_importance_t verbosity, log_callback_t callback);
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -333,12 +334,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// TODO: switch logging over to wlroots?
 	if (debug) {
+		wlr_log_init(L_DEBUG, NULL);
 		sway_log_init(L_DEBUG, NULL);
 	} else if (verbose || validate) {
+		wlr_log_init(L_INFO, NULL);
 		sway_log_init(L_INFO, NULL);
 	} else {
+		wlr_log_init(L_ERROR, NULL);
 		sway_log_init(L_ERROR, NULL);
 	}
 
