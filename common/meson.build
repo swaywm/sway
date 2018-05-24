@@ -3,7 +3,6 @@ lib_sway_common = static_library(
 	files(
 		'background-image.c',
 		'cairo.c',
-		'ipc-client.c',
 		'log.c',
 		'list.c',
 		'pango.c',

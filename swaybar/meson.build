@@ -23,6 +23,6 @@ executable(
 		wayland_cursor,
 		wlroots,
 	],
-	link_with: [lib_sway_common, lib_sway_client],
+	link_with: [lib_sway_common, lib_sway_client, lib_sway_ipc],
 	install: true
 )

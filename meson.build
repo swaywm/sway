@@ -115,6 +115,7 @@ sway_inc = include_directories('include')
 subdir('include')
 subdir('protocols')
 subdir('common')
+subdir('ipc')
 subdir('sway')
 subdir('swaymsg')
 
