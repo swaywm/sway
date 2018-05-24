@@ -163,8 +163,9 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			}
 		} else {
 			// Don't switch focus on mouseover for stacked and tabbed layouts
-			if(c->parent && c->parent->layout != L_STACKED
-						 && c->parent->layout != L_TABBED) {
+			if(focus->parent == c->parent &&
+					(c->parent->layout != L_STACKED
+					|| c->parent->layout != L_TABBED)) {
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		}
