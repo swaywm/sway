@@ -8,7 +8,7 @@ struct sway_view;
 struct sway_workspace {
 	struct sway_container *swayc;
 	struct sway_view *fullscreen;
-	list_t *floating;
+	struct sway_container *floating;
 };
 
 extern char *prev_workspace_name;
@@ -30,5 +30,7 @@ struct sway_container *workspace_output_prev(struct sway_container *current);
 struct sway_container *workspace_prev(struct sway_container *current);
 
 bool workspace_is_visible(struct sway_container *ws);
+
+bool workspace_is_empty(struct sway_container *ws);
 
 #endif

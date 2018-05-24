@@ -65,6 +65,7 @@ sway_sources = files(
 	'commands/set.c',
 	'commands/show_marks.c',
 	'commands/split.c',
+	'commands/sticky.c',
 	'commands/swaybg_command.c',
 	'commands/swap.c',
 	'commands/title_format.c',

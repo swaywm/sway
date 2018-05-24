@@ -121,12 +121,15 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->floating) {
-		// TODO
-		return false;
+		if (!view->swayc->is_floating) {
+			return false;
+		}
 	}
 
 	if (criteria->tiling) {
-		// TODO
+		if (view->swayc->is_floating) {
+			return false;
+		}
 	}
 
 	if (criteria->urgent) {

@@ -32,7 +32,9 @@ struct sway_view_impl {
 	void (*configure)(struct sway_view *view, double ox, double oy, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
+	void (*set_maximized)(struct sway_view *view, bool maximized);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
+	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
@@ -49,6 +51,10 @@ struct sway_view {
 	// Geometry of the view itself (excludes borders)
 	double x, y;
 	int width, height;
+
+	// The size the view would want to be if it weren't tiled.
+	// Used when changing a view from tiled to floating.
+	int natural_width, natural_height;
 
 	bool is_fullscreen;
 
@@ -214,6 +220,8 @@ void view_autoconfigure(struct sway_view *view);
 
 void view_set_activated(struct sway_view *view, bool activated);
 
+void view_set_maximized(struct sway_view *view, bool maximized);
+
 void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen);
 
 void view_set_fullscreen(struct sway_view *view, bool fullscreen);
@@ -236,7 +244,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
 void view_unmap(struct sway_view *view);
 
-void view_update_position(struct sway_view *view, double ox, double oy);
+void view_update_position(struct sway_view *view, double lx, double ly);
 
 void view_update_size(struct sway_view *view, int width, int height);
 

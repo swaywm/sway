@@ -247,6 +247,18 @@ void arrange_children_of(struct sway_container *parent) {
 			arrange_children_of(child);
 		}
 	}
+
+	// If container is a workspace, process floating containers too
+	if (parent->type == C_WORKSPACE) {
+		struct sway_workspace *ws = workspace->sway_workspace;
+		for (int i = 0; i < ws->floating->children->length; ++i) {
+			struct sway_container *child = ws->floating->children->items[i];
+			if (child->type != C_VIEW) {
+				arrange_children_of(child);
+			}
+		}
+	}
+
 	container_damage_whole(parent);
 	update_debug_tree();
 }

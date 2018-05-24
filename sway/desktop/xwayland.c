@@ -152,7 +152,9 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void configure(struct sway_view *view, double ox, double oy, int width,
+// The x and y arguments are output-local for tiled views, and layout
+// coordinates for floating views.
+static void configure(struct sway_view *view, double x, double y, int width,
 		int height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
@@ -160,25 +162,33 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 	}
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
-	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
-	if (!sway_assert(output, "view must be within tree to set position")) {
-		return;
-	}
-	struct sway_container *root = container_parent(output, C_ROOT);
-	if (!sway_assert(root, "output must be within tree to set position")) {
-		return;
-	}
-	struct wlr_output_layout *layout = root->sway_root->output_layout;
-	struct wlr_output_layout_output *loutput =
-		wlr_output_layout_get(layout, output->sway_output->wlr_output);
-	if (!sway_assert(loutput, "output must be within layout to set position")) {
-		return;
+	double lx, ly;
+	if (view->swayc->is_floating) {
+		lx = x;
+		ly = y;
+	} else {
+		struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+		if (!sway_assert(output, "view must be within tree to set position")) {
+			return;
+		}
+		struct sway_container *root = container_parent(output, C_ROOT);
+		if (!sway_assert(root, "output must be within tree to set position")) {
+			return;
+		}
+		struct wlr_output_layout *layout = root->sway_root->output_layout;
+		struct wlr_output_layout_output *loutput =
+			wlr_output_layout_get(layout, output->sway_output->wlr_output);
+		if (!sway_assert(loutput,
+					"output must be within layout to set position")) {
+			return;
+		}
+		lx = x + loutput->x;
+		ly = y + loutput->y;
 	}
 
 	xwayland_view->pending_width = width;
 	xwayland_view->pending_height = height;
-	wlr_xwayland_surface_configure(xsurface, ox + loutput->x, oy + loutput->y,
-		width, height);
+	wlr_xwayland_surface_configure(xsurface, lx, ly, width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -189,12 +199,49 @@ static void set_activated(struct sway_view *view, bool activated) {
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
+static void set_maximized(struct sway_view *view, bool maximized) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	wlr_xwayland_surface_set_maximized(surface, maximized);
+}
+
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
 	}
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	wlr_xwayland_surface_set_fullscreen(surface, fullscreen);
+}
+
+static bool wants_floating(struct sway_view *view) {
+	// TODO:
+	// We want to return true if the window type contains any of these:
+	// NET_WM_WINDOW_TYPE_DIALOG
+	// NET_WM_WINDOW_TYPE_UTILITY
+	// NET_WM_WINDOW_TYPE_TOOLBAR
+	// NET_WM_WINDOW_TYPE_SPLASH
+	//
+	// We also want to return true if the NET_WM_STATE is MODAL.
+	// wlroots doesn't appear to provide all this information at the moment.
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	uint32_t *atom = xsurface->window_type;
+	for (size_t i = 0; i < xsurface->window_type_len; ++i) {
+		wlr_log(L_DEBUG, "xwayland window type %i", *atom);
+		// TODO: Come up with a better way of doing this
+		switch (*atom) {
+		case 36: // NET_WM_WINDOW_TYPE_UTILITY
+		case 44: // NET_WM_WINDOW_TYPE_SPLASH
+		case 276: // ? PGP passphrase dialog
+		case 337: // ? Firefox open file dialog
+		case 338: // ? Firefox open file dialog
+			return true;
+		}
+		++atom;
+	}
+
+	return false;
 }
 
 static void _close(struct sway_view *view) {
@@ -225,7 +272,9 @@ static const struct sway_view_impl view_impl = {
 	.get_int_prop = get_int_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_maximized = set_maximized,
 	.set_fullscreen = set_fullscreen,
+	.wants_floating = wants_floating,
 	.close = _close,
 	.destroy = destroy,
 };
@@ -234,10 +283,18 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
-	// NOTE: We intentionally discard the view's desired width here
-	// TODO: Let floating views do whatever
-	view_update_size(view, xwayland_view->pending_width,
-		xwayland_view->pending_height);
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!view->natural_width && !view->natural_height) {
+		view->natural_width = xsurface->width;
+		view->natural_height = xsurface->height;
+	}
+	if (view->swayc && view->swayc->is_floating) {
+		view_update_size(view, xsurface->width, xsurface->height);
+		view_update_position(view, xsurface->x, xsurface->y);
+	} else {
+		view_update_size(view, xwayland_view->pending_width,
+				xwayland_view->pending_height);
+	}
 	view_damage_from(view);
 }
 

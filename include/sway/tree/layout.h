@@ -46,9 +46,6 @@ struct sway_container *container_add_sibling(struct sway_container *parent,
 
 struct sway_container *container_remove_child(struct sway_container *child);
 
-void container_add_floating(struct sway_container *workspace,
-		struct sway_container *child);
-
 struct sway_container *container_replace_child(struct sway_container *child,
 		struct sway_container *new_child);
 

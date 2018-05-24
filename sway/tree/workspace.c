@@ -65,7 +65,9 @@ struct sway_container *workspace_create(struct sway_container *output,
 		return NULL;
 	}
 	swayws->swayc = workspace;
-	swayws->floating = create_list();
+	swayws->floating = container_create(C_CONTAINER);
+	swayws->floating->parent = swayws->swayc;
+	swayws->floating->reapable = false;
 	workspace->sway_workspace = swayws;
 
 	container_add_child(output, workspace);
@@ -407,4 +409,17 @@ bool workspace_is_visible(struct sway_container *ws) {
 		focus = container_parent(focus, C_WORKSPACE);
 	}
 	return focus == ws;
+}
+
+bool workspace_is_empty(struct sway_container *ws) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return false;
+	}
+	if (ws->children->length) {
+		return false;
+	}
+	if (ws->sway_workspace->floating->children->length) {
+		return false;
+	}
+	return true;
 }

@@ -75,8 +75,13 @@ struct sway_container {
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_layout;
 
+	// Allow the container to be automatically removed if it's empty. True by
+	// default, false for the magic floating container that each workspace has.
+	bool reapable;
+
 	// Saves us from searching the list of children/floating in the parent
 	bool is_floating;
+	bool is_sticky;
 
 	// For C_ROOT, this has no meaning
 	// For C_OUTPUT, this is the output position in layout coordinates
@@ -174,6 +179,13 @@ struct sway_container *container_at(struct sway_container *container,
 		double *sx, double *sy);
 
 /**
+ * Same as container_at, but only checks floating views and expects coordinates
+ * to be layout coordinates, as that's what floating views use.
+ */
+struct sway_container *floating_container_at(double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy);
+
+/**
  * Apply the function for each descendant of the container breadth first.
  */
 void container_for_each_descendant_bfs(struct sway_container *container,
@@ -228,5 +240,15 @@ void container_notify_subtree_changed(struct sway_container *container);
  * Return the height of a regular title bar.
  */
 size_t container_titlebar_height(void);
+
+void container_set_floating(struct sway_container *container, bool enable);
+
+void container_set_geometry_from_view(struct sway_container *container);
+
+/**
+ * Determine if the given container is itself floating or has a floating
+ * ancestor.
+ */
+bool container_self_or_parent_floating(struct sway_container *container);
 
 #endif

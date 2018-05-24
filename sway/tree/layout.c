@@ -45,20 +45,14 @@ void layout_init(void) {
 }
 
 static int index_child(const struct sway_container *child) {
-	// TODO handle floating
 	struct sway_container *parent = child->parent;
-	int i, len;
-	len = parent->children->length;
-	for (i = 0; i < len; ++i) {
+	for (int i = 0; i < parent->children->length; ++i) {
 		if (parent->children->items[i] == child) {
-			break;
+			return i;
 		}
 	}
-
-	if (!sway_assert(i < len, "Stray container")) {
-		return -1;
-	}
-	return i;
+	// This happens if the child is a floating container
+	return -1;
 }
 
 static void container_handle_fullscreen_reparent(struct sway_container *viewcon,
@@ -142,26 +136,11 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	}
 
 	struct sway_container *parent = child->parent;
-	if (!child->is_floating) {
-		for (int i = 0; i < parent->children->length; ++i) {
-			if (parent->children->items[i] == child) {
-				list_del(parent->children, i);
-				break;
-			}
+	for (int i = 0; i < parent->children->length; ++i) {
+		if (parent->children->items[i] == child) {
+			list_del(parent->children, i);
+			break;
 		}
-	} else {
-		if (!sway_assert(parent->type == C_WORKSPACE && child->type == C_VIEW,
-					"Found floating non-view and/or in non-workspace")) {
-			return parent;
-		}
-		struct sway_workspace *ws = parent->sway_workspace;
-		for (int i = 0; i < ws->floating->length; ++i) {
-			if (ws->floating->items[i] == child) {
-				list_del(ws->floating, i);
-				break;
-			}
-		}
-		child->is_floating = false;
 	}
 	child->parent = NULL;
 	container_notify_subtree_changed(parent);
@@ -169,30 +148,14 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	return parent;
 }
 
-void container_add_floating(struct sway_container *workspace,
-		struct sway_container *child) {
-	if (!sway_assert(workspace->type == C_WORKSPACE && child->type == C_VIEW,
-				"Attempted to float non-view and/or in non-workspace")) {
-		return;
-	}
-	if (!sway_assert(!child->parent,
-				"child already has a parent (invalid call)")) {
-		return;
-	}
-	if (!sway_assert(!child->is_floating,
-				"child is already floating (invalid state)")) {
-		return;
-	}
-	struct sway_workspace *ws = workspace->sway_workspace;
-	list_add(ws->floating, child);
-	child->parent = workspace;
-	child->is_floating = true;
-}
-
 void container_move_to(struct sway_container *container,
 		struct sway_container *destination) {
 	if (container == destination
 			|| container_has_ancestor(container, destination)) {
+		return;
+	}
+	if (container->is_floating) {
+		// TODO
 		return;
 	}
 	struct sway_container *old_parent = container_remove_child(container);
@@ -207,8 +170,9 @@ void container_move_to(struct sway_container *container,
 	}
 	wl_signal_emit(&container->events.reparent, old_parent);
 	if (container->type == C_WORKSPACE) {
-		struct sway_seat *seat = input_manager_get_default_seat(
-				input_manager);
+		// If moving a workspace to a new output, maybe create a new workspace
+		// on the previous output
+		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		if (old_parent->children->length == 0) {
 			char *ws_name = workspace_next_name(old_parent->name);
 			struct sway_container *ws =
@@ -754,6 +718,10 @@ struct sway_container *container_get_in_direction(
 		enum movement_direction dir) {
 	struct sway_container *parent = container->parent;
 
+	if (container->is_floating) {
+		return NULL;
+	}
+
 	if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
 		if (dir == MOVE_PARENT || dir == MOVE_CHILD) {
 			return NULL;
@@ -778,6 +746,9 @@ struct sway_container *container_get_in_direction(
 		bool can_move = false;
 		int desired;
 		int idx = index_child(container);
+		if (idx == -1) {
+			return NULL;
+		}
 		if (parent->type == C_ROOT) {
 			enum wlr_direction wlr_dir = 0;
 			if (!sway_assert(sway_dir_to_wlr(dir, &wlr_dir),

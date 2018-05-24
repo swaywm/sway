@@ -108,6 +108,9 @@ static struct sway_container *container_at_coords(
 	}
 
 	struct sway_container *c;
+	if ((c = floating_container_at(x, y, surface, sx, sy))) {
+		return c;
+	}
 	if ((c = container_at(ws, ox, oy, surface, sx, sy))) {
 		return c;
 	}

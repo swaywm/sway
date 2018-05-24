@@ -4,6 +4,7 @@
 #include "log.h"
 #include "sway/ipc-json.h"
 #include "sway/tree/container.h"
+#include "sway/tree/workspace.h"
 #include "sway/output.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -150,6 +151,15 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 
 	const char *layout = ipc_json_layout_description(workspace->layout);
 	json_object_object_add(object, "layout", json_object_new_string(layout));
+
+	// Floating
+	json_object *floating_array = json_object_new_array();
+	struct sway_container *floating = workspace->sway_workspace->floating;
+	for (int i = 0; i < floating->children->length; ++i) {
+		struct sway_container *floater = floating->children->items[i];
+		json_object_array_add(floating_array, ipc_json_describe_container_recursive(floater));
+	}
+	json_object_object_add(object, "floating_nodes", floating_array);
 }
 
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {

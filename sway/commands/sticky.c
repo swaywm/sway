@@ -10,31 +10,31 @@
 #include "sway/tree/view.h"
 #include "list.h"
 
-struct cmd_results *cmd_floating(int argc, char **argv) {
+struct cmd_results *cmd_sticky(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "sticky", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 	struct sway_container *container =
 		config->handler_context.current_container;
-	if (container->type != C_VIEW) {
-		// TODO: This doesn't strictly speaking have to be true
-		return cmd_results_new(CMD_INVALID, "float", "Only views can float");
+	if (!container->is_floating) {
+		return cmd_results_new(CMD_FAILURE, "sticky",
+			"Can't set sticky on a tiled container");
 	}
 
-	bool wants_floating;
+	bool wants_sticky;
 	if (strcasecmp(argv[0], "enable") == 0) {
-		wants_floating = true;
+		wants_sticky = true;
 	} else if (strcasecmp(argv[0], "disable") == 0) {
-		wants_floating = false;
+		wants_sticky = false;
 	} else if (strcasecmp(argv[0], "toggle") == 0) {
-		wants_floating = !container->is_floating;
+		wants_sticky = !container->is_sticky;
 	} else {
-		return cmd_results_new(CMD_FAILURE, "floating",
-			"Expected 'floating <enable|disable|toggle>'");
+		return cmd_results_new(CMD_FAILURE, "sticky",
+			"Expected 'sticky <enable|disable|toggle>'");
 	}
 
-	container_set_floating(container, wants_floating);
+	container->is_sticky = wants_sticky;
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

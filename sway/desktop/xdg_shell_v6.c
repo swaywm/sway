@@ -97,6 +97,7 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 	xdg_shell_v6_view->pending_width = width;
 	xdg_shell_v6_view->pending_height = height;
 	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
+	view_update_position(view, ox, oy);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -109,12 +110,25 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+static void set_maximized(struct sway_view *view, bool maximized) {
+	if (xdg_shell_v6_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
+	wlr_xdg_toplevel_v6_set_maximized(surface, maximized);
+}
+
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return;
 	}
 	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
 	wlr_xdg_toplevel_v6_set_fullscreen(surface, fullscreen);
+}
+
+static bool wants_floating(struct sway_view *view) {
+	// TODO
+	return false;
 }
 
 static void for_each_surface(struct sway_view *view,
@@ -153,7 +167,9 @@ static const struct sway_view_impl view_impl = {
 	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_maximized = set_maximized,
 	.set_fullscreen = set_fullscreen,
+	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.close = _close,
 	.destroy = destroy,
@@ -163,11 +179,17 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, commit);
 	struct sway_view *view = &xdg_shell_v6_view->view;
-	// NOTE: We intentionally discard the view's desired width here
-	// TODO: Store this for restoration when moving to floating plane
-	// TODO: Let floating views do whatever
-	view_update_size(view, xdg_shell_v6_view->pending_width,
-		xdg_shell_v6_view->pending_height);
+	struct wlr_box *geometry = &view->wlr_xdg_surface_v6->geometry;
+	if (!view->natural_width && !view->natural_height) {
+		view->natural_width = geometry->width;
+		view->natural_height = geometry->height;
+	}
+	if (view->swayc && view->swayc->is_floating) {
+		view_update_size(view, geometry->width, geometry->height);
+	} else {
+		view_update_size(view, xdg_shell_v6_view->pending_width,
+				xdg_shell_v6_view->pending_height);
+	}
 	view_update_title(view, false);
 	view_damage_from(view);
 }
