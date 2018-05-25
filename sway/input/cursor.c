@@ -169,17 +169,17 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			bool do_mouse_focus = true;
 			struct sway_container *p = c->parent;
 			struct sway_container *first_tabbed_parent = c->parent;
-			while(p) {
-				if(p->layout == L_TABBED || p->layout == L_STACKED) {
+			while (p) {
+				if (p->layout == L_TABBED || p->layout == L_STACKED) {
 					do_mouse_focus = false;
 					first_tabbed_parent = p;
 				}
 				p = p->parent;
 			}
-			if(!do_mouse_focus) {
+			if (!do_mouse_focus) {
 				struct sway_container *next_focus = seat_get_focus_inactive(
 						cursor->seat, first_tabbed_parent);
-				if(next_focus) {
+				if (next_focus) {
 					seat_set_focus_warp(cursor->seat, next_focus, false);
 				}
 			} else {
