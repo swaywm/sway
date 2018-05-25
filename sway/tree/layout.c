@@ -327,9 +327,11 @@ void container_move(struct sway_container *container,
 		current = container_parent(container, C_OUTPUT);
 	}
 
-	if (parent != container_flatten(parent)) {
+	struct sway_container *new_parent = container_flatten(parent);
+	if (new_parent != parent) {
 		// Special case: we were the last one in this container, so flatten it
 		// and leave
+		arrange_children_of(new_parent);
 		update_debug_tree();
 		return;
 	}
