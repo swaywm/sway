@@ -30,7 +30,7 @@ bool server_init(struct sway_server *server) {
 
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
-	server->backend = wlr_backend_autocreate(server->wl_display);
+	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
 
 	if (!server->backend) {
 		wlr_log(L_ERROR, "Unable to create backend");
