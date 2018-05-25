@@ -149,7 +149,7 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 		}
 	}
 	child->parent = NULL;
-	container_notify_child_title_changed(parent);
+	container_notify_subtree_changed(parent);
 
 	return parent;
 }
@@ -184,8 +184,8 @@ void container_move_to(struct sway_container *container,
 		container_sort_workspaces(new_parent);
 		seat_set_focus(seat, new_parent);
 	}
-	container_notify_child_title_changed(old_parent);
-	container_notify_child_title_changed(new_parent);
+	container_notify_subtree_changed(old_parent);
+	container_notify_subtree_changed(new_parent);
 	if (old_parent) {
 		if (old_parent->type == C_OUTPUT) {
 			arrange_output(old_parent);
@@ -497,8 +497,8 @@ void container_move(struct sway_container *container,
 		}
 	}
 
-	container_notify_child_title_changed(old_parent);
-	container_notify_child_title_changed(container->parent);
+	container_notify_subtree_changed(old_parent);
+	container_notify_subtree_changed(container->parent);
 
 	if (old_parent) {
 		seat_set_focus(config->handler_context.seat, old_parent);
@@ -847,7 +847,7 @@ struct sway_container *container_split(struct sway_container *child,
 		container_add_child(cont, child);
 	}
 
-	container_notify_child_title_changed(cont);
+	container_notify_subtree_changed(cont);
 
 	return cont;
 }

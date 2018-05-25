@@ -1,5 +1,6 @@
 #ifndef _SWAY_STRINGOP_H
 #define _SWAY_STRINGOP_H
+#include <stdlib.h>
 #include "list.h"
 
 #if !HAVE_DECL_SETENV
@@ -13,6 +14,10 @@ extern const char whitespace[];
 char *strip_whitespace(char *str);
 char *strip_comments(char *str);
 void strip_quotes(char *str);
+
+// strcat that does nothing if dest or src is NULL
+char *lenient_strcat(char *dest, const char *src);
+char *lenient_strncat(char *dest, const char *src, size_t len);
 
 // strcmp that also handles null pointers.
 int lenient_strcmp(char *a, char *b);

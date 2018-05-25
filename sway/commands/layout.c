@@ -52,6 +52,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		}
 	}
 
+	container_notify_subtree_changed(parent);
 	arrange_children_of(parent);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

@@ -55,6 +55,20 @@ void strip_quotes(char *str) {
 	*end = '\0';
 }
 
+char *lenient_strcat(char *dest, const char *src) {
+	if (dest && src) {
+		return strcat(dest, src);
+	}
+	return dest;
+}
+
+char *lenient_strncat(char *dest, const char *src, size_t len) {
+	if (dest && src) {
+		return strncat(dest, src, len);
+	}
+	return dest;
+}
+
 // strcmp that also handles null pointers.
 int lenient_strcmp(char *a, char *b) {
 	if (a == b) {

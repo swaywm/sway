@@ -21,6 +21,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
+#include "stringop.h"
 
 static list_t *bfs_queue;
 
@@ -774,42 +775,36 @@ void container_calculate_title_height(struct sway_container *container) {
 }
 
 /**
- * Calculate and return the length of the concatenated child titles.
- * An example concatenated title is: V[Terminal, Firefox]
- * If buffer is not NULL, also populate the buffer with the concatenated title.
+ * Calculate and return the length of the tree representation.
+ * An example tree representation is: V[Terminal, Firefox]
+ * If buffer is not NULL, also populate the buffer with the representation.
  */
-static size_t concatenate_child_titles(struct sway_container *parent,
-		char *buffer) {
-	size_t len = 2; // V[
-	if (buffer) {
-		switch (parent->layout) {
-		case L_VERT:
-			strcpy(buffer, "V[");
-			break;
-		case L_HORIZ:
-			strcpy(buffer, "H[");
-			break;
-		case L_TABBED:
-			strcpy(buffer, "T[");
-			break;
-		case L_STACKED:
-			strcpy(buffer, "S[");
-			break;
-		case L_FLOATING:
-			strcpy(buffer, "F[");
-			break;
-		case L_NONE:
-			strcpy(buffer, "D[");
-			break;
-		}
+static size_t get_tree_representation(struct sway_container *parent, char *buffer) {
+	size_t len = 2;
+	switch (parent->layout) {
+	case L_VERT:
+		lenient_strcat(buffer, "V[");
+		break;
+	case L_HORIZ:
+		lenient_strcat(buffer, "H[");
+		break;
+	case L_TABBED:
+		lenient_strcat(buffer, "T[");
+		break;
+	case L_STACKED:
+		lenient_strcat(buffer, "S[");
+		break;
+	case L_FLOATING:
+		lenient_strcat(buffer, "F[");
+		break;
+	case L_NONE:
+		lenient_strcat(buffer, "D[");
+		break;
 	}
-
 	for (int i = 0; i < parent->children->length; ++i) {
 		if (i != 0) {
-			len += 1;
-			if (buffer) {
-				strcat(buffer, " ");
-			}
+			++len;
+			lenient_strcat(buffer, " ");
 		}
 		struct sway_container *child = parent->children->items[i];
 		const char *identifier = NULL;
@@ -819,48 +814,39 @@ static size_t concatenate_child_titles(struct sway_container *parent,
 				identifier = view_get_app_id(child->sway_view);
 			}
 		} else {
-			identifier = child->name;
+			identifier = child->formatted_title;
 		}
 		if (identifier) {
 			len += strlen(identifier);
-			if (buffer) {
-				strcat(buffer, identifier);
-			}
+			lenient_strcat(buffer, identifier);
 		} else {
 			len += 6;
-			if (buffer) {
-				strcat(buffer, "(null)");
-			}
+			lenient_strcat(buffer, "(null)");
 		}
 	}
-
-	len += 1;
-	if (buffer) {
-		strcat(buffer, "]");
-	}
+	++len;
+	lenient_strcat(buffer, "]");
 	return len;
 }
 
-void container_notify_child_title_changed(struct sway_container *container) {
+void container_notify_subtree_changed(struct sway_container *container) {
 	if (!container || container->type != C_CONTAINER) {
 		return;
 	}
-	if (container->formatted_title) {
-		free(container->formatted_title);
-	}
+	free(container->formatted_title);
+	container->formatted_title = NULL;
 
-	size_t len = concatenate_child_titles(container, NULL);
+	size_t len = get_tree_representation(container, NULL);
 	char *buffer = calloc(len + 1, sizeof(char));
 	if (!sway_assert(buffer, "Unable to allocate title string")) {
 		return;
 	}
-	concatenate_child_titles(container, buffer);
+	get_tree_representation(container, buffer);
 
-	container->name = buffer;
 	container->formatted_title = buffer;
 	container_calculate_title_height(container);
 	container_update_title_textures(container);
-	container_notify_child_title_changed(container->parent);
+	container_notify_subtree_changed(container->parent);
 }
 
 size_t container_titlebar_height() {

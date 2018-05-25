@@ -17,6 +17,7 @@
 #include "sway/tree/workspace.h"
 #include "sway/config.h"
 #include "pango.h"
+#include "stringop.h"
 
 void view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
@@ -470,7 +471,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	input_manager_set_focus(input_manager, cont);
 
 	view_update_title(view, false);
-	container_notify_child_title_changed(view->swayc->parent);
+	container_notify_subtree_changed(view->swayc->parent);
 	view_execute_criteria(view);
 
 	container_damage_whole(cont);
@@ -661,49 +662,35 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	char *format = view->title_format;
 	char *next = strchr(format, '%');
 	while (next) {
-		if (buffer) {
-			// Copy everything up to the %
-			strncat(buffer, format, next - format);
-		}
+		// Copy everything up to the %
+		lenient_strncat(buffer, format, next - format);
 		len += next - format;
 		format = next;
 
 		if (strncmp(next, "%title", 6) == 0) {
-			if (buffer && title) {
-				strcat(buffer, title);
-			}
+			lenient_strcat(buffer, title);
 			len += title_len;
 			format += 6;
 		} else if (strncmp(next, "%class", 6) == 0) {
-			if (buffer && class) {
-				strcat(buffer, class);
-			}
+			lenient_strcat(buffer, class);
 			len += class_len;
 			format += 6;
 		} else if (strncmp(next, "%instance", 9) == 0) {
-			if (buffer && instance) {
-				strcat(buffer, instance);
-			}
+			lenient_strcat(buffer, instance);
 			len += instance_len;
 			format += 9;
 		} else if (strncmp(next, "%shell", 6) == 0) {
-			if (buffer) {
-				strcat(buffer, shell);
-			}
+			lenient_strcat(buffer, shell);
 			len += shell_len;
 			format += 6;
 		} else {
-			if (buffer) {
-				strcat(buffer, "%");
-			}
+			lenient_strcat(buffer, "%");
 			++format;
 			++len;
 		}
 		next = strchr(format, '%');
 	}
-	if (buffer) {
-		strcat(buffer, format);
-	}
+	lenient_strcat(buffer, format);
 	len += strlen(format);
 
 	return len;
@@ -759,7 +746,6 @@ void view_update_title(struct sway_view *view, bool force) {
 	}
 	container_calculate_title_height(view->swayc);
 	container_update_title_textures(view->swayc);
-	container_notify_child_title_changed(view->swayc->parent);
 	config_update_font_height(false);
 }
 
