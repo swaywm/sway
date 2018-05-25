@@ -216,7 +216,11 @@ void container_update_title_textures(struct sway_container *container);
  */
 void container_calculate_title_height(struct sway_container *container);
 
-void container_notify_child_title_changed(struct sway_container *container);
+/**
+ * Notify a container that a tree modification has changed in its children,
+ * so the container can update its tree representation.
+ */
+void container_notify_subtree_changed(struct sway_container *container);
 
 /**
  * Return the height of a regular title bar.
