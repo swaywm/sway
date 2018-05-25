@@ -32,7 +32,7 @@ struct sway_view_impl {
 	void (*configure)(struct sway_view *view, double ox, double oy, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
-	void (*set_maximized)(struct sway_view *view, bool maximized);
+	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
@@ -220,7 +220,7 @@ void view_autoconfigure(struct sway_view *view);
 
 void view_set_activated(struct sway_view *view, bool activated);
 
-void view_set_maximized(struct sway_view *view, bool maximized);
+void view_set_tiled(struct sway_view *view, bool tiled);
 
 void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen);
 

@@ -921,7 +921,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container->width = container->parent->width;
 		container->height = container->parent->height;
 		if (container->type == C_VIEW) {
-			view_set_maximized(container->sway_view, true);
+			view_set_tiled(container->sway_view, true);
 		}
 		container->is_sticky = false;
 		container_reap_empty_recursive(workspace->sway_workspace->floating);
