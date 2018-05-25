@@ -22,10 +22,12 @@ static const char *layout_to_str(enum sway_container_layout layout) {
 		return "L_STACKED";
 	case L_TABBED:
 		return "L_TABBED";
+	case L_FLOATING:
+		return "L_FLOATING";
 	case L_NONE:
-	default:
 		return "L_NONE";
 	}
+	return "L_NONE";
 }
 
 static int draw_container(cairo_t *cairo, struct sway_container *container,
