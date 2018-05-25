@@ -162,10 +162,31 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		} else {
-			// Don't switch focus on mouseover for stacked and tabbed layouts
-			if(focus->parent == c->parent &&
-					(c->parent->layout != L_STACKED
-					|| c->parent->layout != L_TABBED)) {
+			// Get container-local cursor position
+			double c_local_y = cursor->cursor->y - c->y;
+			bool is_below_title =
+				c_local_y - container_titlebar_height() > 0.001;
+
+			bool do_mouse_focus = true;
+
+			// Don't switch focus on title mouseover for stacked and tabbed
+			// layouts
+			if(c->parent && (c->parent->layout == L_STACKED
+					|| c->parent->layout == L_TABBED)
+					&& !is_below_title) {
+				do_mouse_focus = false;
+			}
+
+			// If pointed container is in nested container
+			// inside tabbed/stacked layout we should skip this nested container
+			if(c->parent && c->parent->parent &&
+					(c->parent->parent->layout == L_STACKED
+					|| c->parent->parent->layout == L_TABBED)
+					&& !is_below_title) {
+				do_mouse_focus = false;
+			}
+
+			if(do_mouse_focus) {
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		}
