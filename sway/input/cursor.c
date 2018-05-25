@@ -170,7 +170,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			struct sway_container *p = c->parent;
 			struct sway_container *first_tabbed_parent = c->parent;
 			while (p) {
-				if (p->layout == L_TABBED || p->layout == L_STACKED) {
+				if ((p->layout == L_TABBED || p->layout == L_STACKED)
+					&& !view_is_visible(c->sway_view)) {
 					do_mouse_focus = false;
 					first_tabbed_parent = p;
 				}
