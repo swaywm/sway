@@ -100,4 +100,3 @@ Locks your Wayland session.
 Maintained by Drew DeVault <sir@cmpwn.com>, who is assisted by other open
 source contributors. For more information about sway development, see
 https://github.com/swaywm/sway.
-
