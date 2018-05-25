@@ -586,11 +586,19 @@ static struct sway_container *get_swayc_in_output_direction(
 	if (ws->children->length > 0) {
 		switch (dir) {
 		case MOVE_LEFT:
-			// get most right child of new output
-			return ws->children->items[ws->children->length-1];
+			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
+				// get most right child of new output
+				return ws->children->items[ws->children->length-1];
+			} else {
+				return seat_get_focus_inactive(seat, ws);
+			}
 		case MOVE_RIGHT:
-			// get most left child of new output
-			return ws->children->items[0];
+			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
+				// get most left child of new output
+				return ws->children->items[0];
+			} else {
+				return seat_get_focus_inactive(seat, ws);
+			}
 		case MOVE_UP:
 		case MOVE_DOWN: {
 			struct sway_container *focused =
