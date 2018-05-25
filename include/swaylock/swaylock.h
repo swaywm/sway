@@ -56,6 +56,7 @@ struct swaylock_surface {
 	struct zwlr_layer_surface_v1 *layer_surface;
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
+	bool frame_pending, dirty;
 	uint32_t width, height;
 	int32_t scale;
 	char *output_name;
@@ -74,5 +75,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint);
 void render_frame(struct swaylock_surface *surface);
 void render_frames(struct swaylock_state *state);
+void damage_surface(struct swaylock_surface *surface);
+void damage_state(struct swaylock_state *state);
 
 #endif
