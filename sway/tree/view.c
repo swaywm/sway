@@ -439,10 +439,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
 			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
+	struct sway_container *workspace = NULL;
 	if (criterias->length) {
 		struct criteria *criteria = criterias->items[0];
 		if (criteria->type == CT_ASSIGN_WORKSPACE) {
-			struct sway_container *workspace = workspace_by_name(criteria->target);
+			workspace = workspace_by_name(criteria->target);
 			if (!workspace) {
 				workspace = workspace_create(NULL, criteria->target);
 			}
@@ -469,6 +470,9 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	arrange_children_of(cont->parent);
 	input_manager_set_focus(input_manager, cont);
+	if (workspace) {
+		workspace_switch(workspace);
+	}
 
 	view_update_title(view, false);
 	container_notify_subtree_changed(view->swayc->parent);
