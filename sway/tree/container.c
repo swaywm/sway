@@ -906,23 +906,6 @@ size_t container_titlebar_height() {
 	return config->font_height + TITLEBAR_V_PADDING * 2;
 }
 
-static void configure_floating_view(struct sway_view *view) {
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int max_width = ws->width * 0.6666;
-	int max_height = ws->height * 0.6666;
-	int width =
-		view->natural_width > max_width ? max_width : view->natural_width;
-	int height =
-		view->natural_height > max_height ? max_height : view->natural_height;
-	struct sway_container *output = ws->parent;
-	int lx = output->x + (ws->width - width) / 2;
-	int ly = output->y + (ws->height - height) / 2;
-
-	view->border_left = view->border_right = view->border_bottom = true;
-	view_set_maximized(view, false);
-	view_configure(view, lx, ly, width, height);
-}
-
 void container_set_floating(struct sway_container *container, bool enable) {
 	if (container_is_floating(container) == enable) {
 		return;
@@ -936,7 +919,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_remove_child(container);
 		container_add_child(workspace->sway_workspace->floating, container);
 		if (container->type == C_VIEW) {
-			configure_floating_view(container->sway_view);
+			view_autoconfigure(container->sway_view);
 		}
 		seat_set_focus(seat, seat_get_focus_inactive(seat, container));
 		container_reap_empty_recursive(workspace);

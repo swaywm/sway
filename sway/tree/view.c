@@ -126,6 +126,23 @@ void view_configure(struct sway_view *view, double ox, double oy, int width,
 	}
 }
 
+static void view_autoconfigure_floating(struct sway_view *view) {
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	int max_width = ws->width * 0.6666;
+	int max_height = ws->height * 0.6666;
+	int width =
+		view->natural_width > max_width ? max_width : view->natural_width;
+	int height =
+		view->natural_height > max_height ? max_height : view->natural_height;
+	struct sway_container *output = ws->parent;
+	int lx = output->x + (ws->width - width) / 2;
+	int ly = output->y + (ws->height - height) / 2;
+
+	view->border_left = view->border_right = view->border_bottom = true;
+	view_set_maximized(view, false);
+	view_configure(view, lx, ly, width, height);
+}
+
 void view_autoconfigure(struct sway_view *view) {
 	if (!sway_assert(view->swayc,
 				"Called view_autoconfigure() on a view without a swayc")) {
@@ -137,6 +154,11 @@ void view_autoconfigure(struct sway_view *view) {
 	if (view->is_fullscreen) {
 		view_configure(view, 0, 0, output->width, output->height);
 		view->x = view->y = 0;
+		return;
+	}
+
+	if (container_is_floating(view->swayc)) {
+		view_autoconfigure_floating(view);
 		return;
 	}
 
@@ -261,6 +283,8 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 		}
 		workspace->sway_workspace->fullscreen = view;
+		view->swayc->saved_x = view->swayc->x;
+		view->swayc->saved_y = view->swayc->y;
 		view->swayc->saved_width = view->swayc->width;
 		view->swayc->saved_height = view->swayc->height;
 
@@ -283,6 +307,11 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 		workspace->sway_workspace->fullscreen = NULL;
 		view->swayc->width = view->swayc->saved_width;
 		view->swayc->height = view->swayc->saved_height;
+		if (container_is_floating(view->swayc)) {
+			view->swayc->x = view->swayc->saved_x;
+			view->swayc->y = view->swayc->saved_y;
+			view_autoconfigure(view);
+		}
 	}
 }
 

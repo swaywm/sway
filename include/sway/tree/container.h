@@ -84,6 +84,7 @@ struct sway_container {
 	// Includes borders
 	double x, y;
 	double width, height;
+	double saved_x, saved_y;
 	double saved_width, saved_height;
 
 	list_t *children;
