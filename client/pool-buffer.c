@@ -72,7 +72,7 @@ static struct pool_buffer *create_buffer(struct wl_shm *shm,
 		struct pool_buffer *buf, int32_t width, int32_t height,
 		uint32_t format) {
 	uint32_t stride = width * 4;
-	uint32_t size = stride * height;
+	size_t size = stride * height;
 
 	char *name;
 	int fd = create_pool_file(size, &name);
@@ -87,8 +87,10 @@ static struct pool_buffer *create_buffer(struct wl_shm *shm,
 	free(name);
 	fd = -1;
 
+	buf->size = size;
 	buf->width = width;
 	buf->height = height;
+	buf->data = data;
 	buf->surface = cairo_image_surface_create_for_data(data,
 			CAIRO_FORMAT_ARGB32, width, height, stride);
 	buf->cairo = cairo_create(buf->surface);
@@ -110,6 +112,9 @@ void destroy_buffer(struct pool_buffer *buffer) {
 	}
 	if (buffer->pango) {
 		g_object_unref(buffer->pango);
+	}
+	if (buffer->data) {
+		munmap(buffer->data, buffer->size);
 	}
 	memset(buffer, 0, sizeof(struct pool_buffer));
 }
