@@ -64,16 +64,6 @@ void container_create_notify(struct sway_container *container) {
 	}
 }
 
-static void container_close_notify(struct sway_container *container) {
-	if (container == NULL) {
-		return;
-	}
-	// TODO send ipc event type based on the container type
-	if (container->type == C_VIEW || container->type == C_WORKSPACE) {
-		ipc_event_window(container, "close");
-	}
-}
-
 static void container_update_textures_recursive(struct sway_container *con) {
 	container_update_title_textures(con);
 
@@ -143,7 +133,6 @@ static void _container_destroy(struct sway_container *cont) {
 	}
 
 	wl_signal_emit(&cont->events.destroy, cont);
-	container_close_notify(cont);
 
 	struct sway_container *parent = cont->parent;
 	if (cont->children != NULL && cont->children->length) {
@@ -151,6 +140,7 @@ static void _container_destroy(struct sway_container *cont) {
 		// container_remove_child, which removes child from this container
 		while (cont->children != NULL && cont->children->length > 0) {
 			struct sway_container *child = cont->children->items[0];
+			ipc_event_window(child, "close");
 			container_remove_child(child);
 			_container_destroy(child);
 		}
@@ -188,12 +178,11 @@ static struct sway_container *container_workspace_destroy(
 		return NULL;
 	}
 
+	wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+	ipc_event_window(workspace, "close");
+
 	struct sway_container *parent = workspace->parent;
-	if (workspace_is_empty(workspace)) {
-		// destroy the WS if there are no children
-		wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
-		ipc_event_workspace(workspace, NULL, "empty");
-	} else if (output) {
+	if (!workspace_is_empty(workspace) && output) {
 		// Move children to a different workspace on this output
 		struct sway_container *new_workspace = NULL;
 		for (int i = 0; i < output->children->length; i++) {
@@ -357,10 +346,12 @@ struct sway_container *container_destroy(struct sway_container *con) {
 			if (con->children->length) {
 				for (int i = 0; i < con->children->length; ++i) {
 					struct sway_container *child = con->children->items[0];
+					ipc_event_window(child, "close");
 					container_remove_child(child);
 					container_add_child(parent, child);
 				}
 			}
+			ipc_event_window(con, "close");
 			_container_destroy(con);
 			break;
 		case C_VIEW:
@@ -635,20 +626,20 @@ struct sway_container *floating_container_at(double lx, double ly,
 		for (int j = 0; j < output->children->length; ++j) {
 			struct sway_container *workspace = output->children->items[j];
 			struct sway_workspace *ws = workspace->sway_workspace;
-			bool ws_is_visible = workspace_is_visible(workspace);
+			if (!workspace_is_visible(workspace)) {
+				continue;
+			}
 			for (int k = 0; k < ws->floating->children->length; ++k) {
 				struct sway_container *floater =
 					ws->floating->children->items[k];
-				if (ws_is_visible || floater->is_sticky) {
-					struct wlr_box box = {
-						.x = floater->x,
-						.y = floater->y,
-						.width = floater->width,
-						.height = floater->height,
-					};
-					if (wlr_box_contains_point(&box, lx, ly)) {
-						return container_at(floater, lx, ly, surface, sx, sy);
-					}
+				struct wlr_box box = {
+					.x = floater->x,
+					.y = floater->y,
+					.width = floater->width,
+					.height = floater->height,
+				};
+				if (wlr_box_contains_point(&box, lx, ly)) {
+					return container_at(floater, lx, ly, surface, sx, sy);
 				}
 			}
 		}

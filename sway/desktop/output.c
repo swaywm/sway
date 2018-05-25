@@ -832,12 +832,13 @@ static void render_floating(struct sway_output *soutput,
 		for (int j = 0; j < output->children->length; ++j) {
 			struct sway_container *workspace = output->children->items[j];
 			struct sway_workspace *ws = workspace->sway_workspace;
-			bool ws_is_visible = workspace_is_visible(workspace);
+			if (!workspace_is_visible(workspace)) {
+				continue;
+			}
 			for (int k = 0; k < ws->floating->children->length; ++k) {
 				struct sway_container *floater =
 					ws->floating->children->items[k];
-				if ((ws_is_visible || floater->is_sticky)
-						&& floater_intersects_output(floater, soutput->swayc)) {
+				if (floater_intersects_output(floater, soutput->swayc)) {
 					render_floating_container(soutput, damage, floater);
 				}
 			}
