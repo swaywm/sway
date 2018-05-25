@@ -10,6 +10,10 @@
 
 static struct cmd_results *do_split(int layout) {
 	struct sway_container *con = config->handler_context.current_container;
+	if (container_is_floating(con)) {
+		return cmd_results_new(CMD_FAILURE, "split",
+			"Can't split a floating view");
+	}
 	struct sway_container *parent = container_split(con, layout);
 	container_create_notify(parent);
 	arrange_children_of(parent);
@@ -23,24 +27,23 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 		return error;
 	}
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
-		do_split(L_VERT);
+		return do_split(L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 ||
 			strcasecmp(argv[0], "horizontal") == 0) {
-		do_split(L_HORIZ);
+		return do_split(L_HORIZ);
 	} else if (strcasecmp(argv[0], "t") == 0 ||
 			strcasecmp(argv[0], "toggle") == 0) {
 		struct sway_container *focused =
 			config->handler_context.current_container;
 
 		if (focused->parent->layout == L_VERT) {
-			do_split(L_HORIZ);
+			return do_split(L_HORIZ);
 		} else {
-			do_split(L_VERT);
+			return do_split(L_VERT);
 		}
 	} else {
-		error = cmd_results_new(CMD_FAILURE, "split",
+		return cmd_results_new(CMD_FAILURE, "split",
 			"Invalid split command (expected either horizontal or vertical).");
-		return error;
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
