@@ -767,18 +767,6 @@ static void render_container(struct sway_output *output,
 	}
 }
 
-static bool floater_intersects_output(struct sway_container *floater,
-		struct sway_container *output) {
-	struct wlr_box box = {
-		.x = floater->x,
-		.y = floater->y,
-		.width = floater->width,
-		.height = floater->height,
-	};
-	return wlr_output_layout_intersects(root_container.sway_root->output_layout,
-			output->sway_output->wlr_output, &box);
-}
-
 static void render_floating_container(struct sway_output *soutput,
 		pixman_region32_t *damage, struct sway_container *con) {
 	if (con->type == C_VIEW) {
@@ -824,9 +812,7 @@ static void render_floating(struct sway_output *soutput,
 			for (int k = 0; k < ws->floating->children->length; ++k) {
 				struct sway_container *floater =
 					ws->floating->children->items[k];
-				if (floater_intersects_output(floater, soutput->swayc)) {
-					render_floating_container(soutput, damage, floater);
-				}
+				render_floating_container(soutput, damage, floater);
 			}
 		}
 	}
