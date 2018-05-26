@@ -201,22 +201,6 @@ static bool wants_floating(struct sway_view *view) {
 	//
 	// We also want to return true if the NET_WM_STATE is MODAL.
 	// wlroots doesn't appear to provide all this information at the moment.
-	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	uint32_t *atom = xsurface->window_type;
-	for (size_t i = 0; i < xsurface->window_type_len; ++i) {
-		wlr_log(L_DEBUG, "xwayland window type %i", *atom);
-		// TODO: Come up with a better way of doing this
-		switch (*atom) {
-		case 36: // NET_WM_WINDOW_TYPE_UTILITY
-		case 44: // NET_WM_WINDOW_TYPE_SPLASH
-		case 276: // ? PGP passphrase dialog
-		case 337: // ? Firefox open file dialog
-		case 338: // ? Firefox open file dialog
-			return true;
-		}
-		++atom;
-	}
-
 	return false;
 }
 
