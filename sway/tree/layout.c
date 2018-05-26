@@ -680,26 +680,6 @@ static struct sway_container *get_swayc_in_output_direction(
 	return ws;
 }
 
-static void get_layout_center_position(struct sway_container *container,
-		int *x, int *y) {
-	// FIXME view coords are inconsistently referred to in layout/output systems
-	if (container->type == C_OUTPUT) {
-		*x = container->x + container->width/2;
-		*y = container->y + container->height/2;
-	} else {
-		struct sway_container *output = container_parent(container, C_OUTPUT);
-		if (container->type == C_WORKSPACE) {
-			// Workspace coordinates are actually wrong/arbitrary, but should
-			// be same as output.
-			*x = output->x;
-			*y = output->y;
-		} else {
-			*x = output->x + container->x;
-			*y = output->y + container->y;
-		}
-	}
-}
-
 static struct sway_container *sway_output_from_wlr(struct wlr_output *output) {
 	if (output == NULL) {
 		return NULL;
@@ -755,8 +735,8 @@ struct sway_container *container_get_in_direction(
 						"got invalid direction: %d", dir)) {
 				return NULL;
 			}
-			int lx, ly;
-			get_layout_center_position(container, &lx, &ly);
+			int lx = container->x + container->width / 2;
+			int ly = container->y + container->height / 2;
 			struct wlr_output_layout *layout =
 				root_container.sway_root->output_layout;
 			struct wlr_output *wlr_adjacent =
