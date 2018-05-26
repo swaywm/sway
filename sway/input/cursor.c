@@ -161,15 +161,12 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			if (output != focus) {
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
-		} else {
+		} else if (c->type == C_VIEW) {
 			// Don't switch focus on title mouseover for
 			// stacked and tabbed layouts
 			// If pointed container is in nested containers which are
 			// inside tabbed/stacked layout we should skip them
 			bool do_mouse_focus = true;
-			if(!sway_assert(c->type == C_VIEW, "pointed container is not a view")) {
-				return;
-			}
 			bool is_visible = view_is_visible(c->sway_view);
 			struct sway_container *p = c->parent;
 			while (p) {
