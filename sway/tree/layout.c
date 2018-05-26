@@ -882,3 +882,127 @@ void container_recursive_resize(struct sway_container *container,
 		}
 	}
 }
+
+static void swap_places(struct sway_container *con1,
+		struct sway_container *con2) {
+	struct sway_container *temp = malloc(sizeof(struct sway_container));
+	temp->x = con1->x;
+	temp->y = con1->y;
+	temp->width = con1->width;
+	temp->height = con1->height;
+	temp->parent = con1->parent;
+
+	con1->x = con2->x;
+	con1->y = con2->y;
+	con1->width = con2->width;
+	con1->height = con2->height;
+
+	con2->x = temp->x;
+	con2->y = temp->y;
+	con2->width = temp->width;
+	con2->height = temp->height;
+
+	int temp_index = index_child(con1);
+	container_insert_child(con2->parent, con1, index_child(con2));
+	container_insert_child(temp->parent, con2, temp_index);
+
+	free(temp);
+}
+
+static void swap_focus(struct sway_container *con1,
+		struct sway_container *con2, struct sway_seat *seat,
+		struct sway_container *focus) {
+	if (focus == con1 || focus == con2) {
+		struct sway_container *ws1 = container_parent(con1, C_WORKSPACE);
+		struct sway_container *ws2 = container_parent(con2, C_WORKSPACE);
+		if (focus == con1 && (con2->parent->layout == L_TABBED
+					|| con2->parent->layout == L_STACKED)) {
+			if (workspace_is_visible(ws2)) {
+				seat_set_focus_warp(seat, con2, false);
+			}
+			seat_set_focus(seat, ws1 != ws2 ? con2 : con1);
+		} else if (focus == con2 && (con1->parent->layout == L_TABBED
+					|| con1->parent->layout == L_STACKED)) {
+			if (workspace_is_visible(ws1)) {
+				seat_set_focus_warp(seat, con1, false);
+			}
+			seat_set_focus(seat, ws1 != ws2 ? con1 : con2);
+		} else if (ws1 != ws2) {
+			seat_set_focus(seat, focus == con1 ? con2 : con1);
+		} else {
+			seat_set_focus(seat, focus);
+		}
+	} else {
+		seat_set_focus(seat, focus);
+	}
+}
+
+void container_swap(struct sway_container *con1, struct sway_container *con2) {
+	if (!sway_assert(con1 && con2, "Cannot swap with nothing")) {
+		return;
+	}
+	if (!sway_assert(con1->type >= C_CONTAINER && con2->type >= C_CONTAINER,
+				"Can only swap containers and views")) {
+		return;
+	}
+	if (!sway_assert(!container_has_anscestor(con1, con2)
+				&& !container_has_anscestor(con2, con1),
+				"Cannot swap anscestor and descendant")) {
+		return;
+	}
+	if (!sway_assert(con1->layout != L_FLOATING && con2->layout != L_FLOATING,
+				"Swapping with floating containers is not supported")) {
+		return;
+	}
+
+	wlr_log(L_DEBUG, "Swapping containers %zu and %zu", con1->id, con2->id);
+
+	int fs1 = con1->type == C_VIEW && con1->sway_view->is_fullscreen;
+	int fs2 = con2->type == C_VIEW && con2->sway_view->is_fullscreen;
+	if (fs1) {
+		view_set_fullscreen(con1->sway_view, false);
+	}
+	if (fs2) {
+		view_set_fullscreen(con2->sway_view, false);
+	}
+
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+	struct sway_container *vis1 = container_parent(
+			seat_get_focus_inactive(seat, container_parent(con1, C_OUTPUT)),
+			C_WORKSPACE);
+	struct sway_container *vis2 = container_parent(
+			seat_get_focus_inactive(seat, container_parent(con2, C_OUTPUT)),
+			C_WORKSPACE);
+
+	char *stored_prev_name = NULL;
+	if (prev_workspace_name) {
+		stored_prev_name = strdup(prev_workspace_name);
+	}
+
+	swap_places(con1, con2);
+
+	if (!workspace_is_visible(vis1)) {
+		seat_set_focus(seat, seat_get_focus_inactive(seat, vis1));
+	}
+	if (!workspace_is_visible(vis2)) {
+		seat_set_focus(seat, seat_get_focus_inactive(seat, vis2));
+	}
+
+	swap_focus(con1, con2, seat, focus);
+
+	if (stored_prev_name) {
+		free(prev_workspace_name);
+		prev_workspace_name = stored_prev_name;
+	}
+
+	arrange_children_of(con1->parent);
+	arrange_children_of(con2->parent);
+
+	if (fs1 && con2->type == C_VIEW) {
+		view_set_fullscreen(con2->sway_view, true);
+	}
+	if (fs2 && con1->type == C_VIEW) {
+		view_set_fullscreen(con1->sway_view, true);
+	}
+}

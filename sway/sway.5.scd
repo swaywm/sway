@@ -167,6 +167,15 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	"Sticks" a floating window to the current output so that it shows up on all
 	workspaces.
 
+*swap* container with id|con\_id|mark <arg>
+	Swaps the position, geometry, and fullscreen status of two containers. The
+	first container can be selected either by criteria or focus. The second
+	container can be selected by _id_, _con\_id_, or _mark_. _id_ can only be
+	used with xwayland views. If the first container has focus, it will retain
+	focus unless it is moved to a different workspace or the second container
+	becomes fullscreen on the same workspace as the first container. In either
+	of those cases, the second container will gain focus.
+
 The following commands may be used either in the configuration file or at
 runtime.
 

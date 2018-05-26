@@ -69,4 +69,6 @@ struct sway_container *container_split(struct sway_container *child,
 void container_recursive_resize(struct sway_container *container,
 		double amount, enum resize_edge edge);
 
+void container_swap(struct sway_container *con1, struct sway_container *con2);
+
 #endif
