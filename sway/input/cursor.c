@@ -162,7 +162,37 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		} else {
-			seat_set_focus_warp(cursor->seat, c, false);
+			// Don't switch focus on title mouseover for
+			// stacked and tabbed layouts
+			// If pointed container is in nested containers which are
+			// inside tabbed/stacked layout we should skip them
+			bool do_mouse_focus = true;
+			if(!sway_assert(c->type == C_VIEW, "pointed container is not a view")) {
+				return;
+			}
+			bool is_visible = view_is_visible(c->sway_view);
+			struct sway_container *p = c->parent;
+			while (p) {
+				if ((p->layout == L_TABBED || p->layout == L_STACKED)
+					&& !is_visible) {
+					do_mouse_focus = false;
+					break;
+				}
+				p = p->parent;
+			}
+			if (!do_mouse_focus) {
+				struct sway_container *next_focus = seat_get_focus_inactive(
+						cursor->seat, p);
+				if(next_focus && !sway_assert(next_focus->type == C_VIEW,
+							"focus inactive container is not a view")) {
+					return;
+				}
+				if (next_focus && view_is_visible(next_focus->sway_view)) {
+					seat_set_focus_warp(cursor->seat, next_focus, false);
+				}
+			} else {
+				seat_set_focus_warp(cursor->seat, c, false);
+			}
 		}
 	}
 
