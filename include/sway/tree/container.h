@@ -238,7 +238,7 @@ size_t container_titlebar_height(void);
 
 void container_set_floating(struct sway_container *container, bool enable);
 
-void container_set_geometry_from_view(struct sway_container *container);
+void container_set_geometry_from_floating_view(struct sway_container *con);
 
 /**
  * Determine if the given container is itself floating.

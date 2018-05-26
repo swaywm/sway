@@ -930,23 +930,23 @@ void container_set_floating(struct sway_container *container, bool enable) {
 	container_damage_whole(container);
 }
 
-void container_set_geometry_from_view(struct sway_container *container) {
-	if (!sway_assert(container->type == C_VIEW, "Expected a view")) {
+void container_set_geometry_from_floating_view(struct sway_container *con) {
+	if (!sway_assert(con->type == C_VIEW, "Expected a view")) {
 		return;
 	}
-	if (!sway_assert(container_is_floating(container),
+	if (!sway_assert(container_is_floating(con),
 				"Expected a floating view")) {
 		return;
 	}
-	struct sway_view *view = container->sway_view;
+	struct sway_view *view = con->sway_view;
 	size_t border_width = view->border_thickness * (view->border != B_NONE);
 	size_t top =
 		view->border == B_NORMAL ? container_titlebar_height() : border_width;
 
-	container->x = view->x - border_width;
-	container->y = view->y - top;
-	container->width = view->width + border_width * 2;
-	container->height = top + view->height + border_width;
+	con->x = view->x - border_width;
+	con->y = view->y - top;
+	con->width = view->width + border_width * 2;
+	con->height = top + view->height + border_width;
 }
 
 bool container_self_or_parent_floating(struct sway_container *container) {
