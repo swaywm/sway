@@ -124,8 +124,8 @@ static void output_view_for_each_surface(struct sway_view *view,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct render_data *data = user_data;
-	geo->x = view->x - data->output->wlr_output->lx;
-	geo->y = view->y - data->output->wlr_output->ly;
+	geo->x = view->x - data->output->swayc->x;
+	geo->y = view->y - data->output->swayc->y;
 	geo->width = view->surface->current->width;
 	geo->height = view->surface->current->height;
 	geo->rotation = 0; // TODO
@@ -453,10 +453,9 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(marks_texture,
 			&texture_box.width, &texture_box.height);
-		texture_box.x =
-			(x - output->wlr_output->lx + width - TITLEBAR_H_PADDING)
+		texture_box.x = (x - output->swayc->x + width - TITLEBAR_H_PADDING)
 			* output_scale - texture_box.width;
-		texture_box.y = (y - output->wlr_output->ly + TITLEBAR_V_PADDING)
+		texture_box.y = (y - output->swayc->y + TITLEBAR_V_PADDING)
 			* output_scale;
 
 		float matrix[9];
@@ -478,9 +477,9 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
-		texture_box.x = (x - output->wlr_output->lx + TITLEBAR_H_PADDING)
+		texture_box.x = (x - output->swayc->x + TITLEBAR_H_PADDING)
 			* output_scale;
-		texture_box.y = (y - output->wlr_output->ly + TITLEBAR_V_PADDING)
+		texture_box.y = (y - output->swayc->y + TITLEBAR_V_PADDING)
 			* output_scale;
 
 		float matrix[9];
