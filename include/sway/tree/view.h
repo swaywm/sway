@@ -29,7 +29,7 @@ struct sway_view_impl {
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
-	void (*configure)(struct sway_view *view, double ox, double oy, int width,
+	void (*configure)(struct sway_view *view, double lx, double ly, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_tiled)(struct sway_view *view, bool tiled);
@@ -48,7 +48,7 @@ struct sway_view {
 	struct sway_container *swayc; // NULL for unmapped views
 	struct wlr_surface *surface; // NULL for unmapped views
 
-	// Geometry of the view itself (excludes borders)
+	// Geometry of the view itself (excludes borders) in layout coordinates
 	double x, y;
 	int width, height;
 

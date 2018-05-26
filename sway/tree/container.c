@@ -467,14 +467,14 @@ struct sway_container *container_parent(struct sway_container *container,
 }
 
 static struct sway_container *container_at_view(struct sway_container *swayc,
-		double ox, double oy,
+		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (!sway_assert(swayc->type == C_VIEW, "Expected a view")) {
 		return NULL;
 	}
 	struct sway_view *sview = swayc->sway_view;
-	double view_sx = ox - sview->x;
-	double view_sy = oy - sview->y;
+	double view_sx = lx - sview->x;
+	double view_sy = ly - sview->y;
 
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;
@@ -516,18 +516,18 @@ static struct sway_container *container_at_view(struct sway_container *swayc,
  * container_at for a container with layout L_TABBED.
  */
 static struct sway_container *container_at_tabbed(struct sway_container *parent,
-		double ox, double oy,
+		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	if (oy < parent->y || oy > parent->y + parent->height) {
+	if (ly < parent->y || ly > parent->y + parent->height) {
 		return NULL;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
 	// Tab titles
 	int title_height = container_titlebar_height();
-	if (oy < parent->y + title_height) {
+	if (ly < parent->y + title_height) {
 		int tab_width = parent->width / parent->children->length;
-		int child_index = (ox - parent->x) / tab_width;
+		int child_index = (lx - parent->x) / tab_width;
 		if (child_index >= parent->children->length) {
 			child_index = parent->children->length - 1;
 		}
@@ -538,23 +538,23 @@ static struct sway_container *container_at_tabbed(struct sway_container *parent,
 	// Surfaces
 	struct sway_container *current = seat_get_active_child(seat, parent);
 
-	return container_at(current, ox, oy, surface, sx, sy);
+	return container_at(current, lx, ly, surface, sx, sy);
 }
 
 /**
  * container_at for a container with layout L_STACKED.
  */
 static struct sway_container *container_at_stacked(
-		struct sway_container *parent, double ox, double oy,
+		struct sway_container *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	if (oy < parent->y || oy > parent->y + parent->height) {
+	if (ly < parent->y || ly > parent->y + parent->height) {
 		return NULL;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
 	// Title bars
 	int title_height = container_titlebar_height();
-	int child_index = (oy - parent->y) / title_height;
+	int child_index = (ly - parent->y) / title_height;
 	if (child_index < parent->children->length) {
 		struct sway_container *child = parent->children->items[child_index];
 		return seat_get_focus_inactive(seat, child);
@@ -563,14 +563,14 @@ static struct sway_container *container_at_stacked(
 	// Surfaces
 	struct sway_container *current = seat_get_active_child(seat, parent);
 
-	return container_at(current, ox, oy, surface, sx, sy);
+	return container_at(current, lx, ly, surface, sx, sy);
 }
 
 /**
  * container_at for a container with layout L_HORIZ or L_VERT.
  */
 static struct sway_container *container_at_linear(struct sway_container *parent,
-		double ox, double oy,
+		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
@@ -580,22 +580,22 @@ static struct sway_container *container_at_linear(struct sway_container *parent,
 			.width = child->width,
 			.height = child->height,
 		};
-		if (wlr_box_contains_point(&box, ox, oy)) {
-			return container_at(child, ox, oy, surface, sx, sy);
+		if (wlr_box_contains_point(&box, lx, ly)) {
+			return container_at(child, lx, ly, surface, sx, sy);
 		}
 	}
 	return NULL;
 }
 
 struct sway_container *container_at(struct sway_container *parent,
-		double ox, double oy,
+		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (!sway_assert(parent->type >= C_WORKSPACE,
 				"Expected workspace or deeper")) {
 		return NULL;
 	}
 	if (parent->type == C_VIEW) {
-		return container_at_view(parent, ox, oy, surface, sx, sy);
+		return container_at_view(parent, lx, ly, surface, sx, sy);
 	}
 	if (!parent->children->length) {
 		return NULL;
@@ -604,11 +604,11 @@ struct sway_container *container_at(struct sway_container *parent,
 	switch (parent->layout) {
 	case L_HORIZ:
 	case L_VERT:
-		return container_at_linear(parent, ox, oy, surface, sx, sy);
+		return container_at_linear(parent, lx, ly, surface, sx, sy);
 	case L_TABBED:
-		return container_at_tabbed(parent, ox, oy, surface, sx, sy);
+		return container_at_tabbed(parent, lx, ly, surface, sx, sy);
 	case L_STACKED:
-		return container_at_stacked(parent, ox, oy, surface, sx, sy);
+		return container_at_stacked(parent, lx, ly, surface, sx, sy);
 	case L_FLOATING:
 		sway_assert(false, "Didn't expect to see floating here");
 		return NULL;
@@ -837,7 +837,7 @@ static size_t get_tree_representation(struct sway_container *parent, char *buffe
 		lenient_strcat(buffer, "S[");
 		break;
 	case L_FLOATING:
-		strcpy(buffer, "F[");
+		lenient_strcat(buffer, "F[");
 		break;
 	case L_NONE:
 		lenient_strcat(buffer, "D[");

@@ -79,8 +79,7 @@ struct sway_container {
 	bool is_sticky;
 
 	// For C_ROOT, this has no meaning
-	// For C_OUTPUT, this is the output position in layout coordinates
-	// For other types, this is the position in output-local coordinates
+	// For other types, this is the position in layout coordinates
 	// Includes borders
 	double x, y;
 	double width, height;

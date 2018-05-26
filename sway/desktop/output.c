@@ -65,6 +65,13 @@ struct root_geometry {
 	float rotation;
 };
 
+struct render_data {
+	struct root_geometry root_geo;
+	struct sway_output *output;
+	pixman_region32_t *damage;
+	float alpha;
+};
+
 static bool get_surface_box(struct root_geometry *geo,
 		struct sway_output *output, struct wlr_surface *surface, int sx, int sy,
 		struct wlr_box *surface_box) {
@@ -116,8 +123,9 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 static void output_view_for_each_surface(struct sway_view *view,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
-	geo->x = view->x;
-	geo->y = view->y;
+	struct render_data *data = user_data;
+	geo->x = view->x - data->output->wlr_output->lx;
+	geo->y = view->y - data->output->wlr_output->ly;
 	geo->width = view->surface->current->width;
 	geo->height = view->surface->current->height;
 	geo->rotation = 0; // TODO
@@ -159,13 +167,6 @@ static void scale_box(struct wlr_box *box, float scale) {
 	box->width *= scale;
 	box->height *= scale;
 }
-
-struct render_data {
-	struct root_geometry root_geo;
-	struct sway_output *output;
-	pixman_region32_t *damage;
-	float alpha;
-};
 
 static void scissor_output(struct wlr_output *wlr_output,
 		pixman_box32_t *rect) {
@@ -275,7 +276,10 @@ static void render_rect(struct wlr_output *wlr_output,
 	struct wlr_renderer *renderer =
 		wlr_backend_get_renderer(wlr_output->backend);
 
-	struct wlr_box box = *_box;
+	struct wlr_box box;
+	memcpy(&box, _box, sizeof(struct wlr_box));
+	box.x -= wlr_output->lx * wlr_output->scale;
+	box.y -= wlr_output->ly * wlr_output->scale;
 
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
@@ -450,8 +454,10 @@ static void render_titlebar(struct sway_output *output,
 		wlr_texture_get_size(marks_texture,
 			&texture_box.width, &texture_box.height);
 		texture_box.x =
-			(x + width - TITLEBAR_H_PADDING) * output_scale - texture_box.width;
-		texture_box.y = (y + TITLEBAR_V_PADDING) * output_scale;
+			(x - output->wlr_output->lx + width - TITLEBAR_H_PADDING)
+			* output_scale - texture_box.width;
+		texture_box.y = (y - output->wlr_output->ly + TITLEBAR_V_PADDING)
+			* output_scale;
 
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &texture_box,
@@ -472,8 +478,10 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
-		texture_box.x = (x + TITLEBAR_H_PADDING) * output_scale;
-		texture_box.y = (y + TITLEBAR_V_PADDING) * output_scale;
+		texture_box.x = (x - output->wlr_output->lx + TITLEBAR_H_PADDING)
+			* output_scale;
+		texture_box.y = (y - output->wlr_output->ly + TITLEBAR_V_PADDING)
+			* output_scale;
 
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &texture_box,
@@ -771,28 +779,8 @@ static bool floater_intersects_output(struct sway_container *floater,
 			output->sway_output->wlr_output, &box);
 }
 
-static void container_translate(struct sway_container *con, int x, int y) {
-	con->x += x;
-	con->y += y;
-	if (con->type == C_VIEW) {
-		con->sway_view->x += x;
-		con->sway_view->y += y;
-	} else {
-		for (int i = 0; i < con->children->length; ++i) {
-			struct sway_container *child = con->children->items[i];
-			container_translate(child, x, y);
-		}
-	}
-}
-
 static void render_floating_container(struct sway_output *soutput,
 		pixman_region32_t *damage, struct sway_container *con) {
-	// We need to translate the floating container's coordinates from layout
-	// coordinates into output-local coordinates. This needs to happen for all
-	// children of the floating container too.
-	struct sway_container *output = container_parent(con, C_OUTPUT);
-	container_translate(con, -output->x, -output->y);
-
 	if (con->type == C_VIEW) {
 		struct sway_view *view = con->sway_view;
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
@@ -821,8 +809,6 @@ static void render_floating_container(struct sway_output *soutput,
 	} else {
 		render_container(soutput, damage, con, false);
 	}
-	// Undo the translation
-	container_translate(con, output->x, output->y);
 }
 
 static void render_floating(struct sway_output *soutput,
@@ -1123,15 +1109,7 @@ static void output_damage_view(struct sway_output *output,
 
 void output_damage_from_view(struct sway_output *output,
 		struct sway_view *view) {
-	if (container_self_or_parent_floating(view->swayc)) {
-		view->x -= output->swayc->x;
-		view->y -= output->swayc->y;
-		output_damage_view(output, view, false);
-		view->x += output->swayc->x;
-		view->y += output->swayc->y;
-	} else {
-		output_damage_view(output, view, false);
-	}
+	output_damage_view(output, view, false);
 }
 
 static void output_damage_whole_container_iterator(struct sway_container *con,
@@ -1148,24 +1126,13 @@ static void output_damage_whole_container_iterator(struct sway_container *con,
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	struct wlr_box box = {
-		.x = con->x,
-		.y = con->y,
+		.x = con->x - output->wlr_output->lx,
+		.y = con->y - output->wlr_output->ly,
 		.width = con->width,
 		.height = con->height,
 	};
-	if (container_is_floating(con)) {
-		box.x -= output->wlr_output->lx;
-		box.y -= output->wlr_output->ly;
-	}
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);
-
-	if (con->type == C_VIEW) {
-		output_damage_whole_container_iterator(con, output);
-	} else {
-		container_descendants(con, C_VIEW,
-			output_damage_whole_container_iterator, output);
-	}
 }
 
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {

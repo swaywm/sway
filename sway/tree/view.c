@@ -119,10 +119,10 @@ const char *view_get_shell(struct sway_view *view) {
 	return "unknown";
 }
 
-void view_configure(struct sway_view *view, double ox, double oy, int width,
+void view_configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	if (view->impl->configure) {
-		view->impl->configure(view, ox, oy, width, height);
+		view->impl->configure(view, lx, ly, width, height);
 	}
 }
 
@@ -134,9 +134,8 @@ static void view_autoconfigure_floating(struct sway_view *view) {
 		view->natural_width > max_width ? max_width : view->natural_width;
 	int height =
 		view->natural_height > max_height ? max_height : view->natural_height;
-	struct sway_container *output = ws->parent;
-	int lx = output->x + (ws->width - width) / 2;
-	int ly = output->y + (ws->height - height) / 2;
+	int lx = ws->x + (ws->width - width) / 2;
+	int ly = ws->y + (ws->height - height) / 2;
 
 	view->border_left = view->border_right = view->border_bottom = true;
 	view_set_tiled(view, false);
@@ -152,8 +151,7 @@ void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
 	if (view->is_fullscreen) {
-		view_configure(view, 0, 0, output->width, output->height);
-		view->x = view->y = 0;
+		view_configure(view, output->x, output->y, output->width, output->height);
 		return;
 	}
 
@@ -560,6 +558,9 @@ void view_unmap(struct sway_view *view) {
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {
+	if (view->x == lx && view->y == ly) {
+		return;
+	}
 	if (!container_is_floating(view->swayc)) {
 		return;
 	}

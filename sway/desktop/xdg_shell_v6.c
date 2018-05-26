@@ -86,7 +86,7 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 	}
 }
 
-static void configure(struct sway_view *view, double ox, double oy, int width,
+static void configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		xdg_shell_v6_view_from_view(view);
@@ -97,7 +97,7 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 	xdg_shell_v6_view->pending_width = width;
 	xdg_shell_v6_view->pending_height = height;
 	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
-	view_update_position(view, ox, oy);
+	view_update_position(view, lx, ly);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {

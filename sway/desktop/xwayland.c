@@ -152,39 +152,13 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-// The x and y arguments are output-local for tiled views, and layout
-// coordinates for floating views.
-static void configure(struct sway_view *view, double x, double y, int width,
+static void configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
 		return;
 	}
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-
-	double lx, ly;
-	if (container_is_floating(view->swayc)) {
-		lx = x;
-		ly = y;
-	} else {
-		struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
-		if (!sway_assert(output, "view must be within tree to set position")) {
-			return;
-		}
-		struct sway_container *root = container_parent(output, C_ROOT);
-		if (!sway_assert(root, "output must be within tree to set position")) {
-			return;
-		}
-		struct wlr_output_layout *layout = root->sway_root->output_layout;
-		struct wlr_output_layout_output *loutput =
-			wlr_output_layout_get(layout, output->sway_output->wlr_output);
-		if (!sway_assert(loutput,
-					"output must be within layout to set position")) {
-			return;
-		}
-		lx = x + loutput->x;
-		ly = y + loutput->y;
-	}
 
 	xwayland_view->pending_width = width;
 	xwayland_view->pending_height = height;

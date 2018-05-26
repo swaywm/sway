@@ -73,8 +73,8 @@ void arrange_workspace(struct sway_container *workspace) {
 			area->width, area->height, area->x, area->y);
 	workspace->width = area->width;
 	workspace->height = area->height;
-	workspace->x = area->x;
-	workspace->y = area->y;
+	workspace->x = output->x + area->x;
+	workspace->y = output->y + area->y;
 	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 			workspace->name, workspace->x, workspace->y);
 	arrange_children_of(workspace);

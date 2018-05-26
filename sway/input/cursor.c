@@ -46,7 +46,7 @@ static struct wlr_surface *layer_surface_at(struct sway_output *output,
  * location, it is stored in **surface (it may not be a view).
  */
 static struct sway_container *container_at_coords(
-		struct sway_seat *seat, double x, double y,
+		struct sway_seat *seat, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	// check for unmanaged views first
 	struct wl_list *unmanaged = &root_container.sway_root->xwayland_unmanaged;
@@ -55,8 +55,8 @@ static struct sway_container *container_at_coords(
 		struct wlr_xwayland_surface *xsurface =
 			unmanaged_surface->wlr_xwayland_surface;
 
-		double _sx = x - unmanaged_surface->lx;
-		double _sy = y - unmanaged_surface->ly;
+		double _sx = lx - unmanaged_surface->lx;
+		double _sy = ly - unmanaged_surface->ly;
 		if (wlr_surface_point_accepts_input(xsurface->surface, _sx, _sy)) {
 			*surface = xsurface->surface;
 			*sx = _sx;
@@ -69,12 +69,12 @@ static struct sway_container *container_at_coords(
 	struct wlr_output_layout *output_layout =
 		root_container.sway_root->output_layout;
 	struct wlr_output *wlr_output = wlr_output_layout_output_at(
-			output_layout, x, y);
+			output_layout, lx, ly);
 	if (wlr_output == NULL) {
 		return NULL;
 	}
 	struct sway_output *output = wlr_output->data;
-	double ox = x, oy = y;
+	double ox = lx, oy = ly;
 	wlr_output_layout_output_coords(output_layout, wlr_output, &ox, &oy);
 
 	// find the focused workspace on the output for this seat
@@ -108,10 +108,10 @@ static struct sway_container *container_at_coords(
 	}
 
 	struct sway_container *c;
-	if ((c = floating_container_at(x, y, surface, sx, sy))) {
+	if ((c = floating_container_at(lx, ly, surface, sx, sy))) {
 		return c;
 	}
-	if ((c = container_at(ws, ox, oy, surface, sx, sy))) {
+	if ((c = container_at(ws, lx, ly, surface, sx, sy))) {
 		return c;
 	}
 
