@@ -904,13 +904,12 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
 		struct sway_container *focus = seat_get_focus(seat);
 		render_container(output, damage, workspace, focus == workspace);
+		render_floating(output, damage);
 
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
-
-		render_floating(output, damage);
 	}
 	render_layer(output, damage,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
