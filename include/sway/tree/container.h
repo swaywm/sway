@@ -246,10 +246,4 @@ void container_set_geometry_from_floating_view(struct sway_container *con);
  */
 bool container_is_floating(struct sway_container *container);
 
-/**
- * Determine if the given container is itself floating or is a child of a
- * floating container.
- */
-bool container_self_or_parent_floating(struct sway_container *container);
-
 #endif

@@ -949,15 +949,6 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 	con->height = top + view->height + border_width;
 }
 
-bool container_self_or_parent_floating(struct sway_container *container) {
-	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
-	if (!workspace) {
-		return false;
-	}
-	return container_has_anscestor(container,
-			workspace->sway_workspace->floating);
-}
-
 bool container_is_floating(struct sway_container *container) {
 	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
 	if (!workspace) {
