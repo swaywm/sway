@@ -193,8 +193,8 @@ static void config_defaults(struct sway_config *config) {
 
 	config->edge_gaps = true;
 	config->smart_gaps = false;
-	config->gaps_inner = 0;
-	config->gaps_outer = 0;
+	config->gaps_inner = 20;//0;
+	config->gaps_outer = 20;//0;
 
 	if (!(config->active_bar_modifiers = create_list())) goto cleanup;
 

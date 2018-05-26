@@ -109,6 +109,7 @@ static struct cmd_handler handlers[] = {
 	{ "font", cmd_font },
 	{ "for_window", cmd_for_window },
 	{ "fullscreen", cmd_fullscreen },
+	{ "gaps", cmd_gaps },
 	{ "hide_edge_borders", cmd_hide_edge_borders },
 	{ "include", cmd_include },
 	{ "input", cmd_input },
@@ -117,6 +118,7 @@ static struct cmd_handler handlers[] = {
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
 	{ "show_marks", cmd_show_marks },
+	{ "smart_gaps", cmd_smart_gaps },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };

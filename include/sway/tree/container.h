@@ -84,6 +84,10 @@ struct sway_container {
 	double width, height;
 	double saved_width, saved_height;
 
+        bool has_gaps;
+        double gaps_inner;
+        double gaps_outer;
+
 	list_t *children;
 
 	struct sway_container *parent;
