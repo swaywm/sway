@@ -183,7 +183,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			if (!do_mouse_focus) {
 				struct sway_container *next_focus = seat_get_focus_inactive(
 						cursor->seat, p);
-				if(!sway_assert(next_focus->type == C_VIEW,
+				if(next_focus && !sway_assert(next_focus->type == C_VIEW,
 							"focus inactive container is not a view")) {
 					return;
 				}
