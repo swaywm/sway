@@ -71,10 +71,18 @@ void arrange_workspace(struct sway_container *workspace) {
 	struct wlr_box *area = &output->sway_output->usable_area;
 	wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
-	workspace->width = area->width;
-	workspace->height = area->height;
-	workspace->x = area->x;
-	workspace->y = area->y;
+	if (config->edge_gaps || (config->smart_gaps && workspace->children->length > 1)) {
+		double gaps = workspace->has_gaps ? workspace->gaps_outer : config->gaps_outer;
+		workspace->width = area->width - (2 * gaps);
+		workspace->height = area->height - (2 * gaps);
+		workspace->x = area->x + gaps;
+		workspace->y = area->y + gaps;
+	} else {
+		workspace->width = area->width;
+		workspace->height = area->height;
+		workspace->x = area->x;
+		workspace->y = area->y;
+	}
 	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 			workspace->name, workspace->x, workspace->y);
 	arrange_children_of(workspace);
@@ -116,6 +124,7 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	struct sway_container *child;
 	for (size_t i = 0; i < num_children; ++i) {
 		child = parent->children->items[i];
+		double gaps = child->has_gaps ? child->gaps_inner : config->gaps_inner;
 		wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->width, scale);
@@ -123,7 +132,7 @@ static void apply_horiz_layout(struct sway_container *parent) {
 		child->y = parent->y + parent_offset;
 		child->width = floor(child->width * scale);
 		child->height = parent_height;
-		child_x += child->width;
+		child_x += child->width + gaps;
 	}
 	// Make last child use remaining width of parent
 	child->width = parent->x + parent->width - child->x;
@@ -141,7 +150,7 @@ static void apply_vert_layout(struct sway_container *parent) {
 		parent_offset =
 			container_titlebar_height() * parent->parent->children->length;
 	}
-	size_t parent_height = parent->height - parent_offset;
+	size_t parent_height = parent->height + parent_offset;
 
 	// Calculate total height of children
 	double total_height = 0;
@@ -164,6 +173,7 @@ static void apply_vert_layout(struct sway_container *parent) {
 	struct sway_container *child;
 	for (size_t i = 0; i < num_children; ++i) {
 		child = parent->children->items[i];
+		double gaps = child->has_gaps ? child->gaps_inner : config->gaps_inner;
 		wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->height, scale);
@@ -171,7 +181,7 @@ static void apply_vert_layout(struct sway_container *parent) {
 		child->y = child_y;
 		child->width = parent->width;
 		child->height = floor(child->height * scale);
-		child_y += child->height;
+		child_y += child->height + gaps;
 	}
 	// Make last child use remaining height of parent
 	child->height = parent->y + parent_offset + parent_height - child->y;
@@ -244,6 +254,11 @@ void arrange_children_of(struct sway_container *parent) {
 		if (child->type == C_VIEW) {
 			view_autoconfigure(child->sway_view);
 		} else {
+			if (parent->has_gaps && !child->has_gaps) {
+				child->has_gaps = true;
+				child->gaps_inner = parent->gaps_inner;
+				child->gaps_outer = parent->gaps_outer;
+			}
 			arrange_children_of(child);
 		}
 	}
