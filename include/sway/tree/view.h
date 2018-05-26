@@ -137,6 +137,7 @@ struct sway_xwayland_view {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 
+	int pending_lx, pending_ly;
 	int pending_width, pending_height;
 };
 
