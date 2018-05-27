@@ -170,15 +170,10 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		} else if (c->type == C_VIEW) {
-			bool do_mouse_focus = true;
-			// Don't switch focus if either of the following is true:
-			// - the cursor is over the same container as before. i.e. hasn't crossed
-			//   a window boundary; or
-			// - the view is not visible. i.e. in a stack or tab.
-			if (c == prev_c || !view_is_visible(c->sway_view)) {
-				do_mouse_focus = false;
-			}
-			if (do_mouse_focus) {
+			// Focus c if both of the following are true:
+			// - cursor is over a new view, i.e. entered a new window; and
+			// - the new view is visible, i.e. not hidden in a stack or tab.
+			if (c != prev_c && view_is_visible(c->sway_view)) {
 				seat_set_focus_warp(cursor->seat, c, false);
 			} else {
 				struct sway_container *next_focus =
