@@ -56,7 +56,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->shell) {
-		const char *shell = view_get_type(view);
+		const char *shell = view_get_shell(view);
 		if (!shell || regex_cmp(shell, criteria->shell) != 0) {
 			return false;
 		}
@@ -284,7 +284,7 @@ static char *get_focused_prop(enum criteria_token token) {
 		value = view_get_instance(view);
 		break;
 	case T_SHELL:
-		value = view_get_type(view);
+		value = view_get_shell(view);
 		break;
 	case T_TITLE:
 		value = view_get_class(view);
