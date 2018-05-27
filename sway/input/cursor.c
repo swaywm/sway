@@ -178,14 +178,9 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			} else {
 				struct sway_container *next_focus =
 					seat_get_focus_inactive(cursor->seat, &root_container);
-				if (next_focus) {
-					if (!sway_assert(next_focus->type == C_VIEW,
-								"focus inactive container is not a view")) {
-						return;
-					}
-					if (view_is_visible(next_focus->sway_view)) {
-						seat_set_focus_warp(cursor->seat, next_focus, false);
-					}
+				if (next_focus && next_focus->type == C_VIEW &&
+						view_is_visible(next_focus->sway_view)) {
+					seat_set_focus_warp(cursor->seat, next_focus, false);
 				}
 			}
 		}
