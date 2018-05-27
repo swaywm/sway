@@ -144,6 +144,14 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
+
+	// Find the container beneath the pointer's previous position
+	struct sway_container *prev_c = container_at_coords(cursor->seat,
+			cursor->previous.x, cursor->previous.y, &surface, &sx, &sy);
+	// Update the stored previous position
+	cursor->previous.x = cursor->cursor->x;
+	cursor->previous.y = cursor->cursor->y;
+
 	struct sway_container *c = container_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse && allow_refocusing) {
@@ -162,33 +170,18 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		} else if (c->type == C_VIEW) {
-			// Don't switch focus on title mouseover for
-			// stacked and tabbed layouts
-			// If pointed container is in nested containers which are
-			// inside tabbed/stacked layout we should skip them
-			bool do_mouse_focus = true;
-			bool is_visible = view_is_visible(c->sway_view);
-			struct sway_container *p = c->parent;
-			while (p) {
-				if ((p->layout == L_TABBED || p->layout == L_STACKED)
-					&& !is_visible) {
-					do_mouse_focus = false;
-					break;
-				}
-				p = p->parent;
-			}
-			if (!do_mouse_focus) {
-				struct sway_container *next_focus = seat_get_focus_inactive(
-						cursor->seat, p);
-				if(next_focus && !sway_assert(next_focus->type == C_VIEW,
-							"focus inactive container is not a view")) {
-					return;
-				}
-				if (next_focus && view_is_visible(next_focus->sway_view)) {
+			// Focus c if both of the following are true:
+			// - cursor is over a new view, i.e. entered a new window; and
+			// - the new view is visible, i.e. not hidden in a stack or tab.
+			if (c != prev_c && view_is_visible(c->sway_view)) {
+				seat_set_focus_warp(cursor->seat, c, false);
+			} else {
+				struct sway_container *next_focus =
+					seat_get_focus_inactive(cursor->seat, &root_container);
+				if (next_focus && next_focus->type == C_VIEW &&
+						view_is_visible(next_focus->sway_view)) {
 					seat_set_focus_warp(cursor->seat, next_focus, false);
 				}
-			} else {
-				seat_set_focus_warp(cursor->seat, c, false);
 			}
 		}
 	}

@@ -6,6 +6,9 @@
 struct sway_cursor {
 	struct sway_seat *seat;
 	struct wlr_cursor *cursor;
+	struct {
+		double x, y;
+	} previous;
 	struct wlr_xcursor_manager *xcursor_manager;
 
 	struct wl_client *image_client;
@@ -30,7 +33,7 @@ struct sway_cursor {
 void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
 void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
-		bool allow_refocusing);
+	bool allow_refocusing);
 void dispatch_cursor_button(struct sway_cursor *cursor, uint32_t time_msec,
 	uint32_t button, enum wlr_button_state state);
 
