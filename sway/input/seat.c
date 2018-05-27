@@ -730,13 +730,6 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 	return focus;
 }
 
-struct sway_container *sway_seat_get_focus(struct sway_seat *seat) {
-	if (!seat->has_focus) {
-		return NULL;
-	}
-	return seat_get_focus_inactive(seat, &root_container);
-}
-
 struct sway_container *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
