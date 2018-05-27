@@ -23,6 +23,10 @@ void render_frame(struct swaylock_surface *surface) {
 
 	surface->current_buffer = get_next_buffer(state->shm,
 			surface->buffers, buffer_width, buffer_height);
+	if (surface->current_buffer == NULL) {
+		return;
+	}
+
 	cairo_t *cairo = surface->current_buffer->cairo;
 	cairo_identity_matrix(cairo);
 

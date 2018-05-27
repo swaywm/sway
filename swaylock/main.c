@@ -131,14 +131,58 @@ static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
-static void handle_wl_output_geometry(void *data, struct wl_output *output, int32_t x,
-		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
-		const char *make, const char *model, int32_t transform) {
+static const struct wl_callback_listener surface_frame_listener;
+
+static void surface_frame_handle_done(void *data, struct wl_callback *callback,
+		uint32_t time) {
+	struct swaylock_surface *surface = data;
+
+	wl_callback_destroy(callback);
+	surface->frame_pending = false;
+
+	if (surface->dirty) {
+		// Schedule a frame in case the surface is damaged again
+		struct wl_callback *callback = wl_surface_frame(surface->surface);
+		wl_callback_add_listener(callback, &surface_frame_listener, surface);
+		surface->frame_pending = true;
+
+		render_frame(surface);
+		surface->dirty = false;
+	}
+}
+
+static const struct wl_callback_listener surface_frame_listener = {
+	.done = surface_frame_handle_done,
+};
+
+void damage_surface(struct swaylock_surface *surface) {
+	surface->dirty = true;
+	if (surface->frame_pending) {
+		return;
+	}
+
+	struct wl_callback *callback = wl_surface_frame(surface->surface);
+	wl_callback_add_listener(callback, &surface_frame_listener, surface);
+	surface->frame_pending = true;
+	wl_surface_commit(surface->surface);
+}
+
+void damage_state(struct swaylock_state *state) {
+	struct swaylock_surface *surface;
+	wl_list_for_each(surface, &state->surfaces, link) {
+		damage_surface(surface);
+	}
+}
+
+static void handle_wl_output_geometry(void *data, struct wl_output *output,
+		int32_t x, int32_t y, int32_t width_mm, int32_t height_mm,
+		int32_t subpixel, const char *make, const char *model,
+		int32_t transform) {
 	// Who cares
 }
 
-static void handle_wl_output_mode(void *data, struct wl_output *output, uint32_t flags,
-		int32_t width, int32_t height, int32_t refresh) {
+static void handle_wl_output_mode(void *data, struct wl_output *output,
+		uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
 	// Who cares
 }
 
@@ -151,7 +195,7 @@ static void handle_wl_output_scale(void *data, struct wl_output *output,
 	struct swaylock_surface *surface = data;
 	surface->scale = factor;
 	if (surface->state->run_display) {
-		render_frames(surface->state);
+		damage_surface(surface);
 	}
 }
 
