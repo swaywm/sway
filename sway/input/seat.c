@@ -602,7 +602,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 						wlr_output, seat->cursor->cursor->x,
 						seat->cursor->cursor->y)) {
 					wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
-					cursor_send_pointer_motion(seat->cursor, 0, true);
+					cursor_send_pointer_motion(seat->cursor, 0, 0, 0, true);
 				}
 			}
 		}
@@ -613,7 +613,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	}
 
 	if (last_workspace && last_workspace != new_workspace) {
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		cursor_send_pointer_motion(seat->cursor, 0, 0, 0, true);
 	}
 
 	seat->has_focus = (container != NULL);
