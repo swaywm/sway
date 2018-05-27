@@ -654,10 +654,12 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 		return title ? strlen(title) : 0;
 	}
 	const char *title = view_get_title(view);
+	const char *app_id = view_get_app_id(view);
 	const char *class = view_get_class(view);
 	const char *instance = view_get_instance(view);
 	const char *shell = view_get_type(view);
 	size_t title_len = title ? strlen(title) : 0;
+	size_t app_id_len = app_id ? strlen(app_id) : 0;
 	size_t class_len = class ? strlen(class) : 0;
 	size_t instance_len = instance ? strlen(instance) : 0;
 	size_t shell_len = shell ? strlen(shell) : 0;
@@ -675,6 +677,10 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 			lenient_strcat(buffer, title);
 			len += title_len;
 			format += 6;
+		} else if (strncmp(next, "%app_id", 7) == 0) {
+			lenient_strcat(buffer, app_id);
+			len += app_id_len;
+			format += 7;
 		} else if (strncmp(next, "%class", 6) == 0) {
 			lenient_strcat(buffer, class);
 			len += class_len;
