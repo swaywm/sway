@@ -560,6 +560,11 @@ The following attributes may be matched with:
 	value is \_\_focused\_\_, then the window instance must be the same as that
 	of the currently focused window.
 
+*shell*
+	Compare value against the window shell, such as "xdg\_shell" or "xwayland".
+	Can be a regular expression. If value is \_\_focused\_\_, then the shell
+	must be the same as that of the currently focused window.
+
 *tiling*
 	Matches tiling windows.
 

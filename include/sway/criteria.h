@@ -18,6 +18,7 @@ struct criteria {
 	char *target; // workspace or output name for `assign` criteria
 
 	pcre *title;
+	pcre *shell;
 	pcre *app_id;
 	pcre *class;
 	pcre *instance;

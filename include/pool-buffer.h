@@ -12,6 +12,8 @@ struct pool_buffer {
 	cairo_t *cairo;
 	PangoContext *pango;
 	uint32_t width, height;
+	void *data;
+	size_t size;
 	bool busy;
 };
 
