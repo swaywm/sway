@@ -107,7 +107,7 @@ uint32_t view_get_window_type(struct sway_view *view) {
 	return 0;
 }
 
-const char *view_get_type(struct sway_view *view) {
+const char *view_get_shell(struct sway_view *view) {
 	switch(view->type) {
 	case SWAY_VIEW_XDG_SHELL_V6:
 		return "xdg_shell_v6";
@@ -657,7 +657,7 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	const char *app_id = view_get_app_id(view);
 	const char *class = view_get_class(view);
 	const char *instance = view_get_instance(view);
-	const char *shell = view_get_type(view);
+	const char *shell = view_get_shell(view);
 	size_t title_len = title ? strlen(title) : 0;
 	size_t app_id_len = app_id ? strlen(app_id) : 0;
 	size_t class_len = class ? strlen(class) : 0;
