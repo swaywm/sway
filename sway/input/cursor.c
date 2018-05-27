@@ -171,23 +171,12 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			}
 		} else if (c->type == C_VIEW) {
 			bool do_mouse_focus = true;
-			bool is_visible = view_is_visible(c->sway_view);
-			struct sway_container *p = c->parent;
-			// Don't switch focus unless we have moved from one container to another
-			if (c && c == prev_c) {
+			// Don't switch focus if either of the following is true:
+			// - the cursor is over the same container as before. i.e. hasn't crossed
+			//   a window boundary; or
+			// - the view is not visible. i.e. in a stack or tab.
+			if (c == prev_c || !view_is_visible(c->sway_view)) {
 				do_mouse_focus = false;
-			}
-			// Don't switch focus on title mouseover for stacked and tabbed layouts
-			// If pointed container is in nested containers which are inside
-			// tabbed/stacked layout we should skip them
-			if (do_mouse_focus && !is_visible) {
-				while (p) {
-					if ((p->layout == L_TABBED || p->layout == L_STACKED)) {
-						do_mouse_focus = false;
-						break;
-					}
-					p = p->parent;
-				}
 			}
 			if (do_mouse_focus) {
 				seat_set_focus_warp(cursor->seat, c, false);
