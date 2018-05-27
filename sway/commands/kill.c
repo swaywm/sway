@@ -1,4 +1,3 @@
-#include <wlr/util/log.h>
 #include "log.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <wayland-client.h>
-#include <wlr/util/log.h>
+#include "log.h"
 #include "background-image.h"
 #include "pool-buffer.h"
 #include "cairo.h"
@@ -48,7 +48,7 @@ struct swaybg_state {
 bool is_valid_color(const char *color) {
 	int len = strlen(color);
 	if (len != 7 || color[0] != '#') {
-		wlr_log(L_ERROR, "%s is not a valid color for swaybg. "
+		sway_log(L_ERROR, "%s is not a valid color for swaybg. "
 				"Color should be specified as #rrggbb (no alpha).", color);
 		return false;
 	}
@@ -185,10 +185,10 @@ int main(int argc, const char **argv) {
 	struct swaybg_args args = {0};
 	struct swaybg_state state = {0};
 	state.args = &args;
-	wlr_log_init(L_DEBUG, NULL);
+	sway_log_init(L_DEBUG, NULL);
 
 	if (argc != 4) {
-		wlr_log(L_ERROR, "Do not run this program manually. "
+		sway_log(L_ERROR, "Do not run this program manually. "
 				"See man 5 sway and look for output options.");
 		return 1;
 	}
@@ -243,4 +243,9 @@ int main(int argc, const char **argv) {
 		// This space intentionally left blank
 	}
 	return 0;
+}
+
+/* Required by common code */
+void sway_terminate(int code) {
+	exit(code);
 }

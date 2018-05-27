@@ -144,6 +144,6 @@ executable(
 	sway_sources,
 	include_directories: [sway_inc],
 	dependencies: sway_deps,
-	link_with: [lib_sway_common],
+	link_with: [lib_sway_common, lib_sway_ipc],
 	install: true
 )

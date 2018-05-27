@@ -22,11 +22,11 @@ struct sway_container *output_create(
 
 		if (strcasecmp(name, cur->name) == 0 ||
 				strcasecmp(identifier, cur->name) == 0) {
-			wlr_log(L_DEBUG, "Matched output config for %s", name);
+			sway_log(L_DEBUG, "Matched output config for %s", name);
 			oc = cur;
 		}
 		if (strcasecmp("*", cur->name) == 0) {
-			wlr_log(L_DEBUG, "Matched wildcard output config for %s", name);
+			sway_log(L_DEBUG, "Matched wildcard output config for %s", name);
 			all = cur;
 		}
 
@@ -56,7 +56,7 @@ struct sway_container *output_create(
 
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
-	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
+	sway_log(L_DEBUG, "Creating default workspace %s", ws_name);
 	struct sway_container *ws = workspace_create(output, ws_name);
 	// Set each seat's focus if not already set
 	struct sway_seat *seat = NULL;

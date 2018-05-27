@@ -7,11 +7,11 @@
 struct seat_config *new_seat_config(const char* name) {
 	struct seat_config *seat = calloc(1, sizeof(struct seat_config));
 	if (!seat) {
-		wlr_log(L_DEBUG, "Unable to allocate seat config");
+		sway_log(L_DEBUG, "Unable to allocate seat config");
 		return NULL;
 	}
 
-	wlr_log(L_DEBUG, "new_seat_config(%s)", name);
+	sway_log(L_DEBUG, "new_seat_config(%s)", name);
 	seat->name = strdup(name);
 	if (!sway_assert(seat->name, "could not allocate name for seat")) {
 		free(seat);
@@ -34,7 +34,7 @@ struct seat_attachment_config *seat_attachment_config_new() {
 	struct seat_attachment_config *attachment =
 		calloc(1, sizeof(struct seat_attachment_config));
 	if (!attachment) {
-		wlr_log(L_DEBUG, "cannot allocate attachment config");
+		sway_log(L_DEBUG, "cannot allocate attachment config");
 		return NULL;
 	}
 	return attachment;

@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
-#include <wlr/util/log.h>
+#include "log.h"
 #include "swaybar/bar.h"
 #include "ipc-client.h"
 
@@ -75,13 +75,13 @@ int main(int argc, char **argv) {
 	}
 
 	if (debug) {
-		wlr_log_init(L_DEBUG, NULL);
+		sway_log_init(L_DEBUG, NULL);
 	} else {
-		wlr_log_init(L_ERROR, NULL);
+		sway_log_init(L_ERROR, NULL);
 	}
 
 	if (!bar_id) {
-		wlr_log(L_ERROR, "No bar_id passed. "
+		sway_log(L_ERROR, "No bar_id passed. "
 				"Provide --bar_id or let sway start swaybar");
 		return 1;
 	}
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 	if (!socket_path) {
 		socket_path = get_socketpath();
 		if (!socket_path) {
-			wlr_log(L_ERROR, "Unable to retrieve socket path");
+			sway_log(L_ERROR, "Unable to retrieve socket path");
 			return 1;
 		}
 	}

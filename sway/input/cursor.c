@@ -453,7 +453,7 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	// TODO: check cursor mode
 	if (focused_client == NULL ||
 			event->seat_client->client != focused_client) {
-		wlr_log(L_DEBUG, "denying request to set cursor from unfocused client");
+		sway_log(L_DEBUG, "denying request to set cursor from unfocused client");
 		return;
 	}
 

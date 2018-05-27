@@ -231,7 +231,7 @@ static struct cmd_handler seat_handlers[] = {
 static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	wlr_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
+	sway_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
 
 	bool config_loading = config->reading || !config->active;
 
@@ -329,10 +329,10 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
-				wlr_log(L_INFO, "Ignoring empty command.");
+				sway_log(L_INFO, "Ignoring empty command.");
 				continue;
 			}
-			wlr_log(L_INFO, "Handling command '%s'", cmd);
+			sway_log(L_INFO, "Handling command '%s'", cmd);
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
@@ -417,7 +417,7 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 		goto cleanup;
 	}
 
-	wlr_log(L_INFO, "handling config command '%s'", exec);
+	sway_log(L_INFO, "handling config command '%s'", exec);
 	// Endblock
 	if (**argv == '}') {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
@@ -521,7 +521,7 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	policy->context = context;
 
-	wlr_log(L_INFO, "Set command policy for %s to %d",
+	sway_log(L_INFO, "Set command policy for %s to %d",
 			policy->command, policy->context);
 
 	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -535,7 +535,7 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		const char *input, const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	if (!results) {
-		wlr_log(L_ERROR, "Unable to allocate command results");
+		sway_log(L_ERROR, "Unable to allocate command results");
 		return NULL;
 	}
 	results->status = status;

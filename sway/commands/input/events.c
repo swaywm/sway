@@ -16,7 +16,7 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "events",
 			"No input device defined.");
 	}
-	wlr_log(L_DEBUG, "events for device: %s",
+	sway_log(L_DEBUG, "events for device: %s",
 		current_input_config->identifier);
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);

@@ -17,7 +17,7 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 			return cmd_results_new(CMD_FAILURE, NULL,
 					"Couldn't allocate config");
 		}
-		wlr_log(L_DEBUG, "entering seat block: %s", argv[0]);
+		sway_log(L_DEBUG, "entering seat block: %s", argv[0]);
 		return cmd_results_new(CMD_BLOCK_SEAT, NULL, NULL);
 	}
 

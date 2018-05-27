@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
 #include "log.h"
@@ -95,7 +94,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		return;
 	}
 
-	wlr_log(L_DEBUG,
+	sway_log(L_DEBUG,
 			"Found the proper parent: %p. It has %d l conts, and %d r conts",
 			parent->parent, minor_weight, major_weight);
 

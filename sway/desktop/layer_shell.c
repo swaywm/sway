@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
-#include <wlr/util/log.h>
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -174,7 +173,7 @@ void arrange_layers(struct sway_output *output) {
 
 	if (memcmp(&usable_area, &output->usable_area,
 				sizeof(struct wlr_box)) != 0) {
-		wlr_log(L_DEBUG, "Usable area changed, rearranging output");
+		sway_log(L_DEBUG, "Usable area changed, rearranging output");
 		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
 		arrange_output(output->swayc);
 	}
@@ -262,7 +261,7 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer =
 		wl_container_of(listener, sway_layer, destroy);
-	wlr_log(L_DEBUG, "Layer surface destroyed (%s)",
+	sway_log(L_DEBUG, "Layer surface destroyed (%s)",
 		sway_layer->layer_surface->namespace);
 	if (sway_layer->layer_surface->mapped) {
 		unmap(sway_layer);
@@ -304,7 +303,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface *layer_surface = data;
 	struct sway_server *server =
 		wl_container_of(listener, server, layer_shell_surface);
-	wlr_log(L_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
+	sway_log(L_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
 			"size %dx%d margin %d,%d,%d,%d",
 		layer_surface->namespace, layer_surface->layer, layer_surface->layer,
 		layer_surface->client_pending.desired_width,

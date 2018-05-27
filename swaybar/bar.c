@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
-#include <wlr/util/log.h>
 #ifdef __FreeBSD__
 #include <dev/evdev/input-event-codes.h>
 #else
@@ -46,7 +45,7 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	if (!output) {
 		return;
 	}
-	wlr_log(L_DEBUG, "Removing output %s", output->name);
+	sway_log(L_DEBUG, "Removing output %s", output->name);
 	zwlr_layer_surface_v1_destroy(output->layer_surface);
 	wl_surface_destroy(output->surface);
 	wl_output_destroy(output->output);

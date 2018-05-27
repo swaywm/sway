@@ -3,7 +3,6 @@ lib_sway_common = static_library(
 	files(
 		'background-image.c',
 		'cairo.c',
-		'ipc-client.c',
 		'log.c',
 		'list.c',
 		'pango.c',
@@ -17,7 +16,6 @@ lib_sway_common = static_library(
 		gdk_pixbuf,
 		pango,
 		pangocairo,
-		wlroots
 	],
 	include_directories: sway_inc
 )

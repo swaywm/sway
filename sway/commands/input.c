@@ -16,7 +16,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		if (!config->handler_context.input_config) {
 			return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
 		}
-		wlr_log(L_DEBUG, "entering input block: %s", argv[0]);
+		sway_log(L_DEBUG, "entering input block: %s", argv[0]);
 		return cmd_results_new(CMD_BLOCK_INPUT, NULL, NULL);
 	}
 

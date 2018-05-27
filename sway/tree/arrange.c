@@ -50,7 +50,7 @@ void arrange_output(struct sway_container *output) {
 	output->y = output_box->y;
 	output->width = output_box->width;
 	output->height = output_box->height;
-	wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
+	sway_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 			output->name, output->x, output->y);
 	for (int i = 0; i < output->children->length; ++i) {
 		struct sway_container *workspace = output->children->items[i];
@@ -69,13 +69,13 @@ void arrange_workspace(struct sway_container *workspace) {
 	}
 	struct sway_container *output = workspace->parent;
 	struct wlr_box *area = &output->sway_output->usable_area;
-	wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
+	sway_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
 	workspace->width = area->width;
 	workspace->height = area->height;
 	workspace->x = area->x;
 	workspace->y = area->y;
-	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
+	sway_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 			workspace->name, workspace->x, workspace->y);
 	arrange_children_of(workspace);
 	container_damage_whole(workspace);
@@ -111,12 +111,12 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	double scale = parent->width / total_width;
 
 	// Resize windows
-	wlr_log(L_DEBUG, "Arranging %p horizontally", parent);
+	sway_log(L_DEBUG, "Arranging %p horizontally", parent);
 	double child_x = parent->x;
 	struct sway_container *child;
 	for (size_t i = 0; i < num_children; ++i) {
 		child = parent->children->items[i];
-		wlr_log(L_DEBUG,
+		sway_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->width, scale);
 		child->x = child_x;
@@ -159,12 +159,12 @@ static void apply_vert_layout(struct sway_container *parent) {
 	double scale = parent_height / total_height;
 
 	// Resize
-	wlr_log(L_DEBUG, "Arranging %p vertically", parent);
+	sway_log(L_DEBUG, "Arranging %p vertically", parent);
 	double child_y = parent->y + parent_offset;
 	struct sway_container *child;
 	for (size_t i = 0; i < num_children; ++i) {
 		child = parent->children->items[i];
-		wlr_log(L_DEBUG,
+		sway_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->height, scale);
 		child->x = parent->x;
@@ -217,7 +217,7 @@ void arrange_children_of(struct sway_container *parent) {
 		return;
 	}
 
-	wlr_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", parent,
+	sway_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", parent,
 		parent->name, parent->width, parent->height, parent->x, parent->y);
 
 	// Calculate x, y, width and height of children
@@ -233,7 +233,7 @@ void arrange_children_of(struct sway_container *parent) {
 		apply_tabbed_or_stacked_layout(parent);
 		break;
 	default:
-		wlr_log(L_DEBUG, "TODO: arrange layout type %d", parent->layout);
+		sway_log(L_DEBUG, "TODO: arrange layout type %d", parent->layout);
 		apply_horiz_layout(parent);
 		break;
 	}
