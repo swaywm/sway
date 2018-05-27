@@ -186,17 +186,20 @@ runtime.
 
 		for\_window <criteria> move container to workspace <workspace>
 
-*bindsym* <key combo> <command>
+*bindsym* [--release|--locked] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
+	With the flag _--release_, the command is executed when the key combo is
+	released. Unless the flag _--locked_ is set, the command will not be run
+	when a screen locking program is active.
 
 	Example:
 
 		# Execute firefox when alt, shift, and f are pressed together
 		bindsym Mod1+Shift+f exec firefox
 
-	*bindcode* <code> <command> is also available for binding with key codes
-	instead of key names.
+	*bindcode* [--release|--locked] <code> <command> is also available for
+	binding with key codes instead of key names.
 
 *client.<class>* <border> <background> <text> <indicator> <child\_border>
 	Configures the color of window borders and title bars. All 5 colors are

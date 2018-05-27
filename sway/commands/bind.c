@@ -83,20 +83,26 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->release = false;
+	binding->locked = false;
 	binding->bindcode = false;
 
-	// Handle --release
-	if (strcmp("--release", argv[0]) == 0) {
-		if (argc >= 3) {
+	// Handle --release and --locked
+	while (argc > 0) {
+		if (strcmp("--release", argv[0]) == 0) {
 			binding->release = true;
-			argv++;
-			argc--;
+		} else if (strcmp("--locked", argv[0]) == 0) {
+			binding->locked = true;
 		} else {
-			free_sway_binding(binding);
-			return cmd_results_new(CMD_FAILURE, "bindsym",
-				"Invalid bindsym command "
-				"(expected more than 2 arguments, got %d)", argc);
+			break;
 		}
+		argv++;
+		argc--;
+	}
+	if (argc < 2) {
+		free_sway_binding(binding);
+		return cmd_results_new(CMD_FAILURE, "bindsym",
+			"Invalid bindsym command "
+			"(expected at least 2 non-option arguments, got %d)", argc);
 	}
 
 	binding->command = join_args(argv + 1, argc - 1);
@@ -176,20 +182,26 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->release = false;
+	binding->locked = false;
 	binding->bindcode = true;
 
-	// Handle --release
-	if (strcmp("--release", argv[0]) == 0) {
-		if (argc >= 3) {
+	// Handle --release and --locked
+	while (argc > 0) {
+		if (strcmp("--release", argv[0]) == 0) {
 			binding->release = true;
-			argv++;
-			argc--;
+		} else if (strcmp("--locked", argv[0]) == 0) {
+			binding->locked = true;
 		} else {
-			free_sway_binding(binding);
-			return cmd_results_new(CMD_FAILURE, "bindcode",
-				"Invalid bindcode command "
-				"(expected more than 2 arguments, got %d)", argc);
+			break;
 		}
+		argv++;
+		argc--;
+	}
+	if (argc < 2) {
+		free_sway_binding(binding);
+		return cmd_results_new(CMD_FAILURE, "bindcode",
+			"Invalid bindcode command "
+			"(expected at least 2 non-option arguments, got %d)", argc);
 	}
 
 	binding->command = join_args(argv + 1, argc - 1);

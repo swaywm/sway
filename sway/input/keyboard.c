@@ -141,7 +141,7 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
  */
 static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
 		xkb_keysym_t *pressed_keysyms, uint32_t modifiers,
-		enum wlr_key_state key_state) {
+		enum wlr_key_state key_state, bool locked) {
 	// configured bindings
 	int n = pressed_keysyms_length(pressed_keysyms);
 	list_t *keysym_bindings = config->current_mode->keysym_bindings;
@@ -149,7 +149,7 @@ static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
 		struct sway_binding *binding = keysym_bindings->items[i];
 		if (!binding_matches_key_state(binding, key_state) ||
 				modifiers ^ binding->modifiers ||
-				n != binding->keys->length) {
+				n != binding->keys->length || locked > binding->locked) {
 			continue;
 		}
 
@@ -174,12 +174,16 @@ static bool keyboard_execute_bindsym(struct sway_keyboard *keyboard,
 }
 
 static bool binding_matches_keycodes(struct wlr_keyboard *keyboard,
-		struct sway_binding *binding, struct wlr_event_keyboard_key *event) {
+		struct sway_binding *binding, struct wlr_event_keyboard_key *event, bool locked) {
 	assert(binding->bindcode);
 
 	uint32_t keycode = event->keycode + 8;
 
 	if (!binding_matches_key_state(binding, event->state)) {
+		return false;
+	}
+
+	if (locked > binding->locked) {
 		return false;
 	}
 
@@ -265,13 +269,13 @@ static bool binding_matches_keycodes(struct wlr_keyboard *keyboard,
  * should be propagated to clients.
  */
 static bool keyboard_execute_bindcode(struct sway_keyboard *keyboard,
-		struct wlr_event_keyboard_key *event) {
+		struct wlr_event_keyboard_key *event, bool locked) {
 	struct wlr_keyboard *wlr_keyboard =
 		keyboard->seat_device->input_device->wlr_device->keyboard;
 	list_t *keycode_bindings = config->current_mode->keycode_bindings;
 	for (int i = 0; i < keycode_bindings->length; ++i) {
 		struct sway_binding *binding = keycode_bindings->items[i];
-		if (binding_matches_keycodes(wlr_keyboard, binding, event)) {
+		if (binding_matches_keycodes(wlr_keyboard, binding, event, locked)) {
 			keyboard_execute_command(keyboard, binding);
 			return true;
 		}
@@ -333,19 +337,20 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		keyboard->seat_device->input_device->wlr_device;
 	wlr_idle_notify_activity(keyboard->seat_device->sway_seat->input->server->idle, wlr_seat);
 	struct wlr_event_keyboard_key *event = data;
+	bool input_inhibited = keyboard->seat_device->sway_seat->exclusive_client != NULL;
 
 	xkb_keycode_t keycode = event->keycode + 8;
 	bool handled = false;
 
 	// handle keycodes
-	handled = keyboard_execute_bindcode(keyboard, event);
+	handled = keyboard_execute_bindcode(keyboard, event, input_inhibited);
 
 	// handle translated keysyms
 	if (!handled && event->state == WLR_KEY_RELEASED) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_translated,
 			keyboard->modifiers_translated,
-			event->state);
+			event->state, input_inhibited);
 	}
 	const xkb_keysym_t *translated_keysyms;
 	size_t translated_keysyms_len =
@@ -357,14 +362,14 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_translated,
 			keyboard->modifiers_translated,
-			event->state);
+			event->state, input_inhibited);
 	}
 
 	// Handle raw keysyms
 	if (!handled && event->state == WLR_KEY_RELEASED) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
-			event->state);
+			event->state, input_inhibited);
 	}
 	const xkb_keysym_t *raw_keysyms;
 	size_t raw_keysyms_len =
@@ -374,7 +379,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
-			event->state);
+			event->state, input_inhibited);
 	}
 
 	// Compositor bindings
