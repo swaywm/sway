@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/util/edges.h>
+#include "log.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
+#include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
-#include "sway/server.h"
 #include "sway/tree/view.h"
-#include "sway/input/seat.h"
-#include "sway/input/input-manager.h"
-#include "log.h"
 
 static const struct sway_view_child_impl popup_impl;
 
@@ -248,7 +249,8 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "New xdg_shell toplevel title='%s' app_id='%s'",
 		xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_ping(xdg_surface);
-	wlr_xdg_toplevel_set_maximized(xdg_surface, true);
+	wlr_xdg_toplevel_set_tiled(xdg_surface, WLR_EDGE_LEFT | WLR_EDGE_RIGHT |
+		WLR_EDGE_TOP | WLR_EDGE_BOTTOM);
 
 	struct sway_xdg_shell_view *xdg_shell_view =
 		calloc(1, sizeof(struct sway_xdg_shell_view));
