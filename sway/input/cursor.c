@@ -147,10 +147,10 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	// Find the container the pointer was previously over
 	struct sway_container *prev_c = container_at_coords(cursor->seat,
-			cursor->previous->x, cursor->previous->y, &surface, &sx, &sy);
+			cursor->previous.x, cursor->previous.y, &surface, &sx, &sy);
 	// Update the stored previous position
-	cursor->previous->x = cursor->cursor->x;
-	cursor->previous->y = cursor->cursor->y;
+	cursor->previous.x = cursor->cursor->x;
+	cursor->previous.y = cursor->cursor->y;
 
 	struct sway_container *c = container_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
@@ -476,15 +476,8 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		return NULL;
 	}
 
-	struct cursor_position *previous = calloc(1, sizeof(struct cursor_position));
-	if (!sway_assert(previous, "could not allocate sway cursor position")) {
-		free(cursor);
-		return NULL;
-	}
-
 	struct wlr_cursor *wlr_cursor = wlr_cursor_create();
 	if (!sway_assert(wlr_cursor, "could not allocate wlr cursor")) {
-		free(previous);
 		free(cursor);
 		return NULL;
 	}
@@ -535,7 +528,6 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	cursor->request_set_cursor.notify = handle_request_set_cursor;
 
 	cursor->cursor = wlr_cursor;
-	cursor->previous = previous;
 
 	return cursor;
 }

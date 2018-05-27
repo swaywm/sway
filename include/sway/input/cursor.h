@@ -6,7 +6,9 @@
 struct sway_cursor {
 	struct sway_seat *seat;
 	struct wlr_cursor *cursor;
-	struct cursor_position *previous;
+	struct {
+		double x, y;
+	} previous;
 	struct wlr_xcursor_manager *xcursor_manager;
 
 	struct wl_client *image_client;
@@ -26,10 +28,6 @@ struct sway_cursor {
 	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;
-};
-
-struct cursor_position {
-	double x, y;
 };
 
 void sway_cursor_destroy(struct sway_cursor *cursor);
