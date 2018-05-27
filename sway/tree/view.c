@@ -138,7 +138,6 @@ static void view_autoconfigure_floating(struct sway_view *view) {
 	int ly = ws->y + (ws->height - height) / 2;
 
 	view->border_left = view->border_right = view->border_bottom = true;
-	view_set_tiled(view, false);
 	view_configure(view, lx, ly, width, height);
 }
 
@@ -252,12 +251,6 @@ void view_autoconfigure(struct sway_view *view) {
 void view_set_activated(struct sway_view *view, bool activated) {
 	if (view->impl->set_activated) {
 		view->impl->set_activated(view, activated);
-	}
-}
-
-void view_set_tiled(struct sway_view *view, bool tiled) {
-	if (view->impl->set_tiled) {
-		view->impl->set_tiled(view, tiled);
 	}
 }
 
