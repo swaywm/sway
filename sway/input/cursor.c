@@ -135,25 +135,23 @@ static struct sway_container *container_at_coords(
 	return output->swayc;
 }
 
-void cursor_send_pointer_motion(struct sway_cursor *cursor,
-		double delta_x, double delta_y, uint32_t time_msec, bool allow_refocusing) {
-	struct sway_container *prev_c = NULL;
-	struct wlr_surface *surface = NULL;
-	double sx, sy;
-
-	if (delta_x != 0 || delta_y != 0) {
-		// Use the motion delta to find the container the pointer was previously
-		// over.
-		prev_c = container_at_coords(cursor->seat,
-			cursor->cursor->x - delta_x, cursor->cursor->y - delta_y,
-			&surface, &sx, &sy);
-	}
-
+void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
+		bool allow_refocusing) {
 	if (time_msec == 0) {
 		time_msec = get_current_time_msec();
 	}
 
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+
+	// Find the container the pointer was previously over
+	struct sway_container *prev_c = container_at_coords(cursor->seat,
+			cursor->previous->x, cursor->previous->y, &surface, &sx, &sy);
+	// Update the stored previous position
+	cursor->previous->x = cursor->cursor->x;
+	cursor->previous->y = cursor->cursor->y;
+
 	struct sway_container *c = container_at_coords(cursor->seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse && allow_refocusing) {
@@ -173,39 +171,38 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 			}
 		} else if (c->type == C_VIEW) {
 			bool do_mouse_focus = true;
+			bool is_visible = view_is_visible(c->sway_view);
 			struct sway_container *p = c->parent;
-			// Don't switch focus unless we have moved from one container to another.
-			if (c && prev_c && c == prev_c) {
+			// Don't switch focus unless we have moved from one container to another
+			if (c && c == prev_c) {
 				do_mouse_focus = false;
 			}
-			// Skip check if we already know not to focus.
-			if (do_mouse_focus) {
-				// Don't switch focus on title mouseover for
-				// stacked and tabbed layouts
-				// If pointed container is in nested containers which are
-				// inside tabbed/stacked layout we should skip them
-				bool is_visible = view_is_visible(c->sway_view);
+			// Don't switch focus on title mouseover for stacked and tabbed layouts
+			// If pointed container is in nested containers which are inside
+			// tabbed/stacked layout we should skip them
+			if (do_mouse_focus && !is_visible) {
 				while (p) {
-					if ((p->layout == L_TABBED || p->layout == L_STACKED)
-							&& !is_visible) {
+					if ((p->layout == L_TABBED || p->layout == L_STACKED)) {
 						do_mouse_focus = false;
 						break;
 					}
 					p = p->parent;
 				}
 			}
-			if (!do_mouse_focus) {
-				struct sway_container *next_focus = seat_get_focus_inactive(
-						cursor->seat, p);
-				if(next_focus && !sway_assert(next_focus->type == C_VIEW,
-							"focus inactive container is not a view")) {
-					return;
-				}
-				if (next_focus && view_is_visible(next_focus->sway_view)) {
-					seat_set_focus_warp(cursor->seat, next_focus, false);
-				}
-			} else {
+			if (do_mouse_focus) {
 				seat_set_focus_warp(cursor->seat, c, false);
+			} else {
+				struct sway_container *next_focus =
+					seat_get_focus_inactive(cursor->seat, &root_container);
+				if (next_focus) {
+					if (!sway_assert(next_focus->type == C_VIEW,
+								"focus inactive container is not a view")) {
+						return;
+					}
+					if (view_is_visible(next_focus->sway_view)) {
+						seat_set_focus_warp(cursor->seat, next_focus, false);
+					}
+				}
 			}
 		}
 	}
@@ -238,8 +235,7 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
-	cursor_send_pointer_motion(cursor, event->delta_x, event->delta_y,
-			event->time_msec, true);
+	cursor_send_pointer_motion(cursor, event->time_msec, true);
 }
 
 static void handle_cursor_motion_absolute(
@@ -249,7 +245,7 @@ static void handle_cursor_motion_absolute(
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
-	cursor_send_pointer_motion(cursor, 0, 0, event->time_msec, true);
+	cursor_send_pointer_motion(cursor, event->time_msec, true);
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
@@ -419,7 +415,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, x, y);
-	cursor_send_pointer_motion(cursor, 0, 0, event->time_msec, true);
+	cursor_send_pointer_motion(cursor, event->time_msec, true);
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
@@ -496,8 +492,15 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		return NULL;
 	}
 
+	struct cursor_position *previous = calloc(1, sizeof(struct cursor_position));
+	if (!sway_assert(previous, "could not allocate sway cursor position")) {
+		free(cursor);
+		return NULL;
+	}
+
 	struct wlr_cursor *wlr_cursor = wlr_cursor_create();
 	if (!sway_assert(wlr_cursor, "could not allocate wlr cursor")) {
+		free(previous);
 		free(cursor);
 		return NULL;
 	}
@@ -548,6 +551,7 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	cursor->request_set_cursor.notify = handle_request_set_cursor;
 
 	cursor->cursor = wlr_cursor;
+	cursor->previous = previous;
 
 	return cursor;
 }

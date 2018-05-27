@@ -36,7 +36,7 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 		int delta_x = strtol(argv[1], NULL, 10);
 		int delta_y = strtol(argv[2], NULL, 10);
 		wlr_cursor_move(cursor->cursor, NULL, delta_x, delta_y);
-		cursor_send_pointer_motion(cursor, 0, 0, 0, true);
+		cursor_send_pointer_motion(cursor, 0, true);
 	} else if (strcasecmp(argv[0], "set") == 0) {
 		if (argc < 3) {
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
@@ -45,7 +45,7 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 		float x = strtof(argv[1], NULL) / root_container.width;
 		float y = strtof(argv[2], NULL) / root_container.height;
 		wlr_cursor_warp_absolute(cursor->cursor, NULL, x, y);
-		cursor_send_pointer_motion(cursor, 0, 0, 0, true);
+		cursor_send_pointer_motion(cursor, 0, true);
 	} else {
 		if (argc < 2) {
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
