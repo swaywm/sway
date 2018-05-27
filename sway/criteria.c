@@ -13,6 +13,7 @@
 
 bool criteria_is_empty(struct criteria *criteria) {
 	return !criteria->title
+		&& !criteria->shell
 		&& !criteria->app_id
 		&& !criteria->class
 		&& !criteria->instance
@@ -29,6 +30,7 @@ bool criteria_is_empty(struct criteria *criteria) {
 
 void criteria_destroy(struct criteria *criteria) {
 	pcre_free(criteria->title);
+	pcre_free(criteria->shell);
 	pcre_free(criteria->app_id);
 	pcre_free(criteria->class);
 	pcre_free(criteria->instance);
@@ -49,6 +51,13 @@ static bool criteria_matches_view(struct criteria *criteria,
 	if (criteria->title) {
 		const char *title = view_get_title(view);
 		if (!title || regex_cmp(title, criteria->title) != 0) {
+			return false;
+		}
+	}
+
+	if (criteria->shell) {
+		const char *shell = view_get_type(view);
+		if (!shell || regex_cmp(shell, criteria->shell) != 0) {
 			return false;
 		}
 	}
@@ -206,6 +215,7 @@ enum criteria_token {
 	T_FLOATING,
 	T_ID,
 	T_INSTANCE,
+	T_SHELL,
 	T_TILING,
 	T_TITLE,
 	T_URGENT,
@@ -229,6 +239,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_ID;
 	} else if (strcmp(name, "instance") == 0) {
 		return T_INSTANCE;
+	} else if (strcmp(name, "shell") == 0) {
+		return T_SHELL;
 	} else if (strcmp(name, "title") == 0) {
 		return T_TITLE;
 	} else if (strcmp(name, "urgent") == 0) {
@@ -270,6 +282,9 @@ static char *get_focused_prop(enum criteria_token token) {
 		break;
 	case T_INSTANCE:
 		value = view_get_instance(view);
+		break;
+	case T_SHELL:
+		value = view_get_type(view);
 		break;
 	case T_TITLE:
 		value = view_get_class(view);
@@ -331,6 +346,9 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	switch (token) {
 	case T_TITLE:
 		generate_regex(&criteria->title, effective_value);
+		break;
+	case T_SHELL:
+		generate_regex(&criteria->shell, effective_value);
 		break;
 	case T_APP_ID:
 		generate_regex(&criteria->app_id, effective_value);
