@@ -244,6 +244,7 @@ static struct sway_container *container_output_destroy(
 				container_remove_child(workspace);
 				if (workspace->children->length > 0) {
 					container_add_child(other_output, workspace);
+					ipc_event_workspace(workspace, NULL, "move");
 				} else {
 					container_workspace_destroy(workspace);
 				}
