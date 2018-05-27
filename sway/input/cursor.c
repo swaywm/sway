@@ -145,7 +145,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 
-	// Find the container the pointer was previously over
+	// Find the container beneath the pointer's previous position
 	struct sway_container *prev_c = container_at_coords(cursor->seat,
 			cursor->previous.x, cursor->previous.y, &surface, &sx, &sy);
 	// Update the stored previous position
