@@ -109,6 +109,7 @@ sway_cmd cmd_focus_follows_mouse;
 sway_cmd cmd_focus_wrapping;
 sway_cmd cmd_font;
 sway_cmd cmd_for_window;
+sway_cmd cmd_force_focus_wrapping;
 sway_cmd cmd_fullscreen;
 sway_cmd cmd_gaps;
 sway_cmd cmd_hide_edge_borders;
