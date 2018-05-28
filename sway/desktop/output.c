@@ -307,11 +307,11 @@ static void premultiply_alpha(float color[4], float opacity) {
 }
 
 static void render_view_surfaces(struct sway_view *view,
-		struct sway_output *output, pixman_region32_t *damage) {
+		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct render_data data = {
 		.output = output,
 		.damage = damage,
-		.alpha = view->swayc->alpha,
+		.alpha = alpha,
 	};
 	output_view_for_each_surface(
 			view, &data.root_geo, render_surface_iterator, &data);
@@ -323,7 +323,7 @@ static void render_view_surfaces(struct sway_view *view,
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->sway_view;
-	render_view_surfaces(view, output, damage);
+	render_view_surfaces(view, output, damage, view->swayc->alpha);
 
 	struct wlr_box box;
 	float output_scale = output->wlr_output->scale;
@@ -810,7 +810,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 		// TODO: handle views smaller than the output
 		render_view_surfaces(
-				workspace->sway_workspace->fullscreen, output, damage);
+				workspace->sway_workspace->fullscreen, output, damage, 1.0f);
 
 		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
