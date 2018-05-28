@@ -328,6 +328,15 @@ The default colors are:
 *focus\_follows\_mouse* yes|no
 	If set to _yes_, moving your mouse over a window will focus that window.
 
+*focus\_wrapping* yes|no|force
+	This option determines what to do when attempting to focus over the edge
+	of a container. If set to _no_, the focused container will retain focus,
+	if there are no other containers in the direction. If set to _yes_, focus
+	will be wrapped to the opposite edge of the container, if there are no
+	other containers in the direction. If set to _force_, focus will be wrapped
+	to the opposite edge of the container, even if there are other containers
+	in the direction. Default is _yes_.
+
 *font* <font>
 	Sets font for use in title bars in Pango format.
 

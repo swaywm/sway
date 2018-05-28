@@ -708,7 +708,10 @@ struct sway_container *container_get_in_direction(
 				sway_output_from_wlr(wlr_adjacent);
 
 			if (!adjacent || adjacent == container) {
-				return wrap_candidate;
+				if (!wrap_candidate) {
+					return NULL;
+				}
+				return seat_get_focus_inactive_view(seat, wrap_candidate);
 			}
 			struct sway_container *next =
 				get_swayc_in_output_direction(adjacent, dir, seat);
@@ -748,23 +751,25 @@ struct sway_container *container_get_in_direction(
 			if (desired < 0 || desired >= parent->children->length) {
 				can_move = false;
 				int len = parent->children->length;
-				if (!wrap_candidate && len > 1) {
+				if (config->focus_wrapping != WRAP_NO && !wrap_candidate
+						&& len > 1) {
 					if (desired < 0) {
 						wrap_candidate = parent->children->items[len-1];
 					} else {
 						wrap_candidate = parent->children->items[0];
 					}
-					if (config->force_focus_wrapping) {
-						 return wrap_candidate;
+					if (config->focus_wrapping == WRAP_FORCE) {
+						return seat_get_focus_inactive_view(seat,
+								wrap_candidate);
 					}
 				}
 			} else {
-				struct sway_container *desired_con = parent->children->items[desired];
+				struct sway_container *desired_con =
+					parent->children->items[desired];
 				wlr_log(L_DEBUG,
 					"cont %d-%p dir %i sibling %d: %p", idx,
 					container, dir, desired, desired_con);
-				struct sway_container *next = seat_get_focus_inactive_view(seat, desired_con);
-				return next;
+				return seat_get_focus_inactive_view(seat, desired_con);
 			}
 		}
 
@@ -773,7 +778,10 @@ struct sway_container *container_get_in_direction(
 			parent = parent->parent;
 			if (!parent) {
 				// wrapping is the last chance
-				return wrap_candidate;
+				if (!wrap_candidate) {
+					return NULL;
+				}
+				return seat_get_focus_inactive_view(seat, wrap_candidate);
 			}
 		}
 	}

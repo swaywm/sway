@@ -285,6 +285,12 @@ struct ipc_policy {
 	uint32_t features;
 };
 
+enum focus_wrapping_mode {
+	WRAP_NO,
+	WRAP_YES,
+	WRAP_FORCE
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -320,7 +326,7 @@ struct sway_config {
 	// Flags
 	bool focus_follows_mouse;
 	bool mouse_warping;
-	bool force_focus_wrapping;
+	enum focus_wrapping_mode focus_wrapping;
 	bool active;
 	bool failed;
 	bool reloading;
