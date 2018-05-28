@@ -66,14 +66,25 @@ static void pressed_keysyms_remove(xkb_keysym_t *pressed_keysyms,
 
 static void pressed_keysyms_update(xkb_keysym_t *pressed_keysyms,
 		const xkb_keysym_t *keysyms, size_t keysyms_len,
-		enum wlr_key_state state) {
+		enum wlr_key_state state, bool mod_release_invalidate) {
 	for (size_t i = 0; i < keysyms_len; ++i) {
-		if (keysym_is_modifier(keysyms[i])) {
-			continue;
-		}
 		if (state == WLR_KEY_PRESSED) {
+			if (keysym_is_modifier(keysyms[i])) {
+				continue;
+			}
 			pressed_keysyms_add(pressed_keysyms, keysyms[i]);
 		} else { // WLR_KEY_RELEASED
+			if (keysym_is_modifier(keysyms[i])) {
+				if (mod_release_invalidate) {
+					// clear the translated keysyms since they are no longer valid
+					for (size_t j = 0; j < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++j) {
+						pressed_keysyms[j] = XKB_KEY_NoSymbol;
+						return;
+					}
+				} else {
+					continue;
+				}
+			}
 			pressed_keysyms_remove(pressed_keysyms, keysyms[i]);
 		}
 	}
@@ -357,7 +368,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		keyboard_keysyms_translated(keyboard, keycode, &translated_keysyms,
 			&keyboard->modifiers_translated);
 	pressed_keysyms_update(keyboard->pressed_keysyms_translated,
-		translated_keysyms, translated_keysyms_len, event->state);
+		translated_keysyms, translated_keysyms_len, event->state, true);
 	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_translated,
@@ -375,7 +386,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	size_t raw_keysyms_len =
 		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &keyboard->modifiers_raw);
 	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms,
-		raw_keysyms_len, event->state);
+		raw_keysyms_len, event->state, false);
 	if (!handled && event->state == WLR_KEY_PRESSED) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
