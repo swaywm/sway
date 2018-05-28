@@ -542,7 +542,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 			return;
 		}
 
-		// put all the anscestors of this container on top of the focus stack
+		// put all the ancestors of this container on top of the focus stack
 		struct sway_seat_container *parent =
 			seat_container_from_container(seat, container->parent);
 		while (parent) {

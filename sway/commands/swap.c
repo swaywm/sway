@@ -60,8 +60,8 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	} else if (current->type < C_CONTAINER || other->type < C_CONTAINER) {
 		error = cmd_results_new(CMD_FAILURE, "swap",
 				"Can only swap with containers and views");
-	} else if (container_has_anscestor(current, other)
-			|| container_has_anscestor(other, current)) {
+	} else if (container_has_ancestor(current, other)
+			|| container_has_ancestor(other, current)) {
 		error = cmd_results_new(CMD_FAILURE, "swap",
 				"Cannot swap ancestor and descendant");
 	} else if (current->layout == L_FLOATING || other->layout == L_FLOATING) {
