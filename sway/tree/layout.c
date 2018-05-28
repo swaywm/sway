@@ -157,7 +157,7 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 void container_move_to(struct sway_container *container,
 		struct sway_container *destination) {
 	if (container == destination
-			|| container_has_anscestor(container, destination)) {
+			|| container_has_ancestor(container, destination)) {
 		return;
 	}
 	struct sway_container *old_parent = container_remove_child(container);
@@ -945,9 +945,9 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 				"Can only swap containers and views")) {
 		return;
 	}
-	if (!sway_assert(!container_has_anscestor(con1, con2)
-				&& !container_has_anscestor(con2, con1),
-				"Cannot swap anscestor and descendant")) {
+	if (!sway_assert(!container_has_ancestor(con1, con2)
+				&& !container_has_ancestor(con2, con1),
+				"Cannot swap ancestor and descendant")) {
 		return;
 	}
 	if (!sway_assert(con1->layout != L_FLOATING && con2->layout != L_FLOATING,

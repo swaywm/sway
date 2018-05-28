@@ -186,8 +186,8 @@ void container_for_each_descendant_dfs(struct sway_container *container,
 /**
  * Returns true if the given container is an ancestor of this container.
  */
-bool container_has_anscestor(struct sway_container *container,
-		struct sway_container *anscestor);
+bool container_has_ancestor(struct sway_container *container,
+		struct sway_container *ancestor);
 
 /**
  * Returns true if the given container is a child descendant of this container.

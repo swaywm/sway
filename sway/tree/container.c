@@ -656,11 +656,11 @@ void container_for_each_descendant_bfs(struct sway_container *con,
 	}
 }
 
-bool container_has_anscestor(struct sway_container *descendant,
-		struct sway_container *anscestor) {
+bool container_has_ancestor(struct sway_container *descendant,
+		struct sway_container *ancestor) {
 	while (descendant->type != C_ROOT) {
 		descendant = descendant->parent;
-		if (descendant == anscestor) {
+		if (descendant == ancestor) {
 			return true;
 		}
 	}
