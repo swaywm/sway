@@ -344,6 +344,12 @@ The default colors are:
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.
 
+*force\_focus\_wrapping* yes|no
+	This option is a wrapper to support i3's legacy syntax. _no_ is equivalent
+	to _focus\_wrapping yes_ and _yes_ is equivalent to
+	_focus\_wrapping force_. This is only available for convenience. Please
+	use _focus\_wrapping_ instead when possible.
+
 *gaps* edge\_gaps on|off|toggle
 	When _on_, gaps will be added between windows and workspace edges if the
 	inner gap is nonzero. When _off_, gaps will only be added between views.
