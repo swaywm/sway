@@ -554,13 +554,12 @@ void view_update_position(struct sway_view *view, double lx, double ly) {
 	if (view->x == lx && view->y == ly) {
 		return;
 	}
-	if (!container_is_floating(view->swayc)) {
-		return;
-	}
 	container_damage_whole(view->swayc);
 	view->x = lx;
 	view->y = ly;
-	container_set_geometry_from_floating_view(view->swayc);
+	if (container_is_floating(view->swayc)) {
+		container_set_geometry_from_floating_view(view->swayc);
+	}
 	container_damage_whole(view->swayc);
 }
 
