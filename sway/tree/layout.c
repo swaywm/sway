@@ -313,15 +313,24 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 		struct sway_container *current, enum movement_direction move_dir,
 		int offs) {
 	wlr_log(L_DEBUG, "Moving out of tab/stack into a split");
+	bool is_workspace = current->parent->type == C_WORKSPACE;
 	struct sway_container *old_parent = current->parent->parent;
 	struct sway_container *new_parent = container_split(current->parent,
 		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT);
-	container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
-	container_reap_empty_recursive(new_parent->parent);
-	container_flatten(new_parent->parent);
-	wl_signal_emit(&current->events.reparent, old_parent);
+	if (is_workspace) {
+		container_insert_child(new_parent->parent, container, offs < 0 ? 0 : 1);
+	} else {
+		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
+		container_reap_empty_recursive(new_parent->parent);
+		container_flatten(new_parent->parent);
+	}
+	wl_signal_emit(&container->events.reparent, old_parent);
 	container_create_notify(new_parent);
-	arrange_children_of(new_parent);
+	if (is_workspace) {
+		arrange_workspace(new_parent->parent);
+	} else {
+		arrange_children_of(new_parent);
+	}
 }
 
 void container_move(struct sway_container *container,
