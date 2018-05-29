@@ -331,6 +331,7 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 	} else {
 		arrange_children_of(new_parent);
 	}
+	container_notify_subtree_changed(new_parent);
 }
 
 void container_move(struct sway_container *container,
