@@ -842,7 +842,7 @@ static size_t get_tree_representation(struct sway_container *parent, char *buffe
 }
 
 void container_notify_subtree_changed(struct sway_container *container) {
-	if (!container || container->type != C_CONTAINER) {
+	if (!container || container->type < C_WORKSPACE) {
 		return;
 	}
 	free(container->formatted_title);
@@ -856,9 +856,11 @@ void container_notify_subtree_changed(struct sway_container *container) {
 	get_tree_representation(container, buffer);
 
 	container->formatted_title = buffer;
-	container_calculate_title_height(container);
-	container_update_title_textures(container);
-	container_notify_subtree_changed(container->parent);
+	if (container->type != C_WORKSPACE) {
+		container_calculate_title_height(container);
+		container_update_title_textures(container);
+		container_notify_subtree_changed(container->parent);
+	}
 }
 
 size_t container_titlebar_height() {
