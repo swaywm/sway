@@ -147,6 +147,8 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 			json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
 	json_object_object_add(object, "urgent", json_object_new_boolean(false));
+	json_object_object_add(object, "representation", workspace->formatted_title ?
+			json_object_new_string(workspace->formatted_title) : NULL);
 
 	const char *layout = ipc_json_layout_description(workspace->layout);
 	json_object_object_add(object, "layout", json_object_new_string(layout));
