@@ -336,7 +336,8 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	// update raw keysyms
 	const xkb_keysym_t *raw_keysyms;
 	size_t raw_keysyms_len =
-		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &keyboard->modifiers_raw);
+		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms,
+			&keyboard->modifiers_raw);
 	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms,
 		raw_keysyms_len);
 
