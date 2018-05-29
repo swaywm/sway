@@ -45,48 +45,18 @@ static ssize_t pressed_keysyms_index(xkb_keysym_t *pressed_keysyms,
 	return -1;
 }
 
-static void pressed_keysyms_add(xkb_keysym_t *pressed_keysyms,
-		xkb_keysym_t keysym) {
-	ssize_t i = pressed_keysyms_index(pressed_keysyms, keysym);
-	if (i < 0) {
-		i = pressed_keysyms_index(pressed_keysyms, XKB_KEY_NoSymbol);
-		if (i >= 0) {
-			pressed_keysyms[i] = keysym;
-		}
-	}
-}
-
-static void pressed_keysyms_remove(xkb_keysym_t *pressed_keysyms,
-		xkb_keysym_t keysym) {
-	ssize_t i = pressed_keysyms_index(pressed_keysyms, keysym);
-	if (i >= 0) {
-		pressed_keysyms[i] = XKB_KEY_NoSymbol;
-	}
-}
-
 static void pressed_keysyms_update(xkb_keysym_t *pressed_keysyms,
-		const xkb_keysym_t *keysyms, size_t keysyms_len,
-		enum wlr_key_state state, bool mod_release_invalidate) {
+		const xkb_keysym_t *keysyms, size_t keysyms_len) {
+	size_t keysym_count = 0;
+	// copy the translated keysyms
 	for (size_t i = 0; i < keysyms_len; ++i) {
-		if (state == WLR_KEY_PRESSED) {
-			if (keysym_is_modifier(keysyms[i])) {
-				continue;
-			}
-			pressed_keysyms_add(pressed_keysyms, keysyms[i]);
-		} else { // WLR_KEY_RELEASED
-			if (keysym_is_modifier(keysyms[i])) {
-				if (mod_release_invalidate) {
-					// clear the translated keysyms since they are no longer valid
-					for (size_t j = 0; j < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; ++j) {
-						pressed_keysyms[j] = XKB_KEY_NoSymbol;
-						return;
-					}
-				} else {
-					continue;
-				}
-			}
-			pressed_keysyms_remove(pressed_keysyms, keysyms[i]);
+		if (keysym_is_modifier(keysyms[i])) {
+			continue;
 		}
+		pressed_keysyms[keysym_count++] = keysyms[i];
+	}
+	for (size_t i = keysym_count; i < SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP; i++) {
+		pressed_keysyms[i] = XKB_KEY_NoSymbol;
 	}
 }
 
@@ -346,66 +316,64 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
-	wlr_idle_notify_activity(keyboard->seat_device->sway_seat->input->server->idle, wlr_seat);
 	struct wlr_event_keyboard_key *event = data;
-	bool input_inhibited = keyboard->seat_device->sway_seat->exclusive_client != NULL;
+	bool input_inhibited =
+		keyboard->seat_device->sway_seat->exclusive_client != NULL;
+
+	wlr_idle_notify_activity(
+			keyboard->seat_device->sway_seat->input->server->idle, wlr_seat);
 
 	xkb_keycode_t keycode = event->keycode + 8;
-	bool handled = false;
 
-	// handle keycodes
-	handled = keyboard_execute_bindcode(keyboard, event, input_inhibited);
-
-	// handle translated keysyms
-	if (!handled && event->state == WLR_KEY_RELEASED) {
-		handled = keyboard_execute_bindsym(keyboard,
-			keyboard->pressed_keysyms_translated,
-			keyboard->modifiers_translated,
-			event->state, input_inhibited);
-	}
+	// update translated keysyms
 	const xkb_keysym_t *translated_keysyms;
 	size_t translated_keysyms_len =
 		keyboard_keysyms_translated(keyboard, keycode, &translated_keysyms,
 			&keyboard->modifiers_translated);
 	pressed_keysyms_update(keyboard->pressed_keysyms_translated,
-		translated_keysyms, translated_keysyms_len, event->state, true);
-	if (!handled && event->state == WLR_KEY_PRESSED) {
+			translated_keysyms, translated_keysyms_len);
+
+	// update raw keysyms
+	const xkb_keysym_t *raw_keysyms;
+	size_t raw_keysyms_len =
+		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &keyboard->modifiers_raw);
+	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms,
+		raw_keysyms_len);
+
+	// handle keycodes
+	bool handled = keyboard_execute_bindcode(keyboard, event, input_inhibited);
+
+	// handle translated keysyms
+	if (!handled) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_translated,
 			keyboard->modifiers_translated,
 			event->state, input_inhibited);
 	}
 
-	// Handle raw keysyms
-	if (!handled && event->state == WLR_KEY_RELEASED) {
-		handled = keyboard_execute_bindsym(keyboard,
-			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
-			event->state, input_inhibited);
-	}
-	const xkb_keysym_t *raw_keysyms;
-	size_t raw_keysyms_len =
-		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms, &keyboard->modifiers_raw);
-	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms,
-		raw_keysyms_len, event->state, false);
-	if (!handled && event->state == WLR_KEY_PRESSED) {
+	// handle raw keysyms
+	if (!handled) {
 		handled = keyboard_execute_bindsym(keyboard,
 			keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
 			event->state, input_inhibited);
 	}
 
 	// Compositor bindings
-	if (!handled && event->state == WLR_KEY_PRESSED) {
-		handled =
-			keyboard_execute_compositor_binding(keyboard,
-				keyboard->pressed_keysyms_translated,
-				keyboard->modifiers_translated,
-				translated_keysyms_len);
-	}
-	if (!handled && event->state == WLR_KEY_PRESSED) {
-		handled =
-			keyboard_execute_compositor_binding(keyboard,
-				keyboard->pressed_keysyms_raw, keyboard->modifiers_raw,
-				raw_keysyms_len);
+	if (event->state == WLR_KEY_PRESSED) {
+		if (!handled) {
+			handled =
+				keyboard_execute_compositor_binding(keyboard,
+						keyboard->pressed_keysyms_translated,
+						keyboard->modifiers_translated,
+						translated_keysyms_len);
+		}
+		if (!handled) {
+			handled =
+				keyboard_execute_compositor_binding(keyboard,
+						keyboard->pressed_keysyms_raw,
+						keyboard->modifiers_raw,
+						raw_keysyms_len);
+		}
 	}
 
 	if (!handled || event->state == WLR_KEY_RELEASED) {
