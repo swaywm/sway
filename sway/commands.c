@@ -169,6 +169,7 @@ static struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
 	{ "set", cmd_set },
 	{ "swaybg_command", cmd_swaybg_command },
+	{ "workspace_layout", cmd_workspace_layout },
 };
 
 /* Runtime-only commands. Keep alphabetized */

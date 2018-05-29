@@ -69,6 +69,7 @@ sway_sources = files(
 	'commands/title_format.c',
 	'commands/unmark.c',
 	'commands/workspace.c',
+	'commands/workspace_layout.c',
 	'commands/ws_auto_back_and_forth.c',
 
 	'commands/bar/activate_button.c',
