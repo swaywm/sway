@@ -513,6 +513,49 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	return true;
 }
 
+static int detect_brace_on_following_line(FILE *file, char *line,
+		int line_number) {
+	int lines = 0;
+	if (line[strlen(line) - 1] != '{' && line[strlen(line) - 1] != '}') {
+		char *peeked = NULL;
+		do {
+			wlr_log(L_DEBUG, "Peeking line %d", line_number + lines + 1);
+			free(peeked);
+			peeked = peek_line(file, lines);
+			if (peeked) {
+				peeked = strip_whitespace(peeked);
+			}
+			lines++;
+		} while (peeked && strlen(peeked) == 0);
+
+		if (peeked && strlen(peeked) == 1 && peeked[0] == '{') {
+			for (int i = 0; i < lines; i++) {
+				free(peeked);
+				peeked = read_line(file);
+			}
+		} else {
+			lines = 0;
+		}
+		free(peeked);
+	}
+	return lines;
+}
+
+static char *expand_line(char *block, char *line, bool add_brace) {
+	int size = (block ? strlen(block) + 1 : 0) + strlen(line)
+		+ (add_brace ? 2 : 0) + 1;
+	char *expanded = calloc(1, size);
+	if (!expanded) {
+		wlr_log(L_ERROR, "Cannot allocate expanded line buffer");
+		return NULL;
+	}
+	strcat(expanded, block ? block : "");
+	strcat(expanded, block ? " " : "");
+	strcat(expanded, line);
+	strcat(expanded, add_brace ? " {" : "");
+	return expanded;
+}
+
 bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;
 	int line_number = 0;
@@ -535,19 +578,27 @@ bool read_config(FILE *file, struct sway_config *config) {
 			free(line);
 			continue;
 		}
-		char *full = calloc(strlen(block ? block : "") + strlen(line) + 2, 1);
-		strcat(full, block ? block : "");
-		strcat(full, block ? " " : "");
-		strcat(full, line);
-		wlr_log(L_DEBUG, "Expanded line: %s", full);
+		int brace_detected = detect_brace_on_following_line(file, line,
+				line_number);
+		if (brace_detected > 0) {
+			line_number += brace_detected;
+			wlr_log(L_DEBUG, "Detected open brace on line %d", line_number);
+		}
+		char *expanded = expand_line(block, line, brace_detected > 0);
+		if (!expanded) {
+			return false;
+		}
+		wlr_log(L_DEBUG, "Expanded line: %s", expanded);
 		struct cmd_results *res;
 		if (block && strcmp(block, "<commands>") == 0) {
 			// Special case
-			res = config_commands_command(full);
+			res = config_commands_command(expanded);
 		} else {
-			res = config_command(full);
+			wlr_log(L_DEBUG, "Entering c_c");
+			res = config_command(expanded);
+			wlr_log(L_DEBUG, "Exiting c_c");
 		}
-		free(full);
+		free(expanded);
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:

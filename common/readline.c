@@ -48,6 +48,20 @@ char *read_line(FILE *file) {
 	return string;
 }
 
+char *peek_line(FILE *file, int offset) {
+	int pos = ftell(file);
+	char *line = NULL;
+	for (int i = 0; i <= offset; i++) {
+		free(line);
+		line = read_line(file);
+		if (!line) {
+			break;
+		}
+	}
+	fseek(file, pos, SEEK_SET);
+	return line;
+}
+
 char *read_line_buffer(FILE *file, char *string, size_t string_len) {
 	size_t length = 0;
 	if (!string) {
