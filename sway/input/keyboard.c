@@ -298,16 +298,39 @@ static size_t keyboard_keysyms_translated(struct sway_keyboard *keyboard,
  * This will trigger keybinds such as Alt+Shift+2.
  */
 static size_t keyboard_keysyms_raw(struct sway_keyboard *keyboard,
-		xkb_keycode_t keycode, const xkb_keysym_t **keysyms,
+		xkb_keysym_t *keysyms,
 		uint32_t *modifiers) {
 	struct wlr_input_device *device =
 		keyboard->seat_device->input_device->wlr_device;
 	*modifiers = wlr_keyboard_get_modifiers(device->keyboard);
 
-	xkb_layout_index_t layout_index = xkb_state_key_get_layout(
-		device->keyboard->xkb_state, keycode);
-	return xkb_keymap_key_get_syms_by_level(device->keyboard->keymap,
-		keycode, layout_index, 0, keysyms);
+	size_t num_keysyms = 0, num_keysyms_for_keycode;
+	const xkb_keysym_t *keysyms_for_keycode;
+	xkb_keycode_t keycode;
+	for (size_t i = 0; i < device->keyboard->num_keycodes; i++) {
+		keycode = device->keyboard->keycodes[i] + 8;
+		xkb_layout_index_t layout_index =
+				xkb_state_key_get_layout(device->keyboard->xkb_state, keycode);
+		num_keysyms_for_keycode =
+				xkb_keymap_key_get_syms_by_level(device->keyboard->keymap,
+						keycode,
+						layout_index,
+						0,
+						&keysyms_for_keycode);
+		for (size_t j = 0, k; j < num_keysyms_for_keycode; j++) {
+			// search the existing keysyms for the new keysym
+			for (k = 0; k < num_keysyms; k++) {
+				if (keysyms[k] == keysyms_for_keycode[j]) {
+					break;
+				}
+			}
+			if (k == num_keysyms) {
+				// this is a new keysym, so add to the array
+				keysyms[num_keysyms++] = keysyms_for_keycode[j];
+			}
+		}
+	}
+	return num_keysyms;
 }
 
 static void handle_keyboard_key(struct wl_listener *listener, void *data) {
@@ -318,28 +341,27 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		keyboard->seat_device->input_device->wlr_device;
 	struct wlr_event_keyboard_key *event = data;
 	bool input_inhibited =
-		keyboard->seat_device->sway_seat->exclusive_client != NULL;
+			keyboard->seat_device->sway_seat->exclusive_client != NULL;
 
 	wlr_idle_notify_activity(
 			keyboard->seat_device->sway_seat->input->server->idle, wlr_seat);
 
-	xkb_keycode_t keycode = event->keycode + 8;
-
 	// update translated keysyms
 	const xkb_keysym_t *translated_keysyms;
-	size_t translated_keysyms_len =
-		keyboard_keysyms_translated(keyboard, keycode, &translated_keysyms,
+	size_t translated_keysyms_len = keyboard_keysyms_translated(keyboard,
+			event->keycode + 8,
+			&translated_keysyms,
 			&keyboard->modifiers_translated);
 	pressed_keysyms_update(keyboard->pressed_keysyms_translated,
 			translated_keysyms, translated_keysyms_len);
 
 	// update raw keysyms
-	const xkb_keysym_t *raw_keysyms;
-	size_t raw_keysyms_len =
-		keyboard_keysyms_raw(keyboard, keycode, &raw_keysyms,
-			&keyboard->modifiers_raw);
-	pressed_keysyms_update(keyboard->pressed_keysyms_raw, raw_keysyms,
-		raw_keysyms_len);
+	xkb_keysym_t raw_keysyms[SWAY_KEYBOARD_PRESSED_KEYSYMS_CAP] = {0};
+	size_t raw_keysyms_len = keyboard_keysyms_raw(
+			keyboard, raw_keysyms, &keyboard->modifiers_raw);
+	pressed_keysyms_update(keyboard->pressed_keysyms_raw,
+			(const xkb_keysym_t*)raw_keysyms,
+			raw_keysyms_len);
 
 	// handle keycodes
 	bool handled = keyboard_execute_bindcode(keyboard, event, input_inhibited);
