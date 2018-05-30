@@ -309,6 +309,31 @@ static void workspace_rejigger(struct sway_container *ws,
 	arrange_workspace(ws);
 }
 
+static void move_out_of_tabs_stacks(struct sway_container *container,
+		struct sway_container *current, enum movement_direction move_dir,
+		int offs) {
+	wlr_log(L_DEBUG, "Moving out of tab/stack into a split");
+	bool is_workspace = current->parent->type == C_WORKSPACE;
+	struct sway_container *old_parent = current->parent->parent;
+	struct sway_container *new_parent = container_split(current->parent,
+		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT);
+	if (is_workspace) {
+		container_insert_child(new_parent->parent, container, offs < 0 ? 0 : 1);
+	} else {
+		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
+		container_reap_empty_recursive(new_parent->parent);
+		container_flatten(new_parent->parent);
+	}
+	wl_signal_emit(&container->events.reparent, old_parent);
+	container_create_notify(new_parent);
+	if (is_workspace) {
+		arrange_workspace(new_parent->parent);
+	} else {
+		arrange_children_of(new_parent);
+	}
+	container_notify_subtree_changed(new_parent);
+}
+
 void container_move(struct sway_container *container,
 		enum movement_direction move_dir, int move_amt) {
 	if (!sway_assert(
@@ -390,6 +415,10 @@ void container_move(struct sway_container *container,
 					arrange_workspace(current);
 				}
 				return;
+			} else if (current->layout == L_TABBED
+					|| current->layout == L_STACKED) {
+				wlr_log(L_DEBUG, "Rejiggering out of tabs/stacks");
+				workspace_rejigger(current, container, move_dir);
 			} else {
 				wlr_log(L_DEBUG, "Selecting output");
 				current = current->parent;
@@ -401,8 +430,15 @@ void container_move(struct sway_container *container,
 				if ((index == parent->children->length - 1 && offs > 0)
 						|| (index == 0 && offs < 0)) {
 					if (current->parent == container->parent) {
-						wlr_log(L_DEBUG, "Hit limit, selecting parent");
-						current = current->parent;
+						if (parent->layout == L_TABBED
+								|| parent->layout == L_STACKED) {
+							move_out_of_tabs_stacks(container, current,
+									move_dir, offs);
+							return;
+						} else {
+							wlr_log(L_DEBUG, "Hit limit, selecting parent");
+							current = current->parent;
+						}
 					} else {
 						wlr_log(L_DEBUG, "Hit limit, "
 								"promoting descendant to sibling");
@@ -419,6 +455,10 @@ void container_move(struct sway_container *container,
 					sibling = parent->children->items[index + offs];
 					wlr_log(L_DEBUG, "Selecting sibling id:%zd", sibling->id);
 				}
+			} else if (parent->layout == L_TABBED
+					|| parent->layout == L_STACKED) {
+				move_out_of_tabs_stacks(container, current, move_dir, offs);
+				return;
 			} else {
 				wlr_log(L_DEBUG, "Moving up to find a parallel container");
 				current = current->parent;

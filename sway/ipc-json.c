@@ -160,11 +160,8 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "type", json_object_new_string("con"));
 
 	if (c->parent) {
-		enum sway_container_layout layout = (c->parent->type == C_CONTAINER) ?
-			c->parent->layout : c->layout;
-
 		json_object_object_add(object, "layout",
-			json_object_new_string(ipc_json_layout_description(layout)));
+			json_object_new_string(ipc_json_layout_description(c->layout)));
 	}
 }
 
