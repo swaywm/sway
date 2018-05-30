@@ -403,8 +403,6 @@ bool read_config(FILE *file, struct sway_config *config);
  */
 void free_config(struct sway_config *config);
 
-void config_clear_handler_context(struct sway_config *config);
-
 void free_sway_variable(struct sway_variable *var);
 
 /**

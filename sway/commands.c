@@ -16,11 +16,6 @@
 #include "stringop.h"
 #include "log.h"
 
-struct cmd_handler {
-	char *command;
-	sway_cmd *handle;
-};
-
 // Returns error object, or NULL if check succeeds.
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
 	struct cmd_results *error = NULL;
@@ -122,47 +117,6 @@ static struct cmd_handler handlers[] = {
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };
 
-static struct cmd_handler bar_handlers[] = {
-	{ "activate_button", bar_cmd_activate_button },
-	{ "binding_mode_indicator", bar_cmd_binding_mode_indicator },
-	{ "bindsym", bar_cmd_bindsym },
-	{ "colors", bar_cmd_colors },
-	{ "context_button", bar_cmd_context_button },
-	{ "font", bar_cmd_font },
-	{ "height", bar_cmd_height },
-	{ "hidden_state", bar_cmd_hidden_state },
-	{ "icon_theme", bar_cmd_icon_theme },
-	{ "id", bar_cmd_id },
-	{ "mode", bar_cmd_mode },
-	{ "modifier", bar_cmd_modifier },
-	{ "output", bar_cmd_output },
-	{ "pango_markup", bar_cmd_pango_markup },
-	{ "position", bar_cmd_position },
-	{ "secondary_button", bar_cmd_secondary_button },
-	{ "separator_symbol", bar_cmd_separator_symbol },
-	{ "status_command", bar_cmd_status_command },
-	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
-	{ "swaybar_command", bar_cmd_swaybar_command },
-	{ "tray_output", bar_cmd_tray_output },
-	{ "tray_padding", bar_cmd_tray_padding },
-	{ "workspace_buttons", bar_cmd_workspace_buttons },
-	{ "wrap_scroll", bar_cmd_wrap_scroll },
-};
-
-static struct cmd_handler bar_colors_handlers[] = {
-	{ "active_workspace", bar_colors_cmd_active_workspace },
-	{ "background", bar_colors_cmd_background },
-	{ "binding_mode", bar_colors_cmd_binding_mode },
-	{ "focused_background", bar_colors_cmd_focused_background },
-	{ "focused_separator", bar_colors_cmd_focused_separator },
-	{ "focused_statusline", bar_colors_cmd_focused_statusline },
-	{ "focused_workspace", bar_colors_cmd_focused_workspace },
-	{ "inactive_workspace", bar_colors_cmd_inactive_workspace },
-	{ "separator", bar_colors_cmd_separator },
-	{ "statusline", bar_colors_cmd_statusline },
-	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
-};
-
 /* Config-time only commands. Keep alphabetized */
 static struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
@@ -202,61 +156,13 @@ static int handler_compare(const void *_a, const void *_b) {
 	return strcasecmp(a->command, b->command);
 }
 
-// must be in order for the bsearch
-static struct cmd_handler input_handlers[] = {
-	{ "accel_profile", input_cmd_accel_profile },
-	{ "click_method", input_cmd_click_method },
-	{ "drag_lock", input_cmd_drag_lock },
-	{ "dwt", input_cmd_dwt },
-	{ "events", input_cmd_events },
-	{ "left_handed", input_cmd_left_handed },
-	{ "map_from_region", input_cmd_map_from_region },
-	{ "map_to_output", input_cmd_map_to_output },
-	{ "middle_emulation", input_cmd_middle_emulation },
-	{ "natural_scroll", input_cmd_natural_scroll },
-	{ "pointer_accel", input_cmd_pointer_accel },
-	{ "repeat_delay", input_cmd_repeat_delay },
-	{ "repeat_rate", input_cmd_repeat_rate },
-	{ "scroll_method", input_cmd_scroll_method },
-	{ "tap", input_cmd_tap },
-	{ "xkb_layout", input_cmd_xkb_layout },
-	{ "xkb_model", input_cmd_xkb_model },
-	{ "xkb_options", input_cmd_xkb_options },
-	{ "xkb_rules", input_cmd_xkb_rules },
-	{ "xkb_variant", input_cmd_xkb_variant },
-};
-
-// must be in order for the bsearch
-static struct cmd_handler seat_handlers[] = {
-	{ "attach", seat_cmd_attach },
-	{ "cursor", seat_cmd_cursor },
-	{ "fallback", seat_cmd_fallback },
-};
-
-static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
+struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
+		int handlers_size) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	wlr_log(L_DEBUG, "find_handler(%s) %d", line, block == CMD_BLOCK_SEAT);
+	wlr_log(L_DEBUG, "find_handler(%s)", line);
 
 	bool config_loading = config->reading || !config->active;
-
-	if (block == CMD_BLOCK_BAR) {
-		return bsearch(&d, bar_handlers,
-				sizeof(bar_handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_BAR_COLORS) {
-		return bsearch(&d, bar_colors_handlers,
-				sizeof(bar_colors_handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_INPUT) {
-		return bsearch(&d, input_handlers,
-				sizeof(input_handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
-	} else if (block == CMD_BLOCK_SEAT) {
-		return bsearch(&d, seat_handlers,
-				sizeof(seat_handlers) / sizeof(struct cmd_handler),
-				sizeof(struct cmd_handler), handler_compare);
-	}
 
 	if (!config_loading) {
 		res = bsearch(&d, command_handlers,
@@ -278,8 +184,13 @@ static struct cmd_handler *find_handler(char *line, enum cmd_status block) {
 		}
 	}
 
-	res = bsearch(&d, handlers,
-			sizeof(handlers) / sizeof(struct cmd_handler),
+	if (!cmd_handlers) {
+		cmd_handlers = handlers;
+		handlers_size = sizeof(handlers);
+	}
+
+	res = bsearch(&d, cmd_handlers,
+			handlers_size / sizeof(struct cmd_handler),
 			sizeof(struct cmd_handler), handler_compare);
 
 	return res;
@@ -349,7 +260,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 					}
 				}
 			}
-			struct cmd_handler *handler = find_handler(argv[0], CMD_BLOCK_END);
+			struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 			if (!handler) {
 				if (results) {
 					free_cmd_results(results);
@@ -413,7 +324,7 @@ cleanup:
 //	  be chained together)
 // 4) execute_command handles all state internally while config_command has
 // some state handled outside (notably the block mode, in read_config)
-struct cmd_results *config_command(char *exec, enum cmd_status block) {
+struct cmd_results *config_command(char *exec) {
 	struct cmd_results *results = NULL;
 	int argc;
 	char **argv = split_args(exec, &argc);
@@ -422,13 +333,21 @@ struct cmd_results *config_command(char *exec, enum cmd_status block) {
 		goto cleanup;
 	}
 
-	wlr_log(L_INFO, "handling config command '%s'", exec);
+	// Start block
+	if (argc > 1 && strcmp(argv[argc - 1], "{") == 0) {
+		char *block = join_args(argv, argc - 1); 
+		results = cmd_results_new(CMD_BLOCK, block, NULL);
+		free(block);
+		goto cleanup;
+	}
+
 	// Endblock
-	if (**argv == '}') {
+	if (strcmp(argv[argc - 1], "}") == 0) {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
 		goto cleanup;
 	}
-	struct cmd_handler *handler = find_handler(argv[0], block);
+	wlr_log(L_INFO, "handling config command '%s'", exec);
+	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
@@ -457,6 +376,30 @@ cleanup:
 	return results;
 }
 
+struct cmd_results *subcommand(char **argv, int argc,
+		struct cmd_handler *handlers, int handlers_size) {
+	char *command = join_args(argv, argc);
+	wlr_log(L_DEBUG, "Subcommand: %s", command);
+	free(command);
+
+	struct cmd_handler *handler = find_handler(argv[0], handlers,
+			handlers_size);
+	if (!handler) {
+		char *input = argv[0] ? argv[0] : "(empty)";
+		return cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+	}
+	// Strip quotes for first argument.
+	// TODO This part needs to be handled much better
+	if (argc > 1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
+		strip_quotes(argv[1]);
+	}
+	if (handler->handle) {
+		return handler->handle(argc - 1, argv + 1);
+	}
+	return cmd_results_new(CMD_INVALID, argv[0],
+			"This command is shimmed, but unimplemented");
+}
+
 struct cmd_results *config_commands_command(char *exec) {
 	struct cmd_results *results = NULL;
 	int argc;
@@ -474,7 +417,7 @@ struct cmd_results *config_commands_command(char *exec) {
 		goto cleanup;
 	}
 
-	struct cmd_handler *handler = find_handler(cmd, CMD_BLOCK_END);
+	struct cmd_handler *handler = find_handler(cmd, NULL, 0);
 	if (!handler && strcmp(cmd, "*") != 0) {
 		char *input = cmd ? cmd : "(empty)";
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
