@@ -237,12 +237,12 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	if (view->swayc && container_is_floating(view->swayc)) {
 		view_update_size(view, xsurface->width, xsurface->height);
-		view_update_position(view,
-				xwayland_view->pending_lx, xwayland_view->pending_ly);
 	} else {
 		view_update_size(view, xwayland_view->pending_width,
 				xwayland_view->pending_height);
 	}
+	view_update_position(view,
+			xwayland_view->pending_lx, xwayland_view->pending_ly);
 	view_damage_from(view);
 }
 
