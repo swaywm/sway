@@ -235,10 +235,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (!view->natural_width && !view->natural_height) {
-		view->natural_width = xsurface->width;
-		view->natural_height = xsurface->height;
-	}
 	if (view->swayc && container_is_floating(view->swayc)) {
 		view_update_size(view, xsurface->width, xsurface->height);
 		view_update_position(view,
@@ -262,6 +258,9 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, map);
 	struct wlr_xwayland_surface *xsurface = data;
 	struct sway_view *view = &xwayland_view->view;
+
+	view->natural_width = xsurface->width;
+	view->natural_height = xsurface->height;
 
 	// Wire up the commit listener here, because xwayland map/unmap can change
 	// the underlying wlr_surface

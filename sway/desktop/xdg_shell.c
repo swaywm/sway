@@ -173,17 +173,13 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, commit);
 	struct sway_view *view = &xdg_shell_view->view;
-	int width = view->wlr_xdg_surface->geometry.width;
-	int height = view->wlr_xdg_surface->geometry.height;
-	if (!width && !height) {
-		width = view->wlr_xdg_surface->surface->current->width;
-		height = view->wlr_xdg_surface->surface->current->height;
-	}
-	if (!view->natural_width && !view->natural_height) {
-		view->natural_width = width;
-		view->natural_height = height;
-	}
 	if (view->swayc && container_is_floating(view->swayc)) {
+		int width = view->wlr_xdg_surface->geometry.width;
+		int height = view->wlr_xdg_surface->geometry.height;
+		if (!width && !height) {
+			width = view->wlr_xdg_surface->surface->current->width;
+			height = view->wlr_xdg_surface->surface->current->height;
+		}
 		view_update_size(view, width, height);
 	} else {
 		view_update_size(view, xdg_shell_view->pending_width,
@@ -216,6 +212,12 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_surface *xdg_surface = view->wlr_xdg_surface;
 
+	view->natural_width = view->wlr_xdg_surface->geometry.width;
+	view->natural_height = view->wlr_xdg_surface->geometry.height;
+	if (!view->natural_width && !view->natural_height) {
+		view->natural_width = view->wlr_xdg_surface->surface->current->width;
+		view->natural_height = view->wlr_xdg_surface->surface->current->height;
+	}
 	view_map(view, view->wlr_xdg_surface->surface);
 
 	xdg_shell_view->commit.notify = handle_commit;
