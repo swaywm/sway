@@ -158,7 +158,7 @@ static struct cmd_results * cmd_bindsym_or_bindcode(int argc, char **argv, bool 
 		}
 
 		if (bindcode) {
-			*key = (uint32_t) (keycode - 8);
+			*key = (uint32_t) keycode;
 		} else {
 			*key = (uint32_t) keysym;
 		}
