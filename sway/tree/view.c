@@ -274,6 +274,10 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 		}
 		workspace->sway_workspace->fullscreen = view;
+		view->saved_x = view->x;
+		view->saved_y = view->y;
+		view->saved_width = view->width;
+		view->saved_height = view->height;
 		view->swayc->saved_x = view->swayc->x;
 		view->swayc->saved_y = view->swayc->y;
 		view->swayc->saved_width = view->swayc->width;
@@ -296,11 +300,12 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 		}
 	} else {
 		workspace->sway_workspace->fullscreen = NULL;
-		view->swayc->width = view->swayc->saved_width;
-		view->swayc->height = view->swayc->saved_height;
 		if (container_is_floating(view->swayc)) {
-			view->swayc->x = view->swayc->saved_x;
-			view->swayc->y = view->swayc->saved_y;
+			view_configure(view, view->saved_x, view->saved_y,
+					view->saved_width, view->saved_height);
+		} else {
+			view->swayc->width = view->swayc->saved_width;
+			view->swayc->height = view->swayc->saved_height;
 			view_autoconfigure(view);
 		}
 	}

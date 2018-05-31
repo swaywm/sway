@@ -51,6 +51,9 @@ struct sway_view {
 	double x, y;
 	int width, height;
 
+	double saved_x, saved_y;
+	int saved_width, saved_height;
+
 	// The size the view would want to be if it weren't tiled.
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
