@@ -315,7 +315,7 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 	if (container->parent == current->parent
 			&& current->parent->children->length == 1) {
 		wlr_log(L_DEBUG, "Changing layout of %zd", current->parent->id);
-		current->parent->layout = move_dir =
+		current->parent->layout = move_dir ==
 			MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
 		if (current->parent->type == C_WORKSPACE) {
 			arrange_workspace(current->parent);
