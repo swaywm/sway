@@ -52,7 +52,7 @@ static struct cmd_results *parse_three_colors(char ***colors,
 }
 
 struct cmd_results *bar_cmd_colors(int argc, char **argv) {
-	return subcommand(argv, argc, bar_colors_handlers,
+	return config_subcommand(argv, argc, bar_colors_handlers,
 			sizeof(bar_colors_handlers));
 }
 

@@ -24,8 +24,8 @@ struct cmd_results *cmd_seat(int argc, char **argv) {
 				"Couldn't allocate config");
 	}
 
-	struct cmd_results *res = subcommand(argv + 1, argc - 1, seat_handlers,
-			sizeof(seat_handlers));
+	struct cmd_results *res = config_subcommand(argv + 1, argc - 1,
+			seat_handlers, sizeof(seat_handlers));
 
 	free_seat_config(config->handler_context.seat_config);
 	config->handler_context.seat_config = NULL;

@@ -42,8 +42,8 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
 	}
 
-	struct cmd_results *res = subcommand(argv + 1, argc - 1, input_handlers,
-			sizeof(input_handlers));
+	struct cmd_results *res = config_subcommand(argv + 1, argc - 1,
+			input_handlers, sizeof(input_handlers));
 
 	free_input_config(config->handler_context.input_config);
 	config->handler_context.input_config = NULL;

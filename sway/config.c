@@ -518,21 +518,20 @@ static int detect_brace_on_following_line(FILE *file, char *line,
 	int lines = 0;
 	if (line[strlen(line) - 1] != '{' && line[strlen(line) - 1] != '}') {
 		char *peeked = NULL;
+		long position = 0;
 		do {
 			wlr_log(L_DEBUG, "Peeking line %d", line_number + lines + 1);
 			free(peeked);
-			peeked = peek_line(file, lines);
+			peeked = peek_line(file, lines, &position);
 			if (peeked) {
 				peeked = strip_whitespace(peeked);
 			}
+			wlr_log(L_DEBUG, "Peeked line: `%s`", peeked);
 			lines++;
 		} while (peeked && strlen(peeked) == 0);
 
 		if (peeked && strlen(peeked) == 1 && peeked[0] == '{') {
-			for (int i = 0; i < lines; i++) {
-				free(peeked);
-				peeked = read_line(file);
-			}
+			fseek(file, position, SEEK_SET); 
 		} else {
 			lines = 0;
 		}
@@ -541,7 +540,7 @@ static int detect_brace_on_following_line(FILE *file, char *line,
 	return lines;
 }
 
-static char *expand_line(char *block, char *line, bool add_brace) {
+static char *expand_line(const char *block, const char *line, bool add_brace) {
 	int size = (block ? strlen(block) + 1 : 0) + strlen(line)
 		+ (add_brace ? 2 : 0) + 1;
 	char *expanded = calloc(1, size);
@@ -549,10 +548,8 @@ static char *expand_line(char *block, char *line, bool add_brace) {
 		wlr_log(L_ERROR, "Cannot allocate expanded line buffer");
 		return NULL;
 	}
-	strcat(expanded, block ? block : "");
-	strcat(expanded, block ? " " : "");
-	strcat(expanded, line);
-	strcat(expanded, add_brace ? " {" : "");
+	snprintf(expanded, size, "%s%s%s%s", block ? block : "",
+			block ? " " : "", line, add_brace ? " {" : "");
 	return expanded;
 }
 
@@ -594,9 +591,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			// Special case
 			res = config_commands_command(expanded);
 		} else {
-			wlr_log(L_DEBUG, "Entering c_c");
 			res = config_command(expanded);
-			wlr_log(L_DEBUG, "Exiting c_c");
 		}
 		free(expanded);
 		switch(res->status) {

@@ -376,8 +376,8 @@ cleanup:
 	return results;
 }
 
-struct cmd_results *subcommand(char **argv, int argc,
-		struct cmd_handler *handlers, int handlers_size) {
+struct cmd_results *config_subcommand(char **argv, int argc,
+		struct cmd_handler *handlers, size_t handlers_size) {
 	char *command = join_args(argv, argc);
 	wlr_log(L_DEBUG, "Subcommand: %s", command);
 	free(command);

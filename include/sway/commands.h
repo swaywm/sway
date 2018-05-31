@@ -60,8 +60,8 @@ struct cmd_results *config_command(char *command);
 /**
  * Parse and handle a sub command
  */
-struct cmd_results *subcommand(char **argv, int argc,
-		struct cmd_handler *handlers, int handlers_size);
+struct cmd_results *config_subcommand(char **argv, int argc,
+		struct cmd_handler *handlers, size_t handlers_size);
 /*
  * Parses a command policy rule.
  */

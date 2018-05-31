@@ -52,7 +52,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 			return cmd_results_new(CMD_FAILURE, "bar",
 					"Can only be used in config file.");
 		}
-		return subcommand(argv, argc, bar_config_handlers,
+		return config_subcommand(argv, argc, bar_config_handlers,
 				sizeof(bar_config_handlers));
 	}
 
@@ -111,5 +111,5 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		wlr_log(L_DEBUG, "Creating bar %s", bar->id);
 	}
 
-	return subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
+	return config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
 }
