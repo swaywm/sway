@@ -69,15 +69,17 @@ bool binding_key_compare(struct sway_binding *binding_a,
 	return true;
 }
 
-struct cmd_results *cmd_bindsym(int argc, char **argv) {
+static struct cmd_results * cmd_bindsym_or_bindcode(int argc, char **argv, bool bindcode) {
+	const char* bindtype = bindcode ? "bindcode" : "bindsym";
+
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bindsym", EXPECTED_MORE_THAN, 1))) {
+	if ((error = checkarg(argc, bindtype, EXPECTED_MORE_THAN, 1))) {
 		return error;
 	}
 
 	struct sway_binding *binding = calloc(1, sizeof(struct sway_binding));
 	if (!binding) {
-		return cmd_results_new(CMD_FAILURE, "bindsym",
+		return cmd_results_new(CMD_FAILURE, bindtype,
 				"Unable to allocate binding");
 	}
 	binding->keys = create_list();
@@ -100,9 +102,9 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 	}
 	if (argc < 2) {
 		free_sway_binding(binding);
-		return cmd_results_new(CMD_FAILURE, "bindsym",
-			"Invalid bindsym command "
-			"(expected at least 2 non-option arguments, got %d)", argc);
+		return cmd_results_new(CMD_FAILURE, bindtype,
+			"Invalid %s command "
+			"(expected at least 2 non-option arguments, got %d)", bindtype, argc);
 	}
 
 	binding->command = join_args(argv + 1, argc - 1);
@@ -115,36 +117,63 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 			binding->modifiers |= mod;
 			continue;
 		}
-		// Check for xkb key
-		xkb_keysym_t sym = xkb_keysym_from_name(split->items[i],
-				XKB_KEYSYM_CASE_INSENSITIVE);
 
-		// Check for mouse binding
-		if (strncasecmp(split->items[i], "button", strlen("button")) == 0 &&
-				strlen(split->items[i]) == strlen("button0")) {
-			sym = ((char *)split->items[i])[strlen("button")] - '1' + BTN_LEFT;
+		xkb_keycode_t keycode;
+		xkb_keysym_t keysym;
+		if (bindcode) {
+			// parse keycode
+			keycode = (int)strtol(split->items[i], NULL, 10);
+			if (!xkb_keycode_is_legal_ext(keycode)) {
+				error =
+					cmd_results_new(CMD_INVALID, "bindcode",
+						"Invalid keycode '%s'", (char *)split->items[i]);
+				free_sway_binding(binding);
+				list_free(split);
+				return error;
+			}
+		} else {
+			// Check for xkb key
+			 keysym = xkb_keysym_from_name(split->items[i],
+					XKB_KEYSYM_CASE_INSENSITIVE);
+
+			// Check for mouse binding
+			if (strncasecmp(split->items[i], "button", strlen("button")) == 0 &&
+					strlen(split->items[i]) == strlen("button0")) {
+				keysym = ((char *)split->items[i])[strlen("button")] - '1' + BTN_LEFT;
+			}
+			if (!keysym) {
+				struct cmd_results *ret = cmd_results_new(CMD_INVALID, "bindsym",
+						"Unknown key '%s'", (char *)split->items[i]);
+				free_sway_binding(binding);
+				free_flat_list(split);
+				return ret;
+			}
 		}
-		if (!sym) {
-			struct cmd_results *ret = cmd_results_new(CMD_INVALID, "bindsym",
-					"Unknown key '%s'", (char *)split->items[i]);
-			free_sway_binding(binding);
-			free_flat_list(split);
-			return ret;
-		}
-		xkb_keysym_t *key = calloc(1, sizeof(xkb_keysym_t));
+		uint32_t *key = calloc(1, sizeof(xkb_keysym_t));
 		if (!key) {
 			free_sway_binding(binding);
 			free_flat_list(split);
-			return cmd_results_new(CMD_FAILURE, "bindsym",
+			return cmd_results_new(CMD_FAILURE, bindtype,
 					"Unable to allocate binding");
 		}
-		*key = sym;
+
+		if (bindcode) {
+			*key = (uint32_t) (keycode - 8);
+		} else {
+			*key = (uint32_t) keysym;
+		}
+
 		list_add(binding->keys, key);
 	}
 	free_flat_list(split);
 	binding->order = binding_order++;
 
-	list_t *mode_bindings = config->current_mode->keysym_bindings;
+	list_t *mode_bindings;
+	if (bindcode) {
+		mode_bindings = config->current_mode->keycode_bindings;
+	} else {
+		mode_bindings = config->current_mode->keysym_bindings;
+	}
 
 	// overwrite the binding if it already exists
 	bool overwritten = false;
@@ -163,95 +192,16 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 		list_add(mode_bindings, binding);
 	}
 
-	wlr_log(L_DEBUG, "bindsym - Bound %s to command %s",
-		argv[0], binding->command);
+	wlr_log(L_DEBUG, "%s - Bound %s to command %s",
+		bindtype, argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+
+}
+
+struct cmd_results *cmd_bindsym(int argc, char **argv) {
+	return cmd_bindsym_or_bindcode(argc, argv, false);
 }
 
 struct cmd_results *cmd_bindcode(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bindcode", EXPECTED_MORE_THAN, 1))) {
-		return error;
-	}
-
-	struct sway_binding *binding = calloc(1, sizeof(struct sway_binding));
-	if (!binding) {
-		return cmd_results_new(CMD_FAILURE, "bindsym",
-				"Unable to allocate binding");
-	}
-	binding->keys = create_list();
-	binding->modifiers = 0;
-	binding->release = false;
-	binding->locked = false;
-	binding->bindcode = true;
-
-	// Handle --release and --locked
-	while (argc > 0) {
-		if (strcmp("--release", argv[0]) == 0) {
-			binding->release = true;
-		} else if (strcmp("--locked", argv[0]) == 0) {
-			binding->locked = true;
-		} else {
-			break;
-		}
-		argv++;
-		argc--;
-	}
-	if (argc < 2) {
-		free_sway_binding(binding);
-		return cmd_results_new(CMD_FAILURE, "bindcode",
-			"Invalid bindcode command "
-			"(expected at least 2 non-option arguments, got %d)", argc);
-	}
-
-	binding->command = join_args(argv + 1, argc - 1);
-
-	list_t *split = split_string(argv[0], "+");
-	for (int i = 0; i < split->length; ++i) {
-		// Check for a modifier key
-		uint32_t mod;
-		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {
-			binding->modifiers |= mod;
-			continue;
-		}
-		// parse keycode
-		xkb_keycode_t keycode = (int)strtol(split->items[i], NULL, 10);
-		if (!xkb_keycode_is_legal_ext(keycode)) {
-			error =
-				cmd_results_new(CMD_INVALID, "bindcode",
-					"Invalid keycode '%s'", (char *)split->items[i]);
-			free_sway_binding(binding);
-			list_free(split);
-			return error;
-		}
-		xkb_keycode_t *key = calloc(1, sizeof(xkb_keycode_t));
-		*key = keycode - 8;
-		list_add(binding->keys, key);
-	}
-	free_flat_list(split);
-
-	binding->order = binding_order++;
-
-	list_t *mode_bindings = config->current_mode->keycode_bindings;
-
-	// overwrite the binding if it already exists
-	bool overwritten = false;
-	for (int i = 0; i < mode_bindings->length; ++i) {
-		struct sway_binding *config_binding = mode_bindings->items[i];
-		if (binding_key_compare(binding, config_binding)) {
-			wlr_log(L_DEBUG, "overwriting old binding with command '%s'",
-				config_binding->command);
-			free_sway_binding(config_binding);
-			mode_bindings->items[i] = binding;
-			overwritten = true;
-		}
-	}
-
-	if (!overwritten) {
-		list_add(mode_bindings, binding);
-	}
-
-	wlr_log(L_DEBUG, "bindcode - Bound %s to command %s",
-		argv[0], binding->command);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_bindsym_or_bindcode(argc, argv, true);
 }
