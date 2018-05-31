@@ -58,7 +58,7 @@ char *peek_line(FILE *file, int offset, long *position) {
 		if (read < 0) {
 			break;
 		}
-		if (line[read - 1] == '\n') {
+		if (read > 0 && line[read - 1] == '\n') {
 			line[read - 1] = '\0';
 		}
 	}
