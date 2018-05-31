@@ -86,7 +86,7 @@ static struct cmd_results * cmd_bindsym_or_bindcode(int argc, char **argv, bool 
 	binding->modifiers = 0;
 	binding->release = false;
 	binding->locked = false;
-	binding->bindcode = false;
+	binding->bindcode = bindcode;
 
 	// Handle --release and --locked
 	while (argc > 0) {
