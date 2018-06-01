@@ -229,33 +229,29 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	// identify which binding should be executed.
-	struct sway_binding *binding =
-		check_shortcut_model(&keyboard->state_keycodes,
-				 config->current_mode->keycode_bindings,
-				 code_modifiers, input_inhibited);
-	for (size_t i=0;i<translated_keysyms_len;i++) {
-		struct sway_binding *translated_binding =
-			check_shortcut_model(&keyboard->state_keysyms_translated,
-				 config->current_mode->keysym_bindings,
-				 translated_modifiers, input_inhibited);
-		if (translated_binding && !binding) {
-			binding = translated_binding;
-		} else if (binding && translated_binding && binding != translated_binding) {
-			wlr_log(L_DEBUG, "encountered duplicate bindings %d and %d",
-				binding->order, translated_binding->order);
-		}
+	struct sway_binding *binding = check_shortcut_model(
+			&keyboard->state_keycodes,
+			config->current_mode->keycode_bindings,
+			code_modifiers, input_inhibited);
+	struct sway_binding *translated_binding = check_shortcut_model(
+			&keyboard->state_keysyms_translated,
+			config->current_mode->keysym_bindings,
+			translated_modifiers, input_inhibited);
+	if (translated_binding && !binding) {
+		binding = translated_binding;
+	} else if (binding && translated_binding && binding != translated_binding) {
+		wlr_log(L_DEBUG, "encountered duplicate bindings %d and %d",
+			binding->order, translated_binding->order);
 	}
-	for (size_t i=0;i<raw_keysyms_len;i++) {
-		struct sway_binding *raw_binding =
-			check_shortcut_model(&keyboard->state_keysyms_raw,
-				config->current_mode->keysym_bindings,
-				raw_modifiers, input_inhibited);
-		if (raw_binding && !binding) {
-			binding = raw_binding;
-		} else if (binding && raw_binding && binding != raw_binding) {
-			wlr_log(L_DEBUG, "encountered duplicate bindings %d and %d",
-				binding->order, raw_binding->order);
-		}
+	struct sway_binding *raw_binding = check_shortcut_model(
+			&keyboard->state_keysyms_raw,
+			config->current_mode->keysym_bindings,
+			raw_modifiers, input_inhibited);
+	if (raw_binding && !binding) {
+		binding = raw_binding;
+	} else if (binding && raw_binding && binding != raw_binding) {
+		wlr_log(L_DEBUG, "encountered duplicate bindings %d and %d",
+			binding->order, raw_binding->order);
 	}
 
 	bool handled = false;
