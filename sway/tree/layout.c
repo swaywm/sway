@@ -45,20 +45,14 @@ void layout_init(void) {
 }
 
 static int index_child(const struct sway_container *child) {
-	// TODO handle floating
 	struct sway_container *parent = child->parent;
-	int i, len;
-	len = parent->children->length;
-	for (i = 0; i < len; ++i) {
+	for (int i = 0; i < parent->children->length; ++i) {
 		if (parent->children->items[i] == child) {
-			break;
+			return i;
 		}
 	}
-
-	if (!sway_assert(i < len, "Stray container")) {
-		return -1;
-	}
-	return i;
+	// This happens if the child is a floating container
+	return -1;
 }
 
 static void container_handle_fullscreen_reparent(struct sway_container *viewcon,
@@ -160,6 +154,10 @@ void container_move_to(struct sway_container *container,
 			|| container_has_ancestor(container, destination)) {
 		return;
 	}
+	if (container_is_floating(container)) {
+		// TODO
+		return;
+	}
 	struct sway_container *old_parent = container_remove_child(container);
 	container->width = container->height = 0;
 	container->saved_width = container->saved_height = 0;
@@ -172,8 +170,9 @@ void container_move_to(struct sway_container *container,
 	}
 	wl_signal_emit(&container->events.reparent, old_parent);
 	if (container->type == C_WORKSPACE) {
-		struct sway_seat *seat = input_manager_get_default_seat(
-				input_manager);
+		// If moving a workspace to a new output, maybe create a new workspace
+		// on the previous output
+		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		if (old_parent->children->length == 0) {
 			char *ws_name = workspace_next_name(old_parent->name);
 			struct sway_container *ws =
@@ -681,26 +680,6 @@ static struct sway_container *get_swayc_in_output_direction(
 	return ws;
 }
 
-static void get_layout_center_position(struct sway_container *container,
-		int *x, int *y) {
-	// FIXME view coords are inconsistently referred to in layout/output systems
-	if (container->type == C_OUTPUT) {
-		*x = container->x + container->width/2;
-		*y = container->y + container->height/2;
-	} else {
-		struct sway_container *output = container_parent(container, C_OUTPUT);
-		if (container->type == C_WORKSPACE) {
-			// Workspace coordinates are actually wrong/arbitrary, but should
-			// be same as output.
-			*x = output->x;
-			*y = output->y;
-		} else {
-			*x = output->x + container->x;
-			*y = output->y + container->y;
-		}
-	}
-}
-
 static struct sway_container *sway_output_from_wlr(struct wlr_output *output) {
 	if (output == NULL) {
 		return NULL;
@@ -718,6 +697,10 @@ struct sway_container *container_get_in_direction(
 		struct sway_container *container, struct sway_seat *seat,
 		enum movement_direction dir) {
 	struct sway_container *parent = container->parent;
+
+	if (container_is_floating(container)) {
+		return NULL;
+	}
 
 	if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
 		if (dir == MOVE_PARENT || dir == MOVE_CHILD) {
@@ -743,14 +726,17 @@ struct sway_container *container_get_in_direction(
 		bool can_move = false;
 		int desired;
 		int idx = index_child(container);
+		if (idx == -1) {
+			return NULL;
+		}
 		if (parent->type == C_ROOT) {
 			enum wlr_direction wlr_dir = 0;
 			if (!sway_assert(sway_dir_to_wlr(dir, &wlr_dir),
 						"got invalid direction: %d", dir)) {
 				return NULL;
 			}
-			int lx, ly;
-			get_layout_center_position(container, &lx, &ly);
+			int lx = container->x + container->width / 2;
+			int ly = container->y + container->height / 2;
 			struct wlr_output_layout *layout =
 				root_container.sway_root->output_layout;
 			struct wlr_output *wlr_adjacent =

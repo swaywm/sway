@@ -86,7 +86,7 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 	}
 }
 
-static void configure(struct sway_view *view, double ox, double oy, int width,
+static void configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		xdg_shell_v6_view_from_view(view);
@@ -97,6 +97,7 @@ static void configure(struct sway_view *view, double ox, double oy, int width,
 	xdg_shell_v6_view->pending_width = width;
 	xdg_shell_v6_view->pending_height = height;
 	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
+	view_update_position(view, lx, ly);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -115,6 +116,14 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	}
 	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
 	wlr_xdg_toplevel_v6_set_fullscreen(surface, fullscreen);
+}
+
+static bool wants_floating(struct sway_view *view) {
+	struct wlr_xdg_toplevel_v6_state *state =
+		&view->wlr_xdg_surface_v6->toplevel->current;
+	return state->min_width != 0 && state->min_height != 0
+		&& state->min_width == state->max_width
+		&& state->min_height == state->max_height;
 }
 
 static void for_each_surface(struct sway_view *view,
@@ -154,6 +163,7 @@ static const struct sway_view_impl view_impl = {
 	.configure = configure,
 	.set_activated = set_activated,
 	.set_fullscreen = set_fullscreen,
+	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.close = _close,
 	.destroy = destroy,
@@ -163,11 +173,18 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, commit);
 	struct sway_view *view = &xdg_shell_v6_view->view;
-	// NOTE: We intentionally discard the view's desired width here
-	// TODO: Store this for restoration when moving to floating plane
-	// TODO: Let floating views do whatever
-	view_update_size(view, xdg_shell_v6_view->pending_width,
-		xdg_shell_v6_view->pending_height);
+	if (view->swayc && container_is_floating(view->swayc)) {
+		int width = view->wlr_xdg_surface_v6->geometry.width;
+		int height = view->wlr_xdg_surface_v6->geometry.height;
+		if (!width && !height) {
+			width = view->wlr_xdg_surface_v6->surface->current->width;
+			height = view->wlr_xdg_surface_v6->surface->current->height;
+		}
+		view_update_size(view, width, height);
+	} else {
+		view_update_size(view, xdg_shell_v6_view->pending_width,
+				xdg_shell_v6_view->pending_height);
+	}
 	view_update_title(view, false);
 	view_damage_from(view);
 }
@@ -195,6 +212,12 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_v6_view->view;
 	struct wlr_xdg_surface_v6 *xdg_surface = view->wlr_xdg_surface_v6;
 
+	view->natural_width = view->wlr_xdg_surface_v6->geometry.width;
+	view->natural_height = view->wlr_xdg_surface_v6->geometry.height;
+	if (!view->natural_width && !view->natural_height) {
+		view->natural_width = view->wlr_xdg_surface_v6->surface->current->width;
+		view->natural_height = view->wlr_xdg_surface_v6->surface->current->height;
+	}
 	view_map(view, view->wlr_xdg_surface_v6->surface);
 
 	xdg_shell_v6_view->commit.notify = handle_commit;

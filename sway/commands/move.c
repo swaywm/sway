@@ -13,16 +13,14 @@
 #include "stringop.h"
 #include "list.h"
 
-static const char* expected_syntax = 
+static const char* expected_syntax =
 	"Expected 'move <left|right|up|down> <[px] px>' or "
 	"'move <container|window> to workspace <name>' or "
 	"'move <container|window|workspace> to output <name|direction>' or "
 	"'move position mouse'";
 
 static struct sway_container *output_in_direction(const char *direction,
-		struct wlr_output *reference, int ref_ox, int ref_oy) {
-	int ref_lx = ref_ox + reference->lx,
-		ref_ly = ref_oy + reference->ly;
+		struct wlr_output *reference, int ref_lx, int ref_ly) {
 	struct {
 		char *name;
 		enum wlr_direction direction;

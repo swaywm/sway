@@ -12,18 +12,14 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	}
 	struct sway_container *parent = config->handler_context.current_container;
 
-	// TODO: floating
-	/*
-	if (parent->is_floating) {
-		return cmd_results_new(CMD_FAILURE, "layout", "Unable to change layout of floating windows");
+	if (container_is_floating(parent)) {
+		return cmd_results_new(CMD_FAILURE, "layout",
+				"Unable to change layout of floating windows");
 	}
-	*/
 
 	while (parent->type == C_VIEW) {
 		parent = parent->parent;
 	}
-
-	// TODO: stacks and tabs
 
 	if (strcasecmp(argv[0], "default") == 0) {
 		parent->layout = parent->prev_layout;

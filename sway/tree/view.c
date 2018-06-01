@@ -119,11 +119,26 @@ const char *view_get_shell(struct sway_view *view) {
 	return "unknown";
 }
 
-void view_configure(struct sway_view *view, double ox, double oy, int width,
+void view_configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	if (view->impl->configure) {
-		view->impl->configure(view, ox, oy, width, height);
+		view->impl->configure(view, lx, ly, width, height);
 	}
+}
+
+static void view_autoconfigure_floating(struct sway_view *view) {
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	int max_width = ws->width * 0.6666;
+	int max_height = ws->height * 0.6666;
+	int width =
+		view->natural_width > max_width ? max_width : view->natural_width;
+	int height =
+		view->natural_height > max_height ? max_height : view->natural_height;
+	int lx = ws->x + (ws->width - width) / 2;
+	int ly = ws->y + (ws->height - height) / 2;
+
+	view->border_left = view->border_right = view->border_bottom = true;
+	view_configure(view, lx, ly, width, height);
 }
 
 void view_autoconfigure(struct sway_view *view) {
@@ -135,8 +150,12 @@ void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
 	if (view->is_fullscreen) {
-		view_configure(view, 0, 0, output->width, output->height);
-		view->x = view->y = 0;
+		view_configure(view, output->x, output->y, output->width, output->height);
+		return;
+	}
+
+	if (container_is_floating(view->swayc)) {
+		view_autoconfigure_floating(view);
 		return;
 	}
 
@@ -158,21 +177,19 @@ void view_autoconfigure(struct sway_view *view) {
 
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;
-	if (view->swayc->layout != L_FLOATING) {
-		if (config->hide_edge_borders == E_BOTH
-				|| config->hide_edge_borders == E_VERTICAL
-				|| (config->hide_edge_borders == E_SMART && !other_views)) {
-			view->border_left = view->swayc->x != ws->x;
-			int right_x = view->swayc->x + view->swayc->width;
-			view->border_right = right_x != ws->x + ws->width;
-		}
-		if (config->hide_edge_borders == E_BOTH
-				|| config->hide_edge_borders == E_HORIZONTAL
-				|| (config->hide_edge_borders == E_SMART && !other_views)) {
-			view->border_top = view->swayc->y != ws->y;
-			int bottom_y = view->swayc->y + view->swayc->height;
-			view->border_bottom = bottom_y != ws->y + ws->height;
-		}
+	if (config->hide_edge_borders == E_BOTH
+			|| config->hide_edge_borders == E_VERTICAL
+			|| (config->hide_edge_borders == E_SMART && !other_views)) {
+		view->border_left = view->swayc->x != ws->x;
+		int right_x = view->swayc->x + view->swayc->width;
+		view->border_right = right_x != ws->x + ws->width;
+	}
+	if (config->hide_edge_borders == E_BOTH
+			|| config->hide_edge_borders == E_HORIZONTAL
+			|| (config->hide_edge_borders == E_SMART && !other_views)) {
+		view->border_top = view->swayc->y != ws->y;
+		int bottom_y = view->swayc->y + view->swayc->height;
+		view->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
 	double x, y, width, height;
@@ -184,11 +201,11 @@ void view_autoconfigure(struct sway_view *view) {
 	// disable any top border because we'll always have the title bar.
 	if (view->swayc->parent->layout == L_TABBED) {
 		y_offset = container_titlebar_height();
-		view->border_top = 0;
+		view->border_top = false;
 	} else if (view->swayc->parent->layout == L_STACKED) {
 		y_offset = container_titlebar_height()
 			* view->swayc->parent->children->length;
-		view->border_top = 0;
+		view->border_top = false;
 	}
 
 	switch (view->border) {
@@ -257,6 +274,12 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 		}
 		workspace->sway_workspace->fullscreen = view;
+		view->saved_x = view->x;
+		view->saved_y = view->y;
+		view->saved_width = view->width;
+		view->saved_height = view->height;
+		view->swayc->saved_x = view->swayc->x;
+		view->swayc->saved_y = view->swayc->y;
 		view->swayc->saved_width = view->swayc->width;
 		view->swayc->saved_height = view->swayc->height;
 
@@ -277,8 +300,14 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 		}
 	} else {
 		workspace->sway_workspace->fullscreen = NULL;
-		view->swayc->width = view->swayc->saved_width;
-		view->swayc->height = view->swayc->saved_height;
+		if (container_is_floating(view->swayc)) {
+			view_configure(view, view->saved_x, view->saved_y,
+					view->saved_width, view->saved_height);
+		} else {
+			view->swayc->width = view->swayc->saved_width;
+			view->swayc->height = view->swayc->saved_height;
+			view_autoconfigure(view);
+		}
 	}
 }
 
@@ -452,6 +481,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 			// TODO: CT_ASSIGN_OUTPUT
 		}
 	}
+	// If we're about to launch the view into the floating container, then
+	// launch it as a tiled view in the root of the workspace instead.
+	if (container_is_floating(focus)) {
+		focus = focus->parent->parent;
+	}
 	free(criterias);
 	cont = container_view_create(focus, view);
 
@@ -468,7 +502,12 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	wl_signal_add(&view->swayc->events.reparent, &view->container_reparent);
 	view->container_reparent.notify = view_handle_container_reparent;
 
-	arrange_children_of(cont->parent);
+	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+		container_set_floating(view->swayc, true);
+	} else {
+		arrange_children_of(cont->parent);
+	}
+
 	input_manager_set_focus(input_manager, cont);
 	if (workspace) {
 		workspace_switch(workspace);
@@ -516,16 +555,16 @@ void view_unmap(struct sway_view *view) {
 	}
 }
 
-void view_update_position(struct sway_view *view, double ox, double oy) {
-	if (view->swayc->x == ox && view->swayc->y == oy) {
+void view_update_position(struct sway_view *view, double lx, double ly) {
+	if (view->x == lx && view->y == ly) {
 		return;
 	}
-
-	// TODO: Only allow this if the view is floating (this function will only be
-	// called in response to wayland clients wanting to reposition themselves).
 	container_damage_whole(view->swayc);
-	view->swayc->x = ox;
-	view->swayc->y = oy;
+	view->x = lx;
+	view->y = ly;
+	if (container_is_floating(view->swayc)) {
+		container_set_geometry_from_floating_view(view->swayc);
+	}
 	container_damage_whole(view->swayc);
 }
 
@@ -533,14 +572,14 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	if (view->width == width && view->height == height) {
 		return;
 	}
-
 	container_damage_whole(view->swayc);
-	// Should we update the swayc width/height here too?
 	view->width = width;
 	view->height = height;
+	if (container_is_floating(view->swayc)) {
+		container_set_geometry_from_floating_view(view->swayc);
+	}
 	container_damage_whole(view->swayc);
 }
-
 
 static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *subsurface) {
@@ -888,6 +927,19 @@ bool view_is_visible(struct sway_view *view) {
 	if (!view->swayc) {
 		return false;
 	}
+	struct sway_container *workspace =
+		container_parent(view->swayc, C_WORKSPACE);
+	// Determine if view is nested inside a floating container which is sticky.
+	// A simple floating view will have this ancestry:
+	// C_VIEW -> floating -> workspace
+	// A more complex ancestry could be:
+	// C_VIEW -> C_CONTAINER (tabbed) -> floating -> workspace
+	struct sway_container *floater = view->swayc;
+	while (floater->parent->type != C_WORKSPACE
+			&& floater->parent->parent->type != C_WORKSPACE) {
+		floater = floater->parent;
+	}
+	bool is_sticky = container_is_floating(floater) && floater->is_sticky;
 	// Check view isn't in a tabbed or stacked container on an inactive tab
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *container = view->swayc;
@@ -901,10 +953,12 @@ bool view_is_visible(struct sway_view *view) {
 		container = container->parent;
 	}
 	// Check view isn't hidden by another fullscreen view
-	struct sway_container *workspace = container;
 	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
 		return false;
 	}
 	// Check the workspace is visible
-	return workspace_is_visible(workspace);
+	if (!is_sticky) {
+		return workspace_is_visible(workspace);
+	}
+	return true;
 }

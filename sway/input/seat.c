@@ -113,7 +113,14 @@ static void seat_send_focus(struct sway_container *con,
 
 static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		struct sway_container *container, enum sway_container_type type) {
-	if (container->type == C_VIEW || container->children->length == 0) {
+	if (container->type == C_VIEW) {
+		return container;
+	}
+
+	struct sway_container *floating = container->type == C_WORKSPACE ?
+		container->sway_workspace->floating : NULL;
+	if (container->children->length == 0 &&
+			(!floating || floating->children->length == 0)) {
 		return container;
 	}
 
@@ -124,6 +131,9 @@ static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		}
 
 		if (container_has_child(container, current->container)) {
+			return current->container;
+		}
+		if (floating && container_has_child(floating, current->container)) {
 			return current->container;
 		}
 	}
@@ -568,7 +578,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	// clean up unfocused empty workspace on new output
 	if (new_output_last_ws) {
 		if (!workspace_is_visible(new_output_last_ws)
-				&& new_output_last_ws->children->length == 0) {
+				&& workspace_is_empty(new_output_last_ws)) {
 			if (last_workspace == new_output_last_ws) {
 				last_focus = NULL;
 				last_workspace = NULL;
@@ -581,7 +591,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		if (last_workspace) {
 			ipc_event_workspace(last_workspace, container, "focus");
 			if (!workspace_is_visible(last_workspace)
-					&& last_workspace->children->length == 0) {
+					&& workspace_is_empty(last_workspace)) {
 				if (last_workspace == last_focus) {
 					last_focus = NULL;
 				}
@@ -591,10 +601,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 		if (config->mouse_warping && warp) {
 			if (new_output && last_output && new_output != last_output) {
-				double x = new_output->x + container->x +
-					container->width / 2.0;
-				double y = new_output->y + container->y +
-					container->height / 2.0;
+				double x = container->x + container->width / 2.0;
+				double y = container->y + container->height / 2.0;
 				struct wlr_output *wlr_output =
 					new_output->sway_output->wlr_output;
 				if (!wlr_output_layout_contains_point(

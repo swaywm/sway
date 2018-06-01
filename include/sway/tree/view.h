@@ -29,10 +29,11 @@ struct sway_view_impl {
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
-	void (*configure)(struct sway_view *view, double ox, double oy, int width,
+	void (*configure)(struct sway_view *view, double lx, double ly, int width,
 		int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
+	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
@@ -46,9 +47,16 @@ struct sway_view {
 	struct sway_container *swayc; // NULL for unmapped views
 	struct wlr_surface *surface; // NULL for unmapped views
 
-	// Geometry of the view itself (excludes borders)
+	// Geometry of the view itself (excludes borders) in layout coordinates
 	double x, y;
 	int width, height;
+
+	double saved_x, saved_y;
+	int saved_width, saved_height;
+
+	// The size the view would want to be if it weren't tiled.
+	// Used when changing a view from tiled to floating.
+	int natural_width, natural_height;
 
 	bool is_fullscreen;
 
@@ -131,6 +139,7 @@ struct sway_xwayland_view {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 
+	int pending_lx, pending_ly;
 	int pending_width, pending_height;
 };
 
@@ -236,7 +245,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
 void view_unmap(struct sway_view *view);
 
-void view_update_position(struct sway_view *view, double ox, double oy);
+void view_update_position(struct sway_view *view, double lx, double ly);
 
 void view_update_size(struct sway_view *view, int width, int height);
 

@@ -37,7 +37,13 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 				"or 'border pixel <px>'");
 	}
 
-	view_autoconfigure(view);
+	if (container_is_floating(view->swayc)) {
+		container_damage_whole(view->swayc);
+		container_set_geometry_from_floating_view(view->swayc);
+		container_damage_whole(view->swayc);
+	} else {
+		view_autoconfigure(view);
+	}
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	if (seat->cursor) {

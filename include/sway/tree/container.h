@@ -76,12 +76,14 @@ struct sway_container {
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_layout;
 
+	bool is_sticky;
+
 	// For C_ROOT, this has no meaning
-	// For C_OUTPUT, this is the output position in layout coordinates
-	// For other types, this is the position in output-local coordinates
+	// For other types, this is the position in layout coordinates
 	// Includes borders
 	double x, y;
 	double width, height;
+	double saved_x, saved_y;
 	double saved_width, saved_height;
 
 	list_t *children;
@@ -172,6 +174,13 @@ struct sway_container *container_at(struct sway_container *container,
 		double *sx, double *sy);
 
 /**
+ * Same as container_at, but only checks floating views and expects coordinates
+ * to be layout coordinates, as that's what floating views use.
+ */
+struct sway_container *floating_container_at(double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy);
+
+/**
  * Apply the function for each descendant of the container breadth first.
  */
 void container_for_each_descendant_bfs(struct sway_container *container,
@@ -226,5 +235,15 @@ void container_notify_subtree_changed(struct sway_container *container);
  * Return the height of a regular title bar.
  */
 size_t container_titlebar_height(void);
+
+void container_set_floating(struct sway_container *container, bool enable);
+
+void container_set_geometry_from_floating_view(struct sway_container *con);
+
+/**
+ * Determine if the given container is itself floating.
+ * This will return false for any descendants of a floating container.
+ */
+bool container_is_floating(struct sway_container *container);
 
 #endif

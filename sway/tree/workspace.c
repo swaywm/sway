@@ -12,6 +12,7 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
+#include "list.h"
 #include "log.h"
 #include "util.h"
 
@@ -64,6 +65,9 @@ struct sway_container *workspace_create(struct sway_container *output,
 		return NULL;
 	}
 	swayws->swayc = workspace;
+	swayws->floating = container_create(C_CONTAINER);
+	swayws->floating->parent = swayws->swayc;
+	swayws->floating->layout = L_FLOATING;
 	workspace->sway_workspace = swayws;
 
 	container_add_child(output, workspace);
@@ -383,13 +387,37 @@ bool workspace_switch(struct sway_container *workspace) {
 		strcpy(prev_workspace_name, active_ws->name);
 	}
 
-	// TODO: Deal with sticky containers
+	// Move sticky containers to new workspace
+	struct sway_container *next_output = workspace->parent;
+	struct sway_container *next_output_prev_ws =
+		seat_get_active_child(seat, next_output);
+	struct sway_container *floating =
+		next_output_prev_ws->sway_workspace->floating;
+	bool has_sticky = false;
+	for (int i = 0; i < floating->children->length; ++i) {
+		struct sway_container *floater = floating->children->items[i];
+		if (floater->is_sticky) {
+			has_sticky = true;
+			container_remove_child(floater);
+			container_add_child(workspace->sway_workspace->floating, floater);
+		}
+	}
 
 	wlr_log(L_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
 	struct sway_container *next = seat_get_focus_inactive(seat, workspace);
 	if (next == NULL) {
 		next = workspace;
+	}
+	if (has_sticky) {
+		// If there's a sticky container, we might be setting focus to the same
+		// container that's already focused, so seat_set_focus is effectively a
+		// no op. We therefore need to send the IPC event and clean up the old
+		// workspace here.
+		ipc_event_workspace(active_ws, workspace, "focus");
+		if (!workspace_is_visible(active_ws) && workspace_is_empty(active_ws)) {
+			container_destroy(active_ws);
+		}
 	}
 	seat_set_focus(seat, next);
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
@@ -405,4 +433,22 @@ bool workspace_is_visible(struct sway_container *ws) {
 		focus = container_parent(focus, C_WORKSPACE);
 	}
 	return focus == ws;
+}
+
+bool workspace_is_empty(struct sway_container *ws) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return false;
+	}
+	if (ws->children->length) {
+		return false;
+	}
+	// Sticky views are not considered to be part of this workspace
+	struct sway_container *floating = ws->sway_workspace->floating;
+	for (int i = 0; i < floating->children->length; ++i) {
+		struct sway_container *floater = floating->children->items[i];
+		if (!floater->is_sticky) {
+			return false;
+		}
+	}
+	return true;
 }
