@@ -17,9 +17,8 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
 		bool last_key_was_a_modifier) {
 	if (event->state == WLR_KEY_PRESSED) {
 		if (last_key_was_a_modifier && state->last_key_index >= 0) {
-			// Last pressed key before this one was a modifier. We nullify
-			// the key id but not the keycode (as that is used for erasure
-			// on release)
+			// Last pressed key before this one was a modifier
+			state->pressed_keycodes[state->last_key_index] = 0;
 			state->pressed_keys[state->last_key_index] = 0;
 			state->last_key_index = -1;
 		}
@@ -62,8 +61,8 @@ static struct sway_binding *get_active_binding(
 		struct sway_binding *binding = bindings->items[i];
 
 		if (modifiers ^ binding->modifiers ||
-			npressed_keys != binding->keys->length ||
-			locked > binding->locked) {
+				npressed_keys != binding->keys->length ||
+				locked > binding->locked) {
 			continue;
 		}
 
@@ -219,12 +218,12 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	for (size_t i = 0; i < translated_keysyms_len; ++i) {
 		update_shortcut_state(&keyboard->state_keysyms_translated,
 				event, (uint32_t)translated_keysyms[i],
-				last_key_was_a_modifier);
+				last_key_was_a_modifier && i == 0);
 	}
 	for (size_t i = 0; i < raw_keysyms_len; ++i) {
 		update_shortcut_state(&keyboard->state_keysyms_raw,
 				event, (uint32_t)raw_keysyms[i],
-				last_key_was_a_modifier);
+				last_key_was_a_modifier && i == 0);
 	}
 
 	// identify which binding should be executed.
