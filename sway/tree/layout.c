@@ -327,7 +327,6 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 
 	wlr_log(L_DEBUG, "Moving out of tab/stack into a split");
 	bool is_workspace = current->parent->type == C_WORKSPACE;
-	struct sway_container *old_parent = current->parent->parent;
 	struct sway_container *new_parent = container_split(current->parent,
 		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT);
 	if (is_workspace) {
@@ -337,7 +336,6 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 		container_reap_empty_recursive(new_parent->parent);
 		container_flatten(new_parent->parent);
 	}
-	wl_signal_emit(&container->events.reparent, old_parent);
 	container_create_notify(new_parent);
 	if (is_workspace) {
 		arrange_workspace(new_parent->parent);
@@ -903,6 +901,7 @@ struct sway_container *container_split(struct sway_container *child,
 			struct sway_container *ws_child = workspace->children->items[0];
 			container_remove_child(ws_child);
 			container_add_child(cont, ws_child);
+			wl_signal_emit(&ws_child->events.reparent, workspace);
 		}
 
 		container_add_child(workspace, cont);
@@ -914,9 +913,11 @@ struct sway_container *container_split(struct sway_container *child,
 			seat_set_focus(seat, cont);
 		}
 	} else {
+		struct sway_container *old_parent = child->parent;
 		cont->layout = layout;
 		container_replace_child(child, cont);
 		container_add_child(cont, child);
+		wl_signal_emit(&child->events.reparent, old_parent);
 	}
 
 	container_notify_subtree_changed(cont);
