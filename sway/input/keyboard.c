@@ -49,7 +49,7 @@ static void update_shortcut_model(struct sway_shortcut_state *state,
  * Returns a binding which matches the shortcut model state (ignoring the
  * `release` flag).
  */
-static struct sway_binding *check_shortcut_model(
+static struct sway_binding *get_active_binding(
 		struct sway_shortcut_state *state, list_t *bindings,
 		uint32_t modifiers, bool locked) {
 	int npressed_keys = 0;
@@ -228,11 +228,11 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	// identify which binding should be executed.
-	struct sway_binding *binding = check_shortcut_model(
+	struct sway_binding *binding = get_active_binding(
 			&keyboard->state_keycodes,
 			config->current_mode->keycode_bindings,
 			code_modifiers, input_inhibited);
-	struct sway_binding *translated_binding = check_shortcut_model(
+	struct sway_binding *translated_binding = get_active_binding(
 			&keyboard->state_keysyms_translated,
 			config->current_mode->keysym_bindings,
 			translated_modifiers, input_inhibited);
@@ -242,7 +242,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		wlr_log(L_DEBUG, "encountered duplicate bindings %d and %d",
 			binding->order, translated_binding->order);
 	}
-	struct sway_binding *raw_binding = check_shortcut_model(
+	struct sway_binding *raw_binding = get_active_binding(
 			&keyboard->state_keysyms_raw,
 			config->current_mode->keysym_bindings,
 			raw_modifiers, input_inhibited);
