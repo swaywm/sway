@@ -12,10 +12,9 @@
 /**
  * Update the shortcut model state in response to new input
  */
-static void update_shortcut_model(struct sway_shortcut_state* state,
-				  struct wlr_event_keyboard_key * event,
-				  uint32_t new_key,
-				  bool last_key_was_a_modifier) {
+static void update_shortcut_model(struct sway_shortcut_state *state,
+		struct wlr_event_keyboard_key *event, uint32_t new_key,
+		bool last_key_was_a_modifier) {
 	if (event->state == WLR_KEY_PRESSED) {
 		if (last_key_was_a_modifier && state->last_key_index >= 0) {
 			// Last pressed key before this one was a modifier. We nullify
@@ -26,7 +25,7 @@ static void update_shortcut_model(struct sway_shortcut_state* state,
 		}
 
 		// Add current key to set; there may be duplicates
-		for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYS_CAP; i++) {
+		for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYS_CAP; ++i) {
 			if (!state->pressed_keys[i]) {
 				state->pressed_keys[i] = new_key;
 				state->pressed_keycodes[i] = event->keycode;
@@ -35,7 +34,7 @@ static void update_shortcut_model(struct sway_shortcut_state* state,
 			}
 		}
 	} else {
-		for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYS_CAP; i++) {
+		for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYS_CAP; ++i) {
 			// The same keycode may match multiple keysyms.
 			if (state->pressed_keycodes[i] == event->keycode) {
 				state->pressed_keys[i] = 0;
@@ -50,11 +49,11 @@ static void update_shortcut_model(struct sway_shortcut_state* state,
  * Returns a binding which matches the shortcut model state (ignoring the
  * `release` flag).
  */
-static struct sway_binding* check_shortcut_model(
-		struct sway_shortcut_state* state, list_t* bindings,
+static struct sway_binding *check_shortcut_model(
+		struct sway_shortcut_state *state, list_t *bindings,
 		uint32_t modifiers, bool locked) {
 	int npressed_keys = 0;
-	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYS_CAP; i++) {
+	for (size_t i = 0; i < SWAY_KEYBOARD_PRESSED_KEYS_CAP; ++i) {
 		if (state->pressed_keys[i]) {
 			++npressed_keys;
 		}
@@ -70,10 +69,10 @@ static struct sway_binding* check_shortcut_model(
 
 		bool match = true;
 		for (int j = 0; j < binding->keys->length; ++j) {
-			uint32_t key = *(uint32_t*)binding->keys->items[j];
+			uint32_t key = *(uint32_t *)binding->keys->items[j];
 
 			bool key_found = false;
-			for (int k = 0; k < SWAY_KEYBOARD_PRESSED_KEYS_CAP; k++) {
+			for (int k = 0; k < SWAY_KEYBOARD_PRESSED_KEYS_CAP; ++k) {
 				if (state->pressed_keys[k] == key) {
 					key_found = true;
 					break;
@@ -216,13 +215,13 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 
 	// Update shortcut models
 	update_shortcut_model(&keyboard->state_keycodes, event,
-			      (uint32_t)keycode, last_key_was_a_modifier);
-	for (size_t i=0;i<translated_keysyms_len;i++) {
+			(uint32_t)keycode, last_key_was_a_modifier);
+	for (size_t i = 0; i < translated_keysyms_len; ++i) {
 		update_shortcut_model(&keyboard->state_keysyms_translated,
 				event, (uint32_t)translated_keysyms[i],
 				last_key_was_a_modifier);
 	}
-	for (size_t i=0;i<raw_keysyms_len;i++) {
+	for (size_t i = 0; i < raw_keysyms_len; ++i) {
 		update_shortcut_model(&keyboard->state_keysyms_raw,
 				event, (uint32_t)raw_keysyms[i],
 				last_key_was_a_modifier);
