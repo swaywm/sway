@@ -6,7 +6,20 @@
 #define SWAY_KEYBOARD_PRESSED_KEYS_CAP 32
 
 struct sway_shortcut_state {
+	/**
+	 * A list of pressed key ids (either keysyms or keycodes),
+	 * including duplicates when different keycodes produce the same key id.
+	 *
+	 * Each key id is associated with the keycode (in `pressed_keycodes`)
+	 * whose press generated it, so that the key id can be removed on
+	 * keycode release without recalculating the transient link between
+	 * keycode and key id at the time of the key press.
+	 */
 	uint32_t pressed_keys[SWAY_KEYBOARD_PRESSED_KEYS_CAP];
+	/**
+	 * The list of keycodes associated to currently pressed key ids,
+	 * including duplicates when a keycode generates multiple key ids.
+	 */
 	uint32_t pressed_keycodes[SWAY_KEYBOARD_PRESSED_KEYS_CAP];
 	int last_key_index;
 };
