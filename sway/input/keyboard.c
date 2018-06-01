@@ -12,7 +12,7 @@
 /**
  * Update the shortcut model state in response to new input
  */
-static void update_shortcut_model(struct sway_shortcut_state *state,
+static void update_shortcut_state(struct sway_shortcut_state *state,
 		struct wlr_event_keyboard_key *event, uint32_t new_key,
 		bool last_key_was_a_modifier) {
 	if (event->state == WLR_KEY_PRESSED) {
@@ -213,16 +213,16 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	bool last_key_was_a_modifier = code_modifiers != keyboard->last_modifiers;
 	keyboard->last_modifiers = code_modifiers;
 
-	// Update shortcut models
-	update_shortcut_model(&keyboard->state_keycodes, event,
+	// Update shortcut model state
+	update_shortcut_state(&keyboard->state_keycodes, event,
 			(uint32_t)keycode, last_key_was_a_modifier);
 	for (size_t i = 0; i < translated_keysyms_len; ++i) {
-		update_shortcut_model(&keyboard->state_keysyms_translated,
+		update_shortcut_state(&keyboard->state_keysyms_translated,
 				event, (uint32_t)translated_keysyms[i],
 				last_key_was_a_modifier);
 	}
 	for (size_t i = 0; i < raw_keysyms_len; ++i) {
-		update_shortcut_model(&keyboard->state_keysyms_raw,
+		update_shortcut_state(&keyboard->state_keysyms_raw,
 				event, (uint32_t)raw_keysyms[i],
 				last_key_was_a_modifier);
 	}
