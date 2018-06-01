@@ -312,6 +312,19 @@ static void workspace_rejigger(struct sway_container *ws,
 static void move_out_of_tabs_stacks(struct sway_container *container,
 		struct sway_container *current, enum movement_direction move_dir,
 		int offs) {
+	if (container->parent == current->parent
+			&& current->parent->children->length == 1) {
+		wlr_log(L_DEBUG, "Changing layout of %zd", current->parent->id);
+		current->parent->layout = move_dir ==
+			MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
+		if (current->parent->type == C_WORKSPACE) {
+			arrange_workspace(current->parent);
+		} else {
+			arrange_children_of(current->parent);
+		}
+		return;
+	}
+
 	wlr_log(L_DEBUG, "Moving out of tab/stack into a split");
 	bool is_workspace = current->parent->type == C_WORKSPACE;
 	struct sway_container *old_parent = current->parent->parent;
