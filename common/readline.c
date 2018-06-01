@@ -49,11 +49,11 @@ char *read_line(FILE *file) {
 	return string;
 }
 
-char *peek_line(FILE *file, int offset, long *position) {
+char *peek_line(FILE *file, int line_offset, long *position) {
 	long pos = ftell(file);
-	size_t length = 1;
-	char *line = calloc(1, length);
-	for (int i = 0; i <= offset; i++) {
+	size_t length = 0;
+	char *line = NULL;
+	for (int i = 0; i <= line_offset; i++) {
 		ssize_t read = getline(&line, &length, file);
 		if (read < 0) {
 			break;
