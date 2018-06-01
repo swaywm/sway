@@ -521,7 +521,6 @@ void container_move(struct sway_container *container,
 				sibling = NULL;
 			} else {
 				wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
-				container_remove_child(container);
 				struct sway_container *focus_inactive = seat_get_focus_inactive(
 						config->handler_context.seat, sibling);
 				if (focus_inactive) {
@@ -534,9 +533,11 @@ void container_move(struct sway_container *container,
 					continue;
 				} else if (sibling->children->length) {
 					wlr_log(L_DEBUG, "No focus-inactive, adding arbitrarily");
+					container_remove_child(container);
 					container_add_sibling(sibling->children->items[0], container);
 				} else {
 					wlr_log(L_DEBUG, "No kiddos, adding container alone");
+					container_remove_child(container);
 					container_add_child(sibling, container);
 				}
 				container->width = container->height = 0;
