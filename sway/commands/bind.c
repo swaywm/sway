@@ -69,8 +69,9 @@ bool binding_key_compare(struct sway_binding *binding_a,
 	return true;
 }
 
-static struct cmd_results * cmd_bindsym_or_bindcode(int argc, char **argv, bool bindcode) {
-	const char* bindtype = bindcode ? "bindcode" : "bindsym";
+static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
+		bool bindcode) {
+	const char *bindtype = bindcode ? "bindcode" : "bindsym";
 
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, bindtype, EXPECTED_MORE_THAN, 1))) {
@@ -149,7 +150,7 @@ static struct cmd_results * cmd_bindsym_or_bindcode(int argc, char **argv, bool 
 				return ret;
 			}
 		}
-		uint32_t *key = calloc(1, sizeof(xkb_keysym_t));
+		uint32_t *key = calloc(1, sizeof(uint32_t));
 		if (!key) {
 			free_sway_binding(binding);
 			free_flat_list(split);
@@ -158,9 +159,9 @@ static struct cmd_results * cmd_bindsym_or_bindcode(int argc, char **argv, bool 
 		}
 
 		if (bindcode) {
-			*key = (uint32_t) keycode;
+			*key = (uint32_t)keycode;
 		} else {
-			*key = (uint32_t) keysym;
+			*key = (uint32_t)keysym;
 		}
 
 		list_add(binding->keys, key);
