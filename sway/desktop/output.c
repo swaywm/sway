@@ -1066,6 +1066,8 @@ static void damage_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		wlr_box_rotated_bounds(&box, rotation, &box);
 		wlr_output_damage_add_box(output->damage, &box);
 	}
+
+	wlr_output_schedule_frame(output->wlr_output);
 }
 
 void output_damage_surface(struct sway_output *output, double ox, double oy,
