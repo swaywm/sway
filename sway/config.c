@@ -626,13 +626,13 @@ bool read_config(FILE *file, struct sway_config *config) {
 				success = false;
 				break;
 			}
-			wlr_log(L_DEBUG, "Exiting block '%s'", block);
-			list_del(stack, 0);
-			free(block);
-
 			if (strcmp(block, "bar") == 0) {
 				config->current_bar = NULL;
 			}
+
+			wlr_log(L_DEBUG, "Exiting block '%s'", block);
+			list_del(stack, 0);
+			free(block);
 			memset(&config->handler_context, 0,
 					sizeof(config->handler_context));
 		default:;
