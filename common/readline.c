@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "readline.h"
 #include "log.h"
 #include <stdlib.h>
@@ -46,6 +47,28 @@ char *read_line(FILE *file) {
 	}
 	string[length] = '\0';
 	return string;
+}
+
+char *peek_line(FILE *file, int line_offset, long *position) {
+	long pos = ftell(file);
+	size_t length = 0;
+	char *line = NULL;
+	for (int i = 0; i <= line_offset; i++) {
+		ssize_t read = getline(&line, &length, file);
+		if (read < 0) {
+			free(line);
+			line = NULL;
+			break;
+		}
+		if (read > 0 && line[read - 1] == '\n') {
+			line[read - 1] = '\0';
+		}
+	}
+	if (position) {
+		*position = ftell(file);
+	}
+	fseek(file, pos, SEEK_SET);
+	return line;
 }
 
 char *read_line_buffer(FILE *file, char *string, size_t string_len) {

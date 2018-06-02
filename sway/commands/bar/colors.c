@@ -1,6 +1,21 @@
 #include <string.h>
 #include "sway/commands.h"
 
+// Must be in alphabetical order for bsearch
+static struct cmd_handler bar_colors_handlers[] = {
+	{ "active_workspace", bar_colors_cmd_active_workspace },
+	{ "background", bar_colors_cmd_background },
+	{ "binding_mode", bar_colors_cmd_binding_mode },
+	{ "focused_background", bar_colors_cmd_focused_background },
+	{ "focused_separator", bar_colors_cmd_focused_separator },
+	{ "focused_statusline", bar_colors_cmd_focused_statusline },
+	{ "focused_workspace", bar_colors_cmd_focused_workspace },
+	{ "inactive_workspace", bar_colors_cmd_inactive_workspace },
+	{ "separator", bar_colors_cmd_separator },
+	{ "statusline", bar_colors_cmd_statusline },
+	{ "urgent_workspace", bar_colors_cmd_urgent_workspace },
+};
+
 static struct cmd_results *parse_single_color(char **color,
 		const char *cmd_name, int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -37,15 +52,8 @@ static struct cmd_results *parse_three_colors(char ***colors,
 }
 
 struct cmd_results *bar_cmd_colors(int argc, char **argv) {
-	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "colors", EXPECTED_EQUAL_TO, 1))) {
-		return error;
-	}
-	if (strcmp("{", argv[0]) != 0) {
-		return cmd_results_new(CMD_INVALID, "colors",
-				"Expected '{' at the start of colors config definition.");
-	}
-	return cmd_results_new(CMD_BLOCK_BAR_COLORS, NULL, NULL);
+	return config_subcommand(argv, argc, bar_colors_handlers,
+			sizeof(bar_colors_handlers));
 }
 
 struct cmd_results *bar_colors_cmd_active_workspace(int argc, char **argv) {

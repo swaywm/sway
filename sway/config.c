@@ -59,11 +59,11 @@ static void free_mode(struct sway_mode *mode) {
 }
 
 void free_config(struct sway_config *config) {
-	config_clear_handler_context(config);
-
 	if (!config) {
 		return;
 	}
+
+	memset(&config->handler_context, 0, sizeof(config->handler_context));
 
 	// TODO: handle all currently unhandled lists as we add implementations
 	if (config->symbols) {
@@ -107,7 +107,6 @@ void free_config(struct sway_config *config) {
 	list_free(config->command_policies);
 	list_free(config->feature_policies);
 	list_free(config->ipc_policies);
-	free(config->current_bar);
 	free(config->floating_scroll_up_cmd);
 	free(config->floating_scroll_down_cmd);
 	free(config->floating_scroll_left_cmd);
@@ -514,37 +513,87 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	return true;
 }
 
-void config_clear_handler_context(struct sway_config *config) {
-	free_input_config(config->handler_context.input_config);
-	free_seat_config(config->handler_context.seat_config);
+static int detect_brace_on_following_line(FILE *file, char *line,
+		int line_number) {
+	int lines = 0;
+	if (line[strlen(line) - 1] != '{' && line[strlen(line) - 1] != '}') {
+		char *peeked = NULL;
+		long position = 0;
+		do {
+			wlr_log(L_DEBUG, "Peeking line %d", line_number + lines + 1);
+			free(peeked);
+			peeked = peek_line(file, lines, &position);
+			if (peeked) {
+				peeked = strip_whitespace(peeked);
+			}
+			wlr_log(L_DEBUG, "Peeked line: `%s`", peeked);
+			lines++;
+		} while (peeked && strlen(peeked) == 0);
 
-	memset(&config->handler_context, 0, sizeof(config->handler_context));
+		if (peeked && strlen(peeked) == 1 && peeked[0] == '{') {
+			fseek(file, position, SEEK_SET); 
+		} else {
+			lines = 0;
+		}
+		free(peeked);
+	}
+	return lines;
+}
+
+static char *expand_line(const char *block, const char *line, bool add_brace) {
+	int size = (block ? strlen(block) + 1 : 0) + strlen(line)
+		+ (add_brace ? 2 : 0) + 1;
+	char *expanded = calloc(1, size);
+	if (!expanded) {
+		wlr_log(L_ERROR, "Cannot allocate expanded line buffer");
+		return NULL;
+	}
+	snprintf(expanded, size, "%s%s%s%s", block ? block : "",
+			block ? " " : "", line, add_brace ? " {" : "");
+	return expanded;
 }
 
 bool read_config(FILE *file, struct sway_config *config) {
 	bool success = true;
-	enum cmd_status block = CMD_BLOCK_END;
-
 	int line_number = 0;
 	char *line;
+	list_t *stack = create_list();
 	while (!feof(file)) {
+		char *block = stack->length ? stack->items[0] : NULL;
 		line = read_line(file);
 		if (!line) {
 			continue;
 		}
 		line_number++;
+		wlr_log(L_DEBUG, "Read line %d: %s", line_number, line);
 		line = strip_whitespace(line);
 		if (line[0] == '#') {
 			free(line);
 			continue;
 		}
-		struct cmd_results *res;
-		if (block == CMD_BLOCK_COMMANDS) {
-			// Special case
-			res = config_commands_command(line);
-		} else {
-			res = config_command(line, block);
+		if (strlen(line) == 0) {
+			free(line);
+			continue;
 		}
+		int brace_detected = detect_brace_on_following_line(file, line,
+				line_number);
+		if (brace_detected > 0) {
+			line_number += brace_detected;
+			wlr_log(L_DEBUG, "Detected open brace on line %d", line_number);
+		}
+		char *expanded = expand_line(block, line, brace_detected > 0);
+		if (!expanded) {
+			return false;
+		}
+		wlr_log(L_DEBUG, "Expanded line: %s", expanded);
+		struct cmd_results *res;
+		if (block && strcmp(block, "<commands>") == 0) {
+			// Special case
+			res = config_commands_command(expanded);
+		} else {
+			res = config_command(expanded);
+		}
+		free(expanded);
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
@@ -558,126 +607,41 @@ bool read_config(FILE *file, struct sway_config *config) {
 			list_add(config->cmd_queue, strdup(line));
 			break;
 
-		case CMD_BLOCK_MODE:
-			if (block == CMD_BLOCK_END) {
-				block = CMD_BLOCK_MODE;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
-			break;
-
-		case CMD_BLOCK_INPUT:
-			if (block == CMD_BLOCK_END) {
-				block = CMD_BLOCK_INPUT;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
-			break;
-
-		case CMD_BLOCK_SEAT:
-			if (block == CMD_BLOCK_END) {
-				block = CMD_BLOCK_SEAT;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
-			break;
-
-		case CMD_BLOCK_BAR:
-			if (block == CMD_BLOCK_END) {
-				block = CMD_BLOCK_BAR;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
-			break;
-
-		case CMD_BLOCK_BAR_COLORS:
-			if (block == CMD_BLOCK_BAR) {
-				block = CMD_BLOCK_BAR_COLORS;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
-			break;
-
 		case CMD_BLOCK_COMMANDS:
-			if (block == CMD_BLOCK_END) {
-				block = CMD_BLOCK_COMMANDS;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
+			wlr_log(L_DEBUG, "Entering commands block");
+			list_insert(stack, 0, "<commands>");
 			break;
 
-		case CMD_BLOCK_IPC:
-			if (block == CMD_BLOCK_END) {
-				block = CMD_BLOCK_IPC;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
-			}
-			break;
-
-		case CMD_BLOCK_IPC_EVENTS:
-			if (block == CMD_BLOCK_IPC) {
-				block = CMD_BLOCK_IPC_EVENTS;
-			} else {
-				wlr_log(L_ERROR, "Invalid block '%s'", line);
+		case CMD_BLOCK:
+			wlr_log(L_DEBUG, "Entering block '%s'", res->input);
+			list_insert(stack, 0, strdup(res->input));
+			if (strcmp(res->input, "bar") == 0) {
+				config->current_bar = NULL;
 			}
 			break;
 
 		case CMD_BLOCK_END:
-			switch(block) {
-			case CMD_BLOCK_MODE:
-				wlr_log(L_DEBUG, "End of mode block");
-				config->current_mode = config->modes->items[0];
-				block = CMD_BLOCK_END;
+			if (!block) {
+				wlr_log(L_DEBUG, "Unmatched '}' on line %i", line_number);
+				success = false;
 				break;
-
-			case CMD_BLOCK_INPUT:
-				wlr_log(L_DEBUG, "End of input block");
-				block = CMD_BLOCK_END;
-				break;
-
-			case CMD_BLOCK_SEAT:
-				wlr_log(L_DEBUG, "End of seat block");
-				block = CMD_BLOCK_END;
-				break;
-
-			case CMD_BLOCK_BAR:
-				wlr_log(L_DEBUG, "End of bar block");
-				config->current_bar = NULL;
-				block = CMD_BLOCK_END;
-				break;
-
-			case CMD_BLOCK_BAR_COLORS:
-				wlr_log(L_DEBUG, "End of bar colors block");
-				block = CMD_BLOCK_BAR;
-				break;
-
-			case CMD_BLOCK_COMMANDS:
-				wlr_log(L_DEBUG, "End of commands block");
-				block = CMD_BLOCK_END;
-				break;
-
-			case CMD_BLOCK_IPC:
-				wlr_log(L_DEBUG, "End of IPC block");
-				block = CMD_BLOCK_END;
-				break;
-
-			case CMD_BLOCK_IPC_EVENTS:
-				wlr_log(L_DEBUG, "End of IPC events block");
-				block = CMD_BLOCK_IPC;
-				break;
-
-			case CMD_BLOCK_END:
-				wlr_log(L_ERROR, "Unmatched }");
-				break;
-
-			default:;
 			}
-			config_clear_handler_context(config);
+			wlr_log(L_DEBUG, "Exiting block '%s'", block);
+			list_del(stack, 0);
+			free(block);
+
+			if (strcmp(block, "bar") == 0) {
+				config->current_bar = NULL;
+			}
+			memset(&config->handler_context, 0,
+					sizeof(config->handler_context));
 		default:;
 		}
 		free(line);
 		free_cmd_results(res);
 	}
+	list_foreach(stack, free);
+	list_free(stack);
 
 	return success;
 }

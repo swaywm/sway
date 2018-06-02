@@ -98,7 +98,6 @@ static void keyboard_execute_command(struct sway_keyboard *keyboard,
 		struct sway_binding *binding) {
 	wlr_log(L_DEBUG, "running command for binding: %s",
 		binding->command);
-	config_clear_handler_context(config);
 	config->handler_context.seat = keyboard->seat_device->sway_seat;
 	struct cmd_results *results = execute_command(binding->command, NULL);
 	if (results->status != CMD_SUCCESS) {

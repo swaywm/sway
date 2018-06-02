@@ -3,6 +3,13 @@
 
 #include "config.h"
 
+typedef struct cmd_results *sway_cmd(int argc, char **argv);
+
+struct cmd_handler {
+	char *command;
+	sway_cmd *handle;
+};
+
 /**
  * Indicates the result of a command's execution.
  */
@@ -11,16 +18,9 @@ enum cmd_status {
 	CMD_FAILURE,		/**< The command resulted in an error */
 	CMD_INVALID, 		/**< Unknown command or parser error */
 	CMD_DEFER,		/**< Command execution deferred */
-	// Config Blocks
-	CMD_BLOCK_END,
-	CMD_BLOCK_MODE,
-	CMD_BLOCK_BAR,
-	CMD_BLOCK_BAR_COLORS,
-	CMD_BLOCK_INPUT,
-	CMD_BLOCK_SEAT,
+	CMD_BLOCK,
 	CMD_BLOCK_COMMANDS,
-	CMD_BLOCK_IPC,
-	CMD_BLOCK_IPC_EVENTS,
+	CMD_BLOCK_END
 };
 
 /**
@@ -45,6 +45,8 @@ enum expected_args {
 struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
 
+struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
+		int handlers_size);
 /**
  * Parse and executes a command.
  */
@@ -54,7 +56,12 @@ struct cmd_results *execute_command(char *command,  struct sway_seat *seat);
  *
  * Do not use this under normal conditions.
  */
-struct cmd_results *config_command(char *command, enum cmd_status block);
+struct cmd_results *config_command(char *command);
+/**
+ * Parse and handle a sub command
+ */
+struct cmd_results *config_subcommand(char **argv, int argc,
+		struct cmd_handler *handlers, size_t handlers_size);
 /*
  * Parses a command policy rule.
  */
@@ -76,8 +83,6 @@ const char *cmd_results_to_json(struct cmd_results *results);
 
 struct cmd_results *add_color(const char *name,
 		char *buffer, const char *color);
-
-typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;

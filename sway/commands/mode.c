@@ -7,6 +7,13 @@
 #include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
+#include "stringop.h"
+
+// Must be in order for the bsearch
+static struct cmd_handler mode_handlers[] = {
+	{ "bindcode", cmd_bindcode },
+	{ "bindsym", cmd_bindsym }
+};
 
 struct cmd_results *cmd_mode(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -14,12 +21,12 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		return error;
 	}
 
-	const char *mode_name = argv[0];
-	bool new_mode = (argc == 2 && strcmp(argv[1], "{") == 0);
-	if (new_mode && !config->reading) {
+	if (argc > 1 && !config->reading) {
 		return cmd_results_new(CMD_FAILURE,
 				"mode", "Can only be used in config file.");
 	}
+
+	const char *mode_name = argv[0];
 	struct sway_mode *mode = NULL;
 	// Find mode
 	for (int i = 0; i < config->modes->length; ++i) {
@@ -30,7 +37,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		}
 	}
 	// Create mode if it doesn't exist
-	if (!mode && new_mode) {
+	if (!mode && argc > 1) {
 		mode = calloc(1, sizeof(struct sway_mode));
 		if (!mode) {
 			return cmd_results_new(CMD_FAILURE,
@@ -46,14 +53,21 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 				"mode", "Unknown mode `%s'", mode_name);
 		return error;
 	}
-	if ((config->reading && new_mode) || (!config->reading && !new_mode)) {
+	if ((config->reading && argc > 1) || (!config->reading && argc == 1)) {
 		wlr_log(L_DEBUG, "Switching to mode `%s'",mode->name);
 	}
 	// Set current mode
 	config->current_mode = mode;
-	if (!new_mode) {
+	if (argc == 1) {
 		// trigger IPC mode event
 		ipc_event_mode(config->current_mode->name);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
-	return cmd_results_new(new_mode ? CMD_BLOCK_MODE : CMD_SUCCESS, NULL, NULL);
+
+	// Create binding
+	struct cmd_results *result = config_subcommand(argv + 1, argc - 1,
+			mode_handlers, sizeof(mode_handlers));
+	config->current_mode = config->modes->items[0];
+
+	return result;
 }
