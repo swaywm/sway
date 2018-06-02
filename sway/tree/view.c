@@ -137,7 +137,10 @@ static void view_autoconfigure_floating(struct sway_view *view) {
 	int lx = ws->x + (ws->width - width) / 2;
 	int ly = ws->y + (ws->height - height) / 2;
 
-	view->border_left = view->border_right = view->border_bottom = true;
+	// If the view's border is B_NONE then these properties are ignored.
+	view->border_top = view->border_bottom = true;
+	view->border_left = view->border_right = true;
+
 	view_configure(view, lx, ly, width, height);
 }
 
