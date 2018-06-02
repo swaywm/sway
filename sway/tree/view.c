@@ -790,8 +790,10 @@ void view_update_title(struct sway_view *view, bool force) {
 		view->swayc->formatted_title = NULL;
 	}
 	container_calculate_title_height(view->swayc);
-	container_update_title_textures(view->swayc);
 	config_update_font_height(false);
+
+	// Update title after the global font height is updated
+	container_update_title_textures(view->swayc);
 }
 
 static bool find_by_mark_iterator(struct sway_container *con,
