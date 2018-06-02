@@ -56,6 +56,8 @@ char *peek_line(FILE *file, int line_offset, long *position) {
 	for (int i = 0; i <= line_offset; i++) {
 		ssize_t read = getline(&line, &length, file);
 		if (read < 0) {
+			free(line);
+			line = NULL;
 			break;
 		}
 		if (read > 0 && line[read - 1] == '\n') {
