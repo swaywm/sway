@@ -8,10 +8,6 @@
 
 struct sway_container *output_create(
 		struct sway_output *sway_output) {
-	struct wlr_box size;
-	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
-		&size.height);
-
 	const char *name = sway_output->wlr_output->name;
 	char identifier[128];
 	output_get_identifier(identifier, sizeof(identifier), sway_output);
@@ -53,6 +49,12 @@ struct sway_container *output_create(
 	apply_output_config(oc, output);
 	container_add_child(&root_container, output);
 	load_swaybars();
+
+	struct wlr_box size;
+	wlr_output_effective_resolution(sway_output->wlr_output, &size.width,
+		&size.height);
+	output->width = size.width;
+	output->height = size.height;
 
 	// Create workspace
 	char *ws_name = workspace_next_name(output->name);
