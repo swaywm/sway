@@ -728,14 +728,14 @@ struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 
 struct sway_container *seat_get_active_child(struct sway_seat *seat,
 		struct sway_container *container) {
-	struct sway_container *focus = seat_get_focus_inactive(seat, container);
-	if (!focus) {
-		return NULL;
+	struct sway_seat_container *current = NULL;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (current->container->parent == container &&
+				current->container->layout != L_FLOATING) {
+			return current->container;
+		}
 	}
-	while (focus->parent != container) {
-		focus = focus->parent;
-	}
-	return focus;
+	return NULL;
 }
 
 struct sway_container *seat_get_focus(struct sway_seat *seat) {
