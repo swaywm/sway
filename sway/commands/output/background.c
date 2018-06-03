@@ -8,7 +8,7 @@
 #include "log.h"
 #include "stringop.h"
 
-static char *bg_options[] = {
+static const char *bg_options[] = {
 	"stretch",
 	"center",
 	"fill",

@@ -35,6 +35,9 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	config->handler_context.output_config = output;
 
 	while (argc > 0) {
+		config->handler_context.leftovers.argc = 0;
+		config->handler_context.leftovers.argv = NULL;
+
 		if (find_handler(*argv, output_handlers, sizeof(output_handlers))) {
 			error = config_subcommand(argv, argc, output_handlers,
 					sizeof(output_handlers));
