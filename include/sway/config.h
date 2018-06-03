@@ -372,10 +372,15 @@ struct sway_config {
 	// Context for command handlers
 	struct {
 		struct input_config *input_config;
+		struct output_config *output_config;
 		struct seat_config *seat_config;
 		struct sway_seat *seat;
 		struct sway_container *current_container;
 		bool using_criteria;
+		struct {
+			int argc;
+			char **argv;
+		} leftovers;
 	} handler_context;
 };
 

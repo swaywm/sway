@@ -216,6 +216,15 @@ sway_cmd input_cmd_xkb_options;
 sway_cmd input_cmd_xkb_rules;
 sway_cmd input_cmd_xkb_variant;
 
+sway_cmd output_cmd_background;
+sway_cmd output_cmd_disable;
+sway_cmd output_cmd_dpms;
+sway_cmd output_cmd_enable;
+sway_cmd output_cmd_mode;
+sway_cmd output_cmd_position;
+sway_cmd output_cmd_scale;
+sway_cmd output_cmd_transform;
+
 sway_cmd seat_cmd_attach;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_cursor;
