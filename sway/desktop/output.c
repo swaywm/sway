@@ -846,9 +846,22 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
 
+	bool damage_whole_before_swap = false;
 	if (!pixman_region32_not_empty(damage)) {
 		// Output isn't damaged but needs buffer swap
 		goto renderer_end;
+	}
+
+	const char *damage_debug = getenv("SWAY_DAMAGE_DEBUG");
+	if (damage_debug != NULL) {
+		if (strcmp(damage_debug, "highlight") == 0) {
+			wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
+			damage_whole_before_swap = true;
+		} else if (strcmp(damage_debug, "rerender") == 0) {
+			int width, height;
+			wlr_output_transformed_resolution(wlr_output, &width, &height);
+			pixman_region32_union_rect(damage, damage, 0, 0, width, height);
+		}
 	}
 
 	struct sway_container *workspace = output_get_active_workspace(output);
@@ -903,6 +916,12 @@ renderer_end:
 	if (root_container.sway_root->debug_tree) {
 		wlr_render_texture(renderer, root_container.sway_root->debug_tree,
 			wlr_output->transform_matrix, 0, 0, 1);
+	}
+
+	if (damage_whole_before_swap || root_container.sway_root->debug_tree) {
+		int width, height;
+		wlr_output_transformed_resolution(wlr_output, &width, &height);
+		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 	}
 
 	wlr_renderer_scissor(renderer, NULL);
