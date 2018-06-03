@@ -219,11 +219,6 @@ damage_finish:
 }
 
 static bool surface_is_popup(struct wlr_surface *surface) {
-	if (wlr_surface_is_xwayland_surface(surface)) {
-		struct wlr_xwayland_surface *xsurface =
-			wlr_xwayland_surface_from_wlr_surface(surface);
-		return wlr_xwayland_surface_is_unmanaged(xsurface);
-	}
 	if (wlr_surface_is_xdg_surface(surface)) {
 		struct wlr_xdg_surface *xdg_surface =
 			wlr_xdg_surface_from_wlr_surface(surface);
@@ -234,7 +229,10 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 			wlr_xdg_surface_v6_from_wlr_surface(surface);
 		return xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP;
 	}
-	// Layer surface
+	// Anything else will either be a layer surface, an xwayland managed surface
+	// or an xwayland unmanaged surface. Xwayland unmanaged surfaces are
+	// rendered specially and expect the surface to NOT identify as a popup.
+	// The other two are not popups.
 	return false;
 }
 
