@@ -157,7 +157,7 @@ char *default_filename(const char *extension) {
 
 	struct tm *lt = localtime(&t);
 	strftime(filename, len, "%Y-%m-%d-%H%M%S_swaygrab.", lt);
-	strncat(filename, extension, ext_len);
+	strcat(filename, extension);
 
 	return filename;
 }
