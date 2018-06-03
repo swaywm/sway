@@ -681,10 +681,12 @@ static struct sway_container *popup_at_container(struct sway_container *parent,
 	if (parent->layout == L_TABBED || parent->layout == L_STACKED) {
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
 		struct sway_container *child = seat_get_active_child(seat, parent);
-		struct sway_container *c =
-			popup_at_container(child, lx, ly, surface, sx, sy);
-		if (c) {
-			return c;
+		if (child) {
+			struct sway_container *c =
+				popup_at_container(child, lx, ly, surface, sx, sy);
+			if (c) {
+				return c;
+			}
 		}
 	} else {
 		for (int i = 0; i < parent->children->length; ++i) {
