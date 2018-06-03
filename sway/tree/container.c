@@ -204,8 +204,16 @@ static struct sway_container *container_workspace_destroy(
 		}
 	}
 
-	free(workspace->sway_workspace);
+	struct sway_workspace *sway_workspace = workspace->sway_workspace;
+
+	// This emits the destroy event and also destroys the swayc.
 	_container_destroy(workspace);
+
+	// Clean up the floating container
+	sway_workspace->floating->parent = NULL;
+	_container_destroy(sway_workspace->floating);
+
+	free(sway_workspace);
 
 	if (output) {
 		output_damage_whole(output->sway_output);
