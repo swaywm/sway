@@ -69,6 +69,7 @@ struct render_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
 	pixman_region32_t *damage;
+	struct sway_view *view;
 	float alpha;
 };
 
@@ -81,6 +82,38 @@ static bool get_surface_box(struct root_geometry *geo,
 
 	int sw = surface->current->width;
 	int sh = surface->current->height;
+
+	double _sx = sx, _sy = sy;
+	rotate_child_position(&_sx, &_sy, sw, sh, geo->width, geo->height,
+		geo->rotation);
+
+	struct wlr_box box = {
+		.x = geo->x + _sx,
+		.y = geo->y + _sy,
+		.width = sw,
+		.height = sh,
+	};
+	if (surface_box != NULL) {
+		memcpy(surface_box, &box, sizeof(struct wlr_box));
+	}
+
+	struct wlr_box rotated_box;
+	wlr_box_rotated_bounds(&box, geo->rotation, &rotated_box);
+
+	struct wlr_box output_box = {
+		.width = output->swayc->width,
+		.height = output->swayc->height,
+	};
+
+	struct wlr_box intersection;
+	return wlr_box_intersection(&output_box, &rotated_box, &intersection);
+}
+
+static bool get_view_box(struct root_geometry *geo,
+		struct sway_output *output, struct sway_view *view, int sx, int sy,
+		struct wlr_box *surface_box) {
+	int sw = view->width;
+	int sh = view->height;
 
 	double _sx = sx, _sy = sy;
 	rotate_child_position(&_sx, &_sy, sw, sh, geo->width, geo->height,
@@ -225,13 +258,26 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
 
-	if (!wlr_surface_has_buffer(surface)) {
-		return;
+	struct wlr_texture *texture = NULL;
+	struct wlr_box box;
+	bool intersects;
+
+	// If this is the main surface of a view, render the saved_texture instead
+	// if it exists. It exists when we are mid-transaction.
+	if (data->view && data->view->saved_texture &&
+			data->view->surface == surface) {
+		texture = data->view->saved_texture;
+		intersects = get_view_box(&data->root_geo, data->output, data->view,
+				sx, sy, &box);
+	} else {
+		if (!wlr_surface_has_buffer(surface)) {
+			return;
+		}
+		texture = surface->texture;
+		intersects = get_surface_box(&data->root_geo, data->output, surface,
+				sx, sy, &box);
 	}
 
-	struct wlr_box box;
-	bool intersects = get_surface_box(&data->root_geo, data->output, surface,
-		sx, sy, &box);
 	if (!intersects) {
 		return;
 	}
@@ -244,8 +290,7 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
-	render_texture(wlr_output, output_damage, surface->texture, &box, matrix,
-		alpha);
+	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
 }
 
 static void render_layer(struct sway_output *output,
@@ -315,6 +360,7 @@ static void render_view_surfaces(struct sway_view *view,
 	struct render_data data = {
 		.output = output,
 		.damage = damage,
+		.view = view,
 		.alpha = alpha,
 	};
 	output_view_for_each_surface(
@@ -1132,6 +1178,16 @@ static void output_damage_view(struct sway_output *output,
 void output_damage_from_view(struct sway_output *output,
 		struct sway_view *view) {
 	output_damage_view(output, view, false);
+}
+
+// Expecting an unscaled box in layout coordinates
+void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
+	struct wlr_box box;
+	memcpy(&box, _box, sizeof(struct wlr_box));
+	box.x -= output->swayc->x;
+	box.y -= output->swayc->y;
+	scale_box(&box, output->wlr_output->scale);
+	wlr_output_damage_add_box(output->damage, &box);
 }
 
 static void output_damage_whole_container_iterator(struct sway_container *con,

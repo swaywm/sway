@@ -42,6 +42,8 @@ void output_damage_surface(struct sway_output *output, double ox, double oy,
 void output_damage_from_view(struct sway_output *output,
 	struct sway_view *view);
 
+void output_damage_box(struct sway_output *output, struct wlr_box *box);
+
 void output_damage_whole_container(struct sway_output *output,
 	struct sway_container *con);
 

@@ -29,8 +29,8 @@ struct sway_view_impl {
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
-	void (*configure)(struct sway_view *view, double lx, double ly, int width,
-		int height);
+	uint32_t (*configure)(struct sway_view *view, double lx, double ly,
+			int width, int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
@@ -70,6 +70,12 @@ struct sway_view {
 
 	list_t *executed_criteria; // struct criteria *
 	list_t *marks;             // char *
+	list_t *instructions;      // struct sway_transaction_instruction *
+
+	// If saved_texture is set, the main surface of the view will render this
+	// texture instead of its own. This is used while waiting for transactions
+	// to complete.
+	struct wlr_texture *saved_texture;
 
 	struct wlr_texture *marks_focused;
 	struct wlr_texture *marks_focused_inactive;
@@ -103,8 +109,6 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-
-	int pending_width, pending_height;
 };
 
 struct sway_xdg_shell_view {
@@ -119,8 +123,6 @@ struct sway_xdg_shell_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-
-	int pending_width, pending_height;
 };
 
 struct sway_xwayland_view {
@@ -138,9 +140,6 @@ struct sway_xwayland_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-
-	int pending_lx, pending_ly;
-	int pending_width, pending_height;
 };
 
 struct sway_xwayland_unmanaged {
@@ -212,7 +211,7 @@ uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
 
-void view_configure(struct sway_view *view, double ox, double oy, int width,
+uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
 
 /**

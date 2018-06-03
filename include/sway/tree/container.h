@@ -54,6 +54,28 @@ struct sway_output;
 struct sway_workspace;
 struct sway_view;
 
+struct sway_container_state {
+	// Container/swayc properties
+	enum sway_container_layout layout;
+	double swayc_x, swayc_y;
+	double swayc_width, swayc_height;
+
+	//struct sway_container *parent;
+	//list_t *children;
+
+	// View properties
+	double view_x, view_y;
+	double view_width, view_height;
+	bool is_fullscreen;
+
+	enum sway_container_border border;
+	int border_thickness;
+	bool border_top;
+	bool border_bottom;
+	bool border_left;
+	bool border_right;
+};
+
 struct sway_container {
 	union {
 		// TODO: Encapsulate state for other node types as well like C_CONTAINER
@@ -68,6 +90,8 @@ struct sway_container {
 	 * get_tree JSON output.
 	 */
 	size_t id;
+
+	struct sway_container_state pending;
 
 	char *name;            // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
@@ -245,5 +269,10 @@ void container_set_geometry_from_floating_view(struct sway_container *con);
  * This will return false for any descendants of a floating container.
  */
 bool container_is_floating(struct sway_container *container);
+
+/**
+ * Get a container's box in layout coordinates.
+ */
+struct wlr_box *container_get_box(struct sway_container *container);
 
 #endif

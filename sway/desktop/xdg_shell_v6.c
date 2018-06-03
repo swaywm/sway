@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include "sway/desktop/transaction.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/server.h"
@@ -86,18 +87,15 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 	}
 }
 
-static void configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+static uint32_t configure(struct sway_view *view, double lx, double ly,
+		int width, int height) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		xdg_shell_v6_view_from_view(view);
 	if (xdg_shell_v6_view == NULL) {
-		return;
+		return 0;
 	}
-
-	xdg_shell_v6_view->pending_width = width;
-	xdg_shell_v6_view->pending_height = height;
-	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
-	view_update_position(view, lx, ly);
+	return wlr_xdg_toplevel_v6_set_size(
+			view->wlr_xdg_surface_v6, width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -173,18 +171,12 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, commit);
 	struct sway_view *view = &xdg_shell_v6_view->view;
-	if (view->swayc && container_is_floating(view->swayc)) {
-		int width = view->wlr_xdg_surface_v6->geometry.width;
-		int height = view->wlr_xdg_surface_v6->geometry.height;
-		if (!width && !height) {
-			width = view->wlr_xdg_surface_v6->surface->current->width;
-			height = view->wlr_xdg_surface_v6->surface->current->height;
-		}
-		view_update_size(view, width, height);
-	} else {
-		view_update_size(view, xdg_shell_v6_view->pending_width,
-				xdg_shell_v6_view->pending_height);
+	struct wlr_xdg_surface_v6 *xdg_surface_v6 = view->wlr_xdg_surface_v6;
+
+	if (view->instructions->length) {
+		transaction_notify_view_ready(view, xdg_surface_v6->configure_serial);
 	}
+
 	view_update_title(view, false);
 	view_damage_from(view);
 }

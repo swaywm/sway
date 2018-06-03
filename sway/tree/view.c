@@ -25,6 +25,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->impl = impl;
 	view->executed_criteria = create_list();
 	view->marks = create_list();
+	view->instructions = create_list();
 	wl_signal_init(&view->events.unmap);
 }
 
@@ -37,12 +38,19 @@ void view_destroy(struct sway_view *view) {
 		view_unmap(view);
 	}
 
+	if (!sway_assert(view->instructions->length == 0,
+				"Tried to destroy view with pending instructions")) {
+		return;
+	}
+
 	list_free(view->executed_criteria);
 
 	for (int i = 0; i < view->marks->length; ++i) {
 		free(view->marks->items[i]);
 	}
 	list_free(view->marks);
+
+	list_free(view->instructions);
 
 	wlr_texture_destroy(view->marks_focused);
 	wlr_texture_destroy(view->marks_focused_inactive);
@@ -119,11 +127,12 @@ const char *view_get_shell(struct sway_view *view) {
 	return "unknown";
 }
 
-void view_configure(struct sway_view *view, double lx, double ly, int width,
+uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	if (view->impl->configure) {
-		view->impl->configure(view, lx, ly, width, height);
+		return view->impl->configure(view, lx, ly, width, height);
 	}
+	return 0;
 }
 
 static void view_autoconfigure_floating(struct sway_view *view) {
@@ -178,21 +187,23 @@ void view_autoconfigure(struct sway_view *view) {
 		}
 	}
 
-	view->border_top = view->border_bottom = true;
-	view->border_left = view->border_right = true;
+	struct sway_container_state *state = &view->swayc->pending;
+
+	state->border_top = state->border_bottom = true;
+	state->border_left = state->border_right = true;
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_VERTICAL
 			|| (config->hide_edge_borders == E_SMART && !other_views)) {
-		view->border_left = view->swayc->x != ws->x;
-		int right_x = view->swayc->x + view->swayc->width;
-		view->border_right = right_x != ws->x + ws->width;
+		state->border_left = state->swayc_x != ws->x;
+		int right_x = state->swayc_x + state->swayc_width;
+		state->border_right = right_x != ws->x + ws->width;
 	}
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_HORIZONTAL
 			|| (config->hide_edge_borders == E_SMART && !other_views)) {
-		view->border_top = view->swayc->y != ws->y;
-		int bottom_y = view->swayc->y + view->swayc->height;
-		view->border_bottom = bottom_y != ws->y + ws->height;
+		state->border_top = state->swayc_y != ws->y;
+		int bottom_y = state->swayc_y + state->swayc_height;
+		state->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
 	double x, y, width, height;
@@ -202,53 +213,54 @@ void view_autoconfigure(struct sway_view *view) {
 	// In a tabbed or stacked container, the swayc's y is the top of the title
 	// area. We have to offset the surface y by the height of the title bar, and
 	// disable any top border because we'll always have the title bar.
-	if (view->swayc->parent->layout == L_TABBED) {
+	if (view->swayc->parent->pending.layout == L_TABBED) {
 		y_offset = container_titlebar_height();
-		view->border_top = false;
-	} else if (view->swayc->parent->layout == L_STACKED) {
+		state->border_top = false;
+	} else if (view->swayc->parent->pending.layout == L_STACKED) {
 		y_offset = container_titlebar_height()
 			* view->swayc->parent->children->length;
 		view->border_top = false;
 	}
 
-	switch (view->border) {
+	switch (state->border) {
 	case B_NONE:
-		x = view->swayc->x;
-		y = view->swayc->y + y_offset;
-		width = view->swayc->width;
-		height = view->swayc->height - y_offset;
+		x = state->swayc_x;
+		y = state->swayc_y + y_offset;
+		width = state->swayc_width;
+		height = state->swayc_height - y_offset;
 		break;
 	case B_PIXEL:
-		x = view->swayc->x + view->border_thickness * view->border_left;
-		y = view->swayc->y + view->border_thickness * view->border_top + y_offset;
-		width = view->swayc->width
-			- view->border_thickness * view->border_left
-			- view->border_thickness * view->border_right;
-		height = view->swayc->height - y_offset
-			- view->border_thickness * view->border_top
-			- view->border_thickness * view->border_bottom;
+		x = state->swayc_x + state->border_thickness * state->border_left;
+		y = state->swayc_y + state->border_thickness * state->border_top + y_offset;
+		width = state->swayc_width
+			- state->border_thickness * state->border_left
+			- state->border_thickness * state->border_right;
+		height = state->swayc_height - y_offset
+			- state->border_thickness * state->border_top
+			- state->border_thickness * state->border_bottom;
 		break;
 	case B_NORMAL:
 		// Height is: 1px border + 3px pad + title height + 3px pad + 1px border
-		x = view->swayc->x + view->border_thickness * view->border_left;
-		width = view->swayc->width
-			- view->border_thickness * view->border_left
-			- view->border_thickness * view->border_right;
+		x = state->swayc_x + state->border_thickness * state->border_left;
+		width = state->swayc_width
+			- state->border_thickness * state->border_left
+			- state->border_thickness * state->border_right;
 		if (y_offset) {
-			y = view->swayc->y + y_offset;
-			height = view->swayc->height - y_offset
-				- view->border_thickness * view->border_bottom;
+			y = state->swayc_y + y_offset;
+			height = state->swayc_height - y_offset
+				- state->border_thickness * state->border_bottom;
 		} else {
-			y = view->swayc->y + container_titlebar_height();
-			height = view->swayc->height - container_titlebar_height()
-				- view->border_thickness * view->border_bottom;
+			y = state->swayc_y + container_titlebar_height();
+			height = state->swayc_height - container_titlebar_height()
+				- state->border_thickness * state->border_bottom;
 		}
 		break;
 	}
 
-	view->x = x;
-	view->y = y;
-	view_configure(view, x, y, width, height);
+	state->view_x = x;
+	state->view_y = y;
+	state->view_width = width;
+	state->view_height = height;
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -307,8 +319,8 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 			view_configure(view, view->saved_x, view->saved_y,
 					view->saved_width, view->saved_height);
 		} else {
-			view->swayc->width = view->swayc->saved_width;
-			view->swayc->height = view->swayc->saved_height;
+		view->swayc->width = view->swayc->saved_width;
+		view->swayc->height = view->swayc->saved_height;
 			view_autoconfigure(view);
 		}
 	}
@@ -496,6 +508,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view->swayc = cont;
 	view->border = config->border;
 	view->border_thickness = config->border_thickness;
+	view->swayc->pending.border = config->border;
+	view->swayc->pending.border_thickness = config->border_thickness;
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
@@ -963,7 +977,7 @@ bool view_is_visible(struct sway_view *view) {
 	}
 	// Check the workspace is visible
 	if (!is_sticky) {
-		return workspace_is_visible(workspace);
+	return workspace_is_visible(workspace);
 	}
 	return true;
 }

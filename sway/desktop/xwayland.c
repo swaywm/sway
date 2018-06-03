@@ -167,19 +167,18 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void configure(struct sway_view *view, double lx, double ly, int width,
+static uint32_t configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
-		return;
+		return 0;
 	}
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
-	xwayland_view->pending_lx = lx;
-	xwayland_view->pending_ly = ly;
-	xwayland_view->pending_width = width;
-	xwayland_view->pending_height = height;
 	wlr_xwayland_surface_configure(xsurface, lx, ly, width, height);
+
+	// xwayland doesn't give us a serial for the configure
+	return 0;
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -250,15 +249,21 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (view->swayc && container_is_floating(view->swayc)) {
-		view_update_size(view, xsurface->width, xsurface->height);
-	} else {
-		view_update_size(view, xwayland_view->pending_width,
-				xwayland_view->pending_height);
+
+	// Don't allow xwayland views to do resize or reposition themselves if
+	// they're involved in a transaction. Once the transaction has finished
+	// they'll apply the next time a commit happens.
+	if (view->instructions->length) {
+		if (view->swayc && container_is_floating(view->swayc)) {
+			view_update_size(view, xsurface->width, xsurface->height);
+		} else {
+			view_update_size(view, view->swayc->pending.swayc_width,
+					view->swayc->pending.swayc_height);
+		}
+		view_update_position(view,
+				view->swayc->pending.view_x, view->swayc->pending.view_y);
+		view_damage_from(view);
 	}
-	view_update_position(view,
-			xwayland_view->pending_lx, xwayland_view->pending_ly);
-	view_damage_from(view);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {

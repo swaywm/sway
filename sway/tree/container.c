@@ -116,6 +116,7 @@ struct sway_container *container_create(enum sway_container_type type) {
 
 	if (type != C_VIEW) {
 		c->children = create_list();
+		//c->pending.children = create_list();
 	}
 
 	wl_signal_init(&c->events.destroy);
@@ -162,6 +163,7 @@ static void _container_destroy(struct sway_container *cont) {
 	wlr_texture_destroy(cont->title_urgent);
 
 	list_free(cont->children);
+	//list_free(cont->pending.children);
 	cont->children = NULL;
 	free(cont);
 }
@@ -970,4 +972,13 @@ bool container_is_floating(struct sway_container *container) {
 		return false;
 	}
 	return container->parent == workspace->sway_workspace->floating;
+}
+
+struct wlr_box *container_get_box(struct sway_container *container) {
+	struct wlr_box *box = calloc(1, sizeof(struct wlr_box));
+	box->x = container->x;
+	box->y = container->y;
+	box->width = container->width;
+	box->height = container->height;
+	return box;
 }
