@@ -264,7 +264,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		if (new_ws != old_ws) {
 			seat_set_focus(cursor->seat, cont);
 		}
-	} else {
+	} else if (cont) {
 		seat_set_focus(cursor->seat, cont);
 	}
 
