@@ -77,6 +77,18 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	desktop_damage_surface(xsurface->surface, xsurface->x, xsurface->y, true);
 	wl_list_remove(&surface->link);
 	wl_list_remove(&surface->commit.link);
+
+	if (!wlr_xwayland_surface_is_unmanaged(xsurface)) {
+		// Restore focus
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		struct sway_container *previous =
+			seat_get_focus_inactive(seat, &root_container);
+		if (previous) {
+			// Hack to get seat to re-focus the return value of get_focus
+			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, previous);
+		}
+	}
 }
 
 static void unmanaged_handle_destroy(struct wl_listener *listener, void *data) {
