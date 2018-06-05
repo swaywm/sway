@@ -988,20 +988,30 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		.when = when,
 	};
 
-	send_frame_done_layer(&data,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-	send_frame_done_layer(&data,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
-
 	struct sway_container *workspace = output_get_active_workspace(output);
-	send_frame_done_container(&data, workspace);
-	send_frame_done_container(&data, workspace->sway_workspace->floating);
+	if (workspace->sway_workspace->fullscreen) {
+		send_frame_done_container_iterator(
+			workspace->sway_workspace->fullscreen->swayc, &data);
 
-	send_frame_done_unmanaged(&data,
-		&root_container.sway_root->xwayland_unmanaged);
+		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
+			send_frame_done_unmanaged(&data,
+				&root_container.sway_root->xwayland_unmanaged);
+		}
+	} else {
+		send_frame_done_layer(&data,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
+		send_frame_done_layer(&data,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-	send_frame_done_layer(&data,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+		send_frame_done_container(&data, workspace);
+		send_frame_done_container(&data, workspace->sway_workspace->floating);
+
+		send_frame_done_unmanaged(&data,
+			&root_container.sway_root->xwayland_unmanaged);
+		send_frame_done_layer(&data,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	}
+
 	send_frame_done_layer(&data,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 }
