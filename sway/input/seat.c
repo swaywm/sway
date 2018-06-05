@@ -658,7 +658,8 @@ void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface *layer) {
 	if (!layer && seat->focused_layer) {
 		seat->focused_layer = NULL;
-		struct sway_container *previous = seat_get_focus(seat);
+		struct sway_container *previous =
+			seat_get_focus_inactive(seat, &root_container);
 		if (previous) {
 			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", previous,
 					container_type_to_str(previous->type), previous->name);
