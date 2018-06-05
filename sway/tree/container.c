@@ -655,6 +655,20 @@ static struct sway_container *floating_container_at(double lx, double ly,
 	return NULL;
 }
 
+static bool surface_is_popup(struct wlr_surface *surface) {
+	if (wlr_surface_is_xdg_surface(surface)) {
+		struct wlr_xdg_surface *xdg_surface =
+			wlr_xdg_surface_from_wlr_surface(surface);
+		return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
+	}
+	if (wlr_surface_is_xdg_surface_v6(surface)) {
+		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
+			wlr_xdg_surface_v6_from_wlr_surface(surface);
+		return xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP;
+	}
+	return false;
+}
+
 struct sway_container *container_at(struct sway_container *workspace,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
@@ -668,8 +682,7 @@ struct sway_container *container_at(struct sway_container *workspace,
 		seat_get_focus_inactive(seat, &root_container);
 	if (focus && focus->type == C_VIEW) {
 		c = surface_at_view(focus, lx, ly, surface, sx, sy);
-		if (*surface && *surface == focus->sway_view->surface) {
-			// Not a popup
+		if (*surface && !surface_is_popup(*surface)) {
 			*surface = NULL;
 		} else if (c) {
 			return c;
