@@ -662,7 +662,7 @@ char *do_var_replacement(char *str) {
 			size_t length = strlen(find + 1);
 			strncpy(find, find + 1, length);
 			find[length] = '\0';
-			find += 2;
+			++find;
 			continue;
 		}
 		// Find matching variable
