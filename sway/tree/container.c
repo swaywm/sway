@@ -476,7 +476,7 @@ struct sway_container *container_parent(struct sway_container *container,
 
 static struct sway_container *surface_at_view(struct sway_container *swayc,
 		double lx, double ly, struct wlr_surface **surface,
-		double *sx, double *sy, bool only_popups) {
+		double *sx, double *sy) {
 	if (!sway_assert(swayc->type == C_VIEW, "Expected a view")) {
 		return NULL;
 	}
@@ -490,13 +490,6 @@ static struct sway_container *surface_at_view(struct sway_container *swayc,
 	case SWAY_VIEW_XWAYLAND:
 		_surface = wlr_surface_surface_at(sview->surface,
 				view_sx, view_sy, &_sx, &_sy);
-		if (_surface && only_popups) {
-			struct wlr_xwayland_surface *xsurface =
-				wlr_xwayland_surface_from_wlr_surface(_surface);
-			if (!wlr_xwayland_surface_is_unmanaged(xsurface)) {
-				return NULL;
-			}
-		}
 		break;
 	case SWAY_VIEW_XDG_SHELL_V6:
 		// the top left corner of the sway container is the
@@ -507,13 +500,6 @@ static struct sway_container *surface_at_view(struct sway_container *swayc,
 		_surface = wlr_xdg_surface_v6_surface_at(
 				sview->wlr_xdg_surface_v6,
 				view_sx, view_sy, &_sx, &_sy);
-		if (_surface && only_popups) {
-			struct wlr_xdg_surface_v6 *xdg_surface_v6 =
-				wlr_xdg_surface_v6_from_wlr_surface(_surface);
-			if (xdg_surface_v6->role != WLR_XDG_SURFACE_V6_ROLE_POPUP) {
-				return NULL;
-			}
-		}
 		break;
 	case SWAY_VIEW_XDG_SHELL:
 		// the top left corner of the sway container is the
@@ -524,24 +510,15 @@ static struct sway_container *surface_at_view(struct sway_container *swayc,
 		_surface = wlr_xdg_surface_surface_at(
 				sview->wlr_xdg_surface,
 				view_sx, view_sy, &_sx, &_sy);
-		if (_surface && only_popups) {
-			struct wlr_xdg_surface *xdg_surface =
-				wlr_xdg_surface_from_wlr_surface(_surface);
-			if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_POPUP) {
-				return NULL;
-			}
-		}
 		break;
 	}
 	if (_surface) {
 		*sx = _sx;
 		*sy = _sy;
 		*surface = _surface;
+		return swayc;
 	}
-	if (only_popups && !_surface) {
-		return NULL;
-	}
-	return swayc;
+	return NULL;
 }
 
 static struct sway_container *container_at_container(
@@ -603,7 +580,10 @@ static struct sway_container *container_at_stacked(
 }
 
 /**
- * container_at for a container with layout L_HORIZ or L_VERT.
+ * container_at for a container with layout L_HORIZ, L_VERT or L_FLOATING.
+ *
+ * Iterates the children, does a box check and descends into the child if it
+ * passes.
  */
 static struct sway_container *container_at_linear(struct sway_container *parent,
 		double lx, double ly,
@@ -627,7 +607,8 @@ static struct sway_container *container_at_container(
 		struct sway_container *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (parent->type == C_VIEW) {
-		return surface_at_view(parent, lx, ly, surface, sx, sy, false);
+		surface_at_view(parent, lx, ly, surface, sx, sy);
+		return parent;
 	}
 	if (!parent->children->length) {
 		return NULL;
@@ -643,9 +624,33 @@ static struct sway_container *container_at_container(
 		return container_at_stacked(parent, lx, ly, surface, sx, sy);
 	case L_FLOATING:
 		sway_assert(false, "Didn't expect to see floating here");
-		return NULL;
+		// We can recover from this situation
+		return container_at_linear(parent, lx, ly, surface, sx, sy);
 	case L_NONE:
 		return NULL;
+	}
+	return NULL;
+}
+
+/**
+ * Iterate all visible workspaces and run container_at for each floating
+ * container.
+ */
+static struct sway_container *floating_container_at(double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		for (int j = 0; j < output->children->length; ++j) {
+			struct sway_container *ws = output->children->items[j];
+			if (!workspace_is_visible(ws)) {
+				continue;
+			}
+			struct sway_container *c = container_at_linear(
+					ws->sway_workspace->floating, lx, ly, surface, sx, sy);
+			if (c) {
+				return c;
+			}
+		}
 	}
 	return NULL;
 }
@@ -656,65 +661,26 @@ struct sway_container *container_at(struct sway_container *workspace,
 	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
 		return NULL;
 	}
-	struct sway_container *floating = workspace->sway_workspace->floating;
 	struct sway_container *c;
-	// Floating
-	for (int i = 0; i < floating->children->length; ++i) {
-		struct sway_container *floater = floating->children->items[i];
-		if ((c = container_at_container(floater, lx, ly, surface, sx, sy))) {
+	// Focused view's popups
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
+	if (focus && focus->type == C_VIEW) {
+		c = surface_at_view(focus, lx, ly, surface, sx, sy);
+		if (*surface && *surface == focus->sway_view->surface) {
+			// Not a popup
+			*surface = NULL;
+		} else if (c) {
 			return c;
 		}
 	}
+	// Floating
+	if ((c = floating_container_at(lx, ly, surface, sx, sy))) {
+		return c;
+	}
 	// Tiling
 	if ((c = container_at_container(workspace, lx, ly, surface, sx, sy))) {
-		return c;
-	}
-	return NULL;
-}
-
-static struct sway_container *popup_at_container(struct sway_container *parent,
-		double lx, double ly, struct wlr_surface **surface,
-		double *sx, double *sy) {
-	if (parent->type == C_VIEW) {
-		return surface_at_view(parent, lx, ly, surface, sx, sy, true);
-	}
-	if (parent->layout == L_TABBED || parent->layout == L_STACKED) {
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *child = seat_get_active_child(seat, parent);
-		if (child) {
-			struct sway_container *c =
-				popup_at_container(child, lx, ly, surface, sx, sy);
-			if (c) {
-				return c;
-			}
-		}
-	} else {
-		for (int i = 0; i < parent->children->length; ++i) {
-			struct sway_container *child = parent->children->items[i];
-			struct sway_container *c =
-				popup_at_container(child, lx, ly, surface, sx, sy);
-			if (c) {
-				return c;
-			}
-		}
-	}
-	return NULL;
-}
-
-struct sway_container *popup_at(struct sway_container *workspace,
-		double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy) {
-	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
-		return NULL;
-	}
-	struct sway_container *c;
-	// Floating popups
-	if ((c = popup_at_container(workspace->sway_workspace->floating, lx, ly,
-				surface, sx, sy))) {
-		return c;
-	}
-	// Tiling poups
-	if ((c = popup_at_container(workspace, lx, ly, surface, sx, sy))) {
 		return c;
 	}
 	return NULL;

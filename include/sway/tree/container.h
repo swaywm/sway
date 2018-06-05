@@ -174,13 +174,6 @@ struct sway_container *container_at(struct sway_container *workspace,
 		double *sx, double *sy);
 
 /**
- * Same as container_at, but only checks for popups only.
- */
-struct sway_container *popup_at(struct sway_container *workspace,
-		double lx, double ly, struct wlr_surface **surface,
-		double *sx, double *sy);
-
-/**
  * Apply the function for each descendant of the container breadth first.
  */
 void container_for_each_descendant_bfs(struct sway_container *container,

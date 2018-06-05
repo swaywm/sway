@@ -69,8 +69,9 @@ struct render_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
 	pixman_region32_t *damage;
+	struct sway_view *view;
+	bool only_popups;
 	float alpha;
-	bool render_popups;
 };
 
 static bool get_surface_box(struct root_geometry *geo,
@@ -218,28 +219,10 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static bool surface_is_popup(struct wlr_surface *surface) {
-	if (wlr_surface_is_xdg_surface(surface)) {
-		struct wlr_xdg_surface *xdg_surface =
-			wlr_xdg_surface_from_wlr_surface(surface);
-		return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
-	}
-	if (wlr_surface_is_xdg_surface_v6(surface)) {
-		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
-			wlr_xdg_surface_v6_from_wlr_surface(surface);
-		return xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP;
-	}
-	// Anything else will either be a layer surface, an xwayland managed surface
-	// or an xwayland unmanaged surface. Xwayland unmanaged surfaces are
-	// rendered specially and expect the surface to NOT identify as a popup.
-	// The other two are not popups.
-	return false;
-}
-
-static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
+static void render_surface(struct wlr_surface *surface, int sx, int sy,
 		void *_data) {
 	struct render_data *data = _data;
-	if (surface_is_popup(surface) != data->render_popups) {
+	if (data->only_popups && surface == data->view->surface) {
 		return;
 	}
 	struct wlr_output *wlr_output = data->output->wlr_output;
@@ -278,7 +261,7 @@ static void render_layer(struct sway_output *output,
 		.alpha = 1.0f,
 	};
 	layer_for_each_surface(layer_surfaces, &data.root_geo,
-		render_surface_iterator, &data);
+		render_surface, &data);
 }
 
 static void render_unmanaged(struct sway_output *output,
@@ -289,7 +272,7 @@ static void render_unmanaged(struct sway_output *output,
 		.alpha = 1.0f,
 	};
 	unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
-		render_surface_iterator, &data);
+		render_surface, &data);
 }
 
 static void render_rect(struct wlr_output *wlr_output,
@@ -332,17 +315,16 @@ static void premultiply_alpha(float color[4], float opacity) {
 	color[2] *= color[3];
 }
 
-static void render_view_surfaces(struct sway_view *view,
-		struct sway_output *output, pixman_region32_t *damage,
-		float alpha, bool popups) {
+static void render_view_popups(struct sway_view *view,
+		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct render_data data = {
 		.output = output,
 		.damage = damage,
 		.alpha = alpha,
-		.render_popups = popups,
+		.view = view,
+		.only_popups = true,
 	};
-	output_view_for_each_surface(
-			view, &data.root_geo, render_surface_iterator, &data);
+	output_view_for_each_surface(view, &data.root_geo, render_surface, &data);
 }
 
 /**
@@ -351,7 +333,17 @@ static void render_view_surfaces(struct sway_view *view,
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->sway_view;
-	render_view_surfaces(view, output, damage, view->swayc->alpha, false);
+
+	// We'll only render the view's primary surface here.
+	// Popups need to be rendered too, but only for the focused view, and they
+	// need to render on top of everything else so we do them separately.
+	struct render_data data = {
+		.output = output,
+		.damage = damage,
+		.alpha = view->swayc->alpha,
+	};
+	render_surface(view->surface, view->x - output->swayc->x,
+			view->y - output->swayc->y, &data);
 
 	struct wlr_box box;
 	float output_scale = output->wlr_output->scale;
@@ -857,26 +849,6 @@ static struct sway_container *output_get_active_workspace(
 	return workspace;
 }
 
-static void render_popups(struct sway_output *output, pixman_region32_t *damage,
-		struct sway_container *container) {
-	if (container->type == C_VIEW) {
-		render_view_surfaces(container->sway_view, output, damage, 1.0, true);
-		return;
-	}
-	if (container->layout == L_TABBED || container->layout == L_STACKED) {
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *child = seat_get_active_child(seat, container);
-		if (child) {
-			render_popups(output, damage, child);
-		}
-	} else {
-		for (int i = 0; i < container->children->length; ++i) {
-			struct sway_container *child = container->children->items[i];
-			render_popups(output, damage, child);
-		}
-	}
-}
-
 static void render_output(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -921,12 +893,16 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		render_view_surfaces(workspace->sway_workspace->fullscreen,
-				output, damage, 1.0f, false);
-		render_view_surfaces(workspace->sway_workspace->fullscreen,
-				output, damage, 1.0f, true);
+		struct sway_view *view = workspace->sway_workspace->fullscreen;
+		struct render_data data = {
+			.output = output,
+			.damage = damage,
+			.alpha = 1.0f,
+		};
+		output_view_for_each_surface(
+				view, &data.root_geo, render_surface, &data);
 
-		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
+		if (view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
@@ -948,9 +924,12 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
 		struct sway_container *focus = seat_get_focus(seat);
 		render_container(output, damage, workspace, focus == workspace);
-		render_popups(output, damage, workspace);
 		render_floating(output, damage);
-		render_popups(output, damage, workspace->sway_workspace->floating);
+
+		focus = seat_get_focus_inactive(seat, &root_container);
+		if (focus && focus->type == C_VIEW) {
+			render_view_popups(focus->sway_view, output, damage, 1.0f);
+		}
 
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
