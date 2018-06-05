@@ -412,19 +412,15 @@ void container_move(struct sway_container *container,
 		}
 		case C_WORKSPACE:
 			if (!is_parallel(current->layout, move_dir)) {
-				if (current->children->length > 2) {
+				if (current->children->length >= 2) {
 					wlr_log(L_DEBUG, "Rejiggering the workspace (%d kiddos)",
 							current->children->length);
 					workspace_rejigger(current, container, move_dir);
-				} else if (current->children->length == 2) {
-					wlr_log(L_DEBUG, "Changing workspace layout");
-					current->layout =
-						move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ?
-						L_HORIZ : L_VERT;
-					container_insert_child(current, container, offs < 0 ? 0 : 1);
-					arrange_workspace(current);
+					return;
+				} else {
+					wlr_log(L_DEBUG, "Selecting output");
+					current = current->parent;
 				}
-				return;
 			} else if (current->layout == L_TABBED
 					|| current->layout == L_STACKED) {
 				wlr_log(L_DEBUG, "Rejiggering out of tabs/stacks");
@@ -520,7 +516,7 @@ void container_move(struct sway_container *container,
 				wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
 				struct sway_container *focus_inactive = seat_get_focus_inactive(
 						config->handler_context.seat, sibling);
-				if (focus_inactive) {
+				if (focus_inactive && focus_inactive != sibling) {
 					while (focus_inactive->parent != sibling) {
 						focus_inactive = focus_inactive->parent;
 					}
