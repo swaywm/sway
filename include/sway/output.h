@@ -45,4 +45,5 @@ void output_damage_whole_container(struct sway_output *output,
 
 struct sway_container *output_by_name(const char *name);
 
+void output_enable(struct sway_output *output);
 #endif

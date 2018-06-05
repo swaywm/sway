@@ -255,7 +255,6 @@ static struct sway_container *container_output_destroy(
 		}
 	}
 
-	wl_list_remove(&output->sway_output->destroy.link);
 	wl_list_remove(&output->sway_output->mode.link);
 	wl_list_remove(&output->sway_output->transform.link);
 	wl_list_remove(&output->sway_output->scale.link);
@@ -265,6 +264,7 @@ static struct sway_container *container_output_destroy(
 
 	// clear the wlr_output reference to this container
 	output->sway_output->wlr_output->data = NULL;
+	output->sway_output->swayc = NULL;
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 	_container_destroy(output);

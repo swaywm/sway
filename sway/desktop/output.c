@@ -1157,6 +1157,10 @@ void output_damage_whole_container(struct sway_output *output,
 	wlr_output_damage_add_box(output->damage, &box);
 }
 
+static int find_output(const void *output1, const void *output2) {
+	return output1 == output2 ? 0 : 1;
+}
+
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_destroy);
@@ -1165,7 +1169,19 @@ static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
-	container_destroy(output->swayc);
+	if (output->swayc) {
+		container_destroy(output->swayc);
+	}
+	int index = list_seq_find(root_container.sway_root->outputs, find_output,
+			output);
+	if (index >= 0 && index < root_container.sway_root->outputs->length) {
+		wlr_log(L_DEBUG, "Removing %s from outputs list",
+				output->wlr_output->name);
+		list_del(root_container.sway_root->outputs, index);
+		wl_list_remove(&output->destroy.link);
+		output->wlr_output = NULL;
+		free(output);
+	}
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
@@ -1203,6 +1219,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->server = server;
+	list_add(root_container.sway_root->outputs, output);
 
 	if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
@@ -1210,11 +1227,23 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wlr_output_set_mode(wlr_output, mode);
 	}
 
-	output->damage = wlr_output_damage_create(wlr_output);
+	output_enable(output);
+}
+
+void output_enable(struct sway_output *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
+
+	if (!wlr_output->data) {
+		wlr_output->data = output;
+	}
+
+	if (!output->damage) {
+		output->damage = wlr_output_damage_create(wlr_output);
+	}
 
 	output->swayc = output_create(output);
 	if (!output->swayc) {
-		free(output);
+		// Output is disabled
 		return;
 	}
 

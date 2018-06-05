@@ -131,11 +131,13 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 	struct wlr_output *wlr_output = output->sway_output->wlr_output;
 
 	if (oc && oc->enabled == 0) {
+		struct sway_output *sway_output = output->sway_output;
 		if (output->sway_output->bg_pid != 0) {
 			terminate_swaybg(output->sway_output->bg_pid);
 			output->sway_output->bg_pid = 0;
 		}
 		container_destroy(output);
+		sway_output->swayc = NULL;
 		wlr_output_layout_remove(root_container.sway_root->output_layout,
 			wlr_output);
 		return;

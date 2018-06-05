@@ -139,6 +139,26 @@ static void ipc_json_describe_output(struct sway_container *container, json_obje
 	json_object_object_add(object, "layout", json_object_new_string("output"));
 }
 
+json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
+	
+	json_object *object = json_object_new_object();
+
+	json_object_object_add(object, "type", json_object_new_string("output"));
+	json_object_object_add(object, "name",
+			wlr_output->name ? json_object_new_string(wlr_output->name) : NULL);
+	json_object_object_add(object, "active", json_object_new_boolean(false));
+	json_object_object_add(object, "make",
+			json_object_new_string(wlr_output->make));
+	json_object_object_add(object, "model",
+			json_object_new_string(wlr_output->model));
+	json_object_object_add(object, "serial",
+			json_object_new_string(wlr_output->serial));
+	json_object_object_add(object, "modes", json_object_new_array());
+
+	return object;
+}
+
 static void ipc_json_describe_workspace(struct sway_container *workspace,
 		json_object *object) {
 	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
