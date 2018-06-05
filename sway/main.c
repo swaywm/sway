@@ -160,7 +160,6 @@ static void log_distro() {
 }
 
 static void log_kernel() {
-	return;
 	FILE *f = popen("uname -a", "r");
 	if (!f) {
 		wlr_log(L_INFO, "Unable to determine kernel version");
