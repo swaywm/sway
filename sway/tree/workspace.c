@@ -128,12 +128,14 @@ char *workspace_next_name(const char *output_name) {
 		}
 
 		if (strcmp("workspace", cmd) == 0 && name) {
-			wlr_log(L_DEBUG, "Got valid workspace command for target: '%s'", name);
 			char *_target = strdup(name);
+			_target = do_var_replacement(_target);
 			strip_quotes(_target);
 			while (isspace(*_target)) {
 				memmove(_target, _target+1, strlen(_target+1));
 			}
+			wlr_log(L_DEBUG, "Got valid workspace command for target: '%s'",
+					_target);
 
 			// Make sure that the command references an actual workspace
 			// not a command about workspaces
