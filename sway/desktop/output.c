@@ -774,9 +774,10 @@ static void render_container_stacked(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int y = con->y + container_titlebar_height() * i;
-		render_titlebar(output, damage, child, child->x, y, child->width,
-				colors, title_texture, marks_texture);
+		int y = con->current.swayc_y + container_titlebar_height() * i;
+		render_titlebar(output, damage, child, child->current.swayc_x, y,
+				child->current.swayc_width, colors,
+				title_texture, marks_texture);
 
 		if (child == current) {
 			current_colors = colors;
@@ -795,7 +796,7 @@ static void render_container_stacked(struct sway_output *output,
 static void render_container(struct sway_output *output,
 		pixman_region32_t *damage, struct sway_container *con,
 		bool parent_focused) {
-	switch (con->layout) {
+	switch (con->current.layout) {
 	case L_NONE:
 	case L_HORIZ:
 	case L_VERT:
@@ -832,9 +833,10 @@ static void render_floating_container(struct sway_output *soutput,
 			marks_texture = view->marks_unfocused;
 		}
 
-		if (con->sway_view->border == B_NORMAL) {
-			render_titlebar(soutput, damage, con, con->x, con->y, con->width,
-					colors, title_texture, marks_texture);
+		if (con->current.border == B_NORMAL) {
+			render_titlebar(soutput, damage, con, con->current.swayc_x,
+					con->current.swayc_y, con->current.swayc_width, colors,
+					title_texture, marks_texture);
 		} else {
 			render_top_border(soutput, damage, con, colors);
 		}
@@ -1184,8 +1186,8 @@ void output_damage_from_view(struct sway_output *output,
 void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
 	struct wlr_box box;
 	memcpy(&box, _box, sizeof(struct wlr_box));
-	box.x -= output->swayc->x;
-	box.y -= output->swayc->y;
+	box.x -= output->swayc->current.swayc_x;
+	box.y -= output->swayc->current.swayc_y;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);
 }
@@ -1204,10 +1206,10 @@ static void output_damage_whole_container_iterator(struct sway_container *con,
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	struct wlr_box box = {
-		.x = con->x - output->wlr_output->lx,
-		.y = con->y - output->wlr_output->ly,
-		.width = con->width,
-		.height = con->height,
+		.x = con->current.swayc_x - output->wlr_output->lx,
+		.y = con->current.swayc_y - output->wlr_output->ly,
+		.width = con->current.swayc_width,
+		.height = con->current.swayc_height,
 	};
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);

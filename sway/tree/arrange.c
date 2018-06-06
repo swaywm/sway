@@ -22,48 +22,46 @@ static void apply_horiz_layout(struct sway_container *parent) {
 		return;
 	}
 	size_t parent_offset = 0;
-	if (parent->parent->pending.layout == L_TABBED) {
+	if (parent->parent->layout == L_TABBED) {
 		parent_offset = container_titlebar_height();
-	} else if (parent->parent->pending.layout == L_STACKED) {
+	} else if (parent->parent->layout == L_STACKED) {
 		parent_offset = container_titlebar_height() *
 			parent->parent->children->length;
 	}
-	size_t parent_height = parent->pending.swayc_height - parent_offset;
+	size_t parent_height = parent->height - parent_offset;
 
 	// Calculate total width of children
 	double total_width = 0;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
-		if (child->pending.swayc_width <= 0) {
+		if (child->width <= 0) {
 			if (num_children > 1) {
-				child->pending.swayc_width =
-					parent->pending.swayc_width / (num_children - 1);
+				child->width = parent->width / (num_children - 1);
 			} else {
-				child->pending.swayc_width = parent->pending.swayc_width;
+				child->width = parent->width;
 			}
 		}
-		total_width += child->pending.swayc_width;
+		total_width += child->width;
 	}
-	double scale = parent->pending.swayc_width / total_width;
+	double scale = parent->width / total_width;
 
 	// Resize windows
 	wlr_log(L_DEBUG, "Arranging %p horizontally", parent);
-	double child_x = parent->pending.swayc_x;
+	double child_x = parent->x;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
 		wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
-				child, child->type, child->pending.swayc_width, scale);
-		child->pending.swayc_x = child_x;
-		child->pending.swayc_y = parent->pending.swayc_y + parent_offset;
-		child->pending.swayc_width = floor(child->pending.swayc_width * scale);
-		child->pending.swayc_height = parent_height;
-		child_x += child->pending.swayc_width;
+				child, child->type, child->width, scale);
+		child->x = child_x;
+		child->y = parent->y + parent_offset;
+		child->width = floor(child->width * scale);
+		child->height = parent_height;
+		child_x += child->width;
 
 		// Make last child use remaining width of parent
 		if (i == num_children - 1) {
-			child->pending.swayc_width = parent->pending.swayc_x +
-				parent->pending.swayc_width - child->pending.swayc_x;
+			child->width = parent->x + parent->width - child->x;
 		}
 	}
 }
@@ -74,49 +72,47 @@ static void apply_vert_layout(struct sway_container *parent) {
 		return;
 	}
 	size_t parent_offset = 0;
-	if (parent->parent->pending.layout == L_TABBED) {
+	if (parent->parent->layout == L_TABBED) {
 		parent_offset = container_titlebar_height();
-	} else if (parent->parent->pending.layout == L_STACKED) {
+	} else if (parent->parent->layout == L_STACKED) {
 		parent_offset =
 			container_titlebar_height() * parent->parent->children->length;
 	}
-	size_t parent_height = parent->pending.swayc_height - parent_offset;
+	size_t parent_height = parent->height - parent_offset;
 
 	// Calculate total height of children
 	double total_height = 0;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
-		if (child->pending.swayc_height <= 0) {
+		if (child->height <= 0) {
 			if (num_children > 1) {
-				child->pending.swayc_height =
-					parent_height / (num_children - 1);
+				child->height = parent_height / (num_children - 1);
 			} else {
-				child->pending.swayc_height = parent_height;
+				child->height = parent_height;
 			}
 		}
-		total_height += child->pending.swayc_height;
+		total_height += child->height;
 	}
 	double scale = parent_height / total_height;
 
 	// Resize
 	wlr_log(L_DEBUG, "Arranging %p vertically", parent);
-	double child_y = parent->pending.swayc_y + parent_offset;
+	double child_y = parent->y + parent_offset;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
 		wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
-				child, child->type, child->pending.swayc_height, scale);
-		child->pending.swayc_x = parent->pending.swayc_x;
-		child->pending.swayc_y = child_y;
-		child->pending.swayc_width = parent->pending.swayc_width;
-		child->pending.swayc_height =
-			floor(child->pending.swayc_height * scale);
-		child_y += child->pending.swayc_height;
+				child, child->type, child->height, scale);
+		child->x = parent->x;
+		child->y = child_y;
+		child->width = parent->width;
+		child->height = floor(child->height * scale);
+		child_y += child->height;
 
 		// Make last child use remaining height of parent
 		if (i == num_children - 1) {
-			child->pending.swayc_height = parent->pending.swayc_y +
-				parent_offset + parent_height - child->pending.swayc_y;
+			child->height =
+				parent->y + parent_offset + parent_height - child->y;
 		}
 	}
 }
@@ -126,19 +122,19 @@ static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 		return;
 	}
 	size_t parent_offset = 0;
-	if (parent->parent->pending.layout == L_TABBED) {
+	if (parent->parent->layout == L_TABBED) {
 		parent_offset = container_titlebar_height();
-	} else if (parent->parent->pending.layout == L_STACKED) {
+	} else if (parent->parent->layout == L_STACKED) {
 		parent_offset =
 			container_titlebar_height() * parent->parent->children->length;
 	}
-	size_t parent_height = parent->pending.swayc_height - parent_offset;
+	size_t parent_height = parent->height - parent_offset;
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
-		child->pending.swayc_x = parent->pending.swayc_x;
-		child->pending.swayc_y = parent->pending.swayc_y + parent_offset;
-		child->pending.swayc_width = parent->pending.swayc_width;
-		child->pending.swayc_height = parent_height;
+		child->x = parent->x;
+		child->y = parent->y + parent_offset;
+		child->width = parent->width;
+		child->height = parent_height;
 	}
 }
 
@@ -148,11 +144,10 @@ static void _arrange_children_of(struct sway_container *parent,
 		return;
 	}
 	wlr_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", parent,
-		parent->name, parent->pending.swayc_width, parent->pending.swayc_height,
-		parent->pending.swayc_x, parent->pending.swayc_y);
+		parent->name, parent->width, parent->height, parent->x, parent->y);
 
 	// Calculate x, y, width and height of children
-	switch (parent->pending.layout) {
+	switch (parent->layout) {
 	case L_HORIZ:
 		apply_horiz_layout(parent);
 		break;
@@ -191,13 +186,13 @@ static void _arrange_workspace(struct sway_container *workspace,
 	struct wlr_box *area = &output->sway_output->usable_area;
 	wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
-	workspace->pending.swayc_width = area->width;
-	workspace->pending.swayc_height = area->height;
-	workspace->pending.swayc_x = output->x + area->x;
-	workspace->pending.swayc_y = output->y + area->y;
+	workspace->width = area->width;
+	workspace->height = area->height;
+	workspace->x = output->x + area->x;
+	workspace->y = output->y + area->y;
 	transaction_add_container(transaction, workspace);
 	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
-			workspace->pending.swayc_x, workspace->pending.swayc_y);
+			workspace->x, workspace->y);
 	_arrange_children_of(workspace, transaction);
 }
 
@@ -213,13 +208,9 @@ static void _arrange_output(struct sway_container *output,
 	output->y = output_box->y;
 	output->width = output_box->width;
 	output->height = output_box->height;
-	output->pending.swayc_x = output_box->x;
-	output->pending.swayc_y = output_box->y;
-	output->pending.swayc_width = output_box->width;
-	output->pending.swayc_height = output_box->height;
 	transaction_add_container(transaction, output);
 	wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
-			output->name, output->pending.swayc_x, output->pending.swayc_y);
+			output->name, output->x, output->y);
 	for (int i = 0; i < output->children->length; ++i) {
 		struct sway_container *workspace = output->children->items[i];
 		_arrange_workspace(workspace, transaction);
@@ -238,10 +229,6 @@ static void _arrange_root(struct sway_transaction *transaction) {
 	root_container.y = layout_box->y;
 	root_container.width = layout_box->width;
 	root_container.height = layout_box->height;
-	root_container.pending.swayc_x = layout_box->x;
-	root_container.pending.swayc_y = layout_box->y;
-	root_container.pending.swayc_width = layout_box->width;
-	root_container.pending.swayc_height = layout_box->height;
 	transaction_add_container(transaction, &root_container);
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *output = root_container.children->items[i];

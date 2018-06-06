@@ -91,7 +91,9 @@ struct sway_container {
 	 */
 	size_t id;
 
-	struct sway_container_state pending;
+	// The pending state is the main container properties, and the current state is in the below struct.
+	// This means most places of the code can refer to the main variables (pending state) and it'll just work.
+	struct sway_container_state current;
 
 	char *name;            // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar

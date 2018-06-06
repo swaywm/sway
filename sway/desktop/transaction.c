@@ -67,8 +67,30 @@ void transaction_add_container(struct sway_transaction *transaction,
 		calloc(1, sizeof(struct sway_transaction_instruction));
 	instruction->transaction = transaction;
 	instruction->container = container;
-	memcpy(&instruction->state, &container->pending,
-			sizeof(struct sway_container_state));
+
+	// Copy the container's main (pending) properties into the instruction state
+	struct sway_container_state *state = &instruction->state;
+	state->layout = container->layout;
+	state->swayc_x = container->x;
+	state->swayc_y = container->y;
+	state->swayc_width = container->width;
+	state->swayc_height = container->height;
+
+	if (container->type == C_VIEW) {
+		struct sway_view *view = container->sway_view;
+		state->view_x = view->x;
+		state->view_y = view->y;
+		state->view_width = view->width;
+		state->view_height = view->height;
+		state->is_fullscreen = view->is_fullscreen;
+		state->border = view->border;
+		state->border_thickness = view->border_thickness;
+		state->border_top = view->border_top;
+		state->border_left = view->border_left;
+		state->border_right = view->border_right;
+		state->border_bottom = view->border_bottom;
+	}
+
 	list_add(transaction->instructions, instruction);
 }
 
@@ -102,30 +124,13 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	for (i = 0; i < transaction->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
-		struct sway_container_state *state = &instruction->state;
 		struct sway_container *container = instruction->container;
 
-		container->layout = state->layout;
-		container->x = state->swayc_x;
-		container->y = state->swayc_y;
-		container->width = state->swayc_width;
-		container->height = state->swayc_height;
+		memcpy(&instruction->container->current, &instruction->state,
+				sizeof(struct sway_container_state));
 
 		if (container->type == C_VIEW) {
-			struct sway_view *view = container->sway_view;
-			view->x = state->view_x;
-			view->y = state->view_y;
-			view->width = state->view_width;
-			view->height = state->view_height;
-			view->is_fullscreen = state->is_fullscreen;
-			view->border = state->border;
-			view->border_thickness = state->border_thickness;
-			view->border_top = state->border_top;
-			view->border_left = state->border_left;
-			view->border_right = state->border_right;
-			view->border_bottom = state->border_bottom;
-
-			remove_saved_view_texture(view);
+			remove_saved_view_texture(container->sway_view);
 		}
 	}
 

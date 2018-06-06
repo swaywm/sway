@@ -257,11 +257,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		if (view->swayc && container_is_floating(view->swayc)) {
 			view_update_size(view, xsurface->width, xsurface->height);
 		} else {
-			view_update_size(view, view->swayc->pending.swayc_width,
-					view->swayc->pending.swayc_height);
+			view_update_size(view, view->swayc->width, view->swayc->height);
 		}
-		view_update_position(view,
-				view->swayc->pending.view_x, view->swayc->pending.view_y);
+		view_update_position(view, view->x, view->y);
 		view_damage_from(view);
 	}
 }
@@ -314,7 +312,8 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		return;
 	}
 	// TODO: Let floating views do whatever
-	configure(view, view->swayc->x, view->swayc->y, view->width, view->height);
+	configure(view, view->swayc->current.view_x, view->swayc->current.view_y,
+			view->swayc->current.view_width, view->swayc->current.view_height);
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {

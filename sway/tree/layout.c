@@ -915,10 +915,10 @@ void container_recursive_resize(struct sway_container *container,
 	bool layout_match = true;
 	wlr_log(L_DEBUG, "Resizing %p with amount: %f", container, amount);
 	if (edge == RESIZE_EDGE_LEFT || edge == RESIZE_EDGE_RIGHT) {
-		container->pending.swayc_width += amount;
+		container->width += amount;
 		layout_match = container->layout == L_HORIZ;
 	} else if (edge == RESIZE_EDGE_TOP || edge == RESIZE_EDGE_BOTTOM) {
-		container->pending.swayc_height += amount;
+		container->height += amount;
 		layout_match = container->layout == L_VERT;
 	}
 	if (container->children) {

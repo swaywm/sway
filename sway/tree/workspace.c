@@ -60,12 +60,6 @@ struct sway_container *workspace_create(struct sway_container *output,
 	workspace->prev_layout = L_NONE;
 	workspace->layout = container_get_default_layout(output);
 
-	workspace->pending.swayc_x = workspace->x;
-	workspace->pending.swayc_y = workspace->y;
-	workspace->pending.swayc_width = workspace->width;
-	workspace->pending.swayc_height = workspace->height;
-	workspace->pending.layout = workspace->layout;
-
 	struct sway_workspace *swayws = calloc(1, sizeof(struct sway_workspace));
 	if (!swayws) {
 		return NULL;
