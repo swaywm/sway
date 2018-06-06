@@ -899,10 +899,7 @@ struct sway_container *container_split(struct sway_container *child,
 
 	if (set_focus) {
 		seat_set_focus(seat, cont);
-		if (cont->parent->layout == L_TABBED
-				|| cont->parent->layout == L_STACKED) {
-			seat_set_focus(seat, child);
-		}
+		seat_set_focus(seat, child);
 	}
 
 	container_notify_subtree_changed(cont);
