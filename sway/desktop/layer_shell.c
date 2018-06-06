@@ -176,7 +176,7 @@ void arrange_layers(struct sway_output *output) {
 				sizeof(struct wlr_box)) != 0) {
 		wlr_log(L_DEBUG, "Usable area changed, rearranging output");
 		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
-		arrange_output(output->swayc);
+		arrange_and_commit(output->swayc);
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom

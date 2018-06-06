@@ -5,10 +5,10 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/edges.h>
 #include "log.h"
-#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -210,7 +210,13 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		view->natural_width = view->wlr_xdg_surface->surface->current->width;
 		view->natural_height = view->wlr_xdg_surface->surface->current->height;
 	}
+
 	view_map(view, view->wlr_xdg_surface->surface);
+
+	if (xdg_surface->toplevel->client_pending.fullscreen) {
+		view_set_fullscreen(view, true);
+	}
+	arrange_and_commit(view->swayc->parent);
 
 	xdg_shell_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
@@ -219,10 +225,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->new_popup.notify = handle_new_popup;
 	wl_signal_add(&xdg_surface->events.new_popup,
 		&xdg_shell_view->new_popup);
-
-	if (xdg_surface->toplevel->client_pending.fullscreen) {
-		view_set_fullscreen(view, true);
-	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -237,6 +239,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	struct wlr_xdg_toplevel_set_fullscreen_event *e = data;
 	struct wlr_xdg_surface *xdg_surface =
 		xdg_shell_view->view.wlr_xdg_surface;
+	struct sway_view *view = &xdg_shell_view->view;
 
 	if (!sway_assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL,
 				"xdg_shell requested fullscreen of surface with role %i",
@@ -247,7 +250,10 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
-	view_set_fullscreen(&xdg_shell_view->view, e->fullscreen);
+	view_set_fullscreen(view, e->fullscreen);
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	arrange_and_commit(ws);
 }
 
 void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {

@@ -5,8 +5,10 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/log.h>
 #include "sway/commands.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/workspace.h"
@@ -96,6 +98,12 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		seat_set_focus(config->handler_context.seat, focus);
 		container_reap_empty(old_parent);
 		container_reap_empty(destination->parent);
+
+		struct sway_transaction *txn = transaction_create();
+		arrange_windows(old_parent, txn);
+		arrange_windows(destination->parent, txn);
+		transaction_commit(txn);
+
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcasecmp(argv[1], "to") == 0
 			&& strcasecmp(argv[2], "output") == 0) {
@@ -125,6 +133,12 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		seat_set_focus(config->handler_context.seat, old_parent);
 		container_reap_empty(old_parent);
 		container_reap_empty(focus->parent);
+
+		struct sway_transaction *txn = transaction_create();
+		arrange_windows(old_parent, txn);
+		arrange_windows(focus->parent, txn);
+		transaction_commit(txn);
+
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	return cmd_results_new(CMD_INVALID, "move", expected_syntax);
@@ -152,7 +166,26 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 		current = container_parent(current, C_WORKSPACE);
 	}
 	container_move_to(current, destination);
+
+	struct sway_transaction *txn = transaction_create();
+	arrange_windows(source, txn);
+	arrange_windows(destination, txn);
+	transaction_commit(txn);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static void move_in_direction(struct sway_container *container,
+		enum wlr_direction direction, int move_amt) {
+	struct sway_container *old_parent = container->parent;
+	container_move(container, direction, move_amt);
+
+	struct sway_transaction *txn = transaction_create();
+	arrange_windows(old_parent, txn);
+	if (container->parent != old_parent) {
+		arrange_windows(container->parent, txn);
+	}
+	transaction_commit(txn);
 }
 
 struct cmd_results *cmd_move(int argc, char **argv) {
@@ -173,13 +206,13 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		container_move(current, MOVE_LEFT, move_amt);
+		move_in_direction(current, MOVE_LEFT, move_amt);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		container_move(current, MOVE_RIGHT, move_amt);
+		move_in_direction(current, MOVE_RIGHT, move_amt);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		container_move(current, MOVE_UP, move_amt);
+		move_in_direction(current, MOVE_UP, move_amt);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		container_move(current, MOVE_DOWN, move_amt);
+		move_in_direction(current, MOVE_DOWN, move_amt);
 	} else if (strcasecmp(argv[0], "container") == 0
 			|| strcasecmp(argv[0], "window") == 0) {
 		return cmd_move_container(current, argc, argv);

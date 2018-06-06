@@ -17,6 +17,13 @@
  */
 #define TIMEOUT_MS 200
 
+struct sway_transaction {
+	struct wl_event_source *timer;
+	list_t *instructions;   // struct sway_transaction_instruction *
+	list_t *damage;         // struct wlr_box *
+	size_t num_waiting;
+};
+
 struct sway_transaction_instruction {
 	struct sway_transaction *transaction;
 	struct sway_container *container;
@@ -162,16 +169,18 @@ void transaction_commit(struct sway_transaction *transaction) {
 	for (int i = 0; i < transaction->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
-		if (instruction->container->type == C_VIEW) {
-			struct sway_view *view = instruction->container->sway_view;
-			instruction->serial = view_configure(view,
+		struct sway_container *con = instruction->container;
+		if (con->type == C_VIEW &&
+				(con->current.view_width != instruction->state.view_width ||
+				 con->current.view_height != instruction->state.view_height)) {
+			instruction->serial = view_configure(con->sway_view,
 					instruction->state.view_x,
 					instruction->state.view_y,
 					instruction->state.view_width,
 					instruction->state.view_height);
 			if (instruction->serial) {
-				save_view_texture(view);
-				list_add(view->instructions, instruction);
+				save_view_texture(con->sway_view);
+				list_add(con->sway_view->instructions, instruction);
 				++transaction->num_waiting;
 			}
 		}

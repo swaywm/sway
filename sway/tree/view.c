@@ -135,22 +135,22 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	return 0;
 }
 
-static void view_autoconfigure_floating(struct sway_view *view) {
+void view_init_floating(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 	int max_width = ws->width * 0.6666;
 	int max_height = ws->height * 0.6666;
-	int width =
+	view->width =
 		view->natural_width > max_width ? max_width : view->natural_width;
-	int height =
+	view->height =
 		view->natural_height > max_height ? max_height : view->natural_height;
-	int lx = ws->x + (ws->width - width) / 2;
-	int ly = ws->y + (ws->height - height) / 2;
+	view->x = ws->x + (ws->width - view->width) / 2;
+	view->y = ws->y + (ws->height - view->height) / 2;
 
 	// If the view's border is B_NONE then these properties are ignored.
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;
 
-	view_configure(view, lx, ly, width, height);
+	container_set_geometry_from_floating_view(view->swayc);
 }
 
 void view_autoconfigure(struct sway_view *view) {
@@ -162,12 +162,14 @@ void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
 	if (view->is_fullscreen) {
-		view_configure(view, output->x, output->y, output->width, output->height);
+		view->x = output->x;
+		view->y = output->y;
+		view->width = output->width;
+		view->height = output->height;
 		return;
 	}
 
 	if (container_is_floating(view->swayc)) {
-		view_autoconfigure_floating(view);
 		return;
 	}
 
@@ -268,8 +270,7 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
-// Set fullscreen, but without IPC events or arranging windows.
-void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
+void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (view->is_fullscreen == fullscreen) {
 		return;
 	}
@@ -315,26 +316,17 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 	} else {
 		workspace->sway_workspace->fullscreen = NULL;
 		if (container_is_floating(view->swayc)) {
-			view_configure(view, view->saved_x, view->saved_y,
-					view->saved_width, view->saved_height);
+			view->x = view->saved_x;
+			view->y = view->saved_y;
+			view->width = view->saved_width;
+			view->height = view->saved_height;
+			container_set_geometry_from_floating_view(view->swayc);
 		} else {
 			view->swayc->width = view->swayc->saved_width;
 			view->swayc->height = view->swayc->saved_height;
 		}
 	}
-}
 
-void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
-	if (view->is_fullscreen == fullscreen) {
-		return;
-	}
-
-	view_set_fullscreen_raw(view, fullscreen);
-
-	struct sway_container *workspace =
-		container_parent(view->swayc, C_WORKSPACE);
-	arrange_workspace(workspace);
-	output_damage_whole(workspace->parent->sway_output);
 	ipc_event_window(view->swayc, "fullscreen_mode");
 }
 
@@ -517,8 +509,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		container_set_floating(view->swayc, true);
-	} else {
-		arrange_children_of(cont->parent);
 	}
 
 	input_manager_set_focus(input_manager, cont);
@@ -530,7 +520,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	container_notify_subtree_changed(view->swayc->parent);
 	view_execute_criteria(view);
 
-	container_damage_whole(cont);
 	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
@@ -561,11 +550,7 @@ void view_unmap(struct sway_view *view) {
 		view->title_format = NULL;
 	}
 
-	if (parent->type == C_OUTPUT) {
-		arrange_output(parent);
-	} else {
-		arrange_children_of(parent);
-	}
+	arrange_and_commit(parent);
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {

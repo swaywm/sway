@@ -16,7 +16,7 @@ static struct cmd_results *do_split(int layout) {
 	}
 	struct sway_container *parent = container_split(con, layout);
 	container_create_notify(parent);
-	arrange_children_of(parent);
+	arrange_and_commit(parent);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

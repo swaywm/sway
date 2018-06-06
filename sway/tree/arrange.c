@@ -138,7 +138,23 @@ static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 	}
 }
 
-static void _arrange_children_of(struct sway_container *parent,
+static void arrange_children_of(struct sway_container *parent,
+		struct sway_transaction *transaction);
+
+static void arrange_floating(struct sway_container *floating,
+		struct sway_transaction *transaction) {
+	for (int i = 0; i < floating->children->length; ++i) {
+		struct sway_container *floater = floating->children->items[i];
+		if (floater->type == C_VIEW) {
+			view_autoconfigure(floater->sway_view);
+		} else {
+			arrange_children_of(floater, transaction);
+		}
+		transaction_add_container(transaction, floater);
+	}
+}
+
+static void arrange_children_of(struct sway_container *parent,
 		struct sway_transaction *transaction) {
 	if (config->reloading) {
 		return;
@@ -162,7 +178,8 @@ static void _arrange_children_of(struct sway_container *parent,
 		apply_horiz_layout(parent);
 		break;
 	case L_FLOATING:
-		sway_assert(false, "Didn't expect to see floating here");
+		arrange_floating(parent, transaction);
+		break;
 	}
 
 	// Recurse into child containers
@@ -171,13 +188,13 @@ static void _arrange_children_of(struct sway_container *parent,
 		if (child->type == C_VIEW) {
 			view_autoconfigure(child->sway_view);
 		} else {
-			_arrange_children_of(child, transaction);
+			arrange_children_of(child, transaction);
 		}
 		transaction_add_container(transaction, child);
 	}
 }
 
-static void _arrange_workspace(struct sway_container *workspace,
+static void arrange_workspace(struct sway_container *workspace,
 		struct sway_transaction *transaction) {
 	if (config->reloading) {
 		return;
@@ -193,10 +210,11 @@ static void _arrange_workspace(struct sway_container *workspace,
 	transaction_add_container(transaction, workspace);
 	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
 			workspace->x, workspace->y);
-	_arrange_children_of(workspace, transaction);
+	arrange_floating(workspace->sway_workspace->floating, transaction);
+	arrange_children_of(workspace, transaction);
 }
 
-static void _arrange_output(struct sway_container *output,
+static void arrange_output(struct sway_container *output,
 		struct sway_transaction *transaction) {
 	if (config->reloading) {
 		return;
@@ -213,11 +231,11 @@ static void _arrange_output(struct sway_container *output,
 			output->name, output->x, output->y);
 	for (int i = 0; i < output->children->length; ++i) {
 		struct sway_container *workspace = output->children->items[i];
-		_arrange_workspace(workspace, transaction);
+		arrange_workspace(workspace, transaction);
 	}
 }
 
-static void _arrange_root(struct sway_transaction *transaction) {
+static void arrange_root(struct sway_transaction *transaction) {
 	if (config->reloading) {
 		return;
 	}
@@ -232,7 +250,7 @@ static void _arrange_root(struct sway_transaction *transaction) {
 	transaction_add_container(transaction, &root_container);
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *output = root_container.children->items[i];
-		_arrange_output(output, transaction);
+		arrange_output(output, transaction);
 	}
 }
 
@@ -240,19 +258,21 @@ void arrange_windows(struct sway_container *container,
 		struct sway_transaction *transaction) {
 	switch (container->type) {
 	case C_ROOT:
-		_arrange_root(transaction);
+		arrange_root(transaction);
 		break;
 	case C_OUTPUT:
-		_arrange_output(container, transaction);
+		arrange_output(container, transaction);
 		break;
 	case C_WORKSPACE:
-		_arrange_workspace(container, transaction);
+		arrange_workspace(container, transaction);
 		break;
 	case C_CONTAINER:
-		_arrange_children_of(container, transaction);
+		arrange_children_of(container, transaction);
 		transaction_add_container(transaction, container);
 		break;
 	case C_VIEW:
+		view_autoconfigure(container->sway_view);
+		transaction_add_container(transaction, container);
 		break;
 	case C_TYPES:
 		break;
@@ -264,21 +284,4 @@ void arrange_and_commit(struct sway_container *container) {
 	struct sway_transaction *transaction = transaction_create();
 	arrange_windows(container, transaction);
 	transaction_commit(transaction);
-}
-
-// These functions are only temporary
-void arrange_root() {
-	arrange_and_commit(&root_container);
-}
-
-void arrange_output(struct sway_container *container) {
-	arrange_and_commit(container);
-}
-
-void arrange_workspace(struct sway_container *container) {
-	arrange_and_commit(container);
-}
-
-void arrange_children_of(struct sway_container *container) {
-	arrange_and_commit(container);
 }

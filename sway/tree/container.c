@@ -204,6 +204,7 @@ static struct sway_container *container_workspace_destroy(
 			container_move_to(floating->children->items[i],
 					new_workspace->sway_workspace->floating);
 		}
+		arrange_and_commit(new_workspace);
 	}
 
 	struct sway_workspace *sway_workspace = workspace->sway_workspace;
@@ -264,10 +265,10 @@ static struct sway_container *container_output_destroy(
 				}
 
 				container_sort_workspaces(new_output);
-				arrange_output(new_output);
 			}
 		}
 	}
+	arrange_and_commit(&root_container);
 
 	wl_list_remove(&output->sway_output->mode.link);
 	wl_list_remove(&output->sway_output->transform.link);
@@ -924,13 +925,12 @@ void container_set_floating(struct sway_container *container, bool enable) {
 
 	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	container_damage_whole(container);
 
 	if (enable) {
 		container_remove_child(container);
 		container_add_child(workspace->sway_workspace->floating, container);
 		if (container->type == C_VIEW) {
-			view_autoconfigure(container->sway_view);
+			view_init_floating(container->sway_view);
 		}
 		seat_set_focus(seat, seat_get_focus_inactive(seat, container));
 		container_reap_empty_recursive(workspace);
@@ -943,8 +943,8 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container->is_sticky = false;
 		container_reap_empty_recursive(workspace->sway_workspace->floating);
 	}
-	arrange_workspace(workspace);
-	container_damage_whole(container);
+
+	ipc_event_window(container, "floating");
 }
 
 void container_set_geometry_from_floating_view(struct sway_container *con) {

@@ -16,12 +16,7 @@
  * the updates all at the same time.
  */
 
-struct sway_transaction {
-	struct wl_event_source *timer;
-	list_t *instructions;   // struct sway_transaction_instruction *
-	list_t *damage;         // struct wlr_box *
-	size_t num_waiting;
-};
+struct sway_transaction;
 
 /**
  * Create a new transaction.

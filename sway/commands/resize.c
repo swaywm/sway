@@ -182,7 +182,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		}
 	}
 
-	arrange_children_of(parent->parent);
+	arrange_and_commit(parent->parent);
 }
 
 static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {

@@ -23,11 +23,4 @@ void arrange_windows(struct sway_container *container,
  */
 void arrange_and_commit(struct sway_container *container);
 
-// These functions are temporary and are only here to make everything compile.
-// They are wrappers around arrange_and_commit.
-void arrange_root(void);
-void arrange_output(struct sway_container *container);
-void arrange_workspace(struct sway_container *container);
-void arrange_children_of(struct sway_container *container);
-
 #endif

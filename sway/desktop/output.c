@@ -1238,13 +1238,13 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
-	arrange_output(output->swayc);
+	arrange_and_commit(output->swayc);
 }
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
 	arrange_layers(output);
-	arrange_output(output->swayc);
+	arrange_and_commit(output->swayc);
 }
 
 static void handle_scale_iterator(struct sway_container *view, void *data) {
@@ -1254,8 +1254,8 @@ static void handle_scale_iterator(struct sway_container *view, void *data) {
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	arrange_layers(output);
-	arrange_output(output->swayc);
 	container_descendants(output->swayc, C_VIEW, handle_scale_iterator, NULL);
+	arrange_and_commit(output->swayc);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -1314,5 +1314,5 @@ void output_enable(struct sway_output *output) {
 	output->damage_destroy.notify = damage_handle_destroy;
 
 	arrange_layers(output);
-	arrange_root();
+	arrange_and_commit(&root_container);
 }

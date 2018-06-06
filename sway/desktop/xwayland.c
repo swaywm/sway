@@ -11,6 +11,7 @@
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -292,6 +293,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	if (xsurface->fullscreen) {
 		view_set_fullscreen(view, true);
 	}
+	arrange_and_commit(view->swayc);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -325,6 +327,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 	view_set_fullscreen(view, xsurface->fullscreen);
+	arrange_and_commit(view->swayc);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {

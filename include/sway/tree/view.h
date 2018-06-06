@@ -215,6 +215,11 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
 
 /**
+ * Center the view in its workspace and build the swayc decorations around it.
+ */
+void view_init_floating(struct sway_view *view);
+
+/**
  * Configure the view's position and size based on the swayc's position and
  * size, taking borders into consideration.
  */

@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 
@@ -38,12 +39,10 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	}
 
 	if (container_is_floating(view->swayc)) {
-		container_damage_whole(view->swayc);
 		container_set_geometry_from_floating_view(view->swayc);
-		container_damage_whole(view->swayc);
-	} else {
-		view_autoconfigure(view);
 	}
+
+	arrange_and_commit(view->swayc);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	if (seat->cursor) {
