@@ -874,11 +874,10 @@ struct sway_container *container_split(struct sway_container *child,
 	cont->x = child->x;
 	cont->y = child->y;
 
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	bool set_focus = (seat_get_focus(seat) == child);
 	if (child->type == C_WORKSPACE) {
-		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		struct sway_container *workspace = child;
-		bool set_focus = (seat_get_focus(seat) == workspace);
-
 		while (workspace->children->length) {
 			struct sway_container *ws_child = workspace->children->items[0];
 			container_remove_child(ws_child);
@@ -890,16 +889,17 @@ struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout old_layout = workspace->layout;
 		workspace->layout = layout;
 		cont->layout = old_layout;
-
-		if (set_focus) {
-			seat_set_focus(seat, cont);
-		}
 	} else {
 		struct sway_container *old_parent = child->parent;
 		cont->layout = layout;
 		container_replace_child(child, cont);
 		container_add_child(cont, child);
 		wl_signal_emit(&child->events.reparent, old_parent);
+	}
+
+	if (set_focus) {
+		seat_set_focus(seat, cont);
+		seat_set_focus(seat, child);
 	}
 
 	container_notify_subtree_changed(cont);
