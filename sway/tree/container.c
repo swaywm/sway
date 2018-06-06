@@ -487,10 +487,12 @@ static struct sway_container *container_at_view(struct sway_container *swayc,
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;
 	switch (sview->type) {
+#ifdef HAVE_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		_surface = wlr_surface_surface_at(sview->surface,
 				view_sx, view_sy, &_sx, &_sy);
 		break;
+#endif
 	case SWAY_VIEW_XDG_SHELL_V6:
 		// the top left corner of the sway container is the
 		// coordinate of the top left corner of the window geometry

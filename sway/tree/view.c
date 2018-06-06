@@ -86,12 +86,14 @@ const char *view_get_instance(struct sway_view *view) {
 	return NULL;
 }
 
+#ifdef HAVE_XWAYLAND
 uint32_t view_get_x11_window_id(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
 	}
 	return 0;
 }
+#endif
 
 const char *view_get_window_role(struct sway_view *view) {
 	if (view->impl->get_string_prop) {
@@ -113,8 +115,10 @@ const char *view_get_shell(struct sway_view *view) {
 		return "xdg_shell_v6";
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
+#ifdef HAVE_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
+#endif
 	}
 	return "unknown";
 }

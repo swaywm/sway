@@ -18,7 +18,9 @@
 #include <wlr/types/wlr_xdg_output.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
+#ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
+#endif
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
@@ -72,12 +74,13 @@ bool server_init(struct sway_server *server) {
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
 
 	// TODO make xwayland optional
+#ifdef HAVE_XWAYLAND
 	server->xwayland =
 		wlr_xwayland_create(server->wl_display, server->compositor, true);
 	wl_signal_add(&server->xwayland->events.new_surface,
 		&server->xwayland_surface);
 	server->xwayland_surface.notify = handle_xwayland_surface;
-
+#endif
 	// TODO: configurable cursor theme and size
 	server->xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
 	wlr_xcursor_manager_load(server->xcursor_manager, 1);
@@ -85,9 +88,11 @@ bool server_init(struct sway_server *server) {
 		server->xcursor_manager, "left_ptr", 1);
 	if (xcursor != NULL) {
 		struct wlr_xcursor_image *image = xcursor->images[0];
+#ifdef HAVE_XWAYLAND
 		wlr_xwayland_set_cursor(server->xwayland, image->buffer,
 			image->width * 4, image->width, image->height, image->hotspot_x,
 			image->hotspot_y);
+#endif
 	}
 
 	// TODO: Integration with sway borders

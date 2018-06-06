@@ -19,7 +19,9 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->instance
 		&& !criteria->con_mark
 		&& !criteria->con_id
+#ifdef HAVE_XWAYLAND
 		&& !criteria->id
+#endif
 		&& !criteria->window_role
 		&& !criteria->window_type
 		&& !criteria->floating
@@ -102,12 +104,14 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
+#ifdef HAVE_XWAYLAND
 	if (criteria->id) { // X11 window ID
 		uint32_t x11_window_id = view_get_x11_window_id(view);
 		if (!x11_window_id || x11_window_id != criteria->id) {
 			return false;
 		}
 	}
+#endif
 
 	if (criteria->window_role) {
 		// TODO
@@ -377,12 +381,14 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_WINDOW_TYPE:
 		// TODO: This is a string but will be stored as an enum or integer
 		break;
+#ifdef HAVE_XWAYLAND
 	case T_ID:
 		criteria->id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'id' should be numeric");
 		}
 		break;
+#endif
 	case T_FLOATING:
 		criteria->floating = true;
 		break;

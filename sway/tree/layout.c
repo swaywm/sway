@@ -35,7 +35,9 @@ void layout_init(void) {
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
 	root_container.sway_root->output_layout = wlr_output_layout_create();
+#ifdef HAVE_XWAYLAND
 	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
+#endif
 	wl_signal_init(&root_container.sway_root->events.new_container);
 
 	root_container.sway_root->output_layout_change.notify =

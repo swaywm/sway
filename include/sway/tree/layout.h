@@ -27,7 +27,9 @@ struct sway_root {
 
 	struct wl_listener output_layout_change;
 
+#ifdef HAVE_XWAYLAND
 	struct wl_list xwayland_unmanaged; // sway_xwayland_unmanaged::link
+#endif
 
 	struct wlr_texture *debug_tree;
 
