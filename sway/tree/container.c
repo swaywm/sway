@@ -262,8 +262,6 @@ static struct sway_container *container_output_destroy(
 	wl_list_remove(&output->sway_output->damage_destroy.link);
 	wl_list_remove(&output->sway_output->damage_frame.link);
 
-	// clear the wlr_output reference to this container
-	output->sway_output->wlr_output->data = NULL;
 	output->sway_output->swayc = NULL;
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);

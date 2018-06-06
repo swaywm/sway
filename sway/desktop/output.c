@@ -1221,6 +1221,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->server = server;
 	list_add(root_container.sway_root->outputs, output);
 
+	output->damage = wlr_output_damage_create(wlr_output);
+
 	if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
 			wl_container_of(wlr_output->modes.prev, mode, link);
@@ -1232,14 +1234,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 void output_enable(struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
-
-	if (!wlr_output->data) {
-		wlr_output->data = output;
-	}
-
-	if (!output->damage) {
-		output->damage = wlr_output_damage_create(wlr_output);
-	}
 
 	output->swayc = output_create(output);
 	if (!output->swayc) {
