@@ -480,6 +480,9 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 		return NULL;
 	}
 
+	cursor->previous.x = wlr_cursor->x;
+	cursor->previous.y = wlr_cursor->y;
+
 	cursor->seat = seat;
 	wlr_cursor_attach_output_layout(wlr_cursor,
 		root_container.sway_root->output_layout);
