@@ -97,6 +97,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 	case XKB_KEY_Return:
 		state->auth_state = AUTH_STATE_VALIDATING;
 		damage_state(state);
+		wl_display_dispatch(state->display);
 		wl_display_roundtrip(state->display);
 		if (attempt_password(&state->password)) {
 			state->run_display = false;
