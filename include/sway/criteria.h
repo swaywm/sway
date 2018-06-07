@@ -24,7 +24,9 @@ struct criteria {
 	pcre *instance;
 	pcre *con_mark;
 	uint32_t con_id; // internal ID
+#ifdef HAVE_XWAYLAND
 	uint32_t id; // X11 window ID
+#endif
 	pcre *window_role;
 	uint32_t window_type;
 	bool floating;

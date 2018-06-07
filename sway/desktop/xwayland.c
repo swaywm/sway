@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
+#ifdef HAVE_XWAYLAND
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -411,3 +412,4 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.map, &xwayland_view->map);
 	xwayland_view->map.notify = handle_map;
 }
+#endif

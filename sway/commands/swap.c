@@ -13,10 +13,14 @@ static bool test_con_id(struct sway_container *container, void *con_id) {
 }
 
 static bool test_id(struct sway_container *container, void *id) {
+#ifdef HAVE_XWAYLAND
 	xcb_window_t *wid = id;
 	return (container->type == C_VIEW
 			&& container->sway_view->type == SWAY_VIEW_XWAYLAND
 			&& container->sway_view->wlr_xwayland_surface->window_id == *wid);
+#else
+	return false;
+#endif
 }
 
 static bool test_mark(struct sway_container *container, void *mark) {
@@ -42,8 +46,10 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 
 	char *value = join_args(argv + 3, argc - 3);
 	if (strcasecmp(argv[2], "id") == 0) {
+#ifdef HAVE_XWAYLAND
 		xcb_window_t id = strtol(value, NULL, 0);
 		other = container_find(&root_container, test_id, (void *)&id);
+#endif
 	} else if (strcasecmp(argv[2], "con_id") == 0) {
 		size_t con_id = atoi(value);
 		other = container_find(&root_container, test_con_id, (void *)con_id);

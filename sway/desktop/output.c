@@ -146,6 +146,7 @@ static void layer_for_each_surface(struct wl_list *layer_surfaces,
 	}
 }
 
+#ifdef HAVE_XWAYLAND
 static void unmanaged_for_each_surface(struct wl_list *unmanaged,
 		struct sway_output *output, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
@@ -160,6 +161,7 @@ static void unmanaged_for_each_surface(struct wl_list *unmanaged,
 			iterator, user_data);
 	}
 }
+#endif
 
 static void scale_box(struct wlr_box *box, float scale) {
 	box->x *= scale;
@@ -259,6 +261,7 @@ static void render_layer(struct sway_output *output,
 		render_surface_iterator, &data);
 }
 
+#ifdef HAVE_XWAYLAND
 static void render_unmanaged(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *unmanaged) {
 	struct render_data data = {
@@ -269,6 +272,7 @@ static void render_unmanaged(struct sway_output *output,
 	unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
 		render_surface_iterator, &data);
 }
+#endif
 
 static void render_rect(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
@@ -880,10 +884,12 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		render_view_surfaces(
 				workspace->sway_workspace->fullscreen, output, damage, 1.0f);
 
+#ifdef HAVE_XWAYLAND
 		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
+#endif
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 
@@ -904,8 +910,10 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		render_container(output, damage, workspace, focus == workspace);
 		render_floating(output, damage);
 
+#ifdef HAVE_XWAYLAND
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
+#endif
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
@@ -955,11 +963,13 @@ static void send_frame_done_layer(struct send_frame_done_data *data,
 		send_frame_done_iterator, data);
 }
 
+#ifdef HAVE_XWAYLAND
 static void send_frame_done_unmanaged(struct send_frame_done_data *data,
 		struct wl_list *unmanaged) {
 	unmanaged_for_each_surface(unmanaged, data->output, &data->root_geo,
 		send_frame_done_iterator, data);
 }
+#endif
 
 static void send_frame_done_container_iterator(struct sway_container *con,
 		void *_data) {
@@ -993,10 +1003,12 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		send_frame_done_container_iterator(
 			workspace->sway_workspace->fullscreen->swayc, &data);
 
+#ifdef HAVE_XWAYLAND
 		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
 			send_frame_done_unmanaged(&data,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
+#endif
 	} else {
 		send_frame_done_layer(&data,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
@@ -1006,8 +1018,10 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		send_frame_done_container(&data, workspace);
 		send_frame_done_container(&data, workspace->sway_workspace->floating);
 
+#ifdef HAVE_XWAYLAND
 		send_frame_done_unmanaged(&data,
 			&root_container.sway_root->xwayland_unmanaged);
+#endif
 		send_frame_done_layer(&data,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
