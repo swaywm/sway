@@ -1,10 +1,34 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include <strings.h>
+#include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/output.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
+
+static void restore_workspace(struct sway_container *ws, void *output) {
+	if (ws->parent == output) {
+		return;
+	}
+
+	struct sway_container *highest = workspace_output_get_highest_available(
+			ws, NULL);
+	if (!highest) {
+		return;
+	}
+
+	if (highest == output) {
+		struct sway_container *other = container_remove_child(ws);
+		container_add_child(output, ws);
+		ipc_event_workspace(ws, NULL, "move");
+
+		container_sort_workspaces(output);
+		arrange_output(output);
+		arrange_output(other);
+	}
+}
 
 struct sway_container *output_create(
 		struct sway_output *sway_output) {
@@ -56,19 +80,24 @@ struct sway_container *output_create(
 	output->width = size.width;
 	output->height = size.height;
 
-	// Create workspace
-	char *ws_name = workspace_next_name(output->name);
-	wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
-	struct sway_container *ws = workspace_create(output, ws_name);
-	// Set each seat's focus if not already set
-	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input_manager->seats, link) {
-		if (!seat->has_focus) {
-			seat_set_focus(seat, ws);
+	container_descendants(&root_container, C_WORKSPACE, restore_workspace,
+			output);
+
+	if (!output->children->length) {
+		// Create workspace
+		char *ws_name = workspace_next_name(output->name);
+		wlr_log(L_DEBUG, "Creating default workspace %s", ws_name);
+		struct sway_container *ws = workspace_create(output, ws_name);
+		// Set each seat's focus if not already set
+		struct sway_seat *seat = NULL;
+		wl_list_for_each(seat, &input_manager->seats, link) {
+			if (!seat->has_focus) {
+				seat_set_focus(seat, ws);
+			}
 		}
+		free(ws_name);
 	}
 
-	free(ws_name);
 	container_create_notify(output);
 	return output;
 }

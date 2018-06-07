@@ -213,6 +213,9 @@ static struct sway_container *container_workspace_destroy(
 	sway_workspace->floating->parent = NULL;
 	_container_destroy(sway_workspace->floating);
 
+	list_foreach(sway_workspace->output_priority, free);
+	list_free(sway_workspace->output_priority);
+
 	free(sway_workspace);
 
 	if (output) {
@@ -234,24 +237,33 @@ static struct sway_container *container_output_destroy(
 		// program
 		if (root_container.children->length > 1) {
 			// Move workspace from this output to another output
-			struct sway_container *other_output =
+			struct sway_container *fallback_output =
 				root_container.children->items[0];
-			if (other_output == output) {
-				other_output = root_container.children->items[1];
+			if (fallback_output == output) {
+				fallback_output = root_container.children->items[1];
 			}
 
 			while (output->children->length) {
 				struct sway_container *workspace = output->children->items[0];
+
+				struct sway_container *new_output =
+					workspace_output_get_highest_available(workspace, output);
+				if (!new_output) {
+					new_output = fallback_output;
+					workspace_output_add_priority(workspace, new_output);
+				}
+
 				container_remove_child(workspace);
-				if (workspace->children->length > 0) {
-					container_add_child(other_output, workspace);
+				if (!workspace_is_empty(workspace)) {
+					container_add_child(new_output, workspace);
 					ipc_event_workspace(workspace, NULL, "move");
 				} else {
 					container_workspace_destroy(workspace);
 				}
+
+				container_sort_workspaces(new_output);
+				arrange_output(new_output);
 			}
-			container_sort_workspaces(other_output);
-			arrange_output(other_output);
 		}
 	}
 
@@ -433,6 +445,9 @@ void container_descendants(struct sway_container *root,
 			func(item, data);
 		}
 		container_descendants(item, type, func, data);
+		if (i < root->children->length && root->children->items[i] != item) {
+			--i;
+		}
 	}
 }
 
