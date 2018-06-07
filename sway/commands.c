@@ -112,6 +112,7 @@ static struct cmd_handler handlers[] = {
 	{ "mouse_warping", cmd_mouse_warping },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
+	{ "set", cmd_set },
 	{ "show_marks", cmd_show_marks },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
@@ -120,7 +121,6 @@ static struct cmd_handler handlers[] = {
 /* Config-time only commands. Keep alphabetized */
 static struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
-	{ "set", cmd_set },
 	{ "swaybg_command", cmd_swaybg_command },
 	{ "workspace_layout", cmd_workspace_layout },
 };
@@ -268,6 +268,13 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
 				free_argv(argc, argv);
 				goto cleanup;
+			}
+
+			// Var replacement, for all but first argument of set
+			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
+				argv[i] = do_var_replacement(argv[i]);
+				unescape_string(argv[i]);
+				strip_quotes(argv[i]);
 			}
 
 			if (!config->handler_context.using_criteria) {

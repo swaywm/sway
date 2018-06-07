@@ -657,6 +657,14 @@ char *do_var_replacement(char *str) {
 				continue;
 			}
 		}
+		// Unescape double $ and move on
+		if (find[1] == '$') {
+			size_t length = strlen(find + 1);
+			strncpy(find, find + 1, length);
+			find[length] = '\0';
+			++find;
+			continue;
+		}
 		// Find matching variable
 		for (i = 0; i < config->symbols->length; ++i) {
 			struct sway_variable *var = config->symbols->items[i];
