@@ -1,5 +1,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/output.h"
+#include "sway/tree/layout.h"
 #include "list.h"
 #include "log.h"
 
@@ -80,16 +82,24 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	// will be applied during normal "new output" event from wlroots.
 	char identifier[128];
 	bool all = strcmp(output->name, "*") == 0;
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *cont = root_container.children->items[i];
-		if (cont->type != C_OUTPUT) {
-			continue;
-		}
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
+		output_get_identifier(identifier, sizeof(identifier), sway_output);
+		wlr_log(L_DEBUG, "Checking identifier %s", identifier);
+		if (all || strcmp(sway_output->wlr_output->name, output->name) == 0
+				|| strcmp(identifier, output->name) == 0) {
+			if (!sway_output->swayc) {
+				if (!output->enabled) {
+					if (!all) {
+						break;
+					}
+					continue;
+				}
 
-		output_get_identifier(identifier, sizeof(identifier), cont->sway_output);
-		if (all || strcmp(cont->name, output->name) == 0 ||
-				strcmp(identifier, output->name) == 0) {
-			apply_output_config(output, cont);
+				output_enable(sway_output);
+			}
+
+			apply_output_config(output, sway_output->swayc);
 
 			if (!all) {
 				// Stop looking if the output config isn't applicable to all

@@ -174,26 +174,35 @@ static void pretty_print_output(json_object *o) {
 	json_object *modes;
 	json_object_object_get_ex(o, "modes", &modes);
 
-	printf(
-		"Output %s '%s %s %s'%s%s\n"
-		"  Current mode: %dx%d @ %f Hz\n"
-		"  Position: %d,%d\n"
-		"  Scale factor: %dx\n"
-		"  Transform: %s\n"
-		"  Workspace: %s\n",
-		json_object_get_string(name),
-		json_object_get_string(make),
-		json_object_get_string(model),
-		json_object_get_string(serial),
-		json_object_get_boolean(focused) ? " (focused)" : "",
-		!json_object_get_boolean(active) ? " (inactive)" : "",
-		json_object_get_int(width), json_object_get_int(height),
-		(float)json_object_get_int(refresh) / 1000,
-		json_object_get_int(x), json_object_get_int(y),
-		json_object_get_int(scale),
-		json_object_get_string(transform),
-		json_object_get_string(ws)
-	);
+	if (json_object_get_boolean(active)) {
+		printf(
+			"Output %s '%s %s %s'%s\n"
+			"  Current mode: %dx%d @ %f Hz\n"
+			"  Position: %d,%d\n"
+			"  Scale factor: %dx\n"
+			"  Transform: %s\n"
+			"  Workspace: %s\n",
+			json_object_get_string(name),
+			json_object_get_string(make),
+			json_object_get_string(model),
+			json_object_get_string(serial),
+			json_object_get_boolean(focused) ? " (focused)" : "",
+			json_object_get_int(width), json_object_get_int(height),
+			(float)json_object_get_int(refresh) / 1000,
+			json_object_get_int(x), json_object_get_int(y),
+			json_object_get_int(scale),
+			json_object_get_string(transform),
+			json_object_get_string(ws)
+		);
+	} else {
+		printf(
+			"Output %s '%s %s %s' (inactive)",
+			json_object_get_string(name),
+			json_object_get_string(make),
+			json_object_get_string(model),
+			json_object_get_string(serial)
+		);
+	}
 
 	size_t modes_len = json_object_array_length(modes);
 	if (modes_len > 0) {

@@ -6,6 +6,7 @@
 
 json_object *ipc_json_get_version();
 
+json_object *ipc_json_describe_disabled_output(struct sway_output *o);
 json_object *ipc_json_describe_container(struct sway_container *c);
 json_object *ipc_json_describe_container_recursive(struct sway_container *c);
 json_object *ipc_json_describe_input(struct sway_input_device *device);

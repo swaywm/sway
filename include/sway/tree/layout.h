@@ -31,6 +31,8 @@ struct sway_root {
 
 	struct wlr_texture *debug_tree;
 
+	struct wl_list outputs; // sway_output::link
+
 	struct {
 		struct wl_signal new_container;
 	} events;

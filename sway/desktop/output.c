@@ -1165,7 +1165,16 @@ static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
-	container_destroy(output->swayc);
+	if (output->swayc) {
+		container_destroy(output->swayc);
+	}
+
+	if (&output->link) {
+		wl_list_remove(&output->link);
+		wl_list_remove(&output->destroy.link);
+		output->wlr_output = NULL;
+		free(output);
+	}
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
@@ -1203,6 +1212,9 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->server = server;
+	wl_list_insert(&root_container.sway_root->outputs, &output->link);
+
+	output->damage = wlr_output_damage_create(wlr_output);
 
 	if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
@@ -1210,11 +1222,15 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 		wlr_output_set_mode(wlr_output, mode);
 	}
 
-	output->damage = wlr_output_damage_create(wlr_output);
+	output_enable(output);
+}
+
+void output_enable(struct sway_output *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
 
 	output->swayc = output_create(output);
 	if (!output->swayc) {
-		free(output);
+		// Output is disabled
 		return;
 	}
 

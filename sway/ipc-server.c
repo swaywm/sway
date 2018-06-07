@@ -19,6 +19,7 @@
 #include "sway/commands.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -486,6 +487,13 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			if (container->type == C_OUTPUT) {
 				json_object_array_add(outputs,
 					ipc_json_describe_container(container));
+			}
+		}
+		struct sway_output *output;
+		wl_list_for_each(output, &root_container.sway_root->outputs, link) {
+			if (!output->swayc) {
+				json_object_array_add(outputs,
+						ipc_json_describe_disabled_output(output));
 			}
 		}
 		const char *json_string = json_object_to_json_string(outputs);
