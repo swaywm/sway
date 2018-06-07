@@ -489,9 +489,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 					ipc_json_describe_container(container));
 			}
 		}
-		for (int i = 0; i < root_container.sway_root->outputs->length; ++i) {
-			struct sway_output *output =
-				root_container.sway_root->outputs->items[i];
+		struct sway_output *output;
+		wl_list_for_each(output, &root_container.sway_root->outputs, link) {
 			if (!output->swayc) {
 				json_object_array_add(outputs,
 						ipc_json_describe_disabled_output(output));

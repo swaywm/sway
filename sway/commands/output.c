@@ -82,9 +82,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	// will be applied during normal "new output" event from wlroots.
 	char identifier[128];
 	bool all = strcmp(output->name, "*") == 0;
-	list_t *sway_outputs = root_container.sway_root->outputs;
-	for (int i = 0; i < sway_outputs->length; ++i) {
-		struct sway_output *sway_output = sway_outputs->items[i];
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
 		output_get_identifier(identifier, sizeof(identifier), sway_output);
 		wlr_log(L_DEBUG, "Checking identifier %s", identifier);
 		if (all || strcmp(sway_output->wlr_output->name, output->name) == 0

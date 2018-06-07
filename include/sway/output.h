@@ -29,6 +29,8 @@ struct sway_output {
 	struct wl_listener damage_destroy;
 	struct wl_listener damage_frame;
 
+	struct wl_list link;
+
 	pid_t bg_pid;
 };
 

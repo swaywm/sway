@@ -1157,10 +1157,6 @@ void output_damage_whole_container(struct sway_output *output,
 	wlr_output_damage_add_box(output->damage, &box);
 }
 
-static int find_output(const void *output1, const void *output2) {
-	return output1 == output2 ? 0 : 1;
-}
-
 static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output =
 		wl_container_of(listener, output, damage_destroy);
@@ -1172,12 +1168,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	if (output->swayc) {
 		container_destroy(output->swayc);
 	}
-	int index = list_seq_find(root_container.sway_root->outputs, find_output,
-			output);
-	if (index >= 0 && index < root_container.sway_root->outputs->length) {
-		wlr_log(L_DEBUG, "Removing %s from outputs list",
-				output->wlr_output->name);
-		list_del(root_container.sway_root->outputs, index);
+
+	if (&output->link) {
+		wl_list_remove(&output->link);
 		wl_list_remove(&output->destroy.link);
 		output->wlr_output = NULL;
 		free(output);
@@ -1219,7 +1212,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->server = server;
-	list_add(root_container.sway_root->outputs, output);
+	wl_list_insert(&root_container.sway_root->outputs, &output->link);
 
 	output->damage = wlr_output_damage_create(wlr_output);
 
