@@ -8,26 +8,30 @@
 #include "sway/tree/workspace.h"
 #include "log.h"
 
-static void restore_workspace(struct sway_container *ws, void *output) {
-	if (ws->parent == output) {
-		return;
-	}
+static void restore_workspaces(struct sway_container *output) {
+	for (int i = 0; i < root_container.children->length; i++) {
+		struct sway_container *other = root_container.children->items[i];
+		if (other == output) {
+			continue;
+		}
 
-	struct sway_container *highest = workspace_output_get_highest_available(
-			ws, NULL);
-	if (!highest) {
-		return;
-	}
+		for (int j = 0; j < other->children->length; j++) {
+			struct sway_container *ws = other->children->items[j];
+			struct sway_container *highest =
+				workspace_output_get_highest_available(ws, NULL);
+			if (highest == output) {
+				container_remove_child(ws);
+				container_add_child(output, ws);
+				ipc_event_workspace(ws, NULL, "move");
+				j--;
+			}
+		}
 
-	if (highest == output) {
-		struct sway_container *other = container_remove_child(ws);
-		container_add_child(output, ws);
-		ipc_event_workspace(ws, NULL, "move");
-
-		container_sort_workspaces(output);
-		arrange_output(output);
 		arrange_output(other);
 	}
+
+	container_sort_workspaces(output);
+	arrange_output(output);
 }
 
 struct sway_container *output_create(
@@ -80,8 +84,7 @@ struct sway_container *output_create(
 	output->width = size.width;
 	output->height = size.height;
 
-	container_descendants(&root_container, C_WORKSPACE, restore_workspace,
-			output);
+	restore_workspaces(output);
 
 	if (!output->children->length) {
 		// Create workspace

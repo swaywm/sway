@@ -445,9 +445,6 @@ void container_descendants(struct sway_container *root,
 			func(item, data);
 		}
 		container_descendants(item, type, func, data);
-		if (i < root->children->length && root->children->items[i] != item) {
-			--i;
-		}
 	}
 }
 
