@@ -274,7 +274,6 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 				argv[i] = do_var_replacement(argv[i]);
 				unescape_string(argv[i]);
-				strip_quotes(argv[i]);
 			}
 
 			if (!config->handler_context.using_criteria) {

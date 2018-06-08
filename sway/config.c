@@ -660,7 +660,7 @@ char *do_var_replacement(char *str) {
 		// Unescape double $ and move on
 		if (find[1] == '$') {
 			size_t length = strlen(find + 1);
-			strncpy(find, find + 1, length);
+			memmove(find, find + 1, length);
 			find[length] = '\0';
 			++find;
 			continue;
