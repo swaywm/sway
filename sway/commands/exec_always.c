@@ -73,7 +73,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	}
 	close(fd[0]);
 	// cleanup child process
-	wait(0);
+	waitpid(pid, NULL, 0);
 	if (*child > 0) {
 		wlr_log(L_DEBUG, "Child process created with pid %d", *child);
 		// TODO: add PID to active workspace
