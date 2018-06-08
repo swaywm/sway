@@ -472,7 +472,9 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 			++head;
 		}
 		name = calloc(head - namestart + 1, 1);
-		strncpy(name, namestart, head - namestart);
+		if (head != namestart) {
+			strncpy(name, namestart, head - namestart);
+		}
 		// Parse token value
 		skip_spaces(&head);
 		value = NULL;
