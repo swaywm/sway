@@ -170,8 +170,6 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		int i = list_seq_find(config->output_configs, output_name_cmp, "*");
 		if (i >= 0) {
 			oc = config->output_configs->items[i];
-		} else {
-			oc = NULL;
 		}
 	}
 
