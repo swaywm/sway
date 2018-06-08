@@ -183,6 +183,8 @@ void container_move_to(struct sway_container *container,
 		}
 		container_sort_workspaces(new_parent);
 		seat_set_focus(seat, new_parent);
+		workspace_output_raise_priority(container, old_parent, new_parent);
+		ipc_event_workspace(container, NULL, "move");
 	}
 	container_notify_subtree_changed(old_parent);
 	container_notify_subtree_changed(new_parent);

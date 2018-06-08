@@ -68,7 +68,9 @@ struct sway_container *workspace_create(struct sway_container *output,
 	swayws->floating = container_create(C_CONTAINER);
 	swayws->floating->parent = swayws->swayc;
 	swayws->floating->layout = L_FLOATING;
+	swayws->output_priority = create_list();
 	workspace->sway_workspace = swayws;
+	workspace_output_add_priority(workspace, output);
 
 	container_add_child(output, workspace);
 	container_sort_workspaces(output);
@@ -453,4 +455,61 @@ bool workspace_is_empty(struct sway_container *ws) {
 		}
 	}
 	return true;
+}
+
+static int find_output(const void *id1, const void *id2) {
+	return strcmp(id1, id2) ? 0 : 1;
+}
+
+void workspace_output_raise_priority(struct sway_container *workspace,
+		struct sway_container *old_output, struct sway_container *output) {
+	struct sway_workspace *ws = workspace->sway_workspace;
+
+	int old_index = list_seq_find(ws->output_priority, find_output,
+			old_output->name);
+	if (old_index < 0) {
+		return;
+	}
+
+	int new_index = list_seq_find(ws->output_priority, find_output,
+			output->name);
+	if (new_index < 0) {
+		list_insert(ws->output_priority, old_index, strdup(output->name));
+	} else if (new_index > old_index) {
+		char *name = ws->output_priority->items[new_index];
+		list_del(ws->output_priority, new_index);
+		list_insert(ws->output_priority, old_index, name);
+	}
+}
+
+void workspace_output_add_priority(struct sway_container *workspace,
+		struct sway_container *output) {
+	int index = list_seq_find(workspace->sway_workspace->output_priority,
+			find_output, output->name);
+	if (index < 0) {
+		list_add(workspace->sway_workspace->output_priority,
+				strdup(output->name));
+	}
+}
+
+static bool _output_by_name(struct sway_container *output, void *data) {
+	return output->type == C_OUTPUT && strcasecmp(output->name, data) == 0;
+}
+
+struct sway_container *workspace_output_get_highest_available(
+		struct sway_container *ws, struct sway_container *exclude) {
+	for (int i = 0; i < ws->sway_workspace->output_priority->length; i++) {
+		char *name = ws->sway_workspace->output_priority->items[i];
+		if (exclude && strcasecmp(name, exclude->name) == 0) {
+			continue;
+		}
+
+		struct sway_container *output = container_find(&root_container,
+				_output_by_name, name);
+		if (output) {
+			return output;
+		}
+	}
+
+	return NULL;
 }

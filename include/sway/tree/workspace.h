@@ -9,6 +9,7 @@ struct sway_workspace {
 	struct sway_container *swayc;
 	struct sway_view *fullscreen;
 	struct sway_container *floating;
+	list_t *output_priority;
 };
 
 extern char *prev_workspace_name;
@@ -33,4 +34,12 @@ bool workspace_is_visible(struct sway_container *ws);
 
 bool workspace_is_empty(struct sway_container *ws);
 
+void workspace_output_raise_priority(struct sway_container *workspace,
+		struct sway_container *old_output, struct sway_container *new_output);
+
+void workspace_output_add_priority(struct sway_container *workspace,
+		struct sway_container *output);
+
+struct sway_container *workspace_output_get_highest_available(
+		struct sway_container *ws, struct sway_container *exclude);
 #endif
