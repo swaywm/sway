@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
@@ -59,13 +60,25 @@ static void cmd_exec(void *data) {
 	}
 	char *param = (char *)data;
 	wlr_log(L_DEBUG, "Cmd exec %s", param);
-	int pid = fork();
+	pid_t pid = fork();
 	if (pid == 0) {
-		char *const cmd[] = { "sh", "-c", param, NULL, };
-		execvp(cmd[0], cmd);
-		exit(1);
+		pid = fork();
+		if (pid == 0) {
+			char *const cmd[] = { "sh", "-c", param, NULL, };
+			execvp(cmd[0], cmd);
+			wlr_log_errno(L_ERROR, "execve failed!");
+			exit(1);
+		} else if (pid < 0) {
+			wlr_log_errno(L_ERROR, "fork failed");
+			exit(1);
+		}
+		exit(0);
+	} else if (pid < 0) {
+		wlr_log_errno(L_ERROR, "fork failed");
+	} else {
+		wlr_log(L_DEBUG, "Spawned process %s", param);
+		waitpid(pid, NULL, 0);
 	}
-	wlr_log(L_DEBUG, "Spawned process %d", pid);
 }
 
 #if defined(SWAY_IDLE_HAS_SYSTEMD) || defined(SWAY_IDLE_HAS_ELOGIND)
