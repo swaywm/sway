@@ -7,28 +7,6 @@
 #include "swaylock/swaylock.h"
 #include "swaylock/seat.h"
 
-const char *XKB_MASK_NAMES[MASK_LAST] = {
-	XKB_MOD_NAME_SHIFT,
-	XKB_MOD_NAME_CAPS,
-	XKB_MOD_NAME_CTRL,
-	XKB_MOD_NAME_ALT,
-	"Mod2",
-	"Mod3",
-	XKB_MOD_NAME_LOGO,
-	"Mod5",
-};
-
-const enum mod_bit XKB_MODS[MASK_LAST] = {
-	MOD_SHIFT,
-	MOD_CAPS,
-	MOD_CTRL,
-	MOD_ALT,
-	MOD_MOD2,
-	MOD_MOD3,
-	MOD_LOGO,
-	MOD_MOD5
-};
-
 static void keyboard_keymap(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t format, int32_t fd, uint32_t size) {
 	struct swaylock_state *state = data;
@@ -84,16 +62,13 @@ static void keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
 		uint32_t mods_locked, uint32_t group) {
 	struct swaylock_state *state = data;
 	xkb_state_update_mask(state->xkb.state,
-			mods_depressed, mods_latched, mods_locked, 0, 0, group);
-	xkb_mod_mask_t mask = xkb_state_serialize_mods(state->xkb.state,
-			XKB_STATE_MODS_DEPRESSED | XKB_STATE_MODS_LATCHED);
-	state->xkb.modifiers = 0;
-	state->xkb.caps_lock = xkb_state_mod_name_is_active(state->xkb.state, XKB_MOD_NAME_CAPS, XKB_STATE_MODS_LOCKED);
-	for (uint32_t i = 0; i < MASK_LAST; ++i) {
-		if (mask & state->xkb.masks[i]) {
-			state->xkb.modifiers |= XKB_MODS[i];
-		}
-	}
+		mods_depressed, mods_latched, mods_locked, 0, 0, group);
+	state->xkb.caps_lock = xkb_state_mod_name_is_active(state->xkb.state,
+		XKB_MOD_NAME_CAPS, XKB_STATE_MODS_LOCKED);
+	state->xkb.control = xkb_state_mod_name_is_active(state->xkb.state,
+		XKB_MOD_NAME_CTRL,
+		XKB_STATE_MODS_DEPRESSED | XKB_STATE_MODS_LATCHED);
+
 }
 
 static void keyboard_repeat_info(void *data, struct wl_keyboard *wl_keyboard,

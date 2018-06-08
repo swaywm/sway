@@ -139,6 +139,14 @@ void swaylock_handle_key(struct swaylock_state *state,
 		state->auth_state = AUTH_STATE_INPUT_NOP;
 		damage_state(state);
 		break;
+	case XKB_KEY_u:
+		if (state->xkb.control) {
+			clear_password_buffer(&state->password);
+			state->auth_state = AUTH_STATE_CLEAR;
+			damage_state(state);
+			break;
+		}
+		// fallthrough
 	default:
 		if (codepoint) {
 			append_ch(&state->password, codepoint);
