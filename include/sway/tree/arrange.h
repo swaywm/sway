@@ -3,6 +3,12 @@
 
 struct sway_container;
 
+// Remove gaps around container
+void remove_gaps(struct sway_container *c);
+
+// Add gaps around container
+void add_gaps(struct sway_container *c);
+
 // Determine the root container's geometry, then iterate to everything below
 void arrange_root(void);
 

@@ -43,6 +43,7 @@ void arrange_output(struct sway_container *output) {
 			"called arrange_output() on non-output container")) {
 		return;
 	}
+
 	const struct wlr_box *output_box = wlr_output_layout_get_box(
 			root_container.sway_root->output_layout,
 			output->sway_output->wlr_output);
@@ -52,6 +53,7 @@ void arrange_output(struct sway_container *output) {
 	output->height = output_box->height;
 	wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 			output->name, output->x, output->y);
+	
 	for (int i = 0; i < output->children->length; ++i) {
 		struct sway_container *workspace = output->children->items[i];
 		arrange_workspace(workspace);
@@ -67,18 +69,62 @@ void arrange_workspace(struct sway_container *workspace) {
 			"called arrange_workspace() on non-workspace container")) {
 		return;
 	}
+
 	struct sway_container *output = workspace->parent;
 	struct wlr_box *area = &output->sway_output->usable_area;
 	wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
+
+	remove_gaps(workspace);
+
 	workspace->width = area->width;
 	workspace->height = area->height;
 	workspace->x = output->x + area->x;
 	workspace->y = output->y + area->y;
+
+	add_gaps(workspace);
+
 	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f",
 			workspace->name, workspace->x, workspace->y);
 	arrange_children_of(workspace);
-	container_damage_whole(workspace);
+}
+
+void remove_gaps(struct sway_container *c) {
+	if (c->current_gaps == 0) {
+		wlr_log(L_DEBUG, "Removing gaps: not gapped: %p", c);
+		return;
+	}
+
+	c->width += c->current_gaps * 2;
+	c->height += c->current_gaps * 2;
+	c->x -= c->current_gaps;
+	c->y -= c->current_gaps;
+
+	c->current_gaps = 0;
+
+	wlr_log(L_DEBUG, "Removing gaps %p", c);
+}
+
+void add_gaps(struct sway_container *c) {
+	if (c->current_gaps > 0 || c->type == C_CONTAINER) {
+		wlr_log(L_DEBUG, "Not adding gaps: %p", c);
+		return;
+	}
+
+	if (c->type == C_WORKSPACE &&
+		!(config->edge_gaps || (config->smart_gaps && c->children->length > 1))) {
+		return;
+	}
+
+	double gaps = c->has_gaps ? c->gaps_inner : config->gaps_inner;
+
+	c->x += gaps;
+	c->y += gaps;
+	c->width -= 2 * gaps;
+	c->height -= 2 * gaps;
+	c->current_gaps = gaps;
+
+	wlr_log(L_DEBUG, "Adding gaps: %p", c);
 }
 
 static void apply_horiz_layout(struct sway_container *parent) {
@@ -99,6 +145,7 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	double total_width = 0;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
+
 		if (child->width <= 0) {
 			if (num_children > 1) {
 				child->width = parent->width / (num_children - 1);
@@ -106,6 +153,7 @@ static void apply_horiz_layout(struct sway_container *parent) {
 				child->width = parent->width;
 			}
 		}
+		remove_gaps(child);
 		total_width += child->width;
 	}
 	double scale = parent->width / total_width;
@@ -121,12 +169,19 @@ static void apply_horiz_layout(struct sway_container *parent) {
 				child, child->type, child->width, scale);
 		child->x = child_x;
 		child->y = parent->y + parent_offset;
-		child->width = floor(child->width * scale);
 		child->height = parent_height;
+
+		if (i == num_children - 1) {
+			// Make last child use remaining width of parent
+			child->width = parent->x + parent->width - child->x;
+		} else {
+			child->width = floor(child->width * scale);
+		}
+
 		child_x += child->width;
+
+		add_gaps(child);
 	}
-	// Make last child use remaining width of parent
-	child->width = parent->x + parent->width - child->x;
 }
 
 static void apply_vert_layout(struct sway_container *parent) {
@@ -141,12 +196,13 @@ static void apply_vert_layout(struct sway_container *parent) {
 		parent_offset =
 			container_titlebar_height() * parent->parent->children->length;
 	}
-	size_t parent_height = parent->height - parent_offset;
+	size_t parent_height = parent->height + parent_offset;
 
 	// Calculate total height of children
 	double total_height = 0;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
+
 		if (child->height <= 0) {
 			if (num_children > 1) {
 				child->height = parent_height / (num_children - 1);
@@ -154,6 +210,7 @@ static void apply_vert_layout(struct sway_container *parent) {
 				child->height = parent_height;
 			}
 		}
+		remove_gaps(child);
 		total_height += child->height;
 	}
 	double scale = parent_height / total_height;
@@ -170,11 +227,18 @@ static void apply_vert_layout(struct sway_container *parent) {
 		child->x = parent->x;
 		child->y = child_y;
 		child->width = parent->width;
-		child->height = floor(child->height * scale);
+
+		if (i == num_children - 1) {
+			// Make last child use remaining height of parent
+			child->height = parent->y + parent_offset + parent_height - child->y;
+		} else {
+			child->height = floor(child->height * scale);
+		}
+
 		child_y += child->height;
+
+		add_gaps(child);
 	}
-	// Make last child use remaining height of parent
-	child->height = parent->y + parent_offset + parent_height - child->y;
 }
 
 static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
@@ -191,10 +255,12 @@ static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 	size_t parent_height = parent->height - parent_offset;
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
+		remove_gaps(child);
 		child->x = parent->x;
 		child->y = parent->y + parent_offset;
 		child->width = parent->width;
 		child->height = parent_height;
+		add_gaps(child);
 	}
 }
 
@@ -211,6 +277,7 @@ void arrange_children_of(struct sway_container *parent) {
 	if (workspace->type != C_WORKSPACE) {
 		workspace = container_parent(workspace, C_WORKSPACE);
 	}
+
 	if (workspace->sway_workspace->fullscreen) {
 		// Just arrange the fullscreen view and jump out
 		view_autoconfigure(workspace->sway_workspace->fullscreen);
@@ -241,6 +308,11 @@ void arrange_children_of(struct sway_container *parent) {
 	// Apply x, y, width and height to children and recurse if needed
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
+		if (parent->has_gaps && !child->has_gaps) {
+			child->has_gaps = true;
+			child->gaps_inner = parent->gaps_inner;
+			child->gaps_outer = parent->gaps_outer;
+		}
 		if (child->type == C_VIEW) {
 			view_autoconfigure(child->sway_view);
 		} else {
