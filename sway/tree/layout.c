@@ -871,6 +871,8 @@ struct sway_container *container_split(struct sway_container *child,
 
 	wlr_log(L_DEBUG, "creating container %p around %p", cont, child);
 
+	remove_gaps(child);
+
 	cont->prev_layout = L_NONE;
 	cont->width = child->width;
 	cont->height = child->height;
@@ -879,6 +881,9 @@ struct sway_container *container_split(struct sway_container *child,
 
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 	bool set_focus = (seat_get_focus(seat) == child);
+	
+	add_gaps(cont);
+
 	if (child->type == C_WORKSPACE) {
 		struct sway_container *workspace = child;
 		while (workspace->children->length) {
@@ -906,7 +911,7 @@ struct sway_container *container_split(struct sway_container *child,
 	}
 
 	container_notify_subtree_changed(cont);
-
+	arrange_children_of(cont);
 	return cont;
 }
 
