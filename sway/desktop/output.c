@@ -1169,12 +1169,10 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		container_destroy(output->swayc);
 	}
 
-	if (&output->link) {
-		wl_list_remove(&output->link);
-		wl_list_remove(&output->destroy.link);
-		output->wlr_output = NULL;
-		free(output);
-	}
+	wl_list_remove(&output->link);
+	wl_list_remove(&output->destroy.link);
+	output->wlr_output->data = NULL;
+	free(output);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
@@ -1212,9 +1210,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->server = server;
-	wl_list_insert(&root_container.sway_root->outputs, &output->link);
-
 	output->damage = wlr_output_damage_create(wlr_output);
+
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	output->destroy.notify = handle_destroy;
+
+	wl_list_insert(&root_container.sway_root->outputs, &output->link);
 
 	if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
@@ -1227,6 +1228,10 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 void output_enable(struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
+
+	if (!sway_assert(output->swayc == NULL, "output is already enabled")) {
+		return;
+	}
 
 	output->swayc = output_create(output);
 	if (!output->swayc) {
@@ -1241,8 +1246,6 @@ void output_enable(struct sway_output *output) {
 
 	input_manager_configure_xcursor(input_manager);
 
-	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
-	output->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.transform, &output->transform);
