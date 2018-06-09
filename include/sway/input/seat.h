@@ -21,6 +21,19 @@ struct sway_seat_container {
 	struct wl_listener destroy;
 };
 
+struct sway_drag_icon {
+	struct sway_seat *seat;
+	struct wlr_drag_icon *wlr_drag_icon;
+	struct wl_list link; // sway_root::drag_icons
+
+	double x, y; // in layout-local coordinates
+
+	struct wl_listener surface_commit;
+	struct wl_listener map;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
+};
+
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
@@ -35,8 +48,13 @@ struct sway_seat {
 	// If exclusive_client is set, no other clients will receive input events
 	struct wl_client *exclusive_client;
 
+	// Last touch point
+	int32_t touch_id;
+	double touch_x, touch_y;
+
 	struct wl_listener focus_destroy;
 	struct wl_listener new_container;
+	struct wl_listener new_drag_icon;
 
 	struct wl_list devices; // sway_seat_device::link
 
@@ -113,5 +131,7 @@ void seat_apply_config(struct sway_seat *seat, struct seat_config *seat_config);
 struct seat_config *seat_get_config(struct sway_seat *seat);
 
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
+
+void drag_icon_update_position(struct sway_drag_icon *icon);
 
 #endif

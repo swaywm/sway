@@ -144,21 +144,22 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		time_msec = get_current_time_msec();
 	}
 
-	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	struct sway_seat *seat = cursor->seat;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 
 	// Find the container beneath the pointer's previous position
-	struct sway_container *prev_c = container_at_coords(cursor->seat,
+	struct sway_container *prev_c = container_at_coords(seat,
 			cursor->previous.x, cursor->previous.y, &surface, &sx, &sy);
 	// Update the stored previous position
 	cursor->previous.x = cursor->cursor->x;
 	cursor->previous.y = cursor->cursor->y;
 
-	struct sway_container *c = container_at_coords(cursor->seat,
+	struct sway_container *c = container_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (c && config->focus_follows_mouse && allow_refocusing) {
-		struct sway_container *focus = seat_get_focus(cursor->seat);
+		struct sway_container *focus = seat_get_focus(seat);
 		if (focus && c->type == C_WORKSPACE) {
 			// Only follow the mouse if it would move to a new output
 			// Otherwise we'll focus the workspace, which is probably wrong
@@ -170,20 +171,20 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				output = container_parent(c, C_OUTPUT);
 			}
 			if (output != focus) {
-				seat_set_focus_warp(cursor->seat, c, false);
+				seat_set_focus_warp(seat, c, false);
 			}
 		} else if (c->type == C_VIEW) {
 			// Focus c if both of the following are true:
 			// - cursor is over a new view, i.e. entered a new window; and
 			// - the new view is visible, i.e. not hidden in a stack or tab.
 			if (c != prev_c && view_is_visible(c->sway_view)) {
-				seat_set_focus_warp(cursor->seat, c, false);
+				seat_set_focus_warp(seat, c, false);
 			} else {
 				struct sway_container *next_focus =
-					seat_get_focus_inactive(cursor->seat, &root_container);
+					seat_get_focus_inactive(seat, &root_container);
 				if (next_focus && next_focus->type == C_VIEW &&
 						view_is_visible(next_focus->sway_view)) {
-					seat_set_focus_warp(cursor->seat, next_focus, false);
+					seat_set_focus_warp(seat, next_focus, false);
 				}
 			}
 		}
@@ -202,12 +203,18 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	// send pointer enter/leave
 	if (surface != NULL) {
-		if (seat_is_input_allowed(cursor->seat, surface)) {
-			wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-			wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
+		if (seat_is_input_allowed(seat, surface)) {
+			wlr_seat_pointer_notify_enter(wlr_seat, surface, sx, sy);
+			wlr_seat_pointer_notify_motion(wlr_seat, time_msec, sx, sy);
 		}
 	} else {
-		wlr_seat_pointer_clear_focus(seat);
+		wlr_seat_pointer_clear_focus(wlr_seat);
+	}
+
+	struct wlr_drag_icon *wlr_drag_icon;
+	wl_list_for_each(wlr_drag_icon, &wlr_seat->drag_icons, link) {
+		struct sway_drag_icon *drag_icon = wlr_drag_icon->data;
+		drag_icon_update_position(drag_icon);
 	}
 }
 
@@ -293,22 +300,27 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_down *event = data;
 
-	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	struct sway_seat *seat = cursor->seat;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 
 	double lx, ly;
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
-	container_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+	container_at_coords(seat, lx, ly, &surface, &sx, &sy);
+
+	seat->touch_id = event->touch_id;
+	seat->touch_x = lx;
+	seat->touch_y = ly;
 
 	if (!surface) {
 		return;
 	}
 
 	// TODO: fall back to cursor simulation if client has not bound to touch
-	if (seat_is_input_allowed(cursor->seat, surface)) {
-		wlr_seat_touch_notify_down(seat, surface, event->time_msec,
+	if (seat_is_input_allowed(seat, surface)) {
+		wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
 				event->touch_id, sx, sy);
 		cursor->image_client = NULL;
 		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
@@ -330,7 +342,8 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_motion *event = data;
 
-	struct wlr_seat *seat = cursor->seat->wlr_seat;
+	struct sway_seat *seat = cursor->seat;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 
 	double lx, ly;
@@ -339,14 +352,25 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	double sx, sy;
 	container_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
 
+	if (seat->touch_id == event->touch_id) {
+		seat->touch_x = lx;
+		seat->touch_y = ly;
+
+		struct wlr_drag_icon *wlr_drag_icon;
+		wl_list_for_each(wlr_drag_icon, &wlr_seat->drag_icons, link) {
+			struct sway_drag_icon *drag_icon = wlr_drag_icon->data;
+			drag_icon_update_position(drag_icon);
+		}
+	}
+
 	if (!surface) {
 		return;
 	}
 
 	// TODO: fall back to cursor simulation if client has not bound to touch
 	if (seat_is_input_allowed(cursor->seat, surface)) {
-		wlr_seat_touch_notify_motion(
-				seat, event->time_msec, event->touch_id, sx, sy);
+		wlr_seat_touch_notify_motion(wlr_seat, event->time_msec,
+			event->touch_id, sx, sy);
 	}
 }
 
