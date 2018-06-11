@@ -82,6 +82,10 @@ void transaction_add_container(struct sway_transaction *transaction,
 	state->swayc_y = container->y;
 	state->swayc_width = container->width;
 	state->swayc_height = container->height;
+	state->has_gaps = container->has_gaps;
+	state->current_gaps = container->current_gaps;
+	state->gaps_inner = container->gaps_inner;
+	state->gaps_outer = container->gaps_outer;
 
 	if (container->type == C_VIEW) {
 		struct sway_view *view = container->sway_view;

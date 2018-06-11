@@ -125,6 +125,11 @@ struct sway_container *container_create(enum sway_container_type type) {
 	wl_signal_add(&c->events.reparent, &c->reparent);
 	c->reparent.notify = handle_reparent;
 
+	c->has_gaps = false;
+	c->gaps_inner = 0;
+	c->gaps_outer = 0;
+	c->current_gaps = 0;
+
 	return c;
 }
 

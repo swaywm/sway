@@ -37,6 +37,7 @@ void layout_init(void) {
 	root_container.sway_root->output_layout = wlr_output_layout_create();
 	wl_list_init(&root_container.sway_root->outputs);
 	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
+	wl_list_init(&root_container.sway_root->drag_icons);
 	wl_signal_init(&root_container.sway_root->events.new_container);
 
 	root_container.sway_root->output_layout_change.notify =
@@ -839,6 +840,8 @@ struct sway_container *container_split(struct sway_container *child,
 
 	wlr_log(L_DEBUG, "creating container %p around %p", cont, child);
 
+	remove_gaps(child);
+
 	cont->prev_layout = L_NONE;
 	cont->width = child->width;
 	cont->height = child->height;
@@ -847,6 +850,9 @@ struct sway_container *container_split(struct sway_container *child,
 
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 	bool set_focus = (seat_get_focus(seat) == child);
+
+	add_gaps(cont);
+
 	if (child->type == C_WORKSPACE) {
 		struct sway_container *workspace = child;
 		while (workspace->children->length) {
@@ -874,7 +880,6 @@ struct sway_container *container_split(struct sway_container *child,
 	}
 
 	container_notify_subtree_changed(cont);
-
 	return cont;
 }
 

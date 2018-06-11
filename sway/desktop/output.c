@@ -194,6 +194,21 @@ static void unmanaged_for_each_surface(struct wl_list *unmanaged,
 	}
 }
 
+static void drag_icons_for_each_surface(struct wl_list *drag_icons,
+		struct sway_output *output, struct root_geometry *geo,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	struct sway_drag_icon *drag_icon;
+	wl_list_for_each(drag_icon, drag_icons, link) {
+		double ox = drag_icon->x - output->swayc->x;
+		double oy = drag_icon->y - output->swayc->y;
+
+		if (drag_icon->wlr_drag_icon->mapped) {
+			surface_for_each_surface(drag_icon->wlr_drag_icon->surface,
+				ox, oy, geo, iterator, user_data);
+		}
+	}
+}
+
 static void scale_box(struct wlr_box *box, float scale) {
 	box->x *= scale;
 	box->y *= scale;
@@ -312,6 +327,17 @@ static void render_unmanaged(struct sway_output *output,
 		.alpha = 1.0f,
 	};
 	unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
+		render_surface_iterator, &data);
+}
+
+static void render_drag_icons(struct sway_output *output,
+		pixman_region32_t *damage, struct wl_list *drag_icons) {
+	struct render_data data = {
+		.output = output,
+		.damage = damage,
+		.alpha = 1.0f,
+	};
+	drag_icons_for_each_surface(drag_icons, output, &data.root_geo,
 		render_surface_iterator, &data);
 }
 
@@ -959,6 +985,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	}
 	render_layer(output, damage,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	render_drag_icons(output, damage, &root_container.sway_root->drag_icons);
 
 renderer_end:
 	if (root_container.sway_root->debug_tree) {
@@ -1006,6 +1033,12 @@ static void send_frame_done_layer(struct send_frame_done_data *data,
 static void send_frame_done_unmanaged(struct send_frame_done_data *data,
 		struct wl_list *unmanaged) {
 	unmanaged_for_each_surface(unmanaged, data->output, &data->root_geo,
+		send_frame_done_iterator, data);
+}
+
+static void send_frame_done_drag_icons(struct send_frame_done_data *data,
+		struct wl_list *drag_icons) {
+	drag_icons_for_each_surface(drag_icons, data->output, &data->root_geo,
 		send_frame_done_iterator, data);
 }
 
@@ -1062,6 +1095,7 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 
 	send_frame_done_layer(&data,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	send_frame_done_drag_icons(&data, &root_container.sway_root->drag_icons);
 }
 
 static void damage_handle_frame(struct wl_listener *listener, void *data) {
@@ -1227,12 +1261,10 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		container_destroy(output->swayc);
 	}
 
-	if (&output->link) {
-		wl_list_remove(&output->link);
-		wl_list_remove(&output->destroy.link);
-		output->wlr_output = NULL;
-		free(output);
-	}
+	wl_list_remove(&output->link);
+	wl_list_remove(&output->destroy.link);
+	output->wlr_output->data = NULL;
+	free(output);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
@@ -1270,9 +1302,12 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	output->wlr_output = wlr_output;
 	wlr_output->data = output;
 	output->server = server;
-	wl_list_insert(&root_container.sway_root->outputs, &output->link);
-
 	output->damage = wlr_output_damage_create(wlr_output);
+
+	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
+	output->destroy.notify = handle_destroy;
+
+	wl_list_insert(&root_container.sway_root->outputs, &output->link);
 
 	if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
@@ -1285,6 +1320,10 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 void output_enable(struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
+
+	if (!sway_assert(output->swayc == NULL, "output is already enabled")) {
+		return;
+	}
 
 	output->swayc = output_create(output);
 	if (!output->swayc) {
@@ -1299,8 +1338,6 @@ void output_enable(struct sway_output *output) {
 
 	input_manager_configure_xcursor(input_manager);
 
-	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
-	output->destroy.notify = handle_destroy;
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	output->mode.notify = handle_mode;
 	wl_signal_add(&wlr_output->events.transform, &output->transform);

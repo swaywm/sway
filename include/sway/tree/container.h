@@ -60,6 +60,11 @@ struct sway_container_state {
 	double swayc_x, swayc_y;
 	double swayc_width, swayc_height;
 
+	bool has_gaps;
+	double current_gaps;
+	double gaps_inner;
+	double gaps_outer;
+
 	//struct sway_container *parent;
 	//list_t *children;
 
@@ -111,6 +116,13 @@ struct sway_container {
 	double width, height;
 	double saved_x, saved_y;
 	double saved_width, saved_height;
+
+	// The gaps currently applied to the container.
+	double current_gaps;
+
+	bool has_gaps;
+	double gaps_inner;
+	double gaps_outer;
 
 	list_t *children;
 

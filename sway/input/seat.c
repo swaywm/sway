@@ -6,21 +6,22 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include "log.h"
 #include "sway/debug.h"
-#include "sway/tree/container.h"
-#include "sway/tree/workspace.h"
-#include "sway/input/seat.h"
+#include "sway/desktop.h"
 #include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
+#include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "log.h"
+#include "sway/tree/workspace.h"
 
 static void seat_device_destroy(struct sway_seat_device *seat_device) {
 	if (!seat_device) {
@@ -40,6 +41,8 @@ void seat_destroy(struct sway_seat *seat) {
 		seat_device_destroy(seat_device);
 	}
 	sway_cursor_destroy(seat->cursor);
+	wl_list_remove(&seat->new_container.link);
+	wl_list_remove(&seat->new_drag_icon.link);
 	wl_list_remove(&seat->link);
 	wlr_seat_destroy(seat->wlr_seat);
 }
@@ -234,6 +237,90 @@ static void handle_new_container(struct wl_listener *listener, void *data) {
 	seat_container_from_container(seat, con);
 }
 
+static void drag_icon_damage_whole(struct sway_drag_icon *icon) {
+	if (!icon->wlr_drag_icon->mapped) {
+		return;
+	}
+	desktop_damage_surface(icon->wlr_drag_icon->surface, icon->x, icon->y, true);
+}
+
+void drag_icon_update_position(struct sway_drag_icon *icon) {
+	drag_icon_damage_whole(icon);
+
+	struct wlr_drag_icon *wlr_icon = icon->wlr_drag_icon;
+	struct sway_seat *seat = icon->seat;
+	struct wlr_cursor *cursor = seat->cursor->cursor;
+	if (wlr_icon->is_pointer) {
+		icon->x = cursor->x + wlr_icon->sx;
+		icon->y = cursor->y + wlr_icon->sy;
+	} else {
+		struct wlr_touch_point *point =
+			wlr_seat_touch_get_point(seat->wlr_seat, wlr_icon->touch_id);
+		if (point == NULL) {
+			return;
+		}
+		icon->x = seat->touch_x + wlr_icon->sx;
+		icon->y = seat->touch_y + wlr_icon->sy;
+	}
+
+	drag_icon_damage_whole(icon);
+}
+
+static void drag_icon_handle_surface_commit(struct wl_listener *listener,
+		void *data) {
+	struct sway_drag_icon *icon =
+		wl_container_of(listener, icon, surface_commit);
+	drag_icon_update_position(icon);
+}
+
+static void drag_icon_handle_map(struct wl_listener *listener, void *data) {
+	struct sway_drag_icon *icon = wl_container_of(listener, icon, map);
+	drag_icon_damage_whole(icon);
+}
+
+static void drag_icon_handle_unmap(struct wl_listener *listener, void *data) {
+	struct sway_drag_icon *icon = wl_container_of(listener, icon, unmap);
+	drag_icon_damage_whole(icon);
+}
+
+static void drag_icon_handle_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_drag_icon *icon = wl_container_of(listener, icon, destroy);
+	icon->wlr_drag_icon->data = NULL;
+	wl_list_remove(&icon->link);
+	wl_list_remove(&icon->surface_commit.link);
+	wl_list_remove(&icon->unmap.link);
+	wl_list_remove(&icon->destroy.link);
+	free(icon);
+}
+
+static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
+	struct sway_seat *seat = wl_container_of(listener, seat, new_drag_icon);
+	struct wlr_drag_icon *wlr_drag_icon = data;
+
+	struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
+	if (icon == NULL) {
+		wlr_log(L_ERROR, "Allocation failed");
+		return;
+	}
+	icon->seat = seat;
+	icon->wlr_drag_icon = wlr_drag_icon;
+	wlr_drag_icon->data = icon;
+
+	icon->surface_commit.notify = drag_icon_handle_surface_commit;
+	wl_signal_add(&wlr_drag_icon->surface->events.commit, &icon->surface_commit);
+	icon->unmap.notify = drag_icon_handle_unmap;
+	wl_signal_add(&wlr_drag_icon->events.unmap, &icon->unmap);
+	icon->map.notify = drag_icon_handle_map;
+	wl_signal_add(&wlr_drag_icon->events.map, &icon->map);
+	icon->destroy.notify = drag_icon_handle_destroy;
+	wl_signal_add(&wlr_drag_icon->events.destroy, &icon->destroy);
+
+	wl_list_insert(&root_container.sway_root->drag_icons, &icon->link);
+
+	drag_icon_update_position(icon);
+}
+
 static void collect_focus_iter(struct sway_container *con, void *data) {
 	struct sway_seat *seat = data;
 	if (con->type > C_WORKSPACE) {
@@ -277,6 +364,9 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);
 	seat->new_container.notify = handle_new_container;
+
+	wl_signal_add(&seat->wlr_seat->events.new_drag_icon, &seat->new_drag_icon);
+	seat->new_drag_icon.notify = handle_new_drag_icon;
 
 	seat->input = input;
 	wl_list_init(&seat->devices);
