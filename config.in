@@ -75,7 +75,8 @@ output * bg @datadir@/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
     # Despite the name, also works for non-floating windows.
     # Change normal to inverse to use left mouse button for resizing and right
     # mouse button for dragging.
-    floating_modifier $mod normal
+    # TODO: reenable when floating_modifier has been reimplemented.
+    #floating_modifier $mod normal
 
     # reload the configuration file
     bindsym $mod+Shift+c reload
