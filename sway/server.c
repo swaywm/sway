@@ -25,9 +25,8 @@
 #include "sway/tree/layout.h"
 
 
-bool server_init(struct sway_server *server) {
-	wlr_log(L_DEBUG, "Initializing Wayland server");
-
+bool server_privileged_prepare(struct sway_server *server) {
+	wlr_log(L_DEBUG, "Preparing Wayland server initialization");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
@@ -36,6 +35,12 @@ bool server_init(struct sway_server *server) {
 		wlr_log(L_ERROR, "Unable to create backend");
 		return false;
 	}
+	return true;
+}
+
+bool server_init(struct sway_server *server) {
+	wlr_log(L_DEBUG, "Initializing Wayland server");
+
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
 	assert(renderer);
 
