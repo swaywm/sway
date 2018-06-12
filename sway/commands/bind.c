@@ -32,7 +32,7 @@ void free_sway_binding(struct sway_binding *binding) {
  * Note that keyboard layout is not considered, so the bindings might actually
  * not be equivalent on some layouts.
  */
-bool binding_key_compare(struct sway_binding *binding_a,
+static bool binding_key_compare(struct sway_binding *binding_a,
 		struct sway_binding *binding_b) {
 	if (binding_a->release != binding_b->release) {
 		return false;
@@ -50,23 +50,23 @@ bool binding_key_compare(struct sway_binding *binding_a,
 		return false;
 	}
 
+	// Keys are sorted
 	int keys_len = binding_a->keys->length;
 	for (int i = 0; i < keys_len; ++i) {
-		uint32_t key_a = *(uint32_t*)binding_a->keys->items[i];
-		bool found = false;
-		for (int j = 0; j < keys_len; ++j) {
-			uint32_t key_b = *(uint32_t*)binding_b->keys->items[j];
-			if (key_b == key_a) {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
+		uint32_t key_a = *(uint32_t *)binding_a->keys->items[i];
+		uint32_t key_b = *(uint32_t *)binding_b->keys->items[i];
+		if (key_a != key_b) {
 			return false;
 		}
 	}
 
 	return true;
+}
+
+static int key_qsort_cmp(const void *keyp_a, const void *keyp_b) {
+	uint32_t key_a = **(uint32_t **)keyp_a;
+	uint32_t key_b = **(uint32_t **)keyp_b;
+	return (key_a < key_b) ? -1 : ((key_a > key_b) ? 1 : 0);
 }
 
 static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
@@ -168,6 +168,9 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	}
 	free_flat_list(split);
 	binding->order = binding_order++;
+
+	// sort ascending
+	list_qsort(binding->keys, key_qsort_cmp);
 
 	list_t *mode_bindings;
 	if (bindcode) {
