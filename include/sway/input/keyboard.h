@@ -21,7 +21,9 @@ struct sway_shortcut_state {
 	 * including duplicates when a keycode generates multiple key ids.
 	 */
 	uint32_t pressed_keycodes[SWAY_KEYBOARD_PRESSED_KEYS_CAP];
-	int last_key_index;
+	uint32_t last_keycode;
+	uint32_t last_raw_modifiers;
+	size_t npressed;
 };
 
 struct sway_keyboard {
@@ -36,7 +38,6 @@ struct sway_keyboard {
 	struct sway_shortcut_state state_keysyms_raw;
 	struct sway_shortcut_state state_keycodes;
 	struct sway_binding *held_binding;
-	uint32_t last_modifiers;
 };
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
