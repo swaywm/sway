@@ -240,7 +240,8 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
 
-	if (!wlr_surface_has_buffer(surface)) {
+	struct wlr_texture *texture = wlr_surface_get_texture(surface);
+	if (texture == NULL) {
 		return;
 	}
 
@@ -259,8 +260,7 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
-	render_texture(wlr_output, output_damage, surface->texture, &box, matrix,
-		alpha);
+	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
 }
 
 static void render_layer(struct sway_output *output,
