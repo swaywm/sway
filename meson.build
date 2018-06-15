@@ -22,7 +22,7 @@ prefix = get_option('prefix')
 
 swayidle_deps = []
 
-jsonc          = dependency('json-c', version: '>=0.13')
+jsonc          = dependency('json-c', version: '>=0.12')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots', fallback: ['wlroots', 'wlroots'])
 wayland_server = dependency('wayland-server')
