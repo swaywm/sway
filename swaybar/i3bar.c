@@ -32,7 +32,7 @@ static bool i3bar_parse_json(struct status_line *status, const char *text) {
 		return false;
 	}
 	wlr_log(L_DEBUG, "Got i3bar json: '%s'", text);
-	for (size_t i = 0; i < json_object_array_length(results); ++i) {
+	for (int i = 0; i < json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
 		json_object *background, *border, *border_top, *border_bottom;

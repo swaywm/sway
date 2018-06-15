@@ -270,7 +270,7 @@ static void ipc_get_outputs(struct swaybar *bar) {
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_OUTPUTS, NULL, &len);
 	json_object *outputs = json_tokener_parse(res);
-	for (size_t i = 0; i < json_object_array_length(outputs); ++i) {
+	for (int i = 0; i < json_object_array_length(outputs); ++i) {
 		json_object *output = json_object_array_get_idx(outputs, i);
 		json_object *output_name, *output_active;
 		json_object_object_get_ex(output, "name", &output_name);
