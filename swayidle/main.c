@@ -127,7 +127,8 @@ void acquire_sleep_lock() {
 
 static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
 		sd_bus_error *ret_error) {
-	bool going_down = true;
+	/* "b" apparently reads into an int, not a bool */
+	int going_down = 1;
 	int ret = sd_bus_message_read(msg, "b", &going_down);
 	if (ret < 0) {
 		wlr_log(L_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
