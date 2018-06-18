@@ -18,12 +18,11 @@
 #include <wlr/types/wlr_xdg_output.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
-#include <wlr/xwayland.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
-
+#include "sway/xwayland.h"
 
 bool server_init(struct sway_server *server) {
 	wlr_log(L_DEBUG, "Initializing Wayland server");
@@ -72,20 +71,23 @@ bool server_init(struct sway_server *server) {
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
 
 	// TODO make xwayland optional
-	server->xwayland =
+	server->xwayland.wlr_xwayland =
 		wlr_xwayland_create(server->wl_display, server->compositor, true);
-	wl_signal_add(&server->xwayland->events.new_surface,
+	wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
 		&server->xwayland_surface);
 	server->xwayland_surface.notify = handle_xwayland_surface;
+	wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
+		&server->xwayland_ready);
+	server->xwayland_ready.notify = handle_xwayland_ready;
 
 	// TODO: configurable cursor theme and size
-	server->xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
-	wlr_xcursor_manager_load(server->xcursor_manager, 1);
+	server->xwayland.xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
+	wlr_xcursor_manager_load(server->xwayland.xcursor_manager, 1);
 	struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
-		server->xcursor_manager, "left_ptr", 1);
+		server->xwayland.xcursor_manager, "left_ptr", 1);
 	if (xcursor != NULL) {
 		struct wlr_xcursor_image *image = xcursor->images[0];
-		wlr_xwayland_set_cursor(server->xwayland, image->buffer,
+		wlr_xwayland_set_cursor(server->xwayland.wlr_xwayland, image->buffer,
 			image->width * 4, image->width, image->height, image->hotspot_x,
 			image->hotspot_y);
 	}
