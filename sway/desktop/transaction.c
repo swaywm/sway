@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_linux_dmabuf.h>
 #include "sway/debug.h"
 #include "sway/desktop/transaction.h"
@@ -112,16 +113,23 @@ void transaction_add_damage(struct sway_transaction *transaction,
 	list_add(transaction->damage, box);
 }
 
-static void save_view_texture(struct sway_view *view) {
-	wlr_texture_destroy(view->saved_texture);
-	view->saved_texture = NULL;
-
-	// TODO: Copy the texture and store it in view->saved_texture.
+static void save_view_buffer(struct sway_view *view) {
+	if (view->saved_buffer) {
+		wlr_buffer_unref(view->saved_buffer);
+	}
+	wlr_buffer_ref(view->surface->buffer);
+	view->saved_buffer = view->surface->buffer;
+	view->saved_surface_width = view->surface->current->width;
+	view->saved_surface_height = view->surface->current->height;
 }
 
-static void remove_saved_view_texture(struct sway_view *view) {
-	wlr_texture_destroy(view->saved_texture);
-	view->saved_texture = NULL;
+static void remove_saved_view_buffer(struct sway_view *view) {
+	if (view->saved_buffer) {
+		wlr_buffer_unref(view->saved_buffer);
+		view->saved_buffer = NULL;
+		view->saved_surface_width = 0;
+		view->saved_surface_height = 0;
+	}
 }
 
 /**
@@ -141,7 +149,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 				sizeof(struct sway_container_state));
 
 		if (container->type == C_VIEW) {
-			remove_saved_view_texture(container->sway_view);
+			remove_saved_view_buffer(container->sway_view);
 		}
 	}
 
@@ -183,7 +191,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 					instruction->state.view_width,
 					instruction->state.view_height);
 			if (instruction->serial) {
-				save_view_texture(con->sway_view);
+				save_view_buffer(con->sway_view);
 				list_add(con->sway_view->instructions, instruction);
 				++transaction->num_waiting;
 			}

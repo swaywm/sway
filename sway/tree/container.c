@@ -766,9 +766,6 @@ static void update_title_texture(struct sway_container *con,
 			"Unexpected type %s", container_type_to_str(con->type))) {
 		return;
 	}
-	if (!con->width) {
-		return;
-	}
 	struct sway_container *output = container_parent(con, C_OUTPUT);
 	if (!output) {
 		return;

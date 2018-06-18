@@ -72,10 +72,11 @@ struct sway_view {
 	list_t *marks;             // char *
 	list_t *instructions;      // struct sway_transaction_instruction *
 
-	// If saved_texture is set, the main surface of the view will render this
-	// texture instead of its own. This is used while waiting for transactions
-	// to complete.
-	struct wlr_texture *saved_texture;
+	// If saved_buffer is set, the main surface of the view will render this
+	// buffer/texture instead of its own. This is used while waiting for
+	// transactions to complete.
+	struct wlr_buffer *saved_buffer;
+	int saved_surface_width, saved_surface_height;
 
 	struct wlr_texture *marks_focused;
 	struct wlr_texture *marks_focused_inactive;

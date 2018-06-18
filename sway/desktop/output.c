@@ -6,6 +6,7 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_box.h>
+#include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_matrix.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -112,8 +113,8 @@ static bool get_surface_box(struct root_geometry *geo,
 static bool get_view_box(struct root_geometry *geo,
 		struct sway_output *output, struct sway_view *view, int sx, int sy,
 		struct wlr_box *surface_box) {
-	int sw = view->width;
-	int sh = view->height;
+	int sw = view->saved_surface_width;
+	int sh = view->saved_surface_height;
 
 	double _sx = sx, _sy = sy;
 	rotate_child_position(&_sx, &_sy, sw, sh, geo->width, geo->height,
@@ -157,10 +158,10 @@ static void output_view_for_each_surface(struct sway_view *view,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct render_data *data = user_data;
-	geo->x = view->x - data->output->swayc->x;
-	geo->y = view->y - data->output->swayc->y;
-	geo->width = view->surface->current->width;
-	geo->height = view->surface->current->height;
+	geo->x = view->swayc->current.view_x - data->output->swayc->x;
+	geo->y = view->swayc->current.view_y - data->output->swayc->y;
+	geo->width = view->swayc->current.view_width;
+	geo->height = view->swayc->current.view_height;
 	geo->rotation = 0; // TODO
 
 	view_for_each_surface(view, iterator, user_data);
@@ -277,11 +278,11 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	struct wlr_box box;
 	bool intersects;
 
-	// If this is the main surface of a view, render the saved_texture instead
+	// If this is the main surface of a view, render the saved_buffer instead
 	// if it exists. It exists when we are mid-transaction.
-	if (data->view && data->view->saved_texture &&
+	if (data->view && data->view->saved_buffer &&
 			data->view->surface == surface) {
-		texture = data->view->saved_texture;
+		texture = data->view->saved_buffer->texture;
 		intersects = get_view_box(&data->root_geo, data->output, data->view,
 				sx, sy, &box);
 	} else {
@@ -405,46 +406,46 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 	float output_scale = output->wlr_output->scale;
 	float color[4];
 
-	if (view->border != B_NONE) {
-		if (view->border_left) {
+	if (con->current.border != B_NONE) {
+		if (con->current.border_left) {
 			memcpy(&color, colors->child_border, sizeof(float) * 4);
 			premultiply_alpha(color, con->alpha);
-			box.x = con->x;
-			box.y = view->y;
-			box.width = view->border_thickness;
-			box.height = view->height;
+			box.x = con->current.swayc_x;
+			box.y = con->current.view_y;
+			box.width = con->current.border_thickness;
+			box.height = con->current.view_height;
 			scale_box(&box, output_scale);
 			render_rect(output->wlr_output, damage, &box, color);
 		}
 
-		if (view->border_right) {
+		if (con->current.border_right) {
 			if (con->parent->children->length == 1
-					&& con->parent->layout == L_HORIZ) {
+					&& con->parent->current.layout == L_HORIZ) {
 				memcpy(&color, colors->indicator, sizeof(float) * 4);
 			} else {
 				memcpy(&color, colors->child_border, sizeof(float) * 4);
 			}
 			premultiply_alpha(color, con->alpha);
-			box.x = view->x + view->width;
-			box.y = view->y;
-			box.width = view->border_thickness;
-			box.height = view->height;
+			box.x = con->current.view_x + con->current.view_width;
+			box.y = con->current.view_y;
+			box.width = con->current.border_thickness;
+			box.height = con->current.view_height;
 			scale_box(&box, output_scale);
 			render_rect(output->wlr_output, damage, &box, color);
 		}
 
-		if (view->border_bottom) {
+		if (con->current.border_bottom) {
 			if (con->parent->children->length == 1
-					&& con->parent->layout == L_VERT) {
+					&& con->parent->current.layout == L_VERT) {
 				memcpy(&color, colors->indicator, sizeof(float) * 4);
 			} else {
 				memcpy(&color, colors->child_border, sizeof(float) * 4);
 			}
 			premultiply_alpha(color, con->alpha);
-			box.x = con->x;
-			box.y = view->y + view->height;
-			box.width = con->width;
-			box.height = view->border_thickness;
+			box.x = con->current.swayc_x;
+			box.y = con->current.view_y + con->current.view_height;
+			box.width = con->current.swayc_width;
+			box.height = con->current.border_thickness;
 			scale_box(&box, output_scale);
 			render_rect(output->wlr_output, damage, &box, color);
 		}
@@ -468,9 +469,8 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_texture *marks_texture) {
 	struct wlr_box box;
 	float color[4];
-	struct sway_view *view = con->type == C_VIEW ? con->sway_view : NULL;
 	float output_scale = output->wlr_output->scale;
-	enum sway_container_layout layout = con->parent->layout;
+	enum sway_container_layout layout = con->parent->current.layout;
 	bool is_last_child =
 		con->parent->children->items[con->parent->children->length - 1] == con;
 
@@ -489,9 +489,11 @@ static void render_titlebar(struct sway_output *output,
 	bool connects_sides = false;
 	if (layout == L_HORIZ || layout == L_VERT ||
 			(layout == L_STACKED && is_last_child)) {
-		if (view) {
-			left_offset = view->border_left * view->border_thickness;
-			right_offset = view->border_right * view->border_thickness;
+		if (con->type == C_VIEW) {
+			left_offset =
+				con->current.border_left * con->current.border_thickness;
+			right_offset =
+				con->current.border_right * con->current.border_thickness;
 			connects_sides = true;
 		}
 	}
@@ -612,15 +614,16 @@ static void render_titlebar(struct sway_output *output,
 		// Left pixel in line with bottom bar
 		box.x = x;
 		box.y = y + container_titlebar_height() - TITLEBAR_BORDER_THICKNESS;
-		box.width = view->border_thickness * view->border_left;
+		box.width = con->current.border_thickness * con->current.border_left;
 		box.height = TITLEBAR_BORDER_THICKNESS;
 		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 
 		// Right pixel in line with bottom bar
-		box.x = x + width - view->border_thickness * view->border_right;
+		box.x = x + width -
+			con->current.border_thickness * con->current.border_right;
 		box.y = y + container_titlebar_height() - TITLEBAR_BORDER_THICKNESS;
-		box.width = view->border_thickness * view->border_right;
+		box.width = con->current.border_thickness * con->current.border_right;
 		box.height = TITLEBAR_BORDER_THICKNESS;
 		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
@@ -633,8 +636,7 @@ static void render_titlebar(struct sway_output *output,
 static void render_top_border(struct sway_output *output,
 		pixman_region32_t *output_damage, struct sway_container *con,
 		struct border_colors *colors) {
-	struct sway_view *view = con->sway_view;
-	if (!view->border_top) {
+	if (!con->current.border_top) {
 		return;
 	}
 	struct wlr_box box;
@@ -644,10 +646,10 @@ static void render_top_border(struct sway_output *output,
 	// Child border - top edge
 	memcpy(&color, colors->child_border, sizeof(float) * 4);
 	premultiply_alpha(color, con->alpha);
-	box.x = con->x;
-	box.y = con->y;
-	box.width = con->width;
-	box.height = view->border_thickness;
+	box.x = con->current.swayc_x;
+	box.y = con->current.swayc_y;
+	box.width = con->current.swayc_width;
+	box.height = con->current.border_thickness;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 }
@@ -688,9 +690,10 @@ static void render_container_simple(struct sway_output *output,
 				marks_texture = child->sway_view->marks_unfocused;
 			}
 
-			if (child->sway_view->border == B_NORMAL) {
-				render_titlebar(output, damage, child, child->x, child->y,
-						child->width, colors, title_texture, marks_texture);
+			if (child->current.border == B_NORMAL) {
+				render_titlebar(output, damage, child, child->current.swayc_x,
+						child->current.swayc_y, child->current.swayc_width,
+						colors, title_texture, marks_texture);
 			} else {
 				render_top_border(output, damage, child, colors);
 			}
@@ -739,15 +742,15 @@ static void render_container_tabbed(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int tab_width = con->width / con->children->length;
-		int x = con->x + tab_width * i;
+		int tab_width = con->current.swayc_width / con->children->length;
+		int x = con->current.swayc_x + tab_width * i;
 		// Make last tab use the remaining width of the parent
 		if (i == con->children->length - 1) {
-			tab_width = con->width - tab_width * i;
+			tab_width = con->current.swayc_width - tab_width * i;
 		}
 
-		render_titlebar(output, damage, child, x, child->y, tab_width, colors,
-				title_texture, marks_texture);
+		render_titlebar(output, damage, child, x, child->current.swayc_y,
+				tab_width, colors, title_texture, marks_texture);
 
 		if (child == current) {
 			current_colors = colors;

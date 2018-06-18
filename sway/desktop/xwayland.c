@@ -261,8 +261,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 			view_update_size(view, view->swayc->width, view->swayc->height);
 		}
 		view_update_position(view, view->x, view->y);
-		view_damage_from(view);
 	}
+	view_damage_from(view);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
