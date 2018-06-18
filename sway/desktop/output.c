@@ -285,10 +285,10 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		intersects = get_view_box(&data->root_geo, data->output, data->view,
 				sx, sy, &box);
 	} else {
-		if (!wlr_surface_has_buffer(surface)) {
+		texture = wlr_surface_get_texture(surface);
+		if (texture == NULL) {
 			return;
 		}
-		texture = surface->texture;
 		intersects = get_surface_box(&data->root_geo, data->output, surface,
 				sx, sy, &box);
 	}

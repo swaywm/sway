@@ -30,7 +30,7 @@ struct sway_binding {
 	bool release;
 	bool locked;
 	bool bindcode;
-	list_t *keys;
+	list_t *keys; // sorted in ascending order
 	uint32_t modifiers;
 	char *command;
 };
