@@ -4,13 +4,13 @@
 [Русский](https://github.com/swaywm/sway/blob/master/README.ru.md#sway--)
 
 "**S**irCmpwn's **Way**land compositor" es un gestor de composición de ventanas
-compatible con i3 [Wayland](http://wayland.freedesktop.org/) **en processo de
+[Wayland](http://wayland.freedesktop.org/) compatible con i3 **en processo de
 desarrollo**.
 Lee el ["FAQ"](https://github.com/swaywm/sway/wiki). Únete al canal de
 ["IRC"](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway en
 irc.freenode.net).
 
-**Nota**: Sway se encuentra actualmente "congelado"("frozen"), es decir que
+**Nota**: Sway se encuentra actualmente "congelado" ("frozen"), es decir que
 nuevas características no están siendo desarrolladas, hasta que terminemos de
 integrar Sway y wlroots.
 Las correcciones a fallos "Bug fixes" continúan. Para mayor información
@@ -33,7 +33,7 @@ característica que se desee desarrollar. En general el uso de Patreon es más
 ## Ayuda en Español
 
 Al momento no hay ayuda en Español en IRC, [tonyskapunk](https://github.com/tonyskapunk)
-puede proveer ayuda en Español en GitHub en el uso horario [UTC-6](https://en.wikipedia.org/wiki/UTC%E2%88%9206:00)
+puede proveer ayuda en Español en GitHub en el huso horario [UTC-6](https://en.wikipedia.org/wiki/UTC%E2%88%9206:00)
 
 La traducción al Español no esta completa, información sobre el progreso de
 la traducción se encuentra documentada en el "issue":
@@ -56,13 +56,13 @@ y son publicados [en GitHub](https://github.com/swaywm/sway/releases).
 
 ### Por medio de paquetes
 
-Sway esta disponible en muchas distribuciones. Intenta instalar el paquete
-"sway" en tu distribución. Si no esta disponible revisa
+Sway está disponible en muchas distribuciones. Intenta instalar el paquete
+"sway" en tu distribución. Si no está disponible revisa
 [ésta wiki](https://github.com/swaywm/sway/wiki/Unsupported-packages)
 para información de la instalación en tu distribución.
 
-Si estas interesado en crear un paquete de Sway para tu distribución entra 
-al canal de IRC o envía un correo(en Inglés) a sir@cmpwn.com para más
+Si estás interesado en crear un paquete de Sway para tu distribución entra
+al canal de IRC o envía un correo (en Inglés) a sir@cmpwn.com para más
 información.
 
 ### Compilando código fuente
@@ -85,7 +85,7 @@ Instalación de dependencias:
 * imagemagick (requerido para captura de imágenes con swaygrab)
 * ffmpeg (requerido para captura de video con swaygrab)
 
-_\*Sólo requerido para swaybar, swaybg, and swaylock_
+_\*Sólo requerido para swaybar, swaybg y swaylock_
 
 _\*\*Sólo requerido para swaylock_
 
