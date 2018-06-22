@@ -359,6 +359,11 @@ int main(int argc, char **argv) {
 
 	executable_sanity_check();
 	bool suid = false;
+
+	if (!server_privileged_prepare(&server)) {
+		return 1;
+	}
+
 #ifdef __linux__
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		// Retain capabilities after setuid()
