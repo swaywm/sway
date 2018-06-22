@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_linux_dmabuf.h>
+#include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_server_decoration.h>
@@ -97,6 +98,7 @@ bool server_init(struct sway_server *server) {
 		deco_manager, WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
 
 	wlr_linux_dmabuf_create(server->wl_display, renderer);
+	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
