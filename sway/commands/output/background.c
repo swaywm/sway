@@ -3,6 +3,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <wordexp.h>
+#include <errno.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "log.h"
@@ -71,21 +72,27 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			if (conf) {
 				char *conf_path = dirname(conf);
 				src = malloc(strlen(conf_path) + strlen(src) + 2);
-				if (src) {
-					sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
-				} else {
+				if (!src) {
+					free(conf);
+					wordfree(&p);
 					wlr_log(L_ERROR,
-						"Unable to allocate background source");
+						"Unable to allocate resource: Not enough memory");
+					return cmd_results_new(CMD_FAILURE, "output",
+						"Unable to allocate resources");
 				}
+				sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
 				free(conf);
 			} else {
 				wlr_log(L_ERROR, "Unable to allocate background source");
 			}
 		}
-		if (!src || access(src, F_OK) == -1) {
+
+		if (access(src, F_OK) == -1) {
+			struct cmd_results * cmd_res = cmd_results_new(CMD_FAILURE, "output",
+				"Unable to access background file '%s': %s", src, strerror(errno));
+			free(src);
 			wordfree(&p);
-			return cmd_results_new(CMD_INVALID, "output",
-				"Background file unreadable (%s).", src);
+			return cmd_res;
 		}
 
 		output->background = strdup(src);
