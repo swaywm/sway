@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_linux_dmabuf.h>
+#include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_server_decoration.h>
@@ -26,9 +27,8 @@
 #include "sway/tree/layout.h"
 
 
-bool server_init(struct sway_server *server) {
-	wlr_log(L_DEBUG, "Initializing Wayland server");
-
+bool server_privileged_prepare(struct sway_server *server) {
+	wlr_log(L_DEBUG, "Preparing Wayland server initialization");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
@@ -37,6 +37,12 @@ bool server_init(struct sway_server *server) {
 		wlr_log(L_ERROR, "Unable to create backend");
 		return false;
 	}
+	return true;
+}
+
+bool server_init(struct sway_server *server) {
+	wlr_log(L_DEBUG, "Initializing Wayland server");
+
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
 	assert(renderer);
 
@@ -98,6 +104,7 @@ bool server_init(struct sway_server *server) {
 		deco_manager, WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
 
 	wlr_linux_dmabuf_create(server->wl_display, renderer);
+	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
