@@ -430,6 +430,9 @@ bool workspace_switch(struct sway_container *workspace) {
 }
 
 bool workspace_is_visible(struct sway_container *ws) {
+	if (ws->destroying) {
+		return false;
+	}
 	struct sway_container *output = container_parent(ws, C_OUTPUT);
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focus_inactive(seat, output);

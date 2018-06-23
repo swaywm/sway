@@ -12,6 +12,7 @@
 #include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
 #include <wlr/xwayland.h>
+#include "list.h"
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -43,6 +44,12 @@ struct sway_server {
 
 	struct wlr_wl_shell *wl_shell;
 	struct wl_listener wl_shell_surface;
+
+	bool terminating;
+
+	// When a view is being destroyed and is waiting for a transaction to
+	// complete it will be stored here.
+	list_t *destroying_containers;
 };
 
 struct sway_server server;

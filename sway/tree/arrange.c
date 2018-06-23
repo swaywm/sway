@@ -144,6 +144,19 @@ static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 	}
 }
 
+/**
+ * If a container has been deleted from the pending tree state, we must add it
+ * to the transaction so it can be freed afterwards. To do this, we iterate the
+ * server's destroying_containers list and add all of them. We may add more than
+ * what we need to, but this is easy and has no negative consequences.
+ */
+static void add_deleted_containers(struct sway_transaction *transaction) {
+	for (int i = 0; i < server.destroying_containers->length; ++i) {
+		struct sway_container *child = server.destroying_containers->items[i];
+		transaction_add_container(transaction, child);
+	}
+}
+
 static void arrange_children_of(struct sway_container *parent,
 		struct sway_transaction *transaction);
 
@@ -158,6 +171,7 @@ static void arrange_floating(struct sway_container *floating,
 		}
 		transaction_add_container(transaction, floater);
 	}
+	transaction_add_container(transaction, floating);
 }
 
 static void arrange_children_of(struct sway_container *parent,
@@ -290,7 +304,16 @@ void arrange_windows(struct sway_container *container,
 	case C_TYPES:
 		break;
 	}
-	transaction_add_damage(transaction, container_get_box(container));
+	// Add damage for whatever container arrange_windows() was called with,
+	// unless it was called with the special floating container, in which case
+	// we'll damage the entire output.
+	if (container->type == C_CONTAINER && container->layout == L_FLOATING) {
+		struct sway_container *output = container_parent(container, C_OUTPUT);
+		transaction_add_damage(transaction, container_get_box(output));
+	} else {
+		transaction_add_damage(transaction, container_get_box(container));
+	}
+	add_deleted_containers(transaction);
 }
 
 void arrange_and_commit(struct sway_container *container) {

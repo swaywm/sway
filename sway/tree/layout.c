@@ -30,7 +30,9 @@ void layout_init(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
 	root_container.name = strdup("root");
+	root_container.instructions = create_list();
 	root_container.children = create_list();
+	root_container.current.children = create_list();
 	wl_signal_init(&root_container.events.destroy);
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));

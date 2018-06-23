@@ -143,16 +143,12 @@ static void _close(struct sway_view *view) {
 	}
 }
 
-static void destroy(struct sway_view *view) {
+static void _free(struct sway_view *view) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		xdg_shell_view_from_view(view);
 	if (xdg_shell_view == NULL) {
 		return;
 	}
-	wl_list_remove(&xdg_shell_view->destroy.link);
-	wl_list_remove(&xdg_shell_view->map.link);
-	wl_list_remove(&xdg_shell_view->unmap.link);
-	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
 	free(xdg_shell_view);
 }
 
@@ -164,7 +160,7 @@ static const struct sway_view_impl view_impl = {
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.close = _close,
-	.destroy = destroy,
+	.free = _free,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -173,7 +169,11 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_surface *xdg_surface = view->wlr_xdg_surface;
 
-	if (view->instructions->length) {
+	if (!view->swayc) {
+		return;
+	}
+
+	if (view->swayc->instructions->length) {
 		transaction_notify_view_ready(view, xdg_surface->configure_serial);
 	}
 
@@ -191,11 +191,18 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, unmap);
+	struct sway_view *view = &xdg_shell_view->view;
 
-	view_unmap(&xdg_shell_view->view);
+	if (!sway_assert(view->surface, "Cannot unmap unmapped view")) {
+		return;
+	}
+
+	struct sway_container *parent = view_unmap(view);
+	arrange_and_commit(parent);
 
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
+	view->surface = NULL;
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -230,7 +237,17 @@ static void handle_map(struct wl_listener *listener, void *data) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, destroy);
-	view_destroy(&xdg_shell_view->view);
+	struct sway_view *view = &xdg_shell_view->view;
+	if (!sway_assert(view->swayc == NULL || view->swayc->destroying,
+				"Tried to destroy a mapped view")) {
+		return;
+	}
+	wl_list_remove(&xdg_shell_view->destroy.link);
+	wl_list_remove(&xdg_shell_view->map.link);
+	wl_list_remove(&xdg_shell_view->unmap.link);
+	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	view->wlr_xdg_surface = NULL;
+	view_destroy(view);
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {

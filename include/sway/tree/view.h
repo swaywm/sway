@@ -37,7 +37,7 @@ struct sway_view_impl {
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
-	void (*destroy)(struct sway_view *view);
+	void (*free)(struct sway_view *view);
 };
 
 struct sway_view {
@@ -68,15 +68,10 @@ struct sway_view {
 	bool border_left;
 	bool border_right;
 
+	bool destroying;
+
 	list_t *executed_criteria; // struct criteria *
 	list_t *marks;             // char *
-	list_t *instructions;      // struct sway_transaction_instruction *
-
-	// If saved_buffer is set, the main surface of the view will render this
-	// buffer/texture instead of its own. This is used while waiting for
-	// transactions to complete.
-	struct wlr_buffer *saved_buffer;
-	int saved_surface_width, saved_surface_height;
 
 	struct wlr_texture *marks_focused;
 	struct wlr_texture *marks_focused_inactive;
@@ -244,11 +239,16 @@ void view_for_each_surface(struct sway_view *view,
 void view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
 
+void view_free(struct sway_view *view);
+
 void view_destroy(struct sway_view *view);
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
-void view_unmap(struct sway_view *view);
+/**
+ * Unmap the view and return the surviving parent (after reaping).
+ */
+struct sway_container *view_unmap(struct sway_view *view);
 
 void view_update_position(struct sway_view *view, double lx, double ly);
 

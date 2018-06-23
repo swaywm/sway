@@ -29,7 +29,6 @@ static void restore_workspaces(struct sway_container *output) {
 	}
 
 	container_sort_workspaces(output);
-	arrange_and_commit(&root_container);
 }
 
 struct sway_container *output_create(
@@ -66,7 +65,6 @@ struct sway_container *output_create(
 
 	struct sway_container *output = container_create(C_OUTPUT);
 	output->sway_output = sway_output;
-	sway_output->swayc = output;
 	output->name = strdup(name);
 	if (output->name == NULL) {
 		container_destroy(output);

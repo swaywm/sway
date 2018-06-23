@@ -1,5 +1,6 @@
 #ifndef _SWAY_TRANSACTION_H
 #define _SWAY_TRANSACTION_H
+#include <wlr/render/wlr_texture.h>
 #include "sway/tree/container.h"
 
 /**
@@ -47,5 +48,13 @@ void transaction_commit(struct sway_transaction *transaction);
  * When all views in the transaction are ready, the layout will be applied.
  */
 void transaction_notify_view_ready(struct sway_view *view, uint32_t serial);
+
+/**
+ * Get the texture that should be rendered for a view.
+ *
+ * In most cases this will return the normal live texture for a view, but if the
+ * view is in a transaction then it'll return a saved texture.
+ */
+struct wlr_texture *transaction_get_texture(struct sway_view *view);
 
 #endif

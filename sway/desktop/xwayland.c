@@ -218,19 +218,11 @@ static void _close(struct sway_view *view) {
 	wlr_xwayland_surface_close(view->wlr_xwayland_surface);
 }
 
-static void destroy(struct sway_view *view) {
+static void _free(struct sway_view *view) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
 		return;
 	}
-	wl_list_remove(&xwayland_view->destroy.link);
-	wl_list_remove(&xwayland_view->request_configure.link);
-	wl_list_remove(&xwayland_view->request_fullscreen.link);
-	wl_list_remove(&xwayland_view->set_title.link);
-	wl_list_remove(&xwayland_view->set_class.link);
-	wl_list_remove(&xwayland_view->set_window_type.link);
-	wl_list_remove(&xwayland_view->map.link);
-	wl_list_remove(&xwayland_view->unmap.link);
 	free(xwayland_view);
 }
 
@@ -242,7 +234,7 @@ static const struct sway_view_impl view_impl = {
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.close = _close,
-	.destroy = destroy,
+	.free = _free,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {
@@ -254,7 +246,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	// Don't allow xwayland views to do resize or reposition themselves if
 	// they're involved in a transaction. Once the transaction has finished
 	// they'll apply the next time a commit happens.
-	if (view->instructions->length) {
+	if (view->swayc && view->swayc->instructions->length) {
 		if (view->swayc && container_is_floating(view->swayc)) {
 			view_update_size(view, xsurface->width, xsurface->height);
 		} else {
@@ -268,8 +260,17 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, unmap);
+	struct sway_view *view = &xwayland_view->view;
+
+	if (!sway_assert(view->surface, "Cannot unmap unmapped view")) {
+		return;
+	}
+
+	struct sway_container *parent = view_unmap(view);
+	arrange_and_commit(parent);
+
 	wl_list_remove(&xwayland_view->commit.link);
-	view_unmap(&xwayland_view->view);
+	view->surface = NULL;
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -293,12 +294,30 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	if (xsurface->fullscreen) {
 		view_set_fullscreen(view, true);
 	}
-	arrange_and_commit(view->swayc);
+	arrange_and_commit(view->swayc->parent);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, destroy);
+	struct sway_view *view = &xwayland_view->view;
+
+	if (view->surface) {
+		struct sway_container *parent = view_unmap(view);
+		arrange_and_commit(parent);
+
+		wl_list_remove(&xwayland_view->commit.link);
+		view->surface = NULL;
+	}
+
+	wl_list_remove(&xwayland_view->destroy.link);
+	wl_list_remove(&xwayland_view->request_configure.link);
+	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->set_title.link);
+	wl_list_remove(&xwayland_view->set_class.link);
+	wl_list_remove(&xwayland_view->set_window_type.link);
+	wl_list_remove(&xwayland_view->map.link);
+	wl_list_remove(&xwayland_view->unmap.link);
 	view_destroy(&xwayland_view->view);
 }
 

@@ -25,44 +25,57 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->impl = impl;
 	view->executed_criteria = create_list();
 	view->marks = create_list();
-	view->instructions = create_list();
 	wl_signal_init(&view->events.unmap);
 }
 
-void view_destroy(struct sway_view *view) {
-	if (view == NULL) {
+void view_free(struct sway_view *view) {
+	if (!sway_assert(view->surface == NULL, "Tried to free mapped view")) {
 		return;
 	}
-
-	if (view->surface != NULL) {
-		view_unmap(view);
-	}
-
-	if (!sway_assert(view->instructions->length == 0,
-				"Tried to destroy view with pending instructions")) {
+	if (!sway_assert(view->destroying,
+				"Tried to free view which wasn't marked as destroying")) {
 		return;
 	}
-
+	if (!sway_assert(view->swayc == NULL,
+				"Tried to free view which still has a swayc "
+				"(might have a pending transaction?)")) {
+		return;
+	}
 	list_free(view->executed_criteria);
 
-	for (int i = 0; i < view->marks->length; ++i) {
-		free(view->marks->items[i]);
-	}
+	list_foreach(view->marks, free);
 	list_free(view->marks);
-
-	list_free(view->instructions);
 
 	wlr_texture_destroy(view->marks_focused);
 	wlr_texture_destroy(view->marks_focused_inactive);
 	wlr_texture_destroy(view->marks_unfocused);
 	wlr_texture_destroy(view->marks_urgent);
 
-	container_destroy(view->swayc);
-
-	if (view->impl->destroy) {
-		view->impl->destroy(view);
+	if (view->impl->free) {
+		view->impl->free(view);
 	} else {
 		free(view);
+	}
+}
+
+/**
+ * The view may or may not be involved in a transaction. For example, a view may
+ * unmap then attempt to destroy itself before we've applied the new layout. If
+ * an unmapping view is still involved in a transaction then it'll still have a
+ * swayc.
+ *
+ * If there's no transaction we can simply free the view. Otherwise the
+ * destroying flag will make the view get freed when the transaction is
+ * finished.
+ */
+void view_destroy(struct sway_view *view) {
+	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+		return;
+	}
+	view->destroying = true;
+
+	if (!view->swayc) {
+		view_free(view);
 	}
 }
 
@@ -356,6 +369,9 @@ static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
 
 void view_for_each_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (!view->surface) {
+		return;
+	}
 	if (view->impl->for_each_surface) {
 		view->impl->for_each_surface(view, iterator, user_data);
 	} else {
@@ -523,11 +539,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
-void view_unmap(struct sway_view *view) {
-	if (!sway_assert(view->surface != NULL, "cannot unmap unmapped view")) {
-		return;
-	}
-
+struct sway_container *view_unmap(struct sway_view *view) {
 	wl_signal_emit(&view->events.unmap, view);
 
 	if (view->is_fullscreen) {
@@ -535,22 +547,10 @@ void view_unmap(struct sway_view *view) {
 		ws->sway_workspace->fullscreen = NULL;
 	}
 
-	container_damage_whole(view->swayc);
-
 	wl_list_remove(&view->surface_new_subsurface.link);
 	wl_list_remove(&view->container_reparent.link);
 
-	struct sway_container *parent = container_destroy(view->swayc);
-
-	view->swayc = NULL;
-	view->surface = NULL;
-
-	if (view->title_format) {
-		free(view->title_format);
-		view->title_format = NULL;
-	}
-
-	arrange_and_commit(parent);
+	return container_destroy(view->swayc);
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {
@@ -924,7 +924,7 @@ void view_update_marks_textures(struct sway_view *view) {
 }
 
 bool view_is_visible(struct sway_view *view) {
-	if (!view->swayc) {
+	if (!view->swayc || view->swayc->destroying) {
 		return false;
 	}
 	struct sway_container *workspace =

@@ -34,6 +34,7 @@ struct sway_server server;
 void sway_terminate(int exit_code) {
 	terminate_request = true;
 	exit_value = exit_code;
+	server.terminating = true;
 	wl_display_terminate(server.wl_display);
 }
 

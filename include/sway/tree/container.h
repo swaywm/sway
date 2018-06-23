@@ -65,8 +65,8 @@ struct sway_container_state {
 	double gaps_inner;
 	double gaps_outer;
 
-	//struct sway_container *parent;
-	//list_t *children;
+	struct sway_container *parent;
+	list_t *children;
 
 	// View properties
 	double view_x, view_y;
@@ -79,6 +79,10 @@ struct sway_container_state {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+
+	// Workspace properties
+	struct sway_view *ws_fullscreen;
+	struct sway_container *ws_floating;
 };
 
 struct sway_container {
@@ -128,8 +132,6 @@ struct sway_container {
 
 	struct sway_container *parent;
 
-	list_t *marks; // list of char*
-
 	float alpha;
 
 	struct wlr_texture *title_focused;
@@ -137,6 +139,10 @@ struct sway_container {
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
 	size_t title_height;
+
+	list_t *instructions; // struct sway_transaction_instruction *
+
+	bool destroying;
 
 	struct {
 		struct wl_signal destroy;
@@ -180,6 +186,8 @@ struct sway_container *workspace_create(struct sway_container *output,
  */
 struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
+
+void container_free(struct sway_container *cont);
 
 struct sway_container *container_destroy(struct sway_container *container);
 
