@@ -829,6 +829,18 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 	return NULL;
 }
 
+struct sway_container *seat_get_active_current_child(struct sway_seat *seat,
+		struct sway_container *container) {
+	struct sway_container *child = seat_get_active_child(seat, container);
+	if (child) {
+		return child;
+	}
+	if (container->current.children->length == 1) {
+		return container->current.children->items[0];
+	}
+	return NULL;
+}
+
 struct sway_container *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
