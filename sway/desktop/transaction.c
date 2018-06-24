@@ -267,9 +267,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 					instruction->state.view_y,
 					instruction->state.view_width,
 					instruction->state.view_height);
-			if (instruction->serial) {
-				++transaction->num_waiting;
-			}
+			++transaction->num_waiting;
 		}
 		list_add(con->instructions, instruction);
 	}
@@ -307,20 +305,8 @@ void transaction_commit(struct sway_transaction *transaction) {
 	update_debug_tree();
 }
 
-void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
-	// Find the instruction
-	struct sway_transaction_instruction *instruction = NULL;
-	for (int i = 0; i < view->swayc->instructions->length; ++i) {
-		struct sway_transaction_instruction *tmp_instruction =
-			view->swayc->instructions->items[i];
-		if (tmp_instruction->serial == serial && !tmp_instruction->ready) {
-			instruction = tmp_instruction;
-			break;
-		}
-	}
-	if (!instruction) {
-		return;
-	}
+static void set_instruction_ready(
+		struct sway_transaction_instruction *instruction) {
 	instruction->ready = true;
 
 	// If all views are ready, apply the transaction.
@@ -332,6 +318,30 @@ void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
 		wl_event_source_timer_update(transaction->timer, 0);
 		progress_queue();
 #endif
+	}
+}
+
+void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
+	for (int i = 0; i < view->swayc->instructions->length; ++i) {
+		struct sway_transaction_instruction *instruction =
+			view->swayc->instructions->items[i];
+		if (instruction->serial == serial && !instruction->ready) {
+			set_instruction_ready(instruction);
+			return;
+		}
+	}
+}
+
+void transaction_notify_view_ready_by_size(struct sway_view *view,
+		int width, int height) {
+	for (int i = 0; i < view->swayc->instructions->length; ++i) {
+		struct sway_transaction_instruction *instruction =
+			view->swayc->instructions->items[i];
+		if (!instruction->ready && instruction->state.view_width == width &&
+				instruction->state.view_height == height) {
+			set_instruction_ready(instruction);
+			return;
+		}
 	}
 }
 

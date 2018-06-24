@@ -50,6 +50,15 @@ void transaction_commit(struct sway_transaction *transaction);
 void transaction_notify_view_ready(struct sway_view *view, uint32_t serial);
 
 /**
+ * Notify the transaction system that a view is ready for the new layout, but
+ * identifying the instruction by width and height rather than by serial.
+ *
+ * This is used by xwayland views, as they don't have serials.
+ */
+void transaction_notify_view_ready_by_size(struct sway_view *view,
+		int width, int height);
+
+/**
  * Get the texture that should be rendered for a view.
  *
  * In most cases this will return the normal live texture for a view, but if the

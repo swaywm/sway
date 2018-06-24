@@ -7,6 +7,7 @@
 #include <wlr/xwayland.h>
 #include "log.h"
 #include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
@@ -243,16 +244,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
-	// Don't allow xwayland views to do resize or reposition themselves if
-	// they're involved in a transaction. Once the transaction has finished
-	// they'll apply the next time a commit happens.
-	if (view->swayc && view->swayc->instructions->length) {
-		if (view->swayc && container_is_floating(view->swayc)) {
-			view_update_size(view, xsurface->width, xsurface->height);
-		} else {
-			view_update_size(view, view->swayc->width, view->swayc->height);
-		}
-		view_update_position(view, view->x, view->y);
+	if (view->swayc->instructions->length) {
+		transaction_notify_view_ready_by_size(view,
+				xsurface->width, xsurface->height);
 	}
 	view_damage_from(view);
 }
