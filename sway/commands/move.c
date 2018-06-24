@@ -175,8 +175,12 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
-static void move_in_direction(struct sway_container *container,
+static struct cmd_results *move_in_direction(struct sway_container *container,
 		enum wlr_direction direction, int move_amt) {
+	if (container->type == C_WORKSPACE) {
+		return cmd_results_new(CMD_FAILURE, "move",
+				"Cannot move workspaces in a direction");
+	}
 	// For simplicity, we'll arrange the entire workspace. The reason for this
 	// is moving the container might reap the old parent, and container_move
 	// does not return a surviving parent.
@@ -192,6 +196,8 @@ static void move_in_direction(struct sway_container *container,
 		arrange_windows(new_ws, txn);
 	}
 	transaction_commit(txn);
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 struct cmd_results *cmd_move(int argc, char **argv) {
@@ -212,13 +218,13 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "left") == 0) {
-		move_in_direction(current, MOVE_LEFT, move_amt);
+		return move_in_direction(current, MOVE_LEFT, move_amt);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		move_in_direction(current, MOVE_RIGHT, move_amt);
+		return move_in_direction(current, MOVE_RIGHT, move_amt);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		move_in_direction(current, MOVE_UP, move_amt);
+		return move_in_direction(current, MOVE_UP, move_amt);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		move_in_direction(current, MOVE_DOWN, move_amt);
+		return move_in_direction(current, MOVE_DOWN, move_amt);
 	} else if (strcasecmp(argv[0], "container") == 0
 			|| strcasecmp(argv[0], "window") == 0) {
 		return cmd_move_container(current, argc, argv);
