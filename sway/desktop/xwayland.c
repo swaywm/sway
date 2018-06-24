@@ -334,8 +334,12 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 			ev->width, ev->height);
 		return;
 	}
-	// TODO: Let floating views do whatever
-	configure(view, view->swayc->x, view->swayc->y, view->width, view->height);
+	if (container_is_floating(view->swayc)) {
+		configure(view, view->swayc->x, view->swayc->y, ev->width, ev->height);
+	} else {
+		configure(view, view->swayc->x, view->swayc->y,
+			view->width, view->height);
+	}
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
