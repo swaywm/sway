@@ -714,7 +714,7 @@ static void render_container_tabbed(struct sway_output *output,
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focus(seat);
 	struct sway_container *current = seat_get_active_current_child(seat, con);
-	struct border_colors *current_colors = NULL;
+	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
 
 	// Render tabs
@@ -778,7 +778,7 @@ static void render_container_stacked(struct sway_output *output,
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focus(seat);
 	struct sway_container *current = seat_get_active_current_child(seat, con);
-	struct border_colors *current_colors = NULL;
+	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
 
 	// Render titles
