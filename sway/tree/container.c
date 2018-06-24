@@ -331,6 +331,10 @@ struct sway_container *container_destroy_noreaping(struct sway_container *con) {
 	con->destroying = true;
 	list_add(server.destroying_containers, con);
 
+	if (!con->parent) {
+		return NULL;
+	}
+
 	return container_remove_child(con);
 }
 
@@ -384,7 +388,7 @@ struct sway_container *container_flatten(struct sway_container *container) {
 		struct sway_container *child = container->children->items[0];
 		struct sway_container *parent = container->parent;
 		container_replace_child(container, child);
-		container_destroy(container);
+		container_destroy_noreaping(container);
 		container = parent;
 	}
 	return container;
