@@ -32,6 +32,7 @@ struct sway_transaction {
 	list_t *instructions;   // struct sway_transaction_instruction *
 	list_t *damage;         // struct wlr_box *
 	size_t num_waiting;
+	size_t num_configures;
 	struct sway_transaction *next;
 	struct timespec create_time;
 	struct timespec commit_time;
@@ -291,6 +292,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 		}
 		list_add(con->instructions, instruction);
 	}
+	transaction->num_configures = transaction->num_waiting;
 	if (server.debug_txn_timings) {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->commit_time);
 	}
@@ -331,10 +333,24 @@ void transaction_commit(struct sway_transaction *transaction) {
 static void set_instruction_ready(
 		struct sway_transaction_instruction *instruction) {
 	instruction->ready = true;
+	struct sway_transaction *transaction = instruction->transaction;
+
+	if (server.debug_txn_timings) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		struct timespec *start = &transaction->commit_time;
+		float ms = (now.tv_sec - start->tv_sec) * 1000 +
+			(now.tv_nsec - start->tv_nsec) / 1000000.0;
+		wlr_log(L_DEBUG, "Transaction %p: %li/%li ready in %.1fms (%s)",
+				transaction,
+				transaction->num_configures - transaction->num_waiting + 1,
+				transaction->num_configures, ms,
+				instruction->container->name);
+
+	}
 
 	// If all views are ready, apply the transaction.
 	// If the transaction has timed out then its num_waiting will be 0 already.
-	struct sway_transaction *transaction = instruction->transaction;
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
 #if !TRANSACTION_DEBUG
 		wlr_log(L_DEBUG, "Transaction %p is ready", transaction);
