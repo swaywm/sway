@@ -45,6 +45,8 @@ struct sway_server {
 	struct wlr_wl_shell *wl_shell;
 	struct wl_listener wl_shell_surface;
 
+	bool debug_txn_timings;
+
 	bool terminating;
 
 	struct sway_transaction *head_transaction; // singly linked list

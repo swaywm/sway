@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_linux_dmabuf.h>
 #include "sway/debug.h"
@@ -32,6 +33,8 @@ struct sway_transaction {
 	list_t *damage;         // struct wlr_box *
 	size_t num_waiting;
 	struct sway_transaction *next;
+	struct timespec create_time;
+	struct timespec commit_time;
 };
 
 struct sway_transaction_instruction {
@@ -48,6 +51,9 @@ struct sway_transaction *transaction_create() {
 		calloc(1, sizeof(struct sway_transaction));
 	transaction->instructions = create_list();
 	transaction->damage = create_list();
+	if (server.debug_txn_timings) {
+		clock_gettime(CLOCK_MONOTONIC, &transaction->create_time);
+	}
 	return transaction;
 }
 
@@ -177,6 +183,20 @@ void transaction_add_damage(struct sway_transaction *transaction,
  */
 static void transaction_apply(struct sway_transaction *transaction) {
 	wlr_log(L_DEBUG, "Applying transaction %p", transaction);
+	if (server.debug_txn_timings) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		struct timespec *create = &transaction->create_time;
+		struct timespec *commit = &transaction->commit_time;
+		float ms_arranging = (commit->tv_sec - create->tv_sec) * 1000 +
+			(commit->tv_nsec - create->tv_nsec) / 1000000.0;
+		float ms_waiting = (now.tv_sec - commit->tv_sec) * 1000 +
+			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
+		float ms_total = ms_arranging + ms_waiting;
+		wlr_log(L_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
+				"%.1fms total (%.1f frames if 60hz)", transaction,
+				ms_arranging, ms_waiting, ms_total, ms_total / (1000 / 60));
+	}
 	int i;
 	// Apply the instruction state to the container's current state
 	for (i = 0; i < transaction->instructions->length; ++i) {
@@ -270,6 +290,9 @@ void transaction_commit(struct sway_transaction *transaction) {
 			++transaction->num_waiting;
 		}
 		list_add(con->instructions, instruction);
+	}
+	if (server.debug_txn_timings) {
+		clock_gettime(CLOCK_MONOTONIC, &transaction->commit_time);
 	}
 	if (server.head_transaction) {
 		// There is another transaction in progress - we must add this one to

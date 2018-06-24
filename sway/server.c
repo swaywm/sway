@@ -113,6 +113,10 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
+	const char *debug = getenv("SWAY_DEBUG");
+	if (debug != NULL && strcmp(debug, "txn_timings") == 0) {
+		server->debug_txn_timings = true;
+	}
 	server->destroying_containers = create_list();
 
 	input_manager = input_manager_create(server);
