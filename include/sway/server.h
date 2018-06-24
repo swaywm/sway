@@ -47,6 +47,8 @@ struct sway_server {
 
 	bool terminating;
 
+	struct sway_transaction *head_transaction; // singly linked list
+
 	// When a view is being destroyed and is waiting for a transaction to
 	// complete it will be stored here.
 	list_t *destroying_containers;

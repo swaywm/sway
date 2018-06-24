@@ -31,6 +31,7 @@ struct sway_transaction {
 	list_t *instructions;   // struct sway_transaction_instruction *
 	list_t *damage;         // struct wlr_box *
 	size_t num_waiting;
+	struct sway_transaction *next;
 };
 
 struct sway_transaction_instruction {
@@ -175,6 +176,7 @@ void transaction_add_damage(struct sway_transaction *transaction,
  * Apply a transaction to the "current" state of the tree.
  */
 static void transaction_apply(struct sway_transaction *transaction) {
+	wlr_log(L_DEBUG, "Applying transaction %p", transaction);
 	int i;
 	// Apply the instruction state to the container's current state
 	for (i = 0; i < transaction->instructions->length; ++i) {
@@ -203,13 +205,52 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	}
 }
 
+static void progress_queue() {
+	struct sway_transaction *transaction = server.head_transaction;
+	struct sway_transaction *next = NULL;
+	while (transaction && !transaction->num_waiting) {
+		next = transaction->next;
+		transaction_apply(transaction);
+		transaction_destroy(transaction);
+		transaction = next;
+	}
+	server.head_transaction = transaction;
+}
+
 static int handle_timeout(void *data) {
 	struct sway_transaction *transaction = data;
-	wlr_log(L_DEBUG, "Transaction %p timed out (%li waiting), applying anyway",
+	wlr_log(L_DEBUG, "Transaction %p timed out (%li waiting)",
 			transaction, transaction->num_waiting);
-	transaction_apply(transaction);
-	transaction_destroy(transaction);
+	transaction->num_waiting = 0;
+	progress_queue();
 	return 0;
+}
+
+static bool should_configure(struct sway_container *con,
+		struct sway_transaction_instruction *instruction) {
+	if (con->type != C_VIEW) {
+		return false;
+	}
+	if (con->destroying) {
+		return false;
+	}
+	// The settled dimensions are what size the view will be once any pending
+	// configures have applied (excluding the one we might be configuring now).
+	// If these match the dimensions that this transaction wants then we don't
+	// need to configure it.
+	int settled_width = con->current.view_width;
+	int settled_height = con->current.view_height;
+	if (con->instructions->length) {
+		struct sway_transaction_instruction *last_instruction =
+			con->instructions->items[con->instructions->length - 1];
+		settled_width = last_instruction->state.view_width;
+		settled_height = last_instruction->state.view_height;
+	}
+	if (settled_width == instruction->state.view_width &&
+			settled_height == instruction->state.view_height) {
+		return false;
+	}
+	return true;
 }
 
 void transaction_commit(struct sway_transaction *transaction) {
@@ -220,9 +261,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_container *con = instruction->container;
-		if (con->type == C_VIEW && !con->destroying &&
-				(con->current.view_width != instruction->state.view_width ||
-				 con->current.view_height != instruction->state.view_height)) {
+		if (should_configure(con, instruction)) {
 			instruction->serial = view_configure(con->sway_view,
 					instruction->state.view_x,
 					instruction->state.view_y,
@@ -234,18 +273,33 @@ void transaction_commit(struct sway_transaction *transaction) {
 		}
 		list_add(con->instructions, instruction);
 	}
-	if (!transaction->num_waiting) {
-		wlr_log(L_DEBUG, "Transaction %p has nothing to wait for, applying",
-				transaction);
+	if (server.head_transaction) {
+		// There is another transaction in progress - we must add this one to
+		// the queue so we complete after it.
+		struct sway_transaction *tail = server.head_transaction;
+		while (tail->next) {
+			tail = tail->next;
+		}
+		tail->next = transaction;
+	} else if (transaction->num_waiting) {
+		// There are no other transactions, but we're not applying immediately
+		// so we must jump in the queue so others will queue behind us.
+		server.head_transaction = transaction;
+	} else {
+		// There are no other transactions in progress, and this one has nothing
+		// to wait for, so we can skip the queue.
+		wlr_log(L_DEBUG, "Transaction %p has nothing to wait for", transaction);
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
 		return;
 	}
 
-	// Set up a timer which the views must respond within
-	transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
-			handle_timeout, transaction);
-	wl_event_source_timer_update(transaction->timer, TIMEOUT_MS);
+	if (transaction->num_waiting) {
+		// Set up a timer which the views must respond within
+		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
+				handle_timeout, transaction);
+		wl_event_source_timer_update(transaction->timer, TIMEOUT_MS);
+	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
 	// update it, because we make a transaction every time we change the pending
@@ -269,14 +323,14 @@ void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
 	}
 	instruction->ready = true;
 
-	// If all views are ready, apply the transaction
+	// If all views are ready, apply the transaction.
+	// If the transaction has timed out then its num_waiting will be 0 already.
 	struct sway_transaction *transaction = instruction->transaction;
-	if (--transaction->num_waiting == 0) {
+	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
 #if !TRANSACTION_DEBUG
-		wlr_log(L_DEBUG, "Transaction %p is ready, applying", transaction);
+		wlr_log(L_DEBUG, "Transaction %p is ready", transaction);
 		wl_event_source_timer_update(transaction->timer, 0);
-		transaction_apply(transaction);
-		transaction_destroy(transaction);
+		progress_queue();
 #endif
 	}
 }
