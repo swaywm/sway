@@ -293,6 +293,47 @@ static struct sway_container *container_output_destroy(
 	return &root_container;
 }
 
+/**
+ * Implement the actual destroy logic, without reaping.
+ */
+struct sway_container *container_destroy_noreaping(struct sway_container *con) {
+	if (con == NULL) {
+		return NULL;
+	}
+	if (con->destroying) {
+		return NULL;
+	}
+
+	// The below functions move their children to somewhere else.
+	if (con->type == C_OUTPUT) {
+		container_output_destroy(con);
+	} else if (con->type == C_WORKSPACE) {
+		// Workspaces will refuse to be destroyed if they're the last workspace
+		// on their output.
+		if (!container_workspace_destroy(con)) {
+			wlr_log(L_ERROR, "workspace doesn't want to destroy");
+			return NULL;
+		}
+	}
+
+	// At this point the container being destroyed shouldn't have any children
+	// unless sway is terminating.
+	if (!server.terminating) {
+		if (!sway_assert(!con->children || con->children->length == 0,
+					"Didn't expect to see children here")) {
+			return NULL;
+		}
+	}
+
+	wl_signal_emit(&con->events.destroy, con);
+	ipc_event_window(con, "close");
+
+	con->destroying = true;
+	list_add(server.destroying_containers, con);
+
+	return container_remove_child(con);
+}
+
 bool container_reap_empty(struct sway_container *con) {
 	if (con->layout == L_FLOATING) {
 		// Don't reap the magical floating container that each workspace has
@@ -306,13 +347,13 @@ bool container_reap_empty(struct sway_container *con) {
 	case C_WORKSPACE:
 		if (!workspace_is_visible(con) && workspace_is_empty(con)) {
 			wlr_log(L_DEBUG, "Destroying workspace via reaper");
-			container_destroy(con);
+			container_destroy_noreaping(con);
 			return true;
 		}
 		break;
 	case C_CONTAINER:
 		if (con->children->length == 0) {
-			container_destroy(con);
+			container_destroy_noreaping(con);
 			return true;
 		}
 	case C_VIEW:
@@ -354,42 +395,15 @@ struct sway_container *container_flatten(struct sway_container *container) {
  * events, detach it from the tree and mark it as destroying. The container will
  * remain in memory until it's no longer used by a transaction, then it will be
  * freed via container_free().
+ *
+ * This function just wraps container_destroy_noreaping(), then does reaping.
  */
 struct sway_container *container_destroy(struct sway_container *con) {
-	if (con == NULL) {
+	struct sway_container *parent = container_destroy_noreaping(con);
+
+	if (!parent) {
 		return NULL;
 	}
-	if (con->destroying) {
-		return NULL;
-	}
-
-	// The below functions move their children to somewhere else.
-	if (con->type == C_OUTPUT) {
-		container_output_destroy(con);
-	} else if (con->type == C_WORKSPACE) {
-		// Workspaces will refuse to be destroyed if they're the last workspace
-		// on their output.
-		if (!container_workspace_destroy(con)) {
-			return NULL;
-		}
-	}
-
-	// At this point the container being destroyed shouldn't have any children
-	// unless sway is terminating.
-	if (!server.terminating) {
-		if (!sway_assert(!con->children || con->children->length == 0,
-					"Didn't expect to see children here")) {
-			return NULL;
-		}
-	}
-
-	wl_signal_emit(&con->events.destroy, con);
-	ipc_event_window(con, "close");
-
-	struct sway_container *parent = container_remove_child(con);
-
-	con->destroying = true;
-	list_add(server.destroying_containers, con);
 
 	return container_reap_empty_recursive(parent);
 }

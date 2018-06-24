@@ -177,13 +177,19 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 
 static void move_in_direction(struct sway_container *container,
 		enum wlr_direction direction, int move_amt) {
-	struct sway_container *old_parent = container->parent;
+	// For simplicity, we'll arrange the entire workspace. The reason for this
+	// is moving the container might reap the old parent, and container_move
+	// does not return a surviving parent.
+	// TODO: Make container_move return the surviving parent so we can arrange
+	// just that.
+	struct sway_container *old_ws = container_parent(container, C_WORKSPACE);
 	container_move(container, direction, move_amt);
+	struct sway_container *new_ws = container_parent(container, C_WORKSPACE);
 
 	struct sway_transaction *txn = transaction_create();
-	arrange_windows(old_parent, txn);
-	if (container->parent != old_parent) {
-		arrange_windows(container->parent, txn);
+	arrange_windows(old_ws, txn);
+	if (new_ws != old_ws) {
+		arrange_windows(new_ws, txn);
 	}
 	transaction_commit(txn);
 }
