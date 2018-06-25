@@ -542,13 +542,15 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 struct sway_container *view_unmap(struct sway_view *view) {
 	wl_signal_emit(&view->events.unmap, view);
 
+	wl_list_remove(&view->surface_new_subsurface.link);
+	wl_list_remove(&view->container_reparent.link);
+
 	if (view->is_fullscreen) {
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		ws->sway_workspace->fullscreen = NULL;
+		container_destroy(view->swayc);
+		return ws;
 	}
-
-	wl_list_remove(&view->surface_new_subsurface.link);
-	wl_list_remove(&view->container_reparent.link);
 
 	return container_destroy(view->swayc);
 }
