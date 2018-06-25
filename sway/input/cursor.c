@@ -174,10 +174,13 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				seat_set_focus_warp(seat, c, false);
 			}
 		} else if (c->type == C_VIEW) {
-			// Focus c if both of the following are true:
+			// Focus c if the following are true:
 			// - cursor is over a new view, i.e. entered a new window; and
-			// - the new view is visible, i.e. not hidden in a stack or tab.
-			if (c != prev_c && view_is_visible(c->sway_view)) {
+			// - the new view is visible, i.e. not hidden in a stack or tab; and
+			// - the seat does not have a keyboard grab
+			if (!wlr_seat_keyboard_has_grab(cursor->seat->wlr_seat) &&
+					c != prev_c &&
+					view_is_visible(c->sway_view)) {
 				seat_set_focus_warp(seat, c, false);
 			} else {
 				struct sway_container *next_focus =
