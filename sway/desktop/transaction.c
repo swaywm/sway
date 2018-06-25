@@ -226,7 +226,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	}
 }
 
-static void progress_queue() {
+static void transaction_progress_queue() {
 	struct sway_transaction *transaction = server.head_transaction;
 	struct sway_transaction *next = NULL;
 	while (transaction && !transaction->num_waiting) {
@@ -243,7 +243,7 @@ static int handle_timeout(void *data) {
 	wlr_log(L_DEBUG, "Transaction %p timed out (%li waiting)",
 			transaction, transaction->num_waiting);
 	transaction->num_waiting = 0;
-	progress_queue();
+	transaction_progress_queue();
 	return 0;
 }
 
@@ -355,7 +355,7 @@ static void set_instruction_ready(
 #if !TRANSACTION_DEBUG
 		wlr_log(L_DEBUG, "Transaction %p is ready", transaction);
 		wl_event_source_timer_update(transaction->timer, 0);
-		progress_queue();
+		transaction_progress_queue();
 #endif
 	}
 }
