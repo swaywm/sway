@@ -260,8 +260,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_container *parent = view_unmap(view);
-	arrange_and_commit(parent);
+	view_unmap(view);
 
 	wl_list_remove(&xwayland_view->commit.link);
 	view->surface = NULL;
@@ -297,9 +296,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xwayland_view->view;
 
 	if (view->surface) {
-		struct sway_container *parent = view_unmap(view);
-		arrange_and_commit(parent);
-
+		view_unmap(view);
 		wl_list_remove(&xwayland_view->commit.link);
 		view->surface = NULL;
 	}

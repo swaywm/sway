@@ -539,7 +539,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
-struct sway_container *view_unmap(struct sway_view *view) {
+void view_unmap(struct sway_view *view) {
 	wl_signal_emit(&view->events.unmap, view);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
@@ -549,10 +549,16 @@ struct sway_container *view_unmap(struct sway_view *view) {
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		ws->sway_workspace->fullscreen = NULL;
 		container_destroy(view->swayc);
-		return ws;
-	}
 
-	return container_destroy(view->swayc);
+		struct sway_container *output = ws->parent;
+		struct sway_transaction *transaction = transaction_create();
+		arrange_windows(output, transaction);
+		transaction_add_damage(transaction, container_get_box(output));
+		transaction_commit(transaction);
+	} else {
+		struct sway_container *parent = container_destroy(view->swayc);
+		arrange_and_commit(parent);
+	}
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {

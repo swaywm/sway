@@ -245,10 +245,7 @@ void view_destroy(struct sway_view *view);
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
-/**
- * Unmap the view and return the surviving parent (after reaping).
- */
-struct sway_container *view_unmap(struct sway_view *view);
+void view_unmap(struct sway_view *view);
 
 void view_update_position(struct sway_view *view, double lx, double ly);
 

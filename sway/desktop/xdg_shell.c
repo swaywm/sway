@@ -197,8 +197,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	struct sway_container *parent = view_unmap(view);
-	arrange_and_commit(parent);
+	view_unmap(view);
 
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
