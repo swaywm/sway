@@ -171,7 +171,6 @@ void container_free(struct sway_container *cont) {
 	case C_ROOT:
 		break;
 	case C_OUTPUT:
-		cont->sway_output->swayc = NULL;
 		break;
 	case C_WORKSPACE:
 		container_workspace_free(cont->sway_workspace);
@@ -287,6 +286,7 @@ static struct sway_container *container_output_destroy(
 	wl_list_remove(&output->sway_output->damage_frame.link);
 
 	output->sway_output->swayc = NULL;
+	output->sway_output = NULL;
 
 	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 

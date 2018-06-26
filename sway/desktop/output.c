@@ -1271,6 +1271,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&output->destroy.link);
 	output->wlr_output->data = NULL;
 	free(output);
+
+	arrange_and_commit(&root_container);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
