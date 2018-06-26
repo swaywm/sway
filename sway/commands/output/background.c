@@ -62,8 +62,11 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		wordexp_t p;
 		char *src = join_args(argv, j);
 		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid syntax (%s).", src);
+			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID, "output",
+				"Invalid syntax (%s)", src);
+			free(src);
+			wordfree(&p);
+			return cmd_res;
 		}
 		free(src);
 		src = p.we_wordv[0];
