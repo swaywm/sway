@@ -219,6 +219,8 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer =
 		wl_container_of(listener, sway_layer, output_destroy);
 	wl_list_remove(&sway_layer->output_destroy.link);
+	wl_list_remove(&sway_layer->link);
+	wl_list_init(&sway_layer->link);
 	sway_layer->layer_surface->output = NULL;
 	wlr_layer_surface_close(sway_layer->layer_surface);
 }
