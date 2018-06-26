@@ -319,15 +319,6 @@ struct sway_container *container_destroy_noreaping(struct sway_container *con) {
 		}
 	}
 
-	// At this point the container being destroyed shouldn't have any children
-	// unless sway is terminating.
-	if (!server.terminating) {
-		if (!sway_assert(!con->children || con->children->length == 0,
-					"Didn't expect to see children here")) {
-			return NULL;
-		}
-	}
-
 	con->destroying = true;
 	list_add(server.destroying_containers, con);
 
