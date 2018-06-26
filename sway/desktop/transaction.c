@@ -102,6 +102,9 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 	list_foreach(transaction->damage, free);
 	list_free(transaction->damage);
 
+	if (transaction->timer) {
+		wl_event_source_remove(transaction->timer);
+	}
 	free(transaction);
 }
 
