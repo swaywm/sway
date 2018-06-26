@@ -304,6 +304,9 @@ struct sway_container *container_destroy_noreaping(struct sway_container *con) {
 		return NULL;
 	}
 
+	wl_signal_emit(&con->events.destroy, con);
+	ipc_event_window(con, "close");
+
 	// The below functions move their children to somewhere else.
 	if (con->type == C_OUTPUT) {
 		container_output_destroy(con);
@@ -324,9 +327,6 @@ struct sway_container *container_destroy_noreaping(struct sway_container *con) {
 			return NULL;
 		}
 	}
-
-	wl_signal_emit(&con->events.destroy, con);
-	ipc_event_window(con, "close");
 
 	con->destroying = true;
 	list_add(server.destroying_containers, con);
