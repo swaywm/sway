@@ -286,8 +286,11 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	if (xsurface->fullscreen) {
 		view_set_fullscreen(view, true);
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		arrange_and_commit(ws);
+	} else {
+		arrange_and_commit(view->swayc->parent);
 	}
-	arrange_and_commit(view->swayc->parent);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -337,7 +340,12 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 	view_set_fullscreen(view, xsurface->fullscreen);
-	arrange_and_commit(view->swayc);
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	struct sway_transaction *transaction = transaction_create();
+	arrange_windows(ws, transaction);
+	transaction_add_damage(transaction, container_get_box(ws->parent));
+	transaction_commit(transaction);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {

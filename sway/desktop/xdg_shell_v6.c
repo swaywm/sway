@@ -220,8 +220,11 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		view_set_fullscreen(view, true);
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		arrange_and_commit(ws);
+	} else {
+		arrange_and_commit(view->swayc->parent);
 	}
-	arrange_and_commit(view->swayc->parent);
 
 	xdg_shell_v6_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
@@ -264,7 +267,10 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	view_set_fullscreen(view, e->fullscreen);
 
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	arrange_and_commit(ws);
+	struct sway_transaction *transaction = transaction_create();
+	arrange_windows(ws, transaction);
+	transaction_add_damage(transaction, container_get_box(ws->parent));
+	transaction_commit(transaction);
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
