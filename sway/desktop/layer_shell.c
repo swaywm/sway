@@ -352,10 +352,6 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&layer_surface->surface->events.commit,
 		&sway_layer->surface_commit);
 
-	sway_layer->output_destroy.notify = handle_output_destroy;
-	wl_signal_add(&layer_surface->output->events.destroy,
-		&sway_layer->output_destroy);
-
 	sway_layer->destroy.notify = handle_destroy;
 	wl_signal_add(&layer_surface->events.destroy, &sway_layer->destroy);
 	sway_layer->map.notify = handle_map;
@@ -368,6 +364,9 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	layer_surface->data = sway_layer;
 
 	struct sway_output *output = layer_surface->output->data;
+	sway_layer->output_destroy.notify = handle_output_destroy;
+	wl_signal_add(&output->events.destroy, &sway_layer->output_destroy);
+
 	wl_list_insert(&output->layers[layer_surface->layer], &sway_layer->link);
 
 	// Temporarily set the layer's current state to client_pending
