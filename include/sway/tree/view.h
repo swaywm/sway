@@ -37,7 +37,7 @@ struct sway_view_impl {
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
-	void (*free)(struct sway_view *view);
+	void (*destroy)(struct sway_view *view);
 };
 
 struct sway_view {

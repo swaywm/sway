@@ -219,7 +219,7 @@ static void _close(struct sway_view *view) {
 	wlr_xwayland_surface_close(view->wlr_xwayland_surface);
 }
 
-static void _free(struct sway_view *view) {
+static void destroy(struct sway_view *view) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
 		return;
@@ -235,7 +235,7 @@ static const struct sway_view_impl view_impl = {
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.close = _close,
-	.free = _free,
+	.destroy = destroy,
 };
 
 static void handle_commit(struct wl_listener *listener, void *data) {

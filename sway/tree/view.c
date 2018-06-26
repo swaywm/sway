@@ -51,8 +51,8 @@ void view_free(struct sway_view *view) {
 	wlr_texture_destroy(view->marks_unfocused);
 	wlr_texture_destroy(view->marks_urgent);
 
-	if (view->impl->free) {
-		view->impl->free(view);
+	if (view->impl->destroy) {
+		view->impl->destroy(view);
 	} else {
 		free(view);
 	}
