@@ -3,6 +3,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <wordexp.h>
+#include <errno.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "log.h"
@@ -61,40 +62,56 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		wordexp_t p;
 		char *src = join_args(argv, j);
 		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
-			return cmd_results_new(CMD_INVALID, "output",
-				"Invalid syntax (%s).", src);
+			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID, "output",
+				"Invalid syntax (%s)", src);
+			free(src);
+			wordfree(&p);
+			return cmd_res;
 		}
 		free(src);
-		src = p.we_wordv[0];
-		if (config->reading && *src != '/') {
-			char *conf = strdup(config->current_config);
-			if (conf) {
-				char *conf_path = dirname(conf);
-				src = malloc(strlen(conf_path) + strlen(src) + 2);
-				if (src) {
-					sprintf(src, "%s/%s", conf_path, p.we_wordv[0]);
-				} else {
-					wlr_log(L_ERROR,
-						"Unable to allocate background source");
-				}
-				free(conf);
-			} else {
-				wlr_log(L_ERROR, "Unable to allocate background source");
-			}
-		}
-		if (!src || access(src, F_OK) == -1) {
-			wordfree(&p);
-			return cmd_results_new(CMD_INVALID, "output",
-				"Background file unreadable (%s).", src);
-		}
-
-		output->background = strdup(src);
-		output->background_option = strdup(mode);
-		if (src != p.we_wordv[0]) {
-			free(src);
-		}
+		src = strdup(p.we_wordv[0]);
 		wordfree(&p);
+		if (!src) {
+			wlr_log(L_ERROR, "Failed to duplicate string");
+			return cmd_results_new(CMD_FAILURE, "output",
+				"Unable to allocate resource");
+		}
 
+		if (config->reading && *src != '/') {
+			// src file is inside configuration dir
+
+			char *conf = strdup(config->current_config);
+			if(!conf) {
+				wlr_log(L_ERROR, "Failed to duplicate string");
+				return cmd_results_new(CMD_FAILURE, "output",
+						"Unable to allocate resources");
+			}
+
+			char *conf_path = dirname(conf);
+			char *rel_path = src;
+			src = malloc(strlen(conf_path) + strlen(src) + 2);
+			if (!src) {
+				free(rel_path);
+				free(conf);
+				wlr_log(L_ERROR, "Unable to allocate memory");
+				return cmd_results_new(CMD_FAILURE, "output",
+						"Unable to allocate resources");
+			}
+
+			sprintf(src, "%s/%s", conf_path, rel_path);
+			free(rel_path);
+			free(conf);
+		}
+
+		if (access(src, F_OK) == -1) {
+			struct cmd_results *cmd_res = cmd_results_new(CMD_FAILURE, "output",
+				"Unable to access background file '%s': %s", src, strerror(errno));
+			free(src);
+			return cmd_res;
+		}
+
+		output->background = src;
+		output->background_option = strdup(mode);
 		argc -= j + 1; argv += j + 1;
 	}
 
