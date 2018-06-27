@@ -295,6 +295,6 @@ bool container_is_floating(struct sway_container *container);
 /**
  * Get a container's box in layout coordinates.
  */
-struct wlr_box *container_get_box(struct sway_container *container);
+void container_get_box(struct sway_container *container, struct wlr_box *box);
 
 #endif

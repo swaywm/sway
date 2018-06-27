@@ -988,11 +988,9 @@ bool container_is_floating(struct sway_container *container) {
 	return container->parent == workspace->sway_workspace->floating;
 }
 
-struct wlr_box *container_get_box(struct sway_container *container) {
-	struct wlr_box *box = calloc(1, sizeof(struct wlr_box));
+void container_get_box(struct sway_container *container, struct wlr_box *box) {
 	box->x = container->x;
 	box->y = container->y;
 	box->width = container->width;
 	box->height = container->height;
-	return box;
 }
