@@ -3,6 +3,7 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/xwayland.h>
 #include "list.h"
 #include "log.h"
 #include "sway/criteria.h"
@@ -492,9 +493,21 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		return;
 	}
 
+	pid_t pid;
+	if (view->type == SWAY_VIEW_XWAYLAND) {
+		struct wlr_xwayland_surface *surf =
+			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
+		pid = surf->pid;
+	} else {
+		struct wl_client *client =
+			wl_resource_get_client(wlr_surface->resource);
+		wl_client_get_credentials(client, &pid, NULL, NULL);
+	}
+
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus =
+	struct sway_container *target_sibling =
 		seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *prev_focus = target_sibling;
 	struct sway_container *cont = NULL;
 
 	// Check if there's any `assign` criteria for the view
@@ -508,18 +521,31 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 			if (!workspace) {
 				workspace = workspace_create(NULL, criteria->target);
 			}
-			focus = seat_get_focus_inactive(seat, workspace);
+			prev_focus = target_sibling;
+			target_sibling = seat_get_focus_inactive(seat, workspace);
 		} else {
 			// TODO: CT_ASSIGN_OUTPUT
 		}
 	}
+	list_free(criterias);
+
+	if (!workspace) {
+		workspace = workspace_for_pid(pid);
+		if (workspace) {
+			prev_focus = target_sibling;
+			target_sibling = seat_get_focus_inactive(seat, workspace);
+		}
+	}
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
-	if (container_is_floating(focus)) {
-		focus = focus->parent->parent;
+	if (container_is_floating(target_sibling)) {
+		if (prev_focus == target_sibling) {
+			prev_focus = target_sibling->parent->parent;
+		}
+		target_sibling = target_sibling->parent->parent;
 	}
-	free(criterias);
-	cont = container_view_create(focus, view);
+
+	cont = container_view_create(target_sibling, view);
 
 	view->surface = wlr_surface;
 	view->swayc = cont;
@@ -538,9 +564,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		container_set_floating(view->swayc, true);
 	}
 
-	input_manager_set_focus(input_manager, cont);
-	if (workspace) {
-		workspace_switch(workspace);
+	if (prev_focus == target_sibling) {
+		input_manager_set_focus(input_manager, cont);
 	}
 
 	view_update_title(view, false);

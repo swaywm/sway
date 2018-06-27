@@ -446,9 +446,6 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl);
 	xwayland_view->view.wlr_xwayland_surface = xsurface;
 
-	// TODO:
-	// - Look up pid and open on appropriate workspace
-
 	wl_signal_add(&xsurface->events.destroy, &xwayland_view->destroy);
 	xwayland_view->destroy.notify = handle_destroy;
 

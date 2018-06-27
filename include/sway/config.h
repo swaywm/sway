@@ -1,6 +1,5 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
-#define PID_WORKSPACE_TIMEOUT 60
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
@@ -141,12 +140,6 @@ struct output_config {
 struct workspace_output {
 	char *output;
 	char *workspace;
-};
-
-struct pid_workspace {
-	pid_t *pid;
-	char *workspace;
-	time_t *time_added;
 };
 
 struct bar_config {
@@ -300,7 +293,6 @@ struct sway_config {
 	list_t *bars;
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
-	list_t *pid_workspaces;
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *seat_configs;
@@ -383,9 +375,6 @@ struct sway_config {
 		} leftovers;
 	} handler_context;
 };
-
-void pid_workspace_add(struct pid_workspace *pw);
-void free_pid_workspace(struct pid_workspace *pw);
 
 /**
  * Loads the main config from the given path. is_active should be true when
