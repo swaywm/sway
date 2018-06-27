@@ -199,6 +199,14 @@ static void set_activated(struct sway_view *view, bool activated) {
 	wlr_xwayland_surface_activate(surface, activated);
 }
 
+static void set_tiled(struct sway_view *view, bool tiled) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	wlr_xwayland_surface_set_maximized(surface, tiled);
+}
+
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
@@ -265,6 +273,7 @@ static const struct sway_view_impl view_impl = {
 	.get_int_prop = get_int_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.close = _close,
@@ -309,7 +318,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xwayland_view->commit.notify = handle_commit;
 
 	// Put it back into the tree
-	wlr_xwayland_surface_set_maximized(xsurface, true);
 	view_map(view, xsurface->surface);
 
 	if (xsurface->fullscreen) {

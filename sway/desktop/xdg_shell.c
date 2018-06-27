@@ -111,6 +111,19 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+static void set_tiled(struct sway_view *view, bool tiled) {
+	if (xdg_shell_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
+	enum wlr_edges edges = WLR_EDGE_NONE;
+	if (tiled) {
+		edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
+				WLR_EDGE_BOTTOM;
+	}
+	wlr_xdg_toplevel_set_tiled(surface, edges);
+}
+
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return;
@@ -164,6 +177,7 @@ static const struct sway_view_impl view_impl = {
 	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
@@ -273,8 +287,6 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "New xdg_shell toplevel title='%s' app_id='%s'",
 		xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_ping(xdg_surface);
-	wlr_xdg_toplevel_set_tiled(xdg_surface, WLR_EDGE_LEFT | WLR_EDGE_RIGHT |
-		WLR_EDGE_TOP | WLR_EDGE_BOTTOM);
 
 	struct sway_xdg_shell_view *xdg_shell_view =
 		calloc(1, sizeof(struct sway_xdg_shell_view));
