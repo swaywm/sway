@@ -555,6 +555,7 @@ void view_unmap(struct sway_view *view) {
 		struct sway_container *parent = container_destroy(view->swayc);
 		arrange_and_commit(parent);
 	}
+	view->surface = NULL;
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {

@@ -263,7 +263,6 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	view_unmap(view);
 
 	wl_list_remove(&xwayland_view->commit.link);
-	view->surface = NULL;
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -301,7 +300,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	if (view->surface) {
 		view_unmap(view);
 		wl_list_remove(&xwayland_view->commit.link);
-		view->surface = NULL;
 	}
 
 	wl_list_remove(&xwayland_view->destroy.link);

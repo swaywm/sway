@@ -200,7 +200,6 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 
 	wl_list_remove(&xdg_shell_v6_view->commit.link);
 	wl_list_remove(&xdg_shell_v6_view->new_popup.link);
-	view->surface = NULL;
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
