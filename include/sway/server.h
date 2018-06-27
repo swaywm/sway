@@ -47,7 +47,7 @@ struct sway_server {
 
 	bool debug_txn_timings;
 
-	struct sway_transaction *head_transaction; // singly linked list
+	list_t *transactions;
 
 	// When a view is being destroyed and is waiting for a transaction to
 	// complete it will be stored here.

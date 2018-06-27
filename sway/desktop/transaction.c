@@ -32,7 +32,6 @@ struct sway_transaction {
 	list_t *instructions;   // struct sway_transaction_instruction *
 	size_t num_waiting;
 	size_t num_configures;
-	struct sway_transaction *next;
 	struct timespec create_time;
 	struct timespec commit_time;
 };
@@ -225,16 +224,24 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	}
 }
 
+/**
+ * For simplicity, we only progress the queue if it can be completely flushed.
+ */
 static void transaction_progress_queue() {
-	struct sway_transaction *transaction = server.head_transaction;
-	struct sway_transaction *next = NULL;
-	while (transaction && !transaction->num_waiting) {
-		next = transaction->next;
+	// We iterate this list in reverse because we're more likely to find a
+	// waiting transactions at the end of the list.
+	for (int i = server.transactions->length - 1; i >= 0; --i) {
+		struct sway_transaction *transaction = server.transactions->items[i];
+		if (transaction->num_waiting) {
+			return;
+		}
+	}
+	for (int i = 0; i < server.transactions->length; ++i) {
+		struct sway_transaction *transaction = server.transactions->items[i];
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
-		transaction = next;
 	}
-	server.head_transaction = transaction;
+	list_empty(server.transactions);
 }
 
 static int handle_timeout(void *data) {
@@ -295,18 +302,8 @@ void transaction_commit(struct sway_transaction *transaction) {
 	if (server.debug_txn_timings) {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->commit_time);
 	}
-	if (server.head_transaction) {
-		// There is another transaction in progress - we must add this one to
-		// the queue so we complete after it.
-		struct sway_transaction *tail = server.head_transaction;
-		while (tail->next) {
-			tail = tail->next;
-		}
-		tail->next = transaction;
-	} else if (transaction->num_waiting) {
-		// There are no other transactions, but we're not applying immediately
-		// so we must jump in the queue so others will queue behind us.
-		server.head_transaction = transaction;
+	if (server.transactions->length || transaction->num_waiting) {
+		list_add(server.transactions, transaction);
 	} else {
 		// There are no other transactions in progress, and this one has nothing
 		// to wait for, so we can skip the queue.
@@ -359,12 +356,24 @@ static void set_instruction_ready(
 	}
 }
 
+/**
+ * Mark all of the view's instructions as ready up to and including the
+ * instruction at the given index. This allows the view to skip a configure.
+ */
+static void set_instructions_ready(struct sway_view *view, int index) {
+	for (int i = 0; i <= index; ++i) {
+		struct sway_transaction_instruction *instruction =
+			view->swayc->instructions->items[i];
+		set_instruction_ready(instruction);
+	}
+}
+
 void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
 	for (int i = 0; i < view->swayc->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			view->swayc->instructions->items[i];
 		if (instruction->serial == serial && !instruction->ready) {
-			set_instruction_ready(instruction);
+			set_instructions_ready(view, i);
 			return;
 		}
 	}
@@ -377,7 +386,7 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 			view->swayc->instructions->items[i];
 		if (!instruction->ready && instruction->state.view_width == width &&
 				instruction->state.view_height == height) {
-			set_instruction_ready(instruction);
+			set_instructions_ready(view, i);
 			return;
 		}
 	}

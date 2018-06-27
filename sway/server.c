@@ -119,6 +119,8 @@ bool server_init(struct sway_server *server) {
 	}
 	server->destroying_containers = create_list();
 
+	server->transactions = create_list();
+
 	input_manager = input_manager_create(server);
 	return true;
 }
@@ -127,6 +129,7 @@ void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
 	wl_display_destroy(server->wl_display);
 	list_free(server->destroying_containers);
+	list_free(server->transactions);
 }
 
 void server_run(struct sway_server *server) {
