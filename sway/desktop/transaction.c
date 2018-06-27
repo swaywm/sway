@@ -30,7 +30,6 @@
 struct sway_transaction {
 	struct wl_event_source *timer;
 	list_t *instructions;   // struct sway_transaction_instruction *
-	list_t *damage;         // struct wlr_box *
 	size_t num_waiting;
 	size_t num_configures;
 	struct sway_transaction *next;
@@ -51,7 +50,6 @@ struct sway_transaction *transaction_create() {
 	struct sway_transaction *transaction =
 		calloc(1, sizeof(struct sway_transaction));
 	transaction->instructions = create_list();
-	transaction->damage = create_list();
 	if (server.debug_txn_timings) {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->create_time);
 	}
@@ -96,10 +94,6 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 		free(instruction);
 	}
 	list_free(transaction->instructions);
-
-	// Free damage
-	list_foreach(transaction->damage, free);
-	list_free(transaction->damage);
 
 	if (transaction->timer) {
 		wl_event_source_remove(transaction->timer);
@@ -174,13 +168,6 @@ void transaction_add_container(struct sway_transaction *transaction,
 	list_add(transaction->instructions, instruction);
 }
 
-void transaction_add_damage(struct sway_transaction *transaction,
-		struct wlr_box *_box) {
-	struct wlr_box *box = calloc(1, sizeof(struct wlr_box));
-	memcpy(box, _box, sizeof(struct wlr_box));
-	list_add(transaction->damage, box);
-}
-
 /**
  * Apply a transaction to the "current" state of the tree.
  */
@@ -200,11 +187,31 @@ static void transaction_apply(struct sway_transaction *transaction) {
 				"%.1fms total (%.1f frames if 60Hz)", transaction,
 				ms_arranging, ms_waiting, ms_total, ms_total / (1000 / 60));
 	}
+
 	// Apply the instruction state to the container's current state
 	for (int i = 0; i < transaction->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_container *container = instruction->container;
+
+		// Damage the old and new locations
+		struct wlr_box old_box = {
+			.x = container->current.swayc_x,
+			.y = container->current.swayc_y,
+			.width = container->current.swayc_width,
+			.height = container->current.swayc_height,
+		};
+		struct wlr_box new_box = {
+			.x = instruction->state.swayc_x,
+			.y = instruction->state.swayc_y,
+			.width = instruction->state.swayc_width,
+			.height = instruction->state.swayc_height,
+		};
+		for (int j = 0; j < root_container.children->length; ++j) {
+			struct sway_container *output = root_container.children->items[j];
+			output_damage_box(output->sway_output, &old_box);
+			output_damage_box(output->sway_output, &new_box);
+		}
 
 		// There are separate children lists for each instruction state, the
 		// container's current state and the container's pending state
@@ -215,15 +222,6 @@ static void transaction_apply(struct sway_transaction *transaction) {
 
 		memcpy(&container->current, &instruction->state,
 				sizeof(struct sway_container_state));
-	}
-
-	// Apply damage
-	for (int i = 0; i < transaction->damage->length; ++i) {
-		struct wlr_box *box = transaction->damage->items[i];
-		for (int j = 0; j < root_container.children->length; ++j) {
-			struct sway_container *output = root_container.children->items[j];
-			output_damage_box(output->sway_output, box);
-		}
 	}
 }
 

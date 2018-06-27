@@ -342,10 +342,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	view_set_fullscreen(view, xsurface->fullscreen);
 
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	struct sway_transaction *transaction = transaction_create();
-	arrange_windows(ws, transaction);
-	transaction_add_damage(transaction, container_get_box(ws->parent));
-	transaction_commit(transaction);
+	arrange_and_commit(ws);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {

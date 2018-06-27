@@ -550,11 +550,7 @@ void view_unmap(struct sway_view *view) {
 		ws->sway_workspace->fullscreen = NULL;
 		container_destroy(view->swayc);
 
-		struct sway_container *output = ws->parent;
-		struct sway_transaction *transaction = transaction_create();
-		arrange_windows(output, transaction);
-		transaction_add_damage(transaction, container_get_box(output));
-		transaction_commit(transaction);
+		arrange_and_commit(ws->parent);
 	} else {
 		struct sway_container *parent = container_destroy(view->swayc);
 		arrange_and_commit(parent);

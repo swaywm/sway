@@ -31,13 +31,6 @@ void transaction_add_container(struct sway_transaction *transaction,
 		struct sway_container *container);
 
 /**
- * Add a box to be damaged when the transaction is applied.
- * The box should be in layout coordinates.
- */
-void transaction_add_damage(struct sway_transaction *transaction,
-		struct wlr_box *box);
-
-/**
  * Submit a transaction to the client views for configuration.
  */
 void transaction_commit(struct sway_transaction *transaction);

@@ -304,15 +304,6 @@ void arrange_windows(struct sway_container *container,
 	case C_TYPES:
 		break;
 	}
-	// Add damage for whatever container arrange_windows() was called with,
-	// unless it was called with the special floating container, in which case
-	// we'll damage the entire output.
-	if (container->type == C_CONTAINER && container->layout == L_FLOATING) {
-		struct sway_container *output = container_parent(container, C_OUTPUT);
-		transaction_add_damage(transaction, container_get_box(output));
-	} else {
-		transaction_add_damage(transaction, container_get_box(container));
-	}
 	add_deleted_containers(transaction);
 }
 

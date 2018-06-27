@@ -267,10 +267,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	view_set_fullscreen(view, e->fullscreen);
 
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	struct sway_transaction *transaction = transaction_create();
-	arrange_windows(ws, transaction);
-	transaction_add_damage(transaction, container_get_box(ws->parent));
-	transaction_commit(transaction);
+	arrange_and_commit(ws);
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
