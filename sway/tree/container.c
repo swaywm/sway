@@ -296,7 +296,8 @@ static struct sway_container *container_output_destroy(
 /**
  * Implement the actual destroy logic, without reaping.
  */
-struct sway_container *container_destroy_noreaping(struct sway_container *con) {
+static struct sway_container *container_destroy_noreaping(
+		struct sway_container *con) {
 	if (con == NULL) {
 		return NULL;
 	}

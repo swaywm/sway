@@ -73,8 +73,7 @@ static void save_view_buffer(struct sway_view *view,
 		remove_saved_view_buffer(instruction);
 	}
 	if (view->surface && wlr_surface_has_buffer(view->surface)) {
-		wlr_buffer_ref(view->surface->buffer);
-		instruction->saved_buffer = view->surface->buffer;
+		instruction->saved_buffer = wlr_buffer_ref(view->surface->buffer);
 	}
 }
 
@@ -198,12 +197,11 @@ static void transaction_apply(struct sway_transaction *transaction) {
 			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
 		float ms_total = ms_arranging + ms_waiting;
 		wlr_log(L_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
-				"%.1fms total (%.1f frames if 60hz)", transaction,
+				"%.1fms total (%.1f frames if 60Hz)", transaction,
 				ms_arranging, ms_waiting, ms_total, ms_total / (1000 / 60));
 	}
-	int i;
 	// Apply the instruction state to the container's current state
-	for (i = 0; i < transaction->instructions->length; ++i) {
+	for (int i = 0; i < transaction->instructions->length; ++i) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_container *container = instruction->container;
@@ -220,7 +218,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	}
 
 	// Apply damage
-	for (i = 0; i < transaction->damage->length; ++i) {
+	for (int i = 0; i < transaction->damage->length; ++i) {
 		struct wlr_box *box = transaction->damage->items[i];
 		for (int j = 0; j < root_container.children->length; ++j) {
 			struct sway_container *output = root_container.children->items[j];
