@@ -31,7 +31,7 @@ static struct cmd_handler input_handlers[] = {
 
 struct cmd_results *cmd_input(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 1))) {
+	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
 
