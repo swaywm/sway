@@ -335,9 +335,9 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		return;
 	}
 	if (container_is_floating(view->swayc)) {
-		configure(view, view->swayc->x, view->swayc->y, ev->width, ev->height);
+		configure(view, view->x, view->y, ev->width, ev->height);
 	} else {
-		configure(view, view->swayc->x, view->swayc->y,
+		configure(view, view->x, view->y,
 			view->width, view->height);
 	}
 }
