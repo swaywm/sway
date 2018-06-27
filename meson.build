@@ -43,7 +43,8 @@ systemd        = dependency('libsystemd', required: false)
 elogind        = dependency('libelogind', required: false)
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
-git = find_program('git', required: false)
+xcb            = dependency('xcb')
+git            = find_program('git', required: false)
 
 conf_data = configuration_data()
 
