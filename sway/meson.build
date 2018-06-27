@@ -10,6 +10,7 @@ sway_sources = files(
 	'security.c',
 
 	'desktop/desktop.c',
+	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
 	'desktop/output.c',
 	'desktop/transaction.c',
