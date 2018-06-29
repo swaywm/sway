@@ -90,6 +90,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		}
 		free(ws_name);
 		struct sway_container *old_parent = current->parent;
+		struct sway_container *old_ws = container_parent(current, C_WORKSPACE);
 		struct sway_container *destination = seat_get_focus_inactive(
 				config->handler_context.seat, ws);
 		container_move_to(current, destination);
@@ -99,8 +100,11 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		container_reap_empty(old_parent);
 		container_reap_empty(destination->parent);
 
+		// TODO: Ideally we would arrange the surviving parent after reaping,
+		// but container_reap_empty does not return it, so we arrange the
+		// workspace instead.
 		struct sway_transaction *txn = transaction_create();
-		arrange_windows(old_parent, txn);
+		arrange_windows(old_ws, txn);
 		arrange_windows(destination->parent, txn);
 		transaction_commit(txn);
 
@@ -129,13 +133,17 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			focus = destination->children->items[0];
 		}
 		struct sway_container *old_parent = current->parent;
+		struct sway_container *old_ws = container_parent(current, C_WORKSPACE);
 		container_move_to(current, focus);
 		seat_set_focus(config->handler_context.seat, old_parent);
 		container_reap_empty(old_parent);
 		container_reap_empty(focus->parent);
 
+		// TODO: Ideally we would arrange the surviving parent after reaping,
+		// but container_reap_empty does not return it, so we arrange the
+		// workspace instead.
 		struct sway_transaction *txn = transaction_create();
-		arrange_windows(old_parent, txn);
+		arrange_windows(old_ws, txn);
 		arrange_windows(focus->parent, txn);
 		transaction_commit(txn);
 
