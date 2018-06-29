@@ -69,6 +69,7 @@ struct render_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
 	pixman_region32_t *damage;
+	bool popups;
 	float alpha;
 };
 
@@ -232,9 +233,26 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
+static bool surface_is_popup(struct wlr_surface *surface) {
+	if (wlr_surface_is_xdg_surface(surface)) {
+		struct wlr_xdg_surface *xdg_surface =
+			wlr_xdg_surface_from_wlr_surface(surface);
+		return xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP;
+	}
+	if (wlr_surface_is_xdg_surface_v6(surface)) {
+		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
+			wlr_xdg_surface_v6_from_wlr_surface(surface);
+		return xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP;
+	}
+	return false;
+}
+
 static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		void *_data) {
 	struct render_data *data = _data;
+	if (data->popups != surface_is_popup(surface)) {
+		return;
+	}
 	struct wlr_output *wlr_output = data->output->wlr_output;
 	float rotation = data->root_geo.rotation;
 	pixman_region32_t *output_damage = data->damage;
@@ -337,14 +355,16 @@ static void premultiply_alpha(float color[4], float opacity) {
 }
 
 static void render_view_surfaces(struct sway_view *view,
-		struct sway_output *output, pixman_region32_t *damage, float alpha) {
+		struct sway_output *output, pixman_region32_t *damage, float alpha,
+		bool popups) {
 	struct render_data data = {
 		.output = output,
 		.damage = damage,
 		.alpha = alpha,
+		.popups = popups,
 	};
-	output_view_for_each_surface(
-			view, &data.root_geo, render_surface_iterator, &data);
+	output_view_for_each_surface(view, &data.root_geo,
+			render_surface_iterator, &data);
 }
 
 /**
@@ -353,7 +373,8 @@ static void render_view_surfaces(struct sway_view *view,
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->sway_view;
-	render_view_surfaces(view, output, damage, view->swayc->alpha);
+
+	render_view_surfaces(view, output, damage, con->alpha, false);
 
 	struct wlr_box box;
 	float output_scale = output->wlr_output->scale;
@@ -903,10 +924,11 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		render_view_surfaces(
-				workspace->sway_workspace->fullscreen, output, damage, 1.0f);
+		struct sway_view *view = workspace->sway_workspace->fullscreen;
+		render_view_surfaces(view, output, damage, 1.0f, false);
+		render_view_surfaces(view, output, damage, 1.0f, true);
 
-		if (workspace->sway_workspace->fullscreen->type == SWAY_VIEW_XWAYLAND) {
+		if (view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
@@ -929,6 +951,11 @@ static void render_output(struct sway_output *output, struct timespec *when,
 		struct sway_container *focus = seat_get_focus(seat);
 		render_container(output, damage, workspace, focus == workspace);
 		render_floating(output, damage);
+
+		focus = seat_get_focus_inactive(seat, &root_container);
+		if (focus && focus->type == C_VIEW) {
+			render_view_surfaces(focus->sway_view, output, damage, 1.0f, true);
+		}
 
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
