@@ -117,11 +117,12 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 }
 
 static bool wants_floating(struct sway_view *view) {
-	struct wlr_xdg_toplevel_state *state =
-		&view->wlr_xdg_surface->toplevel->current;
-	return state->min_width != 0 && state->min_height != 0
+	struct wlr_xdg_toplevel *toplevel = view->wlr_xdg_surface->toplevel;
+	struct wlr_xdg_toplevel_state *state = &toplevel->current;
+	return (state->min_width != 0 && state->min_height != 0
 		&& state->min_width == state->max_width
-		&& state->min_height == state->max_height;
+		&& state->min_height == state->max_height)
+		|| toplevel->parent;
 }
 
 static void for_each_surface(struct sway_view *view,

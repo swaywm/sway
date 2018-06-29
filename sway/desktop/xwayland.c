@@ -17,6 +17,14 @@
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 
+static const char *atom_map[ATOM_LAST] = {
+	"_NET_WM_WINDOW_TYPE_DIALOG",
+	"_NET_WM_WINDOW_TYPE_UTILITY",
+	"_NET_WM_WINDOW_TYPE_TOOLBAR",
+	"_NET_WM_WINDOW_TYPE_SPLASH",
+	"_NET_WM_STATE_MODAL",
+};
+
 static void unmanaged_handle_request_configure(struct wl_listener *listener,
 		void *data) {
 	struct sway_xwayland_unmanaged *surface =
@@ -63,7 +71,8 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 
 	if (!wlr_xwayland_surface_is_unmanaged(xsurface)) {
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct wlr_xwayland *xwayland = seat->input->server->xwayland;
+		struct wlr_xwayland *xwayland =
+			seat->input->server->xwayland.wlr_xwayland;
 		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 		seat_set_focus_surface(seat, xsurface->surface);
 	}
@@ -200,15 +209,32 @@ static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 }
 
 static bool wants_floating(struct sway_view *view) {
-	// TODO:
-	// We want to return true if the window type contains any of these:
-	// NET_WM_WINDOW_TYPE_DIALOG
-	// NET_WM_WINDOW_TYPE_UTILITY
-	// NET_WM_WINDOW_TYPE_TOOLBAR
-	// NET_WM_WINDOW_TYPE_SPLASH
-	//
-	// We also want to return true if the NET_WM_STATE is MODAL.
-	// wlroots doesn't appear to provide all this information at the moment.
+	if (xwayland_view_from_view(view) == NULL) {
+		return false;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	struct sway_xwayland *xwayland = &server.xwayland;
+
+	// TODO: return true if the NET_WM_STATE is MODAL
+
+	for (size_t i = 0; i < surface->window_type_len; ++i) {
+		xcb_atom_t type = surface->window_type[i];
+		if (type == xwayland->atoms[NET_WM_WINDOW_TYPE_DIALOG] ||
+				type == xwayland->atoms[NET_WM_WINDOW_TYPE_UTILITY] ||
+				type == xwayland->atoms[NET_WM_WINDOW_TYPE_TOOLBAR] ||
+				type == xwayland->atoms[NET_WM_WINDOW_TYPE_SPLASH]) {
+			return true;
+		}
+	}
+
+	struct wlr_xwayland_surface_size_hints *size_hints = surface->size_hints;
+	if (size_hints != NULL &&
+			size_hints->min_width != 0 && size_hints->min_height != 0 &&
+			size_hints->max_width == size_hints->min_width &&
+			size_hints->max_height == size_hints->min_height) {
+		return true;
+	}
+
 	return false;
 }
 
@@ -324,9 +350,14 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 			ev->width, ev->height);
 		return;
 	}
-	// TODO: Let floating views do whatever
-	configure(view, view->swayc->current.view_x, view->swayc->current.view_y,
-			view->swayc->current.view_width, view->swayc->current.view_height);
+	if (container_is_floating(view->swayc)) {
+		configure(view, view->swayc->current.view_x,
+				view->swayc->current.view_y, ev->width, ev->height);
+	} else {
+		configure(view, view->swayc->current.view_x,
+				view->swayc->current.view_y, view->swayc->current.view_width,
+				view->swayc->current.view_height);
+	}
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
@@ -430,4 +461,41 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&xsurface->events.map, &xwayland_view->map);
 	xwayland_view->map.notify = handle_map;
+}
+
+void handle_xwayland_ready(struct wl_listener *listener, void *data) {
+	struct sway_server *server =
+		wl_container_of(listener, server, xwayland_ready);
+	struct sway_xwayland *xwayland = &server->xwayland;
+
+	xcb_connection_t *xcb_conn = xcb_connect(NULL, NULL);
+	int err = xcb_connection_has_error(xcb_conn);
+	if (err) {
+		wlr_log(L_ERROR, "XCB connect failed: %d", err);
+		return;
+	}
+
+	xcb_intern_atom_cookie_t cookies[ATOM_LAST];
+	for (size_t i = 0; i < ATOM_LAST; i++) {
+		cookies[i] =
+			xcb_intern_atom(xcb_conn, 0, strlen(atom_map[i]), atom_map[i]);
+	}
+	for (size_t i = 0; i < ATOM_LAST; i++) {
+		xcb_generic_error_t *error = NULL;
+		xcb_intern_atom_reply_t *reply =
+			xcb_intern_atom_reply(xcb_conn, cookies[i], &error);
+		if (reply != NULL && error == NULL) {
+			xwayland->atoms[i] = reply->atom;
+		}
+		free(reply);
+
+		if (error != NULL) {
+			wlr_log(L_ERROR, "could not resolve atom %s, X11 error code %d",
+				atom_map[i], error->error_code);
+			free(error);
+			break;
+		}
+	}
+
+	xcb_disconnect(xcb_conn);
 }

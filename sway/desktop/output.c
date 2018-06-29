@@ -1263,6 +1263,8 @@ static void damage_handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, destroy);
+	wl_signal_emit(&output->events.destroy, output);
+
 	if (output->swayc) {
 		container_destroy(output->swayc);
 	}
@@ -1343,6 +1345,7 @@ void output_enable(struct sway_output *output) {
 	for (size_t i = 0; i < len; ++i) {
 		wl_list_init(&output->layers[i]);
 	}
+	wl_signal_init(&output->events.destroy);
 
 	input_manager_configure_xcursor(input_manager);
 

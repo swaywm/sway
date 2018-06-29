@@ -11,8 +11,8 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
-#include <wlr/xwayland.h>
 #include "list.h"
+#include "sway/xwayland.h"
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -38,12 +38,9 @@ struct sway_server {
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener xdg_shell_surface;
 
-	struct wlr_xwayland *xwayland;
-	struct wlr_xcursor_manager *xcursor_manager;
+	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
-
-	struct wlr_wl_shell *wl_shell;
-	struct wl_listener wl_shell_surface;
+	struct wl_listener xwayland_ready;
 
 	bool debug_txn_timings;
 

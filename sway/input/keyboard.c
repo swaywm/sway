@@ -64,12 +64,12 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
 	bool last_key_was_a_modifier = raw_modifiers != state->last_raw_modifiers;
 	state->last_raw_modifiers = raw_modifiers;
 
-	if (event->state == WLR_KEY_PRESSED) {
-		if (last_key_was_a_modifier && state->last_keycode) {
-			// Last pressed key before this one was a modifier
-			state_erase_key(state, state->last_keycode);
-		}
+    if (last_key_was_a_modifier && state->last_keycode) {
+        // Last pressed key before this one was a modifier
+        state_erase_key(state, state->last_keycode);
+    }
 
+	if (event->state == WLR_KEY_PRESSED) {
 		// Add current key to set; there may be duplicates
 		state_add_key(state, event->keycode, new_key);
 		state->last_keycode = event->keycode;

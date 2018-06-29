@@ -153,6 +153,7 @@ sway_deps = [
 	server_protos,
 	wayland_server,
 	wlroots,
+	xcb,
 	xkbcommon,
 ]
 
