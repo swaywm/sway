@@ -16,6 +16,10 @@ void add_gaps(struct sway_container *c);
  *
  * Use this function if you need to arrange multiple sections of the tree in one
  * transaction.
+ *
+ * You must set the desired state of the container before calling
+ * arrange_windows, then don't change any state-tracked properties in the
+ * container until you've called transaction_commit.
  */
 void arrange_windows(struct sway_container *container,
 		struct sway_transaction *transaction);
