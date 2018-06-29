@@ -241,7 +241,7 @@ static void transaction_progress_queue() {
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
 	}
-	list_empty(server.transactions);
+	server.transactions->length = 0;
 }
 
 static int handle_timeout(void *data) {

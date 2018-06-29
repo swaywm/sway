@@ -14,7 +14,6 @@ void list_add(list_t *list, void *item);
 void list_insert(list_t *list, int index, void *item);
 void list_del(list_t *list, int index);
 void list_cat(list_t *list, list_t *source);
-void list_empty(list_t *list);
 // See qsort. Remember to use *_qsort functions as compare functions,
 // because they dereference the left and right arguments first!
 void list_qsort(list_t *list, int compare(const void *left, const void *right));
