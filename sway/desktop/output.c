@@ -354,15 +354,17 @@ static void render_saved_view(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	struct wlr_texture *texture = transaction_get_texture(view);
+	int width, height;
+	struct wlr_texture *texture =
+		transaction_get_saved_texture(view, &width, &height);
 	if (!texture) {
 		return;
 	}
 	struct wlr_box box = {
 		.x = view->swayc->current.view_x - output->swayc->current.swayc_x,
 		.y = view->swayc->current.view_y - output->swayc->current.swayc_y,
-		.width = view->swayc->current.view_width,
-		.height = view->swayc->current.view_height,
+		.width = width,
+		.height = height,
 	};
 
 	struct wlr_box output_box = {

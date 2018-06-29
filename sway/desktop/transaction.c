@@ -41,6 +41,7 @@ struct sway_transaction_instruction {
 	struct sway_container *container;
 	struct sway_container_state state;
 	struct wlr_buffer *saved_buffer;
+	int saved_buffer_width, saved_buffer_height;
 	uint32_t serial;
 	bool ready;
 };
@@ -71,6 +72,8 @@ static void save_view_buffer(struct sway_view *view,
 	}
 	if (view->surface && wlr_surface_has_buffer(view->surface)) {
 		instruction->saved_buffer = wlr_buffer_ref(view->surface->buffer);
+		instruction->saved_buffer_width = view->surface->current->width;
+		instruction->saved_buffer_height = view->surface->current->height;
 	}
 }
 
@@ -392,12 +395,14 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 	}
 }
 
-struct wlr_texture *transaction_get_texture(struct sway_view *view) {
-	if (!view->swayc || !view->swayc->instructions->length) {
-		return view->surface->buffer->texture;
-	}
+struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
+		int *width, int *height) {
 	struct sway_transaction_instruction *instruction =
 		view->swayc->instructions->items[0];
-	return instruction->saved_buffer ?
-		instruction->saved_buffer->texture : NULL;
+	if (!instruction->saved_buffer) {
+		return NULL;
+	}
+	*width = instruction->saved_buffer_width;
+	*height = instruction->saved_buffer_height;
+	return instruction->saved_buffer->texture;
 }

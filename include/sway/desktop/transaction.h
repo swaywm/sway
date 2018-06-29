@@ -52,11 +52,16 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 		int width, int height);
 
 /**
- * Get the texture that should be rendered for a view.
+ * Get the saved texture that should be rendered for a view.
  *
- * In most cases this will return the normal live texture for a view, but if the
- * view is in a transaction then it'll return a saved texture.
+ * The addresses pointed at by the width and height pointers will be populated
+ * with the surface's dimensions, which may be different to the texture's
+ * dimensions if output scaling is used.
+ *
+ * This function should only be called if it is known that the view has
+ * instructions.
  */
-struct wlr_texture *transaction_get_texture(struct sway_view *view);
+struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
+		int *width, int *height);
 
 #endif
