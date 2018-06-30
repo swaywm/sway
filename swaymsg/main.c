@@ -19,30 +19,44 @@ void sway_terminate(int exit_code) {
 	exit(exit_code);
 }
 
+static bool success_object(json_object *result) {
+	json_object *success;
+
+	if (!json_object_object_get_ex(result, "success", &success)) {
+		return false;
+	}
+
+	if (!json_object_get_boolean(success)) {
+		return false;
+	}
+
+	return true;
+}
+
 // Iterate results array and return false if any of them failed
 static bool success(json_object *r, bool fallback) {
 	if (!json_object_is_type(r, json_type_array)) {
 		return fallback;
 	}
+
 	size_t results_len = json_object_array_length(r);
 	if (!results_len) {
 		return fallback;
 	}
+
 	for (size_t i = 0; i < results_len; ++i) {
 		json_object *result = json_object_array_get_idx(r, i);
-		json_object *success;
-		if (!json_object_object_get_ex(result, "success", &success)) {
-			return false;
-		}
-		if (!json_object_get_boolean(success)) {
+
+		if (!success_object(result)) {
 			return false;
 		}
 	}
+
 	return true;
 }
 
 static void pretty_print_cmd(json_object *r) {
-	if (!success(r, true)) {
+	if (!success_object(r)) {
 		json_object *error;
 		if (!json_object_object_get_ex(r, "error", &error)) {
 			printf("An unknkown error occurred");
@@ -402,6 +416,7 @@ int main(int argc, char **argv) {
 	} else {
 		sway_abort("Unknown message type %s", cmdtype);
 	}
+
 	free(cmdtype);
 
 	char *command = NULL;
