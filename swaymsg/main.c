@@ -26,11 +26,7 @@ static bool success_object(json_object *result) {
 		return false;
 	}
 
-	if (!json_object_get_boolean(success)) {
-		return false;
-	}
-
-	return true;
+	return json_object_get_boolean(success);
 }
 
 // Iterate results array and return false if any of them failed
