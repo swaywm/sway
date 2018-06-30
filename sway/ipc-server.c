@@ -263,7 +263,10 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 		client->current_command = event;
 		if (!ipc_send_reply(client, json_string, (uint32_t) strlen(json_string))) {
 			wlr_log_errno(L_INFO, "Unable to send reply to IPC client");
-			ipc_client_disconnect(client);
+			/* ipc_send_reply destroys client on error, which also
+			 * removes it from the list, so we need to process
+			 * current index again */
+			i--;
 		}
 	}
 }
