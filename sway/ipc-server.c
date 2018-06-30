@@ -386,9 +386,7 @@ void ipc_client_disconnect(struct ipc_client *client) {
 		return;
 	}
 
-	if (client->fd != -1) {
-		shutdown(client->fd, SHUT_RDWR);
-	}
+	shutdown(client->fd, SHUT_RDWR);
 
 	wlr_log(L_INFO, "IPC Client %d disconnected", client->fd);
 	wl_event_source_remove(client->event_source);
@@ -467,8 +465,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 	}
 	buf[client->payload_length] = '\0';
-
-	const char *error_denied = "{ \"success\": false, \"error\": \"Permission denied\" }";
 
 	switch (client->current_command) {
 	case IPC_COMMAND:
@@ -649,9 +645,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		wlr_log(L_INFO, "Unknown IPC command type %i", client->current_command);
 		goto exit_cleanup;
 	}
-
-	ipc_send_reply(client, error_denied, (uint32_t)strlen(error_denied));
-	wlr_log(L_DEBUG, "Denied IPC client access to %i", client->current_command);
 
 exit_cleanup:
 	client->payload_length = 0;
