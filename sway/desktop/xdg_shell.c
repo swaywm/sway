@@ -203,6 +203,29 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 	popup_create(wlr_popup, &xdg_shell_view->view);
 }
 
+static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_fullscreen);
+	struct wlr_xdg_toplevel_set_fullscreen_event *e = data;
+	struct wlr_xdg_surface *xdg_surface =
+		xdg_shell_view->view.wlr_xdg_surface;
+	struct sway_view *view = &xdg_shell_view->view;
+
+	if (!sway_assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL,
+				"xdg_shell requested fullscreen of surface with role %i",
+				xdg_surface->role)) {
+		return;
+	}
+	if (!xdg_surface->mapped) {
+		return;
+	}
+
+	view_set_fullscreen(view, e->fullscreen);
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	arrange_and_commit(ws);
+}
+
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, unmap);
@@ -216,6 +239,7 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
+	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -248,6 +272,10 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->new_popup.notify = handle_new_popup;
 	wl_signal_add(&xdg_surface->events.new_popup,
 		&xdg_shell_view->new_popup);
+
+	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
+	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
+			&xdg_shell_view->request_fullscreen);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -261,32 +289,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->destroy.link);
 	wl_list_remove(&xdg_shell_view->map.link);
 	wl_list_remove(&xdg_shell_view->unmap.link);
-	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
 	view->wlr_xdg_surface = NULL;
 	view_destroy(view);
-}
-
-static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
-	struct sway_xdg_shell_view *xdg_shell_view =
-		wl_container_of(listener, xdg_shell_view, request_fullscreen);
-	struct wlr_xdg_toplevel_set_fullscreen_event *e = data;
-	struct wlr_xdg_surface *xdg_surface =
-		xdg_shell_view->view.wlr_xdg_surface;
-	struct sway_view *view = &xdg_shell_view->view;
-
-	if (!sway_assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL,
-				"xdg_shell requested fullscreen of surface with role %i",
-				xdg_surface->role)) {
-		return;
-	}
-	if (!xdg_surface->mapped) {
-		return;
-	}
-
-	view_set_fullscreen(view, e->fullscreen);
-
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	arrange_and_commit(ws);
 }
 
 struct sway_view *view_from_wlr_xdg_surface(
@@ -328,10 +332,6 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {
 
 	xdg_shell_view->destroy.notify = handle_destroy;
 	wl_signal_add(&xdg_surface->events.destroy, &xdg_shell_view->destroy);
-
-	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
-	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
-			&xdg_shell_view->request_fullscreen);
 
 	xdg_surface->data = xdg_shell_view;
 }
