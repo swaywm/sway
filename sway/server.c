@@ -68,6 +68,7 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->idle_inhibit->events.new_inhibitor,
 		&server->new_idle_inhibitor_v1);
 	server->new_idle_inhibitor_v1.notify = handle_idle_inhibitor_v1;
+	wl_list_init(&server->idle_inhibitors_v1);
 
 	server->layer_shell = wlr_layer_shell_create(server->wl_display);
 	wl_signal_add(&server->layer_shell->events.new_surface,

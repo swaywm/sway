@@ -6,6 +6,7 @@
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_linux_dmabuf.h>
 #include "sway/debug.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
@@ -245,6 +246,7 @@ static void transaction_progress_queue() {
 		transaction_destroy(transaction);
 	}
 	server.transactions->length = 0;
+	idle_inhibit_v1_check_active(&server);
 }
 
 static int handle_timeout(void *data) {
@@ -320,6 +322,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 		wlr_log(L_DEBUG, "Transaction %p has nothing to wait for", transaction);
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
+		idle_inhibit_v1_check_active(&server);
 		return;
 	}
 

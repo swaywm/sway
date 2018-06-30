@@ -6,8 +6,12 @@
 
 struct sway_idle_inhibitor_v1 {
 	struct sway_server *server;
+	struct sway_view *view;
 
+	struct wl_list link;
 	struct wl_listener destroy;
 };
+
+void idle_inhibit_v1_check_active(struct sway_server *server);
 
 #endif
