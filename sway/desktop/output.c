@@ -870,7 +870,7 @@ static void render_floating_container(struct sway_output *soutput,
 			render_titlebar(soutput, damage, con, con->current.swayc_x,
 					con->current.swayc_y, con->current.swayc_width, colors,
 					title_texture, marks_texture);
-		} else {
+		} else if (con->current.border != B_NONE) {
 			render_top_border(soutput, damage, con, colors);
 		}
 		render_view(soutput, damage, con, colors);

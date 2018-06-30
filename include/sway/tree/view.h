@@ -32,6 +32,7 @@ struct sway_view_impl {
 	uint32_t (*configure)(struct sway_view *view, double lx, double ly,
 			int width, int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
+	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
@@ -222,6 +223,8 @@ void view_init_floating(struct sway_view *view);
 void view_autoconfigure(struct sway_view *view);
 
 void view_set_activated(struct sway_view *view, bool activated);
+
+void view_set_tiled(struct sway_view *view, bool tiled);
 
 void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen);
 

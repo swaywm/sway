@@ -164,6 +164,9 @@ void view_init_floating(struct sway_view *view) {
 	view->border_left = view->border_right = true;
 
 	container_set_geometry_from_floating_view(view->swayc);
+
+	// Don't maximize floating windows
+	view_set_tiled(view, false);
 }
 
 void view_autoconfigure(struct sway_view *view) {
@@ -275,11 +278,19 @@ void view_autoconfigure(struct sway_view *view) {
 	view->y = y;
 	view->width = width;
 	view->height = height;
+	view_set_tiled(view, true);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
 	if (view->impl->set_activated) {
 		view->impl->set_activated(view, activated);
+	}
+}
+
+void view_set_tiled(struct sway_view *view, bool tiled) {
+	view->border = tiled ? config->border : B_NONE;
+	if (view->impl->set_tiled) {
+		view->impl->set_tiled(view, tiled);
 	}
 }
 
@@ -948,7 +959,7 @@ bool view_is_visible(struct sway_view *view) {
 	// Check view isn't in a tabbed or stacked container on an inactive tab
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *container = view->swayc;
-	while (container->type != C_WORKSPACE) {
+	while (container->type != C_WORKSPACE && container->layout != L_FLOATING) {
 		if (container->parent->layout == L_TABBED ||
 				container->parent->layout == L_STACKED) {
 			if (seat_get_active_child(seat, container->parent) != container) {
