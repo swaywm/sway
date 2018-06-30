@@ -175,7 +175,7 @@ static void log_kernel() {
 		}
 		free(line);
 	}
-	fclose(f);
+	pclose(f);
 }
 
 static void security_sanity_check() {
