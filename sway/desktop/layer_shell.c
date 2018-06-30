@@ -307,6 +307,11 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	unmap(sway_layer);
 }
 
+struct sway_layer_surface *layer_from_wlr_layer_surface(
+		struct wlr_layer_surface *layer_surface) {
+	return layer_surface->data;
+}
+
 void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface *layer_surface = data;
 	struct sway_server *server =

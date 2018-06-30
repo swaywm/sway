@@ -260,6 +260,16 @@ void view_child_init(struct sway_view_child *child,
 
 void view_child_destroy(struct sway_view_child *child);
 
+
+struct sway_view *view_from_wlr_xdg_surface(
+	struct wlr_xdg_surface *xdg_surface);
+struct sway_view *view_from_wlr_xdg_surface_v6(
+	struct wlr_xdg_surface_v6 *xdg_surface_v6);
+struct sway_view *view_from_wlr_xwayland_surface(
+	struct wlr_xwayland_surface *xsurface);
+
+struct sway_view *view_from_wlr_surface(struct wlr_surface *surface);
+
 /**
  * Re-read the view's title property and update any relevant title bars.
  * The force argument makes it recreate the title bars even if the title hasn't

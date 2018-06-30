@@ -280,6 +280,11 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	arrange_and_commit(ws);
 }
 
+struct sway_view *view_from_wlr_xdg_surface_v6(
+		struct wlr_xdg_surface_v6 *xdg_surface_v6) {
+       return xdg_surface_v6->data;
+}
+
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server,
 		xdg_shell_v6_surface);
@@ -318,4 +323,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	xdg_shell_v6_view->request_fullscreen.notify = handle_request_fullscreen;
 	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
 			&xdg_shell_v6_view->request_fullscreen);
+
+	xdg_surface->data = xdg_shell_v6_view;
 }

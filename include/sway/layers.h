@@ -22,4 +22,7 @@ struct sway_layer_surface {
 struct sway_output;
 void arrange_layers(struct sway_output *output);
 
+struct sway_layer_surface *layer_from_wlr_layer_surface(
+	struct wlr_layer_surface *layer_surface);
+
 #endif
