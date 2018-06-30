@@ -417,6 +417,11 @@ static void handle_set_window_type(struct wl_listener *listener, void *data) {
 	view_execute_criteria(view);
 }
 
+struct sway_view *view_from_wlr_xwayland_surface(
+		struct wlr_xwayland_surface *xsurface) {
+	return xsurface->data;
+}
+
 void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server,
 		xwayland_surface);
@@ -470,6 +475,8 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&xsurface->events.map, &xwayland_view->map);
 	xwayland_view->map.notify = handle_map;
+
+	xsurface->data = xwayland_view;
 }
 
 void handle_xwayland_ready(struct wl_listener *listener, void *data) {
