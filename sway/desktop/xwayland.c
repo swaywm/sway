@@ -7,10 +7,12 @@
 #include <wlr/xwayland.h>
 #include "log.h"
 #include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -176,19 +178,18 @@ static uint32_t get_int_prop(struct sway_view *view, enum sway_view_prop prop) {
 	}
 }
 
-static void configure(struct sway_view *view, double lx, double ly, int width,
+static uint32_t configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	struct sway_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	if (xwayland_view == NULL) {
-		return;
+		return 0;
 	}
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
-	xwayland_view->pending_lx = lx;
-	xwayland_view->pending_ly = ly;
-	xwayland_view->pending_width = width;
-	xwayland_view->pending_height = height;
 	wlr_xwayland_surface_configure(xsurface, lx, ly, width, height);
+
+	// xwayland doesn't give us a serial for the configure
+	return 0;
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -257,14 +258,6 @@ static void destroy(struct sway_view *view) {
 	if (xwayland_view == NULL) {
 		return;
 	}
-	wl_list_remove(&xwayland_view->destroy.link);
-	wl_list_remove(&xwayland_view->request_configure.link);
-	wl_list_remove(&xwayland_view->request_fullscreen.link);
-	wl_list_remove(&xwayland_view->set_title.link);
-	wl_list_remove(&xwayland_view->set_class.link);
-	wl_list_remove(&xwayland_view->set_window_type.link);
-	wl_list_remove(&xwayland_view->map.link);
-	wl_list_remove(&xwayland_view->unmap.link);
 	free(xwayland_view);
 }
 
@@ -285,22 +278,27 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	if (view->swayc && container_is_floating(view->swayc)) {
-		view_update_size(view, xsurface->width, xsurface->height);
-	} else {
-		view_update_size(view, xwayland_view->pending_width,
-				xwayland_view->pending_height);
+	struct wlr_surface_state *surface_state = xsurface->surface->current;
+
+	if (view->swayc->instructions->length) {
+		transaction_notify_view_ready_by_size(view,
+				surface_state->width, surface_state->height);
 	}
-	view_update_position(view,
-			xwayland_view->pending_lx, xwayland_view->pending_ly);
 	view_damage_from(view);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, unmap);
+	struct sway_view *view = &xwayland_view->view;
+
+	if (!sway_assert(view->surface, "Cannot unmap unmapped view")) {
+		return;
+	}
+
+	view_unmap(view);
+
 	wl_list_remove(&xwayland_view->commit.link);
-	view_unmap(&xwayland_view->view);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -322,12 +320,31 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	if (xsurface->fullscreen) {
 		view_set_fullscreen(view, true);
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		arrange_and_commit(ws);
+	} else {
+		arrange_and_commit(view->swayc->parent);
 	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, destroy);
+	struct sway_view *view = &xwayland_view->view;
+
+	if (view->surface) {
+		view_unmap(view);
+		wl_list_remove(&xwayland_view->commit.link);
+	}
+
+	wl_list_remove(&xwayland_view->destroy.link);
+	wl_list_remove(&xwayland_view->request_configure.link);
+	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->set_title.link);
+	wl_list_remove(&xwayland_view->set_class.link);
+	wl_list_remove(&xwayland_view->set_window_type.link);
+	wl_list_remove(&xwayland_view->map.link);
+	wl_list_remove(&xwayland_view->unmap.link);
 	view_destroy(&xwayland_view->view);
 }
 
@@ -343,10 +360,12 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		return;
 	}
 	if (container_is_floating(view->swayc)) {
-		configure(view, view->x, view->y, ev->width, ev->height);
+		configure(view, view->swayc->current.view_x,
+				view->swayc->current.view_y, ev->width, ev->height);
 	} else {
-		configure(view, view->x, view->y,
-			view->width, view->height);
+		configure(view, view->swayc->current.view_x,
+				view->swayc->current.view_y, view->swayc->current.view_width,
+				view->swayc->current.view_height);
 	}
 }
 
@@ -359,6 +378,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 	view_set_fullscreen(view, xsurface->fullscreen);
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	arrange_and_commit(ws);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {

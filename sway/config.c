@@ -531,7 +531,7 @@ static int detect_brace_on_following_line(FILE *file, char *line,
 		} while (peeked && strlen(peeked) == 0);
 
 		if (peeked && strlen(peeked) == 1 && peeked[0] == '{') {
-			fseek(file, position, SEEK_SET); 
+			fseek(file, position, SEEK_SET);
 		} else {
 			lines = 0;
 		}
@@ -735,6 +735,6 @@ void config_update_font_height(bool recalculate) {
 	}
 
 	if (config->font_height != prev_max_height) {
-		arrange_root();
+		arrange_and_commit(&root_container);
 	}
 }

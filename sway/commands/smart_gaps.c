@@ -16,13 +16,14 @@ struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 
 	if (strcmp(argv[0], "on") == 0) {
 		config->smart_gaps = true;
-		arrange_root();
 	} else if (strcmp(argv[0], "off") == 0) {
 		config->smart_gaps = false;
-		arrange_root();
 	} else {
 		return cmd_results_new(CMD_INVALID, "smart_gaps",
 			"Expected 'smart_gaps <on|off>' ");
 	}
+
+	arrange_and_commit(&root_container);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

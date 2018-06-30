@@ -31,21 +31,19 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 
 		if (strcmp(argv[1], "on") == 0) {
 			config->edge_gaps = true;
-			arrange_root();
 		} else if (strcmp(argv[1], "off") == 0) {
 			config->edge_gaps = false;
-			arrange_root();
 		} else if (strcmp(argv[1], "toggle") == 0) {
 			if (!config->active) {
 				return cmd_results_new(CMD_INVALID, "gaps",
 					"Cannot toggle gaps while not running.");
 			}
 			config->edge_gaps = !config->edge_gaps;
-			arrange_root();
 		} else {
 			return cmd_results_new(CMD_INVALID, "gaps",
 				"gaps edge_gaps on|off|toggle");
 		}
+		arrange_and_commit(&root_container);
 	} else {
 		int amount_idx = 0; // the current index in argv
 		enum gaps_op op = GAPS_OP_SET;
@@ -120,13 +118,13 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 					"gaps inner|outer <amount>");
 			}
 			return cmd_results_new(CMD_INVALID, "gaps",
-				"gaps inner|outer all|workspace|current set|plus|minus <amount>"); 
+				"gaps inner|outer all|workspace|current set|plus|minus <amount>");
 		}
 
 		if (amount_idx == 0) { // gaps <amount>
 			config->gaps_inner = val;
 			config->gaps_outer = val;
-			arrange_root();
+			arrange_and_commit(&root_container);
 			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 		}
 		// Other variants. The middle-length variant (gaps inner|outer <amount>)
@@ -150,14 +148,14 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 				break;
 			}
 		}
- 
+
 		if (scope == GAPS_SCOPE_ALL) {
 			if (inner) {
 				config->gaps_inner = total;
 			} else {
 				config->gaps_outer = total;
 			}
-			arrange_root();
+			arrange_and_commit(&root_container);
 		} else {
 			struct sway_container *c =
 				config->handler_context.current_container;
@@ -171,11 +169,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 				c->gaps_outer = total;
 			}
 
-			if (c->parent) {
-				arrange_children_of(c->parent);
-			} else {
-				arrange_root();
-			}
+			arrange_and_commit(c->parent ? c->parent : &root_container);
 		}
 	}
 

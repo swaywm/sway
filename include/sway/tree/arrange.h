@@ -1,5 +1,6 @@
 #ifndef _SWAY_ARRANGE_H
 #define _SWAY_ARRANGE_H
+#include "sway/desktop/transaction.h"
 
 struct sway_container;
 
@@ -9,16 +10,27 @@ void remove_gaps(struct sway_container *c);
 // Add gaps around container
 void add_gaps(struct sway_container *c);
 
-// Determine the root container's geometry, then iterate to everything below
-void arrange_root(void);
+/**
+ * Arrange layout for all the children of the given container, and add them to
+ * the given transaction.
+ *
+ * Use this function if you need to arrange multiple sections of the tree in one
+ * transaction.
+ *
+ * You must set the desired state of the container before calling
+ * arrange_windows, then don't change any state-tracked properties in the
+ * container until you've called transaction_commit.
+ */
+void arrange_windows(struct sway_container *container,
+		struct sway_transaction *transaction);
 
-// Determine the output's geometry, then iterate to everything below
-void arrange_output(struct sway_container *output);
-
-// Determine the workspace's geometry, then iterate to everything below
-void arrange_workspace(struct sway_container *workspace);
-
-// Arrange layout for all the children of the given workspace/container
-void arrange_children_of(struct sway_container *parent);
+/**
+ * Arrange layout for the given container and commit the transaction.
+ *
+ * This function is a wrapper around arrange_windows, and handles creating and
+ * committing the transaction for you. Use this function if you're only doing
+ * one arrange operation.
+ */
+void arrange_and_commit(struct sway_container *container);
 
 #endif

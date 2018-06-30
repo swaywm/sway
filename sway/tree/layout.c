@@ -22,7 +22,7 @@ struct sway_container root_container;
 
 static void output_layout_handle_change(struct wl_listener *listener,
 		void *data) {
-	arrange_root();
+	arrange_and_commit(&root_container);
 }
 
 void layout_init(void) {
@@ -30,7 +30,9 @@ void layout_init(void) {
 	root_container.type = C_ROOT;
 	root_container.layout = L_NONE;
 	root_container.name = strdup("root");
+	root_container.instructions = create_list();
 	root_container.children = create_list();
+	root_container.current.children = create_list();
 	wl_signal_init(&root_container.events.destroy);
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
@@ -57,18 +59,17 @@ static int index_child(const struct sway_container *child) {
 	return -1;
 }
 
-static void container_handle_fullscreen_reparent(struct sway_container *viewcon,
+static void container_handle_fullscreen_reparent(struct sway_container *con,
 		struct sway_container *old_parent) {
-	if (viewcon->type != C_VIEW || !viewcon->sway_view->is_fullscreen) {
+	if (con->type != C_VIEW || !con->sway_view->is_fullscreen) {
 		return;
 	}
-	struct sway_view *view = viewcon->sway_view;
+	struct sway_view *view = con->sway_view;
 	struct sway_container *old_workspace = old_parent;
 	if (old_workspace && old_workspace->type != C_WORKSPACE) {
 		old_workspace = container_parent(old_workspace, C_WORKSPACE);
 	}
-	struct sway_container *new_workspace = container_parent(view->swayc,
-			C_WORKSPACE);
+	struct sway_container *new_workspace = container_parent(con, C_WORKSPACE);
 	if (old_workspace == new_workspace) {
 		return;
 	}
@@ -79,15 +80,19 @@ static void container_handle_fullscreen_reparent(struct sway_container *viewcon,
 
 	// Mark the new workspace as fullscreen
 	if (new_workspace->sway_workspace->fullscreen) {
-		view_set_fullscreen_raw(
-				new_workspace->sway_workspace->fullscreen, false);
+		view_set_fullscreen(new_workspace->sway_workspace->fullscreen, false);
 	}
 	new_workspace->sway_workspace->fullscreen = view;
 	// Resize view to new output dimensions
 	struct sway_container *output = new_workspace->parent;
-	view_configure(view, 0, 0, output->width, output->height);
-	view->swayc->width = output->width;
-	view->swayc->height = output->height;
+	view->x = output->x;
+	view->y = output->y;
+	view->width = output->width;
+	view->height = output->height;
+	con->x = output->x;
+	con->y = output->y;
+	con->width = output->width;
+	con->height = output->height;
 }
 
 void container_insert_child(struct sway_container *parent,
@@ -189,18 +194,7 @@ void container_move_to(struct sway_container *container,
 	}
 	container_notify_subtree_changed(old_parent);
 	container_notify_subtree_changed(new_parent);
-	if (old_parent) {
-		if (old_parent->type == C_OUTPUT) {
-			arrange_output(old_parent);
-		} else {
-			arrange_children_of(old_parent);
-		}
-	}
-	if (new_parent->type == C_OUTPUT) {
-		arrange_output(new_parent);
-	} else {
-		arrange_children_of(new_parent);
-	}
+
 	// If view was moved to a fullscreen workspace, refocus the fullscreen view
 	struct sway_container *new_workspace = container;
 	if (new_workspace->type != C_WORKSPACE) {
@@ -215,7 +209,8 @@ void container_move_to(struct sway_container *container,
 			if (focus_ws->type != C_WORKSPACE) {
 				focus_ws = container_parent(focus_ws, C_WORKSPACE);
 			}
-			seat_set_focus(seat, new_workspace->sway_workspace->fullscreen->swayc);
+			seat_set_focus(seat,
+					new_workspace->sway_workspace->fullscreen->swayc);
 			if (focus_ws != new_workspace) {
 				seat_set_focus(seat, focus);
 			}
@@ -309,7 +304,6 @@ static void workspace_rejigger(struct sway_container *ws,
 	container_reap_empty_recursive(original_parent);
 	wl_signal_emit(&child->events.reparent, original_parent);
 	container_create_notify(new_parent);
-	arrange_workspace(ws);
 }
 
 static void move_out_of_tabs_stacks(struct sway_container *container,
@@ -320,11 +314,6 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 		wlr_log(L_DEBUG, "Changing layout of %zd", current->parent->id);
 		current->parent->layout = move_dir ==
 			MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
-		if (current->parent->type == C_WORKSPACE) {
-			arrange_workspace(current->parent);
-		} else {
-			arrange_children_of(current->parent);
-		}
 		return;
 	}
 
@@ -340,11 +329,6 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 		container_flatten(new_parent->parent);
 	}
 	container_create_notify(new_parent);
-	if (is_workspace) {
-		arrange_workspace(new_parent->parent);
-	} else {
-		arrange_children_of(new_parent);
-	}
 	container_notify_subtree_changed(new_parent);
 }
 
@@ -368,10 +352,7 @@ void container_move(struct sway_container *container,
 
 	struct sway_container *new_parent = container_flatten(parent);
 	if (new_parent != parent) {
-		// Special case: we were the last one in this container, so flatten it
-		// and leave
-		arrange_children_of(new_parent);
-		update_debug_tree();
+		// Special case: we were the last one in this container, so leave
 		return;
 	}
 
@@ -453,12 +434,9 @@ void container_move(struct sway_container *container,
 						wlr_log(L_DEBUG, "Hit limit, "
 								"promoting descendant to sibling");
 						// Special case
-						struct sway_container *old_parent = container->parent;
 						container_insert_child(current->parent, container,
 								index + (offs < 0 ? 0 : 1));
 						container->width = container->height = 0;
-						arrange_children_of(current->parent);
-						arrange_children_of(old_parent);
 						return;
 					}
 				} else {
@@ -492,14 +470,11 @@ void container_move(struct sway_container *container,
 				wlr_log(L_DEBUG, "Swapping siblings");
 				sibling->parent->children->items[index + offs] = container;
 				sibling->parent->children->items[index] = sibling;
-				arrange_children_of(sibling->parent);
 			} else {
 				wlr_log(L_DEBUG, "Promoting to sibling of cousin");
 				container_insert_child(sibling->parent, container,
 						index_child(sibling) + (offs > 0 ? 0 : 1));
 				container->width = container->height = 0;
-				arrange_children_of(sibling->parent);
-				arrange_children_of(old_parent);
 			}
 			sibling = NULL;
 			break;
@@ -513,8 +488,6 @@ void container_move(struct sway_container *container,
 						"(move dir: %d)", limit, move_dir);
 				container_insert_child(sibling, container, limit);
 				container->width = container->height = 0;
-				arrange_children_of(sibling);
-				arrange_children_of(old_parent);
 				sibling = NULL;
 			} else {
 				wlr_log(L_DEBUG, "Reparenting container (perpendicular)");
@@ -538,8 +511,6 @@ void container_move(struct sway_container *container,
 					container_add_child(sibling, container);
 				}
 				container->width = container->height = 0;
-				arrange_children_of(sibling);
-				arrange_children_of(old_parent);
 				sibling = NULL;
 			}
 			break;
@@ -864,7 +835,6 @@ struct sway_container *container_split(struct sway_container *child,
 		// Special case: this just behaves like splitt
 		child->prev_layout = child->layout;
 		child->layout = layout;
-		arrange_children_of(child);
 		return child;
 	}
 
@@ -882,7 +852,7 @@ struct sway_container *container_split(struct sway_container *child,
 
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 	bool set_focus = (seat_get_focus(seat) == child);
-	
+
 	add_gaps(cont);
 
 	if (child->type == C_WORKSPACE) {
@@ -912,7 +882,6 @@ struct sway_container *container_split(struct sway_container *child,
 	}
 
 	container_notify_subtree_changed(cont);
-	arrange_children_of(cont);
 	return cont;
 }
 
@@ -1049,9 +1018,6 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 		free(prev_workspace_name);
 		prev_workspace_name = stored_prev_name;
 	}
-
-	arrange_children_of(con1->parent);
-	arrange_children_of(con2->parent);
 
 	if (fs1 && con2->type == C_VIEW) {
 		view_set_fullscreen(con2->sway_view, true);

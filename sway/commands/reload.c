@@ -12,6 +12,6 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 	}
 
 	load_swaybars();
-	arrange_root();
+	arrange_and_commit(&root_container);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

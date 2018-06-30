@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
-#include "sway/server.h"
 #include "sway/tree/view.h"
 #include "sway/input/seat.h"
 #include "sway/input/input-manager.h"
@@ -86,18 +87,15 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 	}
 }
 
-static void configure(struct sway_view *view, double lx, double ly, int width,
-		int height) {
+static uint32_t configure(struct sway_view *view, double lx, double ly,
+		int width, int height) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		xdg_shell_v6_view_from_view(view);
 	if (xdg_shell_v6_view == NULL) {
-		return;
+		return 0;
 	}
-
-	xdg_shell_v6_view->pending_width = width;
-	xdg_shell_v6_view->pending_height = height;
-	wlr_xdg_toplevel_v6_set_size(view->wlr_xdg_surface_v6, width, height);
-	view_update_position(view, lx, ly);
+	return wlr_xdg_toplevel_v6_set_size(
+			view->wlr_xdg_surface_v6, width, height);
 }
 
 static void set_activated(struct sway_view *view, bool activated) {
@@ -161,10 +159,6 @@ static void destroy(struct sway_view *view) {
 	if (xdg_shell_v6_view == NULL) {
 		return;
 	}
-	wl_list_remove(&xdg_shell_v6_view->destroy.link);
-	wl_list_remove(&xdg_shell_v6_view->map.link);
-	wl_list_remove(&xdg_shell_v6_view->unmap.link);
-	wl_list_remove(&xdg_shell_v6_view->request_fullscreen.link);
 	free(xdg_shell_v6_view);
 }
 
@@ -184,18 +178,15 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, commit);
 	struct sway_view *view = &xdg_shell_v6_view->view;
-	if (view->swayc && container_is_floating(view->swayc)) {
-		int width = view->wlr_xdg_surface_v6->geometry.width;
-		int height = view->wlr_xdg_surface_v6->geometry.height;
-		if (!width && !height) {
-			width = view->wlr_xdg_surface_v6->surface->current->width;
-			height = view->wlr_xdg_surface_v6->surface->current->height;
-		}
-		view_update_size(view, width, height);
-	} else {
-		view_update_size(view, xdg_shell_v6_view->pending_width,
-				xdg_shell_v6_view->pending_height);
+	struct wlr_xdg_surface_v6 *xdg_surface_v6 = view->wlr_xdg_surface_v6;
+
+	if (!view->swayc) {
+		return;
 	}
+	if (view->swayc->instructions->length) {
+		transaction_notify_view_ready(view, xdg_surface_v6->configure_serial);
+	}
+
 	view_update_title(view, false);
 	view_damage_from(view);
 }
@@ -210,8 +201,13 @@ static void handle_new_popup(struct wl_listener *listener, void *data) {
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, unmap);
+	struct sway_view *view = &xdg_shell_v6_view->view;
 
-	view_unmap(&xdg_shell_v6_view->view);
+	if (!sway_assert(view->surface, "Cannot unmap unmapped view")) {
+		return;
+	}
+
+	view_unmap(view);
 
 	wl_list_remove(&xdg_shell_v6_view->commit.link);
 	wl_list_remove(&xdg_shell_v6_view->new_popup.link);
@@ -229,7 +225,16 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		view->natural_width = view->wlr_xdg_surface_v6->surface->current->width;
 		view->natural_height = view->wlr_xdg_surface_v6->surface->current->height;
 	}
+
 	view_map(view, view->wlr_xdg_surface_v6->surface);
+
+	if (xdg_surface->toplevel->client_pending.fullscreen) {
+		view_set_fullscreen(view, true);
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		arrange_and_commit(ws);
+	} else {
+		arrange_and_commit(view->swayc->parent);
+	}
 
 	xdg_shell_v6_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
@@ -238,16 +243,18 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_v6_view->new_popup.notify = handle_new_popup;
 	wl_signal_add(&xdg_surface->events.new_popup,
 		&xdg_shell_v6_view->new_popup);
-
-	if (xdg_surface->toplevel->client_pending.fullscreen) {
-		view_set_fullscreen(view, true);
-	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, destroy);
-	view_destroy(&xdg_shell_v6_view->view);
+	struct sway_view *view = &xdg_shell_v6_view->view;
+	wl_list_remove(&xdg_shell_v6_view->destroy.link);
+	wl_list_remove(&xdg_shell_v6_view->map.link);
+	wl_list_remove(&xdg_shell_v6_view->unmap.link);
+	wl_list_remove(&xdg_shell_v6_view->request_fullscreen.link);
+	view->wlr_xdg_surface_v6 = NULL;
+	view_destroy(view);
 }
 
 static void handle_request_fullscreen(struct wl_listener *listener, void *data) {
@@ -256,6 +263,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	struct wlr_xdg_toplevel_v6_set_fullscreen_event *e = data;
 	struct wlr_xdg_surface_v6 *xdg_surface =
 		xdg_shell_v6_view->view.wlr_xdg_surface_v6;
+	struct sway_view *view = &xdg_shell_v6_view->view;
 
 	if (!sway_assert(xdg_surface->role == WLR_XDG_SURFACE_V6_ROLE_TOPLEVEL,
 				"xdg_shell_v6 requested fullscreen of surface with role %i",
@@ -266,7 +274,10 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
-	view_set_fullscreen(&xdg_shell_v6_view->view, e->fullscreen);
+	view_set_fullscreen(view, e->fullscreen);
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	arrange_and_commit(ws);
 }
 
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {

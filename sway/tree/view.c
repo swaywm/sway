@@ -28,20 +28,22 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	wl_signal_init(&view->events.unmap);
 }
 
-void view_destroy(struct sway_view *view) {
-	if (view == NULL) {
+void view_free(struct sway_view *view) {
+	if (!sway_assert(view->surface == NULL, "Tried to free mapped view")) {
 		return;
 	}
-
-	if (view->surface != NULL) {
-		view_unmap(view);
+	if (!sway_assert(view->destroying,
+				"Tried to free view which wasn't marked as destroying")) {
+		return;
 	}
-
+	if (!sway_assert(view->swayc == NULL,
+				"Tried to free view which still has a swayc "
+				"(might have a pending transaction?)")) {
+		return;
+	}
 	list_free(view->executed_criteria);
 
-	for (int i = 0; i < view->marks->length; ++i) {
-		free(view->marks->items[i]);
-	}
+	list_foreach(view->marks, free);
 	list_free(view->marks);
 
 	wlr_texture_destroy(view->marks_focused);
@@ -49,12 +51,31 @@ void view_destroy(struct sway_view *view) {
 	wlr_texture_destroy(view->marks_unfocused);
 	wlr_texture_destroy(view->marks_urgent);
 
-	container_destroy(view->swayc);
-
 	if (view->impl->destroy) {
 		view->impl->destroy(view);
 	} else {
 		free(view);
+	}
+}
+
+/**
+ * The view may or may not be involved in a transaction. For example, a view may
+ * unmap then attempt to destroy itself before we've applied the new layout. If
+ * an unmapping view is still involved in a transaction then it'll still have a
+ * swayc.
+ *
+ * If there's no transaction we can simply free the view. Otherwise the
+ * destroying flag will make the view get freed when the transaction is
+ * finished.
+ */
+void view_destroy(struct sway_view *view) {
+	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
+		return;
+	}
+	view->destroying = true;
+
+	if (!view->swayc) {
+		view_free(view);
 	}
 }
 
@@ -119,32 +140,33 @@ const char *view_get_shell(struct sway_view *view) {
 	return "unknown";
 }
 
-void view_configure(struct sway_view *view, double lx, double ly, int width,
+uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	if (view->impl->configure) {
-		view->impl->configure(view, lx, ly, width, height);
+		return view->impl->configure(view, lx, ly, width, height);
 	}
+	return 0;
 }
 
-static void view_autoconfigure_floating(struct sway_view *view) {
+void view_init_floating(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 	int max_width = ws->width * 0.6666;
 	int max_height = ws->height * 0.6666;
-	int width =
+	view->width =
 		view->natural_width > max_width ? max_width : view->natural_width;
-	int height =
+	view->height =
 		view->natural_height > max_height ? max_height : view->natural_height;
-	int lx = ws->x + (ws->width - width) / 2;
-	int ly = ws->y + (ws->height - height) / 2;
+	view->x = ws->x + (ws->width - view->width) / 2;
+	view->y = ws->y + (ws->height - view->height) / 2;
 
 	// If the view's border is B_NONE then these properties are ignored.
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;
 
+	container_set_geometry_from_floating_view(view->swayc);
+
 	// Don't maximize floating windows
 	view_set_tiled(view, false);
-
-	view_configure(view, lx, ly, width, height);
 }
 
 void view_autoconfigure(struct sway_view *view) {
@@ -156,12 +178,14 @@ void view_autoconfigure(struct sway_view *view) {
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
 	if (view->is_fullscreen) {
-		view_configure(view, output->x, output->y, output->width, output->height);
+		view->x = output->x;
+		view->y = output->y;
+		view->width = output->width;
+		view->height = output->height;
 		return;
 	}
 
 	if (container_is_floating(view->swayc)) {
-		view_autoconfigure_floating(view);
 		return;
 	}
 
@@ -181,20 +205,22 @@ void view_autoconfigure(struct sway_view *view) {
 		}
 	}
 
+	struct sway_container *con = view->swayc;
+
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_VERTICAL
 			|| (config->hide_edge_borders == E_SMART && !other_views)) {
-		view->border_left = view->swayc->x != ws->x;
-		int right_x = view->swayc->x + view->swayc->width;
+		view->border_left = con->x != ws->x;
+		int right_x = con->x + con->width;
 		view->border_right = right_x != ws->x + ws->width;
 	}
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_HORIZONTAL
 			|| (config->hide_edge_borders == E_SMART && !other_views)) {
-		view->border_top = view->swayc->y != ws->y;
-		int bottom_y = view->swayc->y + view->swayc->height;
+		view->border_top = con->y != ws->y;
+		int bottom_y = con->y + con->height;
 		view->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
@@ -205,45 +231,44 @@ void view_autoconfigure(struct sway_view *view) {
 	// In a tabbed or stacked container, the swayc's y is the top of the title
 	// area. We have to offset the surface y by the height of the title bar, and
 	// disable any top border because we'll always have the title bar.
-	if (view->swayc->parent->layout == L_TABBED) {
+	if (con->parent->layout == L_TABBED) {
 		y_offset = container_titlebar_height();
 		view->border_top = false;
-	} else if (view->swayc->parent->layout == L_STACKED) {
-		y_offset = container_titlebar_height()
-			* view->swayc->parent->children->length;
+	} else if (con->parent->layout == L_STACKED) {
+		y_offset = container_titlebar_height() * con->parent->children->length;
 		view->border_top = false;
 	}
 
 	switch (view->border) {
 	case B_NONE:
-		x = view->swayc->x;
-		y = view->swayc->y + y_offset;
-		width = view->swayc->width;
-		height = view->swayc->height - y_offset;
+		x = con->x;
+		y = con->y + y_offset;
+		width = con->width;
+		height = con->height - y_offset;
 		break;
 	case B_PIXEL:
-		x = view->swayc->x + view->border_thickness * view->border_left;
-		y = view->swayc->y + view->border_thickness * view->border_top + y_offset;
-		width = view->swayc->width
+		x = con->x + view->border_thickness * view->border_left;
+		y = con->y + view->border_thickness * view->border_top + y_offset;
+		width = con->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
-		height = view->swayc->height - y_offset
+		height = con->height - y_offset
 			- view->border_thickness * view->border_top
 			- view->border_thickness * view->border_bottom;
 		break;
 	case B_NORMAL:
 		// Height is: 1px border + 3px pad + title height + 3px pad + 1px border
-		x = view->swayc->x + view->border_thickness * view->border_left;
-		width = view->swayc->width
+		x = con->x + view->border_thickness * view->border_left;
+		width = con->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
 		if (y_offset) {
-			y = view->swayc->y + y_offset;
-			height = view->swayc->height - y_offset
+			y = con->y + y_offset;
+			height = con->height - y_offset
 				- view->border_thickness * view->border_bottom;
 		} else {
-			y = view->swayc->y + container_titlebar_height();
-			height = view->swayc->height - container_titlebar_height()
+			y = con->y + container_titlebar_height();
+			height = con->height - container_titlebar_height()
 				- view->border_thickness * view->border_bottom;
 		}
 		break;
@@ -251,8 +276,9 @@ void view_autoconfigure(struct sway_view *view) {
 
 	view->x = x;
 	view->y = y;
+	view->width = width;
+	view->height = height;
 	view_set_tiled(view, true);
-	view_configure(view, x, y, width, height);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -268,8 +294,7 @@ void view_set_tiled(struct sway_view *view, bool tiled) {
 	}
 }
 
-// Set fullscreen, but without IPC events or arranging windows.
-void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
+void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (view->is_fullscreen == fullscreen) {
 		return;
 	}
@@ -315,27 +340,17 @@ void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen) {
 	} else {
 		workspace->sway_workspace->fullscreen = NULL;
 		if (container_is_floating(view->swayc)) {
-			view_configure(view, view->saved_x, view->saved_y,
-					view->saved_width, view->saved_height);
+			view->x = view->saved_x;
+			view->y = view->saved_y;
+			view->width = view->saved_width;
+			view->height = view->saved_height;
+			container_set_geometry_from_floating_view(view->swayc);
 		} else {
 			view->swayc->width = view->swayc->saved_width;
 			view->swayc->height = view->swayc->saved_height;
-			view_autoconfigure(view);
 		}
 	}
-}
 
-void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
-	if (view->is_fullscreen == fullscreen) {
-		return;
-	}
-
-	view_set_fullscreen_raw(view, fullscreen);
-
-	struct sway_container *workspace =
-		container_parent(view->swayc, C_WORKSPACE);
-	arrange_workspace(workspace);
-	output_damage_whole(workspace->parent->sway_output);
 	ipc_event_window(view->swayc, "fullscreen_mode");
 }
 
@@ -365,6 +380,9 @@ static void view_get_layout_box(struct sway_view *view, struct wlr_box *box) {
 
 void view_for_each_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (!view->surface) {
+		return;
+	}
 	if (view->impl->for_each_surface) {
 		view->impl->for_each_surface(view, iterator, user_data);
 	} else {
@@ -518,8 +536,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		container_set_floating(view->swayc, true);
-	} else {
-		arrange_children_of(cont->parent);
 	}
 
 	input_manager_set_focus(input_manager, cont);
@@ -531,42 +547,26 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	container_notify_subtree_changed(view->swayc->parent);
 	view_execute_criteria(view);
 
-	container_damage_whole(cont);
 	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
 void view_unmap(struct sway_view *view) {
-	if (!sway_assert(view->surface != NULL, "cannot unmap unmapped view")) {
-		return;
-	}
-
 	wl_signal_emit(&view->events.unmap, view);
-
-	if (view->is_fullscreen) {
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		ws->sway_workspace->fullscreen = NULL;
-	}
-
-	container_damage_whole(view->swayc);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
 	wl_list_remove(&view->container_reparent.link);
 
-	struct sway_container *parent = container_destroy(view->swayc);
+	if (view->is_fullscreen) {
+		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		ws->sway_workspace->fullscreen = NULL;
+		container_destroy(view->swayc);
 
-	view->swayc = NULL;
-	view->surface = NULL;
-
-	if (view->title_format) {
-		free(view->title_format);
-		view->title_format = NULL;
-	}
-
-	if (parent->type == C_OUTPUT) {
-		arrange_output(parent);
+		arrange_and_commit(ws->parent);
 	} else {
-		arrange_children_of(parent);
+		struct sway_container *parent = container_destroy(view->swayc);
+		arrange_and_commit(parent);
 	}
+	view->surface = NULL;
 }
 
 void view_update_position(struct sway_view *view, double lx, double ly) {
@@ -940,7 +940,7 @@ void view_update_marks_textures(struct sway_view *view) {
 }
 
 bool view_is_visible(struct sway_view *view) {
-	if (!view->swayc) {
+	if (!view->swayc || view->swayc->destroying) {
 		return false;
 	}
 	struct sway_container *workspace =

@@ -19,6 +19,7 @@
 #include <wlr/types/wlr_xdg_output.h>
 #include <wlr/util/log.h>
 // TODO WLR: make Xwayland optional
+#include "list.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
@@ -114,6 +115,14 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
+	const char *debug = getenv("SWAY_DEBUG");
+	if (debug != NULL && strcmp(debug, "txn_timings") == 0) {
+		server->debug_txn_timings = true;
+	}
+	server->destroying_containers = create_list();
+
+	server->transactions = create_list();
+
 	input_manager = input_manager_create(server);
 	return true;
 }
@@ -121,6 +130,8 @@ bool server_init(struct sway_server *server) {
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
 	wl_display_destroy(server->wl_display);
+	list_free(server->destroying_containers);
+	list_free(server->transactions);
 }
 
 void server_run(struct sway_server *server) {

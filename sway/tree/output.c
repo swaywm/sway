@@ -26,12 +26,9 @@ static void restore_workspaces(struct sway_container *output) {
 				j--;
 			}
 		}
-
-		arrange_output(other);
 	}
 
 	container_sort_workspaces(output);
-	arrange_output(output);
 }
 
 struct sway_container *output_create(

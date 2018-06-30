@@ -54,6 +54,37 @@ struct sway_output;
 struct sway_workspace;
 struct sway_view;
 
+struct sway_container_state {
+	// Container/swayc properties
+	enum sway_container_layout layout;
+	double swayc_x, swayc_y;
+	double swayc_width, swayc_height;
+
+	bool has_gaps;
+	double current_gaps;
+	double gaps_inner;
+	double gaps_outer;
+
+	struct sway_container *parent;
+	list_t *children;
+
+	// View properties
+	double view_x, view_y;
+	double view_width, view_height;
+	bool is_fullscreen;
+
+	enum sway_container_border border;
+	int border_thickness;
+	bool border_top;
+	bool border_bottom;
+	bool border_left;
+	bool border_right;
+
+	// Workspace properties
+	struct sway_view *ws_fullscreen;
+	struct sway_container *ws_floating;
+};
+
 struct sway_container {
 	union {
 		// TODO: Encapsulate state for other node types as well like C_CONTAINER
@@ -68,6 +99,10 @@ struct sway_container {
 	 * get_tree JSON output.
 	 */
 	size_t id;
+
+	// The pending state is the main container properties, and the current state is in the below struct.
+	// This means most places of the code can refer to the main variables (pending state) and it'll just work.
+	struct sway_container_state current;
 
 	char *name;            // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
@@ -97,8 +132,6 @@ struct sway_container {
 
 	struct sway_container *parent;
 
-	list_t *marks; // list of char*
-
 	float alpha;
 
 	struct wlr_texture *title_focused;
@@ -106,6 +139,10 @@ struct sway_container {
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
 	size_t title_height;
+
+	list_t *instructions; // struct sway_transaction_instruction *
+
+	bool destroying;
 
 	struct {
 		struct wl_signal destroy;
@@ -149,6 +186,8 @@ struct sway_container *workspace_create(struct sway_container *output,
  */
 struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
+
+void container_free(struct sway_container *cont);
 
 struct sway_container *container_destroy(struct sway_container *container);
 
@@ -252,5 +291,10 @@ void container_set_geometry_from_floating_view(struct sway_container *con);
  * This will return false for any descendants of a floating container.
  */
 bool container_is_floating(struct sway_container *container);
+
+/**
+ * Get a container's box in layout coordinates.
+ */
+void container_get_box(struct sway_container *container, struct wlr_box *box);
 
 #endif

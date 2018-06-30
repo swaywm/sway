@@ -29,8 +29,8 @@ struct sway_view_impl {
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
-	void (*configure)(struct sway_view *view, double lx, double ly, int width,
-		int height);
+	uint32_t (*configure)(struct sway_view *view, double lx, double ly,
+			int width, int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
@@ -69,6 +69,8 @@ struct sway_view {
 	bool border_left;
 	bool border_right;
 
+	bool destroying;
+
 	list_t *executed_criteria; // struct criteria *
 	list_t *marks;             // char *
 
@@ -104,8 +106,6 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-
-	int pending_width, pending_height;
 };
 
 struct sway_xdg_shell_view {
@@ -120,8 +120,6 @@ struct sway_xdg_shell_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-
-	int pending_width, pending_height;
 };
 
 struct sway_xwayland_view {
@@ -139,9 +137,6 @@ struct sway_xwayland_view {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
-
-	int pending_lx, pending_ly;
-	int pending_width, pending_height;
 };
 
 struct sway_xwayland_unmanaged {
@@ -213,8 +208,13 @@ uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
 
-void view_configure(struct sway_view *view, double ox, double oy, int width,
+uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
+
+/**
+ * Center the view in its workspace and build the swayc decorations around it.
+ */
+void view_init_floating(struct sway_view *view);
 
 /**
  * Configure the view's position and size based on the swayc's position and
@@ -241,6 +241,8 @@ void view_for_each_surface(struct sway_view *view,
 
 void view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
+
+void view_free(struct sway_view *view);
 
 void view_destroy(struct sway_view *view);
 

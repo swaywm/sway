@@ -119,6 +119,17 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 		struct sway_container *container);
 
 /**
+ * Return the immediate child of container which was most recently focused, with
+ * fallback to selecting the child in the parent's `current` (rendered) children
+ * list.
+ *
+ * This is useful for when a tabbed container and its children are destroyed but
+ * still being rendered, and we have to render an appropriate child.
+ */
+struct sway_container *seat_get_active_current_child(struct sway_seat *seat,
+		struct sway_container *container);
+
+/**
  * Iterate over the focus-inactive children of the container calling the
  * function on each.
  */
