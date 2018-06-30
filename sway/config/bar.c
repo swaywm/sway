@@ -174,7 +174,7 @@ void invoke_swaybar(struct bar_config *bar) {
 		if (!command) {
 			const char msg[] = "Unable to allocate swaybar command string";
 			size_t msg_len = sizeof(msg);
-			if (write(filedes[1], &msg_len, sizeof(int))) {};
+			if (write(filedes[1], &msg_len, sizeof(size_t))) {};
 			if (write(filedes[1], msg, msg_len)) {};
 			close(filedes[1]);
 			exit(1);
@@ -189,8 +189,8 @@ void invoke_swaybar(struct bar_config *bar) {
 	}
 	wlr_log(L_DEBUG, "Spawned swaybar %d", bar->pid);
 	close(filedes[0]);
-	ssize_t len;
-	if (read(filedes[1], &len, sizeof(int)) == sizeof(int)) {
+	size_t len;
+	if (read(filedes[1], &len, sizeof(size_t)) == sizeof(size_t)) {
 		char *buf = malloc(len);
 		if(!buf) {
 			wlr_log(L_ERROR, "Cannot allocate error string");
