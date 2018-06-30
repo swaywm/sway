@@ -271,6 +271,9 @@ struct sway_container *workspace_by_name(const char *name) {
  */
 struct sway_container *workspace_output_prev_next_impl(
 		struct sway_container *output, bool next) {
+	if (!output) {
+		return NULL;
+	}
 	if (!sway_assert(output->type == C_OUTPUT,
 				"Argument must be an output, is %d", output->type)) {
 		return NULL;
@@ -303,6 +306,9 @@ struct sway_container *workspace_output_prev_next_impl(
  */
 struct sway_container *workspace_prev_next_impl(
 		struct sway_container *workspace, bool next) {
+	if (!workspace) {
+		return NULL;
+	}
 	if (!sway_assert(workspace->type == C_WORKSPACE,
 				"Argument must be a workspace, is %d", workspace->type)) {
 		return NULL;
