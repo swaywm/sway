@@ -645,7 +645,7 @@ static void render_container_simple(struct sway_output *output,
 			if (child->sway_view->border == B_NORMAL) {
 				render_titlebar(output, damage, child, child->x, child->y,
 						child->width, colors, title_texture, marks_texture);
-			} else if (con->sway_view->border != B_NONE) {
+			} else {
 				render_top_border(output, damage, child, colors);
 			}
 			render_view(output, damage, child, colors);
