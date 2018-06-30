@@ -645,7 +645,7 @@ static void render_container_simple(struct sway_output *output,
 			if (child->sway_view->border == B_NORMAL) {
 				render_titlebar(output, damage, child, child->x, child->y,
 						child->width, colors, title_texture, marks_texture);
-			} else {
+			} else if (con->sway_view->border != B_NONE) {
 				render_top_border(output, damage, child, colors);
 			}
 			render_view(output, damage, child, colors);
@@ -815,7 +815,7 @@ static void render_floating_container(struct sway_output *soutput,
 		if (con->sway_view->border == B_NORMAL) {
 			render_titlebar(soutput, damage, con, con->x, con->y, con->width,
 					colors, title_texture, marks_texture);
-		} else {
+		} else if (con->sway_view->border != B_NONE) {
 			render_top_border(soutput, damage, con, colors);
 		}
 		render_view(soutput, damage, con, colors);

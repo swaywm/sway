@@ -141,6 +141,9 @@ static void view_autoconfigure_floating(struct sway_view *view) {
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;
 
+	// Don't maximize floating windows
+	view_set_tiled(view, false);
+
 	view_configure(view, lx, ly, width, height);
 }
 
@@ -248,12 +251,20 @@ void view_autoconfigure(struct sway_view *view) {
 
 	view->x = x;
 	view->y = y;
+	view_set_tiled(view, true);
 	view_configure(view, x, y, width, height);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
 	if (view->impl->set_activated) {
 		view->impl->set_activated(view, activated);
+	}
+}
+
+void view_set_tiled(struct sway_view *view, bool tiled) {
+	view->border = tiled ? config->border : B_NONE;
+	if (view->impl->set_tiled) {
+		view->impl->set_tiled(view, tiled);
 	}
 }
 

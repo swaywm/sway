@@ -110,6 +110,14 @@ static void set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+static void set_tiled(struct sway_view *view, bool tiled) {
+	if (xdg_shell_v6_view_from_view(view) == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
+	wlr_xdg_toplevel_v6_set_maximized(surface, tiled);
+}
+
 static void set_fullscreen(struct sway_view *view, bool fullscreen) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return;
@@ -164,6 +172,7 @@ static const struct sway_view_impl view_impl = {
 	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
+	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
@@ -273,7 +282,6 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
 		xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
-	wlr_xdg_toplevel_v6_set_maximized(xdg_surface, true);
 
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		calloc(1, sizeof(struct sway_xdg_shell_v6_view));
