@@ -507,21 +507,11 @@ static struct sway_container *container_at_view(struct sway_container *swayc,
 				view_sx, view_sy, &_sx, &_sy);
 		break;
 	case SWAY_VIEW_XDG_SHELL_V6:
-		// the top left corner of the sway container is the
-		// coordinate of the top left corner of the window geometry
-		view_sx += sview->wlr_xdg_surface_v6->geometry.x;
-		view_sy += sview->wlr_xdg_surface_v6->geometry.y;
-
 		_surface = wlr_xdg_surface_v6_surface_at(
 				sview->wlr_xdg_surface_v6,
 				view_sx, view_sy, &_sx, &_sy);
 		break;
 	case SWAY_VIEW_XDG_SHELL:
-		// the top left corner of the sway container is the
-		// coordinate of the top left corner of the window geometry
-		view_sx += sview->wlr_xdg_surface->geometry.x;
-		view_sy += sview->wlr_xdg_surface->geometry.y;
-
 		_surface = wlr_xdg_surface_surface_at(
 				sview->wlr_xdg_surface,
 				view_sx, view_sy, &_sx, &_sy);
