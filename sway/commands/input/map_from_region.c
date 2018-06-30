@@ -54,20 +54,28 @@ struct cmd_results *input_cmd_map_from_region(int argc, char **argv) {
 	bool mm1, mm2;
 	if (!parse_coords(argv[0], &new_config->mapped_from_region->x1,
 			&new_config->mapped_from_region->y1, &mm1)) {
+		free(new_config->mapped_from_region);
+		free_input_config(new_config);
 		return cmd_results_new(CMD_FAILURE, "map_from_region",
 			"Invalid top-left coordinates");
 	}
 	if (!parse_coords(argv[1], &new_config->mapped_from_region->x2,
 			&new_config->mapped_from_region->y2, &mm2)) {
+		free(new_config->mapped_from_region);
+		free_input_config(new_config);
 		return cmd_results_new(CMD_FAILURE, "map_from_region",
 			"Invalid bottom-right coordinates");
 	}
 	if (new_config->mapped_from_region->x1 > new_config->mapped_from_region->x2 ||
 			new_config->mapped_from_region->y1 > new_config->mapped_from_region->y2) {
+		free(new_config->mapped_from_region);
+		free_input_config(new_config);
 		return cmd_results_new(CMD_FAILURE, "map_from_region",
 			"Invalid rectangle");
 	}
 	if (mm1 != mm2) {
+		free(new_config->mapped_from_region);
+		free_input_config(new_config);
 		return cmd_results_new(CMD_FAILURE, "map_from_region",
 			"Both coordinates must be in the same unit");
 	}
