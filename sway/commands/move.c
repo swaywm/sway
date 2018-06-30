@@ -184,7 +184,7 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 }
 
 static struct cmd_results *move_in_direction(struct sway_container *container,
-		enum wlr_direction direction, int move_amt) {
+		enum movement_direction direction, int move_amt) {
 	if (container->type == C_WORKSPACE) {
 		return cmd_results_new(CMD_FAILURE, "move",
 				"Cannot move workspaces in a direction");
