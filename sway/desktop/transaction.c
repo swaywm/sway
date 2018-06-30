@@ -298,6 +298,13 @@ void transaction_commit(struct sway_transaction *transaction) {
 					instruction->state.view_width,
 					instruction->state.view_height);
 			++transaction->num_waiting;
+
+			// From here on we are rendering a saved buffer of the view, which
+			// means we can send a frame done event to make the client redraw it
+			// as soon as possible. Additionally, this is required if a view is
+			// mapping and its default geometry doesn't intersect an output.
+			struct timespec when;
+			wlr_surface_send_frame_done(con->sway_view->surface, &when);
 		}
 		list_add(con->instructions, instruction);
 	}
