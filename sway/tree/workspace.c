@@ -109,7 +109,6 @@ static bool workspace_valid_on_output(const char *output_name,
 char *workspace_next_name(const char *output_name) {
 	wlr_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
-	int l = 1;
 	// Scan all workspace bindings to find the next available workspace name,
 	// if none are found/available then default to a number
 	struct sway_mode *mode = config->current_mode;
@@ -202,14 +201,9 @@ char *workspace_next_name(const char *output_name) {
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name
 	int ws_num = root_container.children->length;
-	if (ws_num >= 10) {
-		l = 2;
-	} else if (ws_num >= 100) {
-		l = 3;
-	}
+	int l = snprintf(NULL, 0, "%d", ws_num);
 	char *name = malloc(l + 1);
-	if (!name) {
-		wlr_log(L_ERROR, "Could not allocate workspace name");
+	if (!sway_assert(name, "Cloud not allocate workspace name")) {
 		return NULL;
 	}
 	sprintf(name, "%d", ws_num++);
