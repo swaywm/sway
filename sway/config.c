@@ -302,16 +302,16 @@ static char *get_config_path(void) {
 const char *current_config_path;
 
 static bool load_config(const char *path, struct sway_config *config) {
+	if (path == NULL) {
+		wlr_log(L_ERROR, "Unable to find a config file!");
+		return false;
+	}
+
 	wlr_log(L_INFO, "Loading config from %s", path);
 	current_config_path = path;
 
 	struct stat sb;
 	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-		return false;
-	}
-
-	if (path == NULL) {
-		wlr_log(L_ERROR, "Unable to find a config file!");
 		return false;
 	}
 
