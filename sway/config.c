@@ -583,6 +583,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		}
 		char *expanded = expand_line(block, line, brace_detected > 0);
 		if (!expanded) {
+			list_foreach(stack, free);
+			list_free(stack);
 			return false;
 		}
 		wlr_log(L_DEBUG, "Expanded line: %s", expanded);
