@@ -42,6 +42,7 @@ static void daemonize() {
 		int devnull = open("/dev/null", O_RDWR);
 		dup2(STDOUT_FILENO, devnull);
 		dup2(STDERR_FILENO, devnull);
+		close(devnull);
 		uint8_t success = 0;
 		if (chdir("/") != 0) {
 			write(fds[1], &success, 1);
