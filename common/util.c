@@ -95,7 +95,7 @@ pid_t get_parent_pid(pid_t child) {
 			token = strtok(NULL, sep);   // parent pid
 			parent = strtol(token, NULL, 10);
 		}
-
+		free(buffer);
 		fclose(stat);
 	}
 
