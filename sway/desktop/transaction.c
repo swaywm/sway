@@ -73,8 +73,8 @@ static void save_view_buffer(struct sway_view *view,
 	}
 	if (view->surface && wlr_surface_has_buffer(view->surface)) {
 		instruction->saved_buffer = wlr_buffer_ref(view->surface->buffer);
-		instruction->saved_buffer_width = view->surface->current->width;
-		instruction->saved_buffer_height = view->surface->current->height;
+		instruction->saved_buffer_width = view->surface->current.width;
+		instruction->saved_buffer_height = view->surface->current.height;
 	}
 }
 

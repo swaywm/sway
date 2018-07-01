@@ -81,8 +81,8 @@ static bool get_surface_box(struct root_geometry *geo,
 		return false;
 	}
 
-	int sw = surface->current->width;
-	int sh = surface->current->height;
+	int sw = surface->current.width;
+	int sh = surface->current.height;
 
 	double _sx = sx, _sy = sy;
 	rotate_child_position(&_sx, &_sy, sw, sh, geo->width, geo->height,
@@ -115,8 +115,8 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	geo->x = ox;
 	geo->y = oy;
-	geo->width = surface->current->width;
-	geo->height = surface->current->height;
+	geo->width = surface->current.width;
+	geo->height = surface->current.height;
 	geo->rotation = 0;
 
 	wlr_surface_for_each_surface(surface, iterator, user_data);
@@ -258,7 +258,7 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 
 	float matrix[9];
 	enum wl_output_transform transform =
-		wlr_output_transform_invert(surface->current->transform);
+		wlr_output_transform_invert(surface->current.transform);
 	wlr_matrix_project_box(matrix, &box, transform, rotation,
 		wlr_output->transform_matrix);
 
@@ -1163,16 +1163,16 @@ static void damage_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	int center_x = box.x + box.width/2;
 	int center_y = box.y + box.height/2;
 
-	if (pixman_region32_not_empty(&surface->current->surface_damage)) {
+	if (pixman_region32_not_empty(&surface->current.surface_damage)) {
 		pixman_region32_t damage;
 		pixman_region32_init(&damage);
-		pixman_region32_copy(&damage, &surface->current->surface_damage);
+		pixman_region32_copy(&damage, &surface->current.surface_damage);
 		wlr_region_scale(&damage, &damage, output->wlr_output->scale);
-		if (ceil(output->wlr_output->scale) > surface->current->scale) {
+		if (ceil(output->wlr_output->scale) > surface->current.scale) {
 			// When scaling up a surface, it'll become blurry so we need to
 			// expand the damage region
 			wlr_region_expand(&damage, &damage,
-				ceil(output->wlr_output->scale) - surface->current->scale);
+				ceil(output->wlr_output->scale) - surface->current.scale);
 		}
 		pixman_region32_translate(&damage, box.x, box.y);
 		wlr_region_rotated_bounds(&damage, &damage, rotation,
