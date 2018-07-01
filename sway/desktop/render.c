@@ -122,20 +122,6 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 	wlr_surface_for_each_surface(surface, iterator, user_data);
 }
 
-static void output_view_for_each_surface(struct sway_view *view,
-		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
-		void *user_data) {
-	geo->x =
-		view->swayc->current.view_x - context.output->swayc->current.swayc_x;
-	geo->y =
-		view->swayc->current.view_y - context.output->swayc->current.swayc_y;
-	geo->width = view->swayc->current.view_width;
-	geo->height = view->swayc->current.view_height;
-	geo->rotation = 0; // TODO
-
-	view_for_each_surface(view, iterator, user_data);
-}
-
 static void layer_for_each_surface(struct wl_list *layer_surfaces,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
@@ -331,8 +317,15 @@ static void render_view_surfaces(struct sway_view *view, float alpha) {
 		.view = view,
 		.alpha = alpha,
 	};
-	output_view_for_each_surface(
-			view, &data.root_geo, render_surface_iterator, &data);
+	data.root_geo.x =
+		view->swayc->current.view_x - context.output->swayc->current.swayc_x;
+	data.root_geo.y =
+		view->swayc->current.view_y - context.output->swayc->current.swayc_y;
+	data.root_geo.width = view->swayc->current.view_width;
+	data.root_geo.height = view->swayc->current.view_height;
+	data.root_geo.rotation = 0; // TODO
+
+	view_for_each_surface(view, render_surface_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view, float alpha) {
