@@ -37,33 +37,12 @@ struct render_context {
 struct render_context context;
 
 /**
- * Rotate a child's position relative to a parent. The parent size is (pw, ph),
- * the child position is (*sx, *sy) and its size is (sw, sh).
- */
-static void rotate_child_position(double *sx, double *sy, double sw, double sh,
-		double pw, double ph, float rotation) {
-	if (rotation == 0.0f) {
-		return;
-	}
-
-	// Coordinates relative to the center of the subsurface
-	double ox = *sx - pw/2 + sw/2,
-		oy = *sy - ph/2 + sh/2;
-	// Rotated coordinates
-	double rx = cos(-rotation)*ox - sin(-rotation)*oy,
-		ry = cos(-rotation)*oy + sin(-rotation)*ox;
-	*sx = rx + pw/2 - sw/2;
-	*sy = ry + ph/2 - sh/2;
-}
-
-/**
  * Contains a surface's root geometry information. For instance, when rendering
  * a popup, this will contain the parent view's position and size.
  */
 struct root_geometry {
 	double x, y;
 	int width, height;
-	float rotation;
 };
 
 struct render_data {
@@ -84,13 +63,9 @@ static bool get_surface_box(struct root_geometry *geo,
 	int sw = surface->current->width;
 	int sh = surface->current->height;
 
-	double _sx = sx, _sy = sy;
-	rotate_child_position(&_sx, &_sy, sw, sh, geo->width, geo->height,
-		geo->rotation);
-
 	struct wlr_box box = {
-		.x = geo->x + _sx,
-		.y = geo->y + _sy,
+		.x = geo->x + sx,
+		.y = geo->y + sy,
 		.width = sw,
 		.height = sh,
 	};
@@ -98,16 +73,13 @@ static bool get_surface_box(struct root_geometry *geo,
 		memcpy(surface_box, &box, sizeof(struct wlr_box));
 	}
 
-	struct wlr_box rotated_box;
-	wlr_box_rotated_bounds(&box, geo->rotation, &rotated_box);
-
 	struct wlr_box output_box = {
 		.width = context.output->swayc->current.swayc_width,
 		.height = context.output->swayc->current.swayc_height,
 	};
 
 	struct wlr_box intersection;
-	return wlr_box_intersection(&output_box, &rotated_box, &intersection);
+	return wlr_box_intersection(&output_box, &box, &intersection);
 }
 
 static void surface_for_each_surface(struct wlr_surface *surface,
@@ -117,7 +89,6 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 	geo->y = oy;
 	geo->width = surface->current->width;
 	geo->height = surface->current->height;
-	geo->rotation = 0;
 
 	wlr_surface_for_each_surface(surface, iterator, user_data);
 }
@@ -182,7 +153,6 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		void *_data) {
 	struct render_data *data = _data;
 	struct wlr_output *wlr_output = context.output->wlr_output;
-	float rotation = data->root_geo.rotation;
 	float alpha = data->alpha;
 
 	struct wlr_texture *texture = wlr_surface_get_texture(surface);
@@ -201,7 +171,7 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	float matrix[9];
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current->transform);
-	wlr_matrix_project_box(matrix, &box, transform, rotation,
+	wlr_matrix_project_box(matrix, &box, transform, 0,
 		wlr_output->transform_matrix);
 
 	render_texture(texture, &box, matrix, alpha);
@@ -302,7 +272,6 @@ static void render_view_surfaces(struct sway_view *view, float alpha) {
 		view->swayc->current.view_y - context.output->swayc->current.swayc_y;
 	data.root_geo.width = view->swayc->current.view_width;
 	data.root_geo.height = view->swayc->current.view_height;
-	data.root_geo.rotation = 0; // TODO
 
 	view_for_each_surface(view, render_surface_iterator, &data);
 }
