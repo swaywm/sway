@@ -948,8 +948,30 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
-	if (fullscreen_view) {
+	if (seat->exclusive_client && seat->focused_layer) {
+		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+		int nrects;
+		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			scissor_output(wlr_output, &rects[i]);
+			wlr_renderer_clear(renderer, clear_color);
+		}
+
+		struct wlr_layer_surface *wlr_layer_surface = seat->focused_layer;
+		struct sway_layer_surface *sway_layer_surface =
+			layer_from_wlr_layer_surface(seat->focused_layer);
+		struct render_data data = {
+			.output = output,
+			.damage = damage,
+			.alpha = 1.0f,
+		};
+		surface_for_each_surface(wlr_layer_surface->surface,
+			sway_layer_surface->geo.x, sway_layer_surface->geo.y,
+			&data.root_geo, render_surface_iterator, &data);
+	} else if (fullscreen_view) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		int nrects;
@@ -1019,11 +1041,16 @@ struct send_frame_done_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
 	struct timespec *when;
+	struct wl_client *exclusive_client;
 };
 
 static void send_frame_done_iterator(struct wlr_surface *surface,
 		int sx, int sy, void *_data) {
 	struct send_frame_done_data *data = _data;
+	if (data->exclusive_client &&
+			data->exclusive_client != surface->resource->client) {
+		return;
+	}
 
 	bool intersects = get_surface_box(&data->root_geo, data->output, surface,
 		sx, sy, NULL);
@@ -1072,9 +1099,11 @@ static void send_frame_done_container(struct send_frame_done_data *data,
 }
 
 static void send_frame_done(struct sway_output *output, struct timespec *when) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct send_frame_done_data data = {
 		.output = output,
 		.when = when,
+		.exclusive_client = seat->exclusive_client,
 	};
 
 	struct sway_container *workspace = output_get_active_workspace(output);
