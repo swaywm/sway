@@ -135,21 +135,6 @@ static void layer_for_each_surface(struct wl_list *layer_surfaces,
 	}
 }
 
-static void unmanaged_for_each_surface(struct wl_list *unmanaged,
-		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_xwayland_unmanaged *unmanaged_surface;
-	wl_list_for_each(unmanaged_surface, unmanaged, link) {
-		struct wlr_xwayland_surface *xsurface =
-			unmanaged_surface->wlr_xwayland_surface;
-		double ox = unmanaged_surface->lx - context.output_lx;
-		double oy = unmanaged_surface->ly - context.output_ly;
-
-		surface_for_each_surface(xsurface->surface, ox, oy, geo,
-			iterator, user_data);
-	}
-}
-
 static void drag_icons_for_each_surface(struct wl_list *drag_icons,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
@@ -262,8 +247,16 @@ static void render_unmanaged(struct wl_list *unmanaged) {
 	struct render_data data = {
 		.alpha = 1.0f,
 	};
-	unmanaged_for_each_surface(unmanaged, &data.root_geo,
-		render_surface_iterator, &data);
+	struct sway_xwayland_unmanaged *unmanaged_surface;
+	wl_list_for_each(unmanaged_surface, unmanaged, link) {
+		struct wlr_xwayland_surface *xsurface =
+			unmanaged_surface->wlr_xwayland_surface;
+		double ox = unmanaged_surface->lx - context.output_lx;
+		double oy = unmanaged_surface->ly - context.output_ly;
+
+		surface_for_each_surface(xsurface->surface, ox, oy, &data.root_geo,
+			render_surface_iterator, &data);
+	}
 }
 
 static void render_drag_icons(struct wl_list *drag_icons) {
