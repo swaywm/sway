@@ -70,16 +70,12 @@ void free_bar_config(struct bar_config *bar) {
 
 struct bar_config *default_bar_config(void) {
 	struct bar_config *bar = NULL;
-	bar = malloc(sizeof(struct bar_config));
+	bar = calloc(1, sizeof(struct bar_config));
 	if (!bar) {
 		return NULL;
 	}
-	if (!(bar->mode = strdup("dock"))) goto cleanup;
-	if (!(bar->hidden_state = strdup("hide"))) goto cleanup;
 	bar->outputs = NULL;
 	bar->position = strdup("bottom");
-	if (!(bar->bindings = create_list())) goto cleanup;
-	if (!(bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p'; sleep 1; done"))) goto cleanup;
 	bar->pango_markup = false;
 	bar->swaybar_command = NULL;
 	bar->font = NULL;
@@ -91,6 +87,19 @@ struct bar_config *default_bar_config(void) {
 	bar->binding_mode_indicator = true;
 	bar->verbose = false;
 	bar->pid = 0;
+	if (!(bar->mode = strdup("dock"))) {
+	       goto cleanup;
+	}
+	if (!(bar->hidden_state = strdup("hide"))) {
+		goto cleanup;
+	}
+	if (!(bar->bindings = create_list())) {
+		goto cleanup;
+	}
+	if (!(bar->status_command =
+			strdup("while date +'%Y-%m-%d %l:%M:%S %p'; do sleep 1; done"))) {
+		goto cleanup;
+	}
 	// set default colors
 	if (!(bar->colors.background = strndup("#000000ff", 9))) {
 		goto cleanup;
