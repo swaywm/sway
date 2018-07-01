@@ -122,21 +122,6 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 	wlr_surface_for_each_surface(surface, iterator, user_data);
 }
 
-static void drag_icons_for_each_surface(struct wl_list *drag_icons,
-		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_drag_icon *drag_icon;
-	wl_list_for_each(drag_icon, drag_icons, link) {
-		double ox = drag_icon->x - context.output_lx;
-		double oy = drag_icon->y - context.output_ly;
-
-		if (drag_icon->wlr_drag_icon->mapped) {
-			surface_for_each_surface(drag_icon->wlr_drag_icon->surface,
-				ox, oy, geo, iterator, user_data);
-		}
-	}
-}
-
 static void scale_box(struct wlr_box *box, float scale) {
 	box->x *= scale;
 	box->y *= scale;
@@ -256,8 +241,16 @@ static void render_drag_icons(struct wl_list *drag_icons) {
 	struct render_data data = {
 		.alpha = 1.0f,
 	};
-	drag_icons_for_each_surface(drag_icons, &data.root_geo,
-		render_surface_iterator, &data);
+	struct sway_drag_icon *drag_icon;
+	wl_list_for_each(drag_icon, drag_icons, link) {
+		double ox = drag_icon->x - context.output_lx;
+		double oy = drag_icon->y - context.output_ly;
+
+		if (drag_icon->wlr_drag_icon->mapped) {
+			surface_for_each_surface(drag_icon->wlr_drag_icon->surface,
+				ox, oy, &data.root_geo, render_surface_iterator, &data);
+		}
+	}
 }
 
 static void render_rect(const struct wlr_box *_box, float color[static 4]) {
