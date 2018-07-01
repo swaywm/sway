@@ -247,6 +247,21 @@ static void render_saved_view(struct sway_view *view, float alpha) {
 	render_texture(texture, &box, matrix, alpha);
 }
 
+static void render_popup(struct wlr_surface *surface, int sx, int sy,
+		void *data) {
+	struct sway_view *view = data;
+	double ox = view->swayc->current.view_x - context.output_lx + sx;
+	double oy = view->swayc->current.view_y - context.output_ly + sy;
+	render_surface(surface, ox, oy, view->swayc->alpha);
+}
+
+static void render_view_popups(struct sway_container *con, void *data) {
+	struct sway_view *view = con->sway_view;
+	if (view->impl->for_each_popup) {
+		view->impl->for_each_popup(view, render_popup, view);
+	}
+}
+
 /**
  * Render a view's surface and left/bottom/right borders.
  */
@@ -812,6 +827,7 @@ void render_output(struct sway_output *output, struct timespec *when,
 
 		// TODO: handle views smaller than the output
 		render_surfaces(fullscreen_view->surface, 0, 0, 1.0f);
+		render_view_popups(fullscreen_view->swayc, NULL);
 
 		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(&root_container.sway_root->xwayland_unmanaged);
@@ -833,6 +849,7 @@ void render_output(struct sway_output *output, struct timespec *when,
 		struct sway_container *focus = seat_get_focus(seat);
 		render_container(workspace, focus == workspace);
 		render_floating();
+		container_descendants(workspace, C_VIEW, render_view_popups, NULL);
 
 		render_unmanaged(&root_container.sway_root->xwayland_unmanaged);
 		render_layer(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
