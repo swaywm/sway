@@ -1163,11 +1163,17 @@ static void damage_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	int center_x = box.x + box.width/2;
 	int center_y = box.y + box.height/2;
 
-	if (pixman_region32_not_empty(&surface->current.surface_damage)) {
+	if (pixman_region32_not_empty(&surface->buffer_damage)) {
+		enum wl_output_transform transform =
+			wlr_output_transform_invert(surface->current.transform);
+
 		pixman_region32_t damage;
 		pixman_region32_init(&damage);
-		pixman_region32_copy(&damage, &surface->current.surface_damage);
-		wlr_region_scale(&damage, &damage, output->wlr_output->scale);
+		pixman_region32_copy(&damage, &surface->buffer_damage);
+		wlr_region_transform(&damage, &damage, transform,
+			surface->current.buffer_width, surface->current.buffer_height);
+		wlr_region_scale(&damage, &damage,
+			output->wlr_output->scale / (float)surface->current.scale);
 		if (ceil(output->wlr_output->scale) > surface->current.scale) {
 			// When scaling up a surface, it'll become blurry so we need to
 			// expand the damage region
