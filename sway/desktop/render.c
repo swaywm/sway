@@ -252,7 +252,7 @@ static void render_popup(struct wlr_surface *surface, int sx, int sy,
 	struct sway_view *view = data;
 	double ox = view->swayc->current.view_x - context.output_lx + sx;
 	double oy = view->swayc->current.view_y - context.output_ly + sy;
-	render_surface(surface, ox, oy, view->swayc->alpha);
+	render_surfaces(surface, ox, oy, view->swayc->alpha);
 }
 
 static void render_view_popups(struct sway_container *con, void *data) {
