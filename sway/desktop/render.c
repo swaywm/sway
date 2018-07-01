@@ -29,69 +29,12 @@
 
 struct render_context {
 	struct sway_output *output;
-	int output_lx;
-	int output_ly;
+	double output_lx;
+	double output_ly;
 	pixman_region32_t *damage;
 	float scale;
 };
 struct render_context context;
-
-/**
- * Contains a surface's root geometry information. For instance, when rendering
- * a popup, this will contain the parent view's position and size.
- */
-struct root_geometry {
-	double x, y;
-	int width, height;
-};
-
-struct render_data {
-	struct root_geometry root_geo;
-	struct sway_output *output;
-	pixman_region32_t *damage;
-	struct sway_view *view;
-	float alpha;
-};
-
-static bool get_surface_box(struct root_geometry *geo,
-		struct wlr_surface *surface, int sx, int sy,
-		struct wlr_box *surface_box) {
-	if (!wlr_surface_has_buffer(surface)) {
-		return false;
-	}
-
-	int sw = surface->current->width;
-	int sh = surface->current->height;
-
-	struct wlr_box box = {
-		.x = geo->x + sx,
-		.y = geo->y + sy,
-		.width = sw,
-		.height = sh,
-	};
-	if (surface_box != NULL) {
-		memcpy(surface_box, &box, sizeof(struct wlr_box));
-	}
-
-	struct wlr_box output_box = {
-		.width = context.output->swayc->current.swayc_width,
-		.height = context.output->swayc->current.swayc_height,
-	};
-
-	struct wlr_box intersection;
-	return wlr_box_intersection(&output_box, &box, &intersection);
-}
-
-static void surface_for_each_surface(struct wlr_surface *surface,
-		double ox, double oy, struct root_geometry *geo,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
-	geo->x = ox;
-	geo->y = oy;
-	geo->width = surface->current->width;
-	geo->height = surface->current->height;
-
-	wlr_surface_for_each_surface(surface, iterator, user_data);
-}
 
 static void scale_box(struct wlr_box *box, float scale) {
 	box->x *= scale;
@@ -149,52 +92,66 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
-		void *_data) {
-	struct render_data *data = _data;
+static void render_surface(struct wlr_surface *surface, int ox, int oy,
+		float alpha) {
 	struct wlr_output *wlr_output = context.output->wlr_output;
-	float alpha = data->alpha;
 
 	struct wlr_texture *texture = wlr_surface_get_texture(surface);
 	if (!texture) {
 		return;
 	}
 
-	struct wlr_box box;
-	bool intersects = get_surface_box(&data->root_geo, surface, sx, sy, &box);
-	if (!intersects) {
+	struct wlr_box surface_box = {
+		.x = ox,
+		.y = oy,
+		.width = surface->current->width,
+		.height = surface->current->height,
+	};
+	struct wlr_box output_box = {
+		.width = context.output->swayc->current.swayc_width,
+		.height = context.output->swayc->current.swayc_height,
+	};
+	struct wlr_box intersection;
+	if (!wlr_box_intersection(&output_box, &surface_box, &intersection)) {
 		return;
 	}
 
-	scale_box(&box, context.scale);
+	scale_box(&surface_box, context.scale);
 
 	float matrix[9];
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current->transform);
-	wlr_matrix_project_box(matrix, &box, transform, 0,
+	wlr_matrix_project_box(matrix, &surface_box, transform, 0,
 		wlr_output->transform_matrix);
 
-	render_texture(texture, &box, matrix, alpha);
+	render_texture(texture, &surface_box, matrix, alpha);
+}
+
+static void render_surfaces(struct wlr_surface *surface, double ox, double oy,
+		float alpha) {
+	render_surface(surface, ox, oy, alpha);
+
+	struct wlr_subsurface *subsurface;
+	wl_list_for_each(subsurface, &surface->subsurfaces, parent_link) {
+		struct wlr_surface_state *state = subsurface->surface->current;
+		int sx = state->subsurface_position.x;
+		int sy = state->subsurface_position.y;
+
+		render_surfaces(subsurface->surface, ox + sx, oy + sy, alpha);
+	}
 }
 
 static void render_layer(struct wl_list *layer_surfaces) {
-	struct render_data data = {
-		.alpha = 1.0f,
-	};
 	struct sway_layer_surface *layer_surface;
 	wl_list_for_each(layer_surface, layer_surfaces, link) {
 		struct wlr_layer_surface *wlr_layer_surface =
 			layer_surface->layer_surface;
-		surface_for_each_surface(wlr_layer_surface->surface,
-			layer_surface->geo.x, layer_surface->geo.y, &data.root_geo,
-			render_surface_iterator, &data);
+		render_surfaces(wlr_layer_surface->surface,
+				layer_surface->geo.x, layer_surface->geo.y, 1.0f);
 	}
 }
 
 static void render_unmanaged(struct wl_list *unmanaged) {
-	struct render_data data = {
-		.alpha = 1.0f,
-	};
 	struct sway_xwayland_unmanaged *unmanaged_surface;
 	wl_list_for_each(unmanaged_surface, unmanaged, link) {
 		struct wlr_xwayland_surface *xsurface =
@@ -202,23 +159,18 @@ static void render_unmanaged(struct wl_list *unmanaged) {
 		double ox = unmanaged_surface->lx - context.output_lx;
 		double oy = unmanaged_surface->ly - context.output_ly;
 
-		surface_for_each_surface(xsurface->surface, ox, oy, &data.root_geo,
-			render_surface_iterator, &data);
+		render_surfaces(xsurface->surface, ox, oy, 1.0f);
 	}
 }
 
 static void render_drag_icons(struct wl_list *drag_icons) {
-	struct render_data data = {
-		.alpha = 1.0f,
-	};
 	struct sway_drag_icon *drag_icon;
 	wl_list_for_each(drag_icon, drag_icons, link) {
 		double ox = drag_icon->x - context.output_lx;
 		double oy = drag_icon->y - context.output_ly;
 
 		if (drag_icon->wlr_drag_icon->mapped) {
-			surface_for_each_surface(drag_icon->wlr_drag_icon->surface,
-				ox, oy, &data.root_geo, render_surface_iterator, &data);
+			render_surfaces(drag_icon->wlr_drag_icon->surface, ox, oy, 1.0f);
 		}
 	}
 }
@@ -259,21 +211,6 @@ static void premultiply_alpha(float color[4], float opacity) {
 	color[0] *= color[3];
 	color[1] *= color[3];
 	color[2] *= color[3];
-}
-
-static void render_view_surfaces(struct sway_view *view, float alpha) {
-	struct render_data data = {
-		.view = view,
-		.alpha = alpha,
-	};
-	data.root_geo.x =
-		view->swayc->current.view_x - context.output->swayc->current.swayc_x;
-	data.root_geo.y =
-		view->swayc->current.view_y - context.output->swayc->current.swayc_y;
-	data.root_geo.width = view->swayc->current.view_width;
-	data.root_geo.height = view->swayc->current.view_height;
-
-	view_for_each_surface(view, render_surface_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view, float alpha) {
@@ -319,7 +256,9 @@ static void render_view(struct sway_container *con,
 	if (view->swayc->instructions->length) {
 		render_saved_view(view, view->swayc->alpha);
 	} else {
-		render_view_surfaces(view, view->swayc->alpha);
+		double ox = view->swayc->current.view_x - context.output_lx;
+		double oy = view->swayc->current.view_y - context.output_ly;
+		render_surfaces(view->surface, ox, oy, view->swayc->alpha);
 	}
 
 	struct wlr_box box;
@@ -872,7 +811,7 @@ void render_output(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		render_view_surfaces(fullscreen_view, 1.0f);
+		render_surfaces(fullscreen_view->surface, 0, 0, 1.0f);
 
 		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(&root_container.sway_root->xwayland_unmanaged);
