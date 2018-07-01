@@ -122,19 +122,6 @@ static void surface_for_each_surface(struct wlr_surface *surface,
 	wlr_surface_for_each_surface(surface, iterator, user_data);
 }
 
-static void layer_for_each_surface(struct wl_list *layer_surfaces,
-		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
-		void *user_data) {
-	struct sway_layer_surface *layer_surface;
-	wl_list_for_each(layer_surface, layer_surfaces, link) {
-		struct wlr_layer_surface *wlr_layer_surface =
-			layer_surface->layer_surface;
-		surface_for_each_surface(wlr_layer_surface->surface,
-			layer_surface->geo.x, layer_surface->geo.y, geo, iterator,
-			user_data);
-	}
-}
-
 static void drag_icons_for_each_surface(struct wl_list *drag_icons,
 		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 		void *user_data) {
@@ -239,8 +226,14 @@ static void render_layer(struct wl_list *layer_surfaces) {
 	struct render_data data = {
 		.alpha = 1.0f,
 	};
-	layer_for_each_surface(layer_surfaces, &data.root_geo,
-		render_surface_iterator, &data);
+	struct sway_layer_surface *layer_surface;
+	wl_list_for_each(layer_surface, layer_surfaces, link) {
+		struct wlr_layer_surface *wlr_layer_surface =
+			layer_surface->layer_surface;
+		surface_for_each_surface(wlr_layer_surface->surface,
+			layer_surface->geo.x, layer_surface->geo.y, &data.root_geo,
+			render_surface_iterator, &data);
+	}
 }
 
 static void render_unmanaged(struct wl_list *unmanaged) {
