@@ -425,7 +425,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	// save parent config
 	const char *parent_config = config->current_config;
 
-	char *full_path = strdup(path);
+	char *full_path;
 	int len = strlen(path);
 	if (len >= 1 && path[0] != '/') {
 		len = len + strlen(parent_dir) + 2;
@@ -436,6 +436,8 @@ static bool load_include_config(const char *path, const char *parent_dir,
 			return false;
 		}
 		snprintf(full_path, len, "%s/%s", parent_dir, path);
+	} else {
+		full_path = strdup(path);
 	}
 
 	char *real_path = realpath(full_path, NULL);
