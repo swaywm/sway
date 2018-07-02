@@ -288,6 +288,11 @@ void view_autoconfigure(struct sway_view *view) {
 		break;
 	}
 
+	struct wlr_box geo;
+	view_get_geometry(view, &geo);
+	x -= geo.x;
+	y -= geo.y;
+
 	view->x = x;
 	view->y = y;
 	view->width = width;
