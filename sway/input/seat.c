@@ -832,12 +832,12 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 
 struct sway_container *seat_get_active_current_child(struct sway_seat *seat,
 		struct sway_container *container) {
-	struct sway_container *child = seat_get_active_child(seat, container);
-	if (child) {
-		return child;
-	}
-	if (container->current.children->length == 1) {
-		return container->current.children->items[0];
+	struct sway_seat_container *current = NULL;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (current->container->current.parent == container &&
+				current->container->current.layout != L_FLOATING) {
+			return current->container;
+		}
 	}
 	return NULL;
 }
