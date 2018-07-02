@@ -27,6 +27,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 
 	if (strncmp(*argv, "→", strlen("→")) == 0) {
 		if (argc < 3) {
+			free(criteria);
 			return cmd_results_new(CMD_INVALID, "assign", "Missing workspace");
 		}
 		++argv;

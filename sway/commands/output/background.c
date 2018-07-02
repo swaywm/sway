@@ -81,8 +81,9 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			// src file is inside configuration dir
 
 			char *conf = strdup(config->current_config);
-			if(!conf) {
+			if (!conf) {
 				wlr_log(L_ERROR, "Failed to duplicate string");
+				free(src);
 				return cmd_results_new(CMD_FAILURE, "output",
 						"Unable to allocate resources");
 			}

@@ -20,6 +20,7 @@ struct cmd_results *input_cmd_repeat_delay(int argc, char **argv) {
 
 	int repeat_delay = atoi(argv[0]);
 	if (repeat_delay < 0) {
+		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "repeat_delay",
 			"Repeat delay cannot be negative");
 	}

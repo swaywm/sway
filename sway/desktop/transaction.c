@@ -186,8 +186,8 @@ static void transaction_apply(struct sway_transaction *transaction) {
 			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
 		float ms_total = ms_arranging + ms_waiting;
 		wlr_log(L_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
-				"%.1fms total (%.1f frames if 60Hz)", transaction,
-				ms_arranging, ms_waiting, ms_total, ms_total / (1000 / 60));
+			"%.1fms total (%.1f frames if 60Hz)", transaction,
+			ms_arranging, ms_waiting, ms_total, ms_total / (1000.0f / 60));
 	}
 
 	// Apply the instruction state to the container's current state

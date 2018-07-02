@@ -428,8 +428,7 @@ struct cmd_results *config_commands_command(char *exec) {
 
 	struct cmd_handler *handler = find_handler(cmd, NULL, 0);
 	if (!handler && strcmp(cmd, "*") != 0) {
-		char *input = cmd ? cmd : "(empty)";
-		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
 		goto cleanup;
 	}
 
@@ -471,10 +470,12 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	if (!policy) {
 		policy = alloc_command_policy(cmd);
-		sway_assert(policy, "Unable to allocate security policy");
-		if (policy) {
-			list_add(config->command_policies, policy);
+		if (!sway_assert(policy, "Unable to allocate security policy")) {
+			results = cmd_results_new(CMD_INVALID, cmd,
+					"Unable to allocate memory");
+			goto cleanup;
 		}
+		list_add(config->command_policies, policy);
 	}
 	policy->context = context;
 

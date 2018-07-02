@@ -302,16 +302,16 @@ static char *get_config_path(void) {
 const char *current_config_path;
 
 static bool load_config(const char *path, struct sway_config *config) {
+	if (path == NULL) {
+		wlr_log(L_ERROR, "Unable to find a config file!");
+		return false;
+	}
+
 	wlr_log(L_INFO, "Loading config from %s", path);
 	current_config_path = path;
 
 	struct stat sb;
 	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-		return false;
-	}
-
-	if (path == NULL) {
-		wlr_log(L_ERROR, "Unable to find a config file!");
 		return false;
 	}
 
@@ -425,7 +425,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	// save parent config
 	const char *parent_config = config->current_config;
 
-	char *full_path = strdup(path);
+	char *full_path;
 	int len = strlen(path);
 	if (len >= 1 && path[0] != '/') {
 		len = len + strlen(parent_dir) + 2;
@@ -436,6 +436,8 @@ static bool load_include_config(const char *path, const char *parent_dir,
 			return false;
 		}
 		snprintf(full_path, len, "%s/%s", parent_dir, path);
+	} else {
+		full_path = strdup(path);
 	}
 
 	char *real_path = realpath(full_path, NULL);
@@ -583,6 +585,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		}
 		char *expanded = expand_line(block, line, brace_detected > 0);
 		if (!expanded) {
+			list_foreach(stack, free);
+			list_free(stack);
 			return false;
 		}
 		wlr_log(L_DEBUG, "Expanded line: %s", expanded);

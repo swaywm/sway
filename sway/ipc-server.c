@@ -263,7 +263,10 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 		client->current_command = event;
 		if (!ipc_send_reply(client, json_string, (uint32_t) strlen(json_string))) {
 			wlr_log_errno(L_INFO, "Unable to send reply to IPC client");
-			ipc_client_disconnect(client);
+			/* ipc_send_reply destroys client on error, which also
+			 * removes it from the list, so we need to process
+			 * current index again */
+			i--;
 		}
 	}
 }
@@ -383,9 +386,7 @@ void ipc_client_disconnect(struct ipc_client *client) {
 		return;
 	}
 
-	if (client->fd != -1) {
-		shutdown(client->fd, SHUT_RDWR);
-	}
+	shutdown(client->fd, SHUT_RDWR);
 
 	wlr_log(L_INFO, "IPC Client %d disconnected", client->fd);
 	wl_event_source_remove(client->event_source);
@@ -465,8 +466,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	}
 	buf[client->payload_length] = '\0';
 
-	const char *error_denied = "{ \"success\": false, \"error\": \"Permission denied\" }";
-
+	bool client_valid = true;
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
@@ -474,7 +474,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		const char *json = cmd_results_to_json(results);
 		char reply[256];
 		int length = snprintf(reply, sizeof(reply), "%s", json);
-		ipc_send_reply(client, reply, (uint32_t) length);
+		client_valid = ipc_send_reply(client, reply, (uint32_t)length);
 		free_cmd_results(results);
 		goto exit_cleanup;
 	}
@@ -497,7 +497,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			}
 		}
 		const char *json_string = json_object_to_json_string(outputs);
-		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(outputs); // free
 		goto exit_cleanup;
 	}
@@ -508,7 +509,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		container_for_each_descendant_dfs(&root_container,
 				ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
-		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(workspaces); // free
 		goto exit_cleanup;
 	}
@@ -518,7 +520,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		// TODO: Check if they're permitted to use these events
 		struct json_object *request = json_tokener_parse(buf);
 		if (request == NULL) {
-			ipc_send_reply(client, "{\"success\": false}", 18);
+			client_valid = ipc_send_reply(client, "{\"success\": false}", 18);
 			wlr_log_errno(L_INFO, "Failed to read request");
 			goto exit_cleanup;
 		}
@@ -539,7 +541,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			} else if (strcmp(event_type, "binding") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
 			} else {
-				ipc_send_reply(client, "{\"success\": false}", 18);
+				client_valid =
+					ipc_send_reply(client, "{\"success\": false}", 18);
 				json_object_put(request);
 				wlr_log_errno(L_INFO, "Failed to parse request");
 				goto exit_cleanup;
@@ -547,7 +550,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		json_object_put(request);
-		ipc_send_reply(client, "{\"success\": true}", 17);
+		client_valid = ipc_send_reply(client, "{\"success\": true}", 17);
 		goto exit_cleanup;
 	}
 
@@ -559,7 +562,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_array_add(inputs, ipc_json_describe_input(device));
 		}
 		const char *json_string = json_object_to_json_string(inputs);
-		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(inputs); // free
 		goto exit_cleanup;
 	}
@@ -572,7 +576,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			json_object_array_add(seats, ipc_json_describe_seat(seat));
 		}
 		const char *json_string = json_object_to_json_string(seats);
-		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(seats); // free
 		goto exit_cleanup;
 	}
@@ -582,7 +587,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		json_object *tree =
 			ipc_json_describe_container_recursive(&root_container);
 		const char *json_string = json_object_to_json_string(tree);
-		ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));
 		json_object_put(tree);
 		goto exit_cleanup;
 	}
@@ -593,7 +599,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		container_descendants(&root_container, C_VIEW, ipc_get_marks_callback,
 				marks);
 		const char *json_string = json_object_to_json_string(marks);
-		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(marks);
 		goto exit_cleanup;
 	}
@@ -602,7 +609,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *version = ipc_json_get_version();
 		const char *json_string = json_object_to_json_string(version);
-		ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
 		json_object_put(version); // free
 		goto exit_cleanup;
 	}
@@ -617,7 +625,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				json_object_array_add(bars, json_object_new_string(bar->id));
 			}
 			const char *json_string = json_object_to_json_string(bars);
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+			client_valid =
+				ipc_send_reply(client, json_string,
+					(uint32_t)strlen(json_string));
 			json_object_put(bars); // free
 		} else {
 			// Send particular bar's details
@@ -631,12 +641,15 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			}
 			if (!bar) {
 				const char *error = "{ \"success\": false, \"error\": \"No bar with that ID\" }";
-				ipc_send_reply(client, error, (uint32_t)strlen(error));
+				client_valid =
+					ipc_send_reply(client, error, (uint32_t)strlen(error));
 				goto exit_cleanup;
 			}
 			json_object *json = ipc_json_describe_bar_config(bar);
 			const char *json_string = json_object_to_json_string(json);
-			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+			client_valid =
+				ipc_send_reply(client, json_string,
+					(uint32_t)strlen(json_string));
 			json_object_put(json); // free
 		}
 		goto exit_cleanup;
@@ -647,11 +660,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
-	ipc_send_reply(client, error_denied, (uint32_t)strlen(error_denied));
-	wlr_log(L_DEBUG, "Denied IPC client access to %i", client->current_command);
-
 exit_cleanup:
-	client->payload_length = 0;
+	if (client_valid) {
+		client->payload_length = 0;
+	}
 	free(buf);
 	return;
 }

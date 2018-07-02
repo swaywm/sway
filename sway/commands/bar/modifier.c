@@ -22,9 +22,10 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 			mod |= tmp_mod;
 			continue;
 		} else {
+			error = cmd_results_new(CMD_INVALID, "modifier",
+				"Unknown modifier '%s'", split->items[i]);
 			free_flat_list(split);
-			return cmd_results_new(CMD_INVALID, "modifier",
-					"Unknown modifier '%s'", split->items[i]);
+			return error;
 		}
 	}
 	free_flat_list(split);
