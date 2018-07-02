@@ -10,7 +10,6 @@
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_idle.h>
-#include <wlr/types/wlr_idle_inhibit_v1.h>
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_linux_dmabuf.h>
 #include <wlr/types/wlr_primary_selection.h>
@@ -23,6 +22,7 @@
 // TODO WLR: make Xwayland optional
 #include "list.h"
 #include "sway/config.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
@@ -53,7 +53,6 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	server->idle = wlr_idle_create(server->wl_display);
 	wlr_screenshooter_create(server->wl_display);
 	wlr_gamma_control_manager_create(server->wl_display);
 	wlr_primary_selection_device_manager_create(server->wl_display);
@@ -64,11 +63,9 @@ bool server_init(struct sway_server *server) {
 	wlr_xdg_output_manager_create(server->wl_display,
 			root_container.sway_root->output_layout);
 
-	server->idle_inhibit = wlr_idle_inhibit_v1_create(server->wl_display);
-	wl_signal_add(&server->idle_inhibit->events.new_inhibitor,
-		&server->new_idle_inhibitor_v1);
-	server->new_idle_inhibitor_v1.notify = handle_idle_inhibitor_v1;
-	wl_list_init(&server->idle_inhibitors_v1);
+	server->idle = wlr_idle_create(server->wl_display);
+	server->idle_inhibit_manager_v1 =
+		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
 
 	server->layer_shell = wlr_layer_shell_create(server->wl_display);
 	wl_signal_add(&server->layer_shell->events.new_surface,

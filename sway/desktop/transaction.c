@@ -246,7 +246,7 @@ static void transaction_progress_queue() {
 		transaction_destroy(transaction);
 	}
 	server.transactions->length = 0;
-	idle_inhibit_v1_check_active(&server);
+	idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 }
 
 static int handle_timeout(void *data) {
@@ -322,7 +322,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 		wlr_log(L_DEBUG, "Transaction %p has nothing to wait for", transaction);
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
-		idle_inhibit_v1_check_active(&server);
+		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 		return;
 	}
 
