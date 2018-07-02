@@ -162,6 +162,20 @@ void view_get_constraints(struct sway_view *view, double *min_width,
 	}
 }
 
+void view_get_geometry(struct sway_view *view, struct wlr_box *box) {
+	if (view->surface == NULL) {
+		box->x = box->y = box->width = box->height = 0;
+		return;
+	}
+	if (view->impl->get_geometry) {
+		view->impl->get_geometry(view, box);
+		return;
+	}
+	box->x = box->y = 0;
+	box->width = view->surface->current.width;
+	box->height = view->surface->current.height;
+}
+
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	if (view->impl->configure) {
@@ -613,36 +627,6 @@ void view_unmap(struct sway_view *view) {
 
 	transaction_commit_dirty();
 	view->surface = NULL;
-}
-
-void view_update_position(struct sway_view *view, double lx, double ly) {
-	if (view->x == lx && view->y == ly) {
-		return;
-	}
-	container_damage_whole(view->swayc);
-	view->x = lx;
-	view->y = ly;
-	view->swayc->current.view_x = lx;
-	view->swayc->current.view_y = ly;
-	if (container_is_floating(view->swayc)) {
-		container_set_geometry_from_floating_view(view->swayc);
-	}
-	container_damage_whole(view->swayc);
-}
-
-void view_update_size(struct sway_view *view, int width, int height) {
-	if (view->width == width && view->height == height) {
-		return;
-	}
-	container_damage_whole(view->swayc);
-	view->width = width;
-	view->height = height;
-	view->swayc->current.view_width = width;
-	view->swayc->current.view_height = height;
-	if (container_is_floating(view->swayc)) {
-		container_set_geometry_from_floating_view(view->swayc);
-	}
-	container_damage_whole(view->swayc);
 }
 
 static void view_subsurface_create(struct sway_view *view,

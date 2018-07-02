@@ -287,8 +287,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	if (view->swayc->instruction) {
 		transaction_notify_view_ready_by_size(view,
 				surface_state->width, surface_state->height);
-	} else if (container_is_floating(view->swayc)) {
-		view_update_size(view, surface_state->width, surface_state->height);
 	}
 
 	view_damage_from(view);
