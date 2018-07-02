@@ -133,6 +133,7 @@ struct sway_container {
 	struct sway_container *parent;
 
 	float alpha;
+	float rotation; // in radians
 
 	struct wlr_texture *title_focused;
 	struct wlr_texture *title_focused_inactive;

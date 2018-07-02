@@ -32,6 +32,7 @@ struct render_context {
 	double output_lx;
 	double output_ly;
 	pixman_region32_t *damage;
+	float matrix[9];
 	float scale;
 };
 struct render_context context;
@@ -94,8 +95,6 @@ damage_finish:
 
 static void render_surface(struct wlr_surface *surface, int ox, int oy,
 		float alpha) {
-	struct wlr_output *wlr_output = context.output->wlr_output;
-
 	struct wlr_texture *texture = wlr_surface_get_texture(surface);
 	if (!texture) {
 		return;
@@ -122,7 +121,7 @@ static void render_surface(struct wlr_surface *surface, int ox, int oy,
 	enum wl_output_transform transform =
 		wlr_output_transform_invert(surface->current->transform);
 	wlr_matrix_project_box(matrix, &surface_box, transform, 0,
-		wlr_output->transform_matrix);
+		context.matrix);
 
 	render_texture(texture, &surface_box, matrix, alpha);
 }
@@ -708,6 +707,19 @@ static void render_container(struct sway_container *con, bool parent_focused) {
 }
 
 static void render_floating_container(struct sway_container *con) {
+	float saved_matrix[9];
+	if (con->rotation) {
+		memcpy(saved_matrix, context.matrix, sizeof(saved_matrix));
+		double cx = con->current.swayc_x - context.output_lx +
+			con->current.swayc_width / 2;
+		double cy = con->current.swayc_y - context.output_ly +
+			con->current.swayc_height / 2;
+
+		wlr_matrix_translate(context.matrix, cx, cy);
+		wlr_matrix_rotate(context.matrix, con->rotation);
+		wlr_matrix_translate(context.matrix, -cx, -cy);
+	}
+
 	if (con->type == C_VIEW) {
 		struct sway_view *view = con->sway_view;
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
@@ -736,6 +748,10 @@ static void render_floating_container(struct sway_container *con) {
 		render_view(con, colors);
 	} else {
 		render_container(con, false);
+	}
+
+	if (con->rotation) {
+		memcpy(context.matrix, saved_matrix, sizeof(saved_matrix));
 	}
 }
 
@@ -784,6 +800,7 @@ void render_output(struct sway_output *output, struct timespec *when,
 	context.output_ly = output->swayc->current.swayc_y;
 	context.damage = damage;
 	context.scale = output->wlr_output->scale;
+	memcpy(&context.matrix, wlr_output->transform_matrix, sizeof(context.matrix));
 
 	struct wlr_renderer *renderer =
 	wlr_backend_get_renderer(wlr_output->backend);
