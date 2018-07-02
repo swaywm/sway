@@ -126,8 +126,8 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
 	enum wlr_edges edges = WLR_EDGE_NONE;
 	if (tiled) {
-		edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
-				WLR_EDGE_BOTTOM;
+		// edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
+		// 		WLR_EDGE_BOTTOM;
 	}
 	wlr_xdg_toplevel_set_tiled(surface, edges);
 }
