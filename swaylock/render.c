@@ -15,6 +15,8 @@ const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
 void render_frame(struct swaylock_surface *surface) {
 	struct swaylock_state *state = surface->state;
 
+	static bool first_render = true;
+
 	int buffer_width = surface->width * surface->scale;
 	int buffer_height = surface->height * surface->scale;
 	if (buffer_width == 0 || buffer_height == 0) {
@@ -30,12 +32,15 @@ void render_frame(struct swaylock_surface *surface) {
 	cairo_t *cairo = surface->current_buffer->cairo;
 	cairo_identity_matrix(cairo);
 
-	if (state->args.mode == BACKGROUND_MODE_SOLID_COLOR || !surface->image) {
-		cairo_set_source_u32(cairo, state->args.color);
-		cairo_paint(cairo);
-	} else {
-		render_background_image(cairo, surface->image,
-				state->args.mode, buffer_width, buffer_height);
+	if (first_render) {
+		if (state->args.mode == BACKGROUND_MODE_SOLID_COLOR || !surface->image) {
+			cairo_set_source_u32(cairo, state->args.color);
+			cairo_paint(cairo);
+		} else {
+			render_background_image(cairo, surface->image,
+					state->args.mode, buffer_width, buffer_height);
+		}
+		first_render = false;
 	}
 	cairo_identity_matrix(cairo);
 
