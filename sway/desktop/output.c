@@ -930,16 +930,13 @@ bool output_has_opaque_lockscreen(struct sway_output *output,
 		if (wlr_surface->resource->client != seat->exclusive_client) {
 			continue;
 		}
-		int nrects;
-		pixman_box32_t *rects =
-			pixman_region32_rectangles(&wlr_surface->current->opaque, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			pixman_box32_t *rect = &rects[i];
-			if (rect->x1 <= 0 && rect->y1 <= 0 &&
-					rect->x2 >= output->swayc->current.swayc_width &&
-					rect->y2 >= output->swayc->current.swayc_height) {
-				return true;
-			}
+		pixman_box32_t output_box = {
+			.x2 = output->swayc->current.swayc_width,
+			.y2 = output->swayc->current.swayc_height,
+		};
+		if (pixman_region32_contains_rectangle(&wlr_surface->current->opaque,
+					&output_box)) {
+			return true;
 		}
 	}
 	return false;
