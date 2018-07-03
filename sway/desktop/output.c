@@ -915,6 +915,36 @@ static struct sway_container *output_get_active_workspace(
 	return workspace;
 }
 
+bool output_has_opaque_lockscreen(struct sway_output *output,
+		struct sway_seat *seat) {
+	if (!seat->exclusive_client) {
+		return false;
+	}
+
+	struct wlr_layer_surface *wlr_layer_surface;
+	wl_list_for_each(wlr_layer_surface, &server.layer_shell->surfaces, link) {
+		if (wlr_layer_surface->output != output->wlr_output) {
+			continue;
+		}
+		struct wlr_surface *wlr_surface = wlr_layer_surface->surface;
+		if (wlr_surface->resource->client != seat->exclusive_client) {
+			continue;
+		}
+		int nrects;
+		pixman_box32_t *rects =
+			pixman_region32_rectangles(&wlr_surface->current->opaque, &nrects);
+		for (int i = 0; i < nrects; ++i) {
+			pixman_box32_t *rect = &rects[i];
+			if (rect->x1 <= 0 && rect->y1 <= 0 &&
+					rect->x2 >= output->swayc->current.swayc_width &&
+					rect->y2 >= output->swayc->current.swayc_height) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 static void render_output(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -950,7 +980,7 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
-	if (seat->exclusive_client && seat->focused_layer) {
+	if (output_has_opaque_lockscreen(output, seat)) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		int nrects;
@@ -1103,7 +1133,8 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 	struct send_frame_done_data data = {
 		.output = output,
 		.when = when,
-		.exclusive_client = seat->exclusive_client,
+		.exclusive_client = output_has_opaque_lockscreen(output, seat) ?
+			seat->exclusive_client : NULL,
 	};
 
 	struct sway_container *workspace = output_get_active_workspace(output);
