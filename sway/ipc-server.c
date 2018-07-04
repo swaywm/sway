@@ -481,11 +481,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_COMMAND:
 	{
 		struct cmd_results *results = execute_command(buf, NULL);
-		const char *json = cmd_results_to_json(results);
-		char reply[256];
-		int length = snprintf(reply, sizeof(reply), "%s", json);
+		char *json = cmd_results_to_json(results);
+		int length = strlen(json);
+		client_valid = ipc_send_reply(client, json, (uint32_t)length);
 		free(json);
-		client_valid = ipc_send_reply(client, reply, (uint32_t)length);
 		free_cmd_results(results);
 		goto exit_cleanup;
 	}
