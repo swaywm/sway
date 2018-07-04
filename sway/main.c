@@ -416,6 +416,7 @@ int main(int argc, char **argv) {
 	security_sanity_check();
 
 	config->active = true;
+	setenv("WAYLAND_DISPLAY", server.socket, true);
 	// Execute commands until there are none left
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
