@@ -935,7 +935,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_add_child(workspace->sway_workspace->floating, container);
 		if (container->type == C_VIEW) {
 			view_init_floating(container->sway_view);
-			view_set_tiled(container->sway_view, true);
+			view_set_tiled(container->sway_view, false);
 		}
 		seat_set_focus(seat, seat_get_focus_inactive(seat, container));
 		container_reap_empty_recursive(workspace);
