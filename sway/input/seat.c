@@ -663,7 +663,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 
 		seat_send_focus(container, seat);
-		container_damage_whole(container);
+		container_damage_whole(container->parent);
 	}
 
 	// clean up unfocused empty workspace on new output
