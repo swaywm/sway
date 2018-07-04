@@ -31,6 +31,7 @@ static int ipc_socket = -1;
 static struct wl_event_source *ipc_event_source =  NULL;
 static struct sockaddr_un *ipc_sockaddr = NULL;
 static list_t *ipc_client_list = NULL;
+static struct wl_listener ipc_display_destroy;
 
 static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
@@ -55,6 +56,22 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data);
 void ipc_client_disconnect(struct ipc_client *client);
 void ipc_client_handle_command(struct ipc_client *client);
 bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t payload_length);
+
+static void handle_display_destroy(struct wl_listener *listener, void *data) {
+	if (ipc_event_source) {
+		wl_event_source_remove(ipc_event_source);
+	}
+	close(ipc_socket);
+	unlink(ipc_sockaddr->sun_path);
+
+	list_free(ipc_client_list);
+
+	if (ipc_sockaddr) {
+		free(ipc_sockaddr);
+	}
+
+	wl_list_remove(&ipc_display_destroy.link);
+}
 
 void ipc_init(struct sway_server *server) {
 	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -85,22 +102,11 @@ void ipc_init(struct sway_server *server) {
 
 	ipc_client_list = create_list();
 
+	ipc_display_destroy.notify = handle_display_destroy;
+	wl_display_add_destroy_listener(server->wl_display, &ipc_display_destroy);
+
 	ipc_event_source = wl_event_loop_add_fd(server->wl_event_loop, ipc_socket,
 			WL_EVENT_READABLE, ipc_handle_connection, server);
-}
-
-void ipc_terminate(void) {
-	if (ipc_event_source) {
-		wl_event_source_remove(ipc_event_source);
-	}
-	close(ipc_socket);
-	unlink(ipc_sockaddr->sun_path);
-
-	list_free(ipc_client_list);
-
-	if (ipc_sockaddr) {
-		free(ipc_sockaddr);
-	}
 }
 
 struct sockaddr_un *ipc_user_sockaddr(void) {

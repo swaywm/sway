@@ -9,8 +9,6 @@ struct sway_server;
 
 void ipc_init(struct sway_server *server);
 
-void ipc_terminate(void);
-
 struct sockaddr_un *ipc_user_sockaddr(void);
 
 void ipc_event_workspace(struct sway_container *old,
