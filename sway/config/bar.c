@@ -30,6 +30,7 @@ void free_bar_config(struct bar_config *bar) {
 	if (!bar) {
 		return;
 	}
+	free(bar->id);
 	free(bar->mode);
 	free(bar->position);
 	free(bar->hidden_state);

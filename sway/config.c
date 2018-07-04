@@ -87,7 +87,12 @@ void free_config(struct sway_config *config) {
 	list_free(config->cmd_queue);
 	list_free(config->workspace_outputs);
 	list_free(config->pid_workspaces);
-	list_free(config->output_configs);
+	if (config->output_configs) {
+		for (int i = 0; i < config->output_configs->length; i++) {
+			free_output_config(config->output_configs->items[i]);
+		}
+		list_free(config->output_configs);
+	}
 	if (config->input_configs) {
 		for (int i = 0; i < config->input_configs->length; i++) {
 			free_input_config(config->input_configs->items[i]);
