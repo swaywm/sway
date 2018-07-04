@@ -660,14 +660,10 @@ struct sway_container *floating_container_at(double lx, double ly,
 			for (int k = 0; k < ws->floating->children->length; ++k) {
 				struct sway_container *floater =
 					ws->floating->children->items[k];
-				struct wlr_box box = {
-					.x = floater->x,
-					.y = floater->y,
-					.width = floater->width,
-					.height = floater->height,
-				};
-				if (wlr_box_contains_point(&box, lx, ly)) {
-					return container_at(floater, lx, ly, surface, sx, sy);
+				struct sway_container *at =
+					container_at(floater, lx, ly, surface, sx, sy);
+				if (at != NULL) {
+					return at;
 				}
 			}
 		}
