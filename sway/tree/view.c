@@ -514,7 +514,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (container_is_floating(focus)) {
 		focus = focus->parent->parent;
 	}
-	free(criterias);
+	list_free(criterias);
 	cont = container_view_create(focus, view);
 
 	view->surface = wlr_surface;
