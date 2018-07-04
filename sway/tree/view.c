@@ -164,9 +164,6 @@ void view_init_floating(struct sway_view *view) {
 	view->border_left = view->border_right = true;
 
 	container_set_geometry_from_floating_view(view->swayc);
-
-	// Don't maximize floating windows
-	view_set_tiled(view, false);
 }
 
 void view_autoconfigure(struct sway_view *view) {
@@ -278,7 +275,6 @@ void view_autoconfigure(struct sway_view *view) {
 	view->y = y;
 	view->width = width;
 	view->height = height;
-	view_set_tiled(view, true);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
