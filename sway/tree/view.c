@@ -532,6 +532,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		container_set_floating(view->swayc, true);
+	} else {
+		view_set_tiled(view, true);
 	}
 
 	input_manager_set_focus(input_manager, cont);
