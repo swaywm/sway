@@ -377,7 +377,9 @@ static void set_instructions_ready(struct sway_view *view, int index) {
 	for (int i = 0; i <= index; ++i) {
 		struct sway_transaction_instruction *instruction =
 			view->swayc->instructions->items[i];
-		set_instruction_ready(instruction);
+		if (!instruction->ready) {
+			set_instruction_ready(instruction);
+		}
 	}
 }
 
