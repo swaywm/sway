@@ -191,6 +191,8 @@ char *workspace_next_name(const char *output_name) {
 				free(target);
 				target = _target;
 				wlr_log(L_DEBUG, "Workspace: Found free name %s", _target);
+			} else {
+				free(_target);
 			}
 		}
 		free(dup);
