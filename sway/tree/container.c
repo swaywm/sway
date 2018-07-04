@@ -151,6 +151,7 @@ void container_free(struct sway_container *cont) {
 		return;
 	}
 	free(cont->name);
+	free(cont->formatted_title);
 	wlr_texture_destroy(cont->title_focused);
 	wlr_texture_destroy(cont->title_focused_inactive);
 	wlr_texture_destroy(cont->title_unfocused);
