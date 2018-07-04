@@ -437,8 +437,6 @@ int main(int argc, char **argv) {
 
 	server_fini(&server);
 
-	ipc_terminate();
-
 	if (config) {
 		free_config(config);
 	}
