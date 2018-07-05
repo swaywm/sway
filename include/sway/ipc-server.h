@@ -15,6 +15,6 @@ void ipc_event_workspace(struct sway_container *old,
 		struct sway_container *new, const char *change);
 void ipc_event_window(struct sway_container *window, const char *change);
 void ipc_event_barconfig_update(struct bar_config *bar);
-void ipc_event_mode(const char *mode);
+void ipc_event_mode(const char *mode, bool pango);
 
 #endif
