@@ -143,6 +143,15 @@ static void for_each_surface(struct sway_view *view,
 		user_data);
 }
 
+static void for_each_popup(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (xdg_shell_v6_view_from_view(view) == NULL) {
+		return;
+	}
+	wlr_xdg_surface_v6_for_each_popup(view->wlr_xdg_surface_v6, iterator,
+		user_data);
+}
+
 static void _close(struct sway_view *view) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return;
@@ -170,6 +179,7 @@ static const struct sway_view_impl view_impl = {
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
+	.for_each_popup = for_each_popup,
 	.close = _close,
 	.destroy = destroy,
 };

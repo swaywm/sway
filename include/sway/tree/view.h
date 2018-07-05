@@ -37,6 +37,8 @@ struct sway_view_impl {
 	bool (*wants_floating)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
+	void (*for_each_popup)(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
