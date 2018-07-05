@@ -67,8 +67,8 @@ For more information on these xkb configuration options, see
 	Enables or disables disable-while-typing for the specified input device.
 
 *input* <identifier> events enabled|disabled|disabled\_on\_external\_mouse
-	Enables or disables send_events for specified input device. (Disabling
-	send_events disables the input device)
+	Enables or disables send\_events for specified input device. (Disabling
+	send\_events disables the input device)
 
 *input* <identifier> left\_handed enabled|disabled
 	Enables or disables left handed mode for specified input device.
