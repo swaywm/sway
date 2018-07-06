@@ -251,8 +251,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view->natural_width = view->wlr_xdg_surface->geometry.width;
 	view->natural_height = view->wlr_xdg_surface->geometry.height;
 	if (!view->natural_width && !view->natural_height) {
-		view->natural_width = view->wlr_xdg_surface->surface->current->width;
-		view->natural_height = view->wlr_xdg_surface->surface->current->height;
+		view->natural_width = view->wlr_xdg_surface->surface->current.width;
+		view->natural_height = view->wlr_xdg_surface->surface->current.height;
 	}
 
 	view_map(view, view->wlr_xdg_surface->surface);

@@ -224,6 +224,9 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 		input_manager_libinput_config_pointer(input_device);
 	}
 
+	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
+	input_device->device_destroy.notify = handle_device_destroy;
+
 	struct sway_seat *seat = NULL;
 	if (!input_has_seat_configuration(input)) {
 		wlr_log(L_DEBUG, "no seat configuration, using default seat");
@@ -260,9 +263,6 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 			"device '%s' is not configured on any seats",
 			input_device->identifier);
 	}
-
-	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
-	input_device->device_destroy.notify = handle_device_destroy;
 }
 
 static void handle_inhibit_activate(struct wl_listener *listener, void *data) {

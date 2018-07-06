@@ -278,7 +278,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	struct wlr_surface_state *surface_state = xsurface->surface->current;
+	struct wlr_surface_state *surface_state = &xsurface->surface->current;
 
 	if (view->swayc->instructions->length) {
 		transaction_notify_view_ready_by_size(view,

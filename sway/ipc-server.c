@@ -336,13 +336,15 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 	json_object_put(json);
 }
 
-void ipc_event_mode(const char *mode) {
+void ipc_event_mode(const char *mode, bool pango) {
 	if (!ipc_has_event_listeners(IPC_EVENT_MODE)) {
 		return;
 	}
 	wlr_log(L_DEBUG, "Sending mode::%s event", mode);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(mode));
+	json_object_object_add(obj, "pango_markup",
+			json_object_new_boolean(pango));
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_MODE);
