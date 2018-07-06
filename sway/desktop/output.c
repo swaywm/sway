@@ -978,15 +978,6 @@ static void render_output(struct sway_output *output, struct timespec *when,
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
 	if (output_has_opaque_lockscreen(output, seat)) {
-		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
-
-		int nrects;
-		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			scissor_output(wlr_output, &rects[i]);
-			wlr_renderer_clear(renderer, clear_color);
-		}
-
 		struct wlr_layer_surface *wlr_layer_surface = seat->focused_layer;
 		struct sway_layer_surface *sway_layer_surface =
 			layer_from_wlr_layer_surface(seat->focused_layer);
