@@ -915,6 +915,42 @@ static struct sway_container *output_get_active_workspace(
 	return workspace;
 }
 
+bool output_has_opaque_lockscreen(struct sway_output *output,
+		struct sway_seat *seat) {
+	if (!seat->exclusive_client) {
+		return false;
+	}
+
+	struct wlr_layer_surface *wlr_layer_surface;
+	wl_list_for_each(wlr_layer_surface, &server.layer_shell->surfaces, link) {
+		if (wlr_layer_surface->output != output->wlr_output) {
+			continue;
+		}
+		struct wlr_surface *wlr_surface = wlr_layer_surface->surface;
+		if (wlr_surface->resource->client != seat->exclusive_client) {
+			continue;
+		}
+		struct sway_layer_surface *sway_layer_surface =
+			layer_from_wlr_layer_surface(wlr_layer_surface);
+		pixman_box32_t output_box = {
+			.x2 = output->swayc->current.swayc_width,
+			.y2 = output->swayc->current.swayc_height,
+		};
+		pixman_region32_t surface_opaque_box;
+		pixman_region32_init(&surface_opaque_box);
+		pixman_region32_copy(&surface_opaque_box, &wlr_surface->current.opaque);
+		pixman_region32_translate(&surface_opaque_box,
+				sway_layer_surface->geo.x, sway_layer_surface->geo.y);
+		bool contains = pixman_region32_contains_rectangle(
+				&wlr_surface->current.opaque, &output_box);
+		pixman_region32_fini(&surface_opaque_box);
+		if (contains) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static void render_output(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -948,8 +984,21 @@ static void render_output(struct sway_output *output, struct timespec *when,
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
-	if (fullscreen_view) {
+	if (output_has_opaque_lockscreen(output, seat)) {
+		struct wlr_layer_surface *wlr_layer_surface = seat->focused_layer;
+		struct sway_layer_surface *sway_layer_surface =
+			layer_from_wlr_layer_surface(seat->focused_layer);
+		struct render_data data = {
+			.output = output,
+			.damage = damage,
+			.alpha = 1.0f,
+		};
+		surface_for_each_surface(wlr_layer_surface->surface,
+			sway_layer_surface->geo.x, sway_layer_surface->geo.y,
+			&data.root_geo, render_surface_iterator, &data);
+	} else if (fullscreen_view) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		int nrects;
@@ -1019,11 +1068,16 @@ struct send_frame_done_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
 	struct timespec *when;
+	struct wl_client *exclusive_client;
 };
 
 static void send_frame_done_iterator(struct wlr_surface *surface,
 		int sx, int sy, void *_data) {
 	struct send_frame_done_data *data = _data;
+	if (data->exclusive_client &&
+			data->exclusive_client != surface->resource->client) {
+		return;
+	}
 
 	bool intersects = get_surface_box(&data->root_geo, data->output, surface,
 		sx, sy, NULL);
@@ -1072,9 +1126,12 @@ static void send_frame_done_container(struct send_frame_done_data *data,
 }
 
 static void send_frame_done(struct sway_output *output, struct timespec *when) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct send_frame_done_data data = {
 		.output = output,
 		.when = when,
+		.exclusive_client = output_has_opaque_lockscreen(output, seat) ?
+			seat->exclusive_client : NULL,
 	};
 
 	struct sway_container *workspace = output_get_active_workspace(output);
