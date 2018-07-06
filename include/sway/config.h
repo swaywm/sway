@@ -50,6 +50,7 @@ struct sway_mode {
 	char *name;
 	list_t *keysym_bindings;
 	list_t *keycode_bindings;
+	bool pango;
 };
 
 struct input_config_mapped_from_region {

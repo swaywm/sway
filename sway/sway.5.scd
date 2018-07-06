@@ -413,10 +413,12 @@ The default colors are:
 *mode* <mode>
 	Switches to the specified mode. The default mode _default_.
 
-*mode* <mode> *{* <commands...> *}*
+*mode* [--pango\_markup] <mode> *{* <commands...> *}*
 	_commands..._ after *{* will be added to the specified mode. A newline is
 	required between *{* and the first command, and *}* must be alone on a
 	line. Only *bindsym* and *bindcode* commands are permitted in mode blocks.
+	If _--pango\_markup_ is given, then _mode_ will be interpreted as pango
+	markup.
 
 *mouse\_warping* output|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
