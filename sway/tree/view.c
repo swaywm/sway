@@ -129,7 +129,7 @@ uint32_t view_get_window_type(struct sway_view *view) {
 }
 
 const char *view_get_shell(struct sway_view *view) {
-	switch(view->type) {
+	switch (view->type) {
 	case SWAY_VIEW_XDG_SHELL_V6:
 		return "xdg_shell_v6";
 	case SWAY_VIEW_XDG_SHELL:
@@ -138,6 +138,20 @@ const char *view_get_shell(struct sway_view *view) {
 		return "xwayland";
 	}
 	return "unknown";
+}
+
+void view_get_geometry(struct sway_view *view, struct wlr_box *box) {
+	if (view->surface == NULL) {
+		box->x = box->y = box->width = box->height = 0;
+		return;
+	}
+	if (view->impl->get_geometry) {
+		view->impl->get_geometry(view, box);
+		return;
+	}
+	box->x = box->y = 0;
+	box->width = view->surface->current->width;
+	box->height = view->surface->current->height;
 }
 
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
@@ -270,6 +284,11 @@ void view_autoconfigure(struct sway_view *view) {
 		}
 		break;
 	}
+
+	struct wlr_box geo;
+	view_get_geometry(view, &geo);
+	x -= geo.x;
+	y -= geo.y;
 
 	view->x = x;
 	view->y = y;
@@ -565,32 +584,6 @@ void view_unmap(struct sway_view *view) {
 		arrange_and_commit(parent);
 	}
 	view->surface = NULL;
-}
-
-void view_update_position(struct sway_view *view, double lx, double ly) {
-	if (view->x == lx && view->y == ly) {
-		return;
-	}
-	container_damage_whole(view->swayc);
-	view->x = lx;
-	view->y = ly;
-	if (container_is_floating(view->swayc)) {
-		container_set_geometry_from_floating_view(view->swayc);
-	}
-	container_damage_whole(view->swayc);
-}
-
-void view_update_size(struct sway_view *view, int width, int height) {
-	if (view->width == width && view->height == height) {
-		return;
-	}
-	container_damage_whole(view->swayc);
-	view->width = width;
-	view->height = height;
-	if (container_is_floating(view->swayc)) {
-		container_set_geometry_from_floating_view(view->swayc);
-	}
-	container_damage_whole(view->swayc);
 }
 
 static void view_subsurface_create(struct sway_view *view,

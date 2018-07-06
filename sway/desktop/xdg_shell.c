@@ -74,7 +74,8 @@ static struct sway_xdg_shell_view *xdg_shell_view_from_view(
 	return (struct sway_xdg_shell_view *)view;
 }
 
-static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
+static const char *get_string_prop(struct sway_view *view,
+		enum sway_view_prop prop) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return NULL;
 	}
@@ -86,6 +87,16 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 	default:
 		return NULL;
 	}
+}
+
+static void get_geometry(struct sway_view *view, struct wlr_box *box) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		xdg_shell_view_from_view(view);
+	if (xdg_shell_view == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
+	wlr_xdg_surface_get_geometry(surface, box);
 }
 
 static uint32_t configure(struct sway_view *view, double lx, double ly,
@@ -115,8 +126,8 @@ static void set_tiled(struct sway_view *view, bool tiled) {
 	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
 	enum wlr_edges edges = WLR_EDGE_NONE;
 	if (tiled) {
-		edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
-				WLR_EDGE_BOTTOM;
+		// edges = WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP |
+		// 		WLR_EDGE_BOTTOM;
 	}
 	wlr_xdg_toplevel_set_tiled(surface, edges);
 }
@@ -168,6 +179,7 @@ static void destroy(struct sway_view *view) {
 
 static const struct sway_view_impl view_impl = {
 	.get_string_prop = get_string_prop,
+	.get_geometry = get_geometry,
 	.configure = configure,
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,

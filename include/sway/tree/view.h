@@ -29,6 +29,7 @@ struct sway_view_impl {
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
+	void (*get_geometry)(struct sway_view *view, struct wlr_box *box);
 	uint32_t (*configure)(struct sway_view *view, double lx, double ly,
 			int width, int height);
 	void (*set_activated)(struct sway_view *view, bool activated);
@@ -249,10 +250,6 @@ void view_destroy(struct sway_view *view);
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
 void view_unmap(struct sway_view *view);
-
-void view_update_position(struct sway_view *view, double lx, double ly);
-
-void view_update_size(struct sway_view *view, int width, int height);
 
 void view_child_init(struct sway_view_child *child,
 	const struct sway_view_child_impl *impl, struct sway_view *view,
