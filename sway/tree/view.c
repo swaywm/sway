@@ -574,6 +574,8 @@ void view_update_position(struct sway_view *view, double lx, double ly) {
 	container_damage_whole(view->swayc);
 	view->x = lx;
 	view->y = ly;
+	view->swayc->current.view_x = lx;
+	view->swayc->current.view_y = ly;
 	if (container_is_floating(view->swayc)) {
 		container_set_geometry_from_floating_view(view->swayc);
 	}
@@ -587,6 +589,8 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	container_damage_whole(view->swayc);
 	view->width = width;
 	view->height = height;
+	view->swayc->current.view_width = width;
+	view->swayc->current.view_height = height;
 	if (container_is_floating(view->swayc)) {
 		container_set_geometry_from_floating_view(view->swayc);
 	}
