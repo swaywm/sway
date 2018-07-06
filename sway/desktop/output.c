@@ -934,7 +934,7 @@ bool output_has_opaque_lockscreen(struct sway_output *output,
 			.x2 = output->swayc->current.swayc_width,
 			.y2 = output->swayc->current.swayc_height,
 		};
-		if (pixman_region32_contains_rectangle(&wlr_surface->current->opaque,
+		if (pixman_region32_contains_rectangle(&wlr_surface->current.opaque,
 					&output_box)) {
 			return true;
 		}

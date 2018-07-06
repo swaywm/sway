@@ -84,8 +84,11 @@ static const struct zwlr_layer_surface_v1_listener layer_surface_listener;
 static cairo_surface_t *select_image(struct swaylock_state *state,
 		struct swaylock_surface *surface);
 
-static bool image_is_opaque(cairo_surface_t *image) {
-	return cairo_surface_get_content(image) == CAIRO_CONTENT_COLOR;
+static bool surface_is_opaque(struct swaylock_surface *surface) {
+	if (surface->image) {
+		return cairo_surface_get_content(surface->image) == CAIRO_CONTENT_COLOR;
+	}
+	return (surface->state->args.color & 0xff) == 0xff;
 }
 
 static void create_layer_surface(struct swaylock_surface *surface) {
@@ -113,7 +116,7 @@ static void create_layer_surface(struct swaylock_surface *surface) {
 	zwlr_layer_surface_v1_add_listener(surface->layer_surface,
 			&layer_surface_listener, surface);
 
-	if (image_is_opaque(surface->image) &&
+	if (surface_is_opaque(surface) &&
 			surface->state->args.mode != BACKGROUND_MODE_CENTER &&
 			surface->state->args.mode != BACKGROUND_MODE_FIT) {
 		struct wl_region *region =
