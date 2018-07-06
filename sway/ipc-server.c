@@ -64,6 +64,10 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	close(ipc_socket);
 	unlink(ipc_sockaddr->sun_path);
 
+	while (ipc_client_list->length) {
+		struct ipc_client *client = ipc_client_list->items[0];
+		ipc_client_disconnect(client);
+	}
 	list_free(ipc_client_list);
 
 	if (ipc_sockaddr) {
@@ -479,10 +483,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_COMMAND:
 	{
 		struct cmd_results *results = execute_command(buf, NULL);
-		const char *json = cmd_results_to_json(results);
-		char reply[256];
-		int length = snprintf(reply, sizeof(reply), "%s", json);
-		client_valid = ipc_send_reply(client, reply, (uint32_t)length);
+		char *json = cmd_results_to_json(results);
+		int length = strlen(json);
+		client_valid = ipc_send_reply(client, json, (uint32_t)length);
+		free(json);
 		free_cmd_results(results);
 		goto exit_cleanup;
 	}

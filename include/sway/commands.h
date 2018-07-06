@@ -79,7 +79,7 @@ void free_cmd_results(struct cmd_results *results);
  *
  * Free the JSON string later on.
  */
-const char *cmd_results_to_json(struct cmd_results *results);
+char *cmd_results_to_json(struct cmd_results *results);
 
 struct cmd_results *add_color(const char *name,
 		char *buffer, const char *color);

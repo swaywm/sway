@@ -420,6 +420,9 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (!keyboard) {
 		return;
 	}
+	if (keyboard->keymap) {
+		xkb_keymap_unref(keyboard->keymap);
+	}
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
 	free(keyboard);

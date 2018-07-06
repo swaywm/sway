@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 200112L
 #include <getopt.h>
+#include <pango/pangocairo.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -440,6 +441,8 @@ int main(int argc, char **argv) {
 	if (config) {
 		free_config(config);
 	}
+
+	pango_cairo_font_map_set_default(NULL);
 
 	return exit_value;
 }

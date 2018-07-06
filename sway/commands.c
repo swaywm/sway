@@ -527,7 +527,7 @@ void free_cmd_results(struct cmd_results *results) {
 	free(results);
 }
 
-const char *cmd_results_to_json(struct cmd_results *results) {
+char *cmd_results_to_json(struct cmd_results *results) {
 	json_object *result_array = json_object_new_array();
 	json_object *root = json_object_new_object();
 	json_object_object_add(root, "success",
@@ -542,9 +542,9 @@ const char *cmd_results_to_json(struct cmd_results *results) {
 	}
 	json_object_array_add(result_array, root);
 	const char *json = json_object_to_json_string(result_array);
-	free(result_array);
-	free(root);
-	return json;
+	char *res = strdup(json);
+	json_object_put(result_array);
+	return res;
 }
 
 /**
