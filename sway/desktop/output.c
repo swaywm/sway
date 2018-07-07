@@ -521,7 +521,7 @@ static void render_titlebar(struct sway_output *output,
 	size_t inner_width = width - TITLEBAR_H_PADDING * 2;
 
 	// Marks
-	size_t marks_width = 0;
+	size_t marks_ob_width = 0; // output-buffer-local
 	if (config->show_marks && marks_texture) {
 		struct wlr_box texture_box;
 		wlr_texture_get_size(marks_texture,
@@ -540,11 +540,23 @@ static void render_titlebar(struct sway_output *output,
 		}
 		render_texture(output->wlr_output, output_damage, marks_texture,
 			&texture_box, matrix, con->alpha);
-		marks_width = texture_box.width;
+		marks_ob_width = texture_box.width;
+
+		// Gap between the marks and bottom padding, for when the marks texture
+		// height is smaller than the config's font height
+		memcpy(&color, colors->background, sizeof(float) * 4);
+		premultiply_alpha(color, con->alpha);
+		box.x = texture_box.x;
+		box.y = texture_box.y + texture_box.height;
+		box.width = texture_box.width;
+		box.height = config->font_height * output_scale - texture_box.height;
+		if (box.height > 0) {
+			render_rect(output->wlr_output, output_damage, &box, color);
+		}
 	}
 
 	// Title text
-	size_t title_width = 0;
+	size_t title_ob_width = 0; // output-buffer-local
 	if (title_texture) {
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
@@ -557,12 +569,24 @@ static void render_titlebar(struct sway_output *output,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		if (inner_width * output_scale - marks_width < texture_box.width) {
-			texture_box.width = inner_width * output_scale - marks_width;
+		if (inner_width * output_scale - marks_ob_width < texture_box.width) {
+			texture_box.width = inner_width * output_scale - marks_ob_width;
 		}
 		render_texture(output->wlr_output, output_damage, title_texture,
 			&texture_box, matrix, con->alpha);
-		title_width = texture_box.width;
+		title_ob_width = texture_box.width;
+
+		// Gap between the title and bottom padding, for when the title texture
+		// height is smaller than the config's font height
+		memcpy(&color, colors->background, sizeof(float) * 4);
+		premultiply_alpha(color, con->alpha);
+		box.x = texture_box.x;
+		box.y = texture_box.y + texture_box.height;
+		box.width = texture_box.width;
+		box.height = config->font_height * output_scale - texture_box.height;
+		if (box.height > 0) {
+			render_rect(output->wlr_output, output_damage, &box, color);
+		}
 	}
 
 	// Padding above title
@@ -580,9 +604,9 @@ static void render_titlebar(struct sway_output *output,
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Filler between title and marks
-	box.width = inner_width * output_scale - title_width - marks_width;
+	box.width = inner_width * output_scale - title_ob_width - marks_ob_width;
 	if (box.width > 0) {
-		box.x = (x + TITLEBAR_H_PADDING) * output_scale + title_width;
+		box.x = (x + TITLEBAR_H_PADDING) * output_scale + title_ob_width;
 		box.y = (y + TITLEBAR_V_PADDING) * output_scale;
 		box.height = config->font_height * output_scale;
 		render_rect(output->wlr_output, output_damage, &box, color);
