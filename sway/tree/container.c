@@ -783,7 +783,7 @@ static void update_title_texture(struct sway_container *con,
 
 	double scale = output->sway_output->wlr_output->scale;
 	int width = 0;
-	int height = config->font_height * scale;
+	int height = con->title_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
 	get_text_size(c, config->font, &width, NULL, scale, config->pango_markup,

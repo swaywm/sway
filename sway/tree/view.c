@@ -923,7 +923,7 @@ static void update_marks_texture(struct sway_view *view,
 
 	double scale = output->sway_output->wlr_output->scale;
 	int width = 0;
-	int height = config->font_height * scale;
+	int height = view->swayc->title_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
 	get_text_size(c, config->font, &width, NULL, scale, false, "%s", buffer);
