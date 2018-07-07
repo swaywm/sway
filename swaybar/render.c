@@ -497,7 +497,7 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 		// different height than what we asked for
 		wl_surface_commit(output->surface);
 		wl_display_roundtrip(bar->display);
-	} else {
+	} else if (height > 0) {
 		// Replay recording into shm and send it off
 		output->current_buffer = get_next_buffer(bar->shm,
 				output->buffers,
