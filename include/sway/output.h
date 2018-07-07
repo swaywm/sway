@@ -97,4 +97,6 @@ void output_drag_icons_for_each_surface(struct wl_list *drag_icons,
 	struct sway_output *output, struct root_geometry *geo,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
+struct sway_container *output_get_active_workspace(struct sway_output *output);
+
 #endif

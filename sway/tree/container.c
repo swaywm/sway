@@ -11,11 +11,14 @@
 #include "cairo.h"
 #include "pango.h"
 #include "sway/config.h"
+#include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -988,4 +991,83 @@ void container_get_box(struct sway_container *container, struct wlr_box *box) {
 	box->y = container->y;
 	box->width = container->width;
 	box->height = container->height;
+}
+
+/**
+ * Translate the container's position as well as all children.
+ */
+static void container_floating_translate(struct sway_container *con,
+		double x_amount, double y_amount) {
+	con->x += x_amount;
+	con->y += y_amount;
+	con->current.swayc_x += x_amount;
+	con->current.swayc_y += y_amount;
+	if (con->type == C_VIEW) {
+		con->sway_view->x += x_amount;
+		con->sway_view->y += y_amount;
+		con->current.view_x += x_amount;
+		con->current.view_y += y_amount;
+	} else {
+		for (int i = 0; i < con->children->length; ++i) {
+			struct sway_container *child = con->children->items[i];
+			container_floating_translate(child, x_amount, y_amount);
+		}
+	}
+}
+
+/**
+ * Choose an output for the floating container's new position.
+ *
+ * If the center of the container intersects an output then we'll choose that
+ * one, otherwise we'll choose whichever output is closest to the container's
+ * center.
+ */
+static struct sway_container *container_floating_find_output(
+		struct sway_container *con) {
+	double center_x = con->x + con->width / 2;
+	double center_y = con->y + con->height / 2;
+	struct sway_container *closest_output = NULL;
+	double closest_distance = DBL_MAX;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		struct wlr_box output_box;
+		double closest_x, closest_y;
+		container_get_box(output, &output_box);
+		wlr_box_closest_point(&output_box, center_x, center_y,
+				&closest_x, &closest_y);
+		if (center_x == closest_x && center_y == closest_y) {
+			// The center of the floating container is on this output
+			return output;
+		}
+		double x_dist = closest_x - center_x;
+		double y_dist = closest_y - center_y;
+		double distance = x_dist * x_dist + y_dist * y_dist;
+		if (distance < closest_distance) {
+			closest_output = output;
+			closest_distance = distance;
+		}
+	}
+	return closest_output;
+}
+
+void container_floating_move_to(struct sway_container *con,
+		double lx, double ly) {
+	desktop_damage_whole_container(con);
+	container_floating_translate(con, lx - con->x, ly - con->y);
+	desktop_damage_whole_container(con);
+	struct sway_container *old_workspace = container_parent(con, C_WORKSPACE);
+	struct sway_container *new_output = container_floating_find_output(con);
+	if (!sway_assert(new_output, "Unable to find any output")) {
+		return;
+	}
+	struct sway_container *new_workspace =
+		output_get_active_workspace(new_output->sway_output);
+	if (old_workspace != new_workspace) {
+		container_remove_child(con);
+		container_add_child(new_workspace->sway_workspace->floating, con);
+		struct sway_transaction *transaction = transaction_create();
+		arrange_windows(old_workspace, transaction);
+		arrange_windows(new_workspace, transaction);
+		transaction_commit(transaction);
+	}
 }

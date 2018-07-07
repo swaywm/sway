@@ -297,4 +297,10 @@ bool container_is_floating(struct sway_container *container);
  */
 void container_get_box(struct sway_container *container, struct wlr_box *box);
 
+/**
+ * Move a floating container to a new layout-local position.
+ */
+void container_floating_move_to(struct sway_container *con,
+		double lx, double ly);
+
 #endif
