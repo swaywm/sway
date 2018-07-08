@@ -38,6 +38,7 @@ static void daemonize() {
 		exit(1);
 	}
 	if (fork() == 0) {
+		setsid();
 		close(fds[0]);
 		int devnull = open("/dev/null", O_RDWR);
 		dup2(STDOUT_FILENO, devnull);
@@ -406,7 +407,7 @@ int main(int argc, char **argv) {
 		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
-		"  -f, --daemonize                Detach from the controlling terminal.\n";
+		"  -f, --daemonize                Detach from the controlling terminal after locking.\n";
 
 	state.args = (struct swaylock_args){
 		.mode = BACKGROUND_MODE_SOLID_COLOR,
@@ -454,7 +455,7 @@ int main(int argc, char **argv) {
 			state.args.show_indicator = false;
 			break;
 		case 'f':
-			daemonize();
+			state.args.daemonize = true;
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
@@ -508,6 +509,11 @@ int main(int argc, char **argv) {
 	struct swaylock_surface *surface;
 	wl_list_for_each(surface, &state.surfaces, link) {
 		create_layer_surface(surface);
+	}
+
+	if (state.args.daemonize) {
+		wl_display_roundtrip(state.display);
+		daemonize();
 	}
 
 	state.run_display = true;

@@ -37,6 +37,9 @@ Locks your Wayland session.
 *-u, --no-unlock-indicator*
 	Disable the unlock indicator.
 
+*-f, --daemonize*
+	Detach from the controlling terminal after locking.
+
 *-v, --version*
 	Show the version number and quit.
 

@@ -23,6 +23,7 @@ struct swaylock_args {
 	uint32_t color;
 	enum background_mode mode;
 	bool show_indicator;
+	bool daemonize;
 };
 
 struct swaylock_password {
