@@ -667,6 +667,20 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_GET_BINDING_MODES:
+	{
+		json_object *modes = json_object_new_array();
+		for (int i = 0; i < config->modes->length; i++) {
+			struct sway_mode *mode = config->modes->items[i];
+			json_object_array_add(modes, json_object_new_string(mode->name));
+		}
+		const char *json_string = json_object_to_json_string(modes);
+		client_valid =
+			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
+		json_object_put(modes); // free
+		goto exit_cleanup;
+	}
+
 	default:
 		wlr_log(WLR_INFO, "Unknown IPC command type %i", client->current_command);
 		goto exit_cleanup;

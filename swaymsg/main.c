@@ -407,6 +407,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_BAR_CONFIG;
 	} else if (strcasecmp(cmdtype, "get_version") == 0) {
 		type = IPC_GET_VERSION;
+	} else if (strcasecmp(cmdtype, "get_binding_modes") == 0) {
+		type = IPC_GET_BINDING_MODES;
 	} else if (strcasecmp(cmdtype, "get_clipboard") == 0) {
 		type = IPC_GET_CLIPBOARD;
 	} else {
