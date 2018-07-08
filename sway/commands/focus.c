@@ -1,10 +1,12 @@
 #include <strings.h>
 #include <wlr/util/log.h>
 #include "log.h"
+#include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
-#include "sway/commands.h"
+#include "sway/tree/workspace.h"
 
 static bool parse_movement_direction(const char *name,
 		enum movement_direction *out) {
@@ -27,6 +29,21 @@ static bool parse_movement_direction(const char *name,
 	return true;
 }
 
+static struct cmd_results *focus_mode(struct sway_container *con,
+		struct sway_seat *seat, bool floating) {
+	struct sway_container *ws = con->type == C_WORKSPACE ?
+		con : container_parent(con, C_WORKSPACE);
+	struct sway_container *new_focus = ws;
+	if (floating) {
+		new_focus = ws->sway_workspace->floating;
+		if (new_focus->children->length == 0) {
+			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		}
+	}
+	seat_set_focus(seat, seat_get_active_child(seat, new_focus));
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *cmd_focus(int argc, char **argv) {
 	struct sway_container *con = config->handler_context.current_container;
 	struct sway_seat *seat = config->handler_context.seat;
@@ -40,11 +57,20 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 
-	// TODO mode_toggle
+	if (strcmp(argv[0], "floating") == 0) {
+		return focus_mode(con, seat, true);
+	} else if (strcmp(argv[0], "tiling") == 0) {
+		return focus_mode(con, seat, false);
+	} else if (strcmp(argv[0], "mode_toggle") == 0) {
+		return focus_mode(con, seat, !container_is_floating(con));
+	}
+
+	// TODO: focus output <direction|name>
 	enum movement_direction direction = 0;
 	if (!parse_movement_direction(argv[0], &direction)) {
 		return cmd_results_new(CMD_INVALID, "focus",
-				"Expected 'focus <direction|parent|child|mode_toggle>' or 'focus output <direction|name>'");
+			"Expected 'focus <direction|parent|child|mode_toggle|floating|tiling>' "
+			"or 'focus output <direction|name>'");
 	}
 
 	struct sway_container *next_focus = container_get_in_direction(
