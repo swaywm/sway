@@ -62,6 +62,9 @@ _swaymsg_ [options...] [message]
 *get\_binding\_modes*
 	Gets a JSON-encoded list of currently configured binding modes.
 
+*get\_config*
+	Gets a JSON-encoded copy of the current configuration.
+
 *get\_clipboard*
 	Get JSON-encoded information about the clipboard.
 	Returns the current clipboard mime-types if called without

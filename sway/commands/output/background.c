@@ -80,7 +80,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		if (config->reading && *src != '/') {
 			// src file is inside configuration dir
 
-			char *conf = strdup(config->current_config);
+			char *conf = strdup(config->current_config_path);
 			if (!conf) {
 				wlr_log(WLR_ERROR, "Failed to duplicate string");
 				free(src);

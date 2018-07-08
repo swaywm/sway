@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "log.h"
+#include "sway/config.h"
 #include "sway/ipc-json.h"
 #include "sway/tree/container.h"
 #include "sway/tree/workspace.h"
@@ -41,6 +42,7 @@ json_object *ipc_json_get_version() {
 	json_object_object_add(version, "major", json_object_new_int(major));
 	json_object_object_add(version, "minor", json_object_new_int(minor));
 	json_object_object_add(version, "patch", json_object_new_int(patch));
+	json_object_object_add(version, "loaded_config_file_name", json_object_new_string(config->current_config_path));
 
 	return version;
 }
