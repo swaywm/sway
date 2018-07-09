@@ -64,9 +64,3 @@ _swaymsg_ [options...] [message]
 
 *get\_config*
 	Gets a JSON-encoded copy of the current configuration.
-
-*get\_clipboard*
-	Get JSON-encoded information about the clipboard.
-	Returns the current clipboard mime-types if called without
-	arguments, otherwise returns the clipboard data in the requested
-	formats. Encodes the data using base64 for non-text mime types.

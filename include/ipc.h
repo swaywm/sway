@@ -18,8 +18,7 @@ enum ipc_command_type {
 
 	// sway-specific command types
 	IPC_GET_INPUTS = 100,
-	IPC_GET_CLIPBOARD = 101,
-	IPC_GET_SEATS = 102,
+	IPC_GET_SEATS = 101,
 
 	// Events sent from sway to clients. Events have the highest bits set.
 	IPC_EVENT_WORKSPACE = ((1<<31) | 0),
