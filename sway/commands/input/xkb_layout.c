@@ -19,7 +19,7 @@ struct cmd_results *input_cmd_xkb_layout(int argc, char **argv) {
 
 	new_config->xkb_layout = strdup(argv[0]);
 
-	wlr_log(L_DEBUG, "apply-xkb_layout for device: %s layout: %s",
+	wlr_log(WLR_DEBUG, "apply-xkb_layout for device: %s layout: %s",
 		current_input_config->identifier, new_config->xkb_layout);
 	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

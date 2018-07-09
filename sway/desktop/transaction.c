@@ -175,7 +175,7 @@ void transaction_add_container(struct sway_transaction *transaction,
  * Apply a transaction to the "current" state of the tree.
  */
 static void transaction_apply(struct sway_transaction *transaction) {
-	wlr_log(L_DEBUG, "Applying transaction %p", transaction);
+	wlr_log(WLR_DEBUG, "Applying transaction %p", transaction);
 	if (server.debug_txn_timings) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
@@ -186,7 +186,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		float ms_waiting = (now.tv_sec - commit->tv_sec) * 1000 +
 			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
 		float ms_total = ms_arranging + ms_waiting;
-		wlr_log(L_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
+		wlr_log(WLR_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
 			"%.1fms total (%.1f frames if 60Hz)", transaction,
 			ms_arranging, ms_waiting, ms_total, ms_total / (1000.0f / 60));
 	}
@@ -251,7 +251,7 @@ static void transaction_progress_queue() {
 
 static int handle_timeout(void *data) {
 	struct sway_transaction *transaction = data;
-	wlr_log(L_DEBUG, "Transaction %p timed out (%li waiting)",
+	wlr_log(WLR_DEBUG, "Transaction %p timed out (%li waiting)",
 			transaction, transaction->num_waiting);
 	transaction->num_waiting = 0;
 	transaction_progress_queue();
@@ -286,7 +286,7 @@ static bool should_configure(struct sway_container *con,
 }
 
 void transaction_commit(struct sway_transaction *transaction) {
-	wlr_log(L_DEBUG, "Transaction %p committing with %i instructions",
+	wlr_log(WLR_DEBUG, "Transaction %p committing with %i instructions",
 			transaction, transaction->instructions->length);
 	transaction->num_waiting = 0;
 	for (int i = 0; i < transaction->instructions->length; ++i) {
@@ -319,7 +319,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 	} else {
 		// There are no other transactions in progress, and this one has nothing
 		// to wait for, so we can skip the queue.
-		wlr_log(L_DEBUG, "Transaction %p has nothing to wait for", transaction);
+		wlr_log(WLR_DEBUG, "Transaction %p has nothing to wait for", transaction);
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
 		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
@@ -350,7 +350,7 @@ static void set_instruction_ready(
 		struct timespec *start = &transaction->commit_time;
 		float ms = (now.tv_sec - start->tv_sec) * 1000 +
 			(now.tv_nsec - start->tv_nsec) / 1000000.0;
-		wlr_log(L_DEBUG, "Transaction %p: %li/%li ready in %.1fms (%s)",
+		wlr_log(WLR_DEBUG, "Transaction %p: %li/%li ready in %.1fms (%s)",
 				transaction,
 				transaction->num_configures - transaction->num_waiting + 1,
 				transaction->num_configures, ms,
@@ -362,7 +362,7 @@ static void set_instruction_ready(
 	// If the transaction has timed out then its num_waiting will be 0 already.
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
 #if !TRANSACTION_DEBUG
-		wlr_log(L_DEBUG, "Transaction %p is ready", transaction);
+		wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
 		wl_event_source_timer_update(transaction->timer, 0);
 		transaction_progress_queue();
 #endif

@@ -29,7 +29,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	struct output_config *output = new_output_config(argv[0]);
 	if (!output) {
-		wlr_log(L_ERROR, "Failed to allocate output config");
+		wlr_log(WLR_ERROR, "Failed to allocate output config");
 		return NULL;
 	}
 	argc--; argv++;
@@ -71,7 +71,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 		list_add(config->output_configs, output);
 	}
 
-	wlr_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
+	wlr_log(WLR_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
 		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
 		output->name, output->enabled, output->width, output->height,
 		output->refresh_rate, output->x, output->y, output->scale,
@@ -85,7 +85,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	struct sway_output *sway_output;
 	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
 		output_get_identifier(identifier, sizeof(identifier), sway_output);
-		wlr_log(L_DEBUG, "Checking identifier %s", identifier);
+		wlr_log(WLR_DEBUG, "Checking identifier %s", identifier);
 		if (all || strcmp(sway_output->wlr_output->name, output->name) == 0
 				|| strcmp(identifier, output->name) == 0) {
 			if (!sway_output->swayc) {

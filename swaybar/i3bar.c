@@ -31,7 +31,7 @@ static bool i3bar_parse_json(struct status_line *status, const char *text) {
 		status_error(status, "[failed to parse i3bar json]");
 		return false;
 	}
-	wlr_log(L_DEBUG, "Got i3bar json: '%s'", text);
+	wlr_log(WLR_DEBUG, "Got i3bar json: '%s'", text);
 	for (size_t i = 0; i < json_object_array_length(results); ++i) {
 		json_object *full_text, *short_text, *color, *min_width, *align, *urgent;
 		json_object *name, *instance, *separator, *separator_block_width;
@@ -193,7 +193,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 
 void i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, uint32_t button) {
-	wlr_log(L_DEBUG, "block %s clicked", block->name ? block->name : "(nil)");
+	wlr_log(WLR_DEBUG, "block %s clicked", block->name ? block->name : "(nil)");
 	if (!block->name || !status->i3bar_state.click_events) {
 		return;
 	}

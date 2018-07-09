@@ -119,7 +119,7 @@ static struct sway_xwayland_unmanaged *create_unmanaged(
 	struct sway_xwayland_unmanaged *surface =
 		calloc(1, sizeof(struct sway_xwayland_unmanaged));
 	if (surface == NULL) {
-		wlr_log(L_ERROR, "Allocation failed");
+		wlr_log(WLR_ERROR, "Allocation failed");
 		return NULL;
 	}
 
@@ -432,12 +432,12 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	if (wlr_xwayland_surface_is_unmanaged(xsurface) ||
 			xsurface->override_redirect) {
-		wlr_log(L_DEBUG, "New xwayland unmanaged surface");
+		wlr_log(WLR_DEBUG, "New xwayland unmanaged surface");
 		create_unmanaged(xsurface);
 		return;
 	}
 
-	wlr_log(L_DEBUG, "New xwayland surface title='%s' class='%s'",
+	wlr_log(WLR_DEBUG, "New xwayland surface title='%s' class='%s'",
 		xsurface->title, xsurface->class);
 
 	struct sway_xwayland_view *xwayland_view =
@@ -490,7 +490,7 @@ void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 	xcb_connection_t *xcb_conn = xcb_connect(NULL, NULL);
 	int err = xcb_connection_has_error(xcb_conn);
 	if (err) {
-		wlr_log(L_ERROR, "XCB connect failed: %d", err);
+		wlr_log(WLR_ERROR, "XCB connect failed: %d", err);
 		return;
 	}
 
@@ -509,7 +509,7 @@ void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 		free(reply);
 
 		if (error != NULL) {
-			wlr_log(L_ERROR, "could not resolve atom %s, X11 error code %d",
+			wlr_log(WLR_ERROR, "could not resolve atom %s, X11 error code %d",
 				atom_map[i], error->error_code);
 			free(error);
 			break;

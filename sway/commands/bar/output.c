@@ -42,7 +42,7 @@ struct cmd_results *bar_cmd_output(int argc, char **argv) {
 
 	if (add_output) {
 		list_add(outputs, strdup(output));
-		wlr_log(L_DEBUG, "Adding bar: '%s' to output '%s'",
+		wlr_log(WLR_DEBUG, "Adding bar: '%s' to output '%s'",
 				config->current_bar->id, output);
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

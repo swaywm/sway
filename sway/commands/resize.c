@@ -95,7 +95,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		return;
 	}
 
-	wlr_log(L_DEBUG,
+	wlr_log(WLR_DEBUG,
 			"Found the proper parent: %p. It has %d l conts, and %d r conts",
 			parent->parent, minor_weight, major_weight);
 

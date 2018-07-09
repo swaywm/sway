@@ -462,17 +462,17 @@ void view_execute_criteria(struct sway_view *view) {
 	list_t *criterias = criteria_for_view(view, CT_COMMAND);
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
-		wlr_log(L_DEBUG, "Checking criteria %s", criteria->raw);
+		wlr_log(WLR_DEBUG, "Checking criteria %s", criteria->raw);
 		if (view_has_executed_criteria(view, criteria)) {
-			wlr_log(L_DEBUG, "Criteria already executed");
+			wlr_log(WLR_DEBUG, "Criteria already executed");
 			continue;
 		}
-		wlr_log(L_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
+		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
 		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {
-			wlr_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+			wlr_log(WLR_ERROR, "Command '%s' failed: %s", res->input, res->error);
 		}
 		free_cmd_results(res);
 		// view must be focused for commands to affect it,
@@ -601,7 +601,7 @@ static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *subsurface) {
 	struct sway_view_child *child = calloc(1, sizeof(struct sway_view_child));
 	if (child == NULL) {
-		wlr_log(L_ERROR, "Allocation failed");
+		wlr_log(WLR_ERROR, "Allocation failed");
 		return;
 	}
 	view_child_init(child, NULL, view, subsurface->surface);
@@ -721,7 +721,7 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return NULL;
 	}
 
-	wlr_log(L_DEBUG, "Surface of unknown type (role %s): %p",
+	wlr_log(WLR_DEBUG, "Surface of unknown type (role %s): %p",
 		wlr_surface->role, wlr_surface);
 	return NULL;
 }
@@ -789,7 +789,7 @@ static char *escape_title(char *buffer) {
 	char *escaped_title = calloc(length + 1, sizeof(char));
 	int result = escape_markup_text(buffer, escaped_title, length);
 	if (result != length) {
-		wlr_log(L_ERROR, "Could not escape title: %s", buffer);
+		wlr_log(WLR_ERROR, "Could not escape title: %s", buffer);
 		free(escaped_title);
 		return buffer;
 	}
