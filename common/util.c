@@ -113,7 +113,7 @@ uint32_t parse_color(const char *color) {
 
 	int len = strlen(color);
 	if (len != 6 && len != 8) {
-		wlr_log(L_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
+		wlr_log(WLR_DEBUG, "Invalid color %s, defaulting to color 0xFFFFFFFF", color);
 		return 0xFFFFFFFF;
 	}
 	uint32_t res = (uint32_t)strtoul(color, NULL, 16);

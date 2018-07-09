@@ -61,7 +61,7 @@ static char *get_device_identifier(struct wlr_input_device *device) {
 	int len = snprintf(NULL, 0, fmt, vendor, product, name) + 1;
 	char *identifier = malloc(len);
 	if (!identifier) {
-		wlr_log(L_ERROR, "Unable to allocate unique input device name");
+		wlr_log(WLR_ERROR, "Unable to allocate unique input device name");
 		return NULL;
 	}
 
@@ -104,74 +104,74 @@ static void input_manager_libinput_config_pointer(
 	}
 
 	libinput_device = wlr_libinput_get_device_handle(wlr_device);
-	wlr_log(L_DEBUG, "input_manager_libinput_config_pointer(%s)",
+	wlr_log(WLR_DEBUG, "input_manager_libinput_config_pointer(%s)",
 		ic->identifier);
 
 	if (ic->accel_profile != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_profile(%d)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) accel_set_profile(%d)",
 			ic->identifier, ic->accel_profile);
 		libinput_device_config_accel_set_profile(libinput_device,
 			ic->accel_profile);
 	}
 	if (ic->click_method != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) click_set_method(%d)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) click_set_method(%d)",
 			ic->identifier, ic->click_method);
 		libinput_device_config_click_set_method(libinput_device,
 			ic->click_method);
 	}
 	if (ic->drag_lock != INT_MIN) {
-		wlr_log(L_DEBUG,
+		wlr_log(WLR_DEBUG,
 			"libinput_config_pointer(%s) tap_set_drag_lock_enabled(%d)",
 			ic->identifier, ic->click_method);
 		libinput_device_config_tap_set_drag_lock_enabled(libinput_device,
 			ic->drag_lock);
 	}
 	if (ic->dwt != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) dwt_set_enabled(%d)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) dwt_set_enabled(%d)",
 			ic->identifier, ic->dwt);
 		libinput_device_config_dwt_set_enabled(libinput_device, ic->dwt);
 	}
 	if (ic->left_handed != INT_MIN) {
-		wlr_log(L_DEBUG,
+		wlr_log(WLR_DEBUG,
 			"libinput_config_pointer(%s) left_handed_set_enabled(%d)",
 			ic->identifier, ic->left_handed);
 		libinput_device_config_left_handed_set(libinput_device,
 			ic->left_handed);
 	}
 	if (ic->middle_emulation != INT_MIN) {
-		wlr_log(L_DEBUG,
+		wlr_log(WLR_DEBUG,
 			"libinput_config_pointer(%s) middle_emulation_set_enabled(%d)",
 			ic->identifier, ic->middle_emulation);
 		libinput_device_config_middle_emulation_set_enabled(libinput_device,
 			ic->middle_emulation);
 	}
 	if (ic->natural_scroll != INT_MIN) {
-		wlr_log(L_DEBUG,
+		wlr_log(WLR_DEBUG,
 			"libinput_config_pointer(%s) natural_scroll_set_enabled(%d)",
 			ic->identifier, ic->natural_scroll);
 		libinput_device_config_scroll_set_natural_scroll_enabled(
 			libinput_device, ic->natural_scroll);
 	}
 	if (ic->pointer_accel != FLT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) accel_set_speed(%f)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) accel_set_speed(%f)",
 			ic->identifier, ic->pointer_accel);
 		libinput_device_config_accel_set_speed(libinput_device,
 			ic->pointer_accel);
 	}
 	if (ic->scroll_method != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) scroll_set_method(%d)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) scroll_set_method(%d)",
 			ic->identifier, ic->scroll_method);
 		libinput_device_config_scroll_set_method(libinput_device,
 			ic->scroll_method);
 	}
 	if (ic->send_events != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) send_events_set_mode(%d)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) send_events_set_mode(%d)",
 			ic->identifier, ic->send_events);
 		libinput_device_config_send_events_set_mode(libinput_device,
 			ic->send_events);
 	}
 	if (ic->tap != INT_MIN) {
-		wlr_log(L_DEBUG, "libinput_config_pointer(%s) tap_set_enabled(%d)",
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) tap_set_enabled(%d)",
 			ic->identifier, ic->tap);
 		libinput_device_config_tap_set_enabled(libinput_device, ic->tap);
 	}
@@ -187,7 +187,7 @@ static void handle_device_destroy(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	wlr_log(L_DEBUG, "removing device: '%s'",
+	wlr_log(WLR_DEBUG, "removing device: '%s'",
 		input_device->identifier);
 
 	struct sway_seat *seat = NULL;
@@ -217,7 +217,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	input_device->identifier = get_device_identifier(device);
 	wl_list_insert(&input->devices, &input_device->link);
 
-	wlr_log(L_DEBUG, "adding device: '%s'",
+	wlr_log(WLR_DEBUG, "adding device: '%s'",
 		input_device->identifier);
 
 	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
@@ -229,7 +229,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 
 	struct sway_seat *seat = NULL;
 	if (!input_has_seat_configuration(input)) {
-		wlr_log(L_DEBUG, "no seat configuration, using default seat");
+		wlr_log(WLR_DEBUG, "no seat configuration, using default seat");
 		seat = input_manager_get_seat(input, default_seat);
 		seat_add_device(seat, input_device);
 		return;
@@ -259,7 +259,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	}
 
 	if (!added) {
-		wlr_log(L_DEBUG,
+		wlr_log(WLR_DEBUG,
 			"device '%s' is not configured on any seats",
 			input_device->identifier);
 	}
@@ -282,7 +282,7 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 		seat_set_exclusive_client(seat, NULL);
 		struct sway_container *previous = seat_get_focus(seat);
 		if (previous) {
-			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", previous,
+			wlr_log(WLR_DEBUG, "Returning focus to %p %s '%s'", previous,
 					container_type_to_str(previous->type), previous->name);
 			// Hack to get seat to re-focus the return value of get_focus
 			seat_set_focus(seat, previous->parent);
@@ -359,7 +359,7 @@ void input_manager_apply_input_config(struct sway_input_manager *input,
 
 void input_manager_apply_seat_config(struct sway_input_manager *input,
 		struct seat_config *seat_config) {
-	wlr_log(L_DEBUG, "applying new seat config for seat %s",
+	wlr_log(WLR_DEBUG, "applying new seat config for seat %s",
 		seat_config->name);
 	struct sway_seat *seat = input_manager_get_seat(input, seat_config->name);
 	if (!seat) {

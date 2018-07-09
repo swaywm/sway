@@ -507,7 +507,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 			}
 			unescape(value);
 		}
-		wlr_log(L_DEBUG, "Found pair: %s=%s", name, value);
+		wlr_log(WLR_DEBUG, "Found pair: %s=%s", name, value);
 		if (!parse_token(criteria, name, value)) {
 			*error_arg = error;
 			goto cleanup;
