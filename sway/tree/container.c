@@ -1052,6 +1052,10 @@ static struct sway_container *container_floating_find_output(
 
 void container_floating_move_to(struct sway_container *con,
 		double lx, double ly) {
+	if (!sway_assert(container_is_floating(con),
+			"Expected a floating container")) {
+		return;
+	}
 	desktop_damage_whole_container(con);
 	container_floating_translate(con, lx - con->x, ly - con->y);
 	desktop_damage_whole_container(con);
