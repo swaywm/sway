@@ -180,8 +180,8 @@ void container_move_to(struct sway_container *container,
 		new_parent = destination;
 		container_add_child(destination, container);
 	}
-
 	wl_signal_emit(&container->events.reparent, old_parent);
+
 	if (container->type == C_WORKSPACE) {
 		// If moving a workspace to a new output, maybe create a new workspace
 		// on the previous output
