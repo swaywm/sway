@@ -168,7 +168,12 @@ void container_move_to(struct sway_container *container,
 	struct sway_container *old_parent = container_remove_child(container);
 	container->width = container->height = 0;
 	container->saved_width = container->saved_height = 0;
-	struct sway_container *new_parent;
+
+	struct sway_container *new_parent, *new_parent_focus;
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+
+	// Get the focus of the destination before we change it.
+	new_parent_focus = seat_get_focus_inactive(seat, destination);
 	if (destination->type == C_VIEW) {
 		new_parent = container_add_sibling(destination, container);
 	} else {
@@ -176,17 +181,20 @@ void container_move_to(struct sway_container *container,
 		container_add_child(destination, container);
 	}
 	wl_signal_emit(&container->events.reparent, old_parent);
+
 	if (container->type == C_WORKSPACE) {
 		// If moving a workspace to a new output, maybe create a new workspace
 		// on the previous output
-		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		if (old_parent->children->length == 0) {
 			char *ws_name = workspace_next_name(old_parent->name);
-			struct sway_container *ws =
-				workspace_create(old_parent, ws_name);
+			struct sway_container *ws = workspace_create(old_parent, ws_name);
 			free(ws_name);
 			seat_set_focus(seat, ws);
 		}
+
+		// Try to remove an empty workspace from the destination output.
+		container_reap_empty_recursive(new_parent_focus);
+
 		container_sort_workspaces(new_parent);
 		seat_set_focus(seat, new_parent);
 		workspace_output_raise_priority(container, old_parent, new_parent);
