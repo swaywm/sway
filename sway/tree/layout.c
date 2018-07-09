@@ -192,10 +192,7 @@ void container_move_to(struct sway_container *container,
 			seat_set_focus(seat, ws);
 		}
 
-		// Remove an empty workspace from the destination output.
-		if (new_parent_focus->type != C_WORKSPACE) {
-			new_parent_focus = container_parent(new_parent_focus, C_WORKSPACE);
-		}
+		// Try to remove an empty workspace from the destination output.
 		container_reap_empty_recursive(new_parent_focus);
 
 		container_sort_workspaces(new_parent);
