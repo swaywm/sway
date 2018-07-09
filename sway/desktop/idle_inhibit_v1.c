@@ -9,7 +9,7 @@
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_idle_inhibitor_v1 *inhibitor =
 		wl_container_of(listener, inhibitor, destroy);
-	wlr_log(L_DEBUG, "Sway idle inhibitor destroyed");
+	wlr_log(WLR_DEBUG, "Sway idle inhibitor destroyed");
 	wl_list_remove(&inhibitor->link);
 	wl_list_remove(&inhibitor->destroy.link);
 	idle_inhibit_v1_check_active(inhibitor->manager);
@@ -20,7 +20,7 @@ void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data) {
 	struct wlr_idle_inhibitor_v1 *wlr_inhibitor = data;
 	struct sway_idle_inhibit_manager_v1 *manager =
 		wl_container_of(listener, manager, new_idle_inhibitor_v1);
-	wlr_log(L_DEBUG, "New sway idle inhibitor");
+	wlr_log(WLR_DEBUG, "New sway idle inhibitor");
 
 	struct sway_idle_inhibitor_v1 *inhibitor =
 		calloc(1, sizeof(struct sway_idle_inhibitor_v1));

@@ -81,7 +81,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 			pango_layout_set_markup(layout, buf, -1);
 			free(buf);
 		} else {
-			wlr_log(L_ERROR, "pango_parse_markup '%s' -> error %s", text,
+			wlr_log(WLR_ERROR, "pango_parse_markup '%s' -> error %s", text,
 					error->message);
 			g_error_free(error);
 			markup = false; // fallback to plain text

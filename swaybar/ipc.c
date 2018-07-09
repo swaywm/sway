@@ -327,7 +327,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		json_object *result = json_tokener_parse(resp->payload);
 		if (!result) {
 			free_ipc_response(resp);
-			wlr_log(L_ERROR, "failed to parse payload as json");
+			wlr_log(WLR_ERROR, "failed to parse payload as json");
 			return false;
 		}
 		json_object *json_change, *json_pango_markup;
@@ -340,7 +340,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 				bar->config->mode = strdup(change);
 			}
 		} else {
-			wlr_log(L_ERROR, "failed to parse response");
+			wlr_log(WLR_ERROR, "failed to parse response");
 			json_object_put(result);
 			free_ipc_response(resp);
 			return false;

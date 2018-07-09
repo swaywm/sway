@@ -276,12 +276,12 @@ static char *get_config_path(void) {
 		char *home = getenv("HOME");
 		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
 		if (!config_home) {
-			wlr_log(L_ERROR, "Unable to allocate $HOME/.config");
+			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
 		} else {
 			strcpy(config_home, home);
 			strcat(config_home, "/.config");
 			setenv("XDG_CONFIG_HOME", config_home, 1);
-			wlr_log(L_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
 			free(config_home);
 		}
 	}
@@ -308,11 +308,11 @@ const char *current_config_path;
 
 static bool load_config(const char *path, struct sway_config *config) {
 	if (path == NULL) {
-		wlr_log(L_ERROR, "Unable to find a config file!");
+		wlr_log(WLR_ERROR, "Unable to find a config file!");
 		return false;
 	}
 
-	wlr_log(L_INFO, "Loading config from %s", path);
+	wlr_log(WLR_INFO, "Loading config from %s", path);
 	current_config_path = path;
 
 	struct stat sb;
@@ -322,7 +322,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 
 	FILE *f = fopen(path, "r");
 	if (!f) {
-		wlr_log(L_ERROR, "Unable to open %s for reading", path);
+		wlr_log(WLR_ERROR, "Unable to open %s for reading", path);
 		return false;
 	}
 
@@ -330,7 +330,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 	fclose(f);
 
 	if (!config_load_success) {
-		wlr_log(L_ERROR, "Error(s) loading config!");
+		wlr_log(WLR_ERROR, "Error(s) loading config!");
 	}
 
 	current_config_path = NULL;
@@ -353,7 +353,7 @@ bool load_main_config(const char *file, bool is_active) {
 
 	config_defaults(config);
 	if (is_active) {
-		wlr_log(L_DEBUG, "Performing configuration file reload");
+		wlr_log(WLR_DEBUG, "Performing configuration file reload");
 		config->reloading = true;
 		config->active = true;
 	}
@@ -369,7 +369,7 @@ bool load_main_config(const char *file, bool is_active) {
 	/*
 	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
 	if (!dir) {
-		wlr_log(L_ERROR,
+		wlr_log(WLR_ERROR,
 			"%s does not exist, sway will have no security configuration"
 			" and will probably be broken", SYSCONFDIR "/sway/security.d");
 	} else {
@@ -398,7 +398,7 @@ bool load_main_config(const char *file, bool is_active) {
 			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 ||
 					(((s.st_mode & 0777) != 0644) &&
 					(s.st_mode & 0777) != 0444)) {
-				wlr_log(L_ERROR,
+				wlr_log(WLR_ERROR,
 					"Refusing to load %s - it must be owned by root "
 					"and mode 644 or 444", _path);
 				success = false;
@@ -436,7 +436,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 		len = len + strlen(parent_dir) + 2;
 		full_path = malloc(len * sizeof(char));
 		if (!full_path) {
-			wlr_log(L_ERROR,
+			wlr_log(WLR_ERROR,
 				"Unable to allocate full path to included config");
 			return false;
 		}
@@ -449,7 +449,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	free(full_path);
 
 	if (real_path == NULL) {
-		wlr_log(L_DEBUG, "%s not found.", path);
+		wlr_log(WLR_DEBUG, "%s not found.", path);
 		return false;
 	}
 
@@ -458,7 +458,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	for (j = 0; j < config->config_chain->length; ++j) {
 		char *old_path = config->config_chain->items[j];
 		if (strcmp(real_path, old_path) == 0) {
-			wlr_log(L_DEBUG,
+			wlr_log(WLR_DEBUG,
 				"%s already included once, won't be included again.",
 				real_path);
 			free(real_path);
@@ -512,7 +512,7 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	// restore wd
 	if (chdir(wd) < 0) {
 		free(wd);
-		wlr_log(L_ERROR, "failed to restore working directory");
+		wlr_log(WLR_ERROR, "failed to restore working directory");
 		return false;
 	}
 
@@ -527,13 +527,13 @@ static int detect_brace_on_following_line(FILE *file, char *line,
 		char *peeked = NULL;
 		long position = 0;
 		do {
-			wlr_log(L_DEBUG, "Peeking line %d", line_number + lines + 1);
+			wlr_log(WLR_DEBUG, "Peeking line %d", line_number + lines + 1);
 			free(peeked);
 			peeked = peek_line(file, lines, &position);
 			if (peeked) {
 				peeked = strip_whitespace(peeked);
 			}
-			wlr_log(L_DEBUG, "Peeked line: `%s`", peeked);
+			wlr_log(WLR_DEBUG, "Peeked line: `%s`", peeked);
 			lines++;
 		} while (peeked && strlen(peeked) == 0);
 
@@ -552,7 +552,7 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 		+ (add_brace ? 2 : 0) + 1;
 	char *expanded = calloc(1, size);
 	if (!expanded) {
-		wlr_log(L_ERROR, "Cannot allocate expanded line buffer");
+		wlr_log(WLR_ERROR, "Cannot allocate expanded line buffer");
 		return NULL;
 	}
 	snprintf(expanded, size, "%s%s%s%s", block ? block : "",
@@ -572,7 +572,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			continue;
 		}
 		line_number++;
-		wlr_log(L_DEBUG, "Read line %d: %s", line_number, line);
+		wlr_log(WLR_DEBUG, "Read line %d: %s", line_number, line);
 		line = strip_whitespace(line);
 		if (line[0] == '#') {
 			free(line);
@@ -586,7 +586,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 				line_number);
 		if (brace_detected > 0) {
 			line_number += brace_detected;
-			wlr_log(L_DEBUG, "Detected open brace on line %d", line_number);
+			wlr_log(WLR_DEBUG, "Detected open brace on line %d", line_number);
 		}
 		char *expanded = expand_line(block, line, brace_detected > 0);
 		if (!expanded) {
@@ -594,7 +594,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			list_free(stack);
 			return false;
 		}
-		wlr_log(L_DEBUG, "Expanded line: %s", expanded);
+		wlr_log(WLR_DEBUG, "Expanded line: %s", expanded);
 		struct cmd_results *res;
 		if (block && strcmp(block, "<commands>") == 0) {
 			// Special case
@@ -606,23 +606,23 @@ bool read_config(FILE *file, struct sway_config *config) {
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
-			wlr_log(L_ERROR, "Error on line %i '%s': %s (%s)", line_number,
+			wlr_log(WLR_ERROR, "Error on line %i '%s': %s (%s)", line_number,
 				line, res->error, config->current_config);
 			success = false;
 			break;
 
 		case CMD_DEFER:
-			wlr_log(L_DEBUG, "Deferring command `%s'", line);
+			wlr_log(WLR_DEBUG, "Deferring command `%s'", line);
 			list_add(config->cmd_queue, strdup(line));
 			break;
 
 		case CMD_BLOCK_COMMANDS:
-			wlr_log(L_DEBUG, "Entering commands block");
+			wlr_log(WLR_DEBUG, "Entering commands block");
 			list_insert(stack, 0, "<commands>");
 			break;
 
 		case CMD_BLOCK:
-			wlr_log(L_DEBUG, "Entering block '%s'", res->input);
+			wlr_log(WLR_DEBUG, "Entering block '%s'", res->input);
 			list_insert(stack, 0, strdup(res->input));
 			if (strcmp(res->input, "bar") == 0) {
 				config->current_bar = NULL;
@@ -631,7 +631,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 
 		case CMD_BLOCK_END:
 			if (!block) {
-				wlr_log(L_DEBUG, "Unmatched '}' on line %i", line_number);
+				wlr_log(WLR_DEBUG, "Unmatched '}' on line %i", line_number);
 				success = false;
 				break;
 			}
@@ -639,7 +639,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 				config->current_bar = NULL;
 			}
 
-			wlr_log(L_DEBUG, "Exiting block '%s'", block);
+			wlr_log(WLR_DEBUG, "Exiting block '%s'", block);
 			list_del(stack, 0);
 			free(block);
 			memset(&config->handler_context, 0,
@@ -682,7 +682,7 @@ char *do_var_replacement(char *str) {
 				int vvlen = strlen(var->value);
 				char *newstr = malloc(strlen(str) - vnlen + vvlen + 1);
 				if (!newstr) {
-					wlr_log(L_ERROR,
+					wlr_log(WLR_ERROR,
 						"Unable to allocate replacement "
 						"during variable expansion");
 					break;

@@ -323,7 +323,7 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
-	wlr_log_init(L_INFO, NULL);
+	wlr_log_init(WLR_INFO, NULL);
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},

@@ -525,7 +525,7 @@ struct sway_output *output_from_wlr_output(struct wlr_output *wlr_output) {
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
-	wlr_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
+	wlr_log(WLR_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	if (!output) {
