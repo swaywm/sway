@@ -599,9 +599,11 @@ static void render_container_tabbed(struct sway_output *output,
 	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
 
+	int tab_width = pstate->swayc_width / pstate->children->length;
+
 	// Render tabs
-	for (int i = 0; i < con->current.children->length; ++i) {
-		struct sway_container *child = con->current.children->items[i];
+	for (int i = 0; i < pstate->children->length; ++i) {
+		struct sway_container *child = pstate->children->items[i];
 		struct sway_view *view = child->type == C_VIEW ? child->sway_view : NULL;
 		struct sway_container_state *cstate = &child->current;
 		struct border_colors *colors;
@@ -622,8 +624,8 @@ static void render_container_tabbed(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int tab_width = pstate->swayc_width / pstate->children->length;
-		int x = pstate->swayc_x + tab_width * i;
+		int x = cstate->swayc_x + tab_width * i;
+
 		// Make last tab use the remaining width of the parent
 		if (i == pstate->children->length - 1) {
 			tab_width = pstate->swayc_width - tab_width * i;
@@ -663,9 +665,11 @@ static void render_container_stacked(struct sway_output *output,
 	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
 
+	size_t titlebar_height = container_titlebar_height();
+
 	// Render titles
-	for (int i = 0; i < con->current.children->length; ++i) {
-		struct sway_container *child = con->current.children->items[i];
+	for (int i = 0; i < pstate->children->length; ++i) {
+		struct sway_container *child = pstate->children->items[i];
 		struct sway_view *view = child->type == C_VIEW ? child->sway_view : NULL;
 		struct sway_container_state *cstate = &child->current;
 		struct border_colors *colors;
@@ -686,7 +690,7 @@ static void render_container_stacked(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int y = pstate->swayc_y + container_titlebar_height() * i;
+		int y = cstate->swayc_y + titlebar_height * i;
 		render_titlebar(output, damage, child, cstate->swayc_x, y,
 				cstate->swayc_width, colors, title_texture, marks_texture);
 
