@@ -341,6 +341,7 @@ struct sway_config {
 	int gaps_outer;
 
 	list_t *config_chain;
+	const char *current_config_path;
 	const char *current_config;
 
 	enum sway_container_border border;
@@ -495,8 +496,5 @@ void config_update_font_height(bool recalculate);
 
 /* Global config singleton. */
 extern struct sway_config *config;
-
-/* Config file currently being read */
-extern const char *current_config_path;
 
 #endif

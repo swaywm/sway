@@ -117,6 +117,7 @@ void free_config(struct sway_config *config) {
 	free(config->floating_scroll_left_cmd);
 	free(config->floating_scroll_right_cmd);
 	free(config->font);
+	free((char *)config->current_config_path);
 	free((char *)config->current_config);
 	free(config);
 }
@@ -205,6 +206,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->active_bar_modifiers = create_list())) goto cleanup;
 
 	if (!(config->config_chain = create_list())) goto cleanup;
+	config->current_config_path = NULL;
 	config->current_config = NULL;
 
 	// borders
@@ -304,8 +306,6 @@ static char *get_config_path(void) {
 	return NULL; // Not reached
 }
 
-const char *current_config_path;
-
 static bool load_config(const char *path, struct sway_config *config) {
 	if (path == NULL) {
 		wlr_log(WLR_ERROR, "Unable to find a config file!");
@@ -313,7 +313,6 @@ static bool load_config(const char *path, struct sway_config *config) {
 	}
 
 	wlr_log(WLR_INFO, "Loading config from %s", path);
-	current_config_path = path;
 
 	struct stat sb;
 	if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
@@ -333,7 +332,6 @@ static bool load_config(const char *path, struct sway_config *config) {
 		wlr_log(WLR_ERROR, "Error(s) loading config!");
 	}
 
-	current_config_path = NULL;
 	return true;
 }
 
@@ -358,7 +356,7 @@ bool load_main_config(const char *file, bool is_active) {
 		config->active = true;
 	}
 
-	config->current_config = path;
+	config->current_config_path = path;
 	list_add(config->config_chain, path);
 
 	config->reading = true;
@@ -428,7 +426,7 @@ bool load_main_config(const char *file, bool is_active) {
 static bool load_include_config(const char *path, const char *parent_dir,
 		struct sway_config *config) {
 	// save parent config
-	const char *parent_config = config->current_config;
+	const char *parent_config = config->current_config_path;
 
 	char *full_path;
 	int len = strlen(path);
@@ -466,25 +464,25 @@ static bool load_include_config(const char *path, const char *parent_dir,
 		}
 	}
 
-	config->current_config = real_path;
+	config->current_config_path = real_path;
 	list_add(config->config_chain, real_path);
 	int index = config->config_chain->length - 1;
 
 	if (!load_config(real_path, config)) {
 		free(real_path);
-		config->current_config = parent_config;
+		config->current_config_path = parent_config;
 		list_del(config->config_chain, index);
 		return false;
 	}
 
-	// restore current_config
-	config->current_config = parent_config;
+	// restore current_config_path
+	config->current_config_path = parent_config;
 	return true;
 }
 
 bool load_include_configs(const char *path, struct sway_config *config) {
 	char *wd = getcwd(NULL, 0);
-	char *parent_path = strdup(config->current_config);
+	char *parent_path = strdup(config->current_config_path);
 	const char *parent_dir = dirname(parent_path);
 
 	if (chdir(parent_dir) < 0) {
@@ -561,6 +559,23 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 }
 
 bool read_config(FILE *file, struct sway_config *config) {
+	bool reading_main_config = false;
+	char *current_config, *config_pos;
+	long config_size = 0;
+	if (config->current_config == NULL) {
+		reading_main_config = true;
+
+		fseek(file, 0, SEEK_END);
+		config_size = ftell(file);
+		rewind(file);
+
+		config_pos = current_config = malloc(config_size + 1);
+		if (current_config == NULL) {
+			wlr_log(WLR_ERROR, "Unable to allocate buffer for config contents");
+			return false;
+		}
+	}
+
 	bool success = true;
 	int line_number = 0;
 	char *line;
@@ -573,6 +588,14 @@ bool read_config(FILE *file, struct sway_config *config) {
 		}
 		line_number++;
 		wlr_log(WLR_DEBUG, "Read line %d: %s", line_number, line);
+
+		if (reading_main_config) {
+			size_t l = strlen(line);
+			memcpy(config_pos, line, l); // don't copy terminating character
+			config_pos += l;
+			*config_pos++ = '\n';
+		}
+
 		line = strip_whitespace(line);
 		if (line[0] == '#') {
 			free(line);
@@ -592,6 +615,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		if (!expanded) {
 			list_foreach(stack, free);
 			list_free(stack);
+			free(line);
+			free(current_config);
 			return false;
 		}
 		wlr_log(WLR_DEBUG, "Expanded line: %s", expanded);
@@ -607,7 +632,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
 			wlr_log(WLR_ERROR, "Error on line %i '%s': %s (%s)", line_number,
-				line, res->error, config->current_config);
+				line, res->error, config->current_config_path);
 			success = false;
 			break;
 
@@ -652,6 +677,10 @@ bool read_config(FILE *file, struct sway_config *config) {
 	list_foreach(stack, free);
 	list_free(stack);
 
+	if (reading_main_config) {
+		current_config[config_size - 1] = '\0';
+		config->current_config = current_config;
+	}
 	return success;
 }
 
