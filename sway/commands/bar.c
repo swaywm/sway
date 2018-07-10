@@ -63,13 +63,13 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 			for (int i = 0; i < config->bars->length; ++i) {
 				struct bar_config *item = config->bars->items[i];
 				if (strcmp(item->id, argv[0]) == 0) {
-					wlr_log(L_DEBUG, "Selecting bar: %s", argv[0]);
+					wlr_log(WLR_DEBUG, "Selecting bar: %s", argv[0]);
 					bar = item;
 					break;
 				}
 			}
 			if (!bar) {
-				wlr_log(L_DEBUG, "Creating bar: %s", argv[0]);
+				wlr_log(WLR_DEBUG, "Creating bar: %s", argv[0]);
 				bar = default_bar_config();
 				if (!bar) {
 					return cmd_results_new(CMD_FAILURE, "bar",
@@ -108,7 +108,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 		// Set current bar
 		config->current_bar = bar;
-		wlr_log(L_DEBUG, "Creating bar %s", bar->id);
+		wlr_log(WLR_DEBUG, "Creating bar %s", bar->id);
 	}
 
 	return config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));

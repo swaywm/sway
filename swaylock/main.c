@@ -34,7 +34,7 @@ void sway_terminate(int exit_code) {
 static void daemonize() {
 	int fds[2];
 	if (pipe(fds) != 0) {
-		wlr_log(L_ERROR, "Failed to pipe");
+		wlr_log(WLR_ERROR, "Failed to pipe");
 		exit(1);
 	}
 	if (fork() == 0) {
@@ -58,7 +58,7 @@ static void daemonize() {
 		close(fds[1]);
 		uint8_t success;
 		if (read(fds[0], &success, 1) != 1 || !success) {
-			wlr_log(L_ERROR, "Failed to daemonize");
+			wlr_log(WLR_ERROR, "Failed to daemonize");
 			exit(1);
 		}
 		close(fds[0]);
@@ -238,7 +238,7 @@ static void handle_xdg_output_logical_position(void *data,
 
 static void handle_xdg_output_name(void *data, struct zxdg_output_v1 *output,
 		const char *name) {
-	wlr_log(L_DEBUG, "output name is %s", name);
+	wlr_log(WLR_DEBUG, "output name is %s", name);
 	struct swaylock_surface *surface = data;
 	surface->xdg_output = output;
 	surface->output_name = strdup(name);
@@ -354,10 +354,10 @@ static void load_image(char *arg, struct swaylock_state *state) {
 	}
 	if (exists) {
 		if (image->output_name) {
-			wlr_log(L_ERROR, "Multiple images defined for output %s",
+			wlr_log(WLR_ERROR, "Multiple images defined for output %s",
 				image->output_name);
 		} else {
-			wlr_log(L_ERROR, "Multiple default images defined");
+			wlr_log(WLR_ERROR, "Multiple default images defined");
 		}
 	}
 
@@ -377,7 +377,7 @@ static void load_image(char *arg, struct swaylock_state *state) {
 	}
 	wl_list_insert(&state->images, &image->link);
 	state->args.mode = BACKGROUND_MODE_FILL;
-	wlr_log(L_DEBUG, "Loaded image %s for output %s",
+	wlr_log(WLR_DEBUG, "Loaded image %s for output %s",
 			image->path, image->output_name ? image->output_name : "*");
 }
 
@@ -416,7 +416,7 @@ int main(int argc, char **argv) {
 	};
 	wl_list_init(&state.images);
 
-	wlr_log_init(L_DEBUG, NULL);
+	wlr_log_init(WLR_DEBUG, NULL);
 
 	int c;
 	while (1) {
@@ -480,13 +480,13 @@ int main(int argc, char **argv) {
 	wl_display_roundtrip(state.display);
 	assert(state.compositor && state.layer_shell && state.shm);
 	if (!state.input_inhibit_manager) {
-		wlr_log(L_ERROR, "Compositor does not support the input inhibitor "
+		wlr_log(WLR_ERROR, "Compositor does not support the input inhibitor "
 				"protocol, refusing to run insecurely");
 		return 1;
 	}
 
 	if (wl_list_empty(&state.surfaces)) {
-		wlr_log(L_DEBUG, "Exiting - no outputs to show on.");
+		wlr_log(WLR_DEBUG, "Exiting - no outputs to show on.");
 		return 0;
 	}
 
@@ -502,7 +502,7 @@ int main(int argc, char **argv) {
 		}
 		wl_display_roundtrip(state.display);
 	} else {
-		wlr_log(L_INFO, "Compositor does not support zxdg output manager, "
+		wlr_log(WLR_INFO, "Compositor does not support zxdg output manager, "
 				"images assigned to named outputs will not work");
 	}
 

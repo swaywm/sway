@@ -15,11 +15,11 @@ struct cmd_results *bar_cmd_strip_workspace_numbers(int argc, char **argv) {
 	}
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->strip_workspace_numbers = true;
-		wlr_log(L_DEBUG, "Stripping workspace numbers on bar: %s",
+		wlr_log(WLR_DEBUG, "Stripping workspace numbers on bar: %s",
 				config->current_bar->id);
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->strip_workspace_numbers = false;
-		wlr_log(L_DEBUG, "Enabling workspace numbers on bar: %s",
+		wlr_log(WLR_DEBUG, "Enabling workspace numbers on bar: %s",
 				config->current_bar->id);
 	} else {
 		return cmd_results_new(CMD_INVALID,

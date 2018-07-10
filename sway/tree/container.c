@@ -31,7 +31,7 @@ static list_t *get_bfs_queue() {
 	if (!bfs_queue) {
 		bfs_queue = create_list();
 		if (!bfs_queue) {
-			wlr_log(L_ERROR, "could not allocate list for bfs queue");
+			wlr_log(WLR_ERROR, "could not allocate list for bfs queue");
 			return NULL;
 		}
 	}
@@ -213,7 +213,7 @@ static struct sway_container *container_workspace_destroy(
 		return NULL;
 	}
 
-	wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+	wlr_log(WLR_DEBUG, "destroying workspace '%s'", workspace->name);
 
 	struct sway_container *parent = workspace->parent;
 	if (!workspace_is_empty(workspace) && output) {
@@ -226,7 +226,7 @@ static struct sway_container *container_workspace_destroy(
 			}
 		}
 
-		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
+		wlr_log(WLR_DEBUG, "moving children to different workspace '%s' -> '%s'",
 			workspace->name, new_workspace->name);
 		for (int i = 0; i < workspace->children->length; i++) {
 			container_move_to(workspace->children->items[i], new_workspace);
@@ -292,7 +292,7 @@ static struct sway_container *container_output_destroy(
 	output->sway_output->swayc = NULL;
 	output->sway_output = NULL;
 
-	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
+	wlr_log(WLR_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 
 	return &root_container;
 }
@@ -319,7 +319,7 @@ static struct sway_container *container_destroy_noreaping(
 		// Workspaces will refuse to be destroyed if they're the last workspace
 		// on their output.
 		if (!container_workspace_destroy(con)) {
-			wlr_log(L_ERROR, "workspace doesn't want to destroy");
+			wlr_log(WLR_ERROR, "workspace doesn't want to destroy");
 			return NULL;
 		}
 	}
@@ -346,7 +346,7 @@ bool container_reap_empty(struct sway_container *con) {
 		break;
 	case C_WORKSPACE:
 		if (!workspace_is_visible(con) && workspace_is_empty(con)) {
-			wlr_log(L_DEBUG, "Destroying workspace via reaper");
+			wlr_log(WLR_DEBUG, "Destroying workspace via reaper");
 			container_destroy_noreaping(con);
 			return true;
 		}
@@ -439,7 +439,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 	}
 	const char *title = view_get_title(sway_view);
 	struct sway_container *swayc = container_create(C_VIEW);
-	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d %s",
+	wlr_log(WLR_DEBUG, "Adding new view %p:%s to container %p %d %s",
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
@@ -702,7 +702,7 @@ void container_for_each_descendant_bfs(struct sway_container *con,
 	}
 
 	if (queue == NULL) {
-		wlr_log(L_ERROR, "could not allocate list");
+		wlr_log(WLR_ERROR, "could not allocate list");
 		return;
 	}
 

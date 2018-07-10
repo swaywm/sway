@@ -92,6 +92,12 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* output <name>
 	Moves focus to the named output.
 
+*focus tiling*
+	Sets focus to the last focused tiling container.
+
+*focus floating*
+	Sets focus to the last focused floating container.
+
 *focus* mode\_toggle
 	Moves focus between the floating and tiled layers.
 
