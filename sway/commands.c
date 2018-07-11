@@ -100,6 +100,8 @@ static struct cmd_handler handlers[] = {
 	{ "default_border", cmd_default_border },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
+	{ "floating_maximum_size", cmd_floating_maximum_size },
+	{ "floating_minimum_size", cmd_floating_minimum_size },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "focus_wrapping", cmd_focus_wrapping },
 	{ "font", cmd_font },
@@ -344,7 +346,7 @@ struct cmd_results *config_command(char *exec) {
 
 	// Start block
 	if (argc > 1 && strcmp(argv[argc - 1], "{") == 0) {
-		char *block = join_args(argv, argc - 1); 
+		char *block = join_args(argv, argc - 1);
 		results = cmd_results_new(CMD_BLOCK, block, NULL);
 		free(block);
 		goto cleanup;
