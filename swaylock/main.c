@@ -89,7 +89,7 @@ static bool surface_is_opaque(struct swaylock_surface *surface) {
 	if (surface->image) {
 		return cairo_surface_get_content(surface->image) == CAIRO_CONTENT_COLOR;
 	}
-	return (surface->state->args.color & 0xff) == 0xff;
+	return (surface->state->args.colors.background & 0xff) == 0xff;
 }
 
 static void create_layer_surface(struct swaylock_surface *surface) {
@@ -381,58 +381,212 @@ static void load_image(char *arg, struct swaylock_state *state) {
 			image->path, image->output_name ? image->output_name : "*");
 }
 
+static void set_default_colors(struct swaylock_colors *colors) {
+	colors->background = 0xFFFFFFFF;
+	colors->bs_highlight = 0xDB3300FF;
+	colors->key_highlight = 0x33DB00FF;
+	colors->separator = 0x000000FF;
+	colors->inside = (struct swaylock_colorset){
+		.input = 0x000000C0,
+		.cleared = 0xE5A445C0,
+		.verifying = 0x0072FFC0,
+		.wrong = 0xFA0000C0,
+	};
+	colors->line = (struct swaylock_colorset){
+		.input = 0x000000FF,
+		.cleared = 0x000000FF,
+		.verifying = 0x000000FF,
+		.wrong = 0x000000FF,
+	};
+	colors->ring = (struct swaylock_colorset){
+		.input = 0x337D00FF,
+		.cleared = 0xE5A445FF,
+		.verifying = 0x3300FFFF,
+		.wrong = 0x7D3300FF,
+	};
+	colors->text = (struct swaylock_colorset){
+		.input = 0xE5A445FF,
+		.cleared = 0x000000FF,
+		.verifying = 0x000000FF,
+		.wrong = 0x000000FF,
+	};
+}
+
 static struct swaylock_state state;
 
 int main(int argc, char **argv) {
+	enum line_mode {
+		LM_LINE,
+		LM_INSIDE,
+		LM_RING,
+	};
+
+	enum long_option_codes {
+		LO_BS_HL_COLOR = 256,
+		LO_FONT,
+		LO_IND_RADIUS,
+		LO_IND_THICKNESS,
+		LO_INSIDE_COLOR,
+		LO_INSIDE_CLEAR_COLOR,
+		LO_INSIDE_VER_COLOR,
+		LO_INSIDE_WRONG_COLOR,
+		LO_KEY_HL_COLOR,
+		LO_LINE_COLOR,
+		LO_LINE_CLEAR_COLOR,
+		LO_LINE_VER_COLOR,
+		LO_LINE_WRONG_COLOR,
+		LO_RING_COLOR,
+		LO_RING_CLEAR_COLOR,
+		LO_RING_VER_COLOR,
+		LO_RING_WRONG_COLOR,
+		LO_SEP_COLOR,
+		LO_TEXT_COLOR,
+		LO_TEXT_CLEAR_COLOR,
+		LO_TEXT_VER_COLOR,
+		LO_TEXT_WRONG_COLOR,
+	};
+
 	static struct option long_options[] = {
-		{"help", no_argument, NULL, 'h'},
 		{"color", required_argument, NULL, 'c'},
+		{"ignore-empty-password", no_argument, NULL, 'e'},
+		{"daemonize", no_argument, NULL, 'f'},
+		{"help", no_argument, NULL, 'h'},
 		{"image", required_argument, NULL, 'i'},
+		{"line-uses-inside", no_argument, NULL, 'n'},
+		{"socket", required_argument, NULL, 'p'},
+		{"line-uses-ring", no_argument, NULL, 'r'},
 		{"scaling", required_argument, NULL, 's'},
 		{"tiling", no_argument, NULL, 't'},
-		{"version", no_argument, NULL, 'v'},
-		{"socket", required_argument, NULL, 'p'},
 		{"no-unlock-indicator", no_argument, NULL, 'u'},
-		{"daemonize", no_argument, NULL, 'f'},
+		{"version", no_argument, NULL, 'v'},
+		{"bs-hl-color", required_argument, NULL, LO_BS_HL_COLOR},
+		{"font", required_argument, NULL, LO_FONT},
+		{"indicator-radius", required_argument, NULL, LO_IND_RADIUS},
+		{"indicator-thickness", required_argument, NULL, LO_IND_THICKNESS},
+		{"inside-color", required_argument, NULL, LO_INSIDE_COLOR},
+		{"inside-clear-color", required_argument, NULL, LO_INSIDE_CLEAR_COLOR},
+		{"inside-ver-color", required_argument, NULL, LO_INSIDE_VER_COLOR},
+		{"inside-wrong-color", required_argument, NULL, LO_INSIDE_WRONG_COLOR},
+		{"key-hl-color", required_argument, NULL, LO_KEY_HL_COLOR},
+		{"line-color", required_argument, NULL, LO_LINE_COLOR},
+		{"line-clear-color", required_argument, NULL, LO_LINE_CLEAR_COLOR},
+		{"line-ver-color", required_argument, NULL, LO_LINE_VER_COLOR},
+		{"line-wrong-color", required_argument, NULL, LO_LINE_WRONG_COLOR},
+		{"ring-color", required_argument, NULL, LO_RING_COLOR},
+		{"ring-clear-color", required_argument, NULL, LO_RING_CLEAR_COLOR},
+		{"ring-ver-color", required_argument, NULL, LO_RING_VER_COLOR},
+		{"ring-wrong-color", required_argument, NULL, LO_RING_WRONG_COLOR},
+		{"separator-color", required_argument, NULL, LO_SEP_COLOR},
+		{"text-color", required_argument, NULL, LO_TEXT_COLOR},
+		{"text-clear-color", required_argument, NULL, LO_TEXT_CLEAR_COLOR},
+		{"text-ver-color", required_argument, NULL, LO_TEXT_VER_COLOR},
+		{"text-wrong-color", required_argument, NULL, LO_TEXT_WRONG_COLOR},
 		{0, 0, 0, 0}
 	};
 
 	const char usage[] =
 		"Usage: swaylock [options...]\n"
 		"\n"
+		"  -c, --color <color>            Turn the screen into the given color"
+		" instead of white.\n"
+		"  -e, --ignore-empty-password    When an empty password is provided"
+		" by the user, do not validate it.\n"
+		"  -f, --daemonize                Detach from the controlling terminal"
+		" after locking.\n"
 		"  -h, --help                     Show help message and quit.\n"
-		"  -c, --color <rrggbb[aa]>       Turn the screen into the given color instead of white.\n"
-		"  -s, --scaling                  Scaling mode: stretch, fill, fit, center, tile.\n"
-		"  -t, --tiling                   Same as --scaling=tile.\n"
-		"  -v, --version                  Show the version number and quit.\n"
 		"  -i, --image [<output>:]<path>  Display the given image.\n"
+		"  -s, --scaling <mode>           Scaling mode: stretch, fill, fit,"
+		" center, tile.\n"
+		"  -t, --tiling                   Same as --scaling=tile.\n"
 		"  -u, --no-unlock-indicator      Disable the unlock indicator.\n"
-		"  -f, --daemonize                Detach from the controlling terminal after locking.\n";
+		"  -v, --version                  Show the version number and quit.\n"
+		"  --bs-hl-color <color>          Sets the color of backspace"
+		" highlight segments.\n"
+		"  --font <font>                  Sets the font of the text.\n"
+		"  --indicator-radius <radius>    Sets the indicator radius.\n"
+		"  --indicator-thickness <thick>  Sets the indicator thickness.\n"
+		"  --inside-color <color>         Sets the color of the inside of the"
+		" indicator.\n"
+		"  --inside-clear-color <color>   Sets the color of the inside of the"
+		" indicator when cleared.\n"
+		"  --inside-ver-color <color>     Sets the color of the inside of the"
+		" indicator when verifying.\n"
+		"  --inside-wrong-color <color>   Sets the color of the inside of the"
+		" indicator when invalid.\n"
+		"  --key-hl-color <color>         Sets the color of the key press"
+		" highlight segments.\n"
+		"  --line-color <color>           Sets the color of the line between"
+		" the inside and ring.\n"
+		"  --line-clear-color <color>     Sets the color of the line between"
+		" the inside and ring when cleared.\n"
+		"  --line-ver-color <color>       Sets the color of the line between"
+		" the inside and ring when verifying.\n"
+		"  --line-wrong-color <color>     Sets the color of the line between"
+		" the inside and ring when invalid.\n"
+		"  -n, --line-uses-inside         Use the inside color for the line"
+		" between the inside and ring.\n"
+		"  -r, --line-uses-ring           Use the ring color for the line"
+		" between the inside and ring.\n"
+		"  --ring-color <color>           Sets the color of the ring of the"
+		" indicator.\n"
+		"  --ring-clear-color <color>     Sets the color of the ring of the"
+		" indicator when cleared.\n"
+		"  --ring-ver-color <color>       Sets the color of the ring of the"
+		" indicator when verifying.\n"
+		"  --ring-wrong-color <color>     Sets the color of the ring of the"
+		" indicator when invalid.\n"
+		"  --separator-color <color>      Sets the color of the lines that"
+		" separate highlight segments.\n"
+		"  --text-color <color>           Sets the color of the text.\n"
+		"  --text-clear-color <color>     Sets the color of the text when"
+		" cleared.\n"
+		"  --text-ver-color <color>       Sets the color of the text when"
+		" verifying.\n"
+		"  --text-wrong-color <color>     Sets the color of the text when"
+		" invalid.\n"
+		"\n"
+		"All <color> options are of the form <rrggbb[aa]>.\n";
 
+	enum line_mode line_mode = LM_LINE;
 	state.args = (struct swaylock_args){
 		.mode = BACKGROUND_MODE_SOLID_COLOR,
-		.color = 0xFFFFFFFF,
+		.font = strdup("sans-serif"),
+		.radius = 50,
+		.thickness = 10,
+		.ignore_empty = false,
 		.show_indicator = true,
 	};
 	wl_list_init(&state.images);
+	set_default_colors(&state.args.colors);
 
 	wlr_log_init(WLR_DEBUG, NULL);
 
 	int c;
 	while (1) {
-		int option_index = 0;
-		c = getopt_long(argc, argv, "hc:i:s:tvuf", long_options, &option_index);
+		int opt_idx = 0;
+		c = getopt_long(argc, argv, "c:efhi:nrs:tuv", long_options, &opt_idx);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
-		case 'c': {
-			state.args.color = parse_color(optarg);
+		case 'c':
+			state.args.colors.background = parse_color(optarg);
 			state.args.mode = BACKGROUND_MODE_SOLID_COLOR;
 			break;
-		}
+		case 'e':
+			state.args.ignore_empty = true;
+			break;
+		case 'f':
+			state.args.daemonize = true;
+			break;
 		case 'i':
 			load_image(optarg, &state);
+			break;
+		case 'n':
+			line_mode = LM_INSIDE;
+			break;
+		case 'r':
+			line_mode = LM_RING;
 			break;
 		case 's':
 			state.args.mode = parse_background_mode(optarg);
@@ -443,6 +597,9 @@ int main(int argc, char **argv) {
 		case 't':
 			state.args.mode = BACKGROUND_MODE_TILE;
 			break;
+		case 'u':
+			state.args.show_indicator = false;
+			break;
 		case 'v':
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
 			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n",
@@ -451,16 +608,83 @@ int main(int argc, char **argv) {
 			fprintf(stdout, "version unknown\n");
 #endif
 			return 0;
-		case 'u':
-			state.args.show_indicator = false;
+		case LO_BS_HL_COLOR:
+			state.args.colors.bs_highlight = parse_color(optarg);
 			break;
-		case 'f':
-			state.args.daemonize = true;
+		case LO_FONT:
+			free(state.args.font);
+			state.args.font = strdup(optarg);
+			break;
+		case LO_IND_RADIUS:
+			state.args.radius = strtol(optarg, NULL, 0);
+			break;
+		case LO_IND_THICKNESS:
+			state.args.thickness = strtol(optarg, NULL, 0);
+			break;
+		case LO_INSIDE_COLOR:
+			state.args.colors.inside.input = parse_color(optarg);
+			break;
+		case LO_INSIDE_CLEAR_COLOR:
+			state.args.colors.inside.cleared = parse_color(optarg);
+			break;
+		case LO_INSIDE_VER_COLOR:
+			state.args.colors.inside.verifying = parse_color(optarg);
+			break;
+		case LO_INSIDE_WRONG_COLOR:
+			state.args.colors.inside.wrong = parse_color(optarg);
+			break;
+		case LO_KEY_HL_COLOR:
+			state.args.colors.key_highlight = parse_color(optarg);
+			break;
+		case LO_LINE_COLOR:
+			state.args.colors.line.input = parse_color(optarg);
+			break;
+		case LO_LINE_CLEAR_COLOR:
+			state.args.colors.line.cleared = parse_color(optarg);
+			break;
+		case LO_LINE_VER_COLOR:
+			state.args.colors.line.verifying = parse_color(optarg);
+			break;
+		case LO_LINE_WRONG_COLOR:
+			state.args.colors.line.wrong = parse_color(optarg);
+			break;
+		case LO_RING_COLOR:
+			state.args.colors.ring.input = parse_color(optarg);
+			break;
+		case LO_RING_CLEAR_COLOR:
+			state.args.colors.ring.cleared = parse_color(optarg);
+			break;
+		case LO_RING_VER_COLOR:
+			state.args.colors.ring.verifying = parse_color(optarg);
+			break;
+		case LO_RING_WRONG_COLOR:
+			state.args.colors.ring.wrong = parse_color(optarg);
+			break;
+		case LO_SEP_COLOR:
+			state.args.colors.separator = parse_color(optarg);
+			break;
+		case LO_TEXT_COLOR:
+			state.args.colors.text.input = parse_color(optarg);
+			break;
+		case LO_TEXT_CLEAR_COLOR:
+			state.args.colors.text.cleared = parse_color(optarg);
+			break;
+		case LO_TEXT_VER_COLOR:
+			state.args.colors.text.verifying = parse_color(optarg);
+			break;
+		case LO_TEXT_WRONG_COLOR:
+			state.args.colors.text.wrong = parse_color(optarg);
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
 			return 1;
 		}
+	}
+
+	if (line_mode == LM_INSIDE) {
+		state.args.colors.line = state.args.colors.inside;
+	} else if (line_mode == LM_RING) {
+		state.args.colors.line = state.args.colors.ring;
 	}
 
 #ifdef __linux__
@@ -520,5 +744,7 @@ int main(int argc, char **argv) {
 	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
 		// This space intentionally left blank
 	}
+
+	free(state.args.font);
 	return 0;
 }
