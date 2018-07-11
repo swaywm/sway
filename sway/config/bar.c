@@ -225,7 +225,7 @@ static bool active_output(const char *name) {
 	return false;
 }
 
-void load_swaybars() {
+void load_swaybars(void) {
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
 		bool apply = false;

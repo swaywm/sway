@@ -148,5 +148,6 @@ void server_run(struct sway_server *server) {
 		wlr_backend_destroy(server->backend);
 		return;
 	}
+	load_swaybg();
 	wl_display_run(server->wl_display);
 }

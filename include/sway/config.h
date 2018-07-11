@@ -474,11 +474,11 @@ void free_sway_binding(struct sway_binding *sb);
 
 struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
-void load_swaybars();
+void load_swaybars(void);
 
 void invoke_swaybar(struct bar_config *bar);
 
-void terminate_swaybg(pid_t pid);
+void load_swaybg(void);
 
 struct bar_config *default_bar_config(void);
 
