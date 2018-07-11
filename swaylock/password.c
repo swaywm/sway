@@ -95,6 +95,10 @@ void swaylock_handle_key(struct swaylock_state *state,
 	switch (keysym) {
 	case XKB_KEY_KP_Enter: /* fallthrough */
 	case XKB_KEY_Return:
+		if (state->args.ignore_empty && state->password.len == 0) {
+			break;
+		}
+
 		state->auth_state = AUTH_STATE_VALIDATING;
 		damage_state(state);
 		while (wl_display_dispatch(state->display) != -1 && state->run_display) {
