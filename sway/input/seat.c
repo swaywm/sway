@@ -671,7 +671,9 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	// This must happen for both the pending and current children lists.
 	if (container_is_floating(container)) {
 		list_move_to_end(container->parent->children, container);
-		list_move_to_end(container->parent->current.children, container);
+		if (container_has_ancestor(container, container->current.parent)) {
+			list_move_to_end(container->parent->current.children, container);
+		}
 	}
 
 	// clean up unfocused empty workspace on new output
