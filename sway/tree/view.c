@@ -752,8 +752,9 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return NULL;
 	}
 
+	const char *role = wlr_surface->role ? wlr_surface->role->name : NULL;
 	wlr_log(WLR_DEBUG, "Surface of unknown type (role %s): %p",
-		wlr_surface->role, wlr_surface);
+		role, wlr_surface);
 	return NULL;
 }
 
