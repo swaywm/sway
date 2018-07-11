@@ -20,6 +20,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "pointer_accel", input_cmd_pointer_accel },
 	{ "repeat_delay", input_cmd_repeat_delay },
 	{ "repeat_rate", input_cmd_repeat_rate },
+	{ "scroll_button", input_cmd_scroll_button },
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
 	{ "xkb_layout", input_cmd_xkb_layout },
