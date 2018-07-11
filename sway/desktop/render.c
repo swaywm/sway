@@ -599,7 +599,7 @@ static void render_container_tabbed(struct sway_output *output,
 	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
 
-    double width_gap_adjustment = 2 * pstate->current_gaps;
+	double width_gap_adjustment = 2 * pstate->current_gaps;
 	int tab_width = (pstate->swayc_width - width_gap_adjustment) / pstate->children->length;
 
 	// Render tabs
