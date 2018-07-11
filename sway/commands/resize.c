@@ -7,6 +7,7 @@
 #include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/view.h"
 #include "log.h"
 
 static const int MIN_SANE_W = 100, MIN_SANE_H = 60;
@@ -21,6 +22,10 @@ enum resize_unit {
 enum resize_axis {
 	RESIZE_AXIS_HORIZONTAL,
 	RESIZE_AXIS_VERTICAL,
+	RESIZE_AXIS_UP,
+	RESIZE_AXIS_DOWN,
+	RESIZE_AXIS_LEFT,
+	RESIZE_AXIS_RIGHT,
 	RESIZE_AXIS_INVALID,
 };
 
@@ -43,6 +48,18 @@ static enum resize_axis parse_resize_axis(const char *axis) {
 	}
 	if (strcasecmp(axis, "height") == 0 || strcasecmp(axis, "vertical") == 0) {
 		return RESIZE_AXIS_VERTICAL;
+	}
+	if (strcasecmp(axis, "up") == 0) {
+		return RESIZE_AXIS_UP;
+	}
+	if (strcasecmp(axis, "down") == 0) {
+		return RESIZE_AXIS_DOWN;
+	}
+	if (strcasecmp(axis, "left") == 0) {
+		return RESIZE_AXIS_LEFT;
+	}
+	if (strcasecmp(axis, "right") == 0) {
+		return RESIZE_AXIS_RIGHT;
 	}
 	return RESIZE_AXIS_INVALID;
 }
@@ -185,13 +202,62 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 	arrange_and_commit(parent->parent);
 }
 
-static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {
-	struct sway_container *current = config->handler_context.current_container;
-	if (unit == RESIZE_UNIT_DEFAULT) {
-		// Default for tiling; TODO floating should be px
-		unit = RESIZE_UNIT_PPT;
+static void resize_floating(int amount, enum resize_axis axis) {
+	struct sway_container *con = config->handler_context.current_container;
+	int grow_x = 0, grow_y = 0;
+	int grow_width = 0, grow_height = 0;
+	switch (axis) {
+	case RESIZE_AXIS_HORIZONTAL:
+		grow_x = -amount / 2;
+		grow_width = amount;
+		break;
+	case RESIZE_AXIS_VERTICAL:
+		grow_y = -amount / 2;
+		grow_height = amount;
+		break;
+	case RESIZE_AXIS_UP:
+		grow_y = -amount;
+		grow_height = amount;
+		break;
+	case RESIZE_AXIS_LEFT:
+		grow_x = -amount;
+		grow_width = amount;
+		break;
+	case RESIZE_AXIS_DOWN:
+		grow_height = amount;
+		break;
+	case RESIZE_AXIS_RIGHT:
+		grow_width = amount;
+		break;
+	case RESIZE_AXIS_INVALID:
+		sway_assert(false, "Didn't expect RESIZE_AXIS_INVALID");
+		return;
+	}
+	con->x += grow_x;
+	con->y += grow_y;
+	con->width += grow_width;
+	con->height += grow_height;
+
+	if (con->type == C_VIEW) {
+		struct sway_view *view = con->sway_view;
+		view->x += grow_x;
+		view->y += grow_y;
+		view->width += grow_width;
+		view->height += grow_height;
 	}
 
+	arrange_and_commit(con);
+}
+
+static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {
+	struct sway_container *current = config->handler_context.current_container;
+	if (container_is_floating(current)) {
+		return resize_floating(amount, axis);
+	}
+
+	if (unit == RESIZE_UNIT_DEFAULT) {
+		unit = RESIZE_UNIT_PPT;
+	}
 	if (unit == RESIZE_UNIT_PPT) {
 		float pct = amount / 100.0f;
 		switch (axis) {
@@ -210,6 +276,65 @@ static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {
 	return resize_tiled(amount, axis);
 }
 
+// resize set <width> [px|ppt] <height> [px|ppt]
+static struct cmd_results *cmd_resize_set(int argc, char **argv) {
+	struct cmd_results *error;
+	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+	struct sway_container *con = config->handler_context.current_container;
+	if (!container_is_floating(con)) {
+		return cmd_results_new(CMD_INVALID, "resize",
+				"resize set is not currently supported for tiled containers");
+	}
+	const char *usage = "Expected 'resize set <width> <height>'";
+
+	char *err;
+	size_t width = (int)strtol(*argv, &err, 10);
+	if (*err) {
+		// e.g. `resize set width 500px`
+		enum resize_unit unit = parse_resize_unit(err);
+		if (unit == RESIZE_UNIT_INVALID) {
+			return cmd_results_new(CMD_INVALID, "resize", usage);
+		}
+	}
+	--argc; ++argv;
+	if (parse_resize_unit(argv[0]) != RESIZE_UNIT_INVALID) {
+		--argc; ++argv;
+	}
+
+	if (!argc) {
+		return cmd_results_new(CMD_INVALID, "resize", usage);
+	}
+	size_t height = (int)strtol(*argv, &err, 10);
+	if (*err) {
+		// e.g. `resize set height 500px`
+		enum resize_unit unit = parse_resize_unit(err);
+		if (unit == RESIZE_UNIT_INVALID) {
+			return cmd_results_new(CMD_INVALID, "resize", usage);
+		}
+	}
+
+	int grow_width = width - con->width;
+	int grow_height = height - con->height;
+	con->x -= grow_width / 2;
+	con->y -= grow_height / 2;
+	con->width = width;
+	con->height = height;
+
+	if (con->type == C_VIEW) {
+		struct sway_view *view = con->sway_view;
+		view->x -= grow_width / 2;
+		view->y -= grow_height / 2;
+		view->width += grow_width;
+		view->height += grow_height;
+	}
+
+	arrange_and_commit(con);
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *cmd_resize(int argc, char **argv) {
 	struct sway_container *current = config->handler_context.current_container;
 	if (!current) {
@@ -226,15 +351,11 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	}
 
 	if (strcasecmp(argv[0], "set") == 0) {
-		// TODO
-		//return cmd_resize_set(argc - 1, &argv[1]);
-		return cmd_results_new(CMD_INVALID, "resize", "resize set unimplemented");
+		return cmd_resize_set(argc - 1, &argv[1]);
 	}
 
-	// TODO: resize grow|shrink left|right|up|down
-
 	const char *usage = "Expected 'resize <shrink|grow> "
-		"<width|height> [<amount>] [px|ppt]'";
+		"<width|height|up|down|left|right> [<amount>] [px|ppt]'";
 
 	int multiplier = 0;
 	if (strcasecmp(*argv, "grow") == 0) {
