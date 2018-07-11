@@ -844,7 +844,11 @@ void output_render(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		render_view_surfaces(fullscreen_view, output, damage, 1.0f);
+		if (fullscreen_view->swayc->instructions->length) {
+			render_saved_view(fullscreen_view, output, damage, 1.0f);
+		} else {
+			render_view_surfaces(fullscreen_view, output, damage, 1.0f);
+		}
 
 		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
