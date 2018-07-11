@@ -631,7 +631,7 @@ static void render_container_tabbed(struct sway_output *output,
 		// Make last tab use the remaining width of the parent
 		if (i == pstate->children->length - 1) {
 			tab_width =
-				(pstate->swayc_width - width_gap_adjustment) - tab_width * i;
+				pstate->swayc_width - width_gap_adjustment - tab_width * i;
 		}
 
 		render_titlebar(output, damage, child, x, cstate->swayc_y, tab_width,
