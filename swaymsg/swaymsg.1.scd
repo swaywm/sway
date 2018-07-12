@@ -59,8 +59,8 @@ _swaymsg_ [options...] [message]
 *get\_version*
 	Get JSON-encoded version information for the running instance of sway.
 
-*get\_binding\_modes*
-	Gets a JSON-encoded list of currently configured binding modes.
-
-*get\_config*
-	Gets a JSON-encoded copy of the current configuration.
+*get\_clipboard*
+	Get JSON-encoded information about the clipboard.
+	Returns the current clipboard mime-types if called without
+	arguments, otherwise returns the clipboard data in the requested
+	formats. Encodes the data using base64 for non-text mime types.

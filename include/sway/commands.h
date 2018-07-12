@@ -79,7 +79,7 @@ void free_cmd_results(struct cmd_results *results);
  *
  * Free the JSON string later on.
  */
-char *cmd_results_to_json(struct cmd_results *results);
+const char *cmd_results_to_json(struct cmd_results *results);
 
 struct cmd_results *add_color(const char *name,
 		char *buffer, const char *color);
@@ -95,6 +95,7 @@ sway_cmd cmd_client_unfocused;
 sway_cmd cmd_client_urgent;
 sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
+sway_cmd cmd_clipboard;
 sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
 sway_cmd cmd_default_border;

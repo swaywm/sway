@@ -150,43 +150,12 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 
 void view_init_floating(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int min_width, min_height;
-	int max_width, max_height;
-
-	if (config->floating_minimum_width == -1) { // no minimum
-		min_width = 0;
-	} else if (config->floating_minimum_width == 0) { // automatic
-		min_width = 75;
-	} else {
-		min_width = config->floating_minimum_width;
-	}
-
-	if (config->floating_minimum_height == -1) { // no minimum
-		min_height = 0;
-	} else if (config->floating_minimum_height == 0) { // automatic
-		min_height = 50;
-	} else {
-		min_height = config->floating_minimum_height;
-	}
-
-	if (config->floating_maximum_width == -1) { // no maximum
-		max_width = INT_MAX;
-	} else if (config->floating_maximum_width == 0) { // automatic
-		max_width = ws->width * 0.6666;
-	} else {
-		max_width = config->floating_maximum_width;
-	}
-
-	if (config->floating_maximum_height == -1) { // no maximum
-		max_height = INT_MAX;
-	} else if (config->floating_maximum_height == 0) { // automatic
-		max_height = ws->height * 0.6666;
-	} else {
-		max_height = config->floating_maximum_height;
-	}
-
-	view->width = fmax(min_width, fmin(view->natural_width, max_width));
-	view->height = fmax(min_height, fmin(view->natural_height, max_height));
+	int max_width = ws->width * 0.6666;
+	int max_height = ws->height * 0.6666;
+	view->width =
+		view->natural_width > max_width ? max_width : view->natural_width;
+	view->height =
+		view->natural_height > max_height ? max_height : view->natural_height;
 	view->x = ws->x + (ws->width - view->width) / 2;
 	view->y = ws->y + (ws->height - view->height) / 2;
 
@@ -195,6 +164,9 @@ void view_init_floating(struct sway_view *view) {
 	view->border_left = view->border_right = true;
 
 	container_set_geometry_from_floating_view(view->swayc);
+
+	// Don't maximize floating windows
+	view_set_tiled(view, false);
 }
 
 void view_autoconfigure(struct sway_view *view) {
@@ -306,6 +278,7 @@ void view_autoconfigure(struct sway_view *view) {
 	view->y = y;
 	view->width = width;
 	view->height = height;
+	view_set_tiled(view, true);
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -493,17 +466,17 @@ void view_execute_criteria(struct sway_view *view) {
 	list_t *criterias = criteria_for_view(view, CT_COMMAND);
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
-		wlr_log(WLR_DEBUG, "Checking criteria %s", criteria->raw);
+		wlr_log(L_DEBUG, "Checking criteria %s", criteria->raw);
 		if (view_has_executed_criteria(view, criteria)) {
-			wlr_log(WLR_DEBUG, "Criteria already executed");
+			wlr_log(L_DEBUG, "Criteria already executed");
 			continue;
 		}
-		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
+		wlr_log(L_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
 		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {
-			wlr_log(WLR_ERROR, "Command '%s' failed: %s", res->input, res->error);
+			wlr_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
 		}
 		free_cmd_results(res);
 		// view must be focused for commands to affect it,
@@ -512,6 +485,26 @@ void view_execute_criteria(struct sway_view *view) {
 	}
 	list_free(criterias);
 	seat_set_focus(seat, prior_focus);
+}
+
+void prepare_workspace_of_smart_gaps(struct sway_container *cont) {
+	struct sway_container *ws = cont;
+	if (ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
+	}
+
+	if (!(config->smart_gaps && (ws->children->length == 1 || ws->children->length == 2))) {
+		return;
+	}
+
+	for (int i = 0; i < ws->children->length; i++) {
+		struct sway_container *sibling = cont->parent->children->items[i];
+		if (sibling == cont) continue;
+		container_damage_whole(sibling);
+	}
+
+	remove_gaps(ws);
+	add_gaps(ws);
 }
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
@@ -545,7 +538,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (container_is_floating(focus)) {
 		focus = focus->parent->parent;
 	}
-	list_free(criterias);
+	free(criterias);
 	cont = container_view_create(focus, view);
 
 	view->surface = wlr_surface;
@@ -564,7 +557,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		container_set_floating(view->swayc, true);
 	} else {
-		view_set_tiled(view, true);
+		prepare_workspace_of_smart_gaps(cont);
+		arrange_and_commit(cont->parent);
 	}
 
 	input_manager_set_focus(input_manager, cont);
@@ -593,6 +587,7 @@ void view_unmap(struct sway_view *view) {
 		arrange_and_commit(ws->parent);
 	} else {
 		struct sway_container *parent = container_destroy(view->swayc);
+                prepare_workspace_of_smart_gaps(parent);
 		arrange_and_commit(parent);
 	}
 	view->surface = NULL;
@@ -605,8 +600,6 @@ void view_update_position(struct sway_view *view, double lx, double ly) {
 	container_damage_whole(view->swayc);
 	view->x = lx;
 	view->y = ly;
-	view->swayc->current.view_x = lx;
-	view->swayc->current.view_y = ly;
 	if (container_is_floating(view->swayc)) {
 		container_set_geometry_from_floating_view(view->swayc);
 	}
@@ -620,8 +613,6 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	container_damage_whole(view->swayc);
 	view->width = width;
 	view->height = height;
-	view->swayc->current.view_width = width;
-	view->swayc->current.view_height = height;
 	if (container_is_floating(view->swayc)) {
 		container_set_geometry_from_floating_view(view->swayc);
 	}
@@ -632,7 +623,7 @@ static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *subsurface) {
 	struct sway_view_child *child = calloc(1, sizeof(struct sway_view_child));
 	if (child == NULL) {
-		wlr_log(WLR_ERROR, "Allocation failed");
+		wlr_log(L_ERROR, "Allocation failed");
 		return;
 	}
 	view_child_init(child, NULL, view, subsurface->surface);
@@ -752,9 +743,8 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return NULL;
 	}
 
-	const char *role = wlr_surface->role ? wlr_surface->role->name : NULL;
-	wlr_log(WLR_DEBUG, "Surface of unknown type (role %s): %p",
-		role, wlr_surface);
+	wlr_log(L_DEBUG, "Surface of unknown type (role %s): %p",
+		wlr_surface->role, wlr_surface);
 	return NULL;
 }
 
@@ -821,7 +811,7 @@ static char *escape_title(char *buffer) {
 	char *escaped_title = calloc(length + 1, sizeof(char));
 	int result = escape_markup_text(buffer, escaped_title, length);
 	if (result != length) {
-		wlr_log(WLR_ERROR, "Could not escape title: %s", buffer);
+		wlr_log(L_ERROR, "Could not escape title: %s", buffer);
 		free(escaped_title);
 		return buffer;
 	}
@@ -955,7 +945,7 @@ static void update_marks_texture(struct sway_view *view,
 
 	double scale = output->sway_output->wlr_output->scale;
 	int width = 0;
-	int height = view->swayc->title_height * scale;
+	int height = config->font_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
 	get_text_size(c, config->font, &width, NULL, scale, false, "%s", buffer);

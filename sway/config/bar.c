@@ -16,10 +16,10 @@
 #include "log.h"
 
 static void terminate_swaybar(pid_t pid) {
-	wlr_log(WLR_DEBUG, "Terminating swaybar %d", pid);
+	wlr_log(L_DEBUG, "Terminating swaybar %d", pid);
 	int ret = kill(-pid, SIGTERM);
 	if (ret != 0) {
-		wlr_log_errno(WLR_ERROR, "Unable to terminate swaybar %d", pid);
+		wlr_log_errno(L_ERROR, "Unable to terminate swaybar %d", pid);
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
@@ -30,7 +30,6 @@ void free_bar_config(struct bar_config *bar) {
 	if (!bar) {
 		return;
 	}
-	free(bar->id);
 	free(bar->mode);
 	free(bar->position);
 	free(bar->hidden_state);
@@ -71,12 +70,16 @@ void free_bar_config(struct bar_config *bar) {
 
 struct bar_config *default_bar_config(void) {
 	struct bar_config *bar = NULL;
-	bar = calloc(1, sizeof(struct bar_config));
+	bar = malloc(sizeof(struct bar_config));
 	if (!bar) {
 		return NULL;
 	}
+	if (!(bar->mode = strdup("dock"))) goto cleanup;
+	if (!(bar->hidden_state = strdup("hide"))) goto cleanup;
 	bar->outputs = NULL;
 	bar->position = strdup("bottom");
+	if (!(bar->bindings = create_list())) goto cleanup;
+	if (!(bar->status_command = strdup("while :; do date +'%Y-%m-%d %l:%M:%S %p'; sleep 1; done"))) goto cleanup;
 	bar->pango_markup = false;
 	bar->swaybar_command = NULL;
 	bar->font = NULL;
@@ -88,19 +91,6 @@ struct bar_config *default_bar_config(void) {
 	bar->binding_mode_indicator = true;
 	bar->verbose = false;
 	bar->pid = 0;
-	if (!(bar->mode = strdup("dock"))) {
-	       goto cleanup;
-	}
-	if (!(bar->hidden_state = strdup("hide"))) {
-		goto cleanup;
-	}
-	if (!(bar->bindings = create_list())) {
-		goto cleanup;
-	}
-	if (!(bar->status_command =
-			strdup("while date +'%Y-%m-%d %l:%M:%S %p'; do sleep 1; done"))) {
-		goto cleanup;
-	}
 	// set default colors
 	if (!(bar->colors.background = strndup("#000000ff", 9))) {
 		goto cleanup;
@@ -167,7 +157,7 @@ void invoke_swaybar(struct bar_config *bar) {
 	// Pipe to communicate errors
 	int filedes[2];
 	if (pipe(filedes) == -1) {
-		wlr_log(WLR_ERROR, "Pipe setup failed! Cannot fork into bar");
+		wlr_log(L_ERROR, "Pipe setup failed! Cannot fork into bar");
 		return;
 	}
 
@@ -184,7 +174,7 @@ void invoke_swaybar(struct bar_config *bar) {
 		if (!command) {
 			const char msg[] = "Unable to allocate swaybar command string";
 			size_t msg_len = sizeof(msg);
-			if (write(filedes[1], &msg_len, sizeof(size_t))) {};
+			if (write(filedes[1], &msg_len, sizeof(int))) {};
 			if (write(filedes[1], msg, msg_len)) {};
 			close(filedes[1]);
 			exit(1);
@@ -197,17 +187,17 @@ void invoke_swaybar(struct bar_config *bar) {
 		execvp(cmd[0], cmd);
 		exit(1);
 	}
-	wlr_log(WLR_DEBUG, "Spawned swaybar %d", bar->pid);
+	wlr_log(L_DEBUG, "Spawned swaybar %d", bar->pid);
 	close(filedes[0]);
-	size_t len;
-	if (read(filedes[1], &len, sizeof(size_t)) == sizeof(size_t)) {
+	ssize_t len;
+	if (read(filedes[1], &len, sizeof(int)) == sizeof(int)) {
 		char *buf = malloc(len);
 		if(!buf) {
-			wlr_log(WLR_ERROR, "Cannot allocate error string");
+			wlr_log(L_ERROR, "Cannot allocate error string");
 			return;
 		}
 		if (read(filedes[1], buf, len)) {
-			wlr_log(WLR_ERROR, "%s", buf);
+			wlr_log(L_ERROR, "%s", buf);
 		}
 		free(buf);
 	}
@@ -244,7 +234,7 @@ void load_swaybars() {
 			if (bar->pid != 0) {
 				terminate_swaybar(bar->pid);
 			}
-			wlr_log(WLR_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
+			wlr_log(L_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
 			invoke_swaybar(bar);
 		}
 	}

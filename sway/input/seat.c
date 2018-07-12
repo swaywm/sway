@@ -75,7 +75,7 @@ static void seat_send_activate(struct sway_container *con,
 		struct sway_seat *seat) {
 	if (con->type == C_VIEW) {
 		if (!seat_is_input_allowed(seat, con->sway_view->surface)) {
-			wlr_log(WLR_DEBUG, "Refusing to set focus, input is inhibited");
+			wlr_log(L_DEBUG, "Refusing to set focus, input is inhibited");
 			return;
 		}
 		view_set_activated(con->sway_view, true);
@@ -219,7 +219,7 @@ static struct sway_seat_container *seat_container_from_container(
 
 	seat_con = calloc(1, sizeof(struct sway_seat_container));
 	if (seat_con == NULL) {
-		wlr_log(WLR_ERROR, "could not allocate seat container");
+		wlr_log(L_ERROR, "could not allocate seat container");
 		return NULL;
 	}
 
@@ -301,7 +301,7 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 
 	struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
 	if (icon == NULL) {
-		wlr_log(WLR_ERROR, "Allocation failed");
+		wlr_log(L_ERROR, "Allocation failed");
 		return;
 	}
 	icon->seat = seat;
@@ -391,7 +391,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 	struct input_config *ic = input_device_get_config(
 			sway_device->input_device);
 	if (ic != NULL) {
-		wlr_log(WLR_DEBUG, "Applying input config to %s",
+		wlr_log(L_DEBUG, "Applying input config to %s",
 			sway_device->input_device->identifier);
 
 		mapped_to_output = ic->mapped_to_output;
@@ -401,7 +401,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
 	}
 	if (mapped_to_output != NULL) {
-		wlr_log(WLR_DEBUG, "Mapping input device %s to output %s",
+		wlr_log(L_DEBUG, "Mapping input device %s to output %s",
 			sway_device->input_device->identifier, mapped_to_output);
 		struct sway_container *output = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
@@ -415,7 +415,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 			wlr_cursor_map_input_to_output(seat->cursor->cursor,
 				sway_device->input_device->wlr_device,
 				output->sway_output->wlr_output);
-			wlr_log(WLR_DEBUG, "Mapped to output %s", output->name);
+			wlr_log(L_DEBUG, "Mapped to output %s", output->name);
 		}
 	}
 }
@@ -495,7 +495,7 @@ void seat_configure_device(struct sway_seat *seat,
 			seat_configure_tablet_tool(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
-			wlr_log(WLR_DEBUG, "TODO: configure tablet pad");
+			wlr_log(L_DEBUG, "TODO: configure tablet pad");
 			break;
 	}
 }
@@ -510,11 +510,11 @@ void seat_add_device(struct sway_seat *seat,
 	struct sway_seat_device *seat_device =
 		calloc(1, sizeof(struct sway_seat_device));
 	if (!seat_device) {
-		wlr_log(WLR_DEBUG, "could not allocate seat device");
+		wlr_log(L_DEBUG, "could not allocate seat device");
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "adding device %s to seat %s",
+	wlr_log(L_DEBUG, "adding device %s to seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device->sway_seat = seat;
@@ -533,7 +533,7 @@ void seat_remove_device(struct sway_seat *seat,
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "removing device %s from seat %s",
+	wlr_log(L_DEBUG, "removing device %s from seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device_destroy(seat_device);
@@ -663,17 +663,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 
 		seat_send_focus(container, seat);
-		container_damage_whole(container->parent);
-	}
-
-	// If we've focused a floating container, bring it to the front.
-	// We do this by putting it at the end of the floating list.
-	// This must happen for both the pending and current children lists.
-	if (container && container_is_floating(container)) {
-		list_move_to_end(container->parent->children, container);
-		if (container_has_ancestor(container, container->current.parent)) {
-			list_move_to_end(container->parent->current.children, container);
-		}
+		container_damage_whole(container);
 	}
 
 	// clean up unfocused empty workspace on new output
@@ -762,7 +752,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 		struct sway_container *previous =
 			seat_get_focus_inactive(seat, &root_container);
 		if (previous) {
-			wlr_log(WLR_DEBUG, "Returning focus to %p %s '%s'", previous,
+			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", previous,
 					container_type_to_str(previous->type), previous->name);
 			// Hack to get seat to re-focus the return value of get_focus
 			seat_set_focus(seat, previous->parent);
@@ -842,12 +832,12 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 
 struct sway_container *seat_get_active_current_child(struct sway_seat *seat,
 		struct sway_container *container) {
-	struct sway_seat_container *current = NULL;
-	wl_list_for_each(current, &seat->focus_stack, link) {
-		if (current->container->current.parent == container &&
-				current->container->current.layout != L_FLOATING) {
-			return current->container;
-		}
+	struct sway_container *child = seat_get_active_child(seat, container);
+	if (child) {
+		return child;
+	}
+	if (container->current.children->length == 1) {
+		return container->current.children->items[0];
 	}
 	return NULL;
 }

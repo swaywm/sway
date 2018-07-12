@@ -240,17 +240,44 @@ static void pretty_print_version(json_object *v) {
 	printf("sway version %s\n", json_object_get_string(ver));
 }
 
-static void pretty_print_config(json_object *c) {
-	json_object *config;
-	json_object_object_get_ex(c, "config", &config);
-	printf("%s\n", json_object_get_string(config));
+static void pretty_print_clipboard(json_object *v) {
+	if (success(v, true)) {
+		if (json_object_is_type(v, json_type_array)) {
+			for (size_t i = 0; i < json_object_array_length(v); ++i) {
+				json_object *o = json_object_array_get_idx(v, i);
+				printf("%s\n", json_object_get_string(o));
+			}
+		} else {
+			// NOTE: could be extended to print all received types
+			// instead just the first one when sways ipc server
+			// supports it
+			struct json_object_iterator iter = json_object_iter_begin(v);
+			struct json_object_iterator end = json_object_iter_end(v);
+			if (!json_object_iter_equal(&iter, &end)) {
+				json_object *obj = json_object_iter_peek_value(&iter);
+				if (success(obj, false)) {
+					json_object *content;
+					json_object_object_get_ex(obj, "content", &content);
+					printf("%s\n", json_object_get_string(content));
+				} else {
+					json_object *error;
+					json_object_object_get_ex(obj, "error", &error);
+					printf("Error: %s\n", json_object_get_string(error));
+				}
+			}
+		}
+	} else {
+		json_object *error;
+		json_object_object_get_ex(v, "error", &error);
+		printf("Error: %s\n", json_object_get_string(error));
+	}
 }
 
 static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
-			type != IPC_GET_VERSION && type != IPC_GET_SEATS &&
-			type != IPC_GET_CONFIG) {
+			type != IPC_GET_VERSION && type != IPC_GET_CLIPBOARD &&
+			type != IPC_GET_SEATS) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
 		return;
@@ -261,8 +288,8 @@ static void pretty_print(int type, json_object *resp) {
 		return;
 	}
 
-	if (type == IPC_GET_CONFIG) {
-		pretty_print_config(resp);
+	if (type == IPC_GET_CLIPBOARD) {
+		pretty_print_clipboard(resp);
 		return;
 	}
 
@@ -296,7 +323,7 @@ int main(int argc, char **argv) {
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
-	wlr_log_init(WLR_INFO, NULL);
+	wlr_log_init(L_INFO, NULL);
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -380,10 +407,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_BAR_CONFIG;
 	} else if (strcasecmp(cmdtype, "get_version") == 0) {
 		type = IPC_GET_VERSION;
-	} else if (strcasecmp(cmdtype, "get_binding_modes") == 0) {
-		type = IPC_GET_BINDING_MODES;
-	} else if (strcasecmp(cmdtype, "get_config") == 0) {
-		type = IPC_GET_CONFIG;
+	} else if (strcasecmp(cmdtype, "get_clipboard") == 0) {
+		type = IPC_GET_CLIPBOARD;
 	} else {
 		sway_abort("Unknown message type %s", cmdtype);
 	}

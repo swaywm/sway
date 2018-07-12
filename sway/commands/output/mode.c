@@ -36,11 +36,11 @@ struct cmd_results *output_cmd_mode(int argc, char **argv) {
 		}
 	} else {
 		// Format is 1234 4321
-		argc--; argv++;
 		if (!argc) {
 			return cmd_results_new(CMD_INVALID, "output",
 				"Missing mode argument (height).");
 		}
+		argc--; argv++;
 		output->height = strtol(*argv, &end, 10);
 		if (*end) {
 			return cmd_results_new(CMD_INVALID, "output",

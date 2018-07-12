@@ -22,7 +22,6 @@ struct cmd_results *input_cmd_dwt(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "disabled") == 0) {
 		new_config->dwt = LIBINPUT_CONFIG_DWT_DISABLED;
 	} else {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "dwt",
 			"Expected 'dwt <enabled|disabled>'");
 	}

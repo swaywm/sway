@@ -24,7 +24,6 @@ struct cmd_results *input_cmd_middle_emulation(int argc, char **argv) {
 		new_config->middle_emulation =
 			LIBINPUT_CONFIG_MIDDLE_EMULATION_DISABLED;
 	} else {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "middle_emulation",
 			"Expected 'middle_emulation <enabled|disabled>'");
 	}

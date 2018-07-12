@@ -26,17 +26,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 				"mode", "Can only be used in config file.");
 	}
 
-	bool pango = strcmp(*argv, "--pango_markup") == 0;
-	if (pango) {
-		argc--; argv++;
-		if (argc == 0) {
-			return cmd_results_new(CMD_FAILURE, "mode",
-					"Mode name is missing");
-		}
-	}
-
-	char *mode_name = *argv;
-	strip_quotes(mode_name);
+	const char *mode_name = argv[0];
 	struct sway_mode *mode = NULL;
 	// Find mode
 	for (int i = 0; i < config->modes->length; ++i) {
@@ -56,7 +46,6 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		mode->name = strdup(mode_name);
 		mode->keysym_bindings = create_list();
 		mode->keycode_bindings = create_list();
-		mode->pango = pango;
 		list_add(config->modes, mode);
 	}
 	if (!mode) {
@@ -65,15 +54,13 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		return error;
 	}
 	if ((config->reading && argc > 1) || (!config->reading && argc == 1)) {
-		wlr_log(WLR_DEBUG, "Switching to mode `%s' (pango=%d)",
-				mode->name, mode->pango);
+		wlr_log(L_DEBUG, "Switching to mode `%s'",mode->name);
 	}
 	// Set current mode
 	config->current_mode = mode;
 	if (argc == 1) {
 		// trigger IPC mode event
-		ipc_event_mode(config->current_mode->name,
-				config->current_mode->pango);
+		ipc_event_mode(config->current_mode->name);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 

@@ -92,12 +92,6 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *focus* output <name>
 	Moves focus to the named output.
 
-*focus tiling*
-	Sets focus to the last focused tiling container.
-
-*focus floating*
-	Sets focus to the last focused floating container.
-
 *focus* mode\_toggle
 	Moves focus between the floating and tiled layers.
 
@@ -369,11 +363,9 @@ The default colors are:
 	affects spacing between views and the latter affects the space around each
 	workspace.
 
-*gaps* inner|outer all|workspace|current set|plus|minus <amount>
+*gaps* inner|outer all|current set|plus|minus <amount>
 	Changes the gaps for the _inner_ or _outer_ gap. _all_ changes the gaps for
-	all views or workspace, _workspace_ changes gaps for all views in current
-	workspace (or current workspace), and _current_ changes gaps for the current
-	view or workspace.
+	all workspaces and _current_ changes gaps for all views in current workspace.
 
 *hide\_edge\_borders* none|vertical|horizontal|both|smart
 	Hides window borders adjacent to the screen edges. Default is _none_.
@@ -419,12 +411,10 @@ The default colors are:
 *mode* <mode>
 	Switches to the specified mode. The default mode _default_.
 
-*mode* [--pango\_markup] <mode> *{* <commands...> *}*
+*mode* <mode> *{* <commands...> *}*
 	_commands..._ after *{* will be added to the specified mode. A newline is
 	required between *{* and the first command, and *}* must be alone on a
 	line. Only *bindsym* and *bindcode* commands are permitted in mode blocks.
-	If _--pango\_markup_ is given, then _mode_ will be interpreted as pango
-	markup.
 
 *mouse\_warping* output|none
 	If _output_ is specified, the mouse will be moved to new outputs as you

@@ -6,6 +6,11 @@
 #include "stringop.h"
 #include <math.h>
 
+#define GAPS_EDGE_GAPS_LINE "gaps edge_gaps on|off|toggle"
+#define GAPS_SHORT_LINE "gaps <amount>"
+#define GAPS_MEDIUM_LINE "gaps inner|outer <amount>"
+#define GAPS_LONG_LINE "gaps inner|outer all|current set|plus|minus <amount>"
+
 enum gaps_op {
 	GAPS_OP_SET,
 	GAPS_OP_ADD,
@@ -14,7 +19,6 @@ enum gaps_op {
 
 enum gaps_scope {
 	GAPS_SCOPE_ALL,
-	GAPS_SCOPE_WORKSPACE,
 	GAPS_SCOPE_CURRENT
 };
 
@@ -25,7 +29,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 	}
 
 	if (strcmp(argv[0], "edge_gaps") == 0) {
-		if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2))) {
+		if ((error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 2))) {
 			return error;
 		}
 
@@ -40,8 +44,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 			}
 			config->edge_gaps = !config->edge_gaps;
 		} else {
-			return cmd_results_new(CMD_INVALID, "gaps",
-				"gaps edge_gaps on|off|toggle");
+			return cmd_results_new(CMD_INVALID, "gaps", GAPS_EDGE_GAPS_LINE);
 		}
 		arrange_and_commit(&root_container);
 	} else {
@@ -80,16 +83,15 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		}
 
 		if (argc == 4) {
-			// Long format: all|workspace|current.
+			// Long format: all|current
 			if (strcmp(argv[amount_idx], "all") == 0) {
 				amount_idx++;
 				scope = GAPS_SCOPE_ALL;
-			} else if (strcmp(argv[amount_idx], "workspace") == 0) {
-				amount_idx++;
-				scope = GAPS_SCOPE_WORKSPACE;
 			} else if (strcmp(argv[amount_idx], "current") == 0) {
 				amount_idx++;
 				scope = GAPS_SCOPE_CURRENT;
+			} else {
+				return cmd_results_new(CMD_INVALID, "gaps", GAPS_LONG_LINE);
 			}
 
 			// Long format: set|plus|minus
@@ -102,6 +104,8 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 			} else if (strcmp(argv[amount_idx], "minus") == 0) {
 				amount_idx++;
 				op = GAPS_OP_SUBTRACT;
+			} else {
+				return cmd_results_new(CMD_INVALID, "gaps", GAPS_LONG_LINE);
 			}
 		}
 
@@ -111,14 +115,12 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		if (strlen(end) && val == 0.0) { // invalid <amount>
 			// guess which variant of the command was attempted
 			if (argc == 1) {
-				return cmd_results_new(CMD_INVALID, "gaps", "gaps <amount>");
+				return cmd_results_new(CMD_INVALID, "gaps", GAPS_SHORT_LINE);
 			}
 			if (argc == 2) {
-				return cmd_results_new(CMD_INVALID, "gaps",
-					"gaps inner|outer <amount>");
+				return cmd_results_new(CMD_INVALID, "gaps", GAPS_MEDIUM_LINE);
 			}
-			return cmd_results_new(CMD_INVALID, "gaps",
-				"gaps inner|outer all|workspace|current set|plus|minus <amount>");
+			return cmd_results_new(CMD_INVALID, "gaps", GAPS_LONG_LINE); 
 		}
 
 		if (amount_idx == 0) { // gaps <amount>
@@ -159,7 +161,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		} else {
 			struct sway_container *c =
 				config->handler_context.current_container;
-			if (scope == GAPS_SCOPE_WORKSPACE && c->type != C_WORKSPACE) {
+			if (c->type != C_WORKSPACE) {
 				c = container_parent(c, C_WORKSPACE);
 			}
 			c->has_gaps = true;

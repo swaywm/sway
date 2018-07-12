@@ -24,6 +24,4 @@ int list_seq_find(list_t *list, int compare(const void *item, const void *cmp_to
 void list_stable_sort(list_t *list, int compare(const void *a, const void *b));
 // swap two elements in a list
 void list_swap(list_t *list, int src, int dest);
-// move item to end of list
-void list_move_to_end(list_t *list, void *item);
 #endif

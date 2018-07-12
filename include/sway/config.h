@@ -50,7 +50,6 @@ struct sway_mode {
 	char *name;
 	list_t *keysym_bindings;
 	list_t *keycode_bindings;
-	bool pango;
 };
 
 struct input_config_mapped_from_region {
@@ -271,10 +270,11 @@ enum ipc_feature {
 	IPC_FEATURE_EVENT_WINDOW = 2048,
 	IPC_FEATURE_EVENT_BINDING = 4096,
 	IPC_FEATURE_EVENT_INPUT = 8192,
-	IPC_FEATURE_GET_SEATS = 16384,
+	IPC_FEATURE_GET_CLIPBOARD = 16384,
+	IPC_FEATURE_GET_SEATS = 32768,
 
 	IPC_FEATURE_ALL_COMMANDS =
-		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 16384,
+		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 16384 | 32768,
 	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192,
 
 	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
@@ -340,7 +340,6 @@ struct sway_config {
 	int gaps_outer;
 
 	list_t *config_chain;
-	const char *current_config_path;
 	const char *current_config;
 
 	enum sway_container_border border;
@@ -495,5 +494,8 @@ void config_update_font_height(bool recalculate);
 
 /* Global config singleton. */
 extern struct sway_config *config;
+
+/* Config file currently being read */
+extern const char *current_config_path;
 
 #endif

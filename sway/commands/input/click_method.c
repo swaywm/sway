@@ -26,7 +26,6 @@ struct cmd_results *input_cmd_click_method(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "clickfinger") == 0) {
 		new_config->click_method = LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER;
 	} else {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "click_method",
 			"Expected 'click_method <none|button_areas|clickfinger'");
 	}

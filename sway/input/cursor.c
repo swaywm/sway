@@ -255,12 +255,14 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			wlr_layer_surface_from_wlr_surface(surface);
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(cursor->seat, layer);
+			return;
 		}
-	} else if (surface && cont && cont->type != C_VIEW) {
-		// Avoid moving keyboard focus from a surface that accepts it to one
-		// that does not unless the change would move us to a new workspace.
-		//
-		// This prevents, for example, losing focus when clicking on swaybar.
+	}
+	// Avoid moving keyboard focus from a surface that accepts it to one
+	// that does not unless the change would move us to a new workspace.
+	//
+	// This prevents, for example, losing focus when clicking on swaybar.
+	if (surface && cont && cont->type != C_VIEW) {
 		struct sway_container *new_ws = cont;
 		if (new_ws && new_ws->type != C_WORKSPACE) {
 			new_ws = container_parent(new_ws, C_WORKSPACE);
@@ -474,7 +476,7 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	// TODO: check cursor mode
 	if (focused_client == NULL ||
 			event->seat_client->client != focused_client) {
-		wlr_log(WLR_DEBUG, "denying request to set cursor from unfocused client");
+		wlr_log(L_DEBUG, "denying request to set cursor from unfocused client");
 		return;
 	}
 

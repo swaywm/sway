@@ -298,8 +298,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
-			output->scale, config->mode_pango_markup,
-			"%s", mode);
+			output->scale, config->pango_markup, "%s", mode);
 
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
 	int ws_horizontal_padding = WS_HORIZONTAL_PADDING * output->scale;
@@ -330,7 +329,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, config->colors.binding_mode.text);
 	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
-	pango_printf(cairo, config->font, output->scale, config->mode_pango_markup,
+	pango_printf(cairo, config->font, output->scale, config->pango_markup,
 			"%s", mode);
 	return surface_height;
 }
@@ -497,7 +496,7 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 		// different height than what we asked for
 		wl_surface_commit(output->surface);
 		wl_display_roundtrip(bar->display);
-	} else if (height > 0) {
+	} else {
 		// Replay recording into shm and send it off
 		output->current_buffer = get_next_buffer(bar->shm,
 				output->buffers,

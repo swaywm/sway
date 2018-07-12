@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "log.h"
 
 list_t *create_list(void) {
 	list_t *list = malloc(sizeof(list_t));
@@ -81,20 +80,6 @@ void list_swap(list_t *list, int src, int dest) {
 	void *tmp = list->items[src];
 	list->items[src] = list->items[dest];
 	list->items[dest] = tmp;
-}
-
-void list_move_to_end(list_t *list, void *item) {
-	int i;
-	for (i = 0; i < list->length; ++i) {
-		if (list->items[i] == item) {
-			break;
-		}
-	}
-	if (!sway_assert(i < list->length, "Item not found in list")) {
-		return;
-	}
-	list_del(list, i);
-	list_add(list, item);
 }
 
 static void list_rotate(list_t *list, int from, int to) {

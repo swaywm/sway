@@ -35,7 +35,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return error;
 	}
 
-	wlr_log(WLR_DEBUG, "entering input block: %s", argv[0]);
+	wlr_log(L_DEBUG, "entering input block: %s", argv[0]);
 
 	config->handler_context.input_config = new_input_config(argv[0]);
 	if (!config->handler_context.input_config) {

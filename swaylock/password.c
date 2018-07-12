@@ -53,15 +53,15 @@ static bool attempt_password(struct swaylock_password *pw) {
 	// TODO: only call pam_start once. keep the same handle the whole time
 	if ((pam_err = pam_start("swaylock", username,
 					&local_conversation, &local_auth_handle)) != PAM_SUCCESS) {
-		wlr_log(WLR_ERROR, "PAM returned error %d", pam_err);
+		wlr_log(L_ERROR, "PAM returned error %d", pam_err);
 	}
 	if ((pam_err = pam_authenticate(local_auth_handle, 0)) != PAM_SUCCESS) {
-		wlr_log(WLR_ERROR, "pam_authenticate failed");
+		wlr_log(L_ERROR, "pam_authenticate failed");
 		goto fail;
 	}
 	// TODO: only call pam_end once we succeed at authing. refresh tokens beforehand
 	if ((pam_err = pam_end(local_auth_handle, pam_err)) != PAM_SUCCESS) {
-		wlr_log(WLR_ERROR, "pam_end failed");
+		wlr_log(L_ERROR, "pam_end failed");
 		goto fail;
 	}
 	clear_password_buffer(pw);
@@ -95,26 +95,9 @@ void swaylock_handle_key(struct swaylock_state *state,
 	switch (keysym) {
 	case XKB_KEY_KP_Enter: /* fallthrough */
 	case XKB_KEY_Return:
-		if (state->args.ignore_empty && state->password.len == 0) {
-			break;
-		}
-
 		state->auth_state = AUTH_STATE_VALIDATING;
 		damage_state(state);
-		while (wl_display_dispatch(state->display) != -1 && state->run_display) {
-			bool ok = 1;
-			struct swaylock_surface *surface;
-			wl_list_for_each(surface, &state->surfaces, link) {
-				if (surface->dirty) {
-					ok = 0;
-				}
-			}
-			if (ok) {
-				break;
-			}
-		}
-		wl_display_flush(state->display);
-
+		wl_display_roundtrip(state->display);
 		if (attempt_password(&state->password)) {
 			state->run_display = false;
 			break;
