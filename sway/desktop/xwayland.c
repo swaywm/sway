@@ -246,6 +246,14 @@ static bool wants_floating(struct sway_view *view) {
 	return false;
 }
 
+static bool has_client_side_decorations(struct sway_view *view) {
+	if (xwayland_view_from_view(view) == NULL) {
+		return false;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	return surface->decorations != WLR_XWAYLAND_SURFACE_DECORATIONS_ALL;
+}
+
 static void _close(struct sway_view *view) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
@@ -269,6 +277,7 @@ static const struct sway_view_impl view_impl = {
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
+	.has_client_side_decorations = has_client_side_decorations,
 	.close = _close,
 	.destroy = destroy,
 };

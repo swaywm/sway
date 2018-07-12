@@ -315,7 +315,11 @@ void view_set_activated(struct sway_view *view, bool activated) {
 }
 
 void view_set_tiled(struct sway_view *view, bool tiled) {
-	view->border = tiled ? config->border : B_NONE;
+	bool csd = true;
+	if (view->impl->has_client_side_decorations) {
+		csd = view->impl->has_client_side_decorations(view);
+	}
+	view->border = tiled || !csd ? config->border : B_NONE;
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
 	}
