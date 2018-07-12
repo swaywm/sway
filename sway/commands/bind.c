@@ -184,7 +184,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	for (int i = 0; i < mode_bindings->length; ++i) {
 		struct sway_binding *config_binding = mode_bindings->items[i];
 		if (binding_key_compare(binding, config_binding)) {
-			wlr_log(WLR_DEBUG, "overwriting old binding with command '%s'",
+			wlr_log(L_DEBUG, "overwriting old binding with command '%s'",
 				config_binding->command);
 			free_sway_binding(config_binding);
 			mode_bindings->items[i] = binding;
@@ -196,7 +196,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		list_add(mode_bindings, binding);
 	}
 
-	wlr_log(WLR_DEBUG, "%s - Bound %s to command %s",
+	wlr_log(L_DEBUG, "%s - Bound %s to command %s",
 		bindtype, argv[0], binding->command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 

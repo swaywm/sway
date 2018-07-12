@@ -14,11 +14,11 @@ struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 	}
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = true;
-		wlr_log(WLR_DEBUG, "Enabling workspace buttons on bar: %s",
+		wlr_log(L_DEBUG, "Enabling workspace buttons on bar: %s",
 				config->current_bar->id);
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->workspace_buttons = false;
-		wlr_log(WLR_DEBUG, "Disabling workspace buttons on bar: %s",
+		wlr_log(L_DEBUG, "Disabling workspace buttons on bar: %s",
 				config->current_bar->id);
 	} else {
 		return cmd_results_new(CMD_INVALID, "workspace_buttons",

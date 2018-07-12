@@ -7,21 +7,10 @@
 #include "swaylock/swaylock.h"
 
 #define M_PI 3.14159265358979323846
+const int ARC_RADIUS = 50;
+const int ARC_THICKNESS = 10;
 const float TYPE_INDICATOR_RANGE = M_PI / 3.0f;
 const float TYPE_INDICATOR_BORDER_THICKNESS = M_PI / 128.0f;
-
-static void set_color_for_state(cairo_t *cairo, struct swaylock_state *state,
-		struct swaylock_colorset *colorset) {
-	if (state->auth_state == AUTH_STATE_VALIDATING) {
-		cairo_set_source_u32(cairo, colorset->verifying);
-	} else if (state->auth_state == AUTH_STATE_INVALID) {
-		cairo_set_source_u32(cairo, colorset->wrong);
-	} else if (state->auth_state == AUTH_STATE_CLEAR) {
-		cairo_set_source_u32(cairo, colorset->cleared);
-	} else {
-		cairo_set_source_u32(cairo, colorset->input);
-	}
-}
 
 void render_frame(struct swaylock_surface *surface) {
 	struct swaylock_state *state = surface->state;
@@ -41,37 +30,58 @@ void render_frame(struct swaylock_surface *surface) {
 	cairo_t *cairo = surface->current_buffer->cairo;
 	cairo_identity_matrix(cairo);
 
-	cairo_save(cairo);
-	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	if (state->args.mode == BACKGROUND_MODE_SOLID_COLOR || !surface->image) {
-		cairo_set_source_u32(cairo, state->args.colors.background);
+		cairo_set_source_u32(cairo, state->args.color);
 		cairo_paint(cairo);
 	} else {
 		render_background_image(cairo, surface->image,
 				state->args.mode, buffer_width, buffer_height);
 	}
-	cairo_restore(cairo);
 	cairo_identity_matrix(cairo);
 
-	int arc_radius = state->args.radius * surface->scale;
-	int arc_thickness = state->args.thickness * surface->scale;
+	int arc_radius = ARC_RADIUS * surface->scale;
+	int arc_thickness = ARC_THICKNESS * surface->scale;
 	float type_indicator_border_thickness =
 		TYPE_INDICATOR_BORDER_THICKNESS * surface->scale;
 
 	if (state->args.show_indicator && state->auth_state != AUTH_STATE_IDLE) {
 		// Draw circle
 		cairo_set_line_width(cairo, arc_thickness);
-		cairo_arc(cairo, buffer_width / 2, buffer_height / 2, arc_radius,
-				0, 2 * M_PI);
-		set_color_for_state(cairo, state, &state->args.colors.inside);
-		cairo_fill_preserve(cairo);
-		set_color_for_state(cairo, state, &state->args.colors.ring);
-		cairo_stroke(cairo);
+		cairo_arc(cairo, buffer_width / 2, buffer_height / 2, arc_radius, 0, 2 * M_PI);
+		switch (state->auth_state) {
+		case AUTH_STATE_INPUT:
+		case AUTH_STATE_INPUT_NOP:
+		case AUTH_STATE_BACKSPACE: {
+			cairo_set_source_rgba(cairo, 0, 0, 0, 0.75);
+			cairo_fill_preserve(cairo);
+			cairo_set_source_rgb(cairo, 51.0 / 255, 125.0 / 255, 0);
+			cairo_stroke(cairo);
+		} break;
+		case AUTH_STATE_VALIDATING: {
+			cairo_set_source_rgba(cairo, 0, 114.0 / 255, 255.0 / 255, 0.75);
+			cairo_fill_preserve(cairo);
+			cairo_set_source_rgb(cairo, 51.0 / 255, 0, 250.0 / 255);
+			cairo_stroke(cairo);
+		} break;
+		case AUTH_STATE_INVALID: {
+			cairo_set_source_rgba(cairo, 250.0 / 255, 0, 0, 0.75);
+			cairo_fill_preserve(cairo);
+			cairo_set_source_rgb(cairo, 125.0 / 255, 51.0 / 255, 0);
+			cairo_stroke(cairo);
+		} break;
+		case AUTH_STATE_CLEAR: {
+			cairo_set_source_rgba(cairo, 229.0/255, 164.0/255, 69.0/255, 0.75);
+			cairo_fill_preserve(cairo);
+			cairo_set_source_rgb(cairo, 229.0/255, 164.0/255, 69.0/255);
+			cairo_stroke(cairo);
+		} break;
+		default: break;
+		}
 
 		// Draw a message
 		char *text = NULL;
-		set_color_for_state(cairo, state, &state->args.colors.text);
-		cairo_select_font_face(cairo, state->args.font,
+		cairo_set_source_rgb(cairo, 0, 0, 0);
+		cairo_select_font_face(cairo, "sans-serif",
 				CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cairo, arc_radius / 3.0f);
 		switch (state->auth_state) {
@@ -88,10 +98,9 @@ void render_frame(struct swaylock_surface *surface) {
 		case AUTH_STATE_INPUT_NOP:
 			if (state->xkb.caps_lock) {
 				text = "Caps Lock";
+				cairo_set_source_rgb(cairo, 229.0/255, 164.0/255, 69.0/255);
 			}
-			break;
-		default:
-			break;
+		default: break;
 		}
 
 		if (text) {
@@ -119,14 +128,14 @@ void render_frame(struct swaylock_surface *surface) {
 					arc_radius, highlight_start,
 					highlight_start + TYPE_INDICATOR_RANGE);
 			if (state->auth_state == AUTH_STATE_INPUT) {
-				cairo_set_source_u32(cairo, state->args.colors.key_highlight);
+				cairo_set_source_rgb(cairo, 51.0 / 255, 219.0 / 255, 0);
 			} else {
-				cairo_set_source_u32(cairo, state->args.colors.bs_highlight);
+				cairo_set_source_rgb(cairo, 219.0 / 255, 51.0 / 255, 0);
 			}
 			cairo_stroke(cairo);
 
 			// Draw borders
-			cairo_set_source_u32(cairo, state->args.colors.separator);
+			cairo_set_source_rgb(cairo, 0, 0, 0);
 			cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 					arc_radius, highlight_start,
 					highlight_start + type_indicator_border_thickness);
@@ -140,7 +149,7 @@ void render_frame(struct swaylock_surface *surface) {
 		}
 
 		// Draw inner + outer border of the circle
-		set_color_for_state(cairo, state, &state->args.colors.line);
+		cairo_set_source_rgb(cairo, 0, 0, 0);
 		cairo_set_line_width(cairo, 2.0 * surface->scale);
 		cairo_arc(cairo, buffer_width / 2, buffer_height / 2,
 				arc_radius - arc_thickness / 2, 0, 2 * M_PI);

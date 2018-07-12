@@ -46,7 +46,7 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	if (!output) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Removing output %s", output->name);
+	wlr_log(L_DEBUG, "Removing output %s", output->name);
 	zwlr_layer_surface_v1_destroy(output->layer_surface);
 	wl_surface_destroy(output->surface);
 	wl_output_destroy(output->output);

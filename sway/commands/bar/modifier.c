@@ -22,15 +22,14 @@ struct cmd_results *bar_cmd_modifier(int argc, char **argv) {
 			mod |= tmp_mod;
 			continue;
 		} else {
-			error = cmd_results_new(CMD_INVALID, "modifier",
-				"Unknown modifier '%s'", split->items[i]);
 			free_flat_list(split);
-			return error;
+			return cmd_results_new(CMD_INVALID, "modifier",
+					"Unknown modifier '%s'", split->items[i]);
 		}
 	}
 	free_flat_list(split);
 	config->current_bar->modifier = mod;
-	wlr_log(WLR_DEBUG,
+	wlr_log(L_DEBUG,
 			"Show/Hide the bar when pressing '%s' in hide mode.", argv[0]);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

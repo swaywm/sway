@@ -51,7 +51,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			free(old); // workspaces can only be assigned to a single output
 			list_del(config->workspace_outputs, i);
 		}
-		wlr_log(WLR_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
+		wlr_log(L_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
 		list_add(config->workspace_outputs, wso);
 	} else {
 		if (config->reading || !config->active) {

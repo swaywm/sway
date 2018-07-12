@@ -48,7 +48,7 @@ struct swaybg_state {
 bool is_valid_color(const char *color) {
 	int len = strlen(color);
 	if (len != 7 || color[0] != '#') {
-		wlr_log(WLR_ERROR, "%s is not a valid color for swaybg. "
+		wlr_log(L_ERROR, "%s is not a valid color for swaybg. "
 				"Color should be specified as #rrggbb (no alpha).", color);
 		return false;
 	}
@@ -185,10 +185,10 @@ int main(int argc, const char **argv) {
 	struct swaybg_args args = {0};
 	struct swaybg_state state = {0};
 	state.args = &args;
-	wlr_log_init(WLR_DEBUG, NULL);
+	wlr_log_init(L_DEBUG, NULL);
 
 	if (argc != 4) {
-		wlr_log(WLR_ERROR, "Do not run this program manually. "
+		wlr_log(L_ERROR, "Do not run this program manually. "
 				"See man 5 sway and look for output options.");
 		return 1;
 	}

@@ -23,7 +23,6 @@ struct cmd_results *input_cmd_natural_scroll(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "disabled") == 0) {
 		new_config->natural_scroll = 0;
 	} else {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "natural_scroll",
 			"Expected 'natural_scroll <enabled|disabled>'");
 	}

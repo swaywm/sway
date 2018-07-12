@@ -10,10 +10,8 @@ sway_sources = files(
 	'security.c',
 
 	'desktop/desktop.c',
-	'desktop/idle_inhibit_v1.c',
 	'desktop/layer_shell.c',
 	'desktop/output.c',
-	'desktop/render.c',
 	'desktop/transaction.c',
 	'desktop/xdg_shell_v6.c',
 	'desktop/xdg_shell.c',
@@ -40,7 +38,6 @@ sway_sources = files(
 	'commands/exec.c',
 	'commands/exec_always.c',
 	'commands/floating.c',
-	'commands/floating_minmax_size.c',
 	'commands/focus.c',
 	'commands/focus_follows_mouse.c',
 	'commands/focus_wrapping.c',

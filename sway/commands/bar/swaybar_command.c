@@ -14,7 +14,7 @@ struct cmd_results *bar_cmd_swaybar_command(int argc, char **argv) {
 	}
 	free(config->current_bar->swaybar_command);
 	config->current_bar->swaybar_command = join_args(argv, argc);
-	wlr_log(WLR_DEBUG, "Using custom swaybar command: %s",
+	wlr_log(L_DEBUG, "Using custom swaybar command: %s",
 			config->current_bar->swaybar_command);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

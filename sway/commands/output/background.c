@@ -72,7 +72,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		src = strdup(p.we_wordv[0]);
 		wordfree(&p);
 		if (!src) {
-			wlr_log(WLR_ERROR, "Failed to duplicate string");
+			wlr_log(L_ERROR, "Failed to duplicate string");
 			return cmd_results_new(CMD_FAILURE, "output",
 				"Unable to allocate resource");
 		}
@@ -80,10 +80,9 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		if (config->reading && *src != '/') {
 			// src file is inside configuration dir
 
-			char *conf = strdup(config->current_config_path);
-			if (!conf) {
-				wlr_log(WLR_ERROR, "Failed to duplicate string");
-				free(src);
+			char *conf = strdup(config->current_config);
+			if(!conf) {
+				wlr_log(L_ERROR, "Failed to duplicate string");
 				return cmd_results_new(CMD_FAILURE, "output",
 						"Unable to allocate resources");
 			}
@@ -94,7 +93,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			if (!src) {
 				free(rel_path);
 				free(conf);
-				wlr_log(WLR_ERROR, "Unable to allocate memory");
+				wlr_log(L_ERROR, "Unable to allocate memory");
 				return cmd_results_new(CMD_FAILURE, "output",
 						"Unable to allocate resources");
 			}

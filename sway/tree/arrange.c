@@ -47,11 +47,11 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	double scale = parent->width / total_width;
 
 	// Resize windows
-	wlr_log(WLR_DEBUG, "Arranging %p horizontally", parent);
+	wlr_log(L_DEBUG, "Arranging %p horizontally", parent);
 	double child_x = parent->x;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
-		wlr_log(WLR_DEBUG,
+		wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->width, scale);
 		child->x = child_x;
@@ -99,11 +99,11 @@ static void apply_vert_layout(struct sway_container *parent) {
 	double scale = parent_height / total_height;
 
 	// Resize
-	wlr_log(WLR_DEBUG, "Arranging %p vertically", parent);
+	wlr_log(L_DEBUG, "Arranging %p vertically", parent);
 	double child_y = parent->y + parent_offset;
 	for (size_t i = 0; i < num_children; ++i) {
 		struct sway_container *child = parent->children->items[i];
-		wlr_log(WLR_DEBUG,
+		wlr_log(L_DEBUG,
 				"Calculating arrangement for %p:%d (will scale %f by %f)",
 				child, child->type, child->height, scale);
 		child->x = parent->x;
@@ -179,8 +179,18 @@ static void arrange_children_of(struct sway_container *parent,
 	if (config->reloading) {
 		return;
 	}
-	wlr_log(WLR_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", parent,
+	wlr_log(L_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", parent,
 		parent->name, parent->width, parent->height, parent->x, parent->y);
+
+	// Pass down gaps
+	for (int i = 0; i < parent->children->length && parent->has_gaps; ++i) {
+		struct sway_container *child = parent->children->items[i];
+		if (!child->has_gaps) {
+			child->has_gaps = true;
+			child->gaps_inner = parent->gaps_inner;
+			child->gaps_outer = parent->gaps_outer;
+		}
+	}
 
 	// Calculate x, y, width and height of children
 	switch (parent->layout) {
@@ -205,11 +215,6 @@ static void arrange_children_of(struct sway_container *parent,
 	// Recurse into child containers
 	for (int i = 0; i < parent->children->length; ++i) {
 		struct sway_container *child = parent->children->items[i];
-		if (parent->has_gaps && !child->has_gaps) {
-			child->has_gaps = true;
-			child->gaps_inner = parent->gaps_inner;
-			child->gaps_outer = parent->gaps_outer;
-		}
 		if (child->type == C_VIEW) {
 			view_autoconfigure(child->sway_view);
 		} else {
@@ -226,7 +231,7 @@ static void arrange_workspace(struct sway_container *workspace,
 	}
 	struct sway_container *output = workspace->parent;
 	struct wlr_box *area = &output->sway_output->usable_area;
-	wlr_log(WLR_DEBUG, "Usable area for ws: %dx%d@%d,%d",
+	wlr_log(L_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
 	remove_gaps(workspace);
 	workspace->width = area->width;
@@ -235,7 +240,7 @@ static void arrange_workspace(struct sway_container *workspace,
 	workspace->y = output->y + area->y;
 	add_gaps(workspace);
 	transaction_add_container(transaction, workspace);
-	wlr_log(WLR_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
+	wlr_log(L_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
 			workspace->x, workspace->y);
 	arrange_floating(workspace->sway_workspace->floating, transaction);
 	arrange_children_of(workspace, transaction);
@@ -254,7 +259,7 @@ static void arrange_output(struct sway_container *output,
 	output->width = output_box->width;
 	output->height = output_box->height;
 	transaction_add_container(transaction, output);
-	wlr_log(WLR_DEBUG, "Arranging output '%s' at %f,%f",
+	wlr_log(L_DEBUG, "Arranging output '%s' at %f,%f",
 			output->name, output->x, output->y);
 	for (int i = 0; i < output->children->length; ++i) {
 		struct sway_container *workspace = output->children->items[i];
@@ -315,7 +320,7 @@ void arrange_and_commit(struct sway_container *container) {
 
 void remove_gaps(struct sway_container *c) {
 	if (c->current_gaps == 0) {
-		wlr_log(WLR_DEBUG, "Removing gaps: not gapped: %p", c);
+		wlr_log(L_DEBUG, "Removing gaps: not gapped: %p", c);
 		return;
 	}
 
@@ -326,21 +331,28 @@ void remove_gaps(struct sway_container *c) {
 
 	c->current_gaps = 0;
 
-	wlr_log(WLR_DEBUG, "Removing gaps %p", c);
+	wlr_log(L_DEBUG, "Removing gaps %p", c);
 }
 
 void add_gaps(struct sway_container *c) {
 	if (c->current_gaps > 0 || c->type == C_CONTAINER) {
-		wlr_log(WLR_DEBUG, "Not adding gaps: %p", c);
+		wlr_log(L_DEBUG, "Not adding gaps: %p", c);
 		return;
 	}
 
-	if (c->type == C_WORKSPACE &&
-		!(config->edge_gaps || (config->smart_gaps && c->children->length > 1))) {
-		return;
-	}
+	double gaps = 0;
 
-	double gaps = c->has_gaps ? c->gaps_inner : config->gaps_inner;
+	if (c->type == C_WORKSPACE) {
+		if (!config->edge_gaps || (config->smart_gaps && c->children->length == 1)) {
+			return;
+		}
+		gaps = c->has_gaps ? c->gaps_outer : config->gaps_outer;
+	} else {
+		if (config->smart_gaps && container_parent(c, C_WORKSPACE)->children->length < 2) {
+			return;
+		}
+		gaps = c->has_gaps ? c->gaps_inner : config->gaps_inner;
+	}
 
 	c->x += gaps;
 	c->y += gaps;
@@ -348,5 +360,5 @@ void add_gaps(struct sway_container *c) {
 	c->height -= 2 * gaps;
 	c->current_gaps = gaps;
 
-	wlr_log(WLR_DEBUG, "Adding gaps: %p", c);
+	wlr_log(L_DEBUG, "Adding gaps: %p", c);
 }

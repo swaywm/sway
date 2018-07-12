@@ -23,7 +23,6 @@ struct cmd_results *input_cmd_accel_profile(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "flat") == 0) {
 		new_config->accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
 	} else {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "accel_profile",
 				"Expected 'accel_profile <adaptive|flat>'");
 	}

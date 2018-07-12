@@ -27,7 +27,6 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 
 	if (strncmp(*argv, "→", strlen("→")) == 0) {
 		if (argc < 3) {
-			free(criteria);
 			return cmd_results_new(CMD_INVALID, "assign", "Missing workspace");
 		}
 		++argv;
@@ -45,7 +44,7 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 	criteria->target = join_args(argv, target_len);
 
 	list_add(config->criteria, criteria);
-	wlr_log(WLR_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,
+	wlr_log(L_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,
 			criteria->target);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

@@ -24,7 +24,7 @@ struct cmd_results *bar_cmd_id(int argc, char **argv) {
 		}
 	}
 
-	wlr_log(WLR_DEBUG, "Renaming bar: '%s' to '%s'", oldname, name);
+	wlr_log(L_DEBUG, "Renaming bar: '%s' to '%s'", oldname, name);
 
 	// free old bar id
 	free(config->current_bar->id);

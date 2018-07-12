@@ -19,33 +19,10 @@ enum auth_state {
 	AUTH_STATE_INVALID,
 };
 
-struct swaylock_colorset {
-	uint32_t input;
-	uint32_t cleared;
-	uint32_t verifying;
-	uint32_t wrong;
-};
-
-struct swaylock_colors {
-	uint32_t background;
-	uint32_t bs_highlight;
-	uint32_t key_highlight;
-	uint32_t separator;
-	struct swaylock_colorset inside;
-	struct swaylock_colorset line;
-	struct swaylock_colorset ring;
-	struct swaylock_colorset text;
-};
-
 struct swaylock_args {
-	struct swaylock_colors colors;
+	uint32_t color;
 	enum background_mode mode;
-	char *font;
-	uint32_t radius;
-	uint32_t thickness;
-	bool ignore_empty;
 	bool show_indicator;
-	bool daemonize;
 };
 
 struct swaylock_password {

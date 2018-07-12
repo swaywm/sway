@@ -217,8 +217,8 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 
 	view_set_fullscreen(view, e->fullscreen);
 
-	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
-	arrange_and_commit(output);
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	arrange_and_commit(ws);
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -246,8 +246,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view->natural_width = view->wlr_xdg_surface_v6->geometry.width;
 	view->natural_height = view->wlr_xdg_surface_v6->geometry.height;
 	if (!view->natural_width && !view->natural_height) {
-		view->natural_width = view->wlr_xdg_surface_v6->surface->current.width;
-		view->natural_height = view->wlr_xdg_surface_v6->surface->current.height;
+		view->natural_width = view->wlr_xdg_surface_v6->surface->current->width;
+		view->natural_height = view->wlr_xdg_surface_v6->surface->current->height;
 	}
 
 	view_map(view, view->wlr_xdg_surface_v6->surface);
@@ -295,11 +295,11 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_surface_v6 *xdg_surface = data;
 
 	if (xdg_surface->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
-		wlr_log(WLR_DEBUG, "New xdg_shell_v6 popup");
+		wlr_log(L_DEBUG, "New xdg_shell_v6 popup");
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
+	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
 		xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
 

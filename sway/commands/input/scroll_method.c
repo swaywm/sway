@@ -27,7 +27,6 @@ struct cmd_results *input_cmd_scroll_method(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "on_button_down") == 0) {
 		new_config->scroll_method = LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
 	} else {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "scroll_method",
 			"Expected 'scroll_method <none|two_finger|edge|on_button_down>'");
 	}

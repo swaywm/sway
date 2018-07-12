@@ -23,13 +23,11 @@ struct sway_server {
 
 	struct wlr_compositor *compositor;
 	struct wlr_data_device_manager *data_device_manager;
+	struct wlr_idle *idle;
 
 	struct sway_input_manager *input;
 
 	struct wl_listener new_output;
-
-	struct wlr_idle *idle;
-	struct sway_idle_inhibit_manager_v1 *idle_inhibit_manager_v1;
 
 	struct wlr_layer_shell *layer_shell;
 	struct wl_listener layer_shell_surface;
@@ -63,7 +61,6 @@ void server_run(struct sway_server *server);
 
 void handle_new_output(struct wl_listener *listener, void *data);
 
-void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_surface(struct wl_listener *listener, void *data);

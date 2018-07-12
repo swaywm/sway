@@ -3,9 +3,9 @@
 Use `sway_log(importance, fmt, ...)` to log. The following importances are
 available:
 
-* `WLR_DEBUG`: Debug messages, only shows with `sway -d`
-* `WLR_INFO`: Informational messages
-* `WLR_ERROR`: Error messages
+* `L_DEBUG`: Debug messages, only shows with `sway -d`
+* `L_INFO`: Informational messages
+* `L_ERROR`: Error messages
 
 `sway_log` is a macro that calls `_sway_log` with the current filename and line
 number, which are written into the log with your message.
