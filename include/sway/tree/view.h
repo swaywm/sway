@@ -35,6 +35,7 @@ struct sway_view_impl {
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
+	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
