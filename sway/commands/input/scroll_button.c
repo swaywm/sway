@@ -18,11 +18,17 @@ struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);
 
-	int scroll_button = atoi(argv[0]);
+	char *endptr;
+	long scroll_button = strtol(*argv, &endptr, 10);
+	if (endptr == *argv && scroll_button == 0) {
+		free_input_config(new_config);
+		return cmd_results_new(CMD_INVALID, "scroll_button",
+				"Scroll button identifier must be an integer.");
+	}
 	if (scroll_button < 0) {
 		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "scroll_button",
-				"Scroll button identifier cannot be negative");
+				"Scroll button identifier cannot be negative.");
 	}
 	new_config->scroll_button = scroll_button;
 
