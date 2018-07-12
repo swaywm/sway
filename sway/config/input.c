@@ -27,8 +27,8 @@ struct input_config *new_input_config(const char* identifier) {
 	input->natural_scroll = INT_MIN;
 	input->accel_profile = INT_MIN;
 	input->pointer_accel = FLT_MIN;
-	input->scroll_method = INT_MIN;
 	input->scroll_button = INT_MIN;
+	input->scroll_method = INT_MIN;
 	input->left_handed = INT_MIN;
 	input->repeat_delay = INT_MIN;
 	input->repeat_rate = INT_MIN;
@@ -72,7 +72,7 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 		dst->scroll_method = src->scroll_method;
 	}
 	if (src->scroll_button != INT_MIN) {
-		dst->scroll_button= src->scroll_button;
+		dst->scroll_button = src->scroll_button;
 	}
 	if (src->send_events != INT_MIN) {
 		dst->send_events = src->send_events;

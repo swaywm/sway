@@ -19,7 +19,7 @@ struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 		new_input_config(current_input_config->identifier);
 
 	int scroll_button = atoi(argv[0]);
-	if (scroll_button < 1 || scroll_button > 10) {
+	if (scroll_button < 0 || scroll_button > 1000) {
 		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "scroll_button",
 				"Input out of range [1, 10]");
