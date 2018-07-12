@@ -560,7 +560,7 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 
 bool read_config(FILE *file, struct sway_config *config) {
 	bool reading_main_config = false;
-	char *current_config, *config_pos;
+	char *this_config = NULL, *config_pos;
 	long config_size = 0;
 	if (config->current_config == NULL) {
 		reading_main_config = true;
@@ -569,8 +569,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		config_size = ftell(file);
 		rewind(file);
 
-		config_pos = current_config = malloc(config_size + 1);
-		if (current_config == NULL) {
+		config_pos = this_config = malloc(config_size + 1);
+		if (this_config == NULL) {
 			wlr_log(WLR_ERROR, "Unable to allocate buffer for config contents");
 			return false;
 		}
@@ -616,7 +616,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 			list_foreach(stack, free);
 			list_free(stack);
 			free(line);
-			free(current_config);
+			free(this_config);
 			return false;
 		}
 		wlr_log(WLR_DEBUG, "Expanded line: %s", expanded);
@@ -678,8 +678,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 	list_free(stack);
 
 	if (reading_main_config) {
-		current_config[config_size - 1] = '\0';
-		config->current_config = current_config;
+		this_config[config_size - 1] = '\0';
+		config->current_config = this_config;
 	}
 	return success;
 }
