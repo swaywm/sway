@@ -14,7 +14,6 @@
 #include <wlr/types/wlr_linux_dmabuf.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screencopy_v1.h>
-#include <wlr/types/wlr_screenshooter.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_output.h>
@@ -53,7 +52,6 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	wlr_screenshooter_create(server->wl_display);
 	wlr_gamma_control_manager_create(server->wl_display);
 	wlr_primary_selection_device_manager_create(server->wl_display);
 
