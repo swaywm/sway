@@ -1,13 +1,14 @@
 sway_sources = files(
-	'main.c',
-	'server.c',
 	'commands.c',
 	'config.c',
 	'criteria.c',
 	'debug-tree.c',
+	'decoration.c',
 	'ipc-json.c',
 	'ipc-server.c',
+	'main.c',
 	'security.c',
+	'server.c',
 	'swaynag.c',
 
 	'desktop/desktop.c',

@@ -109,11 +109,14 @@ bool server_init(struct sway_server *server) {
 	}
 #endif
 
-	// TODO: Integration with sway borders
-	struct wlr_server_decoration_manager *deco_manager =
+	server->server_decoration_manager =
 		wlr_server_decoration_manager_create(server->wl_display);
 	wlr_server_decoration_manager_set_default_mode(
-		deco_manager, WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
+		server->server_decoration_manager,
+		WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
+	wl_signal_add(&server->server_decoration_manager->events.new_decoration,
+		&server->server_decoration);
+	server->server_decoration.notify = handle_server_decoration;
 
 	wlr_linux_dmabuf_v1_create(server->wl_display, renderer);
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
