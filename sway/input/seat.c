@@ -766,6 +766,10 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "focus");
+	}
+
 	seat->has_focus = (container != NULL);
 
 	update_debug_tree();
