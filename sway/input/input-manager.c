@@ -158,6 +158,12 @@ static void input_manager_libinput_config_pointer(
 		libinput_device_config_accel_set_speed(libinput_device,
 			ic->pointer_accel);
 	}
+	if (ic->scroll_button != INT_MIN) {
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) scroll_set_button(%d)",
+			ic->identifier, ic->scroll_button);
+		libinput_device_config_scroll_set_button(libinput_device,
+			ic->scroll_button);
+	}
 	if (ic->scroll_method != INT_MIN) {
 		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) scroll_set_method(%d)",
 			ic->identifier, ic->scroll_method);

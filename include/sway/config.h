@@ -75,6 +75,7 @@ struct input_config {
 	float pointer_accel;
 	int repeat_delay;
 	int repeat_rate;
+	int scroll_button;
 	int scroll_method;
 	int send_events;
 	int tap;
