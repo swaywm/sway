@@ -864,6 +864,8 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	// Update title after the global font height is updated
 	container_update_title_textures(view->swayc);
+
+	ipc_event_window(view->swayc, "title");
 }
 
 static bool find_by_mark_iterator(struct sway_container *con,
