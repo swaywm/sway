@@ -503,6 +503,9 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 				output->buffers,
 				output->width * output->scale,
 				output->height * output->scale);
+		if (!output->current_buffer) {
+			return;
+		}
 		cairo_t *shm = output->current_buffer->cairo;
 
 		cairo_save(shm);
