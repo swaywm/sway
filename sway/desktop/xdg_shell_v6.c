@@ -45,47 +45,18 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 }
 
 static void popup_unconstrain(struct sway_xdg_popup_v6 *popup) {
-	// get the output of the popup's positioner anchor point and convert it to
-	// the toplevel parent's coordinate system and then pass it to
-	// wlr_xdg_popup_unconstrain_from_box
-
 	struct sway_view *view = popup->child.view;
-	struct wlr_output_layout *output_layout =
-		root_container.sway_root->output_layout;
 	struct wlr_xdg_popup_v6 *wlr_popup = popup->wlr_xdg_surface_v6->popup;
 
-	int anchor_lx, anchor_ly;
-	wlr_xdg_popup_v6_get_anchor_point(wlr_popup, &anchor_lx, &anchor_ly);
-
-	int popup_lx, popup_ly;
-	wlr_xdg_popup_v6_get_toplevel_coords(wlr_popup, wlr_popup->geometry.x,
-		wlr_popup->geometry.y, &popup_lx, &popup_ly);
-	popup_lx += view->x;
-	popup_ly += view->y;
-
-	anchor_lx += popup_lx;
-	anchor_ly += popup_ly;
-
-	double dest_x = 0, dest_y = 0;
-	wlr_output_layout_closest_point(output_layout, NULL, anchor_lx, anchor_ly,
-		&dest_x, &dest_y);
-
-	struct wlr_output *output =
-		wlr_output_layout_output_at(output_layout, dest_x, dest_y);
-	if (output == NULL) {
-		return;
-	}
-
-	int width = 0, height = 0;
-	wlr_output_effective_resolution(output, &width, &height);
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
 	// the output box expressed in the coordinate system of the toplevel parent
 	// of the popup
 	struct wlr_box output_toplevel_sx_box = {
-		.x = output->lx - view->x,
-		.y = output->ly - view->y,
-		.width = width,
-		.height = height
+		.x = output->x - view->x,
+		.y = output->y - view->y,
+		.width = output->width,
+		.height = output->height,
 	};
 
 	wlr_xdg_popup_v6_unconstrain_from_box(wlr_popup, &output_toplevel_sx_box);
