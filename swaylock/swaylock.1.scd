@@ -12,6 +12,15 @@ Locks your Wayland session.
 
 # OPTIONS
 
+*-C, --config* <path>
+	The config file to use. By default, the following paths are checked:
+	_$HOME/.swaylock/config_, _$XDG\_CONFIG\_HOME/swaylock/config_, and
+	_SYSCONFDIR/swaylock/config_. All flags aside from this one are valid
+	options in the configuration file using the format _long-option=value_.
+	For options such as _ignore-empty-password_, just supply the _long-option_.
+	All leading dashes should be omitted and the equals sign is required for
+	flags that take an argument.
+
 *-c, --color* <rrggbb[aa]>
 	Turn the screen into the given color. If -i is used, this sets the
 	background of the image to the given color. Defaults to white (FFFFFF), or

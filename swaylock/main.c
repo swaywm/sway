@@ -21,6 +21,7 @@
 #include "pool-buffer.h"
 #include "cairo.h"
 #include "log.h"
+#include "readline.h"
 #include "stringop.h"
 #include "util.h"
 #include "wlr-input-inhibitor-unstable-v1-client-protocol.h"
@@ -412,15 +413,14 @@ static void set_default_colors(struct swaylock_colors *colors) {
 	};
 }
 
-static struct swaylock_state state;
+enum line_mode {
+	LM_LINE,
+	LM_INSIDE,
+	LM_RING,
+};
 
-int main(int argc, char **argv) {
-	enum line_mode {
-		LM_LINE,
-		LM_INSIDE,
-		LM_RING,
-	};
-
+static int parse_options(int argc, char **argv, struct swaylock_state *state,
+		enum line_mode *line_mode) {
 	enum long_option_codes {
 		LO_BS_HL_COLOR = 256,
 		LO_FONT,
@@ -447,6 +447,7 @@ int main(int argc, char **argv) {
 	};
 
 	static struct option long_options[] = {
+		{"config", required_argument, NULL, 'C'},
 		{"color", required_argument, NULL, 'c'},
 		{"ignore-empty-password", no_argument, NULL, 'e'},
 		{"daemonize", no_argument, NULL, 'f'},
@@ -487,6 +488,8 @@ int main(int argc, char **argv) {
 	const char usage[] =
 		"Usage: swaylock [options...]\n"
 		"\n"
+		"  -C, --config <config_file>     "
+			"Path to the config file.\n"
 		"  -c, --color <color>            "
 			"Turn the screen into the given color instead of white.\n"
 		"  -e, --ignore-empty-password    "
@@ -559,6 +562,218 @@ int main(int argc, char **argv) {
 		"\n"
 		"All <color> options are of the form <rrggbb[aa]>.\n";
 
+	int c;
+	optind = 1;
+	while (1) {
+		int opt_idx = 0;
+		c = getopt_long(argc, argv, "c:efhi:nrs:tuvC:", long_options, &opt_idx);
+		if (c == -1) {
+			break;
+		}
+		switch (c) {
+		case 'C':
+			// Config file. This will have already been handled so just ignore.
+			break;
+		case 'c':
+			state->args.colors.background = parse_color(optarg);
+			state->args.mode = BACKGROUND_MODE_SOLID_COLOR;
+			break;
+		case 'e':
+			state->args.ignore_empty = true;
+			break;
+		case 'f':
+			state->args.daemonize = true;
+			break;
+		case 'i':
+			load_image(optarg, state);
+			break;
+		case 'n':
+			*line_mode = LM_INSIDE;
+			break;
+		case 'r':
+			*line_mode = LM_RING;
+			break;
+		case 's':
+			state->args.mode = parse_background_mode(optarg);
+			if (state->args.mode == BACKGROUND_MODE_INVALID) {
+				return 1;
+			}
+			break;
+		case 't':
+			state->args.mode = BACKGROUND_MODE_TILE;
+			break;
+		case 'u':
+			state->args.show_indicator = false;
+			break;
+		case 'v':
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n",
+					SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
+#else
+			fprintf(stdout, "version unknown\n");
+#endif
+			return 0;
+		case LO_BS_HL_COLOR:
+			state->args.colors.bs_highlight = parse_color(optarg);
+			break;
+		case LO_FONT:
+			free(state->args.font);
+			state->args.font = strdup(optarg);
+			break;
+		case LO_IND_RADIUS:
+			state->args.radius = strtol(optarg, NULL, 0);
+			break;
+		case LO_IND_THICKNESS:
+			state->args.thickness = strtol(optarg, NULL, 0);
+			break;
+		case LO_INSIDE_COLOR:
+			state->args.colors.inside.input = parse_color(optarg);
+			break;
+		case LO_INSIDE_CLEAR_COLOR:
+			state->args.colors.inside.cleared = parse_color(optarg);
+			break;
+		case LO_INSIDE_VER_COLOR:
+			state->args.colors.inside.verifying = parse_color(optarg);
+			break;
+		case LO_INSIDE_WRONG_COLOR:
+			state->args.colors.inside.wrong = parse_color(optarg);
+			break;
+		case LO_KEY_HL_COLOR:
+			state->args.colors.key_highlight = parse_color(optarg);
+			break;
+		case LO_LINE_COLOR:
+			state->args.colors.line.input = parse_color(optarg);
+			break;
+		case LO_LINE_CLEAR_COLOR:
+			state->args.colors.line.cleared = parse_color(optarg);
+			break;
+		case LO_LINE_VER_COLOR:
+			state->args.colors.line.verifying = parse_color(optarg);
+			break;
+		case LO_LINE_WRONG_COLOR:
+			state->args.colors.line.wrong = parse_color(optarg);
+			break;
+		case LO_RING_COLOR:
+			state->args.colors.ring.input = parse_color(optarg);
+			break;
+		case LO_RING_CLEAR_COLOR:
+			state->args.colors.ring.cleared = parse_color(optarg);
+			break;
+		case LO_RING_VER_COLOR:
+			state->args.colors.ring.verifying = parse_color(optarg);
+			break;
+		case LO_RING_WRONG_COLOR:
+			state->args.colors.ring.wrong = parse_color(optarg);
+			break;
+		case LO_SEP_COLOR:
+			state->args.colors.separator = parse_color(optarg);
+			break;
+		case LO_TEXT_COLOR:
+			state->args.colors.text.input = parse_color(optarg);
+			break;
+		case LO_TEXT_CLEAR_COLOR:
+			state->args.colors.text.cleared = parse_color(optarg);
+			break;
+		case LO_TEXT_VER_COLOR:
+			state->args.colors.text.verifying = parse_color(optarg);
+			break;
+		case LO_TEXT_WRONG_COLOR:
+			state->args.colors.text.wrong = parse_color(optarg);
+			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static bool file_exists(const char *path) {
+	return path && access(path, R_OK) != -1;
+}
+
+static char *get_config_path(void) {
+	static const char *config_paths[] = {
+		"$HOME/.swaylock/config",
+		"$XDG_CONFIG_HOME/swaylock/config",
+		SYSCONFDIR "/swaylock/config",
+	};
+
+	if (!getenv("XDG_CONFIG_HOME")) {
+		char *home = getenv("HOME");
+		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
+		if (!config_home) {
+			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
+		} else {
+			strcpy(config_home, home);
+			strcat(config_home, "/.config");
+			setenv("XDG_CONFIG_HOME", config_home, 1);
+			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+			free(config_home);
+		}
+	}
+
+	wordexp_t p;
+	char *path;
+	for (int i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
+		if (wordexp(config_paths[i], &p, 0) == 0) {
+			path = strdup(p.we_wordv[0]);
+			wordfree(&p);
+			if (file_exists(path)) {
+				return path;
+			}
+			free(path);
+		}
+	}
+
+	return NULL;
+}
+
+static int load_config(char *path, struct swaylock_state *state,
+		enum line_mode *line_mode) {
+	FILE *config = fopen(path, "r");
+	if (!config) {
+		wlr_log(WLR_ERROR, "Failed to read config. Running without it.");
+		return 0;
+	}
+	char *line;
+	int line_number = 0;
+	while (!feof(config)) {
+		line = read_line(config);
+		if (!line) {
+			continue;
+		}
+
+		line_number++;
+		if (line[0] == '#') {
+			free(line);
+			continue;
+		}
+		if (strlen(line) == 0) {
+			free(line);
+			continue;
+		}
+
+		wlr_log(WLR_DEBUG, "Config Line #%d: %s", line_number, line);
+		char flag[strlen(line) + 3];
+		sprintf(flag, "--%s", line);
+		char *argv[] = {"swaylock", flag};
+		int result = parse_options(2, argv, state, line_mode);
+		if (result != 0) {
+			free(line);
+			fclose(config);
+			return result;
+		}
+		free(line);
+	}
+	fclose(config);
+	return 0;
+}
+
+static struct swaylock_state state;
+
+int main(int argc, char **argv) {
 	enum line_mode line_mode = LM_LINE;
 	state.args = (struct swaylock_args){
 		.mode = BACKGROUND_MODE_SOLID_COLOR,
@@ -573,123 +788,35 @@ int main(int argc, char **argv) {
 
 	wlr_log_init(WLR_DEBUG, NULL);
 
-	int c;
-	while (1) {
-		int opt_idx = 0;
-		c = getopt_long(argc, argv, "c:efhi:nrs:tuv", long_options, &opt_idx);
-		if (c == -1) {
-			break;
-		}
-		switch (c) {
-		case 'c':
-			state.args.colors.background = parse_color(optarg);
-			state.args.mode = BACKGROUND_MODE_SOLID_COLOR;
-			break;
-		case 'e':
-			state.args.ignore_empty = true;
-			break;
-		case 'f':
-			state.args.daemonize = true;
-			break;
-		case 'i':
-			load_image(optarg, &state);
-			break;
-		case 'n':
-			line_mode = LM_INSIDE;
-			break;
-		case 'r':
-			line_mode = LM_RING;
-			break;
-		case 's':
-			state.args.mode = parse_background_mode(optarg);
-			if (state.args.mode == BACKGROUND_MODE_INVALID) {
+	char *config_path = NULL;
+	for (int i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--config") == 0) {
+			if (i + 1 == argc) {
+				wlr_log(WLR_ERROR, "Config file path is missing");
 				return 1;
 			}
+			config_path = strdup(argv[i + 1]);
 			break;
-		case 't':
-			state.args.mode = BACKGROUND_MODE_TILE;
-			break;
-		case 'u':
-			state.args.show_indicator = false;
-			break;
-		case 'v':
-#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
-			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n",
-					SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
-#else
-			fprintf(stdout, "version unknown\n");
-#endif
-			return 0;
-		case LO_BS_HL_COLOR:
-			state.args.colors.bs_highlight = parse_color(optarg);
-			break;
-		case LO_FONT:
-			free(state.args.font);
-			state.args.font = strdup(optarg);
-			break;
-		case LO_IND_RADIUS:
-			state.args.radius = strtol(optarg, NULL, 0);
-			break;
-		case LO_IND_THICKNESS:
-			state.args.thickness = strtol(optarg, NULL, 0);
-			break;
-		case LO_INSIDE_COLOR:
-			state.args.colors.inside.input = parse_color(optarg);
-			break;
-		case LO_INSIDE_CLEAR_COLOR:
-			state.args.colors.inside.cleared = parse_color(optarg);
-			break;
-		case LO_INSIDE_VER_COLOR:
-			state.args.colors.inside.verifying = parse_color(optarg);
-			break;
-		case LO_INSIDE_WRONG_COLOR:
-			state.args.colors.inside.wrong = parse_color(optarg);
-			break;
-		case LO_KEY_HL_COLOR:
-			state.args.colors.key_highlight = parse_color(optarg);
-			break;
-		case LO_LINE_COLOR:
-			state.args.colors.line.input = parse_color(optarg);
-			break;
-		case LO_LINE_CLEAR_COLOR:
-			state.args.colors.line.cleared = parse_color(optarg);
-			break;
-		case LO_LINE_VER_COLOR:
-			state.args.colors.line.verifying = parse_color(optarg);
-			break;
-		case LO_LINE_WRONG_COLOR:
-			state.args.colors.line.wrong = parse_color(optarg);
-			break;
-		case LO_RING_COLOR:
-			state.args.colors.ring.input = parse_color(optarg);
-			break;
-		case LO_RING_CLEAR_COLOR:
-			state.args.colors.ring.cleared = parse_color(optarg);
-			break;
-		case LO_RING_VER_COLOR:
-			state.args.colors.ring.verifying = parse_color(optarg);
-			break;
-		case LO_RING_WRONG_COLOR:
-			state.args.colors.ring.wrong = parse_color(optarg);
-			break;
-		case LO_SEP_COLOR:
-			state.args.colors.separator = parse_color(optarg);
-			break;
-		case LO_TEXT_COLOR:
-			state.args.colors.text.input = parse_color(optarg);
-			break;
-		case LO_TEXT_CLEAR_COLOR:
-			state.args.colors.text.cleared = parse_color(optarg);
-			break;
-		case LO_TEXT_VER_COLOR:
-			state.args.colors.text.verifying = parse_color(optarg);
-			break;
-		case LO_TEXT_WRONG_COLOR:
-			state.args.colors.text.wrong = parse_color(optarg);
-			break;
-		default:
-			fprintf(stderr, "%s", usage);
-			return 1;
+		}
+	}
+	if (!config_path) {
+		config_path = get_config_path();
+	}
+
+	if (config_path) {
+		wlr_log(WLR_DEBUG, "Found config at %s", config_path);
+		int config_status = load_config(config_path, &state, &line_mode);
+		free(config_path);
+		if (config_status != 0) {
+			return config_status;
+		}
+	}
+
+	if (argc > 1) {
+		wlr_log(WLR_DEBUG, "Parsing CLI Args");
+		int result = parse_options(argc, argv, &state, &line_mode);
+		if (result != 0) {
+			return result;
 		}
 	}
 
