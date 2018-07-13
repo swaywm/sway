@@ -321,7 +321,11 @@ static struct sway_container *container_destroy_noreaping(
 	}
 
 	wl_signal_emit(&con->events.destroy, con);
-	ipc_event_window(con, "close");
+
+	// emit IPC event
+	if (con->type == C_VIEW) {
+		ipc_event_window(con, "close");
+	}
 
 	// The below functions move their children to somewhere else.
 	if (con->type == C_OUTPUT) {
