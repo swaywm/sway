@@ -1,5 +1,6 @@
 #include <string.h>
 #include <strings.h>
+#include <errno.h>
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
@@ -18,12 +19,18 @@ struct cmd_results *input_cmd_scroll_button(int argc, char **argv) {
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);
 
+	errno = 0;
 	char *endptr;
-	long scroll_button = strtol(*argv, &endptr, 10);
+	int scroll_button = strtol(*argv, &endptr, 10);
 	if (endptr == *argv && scroll_button == 0) {
 		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "scroll_button",
 				"Scroll button identifier must be an integer.");
+	}
+	if (errno == ERANGE) {
+		free_input_config(new_config);
+		return cmd_results_new(CMD_INVALID, "scroll_button",
+				"Scroll button identifier out of range.");
 	}
 	if (scroll_button < 0) {
 		free_input_config(new_config);
