@@ -1,6 +1,6 @@
 executable(
 	'swaybg',
-	'main.c',
+	['main.c', 'render.c'],
 	include_directories: [sway_inc],
 	dependencies: [
 		cairo,

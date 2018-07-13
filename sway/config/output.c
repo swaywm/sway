@@ -2,8 +2,6 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <unistd.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -113,16 +111,6 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	}
 }
 
-void terminate_swaybg(pid_t pid) {
-	int ret = kill(pid, SIGTERM);
-	if (ret != 0) {
-		wlr_log(WLR_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
-	} else {
-		int status;
-		waitpid(pid, &status, 0);
-	}
-}
-
 void apply_output_config(struct output_config *oc, struct sway_container *output) {
 	assert(output->type == C_OUTPUT);
 
@@ -132,10 +120,6 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 
 	if (oc && oc->enabled == 0) {
 		struct sway_output *sway_output = output->sway_output;
-		if (output->sway_output->bg_pid != 0) {
-			terminate_swaybg(output->sway_output->bg_pid);
-			output->sway_output->bg_pid = 0;
-		}
 		container_destroy(output);
 		sway_output->swayc = NULL;
 		wlr_output_layout_remove(root_container.sway_root->output_layout,
@@ -165,58 +149,14 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	}
 
-	if (!oc || !oc->background) {
-		// Look for a * config for background
-		int i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			oc = config->output_configs->items[i];
-		} else {
-			oc = NULL;
-		}
-	}
-
-	int output_i;
-	for (output_i = 0; output_i < root_container.children->length; ++output_i) {
-		if (root_container.children->items[output_i] == output) {
-			break;
-		}
-	}
-
-	if (oc && oc->background) {
-		if (output->sway_output->bg_pid != 0) {
-			terminate_swaybg(output->sway_output->bg_pid);
-		}
-
-		wlr_log(WLR_DEBUG, "Setting background for output %d to %s",
-				output_i, oc->background);
-
-		size_t len = snprintf(NULL, 0, "%s %d %s %s",
-				config->swaybg_command ? config->swaybg_command : "swaybg",
-				output_i, oc->background, oc->background_option);
-		char *command = malloc(len + 1);
-		if (!command) {
-			wlr_log(WLR_DEBUG, "Unable to allocate swaybg command");
-			return;
-		}
-		snprintf(command, len + 1, "%s %d %s %s",
-				config->swaybg_command ? config->swaybg_command : "swaybg",
-				output_i, oc->background, oc->background_option);
-		wlr_log(WLR_DEBUG, "-> %s", command);
-
-		char *const cmd[] = { "sh", "-c", command, NULL };
-		output->sway_output->bg_pid = fork();
-		if (output->sway_output->bg_pid == 0) {
-			execvp(cmd[0], cmd);
-		}
-	}
 	if (oc && oc->dpms_state != DPMS_IGNORE) {
 		switch (oc->dpms_state) {
 		case DPMS_ON:
-			wlr_log(WLR_DEBUG, "Turning on screen");
+			wlr_log(WLR_DEBUG, "Turning on output %s", oc->name);
 			wlr_output_enable(wlr_output, true);
 			break;
 		case DPMS_OFF:
-			wlr_log(WLR_DEBUG, "Turning off screen");
+			wlr_log(WLR_DEBUG, "Turning off output %s", oc->name);
 			wlr_output_enable(wlr_output, false);
 			break;
 		case DPMS_IGNORE:

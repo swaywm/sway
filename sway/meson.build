@@ -25,9 +25,10 @@ sway_sources = files(
 	'input/keyboard.c',
 
 	'config/bar.c',
+	'config/bg.c',
+	'config/input.c',
 	'config/output.c',
 	'config/seat.c',
-	'config/input.c',
 
 	'commands/assign.c',
 	'commands/bar.c',

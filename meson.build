@@ -72,9 +72,10 @@ if scdoc.found()
 		'sway/sway.5.scd',
 		'sway/sway-bar.5.scd',
 		'sway/sway-input.5.scd',
+		'swaybg/swaybg.1.scd',
+		'swayidle/swayidle.1.scd',
 		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
-		'swayidle/swayidle.1.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]

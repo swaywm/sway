@@ -1,116 +1,82 @@
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <getopt.h>
 #include <string.h>
-#include <time.h>
-#include <wayland-client.h>
-#include <wlr/util/log.h>
-#include "background-image.h"
-#include "pool-buffer.h"
-#include "cairo.h"
+#include <wordexp.h>
+#include "log.h"
+#include "stringop.h"
+#include "swaybg.h"
 #include "util.h"
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "xdg-output-unstable-v1-client-protocol.h"
 
-struct swaybg_args {
-	int output_idx;
-	const char *path;
-	enum background_mode mode;
-};
-
-struct swaybg_context {
-	uint32_t color;
-	cairo_surface_t *image;
-};
-
-struct swaybg_state {
-	const struct swaybg_args *args;
-	struct swaybg_context context;
-
-	struct wl_display *display;
-	struct wl_compositor *compositor;
-	struct zwlr_layer_shell_v1 *layer_shell;
-	struct wl_shm *shm;
-
-	struct wl_output *output;
-	struct wl_surface *surface;
-	struct wl_region *input_region;
-	struct zwlr_layer_surface_v1 *layer_surface;
-
-	bool run_display;
-	uint32_t width, height;
-	int32_t scale;
-	struct pool_buffer buffers[2];
-	struct pool_buffer *current_buffer;
-};
-
-bool is_valid_color(const char *color) {
-	int len = strlen(color);
-	if (len != 7 || color[0] != '#') {
-		wlr_log(WLR_ERROR, "%s is not a valid color for swaybg. "
-				"Color should be specified as #rrggbb (no alpha).", color);
-		return false;
-	}
-
-	int i;
-	for (i = 1; i < len; ++i) {
-		if (!isxdigit(color[i])) {
-			return false;
-		}
-	}
-
-	return true;
+void sway_terminate(void) {
+	exit(0);
 }
 
-static void render_frame(struct swaybg_state *state) {
-	int buffer_width = state->width * state->scale,
-		buffer_height = state->height * state->scale;
-	state->current_buffer = get_next_buffer(state->shm,
-			state->buffers, buffer_width, buffer_height);
-	cairo_t *cairo = state->current_buffer->cairo;
-	if (state->args->mode == BACKGROUND_MODE_SOLID_COLOR) {
-		cairo_set_source_u32(cairo, state->context.color);
-		cairo_paint(cairo);
-	} else {
-		render_background_image(cairo, state->context.image,
-				state->args->mode, buffer_width, buffer_height);
+static void destroy_surface(struct swaybg_surface *surface) {
+	wl_list_remove(&surface->link);
+	if (surface->layer_surface != NULL) {
+		zwlr_layer_surface_v1_destroy(surface->layer_surface);
 	}
-
-	wl_surface_set_buffer_scale(state->surface, state->scale);
-	wl_surface_attach(state->surface, state->current_buffer->buffer, 0, 0);
-	wl_surface_damage(state->surface, 0, 0, state->width, state->height);
-	wl_surface_commit(state->surface);
+	if (surface->surface != NULL) {
+		wl_surface_destroy(surface->surface);
+	}
+	destroy_buffer(&surface->buffers[0]);
+	destroy_buffer(&surface->buffers[1]);
+	wl_output_destroy(surface->output);
+	free(surface);
 }
 
-static bool prepare_context(struct swaybg_state *state) {
-	if (state->args->mode == BACKGROUND_MODE_SOLID_COLOR) {
-		state->context.color = parse_color(state->args->path);
-		return is_valid_color(state->args->path);
-	}
-	if (!(state->context.image = load_background_image(state->args->path))) {
-		return false;
-	}
-	return true;
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener;
+
+static cairo_surface_t *select_image(struct swaybg_state *state,
+		struct swaybg_surface *surface);
+
+static void create_layer_surface(struct swaybg_surface *surface) {
+	struct swaybg_state *state = surface->state;
+
+	surface->image = select_image(state, surface);
+
+	surface->surface = wl_compositor_create_surface(state->compositor);
+	assert(surface->surface);
+
+	surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+		state->layer_shell, surface->surface, surface->output,
+		ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "wallpaper");
+	assert(surface->layer_surface);
+
+	zwlr_layer_surface_v1_set_size(surface->layer_surface, 0, 0);
+	zwlr_layer_surface_v1_set_anchor(surface->layer_surface,
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
+		ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
+	zwlr_layer_surface_v1_set_exclusive_zone(surface->layer_surface, -1);
+	zwlr_layer_surface_v1_add_listener(surface->layer_surface,
+		&layer_surface_listener, surface);
+
+	struct wl_region *input_region =
+		wl_compositor_create_region(state->compositor);
+	wl_surface_set_input_region(surface->surface, input_region);
+	wl_region_destroy(input_region);
+
+	wl_surface_commit(surface->surface);
 }
 
 static void layer_surface_configure(void *data,
-		struct zwlr_layer_surface_v1 *surface,
+		struct zwlr_layer_surface_v1 *layer_surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
-	struct swaybg_state *state = data;
-	state->width = width;
-	state->height = height;
-	zwlr_layer_surface_v1_ack_configure(surface, serial);
-	render_frame(state);
+	struct swaybg_surface *surface = data;
+	surface->width = width;
+	surface->height = height;
+	zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
+	render_surface(surface);
 }
 
 static void layer_surface_closed(void *data,
-		struct zwlr_layer_surface_v1 *surface) {
-	struct swaybg_state *state = data;
-	zwlr_layer_surface_v1_destroy(state->layer_surface);
-	wl_surface_destroy(state->surface);
-	wl_region_destroy(state->input_region);
-	state->run_display = false;
+		struct zwlr_layer_surface_v1 *layer_surface) {
+	struct swaybg_surface *surface = data;
+	destroy_surface(surface);
 }
 
 static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
@@ -118,34 +84,70 @@ static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
-static void output_geometry(void *data, struct wl_output *output, int32_t x,
-		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
-		const char *make, const char *model, int32_t transform) {
+static void handle_wl_output_geometry(void *data, struct wl_output *output,
+		int32_t x, int32_t y, int32_t width_mm, int32_t height_mm,
+		int32_t subpixel, const char *make, const char *model,
+		int32_t transform) {
 	// Who cares
 }
 
-static void output_mode(void *data, struct wl_output *output, uint32_t flags,
-		int32_t width, int32_t height, int32_t refresh) {
+static void handle_wl_output_mode(void *data, struct wl_output *output,
+		uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
 	// Who cares
 }
 
-static void output_done(void *data, struct wl_output *output) {
+static void handle_wl_output_done(void *data, struct wl_output *output) {
 	// Who cares
 }
 
-static void output_scale(void *data, struct wl_output *output, int32_t factor) {
-	struct swaybg_state *state = data;
-	state->scale = factor;
-	if (state->run_display) {
-		render_frame(state);
+static void handle_wl_output_scale(void *data, struct wl_output *output,
+		int32_t factor) {
+	struct swaybg_surface *surface = data;
+	surface->scale = factor;
+	if (surface->state->run_display) {
+		render_surface(surface);
 	}
 }
 
-static const struct wl_output_listener output_listener = {
-	.geometry = output_geometry,
-	.mode = output_mode,
-	.done = output_done,
-	.scale = output_scale,
+struct wl_output_listener _wl_output_listener = {
+	.geometry = handle_wl_output_geometry,
+	.mode = handle_wl_output_mode,
+	.done = handle_wl_output_done,
+	.scale = handle_wl_output_scale,
+};
+
+static void handle_xdg_output_logical_size(void *data, struct zxdg_output_v1 *output,
+		int width, int height) {
+	// Who cares
+}
+
+static void handle_xdg_output_logical_position(void *data,
+		struct zxdg_output_v1 *output, int x, int y) {
+	// Who cares
+}
+
+static void handle_xdg_output_name(void *data, struct zxdg_output_v1 *output,
+		const char *name) {
+	struct swaybg_surface *surface = data;
+	surface->xdg_output = output;
+	surface->output_name = strdup(name);
+}
+
+static void handle_xdg_output_description(void *data, struct zxdg_output_v1 *output,
+		const char *description) {
+	// Who cares
+}
+
+static void handle_xdg_output_done(void *data, struct zxdg_output_v1 *output) {
+	// Who cares
+}
+
+struct zxdg_output_v1_listener _xdg_output_listener = {
+	.logical_position = handle_xdg_output_logical_position,
+	.logical_size = handle_xdg_output_logical_size,
+	.done = handle_xdg_output_done,
+	.name = handle_xdg_output_name,
+	.description = handle_xdg_output_description,
 };
 
 static void handle_global(void *data, struct wl_registry *registry,
@@ -153,27 +155,43 @@ static void handle_global(void *data, struct wl_registry *registry,
 	struct swaybg_state *state = data;
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		state->compositor = wl_registry_bind(registry, name,
-				&wl_compositor_interface, 3);
+			&wl_compositor_interface, 3);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		state->shm = wl_registry_bind(registry, name,
-				&wl_shm_interface, 1);
-	} else if (strcmp(interface, wl_output_interface.name) == 0) {
-		static int output_idx = 0;
-		if (output_idx == state->args->output_idx) {
-			state->output = wl_registry_bind(registry, name,
-					&wl_output_interface, 3);
-			wl_output_add_listener(state->output, &output_listener, state);
-		}
-		output_idx++;
+			&wl_shm_interface, 1);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		state->layer_shell = wl_registry_bind(
-				registry, name, &zwlr_layer_shell_v1_interface, 1);
+			registry, name, &zwlr_layer_shell_v1_interface, 1);
+	} else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0) {
+		state->zxdg_output_manager = wl_registry_bind(
+			registry, name, &zxdg_output_manager_v1_interface, 2);
+	} else if (strcmp(interface, wl_output_interface.name) == 0) {
+		struct swaybg_surface *surface =
+			calloc(1, sizeof(struct swaybg_surface));
+		surface->state = state;
+		surface->output = wl_registry_bind(registry, name,
+			&wl_output_interface, 3);
+		surface->output_global_name = name;
+		wl_output_add_listener(surface->output, &_wl_output_listener, surface);
+		wl_list_insert(&state->surfaces, &surface->link);
+
+		if (state->run_display) {
+			create_layer_surface(surface);
+			wl_display_roundtrip(state->display);
+		}
 	}
 }
 
 static void handle_global_remove(void *data, struct wl_registry *registry,
 		uint32_t name) {
-	// who cares
+	struct swaybg_state *state = data;
+	struct swaybg_surface *surface;
+	wl_list_for_each(surface, &state->surfaces, link) {
+		if (surface->output_global_name == name) {
+			destroy_surface(surface);
+			break;
+		}
+	}
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -181,26 +199,137 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = handle_global_remove,
 };
 
-int main(int argc, const char **argv) {
-	struct swaybg_args args = {0};
+static cairo_surface_t *select_image(struct swaybg_state *state,
+		struct swaybg_surface *surface) {
+	struct swaybg_image *image;
+	cairo_surface_t *default_image = NULL;
+	wl_list_for_each(image, &state->images, link) {
+		if (lenient_strcmp(image->output_name, surface->output_name) == 0) {
+			return image->cairo_surface;
+		} else if (!image->output_name) {
+			default_image = image->cairo_surface;
+		}
+	}
+	return default_image;
+}
+
+static void load_image(char *arg, struct swaybg_state *state) {
+	// [<output>:]<path>
+	struct swaybg_image *image = calloc(1, sizeof(struct swaybg_image));
+	char *separator = strchr(arg, ':');
+	if (separator) {
+		*separator = '\0';
+		image->output_name = strdup(arg);
+		image->path = strdup(separator + 1);
+	} else {
+		image->output_name = NULL;
+		image->path = strdup(arg);
+	}
+
+	bool exists = false;
+	struct swaybg_image *iter_image;
+	wl_list_for_each(iter_image, &state->images, link) {
+		if (lenient_strcmp(iter_image->output_name, image->output_name) == 0) {
+			exists = true;
+			break;
+		}
+	}
+	if (exists) {
+		if (image->output_name) {
+			wlr_log(WLR_ERROR, "Multiple images defined for output %s",
+				image->output_name);
+		} else {
+			wlr_log(WLR_ERROR, "Multiple default images defined");
+		}
+	}
+
+	// Bash doesn't replace the ~ with $HOME if the output name is supplied
+	wordexp_t p;
+	if (wordexp(image->path, &p, 0) == 0) {
+		free(image->path);
+		image->path = strdup(p.we_wordv[0]);
+		wordfree(&p);
+	}
+
+	// Load the actual image
+	image->cairo_surface = load_background_image(image->path);
+	if (!image->cairo_surface) {
+		free(image);
+		return;
+	}
+	wl_list_insert(&state->images, &image->link);
+	state->args.mode = BACKGROUND_MODE_FILL;
+	wlr_log(WLR_DEBUG, "Loaded image %s for output %s",
+			image->path, image->output_name ? image->output_name : "*");
+}
+
+static const char usage[] =
+	"Usage: swaybg [options...]\n"
+	"\n"
+	"  -h, --help                     Show help message and quit.\n"
+	"  -c, --color <rrggbb[aa]>       Turn the screen into the given color instead of white.\n"
+	"  -s, --scaling                  Scaling mode: stretch, fill, fit, center, tile.\n"
+	"  -v, --version                  Show the version number and quit.\n"
+	"  -i, --image [<output>:]<path>  Display the given image.\n";
+
+int main(int argc, char *argv[]) {
+	static const struct option long_options[] = {
+		{"help", no_argument, NULL, 'h'},
+		{"color", required_argument, NULL, 'c'},
+		{"image", required_argument, NULL, 'i'},
+		{"scaling", required_argument, NULL, 's'},
+		{"version", no_argument, NULL, 'v'},
+		{"socket", required_argument, NULL, 'p'},
+		{0}
+	};
+
 	struct swaybg_state state = {0};
-	state.args = &args;
+	state.args = (struct swaybg_args){
+		.mode = BACKGROUND_MODE_SOLID_COLOR,
+		.color = 0xFFFFFFFF,
+	};
+	wl_list_init(&state.images);
+	wl_list_init(&state.surfaces);
+
 	wlr_log_init(WLR_DEBUG, NULL);
 
-	if (argc != 4) {
-		wlr_log(WLR_ERROR, "Do not run this program manually. "
-				"See man 5 sway and look for output options.");
-		return 1;
-	}
-	args.output_idx = atoi(argv[1]);
-	args.path = argv[2];
-
-	args.mode = parse_background_mode(argv[3]);
-	if (args.mode == BACKGROUND_MODE_INVALID) {
-		return 1;
-	}
-	if (!prepare_context(&state)) {
-		return 1;
+	int c;
+	while (1) {
+		int option_index = 0;
+		c = getopt_long(argc, argv, "hc:i:s:v", long_options, &option_index);
+		if (c == -1) {
+			break;
+		}
+		switch (c) {
+		case 'c': {
+			state.args.color = parse_color(optarg);
+			state.args.mode = BACKGROUND_MODE_SOLID_COLOR;
+			break;
+		}
+		case 'i':
+			load_image(optarg, &state);
+			break;
+		case 's':
+			state.args.mode = parse_background_mode(optarg);
+			if (state.args.mode == BACKGROUND_MODE_INVALID) {
+				return 1;
+			}
+			break;
+		case 't':
+			state.args.mode = BACKGROUND_MODE_TILE;
+			break;
+		case 'v':
+#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
+			fprintf(stdout, "swaybg version %s (%s, branch \"%s\")\n",
+					SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
+#else
+			fprintf(stdout, "version unknown\n");
+#endif
+			return 0;
+		default:
+			fprintf(stderr, "%s", usage);
+			return 1;
+		}
 	}
 
 	state.display = wl_display_connect(NULL);
@@ -209,34 +338,26 @@ int main(int argc, const char **argv) {
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
 	wl_display_roundtrip(state.display);
-	assert(state.compositor && state.layer_shell && state.output && state.shm);
+	assert(state.compositor && state.layer_shell && state.shm);
 
-	// Second roundtrip to get output properties
-	wl_display_roundtrip(state.display);
+	if (state.zxdg_output_manager) {
+		struct swaybg_surface *surface;
+		wl_list_for_each(surface, &state.surfaces, link) {
+			surface->xdg_output = zxdg_output_manager_v1_get_xdg_output(
+						state.zxdg_output_manager, surface->output);
+			zxdg_output_v1_add_listener(
+					surface->xdg_output, &_xdg_output_listener, surface);
+		}
+		wl_display_roundtrip(state.display);
+	} else {
+		wlr_log(WLR_INFO, "Compositor does not support zxdg output manager, "
+				"images assigned to named outputs will not work");
+	}
 
-	state.surface = wl_compositor_create_surface(state.compositor);
-	assert(state.surface);
-
-	state.input_region = wl_compositor_create_region(state.compositor);
-	assert(state.input_region);
-	wl_surface_set_input_region(state.surface, state.input_region);
-
-	state.layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-			state.layer_shell, state.surface, state.output,
-			ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "wallpaper");
-	assert(state.layer_surface);
-
-	zwlr_layer_surface_v1_set_size(state.layer_surface, 0, 0);
-	zwlr_layer_surface_v1_set_anchor(state.layer_surface,
-			ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-			ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
-			ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM |
-			ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
-	zwlr_layer_surface_v1_set_exclusive_zone(state.layer_surface, -1);
-	zwlr_layer_surface_v1_add_listener(state.layer_surface,
-			&layer_surface_listener, &state);
-	wl_surface_commit(state.surface);
-	wl_display_roundtrip(state.display);
+	struct swaybg_surface *surface;
+	wl_list_for_each(surface, &state.surfaces, link) {
+		create_layer_surface(surface);
+	}
 
 	state.run_display = true;
 	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
