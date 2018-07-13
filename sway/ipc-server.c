@@ -353,6 +353,20 @@ void ipc_event_mode(const char *mode, bool pango) {
 	json_object_put(obj);
 }
 
+void ipc_event_shutdown(const char *reason) {
+	if (!ipc_has_event_listeners(IPC_EVENT_SHUTDOWN)) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Sending shutdown::%s event", reason);
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "change", json_object_new_string(reason));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_SHUTDOWN);
+	json_object_put(json);
+}
+
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
@@ -549,6 +563,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
 			} else if (strcmp(event_type, "mode") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_MODE);
+			} else if (strcmp(event_type, "shutdown") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_SHUTDOWN);
 			} else if (strcmp(event_type, "window") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
 			} else if (strcmp(event_type, "modifier") == 0) {
