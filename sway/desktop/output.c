@@ -204,11 +204,11 @@ bool output_has_opaque_lockscreen(struct sway_output *output,
 		};
 		pixman_region32_t surface_opaque_box;
 		pixman_region32_init(&surface_opaque_box);
-		pixman_region32_copy(&surface_opaque_box, &wlr_surface->current.opaque);
+		pixman_region32_copy(&surface_opaque_box, &wlr_surface->opaque_region);
 		pixman_region32_translate(&surface_opaque_box,
-				sway_layer_surface->geo.x, sway_layer_surface->geo.y);
-		bool contains = pixman_region32_contains_rectangle(
-				&wlr_surface->current.opaque, &output_box);
+			sway_layer_surface->geo.x, sway_layer_surface->geo.y);
+		bool contains = pixman_region32_contains_rectangle(&surface_opaque_box,
+			&output_box);
 		pixman_region32_fini(&surface_opaque_box);
 		if (contains) {
 			return true;
