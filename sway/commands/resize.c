@@ -29,6 +29,11 @@ enum resize_axis {
 	RESIZE_AXIS_INVALID,
 };
 
+struct resize_amount {
+	int amount;
+	enum resize_unit unit;
+};
+
 static enum resize_unit parse_resize_unit(const char *unit) {
 	if (strcasecmp(unit, "px") == 0) {
 		return RESIZE_UNIT_PX;
@@ -40,6 +45,30 @@ static enum resize_unit parse_resize_unit(const char *unit) {
 		return RESIZE_UNIT_DEFAULT;
 	}
 	return RESIZE_UNIT_INVALID;
+}
+
+// Parse arguments such as "10", "10px" or "10 px".
+// Returns the number of arguments consumed.
+static int parse_resize_amount(int argc, char **argv,
+		struct resize_amount *amount) {
+	char *err;
+	amount->amount = (int)strtol(argv[0], &err, 10);
+	if (*err) {
+		// e.g. 10px
+		amount->unit = parse_resize_unit(err);
+		return 1;
+	}
+	if (argc == 1) {
+		amount->unit = RESIZE_UNIT_DEFAULT;
+		return 1;
+	}
+	// Try the second argument
+	amount->unit = parse_resize_unit(argv[1]);
+	if (amount->unit == RESIZE_UNIT_INVALID) {
+		amount->unit = RESIZE_UNIT_DEFAULT;
+		return 1;
+	}
+	return 2;
 }
 
 static enum resize_axis parse_resize_axis(const char *axis) {
@@ -202,36 +231,39 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 	arrange_and_commit(parent->parent);
 }
 
-static void resize_floating(int amount, enum resize_axis axis) {
+/**
+ * Implement `resize <grow|shrink>` for a floating container.
+ */
+static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
+		struct resize_amount *amount) {
 	struct sway_container *con = config->handler_context.current_container;
 	int grow_x = 0, grow_y = 0;
 	int grow_width = 0, grow_height = 0;
 	switch (axis) {
 	case RESIZE_AXIS_HORIZONTAL:
-		grow_x = -amount / 2;
-		grow_width = amount;
+		grow_x = -amount->amount / 2;
+		grow_width = amount->amount;
 		break;
 	case RESIZE_AXIS_VERTICAL:
-		grow_y = -amount / 2;
-		grow_height = amount;
+		grow_y = -amount->amount / 2;
+		grow_height = amount->amount;
 		break;
 	case RESIZE_AXIS_UP:
-		grow_y = -amount;
-		grow_height = amount;
+		grow_y = -amount->amount;
+		grow_height = amount->amount;
 		break;
 	case RESIZE_AXIS_LEFT:
-		grow_x = -amount;
-		grow_width = amount;
+		grow_x = -amount->amount;
+		grow_width = amount->amount;
 		break;
 	case RESIZE_AXIS_DOWN:
-		grow_height = amount;
+		grow_height = amount->amount;
 		break;
 	case RESIZE_AXIS_RIGHT:
-		grow_width = amount;
+		grow_width = amount->amount;
 		break;
 	case RESIZE_AXIS_INVALID:
-		sway_assert(false, "Didn't expect RESIZE_AXIS_INVALID");
-		return;
+		return cmd_results_new(CMD_INVALID, "resize", "Invalid axis/direction");
 	}
 	con->x += grow_x;
 	con->y += grow_y;
@@ -247,80 +279,64 @@ static void resize_floating(int amount, enum resize_axis axis) {
 	}
 
 	arrange_and_commit(con);
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
-static void resize(int amount, enum resize_axis axis, enum resize_unit unit) {
+/**
+ * Implement `resize <grow|shrink>` for a tiled container.
+ */
+static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
+		struct resize_amount *amount) {
 	struct sway_container *current = config->handler_context.current_container;
-	if (container_is_floating(current)) {
-		return resize_floating(amount, axis);
-	}
 
-	if (unit == RESIZE_UNIT_DEFAULT) {
-		unit = RESIZE_UNIT_PPT;
+	if (amount->unit == RESIZE_UNIT_DEFAULT) {
+		amount->unit = RESIZE_UNIT_PPT;
 	}
-	if (unit == RESIZE_UNIT_PPT) {
-		float pct = amount / 100.0f;
+	if (amount->unit == RESIZE_UNIT_PPT) {
+		float pct = amount->amount / 100.0f;
+		// TODO: Make left/right/up/down resize in that direction?
 		switch (axis) {
+		case RESIZE_AXIS_LEFT:
+		case RESIZE_AXIS_RIGHT:
 		case RESIZE_AXIS_HORIZONTAL:
-			amount = (float)current->width * pct;
+			amount->amount = (float)current->width * pct;
 			break;
+		case RESIZE_AXIS_UP:
+		case RESIZE_AXIS_DOWN:
 		case RESIZE_AXIS_VERTICAL:
-			amount = (float)current->height * pct;
+			amount->amount = (float)current->height * pct;
 			break;
-		default:
-			sway_assert(0, "invalid resize axis");
-			return;
+		case RESIZE_AXIS_INVALID:
+			return cmd_results_new(CMD_INVALID, "resize",
+					"Invalid resize axis/direction");
 		}
 	}
 
-	return resize_tiled(amount, axis);
+	resize_tiled(amount->amount, axis);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
-// resize set <width> [px|ppt] <height> [px|ppt]
-static struct cmd_results *cmd_resize_set(int argc, char **argv) {
-	struct cmd_results *error;
-	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
-		return error;
-	}
-	struct sway_container *con = config->handler_context.current_container;
-	if (!container_is_floating(con)) {
-		return cmd_results_new(CMD_INVALID, "resize",
-				"resize set is not currently supported for tiled containers");
-	}
-	const char *usage = "Expected 'resize set <width> <height>'";
+/**
+ * Implement `resize set` for a tiled container.
+ */
+static struct cmd_results *resize_set_tiled(struct sway_container *con,
+		struct resize_amount *width, struct resize_amount *height) {
+	return cmd_results_new(CMD_INVALID, "resize",
+			"'resize set' is not implemented for tiled views");
+}
 
-	char *err;
-	size_t width = (int)strtol(*argv, &err, 10);
-	if (*err) {
-		// e.g. `resize set width 500px`
-		enum resize_unit unit = parse_resize_unit(err);
-		if (unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize", usage);
-		}
-	}
-	--argc; ++argv;
-	if (parse_resize_unit(argv[0]) != RESIZE_UNIT_INVALID) {
-		--argc; ++argv;
-	}
-
-	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
-	}
-	size_t height = (int)strtol(*argv, &err, 10);
-	if (*err) {
-		// e.g. `resize set height 500px`
-		enum resize_unit unit = parse_resize_unit(err);
-		if (unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize", usage);
-		}
-	}
-
-	int grow_width = width - con->width;
-	int grow_height = height - con->height;
+/**
+ * Implement `resize set` for a floating container.
+ */
+static struct cmd_results *resize_set_floating(struct sway_container *con,
+		struct resize_amount *width, struct resize_amount *height) {
+	int grow_width = width->amount - con->width;
+	int grow_height = height->amount - con->height;
 	con->x -= grow_width / 2;
 	con->y -= grow_height / 2;
-	con->width = width;
-	con->height = height;
+	con->width = width->amount;
+	con->height = height->amount;
 
 	if (con->type == C_VIEW) {
 		struct sway_view *view = con->sway_view;
@@ -333,6 +349,141 @@ static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 	arrange_and_commit(con);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+/**
+ * resize set <args>
+ *
+ * args: <width> [px|ppt] <height> [px|ppt]
+ */
+static struct cmd_results *cmd_resize_set(int argc, char **argv) {
+	struct cmd_results *error;
+	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+	const char *usage = "Expected 'resize set <width> <height>'";
+
+	// Width
+	struct resize_amount width;
+	int num_consumed_args = parse_resize_amount(argc, argv, &width);
+	argc -= num_consumed_args;
+	argv += num_consumed_args;
+	if (width.unit == RESIZE_UNIT_INVALID) {
+		return cmd_results_new(CMD_INVALID, "resize", usage);
+	}
+	if (!argc) {
+		return cmd_results_new(CMD_INVALID, "resize", usage);
+	}
+
+	// Height
+	struct resize_amount height;
+	num_consumed_args = parse_resize_amount(argc, argv, &height);
+	argc -= num_consumed_args;
+	argv += num_consumed_args;
+	if (height.unit == RESIZE_UNIT_INVALID) {
+		return cmd_results_new(CMD_INVALID, "resize", usage);
+	}
+
+	// If 0, don't resize that dimension
+	struct sway_container *con = config->handler_context.current_container;
+	if (width.amount <= 0) {
+		width.amount = con->width;
+	}
+	if (height.amount <= 0) {
+		height.amount = con->height;
+	}
+
+	if (container_is_floating(con)) {
+		return resize_set_floating(con, &width, &height);
+	}
+	return resize_set_tiled(con, &width, &height);
+}
+
+/**
+ * resize <grow|shrink> <args>
+ *
+ * args: <direction>
+ * args: <direction> <amount> <unit>
+ * args: <direction> <amount> <unit> or <amount> <other_unit>
+ */
+static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
+		int multiplier) {
+	const char *usage = "Expected 'resize grow|shrink <direction> "
+		"[<amount> px|ppt [or <amount> px|ppt]]'";
+	enum resize_axis axis = parse_resize_axis(*argv);
+	if (axis == RESIZE_AXIS_INVALID) {
+		return cmd_results_new(CMD_INVALID, "resize", usage);
+	}
+	--argc; ++argv;
+
+	// First amount
+	struct resize_amount first_amount;
+	if (argc) {
+		int num_consumed_args = parse_resize_amount(argc, argv, &first_amount);
+		argc -= num_consumed_args;
+		argv += num_consumed_args;
+		if (first_amount.unit == RESIZE_UNIT_INVALID) {
+			return cmd_results_new(CMD_INVALID, "resize", usage);
+		}
+	} else {
+		first_amount.amount = 10;
+		first_amount.unit = RESIZE_UNIT_DEFAULT;
+	}
+
+	// "or"
+	if (argc) {
+		if (strcmp(*argv, "or") != 0) {
+			return cmd_results_new(CMD_INVALID, "resize", usage);
+		}
+		--argc; ++argv;
+	}
+
+	// Second amount
+	struct resize_amount second_amount;
+	if (argc) {
+		int num_consumed_args = parse_resize_amount(argc, argv, &second_amount);
+		argc -= num_consumed_args;
+		argv += num_consumed_args;
+		if (second_amount.unit == RESIZE_UNIT_INVALID) {
+			return cmd_results_new(CMD_INVALID, "resize", usage);
+		}
+	} else {
+		second_amount.unit = RESIZE_UNIT_INVALID;
+	}
+
+	first_amount.amount *= multiplier;
+	second_amount.amount *= multiplier;
+
+	struct sway_container *con = config->handler_context.current_container;
+	if (container_is_floating(con)) {
+		// Floating containers can only resize in px. Choose an amount which
+		// uses px, with fallback to an amount that specified no unit.
+		if (first_amount.unit == RESIZE_UNIT_PX) {
+			return resize_adjust_floating(axis, &first_amount);
+		} else if (second_amount.unit == RESIZE_UNIT_PX) {
+			return resize_adjust_floating(axis, &second_amount);
+		} else if (first_amount.unit == RESIZE_UNIT_DEFAULT) {
+			return resize_adjust_floating(axis, &first_amount);
+		} else if (second_amount.unit == RESIZE_UNIT_DEFAULT) {
+			return resize_adjust_floating(axis, &second_amount);
+		} else {
+			return cmd_results_new(CMD_INVALID, "resize",
+					"Floating containers cannot use ppt measurements");
+		}
+	}
+
+	// For tiling, prefer ppt -> default -> px
+	if (first_amount.unit == RESIZE_UNIT_PPT) {
+		return resize_adjust_tiled(axis, &first_amount);
+	} else if (second_amount.unit == RESIZE_UNIT_PPT) {
+		return resize_adjust_tiled(axis, &second_amount);
+	} else if (first_amount.unit == RESIZE_UNIT_DEFAULT) {
+		return resize_adjust_tiled(axis, &first_amount);
+	} else if (second_amount.unit == RESIZE_UNIT_DEFAULT) {
+		return resize_adjust_tiled(axis, &second_amount);
+	} else {
+		return resize_adjust_tiled(axis, &first_amount);
+	}
 }
 
 struct cmd_results *cmd_resize(int argc, char **argv) {
@@ -353,55 +504,15 @@ struct cmd_results *cmd_resize(int argc, char **argv) {
 	if (strcasecmp(argv[0], "set") == 0) {
 		return cmd_resize_set(argc - 1, &argv[1]);
 	}
+	if (strcasecmp(argv[0], "grow") == 0) {
+		return cmd_resize_adjust(argc - 1, &argv[1], 1);
+	}
+	if (strcasecmp(argv[0], "shrink") == 0) {
+		return cmd_resize_adjust(argc - 1, &argv[1], -1);
+	}
 
 	const char *usage = "Expected 'resize <shrink|grow> "
 		"<width|height|up|down|left|right> [<amount>] [px|ppt]'";
 
-	int multiplier = 0;
-	if (strcasecmp(*argv, "grow") == 0) {
-		multiplier = 1;
-	} else if (strcasecmp(*argv, "shrink") == 0) {
-		multiplier = -1;
-	} else {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
-	}
-	--argc; ++argv;
-
-	enum resize_axis axis = parse_resize_axis(*argv);
-	if (axis == RESIZE_AXIS_INVALID) {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
-	}
-	--argc; ++argv;
-
-	int amount = 10; // Default amount
-	enum resize_unit unit = RESIZE_UNIT_DEFAULT;
-
-	if (argc) {
-		char *err;
-		amount = (int)strtol(*argv, &err, 10);
-		if (*err) {
-			// e.g. `resize grow width 10px`
-			unit = parse_resize_unit(err);
-			if (unit == RESIZE_UNIT_INVALID) {
-				return cmd_results_new(CMD_INVALID, "resize", usage);
-			}
-		}
-		--argc; ++argv;
-	}
-
-	if (argc) {
-		unit = parse_resize_unit(*argv);
-		if (unit == RESIZE_UNIT_INVALID) {
-			return cmd_results_new(CMD_INVALID, "resize", usage);
-		}
-		--argc; ++argv;
-	}
-
-	if (argc) {
-		// Provied too many args, the bastard
-		return cmd_results_new(CMD_INVALID, "resize", usage);
-	}
-
-	resize(amount * multiplier, axis, unit);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return cmd_results_new(CMD_INVALID, "resize", usage);
 }
