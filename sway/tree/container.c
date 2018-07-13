@@ -64,6 +64,8 @@ void container_create_notify(struct sway_container *container) {
 
 	if (container->type == C_VIEW || container->type == C_CONTAINER) {
 		ipc_event_window(container, "new");
+	} else if (container->type == C_WORKSPACE) {
+		ipc_event_workspace(NULL, container, "init");
 	}
 }
 
