@@ -6,7 +6,6 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/log.h>
 #include "sway/commands.h"
-#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
@@ -105,10 +104,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		// TODO: Ideally we would arrange the surviving parent after reaping,
 		// but container_reap_empty does not return it, so we arrange the
 		// workspace instead.
-		struct sway_transaction *txn = transaction_create();
-		arrange_windows(old_ws, txn);
-		arrange_windows(destination->parent, txn);
-		transaction_commit(txn);
+		arrange_windows(old_ws);
+		arrange_windows(destination->parent);
 
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcasecmp(argv[1], "to") == 0
@@ -144,10 +141,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		// TODO: Ideally we would arrange the surviving parent after reaping,
 		// but container_reap_empty does not return it, so we arrange the
 		// workspace instead.
-		struct sway_transaction *txn = transaction_create();
-		arrange_windows(old_ws, txn);
-		arrange_windows(focus->parent, txn);
-		transaction_commit(txn);
+		arrange_windows(old_ws);
+		arrange_windows(focus->parent);
 
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -177,10 +172,8 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 	}
 	container_move_to(current, destination);
 
-	struct sway_transaction *txn = transaction_create();
-	arrange_windows(source, txn);
-	arrange_windows(destination, txn);
-	transaction_commit(txn);
+	arrange_windows(source);
+	arrange_windows(destination);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
@@ -238,12 +231,10 @@ static struct cmd_results *move_in_direction(struct sway_container *container,
 	container_move(container, direction, move_amt);
 	struct sway_container *new_ws = container_parent(container, C_WORKSPACE);
 
-	struct sway_transaction *txn = transaction_create();
-	arrange_windows(old_ws, txn);
+	arrange_windows(old_ws);
 	if (new_ws != old_ws) {
-		arrange_windows(new_ws, txn);
+		arrange_windows(new_ws);
 	}
-	transaction_commit(txn);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

@@ -37,7 +37,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	container_set_floating(container, wants_floating);
 
 	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
-	arrange_and_commit(workspace);
+	arrange_windows(workspace);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

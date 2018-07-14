@@ -47,7 +47,7 @@ struct sway_transaction_instruction {
 	bool ready;
 };
 
-struct sway_transaction *transaction_create() {
+static struct sway_transaction *transaction_create() {
 	struct sway_transaction *transaction =
 		calloc(1, sizeof(struct sway_transaction));
 	transaction->instructions = create_list();
@@ -141,23 +141,8 @@ static void copy_pending_state(struct sway_container *container,
 	}
 }
 
-static bool transaction_has_container(struct sway_transaction *transaction,
+static void transaction_add_container(struct sway_transaction *transaction,
 		struct sway_container *container) {
-	for (int i = 0; i < transaction->instructions->length; ++i) {
-		struct sway_transaction_instruction *instruction =
-			transaction->instructions->items[i];
-		if (instruction->container == container) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void transaction_add_container(struct sway_transaction *transaction,
-		struct sway_container *container) {
-	if (transaction_has_container(transaction, container)) {
-		return;
-	}
 	struct sway_transaction_instruction *instruction =
 		calloc(1, sizeof(struct sway_transaction_instruction));
 	instruction->transaction = transaction;
@@ -285,7 +270,7 @@ static bool should_configure(struct sway_container *con,
 	return true;
 }
 
-void transaction_commit(struct sway_transaction *transaction) {
+static void transaction_commit(struct sway_transaction *transaction) {
 	wlr_log(WLR_DEBUG, "Transaction %p committing with %i instructions",
 			transaction, transaction->instructions->length);
 	transaction->num_waiting = 0;
@@ -417,4 +402,18 @@ struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
 	*width = instruction->saved_buffer_width;
 	*height = instruction->saved_buffer_height;
 	return instruction->saved_buffer->texture;
+}
+
+void transaction_commit_dirty() {
+	if (!server.dirty_containers->length) {
+		return;
+	}
+	struct sway_transaction *transaction = transaction_create();
+	for (int i = 0; i < server.dirty_containers->length; ++i) {
+		struct sway_container *container = server.dirty_containers->items[i];
+		transaction_add_container(transaction, container);
+		container->dirty = false;
+	}
+	server.dirty_containers->length = 0;
+	transaction_commit(transaction);
 }

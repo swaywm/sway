@@ -43,7 +43,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "gaps",
 				"gaps edge_gaps on|off|toggle");
 		}
-		arrange_and_commit(&root_container);
+		arrange_windows(&root_container);
 	} else {
 		int amount_idx = 0; // the current index in argv
 		enum gaps_op op = GAPS_OP_SET;
@@ -124,7 +124,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		if (amount_idx == 0) { // gaps <amount>
 			config->gaps_inner = val;
 			config->gaps_outer = val;
-			arrange_and_commit(&root_container);
+			arrange_windows(&root_container);
 			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 		}
 		// Other variants. The middle-length variant (gaps inner|outer <amount>)
@@ -155,7 +155,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 			} else {
 				config->gaps_outer = total;
 			}
-			arrange_and_commit(&root_container);
+			arrange_windows(&root_container);
 		} else {
 			struct sway_container *c =
 				config->handler_context.current_container;
@@ -169,7 +169,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 				c->gaps_outer = total;
 			}
 
-			arrange_and_commit(c->parent ? c->parent : &root_container);
+			arrange_windows(c->parent ? c->parent : &root_container);
 		}
 	}
 

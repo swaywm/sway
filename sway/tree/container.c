@@ -159,14 +159,6 @@ void container_free(struct sway_container *cont) {
 	wlr_texture_destroy(cont->title_focused_inactive);
 	wlr_texture_destroy(cont->title_unfocused);
 	wlr_texture_destroy(cont->title_urgent);
-
-	for (int i = 0; i < server.destroying_containers->length; ++i) {
-		if (server.destroying_containers->items[i] == cont) {
-			list_del(server.destroying_containers, i);
-			break;
-		}
-	}
-
 	list_free(cont->instructions);
 	list_free(cont->children);
 	list_free(cont->current.children);
@@ -325,7 +317,7 @@ static struct sway_container *container_destroy_noreaping(
 	}
 
 	con->destroying = true;
-	list_add(server.destroying_containers, con);
+	container_set_dirty(con);
 
 	if (!con->parent) {
 		return NULL;
@@ -1069,9 +1061,15 @@ void container_floating_move_to(struct sway_container *con,
 	if (old_workspace != new_workspace) {
 		container_remove_child(con);
 		container_add_child(new_workspace->sway_workspace->floating, con);
-		struct sway_transaction *transaction = transaction_create();
-		arrange_windows(old_workspace, transaction);
-		arrange_windows(new_workspace, transaction);
-		transaction_commit(transaction);
+		arrange_windows(old_workspace);
+		arrange_windows(new_workspace);
 	}
+}
+
+void container_set_dirty(struct sway_container *container) {
+	if (container->dirty) {
+		return;
+	}
+	container->dirty = true;
+	list_add(server.dirty_containers, container);
 }

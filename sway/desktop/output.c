@@ -492,19 +492,21 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	output->wlr_output->data = NULL;
 	free(output);
 
-	arrange_and_commit(&root_container);
+	arrange_windows(&root_container);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
-	arrange_and_commit(output->swayc);
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
 	arrange_layers(output);
-	arrange_and_commit(output->swayc);
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void handle_scale_iterator(struct sway_container *view, void *data) {
@@ -515,7 +517,8 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	arrange_layers(output);
 	container_descendants(output->swayc, C_VIEW, handle_scale_iterator, NULL);
-	arrange_and_commit(output->swayc);
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 struct sway_output *output_from_wlr_output(struct wlr_output *wlr_output) {
@@ -584,5 +587,6 @@ void output_enable(struct sway_output *output) {
 	output->damage_destroy.notify = damage_handle_destroy;
 
 	arrange_layers(output);
-	arrange_and_commit(&root_container);
+	arrange_windows(&root_container);
+	transaction_commit_dirty();
 }

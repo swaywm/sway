@@ -1,7 +1,6 @@
 #include <strings.h>
 #include <wlr/util/log.h>
 #include "sway/commands.h"
-#include "sway/desktop/transaction.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
@@ -79,14 +78,10 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 
 	container_swap(current, other);
 
-	struct sway_transaction *txn = transaction_create();
-	arrange_windows(current->parent, txn);
-
+	arrange_windows(current->parent);
 	if (other->parent != current->parent) {
-		arrange_windows(other->parent, txn);
+		arrange_windows(other->parent);
 	}
-
-	transaction_commit(txn);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

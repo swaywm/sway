@@ -268,7 +268,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		}
 	}
 
-	arrange_and_commit(parent->parent);
+	arrange_windows(parent->parent);
 }
 
 /**
@@ -338,7 +338,7 @@ static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
 		view->height += grow_height;
 	}
 
-	arrange_and_commit(con);
+	arrange_windows(con);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
@@ -410,7 +410,7 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 		view->height += grow_height;
 	}
 
-	arrange_and_commit(con);
+	arrange_windows(con);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
