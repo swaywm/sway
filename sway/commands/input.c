@@ -23,6 +23,7 @@ static struct cmd_handler input_handlers[] = {
 	{ "scroll_button", input_cmd_scroll_button },
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
+	{ "tap_button_map", input_cmd_tap_button_map },
 	{ "xkb_layout", input_cmd_xkb_layout },
 	{ "xkb_model", input_cmd_xkb_model },
 	{ "xkb_options", input_cmd_xkb_options },

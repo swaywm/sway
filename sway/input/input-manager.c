@@ -181,6 +181,12 @@ static void input_manager_libinput_config_pointer(
 			ic->identifier, ic->tap);
 		libinput_device_config_tap_set_enabled(libinput_device, ic->tap);
 	}
+	if (ic->tap_button_map != INT_MIN) {
+		wlr_log(WLR_DEBUG, "libinput_config_pointer(%s) tap_set_button_map(%d)",
+			ic->identifier, ic->tap);
+		libinput_device_config_tap_set_button_map(libinput_device,
+			ic->tap_button_map);
+	}
 }
 
 static void handle_device_destroy(struct wl_listener *listener, void *data) {

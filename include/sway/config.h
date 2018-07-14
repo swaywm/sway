@@ -79,6 +79,7 @@ struct input_config {
 	int scroll_method;
 	int send_events;
 	int tap;
+	int tap_button_map;
 
 	char *xkb_layout;
 	char *xkb_model;
