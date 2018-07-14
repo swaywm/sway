@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -69,6 +70,45 @@ static int parse_resize_amount(int argc, char **argv,
 		return 1;
 	}
 	return 2;
+}
+
+static void calculate_constraints(int *min_width, int *max_width,
+		int *min_height, int *max_height) {
+	struct sway_container *con = config->handler_context.current_container;
+
+	if (config->floating_minimum_width == -1) { // no minimum
+		*min_width = 0;
+	} else if (config->floating_minimum_width == 0) { // automatic
+		*min_width = 75;
+	} else {
+		*min_width = config->floating_minimum_width;
+	}
+
+	if (config->floating_minimum_height == -1) { // no minimum
+		*min_height = 0;
+	} else if (config->floating_minimum_height == 0) { // automatic
+		*min_height = 50;
+	} else {
+		*min_height = config->floating_minimum_height;
+	}
+
+	if (config->floating_maximum_width == -1) { // no maximum
+		*max_width = INT_MAX;
+	} else if (config->floating_maximum_width == 0) { // automatic
+		struct sway_container *ws = container_parent(con, C_WORKSPACE);
+		*max_width = ws->width;
+	} else {
+		*max_width = config->floating_maximum_width;
+	}
+
+	if (config->floating_maximum_height == -1) { // no maximum
+		*max_height = INT_MAX;
+	} else if (config->floating_maximum_height == 0) { // automatic
+		struct sway_container *ws = container_parent(con, C_WORKSPACE);
+		*max_height = ws->height;
+	} else {
+		*max_height = config->floating_maximum_height;
+	}
 }
 
 static enum resize_axis parse_resize_axis(const char *axis) {
@@ -237,30 +277,50 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
 		struct resize_amount *amount) {
 	struct sway_container *con = config->handler_context.current_container;
-	int grow_x = 0, grow_y = 0;
 	int grow_width = 0, grow_height = 0;
 	switch (axis) {
 	case RESIZE_AXIS_HORIZONTAL:
-		grow_x = -amount->amount / 2;
+	case RESIZE_AXIS_LEFT:
+	case RESIZE_AXIS_RIGHT:
 		grow_width = amount->amount;
 		break;
 	case RESIZE_AXIS_VERTICAL:
-		grow_y = -amount->amount / 2;
-		grow_height = amount->amount;
-		break;
 	case RESIZE_AXIS_UP:
-		grow_y = -amount->amount;
-		grow_height = amount->amount;
-		break;
-	case RESIZE_AXIS_LEFT:
-		grow_x = -amount->amount;
-		grow_width = amount->amount;
-		break;
 	case RESIZE_AXIS_DOWN:
 		grow_height = amount->amount;
 		break;
+	case RESIZE_AXIS_INVALID:
+		return cmd_results_new(CMD_INVALID, "resize", "Invalid axis/direction");
+	}
+	// Make sure we're not adjusting beyond floating min/max size
+	int min_width, max_width, min_height, max_height;
+	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
+	if (con->width + grow_width < min_width) {
+		grow_width = min_width - con->width;
+	} else if (con->width + grow_width > max_width) {
+		grow_width = max_width - con->width;
+	}
+	if (con->height + grow_height < min_height) {
+		grow_height = min_height - con->height;
+	} else if (con->height + grow_height > max_height) {
+		grow_height = max_height - con->height;
+	}
+	int grow_x = 0, grow_y = 0;
+	switch (axis) {
+	case RESIZE_AXIS_HORIZONTAL:
+		grow_x = -grow_width / 2;
+		break;
+	case RESIZE_AXIS_VERTICAL:
+		grow_y = -grow_height / 2;
+		break;
+	case RESIZE_AXIS_UP:
+		grow_y = -grow_height;
+		break;
+	case RESIZE_AXIS_LEFT:
+		grow_x = -grow_width;
+		break;
+	case RESIZE_AXIS_DOWN:
 	case RESIZE_AXIS_RIGHT:
-		grow_width = amount->amount;
 		break;
 	case RESIZE_AXIS_INVALID:
 		return cmd_results_new(CMD_INVALID, "resize", "Invalid axis/direction");
@@ -331,6 +391,10 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
  */
 static struct cmd_results *resize_set_floating(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
+	int min_width, max_width, min_height, max_height;
+	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
+	width->amount = fmax(min_width, fmin(width->amount, max_width));
+	height->amount = fmax(min_height, fmin(height->amount, max_height));
 	int grow_width = width->amount - con->width;
 	int grow_height = height->amount - con->height;
 	con->x -= grow_width / 2;
