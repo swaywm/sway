@@ -311,6 +311,8 @@ void view_clear_marks(struct sway_view *view);
 
 bool view_has_mark(struct sway_view *view, char *mark);
 
+void view_add_mark(struct sway_view *view, char *mark);
+
 void view_update_marks_textures(struct sway_view *view);
 
 /**
