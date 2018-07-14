@@ -251,6 +251,18 @@ static void drop_permissions(bool keep_caps) {
 #endif
 }
 
+void enable_debug_flag(const char *flag) {
+	if (strcmp(flag, "render-tree") == 0) {
+		enable_debug_tree = true;
+	} else if (strncmp(flag, "damage=", 7) == 0) {
+		damage_debug = &flag[7];
+	} else if (strcmp(flag, "txn-debug") == 0) {
+		txn_debug = true;
+	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
+		txn_timeout_ms = atoi(&flag[12]);
+	}
+}
+
 int main(int argc, char **argv) {
 	static int verbose = 0, debug = 0, validate = 0;
 
@@ -290,7 +302,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdDvVc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdD:vVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -309,7 +321,7 @@ int main(int argc, char **argv) {
 			debug = 1;
 			break;
 		case 'D': // extended debug options
-			enable_debug_tree = true;
+			enable_debug_flag(optarg);
 			break;
 		case 'v': // version
 			fprintf(stdout, "sway version " SWAY_VERSION "\n");

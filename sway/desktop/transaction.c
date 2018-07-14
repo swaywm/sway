@@ -19,14 +19,14 @@
  * How long we should wait for views to respond to the configure before giving
  * up and applying the transaction anyway.
  */
-#define TIMEOUT_MS 200
+int txn_timeout_ms = 200;
 
 /**
  * If enabled, sway will always wait for the transaction timeout before
  * applying it, rather than applying it when the views are ready. This allows us
  * to observe the rendered state while a transaction is in progress.
  */
-#define TRANSACTION_DEBUG false
+bool txn_debug = false;
 
 struct sway_transaction {
 	struct wl_event_source *timer;
@@ -330,7 +330,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 		// Set up a timer which the views must respond within
 		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
 				handle_timeout, transaction);
-		wl_event_source_timer_update(transaction->timer, TIMEOUT_MS);
+		wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
 	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
@@ -361,11 +361,11 @@ static void set_instruction_ready(
 	// If all views are ready, apply the transaction.
 	// If the transaction has timed out then its num_waiting will be 0 already.
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
-#if !TRANSACTION_DEBUG
-		wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
-		wl_event_source_timer_update(transaction->timer, 0);
-		transaction_progress_queue();
-#endif
+		if (!txn_debug) {
+			wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
+			wl_event_source_timer_update(transaction->timer, 0);
+			transaction_progress_queue();
+		}
 	}
 }
 
