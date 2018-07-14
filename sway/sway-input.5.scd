@@ -100,6 +100,12 @@ For more information on these xkb configuration options, see
 *input* <identifier> tap enabled|disabled
 	Enables or disables tap for specified input device.
 
+*input* <identifier> tap_button_map lrm|lmr
+	Specifies which button mapping to use for tapping. _lrm_ treats 1 finger as
+	left click, 2 fingers as right click, and 3 fingers as middle click. _lmr_
+	treats 1 finger as left click, 2 fingers as middle click, and 3 fingers as
+	right click.
+
 ## SEAT CONFIGURATION
 
 Configure options for multiseat mode. sway-seat commands must be used inside a

@@ -121,6 +121,7 @@ sway_sources = files(
 	'commands/input/scroll_button.c',
 	'commands/input/scroll_method.c',
 	'commands/input/tap.c',
+	'commands/input/tap_button_map.c',
 	'commands/input/xkb_layout.c',
 	'commands/input/xkb_model.c',
 	'commands/input/xkb_options.c',

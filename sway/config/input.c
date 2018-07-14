@@ -19,6 +19,7 @@ struct input_config *new_input_config(const char* identifier) {
 	}
 
 	input->tap = INT_MIN;
+	input->tap_button_map = INT_MIN;
 	input->drag_lock = INT_MIN;
 	input->dwt = INT_MIN;
 	input->send_events = INT_MIN;
@@ -79,6 +80,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 	if (src->tap != INT_MIN) {
 		dst->tap = src->tap;
+	}
+	if (src->tap_button_map != INT_MIN) {
+		dst->tap_button_map = src->tap_button_map;
 	}
 	if (src->xkb_layout) {
 		free(dst->xkb_layout);
