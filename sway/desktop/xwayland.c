@@ -297,6 +297,10 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	view_damage_from(view);
+
+	if (view->allow_request_urgent) {
+		view_set_urgent(view, (bool)xsurface->hints_urgency);
+	}
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
