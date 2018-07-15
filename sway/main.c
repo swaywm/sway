@@ -20,6 +20,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/debug.h"
+#include "sway/desktop/transaction.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 #include "sway/ipc-server.h"
@@ -441,6 +442,7 @@ int main(int argc, char **argv) {
 		free(line);
 		list_del(config->cmd_queue, 0);
 	}
+	transaction_commit_dirty();
 
 	if (!terminate_request) {
 		server_run(&server);

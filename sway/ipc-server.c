@@ -18,6 +18,7 @@
 #include <wayland-server.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/desktop/transaction.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
@@ -484,6 +485,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_COMMAND:
 	{
 		struct cmd_results *results = execute_command(buf, NULL);
+		transaction_commit_dirty();
 		char *json = cmd_results_to_json(results);
 		int length = strlen(json);
 		client_valid = ipc_send_reply(client, json, (uint32_t)length);

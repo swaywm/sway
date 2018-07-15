@@ -139,6 +139,14 @@ static void copy_pending_state(struct sway_container *container,
 		state->children = create_list();
 		list_cat(state->children, container->children);
 	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	state->focused = seat_get_focus(seat) == container;
+
+	if (container->type != C_VIEW) {
+		state->focused_inactive_child =
+			seat_get_active_child(seat, container);
+	}
 }
 
 static void transaction_add_container(struct sway_transaction *transaction,
@@ -195,10 +203,12 @@ static void transaction_apply(struct sway_transaction *transaction) {
 			.width = instruction->state.swayc_width,
 			.height = instruction->state.swayc_height,
 		};
-		for (int j = 0; j < root_container.children->length; ++j) {
-			struct sway_container *output = root_container.children->items[j];
-			output_damage_box(output->sway_output, &old_box);
-			output_damage_box(output->sway_output, &new_box);
+		for (int j = 0; j < root_container.current.children->length; ++j) {
+			struct sway_container *output = root_container.current.children->items[j];
+			if (output->sway_output) {
+				output_damage_box(output->sway_output, &old_box);
+				output_damage_box(output->sway_output, &new_box);
+			}
 		}
 
 		// There are separate children lists for each instruction state, the

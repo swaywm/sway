@@ -661,9 +661,13 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		if (last_focus) {
 			seat_send_unfocus(last_focus, seat);
 		}
-
 		seat_send_focus(container, seat);
-		container_damage_whole(container->parent);
+
+		container_set_dirty(container);
+		container_set_dirty(container->parent); // for focused_inactive_child
+		if (last_focus) {
+			container_set_dirty(last_focus);
+		}
 	}
 
 	// If we've focused a floating container, bring it to the front.
@@ -715,10 +719,6 @@ void seat_set_focus_warp(struct sway_seat *seat,
 				}
 			}
 		}
-	}
-
-	if (last_focus) {
-		container_damage_whole(last_focus);
 	}
 
 	if (last_workspace && last_workspace != new_workspace) {
@@ -834,18 +834,6 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 	wl_list_for_each(current, &seat->focus_stack, link) {
 		if (current->container->parent == container &&
 				current->container->layout != L_FLOATING) {
-			return current->container;
-		}
-	}
-	return NULL;
-}
-
-struct sway_container *seat_get_active_current_child(struct sway_seat *seat,
-		struct sway_container *container) {
-	struct sway_seat_container *current = NULL;
-	wl_list_for_each(current, &seat->focus_stack, link) {
-		if (current->container->current.parent == container &&
-				current->container->current.layout != L_FLOATING) {
 			return current->container;
 		}
 	}
