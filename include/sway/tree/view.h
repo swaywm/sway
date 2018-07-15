@@ -70,6 +70,10 @@ struct sway_view {
 	bool border_left;
 	bool border_right;
 
+	struct timespec urgent;
+	bool allow_request_urgent;
+	struct wl_event_source *urgent_timer;
+
 	bool destroying;
 
 	list_t *executed_criteria; // struct criteria *
@@ -304,5 +308,9 @@ void view_update_marks_textures(struct sway_view *view);
  * Intended for damage tracking.
  */
 bool view_is_visible(struct sway_view *view);
+
+void view_set_urgent(struct sway_view *view, bool enable);
+
+bool view_is_urgent(struct sway_view *view);
 
 #endif

@@ -153,6 +153,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "swap", cmd_swap },
 	{ "title_format", cmd_title_format },
 	{ "unmark", cmd_unmark },
+	{ "urgent", cmd_urgent },
 };
 
 static int handler_compare(const void *_a, const void *_b) {

@@ -11,6 +11,7 @@
 #include "sway/ipc-server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
@@ -517,4 +518,13 @@ struct sway_container *workspace_output_get_highest_available(
 	}
 
 	return NULL;
+}
+
+static bool find_urgent_iterator(struct sway_container *con,
+		void *data) {
+	return con->type == C_VIEW && view_is_urgent(con->sway_view);
+}
+
+bool workspace_is_urgent(struct sway_container *workspace) {
+	return container_find(workspace, find_urgent_iterator, NULL);
 }
