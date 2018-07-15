@@ -404,7 +404,7 @@ struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
 	return instruction->saved_buffer->texture;
 }
 
-void transaction_commit_dirty() {
+void transaction_commit_dirty(void) {
 	if (!server.dirty_containers->length) {
 		return;
 	}
