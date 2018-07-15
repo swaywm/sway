@@ -107,6 +107,87 @@ static bool workspace_valid_on_output(const char *output_name,
 	return true;
 }
 
+static void workspace_name_from_binding(const struct sway_binding * binding,
+		const char* output_name, int *min_order, char **earliest_name) {
+	char *cmdlist = strdup(binding->command);
+	char *dup = cmdlist;
+	char *name = NULL;
+
+	// workspace n
+	char *cmd = argsep(&cmdlist, " ");
+	if (cmdlist) {
+		name = argsep(&cmdlist, ",;");
+	}
+
+	if (strcmp("workspace", cmd) == 0 && name) {
+		char *_target = strdup(name);
+		_target = do_var_replacement(_target);
+		strip_quotes(_target);
+		while (isspace(*_target)) {
+			memmove(_target, _target+1, strlen(_target+1));
+		}
+		wlr_log(WLR_DEBUG, "Got valid workspace command for target: '%s'",
+				_target);
+
+		// Make sure that the command references an actual workspace
+		// not a command about workspaces
+		if (strcmp(_target, "next") == 0 ||
+				strcmp(_target, "prev") == 0 ||
+				strcmp(_target, "next_on_output") == 0 ||
+				strcmp(_target, "prev_on_output") == 0 ||
+				strcmp(_target, "number") == 0 ||
+				strcmp(_target, "back_and_forth") == 0 ||
+				strcmp(_target, "current") == 0) {
+			free(_target);
+			free(dup);
+			return;
+		}
+
+		// If the command is workspace number <name>, isolate the name
+		if (strncmp(_target, "number ", strlen("number ")) == 0) {
+			size_t length = strlen(_target) - strlen("number ") + 1;
+			char *temp = malloc(length);
+			strncpy(temp, _target + strlen("number "), length - 1);
+			temp[length - 1] = '\0';
+			free(_target);
+			_target = temp;
+			wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
+
+			// Make sure the workspace number doesn't already exist
+			if (workspace_by_number(_target)) {
+				free(_target);
+				free(dup);
+				return;
+			}
+		}
+
+		// Make sure that the workspace doesn't already exist
+		if (workspace_by_name(_target)) {
+			free(_target);
+			free(dup);
+			return;
+		}
+
+		// make sure that the workspace can appear on the given
+		// output
+		if (!workspace_valid_on_output(output_name, _target)) {
+			free(_target);
+			free(dup);
+			return;
+		}
+
+		if (binding->order < *min_order) {
+			*min_order = binding->order;
+			free(*earliest_name);
+			*earliest_name = _target;
+			wlr_log(WLR_DEBUG, "Workspace: Found free name %s", _target);
+		} else {
+			free(_target);
+		}
+	}
+	free(dup);
+}
+
 char *workspace_next_name(const char *output_name) {
 	wlr_log(WLR_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
@@ -114,89 +195,15 @@ char *workspace_next_name(const char *output_name) {
 	// if none are found/available then default to a number
 	struct sway_mode *mode = config->current_mode;
 
-	// TODO: iterate over keycode bindings too
 	int order = INT_MAX;
 	char *target = NULL;
 	for (int i = 0; i < mode->keysym_bindings->length; ++i) {
-		struct sway_binding *binding = mode->keysym_bindings->items[i];
-		char *cmdlist = strdup(binding->command);
-		char *dup = cmdlist;
-		char *name = NULL;
-
-		// workspace n
-		char *cmd = argsep(&cmdlist, " ");
-		if (cmdlist) {
-			name = argsep(&cmdlist, ",;");
-		}
-
-		if (strcmp("workspace", cmd) == 0 && name) {
-			char *_target = strdup(name);
-			_target = do_var_replacement(_target);
-			strip_quotes(_target);
-			while (isspace(*_target)) {
-				memmove(_target, _target+1, strlen(_target+1));
-			}
-			wlr_log(WLR_DEBUG, "Got valid workspace command for target: '%s'",
-					_target);
-
-			// Make sure that the command references an actual workspace
-			// not a command about workspaces
-			if (strcmp(_target, "next") == 0 ||
-				strcmp(_target, "prev") == 0 ||
-				strcmp(_target, "next_on_output") == 0 ||
-				strcmp(_target, "prev_on_output") == 0 ||
-				strcmp(_target, "number") == 0 ||
-				strcmp(_target, "back_and_forth") == 0 ||
-				strcmp(_target, "current") == 0)
-			{
-				free(_target);
-				free(dup);
-				continue;
-			}
-
-			// If the command is workspace number <name>, isolate the name
-			if (strncmp(_target, "number ", strlen("number ")) == 0) {
-				size_t length = strlen(_target) - strlen("number ") + 1;
-				char *temp = malloc(length);
-				strncpy(temp, _target + strlen("number "), length - 1);
-				temp[length - 1] = '\0';
-				free(_target);
-				_target = temp;
-				wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
-
-				// Make sure the workspace number doesn't already exist
-				if (workspace_by_number(_target)) {
-					free(_target);
-					free(dup);
-					continue;
-				}
-			}
-
-			// Make sure that the workspace doesn't already exist
-			if (workspace_by_name(_target)) {
-				free(_target);
-				free(dup);
-				continue;
-			}
-
-			// make sure that the workspace can appear on the given
-			// output
-			if (!workspace_valid_on_output(output_name, _target)) {
-				free(_target);
-				free(dup);
-				continue;
-			}
-
-			if (binding->order < order) {
-				order = binding->order;
-				free(target);
-				target = _target;
-				wlr_log(WLR_DEBUG, "Workspace: Found free name %s", _target);
-			} else {
-				free(_target);
-			}
-		}
-		free(dup);
+		workspace_name_from_binding(mode->keysym_bindings->items[i],
+				output_name, &order, &target);
+	}
+	for (int i = 0; i < mode->keycode_bindings->length; ++i) {
+		workspace_name_from_binding(mode->keycode_bindings->items[i],
+				output_name, &order, &target);
 	}
 	if (target != NULL) {
 		return target;
