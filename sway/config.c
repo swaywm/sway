@@ -561,12 +561,17 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 bool read_config(FILE *file, struct sway_config *config) {
 	bool reading_main_config = false;
 	char *this_config = NULL;
-	unsigned long config_size = 0;
+	size_t config_size = 0;
 	if (config->current_config == NULL) {
 		reading_main_config = true;
 
-		fseek(file, 0, SEEK_END);
-		config_size = ftell(file);
+		int ret_seek = fseek(file, 0, SEEK_END);
+		long ret_tell = ftell(file);
+		if (ret_seek == -1 || ret_tell == -1) {
+			wlr_log(WLR_ERROR, "Unable to get size of config file");
+			return false;
+		}
+		config_size = ret_tell;
 		rewind(file);
 
 		config->current_config = this_config = calloc(1, config_size + 1);
