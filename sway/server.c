@@ -123,8 +123,7 @@ bool server_init(struct sway_server *server) {
 	if (debug != NULL && strcmp(debug, "txn_timings") == 0) {
 		server->debug_txn_timings = true;
 	}
-	server->destroying_containers = create_list();
-
+	server->dirty_containers = create_list();
 	server->transactions = create_list();
 
 	input_manager = input_manager_create(server);
@@ -134,7 +133,7 @@ bool server_init(struct sway_server *server) {
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
 	wl_display_destroy(server->wl_display);
-	list_free(server->destroying_containers);
+	list_free(server->dirty_containers);
 	list_free(server->transactions);
 }
 

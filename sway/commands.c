@@ -9,6 +9,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/criteria.h"
+#include "sway/desktop/transaction.h"
 #include "sway/security.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -322,6 +323,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 cleanup:
 	free(exec);
 	free(views);
+	transaction_commit_dirty();
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}

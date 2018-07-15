@@ -12,7 +12,6 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "log.h"
 
@@ -176,7 +175,7 @@ void arrange_layers(struct sway_output *output) {
 				sizeof(struct wlr_box)) != 0) {
 		wlr_log(WLR_DEBUG, "Usable area changed, rearranging output");
 		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
-		arrange_and_commit(output->swayc);
+		container_set_dirty(output->swayc);
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom

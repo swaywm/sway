@@ -773,6 +773,6 @@ void config_update_font_height(bool recalculate) {
 	}
 
 	if (config->font_height != prev_max_height) {
-		arrange_and_commit(&root_container);
+		arrange_windows(&root_container);
 	}
 }

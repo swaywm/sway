@@ -47,10 +47,7 @@ struct sway_server {
 	bool debug_txn_timings;
 
 	list_t *transactions;
-
-	// When a view is being destroyed and is waiting for a transaction to
-	// complete it will be stored here.
-	list_t *destroying_containers;
+	list_t *dirty_containers;
 };
 
 struct sway_server server;

@@ -23,7 +23,7 @@ struct cmd_results *cmd_smart_gaps(int argc, char **argv) {
 			"Expected 'smart_gaps <on|off>' ");
 	}
 
-	arrange_and_commit(&root_container);
+	arrange_windows(&root_container);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

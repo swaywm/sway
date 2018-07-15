@@ -22,7 +22,8 @@ struct sway_container root_container;
 
 static void output_layout_handle_change(struct wl_listener *listener,
 		void *data) {
-	arrange_and_commit(&root_container);
+	arrange_windows(&root_container);
+	transaction_commit_dirty();
 }
 
 void layout_init(void) {

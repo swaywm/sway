@@ -144,6 +144,10 @@ struct sway_container {
 
 	bool destroying;
 
+	// If true, indicates that the container has pending state that differs from
+	// the current.
+	bool dirty;
+
 	struct {
 		struct wl_signal destroy;
 		// Raised after the tree updates, but before arrange_windows
@@ -302,5 +306,11 @@ void container_get_box(struct sway_container *container, struct wlr_box *box);
  */
 void container_floating_move_to(struct sway_container *con,
 		double lx, double ly);
+
+/**
+ * Mark a container as dirty if it isn't already. Dirty containers will be
+ * included in the next transaction then unmarked as dirty.
+ */
+void container_set_dirty(struct sway_container *container);
 
 #endif

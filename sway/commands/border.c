@@ -42,7 +42,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		container_set_geometry_from_floating_view(view->swayc);
 	}
 
-	arrange_and_commit(view->swayc);
+	arrange_windows(view->swayc);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	if (seat->cursor) {
