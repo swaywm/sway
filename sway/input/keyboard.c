@@ -3,6 +3,7 @@
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include <wlr/types/wlr_idle.h>
+#include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/input-manager.h"
@@ -126,6 +127,7 @@ static void keyboard_execute_command(struct sway_keyboard *keyboard,
 		binding->command);
 	config->handler_context.seat = keyboard->seat_device->sway_seat;
 	struct cmd_results *results = execute_command(binding->command, NULL);
+	transaction_commit_dirty();
 	if (results->status != CMD_SUCCESS) {
 		wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
 			binding->command, results->error);
