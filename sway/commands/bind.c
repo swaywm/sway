@@ -20,53 +20,55 @@ void free_sway_binding(struct sway_binding *binding) {
 		return;
 	}
 
-	if (binding->keys) {
-		free_flat_list(binding->keys);
-	}
+	free(binding->keys);
 	free(binding->command);
 	free(binding);
 }
 
+static void *replace_binding(void *old_item, void *new_item) {
+	struct sway_binding *old_binding = (struct sway_binding *)old_item;
+	struct sway_binding *new_binding = (struct sway_binding *)new_item;
+	wlr_log(WLR_DEBUG, "overwriting old binding command '%s' with command '%s'",
+		old_binding->command, new_binding->command);
+	free_sway_binding(old_binding);
+	return new_item;
+}
+
 /**
- * Returns true if the bindings have the same key and modifier combinations.
- * Note that keyboard layout is not considered, so the bindings might actually
- * not be equivalent on some layouts.
+ * Comparison function for bindings.
+ *
+ * Returns -1 if a < b, 0 if a == b, and 1 is a > b
  */
-static bool binding_key_compare(struct sway_binding *binding_a,
-		struct sway_binding *binding_b) {
+int sway_binding_cmp(const void *a, const void *b) {
+	const struct sway_binding *binding_a = (const struct sway_binding *)a;
+	const struct sway_binding *binding_b = (const struct sway_binding *)b;
+
 	if (binding_a->release != binding_b->release) {
-		return false;
+		return binding_a->release < binding_b->release ? -1 : 1;
 	}
 
-	if (binding_a->bindcode != binding_b->bindcode) {
-		return false;
+	if (binding_a->modifiers != binding_b->modifiers) {
+		return binding_a->modifiers < binding_b->modifiers ? -1 : 1;
 	}
 
-	if (binding_a->modifiers ^ binding_b->modifiers) {
-		return false;
-	}
-
-	if (binding_a->keys->length != binding_b->keys->length) {
-		return false;
+	if (binding_a->length != binding_b->length) {
+		return binding_a->length < binding_b->length ? -1 : 1;
 	}
 
 	// Keys are sorted
-	int keys_len = binding_a->keys->length;
-	for (int i = 0; i < keys_len; ++i) {
-		uint32_t key_a = *(uint32_t *)binding_a->keys->items[i];
-		uint32_t key_b = *(uint32_t *)binding_b->keys->items[i];
-		if (key_a != key_b) {
-			return false;
+	for (size_t i = 0; i < binding_a->length; ++i) {
+		if (binding_a->keys[i] != binding_b->keys[i]) {
+			return binding_a->keys[i] < binding_b->keys[i] ? -1 : 1;
 		}
 	}
 
-	return true;
+	return 0;
 }
 
-static int key_qsort_cmp(const void *keyp_a, const void *keyp_b) {
-	uint32_t key_a = **(uint32_t **)keyp_a;
-	uint32_t key_b = **(uint32_t **)keyp_b;
-	return (key_a < key_b) ? -1 : ((key_a > key_b) ? 1 : 0);
+static int key_qsort_cmp(const void *pkey_a, const void *pkey_b) {
+	uint32_t a = *(uint32_t *)pkey_a;
+	uint32_t b = *(uint32_t *)pkey_b;
+	return (a < b) ? -1 : ((a > b) ? 1 : 0);
 }
 
 static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
@@ -83,11 +85,11 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		return cmd_results_new(CMD_FAILURE, bindtype,
 				"Unable to allocate binding");
 	}
-	binding->keys = create_list();
+	binding->keys = NULL;
+	binding->length = 0;
 	binding->modifiers = 0;
 	binding->release = false;
 	binding->locked = false;
-	binding->bindcode = bindcode;
 
 	// Handle --release and --locked
 	while (argc > 0) {
@@ -111,19 +113,31 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	binding->command = join_args(argv + 1, argc - 1);
 
 	list_t *split = split_string(argv[0], "+");
+	int nonmodifiers = 0;
 	for (int i = 0; i < split->length; ++i) {
 		// Check for a modifier key
 		uint32_t mod;
 		if ((mod = get_modifier_mask_by_name(split->items[i])) > 0) {
 			binding->modifiers |= mod;
 			continue;
+		} else {
+			nonmodifiers++;
+		}
+	}
+	binding->keys = (uint32_t *)calloc(nonmodifiers, sizeof (uint32_t));
+	if (!binding->keys) {
+		return cmd_results_new(CMD_FAILURE, bindtype,
+				"Unable to allocate binding key list");
+	}
+	for (int i = 0; i < split->length; ++i) {
+		// Check for a modifier key
+		if (get_modifier_mask_by_name(split->items[i]) > 0) {
+			continue;
 		}
 
-		xkb_keycode_t keycode;
-		xkb_keysym_t keysym;
 		if (bindcode) {
 			// parse keycode
-			keycode = (int)strtol(split->items[i], NULL, 10);
+			xkb_keycode_t keycode = strtol(split->items[i], NULL, 10);
 			if (!xkb_keycode_is_legal_ext(keycode)) {
 				error =
 					cmd_results_new(CMD_INVALID, "bindcode",
@@ -132,9 +146,10 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 				list_free(split);
 				return error;
 			}
+			binding->keys[binding->length++] = (uint32_t)keycode;
 		} else {
 			// Check for xkb key
-			 keysym = xkb_keysym_from_name(split->items[i],
+			xkb_keysym_t keysym = xkb_keysym_from_name(split->items[i],
 					XKB_KEYSYM_CASE_INSENSITIVE);
 
 			// Check for mouse binding
@@ -149,28 +164,14 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 				free_flat_list(split);
 				return ret;
 			}
+			binding->keys[binding->length++] = (uint32_t)keysym;
 		}
-		uint32_t *key = calloc(1, sizeof(uint32_t));
-		if (!key) {
-			free_sway_binding(binding);
-			free_flat_list(split);
-			return cmd_results_new(CMD_FAILURE, bindtype,
-					"Unable to allocate binding");
-		}
-
-		if (bindcode) {
-			*key = (uint32_t)keycode;
-		} else {
-			*key = (uint32_t)keysym;
-		}
-
-		list_add(binding->keys, key);
 	}
 	free_flat_list(split);
 	binding->order = binding_order++;
 
 	// sort ascending
-	list_qsort(binding->keys, key_qsort_cmp);
+	qsort(binding->keys, binding->length, sizeof(uint32_t), key_qsort_cmp);
 
 	list_t *mode_bindings;
 	if (bindcode) {
@@ -179,22 +180,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		mode_bindings = config->current_mode->keysym_bindings;
 	}
 
-	// overwrite the binding if it already exists
-	bool overwritten = false;
-	for (int i = 0; i < mode_bindings->length; ++i) {
-		struct sway_binding *config_binding = mode_bindings->items[i];
-		if (binding_key_compare(binding, config_binding)) {
-			wlr_log(WLR_DEBUG, "overwriting old binding with command '%s'",
-				config_binding->command);
-			free_sway_binding(config_binding);
-			mode_bindings->items[i] = binding;
-			overwritten = true;
-		}
-	}
-
-	if (!overwritten) {
-		list_add(mode_bindings, binding);
-	}
+	list_sortedset_insert(mode_bindings, binding, sway_binding_cmp, replace_binding);
 
 	wlr_log(WLR_DEBUG, "%s - Bound %s to command %s",
 		bindtype, argv[0], binding->command);
