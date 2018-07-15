@@ -560,8 +560,8 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 
 bool read_config(FILE *file, struct sway_config *config) {
 	bool reading_main_config = false;
-	char *this_config = NULL, *config_pos;
-	long config_size = 0;
+	char *this_config = NULL;
+	unsigned long config_size = 0;
 	if (config->current_config == NULL) {
 		reading_main_config = true;
 
@@ -569,7 +569,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 		config_size = ftell(file);
 		rewind(file);
 
-		config_pos = this_config = malloc(config_size + 1);
+		config->current_config = this_config = calloc(1, config_size + 1);
 		if (this_config == NULL) {
 			wlr_log(WLR_ERROR, "Unable to allocate buffer for config contents");
 			return false;
@@ -580,6 +580,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 	int line_number = 0;
 	char *line;
 	list_t *stack = create_list();
+	size_t read = 0;
 	while (!feof(file)) {
 		char *block = stack->length ? stack->items[0] : NULL;
 		line = read_line(file);
@@ -590,10 +591,21 @@ bool read_config(FILE *file, struct sway_config *config) {
 		wlr_log(WLR_DEBUG, "Read line %d: %s", line_number, line);
 
 		if (reading_main_config) {
-			size_t l = strlen(line);
-			memcpy(config_pos, line, l); // don't copy terminating character
-			config_pos += l;
-			*config_pos++ = '\n';
+			size_t length = strlen(line);
+
+			if (read + length > config_size) {
+				wlr_log(WLR_ERROR, "Config file changed during reading");
+				list_foreach(stack, free);
+				list_free(stack);
+				free(line);
+				return false;
+			}
+
+			strcpy(this_config + read, line);
+			if (line_number != 1) {
+				this_config[read - 1] = '\n';
+			}
+			read += length + 1;
 		}
 
 		line = strip_whitespace(line);
@@ -616,7 +628,6 @@ bool read_config(FILE *file, struct sway_config *config) {
 			list_foreach(stack, free);
 			list_free(stack);
 			free(line);
-			free(this_config);
 			return false;
 		}
 		wlr_log(WLR_DEBUG, "Expanded line: %s", expanded);
@@ -677,10 +688,6 @@ bool read_config(FILE *file, struct sway_config *config) {
 	list_foreach(stack, free);
 	list_free(stack);
 
-	if (reading_main_config) {
-		this_config[config_size - 1] = '\0';
-		config->current_config = this_config;
-	}
 	return success;
 }
 
