@@ -15,6 +15,7 @@
 #include <wlr/util/region.h>
 #include "log.h"
 #include "sway/config.h"
+#include "sway/debug.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -786,6 +787,8 @@ static void render_floating(struct sway_output *soutput,
 	}
 }
 
+const char *damage_debug = NULL;
+
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -805,7 +808,6 @@ void output_render(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
-	const char *damage_debug = getenv("SWAY_DAMAGE_DEBUG");
 	if (damage_debug != NULL) {
 		if (strcmp(damage_debug, "highlight") == 0) {
 			wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
