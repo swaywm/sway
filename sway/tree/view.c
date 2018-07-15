@@ -1070,8 +1070,10 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 	}
 	container_damage_whole(view->swayc);
 
+	ipc_event_window(view->swayc, "urgent");
+
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	ipc_event_workspace(ws, NULL, "urgent");
+	ipc_event_workspace(NULL, ws, "urgent");
 }
 
 bool view_is_urgent(struct sway_view *view) {
