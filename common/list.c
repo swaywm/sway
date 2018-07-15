@@ -147,3 +147,61 @@ void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
 		list_inplace_sort(list, 0, list->length - 1, compare);
 	}
 }
+
+void list_sortedset_insert(list_t *list, void *item,
+		int compare(const void *item_left, const void *item_right),
+		void *replace(void *old_item, void* new_item)) {
+	if (list->length <= 0) {
+		list_add(list, item);
+		return;
+	}
+
+	size_t lower = 0;
+	size_t upper = (size_t)list->length - 1;
+	while (lower <= upper && upper != (size_t)-1) {
+		size_t div = (lower + upper) / 2;
+		int cv = compare(list->items[div], item);
+		if (cv < 0) {
+			lower = div + 1;
+		} else if (cv > 0) {
+			upper = div - 1;
+		} else {
+			list->items[div] = replace(list->items[div], item);
+			return;
+		}
+	}
+	list_insert(list, lower, item);
+}
+
+int list_sortedset_find(list_t *list,
+		int compare(const void *item, const void *cmp_to),
+		const void *cmp_to) {
+	if (list->length <= 0) {
+		return -1;
+	}
+
+	size_t lower = 0;
+	size_t upper = (size_t)list->length - 1;
+	while (lower <= upper && upper != (size_t)-1) {
+		size_t div = (lower + upper) / 2;
+		int cv = compare(list->items[div], cmp_to);
+		if (cv < 0) {
+			lower = div + 1;
+		} else if (cv > 0) {
+			upper = div - 1;
+		} else {
+			return div;
+		}
+	}
+	return -1;
+}
+
+int list_is_sortedset(list_t *list,
+		int compare(const void *left, const void *right)) {
+	for (size_t i = 1; i < (size_t)list->length; i++) {
+		if (compare(list->items[i - 1], list->items[i]) >= 0) {
+			return 0;
+		}
+	}
+	return 1;
+}
