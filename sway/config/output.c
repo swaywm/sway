@@ -207,6 +207,8 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		output->sway_output->bg_pid = fork();
 		if (output->sway_output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
+		} else {
+			free(command);
 		}
 	}
 	if (oc && oc->dpms_state != DPMS_IGNORE) {
