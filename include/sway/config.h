@@ -26,12 +26,14 @@ struct sway_variable {
  * A key binding and an associated command.
  */
 struct sway_binding {
-	int order;
-	bool release;
-	bool locked;
-	bool bindcode;
-	list_t *keys; // sorted in ascending order
+	// key part
+	uint32_t *keys; // sorted in ascending order
+	size_t length;
 	uint32_t modifiers;
+	bool release;
+	// value part
+	int order;
+	bool locked;
 	char *command;
 };
 
@@ -467,13 +469,7 @@ int workspace_output_cmp_workspace(const void *a, const void *b);
 
 int sway_binding_cmp(const void *a, const void *b);
 
-int sway_binding_cmp_qsort(const void *a, const void *b);
-
-int sway_binding_cmp_keys(const void *a, const void *b);
-
 void free_sway_binding(struct sway_binding *sb);
-
-struct sway_binding *sway_binding_dup(struct sway_binding *sb);
 
 void load_swaybars();
 

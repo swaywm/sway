@@ -65,10 +65,10 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
 	bool last_key_was_a_modifier = raw_modifiers != state->last_raw_modifiers;
 	state->last_raw_modifiers = raw_modifiers;
 
-    if (last_key_was_a_modifier && state->last_keycode) {
-        // Last pressed key before this one was a modifier
-        state_erase_key(state, state->last_keycode);
-    }
+	if (last_key_was_a_modifier && state->last_keycode) {
+		// Last pressed key before this one was a modifier
+		state_erase_key(state, state->last_keycode);
+	}
 
 	if (event->state == WLR_KEY_PRESSED) {
 		// Add current key to set; there may be duplicates
@@ -86,35 +86,24 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
 static void get_active_binding(const struct sway_shortcut_state *state,
 		list_t *bindings, struct sway_binding **current_binding,
 		uint32_t modifiers, bool release, bool locked) {
-	for (int i = 0; i < bindings->length; ++i) {
-		struct sway_binding *binding = bindings->items[i];
+	struct sway_binding match_binding = {
+			(uint32_t *)state->pressed_keys, state->npressed, modifiers, release,
+			0, false, NULL
+	};
 
-		if (modifiers ^ binding->modifiers ||
-				state->npressed != (size_t)binding->keys->length ||
-				locked > binding->locked ||
-				release != binding->release) {
-			continue;
-		}
-
-		bool match = true;
-		for (size_t j = 0; j < state->npressed; j++) {
-			uint32_t key = *(uint32_t *)binding->keys->items[j];
-			if (key != state->pressed_keys[j]) {
-				match = false;
-				break;
-			}
-		}
-		if (!match) {
-			continue;
-		}
-
-		if (*current_binding && *current_binding != binding) {
-			wlr_log(WLR_DEBUG, "encountered duplicate bindings %d and %d",
-					(*current_binding)->order, binding->order);
-		} else {
-			*current_binding = binding;
-		}
+	int index = list_sortedset_find(bindings, sway_binding_cmp, &match_binding);
+	if (index < 0) {
 		return;
+	}
+	struct sway_binding *binding = bindings->items[index];
+	if (locked > binding->locked) {
+		return;
+	}
+	if (*current_binding && *current_binding != binding) {
+		wlr_log(WLR_DEBUG, "encountered duplicate bindings %d and %d",
+				(*current_binding)->order, binding->order);
+	} else {
+		*current_binding = binding;
 	}
 }
 
