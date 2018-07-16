@@ -504,15 +504,13 @@ void view_execute_criteria(struct sway_view *view) {
 		}
 		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
+		seat_set_focus(seat, view->swayc);
 		list_add(view->executed_criteria, criteria);
 		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {
 			wlr_log(WLR_ERROR, "Command '%s' failed: %s", res->input, res->error);
 		}
 		free_cmd_results(res);
-		// view must be focused for commands to affect it,
-		// so always refocus in-between command lists
-		seat_set_focus(seat, view->swayc);
 	}
 	list_free(criterias);
 	seat_set_focus(seat, prior_focus);
