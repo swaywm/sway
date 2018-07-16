@@ -1,22 +1,21 @@
 #define _XOPEN_SOURCE 500
+#include <errno.h>
 #include <getopt.h>
-#include <signal.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <wayland-server.h>
 #include <wayland-util.h>
 #include <wlr/config.h>
 #include <wlr/util/log.h>
-#include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_output.h>
-#include "idle-client-protocol.h"
 #include "config.h"
+#include "idle-client-protocol.h"
 #include "list.h"
 #ifdef SWAY_IDLE_HAS_SYSTEMD
 #include <systemd/sd-bus.h>
@@ -36,7 +35,6 @@ struct swayidle_state {
 	struct wl_display *display;
 	struct org_kde_kwin_idle_timeout *idle_timer;
 	struct org_kde_kwin_idle_timeout *lock_timer;
-	struct wlr_output_layout *layout;
 	struct wl_event_loop *event_loop;
 	list_t *timeout_cmds;
 } state;
@@ -165,7 +163,7 @@ static int dbus_event(int fd, uint32_t mask, void *data) {
 
 void setup_sleep_listener() {
 	struct sd_bus *bus;
-	
+
 	int ret = sd_bus_default_system(&bus);
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to open D-Bus connection: %s",
@@ -360,7 +358,7 @@ static int display_event(int fd, uint32_t mask, void *data) {
 	if (wl_display_dispatch(state.display) < 0) {
 		wlr_log_errno(WLR_ERROR, "wl_display_dispatch failed, exiting");
 		sway_terminate(0);
-	};
+	}
 	return 0;
 }
 
@@ -397,7 +395,6 @@ int main(int argc, char *argv[]) {
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, NULL);
 	wl_display_roundtrip(state.display);
-	state.layout = wlr_output_layout_create();
 	state.event_loop = wl_event_loop_create();
 
 	if (idle_manager == NULL) {
