@@ -553,7 +553,11 @@ static void render_container_simple(struct sway_output *output,
 			struct wlr_texture *marks_texture;
 			struct sway_container_state *state = &child->current;
 
-			if (state->focused || parent_focused) {
+			if (view_is_urgent(view)) {
+				colors = &config->border_colors.urgent;
+				title_texture = child->title_urgent;
+				marks_texture = view->marks_urgent;
+			} else if (state->focused || parent_focused) {
 				colors = &config->border_colors.focused;
 				title_texture = child->title_focused;
 				marks_texture = view->marks_focused;
@@ -607,8 +611,14 @@ static void render_container_tabbed(struct sway_output *output,
 		struct border_colors *colors;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
+		bool urgent = view ?
+			view_is_urgent(view) : container_has_urgent_child(child);
 
-		if (cstate->focused || parent_focused) {
+		if (urgent) {
+			colors = &config->border_colors.urgent;
+			title_texture = child->title_urgent;
+			marks_texture = view ? view->marks_urgent : NULL;
+		} else if (cstate->focused || parent_focused) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = view ? view->marks_focused : NULL;
@@ -670,8 +680,14 @@ static void render_container_stacked(struct sway_output *output,
 		struct border_colors *colors;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
+		bool urgent = view ?
+			view_is_urgent(view) : container_has_urgent_child(child);
 
-		if (cstate->focused || parent_focused) {
+		if (urgent) {
+			colors = &config->border_colors.urgent;
+			title_texture = child->title_urgent;
+			marks_texture = view ? view->marks_urgent : NULL;
+		} else if (cstate->focused || parent_focused) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = view ? view->marks_focused : NULL;
@@ -731,7 +747,11 @@ static void render_floating_container(struct sway_output *soutput,
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
 
-		if (con->current.focused) {
+		if (view_is_urgent(view)) {
+			colors = &config->border_colors.urgent;
+			title_texture = con->title_urgent;
+			marks_texture = view->marks_urgent;
+		} else if (con->current.focused) {
 			colors = &config->border_colors.focused;
 			title_texture = con->title_focused;
 			marks_texture = view->marks_focused;

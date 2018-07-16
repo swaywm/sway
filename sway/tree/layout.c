@@ -225,6 +225,15 @@ void container_move_to(struct sway_container *container,
 			}
 		}
 	}
+	// Update workspace urgent state
+	struct sway_container *old_workspace = old_parent;
+	if (old_workspace->type != C_WORKSPACE) {
+		old_workspace = container_parent(old_workspace, C_WORKSPACE);
+	}
+	if (new_workspace != old_workspace) {
+		workspace_detect_urgent(new_workspace);
+		workspace_detect_urgent(old_workspace);
+	}
 }
 
 static bool sway_dir_to_wlr(enum movement_direction dir,
@@ -548,6 +557,8 @@ void container_move(struct sway_container *container,
 	}
 	if (last_ws && next_ws && last_ws != next_ws) {
 		ipc_event_workspace(last_ws, container, "focus");
+		workspace_detect_urgent(last_ws);
+		workspace_detect_urgent(next_ws);
 	}
 }
 

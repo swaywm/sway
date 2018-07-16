@@ -25,6 +25,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->impl = impl;
 	view->executed_criteria = create_list();
 	view->marks = create_list();
+	view->allow_request_urgent = true;
 	wl_signal_init(&view->events.unmap);
 }
 
@@ -609,15 +610,25 @@ void view_unmap(struct sway_view *view) {
 	wl_list_remove(&view->surface_new_subsurface.link);
 	wl_list_remove(&view->container_reparent.link);
 
+	if (view->urgent_timer) {
+		wl_event_source_remove(view->urgent_timer);
+		view->urgent_timer = NULL;
+	}
+
+	struct sway_container *parent;
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+
 	if (view->is_fullscreen) {
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		ws->sway_workspace->fullscreen = NULL;
-		container_destroy(view->swayc);
+		parent = container_destroy(view->swayc);
 
 		arrange_windows(ws->parent);
 	} else {
 		struct sway_container *parent = container_destroy(view->swayc);
 		arrange_windows(parent);
+	}
+	if (parent->type >= C_WORKSPACE) { // if the workspace still exists
+		workspace_detect_urgent(ws);
 	}
 	transaction_commit_dirty();
 	view->surface = NULL;
@@ -1066,4 +1077,30 @@ bool view_is_visible(struct sway_view *view) {
 		return workspace_is_visible(workspace);
 	}
 	return true;
+}
+
+void view_set_urgent(struct sway_view *view, bool enable) {
+	if (enable) {
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		if (seat_get_focus(seat) == view->swayc) {
+			return;
+		}
+		clock_gettime(CLOCK_MONOTONIC, &view->urgent);
+	} else {
+		view->urgent = (struct timespec){ 0 };
+		if (view->urgent_timer) {
+			wl_event_source_remove(view->urgent_timer);
+			view->urgent_timer = NULL;
+		}
+	}
+	container_damage_whole(view->swayc);
+
+	ipc_event_window(view->swayc, "urgent");
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	workspace_detect_urgent(ws);
+}
+
+bool view_is_urgent(struct sway_view *view) {
+	return view->urgent.tv_sec || view->urgent.tv_nsec;
 }

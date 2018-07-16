@@ -674,16 +674,23 @@ struct sway_container *floating_container_at(double lx, double ly,
 void container_for_each_descendant_dfs(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
-	if (container) {
-		if (container->children)  {
-			for (int i = 0; i < container->children->length; ++i) {
-				struct sway_container *child =
-					container->children->items[i];
-				container_for_each_descendant_dfs(child, f, data);
-			}
-		}
-		f(container, data);
+	if (!container) {
+		return;
 	}
+	if (container->children)  {
+		for (int i = 0; i < container->children->length; ++i) {
+			struct sway_container *child = container->children->items[i];
+			container_for_each_descendant_dfs(child, f, data);
+		}
+	}
+	if (container->type == C_WORKSPACE)  {
+		struct sway_container *floating = container->sway_workspace->floating;
+		for (int i = 0; i < floating->children->length; ++i) {
+			struct sway_container *child = floating->children->items[i];
+			container_for_each_descendant_dfs(child, f, data);
+		}
+	}
+	f(container, data);
 }
 
 void container_for_each_descendant_bfs(struct sway_container *con,
@@ -1063,6 +1070,8 @@ void container_floating_move_to(struct sway_container *con,
 		container_add_child(new_workspace->sway_workspace->floating, con);
 		arrange_windows(old_workspace);
 		arrange_windows(new_workspace);
+		workspace_detect_urgent(old_workspace);
+		workspace_detect_urgent(new_workspace);
 	}
 }
 
@@ -1072,4 +1081,13 @@ void container_set_dirty(struct sway_container *container) {
 	}
 	container->dirty = true;
 	list_add(server.dirty_containers, container);
+}
+
+static bool find_urgent_iterator(struct sway_container *con,
+		void *data) {
+	return con->type == C_VIEW && view_is_urgent(con->sway_view);
+}
+
+bool container_has_urgent_child(struct sway_container *container) {
+	return container_find(container, find_urgent_iterator, NULL);
 }

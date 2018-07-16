@@ -316,4 +316,6 @@ void container_floating_move_to(struct sway_container *con,
  */
 void container_set_dirty(struct sway_container *container);
 
+bool container_has_urgent_child(struct sway_container *container);
+
 #endif

@@ -11,6 +11,7 @@
 #include "sway/ipc-server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
@@ -517,4 +518,14 @@ struct sway_container *workspace_output_get_highest_available(
 	}
 
 	return NULL;
+}
+
+void workspace_detect_urgent(struct sway_container *workspace) {
+	bool new_urgent = container_has_urgent_child(workspace);
+
+	if (workspace->sway_workspace->urgent != new_urgent) {
+		workspace->sway_workspace->urgent = new_urgent;
+		ipc_event_workspace(NULL, workspace, "urgent");
+		container_damage_whole(workspace);
+	}
 }

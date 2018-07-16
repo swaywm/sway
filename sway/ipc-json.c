@@ -170,7 +170,8 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 	json_object_object_add(object, "output", workspace->parent ?
 			json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
-	json_object_object_add(object, "urgent", json_object_new_boolean(false));
+	json_object_object_add(object, "urgent",
+			json_object_new_boolean(workspace->sway_workspace->urgent));
 	json_object_object_add(object, "representation", workspace->formatted_title ?
 			json_object_new_string(workspace->formatted_title) : NULL);
 
@@ -196,6 +197,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 		json_object_object_add(object, "layout",
 			json_object_new_string(ipc_json_layout_description(c->layout)));
 	}
+
+	bool urgent = c->type == C_VIEW ?
+		view_is_urgent(c->sway_view) : container_has_urgent_child(c);
+	json_object_object_add(object, "urgent", json_object_new_boolean(urgent));
 }
 
 static void focus_inactive_children_iterator(struct sway_container *c, void *data) {

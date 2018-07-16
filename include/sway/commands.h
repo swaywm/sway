@@ -152,6 +152,7 @@ sway_cmd cmd_swaybg_command;
 sway_cmd cmd_swap;
 sway_cmd cmd_title_format;
 sway_cmd cmd_unmark;
+sway_cmd cmd_urgent;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_workspace_layout;
