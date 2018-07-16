@@ -595,15 +595,20 @@ void view_unmap(struct sway_view *view) {
 		view->urgent_timer = NULL;
 	}
 
+	struct sway_container *parent;
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+
 	if (view->is_fullscreen) {
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		ws->sway_workspace->fullscreen = NULL;
-		container_destroy(view->swayc);
+		parent = container_destroy(view->swayc);
 
 		arrange_windows(ws->parent);
 	} else {
 		struct sway_container *parent = container_destroy(view->swayc);
 		arrange_windows(parent);
+	}
+	if (parent->type >= C_WORKSPACE) { // if the workspace still exists
+		workspace_detect_urgent(ws);
 	}
 	transaction_commit_dirty();
 	view->surface = NULL;
@@ -1073,7 +1078,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 	ipc_event_window(view->swayc, "urgent");
 
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	ipc_event_workspace(NULL, ws, "urgent");
+	workspace_detect_urgent(ws);
 }
 
 bool view_is_urgent(struct sway_view *view) {

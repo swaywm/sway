@@ -10,6 +10,7 @@ struct sway_workspace {
 	struct sway_view *fullscreen;
 	struct sway_container *floating;
 	list_t *output_priority;
+	bool urgent;
 };
 
 extern char *prev_workspace_name;
@@ -43,6 +44,6 @@ void workspace_output_add_priority(struct sway_container *workspace,
 struct sway_container *workspace_output_get_highest_available(
 		struct sway_container *ws, struct sway_container *exclude);
 
-bool workspace_is_urgent(struct sway_container *workspace);
+void workspace_detect_urgent(struct sway_container *workspace);
 
 #endif

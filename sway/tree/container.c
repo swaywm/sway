@@ -1070,6 +1070,8 @@ void container_floating_move_to(struct sway_container *con,
 		container_add_child(new_workspace->sway_workspace->floating, con);
 		arrange_windows(old_workspace);
 		arrange_windows(new_workspace);
+		workspace_detect_urgent(old_workspace);
+		workspace_detect_urgent(new_workspace);
 	}
 }
 

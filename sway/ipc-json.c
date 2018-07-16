@@ -171,7 +171,7 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 			json_object_new_string(workspace->parent->name) : NULL);
 	json_object_object_add(object, "type", json_object_new_string("workspace"));
 	json_object_object_add(object, "urgent",
-			json_object_new_boolean(workspace_is_urgent(workspace)));
+			json_object_new_boolean(workspace->sway_workspace->urgent));
 	json_object_object_add(object, "representation", workspace->formatted_title ?
 			json_object_new_string(workspace->formatted_title) : NULL);
 

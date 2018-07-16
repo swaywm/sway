@@ -525,6 +525,11 @@ static bool find_urgent_iterator(struct sway_container *con,
 	return con->type == C_VIEW && view_is_urgent(con->sway_view);
 }
 
-bool workspace_is_urgent(struct sway_container *workspace) {
-	return container_find(workspace, find_urgent_iterator, NULL);
+void workspace_detect_urgent(struct sway_container *workspace) {
+	bool new_urgent = container_find(workspace, find_urgent_iterator, NULL);
+
+	if (workspace->sway_workspace->urgent != new_urgent) {
+		workspace->sway_workspace->urgent = new_urgent;
+		ipc_event_workspace(NULL, workspace, "urgent");
+	}
 }
