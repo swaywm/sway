@@ -115,6 +115,18 @@ static void ipc_parse_colors(
 		config->colors.inactive_workspace.text = parse_color(
 				json_object_get_string(inactive_workspace_text));
 	}
+	if (urgent_workspace_border) {
+		config->colors.urgent_workspace.border = parse_color(
+				json_object_get_string(urgent_workspace_border));
+	}
+	if (urgent_workspace_bg) {
+		config->colors.urgent_workspace.background = parse_color(
+				json_object_get_string(urgent_workspace_bg));
+	}
+	if (urgent_workspace_text) {
+		config->colors.urgent_workspace.text = parse_color(
+				json_object_get_string(urgent_workspace_text));
+	}
 	if (binding_mode_border) {
 		config->colors.binding_mode.border = parse_color(
 				json_object_get_string(binding_mode_border));
