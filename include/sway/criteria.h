@@ -6,9 +6,10 @@
 #include "tree/view.h"
 
 enum criteria_type {
-	CT_COMMAND = 1 << 0,
-	CT_ASSIGN_OUTPUT = 1 << 1,
+	CT_COMMAND          = 1 << 0,
+	CT_ASSIGN_OUTPUT    = 1 << 1,
 	CT_ASSIGN_WORKSPACE = 1 << 2,
+	CT_NO_FOCUS         = 1 << 3,
 };
 
 struct criteria {

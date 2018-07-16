@@ -518,6 +518,26 @@ void view_execute_criteria(struct sway_view *view) {
 	seat_set_focus(seat, prior_focus);
 }
 
+static bool should_focus(struct sway_view *view) {
+	// If the view is the only one in the focused workspace, it'll get focus
+	// regardless of any no_focus criteria.
+	struct sway_container *parent = view->swayc->parent;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	if (parent->type == C_WORKSPACE && seat_get_focus(seat) == parent) {
+		size_t num_children = parent->children->length +
+			parent->sway_workspace->floating->children->length;
+		if (num_children == 1) {
+			return true;
+		}
+	}
+
+	// Check no_focus criteria
+	list_t *criterias = criteria_for_view(view, CT_NO_FOCUS);
+	size_t len = criterias->length;
+	list_free(criterias);
+	return len == 0;
+}
+
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
@@ -571,9 +591,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		view_set_tiled(view, true);
 	}
 
-	input_manager_set_focus(input_manager, cont);
-	if (workspace) {
-		workspace_switch(workspace);
+	if (should_focus(view)) {
+		input_manager_set_focus(input_manager, cont);
+		if (workspace) {
+			workspace_switch(workspace);
+		}
 	}
 
 	view_update_title(view, false);
