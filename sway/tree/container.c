@@ -674,16 +674,23 @@ struct sway_container *floating_container_at(double lx, double ly,
 void container_for_each_descendant_dfs(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
-	if (container) {
-		if (container->children)  {
-			for (int i = 0; i < container->children->length; ++i) {
-				struct sway_container *child =
-					container->children->items[i];
-				container_for_each_descendant_dfs(child, f, data);
-			}
-		}
-		f(container, data);
+	if (!container) {
+		return;
 	}
+	if (container->children)  {
+		for (int i = 0; i < container->children->length; ++i) {
+			struct sway_container *child = container->children->items[i];
+			container_for_each_descendant_dfs(child, f, data);
+		}
+	}
+	if (container->type == C_WORKSPACE)  {
+		struct sway_container *floating = container->sway_workspace->floating;
+		for (int i = 0; i < floating->children->length; ++i) {
+			struct sway_container *child = floating->children->items[i];
+			container_for_each_descendant_dfs(child, f, data);
+		}
+	}
+	f(container, data);
 }
 
 void container_for_each_descendant_bfs(struct sway_container *con,
