@@ -198,8 +198,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 			json_object_new_string(ipc_json_layout_description(c->layout)));
 	}
 
-	json_object_object_add(object, "urgent",
-			json_object_new_boolean(view_is_urgent(c->sway_view)));
+	if (c->type == C_VIEW) {
+		json_object_object_add(object, "urgent",
+				json_object_new_boolean(view_is_urgent(c->sway_view)));
+	}
 }
 
 static void focus_inactive_children_iterator(struct sway_container *c, void *data) {
