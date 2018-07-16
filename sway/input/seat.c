@@ -649,6 +649,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		while (parent) {
 			wl_list_remove(&parent->link);
 			wl_list_insert(&seat->focus_stack, &parent->link);
+			container_set_dirty(parent->container);
 
 			parent =
 				seat_container_from_container(seat,
