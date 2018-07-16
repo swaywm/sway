@@ -789,13 +789,16 @@ int main(int argc, char **argv) {
 	wlr_log_init(WLR_DEBUG, NULL);
 
 	char *config_path = NULL;
-	for (int i = 0; i < argc; i++) {
-		if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--config") == 0) {
-			if (i + 1 == argc) {
-				wlr_log(WLR_ERROR, "Config file path is missing");
-				return 1;
-			}
-			config_path = strdup(argv[i + 1]);
+	static struct option long_options[] = {
+		{"config", required_argument, NULL, 'C'},
+		{0, 0, 0, 0},
+	};
+	while (1) {
+		int c = getopt_long(argc, argv, "C:", long_options, NULL);
+		if (c == -1) {
+			break;
+		} else if (c == 'C') {
+			config_path = strdup(optarg);
 			break;
 		}
 	}
