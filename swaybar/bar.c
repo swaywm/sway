@@ -147,7 +147,7 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
 			hotspot->callback(output, pointer->x, pointer->y,
-					button, hotspot->data);
+					wl_button_to_x11_button(button), hotspot->data);
 		}
 	}
 }

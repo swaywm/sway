@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <json-c/json.h>
+#include <linux/input-event-codes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -192,7 +193,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 }
 
 void i3bar_block_send_click(struct status_line *status,
-		struct i3bar_block *block, int x, int y, uint32_t button) {
+		struct i3bar_block *block, int x, int y, enum x11_button button) {
 	wlr_log(WLR_DEBUG, "block %s clicked", block->name ? block->name : "(nil)");
 	if (!block->name || !status->i3bar_state.click_events) {
 		return;
@@ -214,4 +215,33 @@ void i3bar_block_send_click(struct status_line *status,
 		status_error(status, "[failed to write click event]");
 	}
 	json_object_put(event_json);
+}
+
+enum x11_button wl_button_to_x11_button(uint32_t button) {
+	switch (button) {
+	case (BTN_LEFT):
+		return LEFT;
+	case (BTN_MIDDLE):
+		return MIDDLE;
+	case (BTN_RIGHT):
+		return RIGHT;
+	case (BTN_SIDE):
+		return BACK;
+	case (BTN_EXTRA):
+		return FORWARD;
+	default:
+		return NONE;
+	}
+}
+
+enum x11_button wl_axis_to_x11_button(uint32_t axis, wl_fixed_t value) {
+	switch (axis) {
+	case WL_POINTER_AXIS_VERTICAL_SCROLL:
+		return wl_fixed_to_double(value) < 0 ? SCROLL_UP : SCROLL_DOWN;
+	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+		return wl_fixed_to_double(value) < 0 ? SCROLL_LEFT : SCROLL_RIGHT;
+	default:
+		wlr_log(WLR_DEBUG, "Unexpected axis value on mouse scroll");
+		return NONE;
+	}
 }
