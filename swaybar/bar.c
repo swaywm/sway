@@ -155,9 +155,24 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, uint32_t axis, wl_fixed_t value) {
 	struct swaybar *bar = data;
+	struct swaybar_pointer *pointer = &bar->pointer;
 	struct swaybar_output *output = bar->pointer.current;
 	if (!sway_assert(output, "axis with no active output")) {
 		return;
+	}
+
+	struct swaybar_hotspot *hotspot;
+	wl_list_for_each(hotspot, &output->hotspots, link) {
+		double x = pointer->x * output->scale;
+		double y = pointer->y * output->scale;
+		if (x >= hotspot->x
+				&& y >= hotspot->y
+				&& x < hotspot->x + hotspot->width
+				&& y < hotspot->y + hotspot->height) {
+			hotspot->callback(output, pointer->x, pointer->y,
+					wl_axis_to_x11_button(axis, value), hotspot->data);
+			return;
+		}
 	}
 
 	double amt = wl_fixed_to_double(value);
