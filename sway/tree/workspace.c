@@ -520,13 +520,8 @@ struct sway_container *workspace_output_get_highest_available(
 	return NULL;
 }
 
-static bool find_urgent_iterator(struct sway_container *con,
-		void *data) {
-	return con->type == C_VIEW && view_is_urgent(con->sway_view);
-}
-
 void workspace_detect_urgent(struct sway_container *workspace) {
-	bool new_urgent = container_find(workspace, find_urgent_iterator, NULL);
+	bool new_urgent = container_has_urgent_child(workspace);
 
 	if (workspace->sway_workspace->urgent != new_urgent) {
 		workspace->sway_workspace->urgent = new_urgent;

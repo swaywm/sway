@@ -1082,3 +1082,12 @@ void container_set_dirty(struct sway_container *container) {
 	container->dirty = true;
 	list_add(server.dirty_containers, container);
 }
+
+static bool find_urgent_iterator(struct sway_container *con,
+		void *data) {
+	return con->type == C_VIEW && view_is_urgent(con->sway_view);
+}
+
+bool container_has_urgent_child(struct sway_container *container) {
+	return container_find(container, find_urgent_iterator, NULL);
+}
