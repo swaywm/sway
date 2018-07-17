@@ -20,8 +20,10 @@ static struct cmd_handler input_handlers[] = {
 	{ "pointer_accel", input_cmd_pointer_accel },
 	{ "repeat_delay", input_cmd_repeat_delay },
 	{ "repeat_rate", input_cmd_repeat_rate },
+	{ "scroll_button", input_cmd_scroll_button },
 	{ "scroll_method", input_cmd_scroll_method },
 	{ "tap", input_cmd_tap },
+	{ "tap_button_map", input_cmd_tap_button_map },
 	{ "xkb_layout", input_cmd_xkb_layout },
 	{ "xkb_model", input_cmd_xkb_model },
 	{ "xkb_options", input_cmd_xkb_options },
@@ -35,7 +37,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return error;
 	}
 
-	wlr_log(L_DEBUG, "entering input block: %s", argv[0]);
+	wlr_log(WLR_DEBUG, "entering input block: %s", argv[0]);
 
 	config->handler_context.input_config = new_input_config(argv[0]);
 	if (!config->handler_context.input_config) {

@@ -28,7 +28,7 @@ static struct cmd_results *bar_set_mode(struct bar_config *bar, const char *mode
 		if (!config->reading) {
 			ipc_event_barconfig_update(bar);
 		}
-		wlr_log(L_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
+		wlr_log(WLR_DEBUG, "Setting mode: '%s' for bar: %s", bar->mode, bar->id);
 	}
 
 	// free old mode

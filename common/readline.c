@@ -9,7 +9,7 @@ char *read_line(FILE *file) {
 	char *string = malloc(size);
 	char lastChar = '\0';
 	if (!string) {
-		wlr_log(L_ERROR, "Unable to allocate memory for read_line");
+		wlr_log(WLR_ERROR, "Unable to allocate memory for read_line");
 		return NULL;
 	}
 	while (1) {
@@ -30,7 +30,7 @@ char *read_line(FILE *file) {
 			char *new_string = realloc(string, size *= 2);
 			if (!new_string) {
 				free(string);
-				wlr_log(L_ERROR, "Unable to allocate memory for read_line");
+				wlr_log(WLR_ERROR, "Unable to allocate memory for read_line");
 				return NULL;
 			}
 			string = new_string;

@@ -49,7 +49,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	}
 
 	container_notify_subtree_changed(parent);
-	arrange_and_commit(parent);
+	arrange_windows(parent);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

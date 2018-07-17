@@ -1,11 +1,12 @@
 #define _XOPEN_SOURCE 500
 #include <string.h>
 #include <strings.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/log.h>
 #include "sway/commands.h"
-#include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
@@ -103,10 +104,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		// TODO: Ideally we would arrange the surviving parent after reaping,
 		// but container_reap_empty does not return it, so we arrange the
 		// workspace instead.
-		struct sway_transaction *txn = transaction_create();
-		arrange_windows(old_ws, txn);
-		arrange_windows(destination->parent, txn);
-		transaction_commit(txn);
+		arrange_windows(old_ws);
+		arrange_windows(destination->parent);
 
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcasecmp(argv[1], "to") == 0
@@ -142,10 +141,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		// TODO: Ideally we would arrange the surviving parent after reaping,
 		// but container_reap_empty does not return it, so we arrange the
 		// workspace instead.
-		struct sway_transaction *txn = transaction_create();
-		arrange_windows(old_ws, txn);
-		arrange_windows(focus->parent, txn);
-		transaction_commit(txn);
+		arrange_windows(old_ws);
+		arrange_windows(focus->parent);
 
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -175,19 +172,55 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 	}
 	container_move_to(current, destination);
 
-	struct sway_transaction *txn = transaction_create();
-	arrange_windows(source, txn);
-	arrange_windows(destination, txn);
-	transaction_commit(txn);
+	arrange_windows(source);
+	arrange_windows(destination);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 static struct cmd_results *move_in_direction(struct sway_container *container,
-		enum movement_direction direction, int move_amt) {
+		enum movement_direction direction, int argc, char **argv) {
+	int move_amt = 10;
+	if (argc > 1) {
+		char *inv;
+		move_amt = (int)strtol(argv[1], &inv, 10);
+		if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Invalid distance specified");
+		}
+	}
+
 	if (container->type == C_WORKSPACE) {
 		return cmd_results_new(CMD_FAILURE, "move",
 				"Cannot move workspaces in a direction");
+	}
+	if (container_is_floating(container)) {
+		if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Cannot move fullscreen floating container");
+		}
+		double lx = container->x;
+		double ly = container->y;
+		switch (direction) {
+		case MOVE_LEFT:
+			lx -= move_amt;
+			break;
+		case MOVE_RIGHT:
+			lx += move_amt;
+			break;
+		case MOVE_UP:
+			ly -= move_amt;
+			break;
+		case MOVE_DOWN:
+			ly += move_amt;
+			break;
+		case MOVE_PARENT:
+		case MOVE_CHILD:
+			return cmd_results_new(CMD_FAILURE, "move",
+					"Cannot move floating container to parent or child");
+		}
+		container_floating_move_to(container, lx, ly);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	// For simplicity, we'll arrange the entire workspace. The reason for this
 	// is moving the container might reap the old parent, and container_move
@@ -198,41 +231,86 @@ static struct cmd_results *move_in_direction(struct sway_container *container,
 	container_move(container, direction, move_amt);
 	struct sway_container *new_ws = container_parent(container, C_WORKSPACE);
 
-	struct sway_transaction *txn = transaction_create();
-	arrange_windows(old_ws, txn);
+	arrange_windows(old_ws);
 	if (new_ws != old_ws) {
-		arrange_windows(new_ws, txn);
+		arrange_windows(new_ws);
 	}
-	transaction_commit(txn);
 
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static const char* expected_position_syntax =
+	"Expected 'move [absolute] position <x> <y>' or "
+	"'move [absolute] position mouse'";
+
+static struct cmd_results *move_to_position(struct sway_container *container,
+		int argc, char **argv) {
+	if (!container_is_floating(container)) {
+		return cmd_results_new(CMD_FAILURE, "move",
+				"Only floating containers "
+				"can be moved to an absolute position");
+	}
+	if (!argc) {
+		return cmd_results_new(CMD_FAILURE, "move", expected_position_syntax);
+	}
+	if (strcmp(argv[0], "absolute") == 0) {
+		--argc;
+		++argv;
+	}
+	if (!argc) {
+		return cmd_results_new(CMD_FAILURE, "move", expected_position_syntax);
+	}
+	if (strcmp(argv[0], "position") == 0) {
+		--argc;
+		++argv;
+	}
+	if (!argc) {
+		return cmd_results_new(CMD_FAILURE, "move", expected_position_syntax);
+	}
+	if (strcmp(argv[0], "mouse") == 0) {
+		struct sway_seat *seat = config->handler_context.seat;
+		if (!seat->cursor) {
+			return cmd_results_new(CMD_FAILURE, "move", "No cursor device");
+		}
+		double lx = seat->cursor->cursor->x - container->width / 2;
+		double ly = seat->cursor->cursor->y - container->height / 2;
+		container_floating_move_to(container, lx, ly);
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	}
+	if (argc != 2) {
+		return cmd_results_new(CMD_FAILURE, "move", expected_position_syntax);
+	}
+	double lx, ly;
+	char *inv;
+	lx = (double)strtol(argv[0], &inv, 10);
+	if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
+		return cmd_results_new(CMD_FAILURE, "move",
+				"Invalid position specified");
+	}
+	ly = (double)strtol(argv[1], &inv, 10);
+	if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
+		return cmd_results_new(CMD_FAILURE, "move",
+				"Invalid position specified");
+	}
+	container_floating_move_to(container, lx, ly);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	int move_amt = 10;
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 	struct sway_container *current = config->handler_context.current_container;
 
-	if (argc == 2 || (argc == 3 && strcasecmp(argv[2], "px") == 0)) {
-		char *inv;
-		move_amt = (int)strtol(argv[1], &inv, 10);
-		if (*inv != '\0' && strcasecmp(inv, "px") != 0) {
-			return cmd_results_new(CMD_FAILURE, "move",
-					"Invalid distance specified");
-		}
-	}
-
 	if (strcasecmp(argv[0], "left") == 0) {
-		return move_in_direction(current, MOVE_LEFT, move_amt);
+		return move_in_direction(current, MOVE_LEFT, argc, argv);
 	} else if (strcasecmp(argv[0], "right") == 0) {
-		return move_in_direction(current, MOVE_RIGHT, move_amt);
+		return move_in_direction(current, MOVE_RIGHT, argc, argv);
 	} else if (strcasecmp(argv[0], "up") == 0) {
-		return move_in_direction(current, MOVE_UP, move_amt);
+		return move_in_direction(current, MOVE_UP, argc, argv);
 	} else if (strcasecmp(argv[0], "down") == 0) {
-		return move_in_direction(current, MOVE_DOWN, move_amt);
+		return move_in_direction(current, MOVE_DOWN, argc, argv);
 	} else if (strcasecmp(argv[0], "container") == 0
 			|| strcasecmp(argv[0], "window") == 0) {
 		return cmd_move_container(current, argc, argv);
@@ -244,8 +322,9 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 		// TODO: scratchpad
 		return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
 	} else if (strcasecmp(argv[0], "position") == 0) {
-		// TODO: floating
-		return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
+		return move_to_position(current, argc, argv);
+	} else if (strcasecmp(argv[0], "absolute") == 0) {
+		return move_to_position(current, argc, argv);
 	} else {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}

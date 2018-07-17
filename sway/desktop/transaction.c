@@ -19,14 +19,14 @@
  * How long we should wait for views to respond to the configure before giving
  * up and applying the transaction anyway.
  */
-#define TIMEOUT_MS 200
+int txn_timeout_ms = 200;
 
 /**
  * If enabled, sway will always wait for the transaction timeout before
  * applying it, rather than applying it when the views are ready. This allows us
  * to observe the rendered state while a transaction is in progress.
  */
-#define TRANSACTION_DEBUG false
+bool txn_debug = false;
 
 struct sway_transaction {
 	struct wl_event_source *timer;
@@ -47,7 +47,7 @@ struct sway_transaction_instruction {
 	bool ready;
 };
 
-struct sway_transaction *transaction_create() {
+static struct sway_transaction *transaction_create() {
 	struct sway_transaction *transaction =
 		calloc(1, sizeof(struct sway_transaction));
 	transaction->instructions = create_list();
@@ -139,25 +139,18 @@ static void copy_pending_state(struct sway_container *container,
 		state->children = create_list();
 		list_cat(state->children, container->children);
 	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	state->focused = seat_get_focus(seat) == container;
+
+	if (container->type != C_VIEW) {
+		state->focused_inactive_child =
+			seat_get_active_child(seat, container);
+	}
 }
 
-static bool transaction_has_container(struct sway_transaction *transaction,
+static void transaction_add_container(struct sway_transaction *transaction,
 		struct sway_container *container) {
-	for (int i = 0; i < transaction->instructions->length; ++i) {
-		struct sway_transaction_instruction *instruction =
-			transaction->instructions->items[i];
-		if (instruction->container == container) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void transaction_add_container(struct sway_transaction *transaction,
-		struct sway_container *container) {
-	if (transaction_has_container(transaction, container)) {
-		return;
-	}
 	struct sway_transaction_instruction *instruction =
 		calloc(1, sizeof(struct sway_transaction_instruction));
 	instruction->transaction = transaction;
@@ -175,7 +168,7 @@ void transaction_add_container(struct sway_transaction *transaction,
  * Apply a transaction to the "current" state of the tree.
  */
 static void transaction_apply(struct sway_transaction *transaction) {
-	wlr_log(L_DEBUG, "Applying transaction %p", transaction);
+	wlr_log(WLR_DEBUG, "Applying transaction %p", transaction);
 	if (server.debug_txn_timings) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
@@ -186,7 +179,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		float ms_waiting = (now.tv_sec - commit->tv_sec) * 1000 +
 			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
 		float ms_total = ms_arranging + ms_waiting;
-		wlr_log(L_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
+		wlr_log(WLR_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
 			"%.1fms total (%.1f frames if 60Hz)", transaction,
 			ms_arranging, ms_waiting, ms_total, ms_total / (1000.0f / 60));
 	}
@@ -210,10 +203,12 @@ static void transaction_apply(struct sway_transaction *transaction) {
 			.width = instruction->state.swayc_width,
 			.height = instruction->state.swayc_height,
 		};
-		for (int j = 0; j < root_container.children->length; ++j) {
-			struct sway_container *output = root_container.children->items[j];
-			output_damage_box(output->sway_output, &old_box);
-			output_damage_box(output->sway_output, &new_box);
+		for (int j = 0; j < root_container.current.children->length; ++j) {
+			struct sway_container *output = root_container.current.children->items[j];
+			if (output->sway_output) {
+				output_damage_box(output->sway_output, &old_box);
+				output_damage_box(output->sway_output, &new_box);
+			}
 		}
 
 		// There are separate children lists for each instruction state, the
@@ -251,7 +246,7 @@ static void transaction_progress_queue() {
 
 static int handle_timeout(void *data) {
 	struct sway_transaction *transaction = data;
-	wlr_log(L_DEBUG, "Transaction %p timed out (%li waiting)",
+	wlr_log(WLR_DEBUG, "Transaction %p timed out (%li waiting)",
 			transaction, transaction->num_waiting);
 	transaction->num_waiting = 0;
 	transaction_progress_queue();
@@ -285,8 +280,8 @@ static bool should_configure(struct sway_container *con,
 	return true;
 }
 
-void transaction_commit(struct sway_transaction *transaction) {
-	wlr_log(L_DEBUG, "Transaction %p committing with %i instructions",
+static void transaction_commit(struct sway_transaction *transaction) {
+	wlr_log(WLR_DEBUG, "Transaction %p committing with %i instructions",
 			transaction, transaction->instructions->length);
 	transaction->num_waiting = 0;
 	for (int i = 0; i < transaction->instructions->length; ++i) {
@@ -319,7 +314,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 	} else {
 		// There are no other transactions in progress, and this one has nothing
 		// to wait for, so we can skip the queue.
-		wlr_log(L_DEBUG, "Transaction %p has nothing to wait for", transaction);
+		wlr_log(WLR_DEBUG, "Transaction %p has nothing to wait for", transaction);
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
 		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
@@ -330,7 +325,7 @@ void transaction_commit(struct sway_transaction *transaction) {
 		// Set up a timer which the views must respond within
 		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
 				handle_timeout, transaction);
-		wl_event_source_timer_update(transaction->timer, TIMEOUT_MS);
+		wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
 	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
@@ -350,7 +345,7 @@ static void set_instruction_ready(
 		struct timespec *start = &transaction->commit_time;
 		float ms = (now.tv_sec - start->tv_sec) * 1000 +
 			(now.tv_nsec - start->tv_nsec) / 1000000.0;
-		wlr_log(L_DEBUG, "Transaction %p: %li/%li ready in %.1fms (%s)",
+		wlr_log(WLR_DEBUG, "Transaction %p: %li/%li ready in %.1fms (%s)",
 				transaction,
 				transaction->num_configures - transaction->num_waiting + 1,
 				transaction->num_configures, ms,
@@ -361,11 +356,11 @@ static void set_instruction_ready(
 	// If all views are ready, apply the transaction.
 	// If the transaction has timed out then its num_waiting will be 0 already.
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
-#if !TRANSACTION_DEBUG
-		wlr_log(L_DEBUG, "Transaction %p is ready", transaction);
-		wl_event_source_timer_update(transaction->timer, 0);
-		transaction_progress_queue();
-#endif
+		if (!txn_debug) {
+			wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
+			wl_event_source_timer_update(transaction->timer, 0);
+			transaction_progress_queue();
+		}
 	}
 }
 
@@ -417,4 +412,18 @@ struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
 	*width = instruction->saved_buffer_width;
 	*height = instruction->saved_buffer_height;
 	return instruction->saved_buffer->texture;
+}
+
+void transaction_commit_dirty(void) {
+	if (!server.dirty_containers->length) {
+		return;
+	}
+	struct sway_transaction *transaction = transaction_create();
+	for (int i = 0; i < server.dirty_containers->length; ++i) {
+		struct sway_container *container = server.dirty_containers->items[i];
+		transaction_add_container(transaction, container);
+		container->dirty = false;
+	}
+	server.dirty_containers->length = 0;
+	transaction_commit(transaction);
 }

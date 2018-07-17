@@ -49,14 +49,14 @@ bool status_handle_readable(struct status_line *status) {
 				json_object *version;
 				if (json_object_object_get_ex(proto, "version", &version)
 							&& json_object_get_int(version) == 1) {
-					wlr_log(L_DEBUG, "Switched to i3bar protocol.");
+					wlr_log(WLR_DEBUG, "Switched to i3bar protocol.");
 					status->protocol = PROTOCOL_I3BAR;
 				}
 				json_object *click_events;
 				if (json_object_object_get_ex(
 							proto, "click_events", &click_events)
 						&& json_object_get_boolean(click_events)) {
-					wlr_log(L_DEBUG, "Enabled click events.");
+					wlr_log(WLR_DEBUG, "Enabled click events.");
 					status->i3bar_state.click_events = true;
 					const char *events_array = "[\n";
 					ssize_t len = strlen(events_array);
@@ -91,7 +91,7 @@ struct status_line *status_line_init(char *cmd) {
 	int pipe_read_fd[2];
 	int pipe_write_fd[2];
 	if (pipe(pipe_read_fd) != 0 || pipe(pipe_write_fd) != 0) {
-		wlr_log(L_ERROR, "Unable to create pipes for status_command fork");
+		wlr_log(WLR_ERROR, "Unable to create pipes for status_command fork");
 		exit(1);
 	}
 

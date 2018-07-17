@@ -44,6 +44,24 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 	view_child_destroy(&popup->child);
 }
 
+static void popup_unconstrain(struct sway_xdg_popup_v6 *popup) {
+	struct sway_view *view = popup->child.view;
+	struct wlr_xdg_popup_v6 *wlr_popup = popup->wlr_xdg_surface_v6->popup;
+
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+
+	// the output box expressed in the coordinate system of the toplevel parent
+	// of the popup
+	struct wlr_box output_toplevel_sx_box = {
+		.x = output->x - view->x,
+		.y = output->y - view->y,
+		.width = output->width,
+		.height = output->height,
+	};
+
+	wlr_xdg_popup_v6_unconstrain_from_box(wlr_popup, &output_toplevel_sx_box);
+}
+
 static struct sway_xdg_popup_v6 *popup_create(
 		struct wlr_xdg_popup_v6 *wlr_popup, struct sway_view *view) {
 	struct wlr_xdg_surface_v6 *xdg_surface = wlr_popup->base;
@@ -54,11 +72,14 @@ static struct sway_xdg_popup_v6 *popup_create(
 		return NULL;
 	}
 	view_child_init(&popup->child, &popup_impl, view, xdg_surface->surface);
+	popup->wlr_xdg_surface_v6 = xdg_surface;
 
 	wl_signal_add(&xdg_surface->events.new_popup, &popup->new_popup);
 	popup->new_popup.notify = popup_handle_new_popup;
 	wl_signal_add(&xdg_surface->events.destroy, &popup->destroy);
 	popup->destroy.notify = popup_handle_destroy;
+
+	popup_unconstrain(popup);
 
 	return popup;
 }
@@ -218,7 +239,8 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	view_set_fullscreen(view, e->fullscreen);
 
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
-	arrange_and_commit(output);
+	arrange_windows(output);
+	transaction_commit_dirty();
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -255,10 +277,11 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		view_set_fullscreen(view, true);
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		arrange_and_commit(ws);
+		arrange_windows(ws);
 	} else {
-		arrange_and_commit(view->swayc->parent);
+		arrange_windows(view->swayc->parent);
 	}
+	transaction_commit_dirty();
 
 	xdg_shell_v6_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
@@ -295,11 +318,11 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_surface_v6 *xdg_surface = data;
 
 	if (xdg_surface->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
-		wlr_log(L_DEBUG, "New xdg_shell_v6 popup");
+		wlr_log(WLR_DEBUG, "New xdg_shell_v6 popup");
 		return;
 	}
 
-	wlr_log(L_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
+	wlr_log(WLR_DEBUG, "New xdg_shell_v6 toplevel title='%s' app_id='%s'",
 		xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_v6_ping(xdg_surface);
 

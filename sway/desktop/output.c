@@ -204,11 +204,11 @@ bool output_has_opaque_lockscreen(struct sway_output *output,
 		};
 		pixman_region32_t surface_opaque_box;
 		pixman_region32_init(&surface_opaque_box);
-		pixman_region32_copy(&surface_opaque_box, &wlr_surface->current.opaque);
+		pixman_region32_copy(&surface_opaque_box, &wlr_surface->opaque_region);
 		pixman_region32_translate(&surface_opaque_box,
-				sway_layer_surface->geo.x, sway_layer_surface->geo.y);
-		bool contains = pixman_region32_contains_rectangle(
-				&wlr_surface->current.opaque, &output_box);
+			sway_layer_surface->geo.x, sway_layer_surface->geo.y);
+		bool contains = pixman_region32_contains_rectangle(&surface_opaque_box,
+			&output_box);
 		pixman_region32_fini(&surface_opaque_box);
 		if (contains) {
 			return true;
@@ -492,19 +492,21 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	output->wlr_output->data = NULL;
 	free(output);
 
-	arrange_and_commit(&root_container);
+	arrange_windows(&root_container);
 }
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
 	arrange_layers(output);
-	arrange_and_commit(output->swayc);
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void handle_transform(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, transform);
 	arrange_layers(output);
-	arrange_and_commit(output->swayc);
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void handle_scale_iterator(struct sway_container *view, void *data) {
@@ -515,7 +517,8 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	arrange_layers(output);
 	container_descendants(output->swayc, C_VIEW, handle_scale_iterator, NULL);
-	arrange_and_commit(output->swayc);
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 struct sway_output *output_from_wlr_output(struct wlr_output *wlr_output) {
@@ -525,7 +528,7 @@ struct sway_output *output_from_wlr_output(struct wlr_output *wlr_output) {
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
-	wlr_log(L_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
+	wlr_log(WLR_DEBUG, "New output %p: %s", wlr_output, wlr_output->name);
 
 	struct sway_output *output = calloc(1, sizeof(struct sway_output));
 	if (!output) {
@@ -584,5 +587,6 @@ void output_enable(struct sway_output *output) {
 	output->damage_destroy.notify = damage_handle_destroy;
 
 	arrange_layers(output);
-	arrange_and_commit(&root_container);
+	arrange_windows(&root_container);
+	transaction_commit_dirty();
 }

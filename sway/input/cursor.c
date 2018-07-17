@@ -10,6 +10,7 @@
 #include <wlr/types/wlr_idle.h>
 #include "list.h"
 #include "log.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/layers.h"
 #include "sway/output.h"
@@ -219,6 +220,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		struct sway_drag_icon *drag_icon = wlr_drag_icon->data;
 		drag_icon_update_position(drag_icon);
 	}
+	transaction_commit_dirty();
 }
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
@@ -278,6 +280,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 	wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
 			time_msec, button, state);
+	transaction_commit_dirty();
 }
 
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
@@ -474,7 +477,7 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 	// TODO: check cursor mode
 	if (focused_client == NULL ||
 			event->seat_client->client != focused_client) {
-		wlr_log(L_DEBUG, "denying request to set cursor from unfocused client");
+		wlr_log(WLR_DEBUG, "denying request to set cursor from unfocused client");
 		return;
 	}
 

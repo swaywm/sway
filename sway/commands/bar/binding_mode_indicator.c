@@ -15,11 +15,11 @@ struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
 	}
 	if (strcasecmp("yes", argv[0]) == 0) {
 		config->current_bar->binding_mode_indicator = true;
-		wlr_log(L_DEBUG, "Enabling binding mode indicator on bar: %s",
+		wlr_log(WLR_DEBUG, "Enabling binding mode indicator on bar: %s",
 				config->current_bar->id);
 	} else if (strcasecmp("no", argv[0]) == 0) {
 		config->current_bar->binding_mode_indicator = false;
-		wlr_log(L_DEBUG, "Disabling binding mode indicator on bar: %s",
+		wlr_log(WLR_DEBUG, "Disabling binding mode indicator on bar: %s",
 				config->current_bar->id);
 	}
 	return cmd_results_new(CMD_INVALID, "binding_mode_indicator",

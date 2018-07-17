@@ -15,6 +15,7 @@
 #include <wlr/util/region.h>
 #include "log.h"
 #include "sway/config.h"
+#include "sway/debug.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
@@ -253,6 +254,10 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		render_saved_view(view, output, damage, view->swayc->alpha);
 	} else {
 		render_view_surfaces(view, output, damage, view->swayc->alpha);
+	}
+
+	if (view->using_csd) {
+		return;
 	}
 
 	struct wlr_box box;
@@ -542,9 +547,6 @@ static void render_container(struct sway_output *output,
 static void render_container_simple(struct sway_output *output,
 		pixman_region32_t *damage, struct sway_container *con,
 		bool parent_focused) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
-
 	for (int i = 0; i < con->current.children->length; ++i) {
 		struct sway_container *child = con->current.children->items[i];
 
@@ -555,11 +557,15 @@ static void render_container_simple(struct sway_output *output,
 			struct wlr_texture *marks_texture;
 			struct sway_container_state *state = &child->current;
 
-			if (focus == child || parent_focused) {
+			if (view_is_urgent(view)) {
+				colors = &config->border_colors.urgent;
+				title_texture = child->title_urgent;
+				marks_texture = view->marks_urgent;
+			} else if (state->focused || parent_focused) {
 				colors = &config->border_colors.focused;
 				title_texture = child->title_focused;
 				marks_texture = view->marks_focused;
-			} else if (seat_get_focus_inactive(seat, con) == child) {
+			} else if (con->current.focused_inactive_child == child) {
 				colors = &config->border_colors.focused_inactive;
 				title_texture = child->title_focused_inactive;
 				marks_texture = view->marks_focused_inactive;
@@ -569,17 +575,19 @@ static void render_container_simple(struct sway_output *output,
 				marks_texture = view->marks_unfocused;
 			}
 
-			if (state->border == B_NORMAL) {
-				render_titlebar(output, damage, child, state->swayc_x,
-						state->swayc_y, state->swayc_width, colors,
-						title_texture, marks_texture);
-			} else {
-				render_top_border(output, damage, child, colors);
+			if (!view->using_csd) {
+				if (state->border == B_NORMAL) {
+					render_titlebar(output, damage, child, state->swayc_x,
+							state->swayc_y, state->swayc_width, colors,
+							title_texture, marks_texture);
+				} else {
+					render_top_border(output, damage, child, colors);
+				}
 			}
 			render_view(output, damage, child, colors);
 		} else {
 			render_container(output, damage, child,
-					parent_focused || focus == child);
+					parent_focused || child->current.focused);
 		}
 	}
 }
@@ -593,26 +601,34 @@ static void render_container_tabbed(struct sway_output *output,
 	if (!con->current.children->length) {
 		return;
 	}
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
-	struct sway_container *current = seat_get_active_current_child(seat, con);
-	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
+	struct sway_container *current = pstate->focused_inactive_child;
+	struct border_colors *current_colors = &config->border_colors.unfocused;
+
+	double width_gap_adjustment = 2 * pstate->current_gaps;
+	int tab_width =
+		(pstate->swayc_width - width_gap_adjustment) / pstate->children->length;
 
 	// Render tabs
-	for (int i = 0; i < con->current.children->length; ++i) {
-		struct sway_container *child = con->current.children->items[i];
+	for (int i = 0; i < pstate->children->length; ++i) {
+		struct sway_container *child = pstate->children->items[i];
 		struct sway_view *view = child->type == C_VIEW ? child->sway_view : NULL;
 		struct sway_container_state *cstate = &child->current;
 		struct border_colors *colors;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
+		bool urgent = view ?
+			view_is_urgent(view) : container_has_urgent_child(child);
 
-		if (focus == child || parent_focused) {
+		if (urgent) {
+			colors = &config->border_colors.urgent;
+			title_texture = child->title_urgent;
+			marks_texture = view ? view->marks_urgent : NULL;
+		} else if (cstate->focused || parent_focused) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = view ? view->marks_focused : NULL;
-		} else if (child == current) {
+		} else if (child == pstate->focused_inactive_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = view ? view->marks_focused_inactive : NULL;
@@ -622,11 +638,12 @@ static void render_container_tabbed(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int tab_width = pstate->swayc_width / pstate->children->length;
-		int x = pstate->swayc_x + tab_width * i;
+		int x = cstate->swayc_x + tab_width * i;
+
 		// Make last tab use the remaining width of the parent
 		if (i == pstate->children->length - 1) {
-			tab_width = pstate->swayc_width - tab_width * i;
+			tab_width =
+				pstate->swayc_width - width_gap_adjustment - tab_width * i;
 		}
 
 		render_titlebar(output, damage, child, x, cstate->swayc_y, tab_width,
@@ -638,13 +655,11 @@ static void render_container_tabbed(struct sway_output *output,
 	}
 
 	// Render surface and left/right/bottom borders
-	if (current) {
-		if (current->type == C_VIEW) {
-			render_view(output, damage, current, current_colors);
-		} else {
-			render_container(output, damage, current,
-					parent_focused || current == focus);
-		}
+	if (current->type == C_VIEW) {
+		render_view(output, damage, current, current_colors);
+	} else {
+		render_container(output, damage, current,
+				parent_focused || current->current.focused);
 	}
 }
 
@@ -657,26 +672,32 @@ static void render_container_stacked(struct sway_output *output,
 	if (!con->current.children->length) {
 		return;
 	}
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
-	struct sway_container *current = seat_get_active_current_child(seat, con);
-	struct border_colors *current_colors = &config->border_colors.unfocused;
 	struct sway_container_state *pstate = &con->current;
+	struct sway_container *current = pstate->focused_inactive_child;
+	struct border_colors *current_colors = &config->border_colors.unfocused;
+
+	size_t titlebar_height = container_titlebar_height();
 
 	// Render titles
-	for (int i = 0; i < con->current.children->length; ++i) {
-		struct sway_container *child = con->current.children->items[i];
+	for (int i = 0; i < pstate->children->length; ++i) {
+		struct sway_container *child = pstate->children->items[i];
 		struct sway_view *view = child->type == C_VIEW ? child->sway_view : NULL;
 		struct sway_container_state *cstate = &child->current;
 		struct border_colors *colors;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
+		bool urgent = view ?
+			view_is_urgent(view) : container_has_urgent_child(child);
 
-		if (focus == child || parent_focused) {
+		if (urgent) {
+			colors = &config->border_colors.urgent;
+			title_texture = child->title_urgent;
+			marks_texture = view ? view->marks_urgent : NULL;
+		} else if (cstate->focused || parent_focused) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
 			marks_texture = view ? view->marks_focused : NULL;
-		} else if (child == current) {
+		} else if (child == pstate->focused_inactive_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
 			marks_texture = view ? view->marks_focused_inactive : NULL;
@@ -686,7 +707,7 @@ static void render_container_stacked(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int y = pstate->swayc_y + container_titlebar_height() * i;
+		int y = cstate->swayc_y + titlebar_height * i;
 		render_titlebar(output, damage, child, cstate->swayc_x, y,
 				cstate->swayc_width, colors, title_texture, marks_texture);
 
@@ -696,13 +717,11 @@ static void render_container_stacked(struct sway_output *output,
 	}
 
 	// Render surface and left/right/bottom borders
-	if (current) {
-		if (current->type == C_VIEW) {
-			render_view(output, damage, current, current_colors);
-		} else {
-			render_container(output, damage, current,
-					parent_focused || current == focus);
-		}
+	if (current->type == C_VIEW) {
+		render_view(output, damage, current, current_colors);
+	} else {
+		render_container(output, damage, current,
+				parent_focused || current->current.focused);
 	}
 }
 
@@ -730,13 +749,15 @@ static void render_floating_container(struct sway_output *soutput,
 		pixman_region32_t *damage, struct sway_container *con) {
 	if (con->type == C_VIEW) {
 		struct sway_view *view = con->sway_view;
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *focus = seat_get_focus(seat);
 		struct border_colors *colors;
 		struct wlr_texture *title_texture;
 		struct wlr_texture *marks_texture;
 
-		if (focus == con) {
+		if (view_is_urgent(view)) {
+			colors = &config->border_colors.urgent;
+			title_texture = con->title_urgent;
+			marks_texture = view->marks_urgent;
+		} else if (con->current.focused) {
 			colors = &config->border_colors.focused;
 			title_texture = con->title_focused;
 			marks_texture = view->marks_focused;
@@ -746,12 +767,14 @@ static void render_floating_container(struct sway_output *soutput,
 			marks_texture = view->marks_unfocused;
 		}
 
-		if (con->current.border == B_NORMAL) {
-			render_titlebar(soutput, damage, con, con->current.swayc_x,
-					con->current.swayc_y, con->current.swayc_width, colors,
-					title_texture, marks_texture);
-		} else if (con->current.border != B_NONE) {
-			render_top_border(soutput, damage, con, colors);
+		if (!view->using_csd) {
+			if (con->current.border == B_NORMAL) {
+				render_titlebar(soutput, damage, con, con->current.swayc_x,
+						con->current.swayc_y, con->current.swayc_width, colors,
+						title_texture, marks_texture);
+			} else if (con->current.border != B_NONE) {
+				render_top_border(soutput, damage, con, colors);
+			}
 		}
 		render_view(soutput, damage, con, colors);
 	} else {
@@ -779,6 +802,8 @@ static void render_floating(struct sway_output *soutput,
 	}
 }
 
+const char *damage_debug = NULL;
+
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -798,7 +823,6 @@ void output_render(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
-	const char *damage_debug = getenv("SWAY_DAMAGE_DEBUG");
 	if (damage_debug != NULL) {
 		if (strcmp(damage_debug, "highlight") == 0) {
 			wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
@@ -837,7 +861,11 @@ void output_render(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		render_view_surfaces(fullscreen_view, output, damage, 1.0f);
+		if (fullscreen_view->swayc->instructions->length) {
+			render_saved_view(fullscreen_view, output, damage, 1.0f);
+		} else {
+			render_view_surfaces(fullscreen_view, output, damage, 1.0f);
+		}
 
 		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
@@ -858,9 +886,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
 
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *focus = seat_get_focus(seat);
-		render_container(output, damage, workspace, focus == workspace);
+		render_container(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
 
 		render_unmanaged(output, damage,

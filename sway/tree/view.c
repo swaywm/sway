@@ -25,6 +25,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->impl = impl;
 	view->executed_criteria = create_list();
 	view->marks = create_list();
+	view->allow_request_urgent = true;
 	wl_signal_init(&view->events.unmap);
 }
 
@@ -150,12 +151,43 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 
 void view_init_floating(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int max_width = ws->width * 0.6666;
-	int max_height = ws->height * 0.6666;
-	view->width =
-		view->natural_width > max_width ? max_width : view->natural_width;
-	view->height =
-		view->natural_height > max_height ? max_height : view->natural_height;
+	int min_width, min_height;
+	int max_width, max_height;
+
+	if (config->floating_minimum_width == -1) { // no minimum
+		min_width = 0;
+	} else if (config->floating_minimum_width == 0) { // automatic
+		min_width = 75;
+	} else {
+		min_width = config->floating_minimum_width;
+	}
+
+	if (config->floating_minimum_height == -1) { // no minimum
+		min_height = 0;
+	} else if (config->floating_minimum_height == 0) { // automatic
+		min_height = 50;
+	} else {
+		min_height = config->floating_minimum_height;
+	}
+
+	if (config->floating_maximum_width == -1) { // no maximum
+		max_width = INT_MAX;
+	} else if (config->floating_maximum_width == 0) { // automatic
+		max_width = ws->width * 0.6666;
+	} else {
+		max_width = config->floating_maximum_width;
+	}
+
+	if (config->floating_maximum_height == -1) { // no maximum
+		max_height = INT_MAX;
+	} else if (config->floating_maximum_height == 0) { // automatic
+		max_height = ws->height * 0.6666;
+	} else {
+		max_height = config->floating_maximum_height;
+	}
+
+	view->width = fmax(min_width, fmin(view->natural_width, max_width));
+	view->height = fmax(min_height, fmin(view->natural_height, max_height));
 	view->x = ws->x + (ws->width - view->width) / 2;
 	view->y = ws->y + (ws->height - view->height) / 2;
 
@@ -284,7 +316,15 @@ void view_set_activated(struct sway_view *view, bool activated) {
 }
 
 void view_set_tiled(struct sway_view *view, bool tiled) {
-	view->border = tiled ? config->border : B_NONE;
+	if (!tiled) {
+		view->using_csd = true;
+		if (view->impl->has_client_side_decorations) {
+			view->using_csd = view->impl->has_client_side_decorations(view);
+		}
+	} else {
+		view->using_csd = false;
+	}
+
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
 	}
@@ -462,25 +502,43 @@ void view_execute_criteria(struct sway_view *view) {
 	list_t *criterias = criteria_for_view(view, CT_COMMAND);
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
-		wlr_log(L_DEBUG, "Checking criteria %s", criteria->raw);
+		wlr_log(WLR_DEBUG, "Checking criteria %s", criteria->raw);
 		if (view_has_executed_criteria(view, criteria)) {
-			wlr_log(L_DEBUG, "Criteria already executed");
+			wlr_log(WLR_DEBUG, "Criteria already executed");
 			continue;
 		}
-		wlr_log(L_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
+		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
+		seat_set_focus(seat, view->swayc);
 		list_add(view->executed_criteria, criteria);
 		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {
-			wlr_log(L_ERROR, "Command '%s' failed: %s", res->input, res->error);
+			wlr_log(WLR_ERROR, "Command '%s' failed: %s", res->input, res->error);
 		}
 		free_cmd_results(res);
-		// view must be focused for commands to affect it,
-		// so always refocus in-between command lists
-		seat_set_focus(seat, view->swayc);
 	}
 	list_free(criterias);
 	seat_set_focus(seat, prior_focus);
+}
+
+static bool should_focus(struct sway_view *view) {
+	// If the view is the only one in the focused workspace, it'll get focus
+	// regardless of any no_focus criteria.
+	struct sway_container *parent = view->swayc->parent;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	if (parent->type == C_WORKSPACE && seat_get_focus(seat) == parent) {
+		size_t num_children = parent->children->length +
+			parent->sway_workspace->floating->children->length;
+		if (num_children == 1) {
+			return true;
+		}
+	}
+
+	// Check no_focus criteria
+	list_t *criterias = criteria_for_view(view, CT_NO_FOCUS);
+	size_t len = criterias->length;
+	list_free(criterias);
+	return len == 0;
 }
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
@@ -519,8 +577,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	view->surface = wlr_surface;
 	view->swayc = cont;
-	view->border = config->border;
-	view->border_thickness = config->border_thickness;
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
@@ -531,14 +587,20 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view->container_reparent.notify = view_handle_container_reparent;
 
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+		view->border = config->floating_border;
+		view->border_thickness = config->floating_border_thickness;
 		container_set_floating(view->swayc, true);
 	} else {
+		view->border = config->border;
+		view->border_thickness = config->border_thickness;
 		view_set_tiled(view, true);
 	}
 
-	input_manager_set_focus(input_manager, cont);
-	if (workspace) {
-		workspace_switch(workspace);
+	if (should_focus(view)) {
+		input_manager_set_focus(input_manager, cont);
+		if (workspace) {
+			workspace_switch(workspace);
+		}
 	}
 
 	view_update_title(view, false);
@@ -554,16 +616,27 @@ void view_unmap(struct sway_view *view) {
 	wl_list_remove(&view->surface_new_subsurface.link);
 	wl_list_remove(&view->container_reparent.link);
 
-	if (view->is_fullscreen) {
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		ws->sway_workspace->fullscreen = NULL;
-		container_destroy(view->swayc);
-
-		arrange_and_commit(ws->parent);
-	} else {
-		struct sway_container *parent = container_destroy(view->swayc);
-		arrange_and_commit(parent);
+	if (view->urgent_timer) {
+		wl_event_source_remove(view->urgent_timer);
+		view->urgent_timer = NULL;
 	}
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+
+	struct sway_container *parent;
+	if (view->is_fullscreen) {
+		ws->sway_workspace->fullscreen = NULL;
+		parent = container_destroy(view->swayc);
+
+		arrange_windows(ws->parent);
+	} else {
+		parent = container_destroy(view->swayc);
+		arrange_windows(parent);
+	}
+	if (parent->type >= C_WORKSPACE) { // if the workspace still exists
+		workspace_detect_urgent(ws);
+	}
+	transaction_commit_dirty();
 	view->surface = NULL;
 }
 
@@ -601,7 +674,7 @@ static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *subsurface) {
 	struct sway_view_child *child = calloc(1, sizeof(struct sway_view_child));
 	if (child == NULL) {
-		wlr_log(L_ERROR, "Allocation failed");
+		wlr_log(WLR_ERROR, "Allocation failed");
 		return;
 	}
 	view_child_init(child, NULL, view, subsurface->surface);
@@ -721,8 +794,9 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 		return NULL;
 	}
 
-	wlr_log(L_DEBUG, "Surface of unknown type (role %s): %p",
-		wlr_surface->role, wlr_surface);
+	const char *role = wlr_surface->role ? wlr_surface->role->name : NULL;
+	wlr_log(WLR_DEBUG, "Surface of unknown type (role %s): %p",
+		role, wlr_surface);
 	return NULL;
 }
 
@@ -789,7 +863,7 @@ static char *escape_title(char *buffer) {
 	char *escaped_title = calloc(length + 1, sizeof(char));
 	int result = escape_markup_text(buffer, escaped_title, length);
 	if (result != length) {
-		wlr_log(L_ERROR, "Could not escape title: %s", buffer);
+		wlr_log(WLR_ERROR, "Could not escape title: %s", buffer);
 		free(escaped_title);
 		return buffer;
 	}
@@ -1009,4 +1083,33 @@ bool view_is_visible(struct sway_view *view) {
 		return workspace_is_visible(workspace);
 	}
 	return true;
+}
+
+void view_set_urgent(struct sway_view *view, bool enable) {
+	if (view_is_urgent(view) == enable) {
+		return;
+	}
+	if (enable) {
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		if (seat_get_focus(seat) == view->swayc) {
+			return;
+		}
+		clock_gettime(CLOCK_MONOTONIC, &view->urgent);
+	} else {
+		view->urgent = (struct timespec){ 0 };
+		if (view->urgent_timer) {
+			wl_event_source_remove(view->urgent_timer);
+			view->urgent_timer = NULL;
+		}
+	}
+	container_damage_whole(view->swayc);
+
+	ipc_event_window(view->swayc, "urgent");
+
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	workspace_detect_urgent(ws);
+}
+
+bool view_is_urgent(struct sway_view *view) {
+	return view->urgent.tv_sec || view->urgent.tv_nsec;
 }

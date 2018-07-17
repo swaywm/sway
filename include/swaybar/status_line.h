@@ -72,7 +72,9 @@ bool status_handle_readable(struct status_line *status);
 void status_line_free(struct status_line *status);
 bool i3bar_handle_readable(struct status_line *status);
 void i3bar_block_send_click(struct status_line *status,
-		struct i3bar_block *block, int x, int y, uint32_t button);
+		struct i3bar_block *block, int x, int y, enum x11_button button);
 void i3bar_block_free(struct i3bar_block *block);
+enum x11_button wl_button_to_x11_button(uint32_t button);
+enum x11_button wl_axis_to_x11_button(uint32_t axis, wl_fixed_t value);
 
 #endif

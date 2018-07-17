@@ -1,22 +1,21 @@
 #define _XOPEN_SOURCE 500
+#include <errno.h>
 #include <getopt.h>
-#include <signal.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <wayland-server.h>
 #include <wayland-util.h>
 #include <wlr/config.h>
 #include <wlr/util/log.h>
-#include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_output.h>
-#include "idle-client-protocol.h"
 #include "config.h"
+#include "idle-client-protocol.h"
 #include "list.h"
 #ifdef SWAY_IDLE_HAS_SYSTEMD
 #include <systemd/sd-bus.h>
@@ -36,7 +35,6 @@ struct swayidle_state {
 	struct wl_display *display;
 	struct org_kde_kwin_idle_timeout *idle_timer;
 	struct org_kde_kwin_idle_timeout *lock_timer;
-	struct wlr_output_layout *layout;
 	struct wl_event_loop *event_loop;
 	list_t *timeout_cmds;
 } state;
@@ -59,24 +57,24 @@ static void cmd_exec(void *data) {
 		return;
 	}
 	char *param = (char *)data;
-	wlr_log(L_DEBUG, "Cmd exec %s", param);
+	wlr_log(WLR_DEBUG, "Cmd exec %s", param);
 	pid_t pid = fork();
 	if (pid == 0) {
 		pid = fork();
 		if (pid == 0) {
 			char *const cmd[] = { "sh", "-c", param, NULL, };
 			execvp(cmd[0], cmd);
-			wlr_log_errno(L_ERROR, "execve failed!");
+			wlr_log_errno(WLR_ERROR, "execve failed!");
 			exit(1);
 		} else if (pid < 0) {
-			wlr_log_errno(L_ERROR, "fork failed");
+			wlr_log_errno(WLR_ERROR, "fork failed");
 			exit(1);
 		}
 		exit(0);
 	} else if (pid < 0) {
-		wlr_log_errno(L_ERROR, "fork failed");
+		wlr_log_errno(WLR_ERROR, "fork failed");
 	} else {
-		wlr_log(L_DEBUG, "Spawned process %s", param);
+		wlr_log(WLR_DEBUG, "Spawned process %s", param);
 		waitpid(pid, NULL, 0);
 	}
 }
@@ -86,7 +84,7 @@ static int lock_fd = -1;
 static int ongoing_fd = -1;
 
 static int release_lock(void *data) {
-	wlr_log(L_INFO, "Releasing sleep lock %d", ongoing_fd);
+	wlr_log(WLR_INFO, "Releasing sleep lock %d", ongoing_fd);
 	if (ongoing_fd >= 0) {
 		close(ongoing_fd);
 	}
@@ -101,7 +99,7 @@ void acquire_sleep_lock() {
 	int ret = sd_bus_default_system(&bus);
 
 	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to open D-Bus connection: %s",
+		wlr_log(WLR_ERROR, "Failed to open D-Bus connection: %s",
 				strerror(-ret));
 		return;
 	}
@@ -112,17 +110,17 @@ void acquire_sleep_lock() {
 			&error, &msg, "ssss", "sleep", "swayidle",
 			"Setup Up Lock Screen", "delay");
 	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to send Inhibit signal: %s",
+		wlr_log(WLR_ERROR, "Failed to send Inhibit signal: %s",
 				strerror(-ret));
 	} else {
 		ret = sd_bus_message_read(msg, "h", &lock_fd);
 		if (ret < 0) {
-			wlr_log(L_ERROR,
+			wlr_log(WLR_ERROR,
 					"Failed to parse D-Bus response for Inhibit: %s",
 					strerror(-ret));
 		}
 	}
-	wlr_log(L_INFO, "Got sleep lock: %d", lock_fd);
+	wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
 }
 
 static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
@@ -131,10 +129,10 @@ static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
 	int going_down = 1;
 	int ret = sd_bus_message_read(msg, "b", &going_down);
 	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
+		wlr_log(WLR_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
 				strerror(-ret));
 	}
-	wlr_log(L_DEBUG, "PrepareForSleep signal received %d", going_down);
+	wlr_log(WLR_DEBUG, "PrepareForSleep signal received %d", going_down);
 	if (!going_down) {
 		acquire_sleep_lock();
 		return 0;
@@ -151,7 +149,7 @@ static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
 			wl_event_loop_add_timer(state.event_loop, release_lock, NULL);
 		wl_event_source_timer_update(source, 1000);
 	}
-	wlr_log(L_DEBUG, "Prepare for sleep done");
+	wlr_log(WLR_DEBUG, "Prepare for sleep done");
 	return 0;
 }
 
@@ -165,10 +163,10 @@ static int dbus_event(int fd, uint32_t mask, void *data) {
 
 void setup_sleep_listener() {
 	struct sd_bus *bus;
-	
+
 	int ret = sd_bus_default_system(&bus);
 	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to open D-Bus connection: %s",
+		wlr_log(WLR_ERROR, "Failed to open D-Bus connection: %s",
 				strerror(-ret));
 		return;
 	}
@@ -183,7 +181,7 @@ void setup_sleep_listener() {
 			"/org/freedesktop/login1");
 	ret = sd_bus_add_match(bus, NULL, str, prepare_for_sleep, NULL);
 	if (ret < 0) {
-		wlr_log(L_ERROR, "Failed to add D-Bus match: %s", strerror(-ret));
+		wlr_log(WLR_ERROR, "Failed to add D-Bus match: %s", strerror(-ret));
 		return;
 	}
 	acquire_sleep_lock();
@@ -214,7 +212,7 @@ static const struct wl_registry_listener registry_listener = {
 
 static void handle_idle(void *data, struct org_kde_kwin_idle_timeout *timer) {
 	struct swayidle_timeout_cmd *cmd = data;
-	wlr_log(L_DEBUG, "idle state");
+	wlr_log(WLR_DEBUG, "idle state");
 	if (cmd && cmd->idle_cmd && cmd->idle_cmd->callback) {
 		cmd->idle_cmd->callback(cmd->idle_cmd->param);
 	}
@@ -222,7 +220,7 @@ static void handle_idle(void *data, struct org_kde_kwin_idle_timeout *timer) {
 
 static void handle_resume(void *data, struct org_kde_kwin_idle_timeout *timer) {
 	struct swayidle_timeout_cmd *cmd = data;
-	wlr_log(L_DEBUG, "active state");
+	wlr_log(WLR_DEBUG, "active state");
 	if (cmd && cmd->resume_cmd && cmd->resume_cmd->callback) {
 		cmd->resume_cmd->callback(cmd->resume_cmd->param);
 	}
@@ -235,12 +233,12 @@ static const struct org_kde_kwin_idle_timeout_listener idle_timer_listener = {
 
 struct swayidle_cmd *parse_command(int argc, char **argv) {
 	if (argc < 1) {
-		wlr_log(L_ERROR, "Too few parameters for command in parse_command");
+		wlr_log(WLR_ERROR, "Too few parameters for command in parse_command");
 		return NULL;
 	}
 
 	struct swayidle_cmd *cmd = calloc(1, sizeof(struct swayidle_cmd));
-	wlr_log(L_DEBUG, "Command: %s", argv[0]);
+	wlr_log(WLR_DEBUG, "Command: %s", argv[0]);
 	cmd->callback = cmd_exec;
 	cmd->param = argv[0];
 	return cmd;
@@ -248,7 +246,7 @@ struct swayidle_cmd *parse_command(int argc, char **argv) {
 
 int parse_timeout(int argc, char **argv) {
 	if (argc < 3) {
-		wlr_log(L_ERROR, "Too few parameters to timeout command. "
+		wlr_log(WLR_ERROR, "Too few parameters to timeout command. "
 				"Usage: timeout <seconds> <command>");
 		exit(-1);
 	}
@@ -256,7 +254,7 @@ int parse_timeout(int argc, char **argv) {
 	char *endptr;
 	int seconds = strtoul(argv[1], &endptr, 10);
 	if (errno != 0 || *endptr != '\0') {
-		wlr_log(L_ERROR, "Invalid timeout parameter '%s', it should be a "
+		wlr_log(WLR_ERROR, "Invalid timeout parameter '%s', it should be a "
 				"numeric value representing seconds", optarg);
 		exit(-1);
 	}
@@ -264,13 +262,13 @@ int parse_timeout(int argc, char **argv) {
 		calloc(1, sizeof(struct swayidle_timeout_cmd));
 	cmd->timeout = seconds * 1000;
 
-	wlr_log(L_DEBUG, "Register idle timeout at %d ms", cmd->timeout);
-	wlr_log(L_DEBUG, "Setup idle");
+	wlr_log(WLR_DEBUG, "Register idle timeout at %d ms", cmd->timeout);
+	wlr_log(WLR_DEBUG, "Setup idle");
 	cmd->idle_cmd = parse_command(argc - 2, &argv[2]);
 
 	int result = 3;
 	if (argc >= 5 && !strcmp("resume", argv[3])) {
-		wlr_log(L_DEBUG, "Setup resume");
+		wlr_log(WLR_DEBUG, "Setup resume");
 		cmd->resume_cmd = parse_command(argc - 4, &argv[4]);
 		result = 5;
 	}
@@ -280,14 +278,14 @@ int parse_timeout(int argc, char **argv) {
 
 int parse_sleep(int argc, char **argv) {
 	if (argc < 2) {
-		wlr_log(L_ERROR, "Too few parameters to before-sleep command. "
+		wlr_log(WLR_ERROR, "Too few parameters to before-sleep command. "
 				"Usage: before-sleep <command>");
 		exit(-1);
 	}
 
 	lock_cmd = parse_command(argc - 1, &argv[1]);
 	if (lock_cmd) {
-		wlr_log(L_DEBUG, "Setup sleep lock: %s", lock_cmd->param);
+		wlr_log(WLR_DEBUG, "Setup sleep lock: %s", lock_cmd->param);
 	}
 
 	return 2;
@@ -314,10 +312,10 @@ int parse_args(int argc, char *argv[]) {
 	}
 
 	if (debug) {
-		wlr_log_init(L_DEBUG, NULL);
-		wlr_log(L_DEBUG, "Loglevel debug");
+		wlr_log_init(WLR_DEBUG, NULL);
+		wlr_log(WLR_DEBUG, "Loglevel debug");
 	} else {
-		wlr_log_init(L_INFO, NULL);
+		wlr_log_init(WLR_INFO, NULL);
 	}
 
 
@@ -326,13 +324,13 @@ int parse_args(int argc, char *argv[]) {
 	int i = optind;
 	while (i < argc) {
 		if (!strcmp("timeout", argv[i])) {
-			wlr_log(L_DEBUG, "Got timeout");
+			wlr_log(WLR_DEBUG, "Got timeout");
 			i += parse_timeout(argc - i, &argv[i]);
 		} else if (!strcmp("before-sleep", argv[i])) {
-			wlr_log(L_DEBUG, "Got before-sleep");
+			wlr_log(WLR_DEBUG, "Got before-sleep");
 			i += parse_sleep(argc - i, &argv[i]);
 		} else {
-			wlr_log(L_ERROR, "Unsupported command '%s'", argv[i]);
+			wlr_log(WLR_ERROR, "Unsupported command '%s'", argv[i]);
 			exit(-1);
 		}
 	}
@@ -358,16 +356,16 @@ static int display_event(int fd, uint32_t mask, void *data) {
 		sway_terminate(0);
 	}
 	if (wl_display_dispatch(state.display) < 0) {
-		wlr_log_errno(L_ERROR, "wl_display_dispatch failed, exiting");
+		wlr_log_errno(WLR_ERROR, "wl_display_dispatch failed, exiting");
 		sway_terminate(0);
-	};
+	}
 	return 0;
 }
 
 void register_idle_timeout(void *item) {
 	struct swayidle_timeout_cmd *cmd = item;
 	if (cmd == NULL || !cmd->timeout) {
-		wlr_log(L_ERROR, "Invalid idle cmd, will not register");
+		wlr_log(WLR_ERROR, "Invalid idle cmd, will not register");
 		return;
 	}
 	state.idle_timer =
@@ -376,7 +374,7 @@ void register_idle_timeout(void *item) {
 		org_kde_kwin_idle_timeout_add_listener(state.idle_timer,
 				&idle_timer_listener, cmd);
 	} else {
-		wlr_log(L_ERROR, "Could not create idle timer");
+		wlr_log(WLR_ERROR, "Could not create idle timer");
 	}
 }
 
@@ -390,22 +388,21 @@ int main(int argc, char *argv[]) {
 
 	state.display = wl_display_connect(NULL);
 	if (state.display == NULL) {
-		wlr_log(L_ERROR, "Failed to create display");
+		wlr_log(WLR_ERROR, "Failed to create display");
 		return -3;
 	}
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, NULL);
 	wl_display_roundtrip(state.display);
-	state.layout = wlr_output_layout_create();
 	state.event_loop = wl_event_loop_create();
 
 	if (idle_manager == NULL) {
-		wlr_log(L_ERROR, "Display doesn't support idle protocol");
+		wlr_log(WLR_ERROR, "Display doesn't support idle protocol");
 		return -4;
 	}
 	if (seat == NULL) {
-		wlr_log(L_ERROR, "Seat error");
+		wlr_log(WLR_ERROR, "Seat error");
 		return -5;
 	}
 
@@ -417,7 +414,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 	if (!should_run) {
-		wlr_log(L_INFO, "No command specified! Nothing to do, will exit");
+		wlr_log(WLR_INFO, "No command specified! Nothing to do, will exit");
 		sway_terminate(0);
 	}
 	list_foreach(state.timeout_cmds, register_idle_timeout);

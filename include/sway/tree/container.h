@@ -68,6 +68,9 @@ struct sway_container_state {
 	struct sway_container *parent;
 	list_t *children;
 
+	struct sway_container *focused_inactive_child;
+	bool focused;
+
 	// View properties
 	double view_x, view_y;
 	double view_width, view_height;
@@ -143,6 +146,10 @@ struct sway_container {
 	list_t *instructions; // struct sway_transaction_instruction *
 
 	bool destroying;
+
+	// If true, indicates that the container has pending state that differs from
+	// the current.
+	bool dirty;
 
 	struct {
 		struct wl_signal destroy;
@@ -296,5 +303,19 @@ bool container_is_floating(struct sway_container *container);
  * Get a container's box in layout coordinates.
  */
 void container_get_box(struct sway_container *container, struct wlr_box *box);
+
+/**
+ * Move a floating container to a new layout-local position.
+ */
+void container_floating_move_to(struct sway_container *con,
+		double lx, double ly);
+
+/**
+ * Mark a container as dirty if it isn't already. Dirty containers will be
+ * included in the next transaction then unmarked as dirty.
+ */
+void container_set_dirty(struct sway_container *container);
+
+bool container_has_urgent_child(struct sway_container *container);
 
 #endif

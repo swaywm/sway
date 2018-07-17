@@ -35,6 +35,7 @@ struct sway_view_impl {
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
+	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
@@ -68,6 +69,11 @@ struct sway_view {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+	bool using_csd;
+
+	struct timespec urgent;
+	bool allow_request_urgent;
+	struct wl_event_source *urgent_timer;
 
 	bool destroying;
 
@@ -303,5 +309,9 @@ void view_update_marks_textures(struct sway_view *view);
  * Intended for damage tracking.
  */
 bool view_is_visible(struct sway_view *view);
+
+void view_set_urgent(struct sway_view *view, bool enable);
+
+bool view_is_urgent(struct sway_view *view);
 
 #endif

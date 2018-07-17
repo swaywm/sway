@@ -14,7 +14,7 @@ struct cmd_results *bar_cmd_height(int argc, char **argv) {
 				"Invalid height value: %s", argv[0]);
 	}
 	config->current_bar->height = height;
-	wlr_log(L_DEBUG, "Setting bar height to %d on bar: %s",
+	wlr_log(WLR_DEBUG, "Setting bar height to %d on bar: %s",
 			height, config->current_bar->id);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
