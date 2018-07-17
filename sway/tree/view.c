@@ -316,11 +316,15 @@ void view_set_activated(struct sway_view *view, bool activated) {
 }
 
 void view_set_tiled(struct sway_view *view, bool tiled) {
-	bool csd = true;
-	if (view->impl->has_client_side_decorations) {
-		csd = view->impl->has_client_side_decorations(view);
+	if (!tiled) {
+		view->using_csd = true;
+		if (view->impl->has_client_side_decorations) {
+			view->using_csd = view->impl->has_client_side_decorations(view);
+		}
+	} else {
+		view->using_csd = false;
 	}
-	view->border = tiled || !csd ? config->border : B_NONE;
+
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
 	}
@@ -573,8 +577,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	view->surface = wlr_surface;
 	view->swayc = cont;
-	view->border = config->border;
-	view->border_thickness = config->border_thickness;
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
@@ -585,8 +587,12 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view->container_reparent.notify = view_handle_container_reparent;
 
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
+		view->border = config->floating_border;
+		view->border_thickness = config->floating_border_thickness;
 		container_set_floating(view->swayc, true);
 	} else {
+		view->border = config->border;
+		view->border_thickness = config->border_thickness;
 		view_set_tiled(view, true);
 	}
 

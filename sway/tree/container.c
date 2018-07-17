@@ -967,9 +967,14 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 		return;
 	}
 	struct sway_view *view = con->sway_view;
-	size_t border_width = view->border_thickness * (view->border != B_NONE);
-	size_t top =
-		view->border == B_NORMAL ? container_titlebar_height() : border_width;
+	size_t border_width = 0;
+	size_t top = 0;
+
+	if (!view->using_csd) {
+		border_width = view->border_thickness * (view->border != B_NONE);
+		top = view->border == B_NORMAL ?
+			container_titlebar_height() : border_width;
+	}
 
 	con->x = view->x - border_width;
 	con->y = view->y - top;
