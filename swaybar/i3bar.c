@@ -219,15 +219,15 @@ void i3bar_block_send_click(struct status_line *status,
 
 enum x11_button wl_button_to_x11_button(uint32_t button) {
 	switch (button) {
-	case (BTN_LEFT):
+	case BTN_LEFT:
 		return LEFT;
-	case (BTN_MIDDLE):
+	case BTN_MIDDLE:
 		return MIDDLE;
-	case (BTN_RIGHT):
+	case BTN_RIGHT:
 		return RIGHT;
-	case (BTN_SIDE):
+	case BTN_SIDE:
 		return BACK;
-	case (BTN_EXTRA):
+	case BTN_EXTRA:
 		return FORWARD;
 	default:
 		return NONE;
