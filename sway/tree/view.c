@@ -1080,6 +1080,9 @@ bool view_is_visible(struct sway_view *view) {
 }
 
 void view_set_urgent(struct sway_view *view, bool enable) {
+	if (view_is_urgent(view) == enable) {
+		return;
+	}
 	if (enable) {
 		struct sway_seat *seat = input_manager_current_seat(input_manager);
 		if (seat_get_focus(seat) == view->swayc) {
