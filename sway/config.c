@@ -474,7 +474,6 @@ static bool load_include_config(const char *path, const char *parent_dir,
 		list_del(config->config_chain, index);
 		return false;
 	}
-	free(real_path);
 
 	// restore current_config_path
 	config->current_config_path = parent_config;
