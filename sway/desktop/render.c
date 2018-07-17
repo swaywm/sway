@@ -256,6 +256,10 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		render_view_surfaces(view, output, damage, view->swayc->alpha);
 	}
 
+	if (view->using_csd) {
+		return;
+	}
+
 	struct wlr_box box;
 	float output_scale = output->wlr_output->scale;
 	float color[4];
@@ -571,12 +575,14 @@ static void render_container_simple(struct sway_output *output,
 				marks_texture = view->marks_unfocused;
 			}
 
-			if (state->border == B_NORMAL) {
-				render_titlebar(output, damage, child, state->swayc_x,
-						state->swayc_y, state->swayc_width, colors,
-						title_texture, marks_texture);
-			} else {
-				render_top_border(output, damage, child, colors);
+			if (!view->using_csd) {
+				if (state->border == B_NORMAL) {
+					render_titlebar(output, damage, child, state->swayc_x,
+							state->swayc_y, state->swayc_width, colors,
+							title_texture, marks_texture);
+				} else {
+					render_top_border(output, damage, child, colors);
+				}
 			}
 			render_view(output, damage, child, colors);
 		} else {
@@ -761,12 +767,14 @@ static void render_floating_container(struct sway_output *soutput,
 			marks_texture = view->marks_unfocused;
 		}
 
-		if (con->current.border == B_NORMAL) {
-			render_titlebar(soutput, damage, con, con->current.swayc_x,
-					con->current.swayc_y, con->current.swayc_width, colors,
-					title_texture, marks_texture);
-		} else if (con->current.border != B_NONE) {
-			render_top_border(soutput, damage, con, colors);
+		if (!view->using_csd) {
+			if (con->current.border == B_NORMAL) {
+				render_titlebar(soutput, damage, con, con->current.swayc_x,
+						con->current.swayc_y, con->current.swayc_width, colors,
+						title_texture, marks_texture);
+			} else if (con->current.border != B_NONE) {
+				render_top_border(soutput, damage, con, colors);
+			}
 		}
 		render_view(soutput, damage, con, colors);
 	} else {

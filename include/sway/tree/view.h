@@ -69,6 +69,7 @@ struct sway_view {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+	bool using_csd;
 
 	struct timespec urgent;
 	bool allow_request_urgent;
