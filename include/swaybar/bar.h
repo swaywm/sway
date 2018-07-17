@@ -16,11 +16,24 @@ struct swaybar_pointer {
 	int x, y;
 };
 
+enum x11_button {
+	NONE,
+	LEFT,
+	MIDDLE,
+	RIGHT,
+	SCROLL_UP,
+	SCROLL_DOWN,
+	SCROLL_LEFT,
+	SCROLL_RIGHT,
+	BACK,
+	FORWARD,
+};
+
 struct swaybar_hotspot {
 	struct wl_list link;
 	int x, y, width, height;
 	void (*callback)(struct swaybar_output *output,
-			int x, int y, uint32_t button, void *data);
+			int x, int y, enum x11_button button, void *data);
 	void (*destroy)(void *data);
 	void *data;
 };
