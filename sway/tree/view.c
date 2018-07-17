@@ -621,16 +621,16 @@ void view_unmap(struct sway_view *view) {
 		view->urgent_timer = NULL;
 	}
 
-	struct sway_container *parent;
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 
+	struct sway_container *parent;
 	if (view->is_fullscreen) {
 		ws->sway_workspace->fullscreen = NULL;
 		parent = container_destroy(view->swayc);
 
 		arrange_windows(ws->parent);
 	} else {
-		struct sway_container *parent = container_destroy(view->swayc);
+		parent = container_destroy(view->swayc);
 		arrange_windows(parent);
 	}
 	if (parent->type >= C_WORKSPACE) { // if the workspace still exists
