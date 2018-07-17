@@ -37,7 +37,7 @@ void criteria_destroy(struct criteria *criteria) {
 	pcre_free(criteria->con_mark);
 	pcre_free(criteria->window_role);
 	free(criteria->workspace);
-
+	free(criteria->cmdlist);
 	free(criteria->raw);
 	free(criteria);
 }
