@@ -325,12 +325,6 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 		layer_surface->client_pending.margin.bottom,
 		layer_surface->client_pending.margin.left);
 
-	struct sway_layer_surface *sway_layer =
-		calloc(1, sizeof(struct sway_layer_surface));
-	if (!sway_layer) {
-		return;
-	}
-
 	if (!layer_surface->output) {
 		// Assign last active output
 		struct sway_container *output = NULL;
@@ -350,6 +344,12 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 			output = container_parent(output, C_OUTPUT);
 		}
 		layer_surface->output = output->sway_output->wlr_output;
+	}
+
+	struct sway_layer_surface *sway_layer =
+		calloc(1, sizeof(struct sway_layer_surface));
+	if (!sway_layer) {
+		return;
 	}
 
 	sway_layer->surface_commit.notify = handle_surface_commit;
