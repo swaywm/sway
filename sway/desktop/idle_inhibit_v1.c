@@ -67,6 +67,7 @@ struct sway_idle_inhibit_manager_v1 *sway_idle_inhibit_manager_v1_create(
 
 	manager->wlr_manager = wlr_idle_inhibit_v1_create(wl_display);
 	if (!manager->wlr_manager) {
+		free(manager);
 		return NULL;
 	}
 	manager->idle = idle;
