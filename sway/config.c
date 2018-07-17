@@ -24,6 +24,7 @@
 #include "sway/input/seat.h"
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/criteria.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/workspace.h"
@@ -105,7 +106,12 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->seat_configs);
 	}
-	list_free(config->criteria);
+	if (config->criteria) {
+		for (int i = 0; i < config->criteria->length; ++i) {
+			criteria_destroy(config->criteria->items[i]);
+		}
+		list_free(config->criteria);
+	}
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
 	list_free(config->config_chain);
