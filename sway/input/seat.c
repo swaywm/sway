@@ -738,7 +738,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
-	if (last_workspace && last_workspace != new_workspace) {
+	if (last_focus != NULL) {
 		cursor_send_pointer_motion(seat->cursor, 0, true);
 	}
 
