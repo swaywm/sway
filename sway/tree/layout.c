@@ -598,7 +598,7 @@ void container_move(struct sway_container *container,
 		next_ws = container_parent(next_ws, C_WORKSPACE);
 	}
 	if (last_ws && next_ws && last_ws != next_ws) {
-		ipc_event_workspace(last_ws, container, "focus");
+		ipc_event_workspace(last_ws, next_ws, "focus");
 		workspace_detect_urgent(last_ws);
 		workspace_detect_urgent(next_ws);
 	}
