@@ -218,6 +218,8 @@ void container_move_to(struct sway_container *container,
 		seat_set_focus(seat, new_parent);
 		workspace_output_raise_priority(container, old_parent, new_parent);
 		ipc_event_workspace(NULL, container, "move");
+	} else if (container->type == C_VIEW) {
+		ipc_event_window(container, "move");
 	}
 	container_notify_subtree_changed(old_parent);
 	container_notify_subtree_changed(new_parent);
@@ -577,6 +579,10 @@ void container_move(struct sway_container *container,
 
 	container_notify_subtree_changed(old_parent);
 	container_notify_subtree_changed(container->parent);
+
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "move");
+	}
 
 	if (old_parent) {
 		seat_set_focus(config->handler_context.seat, old_parent);
