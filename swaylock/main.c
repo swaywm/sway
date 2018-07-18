@@ -345,20 +345,23 @@ static void load_image(char *arg, struct swaylock_state *state) {
 		image->path = strdup(arg);
 	}
 
-	bool exists = false;
-	struct swaylock_image *iter_image;
-	wl_list_for_each(iter_image, &state->images, link) {
+	struct swaylock_image *iter_image, *temp;
+	wl_list_for_each_safe(iter_image, temp, &state->images, link) {
 		if (lenient_strcmp(iter_image->output_name, image->output_name) == 0) {
-			exists = true;
+			if (image->output_name) {
+				wlr_log(WLR_DEBUG,
+						"Replacing image defined for output %s with %s",
+						image->output_name, image->path);
+			} else {
+				wlr_log(WLR_DEBUG, "Replacing default image with %s",
+						image->path);
+			}
+			wl_list_remove(&iter_image->link);
+			free(iter_image->cairo_surface);
+			free(iter_image->output_name);
+			free(iter_image->path);
+			free(iter_image);
 			break;
-		}
-	}
-	if (exists) {
-		if (image->output_name) {
-			wlr_log(WLR_ERROR, "Multiple images defined for output %s",
-				image->output_name);
-		} else {
-			wlr_log(WLR_ERROR, "Multiple default images defined");
 		}
 	}
 
@@ -420,7 +423,7 @@ enum line_mode {
 };
 
 static int parse_options(int argc, char **argv, struct swaylock_state *state,
-		enum line_mode *line_mode) {
+		enum line_mode *line_mode, char **config_path) {
 	enum long_option_codes {
 		LO_BS_HL_COLOR = 256,
 		LO_FONT,
@@ -572,38 +575,58 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		}
 		switch (c) {
 		case 'C':
-			// Config file. This will have already been handled so just ignore.
+			if (config_path) {
+				*config_path = strdup(optarg);
+			}
 			break;
 		case 'c':
-			state->args.colors.background = parse_color(optarg);
-			state->args.mode = BACKGROUND_MODE_SOLID_COLOR;
+			if (state) {
+				state->args.colors.background = parse_color(optarg);
+				state->args.mode = BACKGROUND_MODE_SOLID_COLOR;
+			}
 			break;
 		case 'e':
-			state->args.ignore_empty = true;
+			if (state) {
+				state->args.ignore_empty = true;
+			}
 			break;
 		case 'f':
-			state->args.daemonize = true;
+			if (state) {
+				state->args.daemonize = true;
+			}
 			break;
 		case 'i':
-			load_image(optarg, state);
+			if (state) {
+				load_image(optarg, state);
+			}
 			break;
 		case 'n':
-			*line_mode = LM_INSIDE;
+			if (line_mode) {
+				*line_mode = LM_INSIDE;
+			}
 			break;
 		case 'r':
-			*line_mode = LM_RING;
+			if (line_mode) {
+				*line_mode = LM_RING;
+			}
 			break;
 		case 's':
-			state->args.mode = parse_background_mode(optarg);
-			if (state->args.mode == BACKGROUND_MODE_INVALID) {
-				return 1;
+			if (state) {
+				state->args.mode = parse_background_mode(optarg);
+				if (state->args.mode == BACKGROUND_MODE_INVALID) {
+					return 1;
+				}
 			}
 			break;
 		case 't':
-			state->args.mode = BACKGROUND_MODE_TILE;
+			if (state) {
+				state->args.mode = BACKGROUND_MODE_TILE;
+			}
 			break;
 		case 'u':
-			state->args.show_indicator = false;
+			if (state) {
+				state->args.show_indicator = false;
+			}
 			break;
 		case 'v':
 #if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
@@ -612,73 +635,117 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 #else
 			fprintf(stdout, "version unknown\n");
 #endif
-			return 0;
+			return 1;
 		case LO_BS_HL_COLOR:
-			state->args.colors.bs_highlight = parse_color(optarg);
+			if (state) {
+				state->args.colors.bs_highlight = parse_color(optarg);
+			}
 			break;
 		case LO_FONT:
-			free(state->args.font);
-			state->args.font = strdup(optarg);
+			if (state) {
+				free(state->args.font);
+				state->args.font = strdup(optarg);
+			}
 			break;
 		case LO_IND_RADIUS:
-			state->args.radius = strtol(optarg, NULL, 0);
+			if (state) {
+				state->args.radius = strtol(optarg, NULL, 0);
+			}
 			break;
 		case LO_IND_THICKNESS:
-			state->args.thickness = strtol(optarg, NULL, 0);
+			if (state) {
+				state->args.thickness = strtol(optarg, NULL, 0);
+			}
 			break;
 		case LO_INSIDE_COLOR:
-			state->args.colors.inside.input = parse_color(optarg);
+			if (state) {
+				state->args.colors.inside.input = parse_color(optarg);
+			}
 			break;
 		case LO_INSIDE_CLEAR_COLOR:
-			state->args.colors.inside.cleared = parse_color(optarg);
+			if (state) {
+				state->args.colors.inside.cleared = parse_color(optarg);
+			}
 			break;
 		case LO_INSIDE_VER_COLOR:
-			state->args.colors.inside.verifying = parse_color(optarg);
+			if (state) {
+				state->args.colors.inside.verifying = parse_color(optarg);
+			}
 			break;
 		case LO_INSIDE_WRONG_COLOR:
-			state->args.colors.inside.wrong = parse_color(optarg);
+			if (state) {
+				state->args.colors.inside.wrong = parse_color(optarg);
+			}
 			break;
 		case LO_KEY_HL_COLOR:
-			state->args.colors.key_highlight = parse_color(optarg);
+			if (state) {
+				state->args.colors.key_highlight = parse_color(optarg);
+			}
 			break;
 		case LO_LINE_COLOR:
-			state->args.colors.line.input = parse_color(optarg);
+			if (state) {
+				state->args.colors.line.input = parse_color(optarg);
+			}
 			break;
 		case LO_LINE_CLEAR_COLOR:
-			state->args.colors.line.cleared = parse_color(optarg);
+			if (state) {
+				state->args.colors.line.cleared = parse_color(optarg);
+			}
 			break;
 		case LO_LINE_VER_COLOR:
-			state->args.colors.line.verifying = parse_color(optarg);
+			if (state) {
+				state->args.colors.line.verifying = parse_color(optarg);
+			}
 			break;
 		case LO_LINE_WRONG_COLOR:
-			state->args.colors.line.wrong = parse_color(optarg);
+			if (state) {
+				state->args.colors.line.wrong = parse_color(optarg);
+			}
 			break;
 		case LO_RING_COLOR:
-			state->args.colors.ring.input = parse_color(optarg);
+			if (state) {
+				state->args.colors.ring.input = parse_color(optarg);
+			}
 			break;
 		case LO_RING_CLEAR_COLOR:
-			state->args.colors.ring.cleared = parse_color(optarg);
+			if (state) {
+				state->args.colors.ring.cleared = parse_color(optarg);
+			}
 			break;
 		case LO_RING_VER_COLOR:
-			state->args.colors.ring.verifying = parse_color(optarg);
+			if (state) {
+				state->args.colors.ring.verifying = parse_color(optarg);
+			}
 			break;
 		case LO_RING_WRONG_COLOR:
-			state->args.colors.ring.wrong = parse_color(optarg);
+			if (state) {
+				state->args.colors.ring.wrong = parse_color(optarg);
+			}
 			break;
 		case LO_SEP_COLOR:
-			state->args.colors.separator = parse_color(optarg);
+			if (state) {
+				state->args.colors.separator = parse_color(optarg);
+			}
 			break;
 		case LO_TEXT_COLOR:
-			state->args.colors.text.input = parse_color(optarg);
+			if (state) {
+				state->args.colors.text.input = parse_color(optarg);
+			}
 			break;
 		case LO_TEXT_CLEAR_COLOR:
-			state->args.colors.text.cleared = parse_color(optarg);
+			if (state) {
+				state->args.colors.text.cleared = parse_color(optarg);
+			}
 			break;
 		case LO_TEXT_VER_COLOR:
-			state->args.colors.text.verifying = parse_color(optarg);
+			if (state) {
+				state->args.colors.text.verifying = parse_color(optarg);
+			}
 			break;
 		case LO_TEXT_WRONG_COLOR:
-			state->args.colors.text.wrong = parse_color(optarg);
+			if (state) {
+				state->args.colors.text.wrong = parse_color(optarg);
+			}
 			break;
 		default:
 			fprintf(stderr, "%s", usage);
@@ -759,7 +826,7 @@ static int load_config(char *path, struct swaylock_state *state,
 		char flag[strlen(line) + 3];
 		sprintf(flag, "--%s", line);
 		char *argv[] = {"swaylock", flag};
-		int result = parse_options(2, argv, state, line_mode);
+		int result = parse_options(2, argv, state, line_mode, NULL);
 		if (result != 0) {
 			free(line);
 			fclose(config);
@@ -789,18 +856,10 @@ int main(int argc, char **argv) {
 	wlr_log_init(WLR_DEBUG, NULL);
 
 	char *config_path = NULL;
-	static struct option long_options[] = {
-		{"config", required_argument, NULL, 'C'},
-		{0, 0, 0, 0},
-	};
-	while (1) {
-		int c = getopt_long(argc, argv, "C:", long_options, NULL);
-		if (c == -1) {
-			break;
-		} else if (c == 'C') {
-			config_path = strdup(optarg);
-			break;
-		}
+	int result = parse_options(argc, argv, NULL, NULL, &config_path);
+	if (result != 0) {
+		free(config_path);
+		return result;
 	}
 	if (!config_path) {
 		config_path = get_config_path();
@@ -817,7 +876,7 @@ int main(int argc, char **argv) {
 
 	if (argc > 1) {
 		wlr_log(WLR_DEBUG, "Parsing CLI Args");
-		int result = parse_options(argc, argv, &state, &line_mode);
+		int result = parse_options(argc, argv, &state, &line_mode, NULL);
 		if (result != 0) {
 			return result;
 		}
