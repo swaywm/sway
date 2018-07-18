@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
@@ -5,9 +6,11 @@
 #endif
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-names.h>
+#include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/ipc-server.h"
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
@@ -25,6 +28,33 @@ void free_sway_binding(struct sway_binding *binding) {
 	}
 	free(binding->command);
 	free(binding);
+}
+
+static struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
+	struct sway_binding *new_sb = calloc(1, sizeof(struct sway_binding));
+	if (!new_sb) {
+		return NULL;
+	}
+
+	new_sb->type = sb->type;
+	new_sb->order = sb->order;
+	new_sb->flags = sb->flags;
+	new_sb->modifiers = sb->modifiers;
+	new_sb->command = strdup(sb->command);
+
+	new_sb->keys = create_list();
+	int i;
+	for (i = 0; i < sb->keys->length; ++i) {
+		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
+		if (!key) {
+			free_sway_binding(new_sb);
+			return NULL;
+		}
+		*key = *(xkb_keysym_t *)sb->keys->items[i];
+		list_add(new_sb->keys, key);
+	}
+
+	return new_sb;
 }
 
 /**
@@ -275,11 +305,31 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) {
 	wlr_log(WLR_DEBUG, "running command for binding: %s",
 		binding->command);
+
+	struct sway_binding *binding_copy = binding;
+	bool reload = false;
+	// if this is a reload command we need to make a duplicate of the
+	// binding since it will be gone after the reload has completed.
+	if (strcasecmp(binding->command, "reload") == 0) {
+		reload = true;
+		binding_copy = sway_binding_dup(binding);
+		if (!binding_copy) {
+			wlr_log(WLR_ERROR, "Failed to duplicate binding during reload");
+			return;
+		}
+	}
+
 	config->handler_context.seat = seat;
 	struct cmd_results *results = execute_command(binding->command, NULL);
-	if (results->status != CMD_SUCCESS) {
+	if (results->status == CMD_SUCCESS) {
+		ipc_event_binding(binding_copy);
+	} else {
 		wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
 			binding->command, results->error);
+	}
+
+	if (reload) { // free the binding if we made a copy
+		free_sway_binding(binding_copy);
 	}
 	free_cmd_results(results);
 }
