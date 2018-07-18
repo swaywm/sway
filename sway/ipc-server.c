@@ -441,6 +441,21 @@ void ipc_event_binding(struct sway_binding *binding) {
 	json_object_put(json);
 }
 
+static void ipc_event_tick(const char *payload) {
+	if (!ipc_has_event_listeners(IPC_EVENT_TICK)) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Sending tick event");
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "first", json_object_new_boolean(false));
+	json_object_object_add(json, "payload", json_object_new_string(payload));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_TICK);
+	json_object_put(json);
+}
+
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
 	struct ipc_client *client = data;
 
@@ -582,6 +597,13 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_SEND_TICK:
+	{
+		ipc_event_tick(buf);
+		ipc_send_reply(client, "{\"success\": true}", 17);
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_OUTPUTS:
 	{
 		json_object *outputs = json_object_new_array();
@@ -628,6 +650,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			goto exit_cleanup;
 		}
 
+		bool is_tick = false;
 		// parse requested event types
 		for (size_t i = 0; i < json_object_array_length(request); i++) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
@@ -645,6 +668,9 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
 			} else if (strcmp(event_type, "binding") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
+			} else if (strcmp(event_type, "tick") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_TICK);
+				is_tick = true;
 			} else {
 				client_valid =
 					ipc_send_reply(client, "{\"success\": false}", 18);
@@ -656,6 +682,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 		json_object_put(request);
 		client_valid = ipc_send_reply(client, "{\"success\": true}", 17);
+		if (is_tick) {
+			client->current_command = IPC_EVENT_TICK;
+			ipc_send_reply(client, "{\"first\": true, \"payload\": \"\"}", 30);
+		}
 		goto exit_cleanup;
 	}
 

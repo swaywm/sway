@@ -250,9 +250,13 @@ static void pretty_print(int type, json_object *resp) {
 	if (type != IPC_COMMAND && type != IPC_GET_WORKSPACES &&
 			type != IPC_GET_INPUTS && type != IPC_GET_OUTPUTS &&
 			type != IPC_GET_VERSION && type != IPC_GET_SEATS &&
-			type != IPC_GET_CONFIG) {
+			type != IPC_GET_CONFIG && type != IPC_SEND_TICK) {
 		printf("%s\n", json_object_to_json_string_ext(resp,
 			JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+		return;
+	}
+
+	if (type == IPC_SEND_TICK) {
 		return;
 	}
 
@@ -384,6 +388,8 @@ int main(int argc, char **argv) {
 		type = IPC_GET_BINDING_MODES;
 	} else if (strcasecmp(cmdtype, "get_config") == 0) {
 		type = IPC_GET_CONFIG;
+	} else if (strcasecmp(cmdtype, "send_tick") == 0) {
+		type = IPC_SEND_TICK;
 	} else {
 		sway_abort("Unknown message type %s", cmdtype);
 	}

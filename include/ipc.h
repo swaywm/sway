@@ -15,6 +15,7 @@ enum ipc_command_type {
 	IPC_GET_VERSION = 7,
 	IPC_GET_BINDING_MODES = 8,
 	IPC_GET_CONFIG = 9,
+	IPC_SEND_TICK = 10,
 
 	// sway-specific command types
 	IPC_GET_INPUTS = 100,
@@ -28,6 +29,7 @@ enum ipc_command_type {
 	IPC_EVENT_BARCONFIG_UPDATE = ((1<<31) | 4),
 	IPC_EVENT_BINDING = ((1<<31) | 5),
 	IPC_EVENT_SHUTDOWN = ((1<<31) | 6),
+	IPC_EVENT_TICK = ((1<<31) | 7),
 	IPC_EVENT_MODIFIER = ((1<<31) | 16),
 	IPC_EVENT_INPUT = ((1<<31) | 17),
 };
