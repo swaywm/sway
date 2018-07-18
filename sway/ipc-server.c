@@ -298,13 +298,11 @@ void ipc_event_workspace(struct sway_container *old,
 	wlr_log(WLR_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
-	if (strcmp("focus", change) == 0) {
-		if (old) {
-			json_object_object_add(obj, "old",
-					ipc_json_describe_container_recursive(old));
-		} else {
-			json_object_object_add(obj, "old", NULL);
-		}
+	if (old) {
+		json_object_object_add(obj, "old",
+				ipc_json_describe_container_recursive(old));
+	} else {
+		json_object_object_add(obj, "old", NULL);
 	}
 
 	if (new) {
