@@ -515,7 +515,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		seat->operation = OP_RESIZE;
 		seat->op_container = cont;
 		seat->op_resize_preserve_ratio = keyboard &&
-			(keyboard->modifiers.depressed & 1); // Shift
+			(keyboard->modifiers.depressed & WLR_MODIFIER_SHIFT);
 		seat->op_resize_edge = edge;
 		seat->op_button = button;
 		seat->op_ref_lx = cursor->cursor->x;
