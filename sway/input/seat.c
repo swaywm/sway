@@ -753,11 +753,11 @@ void seat_set_focus(struct sway_seat *seat,
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,
-		struct wlr_surface *surface) {
+		struct wlr_surface *surface, bool unfocus) {
 	if (seat->focused_layer != NULL) {
 		return;
 	}
-	if (seat->has_focus) {
+	if (seat->has_focus && unfocus) {
 		struct sway_container *focus = seat_get_focus(seat);
 		seat_send_unfocus(focus, seat);
 		seat->has_focus = false;
@@ -789,7 +789,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	} else if (!layer || seat->focused_layer == layer) {
 		return;
 	}
-	seat_set_focus_surface(seat, layer->surface);
+	seat_set_focus_surface(seat, layer->surface, true);
 	if (layer->layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
 		seat->focused_layer = layer;
 	}
