@@ -69,16 +69,11 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	surface->ly = xsurface->y;
 	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly, true);
 
-	if (!xsurface->override_redirect) {
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct wlr_xwayland *xwayland =
-			seat->input->server->xwayland.wlr_xwayland;
-		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
-		seat_set_focus_surface(seat, xsurface->surface);
-	}
-
-	// TODO: we don't send surface enter/leave events to xwayland unmanaged
-	// surfaces, but xwayland doesn't support HiDPI anyway
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct wlr_xwayland *xwayland =
+		seat->input->server->xwayland.wlr_xwayland;
+	wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+	seat_set_focus_surface(seat, xsurface->surface, false);
 }
 
 static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
@@ -89,18 +84,16 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->link);
 	wl_list_remove(&surface->commit.link);
 
-	if (!xsurface->override_redirect) {
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		if (seat->wlr_seat->keyboard_state.focused_surface ==
-				xsurface->surface) {
-			// Restore focus
-			struct sway_container *previous =
-				seat_get_focus_inactive(seat, &root_container);
-			if (previous) {
-				// Hack to get seat to re-focus the return value of get_focus
-				seat_set_focus(seat, previous->parent);
-				seat_set_focus(seat, previous);
-			}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	if (seat->wlr_seat->keyboard_state.focused_surface ==
+			xsurface->surface) {
+		// Restore focus
+		struct sway_container *previous =
+			seat_get_focus_inactive(seat, &root_container);
+		if (previous) {
+			// Hack to get seat to re-focus the return value of get_focus
+			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, previous);
 		}
 	}
 }

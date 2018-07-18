@@ -83,7 +83,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp);
 
 void seat_set_focus_surface(struct sway_seat *seat,
-		struct wlr_surface *surface);
+		struct wlr_surface *surface, bool unfocus);
 
 void seat_set_focus_layer(struct sway_seat *seat,
 		struct wlr_layer_surface *layer);
