@@ -199,16 +199,23 @@ static struct sway_container *container_workspace_destroy(
 		return NULL;
 	}
 
-	// Do not destroy this if it's the last workspace on this output
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	if (output && output->children->length == 1) {
+
+	// If we're destroying the output, it will be NULL here. Return the root so
+	// that it doesn't appear that the workspace has refused to be destoyed,
+	// which would leave it in a broken state with no parent.
+	if (output == NULL) {
+		return &root_container;
+	}
+
+	// Do not destroy this if it's the last workspace on this output
+	if (output->children->length == 1) {
 		return NULL;
 	}
 
 	wlr_log(WLR_DEBUG, "destroying workspace '%s'", workspace->name);
 
-	struct sway_container *parent = workspace->parent;
-	if (!workspace_is_empty(workspace) && output) {
+	if (!workspace_is_empty(workspace)) {
 		// Move children to a different workspace on this output
 		struct sway_container *new_workspace = NULL;
 		for (int i = 0; i < output->children->length; i++) {
@@ -230,7 +237,7 @@ static struct sway_container *container_workspace_destroy(
 		}
 	}
 
-	return parent;
+	return output;
 }
 
 static struct sway_container *container_output_destroy(
