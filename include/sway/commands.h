@@ -106,7 +106,7 @@ sway_cmd cmd_exit;
 sway_cmd cmd_floating;
 sway_cmd cmd_floating_maximum_size;
 sway_cmd cmd_floating_minimum_size;
-sway_cmd cmd_floating_mod;
+sway_cmd cmd_floating_modifier;
 sway_cmd cmd_floating_scroll;
 sway_cmd cmd_focus;
 sway_cmd cmd_focus_follows_mouse;

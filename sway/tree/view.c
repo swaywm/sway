@@ -387,6 +387,8 @@ void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
 		}
 	}
 
+	container_end_mouse_operation(view->swayc);
+
 	ipc_event_window(view->swayc, "fullscreen_mode");
 }
 

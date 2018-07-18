@@ -34,6 +34,8 @@ struct sway_drag_icon {
 	struct wl_listener destroy;
 };
 
+enum resize_edge;
+
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
@@ -51,6 +53,20 @@ struct sway_seat {
 	// Last touch point
 	int32_t touch_id;
 	double touch_x, touch_y;
+
+	// Operations (drag and resize)
+	enum {
+		OP_NONE,
+		OP_DRAG,
+		OP_RESIZE,
+	} operation;
+	struct sway_container *op_container;
+	enum resize_edge op_resize_edge;
+	uint32_t op_button;
+	bool op_resize_preserve_ratio;
+	double op_ref_lx, op_ref_ly;         // cursor's x/y at start of op
+	double op_ref_width, op_ref_height;  // container's size at start of op
+	double op_ref_con_lx, op_ref_con_ly; // container's x/y at start of op
 
 	struct wl_listener focus_destroy;
 	struct wl_listener new_container;
