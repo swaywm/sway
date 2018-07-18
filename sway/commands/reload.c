@@ -22,6 +22,7 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 	if (!load_main_config(config->current_config_path, true)) {
 		return cmd_results_new(CMD_FAILURE, "reload", "Error(s) reloading config.");
 	}
+	ipc_event_workspace(NULL, NULL, "reload");
 
 	load_swaybars();
 
