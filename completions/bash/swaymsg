@@ -14,7 +14,8 @@ _swaymsg()
     'get_marks'
     'get_bar_config'
     'get_version'
-    'get_clipboard'
+    'get_binding_modes'
+    'get_config'
   )
 
   short=(
