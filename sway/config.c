@@ -56,6 +56,12 @@ static void free_mode(struct sway_mode *mode) {
 		}
 		list_free(mode->keycode_bindings);
 	}
+	if (mode->mouse_bindings) {
+		for (i = 0; i < mode->mouse_bindings->length; i++) {
+			free_sway_binding(mode->mouse_bindings->items[i]);
+		}
+		list_free(mode->mouse_bindings);
+	}
 	free(mode);
 }
 
@@ -172,6 +178,7 @@ static void config_defaults(struct sway_config *config) {
 	strcpy(config->current_mode->name, "default");
 	if (!(config->current_mode->keysym_bindings = create_list())) goto cleanup;
 	if (!(config->current_mode->keycode_bindings = create_list())) goto cleanup;
+	if (!(config->current_mode->mouse_bindings = create_list())) goto cleanup;
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;

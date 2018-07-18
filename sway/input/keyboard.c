@@ -88,11 +88,13 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		uint32_t modifiers, bool release, bool locked) {
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
+		bool binding_locked = binding->flags | BINDING_LOCKED;
+		bool binding_release = binding->flags | BINDING_RELEASE;
 
 		if (modifiers ^ binding->modifiers ||
 				state->npressed != (size_t)binding->keys->length ||
-				locked > binding->locked ||
-				release != binding->release) {
+				release != binding_release ||
+				locked > binding_locked) {
 			continue;
 		}
 

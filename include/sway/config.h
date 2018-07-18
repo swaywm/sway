@@ -22,14 +22,28 @@ struct sway_variable {
 	char *value;
 };
 
+
+enum binding_input_type {
+	BINDING_KEYCODE,
+	BINDING_KEYSYM,
+	BINDING_MOUSE,
+};
+
+enum binding_flags {
+	BINDING_RELEASE=1,
+	BINDING_LOCKED=2, // keyboard only
+	BINDING_BORDER=4, // mouse only; trigger on container border
+	BINDING_CONTENTS=8, // mouse only; trigger on container contents
+	BINDING_TITLEBAR=16 // mouse only; trigger on container titlebar
+};
+
 /**
  * A key binding and an associated command.
  */
 struct sway_binding {
+	enum binding_input_type type;
 	int order;
-	bool release;
-	bool locked;
-	bool bindcode;
+	uint32_t flags;
 	list_t *keys; // sorted in ascending order
 	uint32_t modifiers;
 	char *command;
@@ -50,6 +64,7 @@ struct sway_mode {
 	char *name;
 	list_t *keysym_bindings;
 	list_t *keycode_bindings;
+	list_t *mouse_bindings;
 	bool pango;
 };
 
