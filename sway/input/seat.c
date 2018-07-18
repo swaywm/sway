@@ -617,7 +617,7 @@ static int handle_urgent_timeout(void *data) {
 }
 
 void seat_set_focus_warp(struct sway_seat *seat,
-		struct sway_container *container, bool warp) {
+		struct sway_container *container, bool warp, bool notify) {
 	if (seat->focused_layer) {
 		return;
 	}
@@ -739,7 +739,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	if (last_focus) {
 		if (last_workspace) {
-			if (last_workspace != new_workspace) {
+			if (notify && last_workspace != new_workspace) {
 				 ipc_event_workspace(last_workspace, new_workspace, "focus");
 			}
 			if (!workspace_is_visible(last_workspace)
@@ -779,7 +779,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 void seat_set_focus(struct sway_seat *seat,
 		struct sway_container *container) {
-	seat_set_focus_warp(seat, container, true);
+	seat_set_focus_warp(seat, container, true, true);
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,

@@ -1001,13 +1001,13 @@ static void swap_focus(struct sway_container *con1,
 		if (focus == con1 && (con2->parent->layout == L_TABBED
 					|| con2->parent->layout == L_STACKED)) {
 			if (workspace_is_visible(ws2)) {
-				seat_set_focus_warp(seat, con2, false);
+				seat_set_focus_warp(seat, con2, false, true);
 			}
 			seat_set_focus(seat, ws1 != ws2 ? con2 : con1);
 		} else if (focus == con2 && (con1->parent->layout == L_TABBED
 					|| con1->parent->layout == L_STACKED)) {
 			if (workspace_is_visible(ws1)) {
-				seat_set_focus_warp(seat, con1, false);
+				seat_set_focus_warp(seat, con1, false, true);
 			}
 			seat_set_focus(seat, ws1 != ws2 ? con1 : con2);
 		} else if (ws1 != ws2) {
