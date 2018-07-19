@@ -220,7 +220,6 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		struct sway_drag_icon *drag_icon = wlr_drag_icon->data;
 		drag_icon_update_position(drag_icon);
 	}
-	transaction_commit_dirty();
 }
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
@@ -230,6 +229,7 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
 	cursor_send_pointer_motion(cursor, event->time_msec, true);
+	transaction_commit_dirty();
 }
 
 static void handle_cursor_motion_absolute(
@@ -240,6 +240,7 @@ static void handle_cursor_motion_absolute(
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_send_pointer_motion(cursor, event->time_msec, true);
+	transaction_commit_dirty();
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
@@ -426,6 +427,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, x, y);
 	cursor_send_pointer_motion(cursor, event->time_msec, true);
+	transaction_commit_dirty();
 }
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
