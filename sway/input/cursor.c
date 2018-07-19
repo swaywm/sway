@@ -480,7 +480,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	bool mod_pressed = keyboard &&
-		(keyboard->modifiers.depressed & config->floating_mod);
+		(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
 	enum resize_edge edge = find_resize_edge(cont, cursor);
 	bool over_title = edge == RESIZE_EDGE_NONE && !surface;
 
@@ -501,7 +501,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		seat->operation = OP_RESIZE;
 		seat->op_container = cont;
 		seat->op_resize_preserve_ratio = keyboard &&
-			(keyboard->modifiers.depressed & WLR_MODIFIER_SHIFT);
+			(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
 		seat->op_resize_edge = resizing_via_mod ?
 			RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT : edge;
 		seat->op_button = button;
