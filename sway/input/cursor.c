@@ -569,6 +569,9 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		seat_set_focus(cursor->seat, cont);
 		wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
 				time_msec, button, state);
+	} else {
+		wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
+				time_msec, button, state);
 	}
 
 	transaction_commit_dirty();
