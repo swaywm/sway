@@ -29,10 +29,15 @@ enum x11_button {
 	FORWARD,
 };
 
+enum hotspot_event_handling {
+	HOTSPOT_IGNORE,
+	HOTSPOT_PROCESS,
+};
+
 struct swaybar_hotspot {
 	struct wl_list link;
 	int x, y, width, height;
-	void (*callback)(struct swaybar_output *output,
+	enum hotspot_event_handling (*callback)(struct swaybar_output *output,
 			int x, int y, enum x11_button button, void *data);
 	void (*destroy)(void *data);
 	void *data;

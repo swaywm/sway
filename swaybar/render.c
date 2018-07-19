@@ -108,11 +108,11 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color,
 	}
 }
 
-static void block_hotspot_callback(struct swaybar_output *output,
+static enum hotspot_event_handling block_hotspot_callback(struct swaybar_output *output,
 			int x, int y, enum x11_button button, void *data) {
 	struct i3bar_block *block = data;
 	struct status_line *status = output->bar->status;
-	i3bar_block_send_click(status, block, x, y, button);
+	return i3bar_block_send_click(status, block, x, y, button);
 }
 
 static uint32_t render_status_block(cairo_t *cairo,
@@ -348,9 +348,13 @@ static const char *strip_workspace_number(const char *ws_name) {
 	return ws_name;
 }
 
-static void workspace_hotspot_callback(struct swaybar_output *output,
+static enum hotspot_event_handling workspace_hotspot_callback(struct swaybar_output *output,
 			int x, int y, enum x11_button button, void *data) {
+	if (button != LEFT) {
+		return HOTSPOT_PROCESS;
+	}
 	ipc_send_workspace_command(output->bar, (const char *)data);
+	return HOTSPOT_IGNORE;
 }
 
 static uint32_t render_workspace_button(cairo_t *cairo,
