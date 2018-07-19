@@ -1,4 +1,9 @@
 #define _POSIX_C_SOURCE 199309L
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -248,6 +253,24 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	transaction_commit_dirty();
 }
 
+static void handle_request_move(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_move);
+	struct sway_view *view = &xdg_shell_view->view;
+	struct wlr_xdg_toplevel_move_event *e = data;
+	struct sway_seat *seat = e->seat->seat->data;
+	seat_begin_move(seat, view->swayc);
+}
+
+static void handle_request_resize(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_resize);
+	struct sway_view *view = &xdg_shell_view->view;
+	struct wlr_xdg_toplevel_resize_event *e = data;
+	struct sway_seat *seat = e->seat->seat->data;
+	seat_begin_resize(seat, view->swayc, BTN_LEFT, e->edges);
+}
+
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, unmap);
@@ -262,6 +285,8 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	wl_list_remove(&xdg_shell_view->request_move.link);
+	wl_list_remove(&xdg_shell_view->request_resize.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -299,6 +324,14 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
 	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
 			&xdg_shell_view->request_fullscreen);
+
+	xdg_shell_view->request_move.notify = handle_request_move;
+	wl_signal_add(&xdg_surface->toplevel->events.request_move,
+			&xdg_shell_view->request_move);
+
+	xdg_shell_view->request_resize.notify = handle_request_resize;
+	wl_signal_add(&xdg_surface->toplevel->events.request_resize,
+			&xdg_shell_view->request_resize);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {

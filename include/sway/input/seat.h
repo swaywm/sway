@@ -3,6 +3,7 @@
 
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/util/edges.h>
 #include "sway/input/input-manager.h"
 
 struct sway_seat_device {
@@ -34,8 +35,6 @@ struct sway_drag_icon {
 	struct wl_listener destroy;
 };
 
-enum resize_edge;
-
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
@@ -57,11 +56,12 @@ struct sway_seat {
 	// Operations (drag and resize)
 	enum {
 		OP_NONE,
-		OP_DRAG,
+		OP_MOVE,
 		OP_RESIZE,
 	} operation;
+
 	struct sway_container *op_container;
-	enum resize_edge op_resize_edge;
+	enum wlr_edges op_resize_edge;
 	uint32_t op_button;
 	bool op_resize_preserve_ratio;
 	double op_ref_lx, op_ref_ly;         // cursor's x/y at start of op
@@ -149,5 +149,10 @@ struct seat_config *seat_get_config(struct sway_seat *seat);
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
+
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con);
+
+void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, enum wlr_edges edge);
 
 #endif

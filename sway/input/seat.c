@@ -1,6 +1,11 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
@@ -348,6 +353,7 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		free(seat);
 		return NULL;
 	}
+	seat->wlr_seat->data = seat;
 
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {
@@ -893,4 +899,36 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	}
 
 	return NULL;
+}
+
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
+		return;
+	}
+	seat->operation = OP_MOVE;
+	seat->op_container = con;
+	seat->op_button = BTN_LEFT;
+}
+
+void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, enum wlr_edges edge) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring resize request due to no cursor device");
+		return;
+	}
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	seat->operation = OP_RESIZE;
+	seat->op_container = con;
+	seat->op_resize_preserve_ratio = keyboard &&
+		(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
+	seat->op_resize_edge = edge == WLR_EDGE_NONE ?
+		RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT : edge;
+	seat->op_button = button;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+	seat->op_ref_con_lx = con->x;
+	seat->op_ref_con_ly = con->y;
+	seat->op_ref_width = con->width;
+	seat->op_ref_height = con->height;
 }
