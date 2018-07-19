@@ -56,6 +56,7 @@ struct sway_server server;
 bool server_privileged_prepare(struct sway_server *server);
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
+bool server_start_backend(struct sway_server *server);
 void server_run(struct sway_server *server);
 
 void handle_new_output(struct wl_listener *listener, void *data);
