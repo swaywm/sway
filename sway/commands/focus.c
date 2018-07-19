@@ -84,6 +84,9 @@ static struct cmd_results *focus_output(struct sway_container *con,
 }
 
 struct cmd_results *cmd_focus(int argc, char **argv) {
+	if (config->reading || !config->active) {
+		return cmd_results_new(CMD_DEFER, NULL, NULL);
+	}
 	struct sway_container *con = config->handler_context.current_container;
 	struct sway_seat *seat = config->handler_context.seat;
 	if (con->type < C_WORKSPACE) {
