@@ -564,7 +564,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 			}
 			focus = seat_get_focus_inactive(seat, workspace);
 		} else {
-			// TODO: CT_ASSIGN_OUTPUT
+			// CT_ASSIGN_OUTPUT
+			struct sway_container *output = output_by_name(criteria->target);
+			if (output) {
+				focus = seat_get_focus_inactive(seat, output);
+			}
 		}
 	}
 	// If we're about to launch the view into the floating container, then
