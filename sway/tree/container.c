@@ -660,7 +660,9 @@ struct sway_container *floating_container_at(double lx, double ly,
 			if (!workspace_is_visible(workspace)) {
 				continue;
 			}
-			for (int k = 0; k < ws->floating->children->length; ++k) {
+			// Items at the end of the list are on top, so iterate the list in
+			// reverse.
+			for (int k = ws->floating->children->length - 1; k >= 0; --k) {
 				struct sway_container *floater =
 					ws->floating->children->items[k];
 				struct wlr_box box = {
