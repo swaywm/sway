@@ -140,6 +140,7 @@ struct sway_xwayland_view {
 	struct wl_listener set_title;
 	struct wl_listener set_class;
 	struct wl_listener set_window_type;
+	struct wl_listener set_hints;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;

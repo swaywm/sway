@@ -290,10 +290,6 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	view_damage_from(view);
-
-	if (view->allow_request_urgent) {
-		view_set_urgent(view, (bool)xsurface->hints_urgency);
-	}
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -312,6 +308,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_window_type.link);
+	wl_list_remove(&xwayland_view->set_hints.link);
 	wl_list_remove(&xwayland_view->map.link);
 	wl_list_remove(&xwayland_view->unmap.link);
 	view_destroy(&xwayland_view->view);
@@ -437,6 +434,19 @@ static void handle_set_window_type(struct wl_listener *listener, void *data) {
 	view_execute_criteria(view);
 }
 
+static void handle_set_hints(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_hints);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
+	if (view->allow_request_urgent) {
+		view_set_urgent(view, (bool)xsurface->hints_urgency);
+	}
+}
+
 struct sway_view *view_from_wlr_xwayland_surface(
 		struct wlr_xwayland_surface *xsurface) {
 	return xsurface->data;
@@ -488,6 +498,9 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.set_window_type,
 			&xwayland_view->set_window_type);
 	xwayland_view->set_window_type.notify = handle_set_window_type;
+
+	wl_signal_add(&xsurface->events.set_hints, &xwayland_view->set_hints);
+	xwayland_view->set_hints.notify = handle_set_hints;
 
 	wl_signal_add(&xsurface->events.unmap, &xwayland_view->unmap);
 	xwayland_view->unmap.notify = handle_unmap;
