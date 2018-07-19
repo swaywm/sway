@@ -57,15 +57,8 @@ static struct cmd_results *focus_output(struct sway_container *con,
 
 	if (!output) {
 		enum movement_direction direction;
-		if (strcmp(identifier, "left") == 0) {
-			direction = MOVE_LEFT;
-		} else if (strcmp(identifier, "right") == 0) {
-			direction = MOVE_RIGHT;
-		} else if (strcmp(identifier, "up") == 0) {
-			direction = MOVE_UP;
-		} else if (strcmp(identifier, "down") == 0) {
-			direction = MOVE_DOWN;
-		} else {
+		if (!parse_movement_direction(identifier, &direction) ||
+				direction == MOVE_PARENT || direction == MOVE_CHILD) {
 			free(identifier);
 			return cmd_results_new(CMD_INVALID, "focus",
 				"There is no output with that name");
