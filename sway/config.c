@@ -649,7 +649,6 @@ bool read_config(FILE *file, struct sway_config *config) {
 		} else {
 			res = config_command(expanded);
 		}
-		free(expanded);
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
@@ -660,7 +659,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 
 		case CMD_DEFER:
 			wlr_log(WLR_DEBUG, "Deferring command `%s'", line);
-			list_add(config->cmd_queue, strdup(line));
+			list_add(config->cmd_queue, strdup(expanded));
 			break;
 
 		case CMD_BLOCK_COMMANDS:
@@ -693,6 +692,7 @@ bool read_config(FILE *file, struct sway_config *config) {
 					sizeof(config->handler_context));
 		default:;
 		}
+		free(expanded);
 		free(line);
 		free_cmd_results(res);
 	}

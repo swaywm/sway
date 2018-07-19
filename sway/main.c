@@ -429,9 +429,16 @@ int main(int argc, char **argv) {
 
 	security_sanity_check();
 
-	config->active = true;
 	setenv("WAYLAND_DISPLAY", server.socket, true);
+	if (!terminate_request) {
+		if (!server_start_backend(&server)) {
+			sway_terminate(EXIT_FAILURE);
+		}
+	}
+
+	config->active = true;
 	// Execute commands until there are none left
+	wlr_log(WLR_DEBUG, "Running deferred commands");
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
 		struct cmd_results *res = execute_command(line, NULL);
