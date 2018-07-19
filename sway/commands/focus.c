@@ -4,9 +4,11 @@
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "stringop.h"
 
 static bool parse_movement_direction(const char *name,
 		enum movement_direction *out) {
@@ -44,7 +46,40 @@ static struct cmd_results *focus_mode(struct sway_container *con,
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *focus_output(struct sway_container *con,
+		struct sway_seat *seat, int argc, char **argv) {
+	if (!argc) {
+		return cmd_results_new(CMD_INVALID, "focus",
+			"Expected 'focus output <direction|name>'");
+	}
+	char *identifier = join_args(argv, argc);
+	struct sway_container *output = output_by_name(identifier);
+
+	if (!output) {
+		enum movement_direction direction;
+		if (!parse_movement_direction(identifier, &direction) ||
+				direction == MOVE_PARENT || direction == MOVE_CHILD) {
+			free(identifier);
+			return cmd_results_new(CMD_INVALID, "focus",
+				"There is no output with that name");
+		}
+		struct sway_container *focus = seat_get_focus(seat);
+		focus = container_parent(focus, C_OUTPUT);
+		output = container_get_in_direction(focus, seat, direction);
+	}
+
+	free(identifier);
+	if (output) {
+		seat_set_focus(seat, seat_get_focus_inactive(seat, output));
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *cmd_focus(int argc, char **argv) {
+	if (config->reading || !config->active) {
+		return cmd_results_new(CMD_DEFER, NULL, NULL);
+	}
 	struct sway_container *con = config->handler_context.current_container;
 	struct sway_seat *seat = config->handler_context.seat;
 	if (con->type < C_WORKSPACE) {
@@ -65,7 +100,11 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return focus_mode(con, seat, !container_is_floating(con));
 	}
 
-	// TODO: focus output <direction|name>
+	if (strcmp(argv[0], "output") == 0) {
+		argc--; argv++;
+		return focus_output(con, seat, argc, argv);
+	}
+
 	enum movement_direction direction = 0;
 	if (!parse_movement_direction(argv[0], &direction)) {
 		return cmd_results_new(CMD_INVALID, "focus",
