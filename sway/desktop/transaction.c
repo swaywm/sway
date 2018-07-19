@@ -222,24 +222,16 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	}
 }
 
-/**
- * For simplicity, we only progress the queue if it can be completely flushed.
- */
 static void transaction_progress_queue() {
-	// We iterate this list in reverse because we're more likely to find a
-	// waiting transactions at the end of the list.
-	for (int i = server.transactions->length - 1; i >= 0; --i) {
-		struct sway_transaction *transaction = server.transactions->items[i];
+	while (server.transactions->length) {
+		struct sway_transaction *transaction = server.transactions->items[0];
 		if (transaction->num_waiting) {
 			return;
 		}
-	}
-	for (int i = 0; i < server.transactions->length; ++i) {
-		struct sway_transaction *transaction = server.transactions->items[i];
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
+		list_del(server.transactions, 0);
 	}
-	server.transactions->length = 0;
 	idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 }
 
