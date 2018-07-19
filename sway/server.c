@@ -137,13 +137,19 @@ void server_fini(struct sway_server *server) {
 	list_free(server->transactions);
 }
 
-void server_run(struct sway_server *server) {
-	wlr_log(WLR_INFO, "Running compositor on wayland display '%s'",
+bool server_start_backend(struct sway_server *server) {
+	wlr_log(WLR_INFO, "Starting backend on wayland display '%s'",
 			server->socket);
 	if (!wlr_backend_start(server->backend)) {
 		wlr_log(WLR_ERROR, "Failed to start backend");
 		wlr_backend_destroy(server->backend);
-		return;
+		return false;
 	}
+	return true;
+}
+
+void server_run(struct sway_server *server) {
+	wlr_log(WLR_INFO, "Running compositor on wayland display '%s'",
+			server->socket);
 	wl_display_run(server->wl_display);
 }
