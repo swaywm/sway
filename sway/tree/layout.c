@@ -232,7 +232,9 @@ void container_move_to(struct sway_container *container,
 	}
 	if (new_workspace != old_workspace) {
 		workspace_detect_urgent(new_workspace);
-		workspace_detect_urgent(old_workspace);
+		if (old_workspace) {
+			workspace_detect_urgent(old_workspace);
+		}
 	}
 }
 
