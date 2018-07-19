@@ -218,8 +218,6 @@ static void calculate_floating_constraints(struct sway_container *con,
 static void handle_resize_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
 	struct sway_container *con = seat->op_container;
-	double center_lx = con->x + con->width / 2;
-	double center_ly = con->y + con->height / 2;
 	enum resize_edge edge = seat->op_resize_edge;
 
 	// The amount the mouse has moved since the start of the resize operation
@@ -234,10 +232,8 @@ static void handle_resize_motion(struct sway_seat *seat,
 		mouse_move_y = 0;
 	}
 
-	double grow_width = seat->op_ref_lx > center_lx ?
-		mouse_move_x : -mouse_move_x;
-	double grow_height = seat->op_ref_ly > center_ly ?
-		mouse_move_y : -mouse_move_y;
+	double grow_width = edge & RESIZE_EDGE_LEFT ? -mouse_move_x : mouse_move_x;
+	double grow_height = edge & RESIZE_EDGE_TOP ? -mouse_move_y : mouse_move_y;
 
 	if (seat->op_resize_preserve_ratio) {
 		double x_multiplier = grow_width / seat->op_ref_width;
@@ -245,13 +241,6 @@ static void handle_resize_motion(struct sway_seat *seat,
 		double avg_multiplier = (x_multiplier + y_multiplier) / 2;
 		grow_width = seat->op_ref_width * avg_multiplier;
 		grow_height = seat->op_ref_height * avg_multiplier;
-	}
-
-	// If we're resizing from the center (mod + right click), we need to double
-	// the amount we're growing because we're doing it in both directions.
-	if (edge == RESIZE_EDGE_NONE) {
-		grow_width *= 2;
-		grow_height *= 2;
 	}
 
 	// Determine new width/height, and accommodate for min/max values
@@ -508,7 +497,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	}
 
 	// Check for beginning resize
-	bool resizing_via_border = button == BTN_LEFT && edge;
+	bool resizing_via_border = button == BTN_LEFT && edge != RESIZE_EDGE_NONE;
 	bool resizing_via_mod = button == BTN_RIGHT && mod_pressed;
 	if ((resizing_via_border || resizing_via_mod) &&
 			state == WLR_BUTTON_PRESSED) {
@@ -516,7 +505,8 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		seat->op_container = cont;
 		seat->op_resize_preserve_ratio = keyboard &&
 			(keyboard->modifiers.depressed & WLR_MODIFIER_SHIFT);
-		seat->op_resize_edge = edge;
+		seat->op_resize_edge = resizing_via_mod ?
+			RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT : edge;
 		seat->op_button = button;
 		seat->op_ref_lx = cursor->cursor->x;
 		seat->op_ref_ly = cursor->cursor->y;
