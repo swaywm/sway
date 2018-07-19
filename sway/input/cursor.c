@@ -299,6 +299,31 @@ static void handle_resize_motion(struct sway_seat *seat,
 	transaction_commit_dirty();
 }
 
+static const char *edge_to_image_name(enum resize_edge edge) {
+	switch (edge) {
+	case RESIZE_EDGE_NONE:
+		return "left_ptr";
+	case RESIZE_EDGE_TOP:
+		return "top_side";
+	case RESIZE_EDGE_RIGHT:
+		return "right_side";
+	case RESIZE_EDGE_BOTTOM:
+		return "bottom_side";
+	case RESIZE_EDGE_LEFT:
+		return "left_side";
+	}
+	if (edge == (RESIZE_EDGE_TOP | RESIZE_EDGE_LEFT)) {
+		return "top_left_corner";
+	} else if (edge == (RESIZE_EDGE_TOP | RESIZE_EDGE_RIGHT)) {
+		return "top_right_corner";
+	} else if (edge == (RESIZE_EDGE_BOTTOM | RESIZE_EDGE_LEFT)) {
+		return "bottom_left_corner";
+	} else if (edge == (RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT)) {
+		return "bottom_right_corner";
+	}
+	return "left_ptr";
+}
+
 void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		bool allow_refocusing) {
 	if (time_msec == 0) {
@@ -378,37 +403,9 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	} else if (c && container_is_floating(c)) {
 		// Try a floating container's resize edge
 		enum resize_edge edge = find_resize_edge(c, cursor);
-		if (edge == RESIZE_EDGE_NONE) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"left_ptr", cursor->cursor);
-		} else if (edge == RESIZE_EDGE_TOP) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"top_side", cursor->cursor);
-		} else if (edge == RESIZE_EDGE_RIGHT) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"right_side", cursor->cursor);
-		} else if (edge == RESIZE_EDGE_BOTTOM) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"bottom_side", cursor->cursor);
-		} else if (edge == RESIZE_EDGE_LEFT) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"left_side", cursor->cursor);
-		} else if (edge == (RESIZE_EDGE_TOP | RESIZE_EDGE_LEFT)) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"top_left_corner", cursor->cursor);
-		} else if (edge == (RESIZE_EDGE_TOP | RESIZE_EDGE_RIGHT)) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"top_right_corner", cursor->cursor);
-		} else if (edge == (RESIZE_EDGE_BOTTOM | RESIZE_EDGE_LEFT)) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"bottom_left_corner", cursor->cursor);
-		} else if (edge == (RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT)) {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"bottom_right_corner", cursor->cursor);
-		} else {
-			wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
-					"left_ptr", cursor->cursor);
-		}
+		const char *image = edge_to_image_name(edge);
+		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
+				cursor->cursor);
 		cursor->image_client = NULL;
 	} else {
 		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager,
