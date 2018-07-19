@@ -4,7 +4,6 @@
 #include <string.h>
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
-#include <wlr/types/wlr_linux_dmabuf.h>
 #include "sway/debug.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
