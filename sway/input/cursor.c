@@ -238,9 +238,9 @@ static void handle_resize_motion(struct sway_seat *seat,
 	if (seat->op_resize_preserve_ratio) {
 		double x_multiplier = grow_width / seat->op_ref_width;
 		double y_multiplier = grow_height / seat->op_ref_height;
-		double avg_multiplier = (x_multiplier + y_multiplier) / 2;
-		grow_width = seat->op_ref_width * avg_multiplier;
-		grow_height = seat->op_ref_height * avg_multiplier;
+		double max_multiplier = fmax(x_multiplier, y_multiplier);
+		grow_width = seat->op_ref_width * max_multiplier;
+		grow_height = seat->op_ref_height * max_multiplier;
 	}
 
 	// Determine new width/height, and accommodate for min/max values
