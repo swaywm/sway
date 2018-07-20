@@ -192,11 +192,11 @@ bool i3bar_handle_readable(struct status_line *status) {
 	return redraw;
 }
 
-void i3bar_block_send_click(struct status_line *status,
+enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, enum x11_button button) {
 	wlr_log(WLR_DEBUG, "block %s clicked", block->name ? block->name : "(nil)");
 	if (!block->name || !status->i3bar_state.click_events) {
-		return;
+		return HOTSPOT_PROCESS;
 	}
 
 	struct json_object *event_json = json_object_new_object();
@@ -215,6 +215,7 @@ void i3bar_block_send_click(struct status_line *status,
 		status_error(status, "[failed to write click event]");
 	}
 	json_object_put(event_json);
+	return HOTSPOT_IGNORE;
 }
 
 enum x11_button wl_button_to_x11_button(uint32_t button) {

@@ -71,7 +71,7 @@ void status_error(struct status_line *status, const char *text);
 bool status_handle_readable(struct status_line *status);
 void status_line_free(struct status_line *status);
 bool i3bar_handle_readable(struct status_line *status);
-void i3bar_block_send_click(struct status_line *status,
+enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, enum x11_button button);
 void i3bar_block_free(struct i3bar_block *block);
 enum x11_button wl_button_to_x11_button(uint32_t button);
