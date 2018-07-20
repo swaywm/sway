@@ -186,6 +186,7 @@ static void config_defaults(struct sway_config *config) {
 	config->default_orientation = L_NONE;
 	if (!(config->font = strdup("monospace 10"))) goto cleanup;
 	config->font_height = 17; // height of monospace 10
+	config->urgent_timeout = 500;
 
 	// floating view
 	config->floating_maximum_width = 0;
