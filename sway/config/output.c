@@ -45,10 +45,6 @@ struct output_config *new_output_config(const char *name) {
 }
 
 void merge_output_config(struct output_config *dst, struct output_config *src) {
-	if (src->name) {
-		free(dst->name);
-		dst->name = strdup(src->name);
-	}
 	if (src->enabled != -1) {
 		dst->enabled = src->enabled;
 	}
@@ -84,6 +80,56 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 	if (src->dpms_state != 0) {
 		dst->dpms_state = src->dpms_state;
 	}
+}
+
+static void merge_wildcard_on_all(struct output_config *wildcard) {
+	for (int i = 0; i < config->output_configs->length; i++) {
+		struct output_config *oc = config->output_configs->items[i];
+		if (strcmp(wildcard->name, oc->name) != 0) {
+			wlr_log(WLR_DEBUG, "Merging output * config on %s", oc->name);
+			merge_output_config(oc, wildcard);
+		}
+	}
+}
+
+struct output_config *store_output_config(struct output_config *oc) {
+	bool wildcard = strcmp(oc->name, "*") == 0;
+	if (wildcard) {
+		merge_wildcard_on_all(oc);
+	}
+
+	int i = list_seq_find(config->output_configs, output_name_cmp, oc->name);
+	if (i >= 0) {
+		wlr_log(WLR_DEBUG, "Merging on top of existing output config");
+		struct output_config *current = config->output_configs->items[i];
+		merge_output_config(current, oc);
+		free_output_config(oc);
+		oc = current;
+	} else if (!wildcard) {
+		wlr_log(WLR_DEBUG, "Adding non-wildcard output config");
+		i = list_seq_find(config->output_configs, output_name_cmp, "*");
+		if (i >= 0) {
+			wlr_log(WLR_DEBUG, "Merging on top of output * config");
+			struct output_config *current = new_output_config(oc->name);
+			merge_output_config(current, config->output_configs->items[i]);
+			merge_output_config(current, oc);
+			free_output_config(oc);
+			oc = current;
+		}
+		list_add(config->output_configs, oc);
+	} else {
+		// New wildcard config. Just add it
+		wlr_log(WLR_DEBUG, "Adding output * config");
+		list_add(config->output_configs, oc);
+	}
+
+	wlr_log(WLR_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
+		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
+		oc->name, oc->enabled, oc->width, oc->height, oc->refresh_rate,
+		oc->x, oc->y, oc->scale, oc->transform, oc->background,
+		oc->background_option, oc->dpms_state);
+
+	return oc;
 }
 
 static void set_mode(struct wlr_output *output, int width, int height,
@@ -163,16 +209,6 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		wlr_output_layout_add(output_layout, wlr_output, oc->x, oc->y);
 	} else {
 		wlr_output_layout_add_auto(output_layout, wlr_output);
-	}
-
-	if (!oc || !oc->background) {
-		// Look for a * config for background
-		int i = list_seq_find(config->output_configs, output_name_cmp, "*");
-		if (i >= 0) {
-			oc = config->output_configs->items[i];
-		} else {
-			oc = NULL;
-		}
 	}
 
 	int output_i;
