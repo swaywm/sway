@@ -21,6 +21,60 @@ static struct cmd_handler output_handlers[] = {
 	{ "transform", output_cmd_transform },
 };
 
+static struct output_config *get_output_config(char *name, char *identifier) {
+	int i = list_seq_find(config->output_configs, output_name_cmp, name);
+	if (i >= 0) {
+		return config->output_configs->items[i];
+	}
+
+	i = list_seq_find(config->output_configs, output_name_cmp, identifier);
+	if (i >= 0) {
+		return config->output_configs->items[i];
+	}
+
+	return NULL;
+}
+
+static void apply_output_config_to_outputs(struct output_config *oc) {
+	// Try to find the output container and apply configuration now. If
+	// this is during startup then there will be no container and config
+	// will be applied during normal "new output" event from wlroots.
+	bool wildcard = strcmp(oc->name, "*") == 0;
+	char id[128];
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
+		char *name = sway_output->wlr_output->name;
+		output_get_identifier(id, sizeof(id), sway_output);
+		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
+			if (!sway_output->swayc) {
+				if (!oc->enabled) {
+					if (!wildcard) {
+						break;
+					}
+					continue;
+				}
+
+				output_enable(sway_output);
+			}
+
+			struct output_config *current = oc;
+			if (wildcard) {
+				struct output_config *tmp = get_output_config(name, id);
+				if (tmp) {
+					current = tmp;
+				}
+			}
+			apply_output_config(current, sway_output->swayc);
+
+			if (!wildcard) {
+				// Stop looking if the output config isn't applicable to all
+				// outputs
+				break;
+			}
+		}
+	}
+}
+
 struct cmd_results *cmd_output(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "output", EXPECTED_AT_LEAST, 1);
 	if (error != NULL) {
@@ -60,54 +114,8 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	config->handler_context.leftovers.argc = 0;
 	config->handler_context.leftovers.argv = NULL;
 
-	int i = list_seq_find(config->output_configs, output_name_cmp, output->name);
-	if (i >= 0) {
-		// Merge existing config
-		struct output_config *current = config->output_configs->items[i];
-		merge_output_config(current, output);
-		free_output_config(output);
-		output = current;
-	} else {
-		list_add(config->output_configs, output);
-	}
-
-	wlr_log(WLR_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
-		output->name, output->enabled, output->width, output->height,
-		output->refresh_rate, output->x, output->y, output->scale,
-		output->transform, output->background, output->background_option, output->dpms_state);
-
-	// Try to find the output container and apply configuration now. If
-	// this is during startup then there will be no container and config
-	// will be applied during normal "new output" event from wlroots.
-	char identifier[128];
-	bool all = strcmp(output->name, "*") == 0;
-	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
-		output_get_identifier(identifier, sizeof(identifier), sway_output);
-		wlr_log(WLR_DEBUG, "Checking identifier %s", identifier);
-		if (all || strcmp(sway_output->wlr_output->name, output->name) == 0
-				|| strcmp(identifier, output->name) == 0) {
-			if (!sway_output->swayc) {
-				if (!output->enabled) {
-					if (!all) {
-						break;
-					}
-					continue;
-				}
-
-				output_enable(sway_output);
-			}
-
-			apply_output_config(output, sway_output->swayc);
-
-			if (!all) {
-				// Stop looking if the output config isn't applicable to all
-				// outputs
-				break;
-			}
-		}
-	}
+	output = store_output_config(output);
+	apply_output_config_to_outputs(output);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 
