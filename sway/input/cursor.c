@@ -243,7 +243,7 @@ static void handle_resize_motion(struct sway_seat *seat,
 		grow_height = seat->op_ref_height * max_multiplier;
 	}
 
-	// Determine new width/height, and accommodate for min/max values
+	// Determine new width/height, and accommodate for floating min/max values
 	double width = seat->op_ref_width + grow_width;
 	double height = seat->op_ref_height + grow_height;
 	int min_width, max_width, min_height, max_height;
@@ -251,6 +251,15 @@ static void handle_resize_motion(struct sway_seat *seat,
 			&min_height, &max_height);
 	width = fmax(min_width, fmin(width, max_width));
 	height = fmax(min_height, fmin(height, max_height));
+
+	// Apply the view's min/max size
+	if (con->type == C_VIEW) {
+		double view_min_width, view_max_width, view_min_height, view_max_height;
+		view_get_constraints(con->sway_view, &view_min_width, &view_max_width,
+				&view_min_height, &view_max_height);
+		width = fmax(view_min_width, fmin(width, view_max_width));
+		height = fmax(view_min_height, fmin(height, view_max_height));
+	}
 
 	// Recalculate these, in case we hit a min/max limit
 	grow_width = width - seat->op_ref_width;

@@ -26,6 +26,8 @@ enum sway_view_prop {
 };
 
 struct sway_view_impl {
+	void (*get_constraints)(struct sway_view *view, double *min_width,
+			double *max_width, double *min_height, double *max_height);
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
@@ -214,6 +216,9 @@ const char *view_get_window_role(struct sway_view *view);
 uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
+
+void view_get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height);
 
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);

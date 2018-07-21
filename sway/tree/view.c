@@ -141,6 +141,19 @@ const char *view_get_shell(struct sway_view *view) {
 	return "unknown";
 }
 
+void view_get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height) {
+	if (view->impl->get_constraints) {
+		view->impl->get_constraints(view,
+				min_width, max_width, min_height, max_height);
+	} else {
+		*min_width = DBL_MIN;
+		*max_width = DBL_MAX;
+		*min_height = DBL_MIN;
+		*max_height = DBL_MAX;
+	}
+}
+
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 		int height) {
 	if (view->impl->configure) {

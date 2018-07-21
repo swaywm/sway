@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
+#include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -94,6 +95,16 @@ static struct sway_xdg_shell_v6_view *xdg_shell_v6_view_from_view(
 	return (struct sway_xdg_shell_v6_view *)view;
 }
 
+static void get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height) {
+	struct wlr_xdg_toplevel_v6_state *state =
+		&view->wlr_xdg_surface_v6->toplevel->current;
+	*min_width = state->min_width > 0 ? state->min_width : DBL_MIN;
+	*max_width = state->max_width > 0 ? state->max_width : DBL_MAX;
+	*min_height = state->min_height > 0 ? state->min_height : DBL_MIN;
+	*max_height = state->max_height > 0 ? state->max_height : DBL_MAX;
+}
+
 static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return NULL;
@@ -184,6 +195,7 @@ static void destroy(struct sway_view *view) {
 }
 
 static const struct sway_view_impl view_impl = {
+	.get_constraints = get_constraints,
 	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
