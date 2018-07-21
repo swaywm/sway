@@ -155,4 +155,6 @@ void seat_begin_move(struct sway_seat *seat, struct sway_container *con);
 void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button, enum wlr_edges edge);
 
+void seat_end_mouse_operation(struct sway_seat *seat);
+
 #endif

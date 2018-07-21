@@ -932,3 +932,22 @@ void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
 	seat->op_ref_width = con->width;
 	seat->op_ref_height = con->height;
 }
+
+void seat_end_mouse_operation(struct sway_seat *seat) {
+	switch (seat->operation) {
+	case OP_MOVE:
+		{
+			// We "move" the container to its own location so it discovers its
+			// output again.
+			struct sway_container *con = seat->op_container;
+			container_floating_move_to(con, con->x, con->y);
+		}
+	case OP_RESIZE:
+		// Don't need to do anything here.
+		break;
+	case OP_NONE:
+		break;
+	}
+	seat->operation = OP_NONE;
+	seat->op_container = NULL;
+}

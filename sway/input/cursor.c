@@ -427,21 +427,6 @@ static void handle_cursor_motion_absolute(
 	transaction_commit_dirty();
 }
 
-static void handle_end_operation(struct sway_seat *seat) {
-	if (seat->operation == OP_MOVE) {
-		// We "move" the container to its own location so it discovers its
-		// output again.
-		struct sway_container *con = seat->op_container;
-		container_floating_move_to(con, con->x, con->y);
-		seat->operation = OP_NONE;
-		seat->op_container = NULL;
-	} else {
-		// OP_RESIZE
-		seat->operation = OP_NONE;
-		seat->op_container = NULL;
-	}
-}
-
 static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		uint32_t time_msec, uint32_t button, enum wlr_button_state state,
 		struct wlr_surface *surface, double sx, double sy,
@@ -484,7 +469,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		uint32_t time_msec, uint32_t button, enum wlr_button_state state) {
 	if (cursor->seat->operation != OP_NONE &&
 			button == cursor->seat->op_button && state == WLR_BUTTON_RELEASED) {
-		handle_end_operation(cursor->seat);
+		seat_end_mouse_operation(cursor->seat);
 		return;
 	}
 	if (time_msec == 0) {

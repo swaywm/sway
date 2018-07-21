@@ -1114,8 +1114,7 @@ void container_end_mouse_operation(struct sway_container *container) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		if (seat->op_container == container) {
-			seat->op_container = NULL;
-			seat->operation = OP_NONE;
+			seat_end_mouse_operation(seat);
 		}
 	}
 }
