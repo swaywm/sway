@@ -1,15 +1,5 @@
-#ifdef __linux__
-#include <linux/input-event-codes.h>
-#elif __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#endif
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-names.h>
-#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
-#include "list.h"
-#include "log.h"
 #include "util.h"
 
 struct cmd_results *cmd_floating_modifier(int argc, char **argv) {
