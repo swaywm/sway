@@ -11,6 +11,7 @@ struct sway_cursor {
 	} previous;
 	struct wlr_xcursor_manager *xcursor_manager;
 
+	const char *image;
 	struct wl_client *image_client;
 
 	struct wl_listener motion;
@@ -36,5 +37,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	bool allow_refocusing);
 void dispatch_cursor_button(struct sway_cursor *cursor, uint32_t time_msec,
 	uint32_t button, enum wlr_button_state state);
+
+void cursor_set_image(struct sway_cursor *cursor, const char *image,
+		struct wl_client *client);
 
 #endif
