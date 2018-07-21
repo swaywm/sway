@@ -263,6 +263,60 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 	}
 }
 
+static struct output_config *get_output_config(char *name, char *identifier) {
+	int i = list_seq_find(config->output_configs, output_name_cmp, name);
+	if (i >= 0) {
+		return config->output_configs->items[i];
+	}
+
+	i = list_seq_find(config->output_configs, output_name_cmp, identifier);
+	if (i >= 0) {
+		return config->output_configs->items[i];
+	}
+
+	return NULL;
+}
+
+void apply_output_config_to_outputs(struct output_config *oc) {
+	// Try to find the output container and apply configuration now. If
+	// this is during startup then there will be no container and config
+	// will be applied during normal "new output" event from wlroots.
+	bool wildcard = strcmp(oc->name, "*") == 0;
+	char id[128];
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
+		char *name = sway_output->wlr_output->name;
+		output_get_identifier(id, sizeof(id), sway_output);
+		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
+			if (!sway_output->swayc) {
+				if (!oc->enabled) {
+					if (!wildcard) {
+						break;
+					}
+					continue;
+				}
+
+				output_enable(sway_output);
+			}
+
+			struct output_config *current = oc;
+			if (wildcard) {
+				struct output_config *tmp = get_output_config(name, id);
+				if (tmp) {
+					current = tmp;
+				}
+			}
+			apply_output_config(current, sway_output->swayc);
+
+			if (!wildcard) {
+				// Stop looking if the output config isn't applicable to all
+				// outputs
+				break;
+			}
+		}
+	}
+}
+
 void free_output_config(struct output_config *oc) {
 	if (!oc) {
 		return;
@@ -272,3 +326,29 @@ void free_output_config(struct output_config *oc) {
 	free(oc->background_option);
 	free(oc);
 }
+
+static void default_output_config(struct output_config *oc,
+		struct wlr_output *wlr_output) {
+	oc->enabled = 1;
+	if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
+		oc->width = mode->width;
+		oc->height = mode->height;
+		oc->refresh_rate = mode->refresh;
+	}
+	oc->x = oc->y = -1;
+	oc->scale = 1;
+	oc->transform = WL_OUTPUT_TRANSFORM_NORMAL;
+}
+
+void create_default_output_configs(void) {
+	struct sway_output *sway_output;
+	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
+		char *name = sway_output->wlr_output->name;
+		struct output_config *oc = new_output_config(name);
+		default_output_config(oc, sway_output->wlr_output);
+		list_add(config->output_configs, oc);
+	}
+}
+

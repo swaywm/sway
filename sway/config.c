@@ -361,6 +361,7 @@ bool load_main_config(const char *file, bool is_active) {
 		wlr_log(WLR_DEBUG, "Performing configuration file reload");
 		config->reloading = true;
 		config->active = true;
+		create_default_output_configs();
 	}
 
 	config->current_config_path = path;
@@ -419,6 +420,9 @@ bool load_main_config(const char *file, bool is_active) {
 	success = success && load_config(path, config);
 
 	if (is_active) {
+		for (int i = 0; i < config->output_configs->length; i++) {
+			apply_output_config_to_outputs(config->output_configs->items[i]);
+		}
 		config->reloading = false;
 	}
 
