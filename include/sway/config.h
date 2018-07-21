@@ -324,6 +324,7 @@ struct sway_config {
 	char *font;
 	size_t font_height;
 	bool pango_markup;
+	size_t urgent_timeout;
 
 	// Flags
 	bool focus_follows_mouse;
