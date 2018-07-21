@@ -677,16 +677,20 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
-	// If urgent, start a timer to unset it
+	// If urgent, either unset the urgency or start a timer to unset it
 	if (container && container->type == C_VIEW &&
-			last_workspace && last_workspace != new_workspace &&
 			view_is_urgent(container->sway_view) &&
-			config->urgent_timeout > 0 &&
 			!container->sway_view->urgent_timer) {
 		struct sway_view *view = container->sway_view;
-		view->urgent_timer = wl_event_loop_add_timer(server.wl_event_loop,
-				handle_urgent_timeout, view);
-		wl_event_source_timer_update(view->urgent_timer, config->urgent_timeout);
+		if (last_workspace && last_workspace != new_workspace &&
+				config->urgent_timeout > 0) {
+			view->urgent_timer = wl_event_loop_add_timer(server.wl_event_loop,
+					handle_urgent_timeout, view);
+			wl_event_source_timer_update(view->urgent_timer,
+					config->urgent_timeout);
+		} else {
+			view_set_urgent(view, false);
+		}
 	}
 
 	// If we've focused a floating container, bring it to the front.
