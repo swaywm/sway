@@ -901,14 +901,15 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	return NULL;
 }
 
-void seat_begin_move(struct sway_seat *seat, struct sway_container *con) {
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button) {
 	if (!seat->cursor) {
 		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
 		return;
 	}
 	seat->operation = OP_MOVE;
 	seat->op_container = con;
-	seat->op_button = BTN_LEFT;
+	seat->op_button = button;
 }
 
 void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
@@ -950,4 +951,11 @@ void seat_end_mouse_operation(struct sway_seat *seat) {
 	}
 	seat->operation = OP_NONE;
 	seat->op_container = NULL;
+}
+
+void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
+		uint32_t button, enum wlr_button_state state) {
+	seat->last_button = button;
+	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
+			time_msec, button, state);
 }

@@ -1,9 +1,4 @@
 #define _POSIX_C_SOURCE 199309L
-#ifdef __linux__
-#include <linux/input-event-codes.h>
-#elif __FreeBSD__
-#include <dev/evdev/input-event-codes.h>
-#endif
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -259,7 +254,9 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_toplevel_move_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
-	seat_begin_move(seat, view->swayc);
+	if (e->serial == seat->last_button_serial) {
+		seat_begin_move(seat, view->swayc, seat->last_button);
+	}
 }
 
 static void handle_request_resize(struct wl_listener *listener, void *data) {
@@ -268,7 +265,9 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	struct sway_view *view = &xdg_shell_view->view;
 	struct wlr_xdg_toplevel_resize_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
-	seat_begin_resize(seat, view->swayc, BTN_LEFT, e->edges);
+	if (e->serial == seat->last_button_serial) {
+		seat_begin_resize(seat, view->swayc, seat->last_button, e->edges);
+	}
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {

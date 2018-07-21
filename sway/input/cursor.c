@@ -429,7 +429,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 
 	// Deny moving or resizing a fullscreen view
 	if (cont->type == C_VIEW && cont->sway_view->is_fullscreen) {
-		wlr_seat_pointer_notify_button(seat->wlr_seat, time_msec, button, state);
+		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
 
@@ -442,7 +442,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	// Check for beginning move
 	if (button == BTN_LEFT && state == WLR_BUTTON_PRESSED &&
 			(mod_pressed || over_title)) {
-		seat_begin_move(seat, cont);
+		seat_begin_move(seat, cont, BTN_LEFT);
 		return;
 	}
 
@@ -456,7 +456,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	}
 
 	// Send event to surface
-	wlr_seat_pointer_notify_button(seat->wlr_seat, time_msec, button, state);
+	seat_pointer_notify_button(seat, time_msec, button, state);
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
@@ -480,8 +480,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(cursor->seat, layer);
 		}
-		wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
-				time_msec, button, state);
+		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
 	} else if (cont && container_is_floating(cont)) {
 		dispatch_cursor_button_floating(cursor, time_msec, button, state,
 				surface, sx, sy, cont);
@@ -501,15 +500,12 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		if (new_ws != old_ws) {
 			seat_set_focus(cursor->seat, cont);
 		}
-		wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
-				time_msec, button, state);
+		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
 	} else if (cont) {
 		seat_set_focus(cursor->seat, cont);
-		wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
-				time_msec, button, state);
+		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
 	} else {
-		wlr_seat_pointer_notify_button(cursor->seat->wlr_seat,
-				time_msec, button, state);
+		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
 	}
 
 	transaction_commit_dirty();

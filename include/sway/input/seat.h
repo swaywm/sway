@@ -68,6 +68,9 @@ struct sway_seat {
 	double op_ref_width, op_ref_height;  // container's size at start of op
 	double op_ref_con_lx, op_ref_con_ly; // container's x/y at start of op
 
+	uint32_t last_button;
+	uint32_t last_button_serial;
+
 	struct wl_listener focus_destroy;
 	struct wl_listener new_container;
 	struct wl_listener new_drag_icon;
@@ -150,11 +153,15 @@ bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
 
-void seat_begin_move(struct sway_seat *seat, struct sway_container *con);
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button);
 
 void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button, enum wlr_edges edge);
 
 void seat_end_mouse_operation(struct sway_seat *seat);
+
+void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
+		uint32_t button, enum wlr_button_state state);
 
 #endif
