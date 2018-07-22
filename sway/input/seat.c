@@ -1,6 +1,11 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
@@ -348,6 +353,7 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		free(seat);
 		return NULL;
 	}
+	seat->wlr_seat->data = seat;
 
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {
@@ -893,4 +899,69 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	}
 
 	return NULL;
+}
+
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
+		return;
+	}
+	seat->operation = OP_MOVE;
+	seat->op_container = con;
+	seat->op_button = button;
+	cursor_set_image(seat->cursor, "grab", NULL);
+}
+
+void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, enum wlr_edges edge) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring resize request due to no cursor device");
+		return;
+	}
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	seat->operation = OP_RESIZE;
+	seat->op_container = con;
+	seat->op_resize_preserve_ratio = keyboard &&
+		(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
+	seat->op_resize_edge = edge == WLR_EDGE_NONE ?
+		RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT : edge;
+	seat->op_button = button;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+	seat->op_ref_con_lx = con->x;
+	seat->op_ref_con_ly = con->y;
+	seat->op_ref_width = con->width;
+	seat->op_ref_height = con->height;
+
+	const char *image = edge == WLR_EDGE_NONE ?
+		"se-resize" : wlr_xcursor_get_resize_name(edge);
+	cursor_set_image(seat->cursor, image, NULL);
+}
+
+void seat_end_mouse_operation(struct sway_seat *seat) {
+	switch (seat->operation) {
+	case OP_MOVE:
+		{
+			// We "move" the container to its own location so it discovers its
+			// output again.
+			struct sway_container *con = seat->op_container;
+			container_floating_move_to(con, con->x, con->y);
+		}
+	case OP_RESIZE:
+		// Don't need to do anything here.
+		break;
+	case OP_NONE:
+		break;
+	}
+	seat->operation = OP_NONE;
+	seat->op_container = NULL;
+	cursor_set_image(seat->cursor, "left_ptr", NULL);
+}
+
+void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
+		uint32_t button, enum wlr_button_state state) {
+	seat->last_button = button;
+	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
+			time_msec, button, state);
 }

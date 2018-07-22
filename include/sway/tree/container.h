@@ -305,6 +305,12 @@ bool container_is_floating(struct sway_container *container);
 void container_get_box(struct sway_container *container, struct wlr_box *box);
 
 /**
+ * Move a floating container by the specified amount.
+ */
+void container_floating_translate(struct sway_container *con,
+		double x_amount, double y_amount);
+
+/**
  * Move a floating container to a new layout-local position.
  */
 void container_floating_move_to(struct sway_container *con,
@@ -317,5 +323,11 @@ void container_floating_move_to(struct sway_container *con,
 void container_set_dirty(struct sway_container *container);
 
 bool container_has_urgent_child(struct sway_container *container);
+
+/**
+ * If the container is involved in a drag or resize operation via a mouse, this
+ * ends the operation.
+ */
+void container_end_mouse_operation(struct sway_container *container);
 
 #endif

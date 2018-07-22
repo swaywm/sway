@@ -14,10 +14,11 @@ enum movement_direction {
 };
 
 enum resize_edge {
-	RESIZE_EDGE_LEFT,
-	RESIZE_EDGE_RIGHT,
-	RESIZE_EDGE_TOP,
-	RESIZE_EDGE_BOTTOM,
+	RESIZE_EDGE_NONE   = 0,
+	RESIZE_EDGE_LEFT   = 1,
+	RESIZE_EDGE_RIGHT  = 2,
+	RESIZE_EDGE_TOP    = 4,
+	RESIZE_EDGE_BOTTOM = 8,
 };
 
 struct sway_container;

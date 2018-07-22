@@ -323,6 +323,8 @@ static struct sway_container *container_destroy_noreaping(
 		}
 	}
 
+	container_end_mouse_operation(con);
+
 	con->destroying = true;
 	container_set_dirty(con);
 
@@ -964,6 +966,8 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_reap_empty_recursive(workspace->sway_workspace->floating);
 	}
 
+	container_end_mouse_operation(container);
+
 	ipc_event_window(container, "floating");
 }
 
@@ -1009,7 +1013,7 @@ void container_get_box(struct sway_container *container, struct wlr_box *box) {
 /**
  * Translate the container's position as well as all children.
  */
-static void container_floating_translate(struct sway_container *con,
+void container_floating_translate(struct sway_container *con,
 		double x_amount, double y_amount) {
 	con->x += x_amount;
 	con->y += y_amount;
@@ -1104,4 +1108,13 @@ static bool find_urgent_iterator(struct sway_container *con,
 
 bool container_has_urgent_child(struct sway_container *container) {
 	return container_find(container, find_urgent_iterator, NULL);
+}
+
+void container_end_mouse_operation(struct sway_container *container) {
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		if (seat->op_container == container) {
+			seat_end_mouse_operation(seat);
+		}
+	}
 }

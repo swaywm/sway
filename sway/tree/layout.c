@@ -562,6 +562,7 @@ void container_move(struct sway_container *container,
 		workspace_detect_urgent(last_ws);
 		workspace_detect_urgent(next_ws);
 	}
+	container_end_mouse_operation(container);
 }
 
 enum sway_container_layout container_get_default_layout(

@@ -463,11 +463,12 @@ static void output_damage_whole_container_iterator(struct sway_container *con,
 
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
+	// Pad the box by 1px, because the width is a double and might be a fraction
 	struct wlr_box box = {
-		.x = con->current.swayc_x - output->wlr_output->lx,
-		.y = con->current.swayc_y - output->wlr_output->ly,
-		.width = con->current.swayc_width,
-		.height = con->current.swayc_height,
+		.x = con->current.swayc_x - output->wlr_output->lx - 1,
+		.y = con->current.swayc_y - output->wlr_output->ly - 1,
+		.width = con->current.swayc_width + 2,
+		.height = con->current.swayc_height + 2,
 	};
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);

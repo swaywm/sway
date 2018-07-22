@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
+#include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -95,6 +96,16 @@ static struct sway_xdg_shell_view *xdg_shell_view_from_view(
 	return (struct sway_xdg_shell_view *)view;
 }
 
+static void get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height) {
+	struct wlr_xdg_toplevel_state *state =
+		&view->wlr_xdg_surface->toplevel->current;
+	*min_width = state->min_width > 0 ? state->min_width : DBL_MIN;
+	*max_width = state->max_width > 0 ? state->max_width : DBL_MAX;
+	*min_height = state->min_height > 0 ? state->min_height : DBL_MIN;
+	*max_height = state->max_height > 0 ? state->max_height : DBL_MAX;
+}
+
 static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return NULL;
@@ -188,6 +199,7 @@ static void destroy(struct sway_view *view) {
 }
 
 static const struct sway_view_impl view_impl = {
+	.get_constraints = get_constraints,
 	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
@@ -248,6 +260,34 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	transaction_commit_dirty();
 }
 
+static void handle_request_move(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_move);
+	struct sway_view *view = &xdg_shell_view->view;
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
+	struct wlr_xdg_toplevel_move_event *e = data;
+	struct sway_seat *seat = e->seat->seat->data;
+	if (e->serial == seat->last_button_serial) {
+		seat_begin_move(seat, view->swayc, seat->last_button);
+	}
+}
+
+static void handle_request_resize(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_resize);
+	struct sway_view *view = &xdg_shell_view->view;
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
+	struct wlr_xdg_toplevel_resize_event *e = data;
+	struct sway_seat *seat = e->seat->seat->data;
+	if (e->serial == seat->last_button_serial) {
+		seat_begin_resize(seat, view->swayc, seat->last_button, e->edges);
+	}
+}
+
 static void handle_unmap(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, unmap);
@@ -262,6 +302,8 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	wl_list_remove(&xdg_shell_view->request_move.link);
+	wl_list_remove(&xdg_shell_view->request_resize.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -299,6 +341,14 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
 	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
 			&xdg_shell_view->request_fullscreen);
+
+	xdg_shell_view->request_move.notify = handle_request_move;
+	wl_signal_add(&xdg_surface->toplevel->events.request_move,
+			&xdg_shell_view->request_move);
+
+	xdg_shell_view->request_resize.notify = handle_request_resize;
+	wl_signal_add(&xdg_surface->toplevel->events.request_resize,
+			&xdg_shell_view->request_resize);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {

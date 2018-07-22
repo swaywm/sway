@@ -3,6 +3,7 @@
 
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/util/edges.h>
 #include "sway/input/input-manager.h"
 
 struct sway_seat_device {
@@ -51,6 +52,24 @@ struct sway_seat {
 	// Last touch point
 	int32_t touch_id;
 	double touch_x, touch_y;
+
+	// Operations (drag and resize)
+	enum {
+		OP_NONE,
+		OP_MOVE,
+		OP_RESIZE,
+	} operation;
+
+	struct sway_container *op_container;
+	enum wlr_edges op_resize_edge;
+	uint32_t op_button;
+	bool op_resize_preserve_ratio;
+	double op_ref_lx, op_ref_ly;         // cursor's x/y at start of op
+	double op_ref_width, op_ref_height;  // container's size at start of op
+	double op_ref_con_lx, op_ref_con_ly; // container's x/y at start of op
+
+	uint32_t last_button;
+	uint32_t last_button_serial;
 
 	struct wl_listener focus_destroy;
 	struct wl_listener new_container;
@@ -133,5 +152,16 @@ struct seat_config *seat_get_config(struct sway_seat *seat);
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
+
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button);
+
+void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, enum wlr_edges edge);
+
+void seat_end_mouse_operation(struct sway_seat *seat);
+
+void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
+		uint32_t button, enum wlr_button_state state);
 
 #endif
