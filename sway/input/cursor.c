@@ -215,6 +215,7 @@ static void calculate_floating_constraints(struct sway_container *con,
 		*max_height = config->floating_maximum_height;
 	}
 }
+
 static void handle_resize_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
 	struct sway_container *con = seat->op_container;
@@ -704,6 +705,9 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 		void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, request_set_cursor);
+	if (cursor->seat->operation != OP_NONE) {
+		return;
+	}
 	struct wlr_seat_pointer_request_set_cursor_event *event = data;
 
 	struct wl_client *focused_client = NULL;

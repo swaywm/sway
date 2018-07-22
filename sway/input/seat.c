@@ -910,6 +910,7 @@ void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
 	seat->operation = OP_MOVE;
 	seat->op_container = con;
 	seat->op_button = button;
+	cursor_set_image(seat->cursor, "grab", NULL);
 }
 
 void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
@@ -932,6 +933,10 @@ void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
 	seat->op_ref_con_ly = con->y;
 	seat->op_ref_width = con->width;
 	seat->op_ref_height = con->height;
+
+	const char *image = edge == WLR_EDGE_NONE ?
+		"se-resize" : wlr_xcursor_get_resize_name(edge);
+	cursor_set_image(seat->cursor, image, NULL);
 }
 
 void seat_end_mouse_operation(struct sway_seat *seat) {
@@ -951,6 +956,7 @@ void seat_end_mouse_operation(struct sway_seat *seat) {
 	}
 	seat->operation = OP_NONE;
 	seat->op_container = NULL;
+	cursor_set_image(seat->cursor, "left_ptr", NULL);
 }
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
