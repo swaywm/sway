@@ -101,6 +101,9 @@ struct input_config {
 	char *xkb_rules;
 	char *xkb_variant;
 
+	int xkb_numlock;
+	int xkb_capslock;
+
 	struct input_config_mapped_from_region *mapped_from_region;
 	char *mapped_to_output;
 
