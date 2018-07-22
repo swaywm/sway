@@ -220,8 +220,22 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		transaction_notify_view_ready(view, xdg_surface_v6->configure_serial);
 	}
 
-	view_update_title(view, false);
 	view_damage_from(view);
+}
+
+static void handle_set_title(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
+		wl_container_of(listener, xdg_shell_v6_view, set_title);
+	struct sway_view *view = &xdg_shell_v6_view->view;
+	view_update_title(view, false);
+	view_execute_criteria(view);
+}
+
+static void handle_set_app_id(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
+		wl_container_of(listener, xdg_shell_v6_view, set_app_id);
+	struct sway_view *view = &xdg_shell_v6_view->view;
+	view_execute_criteria(view);
 }
 
 static void handle_new_popup(struct wl_listener *listener, void *data) {
@@ -299,6 +313,8 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_v6_view->request_fullscreen.link);
 	wl_list_remove(&xdg_shell_v6_view->request_move.link);
 	wl_list_remove(&xdg_shell_v6_view->request_resize.link);
+	wl_list_remove(&xdg_shell_v6_view->set_title.link);
+	wl_list_remove(&xdg_shell_v6_view->set_app_id.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -344,6 +360,14 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_v6_view->request_resize.notify = handle_request_resize;
 	wl_signal_add(&xdg_surface->toplevel->events.request_resize,
 			&xdg_shell_v6_view->request_resize);
+
+	xdg_shell_v6_view->set_title.notify = handle_set_title;
+	wl_signal_add(&xdg_surface->toplevel->events.set_title,
+			&xdg_shell_v6_view->set_title);
+
+	xdg_shell_v6_view->set_app_id.notify = handle_set_app_id;
+	wl_signal_add(&xdg_surface->toplevel->events.set_app_id,
+			&xdg_shell_v6_view->set_app_id);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
