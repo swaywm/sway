@@ -305,7 +305,6 @@ static void handle_resize_motion(struct sway_seat *seat,
 	}
 
 	arrange_windows(con);
-	transaction_commit_dirty();
 }
 
 void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
