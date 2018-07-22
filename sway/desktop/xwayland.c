@@ -305,6 +305,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_configure.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->request_move.link);
+	wl_list_remove(&xwayland_view->request_resize.link);
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_window_type.link);
@@ -398,6 +400,37 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 	arrange_windows(output);
 	transaction_commit_dirty();
+}
+
+static void handle_request_move(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_move);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	seat_begin_move(seat, view->swayc, seat->last_button);
+}
+
+static void handle_request_resize(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_resize);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
+	struct wlr_xwayland_resize_event *e = data;
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	seat_begin_resize(seat, view->swayc, seat->last_button, e->edges);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {
@@ -494,6 +527,14 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.request_fullscreen,
 		&xwayland_view->request_fullscreen);
 	xwayland_view->request_fullscreen.notify = handle_request_fullscreen;
+
+	wl_signal_add(&xsurface->events.request_move,
+		&xwayland_view->request_move);
+	xwayland_view->request_move.notify = handle_request_move;
+
+	wl_signal_add(&xsurface->events.request_resize,
+		&xwayland_view->request_resize);
+	xwayland_view->request_resize.notify = handle_request_resize;
 
 	wl_signal_add(&xsurface->events.set_title, &xwayland_view->set_title);
 	xwayland_view->set_title.notify = handle_set_title;

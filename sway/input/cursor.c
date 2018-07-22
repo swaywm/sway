@@ -474,6 +474,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	if (cursor->seat->operation != OP_NONE &&
 			button == cursor->seat->op_button && state == WLR_BUTTON_RELEASED) {
 		seat_end_mouse_operation(cursor->seat);
+		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
 		return;
 	}
 	if (time_msec == 0) {
