@@ -135,6 +135,11 @@ struct sway_container {
 
 	struct sway_container *parent;
 
+	// Indicates that the container is a scratchpad container.
+	// Both hidden and visible scratchpad containers have scratchpad=true.
+	// Hidden scratchpad containers have a NULL parent.
+	bool scratchpad;
+
 	float alpha;
 
 	struct wlr_texture *title_focused;

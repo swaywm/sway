@@ -149,6 +149,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "reload", cmd_reload },
 	{ "rename", cmd_rename },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitt", cmd_splitt },
@@ -326,7 +327,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	} while(head);
 cleanup:
 	free(exec);
-	free(views);
+	list_free(views);
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}

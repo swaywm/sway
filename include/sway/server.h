@@ -48,6 +48,8 @@ struct sway_server {
 
 	list_t *transactions;
 	list_t *dirty_containers;
+
+	list_t *scratchpad; // struct sway_container
 };
 
 struct sway_server server;

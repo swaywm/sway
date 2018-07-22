@@ -17,6 +17,7 @@
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/scratchpad.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
@@ -327,6 +328,10 @@ static struct sway_container *container_destroy_noreaping(
 
 	con->destroying = true;
 	container_set_dirty(con);
+
+	if (con->scratchpad) {
+		scratchpad_remove_container(con);
+	}
 
 	if (!con->parent) {
 		return NULL;
@@ -955,6 +960,9 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_reap_empty_recursive(workspace);
 	} else {
 		// Returning to tiled
+		if (container->scratchpad) {
+			scratchpad_remove_container(container);
+		}
 		container_remove_child(container);
 		container_add_child(workspace, container);
 		container->width = container->parent->width;
