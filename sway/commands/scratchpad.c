@@ -2,7 +2,6 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/scratchpad.h"
-#include "sway/server.h"
 #include "sway/tree/container.h"
 
 struct cmd_results *cmd_scratchpad(int argc, char **argv) {
@@ -14,7 +13,7 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "scratchpad",
 				"Expected 'scratchpad show'");
 	}
-	if (!server.scratchpad->length) {
+	if (!root_container.sway_root->scratchpad->length) {
 		return cmd_results_new(CMD_INVALID, "scratchpad",
 				"Scratchpad is empty");
 	}

@@ -16,7 +16,7 @@ void scratchpad_add_container(struct sway_container *con) {
 		return;
 	}
 	con->scratchpad = true;
-	list_add(server.scratchpad, con);
+	list_add(root_container.sway_root->scratchpad, con);
 
 	struct sway_container *parent = con->parent;
 	container_set_floating(con, true);
@@ -32,9 +32,9 @@ void scratchpad_remove_container(struct sway_container *con) {
 		return;
 	}
 	con->scratchpad = false;
-	for (int i = 0; i < server.scratchpad->length; ++i) {
-		if (server.scratchpad->items[i] == con) {
-			list_del(server.scratchpad, i);
+	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
+		if (root_container.sway_root->scratchpad->items[i] == con) {
+			list_del(root_container.sway_root->scratchpad, i);
 			break;
 		}
 	}
@@ -104,7 +104,7 @@ static void scratchpad_hide(struct sway_container *con) {
 	if (con == focus) {
 		seat_set_focus(seat, seat_get_focus_inactive(seat, ws));
 	}
-	list_move_to_end(server.scratchpad, con);
+	list_move_to_end(root_container.sway_root->scratchpad, con);
 }
 
 void scratchpad_toggle_auto(void) {
@@ -138,8 +138,9 @@ void scratchpad_toggle_auto(void) {
 
     // Check if there is a visible scratchpad window on another workspace.
     // In this case we move it to the current workspace.
-	for (int i = 0; i < server.scratchpad->length; ++i) {
-		struct sway_container *con = server.scratchpad->items[i];
+	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
+		struct sway_container *con =
+			root_container.sway_root->scratchpad->items[i];
 		if (con->parent) {
 			wlr_log(WLR_DEBUG,
 					"Moving a visible scratchpad window (%s) to this workspace",
@@ -150,10 +151,11 @@ void scratchpad_toggle_auto(void) {
 	}
 
 	// Take the container at the bottom of the scratchpad list
-	if (!sway_assert(server.scratchpad->length, "Scratchpad is empty")) {
+	if (!sway_assert(root_container.sway_root->scratchpad->length,
+				"Scratchpad is empty")) {
 		return;
 	}
-	struct sway_container *con = server.scratchpad->items[0];
+	struct sway_container *con = root_container.sway_root->scratchpad->items[0];
 	wlr_log(WLR_DEBUG, "Showing %s from list", con->name);
 	scratchpad_show(con);
 }

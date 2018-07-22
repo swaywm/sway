@@ -227,8 +227,9 @@ list_t *criteria_get_views(struct criteria *criteria) {
 		criteria_get_views_iterator, &data);
 
 	// Scratchpad items which are hidden are not in the tree.
-	for (int i = 0; i < server.scratchpad->length; ++i) {
-		struct sway_container *con = server.scratchpad->items[i];
+	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
+		struct sway_container *con =
+			root_container.sway_root->scratchpad->items[i];
 		if (!con->parent) {
 			criteria_get_views_iterator(con, &data);
 		}

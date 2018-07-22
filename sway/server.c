@@ -126,8 +126,6 @@ bool server_init(struct sway_server *server) {
 	server->dirty_containers = create_list();
 	server->transactions = create_list();
 
-	server->scratchpad = create_list();
-
 	input_manager = input_manager_create(server);
 	return true;
 }
@@ -137,7 +135,6 @@ void server_fini(struct sway_server *server) {
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_containers);
 	list_free(server->transactions);
-	list_free(server->scratchpad);
 }
 
 bool server_start_backend(struct sway_server *server) {

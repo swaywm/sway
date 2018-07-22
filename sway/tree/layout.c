@@ -42,6 +42,7 @@ void layout_init(void) {
 	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
 	wl_list_init(&root_container.sway_root->drag_icons);
 	wl_signal_init(&root_container.sway_root->events.new_container);
+	root_container.sway_root->scratchpad = create_list();
 
 	root_container.sway_root->output_layout_change.notify =
 		output_layout_handle_change;
