@@ -264,6 +264,9 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_move);
 	struct sway_view *view = &xdg_shell_view->view;
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
 	struct wlr_xdg_toplevel_move_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
@@ -275,6 +278,9 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, request_resize);
 	struct sway_view *view = &xdg_shell_view->view;
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
 	struct wlr_xdg_toplevel_resize_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
