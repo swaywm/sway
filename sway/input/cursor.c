@@ -465,6 +465,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	}
 
 	// Send event to surface
+	seat_set_focus(seat, cont);
 	seat_pointer_notify_button(seat, time_msec, button, state);
 }
 
