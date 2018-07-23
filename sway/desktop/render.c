@@ -838,7 +838,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
-	if (output_has_opaque_lockscreen(output, seat)) {
+	if (output_has_opaque_lockscreen(output, seat) && seat->focused_layer) {
 		struct wlr_layer_surface *wlr_layer_surface = seat->focused_layer;
 		struct sway_layer_surface *sway_layer_surface =
 			layer_from_wlr_layer_surface(seat->focused_layer);
