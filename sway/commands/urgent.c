@@ -5,6 +5,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/layout.h"
+#include "util.h"
 
 struct cmd_results *cmd_urgent(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -19,17 +20,12 @@ struct cmd_results *cmd_urgent(int argc, char **argv) {
 	}
 	struct sway_view *view = container->sway_view;
 
-	if (strcmp(argv[0], "enable") == 0) {
-		view_set_urgent(view, true);
-	} else if (strcmp(argv[0], "disable") == 0) {
-		view_set_urgent(view, false);
-	} else if (strcmp(argv[0], "allow") == 0) {
+	if (strcmp(argv[0], "allow") == 0) {
 		view->allow_request_urgent = true;
 	} else if (strcmp(argv[0], "deny") == 0) {
 		view->allow_request_urgent = false;
 	} else {
-		return cmd_results_new(CMD_INVALID, "urgent",
-				"Expected 'urgent <enable|disable|allow|deny>'");
+		view_set_urgent(view, parse_boolean(argv[0], view_is_urgent(view)));
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

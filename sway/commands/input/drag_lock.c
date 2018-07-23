@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "util.h"
 
 struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -18,14 +19,10 @@ struct cmd_results *input_cmd_drag_lock(int argc, char **argv) {
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);
 
-	if (strcasecmp(argv[0], "enabled") == 0) {
+	if (parse_boolean(argv[0], true)) {
 		new_config->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_ENABLED;
-	} else if (strcasecmp(argv[0], "disabled") == 0) {
-		new_config->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
 	} else {
-		free_input_config(new_config);
-		return cmd_results_new(CMD_INVALID, "drag_lock",
-			"Expected 'drag_lock <enabled|disabled>'");
+		new_config->drag_lock = LIBINPUT_CONFIG_DRAG_LOCK_DISABLED;
 	}
 
 	apply_input_config(new_config);

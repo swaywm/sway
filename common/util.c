@@ -123,6 +123,21 @@ uint32_t parse_color(const char *color) {
 	return res;
 }
 
+bool parse_boolean(const char *boolean, const bool current) {
+	if (strcmp(boolean, "1") == 0
+			|| strcmp(boolean, "yes") == 0
+			|| strcmp(boolean, "on") == 0
+			|| strcmp(boolean, "true") == 0
+			|| strcmp(boolean, "enable") == 0
+			|| strcmp(boolean, "enabled") == 0
+			|| strcmp(boolean, "active") == 0) {
+		return true;
+	} else if (strcmp(boolean, "toggle") == 0) {
+		return !current;
+	}
+	return false;
+}
+
 char* resolve_path(const char* path) {
 	struct stat sb;
 	ssize_t r;

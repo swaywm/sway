@@ -51,6 +51,14 @@ pid_t get_parent_pid(pid_t pid);
 uint32_t parse_color(const char *color);
 
 /**
+ * Given a string that represents a boolean, return the boolean value. This
+ * function also takes in the current boolean value to support toggling. If
+ * toggling is not desired, pass in true for current so that toggling values
+ * get parsed as not true.
+ */
+bool parse_boolean(const char *boolean, const bool current);
+
+/**
  * Given a path string, recurseively resolves any symlinks to their targets
  * (which may be a file, directory) and returns the result.
  * argument is returned. Caller must free the returned buffer.
