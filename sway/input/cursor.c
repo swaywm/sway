@@ -726,6 +726,7 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 
 	wlr_cursor_set_surface(cursor->cursor, event->surface, event->hotspot_x,
 		event->hotspot_y);
+	cursor->image = NULL;
 	cursor->image_client = focused_client;
 }
 
