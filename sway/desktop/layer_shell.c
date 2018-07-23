@@ -7,11 +7,13 @@
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "log.h"
 
@@ -212,6 +214,9 @@ void arrange_layers(struct sway_output *output) {
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		seat_set_focus_layer(seat, topmost ? topmost->layer_surface : NULL);
 	}
+
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
