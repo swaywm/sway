@@ -1065,7 +1065,7 @@ void view_update_marks_textures(struct sway_view *view) {
 }
 
 bool view_is_visible(struct sway_view *view) {
-	if (!view->swayc || view->swayc->destroying) {
+	if (!view->swayc || view->swayc->destroying || !view->swayc->parent) {
 		return false;
 	}
 	struct sway_container *workspace =

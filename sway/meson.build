@@ -7,6 +7,7 @@ sway_sources = files(
 	'debug-tree.c',
 	'ipc-json.c',
 	'ipc-server.c',
+	'scratchpad.c',
 	'security.c',
 
 	'desktop/desktop.c',
@@ -67,6 +68,7 @@ sway_sources = files(
 	'commands/reload.c',
 	'commands/rename.c',
 	'commands/resize.c',
+	'commands/scratchpad.c',
 	'commands/seat.c',
 	'commands/seat/attach.c',
 	'commands/seat/cursor.c',

@@ -9,6 +9,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
+#include "sway/scratchpad.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
@@ -296,6 +297,19 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *move_to_scratchpad(struct sway_container *con) {
+	if (con->type != C_CONTAINER && con->type != C_VIEW) {
+		return cmd_results_new(CMD_INVALID, "move",
+				"Only views and containers can be moved to the scratchpad");
+	}
+	if (con->scratchpad) {
+		return cmd_results_new(CMD_INVALID, "move",
+				"Container is already in the scratchpad");
+	}
+	scratchpad_add_container(con);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
@@ -317,10 +331,9 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "workspace") == 0) {
 		return cmd_move_workspace(current, argc, argv);
 	} else if (strcasecmp(argv[0], "scratchpad") == 0
-			|| (strcasecmp(argv[0], "to") == 0
+			|| (strcasecmp(argv[0], "to") == 0 && argc == 2
 				&& strcasecmp(argv[1], "scratchpad") == 0)) {
-		// TODO: scratchpad
-		return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
+		return move_to_scratchpad(current);
 	} else if (strcasecmp(argv[0], "position") == 0) {
 		return move_to_position(current, argc, argv);
 	} else if (strcasecmp(argv[0], "absolute") == 0) {

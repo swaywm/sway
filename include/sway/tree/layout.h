@@ -35,6 +35,8 @@ struct sway_root {
 
 	struct wl_list outputs; // sway_output::link
 
+	list_t *scratchpad; // struct sway_container
+
 	struct {
 		struct wl_signal new_container;
 	} events;

@@ -42,6 +42,7 @@ void layout_init(void) {
 	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
 	wl_list_init(&root_container.sway_root->drag_icons);
 	wl_signal_init(&root_container.sway_root->events.new_container);
+	root_container.sway_root->scratchpad = create_list();
 
 	root_container.sway_root->output_layout_change.notify =
 		output_layout_handle_change;
@@ -135,6 +136,10 @@ void container_add_child(struct sway_container *parent,
 	list_add(parent->children, child);
 	child->parent = parent;
 	container_handle_fullscreen_reparent(child, old_parent);
+	if (old_parent) {
+		container_set_dirty(old_parent);
+	}
+	container_set_dirty(child);
 }
 
 struct sway_container *container_remove_child(struct sway_container *child) {
@@ -152,6 +157,9 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	}
 	child->parent = NULL;
 	container_notify_subtree_changed(parent);
+
+	container_set_dirty(parent);
+	container_set_dirty(child);
 
 	return parent;
 }
