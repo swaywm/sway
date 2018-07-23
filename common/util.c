@@ -123,7 +123,7 @@ uint32_t parse_color(const char *color) {
 	return res;
 }
 
-bool parse_boolean(const char *boolean, const bool current) {
+bool parse_boolean(const char *boolean, bool current) {
 	if (strcmp(boolean, "1") == 0
 			|| strcmp(boolean, "yes") == 0
 			|| strcmp(boolean, "on") == 0

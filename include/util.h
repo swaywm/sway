@@ -56,7 +56,7 @@ uint32_t parse_color(const char *color);
  * toggling is not desired, pass in true for current so that toggling values
  * get parsed as not true.
  */
-bool parse_boolean(const char *boolean, const bool current);
+bool parse_boolean(const char *boolean, bool current);
 
 /**
  * Given a path string, recurseively resolves any symlinks to their targets
