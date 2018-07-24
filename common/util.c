@@ -124,17 +124,18 @@ uint32_t parse_color(const char *color) {
 }
 
 bool parse_boolean(const char *boolean, bool current) {
-	if (strcmp(boolean, "1") == 0
-			|| strcmp(boolean, "yes") == 0
-			|| strcmp(boolean, "on") == 0
-			|| strcmp(boolean, "true") == 0
-			|| strcmp(boolean, "enable") == 0
-			|| strcmp(boolean, "enabled") == 0
-			|| strcmp(boolean, "active") == 0) {
+	if (strcasecmp(boolean, "1") == 0
+			|| strcasecmp(boolean, "yes") == 0
+			|| strcasecmp(boolean, "on") == 0
+			|| strcasecmp(boolean, "true") == 0
+			|| strcasecmp(boolean, "enable") == 0
+			|| strcasecmp(boolean, "enabled") == 0
+			|| strcasecmp(boolean, "active") == 0) {
 		return true;
-	} else if (strcmp(boolean, "toggle") == 0) {
+	} else if (strcasecmp(boolean, "toggle") == 0) {
 		return !current;
 	}
+	// All other values are false to match i3
 	return false;
 }
 

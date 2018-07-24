@@ -9,7 +9,7 @@ struct cmd_results *cmd_focus_wrapping(int argc, char **argv) {
 		return error;
 	}
 
-	if (strcmp(argv[0], "force") == 0) {
+	if (strcasecmp(argv[0], "force") == 0) {
 		config->focus_wrapping = WRAP_FORCE;
 	} else if (parse_boolean(argv[0], config->focus_wrapping == WRAP_YES)) {
 		config->focus_wrapping = WRAP_YES;
