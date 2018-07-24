@@ -41,11 +41,11 @@ struct sway_server {
 
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener xdg_shell_surface;
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
-  #endif
+#endif
 	bool debug_txn_timings;
 
 	list_t *transactions;

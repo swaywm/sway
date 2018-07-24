@@ -18,7 +18,6 @@ sway_sources = files(
 	'desktop/transaction.c',
 	'desktop/xdg_shell_v6.c',
 	'desktop/xdg_shell.c',
-	'desktop/xwayland.c',
 
 	'input/input-manager.c',
 	'input/seat.c',
@@ -151,6 +150,10 @@ sway_sources = files(
 	'tree/workspace.c',
 	'tree/output.c',
 )
+
+if get_option('enable-xwayland')
+	sway_sources += 'desktop/xwayland.c'
+endif
 
 sway_deps = [
 	cairo,

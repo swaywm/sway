@@ -291,12 +291,12 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 	if (workspace->current.ws_fullscreen) {
 		send_frame_done_container_iterator(
 			workspace->current.ws_fullscreen->swayc, &data);
-    #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 		if (workspace->current.ws_fullscreen->type == SWAY_VIEW_XWAYLAND) {
 			send_frame_done_unmanaged(&data,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
-    #endif
+#endif
 	} else {
 		send_frame_done_layer(&data,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
@@ -305,11 +305,11 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 
 		send_frame_done_container(&data, workspace);
 		send_frame_done_container(&data, workspace->sway_workspace->floating);
-    
-    #ifdef HAVE_XWAYLAND
+
+#ifdef HAVE_XWAYLAND
 		send_frame_done_unmanaged(&data,
 			&root_container.sway_root->xwayland_unmanaged);
-    #endif
+#endif
 		send_frame_done_layer(&data,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}

@@ -14,9 +14,9 @@ struct sway_container;
 enum sway_view_type {
 	SWAY_VIEW_XDG_SHELL_V6,
 	SWAY_VIEW_XDG_SHELL,
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	SWAY_VIEW_XWAYLAND,
-  #endif
+#endif
 };
 
 enum sway_view_prop {
@@ -26,9 +26,9 @@ enum sway_view_prop {
 	VIEW_PROP_INSTANCE,
 	VIEW_PROP_WINDOW_TYPE,
 	VIEW_PROP_WINDOW_ROLE,
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	VIEW_PROP_X11_WINDOW_ID,
-  #endif
+#endif
 };
 
 struct sway_view_impl {
@@ -96,9 +96,9 @@ struct sway_view {
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
 		struct wlr_xdg_surface *wlr_xdg_surface;
-    #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
-    #endif
+#endif
 		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
 

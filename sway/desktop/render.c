@@ -866,12 +866,12 @@ void output_render(struct sway_output *output, struct timespec *when,
 		} else {
 			render_view_surfaces(fullscreen_view, output, damage, 1.0f);
 		}
-    #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
-    #endif
+#endif
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 
@@ -889,10 +889,10 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		render_container(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
-    #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
-    #endif  
+#endif
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}

@@ -49,9 +49,9 @@ git            = find_program('git', required: false)
 conf_data = configuration_data()
 
 if get_option('enable-xwayland')
-  conf_data.set('HAVE_XWAYLAND', true)
+	conf_data.set('HAVE_XWAYLAND', true)
 else
-  conf_data.set('HAVE_XWAYLAND', false)
+	conf_data.set('HAVE_XWAYLAND', false)
 endif
 
 if gdk_pixbuf.found()
