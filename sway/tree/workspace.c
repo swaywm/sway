@@ -592,6 +592,8 @@ found:
 static void pw_handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct pid_workspace *pw = wl_container_of(listener, pw, output_destroy);
 	pw->output = NULL;
+	wl_list_remove(&pw->output_destroy.link);
+	wl_list_init(&pw->output_destroy.link);
 }
 
 void workspace_record_pid(pid_t pid) {
