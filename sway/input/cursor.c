@@ -452,7 +452,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 	if (button == btn_move && state == WLR_BUTTON_PRESSED &&
 			(mod_pressed || over_title)) {
-		seat_begin_move(seat, cont, btn_move);
+		seat_begin_move(seat, cont, button);
 		return;
 	}
 
