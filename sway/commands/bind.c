@@ -267,3 +267,19 @@ struct cmd_results *cmd_bindsym(int argc, char **argv) {
 struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, true);
 }
+
+
+/**
+ * Execute the command associated to a binding
+ */
+void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) {
+	wlr_log(WLR_DEBUG, "running command for binding: %s",
+		binding->command);
+	config->handler_context.seat = seat;
+	struct cmd_results *results = execute_command(binding->command, NULL);
+	if (results->status != CMD_SUCCESS) {
+		wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
+			binding->command, results->error);
+	}
+	free_cmd_results(results);
+}

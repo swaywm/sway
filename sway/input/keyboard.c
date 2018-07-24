@@ -3,11 +3,11 @@
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include <wlr/types/wlr_idle.h>
-#include "sway/desktop/transaction.h"
-#include "sway/input/seat.h"
-#include "sway/input/keyboard.h"
-#include "sway/input/input-manager.h"
 #include "sway/commands.h"
+#include "sway/desktop/transaction.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/keyboard.h"
+#include "sway/input/seat.h"
 #include "log.h"
 
 /**
@@ -88,8 +88,8 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		uint32_t modifiers, bool release, bool locked) {
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
-		bool binding_locked = binding->flags | BINDING_LOCKED;
-		bool binding_release = binding->flags | BINDING_RELEASE;
+		bool binding_locked = binding->flags & BINDING_LOCKED;
+		bool binding_release = binding->flags & BINDING_RELEASE;
 
 		if (modifiers ^ binding->modifiers ||
 				state->npressed != (size_t)binding->keys->length ||
@@ -118,23 +118,6 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		}
 		return;
 	}
-}
-
-/**
- * Execute the command associated to a binding
- */
-static void keyboard_execute_command(struct sway_keyboard *keyboard,
-		struct sway_binding *binding) {
-	wlr_log(WLR_DEBUG, "running command for binding: %s",
-		binding->command);
-	config->handler_context.seat = keyboard->seat_device->sway_seat;
-	struct cmd_results *results = execute_command(binding->command, NULL);
-	transaction_commit_dirty();
-	if (results->status != CMD_SUCCESS) {
-		wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
-			binding->command, results->error);
-	}
-	free_cmd_results(results);
 }
 
 /**
@@ -213,12 +196,13 @@ static size_t keyboard_keysyms_raw(struct sway_keyboard *keyboard,
 static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct sway_keyboard *keyboard =
 		wl_container_of(listener, keyboard, keyboard_key);
-	struct wlr_seat *wlr_seat = keyboard->seat_device->sway_seat->wlr_seat;
+	struct sway_seat* seat = keyboard->seat_device->sway_seat;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
-	wlr_idle_notify_activity(keyboard->seat_device->sway_seat->input->server->idle, wlr_seat);
+	wlr_idle_notify_activity(seat->input->server->idle, wlr_seat);
 	struct wlr_event_keyboard_key *event = data;
-	bool input_inhibited = keyboard->seat_device->sway_seat->exclusive_client != NULL;
+	bool input_inhibited = seat->exclusive_client != NULL;
 
 	// Identify new keycode, raw keysym(s), and translated keysym(s)
 	xkb_keycode_t keycode = event->keycode + 8;
@@ -268,7 +252,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	// Execute stored release binding once no longer active
 	if (keyboard->held_binding && binding_released != keyboard->held_binding &&
 			event->state == WLR_KEY_RELEASED) {
-		keyboard_execute_command(keyboard, keyboard->held_binding);
+		seat_execute_command(seat, keyboard->held_binding);
 		handled = true;
 	}
 	if (binding_released != keyboard->held_binding) {
@@ -292,7 +276,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 				raw_modifiers, false, input_inhibited);
 
 		if (binding_pressed) {
-			keyboard_execute_command(keyboard, binding_pressed);
+			seat_execute_command(seat, binding_pressed);
 			handled = true;
 		}
 	}
@@ -314,6 +298,8 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		wlr_seat_keyboard_notify_key(wlr_seat, event->time_msec,
 				event->keycode, event->state);
 	}
+
+	transaction_commit_dirty();
 }
 
 static void handle_keyboard_modifiers(struct wl_listener *listener,

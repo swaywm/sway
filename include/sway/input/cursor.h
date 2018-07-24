@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "sway/input/seat.h"
 
+#define SWAY_CURSOR_PRESSED_BUTTONS_CAP 32
+
 struct sway_cursor {
 	struct sway_seat *seat;
 	struct wlr_cursor *cursor;
@@ -29,6 +31,10 @@ struct sway_cursor {
 	uint32_t tool_buttons;
 
 	struct wl_listener request_set_cursor;
+
+	// Mouse binding state
+	uint32_t pressed_buttons[SWAY_CURSOR_PRESSED_BUTTONS_CAP];
+	size_t pressed_button_count;
 };
 
 void sway_cursor_destroy(struct sway_cursor *cursor);
