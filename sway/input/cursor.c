@@ -449,15 +449,17 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	bool over_title = edge == WLR_EDGE_NONE && !surface;
 
 	// Check for beginning move
-	if (button == BTN_LEFT && state == WLR_BUTTON_PRESSED &&
+	uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
+	if (button == btn_move && state == WLR_BUTTON_PRESSED &&
 			(mod_pressed || over_title)) {
-		seat_begin_move(seat, cont, BTN_LEFT);
+		seat_begin_move(seat, cont, button);
 		return;
 	}
 
 	// Check for beginning resize
 	bool resizing_via_border = button == BTN_LEFT && edge != WLR_EDGE_NONE;
-	bool resizing_via_mod = button == BTN_RIGHT && mod_pressed;
+	uint32_t btn_resize = config->floating_mod_inverse ? BTN_LEFT : BTN_RIGHT;
+	bool resizing_via_mod = button == btn_resize && mod_pressed;
 	if ((resizing_via_border || resizing_via_mod) &&
 			state == WLR_BUTTON_PRESSED) {
 		if (edge == WLR_EDGE_NONE) {
