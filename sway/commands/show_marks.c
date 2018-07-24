@@ -7,6 +7,7 @@
 #include "list.h"
 #include "log.h"
 #include "stringop.h"
+#include "util.h"
 
 static void rebuild_marks_iterator(struct sway_container *con, void *data) {
 	if (con->type == C_VIEW) {
@@ -20,14 +21,7 @@ struct cmd_results *cmd_show_marks(int argc, char **argv) {
 		return error;
 	}
 
-	if (strcmp(*argv, "yes") == 0) {
-		config->show_marks = true;
-	} else if (strcmp(*argv, "no") == 0) {
-		config->show_marks = false;
-	} else {
-		return cmd_results_new(CMD_INVALID, "show_marks",
-				"Expected 'show_marks <yes|no>'");
-	}
+	config->show_marks = parse_boolean(argv[0], config->show_marks);
 
 	if (config->show_marks) {
 		container_for_each_descendant_dfs(&root_container,

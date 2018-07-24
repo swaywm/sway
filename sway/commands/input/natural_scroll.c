@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "util.h"
 
 struct cmd_results *input_cmd_natural_scroll(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -18,15 +19,7 @@ struct cmd_results *input_cmd_natural_scroll(int argc, char **argv) {
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);
 
-	if (strcasecmp(argv[0], "enabled") == 0) {
-		new_config->natural_scroll = 1;
-	} else if (strcasecmp(argv[0], "disabled") == 0) {
-		new_config->natural_scroll = 0;
-	} else {
-		free_input_config(new_config);
-		return cmd_results_new(CMD_INVALID, "natural_scroll",
-			"Expected 'natural_scroll <enabled|disabled>'");
-	}
+	new_config->natural_scroll = parse_boolean(argv[0], true);
 
 	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

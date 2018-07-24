@@ -1,6 +1,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "util.h"
 
 struct cmd_results *cmd_focus_wrapping(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -8,15 +9,12 @@ struct cmd_results *cmd_focus_wrapping(int argc, char **argv) {
 		return error;
 	}
 
-	if (strcasecmp(argv[0], "no") == 0) {
-		config->focus_wrapping = WRAP_NO;
-	} else if (strcasecmp(argv[0], "yes") == 0) {
-		config->focus_wrapping = WRAP_YES;
-	} else if (strcasecmp(argv[0], "force") == 0) {
+	if (strcasecmp(argv[0], "force") == 0) {
 		config->focus_wrapping = WRAP_FORCE;
+	} else if (parse_boolean(argv[0], config->focus_wrapping == WRAP_YES)) {
+		config->focus_wrapping = WRAP_YES;
 	} else {
-		return cmd_results_new(CMD_INVALID, "focus_wrapping",
-				"Expected 'focus_wrapping yes|no|force'");
+		config->focus_wrapping = WRAP_NO;
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
