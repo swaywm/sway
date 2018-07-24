@@ -418,9 +418,6 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {
 	view_init(&xdg_shell_view->view, SWAY_VIEW_XDG_SHELL, &view_impl);
 	xdg_shell_view->view.wlr_xdg_surface = xdg_surface;
 
-	// TODO:
-	// - Look up pid and open on appropriate workspace
-
 	xdg_shell_view->map.notify = handle_map;
 	wl_signal_add(&xdg_surface->events.map, &xdg_shell_view->map);
 

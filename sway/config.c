@@ -93,7 +93,6 @@ void free_config(struct sway_config *config) {
 	}
 	list_free(config->cmd_queue);
 	list_free(config->workspace_outputs);
-	list_free(config->pid_workspaces);
 	if (config->output_configs) {
 		for (int i = 0; i < config->output_configs->length; i++) {
 			free_output_config(config->output_configs->items[i]);
@@ -163,7 +162,6 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->modes = create_list())) goto cleanup;
 	if (!(config->bars = create_list())) goto cleanup;
 	if (!(config->workspace_outputs = create_list())) goto cleanup;
-	if (!(config->pid_workspaces = create_list())) goto cleanup;
 	if (!(config->criteria = create_list())) goto cleanup;
 	if (!(config->no_focus = create_list())) goto cleanup;
 	if (!(config->input_configs = create_list())) goto cleanup;
