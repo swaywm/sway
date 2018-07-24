@@ -460,6 +460,12 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	bool resizing_via_mod = button == BTN_RIGHT && mod_pressed;
 	if ((resizing_via_border || resizing_via_mod) &&
 			state == WLR_BUTTON_PRESSED) {
+		if (edge == WLR_EDGE_NONE) {
+			edge |= cursor->cursor->x > cont->x + cont->width / 2 ?
+				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
+			edge |= cursor->cursor->y > cont->y + cont->height / 2 ?
+				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+		}
 		seat_begin_resize(seat, cont, button, edge);
 		return;
 	}
