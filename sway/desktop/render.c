@@ -132,7 +132,7 @@ static void render_layer(struct sway_output *output,
 	output_layer_for_each_surface(layer_surfaces, &data.root_geo,
 		render_surface_iterator, &data);
 }
-
+#ifdef HAVE_XWAYLAND
 static void render_unmanaged(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *unmanaged) {
 	struct render_data data = {
@@ -143,7 +143,7 @@ static void render_unmanaged(struct sway_output *output,
 	output_unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
 		render_surface_iterator, &data);
 }
-
+#endif
 static void render_drag_icons(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *drag_icons) {
 	struct render_data data = {
@@ -866,11 +866,12 @@ void output_render(struct sway_output *output, struct timespec *when,
 		} else {
 			render_view_surfaces(fullscreen_view, output, damage, 1.0f);
 		}
-
+    #ifdef HAVE_XWAYLAND
 		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
 			render_unmanaged(output, damage,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
+    #endif
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 
@@ -888,9 +889,10 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		render_container(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
-
+    #ifdef HAVE_XWAYLAND
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
+    #endif  
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}

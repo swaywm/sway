@@ -25,7 +25,9 @@
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
+#ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"
+#endif
 
 bool server_privileged_prepare(struct sway_server *server) {
 	wlr_log(WLR_DEBUG, "Preparing Wayland server initialization");
@@ -81,6 +83,7 @@ bool server_init(struct sway_server *server) {
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
 
 	// TODO make xwayland optional
+  #ifdef HAVE_XWAYLAND
 	server->xwayland.wlr_xwayland =
 		wlr_xwayland_create(server->wl_display, server->compositor, true);
 	wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
@@ -101,6 +104,7 @@ bool server_init(struct sway_server *server) {
 			image->width * 4, image->width, image->height, image->hotspot_x,
 			image->hotspot_y);
 	}
+  #endif
 
 	// TODO: Integration with sway borders
 	struct wlr_server_decoration_manager *deco_manager =

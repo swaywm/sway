@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
+#ifdef HAVE_XWAYLAND
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -591,3 +592,4 @@ void handle_xwayland_ready(struct wl_listener *listener, void *data) {
 
 	xcb_disconnect(xcb_conn);
 }
+#endif

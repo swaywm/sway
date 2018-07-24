@@ -12,7 +12,9 @@
 #include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
 #include "list.h"
+#ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"
+#endif
 
 struct sway_server {
 	struct wl_display *wl_display;
@@ -39,11 +41,11 @@ struct sway_server {
 
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener xdg_shell_surface;
-
+  #ifdef HAVE_XWAYLAND
 	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
-
+  #endif
 	bool debug_txn_timings;
 
 	list_t *transactions;
@@ -65,6 +67,7 @@ void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_surface(struct wl_listener *listener, void *data);
+#ifdef HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
-
+#endif
 #endif

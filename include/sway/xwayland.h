@@ -1,3 +1,4 @@
+#ifdef HAVE_XWAYLAND
 #ifndef SWAY_XWAYLAND_H
 #define SWAY_XWAYLAND_H
 
@@ -22,4 +23,5 @@ struct sway_xwayland {
 
 void handle_xwayland_ready(struct wl_listener *listener, void *data);
 
+#endif
 #endif
