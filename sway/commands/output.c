@@ -29,7 +29,7 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 
 	struct output_config *output = new_output_config(argv[0]);
 	if (!output) {
-		wlr_log(L_ERROR, "Failed to allocate output config");
+		wlr_log(WLR_ERROR, "Failed to allocate output config");
 		return NULL;
 	}
 	argc--; argv++;
@@ -60,53 +60,13 @@ struct cmd_results *cmd_output(int argc, char **argv) {
 	config->handler_context.leftovers.argc = 0;
 	config->handler_context.leftovers.argv = NULL;
 
-	int i = list_seq_find(config->output_configs, output_name_cmp, output->name);
-	if (i >= 0) {
-		// Merge existing config
-		struct output_config *current = config->output_configs->items[i];
-		merge_output_config(current, output);
-		free_output_config(output);
-		output = current;
-	} else {
-		list_add(config->output_configs, output);
-	}
+	output = store_output_config(output);
 
-	wlr_log(L_DEBUG, "Config stored for output %s (enabled: %d) (%dx%d@%fHz "
-		"position %d,%d scale %f transform %d) (bg %s %s) (dpms %d)",
-		output->name, output->enabled, output->width, output->height,
-		output->refresh_rate, output->x, output->y, output->scale,
-		output->transform, output->background, output->background_option, output->dpms_state);
-
-	// Try to find the output container and apply configuration now. If
-	// this is during startup then there will be no container and config
-	// will be applied during normal "new output" event from wlroots.
-	char identifier[128];
-	bool all = strcmp(output->name, "*") == 0;
-	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
-		output_get_identifier(identifier, sizeof(identifier), sway_output);
-		wlr_log(L_DEBUG, "Checking identifier %s", identifier);
-		if (all || strcmp(sway_output->wlr_output->name, output->name) == 0
-				|| strcmp(identifier, output->name) == 0) {
-			if (!sway_output->swayc) {
-				if (!output->enabled) {
-					if (!all) {
-						break;
-					}
-					continue;
-				}
-
-				output_enable(sway_output);
-			}
-
-			apply_output_config(output, sway_output->swayc);
-
-			if (!all) {
-				// Stop looking if the output config isn't applicable to all
-				// outputs
-				break;
-			}
-		}
+	// If reloading, the output configs will be applied after reading the
+	// entire config and before the deferred commands so that an auto generated
+	// workspace name is not given to re-enabled outputs.
+	if (!config->reloading) {
+		apply_output_config_to_outputs(output);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

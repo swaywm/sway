@@ -108,11 +108,11 @@ static void render_sharp_line(cairo_t *cairo, uint32_t color,
 	}
 }
 
-static void block_hotspot_callback(struct swaybar_output *output,
-			int x, int y, uint32_t button, void *data) {
+static enum hotspot_event_handling block_hotspot_callback(struct swaybar_output *output,
+			int x, int y, enum x11_button button, void *data) {
 	struct i3bar_block *block = data;
 	struct status_line *status = output->bar->status;
-	i3bar_block_send_click(status, block, x, y, button);
+	return i3bar_block_send_click(status, block, x, y, button);
 }
 
 static uint32_t render_status_block(cairo_t *cairo,
@@ -298,7 +298,8 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height,
-			output->scale, config->pango_markup, "%s", mode);
+			output->scale, config->mode_pango_markup,
+			"%s", mode);
 
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
 	int ws_horizontal_padding = WS_HORIZONTAL_PADDING * output->scale;
@@ -329,7 +330,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, config->colors.binding_mode.text);
 	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
-	pango_printf(cairo, config->font, output->scale, config->pango_markup,
+	pango_printf(cairo, config->font, output->scale, config->mode_pango_markup,
 			"%s", mode);
 	return surface_height;
 }
@@ -347,9 +348,13 @@ static const char *strip_workspace_number(const char *ws_name) {
 	return ws_name;
 }
 
-static void workspace_hotspot_callback(struct swaybar_output *output,
-			int x, int y, uint32_t button, void *data) {
+static enum hotspot_event_handling workspace_hotspot_callback(struct swaybar_output *output,
+			int x, int y, enum x11_button button, void *data) {
+	if (button != LEFT) {
+		return HOTSPOT_PROCESS;
+	}
 	ipc_send_workspace_command(output->bar, (const char *)data);
+	return HOTSPOT_IGNORE;
 }
 
 static uint32_t render_workspace_button(cairo_t *cairo,
@@ -496,12 +501,15 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 		// different height than what we asked for
 		wl_surface_commit(output->surface);
 		wl_display_roundtrip(bar->display);
-	} else {
+	} else if (height > 0) {
 		// Replay recording into shm and send it off
 		output->current_buffer = get_next_buffer(bar->shm,
 				output->buffers,
 				output->width * output->scale,
 				output->height * output->scale);
+		if (!output->current_buffer) {
+			return;
+		}
 		cairo_t *shm = output->current_buffer->cairo;
 
 		cairo_save(shm);

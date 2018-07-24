@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 200112L
 #include <getopt.h>
+#include <pango/pangocairo.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,6 +20,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/debug.h"
+#include "sway/desktop/transaction.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 #include "sway/ipc-server.h"
@@ -128,7 +130,7 @@ static void log_env() {
 		"SWAYSOCK"
 	};
 	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
-		wlr_log(L_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
+		wlr_log(WLR_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
 	}
 }
 
@@ -143,14 +145,14 @@ static void log_distro() {
 	for (size_t i = 0; i < sizeof(paths) / sizeof(char *); ++i) {
 		FILE *f = fopen(paths[i], "r");
 		if (f) {
-			wlr_log(L_INFO, "Contents of %s:", paths[i]);
+			wlr_log(WLR_INFO, "Contents of %s:", paths[i]);
 			while (!feof(f)) {
 				char *line;
 				if (!(line = read_line(f))) {
 					break;
 				}
 				if (*line) {
-					wlr_log(L_INFO, "%s", line);
+					wlr_log(WLR_INFO, "%s", line);
 				}
 				free(line);
 			}
@@ -162,7 +164,7 @@ static void log_distro() {
 static void log_kernel() {
 	FILE *f = popen("uname -a", "r");
 	if (!f) {
-		wlr_log(L_INFO, "Unable to determine kernel version");
+		wlr_log(WLR_INFO, "Unable to determine kernel version");
 		return;
 	}
 	while (!feof(f)) {
@@ -171,25 +173,25 @@ static void log_kernel() {
 			break;
 		}
 		if (*line) {
-			wlr_log(L_INFO, "%s", line);
+			wlr_log(WLR_INFO, "%s", line);
 		}
 		free(line);
 	}
-	fclose(f);
+	pclose(f);
 }
 
 static void security_sanity_check() {
 	// TODO: Notify users visually if this has issues
 	struct stat s;
 	if (stat("/proc", &s)) {
-		wlr_log(L_ERROR,
+		wlr_log(WLR_ERROR,
 			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
 	}
 #ifdef __linux__
 	cap_flag_value_t v;
 	cap_t cap = cap_get_proc();
 	if (!cap || cap_get_flag(cap, CAP_SYS_PTRACE, CAP_PERMITTED, &v) != 0 || v != CAP_SET) {
-		wlr_log(L_ERROR,
+		wlr_log(WLR_ERROR,
 			"!! DANGER !! Sway does not have CAP_SYS_PTRACE and cannot enforce security rules for processes running as other users.");
 	}
 	if (cap) {
@@ -205,13 +207,13 @@ static void executable_sanity_check() {
 		stat(exe, &sb);
 		// We assume that cap_get_file returning NULL implies ENODATA
 		if (sb.st_mode & (S_ISUID|S_ISGID) && cap_get_file(exe)) {
-			wlr_log(L_ERROR,
+			wlr_log(WLR_ERROR,
 				"sway executable has both the s(g)uid bit AND file caps set.");
-			wlr_log(L_ERROR,
+			wlr_log(WLR_ERROR,
 				"This is strongly discouraged (and completely broken).");
-			wlr_log(L_ERROR,
+			wlr_log(WLR_ERROR,
 				"Please clear one of them (either the suid bit, or the file caps).");
-			wlr_log(L_ERROR,
+			wlr_log(WLR_ERROR,
 				"If unsure, strip the file caps.");
 			exit(EXIT_FAILURE);
 		}
@@ -222,16 +224,16 @@ static void executable_sanity_check() {
 static void drop_permissions(bool keep_caps) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		if (setgid(getgid()) != 0) {
-			wlr_log(L_ERROR, "Unable to drop root");
+			wlr_log(WLR_ERROR, "Unable to drop root");
 			exit(EXIT_FAILURE);
 		}
 		if (setuid(getuid()) != 0) {
-			wlr_log(L_ERROR, "Unable to drop root");
+			wlr_log(WLR_ERROR, "Unable to drop root");
 			exit(EXIT_FAILURE);
 		}
 	}
 	if (setuid(0) != -1) {
-		wlr_log(L_ERROR, "Root privileges can be restored.");
+		wlr_log(WLR_ERROR, "Root privileges can be restored.");
 		exit(EXIT_FAILURE);
 	}
 #ifdef __linux__
@@ -239,15 +241,27 @@ static void drop_permissions(bool keep_caps) {
 		// Drop every cap except CAP_SYS_PTRACE
 		cap_t caps = cap_init();
 		cap_value_t keep = CAP_SYS_PTRACE;
-		wlr_log(L_INFO, "Dropping extra capabilities");
+		wlr_log(WLR_INFO, "Dropping extra capabilities");
 		if (cap_set_flag(caps, CAP_PERMITTED, 1, &keep, CAP_SET) ||
 			cap_set_flag(caps, CAP_EFFECTIVE, 1, &keep, CAP_SET) ||
 			cap_set_proc(caps)) {
-			wlr_log(L_ERROR, "Failed to drop extra capabilities");
+			wlr_log(WLR_ERROR, "Failed to drop extra capabilities");
 			exit(EXIT_FAILURE);
 		}
 	}
 #endif
+}
+
+void enable_debug_flag(const char *flag) {
+	if (strcmp(flag, "render-tree") == 0) {
+		enable_debug_tree = true;
+	} else if (strncmp(flag, "damage=", 7) == 0) {
+		damage_debug = &flag[7];
+	} else if (strcmp(flag, "txn-debug") == 0) {
+		txn_debug = true;
+	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
+		txn_timeout_ms = atoi(&flag[12]);
+	}
 }
 
 int main(int argc, char **argv) {
@@ -289,7 +303,7 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hCdDvVc:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hCdD:vVc:", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
@@ -308,7 +322,7 @@ int main(int argc, char **argv) {
 			debug = 1;
 			break;
 		case 'D': // extended debug options
-			enable_debug_tree = true;
+			enable_debug_flag(optarg);
 			break;
 		case 'v': // version
 			fprintf(stdout, "sway version " SWAY_VERSION "\n");
@@ -334,22 +348,22 @@ int main(int argc, char **argv) {
 
 	// TODO: switch logging over to wlroots?
 	if (debug) {
-		wlr_log_init(L_DEBUG, NULL);
+		wlr_log_init(WLR_DEBUG, NULL);
 	} else if (verbose || validate) {
-		wlr_log_init(L_INFO, NULL);
+		wlr_log_init(WLR_INFO, NULL);
 	} else {
-		wlr_log_init(L_ERROR, NULL);
+		wlr_log_init(WLR_ERROR, NULL);
 	}
 
 	if (optind < argc) { // Behave as IPC client
 		if(optind != 1) {
-			wlr_log(L_ERROR, "Don't use options with the IPC client");
+			wlr_log(WLR_ERROR, "Don't use options with the IPC client");
 			exit(EXIT_FAILURE);
 		}
 		drop_permissions(false);
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
-			wlr_log(L_ERROR, "Unable to retrieve socket path");
+			wlr_log(WLR_ERROR, "Unable to retrieve socket path");
 			exit(EXIT_FAILURE);
 		}
 		char *command = join_args(argv + optind, argc - optind);
@@ -368,7 +382,7 @@ int main(int argc, char **argv) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		// Retain capabilities after setuid()
 		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0)) {
-			wlr_log(L_ERROR, "Cannot keep caps after setuid()");
+			wlr_log(WLR_ERROR, "Cannot keep caps after setuid()");
 			exit(EXIT_FAILURE);
 		}
 		suid = true;
@@ -389,7 +403,7 @@ int main(int argc, char **argv) {
 	// prevent ipc from crashing sway
 	signal(SIGPIPE, SIG_IGN);
 
-	wlr_log(L_INFO, "Starting sway version " SWAY_VERSION);
+	wlr_log(WLR_INFO, "Starting sway version " SWAY_VERSION);
 
 	layout_init();
 
@@ -415,32 +429,41 @@ int main(int argc, char **argv) {
 
 	security_sanity_check();
 
+	setenv("WAYLAND_DISPLAY", server.socket, true);
+	if (!terminate_request) {
+		if (!server_start_backend(&server)) {
+			sway_terminate(EXIT_FAILURE);
+		}
+	}
+
 	config->active = true;
 	// Execute commands until there are none left
+	wlr_log(WLR_DEBUG, "Running deferred commands");
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
 		struct cmd_results *res = execute_command(line, NULL);
 		if (res->status != CMD_SUCCESS) {
-			wlr_log(L_ERROR, "Error on line '%s': %s", line, res->error);
+			wlr_log(WLR_ERROR, "Error on line '%s': %s", line, res->error);
 		}
 		free_cmd_results(res);
 		free(line);
 		list_del(config->cmd_queue, 0);
 	}
+	transaction_commit_dirty();
 
 	if (!terminate_request) {
 		server_run(&server);
 	}
 
-	wlr_log(L_INFO, "Shutting down sway");
+	wlr_log(WLR_INFO, "Shutting down sway");
 
 	server_fini(&server);
-
-	ipc_terminate();
 
 	if (config) {
 		free_config(config);
 	}
+
+	pango_cairo_font_map_set_default(NULL);
 
 	return exit_value;
 }

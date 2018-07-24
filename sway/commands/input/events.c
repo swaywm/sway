@@ -16,7 +16,7 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "events",
 			"No input device defined.");
 	}
-	wlr_log(L_DEBUG, "events for device: %s",
+	wlr_log(WLR_DEBUG, "events for device: %s",
 		current_input_config->identifier);
 	struct input_config *new_config =
 		new_input_config(current_input_config->identifier);
@@ -29,6 +29,7 @@ struct cmd_results *input_cmd_events(int argc, char **argv) {
 		new_config->send_events =
 			LIBINPUT_CONFIG_SEND_EVENTS_DISABLED_ON_EXTERNAL_MOUSE;
 	} else {
+		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "events",
 			"Expected 'events <enabled|disabled|disabled_on_external_mouse>'");
 	}

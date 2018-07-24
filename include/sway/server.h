@@ -23,11 +23,13 @@ struct sway_server {
 
 	struct wlr_compositor *compositor;
 	struct wlr_data_device_manager *data_device_manager;
-	struct wlr_idle *idle;
 
 	struct sway_input_manager *input;
 
 	struct wl_listener new_output;
+
+	struct wlr_idle *idle;
+	struct sway_idle_inhibit_manager_v1 *idle_inhibit_manager_v1;
 
 	struct wlr_layer_shell *layer_shell;
 	struct wl_listener layer_shell_surface;
@@ -45,10 +47,7 @@ struct sway_server {
 	bool debug_txn_timings;
 
 	list_t *transactions;
-
-	// When a view is being destroyed and is waiting for a transaction to
-	// complete it will be stored here.
-	list_t *destroying_containers;
+	list_t *dirty_containers;
 };
 
 struct sway_server server;
@@ -57,10 +56,12 @@ struct sway_server server;
 bool server_privileged_prepare(struct sway_server *server);
 bool server_init(struct sway_server *server);
 void server_fini(struct sway_server *server);
+bool server_start_backend(struct sway_server *server);
 void server_run(struct sway_server *server);
 
 void handle_new_output(struct wl_listener *listener, void *data);
 
+void handle_idle_inhibitor_v1(struct wl_listener *listener, void *data);
 void handle_layer_shell_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data);
 void handle_xdg_shell_surface(struct wl_listener *listener, void *data);

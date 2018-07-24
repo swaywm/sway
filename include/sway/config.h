@@ -49,6 +49,7 @@ struct sway_mode {
 	char *name;
 	list_t *keysym_bindings;
 	list_t *keycode_bindings;
+	bool pango;
 };
 
 struct input_config_mapped_from_region {
@@ -73,9 +74,11 @@ struct input_config {
 	float pointer_accel;
 	int repeat_delay;
 	int repeat_rate;
+	int scroll_button;
 	int scroll_method;
 	int send_events;
 	int tap;
+	int tap_button_map;
 
 	char *xkb_layout;
 	char *xkb_model;
@@ -263,11 +266,10 @@ enum ipc_feature {
 	IPC_FEATURE_EVENT_WINDOW = 2048,
 	IPC_FEATURE_EVENT_BINDING = 4096,
 	IPC_FEATURE_EVENT_INPUT = 8192,
-	IPC_FEATURE_GET_CLIPBOARD = 16384,
-	IPC_FEATURE_GET_SEATS = 32768,
+	IPC_FEATURE_GET_SEATS = 16384,
 
 	IPC_FEATURE_ALL_COMMANDS =
-		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 16384 | 32768,
+		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 16384,
 	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192,
 
 	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
@@ -314,6 +316,7 @@ struct sway_config {
 	char *font;
 	size_t font_height;
 	bool pango_markup;
+	size_t urgent_timeout;
 
 	// Flags
 	bool focus_follows_mouse;
@@ -332,6 +335,7 @@ struct sway_config {
 	int gaps_outer;
 
 	list_t *config_chain;
+	const char *current_config_path;
 	const char *current_config;
 
 	enum sway_container_border border;
@@ -447,7 +451,13 @@ void merge_output_config(struct output_config *dst, struct output_config *src);
 void apply_output_config(struct output_config *oc,
 		struct sway_container *output);
 
+struct output_config *store_output_config(struct output_config *oc);
+
+void apply_output_config_to_outputs(struct output_config *oc);
+
 void free_output_config(struct output_config *oc);
+
+void create_default_output_configs(void);
 
 int workspace_output_cmp_workspace(const void *a, const void *b);
 
@@ -483,8 +493,5 @@ void config_update_font_height(bool recalculate);
 
 /* Global config singleton. */
 extern struct sway_config *config;
-
-/* Config file currently being read */
-extern const char *current_config_path;
 
 #endif

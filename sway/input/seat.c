@@ -1,6 +1,11 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
@@ -75,7 +80,7 @@ static void seat_send_activate(struct sway_container *con,
 		struct sway_seat *seat) {
 	if (con->type == C_VIEW) {
 		if (!seat_is_input_allowed(seat, con->sway_view->surface)) {
-			wlr_log(L_DEBUG, "Refusing to set focus, input is inhibited");
+			wlr_log(WLR_DEBUG, "Refusing to set focus, input is inhibited");
 			return;
 		}
 		view_set_activated(con->sway_view, true);
@@ -219,7 +224,7 @@ static struct sway_seat_container *seat_container_from_container(
 
 	seat_con = calloc(1, sizeof(struct sway_seat_container));
 	if (seat_con == NULL) {
-		wlr_log(L_ERROR, "could not allocate seat container");
+		wlr_log(WLR_ERROR, "could not allocate seat container");
 		return NULL;
 	}
 
@@ -301,7 +306,7 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 
 	struct sway_drag_icon *icon = calloc(1, sizeof(struct sway_drag_icon));
 	if (icon == NULL) {
-		wlr_log(L_ERROR, "Allocation failed");
+		wlr_log(WLR_ERROR, "Allocation failed");
 		return;
 	}
 	icon->seat = seat;
@@ -348,6 +353,7 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		free(seat);
 		return NULL;
 	}
+	seat->wlr_seat->data = seat;
 
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {
@@ -391,7 +397,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 	struct input_config *ic = input_device_get_config(
 			sway_device->input_device);
 	if (ic != NULL) {
-		wlr_log(L_DEBUG, "Applying input config to %s",
+		wlr_log(WLR_DEBUG, "Applying input config to %s",
 			sway_device->input_device->identifier);
 
 		mapped_to_output = ic->mapped_to_output;
@@ -401,7 +407,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 		mapped_to_output = sway_device->input_device->wlr_device->output_name;
 	}
 	if (mapped_to_output != NULL) {
-		wlr_log(L_DEBUG, "Mapping input device %s to output %s",
+		wlr_log(WLR_DEBUG, "Mapping input device %s to output %s",
 			sway_device->input_device->identifier, mapped_to_output);
 		struct sway_container *output = NULL;
 		for (int i = 0; i < root_container.children->length; ++i) {
@@ -415,7 +421,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 			wlr_cursor_map_input_to_output(seat->cursor->cursor,
 				sway_device->input_device->wlr_device,
 				output->sway_output->wlr_output);
-			wlr_log(L_DEBUG, "Mapped to output %s", output->name);
+			wlr_log(WLR_DEBUG, "Mapped to output %s", output->name);
 		}
 	}
 }
@@ -495,7 +501,7 @@ void seat_configure_device(struct sway_seat *seat,
 			seat_configure_tablet_tool(seat, seat_device);
 			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
-			wlr_log(L_DEBUG, "TODO: configure tablet pad");
+			wlr_log(WLR_DEBUG, "TODO: configure tablet pad");
 			break;
 	}
 }
@@ -510,11 +516,11 @@ void seat_add_device(struct sway_seat *seat,
 	struct sway_seat_device *seat_device =
 		calloc(1, sizeof(struct sway_seat_device));
 	if (!seat_device) {
-		wlr_log(L_DEBUG, "could not allocate seat device");
+		wlr_log(WLR_DEBUG, "could not allocate seat device");
 		return;
 	}
 
-	wlr_log(L_DEBUG, "adding device %s to seat %s",
+	wlr_log(WLR_DEBUG, "adding device %s to seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device->sway_seat = seat;
@@ -533,7 +539,7 @@ void seat_remove_device(struct sway_seat *seat,
 		return;
 	}
 
-	wlr_log(L_DEBUG, "removing device %s from seat %s",
+	wlr_log(WLR_DEBUG, "removing device %s from seat %s",
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device_destroy(seat_device);
@@ -594,6 +600,12 @@ static void seat_send_unfocus(struct sway_container *container,
 	}
 }
 
+static int handle_urgent_timeout(void *data) {
+	struct sway_view *view = data;
+	view_set_urgent(view, false);
+	return 0;
+}
+
 void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_container *container, bool warp) {
 	if (seat->focused_layer) {
@@ -616,6 +628,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	if (last_workspace && last_workspace == new_workspace
 			&& last_workspace->sway_workspace->fullscreen
+			&& container && container->type == C_VIEW
 			&& !container->sway_view->is_fullscreen) {
 		return;
 	}
@@ -649,6 +662,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		while (parent) {
 			wl_list_remove(&parent->link);
 			wl_list_insert(&seat->focus_stack, &parent->link);
+			container_set_dirty(parent->container);
 
 			parent =
 				seat_container_from_container(seat,
@@ -661,9 +675,39 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		if (last_focus) {
 			seat_send_unfocus(last_focus, seat);
 		}
-
 		seat_send_focus(container, seat);
-		container_damage_whole(container);
+
+		container_set_dirty(container);
+		container_set_dirty(container->parent); // for focused_inactive_child
+		if (last_focus) {
+			container_set_dirty(last_focus);
+		}
+	}
+
+	// If urgent, either unset the urgency or start a timer to unset it
+	if (container && container->type == C_VIEW &&
+			view_is_urgent(container->sway_view) &&
+			!container->sway_view->urgent_timer) {
+		struct sway_view *view = container->sway_view;
+		if (last_workspace && last_workspace != new_workspace &&
+				config->urgent_timeout > 0) {
+			view->urgent_timer = wl_event_loop_add_timer(server.wl_event_loop,
+					handle_urgent_timeout, view);
+			wl_event_source_timer_update(view->urgent_timer,
+					config->urgent_timeout);
+		} else {
+			view_set_urgent(view, false);
+		}
+	}
+
+	// If we've focused a floating container, bring it to the front.
+	// We do this by putting it at the end of the floating list.
+	// This must happen for both the pending and current children lists.
+	if (container && container_is_floating(container)) {
+		list_move_to_end(container->parent->children, container);
+		if (container_has_ancestor(container, container->current.parent)) {
+			list_move_to_end(container->parent->current.children, container);
+		}
 	}
 
 	// clean up unfocused empty workspace on new output
@@ -707,11 +751,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
-	if (last_focus) {
-		container_damage_whole(last_focus);
-	}
-
-	if (last_workspace && last_workspace != new_workspace) {
+	if (last_focus != NULL) {
 		cursor_send_pointer_motion(seat->cursor, 0, true);
 	}
 
@@ -726,11 +766,11 @@ void seat_set_focus(struct sway_seat *seat,
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,
-		struct wlr_surface *surface) {
+		struct wlr_surface *surface, bool unfocus) {
 	if (seat->focused_layer != NULL) {
 		return;
 	}
-	if (seat->has_focus) {
+	if (seat->has_focus && unfocus) {
 		struct sway_container *focus = seat_get_focus(seat);
 		seat_send_unfocus(focus, seat);
 		seat->has_focus = false;
@@ -752,7 +792,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 		struct sway_container *previous =
 			seat_get_focus_inactive(seat, &root_container);
 		if (previous) {
-			wlr_log(L_DEBUG, "Returning focus to %p %s '%s'", previous,
+			wlr_log(WLR_DEBUG, "Returning focus to %p %s '%s'", previous,
 					container_type_to_str(previous->type), previous->name);
 			// Hack to get seat to re-focus the return value of get_focus
 			seat_set_focus(seat, previous->parent);
@@ -762,7 +802,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 	} else if (!layer || seat->focused_layer == layer) {
 		return;
 	}
-	seat_set_focus_surface(seat, layer->surface);
+	seat_set_focus_surface(seat, layer->surface, true);
 	if (layer->layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
 		seat->focused_layer = layer;
 	}
@@ -830,18 +870,6 @@ struct sway_container *seat_get_active_child(struct sway_seat *seat,
 	return NULL;
 }
 
-struct sway_container *seat_get_active_current_child(struct sway_seat *seat,
-		struct sway_container *container) {
-	struct sway_container *child = seat_get_active_child(seat, container);
-	if (child) {
-		return child;
-	}
-	if (container->current.children->length == 1) {
-		return container->current.children->items[0];
-	}
-	return NULL;
-}
-
 struct sway_container *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
@@ -872,4 +900,69 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	}
 
 	return NULL;
+}
+
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
+		return;
+	}
+	seat->operation = OP_MOVE;
+	seat->op_container = con;
+	seat->op_button = button;
+	cursor_set_image(seat->cursor, "grab", NULL);
+}
+
+void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, enum wlr_edges edge) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring resize request due to no cursor device");
+		return;
+	}
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	seat->operation = OP_RESIZE;
+	seat->op_container = con;
+	seat->op_resize_preserve_ratio = keyboard &&
+		(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
+	seat->op_resize_edge = edge == WLR_EDGE_NONE ?
+		RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT : edge;
+	seat->op_button = button;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+	seat->op_ref_con_lx = con->x;
+	seat->op_ref_con_ly = con->y;
+	seat->op_ref_width = con->width;
+	seat->op_ref_height = con->height;
+
+	const char *image = edge == WLR_EDGE_NONE ?
+		"se-resize" : wlr_xcursor_get_resize_name(edge);
+	cursor_set_image(seat->cursor, image, NULL);
+}
+
+void seat_end_mouse_operation(struct sway_seat *seat) {
+	switch (seat->operation) {
+	case OP_MOVE:
+		{
+			// We "move" the container to its own location so it discovers its
+			// output again.
+			struct sway_container *con = seat->op_container;
+			container_floating_move_to(con, con->x, con->y);
+		}
+	case OP_RESIZE:
+		// Don't need to do anything here.
+		break;
+	case OP_NONE:
+		break;
+	}
+	seat->operation = OP_NONE;
+	seat->op_container = NULL;
+	cursor_set_image(seat->cursor, "left_ptr", NULL);
+}
+
+void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
+		uint32_t button, enum wlr_button_state state) {
+	seat->last_button = button;
+	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
+			time_msec, button, state);
 }

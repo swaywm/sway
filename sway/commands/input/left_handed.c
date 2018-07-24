@@ -23,6 +23,7 @@ struct cmd_results *input_cmd_left_handed(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "disabled") == 0) {
 		new_config->left_handed = 0;
 	} else {
+		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "left_handed",
 			"Expected 'left_handed <enabled|disabled>'");
 	}

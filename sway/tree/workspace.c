@@ -12,6 +12,7 @@
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
@@ -50,7 +51,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 		output = get_workspace_initial_output(name);
 	}
 
-	wlr_log(L_DEBUG, "Added workspace %s for output %s", name, output->name);
+	wlr_log(WLR_DEBUG, "Added workspace %s for output %s", name, output->name);
 	struct sway_container *workspace = container_create(C_WORKSPACE);
 
 	workspace->x = output->x;
@@ -108,9 +109,8 @@ static bool workspace_valid_on_output(const char *output_name,
 }
 
 char *workspace_next_name(const char *output_name) {
-	wlr_log(L_DEBUG, "Workspace: Generating new workspace name for output %s",
+	wlr_log(WLR_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
-	int l = 1;
 	// Scan all workspace bindings to find the next available workspace name,
 	// if none are found/available then default to a number
 	struct sway_mode *mode = config->current_mode;
@@ -137,7 +137,7 @@ char *workspace_next_name(const char *output_name) {
 			while (isspace(*_target)) {
 				memmove(_target, _target+1, strlen(_target+1));
 			}
-			wlr_log(L_DEBUG, "Got valid workspace command for target: '%s'",
+			wlr_log(WLR_DEBUG, "Got valid workspace command for target: '%s'",
 					_target);
 
 			// Make sure that the command references an actual workspace
@@ -163,7 +163,7 @@ char *workspace_next_name(const char *output_name) {
 				temp[length - 1] = '\0';
 				free(_target);
 				_target = temp;
-				wlr_log(L_DEBUG, "Isolated name from workspace number: '%s'", _target);
+				wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
 
 				// Make sure the workspace number doesn't already exist
 				if (workspace_by_number(_target)) {
@@ -192,7 +192,9 @@ char *workspace_next_name(const char *output_name) {
 				order = binding->order;
 				free(target);
 				target = _target;
-				wlr_log(L_DEBUG, "Workspace: Found free name %s", _target);
+				wlr_log(WLR_DEBUG, "Workspace: Found free name %s", _target);
+			} else {
+				free(_target);
 			}
 		}
 		free(dup);
@@ -203,14 +205,9 @@ char *workspace_next_name(const char *output_name) {
 	// As a fall back, get the current number of active workspaces
 	// and return that + 1 for the next workspace's name
 	int ws_num = root_container.children->length;
-	if (ws_num >= 10) {
-		l = 2;
-	} else if (ws_num >= 100) {
-		l = 3;
-	}
+	int l = snprintf(NULL, 0, "%d", ws_num);
 	char *name = malloc(l + 1);
-	if (!name) {
-		wlr_log(L_ERROR, "Could not allocate workspace name");
+	if (!sway_assert(name, "Cloud not allocate workspace name")) {
 		return NULL;
 	}
 	sprintf(name, "%d", ws_num++);
@@ -272,6 +269,9 @@ struct sway_container *workspace_by_name(const char *name) {
  */
 struct sway_container *workspace_output_prev_next_impl(
 		struct sway_container *output, bool next) {
+	if (!output) {
+		return NULL;
+	}
 	if (!sway_assert(output->type == C_OUTPUT,
 				"Argument must be an output, is %d", output->type)) {
 		return NULL;
@@ -304,6 +304,9 @@ struct sway_container *workspace_output_prev_next_impl(
  */
 struct sway_container *workspace_prev_next_impl(
 		struct sway_container *workspace, bool next) {
+	if (!workspace) {
+		return NULL;
+	}
 	if (!sway_assert(workspace->type == C_WORKSPACE,
 				"Argument must be a workspace, is %d", workspace->type)) {
 		return NULL;
@@ -386,7 +389,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		free(prev_workspace_name);
 		prev_workspace_name = malloc(strlen(active_ws->name) + 1);
 		if (!prev_workspace_name) {
-			wlr_log(L_ERROR, "Unable to allocate previous workspace name");
+			wlr_log(WLR_ERROR, "Unable to allocate previous workspace name");
 			return false;
 		}
 		strcpy(prev_workspace_name, active_ws->name);
@@ -408,7 +411,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		}
 	}
 
-	wlr_log(L_DEBUG, "Switching to workspace %p:%s",
+	wlr_log(WLR_DEBUG, "Switching to workspace %p:%s",
 		workspace, workspace->name);
 	struct sway_container *next = seat_get_focus_inactive(seat, workspace);
 	if (next == NULL) {
@@ -426,7 +429,7 @@ bool workspace_switch(struct sway_container *workspace) {
 	}
 	seat_set_focus(seat, next);
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	arrange_and_commit(output);
+	arrange_windows(output);
 	return true;
 }
 
@@ -518,6 +521,16 @@ struct sway_container *workspace_output_get_highest_available(
 	return NULL;
 }
 
+void workspace_detect_urgent(struct sway_container *workspace) {
+	bool new_urgent = container_has_urgent_child(workspace);
+
+	if (workspace->sway_workspace->urgent != new_urgent) {
+		workspace->sway_workspace->urgent = new_urgent;
+		ipc_event_workspace(NULL, workspace, "urgent");
+		container_damage_whole(workspace);
+	}
+}
+
 struct pid_workspace {
 	pid_t pid;
 	char *workspace;
@@ -540,14 +553,14 @@ struct sway_container *workspace_for_pid(pid_t pid) {
 	struct sway_container *ws = NULL;
 	struct pid_workspace *pw = NULL;
 
-	wlr_log(L_DEBUG, "Looking up workspace for pid %d", pid);
+	wlr_log(WLR_DEBUG, "Looking up workspace for pid %d", pid);
 
 	do {
 		struct pid_workspace *_pw = NULL;
 		wl_list_for_each(_pw, &pid_workspaces, link) {
 			if (pid == _pw->pid) {
 				pw = _pw;
-				wlr_log(L_DEBUG,
+				wlr_log(WLR_DEBUG,
 						"found pid_workspace for pid %d, workspace %s",
 						pid, pw->workspace);
 				goto found;
@@ -561,7 +574,7 @@ found:
 		ws = workspace_by_name(pw->workspace);
 
 		if (!ws) {
-			wlr_log(L_DEBUG,
+			wlr_log(WLR_DEBUG,
 					"Creating workspace %s for pid %d because it disappeared",
 					pw->workspace, pid);
 			ws = workspace_create(pw->output, pw->workspace);
@@ -582,7 +595,7 @@ static void pw_handle_output_destroy(struct wl_listener *listener, void *data) {
 }
 
 void workspace_record_pid(pid_t pid) {
-	wlr_log(L_DEBUG, "Recording workspace for process %d", pid);
+	wlr_log(WLR_DEBUG, "Recording workspace for process %d", pid);
 	if (!pid_workspaces.prev && !pid_workspaces.next) {
 		wl_list_init(&pid_workspaces);
 	}
@@ -594,12 +607,12 @@ void workspace_record_pid(pid_t pid) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
 	if (!ws) {
-		wlr_log(L_DEBUG, "Bailing out, no workspace");
+		wlr_log(WLR_DEBUG, "Bailing out, no workspace");
 		return;
 	}
 	struct sway_container *output = ws->parent;
 	if (!output) {
-		wlr_log(L_DEBUG, "Bailing out, no output");
+		wlr_log(WLR_DEBUG, "Bailing out, no output");
 		return;
 	}
 

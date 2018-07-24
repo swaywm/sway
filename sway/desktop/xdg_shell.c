@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
+#include <float.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server.h>
@@ -45,6 +46,24 @@ static void popup_handle_destroy(struct wl_listener *listener, void *data) {
 	view_child_destroy(&popup->child);
 }
 
+static void popup_unconstrain(struct sway_xdg_popup *popup) {
+	struct sway_view *view = popup->child.view;
+	struct wlr_xdg_popup *wlr_popup = popup->wlr_xdg_surface->popup;
+
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+
+	// the output box expressed in the coordinate system of the toplevel parent
+	// of the popup
+	struct wlr_box output_toplevel_sx_box = {
+		.x = output->x - view->x,
+		.y = output->y - view->y,
+		.width = output->width,
+		.height = output->height,
+	};
+
+	wlr_xdg_popup_unconstrain_from_box(wlr_popup, &output_toplevel_sx_box);
+}
+
 static struct sway_xdg_popup *popup_create(
 		struct wlr_xdg_popup *wlr_popup, struct sway_view *view) {
 	struct wlr_xdg_surface *xdg_surface = wlr_popup->base;
@@ -55,11 +74,14 @@ static struct sway_xdg_popup *popup_create(
 		return NULL;
 	}
 	view_child_init(&popup->child, &popup_impl, view, xdg_surface->surface);
+	popup->wlr_xdg_surface = xdg_surface;
 
 	wl_signal_add(&xdg_surface->events.new_popup, &popup->new_popup);
 	popup->new_popup.notify = popup_handle_new_popup;
 	wl_signal_add(&xdg_surface->events.destroy, &popup->destroy);
 	popup->destroy.notify = popup_handle_destroy;
+
+	popup_unconstrain(popup);
 
 	return popup;
 }
@@ -72,6 +94,16 @@ static struct sway_xdg_shell_view *xdg_shell_view_from_view(
 		return NULL;
 	}
 	return (struct sway_xdg_shell_view *)view;
+}
+
+static void get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height) {
+	struct wlr_xdg_toplevel_state *state =
+		&view->wlr_xdg_surface->toplevel->current;
+	*min_width = state->min_width > 0 ? state->min_width : DBL_MIN;
+	*max_width = state->max_width > 0 ? state->max_width : DBL_MAX;
+	*min_height = state->min_height > 0 ? state->min_height : DBL_MIN;
+	*max_height = state->max_height > 0 ? state->max_height : DBL_MAX;
 }
 
 static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
@@ -167,6 +199,7 @@ static void destroy(struct sway_view *view) {
 }
 
 static const struct sway_view_impl view_impl = {
+	.get_constraints = get_constraints,
 	.get_string_prop = get_string_prop,
 	.configure = configure,
 	.set_activated = set_activated,
@@ -192,8 +225,22 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		transaction_notify_view_ready(view, xdg_surface->configure_serial);
 	}
 
-	view_update_title(view, false);
 	view_damage_from(view);
+}
+
+static void handle_set_title(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, set_title);
+	struct sway_view *view = &xdg_shell_view->view;
+	view_update_title(view, false);
+	view_execute_criteria(view);
+}
+
+static void handle_set_app_id(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, set_app_id);
+	struct sway_view *view = &xdg_shell_view->view;
+	view_execute_criteria(view);
 }
 
 static void handle_new_popup(struct wl_listener *listener, void *data) {
@@ -222,8 +269,37 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 
 	view_set_fullscreen(view, e->fullscreen);
 
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	arrange_and_commit(ws);
+	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+	arrange_windows(output);
+	transaction_commit_dirty();
+}
+
+static void handle_request_move(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_move);
+	struct sway_view *view = &xdg_shell_view->view;
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
+	struct wlr_xdg_toplevel_move_event *e = data;
+	struct sway_seat *seat = e->seat->seat->data;
+	if (e->serial == seat->last_button_serial) {
+		seat_begin_move(seat, view->swayc, seat->last_button);
+	}
+}
+
+static void handle_request_resize(struct wl_listener *listener, void *data) {
+	struct sway_xdg_shell_view *xdg_shell_view =
+		wl_container_of(listener, xdg_shell_view, request_resize);
+	struct sway_view *view = &xdg_shell_view->view;
+	if (!container_is_floating(view->swayc)) {
+		return;
+	}
+	struct wlr_xdg_toplevel_resize_event *e = data;
+	struct sway_seat *seat = e->seat->seat->data;
+	if (e->serial == seat->last_button_serial) {
+		seat_begin_resize(seat, view->swayc, seat->last_button, e->edges);
+	}
 }
 
 static void handle_unmap(struct wl_listener *listener, void *data) {
@@ -240,6 +316,10 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->new_popup.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	wl_list_remove(&xdg_shell_view->request_move.link);
+	wl_list_remove(&xdg_shell_view->request_resize.link);
+	wl_list_remove(&xdg_shell_view->set_title.link);
+	wl_list_remove(&xdg_shell_view->set_app_id.link);
 }
 
 static void handle_map(struct wl_listener *listener, void *data) {
@@ -251,8 +331,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view->natural_width = view->wlr_xdg_surface->geometry.width;
 	view->natural_height = view->wlr_xdg_surface->geometry.height;
 	if (!view->natural_width && !view->natural_height) {
-		view->natural_width = view->wlr_xdg_surface->surface->current->width;
-		view->natural_height = view->wlr_xdg_surface->surface->current->height;
+		view->natural_width = view->wlr_xdg_surface->surface->current.width;
+		view->natural_height = view->wlr_xdg_surface->surface->current.height;
 	}
 
 	view_map(view, view->wlr_xdg_surface->surface);
@@ -260,10 +340,11 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		view_set_fullscreen(view, true);
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		arrange_and_commit(ws);
+		arrange_windows(ws);
 	} else {
-		arrange_and_commit(view->swayc->parent);
+		arrange_windows(view->swayc->parent);
 	}
+	transaction_commit_dirty();
 
 	xdg_shell_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
@@ -276,6 +357,22 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	xdg_shell_view->request_fullscreen.notify = handle_request_fullscreen;
 	wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen,
 			&xdg_shell_view->request_fullscreen);
+
+	xdg_shell_view->request_move.notify = handle_request_move;
+	wl_signal_add(&xdg_surface->toplevel->events.request_move,
+			&xdg_shell_view->request_move);
+
+	xdg_shell_view->request_resize.notify = handle_request_resize;
+	wl_signal_add(&xdg_surface->toplevel->events.request_resize,
+			&xdg_shell_view->request_resize);
+
+	xdg_shell_view->set_title.notify = handle_set_title;
+	wl_signal_add(&xdg_surface->toplevel->events.set_title,
+			&xdg_shell_view->set_title);
+
+	xdg_shell_view->set_app_id.notify = handle_set_app_id;
+	wl_signal_add(&xdg_surface->toplevel->events.set_app_id,
+			&xdg_shell_view->set_app_id);
 }
 
 static void handle_destroy(struct wl_listener *listener, void *data) {
@@ -304,11 +401,11 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_surface *xdg_surface = data;
 
 	if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
-		wlr_log(L_DEBUG, "New xdg_shell popup");
+		wlr_log(WLR_DEBUG, "New xdg_shell popup");
 		return;
 	}
 
-	wlr_log(L_DEBUG, "New xdg_shell toplevel title='%s' app_id='%s'",
+	wlr_log(WLR_DEBUG, "New xdg_shell toplevel title='%s' app_id='%s'",
 		xdg_surface->toplevel->title, xdg_surface->toplevel->app_id);
 	wlr_xdg_surface_ping(xdg_surface);
 

@@ -20,6 +20,7 @@ struct cmd_results *input_cmd_repeat_rate(int argc, char **argv) {
 
 	int repeat_rate = atoi(argv[0]);
 	if (repeat_rate < 0) {
+		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "repeat_rate",
 			"Repeat rate cannot be negative");
 	}

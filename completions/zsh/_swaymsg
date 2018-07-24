@@ -22,7 +22,6 @@ types=(
 'get_marks'
 'get_bar_config'
 'get_version'
-'get_clipboard'
 )
 
 _arguments -s \

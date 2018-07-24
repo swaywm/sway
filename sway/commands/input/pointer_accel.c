@@ -20,6 +20,7 @@ struct cmd_results *input_cmd_pointer_accel(int argc, char **argv) {
 
 	float pointer_accel = atof(argv[0]);
 	if (pointer_accel < -1 || pointer_accel > 1) {
+		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "pointer_accel",
 			"Input out of range [-1, 1]");
 	}

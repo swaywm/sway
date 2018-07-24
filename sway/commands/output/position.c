@@ -27,11 +27,11 @@ struct cmd_results *output_cmd_position(int argc, char **argv) {
 		}
 	} else {
 		// Format is 1234 4321 (legacy)
+		argc--; argv++;
 		if (!argc) {
 			return cmd_results_new(CMD_INVALID, "output",
 				"Missing position argument (y).");
 		}
-		argc--; argv++;
 		config->handler_context.output_config->y = strtol(*argv, &end, 10);
 		if (*end) {
 			return cmd_results_new(CMD_INVALID, "output",

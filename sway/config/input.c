@@ -8,17 +8,18 @@
 struct input_config *new_input_config(const char* identifier) {
 	struct input_config *input = calloc(1, sizeof(struct input_config));
 	if (!input) {
-		wlr_log(L_DEBUG, "Unable to allocate input config");
+		wlr_log(WLR_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
-	wlr_log(L_DEBUG, "new_input_config(%s)", identifier);
+	wlr_log(WLR_DEBUG, "new_input_config(%s)", identifier);
 	if (!(input->identifier = strdup(identifier))) {
 		free(input);
-		wlr_log(L_DEBUG, "Unable to allocate input config");
+		wlr_log(WLR_DEBUG, "Unable to allocate input config");
 		return NULL;
 	}
 
 	input->tap = INT_MIN;
+	input->tap_button_map = INT_MIN;
 	input->drag_lock = INT_MIN;
 	input->dwt = INT_MIN;
 	input->send_events = INT_MIN;
@@ -27,6 +28,7 @@ struct input_config *new_input_config(const char* identifier) {
 	input->natural_scroll = INT_MIN;
 	input->accel_profile = INT_MIN;
 	input->pointer_accel = FLT_MIN;
+	input->scroll_button = INT_MIN;
 	input->scroll_method = INT_MIN;
 	input->left_handed = INT_MIN;
 	input->repeat_delay = INT_MIN;
@@ -70,11 +72,17 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->scroll_method != INT_MIN) {
 		dst->scroll_method = src->scroll_method;
 	}
+	if (src->scroll_button != INT_MIN) {
+		dst->scroll_button = src->scroll_button;
+	}
 	if (src->send_events != INT_MIN) {
 		dst->send_events = src->send_events;
 	}
 	if (src->tap != INT_MIN) {
 		dst->tap = src->tap;
+	}
+	if (src->tap_button_map != INT_MIN) {
+		dst->tap_button_map = src->tap_button_map;
 	}
 	if (src->xkb_layout) {
 		free(dst->xkb_layout);
@@ -112,7 +120,7 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 struct input_config *copy_input_config(struct input_config *ic) {
 	struct input_config *copy = calloc(1, sizeof(struct input_config));
 	if (copy == NULL) {
-		wlr_log(L_ERROR, "could not allocate input config");
+		wlr_log(WLR_ERROR, "could not allocate input config");
 		return NULL;
 	}
 	merge_input_config(copy, ic);

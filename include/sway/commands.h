@@ -79,7 +79,7 @@ void free_cmd_results(struct cmd_results *results);
  *
  * Free the JSON string later on.
  */
-const char *cmd_results_to_json(struct cmd_results *results);
+char *cmd_results_to_json(struct cmd_results *results);
 
 struct cmd_results *add_color(const char *name,
 		char *buffer, const char *color);
@@ -95,7 +95,6 @@ sway_cmd cmd_client_unfocused;
 sway_cmd cmd_client_urgent;
 sway_cmd cmd_client_placeholder;
 sway_cmd cmd_client_background;
-sway_cmd cmd_clipboard;
 sway_cmd cmd_commands;
 sway_cmd cmd_debuglog;
 sway_cmd cmd_default_border;
@@ -107,13 +106,14 @@ sway_cmd cmd_exit;
 sway_cmd cmd_floating;
 sway_cmd cmd_floating_maximum_size;
 sway_cmd cmd_floating_minimum_size;
-sway_cmd cmd_floating_mod;
+sway_cmd cmd_floating_modifier;
 sway_cmd cmd_floating_scroll;
 sway_cmd cmd_focus;
 sway_cmd cmd_focus_follows_mouse;
 sway_cmd cmd_focus_wrapping;
 sway_cmd cmd_font;
 sway_cmd cmd_for_window;
+sway_cmd cmd_force_display_urgency_hint;
 sway_cmd cmd_force_focus_wrapping;
 sway_cmd cmd_fullscreen;
 sway_cmd cmd_gaps;
@@ -153,6 +153,7 @@ sway_cmd cmd_swaybg_command;
 sway_cmd cmd_swap;
 sway_cmd cmd_title_format;
 sway_cmd cmd_unmark;
+sway_cmd cmd_urgent;
 sway_cmd cmd_workspace;
 sway_cmd cmd_ws_auto_back_and_forth;
 sway_cmd cmd_workspace_layout;
@@ -208,8 +209,10 @@ sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
 sway_cmd input_cmd_repeat_delay;
 sway_cmd input_cmd_repeat_rate;
+sway_cmd input_cmd_scroll_button;
 sway_cmd input_cmd_scroll_method;
 sway_cmd input_cmd_tap;
+sway_cmd input_cmd_tap_button_map;
 sway_cmd input_cmd_xkb_layout;
 sway_cmd input_cmd_xkb_model;
 sway_cmd input_cmd_xkb_options;

@@ -12,7 +12,6 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
-#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "log.h"
 
@@ -174,9 +173,9 @@ void arrange_layers(struct sway_output *output) {
 
 	if (memcmp(&usable_area, &output->usable_area,
 				sizeof(struct wlr_box)) != 0) {
-		wlr_log(L_DEBUG, "Usable area changed, rearranging output");
+		wlr_log(WLR_DEBUG, "Usable area changed, rearranging output");
 		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
-		arrange_and_commit(output->swayc);
+		container_set_dirty(output->swayc);
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom
@@ -269,7 +268,7 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 static void handle_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer =
 		wl_container_of(listener, sway_layer, destroy);
-	wlr_log(L_DEBUG, "Layer surface destroyed (%s)",
+	wlr_log(WLR_DEBUG, "Layer surface destroyed (%s)",
 		sway_layer->layer_surface->namespace);
 	if (sway_layer->layer_surface->mapped) {
 		unmap(sway_layer);
@@ -316,7 +315,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface *layer_surface = data;
 	struct sway_server *server =
 		wl_container_of(listener, server, layer_shell_surface);
-	wlr_log(L_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
+	wlr_log(WLR_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
 			"size %dx%d margin %d,%d,%d,%d",
 		layer_surface->namespace, layer_surface->layer, layer_surface->layer,
 		layer_surface->client_pending.desired_width,
@@ -325,12 +324,6 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 		layer_surface->client_pending.margin.right,
 		layer_surface->client_pending.margin.bottom,
 		layer_surface->client_pending.margin.left);
-
-	struct sway_layer_surface *sway_layer =
-		calloc(1, sizeof(struct sway_layer_surface));
-	if (!sway_layer) {
-		return;
-	}
 
 	if (!layer_surface->output) {
 		// Assign last active output
@@ -351,6 +344,12 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 			output = container_parent(output, C_OUTPUT);
 		}
 		layer_surface->output = output->sway_output->wlr_output;
+	}
+
+	struct sway_layer_surface *sway_layer =
+		calloc(1, sizeof(struct sway_layer_surface));
+	if (!sway_layer) {
+		return;
 	}
 
 	sway_layer->surface_commit.notify = handle_surface_commit;

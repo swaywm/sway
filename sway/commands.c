@@ -98,12 +98,18 @@ static struct cmd_handler handlers[] = {
 	{ "client.unfocused", cmd_client_unfocused },
 	{ "client.urgent", cmd_client_urgent },
 	{ "default_border", cmd_default_border },
+	{ "default_floating_border", cmd_default_floating_border },
 	{ "exec", cmd_exec },
 	{ "exec_always", cmd_exec_always },
+	{ "floating_maximum_size", cmd_floating_maximum_size },
+	{ "floating_minimum_size", cmd_floating_minimum_size },
+	{ "floating_modifier", cmd_floating_modifier },
+	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "focus_wrapping", cmd_focus_wrapping },
 	{ "font", cmd_font },
 	{ "for_window", cmd_for_window },
+	{ "force_display_urgency_hint", cmd_force_display_urgency_hint },
 	{ "force_focus_wrapping", cmd_force_focus_wrapping },
 	{ "fullscreen", cmd_fullscreen },
 	{ "gaps", cmd_gaps },
@@ -112,6 +118,7 @@ static struct cmd_handler handlers[] = {
 	{ "input", cmd_input },
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
+	{ "no_focus", cmd_no_focus },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
@@ -133,7 +140,6 @@ static struct cmd_handler command_handlers[] = {
 	{ "border", cmd_border },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
-	{ "focus", cmd_focus },
 	{ "fullscreen", cmd_fullscreen },
 	{ "kill", cmd_kill },
 	{ "layout", cmd_layout },
@@ -143,6 +149,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "reload", cmd_reload },
 	{ "rename", cmd_rename },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitt", cmd_splitt },
@@ -151,6 +158,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "swap", cmd_swap },
 	{ "title_format", cmd_title_format },
 	{ "unmark", cmd_unmark },
+	{ "urgent", cmd_urgent },
 };
 
 static int handler_compare(const void *_a, const void *_b) {
@@ -163,7 +171,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 		int handlers_size) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
-	wlr_log(L_DEBUG, "find_handler(%s)", line);
+	wlr_log(WLR_DEBUG, "find_handler(%s)", line);
 
 	bool config_loading = config->reading || !config->active;
 
@@ -248,10 +256,10 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
-				wlr_log(L_INFO, "Ignoring empty command.");
+				wlr_log(WLR_INFO, "Ignoring empty command.");
 				continue;
 			}
-			wlr_log(L_INFO, "Handling command '%s'", cmd);
+			wlr_log(WLR_INFO, "Handling command '%s'", cmd);
 			//TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
@@ -319,7 +327,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	} while(head);
 cleanup:
 	free(exec);
-	free(views);
+	list_free(views);
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -344,7 +352,7 @@ struct cmd_results *config_command(char *exec) {
 
 	// Start block
 	if (argc > 1 && strcmp(argv[argc - 1], "{") == 0) {
-		char *block = join_args(argv, argc - 1); 
+		char *block = join_args(argv, argc - 1);
 		results = cmd_results_new(CMD_BLOCK, block, NULL);
 		free(block);
 		goto cleanup;
@@ -355,7 +363,7 @@ struct cmd_results *config_command(char *exec) {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
 		goto cleanup;
 	}
-	wlr_log(L_INFO, "handling config command '%s'", exec);
+	wlr_log(WLR_INFO, "handling config command '%s'", exec);
 	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
@@ -388,7 +396,7 @@ cleanup:
 struct cmd_results *config_subcommand(char **argv, int argc,
 		struct cmd_handler *handlers, size_t handlers_size) {
 	char *command = join_args(argv, argc);
-	wlr_log(L_DEBUG, "Subcommand: %s", command);
+	wlr_log(WLR_DEBUG, "Subcommand: %s", command);
 	free(command);
 
 	struct cmd_handler *handler = find_handler(argv[0], handlers,
@@ -428,8 +436,7 @@ struct cmd_results *config_commands_command(char *exec) {
 
 	struct cmd_handler *handler = find_handler(cmd, NULL, 0);
 	if (!handler && strcmp(cmd, "*") != 0) {
-		char *input = cmd ? cmd : "(empty)";
-		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
 		goto cleanup;
 	}
 
@@ -471,14 +478,16 @@ struct cmd_results *config_commands_command(char *exec) {
 	}
 	if (!policy) {
 		policy = alloc_command_policy(cmd);
-		sway_assert(policy, "Unable to allocate security policy");
-		if (policy) {
-			list_add(config->command_policies, policy);
+		if (!sway_assert(policy, "Unable to allocate security policy")) {
+			results = cmd_results_new(CMD_INVALID, cmd,
+					"Unable to allocate memory");
+			goto cleanup;
 		}
+		list_add(config->command_policies, policy);
 	}
 	policy->context = context;
 
-	wlr_log(L_INFO, "Set command policy for %s to %d",
+	wlr_log(WLR_INFO, "Set command policy for %s to %d",
 			policy->command, policy->context);
 
 	results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -492,7 +501,7 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		const char *input, const char *format, ...) {
 	struct cmd_results *results = malloc(sizeof(struct cmd_results));
 	if (!results) {
-		wlr_log(L_ERROR, "Unable to allocate command results");
+		wlr_log(WLR_ERROR, "Unable to allocate command results");
 		return NULL;
 	}
 	results->status = status;
@@ -526,7 +535,7 @@ void free_cmd_results(struct cmd_results *results) {
 	free(results);
 }
 
-const char *cmd_results_to_json(struct cmd_results *results) {
+char *cmd_results_to_json(struct cmd_results *results) {
 	json_object *result_array = json_object_new_array();
 	json_object *root = json_object_new_object();
 	json_object_object_add(root, "success",
@@ -541,9 +550,9 @@ const char *cmd_results_to_json(struct cmd_results *results) {
 	}
 	json_object_array_add(result_array, root);
 	const char *json = json_object_to_json_string(result_array);
-	free(result_array);
-	free(root);
-	return json;
+	char *res = strdup(json);
+	json_object_put(result_array);
+	return res;
 }
 
 /**

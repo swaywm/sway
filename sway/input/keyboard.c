@@ -3,6 +3,7 @@
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include <wlr/types/wlr_idle.h>
+#include "sway/desktop/transaction.h"
 #include "sway/input/seat.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/input-manager.h"
@@ -108,7 +109,7 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		}
 
 		if (*current_binding && *current_binding != binding) {
-			wlr_log(L_DEBUG, "encountered duplicate bindings %d and %d",
+			wlr_log(WLR_DEBUG, "encountered duplicate bindings %d and %d",
 					(*current_binding)->order, binding->order);
 		} else {
 			*current_binding = binding;
@@ -122,12 +123,13 @@ static void get_active_binding(const struct sway_shortcut_state *state,
  */
 static void keyboard_execute_command(struct sway_keyboard *keyboard,
 		struct sway_binding *binding) {
-	wlr_log(L_DEBUG, "running command for binding: %s",
+	wlr_log(WLR_DEBUG, "running command for binding: %s",
 		binding->command);
 	config->handler_context.seat = keyboard->seat_device->sway_seat;
 	struct cmd_results *results = execute_command(binding->command, NULL);
+	transaction_commit_dirty();
 	if (results->status != CMD_SUCCESS) {
-		wlr_log(L_DEBUG, "could not run command for binding: %s (%s)",
+		wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
 			binding->command, results->error);
 	}
 	free_cmd_results(results);
@@ -386,7 +388,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 	if (!keymap) {
-		wlr_log(L_DEBUG, "cannot configure keyboard: keymap does not exist");
+		wlr_log(WLR_DEBUG, "cannot configure keyboard: keymap does not exist");
 		xkb_context_unref(context);
 		return;
 	}
@@ -419,6 +421,9 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	if (!keyboard) {
 		return;
+	}
+	if (keyboard->keymap) {
+		xkb_keymap_unref(keyboard->keymap);
 	}
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_list_remove(&keyboard->keyboard_modifiers.link);

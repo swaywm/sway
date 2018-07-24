@@ -107,7 +107,7 @@ int main(int argc, const char **argv) {
 	}
 
 	int desired_output = atoi(argv[1]);
-	sway_log(L_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
+	sway_log(WLR_INFO, "Using output %d of %d", desired_output, registry->outputs->length);
 	int i;
 	struct output_state *output = registry->outputs->items[desired_output];
 	struct window *window = window_setup(registry, 100, 100, false);

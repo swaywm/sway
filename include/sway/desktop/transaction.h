@@ -6,34 +6,25 @@
 /**
  * Transactions enable us to perform atomic layout updates.
  *
- * When we want to make adjustments to the layout, we create a transaction.
- * A transaction contains a list of affected containers and their new state.
+ * A transaction contains a list of containers and their new state.
  * A state might contain a new size, or new border settings, or new parent/child
  * relationships.
  *
- * Calling transaction_commit() makes sway notify of all the affected clients
- * with their new sizes. We then wait for all the views to respond with their
- * new surface sizes. When all are ready, or when a timeout has passed, we apply
- * the updates all at the same time.
+ * Committing a transaction makes sway notify of all the affected clients with
+ * their new sizes. We then wait for all the views to respond with their new
+ * surface sizes. When all are ready, or when a timeout has passed, we apply the
+ * updates all at the same time.
+ *
+ * When we want to make adjustments to the layout, we change the pending state
+ * in containers, mark them as dirty and call transaction_commit_dirty(). This
+ * create and commits a transaction from the dirty containers.
  */
-
-struct sway_transaction;
 
 /**
- * Create a new transaction.
+ * Find all dirty containers, create and commit a transaction containing them,
+ * and unmark them as dirty.
  */
-struct sway_transaction *transaction_create(void);
-
-/**
- * Add a container's pending state to the transaction.
- */
-void transaction_add_container(struct sway_transaction *transaction,
-		struct sway_container *container);
-
-/**
- * Submit a transaction to the client views for configuration.
- */
-void transaction_commit(struct sway_transaction *transaction);
+void transaction_commit_dirty(void);
 
 /**
  * Notify the transaction system that a view is ready for the new layout.

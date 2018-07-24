@@ -7,13 +7,13 @@
 #include <wlr/backend/session.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell.h>
-#include <wlr/types/wlr_linux_dmabuf.h>
-#include <wlr/types/wlr_export_dmabuf_v1.h>
+#include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_primary_selection.h>
-#include <wlr/types/wlr_screenshooter.h>
+#include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_output.h>
@@ -21,26 +21,27 @@
 // TODO WLR: make Xwayland optional
 #include "list.h"
 #include "sway/config.h"
+#include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 #include "sway/xwayland.h"
 
 bool server_privileged_prepare(struct sway_server *server) {
-	wlr_log(L_DEBUG, "Preparing Wayland server initialization");
+	wlr_log(WLR_DEBUG, "Preparing Wayland server initialization");
 	server->wl_display = wl_display_create();
 	server->wl_event_loop = wl_display_get_event_loop(server->wl_display);
 	server->backend = wlr_backend_autocreate(server->wl_display, NULL);
 
 	if (!server->backend) {
-		wlr_log(L_ERROR, "Unable to create backend");
+		wlr_log(WLR_ERROR, "Unable to create backend");
 		return false;
 	}
 	return true;
 }
 
 bool server_init(struct sway_server *server) {
-	wlr_log(L_DEBUG, "Initializing Wayland server");
+	wlr_log(WLR_DEBUG, "Initializing Wayland server");
 
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(server->backend);
 	assert(renderer);
@@ -51,8 +52,6 @@ bool server_init(struct sway_server *server) {
 	server->data_device_manager =
 		wlr_data_device_manager_create(server->wl_display);
 
-	server->idle = wlr_idle_create(server->wl_display);
-	wlr_screenshooter_create(server->wl_display);
 	wlr_gamma_control_manager_create(server->wl_display);
 	wlr_primary_selection_device_manager_create(server->wl_display);
 
@@ -61,6 +60,10 @@ bool server_init(struct sway_server *server) {
 
 	wlr_xdg_output_manager_create(server->wl_display,
 			root_container.sway_root->output_layout);
+
+	server->idle = wlr_idle_create(server->wl_display);
+	server->idle_inhibit_manager_v1 =
+		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
 
 	server->layer_shell = wlr_layer_shell_create(server->wl_display);
 	wl_signal_add(&server->layer_shell->events.new_surface,
@@ -105,12 +108,13 @@ bool server_init(struct sway_server *server) {
 	wlr_server_decoration_manager_set_default_mode(
 		deco_manager, WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
 
-	wlr_linux_dmabuf_create(server->wl_display, renderer);
+	wlr_linux_dmabuf_v1_create(server->wl_display, renderer);
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
+	wlr_screencopy_manager_v1_create(server->wl_display);
 
 	server->socket = wl_display_add_socket_auto(server->wl_display);
 	if (!server->socket) {
-		wlr_log(L_ERROR, "Unable to open wayland socket");
+		wlr_log(WLR_ERROR, "Unable to open wayland socket");
 		wlr_backend_destroy(server->backend);
 		return false;
 	}
@@ -119,8 +123,7 @@ bool server_init(struct sway_server *server) {
 	if (debug != NULL && strcmp(debug, "txn_timings") == 0) {
 		server->debug_txn_timings = true;
 	}
-	server->destroying_containers = create_list();
-
+	server->dirty_containers = create_list();
 	server->transactions = create_list();
 
 	input_manager = input_manager_create(server);
@@ -130,18 +133,23 @@ bool server_init(struct sway_server *server) {
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
 	wl_display_destroy(server->wl_display);
-	list_free(server->destroying_containers);
+	list_free(server->dirty_containers);
 	list_free(server->transactions);
 }
 
-void server_run(struct sway_server *server) {
-	wlr_log(L_INFO, "Running compositor on wayland display '%s'",
+bool server_start_backend(struct sway_server *server) {
+	wlr_log(WLR_INFO, "Starting backend on wayland display '%s'",
 			server->socket);
-	setenv("WAYLAND_DISPLAY", server->socket, true);
 	if (!wlr_backend_start(server->backend)) {
-		wlr_log(L_ERROR, "Failed to start backend");
+		wlr_log(WLR_ERROR, "Failed to start backend");
 		wlr_backend_destroy(server->backend);
-		return;
+		return false;
 	}
+	return true;
+}
+
+void server_run(struct sway_server *server) {
+	wlr_log(WLR_INFO, "Running compositor on wayland display '%s'",
+			server->socket);
 	wl_display_run(server->wl_display);
 }

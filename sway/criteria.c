@@ -37,13 +37,38 @@ void criteria_destroy(struct criteria *criteria) {
 	pcre_free(criteria->con_mark);
 	pcre_free(criteria->window_role);
 	free(criteria->workspace);
-
+	free(criteria->cmdlist);
 	free(criteria->raw);
 	free(criteria);
 }
 
 static int regex_cmp(const char *item, const pcre *regex) {
 	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+}
+
+static int cmp_urgent(const void *_a, const void *_b) {
+	struct sway_view *a = *(void **)_a;
+	struct sway_view *b = *(void **)_b;
+
+	if (a->urgent.tv_sec < b->urgent.tv_sec) {
+		return -1;
+	} else if (a->urgent.tv_sec > b->urgent.tv_sec) {
+		return 1;
+	}
+	if (a->urgent.tv_nsec < b->urgent.tv_nsec) {
+		return -1;
+	} else if (a->urgent.tv_nsec > b->urgent.tv_nsec) {
+		return 1;
+	}
+	return 0;
+}
+
+static void find_urgent_iterator(struct sway_container *swayc, void *data) {
+	if (swayc->type != C_VIEW || !view_is_urgent(swayc->sway_view)) {
+		return;
+	}
+	list_t *urgent_views = data;
+	list_add(urgent_views, swayc->sway_view);
 }
 
 static bool criteria_matches_view(struct criteria *criteria,
@@ -133,8 +158,23 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->urgent) {
-		// TODO
-		return false;
+		if (!view_is_urgent(view)) {
+			return false;
+		}
+		list_t *urgent_views = create_list();
+		container_for_each_descendant_dfs(&root_container,
+				find_urgent_iterator, urgent_views);
+		list_stable_sort(urgent_views, cmp_urgent);
+		struct sway_view *target;
+		if (criteria->urgent == 'o') { // oldest
+			target = urgent_views->items[0];
+		} else { // latest
+			target = urgent_views->items[urgent_views->length - 1];
+		}
+		list_free(urgent_views);
+		if (view != target) {
+			return false;
+		}
 	}
 
 	if (criteria->workspace) {
@@ -185,6 +225,15 @@ list_t *criteria_get_views(struct criteria *criteria) {
 	};
 	container_for_each_descendant_dfs(&root_container,
 		criteria_get_views_iterator, &data);
+
+	// Scratchpad items which are hidden are not in the tree.
+	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
+		struct sway_container *con =
+			root_container.sway_root->scratchpad->items[i];
+		if (!con->parent) {
+			criteria_get_views_iterator(con, &data);
+		}
+	}
 	return matches;
 }
 
@@ -507,7 +556,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 			}
 			unescape(value);
 		}
-		wlr_log(L_DEBUG, "Found pair: %s=%s", name, value);
+		wlr_log(WLR_DEBUG, "Found pair: %s=%s", name, value);
 		if (!parse_token(criteria, name, value)) {
 			*error_arg = error;
 			goto cleanup;

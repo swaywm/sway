@@ -11,11 +11,15 @@
 #include "cairo.h"
 #include "pango.h"
 #include "sway/config.h"
+#include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
+#include "sway/scratchpad.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
@@ -28,7 +32,7 @@ static list_t *get_bfs_queue() {
 	if (!bfs_queue) {
 		bfs_queue = create_list();
 		if (!bfs_queue) {
-			wlr_log(L_ERROR, "could not allocate list for bfs queue");
+			wlr_log(WLR_ERROR, "could not allocate list for bfs queue");
 			return NULL;
 		}
 	}
@@ -151,18 +155,11 @@ void container_free(struct sway_container *cont) {
 		return;
 	}
 	free(cont->name);
+	free(cont->formatted_title);
 	wlr_texture_destroy(cont->title_focused);
 	wlr_texture_destroy(cont->title_focused_inactive);
 	wlr_texture_destroy(cont->title_unfocused);
 	wlr_texture_destroy(cont->title_urgent);
-
-	for (int i = 0; i < server.destroying_containers->length; ++i) {
-		if (server.destroying_containers->items[i] == cont) {
-			list_del(server.destroying_containers, i);
-			break;
-		}
-	}
-
 	list_free(cont->instructions);
 	list_free(cont->children);
 	list_free(cont->current.children);
@@ -203,16 +200,23 @@ static struct sway_container *container_workspace_destroy(
 		return NULL;
 	}
 
-	// Do not destroy this if it's the last workspace on this output
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-	if (output && output->children->length == 1) {
+
+	// If we're destroying the output, it will be NULL here. Return the root so
+	// that it doesn't appear that the workspace has refused to be destoyed,
+	// which would leave it in a broken state with no parent.
+	if (output == NULL) {
+		return &root_container;
+	}
+
+	// Do not destroy this if it's the last workspace on this output
+	if (output->children->length == 1) {
 		return NULL;
 	}
 
-	wlr_log(L_DEBUG, "destroying workspace '%s'", workspace->name);
+	wlr_log(WLR_DEBUG, "destroying workspace '%s'", workspace->name);
 
-	struct sway_container *parent = workspace->parent;
-	if (!workspace_is_empty(workspace) && output) {
+	if (!workspace_is_empty(workspace)) {
 		// Move children to a different workspace on this output
 		struct sway_container *new_workspace = NULL;
 		for (int i = 0; i < output->children->length; i++) {
@@ -222,7 +226,7 @@ static struct sway_container *container_workspace_destroy(
 			}
 		}
 
-		wlr_log(L_DEBUG, "moving children to different workspace '%s' -> '%s'",
+		wlr_log(WLR_DEBUG, "moving children to different workspace '%s' -> '%s'",
 			workspace->name, new_workspace->name);
 		for (int i = 0; i < workspace->children->length; i++) {
 			container_move_to(workspace->children->items[i], new_workspace);
@@ -234,7 +238,7 @@ static struct sway_container *container_workspace_destroy(
 		}
 	}
 
-	return parent;
+	return output;
 }
 
 static struct sway_container *container_output_destroy(
@@ -288,7 +292,7 @@ static struct sway_container *container_output_destroy(
 	output->sway_output->swayc = NULL;
 	output->sway_output = NULL;
 
-	wlr_log(L_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
+	wlr_log(WLR_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
 
 	return &root_container;
 }
@@ -315,13 +319,19 @@ static struct sway_container *container_destroy_noreaping(
 		// Workspaces will refuse to be destroyed if they're the last workspace
 		// on their output.
 		if (!container_workspace_destroy(con)) {
-			wlr_log(L_ERROR, "workspace doesn't want to destroy");
+			wlr_log(WLR_ERROR, "workspace doesn't want to destroy");
 			return NULL;
 		}
 	}
 
+	container_end_mouse_operation(con);
+
 	con->destroying = true;
-	list_add(server.destroying_containers, con);
+	container_set_dirty(con);
+
+	if (con->scratchpad) {
+		scratchpad_remove_container(con);
+	}
 
 	if (!con->parent) {
 		return NULL;
@@ -342,7 +352,7 @@ bool container_reap_empty(struct sway_container *con) {
 		break;
 	case C_WORKSPACE:
 		if (!workspace_is_visible(con) && workspace_is_empty(con)) {
-			wlr_log(L_DEBUG, "Destroying workspace via reaper");
+			wlr_log(WLR_DEBUG, "Destroying workspace via reaper");
 			container_destroy_noreaping(con);
 			return true;
 		}
@@ -435,7 +445,7 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 	}
 	const char *title = view_get_title(sway_view);
 	struct sway_container *swayc = container_create(C_VIEW);
-	wlr_log(L_DEBUG, "Adding new view %p:%s to container %p %d %s",
+	wlr_log(WLR_DEBUG, "Adding new view %p:%s to container %p %d %s",
 		swayc, title, sibling, sibling ? sibling->type : 0, sibling->name);
 	// Setup values
 	swayc->sway_view = sway_view;
@@ -657,7 +667,9 @@ struct sway_container *floating_container_at(double lx, double ly,
 			if (!workspace_is_visible(workspace)) {
 				continue;
 			}
-			for (int k = 0; k < ws->floating->children->length; ++k) {
+			// Items at the end of the list are on top, so iterate the list in
+			// reverse.
+			for (int k = ws->floating->children->length - 1; k >= 0; --k) {
 				struct sway_container *floater =
 					ws->floating->children->items[k];
 				struct wlr_box box = {
@@ -678,16 +690,23 @@ struct sway_container *floating_container_at(double lx, double ly,
 void container_for_each_descendant_dfs(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
-	if (container) {
-		if (container->children)  {
-			for (int i = 0; i < container->children->length; ++i) {
-				struct sway_container *child =
-					container->children->items[i];
-				container_for_each_descendant_dfs(child, f, data);
-			}
-		}
-		f(container, data);
+	if (!container) {
+		return;
 	}
+	if (container->children)  {
+		for (int i = 0; i < container->children->length; ++i) {
+			struct sway_container *child = container->children->items[i];
+			container_for_each_descendant_dfs(child, f, data);
+		}
+	}
+	if (container->type == C_WORKSPACE)  {
+		struct sway_container *floating = container->sway_workspace->floating;
+		for (int i = 0; i < floating->children->length; ++i) {
+			struct sway_container *child = floating->children->items[i];
+			container_for_each_descendant_dfs(child, f, data);
+		}
+	}
+	f(container, data);
 }
 
 void container_for_each_descendant_bfs(struct sway_container *con,
@@ -698,7 +717,7 @@ void container_for_each_descendant_bfs(struct sway_container *con,
 	}
 
 	if (queue == NULL) {
-		wlr_log(L_ERROR, "could not allocate list");
+		wlr_log(WLR_ERROR, "could not allocate list");
 		return;
 	}
 
@@ -782,7 +801,7 @@ static void update_title_texture(struct sway_container *con,
 
 	double scale = output->sway_output->wlr_output->scale;
 	int width = 0;
-	int height = config->font_height * scale;
+	int height = con->title_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
 	get_text_size(c, config->font, &width, NULL, scale, config->pango_markup,
@@ -935,11 +954,15 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_add_child(workspace->sway_workspace->floating, container);
 		if (container->type == C_VIEW) {
 			view_init_floating(container->sway_view);
+			view_set_tiled(container->sway_view, false);
 		}
 		seat_set_focus(seat, seat_get_focus_inactive(seat, container));
 		container_reap_empty_recursive(workspace);
 	} else {
 		// Returning to tiled
+		if (container->scratchpad) {
+			scratchpad_remove_container(container);
+		}
 		container_remove_child(container);
 		container_add_child(workspace, container);
 		container->width = container->parent->width;
@@ -950,6 +973,8 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container->is_sticky = false;
 		container_reap_empty_recursive(workspace->sway_workspace->floating);
 	}
+
+	container_end_mouse_operation(container);
 
 	ipc_event_window(container, "floating");
 }
@@ -963,9 +988,14 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 		return;
 	}
 	struct sway_view *view = con->sway_view;
-	size_t border_width = view->border_thickness * (view->border != B_NONE);
-	size_t top =
-		view->border == B_NORMAL ? container_titlebar_height() : border_width;
+	size_t border_width = 0;
+	size_t top = 0;
+
+	if (!view->using_csd) {
+		border_width = view->border_thickness * (view->border != B_NONE);
+		top = view->border == B_NORMAL ?
+			container_titlebar_height() : border_width;
+	}
 
 	con->x = view->x - border_width;
 	con->y = view->y - top;
@@ -986,4 +1016,113 @@ void container_get_box(struct sway_container *container, struct wlr_box *box) {
 	box->y = container->y;
 	box->width = container->width;
 	box->height = container->height;
+}
+
+/**
+ * Translate the container's position as well as all children.
+ */
+void container_floating_translate(struct sway_container *con,
+		double x_amount, double y_amount) {
+	con->x += x_amount;
+	con->y += y_amount;
+	con->current.swayc_x += x_amount;
+	con->current.swayc_y += y_amount;
+	if (con->type == C_VIEW) {
+		con->sway_view->x += x_amount;
+		con->sway_view->y += y_amount;
+		con->current.view_x += x_amount;
+		con->current.view_y += y_amount;
+	} else {
+		for (int i = 0; i < con->children->length; ++i) {
+			struct sway_container *child = con->children->items[i];
+			container_floating_translate(child, x_amount, y_amount);
+		}
+	}
+}
+
+/**
+ * Choose an output for the floating container's new position.
+ *
+ * If the center of the container intersects an output then we'll choose that
+ * one, otherwise we'll choose whichever output is closest to the container's
+ * center.
+ */
+static struct sway_container *container_floating_find_output(
+		struct sway_container *con) {
+	double center_x = con->x + con->width / 2;
+	double center_y = con->y + con->height / 2;
+	struct sway_container *closest_output = NULL;
+	double closest_distance = DBL_MAX;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		struct wlr_box output_box;
+		double closest_x, closest_y;
+		container_get_box(output, &output_box);
+		wlr_box_closest_point(&output_box, center_x, center_y,
+				&closest_x, &closest_y);
+		if (center_x == closest_x && center_y == closest_y) {
+			// The center of the floating container is on this output
+			return output;
+		}
+		double x_dist = closest_x - center_x;
+		double y_dist = closest_y - center_y;
+		double distance = x_dist * x_dist + y_dist * y_dist;
+		if (distance < closest_distance) {
+			closest_output = output;
+			closest_distance = distance;
+		}
+	}
+	return closest_output;
+}
+
+void container_floating_move_to(struct sway_container *con,
+		double lx, double ly) {
+	if (!sway_assert(container_is_floating(con),
+			"Expected a floating container")) {
+		return;
+	}
+	desktop_damage_whole_container(con);
+	container_floating_translate(con, lx - con->x, ly - con->y);
+	desktop_damage_whole_container(con);
+	struct sway_container *old_workspace = container_parent(con, C_WORKSPACE);
+	struct sway_container *new_output = container_floating_find_output(con);
+	if (!sway_assert(new_output, "Unable to find any output")) {
+		return;
+	}
+	struct sway_container *new_workspace =
+		output_get_active_workspace(new_output->sway_output);
+	if (old_workspace != new_workspace) {
+		container_remove_child(con);
+		container_add_child(new_workspace->sway_workspace->floating, con);
+		arrange_windows(old_workspace);
+		arrange_windows(new_workspace);
+		workspace_detect_urgent(old_workspace);
+		workspace_detect_urgent(new_workspace);
+	}
+}
+
+void container_set_dirty(struct sway_container *container) {
+	if (container->dirty) {
+		return;
+	}
+	container->dirty = true;
+	list_add(server.dirty_containers, container);
+}
+
+static bool find_urgent_iterator(struct sway_container *con,
+		void *data) {
+	return con->type == C_VIEW && view_is_urgent(con->sway_view);
+}
+
+bool container_has_urgent_child(struct sway_container *container) {
+	return container_find(container, find_urgent_iterator, NULL);
+}
+
+void container_end_mouse_operation(struct sway_container *container) {
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		if (seat->op_container == container) {
+			seat_end_mouse_operation(seat);
+		}
+	}
 }

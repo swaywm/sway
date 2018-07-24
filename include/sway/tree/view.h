@@ -26,6 +26,8 @@ enum sway_view_prop {
 };
 
 struct sway_view_impl {
+	void (*get_constraints)(struct sway_view *view, double *min_width,
+			double *max_width, double *min_height, double *max_height);
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
@@ -35,6 +37,7 @@ struct sway_view_impl {
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
+	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
@@ -68,6 +71,11 @@ struct sway_view {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+	bool using_csd;
+
+	struct timespec urgent;
+	bool allow_request_urgent;
+	struct wl_event_source *urgent_timer;
 
 	bool destroying;
 
@@ -102,6 +110,8 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
+	struct wl_listener set_title;
+	struct wl_listener set_app_id;
 	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
@@ -116,6 +126,8 @@ struct sway_xdg_shell_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
+	struct wl_listener set_title;
+	struct wl_listener set_app_id;
 	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
@@ -134,6 +146,7 @@ struct sway_xwayland_view {
 	struct wl_listener set_title;
 	struct wl_listener set_class;
 	struct wl_listener set_window_type;
+	struct wl_listener set_hints;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -207,6 +220,9 @@ const char *view_get_window_role(struct sway_view *view);
 uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
+
+void view_get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height);
 
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
@@ -303,5 +319,9 @@ void view_update_marks_textures(struct sway_view *view);
  * Intended for damage tracking.
  */
 bool view_is_visible(struct sway_view *view);
+
+void view_set_urgent(struct sway_view *view, bool enable);
+
+bool view_is_urgent(struct sway_view *view);
 
 #endif
