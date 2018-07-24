@@ -570,7 +570,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 
 	// Handle mouse bindings
-	bool on_border = find_resize_edge(cont, cursor) != WLR_EDGE_NONE;
+	bool on_border = cont && (find_resize_edge(cont, cursor) != WLR_EDGE_NONE);
 	bool on_contents = !on_border && surface;
 	bool on_titlebar = !on_border && !surface;
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(cursor->seat->wlr_seat);
