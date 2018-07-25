@@ -857,7 +857,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 			if (fullscreen_con->instructions->length) {
 				render_saved_view(fullscreen_con->sway_view,
 						output, damage, 1.0f);
-		} else {
+			} else {
 				render_view_surfaces(fullscreen_con->sway_view,
 						output, damage, 1.0f);
 			}
