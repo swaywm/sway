@@ -33,6 +33,8 @@ struct input_config *new_input_config(const char* identifier) {
 	input->left_handed = INT_MIN;
 	input->repeat_delay = INT_MIN;
 	input->repeat_rate = INT_MIN;
+	input->xkb_numlock = INT_MIN;
+	input->xkb_capslock = INT_MIN;
 
 	return input;
 }
@@ -103,6 +105,12 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->xkb_variant) {
 		free(dst->xkb_variant);
 		dst->xkb_variant = strdup(src->xkb_variant);
+	}
+	if (src->xkb_numlock != INT_MIN) {
+		dst->xkb_numlock = src->xkb_numlock;
+	}
+	if (src->xkb_capslock != INT_MIN) {
+		dst->xkb_capslock = src->xkb_capslock;
 	}
 	if (src->mapped_from_region) {
 		free(dst->mapped_from_region);

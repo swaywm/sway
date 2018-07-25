@@ -3,6 +3,7 @@
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/interfaces/wlr_keyboard.h>
 #include "sway/commands.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
@@ -384,6 +385,31 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	xkb_keymap_unref(keyboard->keymap);
 	keyboard->keymap = keymap;
 	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
+
+	xkb_mod_mask_t locked_mods = 0;
+	if (!input_config || input_config->xkb_numlock != 0) {
+		xkb_mod_index_t mod_index = xkb_map_mod_get_index(keymap, XKB_MOD_NAME_NUM);
+		if (mod_index != XKB_MOD_INVALID) {
+		       locked_mods |= (uint32_t)1 << mod_index;
+		}
+	}
+	if (input_config && input_config->xkb_capslock > 0) {
+		xkb_mod_index_t mod_index = xkb_map_mod_get_index(keymap, XKB_MOD_NAME_CAPS);
+		if (mod_index != XKB_MOD_INVALID) {
+		       locked_mods |= (uint32_t)1 << mod_index;
+		}
+	}
+	if (locked_mods) {
+		wlr_keyboard_notify_modifiers(wlr_device->keyboard, 0, 0, locked_mods, 0);
+		uint32_t leds = 0;
+		for (uint32_t i = 0; i < WLR_LED_COUNT; ++i) {
+			if (xkb_state_led_index_is_active(wlr_device->keyboard->xkb_state,
+					wlr_device->keyboard->led_indexes[i])) {
+				leds |= (1 << i);
+			}
+		}
+		wlr_keyboard_led_update(wlr_device->keyboard, leds);
+	}
 
 	if (input_config && input_config->repeat_delay != INT_MIN
 			&& input_config->repeat_rate != INT_MIN) {

@@ -33,6 +33,14 @@ For more information on these xkb configuration options, see
 *input* <identifier> xkb\_variant <variant>
 	Sets the variant of the keyboard like _dvorak_ or _colemak_.
 
+The following commands may only be used in the configuration file.
+
+*input* <identifier> xkb\_capslock enabled|disabled
+	Initially enables or disables CapsLock, the default is disabled.
+
+*input* <identifier> xkb\_numlock enabled|disabled
+	Initially enables or disables NumLock, the default is enabled.
+
 ## MAPPING CONFIGURATION
 
 *input* <identifier> map\_to\_output <identifier>
