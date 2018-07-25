@@ -181,6 +181,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	bool set_focus =
 		focus != NULL &&
 		(focus == con || container_has_child(con, focus)) &&
+		con->parent && con->parent->children->length > 1 &&
 		con->type != C_WORKSPACE;
 
 	seat_container_destroy(seat_con);
