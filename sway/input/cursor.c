@@ -11,6 +11,7 @@
 #include <wlr/types/wlr_idle.h>
 #include "list.h"
 #include "log.h"
+#include "sway/config.h"
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"

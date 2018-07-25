@@ -12,6 +12,7 @@
 #include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
 #include "list.h"
+#include "config.h"
 #ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif

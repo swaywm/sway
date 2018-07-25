@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "sway/config.h"
 #include "sway/debug.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"

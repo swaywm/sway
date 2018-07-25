@@ -10,6 +10,7 @@
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
+#include "config.h"
 
 bool criteria_is_empty(struct criteria *criteria) {
 	return !criteria->title
@@ -19,9 +20,9 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->instance
 		&& !criteria->con_mark
 		&& !criteria->con_id
-    #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 		&& !criteria->id
-    #endif
+#endif
 		&& !criteria->window_role
 		&& !criteria->window_type
 		&& !criteria->floating
@@ -129,14 +130,14 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	if (criteria->id) { // X11 window ID
 		uint32_t x11_window_id = view_get_x11_window_id(view);
 		if (!x11_window_id || x11_window_id != criteria->id) {
 			return false;
 		}
 	}
-  #endif
+#endif
 
 	if (criteria->window_role) {
 		// TODO
@@ -293,10 +294,10 @@ static enum criteria_token token_from_name(char *name) {
 		return T_CON_ID;
 	} else if (strcmp(name, "con_mark") == 0) {
 		return T_CON_MARK;
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	} else if (strcmp(name, "id") == 0) {
 		return T_ID;
-  #endif
+#endif
 	} else if (strcmp(name, "instance") == 0) {
 		return T_INSTANCE;
 	} else if (strcmp(name, "shell") == 0) {
@@ -363,9 +364,9 @@ static char *get_focused_prop(enum criteria_token token) {
 	case T_CON_ID: // These do not support __focused__
 	case T_CON_MARK:
 	case T_FLOATING:
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	case T_ID:
-  #endif
+#endif
 	case T_TILING:
 	case T_URGENT:
 	case T_WINDOW_TYPE:
@@ -436,14 +437,14 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_WINDOW_TYPE:
 		// TODO: This is a string but will be stored as an enum or integer
 		break;
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	case T_ID:
 		criteria->id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'id' should be numeric");
 		}
 		break;
-  #endif
+#endif
 	case T_FLOATING:
 		criteria->floating = true;
 		break;

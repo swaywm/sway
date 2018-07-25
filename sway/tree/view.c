@@ -3,6 +3,7 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "sway/config.h"
 #ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
