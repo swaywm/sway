@@ -1,6 +1,6 @@
 #include <strings.h>
 #include <wlr/util/log.h>
-#include "sway/config.h"
+#include "config.h"
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"

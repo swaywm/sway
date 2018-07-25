@@ -3,6 +3,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/render/wlr_texture.h>
 #include "sway/tree/container.h"
+#include "config.h"
 
 enum movement_direction {
 	MOVE_LEFT,

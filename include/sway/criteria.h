@@ -2,6 +2,7 @@
 #define _SWAY_CRITERIA_H
 
 #include <pcre.h>
+#include "config.h"
 #include "list.h"
 #include "tree/view.h"
 

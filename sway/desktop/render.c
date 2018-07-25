@@ -14,6 +14,7 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/util/region.h>
 #include "log.h"
+#include "config.h"
 #include "sway/config.h"
 #include "sway/debug.h"
 #include "sway/input/input-manager.h"

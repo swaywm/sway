@@ -3,6 +3,7 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include "config.h"
 #ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
 #endif

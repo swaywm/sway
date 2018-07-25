@@ -3,12 +3,12 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
-#include "sway/config.h"
 #ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
 #include "list.h"
 #include "log.h"
+#include "config.h"
 #include "sway/criteria.h"
 #include "sway/commands.h"
 #include "sway/ipc-server.h"

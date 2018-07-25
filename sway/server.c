@@ -25,6 +25,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/layout.h"
+#include "config.h"
 #ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif

@@ -12,7 +12,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "log.h"
-#include "sway/config.h"
+#include "config.h"
 #include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
