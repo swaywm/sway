@@ -401,6 +401,14 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	}
 	if (locked_mods) {
 		wlr_keyboard_notify_modifiers(wlr_device->keyboard, 0, 0, locked_mods, 0);
+		uint32_t leds = 0;
+		for (uint32_t i = 0; i < WLR_LED_COUNT; ++i) {
+			if (xkb_state_led_index_is_active(wlr_device->keyboard->xkb_state,
+					wlr_device->keyboard->led_indexes[i])) {
+				leds |= (1 << i);
+			}
+		}
+		wlr_keyboard_led_update(wlr_device->keyboard, leds);
 	}
 
 	if (input_config && input_config->repeat_delay != INT_MIN
