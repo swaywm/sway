@@ -68,7 +68,9 @@ void container_create_notify(struct sway_container *container) {
 }
 
 static void container_update_textures_recursive(struct sway_container *con) {
-	container_update_title_textures(con);
+	if (con->type == C_CONTAINER || con->type == C_VIEW) {
+		container_update_title_textures(con);
+	}
 
 	if (con->type == C_VIEW) {
 		view_update_marks_textures(con->sway_view);
