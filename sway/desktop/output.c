@@ -182,21 +182,14 @@ struct sway_container *output_get_active_workspace(struct sway_output *output) {
 	return workspace;
 }
 
-bool output_has_opaque_lockscreen(struct sway_output *output,
-		struct sway_seat *seat) {
-	if (!seat->exclusive_client) {
-		return false;
-	}
-
+bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 	struct wlr_layer_surface *wlr_layer_surface;
 	wl_list_for_each(wlr_layer_surface, &server.layer_shell->surfaces, link) {
-		if (wlr_layer_surface->output != output->wlr_output) {
+		if (wlr_layer_surface->output != output->wlr_output ||
+				wlr_layer_surface->layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY) {
 			continue;
 		}
 		struct wlr_surface *wlr_surface = wlr_layer_surface->surface;
-		if (wlr_surface->resource->client != seat->exclusive_client) {
-			continue;
-		}
 		struct sway_layer_surface *sway_layer_surface =
 			layer_from_wlr_layer_surface(wlr_layer_surface);
 		pixman_box32_t output_box = {
@@ -222,16 +215,11 @@ struct send_frame_done_data {
 	struct root_geometry root_geo;
 	struct sway_output *output;
 	struct timespec *when;
-	struct wl_client *exclusive_client;
 };
 
 static void send_frame_done_iterator(struct wlr_surface *surface,
 		int sx, int sy, void *_data) {
 	struct send_frame_done_data *data = _data;
-	if (data->exclusive_client &&
-			data->exclusive_client != surface->resource->client) {
-		return;
-	}
 
 	bool intersects = output_get_surface_box(&data->root_geo, data->output, surface,
 		sx, sy, NULL);
@@ -280,13 +268,14 @@ static void send_frame_done_container(struct send_frame_done_data *data,
 }
 
 static void send_frame_done(struct sway_output *output, struct timespec *when) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct send_frame_done_data data = {
 		.output = output,
 		.when = when,
-		.exclusive_client = output_has_opaque_lockscreen(output, seat) ?
-			seat->exclusive_client : NULL,
 	};
+
+	if (output_has_opaque_overlay_layer_surface(output)) {
+		goto send_frame_overlay;
+	}
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	if (workspace->current.ws_fullscreen) {
@@ -315,6 +304,7 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
 
+send_frame_overlay:
 	send_frame_done_layer(&data,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	send_frame_done_drag_icons(&data, &root_container.sway_root->drag_icons);
