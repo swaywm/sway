@@ -836,21 +836,12 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
 
-	if (output_has_opaque_lockscreen(output, seat) && seat->focused_layer) {
-		struct wlr_layer_surface *wlr_layer_surface = seat->focused_layer;
-		struct sway_layer_surface *sway_layer_surface =
-			layer_from_wlr_layer_surface(seat->focused_layer);
-		struct render_data data = {
-			.output = output,
-			.damage = damage,
-			.alpha = 1.0f,
-		};
-		output_surface_for_each_surface(wlr_layer_surface->surface,
-			sway_layer_surface->geo.x, sway_layer_surface->geo.y,
-			&data.root_geo, render_surface_iterator, &data);
-	} else if (fullscreen_view) {
+	if (output_has_opaque_overlay_layer_surface(output)) {
+		goto render_overlay;
+	}
+
+	if (fullscreen_view) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		int nrects;
@@ -894,6 +885,8 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
+
+render_overlay:
 	render_layer(output, damage,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_drag_icons(output, damage, &root_container.sway_root->drag_icons);
