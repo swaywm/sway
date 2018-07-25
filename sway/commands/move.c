@@ -196,7 +196,7 @@ static struct cmd_results *move_in_direction(struct sway_container *container,
 				"Cannot move workspaces in a direction");
 	}
 	if (container_is_floating(container)) {
-		if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
+		if (container->is_fullscreen) {
 			return cmd_results_new(CMD_FAILURE, "move",
 					"Cannot move fullscreen floating container");
 		}

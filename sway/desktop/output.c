@@ -279,13 +279,15 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 
 	struct sway_container *workspace = output_get_active_workspace(output);
 	if (workspace->current.ws_fullscreen) {
-		send_frame_done_container_iterator(
-			workspace->current.ws_fullscreen->swayc, &data);
-#ifdef HAVE_XWAYLAND
-		if (workspace->current.ws_fullscreen->type == SWAY_VIEW_XWAYLAND) {
-			send_frame_done_unmanaged(&data,
-				&root_container.sway_root->xwayland_unmanaged);
+		if (workspace->current.ws_fullscreen->type == C_VIEW) {
+			send_frame_done_container_iterator(
+				workspace->current.ws_fullscreen, &data);
+		} else {
+			send_frame_done_container(&data, workspace->current.ws_fullscreen);
 		}
+#ifdef HAVE_XWAYLAND
+		send_frame_done_unmanaged(&data,
+			&root_container.sway_root->xwayland_unmanaged);
 #endif
 	} else {
 		send_frame_done_layer(&data,

@@ -60,6 +60,8 @@ struct sway_container_state {
 	double swayc_x, swayc_y;
 	double swayc_width, swayc_height;
 
+	bool is_fullscreen;
+
 	bool has_gaps;
 	double current_gaps;
 	double gaps_inner;
@@ -74,7 +76,6 @@ struct sway_container_state {
 	// View properties
 	double view_x, view_y;
 	double view_width, view_height;
-	bool is_fullscreen;
 
 	enum sway_container_border border;
 	int border_thickness;
@@ -84,7 +85,7 @@ struct sway_container_state {
 	bool border_right;
 
 	// Workspace properties
-	struct sway_view *ws_fullscreen;
+	struct sway_container *ws_fullscreen;
 	struct sway_container *ws_floating;
 };
 
@@ -123,6 +124,8 @@ struct sway_container {
 	double width, height;
 	double saved_x, saved_y;
 	double saved_width, saved_height;
+
+	bool is_fullscreen;
 
 	// The gaps currently applied to the container.
 	double current_gaps;
@@ -334,5 +337,21 @@ bool container_has_urgent_child(struct sway_container *container);
  * ends the operation.
  */
 void container_end_mouse_operation(struct sway_container *container);
+
+void container_set_fullscreen(struct sway_container *container, bool enable);
+
+/**
+ * Return true if the container is fullscreen, or a child of a fullscreen split
+ * container.
+ */
+bool container_is_fullscreen_or_child(struct sway_container *container);
+
+/**
+ * Wrap the children of parent in a new container. The new container will be the
+ * only child of parent.
+ *
+ * The new container is returned.
+ */
+struct sway_container *container_wrap_children(struct sway_container *parent);
 
 #endif

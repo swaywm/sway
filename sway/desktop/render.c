@@ -836,13 +836,13 @@ void output_render(struct sway_output *output, struct timespec *when,
 	}
 
 	struct sway_container *workspace = output_get_active_workspace(output);
-	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
+	struct sway_container *fullscreen_con = workspace->current.ws_fullscreen;
 
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto render_overlay;
 	}
 
-	if (fullscreen_view) {
+	if (fullscreen_con) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		int nrects;
@@ -853,16 +853,21 @@ void output_render(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		if (fullscreen_view->swayc->instructions->length) {
-			render_saved_view(fullscreen_view, output, damage, 1.0f);
+		if (fullscreen_con->type == C_VIEW) {
+			if (fullscreen_con->instructions->length) {
+				render_saved_view(fullscreen_con->sway_view,
+						output, damage, 1.0f);
 		} else {
-			render_view_surfaces(fullscreen_view, output, damage, 1.0f);
+				render_view_surfaces(fullscreen_con->sway_view,
+						output, damage, 1.0f);
+			}
+		} else {
+			render_container(output, damage, fullscreen_con,
+					fullscreen_con->current.focused);
 		}
 #ifdef HAVE_XWAYLAND
-		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
-			render_unmanaged(output, damage,
-				&root_container.sway_root->xwayland_unmanaged);
-		}
+		render_unmanaged(output, damage,
+			&root_container.sway_root->xwayland_unmanaged);
 #endif
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};

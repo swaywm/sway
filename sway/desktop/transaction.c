@@ -110,6 +110,7 @@ static void copy_pending_state(struct sway_container *container,
 	state->swayc_y = container->y;
 	state->swayc_width = container->width;
 	state->swayc_height = container->height;
+	state->is_fullscreen = container->is_fullscreen;
 	state->has_gaps = container->has_gaps;
 	state->current_gaps = container->current_gaps;
 	state->gaps_inner = container->gaps_inner;
@@ -122,7 +123,6 @@ static void copy_pending_state(struct sway_container *container,
 		state->view_y = view->y;
 		state->view_width = view->width;
 		state->view_height = view->height;
-		state->is_fullscreen = view->is_fullscreen;
 		state->border = view->border;
 		state->border_thickness = view->border_thickness;
 		state->border_top = view->border_top;

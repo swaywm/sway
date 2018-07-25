@@ -54,7 +54,7 @@ static void scratchpad_show(struct sway_container *con) {
     // If the current con or any of its parents are in fullscreen mode, we
     // first need to disable it before showing the scratchpad con.
 	if (ws->sway_workspace->fullscreen) {
-		view_set_fullscreen(ws->sway_workspace->fullscreen, false);
+		container_set_fullscreen(ws->sway_workspace->fullscreen, false);
 	}
 
 	// Show the container

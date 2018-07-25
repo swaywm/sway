@@ -69,8 +69,6 @@ struct sway_view {
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
 
-	bool is_fullscreen;
-
 	char *title_format;
 	enum sway_container_border border;
 	int border_thickness;
@@ -250,10 +248,6 @@ void view_autoconfigure(struct sway_view *view);
 void view_set_activated(struct sway_view *view, bool activated);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
-
-void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen);
-
-void view_set_fullscreen(struct sway_view *view, bool fullscreen);
 
 void view_close(struct sway_view *view);
 

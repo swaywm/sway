@@ -267,7 +267,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 		return;
 	}
 
-	view_set_fullscreen(view, e->fullscreen);
+	container_set_fullscreen(view->swayc, e->fullscreen);
 
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 	arrange_windows(output);
@@ -338,7 +338,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view_map(view, view->wlr_xdg_surface->surface);
 
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
-		view_set_fullscreen(view, true);
+		container_set_fullscreen(view->swayc, true);
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		arrange_windows(ws);
 	} else {
