@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "config.h"
 #include "sway/debug.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
@@ -39,7 +40,9 @@ void layout_init(void) {
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
 	root_container.sway_root->output_layout = wlr_output_layout_create();
 	wl_list_init(&root_container.sway_root->outputs);
+#ifdef HAVE_XWAYLAND
 	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
+#endif
 	wl_list_init(&root_container.sway_root->drag_icons);
 	wl_signal_init(&root_container.sway_root->events.new_container);
 	root_container.sway_root->scratchpad = create_list();

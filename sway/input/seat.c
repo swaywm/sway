@@ -12,6 +12,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "log.h"
+#include "config.h"
 #include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
@@ -103,11 +104,13 @@ static void seat_send_focus(struct sway_container *con,
 
 	if (con->type == C_VIEW
 			&& seat_is_input_allowed(seat, con->sway_view->surface)) {
+#ifdef HAVE_XWAYLAND
 		if (con->sway_view->type == SWAY_VIEW_XWAYLAND) {
 			struct wlr_xwayland *xwayland =
 				seat->input->server->xwayland.wlr_xwayland;
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 		}
+#endif
 		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 		if (keyboard) {
 			wlr_seat_keyboard_notify_enter(seat->wlr_seat,

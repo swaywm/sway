@@ -14,6 +14,7 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/util/region.h>
 #include "log.h"
+#include "config.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -128,7 +129,7 @@ void output_layer_for_each_surface(struct wl_list *layer_surfaces,
 			user_data);
 	}
 }
-
+#ifdef HAVE_XWAYLAND
 void output_unmanaged_for_each_surface(struct wl_list *unmanaged,
 		struct sway_output *output, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
@@ -143,7 +144,7 @@ void output_unmanaged_for_each_surface(struct wl_list *unmanaged,
 			iterator, user_data);
 	}
 }
-
+#endif
 void output_drag_icons_for_each_surface(struct wl_list *drag_icons,
 		struct sway_output *output, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
@@ -244,13 +245,13 @@ static void send_frame_done_layer(struct send_frame_done_data *data,
 	output_layer_for_each_surface(layer_surfaces, &data->root_geo,
 		send_frame_done_iterator, data);
 }
-
+#ifdef HAVE_XWAYLAND
 static void send_frame_done_unmanaged(struct send_frame_done_data *data,
 		struct wl_list *unmanaged) {
 	output_unmanaged_for_each_surface(unmanaged, data->output, &data->root_geo,
 		send_frame_done_iterator, data);
 }
-
+#endif
 static void send_frame_done_drag_icons(struct send_frame_done_data *data,
 		struct wl_list *drag_icons) {
 	output_drag_icons_for_each_surface(drag_icons, data->output, &data->root_geo,
@@ -291,11 +292,12 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 	if (workspace->current.ws_fullscreen) {
 		send_frame_done_container_iterator(
 			workspace->current.ws_fullscreen->swayc, &data);
-
+#ifdef HAVE_XWAYLAND
 		if (workspace->current.ws_fullscreen->type == SWAY_VIEW_XWAYLAND) {
 			send_frame_done_unmanaged(&data,
 				&root_container.sway_root->xwayland_unmanaged);
 		}
+#endif
 	} else {
 		send_frame_done_layer(&data,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
@@ -305,8 +307,10 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		send_frame_done_container(&data, workspace);
 		send_frame_done_container(&data, workspace->sway_workspace->floating);
 
+#ifdef HAVE_XWAYLAND
 		send_frame_done_unmanaged(&data,
 			&root_container.sway_root->xwayland_unmanaged);
+#endif
 		send_frame_done_layer(&data,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}

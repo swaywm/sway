@@ -3,7 +3,10 @@
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "config.h"
+#ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
+#endif
 #include "list.h"
 #include "log.h"
 #include "sway/criteria.h"
@@ -108,14 +111,14 @@ const char *view_get_instance(struct sway_view *view) {
 	}
 	return NULL;
 }
-
+#ifdef HAVE_XWAYLAND
 uint32_t view_get_x11_window_id(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
 	}
 	return 0;
 }
-
+#endif
 const char *view_get_window_role(struct sway_view *view) {
 	if (view->impl->get_string_prop) {
 		return view->impl->get_string_prop(view, VIEW_PROP_WINDOW_ROLE);
@@ -136,8 +139,10 @@ const char *view_get_shell(struct sway_view *view) {
 		return "xdg_shell_v6";
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
+#ifdef HAVE_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
+#endif
 	}
 	return "unknown";
 }
@@ -563,6 +568,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	}
 
 	pid_t pid;
+#ifdef HAVE_XWAYLAND
 	if (view->type == SWAY_VIEW_XWAYLAND) {
 		struct wlr_xwayland_surface *surf =
 			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
@@ -572,6 +578,11 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 			wl_resource_get_client(wlr_surface->resource);
 		wl_client_get_credentials(client, &pid, NULL, NULL);
 	}
+#else
+	struct wl_client *client =
+		wl_resource_get_client(wlr_surface->resource);
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+#endif
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *target_sibling =
@@ -825,11 +836,13 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 			wlr_xdg_surface_v6_from_wlr_surface(wlr_surface);
 		return view_from_wlr_xdg_surface_v6(xdg_surface_v6);
 	}
+#ifdef HAVE_XWAYLAND
 	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
 		struct wlr_xwayland_surface *xsurface =
 			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
 		return view_from_wlr_xwayland_surface(xsurface);
 	}
+#endif
 	if (wlr_surface_is_subsurface(wlr_surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(wlr_surface);
