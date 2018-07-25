@@ -33,13 +33,13 @@ For more information on these xkb configuration options, see
 *input* <identifier> xkb\_variant <variant>
 	Sets the variant of the keyboard like _dvorak_ or _colemak_.
 
+The following commands may only be used in the configuration file.
+
 *input* <identifier> xkb\_capslock enabled|disabled
-	Enables or disables CapsLock on sway startup, the default is disabled.
-	Only meaningful if sway controls the keyboard.
+	Initially enables or disables CapsLock, the default is disabled.
 
 *input* <identifier> xkb\_numlock enabled|disabled
-	Enables or disables NumLock on sway startup, the default is enabled.
-	Only meaningful if sway controls the keyboard.
+	Initially enables or disables NumLock, the default is enabled.
 
 ## MAPPING CONFIGURATION
 
