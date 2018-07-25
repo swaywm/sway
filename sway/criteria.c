@@ -270,9 +270,9 @@ enum criteria_token {
 	T_CON_ID,
 	T_CON_MARK,
 	T_FLOATING,
-  #ifdef HAVE_XWAYLAND
+#ifdef HAVE_XWAYLAND
 	T_ID,
-  #endif
+#endif
 	T_INSTANCE,
 	T_SHELL,
 	T_TILING,
