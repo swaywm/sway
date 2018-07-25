@@ -476,12 +476,81 @@ void view_execute_criteria(struct sway_view *view) {
 	seat_set_focus(seat, prior_focus);
 }
 
+static struct sway_container *select_workspace(struct sway_view *view) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+
+	// Check if there's any `assign` criteria for the view
+	list_t *criterias = criteria_for_view(view,
+			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
+	struct sway_container *ws = NULL;
+	for (int i = 0; i < criterias->length; ++i) {
+		struct criteria *criteria = criterias->items[i];
+		if (criteria->type == CT_ASSIGN_WORKSPACE) {
+			struct sway_container *ws = workspace_by_name(criteria->target);
+			if (!ws) {
+				ws = workspace_create(NULL, criteria->target);
+			}
+			break;
+		} else {
+			// CT_ASSIGN_OUTPUT
+			struct sway_container *output = output_by_name(criteria->target);
+			if (output) {
+				ws = seat_get_active_child(seat, output);
+				break;
+			}
+		}
+	}
+	list_free(criterias);
+	if (ws) {
+		return ws;
+	}
+
+	// Check if there's a PID mapping
+	pid_t pid;
+#ifdef HAVE_XWAYLAND
+	if (view->type == SWAY_VIEW_XWAYLAND) {
+		struct wlr_xwayland_surface *surf =
+			wlr_xwayland_surface_from_wlr_surface(view->surface);
+		pid = surf->pid;
+	} else {
+		struct wl_client *client =
+			wl_resource_get_client(view->surface->resource);
+		wl_client_get_credentials(client, &pid, NULL, NULL);
+	}
+#else
+	struct wl_client *client =
+		wl_resource_get_client(view->surface->resource);
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+#endif
+	ws = workspace_for_pid(pid);
+	if (ws) {
+		return ws;
+	}
+
+	// Use the focused workspace
+	ws = seat_get_focus(seat);
+	if (ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
+	}
+	return ws;
+}
+
 static bool should_focus(struct sway_view *view) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *prev_focus = seat_get_focus(seat);
+	struct sway_container *prev_ws = prev_focus->type == C_WORKSPACE ?
+		prev_focus : container_parent(prev_focus, C_WORKSPACE);
+	struct sway_container *map_ws = container_parent(view->swayc, C_WORKSPACE);
+
+	// Views can only take focus if they are mapped into the active workspace
+	if (prev_ws != map_ws) {
+		return false;
+	}
+
 	// If the view is the only one in the focused workspace, it'll get focus
 	// regardless of any no_focus criteria.
 	struct sway_container *parent = view->swayc->parent;
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	if (parent->type == C_WORKSPACE && seat_get_focus(seat) == parent) {
+	if (parent->type == C_WORKSPACE && prev_focus == parent) {
 		size_t num_children = parent->children->length +
 			parent->sway_workspace->floating->children->length;
 		if (num_children == 1) {
@@ -500,73 +569,19 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
 	}
-
-	pid_t pid;
-#ifdef HAVE_XWAYLAND
-	if (view->type == SWAY_VIEW_XWAYLAND) {
-		struct wlr_xwayland_surface *surf =
-			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
-		pid = surf->pid;
-	} else {
-		struct wl_client *client =
-			wl_resource_get_client(wlr_surface->resource);
-		wl_client_get_credentials(client, &pid, NULL, NULL);
-	}
-#else
-	struct wl_client *client =
-		wl_resource_get_client(wlr_surface->resource);
-	wl_client_get_credentials(client, &pid, NULL, NULL);
-#endif
+	view->surface = wlr_surface;
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *target_sibling =
-		seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *prev_focus = target_sibling;
-	struct sway_container *cont = NULL;
+	struct sway_container *ws = select_workspace(view);
+	struct sway_container *target_sibling = seat_get_focus_inactive(seat, ws);
 
-	// Check if there's any `assign` criteria for the view
-	list_t *criterias = criteria_for_view(view,
-			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
-	struct sway_container *workspace = NULL;
-	if (criterias->length) {
-		struct criteria *criteria = criterias->items[0];
-		if (criteria->type == CT_ASSIGN_WORKSPACE) {
-			workspace = workspace_by_name(criteria->target);
-			if (!workspace) {
-				workspace = workspace_create(NULL, criteria->target);
-			}
-			prev_focus = target_sibling;
-			target_sibling = seat_get_focus_inactive(seat, workspace);
-		} else {
-			// CT_ASSIGN_OUTPUT
-			struct sway_container *output = output_by_name(criteria->target);
-			if (output) {
-				prev_focus = seat_get_focus_inactive(seat, output);
-			}
-		}
-	}
-	list_free(criterias);
-
-	if (!workspace) {
-		workspace = workspace_for_pid(pid);
-		if (workspace) {
-			prev_focus = target_sibling;
-			target_sibling = seat_get_focus_inactive(seat, workspace);
-		}
-	}
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
 	if (container_is_floating(target_sibling)) {
-		if (prev_focus == target_sibling) {
-			prev_focus = target_sibling->parent->parent;
-		}
 		target_sibling = target_sibling->parent->parent;
 	}
 
-	cont = container_view_create(target_sibling, view);
-
-	view->surface = wlr_surface;
-	view->swayc = cont;
+	view->swayc = container_view_create(target_sibling, view);
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
@@ -586,11 +601,8 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		view_set_tiled(view, true);
 	}
 
-	if (should_focus(view) && prev_focus == target_sibling) {
-		input_manager_set_focus(input_manager, cont);
-		if (workspace) {
-			workspace_switch(workspace);
-		}
+	if (should_focus(view)) {
+		input_manager_set_focus(input_manager, view->swayc);
 	}
 
 	view_update_title(view, false);
