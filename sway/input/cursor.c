@@ -598,7 +598,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			seat_set_focus_layer(cursor->seat, layer);
 		}
 		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
-	} else if (cont && container_is_floating(cont)) {
+	} else if (cont && container_is_floating_or_child(cont)) {
+		while (cont->parent->layout != L_FLOATING) {
+			cont = cont->parent;
+		}
 		dispatch_cursor_button_floating(cursor, time_msec, button, state,
 				surface, sx, sy, cont);
 	} else if (surface && cont && cont->type != C_VIEW) {

@@ -297,6 +297,11 @@ void container_notify_subtree_changed(struct sway_container *container);
  */
 size_t container_titlebar_height(void);
 
+/**
+ * Resize and center the container in its workspace.
+ */
+void container_init_floating(struct sway_container *container);
+
 void container_set_floating(struct sway_container *container, bool enable);
 
 void container_set_geometry_from_floating_view(struct sway_container *con);
@@ -339,6 +344,12 @@ bool container_has_urgent_child(struct sway_container *container);
 void container_end_mouse_operation(struct sway_container *container);
 
 void container_set_fullscreen(struct sway_container *container, bool enable);
+
+/**
+ * Return true if the container is floating, or a child of a floating split
+ * container.
+ */
+bool container_is_floating_or_child(struct sway_container *container);
 
 /**
  * Return true if the container is fullscreen, or a child of a fullscreen split

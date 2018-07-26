@@ -184,7 +184,6 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	bool set_focus =
 		focus != NULL &&
 		(focus == con || container_has_child(con, focus)) &&
-		con->parent && con->parent->children->length > 1 &&
 		con->type != C_WORKSPACE;
 
 	seat_container_destroy(seat_con);
@@ -752,10 +751,6 @@ void seat_set_focus_warp(struct sway_seat *seat,
 				}
 			}
 		}
-	}
-
-	if (last_focus != NULL) {
-		cursor_send_pointer_motion(seat->cursor, 0, true);
 	}
 
 	seat->has_focus = (container != NULL);

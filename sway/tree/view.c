@@ -168,55 +168,6 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	return 0;
 }
 
-void view_init_floating(struct sway_view *view) {
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int min_width, min_height;
-	int max_width, max_height;
-
-	if (config->floating_minimum_width == -1) { // no minimum
-		min_width = 0;
-	} else if (config->floating_minimum_width == 0) { // automatic
-		min_width = 75;
-	} else {
-		min_width = config->floating_minimum_width;
-	}
-
-	if (config->floating_minimum_height == -1) { // no minimum
-		min_height = 0;
-	} else if (config->floating_minimum_height == 0) { // automatic
-		min_height = 50;
-	} else {
-		min_height = config->floating_minimum_height;
-	}
-
-	if (config->floating_maximum_width == -1) { // no maximum
-		max_width = INT_MAX;
-	} else if (config->floating_maximum_width == 0) { // automatic
-		max_width = ws->width * 0.6666;
-	} else {
-		max_width = config->floating_maximum_width;
-	}
-
-	if (config->floating_maximum_height == -1) { // no maximum
-		max_height = INT_MAX;
-	} else if (config->floating_maximum_height == 0) { // automatic
-		max_height = ws->height * 0.6666;
-	} else {
-		max_height = config->floating_maximum_height;
-	}
-
-	view->width = fmax(min_width, fmin(view->natural_width, max_width));
-	view->height = fmax(min_height, fmin(view->natural_height, max_height));
-	view->x = ws->x + (ws->width - view->width) / 2;
-	view->y = ws->y + (ws->height - view->height) / 2;
-
-	// If the view's border is B_NONE then these properties are ignored.
-	view->border_top = view->border_bottom = true;
-	view->border_left = view->border_right = true;
-
-	container_set_geometry_from_floating_view(view->swayc);
-}
-
 void view_autoconfigure(struct sway_view *view) {
 	if (!sway_assert(view->swayc,
 				"Called view_autoconfigure() on a view without a swayc")) {
@@ -626,10 +577,8 @@ void view_unmap(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 
 	struct sway_container *parent;
-	if (view->swayc->is_fullscreen) {
-		ws->sway_workspace->fullscreen = NULL;
+	if (container_is_fullscreen_or_child(view->swayc)) {
 		parent = container_destroy(view->swayc);
-
 		arrange_windows(ws->parent);
 	} else {
 		parent = container_destroy(view->swayc);

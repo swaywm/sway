@@ -72,11 +72,7 @@ static void scratchpad_show(struct sway_container *con) {
 	if (!wlr_box_contains_point(&workspace_box, center_lx, center_ly)) {
 		// Maybe resize it
 		if (con->width > ws->width || con->height > ws->height) {
-			// TODO: Do this properly once we can float C_CONTAINERs
-			if (con->type == C_VIEW) {
-				view_init_floating(con->sway_view);
-				arrange_windows(con);
-			}
+			container_init_floating(con);
 		}
 
 		// Center it
@@ -85,6 +81,7 @@ static void scratchpad_show(struct sway_container *con) {
 		container_floating_move_to(con, new_lx, new_ly);
 	}
 
+	arrange_windows(ws);
 	seat_set_focus(seat, con);
 
 	container_set_dirty(con->parent);

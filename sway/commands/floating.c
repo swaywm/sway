@@ -17,9 +17,16 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	}
 	struct sway_container *container =
 		config->handler_context.current_container;
-	if (container->type != C_VIEW) {
-		// TODO: This doesn't strictly speaking have to be true
-		return cmd_results_new(CMD_INVALID, "float", "Only views can float");
+	if (container->type == C_WORKSPACE && container->children->length == 0) {
+		return cmd_results_new(CMD_INVALID, "floating",
+				"Can't float an empty workspace");
+	}
+	if (container->type == C_WORKSPACE) {
+		// Wrap the workspace's children in a container so we can float it
+		struct sway_container *workspace = container;
+		container = container_wrap_children(container);
+		workspace->layout = L_HORIZ;
+		seat_set_focus(config->handler_context.seat, container);
 	}
 
 	bool wants_floating;
