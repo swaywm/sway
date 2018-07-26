@@ -357,7 +357,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view_map(view, xsurface->surface);
 
 	if (xsurface->fullscreen) {
-		view_set_fullscreen(view, true);
+		container_set_fullscreen(view->swayc, true);
 		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 		arrange_windows(ws);
 	} else {
@@ -395,7 +395,7 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	if (!xsurface->mapped) {
 		return;
 	}
-	view_set_fullscreen(view, xsurface->fullscreen);
+	container_set_fullscreen(view->swayc, xsurface->fullscreen);
 
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 	arrange_windows(output);

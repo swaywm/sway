@@ -632,8 +632,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	if (last_workspace && last_workspace == new_workspace
 			&& last_workspace->sway_workspace->fullscreen
-			&& container && container->type == C_VIEW
-			&& !container->sway_view->is_fullscreen) {
+			&& container && !container_is_fullscreen_or_child(container)) {
 		return;
 	}
 

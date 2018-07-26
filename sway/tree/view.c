@@ -225,15 +225,11 @@ void view_autoconfigure(struct sway_view *view) {
 
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
-	if (view->is_fullscreen) {
+	if (view->swayc->is_fullscreen) {
 		view->x = output->x;
 		view->y = output->y;
 		view->width = output->width;
 		view->height = output->height;
-		return;
-	}
-
-	if (container_is_floating(view->swayc)) {
 		return;
 	}
 
@@ -347,68 +343,6 @@ void view_set_tiled(struct sway_view *view, bool tiled) {
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
 	}
-}
-
-void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
-	if (view->is_fullscreen == fullscreen) {
-		return;
-	}
-
-	struct sway_container *workspace =
-		container_parent(view->swayc, C_WORKSPACE);
-
-	if (view->impl->set_fullscreen) {
-		view->impl->set_fullscreen(view, fullscreen);
-	}
-
-	view->is_fullscreen = fullscreen;
-
-	if (fullscreen) {
-		if (workspace->sway_workspace->fullscreen) {
-			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
-		}
-		workspace->sway_workspace->fullscreen = view;
-		view->saved_x = view->x;
-		view->saved_y = view->y;
-		view->saved_width = view->width;
-		view->saved_height = view->height;
-		view->swayc->saved_x = view->swayc->x;
-		view->swayc->saved_y = view->swayc->y;
-		view->swayc->saved_width = view->swayc->width;
-		view->swayc->saved_height = view->swayc->height;
-
-		struct sway_seat *seat;
-		struct sway_container *focus, *focus_ws;
-		wl_list_for_each(seat, &input_manager->seats, link) {
-			focus = seat_get_focus(seat);
-			if (focus) {
-				focus_ws = focus;
-				if (focus && focus_ws->type != C_WORKSPACE) {
-					focus_ws = container_parent(focus_ws, C_WORKSPACE);
-				}
-				seat_set_focus(seat, view->swayc);
-				if (focus_ws != workspace) {
-					seat_set_focus(seat, focus);
-				}
-			}
-		}
-	} else {
-		workspace->sway_workspace->fullscreen = NULL;
-		if (container_is_floating(view->swayc)) {
-			view->x = view->saved_x;
-			view->y = view->saved_y;
-			view->width = view->saved_width;
-			view->height = view->saved_height;
-			container_set_geometry_from_floating_view(view->swayc);
-		} else {
-			view->swayc->width = view->swayc->saved_width;
-			view->swayc->height = view->swayc->saved_height;
-		}
-	}
-
-	container_end_mouse_operation(view->swayc);
-
-	ipc_event_window(view->swayc, "fullscreen_mode");
 }
 
 void view_close(struct sway_view *view) {
@@ -680,7 +614,7 @@ void view_unmap(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 
 	struct sway_container *parent;
-	if (view->is_fullscreen) {
+	if (view->swayc->is_fullscreen) {
 		ws->sway_workspace->fullscreen = NULL;
 		parent = container_destroy(view->swayc);
 
@@ -1133,7 +1067,8 @@ bool view_is_visible(struct sway_view *view) {
 		container = container->parent;
 	}
 	// Check view isn't hidden by another fullscreen view
-	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
+	if (workspace->sway_workspace->fullscreen &&
+			!container_is_fullscreen_or_child(view->swayc)) {
 		return false;
 	}
 	// Check the workspace is visible

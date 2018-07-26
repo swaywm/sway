@@ -66,10 +66,9 @@ static int index_child(const struct sway_container *child) {
 
 static void container_handle_fullscreen_reparent(struct sway_container *con,
 		struct sway_container *old_parent) {
-	if (con->type != C_VIEW || !con->sway_view->is_fullscreen) {
+	if (!con->is_fullscreen) {
 		return;
 	}
-	struct sway_view *view = con->sway_view;
 	struct sway_container *old_workspace = old_parent;
 	if (old_workspace && old_workspace->type != C_WORKSPACE) {
 		old_workspace = container_parent(old_workspace, C_WORKSPACE);
@@ -85,19 +84,27 @@ static void container_handle_fullscreen_reparent(struct sway_container *con,
 
 	// Mark the new workspace as fullscreen
 	if (new_workspace->sway_workspace->fullscreen) {
-		view_set_fullscreen(new_workspace->sway_workspace->fullscreen, false);
+		container_set_fullscreen(
+				new_workspace->sway_workspace->fullscreen, false);
 	}
-	new_workspace->sway_workspace->fullscreen = view;
-	// Resize view to new output dimensions
+	new_workspace->sway_workspace->fullscreen = con;
+
+	// Resize container to new output dimensions
 	struct sway_container *output = new_workspace->parent;
-	view->x = output->x;
-	view->y = output->y;
-	view->width = output->width;
-	view->height = output->height;
 	con->x = output->x;
 	con->y = output->y;
 	con->width = output->width;
 	con->height = output->height;
+
+	if (con->type == C_VIEW) {
+		struct sway_view *view = con->sway_view;
+		view->x = output->x;
+		view->y = output->y;
+		view->width = output->width;
+		view->height = output->height;
+	} else {
+		arrange_windows(new_workspace);
+	}
 }
 
 void container_insert_child(struct sway_container *parent,
@@ -146,7 +153,7 @@ void container_add_child(struct sway_container *parent,
 }
 
 struct sway_container *container_remove_child(struct sway_container *child) {
-	if (child->type == C_VIEW && child->sway_view->is_fullscreen) {
+	if (child->is_fullscreen) {
 		struct sway_container *workspace = container_parent(child, C_WORKSPACE);
 		workspace->sway_workspace->fullscreen = NULL;
 	}
@@ -229,10 +236,10 @@ void container_move_to(struct sway_container *container,
 			if (focus_ws->type != C_WORKSPACE) {
 				focus_ws = container_parent(focus_ws, C_WORKSPACE);
 			}
-			seat_set_focus(seat,
-					new_workspace->sway_workspace->fullscreen->swayc);
-			if (focus_ws != new_workspace) {
-				seat_set_focus(seat, focus);
+			if (focus_ws == new_workspace) {
+				struct sway_container *new_focus = seat_get_focus_inactive(seat,
+						new_workspace->sway_workspace->fullscreen);
+				seat_set_focus(seat, new_focus);
 			}
 		}
 	}
@@ -375,10 +382,16 @@ void container_move(struct sway_container *container,
 	struct sway_container *sibling = NULL;
 	struct sway_container *current = container;
 	struct sway_container *parent = current->parent;
+	struct sway_container *top = &root_container;
 
 	// If moving a fullscreen view, only consider outputs
-	if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
+	if (container->is_fullscreen) {
 		current = container_parent(container, C_OUTPUT);
+	} else if (container_is_fullscreen_or_child(container)) {
+		// If we've fullscreened a split container, only allow the child to move
+		// around within the fullscreen parent.
+		struct sway_container *ws = container_parent(container, C_WORKSPACE);
+		top = ws->sway_workspace->fullscreen;
 	}
 
 	struct sway_container *new_parent = container_flatten(parent);
@@ -388,7 +401,7 @@ void container_move(struct sway_container *container,
 	}
 
 	while (!sibling) {
-		if (current->type == C_ROOT) {
+		if (current == top) {
 			return;
 		}
 
@@ -452,8 +465,9 @@ void container_move(struct sway_container *container,
 				if ((index == parent->children->length - 1 && offs > 0)
 						|| (index == 0 && offs < 0)) {
 					if (current->parent == container->parent) {
-						if (parent->layout == L_TABBED
-								|| parent->layout == L_STACKED) {
+						if (!parent->is_fullscreen &&
+								(parent->layout == L_TABBED ||
+								 parent->layout == L_STACKED)) {
 							move_out_of_tabs_stacks(container, current,
 									move_dir, offs);
 							return;
@@ -474,8 +488,8 @@ void container_move(struct sway_container *container,
 					sibling = parent->children->items[index + offs];
 					wlr_log(WLR_DEBUG, "Selecting sibling id:%zd", sibling->id);
 				}
-			} else if (parent->layout == L_TABBED
-					|| parent->layout == L_STACKED) {
+			} else if (!parent->is_fullscreen && (parent->layout == L_TABBED ||
+						parent->layout == L_STACKED)) {
 				move_out_of_tabs_stacks(container, current, move_dir, offs);
 				return;
 			} else {
@@ -707,16 +721,16 @@ struct sway_container *container_get_in_direction(
 		return NULL;
 	}
 
-	if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
-		if (dir == MOVE_PARENT || dir == MOVE_CHILD) {
+	if (dir == MOVE_CHILD) {
+		return seat_get_focus_inactive(seat, container);
+	}
+	if (container->is_fullscreen) {
+		if (dir == MOVE_PARENT) {
 			return NULL;
 		}
 		container = container_parent(container, C_OUTPUT);
 		parent = container->parent;
 	} else {
-		if (dir == MOVE_CHILD) {
-			return seat_get_focus_inactive(seat, container);
-		}
 		if (dir == MOVE_PARENT) {
 			if (parent->type == C_OUTPUT) {
 				return NULL;
@@ -767,7 +781,8 @@ struct sway_container *container_get_in_direction(
 			}
 			sway_assert(next_workspace, "Next container has no workspace");
 			if (next_workspace->sway_workspace->fullscreen) {
-				return next_workspace->sway_workspace->fullscreen->swayc;
+				return seat_get_focus_inactive(seat,
+						next_workspace->sway_workspace->fullscreen);
 			}
 			if (next->children && next->children->length) {
 				// TODO consider floating children as well
@@ -1014,13 +1029,13 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 
 	wlr_log(WLR_DEBUG, "Swapping containers %zu and %zu", con1->id, con2->id);
 
-	int fs1 = con1->type == C_VIEW && con1->sway_view->is_fullscreen;
-	int fs2 = con2->type == C_VIEW && con2->sway_view->is_fullscreen;
+	int fs1 = con1->is_fullscreen;
+	int fs2 = con2->is_fullscreen;
 	if (fs1) {
-		view_set_fullscreen(con1->sway_view, false);
+		container_set_fullscreen(con1, false);
 	}
 	if (fs2) {
-		view_set_fullscreen(con2->sway_view, false);
+		container_set_fullscreen(con2, false);
 	}
 
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
@@ -1053,10 +1068,10 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 		prev_workspace_name = stored_prev_name;
 	}
 
-	if (fs1 && con2->type == C_VIEW) {
-		view_set_fullscreen(con2->sway_view, true);
+	if (fs1) {
+		container_set_fullscreen(con2, true);
 	}
-	if (fs2 && con1->type == C_VIEW) {
-		view_set_fullscreen(con1->sway_view, true);
+	if (fs2) {
+		container_set_fullscreen(con1, true);
 	}
 }

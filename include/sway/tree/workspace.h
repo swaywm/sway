@@ -7,7 +7,7 @@ struct sway_view;
 
 struct sway_workspace {
 	struct sway_container *swayc;
-	struct sway_view *fullscreen;
+	struct sway_container *fullscreen;
 	struct sway_container *floating;
 	list_t *output_priority;
 	bool urgent;

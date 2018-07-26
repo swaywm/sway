@@ -1130,3 +1130,90 @@ void container_end_mouse_operation(struct sway_container *container) {
 		}
 	}
 }
+
+static void set_fullscreen_iterator(struct sway_container *con, void *data) {
+	if (con->type != C_VIEW) {
+		return;
+	}
+	if (con->sway_view->impl->set_fullscreen) {
+		bool *enable = data;
+		con->sway_view->impl->set_fullscreen(con->sway_view, *enable);
+	}
+}
+
+void container_set_fullscreen(struct sway_container *container, bool enable) {
+	if (container->is_fullscreen == enable) {
+		return;
+	}
+
+	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
+	if (enable && workspace->sway_workspace->fullscreen) {
+		container_set_fullscreen(workspace->sway_workspace->fullscreen, false);
+	}
+
+	container_for_each_descendant_dfs(container,
+			set_fullscreen_iterator, &enable);
+
+	container->is_fullscreen = enable;
+
+	if (enable) {
+		workspace->sway_workspace->fullscreen = container;
+		container->saved_x = container->x;
+		container->saved_y = container->y;
+		container->saved_width = container->width;
+		container->saved_height = container->height;
+
+		struct sway_seat *seat;
+		struct sway_container *focus, *focus_ws;
+		wl_list_for_each(seat, &input_manager->seats, link) {
+			focus = seat_get_focus(seat);
+			if (focus) {
+				focus_ws = focus;
+				if (focus_ws->type != C_WORKSPACE) {
+					focus_ws = container_parent(focus_ws, C_WORKSPACE);
+				}
+				if (focus_ws == workspace) {
+					seat_set_focus(seat, container);
+				}
+			}
+		}
+	} else {
+		workspace->sway_workspace->fullscreen = NULL;
+		if (container_is_floating(container)) {
+			container->x = container->saved_x;
+			container->y = container->saved_y;
+			container->width = container->saved_width;
+			container->height = container->saved_height;
+		} else {
+			container->width = container->saved_width;
+			container->height = container->saved_height;
+		}
+	}
+
+	container_end_mouse_operation(container);
+
+	ipc_event_window(container, "fullscreen_mode");
+}
+
+bool container_is_fullscreen_or_child(struct sway_container *container) {
+	do {
+		if (container->is_fullscreen) {
+			return true;
+		}
+		container = container->parent;
+	} while (container && container->type != C_WORKSPACE);
+
+	return false;
+}
+
+struct sway_container *container_wrap_children(struct sway_container *parent) {
+	struct sway_container *middle = container_create(C_CONTAINER);
+	middle->layout = parent->layout;
+	while (parent->children->length) {
+		struct sway_container *child = parent->children->items[0];
+		container_remove_child(child);
+		container_add_child(middle, child);
+	}
+	container_add_child(parent, middle);
+	return middle;
+}

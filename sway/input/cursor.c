@@ -99,14 +99,8 @@ static struct sway_container *container_at_coords(
 		return ws;
 	}
 	if (ws->sway_workspace->fullscreen) {
-		struct wlr_surface *wlr_surface = ws->sway_workspace->fullscreen->surface;
-		if (wlr_surface_point_accepts_input(wlr_surface, ox, oy)) {
-			*sx = ox;
-			*sy = oy;
-			*surface = wlr_surface;
-			return ws->sway_workspace->fullscreen->swayc;
-		}
-		return NULL;
+		return container_at(ws->sway_workspace->fullscreen, lx, ly,
+				surface, sx, sy);
 	}
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
@@ -438,8 +432,8 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		struct sway_container *cont) {
 	struct sway_seat *seat = cursor->seat;
 
-	// Deny moving or resizing a fullscreen view
-	if (cont->type == C_VIEW && cont->sway_view->is_fullscreen) {
+	// Deny moving or resizing a fullscreen container
+	if (container_is_fullscreen_or_child(cont)) {
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}

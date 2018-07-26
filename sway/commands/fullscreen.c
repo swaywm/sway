@@ -14,18 +14,24 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	}
 	struct sway_container *container =
 		config->handler_context.current_container;
-	if (container->type != C_VIEW) {
+	if (container->type == C_WORKSPACE && container->children->length == 0) {
 		return cmd_results_new(CMD_INVALID, "fullscreen",
-				"Only views can fullscreen");
+				"Can't fullscreen an empty workspace");
 	}
-	struct sway_view *view = container->sway_view;
-	bool wants_fullscreen = !view->is_fullscreen;
+	if (container->type == C_WORKSPACE) {
+		// Wrap the workspace's children in a container so we can fullscreen it
+		struct sway_container *workspace = container;
+		container = container_wrap_children(container);
+		workspace->layout = L_HORIZ;
+		seat_set_focus(config->handler_context.seat, container);
+	}
+	bool enable = !container->is_fullscreen;
 
 	if (argc) {
-		wants_fullscreen = parse_boolean(argv[0], view->is_fullscreen);
+		enable = parse_boolean(argv[0], container->is_fullscreen);
 	}
 
-	view_set_fullscreen(view, wants_fullscreen);
+	container_set_fullscreen(container, enable);
 
 	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
 	arrange_windows(workspace->parent);
