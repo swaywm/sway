@@ -35,14 +35,16 @@ static struct cmd_results *focus_mode(struct sway_container *con,
 		struct sway_seat *seat, bool floating) {
 	struct sway_container *ws = con->type == C_WORKSPACE ?
 		con : container_parent(con, C_WORKSPACE);
-	struct sway_container *new_focus = ws;
+	struct sway_container *new_focus = NULL;
 	if (floating) {
-		new_focus = ws->sway_workspace->floating;
-		if (new_focus->children->length == 0) {
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-		}
+		new_focus = seat_get_focus_inactive(seat, ws->sway_workspace->floating);
+	} else {
+		new_focus = seat_get_focus_inactive_tiling(seat, ws);
 	}
-	seat_set_focus(seat, seat_get_active_child(seat, new_focus));
+	if (!new_focus) {
+		new_focus = ws;
+	}
+	seat_set_focus(seat, new_focus);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
