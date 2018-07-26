@@ -999,11 +999,14 @@ void view_update_marks_textures(struct sway_view *view) {
 }
 
 bool view_is_visible(struct sway_view *view) {
-	if (!view->swayc || view->swayc->destroying || !view->swayc->parent) {
+	if (!view->swayc || view->swayc->destroying) {
 		return false;
 	}
 	struct sway_container *workspace =
 		container_parent(view->swayc, C_WORKSPACE);
+	if (!workspace) {
+		return false;
+	}
 	// Determine if view is nested inside a floating container which is sticky.
 	// A simple floating view will have this ancestry:
 	// C_VIEW -> floating -> workspace
