@@ -486,7 +486,7 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 	for (int i = 0; i < criterias->length; ++i) {
 		struct criteria *criteria = criterias->items[i];
 		if (criteria->type == CT_ASSIGN_WORKSPACE) {
-			struct sway_container *ws = workspace_by_name(criteria->target);
+			ws = workspace_by_name(criteria->target);
 			if (!ws) {
 				ws = workspace_create(NULL, criteria->target);
 			}
