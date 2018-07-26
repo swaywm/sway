@@ -10,10 +10,6 @@
 
 static struct cmd_results *do_split(int layout) {
 	struct sway_container *con = config->handler_context.current_container;
-	if (container_is_floating(con)) {
-		return cmd_results_new(CMD_FAILURE, "split",
-			"Can't split a floating view");
-	}
 	struct sway_container *parent = container_split(con, layout);
 	container_create_notify(parent);
 	arrange_windows(parent->parent);
