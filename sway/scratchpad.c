@@ -110,6 +110,15 @@ void scratchpad_toggle_auto(void) {
 	struct sway_container *ws = focus->type == C_WORKSPACE ?
 		focus : container_parent(focus, C_WORKSPACE);
 
+	// If the focus is in a floating split container,
+	// operate on the split container instead of the child.
+	if (container_is_floating_or_child(focus)) {
+		while (focus->parent->layout != L_FLOATING) {
+			focus = focus->parent;
+		}
+	}
+
+
     // Check if the currently focused window is a scratchpad window and should
     // be hidden again.
 	if (focus->scratchpad) {

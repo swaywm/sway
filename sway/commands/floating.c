@@ -29,6 +29,14 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 		seat_set_focus(config->handler_context.seat, container);
 	}
 
+	// If the container is in a floating split container,
+	// operate on the split container instead of the child.
+	if (container_is_floating_or_child(container)) {
+		while (container->parent->layout != L_FLOATING) {
+			container = container->parent;
+		}
+	}
+
 	bool wants_floating;
 	if (strcasecmp(argv[0], "enable") == 0) {
 		wants_floating = true;
