@@ -437,18 +437,22 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
+	struct sway_container *floater = cont;
+	while (floater->parent->layout != L_FLOATING) {
+		floater = floater->parent;
+	}
 
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	bool mod_pressed = keyboard &&
 		(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
-	enum wlr_edges edge = find_resize_edge(cont, cursor);
+	enum wlr_edges edge = find_resize_edge(floater, cursor);
 	bool over_title = edge == WLR_EDGE_NONE && !surface;
 
 	// Check for beginning move
 	uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 	if (button == btn_move && state == WLR_BUTTON_PRESSED &&
 			(mod_pressed || over_title)) {
-		seat_begin_move(seat, cont, button);
+		seat_begin_move(seat, floater, button);
 		return;
 	}
 
@@ -459,12 +463,12 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 	if ((resizing_via_border || resizing_via_mod) &&
 			state == WLR_BUTTON_PRESSED) {
 		if (edge == WLR_EDGE_NONE) {
-			edge |= cursor->cursor->x > cont->x + cont->width / 2 ?
+			edge |= cursor->cursor->x > floater->x + floater->width / 2 ?
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
-			edge |= cursor->cursor->y > cont->y + cont->height / 2 ?
+			edge |= cursor->cursor->y > floater->y + floater->height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
 		}
-		seat_begin_resize(seat, cont, button, edge);
+		seat_begin_resize(seat, floater, button, edge);
 		return;
 	}
 
@@ -599,9 +603,6 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		}
 		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
 	} else if (cont && container_is_floating_or_child(cont)) {
-		while (cont->parent->layout != L_FLOATING) {
-			cont = cont->parent;
-		}
 		dispatch_cursor_button_floating(cursor, time_msec, button, state,
 				surface, sx, sy, cont);
 	} else if (surface && cont && cont->type != C_VIEW) {
