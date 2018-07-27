@@ -197,17 +197,18 @@ void output_unmanaged_for_each_surface(struct sway_output *output,
 }
 #endif
 
-void output_drag_icons_for_each_surface(struct wl_list *drag_icons,
-		struct sway_output *output, struct root_geometry *geo,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
+void output_drag_icons_for_each_surface(struct sway_output *output,
+		struct wl_list *drag_icons, sway_surface_iterator_func_t iterator,
+		void *user_data) {
 	struct sway_drag_icon *drag_icon;
 	wl_list_for_each(drag_icon, drag_icons, link) {
 		double ox = drag_icon->x - output->swayc->x;
 		double oy = drag_icon->y - output->swayc->y;
 
 		if (drag_icon->wlr_drag_icon->mapped) {
-			output_surface_for_each_surface(drag_icon->wlr_drag_icon->surface,
-				ox, oy, geo, iterator, user_data);
+			output_surface_for_each_surface2(output,
+				drag_icon->wlr_drag_icon->surface, ox, oy, 0,
+				iterator, user_data);
 		}
 	}
 }
@@ -303,8 +304,8 @@ static void send_frame_done_unmanaged(struct send_frame_done_data *data,
 
 static void send_frame_done_drag_icons(struct send_frame_done_data *data,
 		struct wl_list *drag_icons) {
-	output_drag_icons_for_each_surface(drag_icons, data->output, &data->root_geo,
-		send_frame_done_iterator, data);
+	output_drag_icons_for_each_surface(data->output, drag_icons,
+		send_frame_done_iterator2, data);
 }
 
 static void send_frame_done_container_iterator(struct sway_container *con,

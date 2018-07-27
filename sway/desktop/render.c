@@ -179,8 +179,8 @@ static void render_drag_icons(struct sway_output *output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_drag_icons_for_each_surface(drag_icons, output, &data.root_geo,
-		render_surface_iterator, &data);
+	output_drag_icons_for_each_surface(output, drag_icons,
+		render_surface_iterator2, &data);
 }
 
 static void render_rect(struct wlr_output *wlr_output,

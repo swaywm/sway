@@ -103,8 +103,8 @@ void output_unmanaged_for_each_surface(struct sway_output *output,
 	void *user_data);
 #endif
 
-void output_drag_icons_for_each_surface(struct wl_list *drag_icons,
-	struct sway_output *output, struct root_geometry *geo,
-	wlr_surface_iterator_func_t iterator, void *user_data);
+void output_drag_icons_for_each_surface(struct sway_output *output,
+	struct wl_list *drag_icons, sway_surface_iterator_func_t iterator,
+	void *user_data);
 
 #endif
