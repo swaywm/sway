@@ -534,10 +534,6 @@ static void handle_scale(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
-struct sway_output *output_from_wlr_output(struct wlr_output *wlr_output) {
-	return wlr_output->data;
-}
-
 void handle_new_output(struct wl_listener *listener, void *data) {
 	struct sway_server *server = wl_container_of(listener, server, new_output);
 	struct wlr_output *wlr_output = data;
