@@ -167,15 +167,15 @@ void output_view_for_each_surface(struct sway_view *view,
 	view_for_each_surface(view, iterator, user_data);
 }
 
-void output_layer_for_each_surface(struct wl_list *layer_surfaces,
-		struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
+void output_layer_for_each_surface(struct sway_output *output,
+		struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 		void *user_data) {
 	struct sway_layer_surface *layer_surface;
 	wl_list_for_each(layer_surface, layer_surfaces, link) {
 		struct wlr_layer_surface *wlr_layer_surface =
 			layer_surface->layer_surface;
-		output_surface_for_each_surface(wlr_layer_surface->surface,
-			layer_surface->geo.x, layer_surface->geo.y, geo, iterator,
+		output_surface_for_each_surface2(output, wlr_layer_surface->surface,
+			layer_surface->geo.x, layer_surface->geo.y, 0, iterator,
 			user_data);
 	}
 }
@@ -288,10 +288,10 @@ static void send_frame_done_iterator2(struct sway_output *output,
 	wlr_surface_send_frame_done(surface, data->when);
 }
 
-static void send_frame_done_layer(struct send_frame_done_data *data,
-		struct wl_list *layer_surfaces) {
-	output_layer_for_each_surface(layer_surfaces, &data->root_geo,
-		send_frame_done_iterator, data);
+static void send_frame_done_layer(struct sway_output *output,
+		struct wl_list *layer_surfaces, struct send_frame_done_data *data) {
+	output_layer_for_each_surface(output, layer_surfaces,
+		send_frame_done_iterator2, data);
 }
 
 #ifdef HAVE_XWAYLAND
@@ -352,10 +352,10 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 			&root_container.sway_root->xwayland_unmanaged);
 #endif
 	} else {
-		send_frame_done_layer(&data,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
-		send_frame_done_layer(&data,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM]);
+		send_frame_done_layer(output,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND], &data);
+		send_frame_done_layer(output,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM], &data);
 
 		send_frame_done_container(&data, workspace);
 		send_frame_done_container(&data, workspace->sway_workspace->floating);
@@ -364,13 +364,13 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		send_frame_done_unmanaged(&data,
 			&root_container.sway_root->xwayland_unmanaged);
 #endif
-		send_frame_done_layer(&data,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+		send_frame_done_layer(output,
+			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], &data);
 	}
 
 send_frame_overlay:
-	send_frame_done_layer(&data,
-		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
+	send_frame_done_layer(output,
+		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], &data);
 	send_frame_done_drag_icons(&data, &root_container.sway_root->drag_icons);
 }
 

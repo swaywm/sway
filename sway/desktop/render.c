@@ -155,8 +155,8 @@ static void render_layer(struct sway_output *output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_layer_for_each_surface(layer_surfaces, &data.root_geo,
-		render_surface_iterator, &data);
+	output_layer_for_each_surface(output, layer_surfaces,
+		render_surface_iterator2, &data);
 }
 
 #ifdef HAVE_XWAYLAND
