@@ -119,8 +119,8 @@ void output_surface_for_each_surface_iterator(struct wlr_surface *surface,
 		data->user_data);
 }
 
-void output_surface_for_each_surface(struct sway_output *output,
-		struct wlr_surface *surface, double ox, double oy, float rotation,
+static void output_surface_for_each_surface(struct sway_output *output,
+		struct wlr_surface *surface, double ox, double oy,
 		sway_surface_iterator_func_t iterator, void *user_data) {
 	struct surface_iterator_data data = {
 		.user_iterator = iterator,
@@ -130,7 +130,7 @@ void output_surface_for_each_surface(struct sway_output *output,
 		.oy = oy,
 		.width = surface->current.width,
 		.height = surface->current.height,
-		.rotation = rotation,
+		.rotation = 0,
 	};
 
 	wlr_surface_for_each_surface(surface,
@@ -163,7 +163,7 @@ void output_layer_for_each_surface(struct sway_output *output,
 		struct wlr_layer_surface *wlr_layer_surface =
 			layer_surface->layer_surface;
 		output_surface_for_each_surface(output, wlr_layer_surface->surface,
-			layer_surface->geo.x, layer_surface->geo.y, 0, iterator,
+			layer_surface->geo.x, layer_surface->geo.y, iterator,
 			user_data);
 	}
 }
@@ -179,7 +179,7 @@ void output_unmanaged_for_each_surface(struct sway_output *output,
 		double ox = unmanaged_surface->lx - output->swayc->current.swayc_x;
 		double oy = unmanaged_surface->ly - output->swayc->current.swayc_y;
 
-		output_surface_for_each_surface(output, xsurface->surface, ox, oy, 0,
+		output_surface_for_each_surface(output, xsurface->surface, ox, oy,
 			iterator, user_data);
 	}
 }
@@ -195,7 +195,7 @@ void output_drag_icons_for_each_surface(struct sway_output *output,
 
 		if (drag_icon->wlr_drag_icon->mapped) {
 			output_surface_for_each_surface(output,
-				drag_icon->wlr_drag_icon->surface, ox, oy, 0,
+				drag_icon->wlr_drag_icon->surface, ox, oy,
 				iterator, user_data);
 		}
 	}
@@ -430,7 +430,7 @@ static void damage_surface_iterator(struct sway_output *output,
 
 void output_damage_surface(struct sway_output *output, double ox, double oy,
 		struct wlr_surface *surface, bool whole) {
-	output_surface_for_each_surface(output, surface, ox, oy, 0,
+	output_surface_for_each_surface(output, surface, ox, oy,
 		damage_surface_iterator, &whole);
 }
 
