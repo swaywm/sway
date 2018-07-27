@@ -3,6 +3,7 @@
 #include <signal.h>
 #include "log.h"
 #include "list.h"
+#include "readline.h"
 #include "swaynagbar/nagbar.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
@@ -34,6 +35,32 @@ static void set_nagbar_colors() {
 	}
 }
 
+static char *read_from_stdin() {
+	char *buffer = NULL;
+	while (!feof(stdin)) {
+		char *line = read_line(stdin);
+		if (!line) {
+			continue;
+		}
+
+		if (!buffer) {
+			buffer = strdup(line);
+		} else {
+			buffer = realloc(buffer, strlen(buffer) + strlen(line) + 2);
+			strcat(buffer, line);
+			strcat(buffer, "\n");
+		}
+
+		free(line);
+	}
+
+	if (buffer && buffer[strlen(buffer) - 1] == '\n') {
+		buffer[strlen(buffer) - 1] = '\0';
+	}
+
+	return buffer;
+}
+
 int main(int argc, char **argv) {
 	int exit_code = EXIT_SUCCESS;
 	bool debug = false;
@@ -50,17 +77,25 @@ int main(int argc, char **argv) {
 	struct sway_nagbar_button *button_close =
 		calloc(sizeof(struct sway_nagbar_button), 1);
 	button_close->text = strdup("X");
-	button_close->action = NULL;
+	button_close->type = NAGBAR_ACTION_DISMISS;
 	list_add(nagbar.buttons, button_close);
 
-	static struct option long_options[] = {
+	struct sway_nagbar_button *button_details =
+		calloc(sizeof(struct sway_nagbar_button), 1);
+	button_details->text = strdup("Toggle Details");
+	button_details->type = NAGBAR_ACTION_EXPAND;
+
+	static struct option opts[] = {
 		{"button", required_argument, NULL, 'b'},
 		{"debug", no_argument, NULL, 'd'},
 		{"edge", required_argument, NULL, 'e'},
 		{"font", required_argument, NULL, 'f'},
 		{"help", no_argument, NULL, 'h'},
+		{"detailed-message", required_argument, NULL, 'l'},
+		{"detailed-button", required_argument, NULL, 'L'},
 		{"message", required_argument, NULL, 'm'},
 		{"output", required_argument, NULL, 'o'},
+		{"dismiss-button", required_argument, NULL, 's'},
 		{"type", required_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
 		{0, 0, 0, 0}
@@ -75,26 +110,30 @@ int main(int argc, char **argv) {
 		"  -e, --edge top|bottom         Set the edge to use.\n"
 		"  -f, --font <font>             Set the font to use.\n"
 		"  -h, --help                    Show help message and quit.\n"
+		"  -l, --detailed-message <msg>  Set a detailed message.\n"
+		"  -L, --detailed-button <text>  Set the text of the detail button.\n"
 		"  -m, --message <msg>           Set the message text.\n"
 		"  -o, --output <output>         Set the output to use.\n"
+		"  -s, --dismiss-button <text>   Set the dismiss button text.\n"
 		"  -t, --type error|warning      Set the message type.\n"
 		"  -v, --version                 Show the version number and quit.\n";
 
 	while (1) {
-		int c = getopt_long(argc, argv, "b:de:f:hm:o:t:v", long_options, NULL);
+		int c = getopt_long(argc, argv, "b:de:f:hl:L:m:o:s:t:v", opts, NULL);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 'b': // Button
 			if (optind >= argc) {
-				fprintf(stderr, "Missing action for button %s", optarg);
+				fprintf(stderr, "Missing action for button %s\n", optarg);
 				exit_code = EXIT_FAILURE;
 				goto cleanup;
 			}
 			struct sway_nagbar_button *button;
 			button = calloc(sizeof(struct sway_nagbar_button), 1);
 			button->text = strdup(optarg);
+			button->type = NAGBAR_ACTION_COMMAND;
 			button->action = strdup(argv[optind]);
 			optind++;
 			list_add(nagbar.buttons, button);
@@ -121,6 +160,20 @@ int main(int argc, char **argv) {
 			free(nagbar.font);
 			nagbar.font = strdup(optarg);
 			break;
+		case 'l': // Detailed Message
+			free(nagbar.details.message);
+			if (strcmp(optarg, "-") == 0) {
+				nagbar.details.message = read_from_stdin();
+			} else {
+				nagbar.details.message = strdup(optarg);
+			}
+			nagbar.details.button_up.text = strdup("▲");
+			nagbar.details.button_down.text = strdup("▼");
+			break;
+		case 'L': // Detailed Button Text
+			free(button_details->text);
+			button_details->text = strdup(optarg);
+			break;
 		case 'm': // Message
 			free(nagbar.message);
 			nagbar.message = strdup(optarg);
@@ -129,13 +182,17 @@ int main(int argc, char **argv) {
 			free(nagbar.output.name);
 			nagbar.output.name = strdup(optarg);
 			break;
+		case 's': // Dismiss Button Text
+			free(button_close->text);
+			button_close->text = strdup(optarg);
+			break;
 		case 't': // Type
 			if (strcmp(optarg, "error") == 0) {
 				nagbar.type = NAGBAR_ERROR;
 			} else if (strcmp(optarg, "warning") == 0) {
 				nagbar.type = NAGBAR_WARNING;
 			} else {
-				fprintf(stderr, "Type must be either 'error' or 'warning'");
+				fprintf(stderr, "Type must be either 'error' or 'warning'\n");
 				exit_code = EXIT_FAILURE;
 				goto cleanup;
 			}
@@ -160,6 +217,13 @@ int main(int argc, char **argv) {
 		goto cleanup;
 	}
 
+	if (nagbar.details.message) {
+		list_add(nagbar.buttons, button_details);
+	} else {
+		free(button_details->text);
+		free(button_details);
+	}
+
 	wlr_log(WLR_DEBUG, "Output: %s", nagbar.output.name);
 	wlr_log(WLR_DEBUG, "Anchors: %d", nagbar.anchors);
 	wlr_log(WLR_DEBUG, "Type: %d", nagbar.type);
@@ -178,6 +242,8 @@ int main(int argc, char **argv) {
 	return exit_code;
 
 cleanup:
+	free(button_details->text);
+	free(button_details);
 	nagbar_destroy(&nagbar);
 	return exit_code;
 }

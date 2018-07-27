@@ -34,8 +34,11 @@ static bool terminal_execute(char *terminal, char *command) {
 static void nagbar_button_execute(struct sway_nagbar *nagbar,
 		struct sway_nagbar_button *button) {
 	wlr_log(WLR_DEBUG, "Executing [%s]: %s", button->text, button->action);
-	if (!button->action) {
+	if (button->type == NAGBAR_ACTION_DISMISS) {
 		nagbar->run_display = false;
+	} else if (button->type == NAGBAR_ACTION_EXPAND) {
+		nagbar->details.visible = !nagbar->details.visible;
+		render_frame(nagbar);
 	} else {
 		if (fork() == 0) {
 			// Child process. Will be used to prevent zombie processes
@@ -119,8 +122,58 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 				&& x < nagbutton->x + nagbutton->width
 				&& y < nagbutton->y + nagbutton->height) {
 			nagbar_button_execute(nagbar, nagbutton);
+			return;
 		}
 	}
+
+	if (nagbar->details.visible &&
+			nagbar->details.total_lines != nagbar->details.visible_lines) {
+		struct sway_nagbar_button button_up = nagbar->details.button_up;
+		if (x >= button_up.x
+				&& y >= button_up.y
+				&& x < button_up.x + button_up.width
+				&& y < button_up.y + button_up.height
+				&& nagbar->details.offset > 0) {
+			nagbar->details.offset--;
+			render_frame(nagbar);
+			return;
+		}
+
+		struct sway_nagbar_button button_down = nagbar->details.button_down;
+		int bot = nagbar->details.total_lines - nagbar->details.visible_lines;
+		if (x >= button_down.x
+				&& y >= button_down.y
+				&& x < button_down.x + button_down.width
+				&& y < button_down.y + button_down.height
+				&& nagbar->details.offset < bot) {
+			nagbar->details.offset++;
+			render_frame(nagbar);
+			return;
+		}
+	}
+}
+
+static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
+		uint32_t time, uint32_t axis, wl_fixed_t value) {
+	struct sway_nagbar *nagbar = data;
+	if (!nagbar->details.visible
+			|| nagbar->pointer.x < nagbar->details.x
+			|| nagbar->pointer.y < nagbar->details.y
+			|| nagbar->pointer.x >= nagbar->details.x + nagbar->details.width
+			|| nagbar->pointer.y >= nagbar->details.y + nagbar->details.height
+			|| nagbar->details.total_lines == nagbar->details.visible_lines) {
+		return;
+	}
+
+	int direction = wl_fixed_to_int(value);
+	int bot = nagbar->details.total_lines - nagbar->details.visible_lines;
+	if (direction < 0 && nagbar->details.offset > 0) {
+		nagbar->details.offset--;
+	} else if (direction > 0 && nagbar->details.offset < bot) {
+		nagbar->details.offset++;
+	}
+
+	render_frame(nagbar);
 }
 
 static struct wl_pointer_listener pointer_listener = {
@@ -128,7 +181,7 @@ static struct wl_pointer_listener pointer_listener = {
 	.leave = nop,
 	.motion = wl_pointer_motion,
 	.button = wl_pointer_button,
-	.axis = nop,
+	.axis = wl_pointer_axis,
 	.frame = nop,
 	.axis_source = nop,
 	.axis_stop = nop,
@@ -329,6 +382,9 @@ void nagbar_destroy(struct sway_nagbar *nagbar) {
 		free(button);
 	}
 	list_free(nagbar->buttons);
+	free(nagbar->details.message);
+	free(nagbar->details.button_up.text);
+	free(nagbar->details.button_down.text);
 
 	if (nagbar->layer_surface) {
 		zwlr_layer_surface_v1_destroy(nagbar->layer_surface);
