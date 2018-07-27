@@ -82,7 +82,7 @@ static void scratchpad_show(struct sway_container *con) {
 	}
 
 	arrange_windows(ws);
-	seat_set_focus(seat, con);
+	seat_set_focus(seat, seat_get_focus_inactive(seat, con));
 
 	container_set_dirty(con->parent);
 }
