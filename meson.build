@@ -191,3 +191,15 @@ if (get_option('zsh_completions'))
 
 	install_data(zsh_files, install_dir: zsh_install_dir)
 endif
+
+if (get_option('bash_completions'))
+	bash_files = files(
+		'completions/bash/sway',
+		'completions/bash/swayidle',
+		'completions/bash/swaylock',
+		'completions/bash/swaymsg',
+	)
+	bash_install_dir = datadir + '/bash-completion/completions'
+
+	install_data(bash_files, install_dir: bash_install_dir)
+endif
