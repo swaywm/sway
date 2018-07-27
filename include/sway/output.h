@@ -5,6 +5,7 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
+#include "config.h"
 #include "sway/tree/view.h"
 
 struct sway_server;
@@ -48,6 +49,10 @@ struct root_geometry {
 	float rotation;
 };
 
+typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
+	struct wlr_surface *surface, struct wlr_box *box, float rotation,
+	void *user_data);
+
 void output_damage_whole(struct sway_output *output);
 
 void output_damage_surface(struct sway_output *output, double ox, double oy,
@@ -80,6 +85,10 @@ void output_surface_for_each_surface(struct wlr_surface *surface,
 	double ox, double oy, struct root_geometry *geo,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
+void output_surface_for_each_surface2(struct sway_output *output,
+	struct wlr_surface *surface, double ox, double oy, float rotation,
+	sway_surface_iterator_func_t iterator, void *user_data);
+
 void output_view_for_each_surface(struct sway_view *view,
 	struct sway_output *output, struct root_geometry *geo,
 	wlr_surface_iterator_func_t iterator, void *user_data);
@@ -88,9 +97,11 @@ void output_layer_for_each_surface(struct wl_list *layer_surfaces,
 	struct root_geometry *geo, wlr_surface_iterator_func_t iterator,
 	void *user_data);
 
-void output_unmanaged_for_each_surface(struct wl_list *unmanaged,
-	struct sway_output *output, struct root_geometry *geo,
-	wlr_surface_iterator_func_t iterator, void *user_data);
+#ifdef HAVE_XWAYLAND
+void output_unmanaged_for_each_surface(struct sway_output *output,
+	struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
+	void *user_data);
+#endif
 
 void output_drag_icons_for_each_surface(struct wl_list *drag_icons,
 	struct sway_output *output, struct root_geometry *geo,

@@ -105,6 +105,56 @@ void output_surface_for_each_surface(struct wlr_surface *surface,
 	wlr_surface_for_each_surface(surface, iterator, user_data);
 }
 
+struct surface_iterator_data {
+	sway_surface_iterator_func_t user_iterator;
+	void *user_data;
+
+	struct sway_output *output;
+	double ox, oy;
+	int width, height;
+	float rotation;
+};
+
+void output_surface_for_each_surface2_iterator(struct wlr_surface *surface,
+		int sx, int sy, void *_data) {
+	struct surface_iterator_data *data = _data;
+
+	struct root_geometry geo = {
+		.x = data->ox,
+		.y = data->oy,
+		.width = data->width,
+		.height = data->height,
+		.rotation = data->rotation,
+	};
+	struct wlr_box box;
+	bool intersects = output_get_surface_box(&geo, data->output,
+		surface, sx, sy, &box);
+	if (!intersects) {
+		return;
+	}
+
+	data->user_iterator(data->output, surface, &box, data->rotation,
+		data->user_data);
+}
+
+void output_surface_for_each_surface2(struct sway_output *output,
+		struct wlr_surface *surface, double ox, double oy, float rotation,
+		sway_surface_iterator_func_t iterator, void *user_data) {
+	struct surface_iterator_data data = {
+		.user_iterator = iterator,
+		.user_data = user_data,
+		.output = output,
+		.ox = ox,
+		.oy = oy,
+		.width = surface->current.width,
+		.height = surface->current.height,
+		.rotation = rotation,
+	};
+
+	wlr_surface_for_each_surface(surface,
+		output_surface_for_each_surface2_iterator, &data);
+}
+
 void output_view_for_each_surface(struct sway_view *view,
 		struct sway_output *output, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
@@ -129,10 +179,11 @@ void output_layer_for_each_surface(struct wl_list *layer_surfaces,
 			user_data);
 	}
 }
+
 #ifdef HAVE_XWAYLAND
-void output_unmanaged_for_each_surface(struct wl_list *unmanaged,
-		struct sway_output *output, struct root_geometry *geo,
-		wlr_surface_iterator_func_t iterator, void *user_data) {
+void output_unmanaged_for_each_surface(struct sway_output *output,
+		struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
+		void *user_data) {
 	struct sway_xwayland_unmanaged *unmanaged_surface;
 	wl_list_for_each(unmanaged_surface, unmanaged, link) {
 		struct wlr_xwayland_surface *xsurface =
@@ -140,11 +191,12 @@ void output_unmanaged_for_each_surface(struct wl_list *unmanaged,
 		double ox = unmanaged_surface->lx - output->swayc->current.swayc_x;
 		double oy = unmanaged_surface->ly - output->swayc->current.swayc_y;
 
-		output_surface_for_each_surface(xsurface->surface, ox, oy, geo,
+		output_surface_for_each_surface2(output, xsurface->surface, ox, oy, 0,
 			iterator, user_data);
 	}
 }
 #endif
+
 void output_drag_icons_for_each_surface(struct wl_list *drag_icons,
 		struct sway_output *output, struct root_geometry *geo,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
@@ -228,18 +280,27 @@ static void send_frame_done_iterator(struct wlr_surface *surface,
 	}
 }
 
+static void send_frame_done_iterator2(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *box, float rotation,
+		void *_data) {
+	struct send_frame_done_data *data = _data;
+	wlr_surface_send_frame_done(surface, data->when);
+}
+
 static void send_frame_done_layer(struct send_frame_done_data *data,
 		struct wl_list *layer_surfaces) {
 	output_layer_for_each_surface(layer_surfaces, &data->root_geo,
 		send_frame_done_iterator, data);
 }
+
 #ifdef HAVE_XWAYLAND
 static void send_frame_done_unmanaged(struct send_frame_done_data *data,
 		struct wl_list *unmanaged) {
-	output_unmanaged_for_each_surface(unmanaged, data->output, &data->root_geo,
-		send_frame_done_iterator, data);
+	output_unmanaged_for_each_surface(data->output, unmanaged,
+		send_frame_done_iterator2, data);
 }
 #endif
+
 static void send_frame_done_drag_icons(struct send_frame_done_data *data,
 		struct wl_list *drag_icons) {
 	output_drag_icons_for_each_surface(drag_icons, data->output, &data->root_geo,

@@ -123,6 +123,31 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
 }
 
+static void render_surface_iterator2(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
+		void *_data) {
+	struct render_data *data = _data;
+	struct wlr_output *wlr_output = output->wlr_output;
+	pixman_region32_t *output_damage = data->damage;
+	float alpha = data->alpha;
+
+	struct wlr_texture *texture = wlr_surface_get_texture(surface);
+	if (!texture) {
+		return;
+	}
+
+	struct wlr_box box = *_box;
+	scale_box(&box, wlr_output->scale);
+
+	float matrix[9];
+	enum wl_output_transform transform =
+		wlr_output_transform_invert(surface->current.transform);
+	wlr_matrix_project_box(matrix, &box, transform, rotation,
+		wlr_output->transform_matrix);
+
+	render_texture(wlr_output, output_damage, texture, &box, matrix, alpha);
+}
+
 static void render_layer(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *layer_surfaces) {
 	struct render_data data = {
@@ -133,6 +158,7 @@ static void render_layer(struct sway_output *output,
 	output_layer_for_each_surface(layer_surfaces, &data.root_geo,
 		render_surface_iterator, &data);
 }
+
 #ifdef HAVE_XWAYLAND
 static void render_unmanaged(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *unmanaged) {
@@ -141,10 +167,11 @@ static void render_unmanaged(struct sway_output *output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
-		render_surface_iterator, &data);
+	output_unmanaged_for_each_surface(output, unmanaged,
+		render_surface_iterator2, &data);
 }
 #endif
+
 static void render_drag_icons(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *drag_icons) {
 	struct render_data data = {
