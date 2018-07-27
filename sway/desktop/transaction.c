@@ -316,7 +316,14 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		// Set up a timer which the views must respond within
 		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
 				handle_timeout, transaction);
-		wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
+		if (transaction->timer) {
+			wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
+		} else {
+			wlr_log(WLR_ERROR, "Unable to create transaction timer. "
+					"There might not be any available file descriptors. "
+					"Some imperfect frames might be rendered.");
+			handle_timeout(transaction);
+		}
 	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
