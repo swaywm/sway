@@ -3,7 +3,7 @@
 #include "log.h"
 #include "pango.h"
 #include "pool-buffer.h"
-#include "swaynagbar/nagbar.h"
+#include "swaynag/nagbar.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static uint32_t render_message(cairo_t *cairo, struct sway_nagbar *nagbar) {
@@ -274,7 +274,7 @@ void render_frame(struct sway_nagbar *nagbar) {
 				nagbar->height * nagbar->scale);
 		if (!nagbar->current_buffer) {
 			wlr_log(WLR_DEBUG, "Failed to get buffer. Skipping frame.");
-			return;
+			goto cleanup;
 		}
 
 		cairo_t *shm = nagbar->current_buffer->cairo;
@@ -293,6 +293,8 @@ void render_frame(struct sway_nagbar *nagbar) {
 		wl_surface_commit(nagbar->surface);
 		wl_display_roundtrip(nagbar->display);
 	}
+
+cleanup:
 	cairo_surface_destroy(recorder);
 	cairo_destroy(cairo);
 }

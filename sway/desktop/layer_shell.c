@@ -214,9 +214,6 @@ void arrange_layers(struct sway_output *output) {
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		seat_set_focus_layer(seat, topmost ? topmost->layer_surface : NULL);
 	}
-
-	arrange_windows(output->swayc);
-	transaction_commit_dirty();
 }
 
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
@@ -250,6 +247,9 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		output_damage_surface(output, layer->geo.x, layer->geo.y,
 			layer_surface->surface, false);
 	}
+
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void unmap(struct sway_layer_surface *sway_layer) {
@@ -287,6 +287,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
 		if (output != NULL && output->swayc != NULL) {
 			arrange_layers(output);
+			arrange_windows(output->swayc);
+			transaction_commit_dirty();
 		}
 		wl_list_remove(&sway_layer->output_destroy.link);
 		sway_layer->layer_surface->output = NULL;

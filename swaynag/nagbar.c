@@ -6,8 +6,8 @@
 #include <wayland-cursor.h>
 #include "log.h"
 #include "list.h"
-#include "swaynagbar/nagbar.h"
-#include "swaynagbar/render.h"
+#include "swaynag/nagbar.h"
+#include "swaynag/render.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static void nop() {
@@ -15,7 +15,7 @@ static void nop() {
 }
 
 static bool terminal_execute(char *terminal, char *command) {
-	char fname[] = "/tmp/swaynagbarXXXXXX";
+	char fname[] = "/tmp/swaynagXXXXXX";
 	FILE *tmp= fdopen(mkstemp(fname), "w");
 	if (!tmp) {
 		wlr_log(WLR_ERROR, "Failed to create temp script");
@@ -352,7 +352,7 @@ void nagbar_setup(struct sway_nagbar *nagbar) {
 	assert(nagbar->surface);
 	nagbar->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
 			nagbar->layer_shell, nagbar->surface, nagbar->output.wl_output,
-			ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "nagbar");
+			ZWLR_LAYER_SHELL_V1_LAYER_TOP, "swaynag");
 	assert(nagbar->layer_surface);
 	zwlr_layer_surface_v1_add_listener(nagbar->layer_surface,
 			&layer_surface_listener, nagbar);

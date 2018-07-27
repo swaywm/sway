@@ -1,5 +1,5 @@
 executable(
-	'swaynagbar', [
+	'swaynag', [
 		'main.c',
 		'nagbar.c',
 		'render.c',

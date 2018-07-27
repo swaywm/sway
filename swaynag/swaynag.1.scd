@@ -2,11 +2,11 @@ swaynagbar(1)
 
 # NAME
 
-swaynagbar - Show a warning or error message with buttons
+swaynag - Show a warning or error message with buttons
 
 # SYNOPSIS
 
-_swaynagbar_ [options...]
+_swaynag_ [options...]
 
 # OPTIONS
 *-b, --button* <text> <action>
@@ -25,10 +25,9 @@ _swaynagbar_ [options...]
 *-h, --help*
 	Show help message and quit.
 
-*-l, --detailed-message <msg>*
-	Set the detailed message. A button to toggle details will be added. Details
-	are shown in a scrollable multi-line text area. If _msg_ is _-_, then the
-	detailed message will be read from stdin.
+*-l, --detailed-message*
+	Read a detailed message from stdin. A button to toggle details will be
+	added. Details are shown in a scrollable multi-line text area.
 
 *-L, --detailed-button <text>*
 	Set the text for the button that toggles details. This has no effect if

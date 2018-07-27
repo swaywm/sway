@@ -82,7 +82,7 @@ if scdoc.found()
 		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swayidle/swayidle.1.scd',
-		'swaynagbar/swaynagbar.1.scd',
+		'swaynag/swaynag.1.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
@@ -131,7 +131,7 @@ subdir('swaybg')
 subdir('swaybar')
 subdir('swaylock')
 subdir('swayidle')
-subdir('swaynagbar')
+subdir('swaynag')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))

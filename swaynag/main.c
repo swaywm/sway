@@ -4,7 +4,7 @@
 #include "log.h"
 #include "list.h"
 #include "readline.h"
-#include "swaynagbar/nagbar.h"
+#include "swaynag/nagbar.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static struct sway_nagbar nagbar;
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	nagbar.type = NAGBAR_ERROR;
 	set_nagbar_colors();
-	nagbar.font = strdup("pango:monospace 8");
+	nagbar.font = strdup("pango:monospace 10");
 	nagbar.buttons = create_list();
 
 	struct sway_nagbar_button *button_close =
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 		{"edge", required_argument, NULL, 'e'},
 		{"font", required_argument, NULL, 'f'},
 		{"help", no_argument, NULL, 'h'},
-		{"detailed-message", required_argument, NULL, 'l'},
+		{"detailed-message", no_argument, NULL, 'l'},
 		{"detailed-button", required_argument, NULL, 'L'},
 		{"message", required_argument, NULL, 'm'},
 		{"output", required_argument, NULL, 'o'},
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 	};
 
 	const char *usage =
-		"Usage: swaynagbar [options...]\n"
+		"Usage: swaynag [options...]\n"
 		"\n"
 		"  -b, --button <text> <action>  Create a button with text that "
 			"executes action when pressed. Multiple buttons can be defined.\n"
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 		"  -e, --edge top|bottom         Set the edge to use.\n"
 		"  -f, --font <font>             Set the font to use.\n"
 		"  -h, --help                    Show help message and quit.\n"
-		"  -l, --detailed-message <msg>  Set a detailed message.\n"
+		"  -l, --detailed-message        Read a detailed message from stdin.\n"
 		"  -L, --detailed-button <text>  Set the text of the detail button.\n"
 		"  -m, --message <msg>           Set the message text.\n"
 		"  -o, --output <output>         Set the output to use.\n"
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 		"  -v, --version                 Show the version number and quit.\n";
 
 	while (1) {
-		int c = getopt_long(argc, argv, "b:de:f:hl:L:m:o:s:t:v", opts, NULL);
+		int c = getopt_long(argc, argv, "b:de:f:hlL:m:o:s:t:v", opts, NULL);
 		if (c == -1) {
 			break;
 		}
@@ -162,11 +162,7 @@ int main(int argc, char **argv) {
 			break;
 		case 'l': // Detailed Message
 			free(nagbar.details.message);
-			if (strcmp(optarg, "-") == 0) {
-				nagbar.details.message = read_from_stdin();
-			} else {
-				nagbar.details.message = strdup(optarg);
-			}
+			nagbar.details.message = read_from_stdin();
 			nagbar.details.button_up.text = strdup("▲");
 			nagbar.details.button_down.text = strdup("▼");
 			break;
@@ -199,7 +195,7 @@ int main(int argc, char **argv) {
 			set_nagbar_colors();
 			break;
 		case 'v': // Version
-			fprintf(stdout, "sway version " SWAY_VERSION "\n");
+			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
 			exit_code = EXIT_SUCCESS;
 			goto cleanup;
 		default: // Help or unknown flag
