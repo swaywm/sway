@@ -1030,10 +1030,13 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		if (container->scratchpad) {
 			scratchpad_remove_container(container);
 		}
-		struct sway_container *sibling =
-			seat_get_focus_inactive_tiling(seat, workspace);
 		container_remove_child(container);
-		container_add_sibling(sibling, container);
+		struct sway_container *reference =
+			seat_get_focus_inactive_tiling(seat, workspace);
+		if (reference->type == C_VIEW) {
+			reference = reference->parent;
+		}
+		container_add_child(reference, container);
 		container->width = container->parent->width;
 		container->height = container->parent->height;
 		if (container->type == C_VIEW) {
