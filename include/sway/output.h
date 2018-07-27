@@ -89,9 +89,9 @@ void output_surface_for_each_surface2(struct sway_output *output,
 	struct wlr_surface *surface, double ox, double oy, float rotation,
 	sway_surface_iterator_func_t iterator, void *user_data);
 
-void output_view_for_each_surface(struct sway_view *view,
-	struct sway_output *output, struct root_geometry *geo,
-	wlr_surface_iterator_func_t iterator, void *user_data);
+void output_view_for_each_surface(struct sway_output *output,
+	struct sway_view *view, sway_surface_iterator_func_t iterator,
+	void *user_data);
 
 void output_layer_for_each_surface(struct sway_output *output,
 	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,

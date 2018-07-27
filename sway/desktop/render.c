@@ -231,8 +231,7 @@ static void render_view_surfaces(struct sway_view *view,
 		.view = view,
 		.alpha = alpha,
 	};
-	output_view_for_each_surface(view, output, &data.root_geo,
-		render_surface_iterator, &data);
+	output_view_for_each_surface(output, view, render_surface_iterator2, &data);
 }
 
 static void render_saved_view(struct sway_view *view,
