@@ -39,16 +39,6 @@ struct sway_output {
 	} events;
 };
 
-/**
- * Contains a surface's root geometry information. For instance, when rendering
- * a popup, this will contain the parent view's position and size.
- */
-struct root_geometry {
-	double x, y;
-	int width, height;
-	float rotation;
-};
-
 typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
 	struct wlr_surface *surface, struct wlr_box *box, float rotation,
 	void *user_data);
@@ -76,14 +66,6 @@ struct sway_container *output_get_active_workspace(struct sway_output *output);
 
 void output_render(struct sway_output *output, struct timespec *when,
 	pixman_region32_t *damage);
-
-bool output_get_surface_box(struct root_geometry *geo,
-	struct sway_output *output, struct wlr_surface *surface, int sx, int sy,
-	struct wlr_box *surface_box);
-
-void output_surface_for_each_surface(struct wlr_surface *surface,
-	double ox, double oy, struct root_geometry *geo,
-	wlr_surface_iterator_func_t iterator, void *user_data);
 
 void output_surface_for_each_surface2(struct sway_output *output,
 	struct wlr_surface *surface, double ox, double oy, float rotation,
