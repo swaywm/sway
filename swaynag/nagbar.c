@@ -230,8 +230,7 @@ static void xdg_output_handle_name(void *data,
 	struct output_state *state = data;
 	char *outname = state->nagbar->output.name;
 	wlr_log(WLR_DEBUG, "Checking against output %s for %s", name, outname);
-	if ((!outname && !state->nagbar->output.wl_output)
-			|| (name && outname && strcmp(name, outname) == 0)) {
+	if (outname && !state->nagbar->output.wl_output) {
 		wlr_log(WLR_DEBUG, "Using output %s", name);
 		state->nagbar->output.wl_output = state->wl_output;
 		state->nagbar->output.wl_name = state->wl_name;
@@ -279,14 +278,6 @@ static void handle_global(void *data, struct wl_registry *registry,
 					nagbar->xdg_output_manager, state->wl_output);
 			zxdg_output_v1_add_listener(state->xdg_output,
 					&xdg_output_listener, state);
-		} else if (!nagbar->output.wl_output && !nagbar->xdg_output_manager) {
-			wlr_log(WLR_ERROR, "Warning: zxdg_output_manager_v1 not supported."
-					" Falling back to first detected output");
-			nagbar->output.wl_output = wl_registry_bind(registry, name,
-					&wl_output_interface, 3);
-			nagbar->output.wl_name = name;
-			wl_output_add_listener(nagbar->output.wl_output,
-					&output_listener, nagbar);
 		}
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		nagbar->layer_shell = wl_registry_bind(
@@ -327,12 +318,8 @@ void nagbar_setup(struct sway_nagbar *nagbar) {
 		wl_display_roundtrip(nagbar->display);
 	}
 
-	if (!nagbar->output.wl_output) {
-		if (nagbar->output.name) {
-			wlr_log(WLR_ERROR, "Output '%s' not found", nagbar->output.name);
-		} else {
-			wlr_log(WLR_ERROR, "No outputs detected");
-		}
+	if (!nagbar->output.wl_output && nagbar->output.name) {
+		wlr_log(WLR_ERROR, "Output '%s' not found", nagbar->output.name);
 		nagbar_destroy(nagbar);
 		exit(EXIT_FAILURE);
 	}
