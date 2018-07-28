@@ -25,7 +25,7 @@ static uint32_t render_message(cairo_t *cairo, struct sway_nagbar *nagbar) {
 
 	cairo_set_source_u32(cairo, nagbar->type->text);
 	cairo_move_to(cairo, padding, (int)(ideal_height - text_height) / 2);
-	pango_printf(cairo, nagbar->font, nagbar->scale, true, "%s",
+	pango_printf(cairo, nagbar->font, nagbar->scale, false, "%s",
 			nagbar->message);
 
 	return ideal_height;
@@ -86,7 +86,7 @@ static uint32_t render_detailed(cairo_t *cairo, struct sway_nagbar *nagbar,
 	nagbar->details.width = width - decor * 2;
 
 	PangoLayout *layout = get_pango_layout(cairo, nagbar->font,
-			nagbar->details.message, nagbar->scale, true);
+			nagbar->details.message, nagbar->scale, false);
 	pango_layout_set_width(layout,
 			(nagbar->details.width - padding * 2) * PANGO_SCALE);
 	pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
