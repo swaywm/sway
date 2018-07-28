@@ -89,6 +89,7 @@ if scdoc.found()
 		'sway/sway.5.scd',
 		'sway/sway-bar.5.scd',
 		'sway/sway-input.5.scd',
+		'sway/sway-security.7.scd',
 		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swayidle/swayidle.1.scd',
