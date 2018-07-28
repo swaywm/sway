@@ -168,21 +168,12 @@ configure_file(
 	install_dir: sysconfdir + '/sway'
 )
 
-if is_freebsd
-	configure_file(
-		configuration: config,
-		input: 'security.d/10-freebsd.in',
-		output: '@BASENAME@',
-		install_dir: sysconfdir + '/sway/security.d'
-	)
-else
-	configure_file(
-		configuration: config,
-		input: 'security.d/00-defaults.in',
-		output: '@BASENAME@',
-		install_dir: sysconfdir + '/sway/security.d'
-	)
-endif
+configure_file(
+	configuration: config,
+	input: 'security.d/00-defaults.in',
+	output: '@BASENAME@',
+	install_dir: sysconfdir + '/sway/security.d'
+)
 
 install_data(
 	'sway.desktop',
