@@ -3,6 +3,7 @@ executable(
 		'main.c',
 		'nagbar.c',
 		'render.c',
+		'types.c',
 	],
 	include_directories: [sway_inc],
 	dependencies: [

@@ -8,6 +8,7 @@
 #include "list.h"
 #include "swaynag/nagbar.h"
 #include "swaynag/render.h"
+#include "swaynag/types.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static void nop() {
@@ -385,6 +386,10 @@ void nagbar_destroy(struct sway_nagbar *nagbar) {
 	free(nagbar->details.message);
 	free(nagbar->details.button_up.text);
 	free(nagbar->details.button_down.text);
+
+	if (nagbar->type) {
+		nagbar_type_free(nagbar->type);
+	}
 
 	if (nagbar->layer_surface) {
 		zwlr_layer_surface_v1_destroy(nagbar->layer_surface);

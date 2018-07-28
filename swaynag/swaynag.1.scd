@@ -1,4 +1,4 @@
-swaynagbar(1)
+swaynag(1)
 
 # NAME
 
@@ -13,13 +13,21 @@ _swaynag_ [options...]
 	Create a button with the text _text_ that executes _action_ when pressed.
 	Multiple buttons can be defined by providing the flag multiple times.
 
+*-c, --config* <path>
+	The config file to use. By default, the following paths are checked:
+	_$HOME/.swaynag/config_, _$XDG\_CONFIG\_HOME/swaynag/config_, and
+	_SYSCONFDIR/swaynag/config_. All flags aside from this one and _debug_ are
+	valid options in the configuration file using the format
+	_long-option=value_. All leading dashes should be omitted and the equals
+	sign is required. See swaynag(5) for more information.
+
 *-d, --debug*
 	Enable debugging.
 
-*-e, --edge top|bottom*
+*-e, --edge* top|bottom
 	Set the edge to use.
 
-*-f, --font <font>*
+*-f, --font* <font>
 	Set the font to use.
 
 *-h, --help*
@@ -29,24 +37,29 @@ _swaynag_ [options...]
 	Read a detailed message from stdin. A button to toggle details will be
 	added. Details are shown in a scrollable multi-line text area.
 
-*-L, --detailed-button <text>*
+*-L, --detailed-button* <text>
 	Set the text for the button that toggles details. This has no effect if
 	there is not a detailed message. The default is _Toggle Details_.
 
-*-m, --message <msg>*
+*-m, --message* <msg>
 	Set the message text.
 
-*-o, --output <output>*
+*-o, --output* <output>
 	Set the output to use. This should be the name of a _xdg\_output_. If
 	_xdg\_output\_manager_ is not supported, then the first detected output
 	will be used
 
-*-s, --dismiss-button <text>*
+*-s, --dismiss-button* <text>
 	Sets the text for the dismiss nagbar button. The default is _X_.
 
-*-t, --type error|warning*
-	Set the message type.
+*-t, --type*
+	Set the message type. Two types are created by default _error_ and
+	_warning_. Custom types can be defined in the config file. See
+	_--config_ and swaynag(5) for details. Both of the default types can be
+	overridden in the config file as well.
 
-*-v, --version
+*-v, --version*
 	Show the version number and quit.
 
+# SEE
+swaynag(5)

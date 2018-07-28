@@ -4,6 +4,7 @@
 #include "pango.h"
 #include "pool-buffer.h"
 #include "swaynag/nagbar.h"
+#include "swaynag/types.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static uint32_t render_message(cairo_t *cairo, struct sway_nagbar *nagbar) {
@@ -22,7 +23,7 @@ static uint32_t render_message(cairo_t *cairo, struct sway_nagbar *nagbar) {
 		return ideal_surface_height;
 	}
 
-	cairo_set_source_u32(cairo, nagbar->colors.text);
+	cairo_set_source_u32(cairo, nagbar->type->text);
 	cairo_move_to(cairo, padding, (int)(ideal_height - text_height) / 2);
 	pango_printf(cairo, nagbar->font, nagbar->scale, true, "%s",
 			nagbar->message);
@@ -39,17 +40,17 @@ static void render_details_scroll_button(cairo_t *cairo,
 	int border = NAGBAR_BUTTON_BORDER_THICKNESS * nagbar->scale;
 	int padding = NAGBAR_BUTTON_PADDING * nagbar->scale;
 
-	cairo_set_source_u32(cairo, nagbar->colors.border);
+	cairo_set_source_u32(cairo, nagbar->type->border);
 	cairo_rectangle(cairo, button->x, button->y,
 			button->width, button->height);
 	cairo_fill(cairo);
 
-	cairo_set_source_u32(cairo, nagbar->colors.button_background);
+	cairo_set_source_u32(cairo, nagbar->type->button_background);
 	cairo_rectangle(cairo, button->x + border, button->y + border,
 			button->width - (border * 2), button->height - (border * 2));
 	cairo_fill(cairo);
 
-	cairo_set_source_u32(cairo, nagbar->colors.text);
+	cairo_set_source_u32(cairo, nagbar->type->text);
 	cairo_move_to(cairo, button->x + border + padding,
 			button->y + border + (button->height - text_height) / 2);
 	pango_printf(cairo, nagbar->font, nagbar->scale, true, "%s", button->text);
@@ -154,14 +155,14 @@ static uint32_t render_detailed(cairo_t *cairo, struct sway_nagbar *nagbar,
 				&nagbar->details.button_down);
 	}
 
-	cairo_set_source_u32(cairo, nagbar->colors.border);
+	cairo_set_source_u32(cairo, nagbar->type->border);
 	cairo_rectangle(cairo, nagbar->details.x, nagbar->details.y,
 			nagbar->details.width, nagbar->details.height);
 	cairo_fill(cairo);
 
 	cairo_move_to(cairo, nagbar->details.x + padding,
 			nagbar->details.y + padding);
-	cairo_set_source_u32(cairo, nagbar->colors.text);
+	cairo_set_source_u32(cairo, nagbar->type->text);
 	pango_cairo_show_layout(cairo, layout);
 	g_object_unref(layout);
 
@@ -192,17 +193,17 @@ static uint32_t render_button(cairo_t *cairo, struct sway_nagbar *nagbar,
 	button->width = text_width + padding * 2;
 	button->height = text_height + padding * 2;
 
-	cairo_set_source_u32(cairo, nagbar->colors.border);
+	cairo_set_source_u32(cairo, nagbar->type->border);
 	cairo_rectangle(cairo, button->x - border, button->y - border,
 			button->width + border * 2, button->height + border * 2);
 	cairo_fill(cairo);
 
-	cairo_set_source_u32(cairo, nagbar->colors.button_background);
+	cairo_set_source_u32(cairo, nagbar->type->button_background);
 	cairo_rectangle(cairo, button->x, button->y,
 			button->width, button->height);
 	cairo_fill(cairo);
 
-	cairo_set_source_u32(cairo, nagbar->colors.text);
+	cairo_set_source_u32(cairo, nagbar->type->text);
 	cairo_move_to(cairo, button->x + padding, button->y + padding);
 	pango_printf(cairo, nagbar->font, nagbar->scale, true, "%s", button->text);
 
@@ -215,7 +216,7 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct sway_nagbar *nagbar) {
 	uint32_t max_height = 0;
 
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_u32(cairo, nagbar->colors.background);
+	cairo_set_source_u32(cairo, nagbar->type->background);
 	cairo_paint(cairo);
 
 	uint32_t h = render_message(cairo, nagbar);
@@ -240,7 +241,7 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct sway_nagbar *nagbar) {
 	if (max_height > nagbar->height) {
 		max_height += border;
 	}
-	cairo_set_source_u32(cairo, nagbar->colors.border_bottom);
+	cairo_set_source_u32(cairo, nagbar->type->border_bottom);
 	cairo_rectangle(cairo, 0, nagbar->height * nagbar->scale - border,
 			nagbar->width * nagbar->scale, border);
 	cairo_fill(cairo);

@@ -1,10 +1,14 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700
+#define _POSIX_C_SOURCE 200112L
 #include <getopt.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <wordexp.h>
 #include "log.h"
 #include "list.h"
 #include "readline.h"
 #include "swaynag/nagbar.h"
+#include "swaynag/types.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static struct sway_nagbar nagbar;
@@ -17,22 +21,6 @@ void sig_handler(int signal) {
 void sway_terminate(int code) {
 	nagbar_destroy(&nagbar);
 	exit(code);
-}
-
-static void set_nagbar_colors() {
-	if (nagbar.type == NAGBAR_ERROR) {
-		nagbar.colors.button_background = 0x680A0AFF;
-		nagbar.colors.background = 0x900000FF;
-		nagbar.colors.text = 0xFFFFFFFF;
-		nagbar.colors.border = 0xD92424FF;
-		nagbar.colors.border_bottom = 0x470909FF;
-	} else if (nagbar.type == NAGBAR_WARNING) {
-		nagbar.colors.button_background = 0xFFC100FF;
-		nagbar.colors.background = 0xFFA800FF;
-		nagbar.colors.text = 0x000000FF;
-		nagbar.colors.border = 0xAB7100FF;
-		nagbar.colors.border_bottom = 0xAB7100FF;
-	}
 }
 
 static char *read_from_stdin() {
@@ -61,32 +49,11 @@ static char *read_from_stdin() {
 	return buffer;
 }
 
-int main(int argc, char **argv) {
-	int exit_code = EXIT_SUCCESS;
-	bool debug = false;
-
-	memset(&nagbar, 0, sizeof(nagbar));
-	nagbar.anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-	nagbar.type = NAGBAR_ERROR;
-	set_nagbar_colors();
-	nagbar.font = strdup("pango:monospace 10");
-	nagbar.buttons = create_list();
-
-	struct sway_nagbar_button *button_close =
-		calloc(sizeof(struct sway_nagbar_button), 1);
-	button_close->text = strdup("X");
-	button_close->type = NAGBAR_ACTION_DISMISS;
-	list_add(nagbar.buttons, button_close);
-
-	struct sway_nagbar_button *button_details =
-		calloc(sizeof(struct sway_nagbar_button), 1);
-	button_details->text = strdup("Toggle Details");
-	button_details->type = NAGBAR_ACTION_EXPAND;
-
+static int parse_options(int argc, char **argv, struct sway_nagbar *nagbar,
+		list_t *types, char **config, bool *debug) {
 	static struct option opts[] = {
 		{"button", required_argument, NULL, 'b'},
+		{"config", required_argument, NULL, 'c'},
 		{"debug", no_argument, NULL, 'd'},
 		{"edge", required_argument, NULL, 'e'},
 		{"font", required_argument, NULL, 'f'},
@@ -106,6 +73,7 @@ int main(int argc, char **argv) {
 		"\n"
 		"  -b, --button <text> <action>  Create a button with text that "
 			"executes action when pressed. Multiple buttons can be defined.\n"
+		"  -c, --config <path>           Path to config file.\n"
 		"  -d, --debug                   Enable debugging.\n"
 		"  -e, --edge top|bottom         Set the edge to use.\n"
 		"  -f, --font <font>             Set the font to use.\n"
@@ -115,97 +83,278 @@ int main(int argc, char **argv) {
 		"  -m, --message <msg>           Set the message text.\n"
 		"  -o, --output <output>         Set the output to use.\n"
 		"  -s, --dismiss-button <text>   Set the dismiss button text.\n"
-		"  -t, --type error|warning      Set the message type.\n"
+		"  -t, --type <type>             Set the message type.\n"
 		"  -v, --version                 Show the version number and quit.\n";
 
+	optind = 1;
 	while (1) {
-		int c = getopt_long(argc, argv, "b:de:f:hlL:m:o:s:t:v", opts, NULL);
+		int c = getopt_long(argc, argv, "b:c:de:f:hlL:m:o:s:t:v", opts, NULL);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
 		case 'b': // Button
-			if (optind >= argc) {
-				fprintf(stderr, "Missing action for button %s\n", optarg);
-				exit_code = EXIT_FAILURE;
-				goto cleanup;
+			if (nagbar) {
+				if (optind >= argc) {
+					fprintf(stderr, "Missing action for button %s\n", optarg);
+					return EXIT_FAILURE;
+				}
+				struct sway_nagbar_button *button;
+				button = calloc(sizeof(struct sway_nagbar_button), 1);
+				button->text = strdup(optarg);
+				button->type = NAGBAR_ACTION_COMMAND;
+				button->action = strdup(argv[optind]);
+				optind++;
+				list_add(nagbar->buttons, button);
 			}
-			struct sway_nagbar_button *button;
-			button = calloc(sizeof(struct sway_nagbar_button), 1);
-			button->text = strdup(optarg);
-			button->type = NAGBAR_ACTION_COMMAND;
-			button->action = strdup(argv[optind]);
-			optind++;
-			list_add(nagbar.buttons, button);
+			break;
+		case 'c': // Config
+			if (config) {
+				*config = strdup(optarg);
+			}
 			break;
 		case 'd': // Debug
-			debug = true;
+			if (debug) {
+				*debug = true;
+			}
 			break;
 		case 'e': // Edge
-			if (strcmp(optarg, "top") == 0) {
-				nagbar.anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-					| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-					| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-			} else if (strcmp(optarg, "bottom") == 0) {
-				nagbar.anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-					| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-					| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-			} else {
-				fprintf(stderr, "Invalid edge: %s\n", optarg);
-				exit_code = EXIT_FAILURE;
-				goto cleanup;
+			if (nagbar) {
+				if (strcmp(optarg, "top") == 0) {
+					nagbar->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+				} else if (strcmp(optarg, "bottom") == 0) {
+					nagbar->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+				} else {
+					fprintf(stderr, "Invalid edge: %s\n", optarg);
+					return EXIT_FAILURE;
+				}
 			}
 			break;
 		case 'f': // Font
-			free(nagbar.font);
-			nagbar.font = strdup(optarg);
+			if (nagbar) {
+				free(nagbar->font);
+				nagbar->font = strdup(optarg);
+			}
 			break;
 		case 'l': // Detailed Message
-			free(nagbar.details.message);
-			nagbar.details.message = read_from_stdin();
-			nagbar.details.button_up.text = strdup("▲");
-			nagbar.details.button_down.text = strdup("▼");
+			if (nagbar) {
+				free(nagbar->details.message);
+				nagbar->details.message = read_from_stdin();
+				nagbar->details.button_up.text = strdup("▲");
+				nagbar->details.button_down.text = strdup("▼");
+			}
 			break;
 		case 'L': // Detailed Button Text
-			free(button_details->text);
-			button_details->text = strdup(optarg);
+			if (nagbar) {
+				free(nagbar->details.button_details.text);
+				nagbar->details.button_details.text = strdup(optarg);
+			}
 			break;
 		case 'm': // Message
-			free(nagbar.message);
-			nagbar.message = strdup(optarg);
+			if (nagbar) {
+				free(nagbar->message);
+				nagbar->message = strdup(optarg);
+			}
 			break;
 		case 'o': // Output
-			free(nagbar.output.name);
-			nagbar.output.name = strdup(optarg);
+			if (nagbar) {
+				free(nagbar->output.name);
+				nagbar->output.name = strdup(optarg);
+			}
 			break;
 		case 's': // Dismiss Button Text
-			free(button_close->text);
-			button_close->text = strdup(optarg);
+			if (nagbar) {
+				struct sway_nagbar_button *button_close;
+				button_close = nagbar->buttons->items[0];
+				free(button_close->text);
+				button_close->text = strdup(optarg);
+			}
 			break;
 		case 't': // Type
-			if (strcmp(optarg, "error") == 0) {
-				nagbar.type = NAGBAR_ERROR;
-			} else if (strcmp(optarg, "warning") == 0) {
-				nagbar.type = NAGBAR_WARNING;
-			} else {
-				fprintf(stderr, "Type must be either 'error' or 'warning'\n");
-				exit_code = EXIT_FAILURE;
-				goto cleanup;
+			if (nagbar) {
+				nagbar->type = nagbar_type_get(types, optarg);
+				if (!nagbar->type) {
+					fprintf(stderr, "Unknown type %s\n", optarg);
+					return EXIT_FAILURE;
+				}
 			}
-			set_nagbar_colors();
 			break;
 		case 'v': // Version
 			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
-			exit_code = EXIT_SUCCESS;
-			goto cleanup;
+			return -1;
 		default: // Help or unknown flag
 			fprintf(c == 'h' ? stdout : stderr, "%s", usage);
-			exit_code = c == 'h' ? EXIT_SUCCESS : EXIT_FAILURE;
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static bool file_exists(const char *path) {
+	return path && access(path, R_OK) != -1;
+}
+
+static char *get_config_path(void) {
+	static const char *config_paths[] = {
+		"$HOME/.swaynag/config",
+		"$XDG_CONFIG_HOME/swaynag/config",
+		SYSCONFDIR "/swaynag/config",
+	};
+
+	if (!getenv("XDG_CONFIG_HOME")) {
+		char *home = getenv("HOME");
+		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
+		if (!config_home) {
+			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
+		} else {
+			strcpy(config_home, home);
+			strcat(config_home, "/.config");
+			setenv("XDG_CONFIG_HOME", config_home, 1);
+			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
+			free(config_home);
+		}
+	}
+
+	wordexp_t p;
+	char *path;
+	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
+		if (wordexp(config_paths[i], &p, 0) == 0) {
+			path = strdup(p.we_wordv[0]);
+			wordfree(&p);
+			if (file_exists(path)) {
+				return path;
+			}
+			free(path);
+		}
+	}
+
+	return NULL;
+}
+
+static int load_config(char *path, struct sway_nagbar *nagbar, list_t *types) {
+	FILE *config = fopen(path, "r");
+	if (!config) {
+		fprintf(stderr, "Failed to read config. Running without it.\n");
+		return 0;
+	}
+	struct sway_nagbar_type *type = NULL;
+	char *line;
+	int line_number = 0;
+	while (!feof(config)) {
+		line = read_line(config);
+		if (!line) {
+			continue;
+		}
+
+		line_number++;
+		if (line[0] == '#') {
+			free(line);
+			continue;
+		}
+		if (strlen(line) == 0) {
+			free(line);
+			continue;
+		}
+
+		if (line[0] == '[') {
+			char *close = strchr(line, ']');
+			if (!close) {
+				free(line);
+				fclose(config);
+				fprintf(stderr, "Closing bracket not found on line %d\n",
+						line_number);
+				return 1;
+			}
+			char *name = calloc(1, close - line);
+			strncat(name, line + 1, close - line - 1);
+			type = nagbar_type_get(types, name);
+			if (!type) {
+				type = calloc(1, sizeof(struct sway_nagbar_type));
+				type->name = strdup(name);
+				list_add(types, type);
+			}
+			free(name);
+		} else {
+			char flag[strlen(line) + 3];
+			sprintf(flag, "--%s", line);
+			char *argv[] = {"swaynag", flag};
+			int result;
+			if (type) {
+				result = nagbar_parse_type(2, argv, type);
+			} else {
+				result = parse_options(2, argv, nagbar, types, NULL, NULL);
+			}
+			if (result != 0) {
+				free(line);
+				fclose(config);
+				return result;
+			}
+		}
+
+		free(line);
+	}
+	fclose(config);
+	return 0;
+}
+
+int main(int argc, char **argv) {
+	int exit_code = EXIT_SUCCESS;
+
+	list_t *types = create_list();
+	nagbar_types_add_default(types);
+
+	memset(&nagbar, 0, sizeof(nagbar));
+	nagbar.anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+	nagbar.font = strdup("pango:monospace 10");
+	nagbar.buttons = create_list();
+
+	struct sway_nagbar_button *button_close =
+		calloc(sizeof(struct sway_nagbar_button), 1);
+	button_close->text = strdup("X");
+	button_close->type = NAGBAR_ACTION_DISMISS;
+	list_add(nagbar.buttons, button_close);
+
+	nagbar.details.button_details.text = strdup("Toggle Details");
+	nagbar.details.button_details.type = NAGBAR_ACTION_EXPAND;
+
+
+	char *config_path = NULL;
+	bool debug = false;
+	int launch_status = parse_options(argc, argv, NULL, NULL,
+			&config_path, &debug);
+	if (launch_status != 0)  {
+		exit_code = launch_status;
+		goto cleanup;
+	}
+	wlr_log_init(debug ? WLR_DEBUG : WLR_ERROR, NULL);
+
+	if (!config_path) {
+		config_path = get_config_path();
+	}
+	if (config_path) {
+		wlr_log(WLR_DEBUG, "Loading config file: %s", config_path);
+		int config_status = load_config(config_path, &nagbar, types);
+		free(config_path);
+		if (config_status != 0) {
+			exit_code = config_status;
 			goto cleanup;
 		}
 	}
 
-	wlr_log_init(debug ? WLR_DEBUG : WLR_ERROR, NULL);
+	if (argc > 1) {
+		int result = parse_options(argc, argv, &nagbar, types, NULL, NULL);
+		if (result != 0) {
+			exit_code = result;
+			goto cleanup;
+		}
+	}
 
 	if (!nagbar.message) {
 		wlr_log(WLR_ERROR, "No message passed. Please provide --message/-m");
@@ -213,16 +362,22 @@ int main(int argc, char **argv) {
 		goto cleanup;
 	}
 
+	if (!nagbar.type) {
+		nagbar.type = nagbar_type_get(types, "error");
+	}
+
+	nagbar.type = nagbar_type_clone(nagbar.type);
+	nagbar_types_free(types);
+
 	if (nagbar.details.message) {
-		list_add(nagbar.buttons, button_details);
+		list_add(nagbar.buttons, &nagbar.details.button_details);
 	} else {
-		free(button_details->text);
-		free(button_details);
+		free(nagbar.details.button_details.text);
 	}
 
 	wlr_log(WLR_DEBUG, "Output: %s", nagbar.output.name);
 	wlr_log(WLR_DEBUG, "Anchors: %d", nagbar.anchors);
-	wlr_log(WLR_DEBUG, "Type: %d", nagbar.type);
+	wlr_log(WLR_DEBUG, "Type: %s", nagbar.type->name);
 	wlr_log(WLR_DEBUG, "Message: %s", nagbar.message);
 	wlr_log(WLR_DEBUG, "Font: %s", nagbar.font);
 	wlr_log(WLR_DEBUG, "Buttons");
@@ -238,8 +393,8 @@ int main(int argc, char **argv) {
 	return exit_code;
 
 cleanup:
-	free(button_details->text);
-	free(button_details);
+	nagbar_types_free(types);
+	free(nagbar.details.button_details.text);
 	nagbar_destroy(&nagbar);
 	return exit_code;
 }

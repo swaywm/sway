@@ -83,6 +83,7 @@ if scdoc.found()
 		'swaymsg/swaymsg.1.scd',
 		'swayidle/swayidle.1.scd',
 		'swaynag/swaynag.1.scd',
+		'swaynag/swaynag.5.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]

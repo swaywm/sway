@@ -1,8 +1,9 @@
 #ifndef _SWAY_NAGBAR_NAGBAR_H
-#define _SWAY_NAGBAR_NAGNAR_H
+#define _SWAY_NAGBAR_NAGBAR_H
 #include <stdint.h>
 #include "list.h"
 #include "pool-buffer.h"
+#include "swaynag/types.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
 
 #define NAGBAR_BAR_BORDER_THICKNESS 2
@@ -16,23 +17,10 @@
 
 #define NAGBAR_MAX_HEIGHT 500
 
-enum sway_nagbar_type {
-	NAGBAR_ERROR,
-	NAGBAR_WARNING,
-};
-
 enum sway_nagbar_action_type {
 	NAGBAR_ACTION_DISMISS,
 	NAGBAR_ACTION_EXPAND,
 	NAGBAR_ACTION_COMMAND,
-};
-
-struct sway_nagbar_colors {
-	uint32_t button_background;
-	uint32_t background;
-	uint32_t text;
-	uint32_t border;
-	uint32_t border_bottom;
 };
 
 struct sway_nagbar_pointer {
@@ -72,6 +60,7 @@ struct sway_nagbar_details {
 	int offset;
 	int visible_lines;
 	int total_lines;
+	struct sway_nagbar_button button_details;
 	struct sway_nagbar_button button_up;
 	struct sway_nagbar_button button_down;
 };
@@ -97,8 +86,7 @@ struct sway_nagbar {
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
 
-	enum sway_nagbar_type type;
-	struct sway_nagbar_colors colors;
+	struct sway_nagbar_type *type;
 	uint32_t anchors;
 	char *message;
 	char *font;
