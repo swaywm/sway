@@ -410,6 +410,10 @@ struct sway_container *container_flatten(struct sway_container *container) {
  * This function just wraps container_destroy_noreaping(), then does reaping.
  */
 struct sway_container *container_destroy(struct sway_container *con) {
+	if (con->is_fullscreen) {
+		struct sway_container *ws = container_parent(con, C_WORKSPACE);
+		ws->sway_workspace->fullscreen = NULL;
+	}
 	struct sway_container *parent = container_destroy_noreaping(con);
 
 	if (!parent) {
@@ -948,37 +952,100 @@ size_t container_titlebar_height() {
 	return config->font_height + TITLEBAR_V_PADDING * 2;
 }
 
+void container_init_floating(struct sway_container *con) {
+	if (!sway_assert(con->type == C_VIEW || con->type == C_CONTAINER,
+			"Expected a view or container")) {
+		return;
+	}
+	struct sway_container *ws = container_parent(con, C_WORKSPACE);
+	int min_width, min_height;
+	int max_width, max_height;
+
+	if (config->floating_minimum_width == -1) { // no minimum
+		min_width = 0;
+	} else if (config->floating_minimum_width == 0) { // automatic
+		min_width = 75;
+	} else {
+		min_width = config->floating_minimum_width;
+	}
+
+	if (config->floating_minimum_height == -1) { // no minimum
+		min_height = 0;
+	} else if (config->floating_minimum_height == 0) { // automatic
+		min_height = 50;
+	} else {
+		min_height = config->floating_minimum_height;
+	}
+
+	if (config->floating_maximum_width == -1) { // no maximum
+		max_width = INT_MAX;
+	} else if (config->floating_maximum_width == 0) { // automatic
+		max_width = ws->width * 0.6666;
+	} else {
+		max_width = config->floating_maximum_width;
+	}
+
+	if (config->floating_maximum_height == -1) { // no maximum
+		max_height = INT_MAX;
+	} else if (config->floating_maximum_height == 0) { // automatic
+		max_height = ws->height * 0.6666;
+	} else {
+		max_height = config->floating_maximum_height;
+	}
+
+	if (con->type == C_CONTAINER) {
+		con->width = max_width;
+		con->height = max_height;
+		con->x = ws->x + (ws->width - con->width) / 2;
+		con->y = ws->y + (ws->height - con->height) / 2;
+	} else {
+		struct sway_view *view = con->sway_view;
+		view->width = fmax(min_width, fmin(view->natural_width, max_width));
+		view->height = fmax(min_height, fmin(view->natural_height, max_height));
+		view->x = ws->x + (ws->width - view->width) / 2;
+		view->y = ws->y + (ws->height - view->height) / 2;
+
+		// If the view's border is B_NONE then these properties are ignored.
+		view->border_top = view->border_bottom = true;
+		view->border_left = view->border_right = true;
+
+		container_set_geometry_from_floating_view(view->swayc);
+	}
+}
+
 void container_set_floating(struct sway_container *container, bool enable) {
 	if (container_is_floating(container) == enable) {
 		return;
 	}
 
-	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
 
 	if (enable) {
 		container_remove_child(container);
 		container_add_child(workspace->sway_workspace->floating, container);
+		container_init_floating(container);
 		if (container->type == C_VIEW) {
-			view_init_floating(container->sway_view);
 			view_set_tiled(container->sway_view, false);
 		}
-		seat_set_focus(seat, seat_get_focus_inactive(seat, container));
-		container_reap_empty_recursive(workspace);
 	} else {
 		// Returning to tiled
 		if (container->scratchpad) {
 			scratchpad_remove_container(container);
 		}
 		container_remove_child(container);
-		container_add_child(workspace, container);
+		struct sway_container *reference =
+			seat_get_focus_inactive_tiling(seat, workspace);
+		if (reference->type == C_VIEW) {
+			reference = reference->parent;
+		}
+		container_add_child(reference, container);
 		container->width = container->parent->width;
 		container->height = container->parent->height;
 		if (container->type == C_VIEW) {
 			view_set_tiled(container->sway_view, true);
 		}
 		container->is_sticky = false;
-		container_reap_empty_recursive(workspace->sway_workspace->floating);
 	}
 
 	container_end_mouse_operation(container);
@@ -1196,6 +1263,17 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 	container_end_mouse_operation(container);
 
 	ipc_event_window(container, "fullscreen_mode");
+}
+
+bool container_is_floating_or_child(struct sway_container *container) {
+	do {
+		if (container->parent && container->parent->layout == L_FLOATING) {
+			return true;
+		}
+		container = container->parent;
+	} while (container && container->type != C_WORKSPACE);
+
+	return false;
 }
 
 bool container_is_fullscreen_or_child(struct sway_container *container) {

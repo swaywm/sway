@@ -72,11 +72,7 @@ static void scratchpad_show(struct sway_container *con) {
 	if (!wlr_box_contains_point(&workspace_box, center_lx, center_ly)) {
 		// Maybe resize it
 		if (con->width > ws->width || con->height > ws->height) {
-			// TODO: Do this properly once we can float C_CONTAINERs
-			if (con->type == C_VIEW) {
-				view_init_floating(con->sway_view);
-				arrange_windows(con);
-			}
+			container_init_floating(con);
 		}
 
 		// Center it
@@ -85,7 +81,8 @@ static void scratchpad_show(struct sway_container *con) {
 		container_floating_move_to(con, new_lx, new_ly);
 	}
 
-	seat_set_focus(seat, con);
+	arrange_windows(ws);
+	seat_set_focus(seat, seat_get_focus_inactive(seat, con));
 
 	container_set_dirty(con->parent);
 }
@@ -112,6 +109,15 @@ void scratchpad_toggle_auto(void) {
 	struct sway_container *focus = seat_get_focus(seat);
 	struct sway_container *ws = focus->type == C_WORKSPACE ?
 		focus : container_parent(focus, C_WORKSPACE);
+
+	// If the focus is in a floating split container,
+	// operate on the split container instead of the child.
+	if (container_is_floating_or_child(focus)) {
+		while (focus->parent->layout != L_FLOATING) {
+			focus = focus->parent;
+		}
+	}
+
 
     // Check if the currently focused window is a scratchpad window and should
     // be hidden again.

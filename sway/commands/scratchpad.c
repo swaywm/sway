@@ -19,11 +19,19 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 	}
 
 	if (config->handler_context.using_criteria) {
+		struct sway_container *con = config->handler_context.current_container;
+
+		// If the container is in a floating split container,
+		// operate on the split container instead of the child.
+		if (container_is_floating_or_child(con)) {
+			while (con->parent->layout != L_FLOATING) {
+				con = con->parent;
+			}
+		}
+
 		// If using criteria, this command is executed for every container which
 		// matches the criteria. If this container isn't in the scratchpad,
 		// we'll just silently return a success.
-		struct sway_container *con = config->handler_context.current_container;
-		wlr_log(WLR_INFO, "cmd_scratchpad(%s)", con->name);
 		if (!con->scratchpad) {
 			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 		}

@@ -779,7 +779,7 @@ static void render_floating_container(struct sway_output *soutput,
 		}
 		render_view(soutput, damage, con, colors);
 	} else {
-		render_container(soutput, damage, con, false);
+		render_container(soutput, damage, con, con->current.focused);
 	}
 }
 

@@ -298,10 +298,25 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 }
 
 static struct cmd_results *move_to_scratchpad(struct sway_container *con) {
-	if (con->type != C_CONTAINER && con->type != C_VIEW) {
+	if (con->type == C_WORKSPACE && con->children->length == 0) {
 		return cmd_results_new(CMD_INVALID, "move",
-				"Only views and containers can be moved to the scratchpad");
+				"Can't move an empty workspace to the scratchpad");
 	}
+	if (con->type == C_WORKSPACE) {
+		// Wrap the workspace's children in a container
+		struct sway_container *workspace = con;
+		con = container_wrap_children(con);
+		workspace->layout = L_HORIZ;
+	}
+
+	// If the container is in a floating split container,
+	// operate on the split container instead of the child.
+	if (container_is_floating_or_child(con)) {
+		while (con->parent->layout != L_FLOATING) {
+			con = con->parent;
+		}
+	}
+
 	if (con->scratchpad) {
 		return cmd_results_new(CMD_INVALID, "move",
 				"Container is already in the scratchpad");

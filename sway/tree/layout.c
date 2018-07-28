@@ -387,9 +387,11 @@ void container_move(struct sway_container *container,
 	// If moving a fullscreen view, only consider outputs
 	if (container->is_fullscreen) {
 		current = container_parent(container, C_OUTPUT);
-	} else if (container_is_fullscreen_or_child(container)) {
+	} else if (container_is_fullscreen_or_child(container) ||
+			container_is_floating_or_child(container)) {
 		// If we've fullscreened a split container, only allow the child to move
 		// around within the fullscreen parent.
+		// Same with floating a split container.
 		struct sway_container *ws = container_parent(container, C_WORKSPACE);
 		top = ws->sway_workspace->fullscreen;
 	}
@@ -465,6 +467,9 @@ void container_move(struct sway_container *container,
 				if ((index == parent->children->length - 1 && offs > 0)
 						|| (index == 0 && offs < 0)) {
 					if (current->parent == container->parent) {
+						if (parent->parent->layout == L_FLOATING) {
+							return;
+						}
 						if (!parent->is_fullscreen &&
 								(parent->layout == L_TABBED ||
 								 parent->layout == L_STACKED)) {
@@ -488,9 +493,13 @@ void container_move(struct sway_container *container,
 					sibling = parent->children->items[index + offs];
 					wlr_log(WLR_DEBUG, "Selecting sibling id:%zd", sibling->id);
 				}
-			} else if (!parent->is_fullscreen && (parent->layout == L_TABBED ||
+			} else if (!parent->is_fullscreen &&
+					parent->parent->layout != L_FLOATING &&
+					(parent->layout == L_TABBED ||
 						parent->layout == L_STACKED)) {
 				move_out_of_tabs_stacks(container, current, move_dir, offs);
+				return;
+			} else if (parent->parent->layout == L_FLOATING) {
 				return;
 			} else {
 				wlr_log(WLR_DEBUG, "Moving up to find a parallel container");
@@ -717,10 +726,6 @@ struct sway_container *container_get_in_direction(
 		enum movement_direction dir) {
 	struct sway_container *parent = container->parent;
 
-	if (container_is_floating(container)) {
-		return NULL;
-	}
-
 	if (dir == MOVE_CHILD) {
 		return seat_get_focus_inactive(seat, container);
 	}
@@ -732,7 +737,7 @@ struct sway_container *container_get_in_direction(
 		parent = container->parent;
 	} else {
 		if (dir == MOVE_PARENT) {
-			if (parent->type == C_OUTPUT) {
+			if (parent->type == C_OUTPUT || container_is_floating(container)) {
 				return NULL;
 			} else {
 				return parent;
