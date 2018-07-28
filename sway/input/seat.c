@@ -700,8 +700,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 				wl_event_source_timer_update(view->urgent_timer,
 						config->urgent_timeout);
 			} else {
-				wlr_log(WLR_ERROR, "Unable to create urgency timer. "
-						"There might not be any available file descriptors.");
+				wlr_log(WLR_ERROR, "Unable to create urgency timer (%s)",
+						strerror(errno));
 				handle_urgent_timeout(view);
 			}
 		} else {

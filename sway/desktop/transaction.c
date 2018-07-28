@@ -319,9 +319,9 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		if (transaction->timer) {
 			wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
 		} else {
-			wlr_log(WLR_ERROR, "Unable to create transaction timer. "
-					"There might not be any available file descriptors. "
-					"Some imperfect frames might be rendered.");
+			wlr_log(WLR_ERROR, "Unable to create transaction timer (%s). "
+					"Some imperfect frames might be rendered.",
+					strerror(errno));
 			handle_timeout(transaction);
 		}
 	}
