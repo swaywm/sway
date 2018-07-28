@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#include <errno.h>
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
