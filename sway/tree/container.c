@@ -142,8 +142,6 @@ struct sway_container *container_create(enum sway_container_type type) {
 static void container_workspace_free(struct sway_workspace *ws) {
 	list_foreach(ws->output_priority, free);
 	list_free(ws->output_priority);
-	ws->floating->destroying = true;
-	container_free(ws->floating);
 	free(ws);
 }
 
@@ -196,6 +194,9 @@ void container_free(struct sway_container *cont) {
 	free(cont);
 }
 
+static struct sway_container *container_destroy_noreaping(
+		struct sway_container *con);
+
 static struct sway_container *container_workspace_destroy(
 		struct sway_container *workspace) {
 	if (!sway_assert(workspace, "cannot destroy null workspace")) {
@@ -239,6 +240,8 @@ static struct sway_container *container_workspace_destroy(
 					new_workspace->sway_workspace->floating);
 		}
 	}
+
+	container_destroy_noreaping(workspace->sway_workspace->floating);
 
 	return output;
 }
