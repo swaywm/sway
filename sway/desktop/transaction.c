@@ -344,13 +344,11 @@ static void set_instruction_ready(
 
 	}
 
-	// If all views are ready, apply the transaction.
 	// If the transaction has timed out then its num_waiting will be 0 already.
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
 		if (!txn_debug) {
 			wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
 			wl_event_source_timer_update(transaction->timer, 0);
-			transaction_progress_queue();
 		}
 	}
 }
@@ -364,15 +362,10 @@ static void set_instructions_ready(struct sway_view *view, int index) {
 		struct sway_transaction_instruction *instruction =
 			view->swayc->instructions->items[i];
 		if (!instruction->ready) {
-			// set_instruction_ready can remove instructions from the list we're
-			// iterating
-			size_t length = view->swayc->instructions->length;
 			set_instruction_ready(instruction);
-			size_t num_removed = length - view->swayc->instructions->length;
-			i -= num_removed;
-			index -= num_removed;
 		}
 	}
+	transaction_progress_queue();
 }
 
 void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
