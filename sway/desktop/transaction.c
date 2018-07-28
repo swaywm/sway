@@ -364,7 +364,13 @@ static void set_instructions_ready(struct sway_view *view, int index) {
 		struct sway_transaction_instruction *instruction =
 			view->swayc->instructions->items[i];
 		if (!instruction->ready) {
+			// set_instruction_ready can remove instructions from the list we're
+			// iterating
+			size_t length = view->swayc->instructions->length;
 			set_instruction_ready(instruction);
+			size_t num_removed = length - view->swayc->instructions->length;
+			i -= num_removed;
+			index -= num_removed;
 		}
 	}
 }
