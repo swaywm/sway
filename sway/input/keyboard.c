@@ -387,7 +387,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	wlr_keyboard_set_keymap(wlr_device->keyboard, keyboard->keymap);
 
 	xkb_mod_mask_t locked_mods = 0;
-	if (!input_config || input_config->xkb_numlock != 0) {
+	if (input_config && input_config->xkb_numlock > 0) {
 		xkb_mod_index_t mod_index = xkb_map_mod_get_index(keymap, XKB_MOD_NAME_NUM);
 		if (mod_index != XKB_MOD_INVALID) {
 		       locked_mods |= (uint32_t)1 << mod_index;
