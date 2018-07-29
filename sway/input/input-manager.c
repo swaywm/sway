@@ -8,6 +8,7 @@
 #include <math.h>
 #include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_input_inhibitor.h>
+#include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -303,6 +304,35 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 	}
 }
 
+void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
+	struct sway_input_manager *input_manager =
+		wl_container_of(listener, input_manager, virtual_keyboard_new);
+	struct wlr_virtual_keyboard_v1 *keyboard = data;
+	struct wlr_input_device *device = &keyboard->input_device;
+
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+
+	// TODO: The user might want this on a different seat
+	struct sway_input_device *input_device =
+		calloc(1, sizeof(struct sway_input_device));
+	if (!sway_assert(input_device, "could not allocate input device")) {
+		return;
+	}
+	device->data = input_device;
+
+	input_device->wlr_device = device;
+	input_device->identifier = get_device_identifier(device);
+	wl_list_insert(&input_manager->devices, &input_device->link);
+
+	wlr_log(WLR_DEBUG, "adding virtual keyboard: '%s'",
+		input_device->identifier);
+
+	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
+	input_device->device_destroy.notify = handle_device_destroy;
+
+	seat_add_device(seat, input_device);
+}
+
 struct sway_input_manager *input_manager_create(
 		struct sway_server *server) {
 	struct sway_input_manager *input =
@@ -320,6 +350,12 @@ struct sway_input_manager *input_manager_create(
 
 	input->new_input.notify = handle_new_input;
 	wl_signal_add(&server->backend->events.new_input, &input->new_input);
+
+	input->virtual_keyboard = wlr_virtual_keyboard_manager_v1_create(
+		server->wl_display);
+	wl_signal_add(&input->virtual_keyboard->events.new_virtual_keyboard,
+		&input->virtual_keyboard_new);
+	input->virtual_keyboard_new.notify = handle_virtual_keyboard;
 
 	input->inhibit = wlr_input_inhibit_manager_create(server->wl_display);
 	input->inhibit_activate.notify = handle_inhibit_activate;
