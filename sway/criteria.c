@@ -452,13 +452,18 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		criteria->tiling = true;
 		break;
 	case T_URGENT:
-		if (strcmp(effective_value, "latest") == 0) {
+		if (strcmp(effective_value, "latest") == 0 ||
+				strcmp(effective_value, "newest") == 0 ||
+				strcmp(effective_value, "last") == 0 ||
+				strcmp(effective_value, "recent") == 0) {
 			criteria->urgent = 'l';
-		} else if (strcmp(effective_value, "oldest") == 0) {
+		} else if (strcmp(effective_value, "oldest") == 0 ||
+				strcmp(effective_value, "first") == 0) {
 			criteria->urgent = 'o';
 		} else {
 			error =
-				strdup("The value for 'urgent' must be 'latest' or 'oldest'");
+				strdup("The value for 'urgent' must be 'first', 'last', "
+						"'latest', 'newest', 'oldest' or 'recent'");
 		}
 		break;
 	case T_WORKSPACE:

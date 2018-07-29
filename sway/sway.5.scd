@@ -612,7 +612,8 @@ The following attributes may be matched with:
 	currently focused window.
 
 *urgent*
-	Compares the urgent state of the window. Can be "latest" or "oldest".
+	Compares the urgent state of the window. Can be "first", "last", "latest",
+	"newest", "oldest" or "recent".
 
 *window\_role*
 	Compare against the window role (WM\_WINDOW\_ROLE). Can be a regular
