@@ -1,5 +1,5 @@
-#ifndef _SWAY_NAGBAR_NAGBAR_H
-#define _SWAY_NAGBAR_NAGBAR_H
+#ifndef _SWAYNAG_SWAYNAG_H
+#define _SWAYNAG_SWAYNAG_H
 #include <stdint.h>
 #include <strings.h>
 #include "list.h"
@@ -7,24 +7,24 @@
 #include "swaynag/types.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
 
-#define NAGBAR_BAR_BORDER_THICKNESS 2
-#define NAGBAR_MESSAGE_PADDING 8
-#define NAGBAR_DETAILS_BORDER_THICKNESS 3
-#define NAGBAR_BUTTON_BORDER_THICKNESS 3
-#define NAGBAR_BUTTON_GAP 20
-#define NAGBAR_BUTTON_GAP_CLOSE 15
-#define NAGBAR_BUTTON_MARGIN_RIGHT 2
-#define NAGBAR_BUTTON_PADDING 3
+#define SWAYNAG_BAR_BORDER_THICKNESS 2
+#define SWAYNAG_MESSAGE_PADDING 8
+#define SWAYNAG_DETAILS_BORDER_THICKNESS 3
+#define SWAYNAG_BUTTON_BORDER_THICKNESS 3
+#define SWAYNAG_BUTTON_GAP 20
+#define SWAYNAG_BUTTON_GAP_CLOSE 15
+#define SWAYNAG_BUTTON_MARGIN_RIGHT 2
+#define SWAYNAG_BUTTON_PADDING 3
 
-#define NAGBAR_MAX_HEIGHT 500
+#define SWAYNAG_MAX_HEIGHT 500
 
-enum sway_nagbar_action_type {
-	NAGBAR_ACTION_DISMISS,
-	NAGBAR_ACTION_EXPAND,
-	NAGBAR_ACTION_COMMAND,
+enum swaynag_action_type {
+	SWAYNAG_ACTION_DISMISS,
+	SWAYNAG_ACTION_EXPAND,
+	SWAYNAG_ACTION_COMMAND,
 };
 
-struct sway_nagbar_pointer {
+struct swaynag_pointer {
 	struct wl_pointer *pointer;
 	struct wl_cursor_theme *cursor_theme;
 	struct wl_cursor_image *cursor_image;
@@ -33,15 +33,15 @@ struct sway_nagbar_pointer {
 	int y;
 };
 
-struct sway_nagbar_output {
+struct swaynag_output {
 	char *name;
 	struct wl_output *wl_output;
 	uint32_t wl_name;
 };
 
-struct sway_nagbar_button {
+struct swaynag_button {
 	char *text;
-	enum sway_nagbar_action_type type;
+	enum swaynag_action_type type;
 	char *action;
 	int x;
 	int y;
@@ -49,7 +49,7 @@ struct sway_nagbar_button {
 	int height;
 };
 
-struct sway_nagbar_details {
+struct swaynag_details {
 	bool visible;
 	char *message;
 
@@ -61,12 +61,12 @@ struct sway_nagbar_details {
 	int offset;
 	int visible_lines;
 	int total_lines;
-	struct sway_nagbar_button button_details;
-	struct sway_nagbar_button button_up;
-	struct sway_nagbar_button button_down;
+	struct swaynag_button button_details;
+	struct swaynag_button button_up;
+	struct swaynag_button button_down;
 };
 
-struct sway_nagbar {
+struct swaynag {
 	bool run_display;
 	int querying_outputs;
 
@@ -74,9 +74,9 @@ struct sway_nagbar {
 	struct wl_compositor *compositor;
 	struct wl_seat *seat;
 	struct wl_shm *shm;
-	struct sway_nagbar_pointer pointer;
+	struct swaynag_pointer pointer;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
-	struct sway_nagbar_output output;
+	struct swaynag_output output;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zwlr_layer_surface_v1 *layer_surface;
 	struct wl_surface *surface;
@@ -87,18 +87,18 @@ struct sway_nagbar {
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
 
-	struct sway_nagbar_type *type;
+	struct swaynag_type *type;
 	uint32_t anchors;
 	char *message;
 	char *font;
 	list_t *buttons;
-	struct sway_nagbar_details details;
+	struct swaynag_details details;
 };
 
-void nagbar_setup(struct sway_nagbar *nagbar);
+void swaynag_setup(struct swaynag *swaynag);
 
-void nagbar_run(struct sway_nagbar *nagbar);
+void swaynag_run(struct swaynag *swaynag);
 
-void nagbar_destroy(struct sway_nagbar *nagbar);
+void swaynag_destroy(struct swaynag *swaynag);
 
 #endif

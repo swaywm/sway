@@ -1,6 +1,7 @@
-#ifndef _SWAY_NAGBAR_RENDER_H
-#define _SWAY_NAGBAR_RENDER_H
+#ifndef _SWAYNAG_RENDER_H
+#define _SWAYNAG_RENDER_H
+#include "swaynag/swaynag.h"
 
-void render_frame(struct sway_nagbar *nagbar);
+void render_frame(struct swaynag *swaynag);
 
 #endif

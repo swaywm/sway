@@ -2,8 +2,8 @@ executable(
 	'swaynag', [
 		'config.c',
 		'main.c',
-		'nagbar.c',
 		'render.c',
+		'swaynag.c',
 		'types.c',
 	],
 	include_directories: [sway_inc],

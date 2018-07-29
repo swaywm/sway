@@ -6,7 +6,7 @@
 #include "log.h"
 #include "list.h"
 #include "readline.h"
-#include "swaynag/nagbar.h"
+#include "swaynag/swaynag.h"
 #include "swaynag/types.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
@@ -36,7 +36,7 @@ static char *read_from_stdin() {
 	return buffer;
 }
 
-int nagbar_parse_options(int argc, char **argv, struct sway_nagbar *nagbar,
+int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		list_t *types, char **config, bool *debug) {
 	static struct option opts[] = {
 		{"button", required_argument, NULL, 'b'},
@@ -81,17 +81,17 @@ int nagbar_parse_options(int argc, char **argv, struct sway_nagbar *nagbar,
 		}
 		switch (c) {
 		case 'b': // Button
-			if (nagbar) {
+			if (swaynag) {
 				if (optind >= argc) {
 					fprintf(stderr, "Missing action for button %s\n", optarg);
 					return EXIT_FAILURE;
 				}
-				struct sway_nagbar_button *button;
-				button = calloc(sizeof(struct sway_nagbar_button), 1);
+				struct swaynag_button *button;
+				button = calloc(sizeof(struct swaynag_button), 1);
 				button->text = strdup(optarg);
-				button->type = NAGBAR_ACTION_COMMAND;
+				button->type = SWAYNAG_ACTION_COMMAND;
 				button->action = strdup(argv[optind]);
-				list_add(nagbar->buttons, button);
+				list_add(swaynag->buttons, button);
 			}
 			optind++;
 			break;
@@ -106,13 +106,13 @@ int nagbar_parse_options(int argc, char **argv, struct sway_nagbar *nagbar,
 			}
 			break;
 		case 'e': // Edge
-			if (nagbar) {
+			if (swaynag) {
 				if (strcmp(optarg, "top") == 0) {
-					nagbar->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+					swaynag->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 				} else if (strcmp(optarg, "bottom") == 0) {
-					nagbar->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+					swaynag->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 				} else {
@@ -122,49 +122,49 @@ int nagbar_parse_options(int argc, char **argv, struct sway_nagbar *nagbar,
 			}
 			break;
 		case 'f': // Font
-			if (nagbar) {
-				free(nagbar->font);
-				nagbar->font = strdup(optarg);
+			if (swaynag) {
+				free(swaynag->font);
+				swaynag->font = strdup(optarg);
 			}
 			break;
 		case 'l': // Detailed Message
-			if (nagbar) {
-				free(nagbar->details.message);
-				nagbar->details.message = read_from_stdin();
-				nagbar->details.button_up.text = strdup("▲");
-				nagbar->details.button_down.text = strdup("▼");
+			if (swaynag) {
+				free(swaynag->details.message);
+				swaynag->details.message = read_from_stdin();
+				swaynag->details.button_up.text = strdup("▲");
+				swaynag->details.button_down.text = strdup("▼");
 			}
 			break;
 		case 'L': // Detailed Button Text
-			if (nagbar) {
-				free(nagbar->details.button_details.text);
-				nagbar->details.button_details.text = strdup(optarg);
+			if (swaynag) {
+				free(swaynag->details.button_details.text);
+				swaynag->details.button_details.text = strdup(optarg);
 			}
 			break;
 		case 'm': // Message
-			if (nagbar) {
-				free(nagbar->message);
-				nagbar->message = strdup(optarg);
+			if (swaynag) {
+				free(swaynag->message);
+				swaynag->message = strdup(optarg);
 			}
 			break;
 		case 'o': // Output
-			if (nagbar) {
-				free(nagbar->output.name);
-				nagbar->output.name = strdup(optarg);
+			if (swaynag) {
+				free(swaynag->output.name);
+				swaynag->output.name = strdup(optarg);
 			}
 			break;
 		case 's': // Dismiss Button Text
-			if (nagbar) {
-				struct sway_nagbar_button *button_close;
-				button_close = nagbar->buttons->items[0];
+			if (swaynag) {
+				struct swaynag_button *button_close;
+				button_close = swaynag->buttons->items[0];
 				free(button_close->text);
 				button_close->text = strdup(optarg);
 			}
 			break;
 		case 't': // Type
-			if (nagbar) {
-				nagbar->type = nagbar_type_get(types, optarg);
-				if (!nagbar->type) {
+			if (swaynag) {
+				swaynag->type = swaynag_type_get(types, optarg);
+				if (!swaynag->type) {
 					fprintf(stderr, "Unknown type %s\n", optarg);
 					return EXIT_FAILURE;
 				}
@@ -186,7 +186,7 @@ static bool file_exists(const char *path) {
 	return path && access(path, R_OK) != -1;
 }
 
-char *nagbar_get_config_path(void) {
+char *swaynag_get_config_path(void) {
 	static const char *config_paths[] = {
 		"$HOME/.swaynag/config",
 		"$XDG_CONFIG_HOME/swaynag/config",
@@ -223,13 +223,13 @@ char *nagbar_get_config_path(void) {
 	return NULL;
 }
 
-int nagbar_load_config(char *path, struct sway_nagbar *nagbar, list_t *types) {
+int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 	FILE *config = fopen(path, "r");
 	if (!config) {
 		fprintf(stderr, "Failed to read config. Running without it.\n");
 		return 0;
 	}
-	struct sway_nagbar_type *type = NULL;
+	struct swaynag_type *type = NULL;
 	char *line;
 	int line_number = 0;
 	while (!feof(config)) {
@@ -259,9 +259,9 @@ int nagbar_load_config(char *path, struct sway_nagbar *nagbar, list_t *types) {
 			}
 			char *name = calloc(1, close - line);
 			strncat(name, line + 1, close - line - 1);
-			type = nagbar_type_get(types, name);
+			type = swaynag_type_get(types, name);
 			if (!type) {
-				type = calloc(1, sizeof(struct sway_nagbar_type));
+				type = calloc(1, sizeof(struct swaynag_type));
 				type->name = strdup(name);
 				list_add(types, type);
 			}
@@ -272,9 +272,9 @@ int nagbar_load_config(char *path, struct sway_nagbar *nagbar, list_t *types) {
 			char *argv[] = {"swaynag", flag};
 			int result;
 			if (type) {
-				result = nagbar_parse_type(2, argv, type);
+				result = swaynag_parse_type(2, argv, type);
 			} else {
-				result = nagbar_parse_options(2, argv, nagbar, types,
+				result = swaynag_parse_options(2, argv, swaynag, types,
 						NULL, NULL);
 			}
 			if (result != 0) {

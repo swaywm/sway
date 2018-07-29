@@ -10,9 +10,9 @@
 #include "swaynag/types.h"
 #include "util.h"
 
-void nagbar_types_add_default(list_t *types) {
-	struct sway_nagbar_type *type_error;
-	type_error = calloc(1, sizeof(struct sway_nagbar_type));
+void swaynag_types_add_default(list_t *types) {
+	struct swaynag_type *type_error;
+	type_error = calloc(1, sizeof(struct swaynag_type));
 	type_error->name = strdup("error");
 	type_error->button_background = 0x680A0AFF;
 	type_error->background = 0x900000FF;
@@ -21,8 +21,8 @@ void nagbar_types_add_default(list_t *types) {
 	type_error->border_bottom = 0x470909FF;
 	list_add(types, type_error);
 
-	struct sway_nagbar_type *type_warning;
-	type_warning = calloc(1, sizeof(struct sway_nagbar_type));
+	struct swaynag_type *type_warning;
+	type_warning = calloc(1, sizeof(struct swaynag_type));
 	type_warning->name = strdup("warning");
 	type_warning->button_background = 0xFFC100FF;
 	type_warning->background = 0xFFA800FF;
@@ -32,9 +32,9 @@ void nagbar_types_add_default(list_t *types) {
 	list_add(types, type_warning);
 }
 
-struct sway_nagbar_type *nagbar_type_get(list_t *types, char *name) {
+struct swaynag_type *swaynag_type_get(list_t *types, char *name) {
 	for (int i = 0; i < types->length; i++) {
-		struct sway_nagbar_type *type = types->items[i];
+		struct swaynag_type *type = types->items[i];
 		if (strcasecmp(type->name, name) == 0) {
 			return type;
 		}
@@ -42,9 +42,9 @@ struct sway_nagbar_type *nagbar_type_get(list_t *types, char *name) {
 	return NULL;
 }
 
-struct sway_nagbar_type *nagbar_type_clone(struct sway_nagbar_type *type) {
-	struct sway_nagbar_type *clone;
-	clone = calloc(1, sizeof(struct sway_nagbar_type));
+struct swaynag_type *swaynag_type_clone(struct swaynag_type *type) {
+	struct swaynag_type *clone;
+	clone = calloc(1, sizeof(struct swaynag_type));
 	clone->name = strdup(type->name);
 	clone->button_background = type->button_background;
 	clone->background = type->background;
@@ -54,21 +54,21 @@ struct sway_nagbar_type *nagbar_type_clone(struct sway_nagbar_type *type) {
 	return clone;
 }
 
-void nagbar_type_free(struct sway_nagbar_type *type) {
+void swaynag_type_free(struct swaynag_type *type) {
 	free(type->name);
 	free(type);
 }
 
-void nagbar_types_free(list_t *types) {
+void swaynag_types_free(list_t *types) {
 	while (types->length) {
-		struct sway_nagbar_type *type = types->items[0];
-		nagbar_type_free(type);
+		struct swaynag_type *type = types->items[0];
+		swaynag_type_free(type);
 		list_del(types, 0);
 	}
 	list_free(types);
 }
 
-int nagbar_parse_type(int argc, char **argv, struct sway_nagbar_type *type) {
+int swaynag_parse_type(int argc, char **argv, struct swaynag_type *type) {
 	enum color_option {
 		COLOR_BACKGROUND,
 		COLOR_BORDER,
