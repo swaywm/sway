@@ -108,7 +108,7 @@ The following commands may only be used in the configuration file.
 *input* <identifier> tap enabled|disabled
 	Enables or disables tap for specified input device.
 
-*input* <identifier> tap_button_map lrm|lmr
+*input* <identifier> tap\_button\_map lrm|lmr
 	Specifies which button mapping to use for tapping. _lrm_ treats 1 finger as
 	left click, 2 fingers as right click, and 3 fingers as middle click. _lmr_
 	treats 1 finger as left click, 2 fingers as middle click, and 3 fingers as
