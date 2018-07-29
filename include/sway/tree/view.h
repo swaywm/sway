@@ -118,6 +118,8 @@ struct sway_view {
 struct sway_xdg_shell_v6_view {
 	struct sway_view view;
 
+	enum wlr_server_decoration_manager_mode deco_mode;
+
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
@@ -133,6 +135,8 @@ struct sway_xdg_shell_v6_view {
 
 struct sway_xdg_shell_view {
 	struct sway_view view;
+
+	enum wlr_server_decoration_manager_mode deco_mode;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;

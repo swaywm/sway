@@ -52,6 +52,7 @@ struct sway_server {
 
 	struct wlr_server_decoration_manager *server_decoration_manager;
 	struct wl_listener server_decoration;
+	struct wl_list decorations; // sway_server_decoration::link
 
 	bool debug_txn_timings;
 
