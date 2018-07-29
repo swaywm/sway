@@ -105,7 +105,7 @@ static bool get_surface_box(struct surface_iterator_data *data,
 	return wlr_box_intersection(&output_box, &rotated_box, &intersection);
 }
 
-void output_surface_for_each_surface_iterator(struct wlr_surface *surface,
+static void output_for_each_surface_iterator(struct wlr_surface *surface,
 		int sx, int sy, void *_data) {
 	struct surface_iterator_data *data = _data;
 
@@ -134,7 +134,7 @@ static void output_surface_for_each_surface(struct sway_output *output,
 	};
 
 	wlr_surface_for_each_surface(surface,
-		output_surface_for_each_surface_iterator, &data);
+		output_for_each_surface_iterator, &data);
 }
 
 void output_view_for_each_surface(struct sway_output *output,
@@ -152,7 +152,7 @@ void output_view_for_each_surface(struct sway_output *output,
 	};
 
 	view_for_each_surface(view,
-		output_surface_for_each_surface_iterator, &data);
+		output_for_each_surface_iterator, &data);
 }
 
 void output_layer_for_each_surface(struct sway_output *output,
