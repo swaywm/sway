@@ -230,7 +230,8 @@ static void xdg_output_handle_name(void *data,
 	struct output_state *state = data;
 	char *outname = state->swaynag->output.name;
 	wlr_log(WLR_DEBUG, "Checking against output %s for %s", name, outname);
-	if (outname && !state->swaynag->output.wl_output) {
+	if (!state->swaynag->output.wl_output && outname && name
+			&& strcmp(outname, name) == 0) {
 		wlr_log(WLR_DEBUG, "Using output %s", name);
 		state->swaynag->output.wl_output = state->wl_output;
 		state->swaynag->output.wl_name = state->wl_name;
