@@ -111,11 +111,17 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *fullscreen*
 	Toggles fullscreen for the focused view.
 
-*layout* splith|splitv|stacking|tabbed
+*layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
 
-*layout* toggle split
-	Switches the focused container between the splitv and splith layouts.
+*layout* toggle [split|all]
+	Cycles the layout mode of the focused container though a preset list of
+	layouts. If no argument is given, then it cycles through stacking, tabbed
+	and the last split layout. If "split" is given, then it cycles through
+	splith and splitv. If "all" is given, then it cycles through every layout.
+
+*layout* toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...
+	Cycles the layout mode of the focused container through a list of layouts.
 
 *move* left|right|up|down [<px>]
 	Moves the focused container in the direction specified. If the container,
