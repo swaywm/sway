@@ -582,7 +582,9 @@ The following attributes may be matched with:
 	the currently focused window.
 
 *con\_id*
-	Compare against the internal container ID, which you can find via IPC.
+	Compare against the internal container ID, which you can find via IPC. If
+	value is \_\_focused\_\_, then the id must be the same as that of the
+	currently focused window.
 
 *con\_mark*
 	Compare against the window marks. Can be a regular expression.

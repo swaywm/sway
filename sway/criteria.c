@@ -361,8 +361,17 @@ static char *get_focused_prop(enum criteria_token token) {
 			}
 		}
 		break;
-	case T_CON_ID: // These do not support __focused__
-	case T_CON_MARK:
+	case T_CON_ID:
+		if (view->swayc == NULL) {
+			return NULL;
+		}
+		size_t id = view->swayc->id;
+		int len = snprintf(NULL, 0, "%zu", id) + 1;
+		char *id_str = malloc(len);
+		snprintf(id_str, len, "%zu", id);
+		value = id_str;
+		break;
+	case T_CON_MARK: // These do not support __focused__
 	case T_FLOATING:
 #ifdef HAVE_XWAYLAND
 	case T_ID:
@@ -425,7 +434,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_CON_ID:
 		criteria->con_id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
-			error = strdup("The value for 'con_id' should be numeric");
+			error = strdup("The value for 'con_id' should be '__focused__' or numeric");
 		}
 		break;
 	case T_CON_MARK:
