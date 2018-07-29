@@ -69,11 +69,13 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	surface->ly = xsurface->y;
 	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly, true);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct wlr_xwayland *xwayland =
-		seat->input->server->xwayland.wlr_xwayland;
-	wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
-	seat_set_focus_surface(seat, xsurface->surface, false);
+	if (wlr_xwayland_or_surface_wants_focus(xsurface)) {
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		struct wlr_xwayland *xwayland =
+			seat->input->server->xwayland.wlr_xwayland;
+		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
+		seat_set_focus_surface(seat, xsurface->surface, false);
+	}
 }
 
 static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
