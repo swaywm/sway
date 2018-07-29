@@ -1,5 +1,6 @@
 executable(
 	'swaynag', [
+		'config.c',
 		'main.c',
 		'nagbar.c',
 		'render.c',

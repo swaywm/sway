@@ -1,6 +1,7 @@
 #ifndef _SWAY_NAGBAR_NAGBAR_H
 #define _SWAY_NAGBAR_NAGBAR_H
 #include <stdint.h>
+#include <strings.h>
 #include "list.h"
 #include "pool-buffer.h"
 #include "swaynag/types.h"

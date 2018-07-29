@@ -6,6 +6,7 @@
 #include <string.h>
 #include <strings.h>
 #include "list.h"
+#include "swaynag/config.h"
 #include "swaynag/types.h"
 #include "util.h"
 

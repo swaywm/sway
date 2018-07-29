@@ -1,12 +1,8 @@
-#define _XOPEN_SOURCE 700
-#define _POSIX_C_SOURCE 200112L
-#include <getopt.h>
+#define _XOPEN_SOURCE 500
 #include <signal.h>
-#include <stdlib.h>
-#include <wordexp.h>
 #include "log.h"
 #include "list.h"
-#include "readline.h"
+#include "swaynag/config.h"
 #include "swaynag/nagbar.h"
 #include "swaynag/types.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -21,285 +17,6 @@ void sig_handler(int signal) {
 void sway_terminate(int code) {
 	nagbar_destroy(&nagbar);
 	exit(code);
-}
-
-static char *read_from_stdin() {
-	char *buffer = NULL;
-	while (!feof(stdin)) {
-		char *line = read_line(stdin);
-		if (!line) {
-			continue;
-		}
-
-		if (!buffer) {
-			buffer = strdup(line);
-		} else {
-			buffer = realloc(buffer, strlen(buffer) + strlen(line) + 2);
-			strcat(buffer, line);
-			strcat(buffer, "\n");
-		}
-
-		free(line);
-	}
-
-	if (buffer && buffer[strlen(buffer) - 1] == '\n') {
-		buffer[strlen(buffer) - 1] = '\0';
-	}
-
-	return buffer;
-}
-
-static int parse_options(int argc, char **argv, struct sway_nagbar *nagbar,
-		list_t *types, char **config, bool *debug) {
-	static struct option opts[] = {
-		{"button", required_argument, NULL, 'b'},
-		{"config", required_argument, NULL, 'c'},
-		{"debug", no_argument, NULL, 'd'},
-		{"edge", required_argument, NULL, 'e'},
-		{"font", required_argument, NULL, 'f'},
-		{"help", no_argument, NULL, 'h'},
-		{"detailed-message", no_argument, NULL, 'l'},
-		{"detailed-button", required_argument, NULL, 'L'},
-		{"message", required_argument, NULL, 'm'},
-		{"output", required_argument, NULL, 'o'},
-		{"dismiss-button", required_argument, NULL, 's'},
-		{"type", required_argument, NULL, 't'},
-		{"version", no_argument, NULL, 'v'},
-		{0, 0, 0, 0}
-	};
-
-	const char *usage =
-		"Usage: swaynag [options...]\n"
-		"\n"
-		"  -b, --button <text> <action>  Create a button with text that "
-			"executes action when pressed. Multiple buttons can be defined.\n"
-		"  -c, --config <path>           Path to config file.\n"
-		"  -d, --debug                   Enable debugging.\n"
-		"  -e, --edge top|bottom         Set the edge to use.\n"
-		"  -f, --font <font>             Set the font to use.\n"
-		"  -h, --help                    Show help message and quit.\n"
-		"  -l, --detailed-message        Read a detailed message from stdin.\n"
-		"  -L, --detailed-button <text>  Set the text of the detail button.\n"
-		"  -m, --message <msg>           Set the message text.\n"
-		"  -o, --output <output>         Set the output to use.\n"
-		"  -s, --dismiss-button <text>   Set the dismiss button text.\n"
-		"  -t, --type <type>             Set the message type.\n"
-		"  -v, --version                 Show the version number and quit.\n";
-
-	optind = 1;
-	while (1) {
-		int c = getopt_long(argc, argv, "b:c:de:f:hlL:m:o:s:t:v", opts, NULL);
-		if (c == -1) {
-			break;
-		}
-		switch (c) {
-		case 'b': // Button
-			if (nagbar) {
-				if (optind >= argc) {
-					fprintf(stderr, "Missing action for button %s\n", optarg);
-					return EXIT_FAILURE;
-				}
-				struct sway_nagbar_button *button;
-				button = calloc(sizeof(struct sway_nagbar_button), 1);
-				button->text = strdup(optarg);
-				button->type = NAGBAR_ACTION_COMMAND;
-				button->action = strdup(argv[optind]);
-				optind++;
-				list_add(nagbar->buttons, button);
-			}
-			break;
-		case 'c': // Config
-			if (config) {
-				*config = strdup(optarg);
-			}
-			break;
-		case 'd': // Debug
-			if (debug) {
-				*debug = true;
-			}
-			break;
-		case 'e': // Edge
-			if (nagbar) {
-				if (strcmp(optarg, "top") == 0) {
-					nagbar->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
-						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-				} else if (strcmp(optarg, "bottom") == 0) {
-					nagbar->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
-						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
-						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-				} else {
-					fprintf(stderr, "Invalid edge: %s\n", optarg);
-					return EXIT_FAILURE;
-				}
-			}
-			break;
-		case 'f': // Font
-			if (nagbar) {
-				free(nagbar->font);
-				nagbar->font = strdup(optarg);
-			}
-			break;
-		case 'l': // Detailed Message
-			if (nagbar) {
-				free(nagbar->details.message);
-				nagbar->details.message = read_from_stdin();
-				nagbar->details.button_up.text = strdup("▲");
-				nagbar->details.button_down.text = strdup("▼");
-			}
-			break;
-		case 'L': // Detailed Button Text
-			if (nagbar) {
-				free(nagbar->details.button_details.text);
-				nagbar->details.button_details.text = strdup(optarg);
-			}
-			break;
-		case 'm': // Message
-			if (nagbar) {
-				free(nagbar->message);
-				nagbar->message = strdup(optarg);
-			}
-			break;
-		case 'o': // Output
-			if (nagbar) {
-				free(nagbar->output.name);
-				nagbar->output.name = strdup(optarg);
-			}
-			break;
-		case 's': // Dismiss Button Text
-			if (nagbar) {
-				struct sway_nagbar_button *button_close;
-				button_close = nagbar->buttons->items[0];
-				free(button_close->text);
-				button_close->text = strdup(optarg);
-			}
-			break;
-		case 't': // Type
-			if (nagbar) {
-				nagbar->type = nagbar_type_get(types, optarg);
-				if (!nagbar->type) {
-					fprintf(stderr, "Unknown type %s\n", optarg);
-					return EXIT_FAILURE;
-				}
-			}
-			break;
-		case 'v': // Version
-			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
-			return -1;
-		default: // Help or unknown flag
-			fprintf(c == 'h' ? stdout : stderr, "%s", usage);
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-static bool file_exists(const char *path) {
-	return path && access(path, R_OK) != -1;
-}
-
-static char *get_config_path(void) {
-	static const char *config_paths[] = {
-		"$HOME/.swaynag/config",
-		"$XDG_CONFIG_HOME/swaynag/config",
-		SYSCONFDIR "/swaynag/config",
-	};
-
-	if (!getenv("XDG_CONFIG_HOME")) {
-		char *home = getenv("HOME");
-		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
-		if (!config_home) {
-			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
-		} else {
-			strcpy(config_home, home);
-			strcat(config_home, "/.config");
-			setenv("XDG_CONFIG_HOME", config_home, 1);
-			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
-			free(config_home);
-		}
-	}
-
-	wordexp_t p;
-	char *path;
-	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
-		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = strdup(p.we_wordv[0]);
-			wordfree(&p);
-			if (file_exists(path)) {
-				return path;
-			}
-			free(path);
-		}
-	}
-
-	return NULL;
-}
-
-static int load_config(char *path, struct sway_nagbar *nagbar, list_t *types) {
-	FILE *config = fopen(path, "r");
-	if (!config) {
-		fprintf(stderr, "Failed to read config. Running without it.\n");
-		return 0;
-	}
-	struct sway_nagbar_type *type = NULL;
-	char *line;
-	int line_number = 0;
-	while (!feof(config)) {
-		line = read_line(config);
-		if (!line) {
-			continue;
-		}
-
-		line_number++;
-		if (line[0] == '#') {
-			free(line);
-			continue;
-		}
-		if (strlen(line) == 0) {
-			free(line);
-			continue;
-		}
-
-		if (line[0] == '[') {
-			char *close = strchr(line, ']');
-			if (!close) {
-				free(line);
-				fclose(config);
-				fprintf(stderr, "Closing bracket not found on line %d\n",
-						line_number);
-				return 1;
-			}
-			char *name = calloc(1, close - line);
-			strncat(name, line + 1, close - line - 1);
-			type = nagbar_type_get(types, name);
-			if (!type) {
-				type = calloc(1, sizeof(struct sway_nagbar_type));
-				type->name = strdup(name);
-				list_add(types, type);
-			}
-			free(name);
-		} else {
-			char flag[strlen(line) + 3];
-			sprintf(flag, "--%s", line);
-			char *argv[] = {"swaynag", flag};
-			int result;
-			if (type) {
-				result = nagbar_parse_type(2, argv, type);
-			} else {
-				result = parse_options(2, argv, nagbar, types, NULL, NULL);
-			}
-			if (result != 0) {
-				free(line);
-				fclose(config);
-				return result;
-			}
-		}
-
-		free(line);
-	}
-	fclose(config);
-	return 0;
 }
 
 int main(int argc, char **argv) {
@@ -327,7 +44,7 @@ int main(int argc, char **argv) {
 
 	char *config_path = NULL;
 	bool debug = false;
-	int launch_status = parse_options(argc, argv, NULL, NULL,
+	int launch_status = nagbar_parse_options(argc, argv, NULL, NULL,
 			&config_path, &debug);
 	if (launch_status != 0)  {
 		exit_code = launch_status;
@@ -336,11 +53,11 @@ int main(int argc, char **argv) {
 	wlr_log_init(debug ? WLR_DEBUG : WLR_ERROR, NULL);
 
 	if (!config_path) {
-		config_path = get_config_path();
+		config_path = nagbar_get_config_path();
 	}
 	if (config_path) {
 		wlr_log(WLR_DEBUG, "Loading config file: %s", config_path);
-		int config_status = load_config(config_path, &nagbar, types);
+		int config_status = nagbar_load_config(config_path, &nagbar, types);
 		free(config_path);
 		if (config_status != 0) {
 			exit_code = config_status;
@@ -349,7 +66,8 @@ int main(int argc, char **argv) {
 	}
 
 	if (argc > 1) {
-		int result = parse_options(argc, argv, &nagbar, types, NULL, NULL);
+		int result = nagbar_parse_options(argc, argv, &nagbar, types,
+				NULL, NULL);
 		if (result != 0) {
 			exit_code = result;
 			goto cleanup;
