@@ -11,6 +11,7 @@ executable(
 		cairo,
 		client_protos,
 		gdk_pixbuf,
+		math,
 		pango,
 		pangocairo,
 		wayland_client,
