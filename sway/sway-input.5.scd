@@ -39,7 +39,7 @@ The following commands may only be used in the configuration file.
 	Initially enables or disables CapsLock, the default is disabled.
 
 *input* <identifier> xkb\_numlock enabled|disabled
-	Initially enables or disables NumLock, the default is enabled.
+	Initially enables or disables NumLock, the default is disabled.
 
 ## MAPPING CONFIGURATION
 
