@@ -285,10 +285,10 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	// Set up (or clear) keyboard repeat for a pressed binding
-	if (next_repeat_binding) {
+	if (next_repeat_binding && wlr_device->keyboard->repeat_info.delay > 0) {
 		keyboard->repeat_binding = next_repeat_binding;
 		if (wl_event_source_timer_update(keyboard->key_repeat_source,
-				keyboard->key_repeat_initial_delay) < 0) {
+				wlr_device->keyboard->repeat_info.delay) < 0) {
 			wlr_log(WLR_DEBUG, "failed to set key repeat timer");
 		}
 	} else if (keyboard->repeat_binding) {
@@ -321,11 +321,15 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 
 static int handle_keyboard_repeat(void *data) {
 	struct sway_keyboard *keyboard = (struct sway_keyboard *)data;
+	struct wlr_keyboard *wlr_device =
+			keyboard->seat_device->input_device->wlr_device->keyboard;
 	if (keyboard->repeat_binding) {
-		// We queue the next event first, as the command might cancel it
-		if (wl_event_source_timer_update(keyboard->key_repeat_source,
-				keyboard->key_repeat_step_delay) < 0) {
-			wlr_log(WLR_DEBUG, "failed to update key repeat timer");
+		if (wlr_device->repeat_info.rate > 0) {
+			// We queue the next event first, as the command might cancel it
+			if (wl_event_source_timer_update(keyboard->key_repeat_source,
+					1000 / wlr_device->repeat_info.rate) < 0) {
+				wlr_log(WLR_DEBUG, "failed to update key repeat timer");
+			}
 		}
 
 		seat_execute_command(keyboard->seat_device->sway_seat,
@@ -362,8 +366,6 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 
 	keyboard->key_repeat_source = wl_event_loop_add_timer(server.wl_event_loop,
 			handle_keyboard_repeat, keyboard);
-	keyboard->key_repeat_initial_delay = 660;
-	keyboard->key_repeat_step_delay = 40;
 
 	return keyboard;
 }

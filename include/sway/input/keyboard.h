@@ -41,8 +41,6 @@ struct sway_keyboard {
 
 	struct wl_event_source *key_repeat_source;
 	struct sway_binding *repeat_binding;
-	int key_repeat_initial_delay; // first key repeat event delay, in ms
-	int key_repeat_step_delay; // subsequent repeat delay, in ms
 };
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
