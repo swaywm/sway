@@ -183,7 +183,6 @@ endif
 if (get_option('zsh_completions'))
 	zsh_files = files(
 		'completions/zsh/_sway',
-		'completions/zsh/_swaygrab',
 		'completions/zsh/_swaylock',
 		'completions/zsh/_swaymsg',
 	)

@@ -64,8 +64,6 @@ Abhängigkeiten:
 * cairo
 * gdk-pixbuf2 *
 * pam **
-* imagemagick (erforderlich für Bildaufnahme mit swaygrab)
-* ffmpeg (erforderlich für Videoaufnahme swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (erforderlich für man pages)
 
 _\*Nur erforderlich für swaybar, swaybg, und swaylock_

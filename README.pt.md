@@ -66,8 +66,6 @@ Antes de iniciar a compilação, instale as dependências:
 * cairo
 * gdk-pixbuf2 *
 * pam **
-* imagemagick (capturar imagem com o swaygrab)
-* ffmpeg (capturar vídeo com o swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (man pages)
 
 _\*Dependência apenas de swaybar, swaybg, e swaylock_

@@ -12,7 +12,6 @@
 permit * fullscreen keyboard mouse
 permit @prefix@/bin/swaylock lock
 permit @prefix@/bin/swaybg background
-permit @prefix@/bin/swaygrab screenshot
 permit @prefix@/bin/swaybar panel
 
 # Configures enabled IPC features for specific programs
@@ -34,11 +33,6 @@ ipc @prefix@/bin/swaybar {
         workspace enabled
         mode enabled
     }
-}
-
-ipc @prefix@/bin/swaygrab {
-    outputs enabled
-    tree enabled
 }
 
 ipc @prefix@/bin/swaylock {

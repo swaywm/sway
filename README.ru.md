@@ -62,8 +62,6 @@ Sway доступен во многих дистрибутивах и наход
 * gdk-pixbuf2 *
 * pam **
 * dbus >= 1.10 ***
-* imagemagick (требуется для захвата изображений через swaygrab)
-* ffmpeg (требуется для захвата видео через swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Требуется только для swaybar, swaybg и swaylock_

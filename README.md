@@ -58,8 +58,6 @@ Install dependencies:
 * gdk-pixbuf2 *
 * pam **
 * dbus >= 1.10 ***
-* imagemagick (required for image capture with swaygrab)
-* ffmpeg (required for video capture with swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Only required for swaybar, swaybg, and swaylock_
