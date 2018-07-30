@@ -19,11 +19,11 @@ void swaynag_types_add_default(list_t *types) {
 	type_defaults->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-	type_defaults->button_background = 0x680A0AFF;
-	type_defaults->background = 0x900000FF;
+	type_defaults->button_background = 0x333333FF;
+	type_defaults->background = 0x323232FF;
 	type_defaults->text = 0xFFFFFFFF;
-	type_defaults->border = 0xD92424FF;
-	type_defaults->border_bottom = 0x470909FF;
+	type_defaults->border = 0x222222FF;
+	type_defaults->border_bottom = 0x444444FF;
 	type_defaults->bar_border_thickness = 2;
 	type_defaults->message_padding = 8;
 	type_defaults->details_border_thickness = 3;
@@ -36,6 +36,11 @@ void swaynag_types_add_default(list_t *types) {
 
 	struct swaynag_type *type_error;
 	type_error = calloc(1, sizeof(struct swaynag_type));
+	type_error->button_background = 0x680A0AFF;
+	type_error->background = 0x900000FF;
+	type_error->text = 0xFFFFFFFF;
+	type_error->border = 0xD92424FF;
+	type_error->border_bottom = 0x470909FF;
 	type_error->name = strdup("error");
 	list_add(types, type_error);
 
