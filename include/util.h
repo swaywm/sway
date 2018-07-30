@@ -2,6 +2,7 @@
 #define _SWAY_UTIL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/types.h> 
 #include <xkbcommon/xkbcommon.h>
