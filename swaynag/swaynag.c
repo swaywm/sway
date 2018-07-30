@@ -345,7 +345,8 @@ void swaynag_setup(struct swaynag *swaynag) {
 	assert(swaynag->layer_surface);
 	zwlr_layer_surface_v1_add_listener(swaynag->layer_surface,
 			&layer_surface_listener, swaynag);
-	zwlr_layer_surface_v1_set_anchor(swaynag->layer_surface, swaynag->anchors);
+	zwlr_layer_surface_v1_set_anchor(swaynag->layer_surface,
+			swaynag->type->anchors);
 
 	wl_registry_destroy(registry);
 }
@@ -363,7 +364,6 @@ void swaynag_destroy(struct swaynag *swaynag) {
 	swaynag->run_display = false;
 
 	free(swaynag->message);
-	free(swaynag->font);
 	while (swaynag->buttons->length) {
 		struct swaynag_button *button = swaynag->buttons->items[0];
 		list_del(swaynag->buttons, 0);

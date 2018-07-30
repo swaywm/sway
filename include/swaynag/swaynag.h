@@ -7,15 +7,6 @@
 #include "swaynag/types.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
 
-#define SWAYNAG_BAR_BORDER_THICKNESS 2
-#define SWAYNAG_MESSAGE_PADDING 8
-#define SWAYNAG_DETAILS_BORDER_THICKNESS 3
-#define SWAYNAG_BUTTON_BORDER_THICKNESS 3
-#define SWAYNAG_BUTTON_GAP 20
-#define SWAYNAG_BUTTON_GAP_CLOSE 15
-#define SWAYNAG_BUTTON_MARGIN_RIGHT 2
-#define SWAYNAG_BUTTON_PADDING 3
-
 #define SWAYNAG_MAX_HEIGHT 500
 
 enum swaynag_action_type {
@@ -88,9 +79,7 @@ struct swaynag {
 	struct pool_buffer *current_buffer;
 
 	struct swaynag_type *type;
-	uint32_t anchors;
 	char *message;
-	char *font;
 	list_t *buttons;
 	struct swaynag_details details;
 };

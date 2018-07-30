@@ -9,8 +9,26 @@
 #include "swaynag/config.h"
 #include "swaynag/types.h"
 #include "util.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 void swaynag_types_add_default(list_t *types) {
+	struct swaynag_type *type_defaults;
+	type_defaults = calloc(1, sizeof(struct swaynag_type));
+	type_defaults->name = strdup("<defaults>");
+	type_defaults->font = strdup("pango:Monospace 10");
+	type_defaults->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+		| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+	type_defaults->bar_border_thickness = 2;
+	type_defaults->message_padding = 8;
+	type_defaults->details_border_thickness = 3;
+	type_defaults->button_border_thickness = 3;
+	type_defaults->button_gap = 20;
+	type_defaults->button_gap_close = 15;
+	type_defaults->button_margin_right = 2;
+	type_defaults->button_padding = 3;
+	list_add(types, type_defaults);
+
 	struct swaynag_type *type_error;
 	type_error = calloc(1, sizeof(struct swaynag_type));
 	type_error->name = strdup("error");
@@ -42,20 +60,84 @@ struct swaynag_type *swaynag_type_get(list_t *types, char *name) {
 	return NULL;
 }
 
-struct swaynag_type *swaynag_type_clone(struct swaynag_type *type) {
-	struct swaynag_type *clone;
-	clone = calloc(1, sizeof(struct swaynag_type));
-	clone->name = strdup(type->name);
-	clone->button_background = type->button_background;
-	clone->background = type->background;
-	clone->text = type->text;
-	clone->border = type->border;
-	clone->border_bottom = type->border_bottom;
-	return clone;
+void swaynag_type_merge(struct swaynag_type *dest, struct swaynag_type *src) {
+	if (!dest || !src) {
+		return;
+	}
+
+	if (!dest->font && src->font) {
+		dest->font = strdup(src->font);
+	}
+
+	if (!dest->output && src->output) {
+		dest->output = strdup(src->output);
+	}
+
+	if (dest->anchors == 0 && src->anchors > 0) {
+		dest->anchors = src->anchors;
+	}
+
+	// Colors
+	if (dest->button_background == 0 && src->button_background > 0) {
+		dest->button_background = src->button_background;
+	}
+
+	if (dest->background == 0 && src->background > 0) {
+		dest->background = src->background;
+	}
+
+	if (dest->text == 0 && src->text > 0) {
+		dest->text = src->text;
+	}
+
+	if (dest->border == 0 && src->border > 0) {
+		dest->border = src->border;
+	}
+
+	if (dest->border_bottom == 0 && src->border_bottom > 0) {
+		dest->border_bottom = src->border_bottom;
+	}
+
+	// Sizing
+	if (dest->bar_border_thickness == 0 && src->bar_border_thickness > 0) {
+		dest->bar_border_thickness = src->bar_border_thickness;
+	}
+
+	if (dest->message_padding == 0 && src->message_padding > 0) {
+		dest->message_padding = src->message_padding;
+	}
+
+	if (dest->details_border_thickness == 0
+			&& src->details_border_thickness > 0) {
+		dest->details_border_thickness = src->details_border_thickness;
+	}
+
+	if (dest->button_border_thickness == 0
+			&& src->button_border_thickness > 0) {
+		dest->button_border_thickness = src->button_border_thickness;
+	}
+
+	if (dest->button_gap == 0 && src->button_gap > 0) {
+		dest->button_gap = src->button_gap;
+	}
+
+	if (dest->button_gap_close == 0 && src->button_gap_close > 0) {
+		dest->button_gap_close = src->button_gap_close;
+	}
+
+	if (dest->button_margin_right == 0 && src->button_margin_right > 0) {
+		dest->button_margin_right = src->button_margin_right;
+	}
+
+	if (dest->button_padding == 0 && src->button_padding > 0) {
+		dest->button_padding = src->button_padding;
+	}
 }
 
 void swaynag_type_free(struct swaynag_type *type) {
 	free(type->name);
+	free(type->font);
+	free(type->output);
 	free(type);
 }
 
@@ -67,51 +149,3 @@ void swaynag_types_free(list_t *types) {
 	}
 	list_free(types);
 }
-
-int swaynag_parse_type(int argc, char **argv, struct swaynag_type *type) {
-	enum color_option {
-		COLOR_BACKGROUND,
-		COLOR_BORDER,
-		COLOR_BORDER_BOTTOM,
-		COLOR_BUTTON,
-		COLOR_TEXT,
-	};
-
-	static struct option opts[] = {
-		{"background", required_argument, NULL, COLOR_BACKGROUND},
-		{"border", required_argument, NULL, COLOR_BORDER},
-		{"border-bottom", required_argument, NULL, COLOR_BORDER_BOTTOM},
-		{"button-background", required_argument, NULL, COLOR_BUTTON},
-		{"text", required_argument, NULL, COLOR_TEXT},
-		{0, 0, 0, 0}
-	};
-
-	optind = 1;
-	while (1) {
-		int c = getopt_long(argc, argv, "", opts, NULL);
-		if (c == -1) {
-			break;
-		}
-		switch (c) {
-			case COLOR_BACKGROUND:
-				type->background = parse_color(optarg);
-				break;
-			case COLOR_BORDER:
-				type->border = parse_color(optarg);
-				break;
-			case COLOR_BORDER_BOTTOM:
-				type->border_bottom = parse_color(optarg);
-				break;
-			case COLOR_BUTTON:
-				type->button_background = parse_color(optarg);
-				break;
-			case COLOR_TEXT:
-				type->text = parse_color(optarg);
-				break;
-			default:
-				break;
-		}
-	}
-	return 0;
-}
-

@@ -8,6 +8,7 @@
 #include "readline.h"
 #include "swaynag/swaynag.h"
 #include "swaynag/types.h"
+#include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static char *read_from_stdin() {
@@ -37,7 +38,23 @@ static char *read_from_stdin() {
 }
 
 int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
-		list_t *types, char **config, bool *debug) {
+		list_t *types, struct swaynag_type *type, char **config, bool *debug) {
+	enum type_options {
+		TO_COLOR_BACKGROUND = 256,
+		TO_COLOR_BORDER,
+		TO_COLOR_BORDER_BOTTOM,
+		TO_COLOR_BUTTON,
+		TO_COLOR_TEXT,
+		TO_THICK_BAR_BORDER,
+		TO_PADDING_MESSAGE,
+		TO_THICK_DET_BORDER,
+		TO_THICK_BTN_BORDER,
+		TO_GAP_BTN,
+		TO_GAP_BTN_DISMISS,
+		TO_MARGIN_BTN_RIGHT,
+		TO_PADDING_BTN,
+	};
+
 	static struct option opts[] = {
 		{"button", required_argument, NULL, 'b'},
 		{"config", required_argument, NULL, 'c'},
@@ -52,6 +69,21 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		{"dismiss-button", required_argument, NULL, 's'},
 		{"type", required_argument, NULL, 't'},
 		{"version", no_argument, NULL, 'v'},
+
+		{"background", required_argument, NULL, TO_COLOR_BACKGROUND},
+		{"border", required_argument, NULL, TO_COLOR_BORDER},
+		{"border-bottom", required_argument, NULL, TO_COLOR_BORDER_BOTTOM},
+		{"button-background", required_argument, NULL, TO_COLOR_BUTTON},
+		{"text", required_argument, NULL, TO_COLOR_TEXT},
+		{"border-bottom-size", required_argument, NULL, TO_THICK_BAR_BORDER},
+		{"message-padding", required_argument, NULL, TO_PADDING_MESSAGE},
+		{"details-border-size", required_argument, NULL, TO_THICK_DET_BORDER},
+		{"button-border-size", required_argument, NULL, TO_THICK_BTN_BORDER},
+		{"button-gap", required_argument, NULL, TO_GAP_BTN},
+		{"button-dismiss-gap", required_argument, NULL, TO_GAP_BTN_DISMISS},
+		{"button-margin-right", required_argument, NULL, TO_MARGIN_BTN_RIGHT},
+		{"button-padding", required_argument, NULL, TO_PADDING_BTN},
+
 		{0, 0, 0, 0}
 	};
 
@@ -71,7 +103,22 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		"  -o, --output <output>         Set the output to use.\n"
 		"  -s, --dismiss-button <text>   Set the dismiss button text.\n"
 		"  -t, --type <type>             Set the message type.\n"
-		"  -v, --version                 Show the version number and quit.\n";
+		"  -v, --version                 Show the version number and quit.\n"
+		"\n"
+		"The following appearance options can also be given:\n"
+		"  --background RRGGBB[AA]       Background color.\n"
+		"  --border RRGGBB[AA]           Border color.\n"
+		"  --border-bottom RRGGBB[AA]    Bottom border color.\n"
+		"  --button-background RRGGBB[AA]           Button background color.\n"
+		"  --text RRGGBB[AA]             Text color.\n"
+		"  --border-bottom-size size     Thickness of the bar border.\n"
+		"  --message-padding padding     Padding for the message.\n"
+		"  --details-border-size size    Thickness for the details border.\n"
+		"  --button-border-size size     Thickness for the button border.\n"
+		"  --button-gap gap              Size of the gap between buttons\n"
+		"  --button-dismiss-gap gap      Size of the gap for dismiss button.\n"
+		"  --button-margin-right margin  Margin from dismiss button to edge.\n"
+		"  --button-padding padding      Padding for the button text.\n";
 
 	optind = 1;
 	while (1) {
@@ -106,13 +153,13 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			}
 			break;
 		case 'e': // Edge
-			if (swaynag) {
+			if (type) {
 				if (strcmp(optarg, "top") == 0) {
-					swaynag->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+					type->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 				} else if (strcmp(optarg, "bottom") == 0) {
-					swaynag->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+					type->anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
 						| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 				} else {
@@ -122,9 +169,9 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			}
 			break;
 		case 'f': // Font
-			if (swaynag) {
-				free(swaynag->font);
-				swaynag->font = strdup(optarg);
+			if (type) {
+				free(type->font);
+				type->font = strdup(optarg);
 			}
 			break;
 		case 'l': // Detailed Message
@@ -148,9 +195,9 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			}
 			break;
 		case 'o': // Output
-			if (swaynag) {
-				free(swaynag->output.name);
-				swaynag->output.name = strdup(optarg);
+			if (type) {
+				free(type->output);
+				type->output = strdup(optarg);
 			}
 			break;
 		case 's': // Dismiss Button Text
@@ -173,6 +220,71 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 		case 'v': // Version
 			fprintf(stdout, "swaynag version " SWAY_VERSION "\n");
 			return -1;
+		case TO_COLOR_BACKGROUND: // Background color
+			if (type) {
+				type->background = parse_color(optarg);
+			}
+			break;
+		case TO_COLOR_BORDER: // Border color
+			if (type) {
+				type->border = parse_color(optarg);
+			}
+			break;
+		case TO_COLOR_BORDER_BOTTOM: // Bottom border color
+			if (type) {
+				type->border_bottom = parse_color(optarg);
+			}
+			break;
+		case TO_COLOR_BUTTON:  // Button background color
+			if (type) {
+				type->button_background = parse_color(optarg);
+			}
+			break;
+		case TO_COLOR_TEXT:  // Text color
+			if (type) {
+				type->text = parse_color(optarg);
+			}
+			break;
+		case TO_THICK_BAR_BORDER:  // Bottom border thickness
+			if (type) {
+				type->bar_border_thickness = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_PADDING_MESSAGE:  // Message padding
+			if (type) {
+				type->message_padding = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_THICK_DET_BORDER:  // Details border thickness
+			if (type) {
+				type->details_border_thickness = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_THICK_BTN_BORDER:  // Button border thickness
+			if (type) {
+				type->button_border_thickness = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_GAP_BTN: // Gap between buttons
+			if (type) {
+				type->button_gap = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_GAP_BTN_DISMISS:  // Gap between dismiss button
+			if (type) {
+				type->button_gap_close = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_MARGIN_BTN_RIGHT:  // Margin on the right side of button area
+			if (type) {
+				type->button_margin_right = strtol(optarg, NULL, 0);
+			}
+			break;
+		case TO_PADDING_BTN:  // Padding for the button text
+			if (type) {
+				type->button_padding = strtol(optarg, NULL, 0);
+			}
+			break;
 		default: // Help or unknown flag
 			fprintf(c == 'h' ? stdout : stderr, "%s", usage);
 			return -1;
@@ -229,7 +341,12 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 		fprintf(stderr, "Failed to read config. Running without it.\n");
 		return 0;
 	}
-	struct swaynag_type *type = NULL;
+
+	struct swaynag_type *type;
+	type = calloc(1, sizeof(struct swaynag_type));
+	type->name = strdup("<config>");
+	list_add(types, type);
+
 	char *line;
 	int line_number = 0;
 	while (!feof(config)) {
@@ -271,12 +388,8 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 			sprintf(flag, "--%s", line);
 			char *argv[] = {"swaynag", flag};
 			int result;
-			if (type) {
-				result = swaynag_parse_type(2, argv, type);
-			} else {
-				result = swaynag_parse_options(2, argv, swaynag, types,
-						NULL, NULL);
-			}
+			result = swaynag_parse_options(2, argv, swaynag, types, type,
+					NULL, NULL);
 			if (result != 0) {
 				free(line);
 				fclose(config);

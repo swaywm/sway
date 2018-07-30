@@ -45,14 +45,12 @@ _swaynag_ [options...]
 	Set the message text.
 
 *-o, --output* <output>
-	Set the output to use. This should be the name of a _xdg\_output_. If
-	_xdg\_output\_manager_ is not supported, then the first detected output
-	will be used
+	Set the output to use. This should be the name of a _xdg\_output_.
 
 *-s, --dismiss-button* <text>
 	Sets the text for the dismiss nagbar button. The default is _X_.
 
-*-t, --type*
+*-t, --type* <type>
 	Set the message type. Two types are created by default _error_ and
 	_warning_. Custom types can be defined in the config file. See
 	_--config_ and swaynag(5) for details. Both of the default types can be
@@ -60,6 +58,46 @@ _swaynag_ [options...]
 
 *-v, --version*
 	Show the version number and quit.
+
+# APPEARANCE OPTIONS
+*--background* <RRGGBB[AA]>
+	Set the color of the background.
+
+*--border* <RRGGBB[AA]>
+	Set the color of the border.
+
+*--border-bottom* <RRGGBB[AA]>
+	Set the color of the bottom border.
+
+*--button-background* <RRGGBB[AA]>
+	Set the color for the background for buttons.
+
+*--text* <RRGGBB[AA]>
+	Set the text color.
+
+*--border-bottom-size* <size>
+	Set the thickness of the bottom border.
+
+*--message-padding* <padding>
+	Set the padding for the message.
+
+*--details-border-size* <size>
+	Set the thickness for the details border.
+
+*--button-border-size* <size>
+	Set the thickness for the button border.
+
+*--button-gap* <gap>
+	Set the size of the gap between buttons.
+
+*--button-dismiss-gap* <gap>
+	Set the size of the gap between the dismiss button and another button.
+
+*--button-margin-right* <margin>
+	Set the margin from the right of the dismiss button to edge.
+
+*--button-padding* <padding>
+	Set the padding for the button text.
 
 # SEE
 swaynag(5)
