@@ -18,5 +18,5 @@ _arguments -s \
 	'(-c --config)'{-c,--config}'[Specify a config file]:files:_files' \
 	'(-C --validate)'{-C,--validate}'[Check validity of the config file, then exit]' \
 	'(-d --debug)'{-d,--debug}'[Enables full logging, including debug information]' \
-	'(-v --verbose)'{-v,--verbose}'[Enables more verbose logging]' \
+	'(-V --verbose)'{-V,--verbose}'[Enables more verbose logging]' \
 	'(--get-socketpath)'--get-socketpath'[Gets the IPC socket path and prints it, then exits]'
