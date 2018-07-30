@@ -29,7 +29,10 @@
 #include "sway/tree/workspace.h"
 
 struct render_data {
+	struct root_geometry root_geo;
+	struct sway_output *output;
 	pixman_region32_t *damage;
+	struct sway_view *view;
 	float alpha;
 };
 
@@ -89,11 +92,11 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static void render_surface_iterator(struct sway_output *output,
-		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
+static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		void *_data) {
 	struct render_data *data = _data;
-	struct wlr_output *wlr_output = output->wlr_output;
+	struct wlr_output *wlr_output = data->output->wlr_output;
+	float rotation = data->root_geo.rotation;
 	pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
 
@@ -102,7 +105,13 @@ static void render_surface_iterator(struct sway_output *output,
 		return;
 	}
 
-	struct wlr_box box = *_box;
+	struct wlr_box box;
+	bool intersects = output_get_surface_box(&data->root_geo, data->output,
+		surface, sx, sy, &box);
+	if (!intersects) {
+		return;
+	}
+
 	scale_box(&box, wlr_output->scale);
 
 	float matrix[9];
@@ -117,32 +126,33 @@ static void render_surface_iterator(struct sway_output *output,
 static void render_layer(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *layer_surfaces) {
 	struct render_data data = {
+		.output = output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_layer_for_each_surface(output, layer_surfaces,
+	output_layer_for_each_surface(layer_surfaces, &data.root_geo,
 		render_surface_iterator, &data);
 }
-
 #ifdef HAVE_XWAYLAND
 static void render_unmanaged(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *unmanaged) {
 	struct render_data data = {
+		.output = output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_unmanaged_for_each_surface(output, unmanaged,
+	output_unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
 		render_surface_iterator, &data);
 }
 #endif
-
 static void render_drag_icons(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *drag_icons) {
 	struct render_data data = {
+		.output = output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_drag_icons_for_each_surface(output, drag_icons,
+	output_drag_icons_for_each_surface(drag_icons, output, &data.root_geo,
 		render_surface_iterator, &data);
 }
 
@@ -189,10 +199,13 @@ static void premultiply_alpha(float color[4], float opacity) {
 static void render_view_surfaces(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct render_data data = {
+		.output = output,
 		.damage = damage,
+		.view = view,
 		.alpha = alpha,
 	};
-	output_view_for_each_surface(output, view, render_surface_iterator, &data);
+	output_view_for_each_surface(view, output, &data.root_geo,
+		render_surface_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view,
