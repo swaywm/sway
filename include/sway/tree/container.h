@@ -270,6 +270,8 @@ int container_count_descendants_of_type(struct sway_container *con,
 
 void container_create_notify(struct sway_container *container);
 
+void container_update_textures_recursive(struct sway_container *con);
+
 void container_damage_whole(struct sway_container *container);
 
 bool container_reap_empty(struct sway_container *con);

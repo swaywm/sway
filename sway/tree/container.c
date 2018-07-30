@@ -67,7 +67,7 @@ void container_create_notify(struct sway_container *container) {
 	}
 }
 
-static void container_update_textures_recursive(struct sway_container *con) {
+void container_update_textures_recursive(struct sway_container *con) {
 	if (con->type == C_CONTAINER || con->type == C_VIEW) {
 		container_update_title_textures(con);
 	}
@@ -78,6 +78,10 @@ static void container_update_textures_recursive(struct sway_container *con) {
 		for (int i = 0; i < con->children->length; ++i) {
 			struct sway_container *child = con->children->items[i];
 			container_update_textures_recursive(child);
+		}
+
+		if (con->type == C_WORKSPACE) {
+			container_update_textures_recursive(con->sway_workspace->floating);
 		}
 	}
 }
