@@ -264,6 +264,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	// Identify and execute active pressed binding
+	struct sway_binding *next_repeat_binding = NULL;
 	if (event->state == WLR_KEY_PRESSED) {
 		struct sway_binding *binding_pressed = NULL;
 		get_active_binding(&keyboard->state_keycodes,
@@ -279,6 +280,21 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 		if (binding_pressed) {
 			seat_execute_command(seat, binding_pressed);
 			handled = true;
+			next_repeat_binding = binding_pressed;
+		}
+	}
+
+	// Set up (or clear) keyboard repeat for a pressed binding
+	if (next_repeat_binding && wlr_device->keyboard->repeat_info.delay > 0) {
+		keyboard->repeat_binding = next_repeat_binding;
+		if (wl_event_source_timer_update(keyboard->key_repeat_source,
+				wlr_device->keyboard->repeat_info.delay) < 0) {
+			wlr_log(WLR_DEBUG, "failed to set key repeat timer");
+		}
+	} else if (keyboard->repeat_binding) {
+		keyboard->repeat_binding = NULL;
+		if (wl_event_source_timer_update(keyboard->key_repeat_source, 0) < 0) {
+			wlr_log(WLR_DEBUG, "failed to disarm key repeat timer");
 		}
 	}
 
@@ -301,6 +317,26 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	transaction_commit_dirty();
+}
+
+static int handle_keyboard_repeat(void *data) {
+	struct sway_keyboard *keyboard = (struct sway_keyboard *)data;
+	struct wlr_keyboard *wlr_device =
+			keyboard->seat_device->input_device->wlr_device->keyboard;
+	if (keyboard->repeat_binding) {
+		if (wlr_device->repeat_info.rate > 0) {
+			// We queue the next event first, as the command might cancel it
+			if (wl_event_source_timer_update(keyboard->key_repeat_source,
+					1000 / wlr_device->repeat_info.rate) < 0) {
+				wlr_log(WLR_DEBUG, "failed to update key repeat timer");
+			}
+		}
+
+		seat_execute_command(keyboard->seat_device->sway_seat,
+				keyboard->repeat_binding);
+		transaction_commit_dirty();
+	}
+	return 0;
 }
 
 static void handle_keyboard_modifiers(struct wl_listener *listener,
@@ -327,6 +363,9 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 
 	wl_list_init(&keyboard->keyboard_key.link);
 	wl_list_init(&keyboard->keyboard_modifiers.link);
+
+	keyboard->key_repeat_source = wl_event_loop_add_timer(server.wl_event_loop,
+			handle_keyboard_repeat, keyboard);
 
 	return keyboard;
 }
@@ -441,5 +480,6 @@ void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
 	}
 	wl_list_remove(&keyboard->keyboard_key.link);
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
+	wl_event_source_remove(keyboard->key_repeat_source);
 	free(keyboard);
 }
