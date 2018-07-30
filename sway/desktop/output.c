@@ -506,14 +506,10 @@ static void handle_transform(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
-static void handle_scale_iterator(struct sway_container *view, void *data) {
-	view_update_marks_textures(view->sway_view);
-}
-
 static void handle_scale(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, scale);
 	arrange_layers(output);
-	container_descendants(output->swayc, C_VIEW, handle_scale_iterator, NULL);
+	container_update_textures_recursive(output->swayc);
 	arrange_windows(output->swayc);
 	transaction_commit_dirty();
 }
