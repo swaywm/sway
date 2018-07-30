@@ -10,6 +10,7 @@ $HOME/.swaynag/config, $XDG\_CONFIG\_HOME/swaynag/config,
 SYSCONFDIR/swaynag/config
 
 # CONFIG FILE
+
 At the top of the config file, _swaynag_ options can be set using the format
 _long-option=value_. These will be used as default values if _swaynag_ is not
 given the option. This can be useful for setting a preferred font, output, and
@@ -79,6 +80,7 @@ Additionally, the following options can be assigned a default per-type:
 	Set the output to use. This should be the name of a _xdg\_output_.
 
 # EXAMPLE
+
 ```
 font=Monospace 12
 edge=bottom
@@ -94,4 +96,5 @@ message-padding=10
 ```
 
 # SEE
+
 swaynag(1)

@@ -9,6 +9,7 @@ swaynag - Show a warning or error message with buttons
 _swaynag_ [options...]
 
 # OPTIONS
+
 *-b, --button* <text> <action>
 	Create a button with the text _text_ that executes _action_ when pressed.
 	Multiple buttons can be defined by providing the flag multiple times.
@@ -60,6 +61,7 @@ _swaynag_ [options...]
 	Show the version number and quit.
 
 # APPEARANCE OPTIONS
+
 *--background* <RRGGBB[AA]>
 	Set the color of the background.
 
@@ -100,4 +102,5 @@ _swaynag_ [options...]
 	Set the padding for the button text.
 
 # SEE
+
 swaynag(5)
