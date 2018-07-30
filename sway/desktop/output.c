@@ -317,8 +317,9 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 	struct sway_container *workspace = output_get_active_workspace(output);
 	if (workspace->current.ws_fullscreen) {
 		if (workspace->current.ws_fullscreen->type == C_VIEW) {
-			send_frame_done_container_iterator(
-				workspace->current.ws_fullscreen, when);
+			output_view_for_each_surface(output,
+				workspace->current.ws_fullscreen->sway_view,
+				send_frame_done_iterator, when);
 		} else {
 			send_frame_done_container(output, workspace->current.ws_fullscreen,
 				when);
