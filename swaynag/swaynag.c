@@ -85,12 +85,34 @@ static struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 	.closed = layer_surface_closed,
 };
 
+static void surface_enter(void *data, struct wl_surface *surface,
+		struct wl_output *output) {
+	struct swaynag *swaynag = data;
+	struct swaynag_output *swaynag_output;
+	wl_list_for_each(swaynag_output, &swaynag->outputs, link) {
+		if (swaynag_output->wl_output == output) {
+			wlr_log(WLR_DEBUG, "Surface enter on output %s",
+					swaynag_output->name);
+			swaynag->output = swaynag_output;
+			swaynag->scale = swaynag->output->scale;
+			render_frame(swaynag);
+			break;
+		}
+	};
+}
+
+static struct wl_surface_listener surface_listener = {
+	.enter = surface_enter,
+	.leave = nop,
+};
+
 static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaynag *swaynag = data;
 	struct swaynag_pointer *pointer = &swaynag->pointer;
-	wl_surface_set_buffer_scale(pointer->cursor_surface, swaynag->scale);
+	wl_surface_set_buffer_scale(pointer->cursor_surface,
+			swaynag->scale);
 	wl_surface_attach(pointer->cursor_surface,
 			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
 	wl_pointer_set_cursor(wl_pointer, serial, pointer->cursor_surface,
@@ -141,7 +163,8 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		}
 
 		struct swaynag_button button_down = swaynag->details.button_down;
-		int bot = swaynag->details.total_lines - swaynag->details.visible_lines;
+		int bot = swaynag->details.total_lines;
+		bot -= swaynag->details.visible_lines;
 		if (x >= button_down.x
 				&& y >= button_down.y
 				&& x < button_down.x + button_down.width
@@ -206,9 +229,12 @@ const struct wl_seat_listener seat_listener = {
 
 static void output_scale(void *data, struct wl_output *output,
 		int32_t factor) {
-	struct swaynag *swaynag = data;
-	swaynag->scale = factor;
-	render_frame(swaynag);
+	struct swaynag_output *swaynag_output = data;
+	swaynag_output->scale = factor;
+	if (swaynag_output->swaynag->output == swaynag_output) {
+		swaynag_output->swaynag->scale = swaynag_output->scale;
+		render_frame(swaynag_output->swaynag);
+	}
 }
 
 static struct wl_output_listener output_listener = {
@@ -218,33 +244,19 @@ static struct wl_output_listener output_listener = {
 	.scale = output_scale,
 };
 
-struct output_state {
-	struct wl_output *wl_output;
-	uint32_t wl_name;
-	struct zxdg_output_v1 *xdg_output;
-	struct swaynag *swaynag;
-};
-
 static void xdg_output_handle_name(void *data,
 		struct zxdg_output_v1 *xdg_output, const char *name) {
-	struct output_state *state = data;
-	char *outname = state->swaynag->output.name;
+	struct swaynag_output *swaynag_output = data;
+	char *outname = swaynag_output->swaynag->type->output;
 	wlr_log(WLR_DEBUG, "Checking against output %s for %s", name, outname);
-	if (!state->swaynag->output.wl_output && outname && name
+	if (!swaynag_output->swaynag->output && outname && name
 			&& strcmp(outname, name) == 0) {
 		wlr_log(WLR_DEBUG, "Using output %s", name);
-		state->swaynag->output.wl_output = state->wl_output;
-		state->swaynag->output.wl_name = state->wl_name;
-		wl_output_add_listener(state->swaynag->output.wl_output,
-				&output_listener, state->swaynag);
-		wl_display_roundtrip(state->swaynag->display);
-		zxdg_output_v1_destroy(state->xdg_output);
-	} else {
-		zxdg_output_v1_destroy(state->xdg_output);
-		wl_output_destroy(state->wl_output);
+		swaynag_output->swaynag->output = swaynag_output;
 	}
-	state->swaynag->querying_outputs--;
-	free(state);
+	swaynag_output->name = strdup(name);
+	zxdg_output_v1_destroy(xdg_output);
+	swaynag_output->swaynag->querying_outputs--;
 }
 
 static struct zxdg_output_v1_listener xdg_output_listener = {
@@ -267,18 +279,24 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		swaynag->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
-		if (!swaynag->output.wl_output && swaynag->xdg_output_manager) {
+		if (!swaynag->output && swaynag->xdg_output_manager) {
 			swaynag->querying_outputs++;
-			struct output_state *state =
-				calloc(1, sizeof(struct output_state));
-			state->swaynag = swaynag;
-			state->wl_output = wl_registry_bind(registry, name,
+			struct swaynag_output *output =
+				calloc(1, sizeof(struct swaynag_output));
+			output->wl_output = wl_registry_bind(registry, name,
 					&wl_output_interface, 3);
-			state->wl_name = name;
-			state->xdg_output = zxdg_output_manager_v1_get_xdg_output(
-					swaynag->xdg_output_manager, state->wl_output);
-			zxdg_output_v1_add_listener(state->xdg_output,
-					&xdg_output_listener, state);
+			output->wl_name = name;
+			output->scale = 1;
+			output->swaynag = swaynag;
+			wl_list_insert(&swaynag->outputs, &output->link);
+			wl_output_add_listener(output->wl_output,
+					&output_listener, output);
+
+			struct zxdg_output_v1 *xdg_output;
+			xdg_output = zxdg_output_manager_v1_get_xdg_output(
+					swaynag->xdg_output_manager, output->wl_output);
+			zxdg_output_v1_add_listener(xdg_output,
+					&xdg_output_listener, output);
 		}
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		swaynag->layer_shell = wl_registry_bind(
@@ -294,7 +312,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 static void handle_global_remove(void *data, struct wl_registry *registry,
 		uint32_t name) {
 	struct swaynag *swaynag = data;
-	if (swaynag->output.wl_name == name) {
+	if (swaynag->output->wl_name == name) {
 		swaynag->run_display = false;
 	}
 }
@@ -309,6 +327,7 @@ void swaynag_setup(struct swaynag *swaynag) {
 	assert(swaynag->display);
 
 	swaynag->scale = 1;
+	wl_list_init(&swaynag->outputs);
 
 	struct wl_registry *registry = wl_display_get_registry(swaynag->display);
 	wl_registry_add_listener(registry, &registry_listener, swaynag);
@@ -319,16 +338,16 @@ void swaynag_setup(struct swaynag *swaynag) {
 		wl_display_roundtrip(swaynag->display);
 	}
 
-	if (!swaynag->output.wl_output && swaynag->output.name) {
-		wlr_log(WLR_ERROR, "Output '%s' not found", swaynag->output.name);
+	if (!swaynag->output && swaynag->type->output) {
+		wlr_log(WLR_ERROR, "Output '%s' not found", swaynag->type->output);
 		swaynag_destroy(swaynag);
 		exit(EXIT_FAILURE);
 	}
 
 	struct swaynag_pointer *pointer = &swaynag->pointer;
-	int scale = swaynag->scale < 1 ? 1 : swaynag->scale;
-	pointer->cursor_theme = wl_cursor_theme_load(
-			NULL, 24 * scale, swaynag->shm);
+	int scale = swaynag->output ? swaynag->scale : 1;
+	pointer->cursor_theme = wl_cursor_theme_load(NULL, 24 * scale,
+			swaynag->shm);
 	assert(pointer->cursor_theme);
 	struct wl_cursor *cursor =
 		wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
@@ -339,8 +358,11 @@ void swaynag_setup(struct swaynag *swaynag) {
 
 	swaynag->surface = wl_compositor_create_surface(swaynag->compositor);
 	assert(swaynag->surface);
+	wl_surface_add_listener(swaynag->surface, &surface_listener, swaynag);
+
 	swaynag->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-			swaynag->layer_shell, swaynag->surface, swaynag->output.wl_output,
+			swaynag->layer_shell, swaynag->surface,
+			swaynag->output ? swaynag->output->wl_output : NULL,
 			ZWLR_LAYER_SHELL_V1_LAYER_TOP, "swaynag");
 	assert(swaynag->layer_surface);
 	zwlr_layer_surface_v1_add_listener(swaynag->layer_surface,
@@ -388,10 +410,6 @@ void swaynag_destroy(struct swaynag *swaynag) {
 		wl_surface_destroy(swaynag->surface);
 	}
 
-	if (swaynag->output.wl_output) {
-		wl_output_destroy(swaynag->output.wl_output);
-	}
-
 	if (&swaynag->buffers[0]) {
 		destroy_buffer(&swaynag->buffers[0]);
 	}
@@ -399,6 +417,14 @@ void swaynag_destroy(struct swaynag *swaynag) {
 	if (&swaynag->buffers[1]) {
 		destroy_buffer(&swaynag->buffers[1]);
 	}
+
+	struct swaynag_output *output, *temp;
+	wl_list_for_each_safe(output, temp, &swaynag->outputs, link) {
+		wl_output_destroy(output->wl_output);
+		free(output->name);
+		wl_list_remove(&output->link);
+		free(output);
+	};
 
 	if (swaynag->compositor) {
 		wl_compositor_destroy(swaynag->compositor);

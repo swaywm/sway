@@ -94,9 +94,6 @@ int main(int argc, char **argv) {
 	swaynag_type_merge(type, swaynag_type_get(types, "<config>"));
 	swaynag_type_merge(type, swaynag_type_get(types, "<defaults>"));
 	swaynag.type = type;
-	if (swaynag.type->output) {
-		swaynag.output.name = strdup(swaynag.type->output);
-	}
 
 	swaynag_types_free(types);
 
@@ -106,7 +103,7 @@ int main(int argc, char **argv) {
 		free(swaynag.details.button_details.text);
 	}
 
-	wlr_log(WLR_DEBUG, "Output: %s", swaynag.output.name);
+	wlr_log(WLR_DEBUG, "Output: %s", swaynag.type->output);
 	wlr_log(WLR_DEBUG, "Anchors: %d", swaynag.type->anchors);
 	wlr_log(WLR_DEBUG, "Type: %s", swaynag.type->name);
 	wlr_log(WLR_DEBUG, "Message: %s", swaynag.message);

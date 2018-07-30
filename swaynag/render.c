@@ -25,10 +25,10 @@ static uint32_t render_message(cairo_t *cairo, struct swaynag *swaynag) {
 
 	cairo_set_source_u32(cairo, swaynag->type->text);
 	cairo_move_to(cairo, padding, (int)(ideal_height - text_height) / 2);
-	pango_printf(cairo, swaynag->type->font, swaynag->scale, false, "%s",
-			swaynag->message);
+	pango_printf(cairo, swaynag->type->font, swaynag->scale, false,
+			"%s", swaynag->message);
 
-	return ideal_height;
+	return ideal_surface_height;
 }
 
 static void render_details_scroll_button(cairo_t *cairo,
@@ -61,9 +61,11 @@ static int get_detailed_scroll_button_width(cairo_t *cairo,
 		struct swaynag *swaynag) {
 	int up_width, down_width, temp_height;
 	get_text_size(cairo, swaynag->type->font, &up_width, &temp_height,
-			swaynag->scale, true, "%s", swaynag->details.button_up.text);
+			swaynag->scale, true,
+			"%s", swaynag->details.button_up.text);
 	get_text_size(cairo, swaynag->type->font, &down_width, &temp_height,
-			swaynag->scale, true, "%s", swaynag->details.button_down.text);
+			swaynag->scale, true,
+			"%s", swaynag->details.button_down.text);
 
 	int text_width =  up_width > down_width ? up_width : down_width;
 	int border = swaynag->type->button_border_thickness * swaynag->scale;
@@ -83,7 +85,7 @@ static uint32_t render_detailed(cairo_t *cairo, struct swaynag *swaynag,
 	int decor = padding + border;
 
 	swaynag->details.x = decor;
-	swaynag->details.y = y + decor;
+	swaynag->details.y = y * swaynag->scale + decor;
 	swaynag->details.width = width - decor * 2;
 
 	PangoLayout *layout = get_pango_layout(cairo, swaynag->type->font,
@@ -167,7 +169,7 @@ static uint32_t render_detailed(cairo_t *cairo, struct swaynag *swaynag,
 	pango_cairo_show_layout(cairo, layout);
 	g_object_unref(layout);
 
-	return ideal_height;
+	return ideal_height / swaynag->scale;
 }
 
 static uint32_t render_button(cairo_t *cairo, struct swaynag *swaynag,
@@ -211,7 +213,7 @@ static uint32_t render_button(cairo_t *cairo, struct swaynag *swaynag,
 
 	*x = button->x - border;
 
-	return ideal_height;
+	return ideal_surface_height;
 }
 
 static uint32_t render_to_cairo(cairo_t *cairo, struct swaynag *swaynag) {
@@ -245,8 +247,10 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaynag *swaynag) {
 		max_height += border;
 	}
 	cairo_set_source_u32(cairo, swaynag->type->border_bottom);
-	cairo_rectangle(cairo, 0, swaynag->height * swaynag->scale - border,
-			swaynag->width * swaynag->scale, border);
+	cairo_rectangle(cairo, 0,
+			swaynag->height * swaynag->scale - border,
+			swaynag->width * swaynag->scale,
+			border);
 	cairo_fill(cairo);
 
 	return max_height;

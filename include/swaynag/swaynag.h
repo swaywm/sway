@@ -9,6 +9,8 @@
 
 #define SWAYNAG_MAX_HEIGHT 500
 
+struct swaynag;
+
 enum swaynag_action_type {
 	SWAYNAG_ACTION_DISMISS,
 	SWAYNAG_ACTION_EXPAND,
@@ -28,6 +30,9 @@ struct swaynag_output {
 	char *name;
 	struct wl_output *wl_output;
 	uint32_t wl_name;
+	uint32_t scale;
+	struct swaynag *swaynag;
+	struct wl_list link;
 };
 
 struct swaynag_button {
@@ -67,7 +72,8 @@ struct swaynag {
 	struct wl_shm *shm;
 	struct swaynag_pointer pointer;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
-	struct swaynag_output output;
+	struct wl_list outputs;  // struct swaynag_output
+	struct swaynag_output *output;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zwlr_layer_surface_v1 *layer_surface;
 	struct wl_surface *surface;
