@@ -8,6 +8,7 @@
 #include "sway/config.h"
 #include "log.h"
 #include "stringop.h"
+#include "util.h"
 
 static const char *bg_options[] = {
 	"stretch",
@@ -43,7 +44,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		size_t j;
 		for (j = 0; j < (size_t)argc; ++j) {
 			mode = argv[j];
-			size_t n = sizeof(bg_options) / sizeof(char *);
+			size_t n = ARRAY_SIZE(bg_options);
 			for (size_t k = 0; k < n; ++k) {
 				if (strcasecmp(mode, bg_options[k]) == 0) {
 					valid = true;

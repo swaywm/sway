@@ -14,6 +14,7 @@
 #include "ipc-client.h"
 #include "readline.h"
 #include "log.h"
+#include "util.h"
 
 void sway_terminate(int exit_code) {
 	exit(exit_code);
@@ -101,7 +102,7 @@ static const char *pretty_type_name(const char *name) {
 		{ "touch", "Touch" },
 	};
 
-	for (size_t i = 0; i < sizeof(type_names) / sizeof(type_names[0]); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(type_names); ++i) {
 		if (strcmp(type_names[i].a, name) == 0) {
 			return type_names[i].b;
 		}

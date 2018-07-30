@@ -16,6 +16,7 @@
 #include "sway/tree/workspace.h"
 #include "stringop.h"
 #include "list.h"
+#include "util.h"
 
 static const char* expected_syntax =
 	"Expected 'move <left|right|up|down> <[px] px>' or "
@@ -34,7 +35,7 @@ static struct sway_container *output_in_direction(const char *direction,
 		{ "left", WLR_DIRECTION_LEFT },
 		{ "right", WLR_DIRECTION_RIGHT },
 	};
-	for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(names); ++i) {
 		if (strcasecmp(names[i].name, direction) == 0) {
 			struct wlr_output *adjacent = wlr_output_layout_adjacent_output(
 					root_container.sway_root->output_layout,

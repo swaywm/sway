@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "unicode.h"
+#include "util.h"
 
 size_t utf8_chsize(uint32_t ch) {
 	if (ch < 0x80) {
@@ -92,7 +93,7 @@ static const struct {
 
 int utf8_size(const char *s) {
 	uint8_t c = (uint8_t)*s;
-	for (size_t i = 0; i < sizeof(sizes) / sizeof(*sizes); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(sizes); ++i) {
 		if ((c & sizes[i].mask) == sizes[i].result) {
 			return sizes[i].octets;
 		}
