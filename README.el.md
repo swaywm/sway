@@ -57,8 +57,6 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * cairo
 * gdk-pixbuf2 *
 * pam **
-* imagemagick (αναγκαίο για καταγραφή εικόνας μέσω του swaygrab)
-* ffmpeg (αναγκαίο για καταγραφή video μέσω του swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Απαιτείται μόνο για swaybar, swaybg, and swaylock_

@@ -58,4 +58,4 @@ https://github.com/swaywm/sway.
 
 # SEE ALSO
 
-*sway*(5) *swaymsg*(1) *swaygrab*(1) *sway-input*(5) *sway-bar*(5)
+*sway*(5) *swaymsg*(1) *sway-input*(5) *sway-bar*(5)

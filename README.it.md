@@ -60,8 +60,6 @@ Installa queste dipendenze:
 * cairo
 * gdk-pixbuf2 *
 * pam **
-* imagemagick (richiesto per catturare immagini con swaygrab)
-* ffmpeg (rrichiesto per catturare video con swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (rrichiesto per man pages)
 
 _\*Richiesto solo per swaybar, swaybg, e swaylock_

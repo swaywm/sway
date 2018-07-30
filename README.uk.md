@@ -66,8 +66,6 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * cairo
 * gdk-pixbuf2 *
 * pam **
-* imagemagick (для захоплення зображень за допомогою swaygrab)
-* ffmpeg (для захоплення відео за допомогою swaygrab)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
 
 _\*Лише для swaybar, swaybg та swaylock_
