@@ -106,19 +106,31 @@ static struct wl_surface_listener surface_listener = {
 	.leave = nop,
 };
 
+static void update_cursor(struct swaynag *swaynag) {
+	struct swaynag_pointer *pointer = &swaynag->pointer;
+	pointer->cursor_theme = wl_cursor_theme_load(NULL, 24 * swaynag->scale,
+			swaynag->shm);
+	struct wl_cursor *cursor =
+		wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
+	pointer->cursor_image = cursor->images[0];
+	wl_surface_set_buffer_scale(pointer->cursor_surface,
+			swaynag->scale);
+	wl_surface_attach(pointer->cursor_surface,
+			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
+	wl_pointer_set_cursor(pointer->pointer, pointer->serial,
+			pointer->cursor_surface,
+			pointer->cursor_image->hotspot_x / swaynag->scale,
+			pointer->cursor_image->hotspot_y / swaynag->scale);
+	wl_surface_commit(pointer->cursor_surface);
+}
+
 static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, struct wl_surface *surface,
 		wl_fixed_t surface_x, wl_fixed_t surface_y) {
 	struct swaynag *swaynag = data;
 	struct swaynag_pointer *pointer = &swaynag->pointer;
-	wl_surface_set_buffer_scale(pointer->cursor_surface,
-			swaynag->scale);
-	wl_surface_attach(pointer->cursor_surface,
-			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
-	wl_pointer_set_cursor(wl_pointer, serial, pointer->cursor_surface,
-			pointer->cursor_image->hotspot_x / swaynag->scale,
-			pointer->cursor_image->hotspot_y / swaynag->scale);
-	wl_surface_commit(pointer->cursor_surface);
+	pointer->serial = serial;
+	update_cursor(swaynag);
 }
 
 static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
@@ -233,6 +245,7 @@ static void output_scale(void *data, struct wl_output *output,
 	swaynag_output->scale = factor;
 	if (swaynag_output->swaynag->output == swaynag_output) {
 		swaynag_output->swaynag->scale = swaynag_output->scale;
+		update_cursor(swaynag_output->swaynag);
 		render_frame(swaynag_output->swaynag);
 	}
 }
@@ -345,14 +358,6 @@ void swaynag_setup(struct swaynag *swaynag) {
 	}
 
 	struct swaynag_pointer *pointer = &swaynag->pointer;
-	int scale = swaynag->output ? swaynag->scale : 1;
-	pointer->cursor_theme = wl_cursor_theme_load(NULL, 24 * scale,
-			swaynag->shm);
-	assert(pointer->cursor_theme);
-	struct wl_cursor *cursor =
-		wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
-	assert(cursor);
-	pointer->cursor_image = cursor->images[0];
 	pointer->cursor_surface = wl_compositor_create_surface(swaynag->compositor);
 	assert(pointer->cursor_surface);
 
@@ -410,6 +415,10 @@ void swaynag_destroy(struct swaynag *swaynag) {
 		wl_surface_destroy(swaynag->surface);
 	}
 
+	if (swaynag->pointer.cursor_theme) {
+		wl_cursor_theme_destroy(swaynag->pointer.cursor_theme);
+	}
+
 	if (&swaynag->buffers[0]) {
 		destroy_buffer(&swaynag->buffers[0]);
 	}
@@ -418,13 +427,15 @@ void swaynag_destroy(struct swaynag *swaynag) {
 		destroy_buffer(&swaynag->buffers[1]);
 	}
 
-	struct swaynag_output *output, *temp;
-	wl_list_for_each_safe(output, temp, &swaynag->outputs, link) {
-		wl_output_destroy(output->wl_output);
-		free(output->name);
-		wl_list_remove(&output->link);
-		free(output);
-	};
+	if (swaynag->outputs.prev || swaynag->outputs.next) {
+		struct swaynag_output *output, *temp;
+		wl_list_for_each_safe(output, temp, &swaynag->outputs, link) {
+			wl_output_destroy(output->wl_output);
+			free(output->name);
+			wl_list_remove(&output->link);
+			free(output);
+		};
+	}
 
 	if (swaynag->compositor) {
 		wl_compositor_destroy(swaynag->compositor);

@@ -19,6 +19,7 @@ enum swaynag_action_type {
 
 struct swaynag_pointer {
 	struct wl_pointer *pointer;
+	uint32_t serial;
 	struct wl_cursor_theme *cursor_theme;
 	struct wl_cursor_image *cursor_image;
 	struct wl_surface *cursor_surface;
@@ -72,7 +73,7 @@ struct swaynag {
 	struct wl_shm *shm;
 	struct swaynag_pointer pointer;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
-	struct wl_list outputs;  // struct swaynag_output
+	struct wl_list outputs;  // swaynag_output::link
 	struct swaynag_output *output;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zwlr_layer_surface_v1 *layer_surface;
