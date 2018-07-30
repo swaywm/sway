@@ -14,6 +14,7 @@
 #include "sway/server.h"
 #include "sway/tree/layout.h"
 #include "log.h"
+#include "util.h"
 
 static void apply_exclusive(struct wlr_box *usable_area,
 		uint32_t anchor, int32_t exclusive,
@@ -65,7 +66,7 @@ static void apply_exclusive(struct wlr_box *usable_area,
 			.margin = margin_right,
 		},
 	};
-	for (size_t i = 0; i < sizeof(edges) / sizeof(edges[0]); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(edges); ++i) {
 		if ((anchor & edges[i].anchors) == edges[i].anchors) {
 			if (edges[i].positive_axis) {
 				*edges[i].positive_axis += exclusive + edges[i].margin;
@@ -193,7 +194,7 @@ void arrange_layers(struct sway_output *output) {
 		ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
 		ZWLR_LAYER_SHELL_V1_LAYER_TOP,
 	};
-	size_t nlayers = sizeof(layers_above_shell) / sizeof(layers_above_shell[0]);
+	size_t nlayers = ARRAY_SIZE(layers_above_shell);
 	struct sway_layer_surface *layer, *topmost = NULL;
 	for (size_t i = 0; i < nlayers; ++i) {
 		wl_list_for_each_reverse(layer,

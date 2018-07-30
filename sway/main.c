@@ -129,7 +129,7 @@ static void log_env() {
 		"SWAY_CURSOR_SIZE",
 		"SWAYSOCK"
 	};
-	for (size_t i = 0; i < sizeof(log_vars) / sizeof(char *); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(log_vars); ++i) {
 		wlr_log(WLR_INFO, "%s=%s", log_vars[i], getenv(log_vars[i]));
 	}
 }
@@ -142,7 +142,7 @@ static void log_distro() {
 		"/etc/redhat-release",
 		"/etc/gentoo-release",
 	};
-	for (size_t i = 0; i < sizeof(paths) / sizeof(char *); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(paths); ++i) {
 		FILE *f = fopen(paths[i], "r");
 		if (f) {
 			wlr_log(WLR_INFO, "Contents of %s:", paths[i]);

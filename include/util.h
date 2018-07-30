@@ -6,6 +6,8 @@
 #include <sys/types.h> 
 #include <xkbcommon/xkbcommon.h>
 
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a)[0])
+
 /**
  * Wrap i into the range [0, max[
  */

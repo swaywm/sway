@@ -15,6 +15,7 @@
 #include "sway/tree/view.h"
 #include "stringop.h"
 #include "log.h"
+#include "util.h"
 
 // Returns error object, or NULL if check succeeds.
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
@@ -177,7 +178,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 
 	if (!config_loading) {
 		res = bsearch(&d, command_handlers,
-				sizeof(command_handlers) / sizeof(struct cmd_handler),
+				ARRAY_SIZE(command_handlers),
 				sizeof(struct cmd_handler), handler_compare);
 
 		if (res) {
@@ -187,7 +188,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 
 	if (config->reading) {
 		res = bsearch(&d, config_handlers,
-				sizeof(config_handlers) / sizeof(struct cmd_handler),
+				ARRAY_SIZE(config_handlers),
 				sizeof(struct cmd_handler), handler_compare);
 
 		if (res) {
@@ -455,12 +456,12 @@ struct cmd_results *config_commands_command(char *exec) {
 
 	for (int i = 1; i < argc; ++i) {
 		size_t j;
-		for (j = 0; j < sizeof(context_names) / sizeof(context_names[0]); ++j) {
+		for (j = 0; j < ARRAY_SIZE(context_names); ++j) {
 			if (strcmp(context_names[j].name, argv[i]) == 0) {
 				break;
 			}
 		}
-		if (j == sizeof(context_names) / sizeof(context_names[0])) {
+		if (j == ARRAY_SIZE(context_names)) {
 			results = cmd_results_new(CMD_INVALID, cmd,
 					"Invalid command context %s", argv[i]);
 			goto cleanup;

@@ -783,7 +783,7 @@ static char *get_config_path(void) {
 
 	wordexp_t p;
 	char *path;
-	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(config_paths); ++i) {
 		if (wordexp(config_paths[i], &p, 0) == 0) {
 			path = strdup(p.we_wordv[0]);
 			wordfree(&p);

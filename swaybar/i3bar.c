@@ -7,6 +7,7 @@
 #include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
+#include "util.h"
 
 void i3bar_block_free(struct i3bar_block *block) {
 	if (!block) {
@@ -146,8 +147,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 			switch (*cur) {
 			case '[':
 				++state->depth;
-				if (state->depth >
-						sizeof(state->nodes) / sizeof(state->nodes[0])) {
+				if (state->depth > ARRAY_SIZE(state->nodes)) {
 					status_error(status, "[i3bar json too deep]");
 					return false;
 				}
@@ -177,8 +177,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 				break;
 			case '"':
 				++state->depth;
-				if (state->depth >
-						sizeof(state->nodes) / sizeof(state->nodes[0])) {
+				if (state->depth > ARRAY_SIZE(state->nodes)) {
 					status_error(status, "[i3bar json too deep]");
 					return false;
 				}

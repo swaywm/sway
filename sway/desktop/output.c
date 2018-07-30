@@ -15,6 +15,7 @@
 #include <wlr/util/region.h>
 #include "log.h"
 #include "config.h"
+#include "util.h"
 #include "sway/config.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
@@ -559,7 +560,7 @@ void output_enable(struct sway_output *output) {
 		return;
 	}
 
-	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
+	size_t len = ARRAY_SIZE(output->layers);
 	for (size_t i = 0; i < len; ++i) {
 		wl_list_init(&output->layers[i]);
 	}

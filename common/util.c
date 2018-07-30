@@ -43,7 +43,7 @@ static struct modifier_key {
 
 uint32_t get_modifier_mask_by_name(const char *name) {
 	int i;
-	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
+	for (i = 0; i < (int)(ARRAY_SIZE(modifiers)); ++i) {
 		if (strcasecmp(modifiers[i].name, name) == 0) {
 			return modifiers[i].mod;
 		}
@@ -54,7 +54,7 @@ uint32_t get_modifier_mask_by_name(const char *name) {
 
 const char *get_modifier_name_by_mask(uint32_t modifier) {
 	int i;
-	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
+	for (i = 0; i < (int)(ARRAY_SIZE(modifiers)); ++i) {
 		if (modifiers[i].mod == modifier) {
 			return modifiers[i].name;
 		}
@@ -66,7 +66,7 @@ const char *get_modifier_name_by_mask(uint32_t modifier) {
 int get_modifier_names(const char **names, uint32_t modifier_masks) {
 	int length = 0;
 	int i;
-	for (i = 0; i < (int)(sizeof(modifiers) / sizeof(struct modifier_key)); ++i) {
+	for (i = 0; i < (int)(ARRAY_SIZE(modifiers)); ++i) {
 		if ((modifier_masks & modifiers[i].mod) != 0) {
 			names[length] = modifiers[i].name;
 			++length;
