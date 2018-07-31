@@ -891,6 +891,15 @@ static bool find_by_mark_iterator(struct sway_container *con,
 	return con->type == C_VIEW && view_has_mark(con->sway_view, mark);
 }
 
+struct sway_view *view_find_mark(char *mark) {
+	struct sway_container *container = container_find(&root_container,
+		find_by_mark_iterator, mark);
+	if (!container) {
+		return NULL;
+	}
+	return container->sway_view;
+}
+
 bool view_find_and_unmark(char *mark) {
 	struct sway_container *container = container_find(&root_container,
 		find_by_mark_iterator, mark);

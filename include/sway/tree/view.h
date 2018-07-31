@@ -316,6 +316,11 @@ void view_update_title(struct sway_view *view, bool force);
 void view_execute_criteria(struct sway_view *view);
 
 /**
+ * Find any view that has the given mark and return it.
+ */
+struct sway_view *view_find_mark(char *mark);
+
+/**
  * Find any view that has the given mark and remove the mark from the view.
  * Returns true if it matched a view.
  */

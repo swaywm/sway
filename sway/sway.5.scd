@@ -123,18 +123,27 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *layout* toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...
 	Cycles the layout mode of the focused container through a list of layouts.
 
-*move* left|right|up|down [<px>]
+*move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. If the container,
 	the optional _px_ argument specifies how many pixels to move the container.
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
+*move* [absolute] position <pos_x> [px] <pos_y> [px]
+	Moves the focused container to the specified position.
+
+*move* [absolute] position center|mouse
+	Moves the focused container to be centered on the workspace or mouse.
+
+*move* container|window to mark <mark>
+	Moves the focused container to the specified mark.
+
 *move* container|window to workspace <name>
 	Moves the focused container to the specified workspace.
 
-*move* container|window to workspace prev|next
-	Moves the focused container to the previous or next workspace on this
-	output, or if no workspaces remain, the previous or next output.
+*move* container|window to workspace prev|next|current
+	Moves the focused container to the previous, next or current workspace on
+	this output, or if no workspaces remain, the previous or next output.
 
 *move* container|window to workspace prev\_on\_output|next\_on\_output
 	Moves the focused container to the previous or next workspace on this
