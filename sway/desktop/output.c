@@ -119,7 +119,7 @@ static void output_for_each_surface_iterator(struct wlr_surface *surface,
 		data->user_data);
 }
 
-static void output_surface_for_each_surface(struct sway_output *output,
+void output_surface_for_each_surface(struct sway_output *output,
 		struct wlr_surface *surface, double ox, double oy,
 		sway_surface_iterator_func_t iterator, void *user_data) {
 	struct surface_iterator_data data = {
@@ -153,6 +153,23 @@ void output_view_for_each_surface(struct sway_output *output,
 
 	view_for_each_surface(view,
 		output_for_each_surface_iterator, &data);
+}
+
+void output_view_for_each_popup(struct sway_output *output,
+		struct sway_view *view, sway_surface_iterator_func_t iterator,
+		void *user_data) {
+	struct surface_iterator_data data = {
+		.user_iterator = iterator,
+		.user_data = user_data,
+		.output = output,
+		.ox = view->swayc->current.view_x - output->swayc->current.swayc_x,
+		.oy = view->swayc->current.view_y - output->swayc->current.swayc_y,
+		.width = view->swayc->current.view_width,
+		.height = view->swayc->current.view_height,
+		.rotation = 0, // TODO
+	};
+
+	view_for_each_popup(view, output_for_each_surface_iterator, &data);
 }
 
 void output_layer_for_each_surface(struct sway_output *output,
@@ -295,8 +312,9 @@ static void send_frame_done_container_iterator(struct sway_container *con,
 		return;
 	}
 
-	output_view_for_each_surface(data->output, con->sway_view,
-		send_frame_done_iterator, data->when);
+	// Toplevels only
+	output_surface_for_each_surface(data->output, con->sway_view->surface,
+		con->x, con->y, send_frame_done_iterator, data->when);
 }
 
 static void send_frame_done_container(struct sway_output *output,
@@ -307,6 +325,27 @@ static void send_frame_done_container(struct sway_output *output,
 	};
 	container_descendants(con, C_VIEW,
 		send_frame_done_container_iterator, &data);
+}
+
+static void send_frame_done_popup_iterator(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *box, float rotation,
+		void *data) {
+	// Send frame done to this popup's surface
+	send_frame_done_iterator(output, surface, box, rotation, data);
+
+	// Send frame done to this popup's child toplevels
+	output_surface_for_each_surface(output, surface, box->x, box->y,
+			send_frame_done_iterator, data);
+}
+
+static void send_frame_done_popups(struct sway_output *output,
+		struct sway_view *view, struct timespec *when) {
+	struct send_frame_done_data data = {
+		.output = output,
+		.when = when,
+	};
+	output_view_for_each_popup(output, view,
+			send_frame_done_popup_iterator, &data);
 }
 
 static void send_frame_done(struct sway_output *output, struct timespec *when) {
@@ -345,6 +384,13 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		send_frame_done_layer(output,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], when);
 	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+	if (focus && focus->type == C_VIEW) {
+		send_frame_done_popups(output, focus->sway_view, when);
+	}
+
 
 send_frame_overlay:
 	send_frame_done_layer(output,
