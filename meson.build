@@ -50,7 +50,7 @@ conf_data = configuration_data()
 
 if get_option('enable-xwayland')
 	conf_data.set('HAVE_XWAYLAND', true)
-	xcb    = dependency('xcb')
+	xcb = dependency('xcb')
 else
 	conf_data.set('HAVE_XWAYLAND', false)
 endif
