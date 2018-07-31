@@ -153,10 +153,6 @@ sway_sources = files(
 	'tree/output.c',
 )
 
-if get_option('enable-xwayland')
-	sway_sources += 'desktop/xwayland.c'
-endif
-
 sway_deps = [
 	cairo,
 	gdk_pixbuf,
@@ -170,9 +166,13 @@ sway_deps = [
 	server_protos,
 	wayland_server,
 	wlroots,
-	xcb,
 	xkbcommon,
 ]
+
+if get_option('enable-xwayland')
+	sway_sources += 'desktop/xwayland.c'
+	sway_deps += xcb
+endif
 
 executable(
 	'sway',
