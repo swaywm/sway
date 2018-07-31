@@ -50,6 +50,7 @@ struct sway_view_impl {
 	void (*for_each_popup)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
+	void (*close_popups)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
 
@@ -247,6 +248,8 @@ void view_set_activated(struct sway_view *view, bool activated);
 void view_set_tiled(struct sway_view *view, bool tiled);
 
 void view_close(struct sway_view *view);
+
+void view_close_popups(struct sway_view *view);
 
 void view_damage_from(struct sway_view *view);
 

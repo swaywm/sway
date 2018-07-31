@@ -197,6 +197,18 @@ static void _close(struct sway_view *view) {
 	}
 }
 
+static void close_popups_iterator(struct wlr_surface *surface,
+		int sx, int sy, void *data) {
+	struct wlr_xdg_surface *xdg_surface =
+		wlr_xdg_surface_from_wlr_surface(surface);
+	wlr_xdg_surface_send_close(xdg_surface);
+}
+
+static void close_popups(struct sway_view *view) {
+	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface,
+			close_popups_iterator, NULL);
+}
+
 static void destroy(struct sway_view *view) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		xdg_shell_view_from_view(view);
@@ -217,6 +229,7 @@ static const struct sway_view_impl view_impl = {
 	.for_each_surface = for_each_surface,
 	.for_each_popup = for_each_popup,
 	.close = _close,
+	.close_popups = close_popups,
 	.destroy = destroy,
 };
 

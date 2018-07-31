@@ -302,6 +302,12 @@ void view_close(struct sway_view *view) {
 	}
 }
 
+void view_close_popups(struct sway_view *view) {
+	if (view->impl->close_popups) {
+		view->impl->close_popups(view);
+	}
+}
+
 void view_damage_from(struct sway_view *view) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
