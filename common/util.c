@@ -110,6 +110,30 @@ pid_t get_parent_pid(pid_t child) {
 }
 
 uint32_t parse_color(const char *color) {
+	static const struct {
+		uint32_t color;
+		char* name;
+	} color_names[] = {
+		{ 0x000000, "black" },
+		{ 0x888888, "grey" },
+		{ 0xFFFFFF, "white" },
+		{ 0xFF0000, "red" },
+		{ 0x00FF00, "green" },
+		{ 0x0000FF, "blue" },
+		{ 0xFFFF00, "yellow" },
+		{ 0xFF00FF, "purple" },
+		{ 0x00FFFF, "cyan" },
+		{ 0xFF8800, "orange" },
+		{ 0xFF0088, "pink" },
+	};
+
+	for (size_t i = 0; i < sizeof(color_names) / sizeof(color_names[0]); i++) {
+		if (strcasecmp(color, color_names[i].name) == 0) {
+			// Alpha is always 100%
+			return (color_names[i].color << 8) | 0xff;
+		}
+	}
+
 	if (color[0] == '#') {
 		++color;
 	}
