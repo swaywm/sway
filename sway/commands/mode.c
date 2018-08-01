@@ -56,6 +56,7 @@ struct cmd_results *cmd_mode(int argc, char **argv) {
 		mode->name = strdup(mode_name);
 		mode->keysym_bindings = create_list();
 		mode->keycode_bindings = create_list();
+		mode->mouse_bindings = create_list();
 		mode->pango = pango;
 		list_add(config->modes, mode);
 	}
