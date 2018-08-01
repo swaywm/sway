@@ -664,8 +664,6 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_SHUTDOWN);
 			} else if (strcmp(event_type, "window") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
-			} else if (strcmp(event_type, "modifier") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
 			} else if (strcmp(event_type, "binding") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
 			} else if (strcmp(event_type, "tick") == 0) {
