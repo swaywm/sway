@@ -3,12 +3,18 @@
 // Any value will hide SOCK_CLOEXEC on FreeBSD (__BSD_VISIBLE=0)
 #define _XOPEN_SOURCE 700
 #endif
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -28,6 +34,7 @@
 #include "sway/tree/view.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 
 static int ipc_socket = -1;
 static struct wl_event_source *ipc_event_source =  NULL;
@@ -291,13 +298,11 @@ void ipc_event_workspace(struct sway_container *old,
 	wlr_log(WLR_DEBUG, "Sending workspace::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
-	if (strcmp("focus", change) == 0) {
-		if (old) {
-			json_object_object_add(obj, "old",
-					ipc_json_describe_container_recursive(old));
-		} else {
-			json_object_object_add(obj, "old", NULL);
-		}
+	if (old) {
+		json_object_object_add(obj, "old",
+				ipc_json_describe_container_recursive(old));
+	} else {
+		json_object_object_add(obj, "old", NULL);
 	}
 
 	if (new) {
@@ -351,6 +356,104 @@ void ipc_event_mode(const char *mode, bool pango) {
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_MODE);
 	json_object_put(obj);
+}
+
+void ipc_event_shutdown(const char *reason) {
+	if (!ipc_has_event_listeners(IPC_EVENT_SHUTDOWN)) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Sending shutdown::%s event", reason);
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "change", json_object_new_string(reason));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_SHUTDOWN);
+	json_object_put(json);
+}
+
+void ipc_event_binding(struct sway_binding *binding) {
+	if (!ipc_has_event_listeners(IPC_EVENT_BINDING)) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Sending binding event");
+
+	json_object *json_binding = json_object_new_object();
+	json_object_object_add(json_binding, "command", json_object_new_string(binding->command));
+
+	const char *names[10];
+	int len = get_modifier_names(names, binding->modifiers);
+	json_object *modifiers = json_object_new_array();
+	for (int i = 0; i < len; ++i) {
+		json_object_array_add(modifiers, json_object_new_string(names[i]));
+	}
+	json_object_object_add(json_binding, "event_state_mask", modifiers);
+
+	json_object *input_codes = json_object_new_array();
+	int input_code = 0;
+	json_object *symbols = json_object_new_array();
+	json_object *symbol = NULL;
+
+	if (binding->type == BINDING_KEYCODE) { // bindcode: populate input_codes
+		uint32_t keycode;
+		for (int i = 0; i < binding->keys->length; ++i) {
+			keycode = *(uint32_t *)binding->keys->items[i];
+			json_object_array_add(input_codes, json_object_new_int(keycode));
+			if (i == 0) {
+				input_code = keycode;
+			}
+		}
+	} else { // bindsym/mouse: populate symbols
+		uint32_t keysym;
+		char buffer[64];
+		for (int i = 0; i < binding->keys->length; ++i) {
+			keysym = *(uint32_t *)binding->keys->items[i];
+			if (keysym >= BTN_LEFT && keysym <= BTN_LEFT + 8) {
+				snprintf(buffer, 64, "button%u", keysym - BTN_LEFT + 1);
+			} else if (xkb_keysym_get_name(keysym, buffer, 64) < 0) {
+				continue;
+			}
+
+			json_object *str = json_object_new_string(buffer);
+			if (i == 0) {
+				// str is owned by both symbol and symbols. Make sure
+				// to bump the ref count.
+				json_object_array_add(symbols, json_object_get(str));
+				symbol = str;
+			} else {
+				json_object_array_add(symbols, str);
+			}
+		}
+	}
+
+	json_object_object_add(json_binding, "input_codes", input_codes);
+	json_object_object_add(json_binding, "input_code", json_object_new_int(input_code));
+	json_object_object_add(json_binding, "symbols", symbols);
+	json_object_object_add(json_binding, "symbol", symbol);
+	json_object_object_add(json_binding, "input_type", binding->type == BINDING_MOUSE ?
+			json_object_new_string("mouse") : json_object_new_string("keyboard"));
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "change", json_object_new_string("run"));
+	json_object_object_add(json, "binding", json_binding);
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_BINDING);
+	json_object_put(json);
+}
+
+static void ipc_event_tick(const char *payload) {
+	if (!ipc_has_event_listeners(IPC_EVENT_TICK)) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Sending tick event");
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "first", json_object_new_boolean(false));
+	json_object_object_add(json, "payload", json_object_new_string(payload));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_TICK);
+	json_object_put(json);
 }
 
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data) {
@@ -494,6 +597,13 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		goto exit_cleanup;
 	}
 
+	case IPC_SEND_TICK:
+	{
+		ipc_event_tick(buf);
+		ipc_send_reply(client, "{\"success\": true}", 17);
+		goto exit_cleanup;
+	}
+
 	case IPC_GET_OUTPUTS:
 	{
 		json_object *outputs = json_object_new_array();
@@ -540,6 +650,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 			goto exit_cleanup;
 		}
 
+		bool is_tick = false;
 		// parse requested event types
 		for (size_t i = 0; i < json_object_array_length(request); i++) {
 			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
@@ -549,12 +660,15 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
 			} else if (strcmp(event_type, "mode") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_MODE);
+			} else if (strcmp(event_type, "shutdown") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_SHUTDOWN);
 			} else if (strcmp(event_type, "window") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
-			} else if (strcmp(event_type, "modifier") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_MODIFIER);
 			} else if (strcmp(event_type, "binding") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
+			} else if (strcmp(event_type, "tick") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_TICK);
+				is_tick = true;
 			} else {
 				client_valid =
 					ipc_send_reply(client, "{\"success\": false}", 18);
@@ -566,6 +680,10 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 		json_object_put(request);
 		client_valid = ipc_send_reply(client, "{\"success\": true}", 17);
+		if (is_tick) {
+			client->current_command = IPC_EVENT_TICK;
+			ipc_send_reply(client, "{\"first\": true, \"payload\": \"\"}", 30);
+		}
 		goto exit_cleanup;
 	}
 

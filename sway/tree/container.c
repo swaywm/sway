@@ -62,8 +62,10 @@ void container_create_notify(struct sway_container *container) {
 	// TODO send ipc event type based on the container type
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 
-	if (container->type == C_VIEW || container->type == C_CONTAINER) {
+	if (container->type == C_VIEW) {
 		ipc_event_window(container, "new");
+	} else if (container->type == C_WORKSPACE) {
+		ipc_event_workspace(NULL, container, "init");
 	}
 }
 
@@ -281,7 +283,7 @@ static struct sway_container *container_output_destroy(
 				container_remove_child(workspace);
 				if (!workspace_is_empty(workspace)) {
 					container_add_child(new_output, workspace);
-					ipc_event_workspace(workspace, NULL, "move");
+					ipc_event_workspace(NULL, workspace, "move");
 				} else {
 					container_destroy(workspace);
 				}
@@ -319,7 +321,13 @@ static struct sway_container *container_destroy_noreaping(
 	}
 
 	wl_signal_emit(&con->events.destroy, con);
-	ipc_event_window(con, "close");
+
+	// emit IPC event
+	if (con->type == C_VIEW) {
+		ipc_event_window(con, "close");
+	} else if (con->type == C_WORKSPACE) {
+		ipc_event_workspace(NULL, con, "empty");
+	}
 
 	// The below functions move their children to somewhere else.
 	if (con->type == C_OUTPUT) {

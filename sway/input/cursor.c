@@ -349,7 +349,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 				output = container_parent(c, C_OUTPUT);
 			}
 			if (output != focus) {
-				seat_set_focus_warp(seat, c, false);
+				seat_set_focus_warp(seat, c, false, true);
 			}
 		} else if (c->type == C_VIEW) {
 			// Focus c if the following are true:
@@ -359,13 +359,13 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			if (!wlr_seat_keyboard_has_grab(cursor->seat->wlr_seat) &&
 					c != prev_c &&
 					view_is_visible(c->sway_view)) {
-				seat_set_focus_warp(seat, c, false);
+				seat_set_focus_warp(seat, c, false, true);
 			} else {
 				struct sway_container *next_focus =
 					seat_get_focus_inactive(seat, &root_container);
 				if (next_focus && next_focus->type == C_VIEW &&
 						view_is_visible(next_focus->sway_view)) {
-					seat_set_focus_warp(seat, next_focus, false);
+					seat_set_focus_warp(seat, next_focus, false, true);
 				}
 			}
 		}

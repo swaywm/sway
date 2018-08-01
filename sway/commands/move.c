@@ -98,7 +98,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		container_move_to(current, destination);
 		struct sway_container *focus = seat_get_focus_inactive(
 				config->handler_context.seat, old_parent);
-		seat_set_focus(config->handler_context.seat, focus);
+		seat_set_focus_warp(config->handler_context.seat, focus, true, false);
 		container_reap_empty(old_parent);
 		container_reap_empty(destination->parent);
 
@@ -135,7 +135,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		struct sway_container *old_parent = current->parent;
 		struct sway_container *old_ws = container_parent(current, C_WORKSPACE);
 		container_move_to(current, focus);
-		seat_set_focus(config->handler_context.seat, old_parent);
+		seat_set_focus_warp(config->handler_context.seat, old_parent, true, false);
 		container_reap_empty(old_parent);
 		container_reap_empty(focus->parent);
 
