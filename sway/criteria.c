@@ -366,9 +366,9 @@ static char *get_focused_prop(enum criteria_token token) {
 			return NULL;
 		}
 		size_t id = view->swayc->id;
-		int len = snprintf(NULL, 0, "%zu", id) + 1;
-		char *id_str = malloc(len);
-		snprintf(id_str, len, "%zu", id);
+		size_t id_size = snprintf(NULL, 0, "%zu", id) + 1;
+		char *id_str = malloc(id_size);
+		snprintf(id_str, id_size, "%zu", id);
 		value = id_str;
 		break;
 	case T_CON_MARK: // These do not support __focused__
