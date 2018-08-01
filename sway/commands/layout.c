@@ -42,19 +42,16 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 		parent = parent->parent;
 	}
 
-	if (strcasecmp(argv[0], "default") == 0) {
-		parent->layout = parent->prev_layout;
-	} else {
-		if (parent->layout != L_TABBED && parent->layout != L_STACKED) {
-			parent->prev_layout = parent->layout;
-		}
-
-		bool assigned_directly = parse_layout_string(argv[0], &parent->layout);
-		if (!assigned_directly && strcasecmp(argv[0], "toggle") == 0) {
+	enum sway_container_layout prev = parent->layout;
+	bool assigned_directly = parse_layout_string(argv[0], &parent->layout);
+	if (!assigned_directly) {
+		if (strcasecmp(argv[0], "default") == 0) {
+			parent->layout = parent->prev_split_layout;
+		} else if (strcasecmp(argv[0], "toggle") == 0) {
 			if (argc == 1) {
 				parent->layout =
 					parent->layout == L_STACKED ? L_TABBED :
-					parent->layout == L_TABBED ? parent->prev_layout : L_STACKED;
+					parent->layout == L_TABBED ? parent->prev_split_layout : L_STACKED;
 			} else if (argc == 2) {
 				if (strcasecmp(argv[1], "all") == 0) {
 					parent->layout =
@@ -62,17 +59,20 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 						parent->layout == L_VERT ? L_STACKED :
 						parent->layout == L_STACKED ? L_TABBED : L_HORIZ;
 				} else if (strcasecmp(argv[1], "split") == 0) {
-					parent->layout = parent->layout == L_VERT ? L_HORIZ : L_VERT;
+					parent->layout =
+						parent->layout == L_HORIZ ? L_VERT :
+						parent->layout == L_VERT ? L_HORIZ : parent->prev_split_layout;
 				} else {
 					return cmd_results_new(CMD_INVALID, "layout", expected_syntax);
 				}
 			} else {
-				bool valid;
 				enum sway_container_layout parsed_layout;
 				int curr = 1;
 				for (; curr < argc; curr++) {
-					valid = parse_layout_string(argv[curr], &parsed_layout);
-					if (valid && parsed_layout == parent->layout) {
+					bool valid = parse_layout_string(argv[curr], &parsed_layout);
+					if ((valid && parsed_layout == parent->layout) ||
+							(strcmp(argv[curr], "split") == 0 &&
+							(parent->layout == L_VERT || parent->layout == L_HORIZ))) {
 						break;
 					}
 				}
@@ -82,6 +82,11 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 						i = 1;
 					}
 					if (parse_layout_string(argv[i], &parent->layout)) {
+						break;
+					} else if (strcmp(argv[i], "split") == 0) {
+						parent->layout =
+							parent->layout == L_HORIZ ? L_VERT :
+							parent->layout == L_VERT ? L_HORIZ : parent->prev_split_layout;
 						break;
 					} // invalid layout strings are silently ignored
 				}
@@ -93,9 +98,13 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 	if (parent->layout == L_NONE) {
 		parent->layout = container_get_default_layout(parent);
 	}
-
-	container_notify_subtree_changed(parent);
-	arrange_windows(parent);
+	if (prev != parent->layout) {
+		if (prev != L_TABBED && prev != L_STACKED) {
+			parent->prev_split_layout = prev;
+		}
+		container_notify_subtree_changed(parent);
+		arrange_windows(parent);
+	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
