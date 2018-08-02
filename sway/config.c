@@ -377,6 +377,10 @@ static bool load_config(const char *path, struct sway_config *config,
 	return true;
 }
 
+static int qstrcmp(const void* a, const void* b) {
+	return strcmp(*((char**) a), *((char**) b));
+}
+
 bool load_main_config(const char *file, bool is_active, bool validating) {
 	char *path;
 	if (file != NULL) {
@@ -412,9 +416,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	config->reading = true;
 
 	// Read security configs
-	// TODO: Security
 	bool success = true;
-	/*
 	DIR *dir = opendir(SYSCONFDIR "/sway/security.d");
 	if (!dir) {
 		wlr_log(WLR_ERROR,
@@ -457,7 +459,6 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 
 		free_flat_list(secconfigs);
 	}
-	*/
 
 	success = success && load_config(path, config,
 			&config->swaynag_config_errors);
@@ -484,6 +485,17 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	}
 	config->reading = false;
 	return success;
+}
+
+struct cmd_results *check_security_config(struct sway_config *config) {
+	const char *path = SYSCONFDIR "/sway/security.d/";
+	if (!config->current_config_path ||
+			strncmp(path, config->current_config_path, strlen(path)) != 0) {
+		return cmd_results_new(CMD_INVALID, "permit",
+			"This command is only permitted to run from %s/sway/security.d/*",
+			path);
+	}
+	return NULL;
 }
 
 static bool load_include_config(const char *path, const char *parent_dir,
