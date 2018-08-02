@@ -775,8 +775,12 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
-	if (container->type == C_VIEW) {
-		ipc_event_window(container, "focus");
+	if (container) {
+		if (container->type == C_VIEW) {
+			ipc_event_window(container, "focus");
+		} else if (container->type == C_WORKSPACE) {
+			ipc_event_workspace(NULL, container, "focus");
+		}
 	}
 
 	seat->has_focus = (container != NULL);

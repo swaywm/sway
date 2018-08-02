@@ -496,7 +496,7 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 	}
 
 	// Use the focused workspace
-	ws = seat_get_focus(seat);
+	ws = seat_get_focus_inactive(seat, &root_container);
 	if (ws->type != C_WORKSPACE) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
@@ -505,7 +505,8 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 
 static bool should_focus(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *prev_focus = seat_get_focus(seat);
+	struct sway_container *prev_focus =
+		seat_get_focus_inactive(seat, &root_container);
 	struct sway_container *prev_ws = prev_focus->type == C_WORKSPACE ?
 		prev_focus : container_parent(prev_focus, C_WORKSPACE);
 	struct sway_container *map_ws = container_parent(view->swayc, C_WORKSPACE);
