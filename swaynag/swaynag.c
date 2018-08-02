@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <stdlib.h>
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/wait.h>

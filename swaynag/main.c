@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <stdlib.h>
 #include <signal.h>
 #include "log.h"
 #include "list.h"
