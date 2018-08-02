@@ -19,18 +19,14 @@ static char *read_from_stdin() {
 			continue;
 		}
 
-		if (!buffer) {
-			buffer = strdup(line);
-		} else {
-			buffer = realloc(buffer, strlen(buffer) + strlen(line) + 2);
-			strcat(buffer, line);
-			strcat(buffer, "\n");
-		}
+		size_t curlen = buffer ? strlen(buffer) : 0;
+		buffer = realloc(buffer, curlen + strlen(line) + 2);
+		snprintf(buffer + curlen, strlen(line) + 2, "%s\n", line);
 
 		free(line);
 	}
 
-	if (buffer && buffer[strlen(buffer) - 1] == '\n') {
+	while (buffer && buffer[strlen(buffer) - 1] == '\n') {
 		buffer[strlen(buffer) - 1] = '\0';
 	}
 
