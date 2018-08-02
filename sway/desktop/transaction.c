@@ -195,11 +195,18 @@ static void transaction_apply(struct sway_transaction *transaction) {
 				sizeof(struct sway_container_state));
 
 		if (container->type == C_VIEW) {
-			if (container->sway_view->saved_buffer) {
-				view_remove_saved_buffer(container->sway_view);
-			}
-			if (container->instructions->length > 1) {
-				view_save_buffer(container->sway_view);
+			if (container->destroying) {
+				if (container->instructions->length == 1 &&
+						container->sway_view->saved_buffer) {
+					view_remove_saved_buffer(container->sway_view);
+				}
+			} else {
+				if (container->sway_view->saved_buffer) {
+					view_remove_saved_buffer(container->sway_view);
+				}
+				if (container->instructions->length > 1) {
+					view_save_buffer(container->sway_view);
+				}
 			}
 		}
 	}
@@ -276,9 +283,9 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			// mapping and its default geometry doesn't intersect an output.
 			struct timespec when;
 			wlr_surface_send_frame_done(con->sway_view->surface, &when);
-			if (!con->sway_view->saved_buffer) {
-				view_save_buffer(con->sway_view);
-			}
+		}
+		if (con->type == C_VIEW && !con->sway_view->saved_buffer) {
+			view_save_buffer(con->sway_view);
 		}
 		list_add(con->instructions, instruction);
 	}
