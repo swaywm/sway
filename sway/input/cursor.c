@@ -99,7 +99,8 @@ static struct sway_container *container_at_coords(
 		return ws;
 	}
 	if (ws->sway_workspace->fullscreen) {
-		return container_at(ws, lx, ly, surface, sx, sy);
+		return container_at_view(ws->sway_workspace->fullscreen, lx, ly,
+				surface, sx, sy);
 	}
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
