@@ -308,6 +308,7 @@ enum focus_wrapping_mode {
  * The configuration struct. The result of loading a config file.
  */
 struct sway_config {
+	pid_t swaynag_pid;
 	list_t *symbols;
 	list_t *modes;
 	list_t *bars;
@@ -403,17 +404,18 @@ struct sway_config {
  * Loads the main config from the given path. is_active should be true when
  * reloading the config.
  */
-bool load_main_config(const char *path, bool is_active);
+bool load_main_config(const char *path, bool is_active, char **errors);
 
 /**
  * Loads an included config. Can only be used after load_main_config.
  */
-bool load_include_configs(const char *path, struct sway_config *config);
+bool load_include_configs(const char *path, struct sway_config *config,
+		char **errors);
 
 /**
  * Reads the config from the given FILE.
  */
-bool read_config(FILE *file, struct sway_config *config);
+bool read_config(FILE *file, struct sway_config *config, char **errors);
 
 /**
  * Free config struct
@@ -421,6 +423,8 @@ bool read_config(FILE *file, struct sway_config *config);
 void free_config(struct sway_config *config);
 
 void free_sway_variable(struct sway_variable *var);
+
+void spawn_swaynag_config_errors(struct sway_config *config, char *errors);
 
 /**
  * Does variable replacement for a string based on the config's currently loaded variables.

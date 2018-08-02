@@ -415,12 +415,14 @@ int main(int argc, char **argv) {
 	ipc_init(&server);
 	log_env();
 
+	char *errors = NULL;
 	if (validate) {
-		bool valid = load_main_config(config_path, false);
+		bool valid = load_main_config(config_path, false, &errors);
+		free(errors);
 		return valid ? 0 : 1;
 	}
 
-	if (!load_main_config(config_path, false)) {
+	if (!load_main_config(config_path, false, &errors)) {
 		sway_terminate(EXIT_FAILURE);
 	}
 
@@ -433,6 +435,7 @@ int main(int argc, char **argv) {
 	setenv("WAYLAND_DISPLAY", server.socket, true);
 	if (!terminate_request) {
 		if (!server_start_backend(&server)) {
+			free(errors);
 			sway_terminate(EXIT_FAILURE);
 		}
 	}
@@ -451,6 +454,11 @@ int main(int argc, char **argv) {
 		list_del(config->cmd_queue, 0);
 	}
 	transaction_commit_dirty();
+
+	if (errors) {
+		spawn_swaynag_config_errors(config, errors);
+		free(errors);
+	}
 
 	if (!terminate_request) {
 		server_run(&server);

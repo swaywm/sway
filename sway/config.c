@@ -158,6 +158,7 @@ static void set_color(float dest[static 4], uint32_t color) {
 }
 
 static void config_defaults(struct sway_config *config) {
+	config->swaynag_pid = -1;
 	if (!(config->symbols = create_list())) goto cleanup;
 	if (!(config->modes = create_list())) goto cleanup;
 	if (!(config->bars = create_list())) goto cleanup;
@@ -319,7 +320,8 @@ static char *get_config_path(void) {
 	return NULL; // Not reached
 }
 
-static bool load_config(const char *path, struct sway_config *config) {
+static bool load_config(const char *path, struct sway_config *config,
+		char **errors) {
 	if (path == NULL) {
 		wlr_log(WLR_ERROR, "Unable to find a config file!");
 		return false;
@@ -338,7 +340,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 		return false;
 	}
 
-	bool config_load_success = read_config(f, config);
+	bool config_load_success = read_config(f, config, errors);
 	fclose(f);
 
 	if (!config_load_success) {
@@ -348,7 +350,7 @@ static bool load_config(const char *path, struct sway_config *config) {
 	return true;
 }
 
-bool load_main_config(const char *file, bool is_active) {
+bool load_main_config(const char *file, bool is_active, char **errors) {
 	char *path;
 	if (file != NULL) {
 		path = strdup(file);
@@ -365,6 +367,7 @@ bool load_main_config(const char *file, bool is_active) {
 	config_defaults(config);
 	if (is_active) {
 		wlr_log(WLR_DEBUG, "Performing configuration file reload");
+		config->swaynag_pid = old_config->swaynag_pid;
 		config->reloading = true;
 		config->active = true;
 		create_default_output_configs();
@@ -423,7 +426,7 @@ bool load_main_config(const char *file, bool is_active) {
 	}
 	*/
 
-	success = success && load_config(path, config);
+	success = success && load_config(path, config, errors);
 
 	if (is_active) {
 		for (int i = 0; i < config->output_configs->length; i++) {
@@ -441,7 +444,7 @@ bool load_main_config(const char *file, bool is_active) {
 }
 
 static bool load_include_config(const char *path, const char *parent_dir,
-		struct sway_config *config) {
+		struct sway_config *config, char **errors) {
 	// save parent config
 	const char *parent_config = config->current_config_path;
 
@@ -485,7 +488,7 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	list_add(config->config_chain, real_path);
 	int index = config->config_chain->length - 1;
 
-	if (!load_config(real_path, config)) {
+	if (!load_config(real_path, config, errors)) {
 		free(real_path);
 		config->current_config_path = parent_config;
 		list_del(config->config_chain, index);
@@ -497,7 +500,8 @@ static bool load_include_config(const char *path, const char *parent_dir,
 	return true;
 }
 
-bool load_include_configs(const char *path, struct sway_config *config) {
+bool load_include_configs(const char *path, struct sway_config *config,
+		char **errors) {
 	char *wd = getcwd(NULL, 0);
 	char *parent_path = strdup(config->current_config_path);
 	const char *parent_dir = dirname(parent_path);
@@ -519,7 +523,7 @@ bool load_include_configs(const char *path, struct sway_config *config) {
 	char **w = p.we_wordv;
 	size_t i;
 	for (i = 0; i < p.we_wordc; ++i) {
-		load_include_config(w[i], parent_dir, config);
+		load_include_config(w[i], parent_dir, config, errors);
 	}
 	free(parent_path);
 	wordfree(&p);
@@ -575,7 +579,26 @@ static char *expand_line(const char *block, const char *line, bool add_brace) {
 	return expanded;
 }
 
-bool read_config(FILE *file, struct sway_config *config) {
+static void log_error(char **errors, const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	size_t length = vsnprintf(NULL, 0, fmt, args) + 1;
+	va_end(args);
+
+	int offset = *errors ? strlen(*errors) : 0;
+	char *temp = realloc(*errors, offset + length + 1);
+	if (!temp) {
+		wlr_log(WLR_ERROR, "Failed to realloc error log");
+		return;
+	}
+	*errors = temp;
+
+	va_start(args, fmt);
+	vsnprintf(*errors + offset, length, fmt, args);
+	va_end(args);
+}
+
+bool read_config(FILE *file, struct sway_config *config, char **errors) {
 	bool reading_main_config = false;
 	char *this_config = NULL;
 	size_t config_size = 0;
@@ -665,6 +688,8 @@ bool read_config(FILE *file, struct sway_config *config) {
 		case CMD_INVALID:
 			wlr_log(WLR_ERROR, "Error on line %i '%s': %s (%s)", line_number,
 				line, res->error, config->current_config_path);
+			log_error(errors, "Error on line %i (%s) '%s': %s\n", line_number,
+				config->current_config_path, line, res->error);
 			success = false;
 			break;
 
@@ -711,6 +736,38 @@ bool read_config(FILE *file, struct sway_config *config) {
 	list_free(stack);
 
 	return success;
+}
+
+void spawn_swaynag_config_errors(struct sway_config *config, char *errors) {
+	char *command = "swaynag "
+		"--type error "
+		"--message 'There are errors in your config file' "
+		"--detailed-message "
+		"--button 'Exit sway' 'swaymsg exit' "
+		"--button 'Reload sway' 'swaymsg reload'";
+
+	int fd[2];
+	if (pipe(fd) != 0) {
+		wlr_log(WLR_ERROR, "Failed to create pipe for swaynag");
+		return;
+	}
+
+	pid_t pid;
+	if ((pid = fork()) == 0) {
+		close(fd[1]);
+		dup2(fd[0], STDIN_FILENO);
+		close(fd[0]);
+		execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+		_exit(0);
+	} else if (pid < 0) {
+		wlr_log(WLR_ERROR, "Failed to create fork for swaynag");
+	}
+
+	close(fd[0]);
+	write(fd[1], errors, strlen(errors));
+	close(fd[1]);
+
+	config->swaynag_pid = pid;
 }
 
 char *do_var_replacement(char *str) {

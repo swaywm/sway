@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <signal.h>
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -19,8 +20,11 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 		list_add(bar_ids, strdup(bar->id));
 	}
 
-	if (!load_main_config(config->current_config_path, true)) {
-		return cmd_results_new(CMD_FAILURE, "reload", "Error(s) reloading config.");
+	char *errors = NULL;
+	if (!load_main_config(config->current_config_path, true, &errors)) {
+		free(errors);
+		return cmd_results_new(CMD_FAILURE, "reload",
+				"Error(s) reloading config.");
 	}
 	ipc_event_workspace(NULL, NULL, "reload");
 
@@ -42,5 +46,16 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 	list_free(bar_ids);
 
 	arrange_windows(&root_container);
+
+	if (config->swaynag_pid > 0) {
+		kill(config->swaynag_pid, SIGTERM);
+		config->swaynag_pid = -1;
+	}
+
+	if (errors) {
+		spawn_swaynag_config_errors(config, errors);
+		free(errors);
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

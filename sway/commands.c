@@ -511,11 +511,14 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		results->input = NULL;
 	}
 	if (format) {
-		char *error = malloc(256);
 		va_list args;
 		va_start(args, format);
+		size_t length = vsnprintf(NULL, 0, format, args) + 1;
+		char *error = malloc(length);
+		va_end(args);
+		va_start(args, format);
 		if (error) {
-			vsnprintf(error, 256, format, args);
+			vsnprintf(error, length, format, args);
 		}
 		va_end(args);
 		results->error = error;
