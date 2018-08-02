@@ -230,9 +230,16 @@ struct sway_container *container_parent(struct sway_container *container,
  * surface-local coordinates of the given layout coordinates if the container
  * is a view and the view contains a surface at those coordinates.
  */
-struct sway_container *container_at(struct sway_container *workspace,
-		double lx, double ly, struct wlr_surface **surface,
+struct sway_container *container_at(struct sway_container *container,
+		double ox, double oy, struct wlr_surface **surface,
 		double *sx, double *sy);
+
+/**
+ * Same as container_at, but only checks floating views and expects coordinates
+ * to be layout coordinates, as that's what floating views use.
+ */
+struct sway_container *floating_container_at(double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy);
 
 /**
  * Apply the function for each descendant of the container breadth first.
