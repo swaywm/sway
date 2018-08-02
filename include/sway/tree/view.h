@@ -47,7 +47,10 @@ struct sway_view_impl {
 	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
+	void (*for_each_popup)(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
+	void (*close_popups)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
 
@@ -246,9 +249,20 @@ void view_set_tiled(struct sway_view *view, bool tiled);
 
 void view_close(struct sway_view *view);
 
+void view_close_popups(struct sway_view *view);
+
 void view_damage_from(struct sway_view *view);
 
+/**
+ * Iterate all surfaces of a view (toplevels + popups).
+ */
 void view_for_each_surface(struct sway_view *view,
+	wlr_surface_iterator_func_t iterator, void *user_data);
+
+/**
+ * Iterate all popups recursively.
+ */
+void view_for_each_popup(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation

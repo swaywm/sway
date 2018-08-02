@@ -737,6 +737,13 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
+	// Close any popups on the old focus
+	if (last_focus && last_focus != container) {
+		if (last_focus->type == C_VIEW) {
+			view_close_popups(last_focus->sway_view);
+		}
+	}
+
 	if (last_focus) {
 		if (last_workspace) {
 			if (notify && last_workspace != new_workspace) {

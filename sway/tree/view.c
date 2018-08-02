@@ -302,6 +302,12 @@ void view_close(struct sway_view *view) {
 	}
 }
 
+void view_close_popups(struct sway_view *view) {
+	if (view->impl->close_popups) {
+		view->impl->close_popups(view);
+	}
+}
+
 void view_damage_from(struct sway_view *view) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
@@ -329,6 +335,16 @@ void view_for_each_surface(struct sway_view *view,
 		view->impl->for_each_surface(view, iterator, user_data);
 	} else {
 		wlr_surface_for_each_surface(view->surface, iterator, user_data);
+	}
+}
+
+void view_for_each_popup(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (!view->surface) {
+		return;
+	}
+	if (view->impl->for_each_popup) {
+		view->impl->for_each_popup(view, iterator, user_data);
 	}
 }
 

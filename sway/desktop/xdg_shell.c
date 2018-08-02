@@ -179,6 +179,14 @@ static void for_each_surface(struct sway_view *view,
 		user_data);
 }
 
+static void for_each_popup(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (xdg_shell_view_from_view(view) == NULL) {
+		return;
+	}
+	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface, iterator, user_data);
+}
+
 static void _close(struct sway_view *view) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return;
@@ -187,6 +195,18 @@ static void _close(struct sway_view *view) {
 	if (surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
 		wlr_xdg_surface_send_close(surface);
 	}
+}
+
+static void close_popups_iterator(struct wlr_surface *surface,
+		int sx, int sy, void *data) {
+	struct wlr_xdg_surface *xdg_surface =
+		wlr_xdg_surface_from_wlr_surface(surface);
+	wlr_xdg_surface_send_close(xdg_surface);
+}
+
+static void close_popups(struct sway_view *view) {
+	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface,
+			close_popups_iterator, NULL);
 }
 
 static void destroy(struct sway_view *view) {
@@ -207,7 +227,9 @@ static const struct sway_view_impl view_impl = {
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
+	.for_each_popup = for_each_popup,
 	.close = _close,
+	.close_popups = close_popups,
 	.destroy = destroy,
 };
 

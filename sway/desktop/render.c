@@ -186,13 +186,36 @@ static void premultiply_alpha(float color[4], float opacity) {
 	color[2] *= color[3];
 }
 
-static void render_view_surfaces(struct sway_view *view,
+static void render_view_toplevels(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct render_data data = {
 		.damage = damage,
 		.alpha = alpha,
 	};
-	output_view_for_each_surface(output, view, render_surface_iterator, &data);
+	// Render all toplevels without descending into popups
+	output_surface_for_each_surface(output, view->surface,
+			view->swayc->current.view_x, view->swayc->current.view_y,
+			render_surface_iterator, &data);
+}
+
+static void render_popup_iterator(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *box, float rotation,
+		void *data) {
+	// Render this popup's surface
+	render_surface_iterator(output, surface, box, rotation, data);
+
+	// Render this popup's child toplevels
+	output_surface_for_each_surface(output, surface, box->x, box->y,
+			render_surface_iterator, data);
+}
+
+static void render_view_popups(struct sway_view *view,
+		struct sway_output *output, pixman_region32_t *damage, float alpha) {
+	struct render_data data = {
+		.damage = damage,
+		.alpha = alpha,
+	};
+	output_view_for_each_popup(output, view, render_popup_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view,
@@ -241,7 +264,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 	if (view->swayc->instructions->length) {
 		render_saved_view(view, output, damage, view->swayc->alpha);
 	} else {
-		render_view_surfaces(view, output, damage, view->swayc->alpha);
+		render_view_toplevels(view, output, damage, view->swayc->alpha);
 	}
 
 	if (view->using_csd) {
@@ -845,7 +868,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 				render_saved_view(fullscreen_con->sway_view,
 						output, damage, 1.0f);
 			} else {
-				render_view_surfaces(fullscreen_con->sway_view,
+				render_view_toplevels(fullscreen_con->sway_view,
 						output, damage, 1.0f);
 			}
 		} else {
@@ -879,6 +902,12 @@ void output_render(struct sway_output *output, struct timespec *when,
 #endif
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
+	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+	if (focus && focus->type == C_VIEW) {
+		render_view_popups(focus->sway_view, output, damage, focus->alpha);
 	}
 
 render_overlay:
