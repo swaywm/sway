@@ -234,6 +234,10 @@ struct sway_container *container_at(struct sway_container *workspace,
 		double lx, double ly, struct wlr_surface **surface,
 		double *sx, double *sy);
 
+struct sway_container *container_at_view(struct sway_container *view,
+		double lx, double ly, struct wlr_surface **surface,
+		double *sx, double *sy);
+
 /**
  * Apply the function for each descendant of the container breadth first.
  */
