@@ -222,17 +222,14 @@ static void render_saved_view(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	int width, height;
-	struct wlr_texture *texture =
-		transaction_get_saved_texture(view, &width, &height);
-	if (!texture) {
+	if (!view->saved_buffer || !view->saved_buffer->texture) {
 		return;
 	}
 	struct wlr_box box = {
 		.x = view->swayc->current.view_x - output->swayc->current.swayc_x,
 		.y = view->swayc->current.view_y - output->swayc->current.swayc_y,
-		.width = width,
-		.height = height,
+		.width = view->saved_buffer_width,
+		.height = view->saved_buffer_height,
 	};
 
 	struct wlr_box output_box = {
@@ -252,7 +249,8 @@ static void render_saved_view(struct sway_view *view,
 	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
 		wlr_output->transform_matrix);
 
-	render_texture(wlr_output, damage, texture, &box, matrix, alpha);
+	render_texture(wlr_output, damage, view->saved_buffer->texture,
+			&box, matrix, alpha);
 }
 
 /**
@@ -261,7 +259,7 @@ static void render_saved_view(struct sway_view *view,
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->sway_view;
-	if (view->swayc->instructions->length) {
+	if (view->saved_buffer) {
 		render_saved_view(view, output, damage, view->swayc->alpha);
 	} else {
 		render_view_toplevels(view, output, damage, view->swayc->alpha);
@@ -864,7 +862,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		// TODO: handle views smaller than the output
 		if (fullscreen_con->type == C_VIEW) {
-			if (fullscreen_con->instructions->length) {
+			if (fullscreen_con->sway_view->saved_buffer) {
 				render_saved_view(fullscreen_con->sway_view,
 						output, damage, 1.0f);
 			} else {
