@@ -393,7 +393,6 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		WL_SEAT_CAPABILITY_POINTER |
 		WL_SEAT_CAPABILITY_TOUCH);
 
-	seat_configure_xcursor(seat);
 
 	wl_list_insert(&input->seats, &seat->link);
 
@@ -438,6 +437,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 
 static void seat_configure_pointer(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
+	seat_configure_xcursor(seat);
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
 	seat_apply_input_config(seat, sway_device);
@@ -617,7 +617,7 @@ static int handle_urgent_timeout(void *data) {
 }
 
 void seat_set_focus_warp(struct sway_seat *seat,
-		struct sway_container *container, bool warp) {
+		struct sway_container *container, bool warp, bool notify) {
 	if (seat->focused_layer) {
 		return;
 	}
@@ -737,9 +737,18 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
+	// Close any popups on the old focus
+	if (last_focus && last_focus != container) {
+		if (last_focus->type == C_VIEW) {
+			view_close_popups(last_focus->sway_view);
+		}
+	}
+
 	if (last_focus) {
 		if (last_workspace) {
-			ipc_event_workspace(last_workspace, container, "focus");
+			if (notify && last_workspace != new_workspace) {
+				 ipc_event_workspace(last_workspace, new_workspace, "focus");
+			}
 			if (!workspace_is_visible(last_workspace)
 					&& workspace_is_empty(last_workspace)) {
 				if (last_workspace == last_focus) {
@@ -766,6 +775,10 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "focus");
+	}
+
 	seat->has_focus = (container != NULL);
 
 	update_debug_tree();
@@ -773,7 +786,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 void seat_set_focus(struct sway_seat *seat,
 		struct sway_container *container) {
-	seat_set_focus_warp(seat, container, true);
+	seat_set_focus_warp(seat, container, true, true);
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,

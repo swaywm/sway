@@ -217,7 +217,9 @@ void container_move_to(struct sway_container *container,
 		container_sort_workspaces(new_parent);
 		seat_set_focus(seat, new_parent);
 		workspace_output_raise_priority(container, old_parent, new_parent);
-		ipc_event_workspace(container, NULL, "move");
+		ipc_event_workspace(NULL, container, "move");
+	} else if (container->type == C_VIEW) {
+		ipc_event_window(container, "move");
 	}
 	container_notify_subtree_changed(old_parent);
 	container_notify_subtree_changed(new_parent);
@@ -578,6 +580,10 @@ void container_move(struct sway_container *container,
 	container_notify_subtree_changed(old_parent);
 	container_notify_subtree_changed(container->parent);
 
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "move");
+	}
+
 	if (old_parent) {
 		seat_set_focus(config->handler_context.seat, old_parent);
 		seat_set_focus(config->handler_context.seat, container);
@@ -592,7 +598,7 @@ void container_move(struct sway_container *container,
 		next_ws = container_parent(next_ws, C_WORKSPACE);
 	}
 	if (last_ws && next_ws && last_ws != next_ws) {
-		ipc_event_workspace(last_ws, container, "focus");
+		ipc_event_workspace(last_ws, next_ws, "focus");
 		workspace_detect_urgent(last_ws);
 		workspace_detect_urgent(next_ws);
 	}
@@ -995,13 +1001,13 @@ static void swap_focus(struct sway_container *con1,
 		if (focus == con1 && (con2->parent->layout == L_TABBED
 					|| con2->parent->layout == L_STACKED)) {
 			if (workspace_is_visible(ws2)) {
-				seat_set_focus_warp(seat, con2, false);
+				seat_set_focus_warp(seat, con2, false, true);
 			}
 			seat_set_focus(seat, ws1 != ws2 ? con2 : con1);
 		} else if (focus == con2 && (con1->parent->layout == L_TABBED
 					|| con1->parent->layout == L_STACKED)) {
 			if (workspace_is_visible(ws1)) {
-				seat_set_focus_warp(seat, con1, false);
+				seat_set_focus_warp(seat, con1, false, true);
 			}
 			seat_set_focus(seat, ws1 != ws2 ? con1 : con2);
 		} else if (ws1 != ws2) {

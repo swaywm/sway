@@ -62,8 +62,10 @@ void container_create_notify(struct sway_container *container) {
 	// TODO send ipc event type based on the container type
 	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 
-	if (container->type == C_VIEW || container->type == C_CONTAINER) {
+	if (container->type == C_VIEW) {
 		ipc_event_window(container, "new");
+	} else if (container->type == C_WORKSPACE) {
+		ipc_event_workspace(NULL, container, "init");
 	}
 }
 
@@ -281,7 +283,7 @@ static struct sway_container *container_output_destroy(
 				container_remove_child(workspace);
 				if (!workspace_is_empty(workspace)) {
 					container_add_child(new_output, workspace);
-					ipc_event_workspace(workspace, NULL, "move");
+					ipc_event_workspace(NULL, workspace, "move");
 				} else {
 					container_destroy(workspace);
 				}
@@ -319,7 +321,13 @@ static struct sway_container *container_destroy_noreaping(
 	}
 
 	wl_signal_emit(&con->events.destroy, con);
-	ipc_event_window(con, "close");
+
+	// emit IPC event
+	if (con->type == C_VIEW) {
+		ipc_event_window(con, "close");
+	} else if (con->type == C_WORKSPACE) {
+		ipc_event_workspace(NULL, con, "empty");
+	}
 
 	// The below functions move their children to somewhere else.
 	if (con->type == C_OUTPUT) {
@@ -561,9 +569,14 @@ static struct sway_container *container_at_view(struct sway_container *swayc,
 		*sx = _sx;
 		*sy = _sy;
 		*surface = _surface;
+		return swayc;
 	}
-	return swayc;
+	return NULL;
 }
+
+static struct sway_container *tiling_container_at(
+		struct sway_container *con, double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy);
 
 /**
  * container_at for a container with layout L_TABBED.
@@ -591,7 +604,7 @@ static struct sway_container *container_at_tabbed(struct sway_container *parent,
 	// Surfaces
 	struct sway_container *current = seat_get_active_child(seat, parent);
 
-	return container_at(current, lx, ly, surface, sx, sy);
+	return tiling_container_at(current, lx, ly, surface, sx, sy);
 }
 
 /**
@@ -616,7 +629,7 @@ static struct sway_container *container_at_stacked(
 	// Surfaces
 	struct sway_container *current = seat_get_active_child(seat, parent);
 
-	return container_at(current, lx, ly, surface, sx, sy);
+	return tiling_container_at(current, lx, ly, surface, sx, sy);
 }
 
 /**
@@ -634,45 +647,13 @@ static struct sway_container *container_at_linear(struct sway_container *parent,
 			.height = child->height,
 		};
 		if (wlr_box_contains_point(&box, lx, ly)) {
-			return container_at(child, lx, ly, surface, sx, sy);
+			return tiling_container_at(child, lx, ly, surface, sx, sy);
 		}
 	}
 	return NULL;
 }
 
-struct sway_container *container_at(struct sway_container *parent,
-		double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy) {
-	if (!sway_assert(parent->type >= C_WORKSPACE,
-				"Expected workspace or deeper")) {
-		return NULL;
-	}
-	if (parent->type == C_VIEW) {
-		return container_at_view(parent, lx, ly, surface, sx, sy);
-	}
-	if (!parent->children->length) {
-		return NULL;
-	}
-
-	switch (parent->layout) {
-	case L_HORIZ:
-	case L_VERT:
-		return container_at_linear(parent, lx, ly, surface, sx, sy);
-	case L_TABBED:
-		return container_at_tabbed(parent, lx, ly, surface, sx, sy);
-	case L_STACKED:
-		return container_at_stacked(parent, lx, ly, surface, sx, sy);
-	case L_FLOATING:
-		sway_assert(false, "Didn't expect to see floating here");
-		return NULL;
-	case L_NONE:
-		return NULL;
-	}
-
-	return NULL;
-}
-
-struct sway_container *floating_container_at(double lx, double ly,
+static struct sway_container *floating_container_at(double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *output = root_container.children->items[i];
@@ -694,10 +675,95 @@ struct sway_container *floating_container_at(double lx, double ly,
 					.height = floater->height,
 				};
 				if (wlr_box_contains_point(&box, lx, ly)) {
-					return container_at(floater, lx, ly, surface, sx, sy);
+					return tiling_container_at(floater, lx, ly,
+							surface, sx, sy);
 				}
 			}
 		}
+	}
+	return NULL;
+}
+
+static struct sway_container *tiling_container_at(
+		struct sway_container *con, double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (con->type == C_VIEW) {
+		return container_at_view(con, lx, ly, surface, sx, sy);
+	}
+	if (!con->children->length) {
+		return NULL;
+	}
+
+	switch (con->layout) {
+	case L_HORIZ:
+	case L_VERT:
+		return container_at_linear(con, lx, ly, surface, sx, sy);
+	case L_TABBED:
+		return container_at_tabbed(con, lx, ly, surface, sx, sy);
+	case L_STACKED:
+		return container_at_stacked(con, lx, ly, surface, sx, sy);
+	case L_FLOATING:
+		sway_assert(false, "Didn't expect to see floating here");
+		return NULL;
+	case L_NONE:
+		return NULL;
+	}
+	return NULL;
+}
+
+static bool surface_is_popup(struct wlr_surface *surface) {
+	if (wlr_surface_is_xdg_surface(surface)) {
+		struct wlr_xdg_surface *xdg_surface =
+			wlr_xdg_surface_from_wlr_surface(surface);
+		while (xdg_surface) {
+			if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
+				return true;
+			}
+			xdg_surface = xdg_surface->toplevel->parent;
+		}
+		return false;
+	}
+
+	if (wlr_surface_is_xdg_surface_v6(surface)) {
+		struct wlr_xdg_surface_v6 *xdg_surface_v6 =
+			wlr_xdg_surface_v6_from_wlr_surface(surface);
+		while (xdg_surface_v6) {
+			if (xdg_surface_v6->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
+				return true;
+			}
+			xdg_surface_v6 = xdg_surface_v6->toplevel->parent;
+		}
+		return false;
+	}
+
+	return false;
+}
+
+struct sway_container *container_at(struct sway_container *workspace,
+		double lx, double ly,
+		struct wlr_surface **surface, double *sx, double *sy) {
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
+		return NULL;
+	}
+	struct sway_container *c;
+	// Focused view's popups
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus =
+		seat_get_focus_inactive(seat, &root_container);
+	if (focus && focus->type == C_VIEW) {
+		container_at_view(focus, lx, ly, surface, sx, sy);
+		if (*surface && surface_is_popup(*surface)) {
+			return focus;
+		}
+		*surface = NULL;
+	}
+	// Floating
+	if ((c = floating_container_at(lx, ly, surface, sx, sy))) {
+		return c;
+	}
+	// Tiling
+	if ((c = tiling_container_at(workspace, lx, ly, surface, sx, sy))) {
+		return c;
 	}
 	return NULL;
 }

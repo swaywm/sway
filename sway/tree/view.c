@@ -303,6 +303,12 @@ void view_close(struct sway_view *view) {
 	}
 }
 
+void view_close_popups(struct sway_view *view) {
+	if (view->impl->close_popups) {
+		view->impl->close_popups(view);
+	}
+}
+
 void view_damage_from(struct sway_view *view) {
 	for (int i = 0; i < root_container.children->length; ++i) {
 		struct sway_container *cont = root_container.children->items[i];
@@ -330,6 +336,16 @@ void view_for_each_surface(struct sway_view *view,
 		view->impl->for_each_surface(view, iterator, user_data);
 	} else {
 		wlr_surface_for_each_surface(view->surface, iterator, user_data);
+	}
+}
+
+void view_for_each_popup(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (!view->surface) {
+		return;
+	}
+	if (view->impl->for_each_popup) {
+		view->impl->for_each_popup(view, iterator, user_data);
 	}
 }
 
@@ -865,6 +881,8 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	// Update title after the global font height is updated
 	container_update_title_textures(view->swayc);
+
+	ipc_event_window(view->swayc, "title");
 }
 
 static bool find_by_mark_iterator(struct sway_container *con,
@@ -887,6 +905,7 @@ bool view_find_and_unmark(char *mark) {
 			free(view_mark);
 			list_del(view->marks, i);
 			view_update_marks_textures(view);
+			ipc_event_window(container, "mark");
 			return true;
 		}
 	}
@@ -894,11 +913,10 @@ bool view_find_and_unmark(char *mark) {
 }
 
 void view_clear_marks(struct sway_view *view) {
-	for (int i = 0; i < view->marks->length; ++i) {
-		free(view->marks->items[i]);
+	while (view->marks->length) {
+		list_del(view->marks, 0);
+		ipc_event_window(view->swayc, "mark");
 	}
-	list_free(view->marks);
-	view->marks = create_list();
 }
 
 bool view_has_mark(struct sway_view *view, char *mark) {
@@ -909,6 +927,11 @@ bool view_has_mark(struct sway_view *view, char *mark) {
 		}
 	}
 	return false;
+}
+
+void view_add_mark(struct sway_view *view, char *mark) {
+	list_add(view->marks, strdup(mark));
+	ipc_event_window(view->swayc, "mark");
 }
 
 static void update_marks_texture(struct sway_view *view,

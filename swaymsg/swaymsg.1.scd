@@ -64,3 +64,6 @@ _swaymsg_ [options...] [message]
 
 *get\_config*
 	Gets a JSON-encoded copy of the current configuration.
+
+*send\_tick*
+	Sends a tick event to all subscribed clients.
