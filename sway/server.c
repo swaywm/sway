@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control.h>
+#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
@@ -56,6 +57,7 @@ bool server_init(struct sway_server *server) {
 		wlr_data_device_manager_create(server->wl_display);
 
 	wlr_gamma_control_manager_create(server->wl_display);
+	wlr_gamma_control_manager_v1_create(server->wl_display);
 	wlr_primary_selection_device_manager_create(server->wl_display);
 
 	server->new_output.notify = handle_new_output;
