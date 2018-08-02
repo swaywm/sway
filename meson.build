@@ -44,13 +44,13 @@ systemd        = dependency('libsystemd', required: false)
 elogind        = dependency('libelogind', required: false)
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
-xcb            = dependency('xcb')
 git            = find_program('git', required: false)
 
 conf_data = configuration_data()
 
 if get_option('enable-xwayland')
 	conf_data.set('HAVE_XWAYLAND', true)
+	xcb = dependency('xcb')
 else
 	conf_data.set('HAVE_XWAYLAND', false)
 endif

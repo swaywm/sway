@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "config.h"
 #ifdef HAVE_XWAYLAND
@@ -495,7 +496,7 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 	}
 
 	// Use the focused workspace
-	ws = seat_get_focus(seat);
+	ws = seat_get_focus_inactive(seat, &root_container);
 	if (ws->type != C_WORKSPACE) {
 		ws = container_parent(ws, C_WORKSPACE);
 	}
@@ -504,7 +505,8 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 
 static bool should_focus(struct sway_view *view) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *prev_focus = seat_get_focus(seat);
+	struct sway_container *prev_focus =
+		seat_get_focus_inactive(seat, &root_container);
 	struct sway_container *prev_ws = prev_focus->type == C_WORKSPACE ?
 		prev_focus : container_parent(prev_focus, C_WORKSPACE);
 	struct sway_container *map_ws = container_parent(view->swayc, C_WORKSPACE);
@@ -1092,4 +1094,23 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 bool view_is_urgent(struct sway_view *view) {
 	return view->urgent.tv_sec || view->urgent.tv_nsec;
+}
+
+void view_remove_saved_buffer(struct sway_view *view) {
+	if (!sway_assert(view->saved_buffer, "Expected a saved buffer")) {
+		return;
+	}
+	wlr_buffer_unref(view->saved_buffer);
+	view->saved_buffer = NULL;
+}
+
+void view_save_buffer(struct sway_view *view) {
+	if (!sway_assert(!view->saved_buffer, "Didn't expect saved buffer")) {
+		view_remove_saved_buffer(view);
+	}
+	if (view->surface && wlr_surface_has_buffer(view->surface)) {
+		view->saved_buffer = wlr_buffer_ref(view->surface->buffer);
+		view->saved_buffer_width = view->surface->current.width;
+		view->saved_buffer_height = view->surface->current.height;
+	}
 }

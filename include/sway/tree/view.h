@@ -85,6 +85,9 @@ struct sway_view {
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
 
+	struct wlr_buffer *saved_buffer;
+	int saved_buffer_width, saved_buffer_height;
+
 	bool destroying;
 
 	list_t *executed_criteria; // struct criteria *
@@ -338,5 +341,9 @@ bool view_is_visible(struct sway_view *view);
 void view_set_urgent(struct sway_view *view, bool enable);
 
 bool view_is_urgent(struct sway_view *view);
+
+void view_remove_saved_buffer(struct sway_view *view);
+
+void view_save_buffer(struct sway_view *view);
 
 #endif
