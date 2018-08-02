@@ -194,7 +194,8 @@ static void render_view_toplevels(struct sway_view *view,
 	};
 	// Render all toplevels without descending into popups
 	output_surface_for_each_surface(output, view->surface,
-			view->swayc->current.view_x, view->swayc->current.view_y,
+			view->swayc->current.view_x - output->wlr_output->lx,
+			view->swayc->current.view_y - output->wlr_output->ly,
 			render_surface_iterator, &data);
 }
 
