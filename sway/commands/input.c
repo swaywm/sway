@@ -31,6 +31,12 @@ static struct cmd_handler input_handlers[] = {
 	{ "xkb_variant", input_cmd_xkb_variant },
 };
 
+// must be in order for the bsearch
+static struct cmd_handler input_config_handlers[] = {
+	{ "xkb_capslock", input_cmd_xkb_capslock },
+	{ "xkb_numlock", input_cmd_xkb_numlock },
+};
+
 struct cmd_results *cmd_input(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 2))) {
@@ -44,8 +50,21 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
 	}
 
-	struct cmd_results *res = config_subcommand(argv + 1, argc - 1,
+	struct cmd_results *res;
+
+	if (find_handler(argv[1], input_config_handlers,
+			sizeof(input_config_handlers))) {
+		if (config->reading) {
+			res = config_subcommand(argv + 1, argc - 1,
+				input_config_handlers, sizeof(input_config_handlers));
+		} else {
+			res = cmd_results_new(CMD_FAILURE, "input",
+				"Can only be used in config file.");
+		}
+	} else {
+		res = config_subcommand(argv + 1, argc - 1,
 			input_handlers, sizeof(input_handlers));
+	}
 
 	free_input_config(config->handler_context.input_config);
 	config->handler_context.input_config = NULL;

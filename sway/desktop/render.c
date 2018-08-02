@@ -14,6 +14,7 @@
 #include <wlr/types/wlr_surface.h>
 #include <wlr/util/region.h>
 #include "log.h"
+#include "config.h"
 #include "sway/config.h"
 #include "sway/debug.h"
 #include "sway/input/input-manager.h"
@@ -28,10 +29,7 @@
 #include "sway/tree/workspace.h"
 
 struct render_data {
-	struct root_geometry root_geo;
-	struct sway_output *output;
 	pixman_region32_t *damage;
-	struct sway_view *view;
 	float alpha;
 };
 
@@ -91,11 +89,11 @@ damage_finish:
 	pixman_region32_fini(&damage);
 }
 
-static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
+static void render_surface_iterator(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
 		void *_data) {
 	struct render_data *data = _data;
-	struct wlr_output *wlr_output = data->output->wlr_output;
-	float rotation = data->root_geo.rotation;
+	struct wlr_output *wlr_output = output->wlr_output;
 	pixman_region32_t *output_damage = data->damage;
 	float alpha = data->alpha;
 
@@ -104,13 +102,7 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 		return;
 	}
 
-	struct wlr_box box;
-	bool intersects = output_get_surface_box(&data->root_geo, data->output,
-		surface, sx, sy, &box);
-	if (!intersects) {
-		return;
-	}
-
+	struct wlr_box box = *_box;
 	scale_box(&box, wlr_output->scale);
 
 	float matrix[9];
@@ -125,33 +117,32 @@ static void render_surface_iterator(struct wlr_surface *surface, int sx, int sy,
 static void render_layer(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *layer_surfaces) {
 	struct render_data data = {
-		.output = output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_layer_for_each_surface(layer_surfaces, &data.root_geo,
+	output_layer_for_each_surface(output, layer_surfaces,
 		render_surface_iterator, &data);
 }
 
+#ifdef HAVE_XWAYLAND
 static void render_unmanaged(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *unmanaged) {
 	struct render_data data = {
-		.output = output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_unmanaged_for_each_surface(unmanaged, output, &data.root_geo,
+	output_unmanaged_for_each_surface(output, unmanaged,
 		render_surface_iterator, &data);
 }
+#endif
 
 static void render_drag_icons(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *drag_icons) {
 	struct render_data data = {
-		.output = output,
 		.damage = damage,
 		.alpha = 1.0f,
 	};
-	output_drag_icons_for_each_surface(drag_icons, output, &data.root_geo,
+	output_drag_icons_for_each_surface(output, drag_icons,
 		render_surface_iterator, &data);
 }
 
@@ -195,33 +186,51 @@ static void premultiply_alpha(float color[4], float opacity) {
 	color[2] *= color[3];
 }
 
-static void render_view_surfaces(struct sway_view *view,
+static void render_view_toplevels(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct render_data data = {
-		.output = output,
 		.damage = damage,
-		.view = view,
 		.alpha = alpha,
 	};
-	output_view_for_each_surface(view, output, &data.root_geo,
-		render_surface_iterator, &data);
+	// Render all toplevels without descending into popups
+	output_surface_for_each_surface(output, view->surface,
+			view->swayc->current.view_x - output->wlr_output->lx,
+			view->swayc->current.view_y - output->wlr_output->ly,
+			render_surface_iterator, &data);
+}
+
+static void render_popup_iterator(struct sway_output *output,
+		struct wlr_surface *surface, struct wlr_box *box, float rotation,
+		void *data) {
+	// Render this popup's surface
+	render_surface_iterator(output, surface, box, rotation, data);
+
+	// Render this popup's child toplevels
+	output_surface_for_each_surface(output, surface, box->x, box->y,
+			render_surface_iterator, data);
+}
+
+static void render_view_popups(struct sway_view *view,
+		struct sway_output *output, pixman_region32_t *damage, float alpha) {
+	struct render_data data = {
+		.damage = damage,
+		.alpha = alpha,
+	};
+	output_view_for_each_popup(output, view, render_popup_iterator, &data);
 }
 
 static void render_saved_view(struct sway_view *view,
 		struct sway_output *output, pixman_region32_t *damage, float alpha) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
-	int width, height;
-	struct wlr_texture *texture =
-		transaction_get_saved_texture(view, &width, &height);
-	if (!texture) {
+	if (!view->saved_buffer || !view->saved_buffer->texture) {
 		return;
 	}
 	struct wlr_box box = {
 		.x = view->swayc->current.view_x - output->swayc->current.swayc_x,
 		.y = view->swayc->current.view_y - output->swayc->current.swayc_y,
-		.width = width,
-		.height = height,
+		.width = view->saved_buffer_width,
+		.height = view->saved_buffer_height,
 	};
 
 	struct wlr_box output_box = {
@@ -241,7 +250,8 @@ static void render_saved_view(struct sway_view *view,
 	wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL, 0,
 		wlr_output->transform_matrix);
 
-	render_texture(wlr_output, damage, texture, &box, matrix, alpha);
+	render_texture(wlr_output, damage, view->saved_buffer->texture,
+			&box, matrix, alpha);
 }
 
 /**
@@ -250,10 +260,10 @@ static void render_saved_view(struct sway_view *view,
 static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		struct sway_container *con, struct border_colors *colors) {
 	struct sway_view *view = con->sway_view;
-	if (view->swayc->instructions->length) {
+	if (view->saved_buffer) {
 		render_saved_view(view, output, damage, view->swayc->alpha);
 	} else {
-		render_view_surfaces(view, output, damage, view->swayc->alpha);
+		render_view_toplevels(view, output, damage, view->swayc->alpha);
 	}
 
 	if (view->using_csd) {
@@ -778,7 +788,7 @@ static void render_floating_container(struct sway_output *soutput,
 		}
 		render_view(soutput, damage, con, colors);
 	} else {
-		render_container(soutput, damage, con, false);
+		render_container(soutput, damage, con, con->current.focused);
 	}
 }
 
@@ -835,22 +845,13 @@ void output_render(struct sway_output *output, struct timespec *when,
 	}
 
 	struct sway_container *workspace = output_get_active_workspace(output);
-	struct sway_view *fullscreen_view = workspace->current.ws_fullscreen;
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *fullscreen_con = workspace->current.ws_fullscreen;
 
-	if (output_has_opaque_lockscreen(output, seat)) {
-		struct wlr_layer_surface *wlr_layer_surface = seat->focused_layer;
-		struct sway_layer_surface *sway_layer_surface =
-			layer_from_wlr_layer_surface(seat->focused_layer);
-		struct render_data data = {
-			.output = output,
-			.damage = damage,
-			.alpha = 1.0f,
-		};
-		output_surface_for_each_surface(wlr_layer_surface->surface,
-			sway_layer_surface->geo.x, sway_layer_surface->geo.y,
-			&data.root_geo, render_surface_iterator, &data);
-	} else if (fullscreen_view) {
+	if (output_has_opaque_overlay_layer_surface(output)) {
+		goto render_overlay;
+	}
+
+	if (fullscreen_con) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		int nrects;
@@ -861,16 +862,22 @@ void output_render(struct sway_output *output, struct timespec *when,
 		}
 
 		// TODO: handle views smaller than the output
-		if (fullscreen_view->swayc->instructions->length) {
-			render_saved_view(fullscreen_view, output, damage, 1.0f);
+		if (fullscreen_con->type == C_VIEW) {
+			if (fullscreen_con->sway_view->saved_buffer) {
+				render_saved_view(fullscreen_con->sway_view,
+						output, damage, 1.0f);
+			} else {
+				render_view_toplevels(fullscreen_con->sway_view,
+						output, damage, 1.0f);
+			}
 		} else {
-			render_view_surfaces(fullscreen_view, output, damage, 1.0f);
+			render_container(output, damage, fullscreen_con,
+					fullscreen_con->current.focused);
 		}
-
-		if (fullscreen_view->type == SWAY_VIEW_XWAYLAND) {
-			render_unmanaged(output, damage,
-				&root_container.sway_root->xwayland_unmanaged);
-		}
+#ifdef HAVE_XWAYLAND
+		render_unmanaged(output, damage,
+			&root_container.sway_root->xwayland_unmanaged);
+#endif
 	} else {
 		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
 
@@ -888,12 +895,21 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		render_container(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
-
+#ifdef HAVE_XWAYLAND
 		render_unmanaged(output, damage,
 			&root_container.sway_root->xwayland_unmanaged);
+#endif
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+	if (focus && focus->type == C_VIEW) {
+		render_view_popups(focus->sway_view, output, damage, focus->alpha);
+	}
+
+render_overlay:
 	render_layer(output, damage,
 		&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY]);
 	render_drag_icons(output, damage, &root_container.sway_root->drag_icons);

@@ -35,14 +35,25 @@ static struct cmd_results *focus_mode(struct sway_container *con,
 		struct sway_seat *seat, bool floating) {
 	struct sway_container *ws = con->type == C_WORKSPACE ?
 		con : container_parent(con, C_WORKSPACE);
-	struct sway_container *new_focus = ws;
-	if (floating) {
-		new_focus = ws->sway_workspace->floating;
-		if (new_focus->children->length == 0) {
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+
+	// If the container is in a floating split container,
+	// operate on the split container instead of the child.
+	if (container_is_floating_or_child(con)) {
+		while (con->parent->layout != L_FLOATING) {
+			con = con->parent;
 		}
 	}
-	seat_set_focus(seat, seat_get_active_child(seat, new_focus));
+
+	struct sway_container *new_focus = NULL;
+	if (floating) {
+		new_focus = seat_get_focus_inactive(seat, ws->sway_workspace->floating);
+	} else {
+		new_focus = seat_get_focus_inactive_tiling(seat, ws);
+	}
+	if (!new_focus) {
+		new_focus = ws;
+	}
+	seat_set_focus(seat, new_focus);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -97,7 +108,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	} else if (strcmp(argv[0], "tiling") == 0) {
 		return focus_mode(con, seat, false);
 	} else if (strcmp(argv[0], "mode_toggle") == 0) {
-		return focus_mode(con, seat, !container_is_floating(con));
+		return focus_mode(con, seat, !container_is_floating_or_child(con));
 	}
 
 	if (strcmp(argv[0], "output") == 0) {

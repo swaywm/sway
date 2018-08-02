@@ -1,0 +1,48 @@
+# swaymsg(1) completion
+
+_swayidle()
+{
+  local cur prev
+  _get_comp_words_by_ref -n : cur prev
+  local prev2=${COMP_WORDS[COMP_CWORD-2]}
+  local prev3=${COMP_WORDS[COMP_CWORD-3]}
+
+  events=(
+    'timeout'
+    'before-sleep'
+  )
+
+  short=(
+    -h
+    -d
+  )
+
+  if [ "$prev" = timeout ]; then
+    # timeout <timeout>
+    return
+  elif [ "$prev2" = timeout ]; then
+    # timeout <timeout> <timeout command>
+    COMPREPLY=($(compgen -c -- "$cur"))
+    return
+  elif [ "$prev3" = timeout ]; then
+    # timeout <timeout> <timeout command> [resume <resume command>]
+    COMPREPLY=(resume)
+    # optional argument; no return here as user may skip 'resume'
+  fi
+
+  case "$prev" in
+    resume)
+      COMPREPLY=($(compgen -c -- "$cur"))
+      return
+      ;;
+    before-sleep)
+      COMPREPLY=($(compgen -c -- "$cur"))
+      return
+      ;;
+  esac
+
+  COMPREPLY+=($(compgen -W "${events[*]}" -- "$cur"))
+  COMPREPLY+=($(compgen -W "${short[*]}" -- "$cur"))
+
+} &&
+complete -F _swayidle swayidle

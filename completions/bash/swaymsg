@@ -1,0 +1,59 @@
+# swaymsg(1) completion
+
+_swaymsg()
+{
+  local cur prev
+  _get_comp_words_by_ref cur prev
+
+  types=(
+    'get_workspaces'
+    'get_seats'
+    'get_inputs'
+    'get_outputs'
+    'get_tree'
+    'get_marks'
+    'get_bar_config'
+    'get_version'
+    'get_binding_modes'
+    'get_config'
+    'send_tick'
+  )
+
+  short=(
+    -h
+    -q
+    -r
+    -s
+    -t
+    -v
+  )
+
+  long=(
+    --help
+    --quiet
+    --raw
+    --socket
+    --type
+    --verbose
+  )
+
+  case $prev in
+    -s|--socket)
+      _filedir
+      return
+      ;;
+    -t|--type)
+      COMPREPLY=($(compgen -W "${types[*]}" -- "$cur"))
+      return
+      ;;
+  esac
+
+  if [[ $cur == --* ]]; then
+    COMPREPLY=($(compgen -W "${long[*]}" -- "$cur"))
+  else
+    COMPREPLY=($(compgen -W "${short[*]}" -- "$cur"))
+    COMPREPLY+=($(compgen -W "${long[*]}" -- "$cur"))
+  fi
+
+} &&
+complete -F _swaymsg swaymsg

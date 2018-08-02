@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <strings.h>
+#include <signal.h>
 #include "sway/config.h"
 #include "stringop.h"
 #include "list.h"
@@ -175,6 +176,9 @@ void invoke_swaybar(struct bar_config *bar) {
 	if (bar->pid == 0) {
 		setpgid(0, 0);
 		close(filedes[0]);
+		sigset_t set;
+		sigemptyset(&set);
+		sigprocmask(SIG_SETMASK, &set, NULL);
 
 		// run custom swaybar
 		size_t len = snprintf(NULL, 0, "%s -b %s",

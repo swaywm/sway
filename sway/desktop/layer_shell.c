@@ -7,11 +7,13 @@
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
 #include "log.h"
 
@@ -245,6 +247,9 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 		output_damage_surface(output, layer->geo.x, layer->geo.y,
 			layer_surface->surface, false);
 	}
+
+	arrange_windows(output->swayc);
+	transaction_commit_dirty();
 }
 
 static void unmap(struct sway_layer_surface *sway_layer) {
@@ -282,6 +287,8 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
 		if (output != NULL && output->swayc != NULL) {
 			arrange_layers(output);
+			arrange_windows(output->swayc);
+			transaction_commit_dirty();
 		}
 		wl_list_remove(&sway_layer->output_destroy.link);
 		sway_layer->layer_surface->output = NULL;

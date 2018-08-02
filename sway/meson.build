@@ -7,6 +7,7 @@ sway_sources = files(
 	'debug-tree.c',
 	'ipc-json.c',
 	'ipc-server.c',
+	'scratchpad.c',
 	'security.c',
 
 	'desktop/desktop.c',
@@ -17,7 +18,6 @@ sway_sources = files(
 	'desktop/transaction.c',
 	'desktop/xdg_shell_v6.c',
 	'desktop/xdg_shell.c',
-	'desktop/xwayland.c',
 
 	'input/input-manager.c',
 	'input/seat.c',
@@ -42,6 +42,7 @@ sway_sources = files(
 	'commands/exec_always.c',
 	'commands/floating.c',
 	'commands/floating_minmax_size.c',
+	'commands/floating_modifier.c',
 	'commands/focus.c',
 	'commands/focus_follows_mouse.c',
 	'commands/focus_wrapping.c',
@@ -66,6 +67,7 @@ sway_sources = files(
 	'commands/reload.c',
 	'commands/rename.c',
 	'commands/resize.c',
+	'commands/scratchpad.c',
 	'commands/seat.c',
 	'commands/seat/attach.c',
 	'commands/seat/cursor.c',
@@ -126,8 +128,10 @@ sway_sources = files(
 	'commands/input/scroll_method.c',
 	'commands/input/tap.c',
 	'commands/input/tap_button_map.c',
+	'commands/input/xkb_capslock.c',
 	'commands/input/xkb_layout.c',
 	'commands/input/xkb_model.c',
+	'commands/input/xkb_numlock.c',
 	'commands/input/xkb_options.c',
 	'commands/input/xkb_rules.c',
 	'commands/input/xkb_variant.c',
@@ -162,9 +166,13 @@ sway_deps = [
 	server_protos,
 	wayland_server,
 	wlroots,
-	xcb,
 	xkbcommon,
 ]
+
+if get_option('enable-xwayland')
+	sway_sources += 'desktop/xwayland.c'
+	sway_deps += xcb
+endif
 
 executable(
 	'sway',

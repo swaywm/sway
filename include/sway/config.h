@@ -1,6 +1,5 @@
 #ifndef _SWAY_CONFIG_H
 #define _SWAY_CONFIG_H
-#define PID_WORKSPACE_TIMEOUT 60
 #include <libinput.h>
 #include <stdint.h>
 #include <string.h>
@@ -22,14 +21,28 @@ struct sway_variable {
 	char *value;
 };
 
+
+enum binding_input_type {
+	BINDING_KEYCODE,
+	BINDING_KEYSYM,
+	BINDING_MOUSE,
+};
+
+enum binding_flags {
+	BINDING_RELEASE=1,
+	BINDING_LOCKED=2, // keyboard only
+	BINDING_BORDER=4, // mouse only; trigger on container border
+	BINDING_CONTENTS=8, // mouse only; trigger on container contents
+	BINDING_TITLEBAR=16 // mouse only; trigger on container titlebar
+};
+
 /**
  * A key binding and an associated command.
  */
 struct sway_binding {
+	enum binding_input_type type;
 	int order;
-	bool release;
-	bool locked;
-	bool bindcode;
+	uint32_t flags;
 	list_t *keys; // sorted in ascending order
 	uint32_t modifiers;
 	char *command;
@@ -50,6 +63,7 @@ struct sway_mode {
 	char *name;
 	list_t *keysym_bindings;
 	list_t *keycode_bindings;
+	list_t *mouse_bindings;
 	bool pango;
 };
 
@@ -86,6 +100,9 @@ struct input_config {
 	char *xkb_options;
 	char *xkb_rules;
 	char *xkb_variant;
+
+	int xkb_numlock;
+	int xkb_capslock;
 
 	struct input_config_mapped_from_region *mapped_from_region;
 	char *mapped_to_output;
@@ -144,12 +161,6 @@ struct output_config {
 struct workspace_output {
 	char *output;
 	char *workspace;
-};
-
-struct pid_workspace {
-	pid_t *pid;
-	char *workspace;
-	time_t *time_added;
 };
 
 struct bar_config {
@@ -302,7 +313,6 @@ struct sway_config {
 	list_t *bars;
 	list_t *cmd_queue;
 	list_t *workspace_outputs;
-	list_t *pid_workspaces;
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *seat_configs;
@@ -313,6 +323,7 @@ struct sway_config {
 	struct bar_config *current_bar;
 	char *swaybg_command;
 	uint32_t floating_mod;
+	bool floating_mod_inverse;
 	uint32_t dragging_key;
 	uint32_t resizing_key;
 	char *floating_scroll_up_cmd;
@@ -387,9 +398,6 @@ struct sway_config {
 		} leftovers;
 	} handler_context;
 };
-
-void pid_workspace_add(struct pid_workspace *pw);
-void free_pid_workspace(struct pid_workspace *pw);
 
 /**
  * Loads the main config from the given path. is_active should be true when
@@ -480,7 +488,7 @@ int sway_binding_cmp_keys(const void *a, const void *b);
 
 void free_sway_binding(struct sway_binding *sb);
 
-struct sway_binding *sway_binding_dup(struct sway_binding *sb);
+void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 
 void load_swaybars();
 

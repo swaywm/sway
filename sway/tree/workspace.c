@@ -9,6 +9,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
@@ -107,6 +108,84 @@ static bool workspace_valid_on_output(const char *output_name,
 	return true;
 }
 
+static void workspace_name_from_binding(const struct sway_binding * binding,
+		const char* output_name, int *min_order, char **earliest_name) {
+	char *cmdlist = strdup(binding->command);
+	char *dup = cmdlist;
+	char *name = NULL;
+
+	// workspace n
+	char *cmd = argsep(&cmdlist, " ");
+	if (cmdlist) {
+		name = argsep(&cmdlist, ",;");
+	}
+
+	if (strcmp("workspace", cmd) == 0 && name) {
+		char *_target = strdup(name);
+		_target = do_var_replacement(_target);
+		strip_quotes(_target);
+		wlr_log(WLR_DEBUG, "Got valid workspace command for target: '%s'",
+				_target);
+
+		// Make sure that the command references an actual workspace
+		// not a command about workspaces
+		if (strcmp(_target, "next") == 0 ||
+				strcmp(_target, "prev") == 0 ||
+				strcmp(_target, "next_on_output") == 0 ||
+				strcmp(_target, "prev_on_output") == 0 ||
+				strcmp(_target, "number") == 0 ||
+				strcmp(_target, "back_and_forth") == 0 ||
+				strcmp(_target, "current") == 0) {
+			free(_target);
+			free(dup);
+			return;
+		}
+
+		// If the command is workspace number <name>, isolate the name
+		if (strncmp(_target, "number ", strlen("number ")) == 0) {
+			size_t length = strlen(_target) - strlen("number ") + 1;
+			char *temp = malloc(length);
+			strncpy(temp, _target + strlen("number "), length - 1);
+			temp[length - 1] = '\0';
+			free(_target);
+			_target = temp;
+			wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
+
+			// Make sure the workspace number doesn't already exist
+			if (workspace_by_number(_target)) {
+				free(_target);
+				free(dup);
+				return;
+			}
+		}
+
+		// Make sure that the workspace doesn't already exist
+		if (workspace_by_name(_target)) {
+			free(_target);
+			free(dup);
+			return;
+		}
+
+		// make sure that the workspace can appear on the given
+		// output
+		if (!workspace_valid_on_output(output_name, _target)) {
+			free(_target);
+			free(dup);
+			return;
+		}
+
+		if (binding->order < *min_order) {
+			*min_order = binding->order;
+			free(*earliest_name);
+			*earliest_name = _target;
+			wlr_log(WLR_DEBUG, "Workspace: Found free name %s", _target);
+		} else {
+			free(_target);
+		}
+	}
+	free(dup);
+}
+
 char *workspace_next_name(const char *output_name) {
 	wlr_log(WLR_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
@@ -114,89 +193,15 @@ char *workspace_next_name(const char *output_name) {
 	// if none are found/available then default to a number
 	struct sway_mode *mode = config->current_mode;
 
-	// TODO: iterate over keycode bindings too
 	int order = INT_MAX;
 	char *target = NULL;
 	for (int i = 0; i < mode->keysym_bindings->length; ++i) {
-		struct sway_binding *binding = mode->keysym_bindings->items[i];
-		char *cmdlist = strdup(binding->command);
-		char *dup = cmdlist;
-		char *name = NULL;
-
-		// workspace n
-		char *cmd = argsep(&cmdlist, " ");
-		if (cmdlist) {
-			name = argsep(&cmdlist, ",;");
-		}
-
-		if (strcmp("workspace", cmd) == 0 && name) {
-			char *_target = strdup(name);
-			_target = do_var_replacement(_target);
-			strip_quotes(_target);
-			while (isspace(*_target)) {
-				memmove(_target, _target+1, strlen(_target+1));
-			}
-			wlr_log(WLR_DEBUG, "Got valid workspace command for target: '%s'",
-					_target);
-
-			// Make sure that the command references an actual workspace
-			// not a command about workspaces
-			if (strcmp(_target, "next") == 0 ||
-				strcmp(_target, "prev") == 0 ||
-				strcmp(_target, "next_on_output") == 0 ||
-				strcmp(_target, "prev_on_output") == 0 ||
-				strcmp(_target, "number") == 0 ||
-				strcmp(_target, "back_and_forth") == 0 ||
-				strcmp(_target, "current") == 0)
-			{
-				free(_target);
-				free(dup);
-				continue;
-			}
-
-			// If the command is workspace number <name>, isolate the name
-			if (strncmp(_target, "number ", strlen("number ")) == 0) {
-				size_t length = strlen(_target) - strlen("number ") + 1;
-				char *temp = malloc(length);
-				strncpy(temp, _target + strlen("number "), length - 1);
-				temp[length - 1] = '\0';
-				free(_target);
-				_target = temp;
-				wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
-
-				// Make sure the workspace number doesn't already exist
-				if (workspace_by_number(_target)) {
-					free(_target);
-					free(dup);
-					continue;
-				}
-			}
-
-			// Make sure that the workspace doesn't already exist
-			if (workspace_by_name(_target)) {
-				free(_target);
-				free(dup);
-				continue;
-			}
-
-			// make sure that the workspace can appear on the given
-			// output
-			if (!workspace_valid_on_output(output_name, _target)) {
-				free(_target);
-				free(dup);
-				continue;
-			}
-
-			if (binding->order < order) {
-				order = binding->order;
-				free(target);
-				target = _target;
-				wlr_log(WLR_DEBUG, "Workspace: Found free name %s", _target);
-			} else {
-				free(_target);
-			}
-		}
-		free(dup);
+		workspace_name_from_binding(mode->keysym_bindings->items[i],
+				output_name, &order, &target);
+	}
+	for (int i = 0; i < mode->keycode_bindings->length; ++i) {
+		workspace_name_from_binding(mode->keycode_bindings->items[i],
+				output_name, &order, &target);
 	}
 	if (target != NULL) {
 		return target;
@@ -528,4 +533,117 @@ void workspace_detect_urgent(struct sway_container *workspace) {
 		ipc_event_workspace(NULL, workspace, "urgent");
 		container_damage_whole(workspace);
 	}
+}
+
+struct pid_workspace {
+	pid_t pid;
+	char *workspace;
+	struct timespec time_added;
+
+	struct sway_container *output;
+	struct wl_listener output_destroy;
+
+	struct wl_list link;
+};
+
+static struct wl_list pid_workspaces;
+
+struct sway_container *workspace_for_pid(pid_t pid) {
+	if (!pid_workspaces.prev && !pid_workspaces.next) {
+		wl_list_init(&pid_workspaces);
+		return NULL;
+	}
+
+	struct sway_container *ws = NULL;
+	struct pid_workspace *pw = NULL;
+
+	wlr_log(WLR_DEBUG, "Looking up workspace for pid %d", pid);
+
+	do {
+		struct pid_workspace *_pw = NULL;
+		wl_list_for_each(_pw, &pid_workspaces, link) {
+			if (pid == _pw->pid) {
+				pw = _pw;
+				wlr_log(WLR_DEBUG,
+						"found pid_workspace for pid %d, workspace %s",
+						pid, pw->workspace);
+				goto found;
+			}
+		}
+		pid = get_parent_pid(pid);
+	} while (pid > 1);
+found:
+
+	if (pw && pw->workspace) {
+		ws = workspace_by_name(pw->workspace);
+
+		if (!ws) {
+			wlr_log(WLR_DEBUG,
+					"Creating workspace %s for pid %d because it disappeared",
+					pw->workspace, pid);
+			ws = workspace_create(pw->output, pw->workspace);
+		}
+
+		wl_list_remove(&pw->output_destroy.link);
+		wl_list_remove(&pw->link);
+		free(pw->workspace);
+		free(pw);
+	}
+
+	return ws;
+}
+
+static void pw_handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct pid_workspace *pw = wl_container_of(listener, pw, output_destroy);
+	pw->output = NULL;
+	wl_list_remove(&pw->output_destroy.link);
+	wl_list_init(&pw->output_destroy.link);
+}
+
+void workspace_record_pid(pid_t pid) {
+	wlr_log(WLR_DEBUG, "Recording workspace for process %d", pid);
+	if (!pid_workspaces.prev && !pid_workspaces.next) {
+		wl_list_init(&pid_workspaces);
+	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *ws =
+		seat_get_focus_inactive(seat, &root_container);
+	if (ws && ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
+	}
+	if (!ws) {
+		wlr_log(WLR_DEBUG, "Bailing out, no workspace");
+		return;
+	}
+	struct sway_container *output = ws->parent;
+	if (!output) {
+		wlr_log(WLR_DEBUG, "Bailing out, no output");
+		return;
+	}
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	// Remove expired entries
+	static const int timeout = 60;
+	struct pid_workspace *old, *_old;
+	wl_list_for_each_safe(old, _old, &pid_workspaces, link) {
+		if (now.tv_sec - old->time_added.tv_sec >= timeout) {
+			wl_list_remove(&old->output_destroy.link);
+			wl_list_remove(&old->link);
+			free(old->workspace);
+			free(old);
+		}
+	}
+
+	struct pid_workspace *pw = calloc(1, sizeof(struct pid_workspace));
+	pw->workspace = strdup(ws->name);
+	pw->output = output;
+	pw->pid = pid;
+	memcpy(&pw->time_added, &now, sizeof(struct timespec));
+	pw->output_destroy.notify = pw_handle_output_destroy;
+	wl_signal_add(&output->sway_output->wlr_output->events.destroy,
+			&pw->output_destroy);
+	wl_list_insert(&pid_workspaces, &pw->link);
 }

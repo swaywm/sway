@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/container.h"
@@ -47,6 +48,9 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if ((pid = fork()) == 0) {
 		// Fork child process again
 		setsid();
+		sigset_t set;
+		sigemptyset(&set);
+		sigprocmask(SIG_SETMASK, &set, NULL);
 		close(fd[0]);
 		if ((child = fork()) == 0) {
 			close(fd[1]);
@@ -74,7 +78,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	waitpid(pid, NULL, 0);
 	if (child > 0) {
 		wlr_log(WLR_DEBUG, "Child process created with pid %d", child);
-		// TODO: add PID to active workspace
+		workspace_record_pid(child);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "exec_always",
 			"Second fork() failed");

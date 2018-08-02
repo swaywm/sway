@@ -1,0 +1,66 @@
+# swaylock(1) completion
+
+_swaylock()
+{
+  local cur prev
+  _get_comp_words_by_ref -n : cur prev
+
+  short=(
+    -h
+    -c
+    -s
+    -t
+    -v
+    -i
+    -u
+    -f
+  )
+
+  long=(
+    --help
+    --color
+    --scaling
+    --tiling
+    --version
+    --image
+    --no-unlock-indicator
+    --daemonize
+  )
+
+  scaling=(
+    'stretch'
+    'fill'
+    'fit'
+    'center'
+    'tile'
+  )
+
+  case $prev in
+    -c|--color)
+      return
+      ;;
+    --scaling)
+      COMPREPLY=($(compgen -W "${scaling[*]}" -- "$cur"))
+      return
+      ;;
+    -i|--image)
+      if grep -q : <<< "$cur"; then
+        output="${cur%%:*}:"
+        cur="${cur#*:}"
+      else
+        output=
+      fi
+      COMPREPLY=($(compgen -f -- "$cur"))
+      return
+      ;;
+  esac
+
+  if [[ $cur == --* ]]; then
+    COMPREPLY=($(compgen -W "${long[*]}" -- "$cur"))
+  else
+    COMPREPLY=($(compgen -W "${short[*]}" -- "$cur"))
+    COMPREPLY+=($(compgen -W "${long[*]}" -- "$cur"))
+  fi
+
+} &&
+complete -F _swaylock swaylock

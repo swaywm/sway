@@ -3,7 +3,10 @@
 #include <wayland-server.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include "config.h"
+#ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
+#endif
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 
@@ -12,7 +15,9 @@ struct sway_container;
 enum sway_view_type {
 	SWAY_VIEW_XDG_SHELL_V6,
 	SWAY_VIEW_XDG_SHELL,
+#ifdef HAVE_XWAYLAND
 	SWAY_VIEW_XWAYLAND,
+#endif
 };
 
 enum sway_view_prop {
@@ -22,10 +27,14 @@ enum sway_view_prop {
 	VIEW_PROP_INSTANCE,
 	VIEW_PROP_WINDOW_TYPE,
 	VIEW_PROP_WINDOW_ROLE,
+#ifdef HAVE_XWAYLAND
 	VIEW_PROP_X11_WINDOW_ID,
+#endif
 };
 
 struct sway_view_impl {
+	void (*get_constraints)(struct sway_view *view, double *min_width,
+			double *max_width, double *min_height, double *max_height);
 	const char *(*get_string_prop)(struct sway_view *view,
 			enum sway_view_prop prop);
 	uint32_t (*get_int_prop)(struct sway_view *view, enum sway_view_prop prop);
@@ -38,7 +47,10 @@ struct sway_view_impl {
 	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
+	void (*for_each_popup)(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
+	void (*close_popups)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
 
@@ -60,8 +72,6 @@ struct sway_view {
 	// Used when changing a view from tiled to floating.
 	int natural_width, natural_height;
 
-	bool is_fullscreen;
-
 	char *title_format;
 	enum sway_container_border border;
 	int border_thickness;
@@ -74,6 +84,9 @@ struct sway_view {
 	struct timespec urgent;
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
+
+	struct wlr_buffer *saved_buffer;
+	int saved_buffer_width, saved_buffer_height;
 
 	bool destroying;
 
@@ -88,7 +101,9 @@ struct sway_view {
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
 		struct wlr_xdg_surface *wlr_xdg_surface;
+#ifdef HAVE_XWAYLAND
 		struct wlr_xwayland_surface *wlr_xwayland_surface;
+#endif
 		struct wlr_wl_shell_surface *wlr_wl_shell_surface;
 	};
 
@@ -108,6 +123,8 @@ struct sway_xdg_shell_v6_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
+	struct wl_listener set_title;
+	struct wl_listener set_app_id;
 	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
@@ -122,12 +139,14 @@ struct sway_xdg_shell_view {
 	struct wl_listener request_resize;
 	struct wl_listener request_maximize;
 	struct wl_listener request_fullscreen;
+	struct wl_listener set_title;
+	struct wl_listener set_app_id;
 	struct wl_listener new_popup;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
-
+#ifdef HAVE_XWAYLAND
 struct sway_xwayland_view {
 	struct sway_view view;
 
@@ -159,7 +178,7 @@ struct sway_xwayland_unmanaged {
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 };
-
+#endif
 struct sway_view_child;
 
 struct sway_view_child_impl {
@@ -215,13 +234,11 @@ uint32_t view_get_window_type(struct sway_view *view);
 
 const char *view_get_shell(struct sway_view *view);
 
+void view_get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height);
+
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
-
-/**
- * Center the view in its workspace and build the swayc decorations around it.
- */
-void view_init_floating(struct sway_view *view);
 
 /**
  * Configure the view's position and size based on the swayc's position and
@@ -233,15 +250,22 @@ void view_set_activated(struct sway_view *view, bool activated);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
 
-void view_set_fullscreen_raw(struct sway_view *view, bool fullscreen);
-
-void view_set_fullscreen(struct sway_view *view, bool fullscreen);
-
 void view_close(struct sway_view *view);
+
+void view_close_popups(struct sway_view *view);
 
 void view_damage_from(struct sway_view *view);
 
+/**
+ * Iterate all surfaces of a view (toplevels + popups).
+ */
 void view_for_each_surface(struct sway_view *view,
+	wlr_surface_iterator_func_t iterator, void *user_data);
+
+/**
+ * Iterate all popups recursively.
+ */
+void view_for_each_popup(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation
@@ -272,9 +296,10 @@ struct sway_view *view_from_wlr_xdg_surface(
 	struct wlr_xdg_surface *xdg_surface);
 struct sway_view *view_from_wlr_xdg_surface_v6(
 	struct wlr_xdg_surface_v6 *xdg_surface_v6);
+#ifdef HAVE_XWAYLAND
 struct sway_view *view_from_wlr_xwayland_surface(
 	struct wlr_xwayland_surface *xsurface);
-
+#endif
 struct sway_view *view_from_wlr_surface(struct wlr_surface *surface);
 
 /**
@@ -303,6 +328,8 @@ void view_clear_marks(struct sway_view *view);
 
 bool view_has_mark(struct sway_view *view, char *mark);
 
+void view_add_mark(struct sway_view *view, char *mark);
+
 void view_update_marks_textures(struct sway_view *view);
 
 /**
@@ -314,5 +341,9 @@ bool view_is_visible(struct sway_view *view);
 void view_set_urgent(struct sway_view *view, bool enable);
 
 bool view_is_urgent(struct sway_view *view);
+
+void view_remove_saved_buffer(struct sway_view *view);
+
+void view_save_buffer(struct sway_view *view);
 
 #endif

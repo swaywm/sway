@@ -56,6 +56,12 @@ static void free_mode(struct sway_mode *mode) {
 		}
 		list_free(mode->keycode_bindings);
 	}
+	if (mode->mouse_bindings) {
+		for (i = 0; i < mode->mouse_bindings->length; i++) {
+			free_sway_binding(mode->mouse_bindings->items[i]);
+		}
+		list_free(mode->mouse_bindings);
+	}
 	free(mode);
 }
 
@@ -87,7 +93,6 @@ void free_config(struct sway_config *config) {
 	}
 	list_free(config->cmd_queue);
 	list_free(config->workspace_outputs);
-	list_free(config->pid_workspaces);
 	if (config->output_configs) {
 		for (int i = 0; i < config->output_configs->length; i++) {
 			free_output_config(config->output_configs->items[i]);
@@ -157,7 +162,6 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->modes = create_list())) goto cleanup;
 	if (!(config->bars = create_list())) goto cleanup;
 	if (!(config->workspace_outputs = create_list())) goto cleanup;
-	if (!(config->pid_workspaces = create_list())) goto cleanup;
 	if (!(config->criteria = create_list())) goto cleanup;
 	if (!(config->no_focus = create_list())) goto cleanup;
 	if (!(config->input_configs = create_list())) goto cleanup;
@@ -172,9 +176,11 @@ static void config_defaults(struct sway_config *config) {
 	strcpy(config->current_mode->name, "default");
 	if (!(config->current_mode->keysym_bindings = create_list())) goto cleanup;
 	if (!(config->current_mode->keycode_bindings = create_list())) goto cleanup;
+	if (!(config->current_mode->mouse_bindings = create_list())) goto cleanup;
 	list_add(config->modes, config->current_mode);
 
 	config->floating_mod = 0;
+	config->floating_mod_inverse = false;
 	config->dragging_key = BTN_LEFT;
 	config->resizing_key = BTN_RIGHT;
 

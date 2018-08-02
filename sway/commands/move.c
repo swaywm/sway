@@ -9,6 +9,7 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
+#include "sway/scratchpad.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
@@ -58,8 +59,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			&& strcasecmp(argv[2], "workspace") == 0) {
 		// move container to workspace x
 		if (current->type == C_WORKSPACE) {
-			// TODO: Wrap children in a container and move that
-			return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
+			current = container_wrap_children(current);
 		} else if (current->type != C_CONTAINER && current->type != C_VIEW) {
 			return cmd_results_new(CMD_FAILURE, "move",
 					"Can only move containers and views.");
@@ -97,7 +97,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		container_move_to(current, destination);
 		struct sway_container *focus = seat_get_focus_inactive(
 				config->handler_context.seat, old_parent);
-		seat_set_focus(config->handler_context.seat, focus);
+		seat_set_focus_warp(config->handler_context.seat, focus, true, false);
 		container_reap_empty(old_parent);
 		container_reap_empty(destination->parent);
 
@@ -134,7 +134,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		struct sway_container *old_parent = current->parent;
 		struct sway_container *old_ws = container_parent(current, C_WORKSPACE);
 		container_move_to(current, focus);
-		seat_set_focus(config->handler_context.seat, old_parent);
+		seat_set_focus_warp(config->handler_context.seat, old_parent, true, false);
 		container_reap_empty(old_parent);
 		container_reap_empty(focus->parent);
 
@@ -195,7 +195,7 @@ static struct cmd_results *move_in_direction(struct sway_container *container,
 				"Cannot move workspaces in a direction");
 	}
 	if (container_is_floating(container)) {
-		if (container->type == C_VIEW && container->sway_view->is_fullscreen) {
+		if (container->is_fullscreen) {
 			return cmd_results_new(CMD_FAILURE, "move",
 					"Cannot move fullscreen floating container");
 		}
@@ -296,6 +296,34 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static struct cmd_results *move_to_scratchpad(struct sway_container *con) {
+	if (con->type == C_WORKSPACE && con->children->length == 0) {
+		return cmd_results_new(CMD_INVALID, "move",
+				"Can't move an empty workspace to the scratchpad");
+	}
+	if (con->type == C_WORKSPACE) {
+		// Wrap the workspace's children in a container
+		struct sway_container *workspace = con;
+		con = container_wrap_children(con);
+		workspace->layout = L_HORIZ;
+	}
+
+	// If the container is in a floating split container,
+	// operate on the split container instead of the child.
+	if (container_is_floating_or_child(con)) {
+		while (con->parent->layout != L_FLOATING) {
+			con = con->parent;
+		}
+	}
+
+	if (con->scratchpad) {
+		return cmd_results_new(CMD_INVALID, "move",
+				"Container is already in the scratchpad");
+	}
+	scratchpad_add_container(con);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
 struct cmd_results *cmd_move(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
@@ -317,10 +345,9 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 	} else if (strcasecmp(argv[0], "workspace") == 0) {
 		return cmd_move_workspace(current, argc, argv);
 	} else if (strcasecmp(argv[0], "scratchpad") == 0
-			|| (strcasecmp(argv[0], "to") == 0
+			|| (strcasecmp(argv[0], "to") == 0 && argc == 2
 				&& strcasecmp(argv[1], "scratchpad") == 0)) {
-		// TODO: scratchpad
-		return cmd_results_new(CMD_FAILURE, "move", "Unimplemented");
+		return move_to_scratchpad(current);
 	} else if (strcasecmp(argv[0], "position") == 0) {
 		return move_to_position(current, argc, argv);
 	} else if (strcasecmp(argv[0], "absolute") == 0) {

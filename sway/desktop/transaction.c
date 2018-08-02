@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,8 +41,6 @@ struct sway_transaction_instruction {
 	struct sway_transaction *transaction;
 	struct sway_container *container;
 	struct sway_container_state state;
-	struct wlr_buffer *saved_buffer;
-	int saved_buffer_width, saved_buffer_height;
 	uint32_t serial;
 	bool ready;
 };
@@ -54,27 +53,6 @@ static struct sway_transaction *transaction_create() {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->create_time);
 	}
 	return transaction;
-}
-
-static void remove_saved_view_buffer(
-		struct sway_transaction_instruction *instruction) {
-	if (instruction->saved_buffer) {
-		wlr_buffer_unref(instruction->saved_buffer);
-		instruction->saved_buffer = NULL;
-	}
-}
-
-static void save_view_buffer(struct sway_view *view,
-		struct sway_transaction_instruction *instruction) {
-	if (!sway_assert(instruction->saved_buffer == NULL,
-				"Didn't expect instruction to have a saved buffer already")) {
-		remove_saved_view_buffer(instruction);
-	}
-	if (view->surface && wlr_surface_has_buffer(view->surface)) {
-		instruction->saved_buffer = wlr_buffer_ref(view->surface->buffer);
-		instruction->saved_buffer_width = view->surface->current.width;
-		instruction->saved_buffer_height = view->surface->current.height;
-	}
 }
 
 static void transaction_destroy(struct sway_transaction *transaction) {
@@ -92,7 +70,6 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 		if (con->destroying && !con->instructions->length) {
 			container_free(con);
 		}
-		remove_saved_view_buffer(instruction);
 		free(instruction);
 	}
 	list_free(transaction->instructions);
@@ -110,6 +87,7 @@ static void copy_pending_state(struct sway_container *container,
 	state->swayc_y = container->y;
 	state->swayc_width = container->width;
 	state->swayc_height = container->height;
+	state->is_fullscreen = container->is_fullscreen;
 	state->has_gaps = container->has_gaps;
 	state->current_gaps = container->current_gaps;
 	state->gaps_inner = container->gaps_inner;
@@ -122,7 +100,6 @@ static void copy_pending_state(struct sway_container *container,
 		state->view_y = view->y;
 		state->view_width = view->width;
 		state->view_height = view->height;
-		state->is_fullscreen = view->is_fullscreen;
 		state->border = view->border;
 		state->border_thickness = view->border_thickness;
 		state->border_top = view->border_top;
@@ -157,9 +134,6 @@ static void transaction_add_container(struct sway_transaction *transaction,
 
 	copy_pending_state(container, &instruction->state);
 
-	if (container->type == C_VIEW) {
-		save_view_buffer(container->sway_view, instruction);
-	}
 	list_add(transaction->instructions, instruction);
 }
 
@@ -219,27 +193,35 @@ static void transaction_apply(struct sway_transaction *transaction) {
 
 		memcpy(&container->current, &instruction->state,
 				sizeof(struct sway_container_state));
+
+		if (container->type == C_VIEW) {
+			if (container->destroying) {
+				if (container->instructions->length == 1 &&
+						container->sway_view->saved_buffer) {
+					view_remove_saved_buffer(container->sway_view);
+				}
+			} else {
+				if (container->sway_view->saved_buffer) {
+					view_remove_saved_buffer(container->sway_view);
+				}
+				if (container->instructions->length > 1) {
+					view_save_buffer(container->sway_view);
+				}
+			}
+		}
 	}
 }
 
-/**
- * For simplicity, we only progress the queue if it can be completely flushed.
- */
 static void transaction_progress_queue() {
-	// We iterate this list in reverse because we're more likely to find a
-	// waiting transactions at the end of the list.
-	for (int i = server.transactions->length - 1; i >= 0; --i) {
-		struct sway_transaction *transaction = server.transactions->items[i];
+	while (server.transactions->length) {
+		struct sway_transaction *transaction = server.transactions->items[0];
 		if (transaction->num_waiting) {
 			return;
 		}
-	}
-	for (int i = 0; i < server.transactions->length; ++i) {
-		struct sway_transaction *transaction = server.transactions->items[i];
 		transaction_apply(transaction);
 		transaction_destroy(transaction);
+		list_del(server.transactions, 0);
 	}
-	server.transactions->length = 0;
 	idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
 }
 
@@ -302,6 +284,9 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			struct timespec when;
 			wlr_surface_send_frame_done(con->sway_view->surface, &when);
 		}
+		if (con->type == C_VIEW && !con->sway_view->saved_buffer) {
+			view_save_buffer(con->sway_view);
+		}
 		list_add(con->instructions, instruction);
 	}
 	transaction->num_configures = transaction->num_waiting;
@@ -324,7 +309,14 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		// Set up a timer which the views must respond within
 		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
 				handle_timeout, transaction);
-		wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
+		if (transaction->timer) {
+			wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
+		} else {
+			wlr_log(WLR_ERROR, "Unable to create transaction timer (%s). "
+					"Some imperfect frames might be rendered.",
+					strerror(errno));
+			handle_timeout(transaction);
+		}
 	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
@@ -352,13 +344,11 @@ static void set_instruction_ready(
 
 	}
 
-	// If all views are ready, apply the transaction.
 	// If the transaction has timed out then its num_waiting will be 0 already.
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
 		if (!txn_debug) {
 			wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
 			wl_event_source_timer_update(transaction->timer, 0);
-			transaction_progress_queue();
 		}
 	}
 }
@@ -375,6 +365,7 @@ static void set_instructions_ready(struct sway_view *view, int index) {
 			set_instruction_ready(instruction);
 		}
 	}
+	transaction_progress_queue();
 }
 
 void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
@@ -399,18 +390,6 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 			return;
 		}
 	}
-}
-
-struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
-		int *width, int *height) {
-	struct sway_transaction_instruction *instruction =
-		view->swayc->instructions->items[0];
-	if (!instruction->saved_buffer) {
-		return NULL;
-	}
-	*width = instruction->saved_buffer_width;
-	*height = instruction->saved_buffer_height;
-	return instruction->saved_buffer->texture;
 }
 
 void transaction_commit_dirty(void) {

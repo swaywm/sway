@@ -220,8 +220,22 @@ static void arrange_workspace(struct sway_container *workspace) {
 	container_set_dirty(workspace);
 	wlr_log(WLR_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
 			workspace->x, workspace->y);
-	arrange_floating(workspace->sway_workspace->floating);
-	arrange_children_of(workspace);
+	if (workspace->sway_workspace->fullscreen) {
+		struct sway_container *fs = workspace->sway_workspace->fullscreen;
+		fs->x = workspace->parent->x;
+		fs->y = workspace->parent->y;
+		fs->width = workspace->parent->width;
+		fs->height = workspace->parent->height;
+		if (fs->type == C_VIEW) {
+			view_autoconfigure(fs->sway_view);
+		} else {
+			arrange_children_of(fs);
+		}
+		container_set_dirty(fs);
+	} else {
+		arrange_floating(workspace->sway_workspace->floating);
+		arrange_children_of(workspace);
+	}
 }
 
 static void arrange_output(struct sway_container *output) {

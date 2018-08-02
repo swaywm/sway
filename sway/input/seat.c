@@ -1,12 +1,19 @@
 #define _XOPEN_SOURCE 700
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
+#include <errno.h>
+#ifdef __linux__
+#include <linux/input-event-codes.h>
+#elif __FreeBSD__
+#include <dev/evdev/input-event-codes.h>
+#endif
 #include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include "log.h"
+#include "config.h"
 #include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
@@ -98,11 +105,13 @@ static void seat_send_focus(struct sway_container *con,
 
 	if (con->type == C_VIEW
 			&& seat_is_input_allowed(seat, con->sway_view->surface)) {
+#ifdef HAVE_XWAYLAND
 		if (con->sway_view->type == SWAY_VIEW_XWAYLAND) {
 			struct wlr_xwayland *xwayland =
 				seat->input->server->xwayland.wlr_xwayland;
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 		}
+#endif
 		struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 		if (keyboard) {
 			wlr_seat_keyboard_notify_enter(seat->wlr_seat,
@@ -116,12 +125,14 @@ static void seat_send_focus(struct sway_container *con,
 }
 
 static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
-		struct sway_container *container, enum sway_container_type type) {
+		struct sway_container *container, enum sway_container_type type,
+		bool only_tiling) {
 	if (container->type == C_VIEW) {
 		return container;
 	}
 
-	struct sway_container *floating = container->type == C_WORKSPACE ?
+	struct sway_container *floating =
+		container->type == C_WORKSPACE && !only_tiling ?
 		container->sway_workspace->floating : NULL;
 	if (container->children->length == 0 &&
 			(!floating || floating->children->length == 0)) {
@@ -135,6 +146,10 @@ static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 		}
 
 		if (container_has_child(container, current->container)) {
+			if (only_tiling &&
+					container_is_floating_or_child(current->container)) {
+				continue;
+			}
 			return current->container;
 		}
 		if (floating && container_has_child(floating, current->container)) {
@@ -161,7 +176,7 @@ void seat_focus_inactive_children_for_each(struct sway_seat *seat,
 
 struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 		struct sway_container *container) {
-	return seat_get_focus_by_type(seat, container, C_VIEW);
+	return seat_get_focus_by_type(seat, container, C_VIEW, false);
 }
 
 static void handle_seat_container_destroy(struct wl_listener *listener,
@@ -183,7 +198,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 	if (set_focus) {
 		struct sway_container *next_focus = NULL;
 		while (next_focus == NULL) {
-			next_focus = seat_get_focus_by_type(seat, parent, C_VIEW);
+			next_focus = seat_get_focus_by_type(seat, parent, C_VIEW, false);
 
 			if (next_focus == NULL && parent->type == C_WORKSPACE) {
 				next_focus = parent;
@@ -348,6 +363,7 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		free(seat);
 		return NULL;
 	}
+	seat->wlr_seat->data = seat;
 
 	seat->cursor = sway_cursor_create(seat);
 	if (!seat->cursor) {
@@ -377,7 +393,6 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 		WL_SEAT_CAPABILITY_POINTER |
 		WL_SEAT_CAPABILITY_TOUCH);
 
-	seat_configure_xcursor(seat);
 
 	wl_list_insert(&input->seats, &seat->link);
 
@@ -422,6 +437,7 @@ static void seat_apply_input_config(struct sway_seat *seat,
 
 static void seat_configure_pointer(struct sway_seat *seat,
 		struct sway_seat_device *sway_device) {
+	seat_configure_xcursor(seat);
 	wlr_cursor_attach_input_device(seat->cursor->cursor,
 		sway_device->input_device->wlr_device);
 	seat_apply_input_config(seat, sway_device);
@@ -601,7 +617,7 @@ static int handle_urgent_timeout(void *data) {
 }
 
 void seat_set_focus_warp(struct sway_seat *seat,
-		struct sway_container *container, bool warp) {
+		struct sway_container *container, bool warp, bool notify) {
 	if (seat->focused_layer) {
 		return;
 	}
@@ -622,7 +638,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	if (last_workspace && last_workspace == new_workspace
 			&& last_workspace->sway_workspace->fullscreen
-			&& !container->sway_view->is_fullscreen) {
+			&& container && !container_is_fullscreen_or_child(container)) {
 		return;
 	}
 
@@ -639,7 +655,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	struct sway_container *new_output_last_ws = NULL;
 	if (last_output && new_output && last_output != new_output) {
 		new_output_last_ws =
-			seat_get_focus_by_type(seat, new_output, C_WORKSPACE);
+			seat_get_focus_by_type(seat, new_output, C_WORKSPACE, false);
 	}
 
 	if (container && container->parent) {
@@ -686,8 +702,14 @@ void seat_set_focus_warp(struct sway_seat *seat,
 				config->urgent_timeout > 0) {
 			view->urgent_timer = wl_event_loop_add_timer(server.wl_event_loop,
 					handle_urgent_timeout, view);
-			wl_event_source_timer_update(view->urgent_timer,
-					config->urgent_timeout);
+			if (view->urgent_timer) {
+				wl_event_source_timer_update(view->urgent_timer,
+						config->urgent_timeout);
+			} else {
+				wlr_log(WLR_ERROR, "Unable to create urgency timer (%s)",
+						strerror(errno));
+				handle_urgent_timeout(view);
+			}
 		} else {
 			view_set_urgent(view, false);
 		}
@@ -715,9 +737,18 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
+	// Close any popups on the old focus
+	if (last_focus && last_focus != container) {
+		if (last_focus->type == C_VIEW) {
+			view_close_popups(last_focus->sway_view);
+		}
+	}
+
 	if (last_focus) {
 		if (last_workspace) {
-			ipc_event_workspace(last_workspace, container, "focus");
+			if (notify && last_workspace != new_workspace) {
+				 ipc_event_workspace(last_workspace, new_workspace, "focus");
+			}
 			if (!workspace_is_visible(last_workspace)
 					&& workspace_is_empty(last_workspace)) {
 				if (last_workspace == last_focus) {
@@ -744,8 +775,12 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		}
 	}
 
-	if (last_focus != NULL) {
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+	if (container) {
+		if (container->type == C_VIEW) {
+			ipc_event_window(container, "focus");
+		} else if (container->type == C_WORKSPACE) {
+			ipc_event_workspace(NULL, container, "focus");
+		}
 	}
 
 	seat->has_focus = (container != NULL);
@@ -755,7 +790,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 void seat_set_focus(struct sway_seat *seat,
 		struct sway_container *container) {
-	seat_set_focus_warp(seat, container, true);
+	seat_set_focus_warp(seat, container, true, true);
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,
@@ -848,7 +883,12 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *container) {
-	return seat_get_focus_by_type(seat, container, C_TYPES);
+	return seat_get_focus_by_type(seat, container, C_TYPES, false);
+}
+
+struct sway_container *seat_get_focus_inactive_tiling(struct sway_seat *seat,
+		struct sway_container *container) {
+	return seat_get_focus_by_type(seat, container, C_TYPES, true);
 }
 
 struct sway_container *seat_get_active_child(struct sway_seat *seat,
@@ -893,4 +933,69 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	}
 
 	return NULL;
+}
+
+void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
+		return;
+	}
+	seat->operation = OP_MOVE;
+	seat->op_container = con;
+	seat->op_button = button;
+	cursor_set_image(seat->cursor, "grab", NULL);
+}
+
+void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, enum wlr_edges edge) {
+	if (!seat->cursor) {
+		wlr_log(WLR_DEBUG, "Ignoring resize request due to no cursor device");
+		return;
+	}
+	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
+	seat->operation = OP_RESIZE;
+	seat->op_container = con;
+	seat->op_resize_preserve_ratio = keyboard &&
+		(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
+	seat->op_resize_edge = edge == WLR_EDGE_NONE ?
+		RESIZE_EDGE_BOTTOM | RESIZE_EDGE_RIGHT : edge;
+	seat->op_button = button;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+	seat->op_ref_con_lx = con->x;
+	seat->op_ref_con_ly = con->y;
+	seat->op_ref_width = con->width;
+	seat->op_ref_height = con->height;
+
+	const char *image = edge == WLR_EDGE_NONE ?
+		"se-resize" : wlr_xcursor_get_resize_name(edge);
+	cursor_set_image(seat->cursor, image, NULL);
+}
+
+void seat_end_mouse_operation(struct sway_seat *seat) {
+	switch (seat->operation) {
+	case OP_MOVE:
+		{
+			// We "move" the container to its own location so it discovers its
+			// output again.
+			struct sway_container *con = seat->op_container;
+			container_floating_move_to(con, con->x, con->y);
+		}
+	case OP_RESIZE:
+		// Don't need to do anything here.
+		break;
+	case OP_NONE:
+		break;
+	}
+	seat->operation = OP_NONE;
+	seat->op_container = NULL;
+	cursor_set_image(seat->cursor, "left_ptr", NULL);
+}
+
+void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
+		uint32_t button, enum wlr_button_state state) {
+	seat->last_button = button;
+	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
+			time_msec, button, state);
 }

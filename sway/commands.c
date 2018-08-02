@@ -103,6 +103,7 @@ static struct cmd_handler handlers[] = {
 	{ "exec_always", cmd_exec_always },
 	{ "floating_maximum_size", cmd_floating_maximum_size },
 	{ "floating_minimum_size", cmd_floating_minimum_size },
+	{ "floating_modifier", cmd_floating_modifier },
 	{ "focus", cmd_focus },
 	{ "focus_follows_mouse", cmd_focus_follows_mouse },
 	{ "focus_wrapping", cmd_focus_wrapping },
@@ -148,6 +149,7 @@ static struct cmd_handler command_handlers[] = {
 	{ "reload", cmd_reload },
 	{ "rename", cmd_rename },
 	{ "resize", cmd_resize },
+	{ "scratchpad", cmd_scratchpad },
 	{ "split", cmd_split },
 	{ "splith", cmd_splith },
 	{ "splitt", cmd_splitt },
@@ -325,7 +327,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	} while(head);
 cleanup:
 	free(exec);
-	free(views);
+	list_free(views);
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}

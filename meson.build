@@ -12,6 +12,7 @@ project(
 add_project_arguments('-Wno-unused-parameter', language: 'c')
 add_project_arguments('-Wno-unused-function', language: 'c')
 add_project_arguments('-Wno-unused-result', language: 'c')
+add_project_arguments('-DWLR_USE_UNSTABLE', language: 'c')
 
 cc = meson.get_compiler('c')
 
@@ -43,10 +44,16 @@ systemd        = dependency('libsystemd', required: false)
 elogind        = dependency('libelogind', required: false)
 math           = cc.find_library('m')
 rt             = cc.find_library('rt')
-xcb            = dependency('xcb')
 git            = find_program('git', required: false)
 
 conf_data = configuration_data()
+
+if get_option('enable-xwayland')
+	conf_data.set('HAVE_XWAYLAND', true)
+	xcb = dependency('xcb')
+else
+	conf_data.set('HAVE_XWAYLAND', false)
+endif
 
 if gdk_pixbuf.found()
 	conf_data.set('HAVE_GDK_PIXBUF', true)
@@ -75,6 +82,8 @@ if scdoc.found()
 		'swaylock/swaylock.1.scd',
 		'swaymsg/swaymsg.1.scd',
 		'swayidle/swayidle.1.scd',
+		'swaynag/swaynag.1.scd',
+		'swaynag/swaynag.5.scd',
 	]
 	foreach filename : man_files
 		topic = filename.split('.')[-3].split('/')[-1]
@@ -123,6 +132,7 @@ subdir('swaybg')
 subdir('swaybar')
 subdir('swaylock')
 subdir('swayidle')
+subdir('swaynag')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))
@@ -176,11 +186,22 @@ endif
 if (get_option('zsh_completions'))
 	zsh_files = files(
 		'completions/zsh/_sway',
-		'completions/zsh/_swaygrab',
 		'completions/zsh/_swaylock',
 		'completions/zsh/_swaymsg',
 	)
 	zsh_install_dir = datadir + '/zsh/site-functions'
 
 	install_data(zsh_files, install_dir: zsh_install_dir)
+endif
+
+if (get_option('bash_completions'))
+	bash_files = files(
+		'completions/bash/sway',
+		'completions/bash/swayidle',
+		'completions/bash/swaylock',
+		'completions/bash/swaymsg',
+	)
+	bash_install_dir = datadir + '/bash-completion/completions'
+
+	install_data(bash_files, install_dir: bash_install_dir)
 endif

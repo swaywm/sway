@@ -1,0 +1,46 @@
+# sway(1) completion
+
+_sway()
+{
+  local cur prev
+  _get_comp_words_by_ref cur prev
+
+  short=(
+    -h
+    -c
+    -C
+    -d
+    -v
+    -V
+  )
+
+  long=(
+    --help
+    --config
+    --validate
+    --debug
+    --version
+    --verbose
+    --get-socketpath
+  )
+
+  case $prev in
+    -c|--config)
+      _filedir
+      return
+      ;;
+  esac
+
+  if [[ $cur == --* ]]; then
+    COMPREPLY=($(compgen -W "${long[*]}" -- "$cur"))
+  elif [[ $cur == -* ]]; then
+    COMPREPLY=($(compgen -W "${short[*]}" -- "$cur"))
+    COMPREPLY+=($(compgen -W "${long[*]}" -- "$cur"))
+  else
+    COMPREPLY=($(compgen -W "${short[*]}" -- "$cur"))
+    COMPREPLY+=($(compgen -W "${long[*]}" -- "$cur"))
+    COMPREPLY+=($(compgen -c -- "$cur"))
+  fi
+
+} &&
+complete -F _sway sway

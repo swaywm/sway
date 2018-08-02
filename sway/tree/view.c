@@ -2,7 +2,12 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include "config.h"
+#ifdef HAVE_XWAYLAND
+#include <wlr/xwayland.h>
+#endif
 #include "list.h"
 #include "log.h"
 #include "sway/criteria.h"
@@ -107,14 +112,14 @@ const char *view_get_instance(struct sway_view *view) {
 	}
 	return NULL;
 }
-
+#ifdef HAVE_XWAYLAND
 uint32_t view_get_x11_window_id(struct sway_view *view) {
 	if (view->impl->get_int_prop) {
 		return view->impl->get_int_prop(view, VIEW_PROP_X11_WINDOW_ID);
 	}
 	return 0;
 }
-
+#endif
 const char *view_get_window_role(struct sway_view *view) {
 	if (view->impl->get_string_prop) {
 		return view->impl->get_string_prop(view, VIEW_PROP_WINDOW_ROLE);
@@ -135,10 +140,25 @@ const char *view_get_shell(struct sway_view *view) {
 		return "xdg_shell_v6";
 	case SWAY_VIEW_XDG_SHELL:
 		return "xdg_shell";
+#ifdef HAVE_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		return "xwayland";
+#endif
 	}
 	return "unknown";
+}
+
+void view_get_constraints(struct sway_view *view, double *min_width,
+		double *max_width, double *min_height, double *max_height) {
+	if (view->impl->get_constraints) {
+		view->impl->get_constraints(view,
+				min_width, max_width, min_height, max_height);
+	} else {
+		*min_width = DBL_MIN;
+		*max_width = DBL_MAX;
+		*min_height = DBL_MIN;
+		*max_height = DBL_MAX;
+	}
 }
 
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
@@ -149,55 +169,6 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	return 0;
 }
 
-void view_init_floating(struct sway_view *view) {
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-	int min_width, min_height;
-	int max_width, max_height;
-
-	if (config->floating_minimum_width == -1) { // no minimum
-		min_width = 0;
-	} else if (config->floating_minimum_width == 0) { // automatic
-		min_width = 75;
-	} else {
-		min_width = config->floating_minimum_width;
-	}
-
-	if (config->floating_minimum_height == -1) { // no minimum
-		min_height = 0;
-	} else if (config->floating_minimum_height == 0) { // automatic
-		min_height = 50;
-	} else {
-		min_height = config->floating_minimum_height;
-	}
-
-	if (config->floating_maximum_width == -1) { // no maximum
-		max_width = INT_MAX;
-	} else if (config->floating_maximum_width == 0) { // automatic
-		max_width = ws->width * 0.6666;
-	} else {
-		max_width = config->floating_maximum_width;
-	}
-
-	if (config->floating_maximum_height == -1) { // no maximum
-		max_height = INT_MAX;
-	} else if (config->floating_maximum_height == 0) { // automatic
-		max_height = ws->height * 0.6666;
-	} else {
-		max_height = config->floating_maximum_height;
-	}
-
-	view->width = fmax(min_width, fmin(view->natural_width, max_width));
-	view->height = fmax(min_height, fmin(view->natural_height, max_height));
-	view->x = ws->x + (ws->width - view->width) / 2;
-	view->y = ws->y + (ws->height - view->height) / 2;
-
-	// If the view's border is B_NONE then these properties are ignored.
-	view->border_top = view->border_bottom = true;
-	view->border_left = view->border_right = true;
-
-	container_set_geometry_from_floating_view(view->swayc);
-}
-
 void view_autoconfigure(struct sway_view *view) {
 	if (!sway_assert(view->swayc,
 				"Called view_autoconfigure() on a view without a swayc")) {
@@ -206,15 +177,11 @@ void view_autoconfigure(struct sway_view *view) {
 
 	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
 
-	if (view->is_fullscreen) {
+	if (view->swayc->is_fullscreen) {
 		view->x = output->x;
 		view->y = output->y;
 		view->width = output->width;
 		view->height = output->height;
-		return;
-	}
-
-	if (container_is_floating(view->swayc)) {
 		return;
 	}
 
@@ -330,69 +297,15 @@ void view_set_tiled(struct sway_view *view, bool tiled) {
 	}
 }
 
-void view_set_fullscreen(struct sway_view *view, bool fullscreen) {
-	if (view->is_fullscreen == fullscreen) {
-		return;
-	}
-
-	struct sway_container *workspace =
-		container_parent(view->swayc, C_WORKSPACE);
-
-	if (view->impl->set_fullscreen) {
-		view->impl->set_fullscreen(view, fullscreen);
-	}
-
-	view->is_fullscreen = fullscreen;
-
-	if (fullscreen) {
-		if (workspace->sway_workspace->fullscreen) {
-			view_set_fullscreen(workspace->sway_workspace->fullscreen, false);
-		}
-		workspace->sway_workspace->fullscreen = view;
-		view->saved_x = view->x;
-		view->saved_y = view->y;
-		view->saved_width = view->width;
-		view->saved_height = view->height;
-		view->swayc->saved_x = view->swayc->x;
-		view->swayc->saved_y = view->swayc->y;
-		view->swayc->saved_width = view->swayc->width;
-		view->swayc->saved_height = view->swayc->height;
-
-		struct sway_seat *seat;
-		struct sway_container *focus, *focus_ws;
-		wl_list_for_each(seat, &input_manager->seats, link) {
-			focus = seat_get_focus(seat);
-			if (focus) {
-				focus_ws = focus;
-				if (focus && focus_ws->type != C_WORKSPACE) {
-					focus_ws = container_parent(focus_ws, C_WORKSPACE);
-				}
-				seat_set_focus(seat, view->swayc);
-				if (focus_ws != workspace) {
-					seat_set_focus(seat, focus);
-				}
-			}
-		}
-	} else {
-		workspace->sway_workspace->fullscreen = NULL;
-		if (container_is_floating(view->swayc)) {
-			view->x = view->saved_x;
-			view->y = view->saved_y;
-			view->width = view->saved_width;
-			view->height = view->saved_height;
-			container_set_geometry_from_floating_view(view->swayc);
-		} else {
-			view->swayc->width = view->swayc->saved_width;
-			view->swayc->height = view->swayc->saved_height;
-		}
-	}
-
-	ipc_event_window(view->swayc, "fullscreen_mode");
-}
-
 void view_close(struct sway_view *view) {
 	if (view->impl->close) {
 		view->impl->close(view);
+	}
+}
+
+void view_close_popups(struct sway_view *view) {
+	if (view->impl->close_popups) {
+		view->impl->close_popups(view);
 	}
 }
 
@@ -423,6 +336,16 @@ void view_for_each_surface(struct sway_view *view,
 		view->impl->for_each_surface(view, iterator, user_data);
 	} else {
 		wlr_surface_for_each_surface(view->surface, iterator, user_data);
+	}
+}
+
+void view_for_each_popup(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data) {
+	if (!view->surface) {
+		return;
+	}
+	if (view->impl->for_each_popup) {
+		view->impl->for_each_popup(view, iterator, user_data);
 	}
 }
 
@@ -521,12 +444,82 @@ void view_execute_criteria(struct sway_view *view) {
 	seat_set_focus(seat, prior_focus);
 }
 
+static struct sway_container *select_workspace(struct sway_view *view) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+
+	// Check if there's any `assign` criteria for the view
+	list_t *criterias = criteria_for_view(view,
+			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
+	struct sway_container *ws = NULL;
+	for (int i = 0; i < criterias->length; ++i) {
+		struct criteria *criteria = criterias->items[i];
+		if (criteria->type == CT_ASSIGN_WORKSPACE) {
+			ws = workspace_by_name(criteria->target);
+			if (!ws) {
+				ws = workspace_create(NULL, criteria->target);
+			}
+			break;
+		} else {
+			// CT_ASSIGN_OUTPUT
+			struct sway_container *output = output_by_name(criteria->target);
+			if (output) {
+				ws = seat_get_active_child(seat, output);
+				break;
+			}
+		}
+	}
+	list_free(criterias);
+	if (ws) {
+		return ws;
+	}
+
+	// Check if there's a PID mapping
+	pid_t pid;
+#ifdef HAVE_XWAYLAND
+	if (view->type == SWAY_VIEW_XWAYLAND) {
+		struct wlr_xwayland_surface *surf =
+			wlr_xwayland_surface_from_wlr_surface(view->surface);
+		pid = surf->pid;
+	} else {
+		struct wl_client *client =
+			wl_resource_get_client(view->surface->resource);
+		wl_client_get_credentials(client, &pid, NULL, NULL);
+	}
+#else
+	struct wl_client *client =
+		wl_resource_get_client(view->surface->resource);
+	wl_client_get_credentials(client, &pid, NULL, NULL);
+#endif
+	ws = workspace_for_pid(pid);
+	if (ws) {
+		return ws;
+	}
+
+	// Use the focused workspace
+	ws = seat_get_focus_inactive(seat, &root_container);
+	if (ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
+	}
+	return ws;
+}
+
 static bool should_focus(struct sway_view *view) {
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *prev_focus =
+		seat_get_focus_inactive(seat, &root_container);
+	struct sway_container *prev_ws = prev_focus->type == C_WORKSPACE ?
+		prev_focus : container_parent(prev_focus, C_WORKSPACE);
+	struct sway_container *map_ws = container_parent(view->swayc, C_WORKSPACE);
+
+	// Views can only take focus if they are mapped into the active workspace
+	if (prev_ws != map_ws) {
+		return false;
+	}
+
 	// If the view is the only one in the focused workspace, it'll get focus
 	// regardless of any no_focus criteria.
 	struct sway_container *parent = view->swayc->parent;
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	if (parent->type == C_WORKSPACE && seat_get_focus(seat) == parent) {
+	if (parent->type == C_WORKSPACE && prev_focus == parent) {
 		size_t num_children = parent->children->length +
 			parent->sway_workspace->floating->children->length;
 		if (num_children == 1) {
@@ -545,42 +538,19 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
 	}
+	view->surface = wlr_surface;
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus =
-		seat_get_focus_inactive(seat, &root_container);
-	struct sway_container *cont = NULL;
+	struct sway_container *ws = select_workspace(view);
+	struct sway_container *target_sibling = seat_get_focus_inactive(seat, ws);
 
-	// Check if there's any `assign` criteria for the view
-	list_t *criterias = criteria_for_view(view,
-			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
-	struct sway_container *workspace = NULL;
-	if (criterias->length) {
-		struct criteria *criteria = criterias->items[0];
-		if (criteria->type == CT_ASSIGN_WORKSPACE) {
-			workspace = workspace_by_name(criteria->target);
-			if (!workspace) {
-				workspace = workspace_create(NULL, criteria->target);
-			}
-			focus = seat_get_focus_inactive(seat, workspace);
-		} else {
-			// CT_ASSIGN_OUTPUT
-			struct sway_container *output = output_by_name(criteria->target);
-			if (output) {
-				focus = seat_get_focus_inactive(seat, output);
-			}
-		}
-	}
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
-	if (container_is_floating(focus)) {
-		focus = focus->parent->parent;
+	if (container_is_floating(target_sibling)) {
+		target_sibling = target_sibling->parent->parent;
 	}
-	list_free(criterias);
-	cont = container_view_create(focus, view);
 
-	view->surface = wlr_surface;
-	view->swayc = cont;
+	view->swayc = container_view_create(target_sibling, view);
 
 	view_init_subsurfaces(view, wlr_surface);
 	wl_signal_add(&wlr_surface->events.new_subsurface,
@@ -601,10 +571,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	}
 
 	if (should_focus(view)) {
-		input_manager_set_focus(input_manager, cont);
-		if (workspace) {
-			workspace_switch(workspace);
-		}
+		input_manager_set_focus(input_manager, view->swayc);
 	}
 
 	view_update_title(view, false);
@@ -628,10 +595,8 @@ void view_unmap(struct sway_view *view) {
 	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
 
 	struct sway_container *parent;
-	if (view->is_fullscreen) {
-		ws->sway_workspace->fullscreen = NULL;
+	if (container_is_fullscreen_or_child(view->swayc)) {
 		parent = container_destroy(view->swayc);
-
 		arrange_windows(ws->parent);
 	} else {
 		parent = container_destroy(view->swayc);
@@ -784,11 +749,13 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 			wlr_xdg_surface_v6_from_wlr_surface(wlr_surface);
 		return view_from_wlr_xdg_surface_v6(xdg_surface_v6);
 	}
+#ifdef HAVE_XWAYLAND
 	if (wlr_surface_is_xwayland_surface(wlr_surface)) {
 		struct wlr_xwayland_surface *xsurface =
 			wlr_xwayland_surface_from_wlr_surface(wlr_surface);
 		return view_from_wlr_xwayland_surface(xsurface);
 	}
+#endif
 	if (wlr_surface_is_subsurface(wlr_surface)) {
 		struct wlr_subsurface *subsurface =
 			wlr_subsurface_from_wlr_surface(wlr_surface);
@@ -915,6 +882,8 @@ void view_update_title(struct sway_view *view, bool force) {
 
 	// Update title after the global font height is updated
 	container_update_title_textures(view->swayc);
+
+	ipc_event_window(view->swayc, "title");
 }
 
 static bool find_by_mark_iterator(struct sway_container *con,
@@ -937,6 +906,7 @@ bool view_find_and_unmark(char *mark) {
 			free(view_mark);
 			list_del(view->marks, i);
 			view_update_marks_textures(view);
+			ipc_event_window(container, "mark");
 			return true;
 		}
 	}
@@ -944,11 +914,10 @@ bool view_find_and_unmark(char *mark) {
 }
 
 void view_clear_marks(struct sway_view *view) {
-	for (int i = 0; i < view->marks->length; ++i) {
-		free(view->marks->items[i]);
+	while (view->marks->length) {
+		list_del(view->marks, 0);
+		ipc_event_window(view->swayc, "mark");
 	}
-	list_free(view->marks);
-	view->marks = create_list();
 }
 
 bool view_has_mark(struct sway_view *view, char *mark) {
@@ -959,6 +928,11 @@ bool view_has_mark(struct sway_view *view, char *mark) {
 		}
 	}
 	return false;
+}
+
+void view_add_mark(struct sway_view *view, char *mark) {
+	list_add(view->marks, strdup(mark));
+	ipc_event_window(view->swayc, "mark");
 }
 
 static void update_marks_texture(struct sway_view *view,
@@ -1055,6 +1029,9 @@ bool view_is_visible(struct sway_view *view) {
 	}
 	struct sway_container *workspace =
 		container_parent(view->swayc, C_WORKSPACE);
+	if (!workspace) {
+		return false;
+	}
 	// Determine if view is nested inside a floating container which is sticky.
 	// A simple floating view will have this ancestry:
 	// C_VIEW -> floating -> workspace
@@ -1079,7 +1056,8 @@ bool view_is_visible(struct sway_view *view) {
 		container = container->parent;
 	}
 	// Check view isn't hidden by another fullscreen view
-	if (workspace->sway_workspace->fullscreen && !view->is_fullscreen) {
+	if (workspace->sway_workspace->fullscreen &&
+			!container_is_fullscreen_or_child(view->swayc)) {
 		return false;
 	}
 	// Check the workspace is visible
@@ -1116,4 +1094,23 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 bool view_is_urgent(struct sway_view *view) {
 	return view->urgent.tv_sec || view->urgent.tv_nsec;
+}
+
+void view_remove_saved_buffer(struct sway_view *view) {
+	if (!sway_assert(view->saved_buffer, "Expected a saved buffer")) {
+		return;
+	}
+	wlr_buffer_unref(view->saved_buffer);
+	view->saved_buffer = NULL;
+}
+
+void view_save_buffer(struct sway_view *view) {
+	if (!sway_assert(!view->saved_buffer, "Didn't expect saved buffer")) {
+		view_remove_saved_buffer(view);
+	}
+	if (view->surface && wlr_surface_has_buffer(view->surface)) {
+		view->saved_buffer = wlr_buffer_ref(view->surface->buffer);
+		view->saved_buffer_width = view->surface->current.width;
+		view->saved_buffer_height = view->surface->current.height;
+	}
 }

@@ -60,6 +60,8 @@ struct sway_container_state {
 	double swayc_x, swayc_y;
 	double swayc_width, swayc_height;
 
+	bool is_fullscreen;
+
 	bool has_gaps;
 	double current_gaps;
 	double gaps_inner;
@@ -74,7 +76,6 @@ struct sway_container_state {
 	// View properties
 	double view_x, view_y;
 	double view_width, view_height;
-	bool is_fullscreen;
 
 	enum sway_container_border border;
 	int border_thickness;
@@ -84,7 +85,7 @@ struct sway_container_state {
 	bool border_right;
 
 	// Workspace properties
-	struct sway_view *ws_fullscreen;
+	struct sway_container *ws_fullscreen;
 	struct sway_container *ws_floating;
 };
 
@@ -124,6 +125,8 @@ struct sway_container {
 	double saved_x, saved_y;
 	double saved_width, saved_height;
 
+	bool is_fullscreen;
+
 	// The gaps currently applied to the container.
 	double current_gaps;
 
@@ -134,6 +137,11 @@ struct sway_container {
 	list_t *children;
 
 	struct sway_container *parent;
+
+	// Indicates that the container is a scratchpad container.
+	// Both hidden and visible scratchpad containers have scratchpad=true.
+	// Hidden scratchpad containers have a NULL parent.
+	bool scratchpad;
 
 	float alpha;
 
@@ -222,16 +230,13 @@ struct sway_container *container_parent(struct sway_container *container,
  * surface-local coordinates of the given layout coordinates if the container
  * is a view and the view contains a surface at those coordinates.
  */
-struct sway_container *container_at(struct sway_container *container,
-		double ox, double oy, struct wlr_surface **surface,
+struct sway_container *container_at(struct sway_container *workspace,
+		double lx, double ly, struct wlr_surface **surface,
 		double *sx, double *sy);
 
-/**
- * Same as container_at, but only checks floating views and expects coordinates
- * to be layout coordinates, as that's what floating views use.
- */
-struct sway_container *floating_container_at(double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy);
+struct sway_container *container_at_view(struct sway_container *view,
+		double lx, double ly, struct wlr_surface **surface,
+		double *sx, double *sy);
 
 /**
  * Apply the function for each descendant of the container breadth first.
@@ -262,6 +267,8 @@ int container_count_descendants_of_type(struct sway_container *con,
 
 void container_create_notify(struct sway_container *container);
 
+void container_update_textures_recursive(struct sway_container *con);
+
 void container_damage_whole(struct sway_container *container);
 
 bool container_reap_empty(struct sway_container *con);
@@ -289,6 +296,11 @@ void container_notify_subtree_changed(struct sway_container *container);
  */
 size_t container_titlebar_height(void);
 
+/**
+ * Resize and center the container in its workspace.
+ */
+void container_init_floating(struct sway_container *container);
+
 void container_set_floating(struct sway_container *container, bool enable);
 
 void container_set_geometry_from_floating_view(struct sway_container *con);
@@ -305,6 +317,12 @@ bool container_is_floating(struct sway_container *container);
 void container_get_box(struct sway_container *container, struct wlr_box *box);
 
 /**
+ * Move a floating container by the specified amount.
+ */
+void container_floating_translate(struct sway_container *con,
+		double x_amount, double y_amount);
+
+/**
  * Move a floating container to a new layout-local position.
  */
 void container_floating_move_to(struct sway_container *con,
@@ -317,5 +335,33 @@ void container_floating_move_to(struct sway_container *con,
 void container_set_dirty(struct sway_container *container);
 
 bool container_has_urgent_child(struct sway_container *container);
+
+/**
+ * If the container is involved in a drag or resize operation via a mouse, this
+ * ends the operation.
+ */
+void container_end_mouse_operation(struct sway_container *container);
+
+void container_set_fullscreen(struct sway_container *container, bool enable);
+
+/**
+ * Return true if the container is floating, or a child of a floating split
+ * container.
+ */
+bool container_is_floating_or_child(struct sway_container *container);
+
+/**
+ * Return true if the container is fullscreen, or a child of a fullscreen split
+ * container.
+ */
+bool container_is_fullscreen_or_child(struct sway_container *container);
+
+/**
+ * Wrap the children of parent in a new container. The new container will be the
+ * only child of parent.
+ *
+ * The new container is returned.
+ */
+struct sway_container *container_wrap_children(struct sway_container *parent);
 
 #endif

@@ -2,6 +2,7 @@
 #define _SWAY_UTIL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/types.h> 
 #include <xkbcommon/xkbcommon.h>
@@ -49,6 +50,14 @@ pid_t get_parent_pid(pid_t pid);
  * version of the color.
  */
 uint32_t parse_color(const char *color);
+
+/**
+ * Given a string that represents a boolean, return the boolean value. This
+ * function also takes in the current boolean value to support toggling. If
+ * toggling is not desired, pass in true for current so that toggling values
+ * get parsed as not true.
+ */
+bool parse_boolean(const char *boolean, bool current);
 
 /**
  * Given a path string, recurseively resolves any symlinks to their targets
