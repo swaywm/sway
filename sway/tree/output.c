@@ -22,7 +22,7 @@ static void restore_workspaces(struct sway_container *output) {
 			if (highest == output) {
 				container_remove_child(ws);
 				container_add_child(output, ws);
-				ipc_event_workspace(ws, NULL, "move");
+				ipc_event_workspace(NULL, ws, "move");
 				j--;
 			}
 		}

@@ -47,7 +47,10 @@ struct sway_view_impl {
 	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
+	void (*for_each_popup)(struct sway_view *view,
+		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*close)(struct sway_view *view);
+	void (*close_popups)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
 };
 
@@ -81,6 +84,9 @@ struct sway_view {
 	struct timespec urgent;
 	bool allow_request_urgent;
 	struct wl_event_source *urgent_timer;
+
+	struct wlr_buffer *saved_buffer;
+	int saved_buffer_width, saved_buffer_height;
 
 	bool destroying;
 
@@ -246,9 +252,20 @@ void view_set_tiled(struct sway_view *view, bool tiled);
 
 void view_close(struct sway_view *view);
 
+void view_close_popups(struct sway_view *view);
+
 void view_damage_from(struct sway_view *view);
 
+/**
+ * Iterate all surfaces of a view (toplevels + popups).
+ */
 void view_for_each_surface(struct sway_view *view,
+	wlr_surface_iterator_func_t iterator, void *user_data);
+
+/**
+ * Iterate all popups recursively.
+ */
+void view_for_each_popup(struct sway_view *view,
 	wlr_surface_iterator_func_t iterator, void *user_data);
 
 // view implementation
@@ -311,6 +328,8 @@ void view_clear_marks(struct sway_view *view);
 
 bool view_has_mark(struct sway_view *view, char *mark);
 
+void view_add_mark(struct sway_view *view, char *mark);
+
 void view_update_marks_textures(struct sway_view *view);
 
 /**
@@ -322,5 +341,9 @@ bool view_is_visible(struct sway_view *view);
 void view_set_urgent(struct sway_view *view, bool enable);
 
 bool view_is_urgent(struct sway_view *view);
+
+void view_remove_saved_buffer(struct sway_view *view);
+
+void view_save_buffer(struct sway_view *view);
 
 #endif

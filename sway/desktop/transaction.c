@@ -41,8 +41,6 @@ struct sway_transaction_instruction {
 	struct sway_transaction *transaction;
 	struct sway_container *container;
 	struct sway_container_state state;
-	struct wlr_buffer *saved_buffer;
-	int saved_buffer_width, saved_buffer_height;
 	uint32_t serial;
 	bool ready;
 };
@@ -55,27 +53,6 @@ static struct sway_transaction *transaction_create() {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->create_time);
 	}
 	return transaction;
-}
-
-static void remove_saved_view_buffer(
-		struct sway_transaction_instruction *instruction) {
-	if (instruction->saved_buffer) {
-		wlr_buffer_unref(instruction->saved_buffer);
-		instruction->saved_buffer = NULL;
-	}
-}
-
-static void save_view_buffer(struct sway_view *view,
-		struct sway_transaction_instruction *instruction) {
-	if (!sway_assert(instruction->saved_buffer == NULL,
-				"Didn't expect instruction to have a saved buffer already")) {
-		remove_saved_view_buffer(instruction);
-	}
-	if (view->surface && wlr_surface_has_buffer(view->surface)) {
-		instruction->saved_buffer = wlr_buffer_ref(view->surface->buffer);
-		instruction->saved_buffer_width = view->surface->current.width;
-		instruction->saved_buffer_height = view->surface->current.height;
-	}
 }
 
 static void transaction_destroy(struct sway_transaction *transaction) {
@@ -93,7 +70,6 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 		if (con->destroying && !con->instructions->length) {
 			container_free(con);
 		}
-		remove_saved_view_buffer(instruction);
 		free(instruction);
 	}
 	list_free(transaction->instructions);
@@ -158,9 +134,6 @@ static void transaction_add_container(struct sway_transaction *transaction,
 
 	copy_pending_state(container, &instruction->state);
 
-	if (container->type == C_VIEW) {
-		save_view_buffer(container->sway_view, instruction);
-	}
 	list_add(transaction->instructions, instruction);
 }
 
@@ -220,6 +193,15 @@ static void transaction_apply(struct sway_transaction *transaction) {
 
 		memcpy(&container->current, &instruction->state,
 				sizeof(struct sway_container_state));
+
+		if (container->type == C_VIEW) {
+			if (container->sway_view->saved_buffer) {
+				view_remove_saved_buffer(container->sway_view);
+			}
+			if (container->instructions->length > 1) {
+				view_save_buffer(container->sway_view);
+			}
+		}
 	}
 }
 
@@ -294,6 +276,9 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			// mapping and its default geometry doesn't intersect an output.
 			struct timespec when;
 			wlr_surface_send_frame_done(con->sway_view->surface, &when);
+			if (!con->sway_view->saved_buffer) {
+				view_save_buffer(con->sway_view);
+			}
 		}
 		list_add(con->instructions, instruction);
 	}
@@ -398,18 +383,6 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 			return;
 		}
 	}
-}
-
-struct wlr_texture *transaction_get_saved_texture(struct sway_view *view,
-		int *width, int *height) {
-	struct sway_transaction_instruction *instruction =
-		view->swayc->instructions->items[0];
-	if (!instruction->saved_buffer) {
-		return NULL;
-	}
-	*width = instruction->saved_buffer_width;
-	*height = instruction->saved_buffer_height;
-	return instruction->saved_buffer->texture;
 }
 
 void transaction_commit_dirty(void) {

@@ -488,8 +488,6 @@ int sway_binding_cmp_keys(const void *a, const void *b);
 
 void free_sway_binding(struct sway_binding *sb);
 
-struct sway_binding *sway_binding_dup(struct sway_binding *sb);
-
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 
 void load_swaybars();

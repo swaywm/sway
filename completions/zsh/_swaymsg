@@ -22,6 +22,9 @@ types=(
 'get_marks'
 'get_bar_config'
 'get_version'
+'get_binding_modes'
+'get_config'
+'send_tick'
 )
 
 _arguments -s \
