@@ -262,61 +262,21 @@ enum sway_popup_during_fullscreen {
 	POPUP_LEAVE,
 };
 
-enum command_context {
-	CONTEXT_CONFIG = 1,
-	CONTEXT_BINDING = 2,
-	CONTEXT_IPC = 4,
-	CONTEXT_CRITERIA = 8,
-	CONTEXT_ALL = 0xFFFFFFFF,
-};
-
-struct command_policy {
-	char *command;
-	uint32_t context;
-};
-
 enum secure_feature {
-	FEATURE_LOCK = 1,
-	FEATURE_PANEL = 2,
-	FEATURE_BACKGROUND = 4,
-	FEATURE_SCREENSHOT = 8,
-	FEATURE_FULLSCREEN = 16,
-	FEATURE_KEYBOARD = 32,
-	FEATURE_MOUSE = 64,
+	FEATURE_FULLSCREEN       = 1 << 0,
+	FEATURE_DATA_CONTROL_MGR = 1 << 1,
+	FEATURE_DMABUF_EXPORT    = 1 << 2,
+	FEATURE_SCREENCOPY       = 1 << 3,
+	FEATURE_GAMMA_CONTROL    = 1 << 4,
+	FEATURE_INPUT_INHIBIT    = 1 << 5,
+	FEATURE_LAYER_SHELL      = 1 << 6,
+	FEATURE_VIRTUAL_KEYBOARD = 1 << 7,
 };
 
 struct feature_policy {
 	char *program;
-	uint32_t features;
-};
-
-enum ipc_feature {
-	IPC_FEATURE_COMMAND = 1,
-	IPC_FEATURE_GET_WORKSPACES = 2,
-	IPC_FEATURE_GET_OUTPUTS = 4,
-	IPC_FEATURE_GET_TREE = 8,
-	IPC_FEATURE_GET_MARKS = 16,
-	IPC_FEATURE_GET_BAR_CONFIG = 32,
-	IPC_FEATURE_GET_VERSION = 64,
-	IPC_FEATURE_GET_INPUTS = 128,
-	IPC_FEATURE_EVENT_WORKSPACE = 256,
-	IPC_FEATURE_EVENT_OUTPUT = 512,
-	IPC_FEATURE_EVENT_MODE = 1024,
-	IPC_FEATURE_EVENT_WINDOW = 2048,
-	IPC_FEATURE_EVENT_BINDING = 4096,
-	IPC_FEATURE_EVENT_INPUT = 8192,
-	IPC_FEATURE_GET_SEATS = 16384,
-
-	IPC_FEATURE_ALL_COMMANDS =
-		1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 16384,
-	IPC_FEATURE_ALL_EVENTS = 256 | 512 | 1024 | 2048 | 4096 | 8192,
-
-	IPC_FEATURE_ALL = IPC_FEATURE_ALL_COMMANDS | IPC_FEATURE_ALL_EVENTS,
-};
-
-struct ipc_policy {
-	char *program;
-	uint32_t features;
+	uint64_t permit_features;
+	uint64_t reject_features;
 };
 
 enum focus_wrapping_mode {
@@ -410,9 +370,7 @@ struct sway_config {
 	int32_t floating_minimum_height;
 
 	// Security
-	list_t *command_policies;
 	list_t *feature_policies;
-	list_t *ipc_policies;
 
 	// Context for command handlers
 	struct {

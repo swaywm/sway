@@ -3,16 +3,17 @@
 #include <unistd.h>
 #include "sway/config.h"
 
-uint32_t get_feature_policy_mask(pid_t pid);
-uint32_t get_ipc_policy_mask(pid_t pid);
-uint32_t get_command_policy_mask(const char *cmd);
+/** Returns a mask of all features this pid is permitted to use */
+uint64_t get_feature_policy_mask(struct wl_client *client);
 
-struct feature_policy *get_feature_policy(const char *name);
+/**
+ * Returns the feature policy for a given program. Creates one if it doesn't
+ * exist.
+ */
+struct feature_policy *get_feature_policy(const char *program);
 
-const char *command_policy_str(enum command_context context);
-
-struct feature_policy *alloc_feature_policy(const char *program);
-struct ipc_policy *alloc_ipc_policy(const char *program);
-struct command_policy *alloc_command_policy(const char *command);
+/** Creates a wayland client with a feature policy applied. */
+struct wl_client *create_secure_client(struct wl_display *display,
+		int fd, const struct feature_policy *policy);
 
 #endif

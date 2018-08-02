@@ -128,9 +128,8 @@ void free_config(struct sway_config *config) {
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
 	list_free(config->config_chain);
-	list_free(config->command_policies);
+	// TODO: Deallocate feature policies
 	list_free(config->feature_policies);
-	list_free(config->ipc_policies);
 	free(config->floating_scroll_up_cmd);
 	free(config->floating_scroll_down_cmd);
 	free(config->floating_scroll_left_cmd);
@@ -291,10 +290,7 @@ static void config_defaults(struct sway_config *config) {
 
 	set_color(config->border_colors.background, 0xFFFFFF);
 
-	// Security
-	if (!(config->command_policies = create_list())) goto cleanup;
 	if (!(config->feature_policies = create_list())) goto cleanup;
-	if (!(config->ipc_policies = create_list())) goto cleanup;
 
 	return;
 cleanup:
@@ -453,7 +449,8 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 					"and mode 644 or 444", _path);
 				success = false;
 			} else {
-				success = success && load_config(_path, config);
+				success = success && load_config(_path, config,
+						&config->swaynag_config_errors);
 			}
 		}
 
@@ -713,13 +710,7 @@ bool read_config(FILE *file, struct sway_config *config,
 			return false;
 		}
 		wlr_log(WLR_DEBUG, "Expanded line: %s", expanded);
-		struct cmd_results *res;
-		if (block && strcmp(block, "<commands>") == 0) {
-			// Special case
-			res = config_commands_command(expanded);
-		} else {
-			res = config_command(expanded);
-		}
+		struct cmd_results *res = config_command(expanded);
 		switch(res->status) {
 		case CMD_FAILURE:
 		case CMD_INVALID:
@@ -736,11 +727,6 @@ bool read_config(FILE *file, struct sway_config *config,
 		case CMD_DEFER:
 			wlr_log(WLR_DEBUG, "Deferring command `%s'", line);
 			list_add(config->cmd_queue, strdup(expanded));
-			break;
-
-		case CMD_BLOCK_COMMANDS:
-			wlr_log(WLR_DEBUG, "Entering commands block");
-			list_insert(stack, 0, "<commands>");
 			break;
 
 		case CMD_BLOCK:
