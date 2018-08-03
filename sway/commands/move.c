@@ -59,6 +59,10 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			&& strcasecmp(argv[2], "workspace") == 0) {
 		// move container to workspace x
 		if (current->type == C_WORKSPACE) {
+			if (current->children->length == 0) {
+				return cmd_results_new(CMD_FAILURE, "move",
+						"Can't move an empty workspace");
+			}
 			current = container_wrap_children(current);
 		} else if (current->type != C_CONTAINER && current->type != C_VIEW) {
 			return cmd_results_new(CMD_FAILURE, "move",
