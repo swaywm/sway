@@ -592,19 +592,18 @@ void view_unmap(struct sway_view *view) {
 		view->urgent_timer = NULL;
 	}
 
-	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	bool was_fullscreen = view->swayc->is_fullscreen;
+	struct sway_container *surviving_ancestor = container_destroy(view->swayc);
 
-	struct sway_container *parent;
-	if (container_is_fullscreen_or_child(view->swayc)) {
-		parent = container_destroy(view->swayc);
-		arrange_windows(ws->parent);
-	} else {
-		parent = container_destroy(view->swayc);
-		arrange_windows(parent);
-	}
-	if (parent->type >= C_WORKSPACE) { // if the workspace still exists
+	// If the workspace wasn't reaped
+	if (surviving_ancestor->type >= C_WORKSPACE) {
+		struct sway_container *ws = surviving_ancestor->type == C_WORKSPACE ?
+			surviving_ancestor :
+			container_parent(surviving_ancestor, C_WORKSPACE);
+		arrange_windows(was_fullscreen ? ws : surviving_ancestor);
 		workspace_detect_urgent(ws);
 	}
+
 	transaction_commit_dirty();
 	view->surface = NULL;
 }
