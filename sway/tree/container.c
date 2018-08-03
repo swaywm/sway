@@ -535,7 +535,7 @@ struct sway_container *container_parent(struct sway_container *container,
 	return container;
 }
 
-struct sway_container *container_at_view(struct sway_container *swayc,
+static struct sway_container *container_at_view(struct sway_container *swayc,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (!sway_assert(swayc->type == C_VIEW, "Expected a view")) {
@@ -573,10 +573,6 @@ struct sway_container *container_at_view(struct sway_container *swayc,
 	}
 	return NULL;
 }
-
-static struct sway_container *tiling_container_at(
-		struct sway_container *con, double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy);
 
 /**
  * container_at for a container with layout L_TABBED.
@@ -684,7 +680,7 @@ static struct sway_container *floating_container_at(double lx, double ly,
 	return NULL;
 }
 
-static struct sway_container *tiling_container_at(
+struct sway_container *tiling_container_at(
 		struct sway_container *con, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (con->type == C_VIEW) {
