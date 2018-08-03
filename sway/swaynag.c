@@ -8,15 +8,6 @@
 #include "log.h"
 #include "sway/swaynag.h"
 
-void swaynag_clone(struct swaynag_instance *dest,
-		struct swaynag_instance *src) {
-	dest->args = src->args;
-	dest->pid = src->pid;
-	dest->fd[0] = src->fd[0];
-	dest->fd[1] = src->fd[1];
-	dest->detailed = src->detailed;
-}
-
 bool swaynag_spawn(const char *swaynag_command,
 		struct swaynag_instance *swaynag) {
 	if (swaynag->detailed) {

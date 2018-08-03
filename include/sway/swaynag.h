@@ -8,10 +8,6 @@ struct swaynag_instance {
 	bool detailed;
 };
 
-// Copy all fields of one instance to another
-void swaynag_clone(struct swaynag_instance *dest,
-		struct swaynag_instance *src);
-
 // Spawn swaynag. If swaynag->detailed, then swaynag->fd[1] will left open
 // so it can be written to. Call swaynag_show when done writing. This will
 // be automatically called by swaynag_log if the instance is not spawned and

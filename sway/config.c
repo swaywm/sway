@@ -386,8 +386,9 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		config->active = true;
 
 		swaynag_kill(&old_config->swaynag_config_errors);
-		swaynag_clone(&config->swaynag_config_errors,
-				&old_config->swaynag_config_errors);
+		memcpy(&config->swaynag_config_errors,
+				&old_config->swaynag_config_errors,
+				sizeof(struct swaynag_instance));
 
 		create_default_output_configs();
 	}
