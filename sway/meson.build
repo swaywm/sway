@@ -9,6 +9,7 @@ sway_sources = files(
 	'ipc-server.c',
 	'scratchpad.c',
 	'security.c',
+	'swaynag.c',
 
 	'desktop/desktop.c',
 	'desktop/idle_inhibit_v1.c',
@@ -78,6 +79,7 @@ sway_sources = files(
 	'commands/split.c',
 	'commands/sticky.c',
 	'commands/swaybg_command.c',
+	'commands/swaynag_command.c',
 	'commands/swap.c',
 	'commands/title_format.c',
 	'commands/unmark.c',

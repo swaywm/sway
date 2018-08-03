@@ -59,6 +59,13 @@ The following commands may only be used in the configuration file.
 	Executes custom background _command_. Default is _swaybg_. Refer to
 	*output* below for more information.
 
+*swaynag\_command* <command>
+	Executes custom command for _swaynag_. Default is _swaynag_. Additional
+	arguments may be appended to the end. This should only be used to either
+	direct sway to call swaynag from a custom path or to provide additional
+	arguments. This should be placed at the top of the config for the best
+	results.
+
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 

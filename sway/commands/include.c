@@ -7,8 +7,10 @@ struct cmd_results *cmd_include(int argc, char **argv) {
 		return error;
 	}
 
-	if (!load_include_configs(argv[0], config)) {
-		return cmd_results_new(CMD_INVALID, "include", "Failed to include sub configuration file: %s", argv[0]);
+	if (!load_include_configs(argv[0], config,
+				&config->swaynag_config_errors)) {
+		return cmd_results_new(CMD_INVALID, "include",
+				"Failed to include sub configuration file: %s", argv[0]);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
