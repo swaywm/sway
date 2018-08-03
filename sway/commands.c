@@ -132,6 +132,7 @@ static struct cmd_handler handlers[] = {
 static struct cmd_handler config_handlers[] = {
 	{ "default_orientation", cmd_default_orientation },
 	{ "swaybg_command", cmd_swaybg_command },
+	{ "swaynag_command", cmd_swaynag_command },
 	{ "workspace_layout", cmd_workspace_layout },
 };
 
@@ -511,14 +512,11 @@ struct cmd_results *cmd_results_new(enum cmd_status status,
 		results->input = NULL;
 	}
 	if (format) {
+		char *error = malloc(256);
 		va_list args;
 		va_start(args, format);
-		size_t length = vsnprintf(NULL, 0, format, args) + 1;
-		char *error = malloc(length);
-		va_end(args);
-		va_start(args, format);
 		if (error) {
-			vsnprintf(error, length, format, args);
+			vsnprintf(error, 256, format, args);
 		}
 		va_end(args);
 		results->error = error;

@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_box.h>
 #include <xkbcommon/xkbcommon.h>
 #include "list.h"
+#include "swaynag.h"
 #include "tree/layout.h"
 #include "tree/container.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
@@ -308,7 +309,8 @@ enum focus_wrapping_mode {
  * The configuration struct. The result of loading a config file.
  */
 struct sway_config {
-	pid_t swaynag_pid;
+	char *swaynag_command;
+	struct swaynag_instance swaynag_config_errors;
 	list_t *symbols;
 	list_t *modes;
 	list_t *bars;
@@ -346,6 +348,7 @@ struct sway_config {
 	bool failed;
 	bool reloading;
 	bool reading;
+	bool validating;
 	bool auto_back_and_forth;
 	bool show_marks;
 
@@ -404,18 +407,19 @@ struct sway_config {
  * Loads the main config from the given path. is_active should be true when
  * reloading the config.
  */
-bool load_main_config(const char *path, bool is_active, char **errors);
+bool load_main_config(const char *path, bool is_active, bool validating);
 
 /**
  * Loads an included config. Can only be used after load_main_config.
  */
 bool load_include_configs(const char *path, struct sway_config *config,
-		char **errors);
+		struct swaynag_instance *swaynag);
 
 /**
  * Reads the config from the given FILE.
  */
-bool read_config(FILE *file, struct sway_config *config, char **errors);
+bool read_config(FILE *file, struct sway_config *config,
+		struct swaynag_instance *swaynag);
 
 /**
  * Free config struct
@@ -423,8 +427,6 @@ bool read_config(FILE *file, struct sway_config *config, char **errors);
 void free_config(struct sway_config *config);
 
 void free_sway_variable(struct sway_variable *var);
-
-void spawn_swaynag_config_errors(struct sway_config *config, char *errors);
 
 /**
  * Does variable replacement for a string based on the config's currently loaded variables.
