@@ -9,10 +9,9 @@
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
-#include "sway/scratchpad.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
 #include "stringop.h"
 #include "list.h"
@@ -324,7 +323,7 @@ static struct cmd_results *move_to_scratchpad(struct sway_container *con) {
 		return cmd_results_new(CMD_INVALID, "move",
 				"Container is already in the scratchpad");
 	}
-	scratchpad_add_container(con);
+	root_scratchpad_add_container(con);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 

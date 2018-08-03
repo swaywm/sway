@@ -14,8 +14,6 @@
 #include "list.h"
 #include "log.h"
 
-struct sway_container root_container;
-
 static void apply_horiz_layout(struct sway_container *parent) {
 	size_t num_children = parent->children->length;
 	if (!num_children) {

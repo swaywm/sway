@@ -19,40 +19,6 @@
 #include "list.h"
 #include "log.h"
 
-struct sway_container root_container;
-
-static void output_layout_handle_change(struct wl_listener *listener,
-		void *data) {
-	arrange_windows(&root_container);
-	transaction_commit_dirty();
-}
-
-void layout_init(void) {
-	root_container.id = 0; // normally assigned in new_swayc()
-	root_container.type = C_ROOT;
-	root_container.layout = L_NONE;
-	root_container.name = strdup("root");
-	root_container.instructions = create_list();
-	root_container.children = create_list();
-	root_container.current.children = create_list();
-	wl_signal_init(&root_container.events.destroy);
-
-	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
-	root_container.sway_root->output_layout = wlr_output_layout_create();
-	wl_list_init(&root_container.sway_root->outputs);
-#ifdef HAVE_XWAYLAND
-	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
-#endif
-	wl_list_init(&root_container.sway_root->drag_icons);
-	wl_signal_init(&root_container.sway_root->events.new_container);
-	root_container.sway_root->scratchpad = create_list();
-
-	root_container.sway_root->output_layout_change.notify =
-		output_layout_handle_change;
-	wl_signal_add(&root_container.sway_root->output_layout->events.change,
-		&root_container.sway_root->output_layout_change);
-}
-
 static int index_child(const struct sway_container *child) {
 	struct sway_container *parent = child->parent;
 	for (int i = 0; i < parent->children->length; ++i) {

@@ -17,7 +17,6 @@
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
-#include "sway/scratchpad.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/layout.h"
@@ -336,7 +335,6 @@ static struct sway_container *container_destroy_noreaping(
 		// Workspaces will refuse to be destroyed if they're the last workspace
 		// on their output.
 		if (!container_workspace_destroy(con)) {
-			wlr_log(WLR_ERROR, "workspace doesn't want to destroy");
 			return NULL;
 		}
 	}
@@ -347,7 +345,7 @@ static struct sway_container *container_destroy_noreaping(
 	container_set_dirty(con);
 
 	if (con->scratchpad) {
-		scratchpad_remove_container(con);
+		root_scratchpad_remove_container(con);
 	}
 
 	if (!con->parent) {
@@ -1097,7 +1095,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 	} else {
 		// Returning to tiled
 		if (container->scratchpad) {
-			scratchpad_remove_container(container);
+			root_scratchpad_remove_container(container);
 		}
 		container_remove_child(container);
 		struct sway_container *reference =

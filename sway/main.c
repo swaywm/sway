@@ -407,7 +407,7 @@ int main(int argc, char **argv) {
 
 	wlr_log(WLR_INFO, "Starting sway version " SWAY_VERSION);
 
-	layout_init();
+	root_create();
 
 	if (!server_init(&server)) {
 		return 1;
@@ -464,6 +464,7 @@ int main(int argc, char **argv) {
 	wlr_log(WLR_INFO, "Shutting down sway");
 
 	server_fini(&server);
+	root_destroy();
 
 	if (config) {
 		free_config(config);
