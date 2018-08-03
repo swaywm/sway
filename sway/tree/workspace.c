@@ -412,6 +412,11 @@ bool workspace_switch(struct sway_container *workspace) {
 			has_sticky = true;
 			container_remove_child(floater);
 			container_add_child(workspace->sway_workspace->floating, floater);
+			if (floater == focus) {
+				seat_set_focus(seat, NULL);
+				seat_set_focus(seat, floater);
+			}
+			--i;
 		}
 	}
 
