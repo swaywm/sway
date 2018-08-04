@@ -329,6 +329,14 @@ void container_floating_move_to(struct sway_container *con,
 		double lx, double ly);
 
 /**
+ * Move a floating container to the center of the workspace.
+ */
+void container_floating_move_to_center(struct sway_container *con);
+
+void container_floating_move_to_container(struct sway_container *container,
+		struct sway_container *destination);
+
+/**
  * Mark a container as dirty if it isn't already. Dirty containers will be
  * included in the next transaction then unmarked as dirty.
  */

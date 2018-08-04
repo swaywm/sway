@@ -151,7 +151,7 @@ void container_move_to(struct sway_container *container,
 		return;
 	}
 	if (container_is_floating(container)) {
-		// TODO
+		container_floating_move_to_container(container, destination);
 		return;
 	}
 	struct sway_container *old_parent = container_remove_child(container);

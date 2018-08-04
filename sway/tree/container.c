@@ -1163,19 +1163,16 @@ void container_floating_translate(struct sway_container *con,
 		double x_amount, double y_amount) {
 	con->x += x_amount;
 	con->y += y_amount;
-	con->current.swayc_x += x_amount;
-	con->current.swayc_y += y_amount;
 	if (con->type == C_VIEW) {
 		con->sway_view->x += x_amount;
 		con->sway_view->y += y_amount;
-		con->current.view_x += x_amount;
-		con->current.view_y += y_amount;
 	} else {
 		for (int i = 0; i < con->children->length; ++i) {
 			struct sway_container *child = con->children->items[i];
 			container_floating_translate(child, x_amount, y_amount);
 		}
 	}
+	container_set_dirty(con);
 }
 
 /**
@@ -1219,9 +1216,7 @@ void container_floating_move_to(struct sway_container *con,
 			"Expected a floating container")) {
 		return;
 	}
-	desktop_damage_whole_container(con);
 	container_floating_translate(con, lx - con->x, ly - con->y);
-	desktop_damage_whole_container(con);
 	struct sway_container *old_workspace = container_parent(con, C_WORKSPACE);
 	struct sway_container *new_output = container_floating_find_output(con);
 	if (!sway_assert(new_output, "Unable to find any output")) {
@@ -1236,6 +1231,50 @@ void container_floating_move_to(struct sway_container *con,
 		arrange_windows(new_workspace);
 		workspace_detect_urgent(old_workspace);
 		workspace_detect_urgent(new_workspace);
+	}
+}
+
+void container_floating_move_to_center(struct sway_container *con) {
+	if (!sway_assert(container_is_floating(con),
+			"Expected a floating container")) {
+		return;
+	}
+	struct sway_container *ws = container_parent(con, C_WORKSPACE);
+	double new_lx = ws->x + (ws->width - con->width) / 2;
+	double new_ly = ws->y + (ws->height - con->height) / 2;
+	container_floating_translate(con, new_lx - con->x, new_ly - con->y);
+}
+
+void container_floating_move_to_container(struct sway_container *container,
+		struct sway_container *destination) {
+	// Resolve destination into a workspace
+	struct sway_container *new_ws = NULL;
+	if (destination->type == C_OUTPUT) {
+		new_ws = output_get_active_workspace(destination->sway_output);
+	} else if (destination->type == C_WORKSPACE) {
+		new_ws = destination;
+	} else {
+		new_ws = container_parent(destination, C_WORKSPACE);
+	}
+	if (!new_ws) {
+		// This can happen if the user has run "move container to mark foo",
+		// where mark foo is on a hidden scratchpad container.
+		return;
+	}
+	struct sway_container *old_ws = container_parent(container, C_WORKSPACE);
+	if (old_ws != new_ws) {
+		container_remove_child(container);
+		container_add_child(new_ws->sway_workspace->floating, container);
+		arrange_windows(old_ws);
+		arrange_windows(new_ws);
+		workspace_detect_urgent(old_ws);
+		workspace_detect_urgent(new_ws);
+	}
+	// If the container's center doesn't overlap the new workspace, center it
+	// within the workspace.
+	struct sway_container *output = container_floating_find_output(container);
+	if (new_ws->parent != output) {
+		container_floating_move_to_center(container);
 	}
 }
 
