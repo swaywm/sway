@@ -7,7 +7,6 @@ sway_sources = files(
 	'debug-tree.c',
 	'ipc-json.c',
 	'ipc-server.c',
-	'scratchpad.c',
 	'security.c',
 	'swaynag.c',
 
@@ -150,6 +149,7 @@ sway_sources = files(
 	'tree/arrange.c',
 	'tree/container.c',
 	'tree/layout.c',
+	'tree/root.c',
 	'tree/view.c',
 	'tree/workspace.c',
 	'tree/output.c',

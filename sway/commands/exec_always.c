@@ -78,7 +78,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	waitpid(pid, NULL, 0);
 	if (child > 0) {
 		wlr_log(WLR_DEBUG, "Child process created with pid %d", child);
-		workspace_record_pid(child);
+		root_record_workspace_pid(child);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "exec_always",
 			"Second fork() failed");
