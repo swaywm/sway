@@ -4,12 +4,14 @@
 #include <string.h>
 #include <wlr/types/wlr_output_layout.h>
 #include "sway/input/seat.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 
 struct sway_container root_container;
 
@@ -144,4 +146,117 @@ void root_scratchpad_hide(struct sway_container *con) {
 		seat_set_focus(seat, seat_get_focus_inactive(seat, ws));
 	}
 	list_move_to_end(root_container.sway_root->scratchpad, con);
+}
+
+struct pid_workspace {
+	pid_t pid;
+	char *workspace;
+	struct timespec time_added;
+
+	struct sway_container *output;
+	struct wl_listener output_destroy;
+
+	struct wl_list link;
+};
+
+static struct wl_list pid_workspaces;
+
+struct sway_container *root_workspace_for_pid(pid_t pid) {
+	if (!pid_workspaces.prev && !pid_workspaces.next) {
+		wl_list_init(&pid_workspaces);
+		return NULL;
+	}
+
+	struct sway_container *ws = NULL;
+	struct pid_workspace *pw = NULL;
+
+	wlr_log(WLR_DEBUG, "Looking up workspace for pid %d", pid);
+
+	do {
+		struct pid_workspace *_pw = NULL;
+		wl_list_for_each(_pw, &pid_workspaces, link) {
+			if (pid == _pw->pid) {
+				pw = _pw;
+				wlr_log(WLR_DEBUG,
+						"found pid_workspace for pid %d, workspace %s",
+						pid, pw->workspace);
+				goto found;
+			}
+		}
+		pid = get_parent_pid(pid);
+	} while (pid > 1);
+found:
+
+	if (pw && pw->workspace) {
+		ws = workspace_by_name(pw->workspace);
+
+		if (!ws) {
+			wlr_log(WLR_DEBUG,
+					"Creating workspace %s for pid %d because it disappeared",
+					pw->workspace, pid);
+			ws = workspace_create(pw->output, pw->workspace);
+		}
+
+		wl_list_remove(&pw->output_destroy.link);
+		wl_list_remove(&pw->link);
+		free(pw->workspace);
+		free(pw);
+	}
+
+	return ws;
+}
+
+static void pw_handle_output_destroy(struct wl_listener *listener, void *data) {
+	struct pid_workspace *pw = wl_container_of(listener, pw, output_destroy);
+	pw->output = NULL;
+	wl_list_remove(&pw->output_destroy.link);
+	wl_list_init(&pw->output_destroy.link);
+}
+
+void root_record_workspace_pid(pid_t pid) {
+	wlr_log(WLR_DEBUG, "Recording workspace for process %d", pid);
+	if (!pid_workspaces.prev && !pid_workspaces.next) {
+		wl_list_init(&pid_workspaces);
+	}
+
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *ws =
+		seat_get_focus_inactive(seat, &root_container);
+	if (ws && ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
+	}
+	if (!ws) {
+		wlr_log(WLR_DEBUG, "Bailing out, no workspace");
+		return;
+	}
+	struct sway_container *output = ws->parent;
+	if (!output) {
+		wlr_log(WLR_DEBUG, "Bailing out, no output");
+		return;
+	}
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	// Remove expired entries
+	static const int timeout = 60;
+	struct pid_workspace *old, *_old;
+	wl_list_for_each_safe(old, _old, &pid_workspaces, link) {
+		if (now.tv_sec - old->time_added.tv_sec >= timeout) {
+			wl_list_remove(&old->output_destroy.link);
+			wl_list_remove(&old->link);
+			free(old->workspace);
+			free(old);
+		}
+	}
+
+	struct pid_workspace *pw = calloc(1, sizeof(struct pid_workspace));
+	pw->workspace = strdup(ws->name);
+	pw->output = output;
+	pw->pid = pid;
+	memcpy(&pw->time_added, &now, sizeof(struct timespec));
+	pw->output_destroy.notify = pw_handle_output_destroy;
+	wl_signal_add(&output->sway_output->wlr_output->events.destroy,
+			&pw->output_destroy);
+	wl_list_insert(&pid_workspaces, &pw->link);
 }

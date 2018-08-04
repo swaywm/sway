@@ -490,7 +490,7 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 		wl_resource_get_client(view->surface->resource);
 	wl_client_get_credentials(client, &pid, NULL, NULL);
 #endif
-	ws = workspace_for_pid(pid);
+	ws = root_workspace_for_pid(pid);
 	if (ws) {
 		return ws;
 	}

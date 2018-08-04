@@ -54,4 +54,8 @@ void root_scratchpad_show(struct sway_container *con);
  */
 void root_scratchpad_hide(struct sway_container *con);
 
+struct sway_container *root_workspace_for_pid(pid_t pid);
+
+void root_record_workspace_pid(pid_t pid);
+
 #endif
