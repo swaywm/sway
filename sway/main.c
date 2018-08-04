@@ -22,6 +22,7 @@
 #include "sway/debug.h"
 #include "sway/desktop/transaction.h"
 #include "sway/server.h"
+#include "sway/swaynag.h"
 #include "sway/tree/layout.h"
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
@@ -416,11 +417,12 @@ int main(int argc, char **argv) {
 	log_env();
 
 	if (validate) {
-		bool valid = load_main_config(config_path, false);
+		bool valid = load_main_config(config_path, false, true);
 		return valid ? 0 : 1;
 	}
 
-	if (!load_main_config(config_path, false)) {
+	setenv("WAYLAND_DISPLAY", server.socket, true);
+	if (!load_main_config(config_path, false, false)) {
 		sway_terminate(EXIT_FAILURE);
 	}
 
@@ -430,7 +432,6 @@ int main(int argc, char **argv) {
 
 	security_sanity_check();
 
-	setenv("WAYLAND_DISPLAY", server.socket, true);
 	if (!terminate_request) {
 		if (!server_start_backend(&server)) {
 			sway_terminate(EXIT_FAILURE);
@@ -451,6 +452,10 @@ int main(int argc, char **argv) {
 		list_del(config->cmd_queue, 0);
 	}
 	transaction_commit_dirty();
+
+	if (config->swaynag_config_errors.pid > 0) {
+		swaynag_show(&config->swaynag_config_errors);
+	}
 
 	if (!terminate_request) {
 		server_run(&server);
