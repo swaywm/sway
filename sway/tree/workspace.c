@@ -250,20 +250,35 @@ struct sway_container *workspace_by_name(const char *name) {
 		current_workspace = container_parent(focus, C_WORKSPACE);
 		current_output = container_parent(focus, C_OUTPUT);
 	}
-	if (strcmp(name, "prev") == 0) {
-		return workspace_prev(current_workspace);
-	} else if (strcmp(name, "prev_on_output") == 0) {
-		return workspace_output_prev(current_output);
-	} else if (strcmp(name, "next") == 0) {
-		return workspace_next(current_workspace);
-	} else if (strcmp(name, "next_on_output") == 0) {
-		return workspace_output_next(current_output);
-	} else if (strcmp(name, "current") == 0) {
-		return current_workspace;
+
+	char *name_cpy = strdup(name);
+	char *first_word = strtok(name_cpy, " ");
+	if (first_word == NULL) {
+		first_word = name_cpy;
+	}
+
+	struct sway_container *ws = NULL;
+	if (strcmp(first_word, "prev") == 0) {
+		ws = workspace_prev(current_workspace);
+	} else if (strcmp(first_word, "prev_on_output") == 0) {
+		ws = workspace_output_prev(current_output);
+	} else if (strcmp(first_word, "next") == 0) {
+		ws = workspace_next(current_workspace);
+	} else if (strcmp(first_word, "next_on_output") == 0) {
+		ws = workspace_output_next(current_output);
+	} else if (strcmp(first_word, "current") == 0) {
+		ws = current_workspace;
+	} else if (strcasecmp(first_word, "back_and_forth") == 0) {
+		if (prev_workspace_name) {
+			ws = container_find(&root_container, _workspace_by_name,
+				(void *)prev_workspace_name);
+		}
 	} else {
-		return container_find(&root_container, _workspace_by_name,
+		ws = container_find(&root_container, _workspace_by_name,
 				(void *)name);
 	}
+	free(name_cpy);
+	return ws;
 }
 
 /**
@@ -364,7 +379,8 @@ struct sway_container *workspace_prev(struct sway_container *current) {
 	return workspace_prev_next_impl(current, false);
 }
 
-bool workspace_switch(struct sway_container *workspace) {
+bool workspace_switch(struct sway_container *workspace,
+		bool no_auto_back_and_forth) {
 	if (!workspace) {
 		return false;
 	}
@@ -379,7 +395,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		active_ws = container_parent(focus, C_WORKSPACE);
 	}
 
-	if (config->auto_back_and_forth
+	if (!no_auto_back_and_forth && config->auto_back_and_forth
 			&& active_ws == workspace
 			&& prev_workspace_name) {
 		struct sway_container *new_ws = workspace_by_name(prev_workspace_name);

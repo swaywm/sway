@@ -526,7 +526,7 @@ config after the others, or it will be matched instead of the others.
 	state. Using _allow_ or _deny_ controls the window's ability to set itself
 	as urgent. By default, windows are allowed to set their own urgency.
 
-*workspace* [number] <name>
+*workspace* [--no-auto-back-and-forth] [number] <name>
 	Switches to the specified workspace. The string "number" is optional and is
 	used to sort workspaces.
 
@@ -536,6 +536,9 @@ config after the others, or it will be matched instead of the others.
 
 *workspace* prev\_on\_output|next\_on\_output
 	Switches to the next workspace on the current output.
+
+*workspace* back_and_forth
+	Switches to the previously focused workspace.
 
 *workspace* <name> output <output>
 	Specifies that workspace _name_ should be shown on the specified _output_.
