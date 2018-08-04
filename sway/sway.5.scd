@@ -135,24 +135,29 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *move* [absolute] position center|mouse
 	Moves the focused container to be centered on the workspace or mouse.
 
-*move* container|window to mark <mark>
+*move* container|window [to] mark <mark>
 	Moves the focused container to the specified mark.
 
-*move* container|window to workspace <name>
-	Moves the focused container to the specified workspace.
+*move* [--no-auto-back-and-forth] container|window [to] workspace [number] <name>
+	Moves the focused container to the specified workspace. The string "number"
+	is optional and is used to match a workspace with the same number, even if
+	it has a different name.
 
-*move* container|window to workspace prev|next|current
+*move* container|window [to] workspace prev|next|current
 	Moves the focused container to the previous, next or current workspace on
 	this output, or if no workspaces remain, the previous or next output.
 
-*move* container|window to workspace prev\_on\_output|next\_on\_output
+*move* container|window [to] workspace prev\_on\_output|next\_on\_output
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window|workspace to output <name>
+*move* container|window [to] workspace back_and_forth
+	Moves the focused container to previously focused workspace.
+
+*move* container|window|workspace [to] output <name>
 	Moves the focused container or workspace to the specified output.
 
-*move* container|window|workspace to output up|right|down|left
+*move* container|window|workspace [to] output up|right|down|left
 	Moves the focused container or workspace to next output in the specified
 	direction.
 
