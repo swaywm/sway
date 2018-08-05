@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include "log.h"
