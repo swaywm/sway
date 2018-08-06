@@ -1182,7 +1182,7 @@ void container_floating_translate(struct sway_container *con,
  * one, otherwise we'll choose whichever output is closest to the container's
  * center.
  */
-static struct sway_container *container_floating_find_output(
+struct sway_container *container_floating_find_output(
 		struct sway_container *con) {
 	double center_x = con->x + con->width / 2;
 	double center_y = con->y + con->height / 2;
@@ -1243,39 +1243,6 @@ void container_floating_move_to_center(struct sway_container *con) {
 	double new_lx = ws->x + (ws->width - con->width) / 2;
 	double new_ly = ws->y + (ws->height - con->height) / 2;
 	container_floating_translate(con, new_lx - con->x, new_ly - con->y);
-}
-
-void container_floating_move_to_container(struct sway_container *container,
-		struct sway_container *destination) {
-	// Resolve destination into a workspace
-	struct sway_container *new_ws = NULL;
-	if (destination->type == C_OUTPUT) {
-		new_ws = output_get_active_workspace(destination->sway_output);
-	} else if (destination->type == C_WORKSPACE) {
-		new_ws = destination;
-	} else {
-		new_ws = container_parent(destination, C_WORKSPACE);
-	}
-	if (!new_ws) {
-		// This can happen if the user has run "move container to mark foo",
-		// where mark foo is on a hidden scratchpad container.
-		return;
-	}
-	struct sway_container *old_ws = container_parent(container, C_WORKSPACE);
-	if (old_ws != new_ws) {
-		container_remove_child(container);
-		container_add_child(new_ws->sway_workspace->floating, container);
-		arrange_windows(old_ws);
-		arrange_windows(new_ws);
-		workspace_detect_urgent(old_ws);
-		workspace_detect_urgent(new_ws);
-	}
-	// If the container's center doesn't overlap the new workspace, center it
-	// within the workspace.
-	struct sway_container *output = container_floating_find_output(container);
-	if (new_ws->parent != output) {
-		container_floating_move_to_center(container);
-	}
 }
 
 void container_set_dirty(struct sway_container *container) {
@@ -1357,6 +1324,11 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 			container->y = container->saved_y;
 			container->width = container->saved_width;
 			container->height = container->saved_height;
+			struct sway_container *output =
+				container_floating_find_output(container);
+			if (!container_has_ancestor(container, output)) {
+				container_floating_move_to_center(container);
+			}
 		} else {
 			container->width = container->saved_width;
 			container->height = container->saved_height;
