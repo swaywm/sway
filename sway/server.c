@@ -141,8 +141,15 @@ bool server_init(struct sway_server *server) {
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
 
-	server->socket = wl_display_add_socket_auto(server->wl_display);
-	if (!server->socket) {
+	server->socket = getenv("WAYLAND_DISPLAY");
+	int ret = 0;
+	if (server->socket) {
+		ret = wl_display_add_socket(server->wl_display, server->socket);
+	}
+	else {
+		server->socket = wl_display_add_socket_auto(server->wl_display);
+	}
+	if (ret < 0 || !server->socket) {
 		wlr_log(WLR_ERROR, "Unable to open wayland socket");
 		wlr_backend_destroy(server->backend);
 		return false;
