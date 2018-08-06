@@ -19,7 +19,6 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_output.h>
 #include <wlr/util/log.h>
-// TODO WLR: make Xwayland optional
 #include "list.h"
 #include "sway/config.h"
 #include "sway/desktop/idle_inhibit_v1.h"
@@ -85,7 +84,6 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_shell_surface);
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
 
-	// TODO make xwayland optional
 #ifdef HAVE_XWAYLAND
 	server->xwayland.wlr_xwayland =
 		wlr_xwayland_create(server->wl_display, server->compositor, true);
@@ -109,11 +107,15 @@ bool server_init(struct sway_server *server) {
 	}
 #endif
 
-	// TODO: Integration with sway borders
-	struct wlr_server_decoration_manager *deco_manager =
+	server->server_decoration_manager =
 		wlr_server_decoration_manager_create(server->wl_display);
 	wlr_server_decoration_manager_set_default_mode(
-		deco_manager, WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
+		server->server_decoration_manager,
+		WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
+	wl_signal_add(&server->server_decoration_manager->events.new_decoration,
+		&server->server_decoration);
+	server->server_decoration.notify = handle_server_decoration;
+	wl_list_init(&server->decorations);
 
 	wlr_linux_dmabuf_v1_create(server->wl_display, renderer);
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);

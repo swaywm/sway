@@ -4,14 +4,15 @@
 #include <stdlib.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
+#include "log.h"
+#include "sway/decoration.h"
+#include "sway/input/input-manager.h"
+#include "sway/input/seat.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
-#include "sway/input/seat.h"
-#include "sway/input/input-manager.h"
-#include "log.h"
 
 static const struct sway_view_child_impl popup_impl;
 
@@ -166,6 +167,15 @@ static bool wants_floating(struct sway_view *view) {
 		|| toplevel->parent;
 }
 
+static bool has_client_side_decorations(struct sway_view *view) {
+	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
+		xdg_shell_v6_view_from_view(view);
+	if (xdg_shell_v6_view == NULL) {
+		return true;
+	}
+	return xdg_shell_v6_view->deco_mode != WLR_SERVER_DECORATION_MANAGER_MODE_SERVER;
+}
+
 static void for_each_surface(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
@@ -223,6 +233,7 @@ static const struct sway_view_impl view_impl = {
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
+	.has_client_side_decorations = has_client_side_decorations,
 	.for_each_surface = for_each_surface,
 	.for_each_popup = for_each_popup,
 	.close = _close,
@@ -351,6 +362,14 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	if (!view->natural_width && !view->natural_height) {
 		view->natural_width = view->wlr_xdg_surface_v6->surface->current.width;
 		view->natural_height = view->wlr_xdg_surface_v6->surface->current.height;
+	}
+
+	struct sway_server_decoration *deco =
+		decoration_from_surface(xdg_surface->surface);
+	if (deco != NULL) {
+		xdg_shell_v6_view->deco_mode = deco->wlr_server_decoration->mode;
+	} else {
+		xdg_shell_v6_view->deco_mode = WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
 	}
 
 	view_map(view, view->wlr_xdg_surface_v6->surface);
