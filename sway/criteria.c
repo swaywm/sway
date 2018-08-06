@@ -361,8 +361,17 @@ static char *get_focused_prop(enum criteria_token token) {
 			}
 		}
 		break;
-	case T_CON_ID: // These do not support __focused__
-	case T_CON_MARK:
+	case T_CON_ID:
+		if (view->swayc == NULL) {
+			return NULL;
+		}
+		size_t id = view->swayc->id;
+		size_t id_size = snprintf(NULL, 0, "%zu", id) + 1;
+		char *id_str = malloc(id_size);
+		snprintf(id_str, id_size, "%zu", id);
+		value = id_str;
+		break;
+	case T_CON_MARK: // These do not support __focused__
 	case T_FLOATING:
 #ifdef HAVE_XWAYLAND
 	case T_ID:
@@ -425,7 +434,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_CON_ID:
 		criteria->con_id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
-			error = strdup("The value for 'con_id' should be numeric");
+			error = strdup("The value for 'con_id' should be '__focused__' or numeric");
 		}
 		break;
 	case T_CON_MARK:
@@ -452,13 +461,18 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		criteria->tiling = true;
 		break;
 	case T_URGENT:
-		if (strcmp(effective_value, "latest") == 0) {
+		if (strcmp(effective_value, "latest") == 0 ||
+				strcmp(effective_value, "newest") == 0 ||
+				strcmp(effective_value, "last") == 0 ||
+				strcmp(effective_value, "recent") == 0) {
 			criteria->urgent = 'l';
-		} else if (strcmp(effective_value, "oldest") == 0) {
+		} else if (strcmp(effective_value, "oldest") == 0 ||
+				strcmp(effective_value, "first") == 0) {
 			criteria->urgent = 'o';
 		} else {
 			error =
-				strdup("The value for 'urgent' must be 'latest' or 'oldest'");
+				strdup("The value for 'urgent' must be 'first', 'last', "
+						"'latest', 'newest', 'oldest' or 'recent'");
 		}
 		break;
 	case T_WORKSPACE:

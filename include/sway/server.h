@@ -4,12 +4,13 @@
 #include <wayland-server.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
+#include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/types/wlr_xdg_shell.h>
-#include <wlr/render/wlr_renderer.h>
 // TODO WLR: make Xwayland optional
 #include "list.h"
 #include "config.h"
@@ -42,11 +43,17 @@ struct sway_server {
 
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener xdg_shell_surface;
+
 #ifdef HAVE_XWAYLAND
 	struct sway_xwayland xwayland;
 	struct wl_listener xwayland_surface;
 	struct wl_listener xwayland_ready;
 #endif
+
+	struct wlr_server_decoration_manager *server_decoration_manager;
+	struct wl_listener server_decoration;
+	struct wl_list decorations; // sway_server_decoration::link
+
 	bool debug_txn_timings;
 
 	list_t *transactions;
@@ -71,4 +78,6 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data);
 #ifdef HAVE_XWAYLAND
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif
+void handle_server_decoration(struct wl_listener *listener, void *data);
+
 #endif

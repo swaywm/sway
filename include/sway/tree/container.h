@@ -113,7 +113,7 @@ struct sway_container {
 
 	enum sway_container_type type;
 	enum sway_container_layout layout;
-	enum sway_container_layout prev_layout;
+	enum sway_container_layout prev_split_layout;
 
 	bool is_sticky;
 

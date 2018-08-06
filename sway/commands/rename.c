@@ -61,6 +61,16 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	}
 
 	char *new_name = join_args(argv + argn, argc - argn);
+	if (strcasecmp(new_name, "next") == 0 ||
+			strcasecmp(new_name, "prev") == 0 ||
+			strcasecmp(new_name, "next_on_output") == 0 ||
+			strcasecmp(new_name, "prev_on_output") == 0 ||
+			strcasecmp(new_name, "back_and_forth") == 0 ||
+			strcasecmp(new_name, "current") == 0) {
+		free(new_name);
+		return cmd_results_new(CMD_INVALID, "rename",
+				"Cannot use special workspace name '%s'", argv[argn]);
+	}
 	struct sway_container *tmp_workspace = workspace_by_name(new_name);
 	if (tmp_workspace) {
 		free(new_name);
