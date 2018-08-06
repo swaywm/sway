@@ -107,8 +107,13 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 				strcasecmp(argv[2], "current") == 0) {
 			ws = workspace_by_name(argv[2]);
 		} else if (strcasecmp(argv[2], "back_and_forth") == 0) {
-			if (!(ws = workspace_by_name(argv[0])) && prev_workspace_name) {
-				ws = workspace_create(NULL, prev_workspace_name);
+			if (!(ws = workspace_by_name(argv[2]))) {
+				if (prev_workspace_name) {
+					ws = workspace_create(NULL, prev_workspace_name);
+				} else {
+					return cmd_results_new(CMD_FAILURE, "move",
+							"No workspace was previously active.");
+				}
 			}
 		} else {
 			char *ws_name = NULL;
