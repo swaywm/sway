@@ -9,6 +9,7 @@
 #include "sway/commands.h"
 #include "sway/input/cursor.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
@@ -16,6 +17,7 @@
 #include "sway/tree/workspace.h"
 #include "stringop.h"
 #include "list.h"
+#include "log.h"
 
 static const char *expected_syntax =
 	"Expected 'move <left|right|up|down> <[px] px>' or "
@@ -189,6 +191,46 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
+static void workspace_move_to_output(struct sway_container *workspace,
+		struct sway_container *output) {
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return;
+	}
+	if (workspace->parent == output) {
+		return;
+	}
+	struct sway_container *old_output = container_remove_child(workspace);
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_container *new_output_focus =
+		seat_get_focus_inactive(seat, output);
+
+	container_add_child(output, workspace);
+	wl_signal_emit(&workspace->events.reparent, old_output);
+
+	// If moving the last workspace from the old output, create a new workspace
+	// on the old output
+	if (old_output->children->length == 0) {
+		char *ws_name = workspace_next_name(old_output->name);
+		struct sway_container *ws = workspace_create(old_output, ws_name);
+		free(ws_name);
+		seat_set_focus(seat, ws);
+	}
+
+	// Try to remove an empty workspace from the destination output.
+	container_reap_empty_recursive(new_output_focus);
+
+	container_sort_workspaces(output);
+	seat_set_focus(seat, output);
+	workspace_output_raise_priority(workspace, old_output, output);
+	ipc_event_workspace(NULL, workspace, "move");
+
+	container_notify_subtree_changed(old_output);
+	container_notify_subtree_changed(output);
+}
+
 static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 		int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -219,7 +261,7 @@ static struct cmd_results *cmd_move_workspace(struct sway_container *current,
 	if (current->type != C_WORKSPACE) {
 		current = container_parent(current, C_WORKSPACE);
 	}
-	container_move_to(current, destination);
+	workspace_move_to_output(current, destination);
 
 	arrange_windows(source);
 	arrange_windows(destination);
