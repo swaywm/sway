@@ -99,40 +99,48 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 	if (strcasecmp(argv[1], "workspace") == 0) {
 		// move container to workspace x
 		struct sway_container *ws;
-		char *ws_name = NULL;
-		if (strcasecmp(argv[2], "number") == 0) {
-			// move "container to workspace number x"
-			if (argc < 4) {
-				return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+		if (strcasecmp(argv[2], "next") == 0 ||
+				strcasecmp(argv[2], "prev") == 0 ||
+				strcasecmp(argv[2], "next_on_output") == 0 ||
+				strcasecmp(argv[2], "prev_on_output") == 0 ||
+				strcasecmp(argv[2], "back_and_forth") == 0 ||
+				strcasecmp(argv[2], "current") == 0) {
+			ws = workspace_by_name(argv[2]);
+		} else if (strcasecmp(argv[2], "back_and_forth") == 0) {
+			if (!(ws = workspace_by_name(argv[0])) && prev_workspace_name) {
+				ws = workspace_create(NULL, prev_workspace_name);
 			}
-			ws_name = strdup(argv[3]);
-			ws = workspace_by_number(ws_name);
 		} else {
-			ws_name = join_args(argv + 2, argc - 2);
-			ws = workspace_by_name(ws_name);
-		}
-
-		if (!no_auto_back_and_forth && config->auto_back_and_forth &&
-				prev_workspace_name) {
-			// auto back and forth move
-			if (old_ws->name && strcmp(old_ws->name, ws_name) == 0) {
-				// if target workspace is the current one
-				free(ws_name);
-				ws_name = strdup(prev_workspace_name);
+			char *ws_name = NULL;
+			if (strcasecmp(argv[2], "number") == 0) {
+				// move "container to workspace number x"
+				if (argc < 4) {
+					return cmd_results_new(CMD_INVALID, "move",
+							expected_syntax);
+				}
+				ws_name = strdup(argv[3]);
+				ws = workspace_by_number(ws_name);
+			} else {
+				ws_name = join_args(argv + 2, argc - 2);
 				ws = workspace_by_name(ws_name);
 			}
-		}
 
-		if (!ws) {
-			if (strcasecmp(argv[2], "back_and_forth") == 0) {
-				if (prev_workspace_name) {
-					ws = workspace_create(NULL, prev_workspace_name);
+			if (!no_auto_back_and_forth && config->auto_back_and_forth &&
+					prev_workspace_name) {
+				// auto back and forth move
+				if (old_ws->name && strcmp(old_ws->name, ws_name) == 0) {
+					// if target workspace is the current one
+					free(ws_name);
+					ws_name = strdup(prev_workspace_name);
+					ws = workspace_by_name(ws_name);
 				}
 			}
-			ws = workspace_create(NULL, ws_name);
-		}
-		free(ws_name);
 
+			if (!ws) {
+				ws = workspace_create(NULL, ws_name);
+			}
+			free(ws_name);
+		}
 		destination = seat_get_focus_inactive(config->handler_context.seat, ws);
 	} else if (strcasecmp(argv[1], "output") == 0) {
 		struct sway_container *source = container_parent(current, C_OUTPUT);

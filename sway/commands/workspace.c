@@ -68,16 +68,20 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				ws = workspace_create(NULL, name);
 				free(name);
 			}
+		} else if (strcasecmp(argv[0], "next") == 0 ||
+				strcasecmp(argv[0], "prev") == 0 ||
+				strcasecmp(argv[0], "next_on_output") == 0 ||
+				strcasecmp(argv[0], "prev_on_output") == 0 ||
+				strcasecmp(argv[0], "current") == 0) {
+			ws = workspace_by_name(argv[0]);
+		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
+			if (!(ws = workspace_by_name(argv[0])) && prev_workspace_name) {
+				ws = workspace_create(NULL, prev_workspace_name);
+			}
 		} else {
 			char *name = join_args(argv, argc);
 			if (!(ws = workspace_by_name(name))) {
-				if (strcasecmp(argv[0], "back_and_forth") == 0) {
-					if (prev_workspace_name) {
-						ws = workspace_create(NULL, prev_workspace_name);
-					}
-				} else {
-					ws = workspace_create(NULL, name);
-				}
+				ws = workspace_create(NULL, name);
 			}
 			free(name);
 		}

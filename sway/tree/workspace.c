@@ -251,34 +251,23 @@ struct sway_container *workspace_by_name(const char *name) {
 		current_output = container_parent(focus, C_OUTPUT);
 	}
 
-	char *name_cpy = strdup(name);
-	char *first_word = strtok(name_cpy, " ");
-	if (first_word == NULL) {
-		first_word = name_cpy;
-	}
-
-	struct sway_container *ws = NULL;
-	if (strcmp(first_word, "prev") == 0) {
-		ws = workspace_prev(current_workspace);
-	} else if (strcmp(first_word, "prev_on_output") == 0) {
-		ws = workspace_output_prev(current_output);
-	} else if (strcmp(first_word, "next") == 0) {
-		ws = workspace_next(current_workspace);
-	} else if (strcmp(first_word, "next_on_output") == 0) {
-		ws = workspace_output_next(current_output);
-	} else if (strcmp(first_word, "current") == 0) {
-		ws = current_workspace;
-	} else if (strcasecmp(first_word, "back_and_forth") == 0) {
-		if (prev_workspace_name) {
-			ws = container_find(&root_container, _workspace_by_name,
-				(void *)prev_workspace_name);
-		}
+	if (strcmp(name, "prev") == 0) {
+		return workspace_prev(current_workspace);
+	} else if (strcmp(name, "prev_on_output") == 0) {
+		return workspace_output_prev(current_output);
+	} else if (strcmp(name, "next") == 0) {
+		return workspace_next(current_workspace);
+	} else if (strcmp(name, "next_on_output") == 0) {
+		return workspace_output_next(current_output);
+	} else if (strcmp(name, "current") == 0) {
+		return current_workspace;
+	} else if (strcasecmp(name, "back_and_forth") == 0) {
+		return prev_workspace_name ? container_find(&root_container,
+				_workspace_by_name, (void *)prev_workspace_name) : NULL;
 	} else {
-		ws = container_find(&root_container, _workspace_by_name,
+		return container_find(&root_container, _workspace_by_name,
 				(void *)name);
 	}
-	free(name_cpy);
-	return ws;
 }
 
 /**
