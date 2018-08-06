@@ -25,6 +25,7 @@ char *get_socketpath(void) {
 		if (line && *line) {
 			return line;
 		}
+		free(line);
 	}
 	const char *i3sock = getenv("I3SOCK");
 	if (i3sock) {
@@ -37,6 +38,7 @@ char *get_socketpath(void) {
 		if (line && *line) {
 			return line;
 		}
+		free(line);
 	}
 	return NULL;
 }
