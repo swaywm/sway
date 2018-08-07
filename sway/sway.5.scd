@@ -51,7 +51,7 @@ The following commands may only be used in the configuration file.
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
 
-*set* <name> <value>
+*set* $<name> <value>
 	Sets variable $_name_ to _value_. You can use the new variable in the
 	arguments of future commands.
 
