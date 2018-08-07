@@ -167,6 +167,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *move* [to] scratchpad
 	Moves the focused window to the scratchpad.
 
+*nop* <comment>
+	A no operation command that can be used to override default behaviour. The
+	optional comment argument is ignored, but logged for debugging purposes.
+
 *reload*
 	Reloads the sway config file and applies any changes.
 
