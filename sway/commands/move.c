@@ -105,7 +105,6 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 				strcasecmp(argv[2], "prev") == 0 ||
 				strcasecmp(argv[2], "next_on_output") == 0 ||
 				strcasecmp(argv[2], "prev_on_output") == 0 ||
-				strcasecmp(argv[2], "back_and_forth") == 0 ||
 				strcasecmp(argv[2], "current") == 0) {
 			ws = workspace_by_name(argv[2]);
 		} else if (strcasecmp(argv[2], "back_and_forth") == 0) {
