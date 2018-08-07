@@ -411,17 +411,20 @@ bool workspace_switch(struct sway_container *workspace,
 	struct sway_container *floating =
 		next_output_prev_ws->sway_workspace->floating;
 	bool has_sticky = false;
-	for (int i = 0; i < floating->children->length; ++i) {
-		struct sway_container *floater = floating->children->items[i];
-		if (floater->is_sticky) {
-			has_sticky = true;
-			container_remove_child(floater);
-			container_add_child(workspace->sway_workspace->floating, floater);
-			if (floater == focus) {
-				seat_set_focus(seat, NULL);
-				seat_set_focus(seat, floater);
+	if (workspace != next_output_prev_ws) {
+		for (int i = 0; i < floating->children->length; ++i) {
+			struct sway_container *floater = floating->children->items[i];
+			if (floater->is_sticky) {
+				has_sticky = true;
+				container_remove_child(floater);
+				container_add_child(workspace->sway_workspace->floating,
+						floater);
+				if (floater == focus) {
+					seat_set_focus(seat, NULL);
+					seat_set_focus(seat, floater);
+				}
+				--i;
 			}
-			--i;
 		}
 	}
 
