@@ -66,7 +66,7 @@ logindを使用していないシステムでは、バイナリにsuidを設定�
 
     sudo chmod a+s /usr/local/bin/sway
 
-swayは始まるのすぐにrootの許可を落としてます。
+swayは起動後、すぐにroot許可を落とします。
 
 ## 設定
 
