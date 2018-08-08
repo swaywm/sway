@@ -567,9 +567,8 @@ static struct sway_container *container_at_view(struct sway_container *swayc,
 		*sx = _sx;
 		*sy = _sy;
 		*surface = _surface;
-		return swayc;
 	}
-	return NULL;
+	return swayc;
 }
 
 /**
