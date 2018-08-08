@@ -17,6 +17,7 @@ struct swaybg_args {
 	int output_idx;
 	const char *path;
 	enum background_mode mode;
+	const char *fallback;
 };
 
 struct swaybg_context {
@@ -76,6 +77,10 @@ static void render_frame(struct swaybg_state *state) {
 		cairo_set_source_u32(cairo, state->context.color);
 		cairo_paint(cairo);
 	} else {
+		if (state->args->fallback && state->context.color) {
+			cairo_set_source_u32(cairo, state->context.color);
+			cairo_paint(cairo);
+		}
 		render_background_image(cairo, state->context.image,
 				state->args->mode, buffer_width, buffer_height);
 	}
@@ -90,6 +95,9 @@ static bool prepare_context(struct swaybg_state *state) {
 	if (state->args->mode == BACKGROUND_MODE_SOLID_COLOR) {
 		state->context.color = parse_color(state->args->path);
 		return is_valid_color(state->args->path);
+	}
+	if (state->args->fallback && is_valid_color(state->args->fallback)) {
+		state->context.color = parse_color(state->args->fallback);
 	}
 	if (!(state->context.image = load_background_image(state->args->path))) {
 		return false;
@@ -190,7 +198,7 @@ int main(int argc, const char **argv) {
 	state.args = &args;
 	wlr_log_init(WLR_DEBUG, NULL);
 
-	if (argc != 4) {
+	if (argc < 4 || argc > 5) {
 		wlr_log(WLR_ERROR, "Do not run this program manually. "
 				"See man 5 sway and look for output options.");
 		return 1;
@@ -202,6 +210,9 @@ int main(int argc, const char **argv) {
 	if (args.mode == BACKGROUND_MODE_INVALID) {
 		return 1;
 	}
+
+	args.fallback = argc == 5 ? argv[4] : NULL;
+
 	if (!prepare_context(&state)) {
 		return 1;
 	}

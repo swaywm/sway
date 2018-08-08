@@ -6,6 +6,7 @@
 #include <errno.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/swaynag.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -36,6 +37,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		output->background = calloc(1, strlen(argv[0]) + 3);
 		snprintf(output->background, strlen(argv[0]) + 3, "\"%s\"", argv[0]);
 		output->background_option = strdup("solid_color");
+		output->background_fallback = NULL;
 		argc -= 2; argv += 2;
 	} else {
 		bool valid = false;
@@ -104,16 +106,35 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			free(conf);
 		}
 
-		if (access(src, F_OK) == -1) {
-			struct cmd_results *cmd_res = cmd_results_new(CMD_FAILURE, "output",
-				"Unable to access background file '%s': %s", src, strerror(errno));
+		bool can_access = access(src, F_OK) != -1;
+		if (!can_access) {
+			wlr_log(WLR_ERROR, "Unable to access background file '%s': %s",
+					src, strerror(errno));
+			if (!config->validating) {
+				swaynag_log(config->swaynag_command,
+						&config->swaynag_config_errors,
+						"Unable to access background file '%s'", src);
+			}
 			free(src);
-			return cmd_res;
+		} else {
+			output->background = src;
+			output->background_option = strdup(mode);
 		}
-
-		output->background = src;
-		output->background_option = strdup(mode);
 		argc -= j + 1; argv += j + 1;
+
+		output->background_fallback = NULL;
+		if (argc && *argv[0] == '#') {
+			output->background_fallback = calloc(1, strlen(argv[0]) + 3);
+			snprintf(output->background_fallback, strlen(argv[0]) + 3,
+					"\"%s\"", argv[0]);
+			argc--; argv++;
+
+			if (!can_access) {
+				output->background = output->background_fallback;
+				output->background_option = strdup("solid_color");
+				output->background_fallback = NULL;
+			}
+		}
 	}
 
 	config->handler_context.leftovers.argc = argc;

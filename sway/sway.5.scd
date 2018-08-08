@@ -489,9 +489,13 @@ The default colors are:
 	setting an integral scale factor and adjusting the font size of your
 	applications to taste.
 
-*output* <name> background|bg <file> <mode>
+*output* <name> background|bg <file> <mode> [<fallback\_color>]
 	Sets the wallpaper for the given output to the specified file, using the
-	given scaling mode (one of "stretch", "fill", "fit", "center", "tile").
+	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If
+	the specified file cannot be accessed or if the image does fill the entire
+	output, a fallback color may be provided to cover the rest of the output.
+	__fallback\_color__ should be specified as _#RRGGBB_. Alpha is not
+	supported.
 
 **output** <name> background|bg <color> solid\_color
 	Sets the background of the given output to the specified color. _color_

@@ -77,6 +77,10 @@ void merge_output_config(struct output_config *dst, struct output_config *src) {
 		free(dst->background_option);
 		dst->background_option = strdup(src->background_option);
 	}
+	if (src->background_fallback) {
+		free(dst->background_fallback);
+		dst->background_fallback = strdup(src->background_fallback);
+	}
 	if (src->dpms_state != 0) {
 		dst->dpms_state = src->dpms_state;
 	}
@@ -226,17 +230,19 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		wlr_log(WLR_DEBUG, "Setting background for output %d to %s",
 				output_i, oc->background);
 
-		size_t len = snprintf(NULL, 0, "%s %d %s %s",
+		size_t len = snprintf(NULL, 0, "%s %d %s %s %s",
 				config->swaybg_command ? config->swaybg_command : "swaybg",
-				output_i, oc->background, oc->background_option);
+				output_i, oc->background, oc->background_option,
+				oc->background_fallback ? oc->background_fallback : "");
 		char *command = malloc(len + 1);
 		if (!command) {
 			wlr_log(WLR_DEBUG, "Unable to allocate swaybg command");
 			return;
 		}
-		snprintf(command, len + 1, "%s %d %s %s",
+		snprintf(command, len + 1, "%s %d %s %s %s",
 				config->swaybg_command ? config->swaybg_command : "swaybg",
-				output_i, oc->background, oc->background_option);
+				output_i, oc->background, oc->background_option,
+				oc->background_fallback ? oc->background_fallback : "");
 		wlr_log(WLR_DEBUG, "-> %s", command);
 
 		char *const cmd[] = { "sh", "-c", command, NULL };
