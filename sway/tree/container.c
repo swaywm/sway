@@ -533,11 +533,10 @@ struct sway_container *container_parent(struct sway_container *container,
 	return container;
 }
 
-static struct sway_container *container_at_view(struct sway_container *swayc,
-		double lx, double ly,
+static void surface_at_view(struct sway_container *swayc, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (!sway_assert(swayc->type == C_VIEW, "Expected a view")) {
-		return NULL;
+		return;
 	}
 	struct sway_view *sview = swayc->sway_view;
 	double view_sx = lx - sview->x;
@@ -567,9 +566,7 @@ static struct sway_container *container_at_view(struct sway_container *swayc,
 		*sx = _sx;
 		*sy = _sy;
 		*surface = _surface;
-		return swayc;
 	}
-	return NULL;
 }
 
 /**
@@ -682,7 +679,8 @@ struct sway_container *tiling_container_at(
 		struct sway_container *con, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (con->type == C_VIEW) {
-		return container_at_view(con, lx, ly, surface, sx, sy);
+		surface_at_view(con, lx, ly, surface, sx, sy);
+		return con;
 	}
 	if (!con->children->length) {
 		return NULL;
@@ -745,7 +743,7 @@ struct sway_container *container_at(struct sway_container *workspace,
 	struct sway_container *focus =
 		seat_get_focus_inactive(seat, &root_container);
 	if (focus && focus->type == C_VIEW) {
-		container_at_view(focus, lx, ly, surface, sx, sy);
+		surface_at_view(focus, lx, ly, surface, sx, sy);
 		if (*surface && surface_is_popup(*surface)) {
 			return focus;
 		}

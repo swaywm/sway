@@ -429,6 +429,8 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		struct sway_container *cont) {
 	struct sway_seat *seat = cursor->seat;
 
+	seat_set_focus(seat, cont);
+
 	// Deny moving or resizing a fullscreen container
 	if (container_is_fullscreen_or_child(cont)) {
 		seat_pointer_notify_button(seat, time_msec, button, state);
@@ -469,8 +471,6 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 		return;
 	}
 
-	// Send event to surface
-	seat_set_focus(seat, cont);
 	seat_pointer_notify_button(seat, time_msec, button, state);
 }
 
