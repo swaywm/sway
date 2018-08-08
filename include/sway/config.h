@@ -151,6 +151,7 @@ struct output_config {
 
 	char *background;
 	char *background_option;
+	char *background_fallback;
 	enum config_dpms dpms_state;
 };
 
