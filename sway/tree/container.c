@@ -1163,19 +1163,16 @@ void container_floating_translate(struct sway_container *con,
 		double x_amount, double y_amount) {
 	con->x += x_amount;
 	con->y += y_amount;
-	con->current.swayc_x += x_amount;
-	con->current.swayc_y += y_amount;
 	if (con->type == C_VIEW) {
 		con->sway_view->x += x_amount;
 		con->sway_view->y += y_amount;
-		con->current.view_x += x_amount;
-		con->current.view_y += y_amount;
 	} else {
 		for (int i = 0; i < con->children->length; ++i) {
 			struct sway_container *child = con->children->items[i];
 			container_floating_translate(child, x_amount, y_amount);
 		}
 	}
+	container_set_dirty(con);
 }
 
 /**
@@ -1185,7 +1182,7 @@ void container_floating_translate(struct sway_container *con,
  * one, otherwise we'll choose whichever output is closest to the container's
  * center.
  */
-static struct sway_container *container_floating_find_output(
+struct sway_container *container_floating_find_output(
 		struct sway_container *con) {
 	double center_x = con->x + con->width / 2;
 	double center_y = con->y + con->height / 2;
@@ -1219,9 +1216,7 @@ void container_floating_move_to(struct sway_container *con,
 			"Expected a floating container")) {
 		return;
 	}
-	desktop_damage_whole_container(con);
 	container_floating_translate(con, lx - con->x, ly - con->y);
-	desktop_damage_whole_container(con);
 	struct sway_container *old_workspace = container_parent(con, C_WORKSPACE);
 	struct sway_container *new_output = container_floating_find_output(con);
 	if (!sway_assert(new_output, "Unable to find any output")) {
@@ -1237,6 +1232,17 @@ void container_floating_move_to(struct sway_container *con,
 		workspace_detect_urgent(old_workspace);
 		workspace_detect_urgent(new_workspace);
 	}
+}
+
+void container_floating_move_to_center(struct sway_container *con) {
+	if (!sway_assert(container_is_floating(con),
+			"Expected a floating container")) {
+		return;
+	}
+	struct sway_container *ws = container_parent(con, C_WORKSPACE);
+	double new_lx = ws->x + (ws->width - con->width) / 2;
+	double new_ly = ws->y + (ws->height - con->height) / 2;
+	container_floating_translate(con, new_lx - con->x, new_ly - con->y);
 }
 
 void container_set_dirty(struct sway_container *container) {
@@ -1318,6 +1324,11 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 			container->y = container->saved_y;
 			container->width = container->saved_width;
 			container->height = container->saved_height;
+			struct sway_container *output =
+				container_floating_find_output(container);
+			if (!container_has_ancestor(container, output)) {
+				container_floating_move_to_center(container);
+			}
 		} else {
 			container->width = container->saved_width;
 			container->height = container->saved_height;

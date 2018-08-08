@@ -717,12 +717,8 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	// If we've focused a floating container, bring it to the front.
 	// We do this by putting it at the end of the floating list.
-	// This must happen for both the pending and current children lists.
 	if (container && container_is_floating(container)) {
 		list_move_to_end(container->parent->children, container);
-		if (container_has_ancestor(container, container->current.parent)) {
-			list_move_to_end(container->parent->current.children, container);
-		}
 	}
 
 	// clean up unfocused empty workspace on new output

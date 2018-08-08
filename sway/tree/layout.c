@@ -150,22 +150,44 @@ void container_move_to(struct sway_container *container,
 			|| container_has_ancestor(container, destination)) {
 		return;
 	}
+	struct sway_container *old_parent = NULL;
+	struct sway_container *new_parent = NULL;
 	if (container_is_floating(container)) {
-		// TODO
-		return;
-	}
-	struct sway_container *old_parent = container_remove_child(container);
-	container->width = container->height = 0;
-	container->saved_width = container->saved_height = 0;
-
-	struct sway_container *new_parent;
-
-	if (destination->type == C_VIEW) {
-		new_parent = container_add_sibling(destination, container);
+		// Resolve destination into a workspace
+		struct sway_container *new_ws = NULL;
+		if (destination->type == C_OUTPUT) {
+			new_ws = output_get_active_workspace(destination->sway_output);
+		} else if (destination->type == C_WORKSPACE) {
+			new_ws = destination;
+		} else {
+			new_ws = container_parent(destination, C_WORKSPACE);
+		}
+		if (!new_ws) {
+			// This can happen if the user has run "move container to mark foo",
+			// where mark foo is on a hidden scratchpad container.
+			return;
+		}
+		struct sway_container *old_output =
+			container_parent(container, C_OUTPUT);
+		old_parent = container_remove_child(container);
+		container_add_child(new_ws->sway_workspace->floating, container);
+		// If changing output, center it within the workspace
+		if (old_output != new_ws->parent && !container->is_fullscreen) {
+			container_floating_move_to_center(container);
+		}
 	} else {
-		new_parent = destination;
-		container_add_child(destination, container);
+		old_parent = container_remove_child(container);
+		container->width = container->height = 0;
+		container->saved_width = container->saved_height = 0;
+
+		if (destination->type == C_VIEW) {
+			new_parent = container_add_sibling(destination, container);
+		} else {
+			new_parent = destination;
+			container_add_child(destination, container);
+		}
 	}
+
 	wl_signal_emit(&container->events.reparent, old_parent);
 
 	if (container->type == C_VIEW) {
