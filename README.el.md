@@ -69,10 +69,6 @@ _\*\*Απαιτείται μόνο για swaylock_
     ninja -C build
     sudo ninja -C build install
 
-Σε συστήματα με logind, χρειάζεται να ορίσετε μερικά δικαιώματα caps στο εκτελέσιμο αρχείο:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
-
 Σε συστήματα χωρίς logind, χρειάζεται να θέσετε το suid bit στο εκτελέσιμο αρχείο:
 
     sudo chmod a+s /usr/local/bin/sway

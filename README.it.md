@@ -72,10 +72,6 @@ Esegui questi comandi:
     ninja -C build
     sudo ninja -C build install
 
-Per i sistemi con logind, devi impostare un paio di caps sull'eseguibile:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
-
 Per i sistemi senza logind, devi cambiare i permessi (suid):
 
     sudo chmod a+s /usr/local/bin/sway
