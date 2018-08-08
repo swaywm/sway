@@ -84,6 +84,9 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *floating* enable|disable|toggle
 	Make focused view floating, non-floating, or the opposite of what it is now.
 
+<criteria> *focus*
+	Moves focus to the container that matches the specified criteria.
+
 *focus* up|right|down|left
 	Moves focus to the next container in the specified direction.
 
@@ -111,33 +114,53 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *fullscreen*
 	Toggles fullscreen for the focused view.
 
-*layout* splith|splitv|stacking|tabbed
+*layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
 
-*layout* toggle split
-	Switches the focused container between the splitv and splith layouts.
+*layout* toggle [split|all]
+	Cycles the layout mode of the focused container though a preset list of
+	layouts. If no argument is given, then it cycles through stacking, tabbed
+	and the last split layout. If "split" is given, then it cycles through
+	splith and splitv. If "all" is given, then it cycles through every layout.
 
-*move* left|right|up|down [<px>]
+*layout* toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...
+	Cycles the layout mode of the focused container through a list of layouts.
+
+*move* left|right|up|down [<px> px]
 	Moves the focused container in the direction specified. If the container,
 	the optional _px_ argument specifies how many pixels to move the container.
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* container|window to workspace <name>
-	Moves the focused container to the specified workspace.
+*move* [absolute] position <pos_x> [px] <pos_y> [px]
+	Moves the focused container to the specified position.
 
-*move* container|window to workspace prev|next
-	Moves the focused container to the previous or next workspace on this
-	output, or if no workspaces remain, the previous or next output.
+*move* [absolute] position center|mouse
+	Moves the focused container to be centered on the workspace or mouse.
 
-*move* container|window to workspace prev\_on\_output|next\_on\_output
+*move* container|window [to] mark <mark>
+	Moves the focused container to the specified mark.
+
+*move* [--no-auto-back-and-forth] container|window [to] workspace [number] <name>
+	Moves the focused container to the specified workspace. The string "number"
+	is optional and is used to match a workspace with the same number, even if
+	it has a different name.
+
+*move* container|window [to] workspace prev|next|current
+	Moves the focused container to the previous, next or current workspace on
+	this output, or if no workspaces remain, the previous or next output.
+
+*move* container|window [to] workspace prev\_on\_output|next\_on\_output
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window|workspace to output <name>
+*move* container|window [to] workspace back_and_forth
+	Moves the focused container to previously focused workspace.
+
+*move* container|window|workspace [to] output <name>
 	Moves the focused container or workspace to the specified output.
 
-*move* container|window|workspace to output up|right|down|left
+*move* container|window|workspace [to] output up|right|down|left
 	Moves the focused container or workspace to next output in the specified
 	direction.
 
@@ -511,7 +534,7 @@ config after the others, or it will be matched instead of the others.
 	state. Using _allow_ or _deny_ controls the window's ability to set itself
 	as urgent. By default, windows are allowed to set their own urgency.
 
-*workspace* [number] <name>
+*workspace* [--no-auto-back-and-forth] [number] <name>
 	Switches to the specified workspace. The string "number" is optional and is
 	used to sort workspaces.
 
@@ -521,6 +544,9 @@ config after the others, or it will be matched instead of the others.
 
 *workspace* prev\_on\_output|next\_on\_output
 	Switches to the next workspace on the current output.
+
+*workspace* back_and_forth
+	Switches to the previously focused workspace.
 
 *workspace* <name> output <output>
 	Specifies that workspace _name_ should be shown on the specified _output_.
@@ -582,7 +608,9 @@ The following attributes may be matched with:
 	the currently focused window.
 
 *con\_id*
-	Compare against the internal container ID, which you can find via IPC.
+	Compare against the internal container ID, which you can find via IPC. If
+	value is \_\_focused\_\_, then the id must be the same as that of the
+	currently focused window.
 
 *con\_mark*
 	Compare against the window marks. Can be a regular expression.
@@ -612,7 +640,8 @@ The following attributes may be matched with:
 	currently focused window.
 
 *urgent*
-	Compares the urgent state of the window. Can be "latest" or "oldest".
+	Compares the urgent state of the window. Can be "first", "last", "latest",
+	"newest", "oldest" or "recent".
 
 *window\_role*
 	Compare against the window role (WM\_WINDOW\_ROLE). Can be a regular

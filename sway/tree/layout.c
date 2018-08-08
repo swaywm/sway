@@ -142,49 +142,55 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 
 void container_move_to(struct sway_container *container,
 		struct sway_container *destination) {
+	if (!sway_assert(container->type == C_CONTAINER ||
+				container->type == C_VIEW, "Expected a container or view")) {
+		return;
+	}
 	if (container == destination
 			|| container_has_ancestor(container, destination)) {
 		return;
 	}
+	struct sway_container *old_parent = NULL;
+	struct sway_container *new_parent = NULL;
 	if (container_is_floating(container)) {
-		// TODO
-		return;
-	}
-	struct sway_container *old_parent = container_remove_child(container);
-	container->width = container->height = 0;
-	container->saved_width = container->saved_height = 0;
-
-	struct sway_container *new_parent, *new_parent_focus;
-	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
-
-	// Get the focus of the destination before we change it.
-	new_parent_focus = seat_get_focus_inactive(seat, destination);
-	if (destination->type == C_VIEW) {
-		new_parent = container_add_sibling(destination, container);
+		// Resolve destination into a workspace
+		struct sway_container *new_ws = NULL;
+		if (destination->type == C_OUTPUT) {
+			new_ws = output_get_active_workspace(destination->sway_output);
+		} else if (destination->type == C_WORKSPACE) {
+			new_ws = destination;
+		} else {
+			new_ws = container_parent(destination, C_WORKSPACE);
+		}
+		if (!new_ws) {
+			// This can happen if the user has run "move container to mark foo",
+			// where mark foo is on a hidden scratchpad container.
+			return;
+		}
+		struct sway_container *old_output =
+			container_parent(container, C_OUTPUT);
+		old_parent = container_remove_child(container);
+		container_add_child(new_ws->sway_workspace->floating, container);
+		// If changing output, center it within the workspace
+		if (old_output != new_ws->parent && !container->is_fullscreen) {
+			container_floating_move_to_center(container);
+		}
 	} else {
-		new_parent = destination;
-		container_add_child(destination, container);
+		old_parent = container_remove_child(container);
+		container->width = container->height = 0;
+		container->saved_width = container->saved_height = 0;
+
+		if (destination->type == C_VIEW) {
+			new_parent = container_add_sibling(destination, container);
+		} else {
+			new_parent = destination;
+			container_add_child(destination, container);
+		}
 	}
+
 	wl_signal_emit(&container->events.reparent, old_parent);
 
-	if (container->type == C_WORKSPACE) {
-		// If moving a workspace to a new output, maybe create a new workspace
-		// on the previous output
-		if (old_parent->children->length == 0) {
-			char *ws_name = workspace_next_name(old_parent->name);
-			struct sway_container *ws = workspace_create(old_parent, ws_name);
-			free(ws_name);
-			seat_set_focus(seat, ws);
-		}
-
-		// Try to remove an empty workspace from the destination output.
-		container_reap_empty_recursive(new_parent_focus);
-
-		container_sort_workspaces(new_parent);
-		seat_set_focus(seat, new_parent);
-		workspace_output_raise_priority(container, old_parent, new_parent);
-		ipc_event_workspace(NULL, container, "move");
-	} else if (container->type == C_VIEW) {
+	if (container->type == C_VIEW) {
 		ipc_event_window(container, "move");
 	}
 	container_notify_subtree_changed(old_parent);
@@ -859,7 +865,7 @@ struct sway_container *container_split(struct sway_container *child,
 	}
 	if (child->type == C_WORKSPACE && child->children->length == 0) {
 		// Special case: this just behaves like splitt
-		child->prev_layout = child->layout;
+		child->prev_split_layout = child->layout;
 		child->layout = layout;
 		return child;
 	}
@@ -870,7 +876,7 @@ struct sway_container *container_split(struct sway_container *child,
 
 	remove_gaps(child);
 
-	cont->prev_layout = L_NONE;
+	cont->prev_split_layout = L_NONE;
 	cont->width = child->width;
 	cont->height = child->height;
 	cont->x = child->x;

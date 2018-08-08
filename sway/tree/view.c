@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
+#include <strings.h>
 #include <wayland-server.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
@@ -456,7 +457,13 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 		if (criteria->type == CT_ASSIGN_WORKSPACE) {
 			ws = workspace_by_name(criteria->target);
 			if (!ws) {
-				ws = workspace_create(NULL, criteria->target);
+				if (strcasecmp(criteria->target, "back_and_forth") == 0) {
+					if (prev_workspace_name) {
+						ws = workspace_create(NULL, prev_workspace_name);
+					}
+				} else {
+					ws = workspace_create(NULL, criteria->target);
+				}
 			}
 			break;
 		} else {
@@ -889,6 +896,15 @@ static bool find_by_mark_iterator(struct sway_container *con,
 		void *data) {
 	char *mark = data;
 	return con->type == C_VIEW && view_has_mark(con->sway_view, mark);
+}
+
+struct sway_view *view_find_mark(char *mark) {
+	struct sway_container *container = container_find(&root_container,
+		find_by_mark_iterator, mark);
+	if (!container) {
+		return NULL;
+	}
+	return container->sway_view;
 }
 
 bool view_find_and_unmark(char *mark) {

@@ -1,6 +1,7 @@
 #ifndef _SWAY_WORKSPACE_H
 #define _SWAY_WORKSPACE_H
 
+#include <stdbool.h>
 #include "sway/tree/container.h"
 
 struct sway_view;
@@ -15,9 +16,12 @@ struct sway_workspace {
 
 extern char *prev_workspace_name;
 
+struct sway_container *workspace_get_initial_output(const char *name);
+
 char *workspace_next_name(const char *output_name);
 
-bool workspace_switch(struct sway_container *workspace);
+bool workspace_switch(struct sway_container *workspace,
+		bool no_auto_back_and_forth);
 
 struct sway_container *workspace_by_number(const char* name);
 

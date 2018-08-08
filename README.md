@@ -72,13 +72,11 @@ Run these commands:
     ninja -C build
     sudo ninja -C build install
 
-On systems with logind, you need to set a few caps on the binary:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
-
 On systems without logind, you need to suid the sway binary:
 
     sudo chmod a+s /usr/local/bin/sway
+
+Sway will drop root permissions shortly after startup.
 
 ## Configuration
 

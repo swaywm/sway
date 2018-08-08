@@ -118,6 +118,8 @@ struct sway_view {
 struct sway_xdg_shell_v6_view {
 	struct sway_view view;
 
+	enum wlr_server_decoration_manager_mode deco_mode;
+
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
@@ -133,6 +135,8 @@ struct sway_xdg_shell_v6_view {
 
 struct sway_xdg_shell_view {
 	struct sway_view view;
+
+	enum wlr_server_decoration_manager_mode deco_mode;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;
@@ -314,6 +318,11 @@ void view_update_title(struct sway_view *view, bool force);
  * before.
  */
 void view_execute_criteria(struct sway_view *view);
+
+/**
+ * Find any view that has the given mark and return it.
+ */
+struct sway_view *view_find_mark(char *mark);
 
 /**
  * Find any view that has the given mark and remove the mark from the view.

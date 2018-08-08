@@ -62,13 +62,11 @@ _\*\*swaylockでのみ必要です_
     ninja -C build
     sudo ninja -C build install
 
-logindを使用しているシステムでは、バイナリにいくつかのケーパビリティを設定する必要があります:
-
-    sudo setcap "cap_sys_ptrace,cap_sys_tty_config=eip" /usr/local/bin/sway
-
 logindを使用していないシステムでは、バイナリにsuidを設定する必要があります:
 
     sudo chmod a+s /usr/local/bin/sway
+
+swayは起動後、すぐにroot許可を落とします。
 
 ## 設定
 

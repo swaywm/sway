@@ -18,7 +18,7 @@
 #include "log.h"
 #include "util.h"
 
-static struct sway_container *get_workspace_initial_output(const char *name) {
+struct sway_container *workspace_get_initial_output(const char *name) {
 	struct sway_container *parent;
 	// Search for workspace<->output pair
 	int e = config->workspace_outputs->length;
@@ -48,7 +48,7 @@ static struct sway_container *get_workspace_initial_output(const char *name) {
 struct sway_container *workspace_create(struct sway_container *output,
 		const char *name) {
 	if (output == NULL) {
-		output = get_workspace_initial_output(name);
+		output = workspace_get_initial_output(name);
 	}
 
 	wlr_log(WLR_DEBUG, "Added workspace %s for output %s", name, output->name);
@@ -59,7 +59,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 	workspace->width = output->width;
 	workspace->height = output->height;
 	workspace->name = !name ? NULL : strdup(name);
-	workspace->prev_layout = L_NONE;
+	workspace->prev_split_layout = L_NONE;
 	workspace->layout = container_get_default_layout(output);
 
 	struct sway_workspace *swayws = calloc(1, sizeof(struct sway_workspace));
@@ -250,6 +250,7 @@ struct sway_container *workspace_by_name(const char *name) {
 		current_workspace = container_parent(focus, C_WORKSPACE);
 		current_output = container_parent(focus, C_OUTPUT);
 	}
+
 	if (strcmp(name, "prev") == 0) {
 		return workspace_prev(current_workspace);
 	} else if (strcmp(name, "prev_on_output") == 0) {
@@ -260,6 +261,9 @@ struct sway_container *workspace_by_name(const char *name) {
 		return workspace_output_next(current_output);
 	} else if (strcmp(name, "current") == 0) {
 		return current_workspace;
+	} else if (strcasecmp(name, "back_and_forth") == 0) {
+		return prev_workspace_name ? container_find(&root_container,
+				_workspace_by_name, (void *)prev_workspace_name) : NULL;
 	} else {
 		return container_find(&root_container, _workspace_by_name,
 				(void *)name);
@@ -364,7 +368,8 @@ struct sway_container *workspace_prev(struct sway_container *current) {
 	return workspace_prev_next_impl(current, false);
 }
 
-bool workspace_switch(struct sway_container *workspace) {
+bool workspace_switch(struct sway_container *workspace,
+		bool no_auto_back_and_forth) {
 	if (!workspace) {
 		return false;
 	}
@@ -379,7 +384,7 @@ bool workspace_switch(struct sway_container *workspace) {
 		active_ws = container_parent(focus, C_WORKSPACE);
 	}
 
-	if (config->auto_back_and_forth
+	if (!no_auto_back_and_forth && config->auto_back_and_forth
 			&& active_ws == workspace
 			&& prev_workspace_name) {
 		struct sway_container *new_ws = workspace_by_name(prev_workspace_name);
@@ -406,17 +411,20 @@ bool workspace_switch(struct sway_container *workspace) {
 	struct sway_container *floating =
 		next_output_prev_ws->sway_workspace->floating;
 	bool has_sticky = false;
-	for (int i = 0; i < floating->children->length; ++i) {
-		struct sway_container *floater = floating->children->items[i];
-		if (floater->is_sticky) {
-			has_sticky = true;
-			container_remove_child(floater);
-			container_add_child(workspace->sway_workspace->floating, floater);
-			if (floater == focus) {
-				seat_set_focus(seat, NULL);
-				seat_set_focus(seat, floater);
+	if (workspace != next_output_prev_ws) {
+		for (int i = 0; i < floating->children->length; ++i) {
+			struct sway_container *floater = floating->children->items[i];
+			if (floater->is_sticky) {
+				has_sticky = true;
+				container_remove_child(floater);
+				container_add_child(workspace->sway_workspace->floating,
+						floater);
+				if (floater == focus) {
+					seat_set_focus(seat, NULL);
+					seat_set_focus(seat, floater);
+				}
+				--i;
 			}
-			--i;
 		}
 	}
 

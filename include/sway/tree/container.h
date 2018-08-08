@@ -113,7 +113,7 @@ struct sway_container {
 
 	enum sway_container_type type;
 	enum sway_container_layout layout;
-	enum sway_container_layout prev_layout;
+	enum sway_container_layout prev_split_layout;
 
 	bool is_sticky;
 
@@ -323,10 +323,21 @@ void container_floating_translate(struct sway_container *con,
 		double x_amount, double y_amount);
 
 /**
+ * Choose an output for the floating container's new position.
+ */
+struct sway_container *container_floating_find_output(
+		struct sway_container *con);
+
+/**
  * Move a floating container to a new layout-local position.
  */
 void container_floating_move_to(struct sway_container *con,
 		double lx, double ly);
+
+/**
+ * Move a floating container to the center of the workspace.
+ */
+void container_floating_move_to_center(struct sway_container *con);
 
 /**
  * Mark a container as dirty if it isn't already. Dirty containers will be
