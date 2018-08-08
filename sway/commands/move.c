@@ -100,7 +100,8 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 	// determine destination
 	if (strcasecmp(argv[1], "workspace") == 0) {
 		// move container to workspace x
-		struct sway_container *ws;
+		struct sway_container *ws = NULL;
+		char *ws_name = NULL;
 		if (strcasecmp(argv[2], "next") == 0 ||
 				strcasecmp(argv[2], "prev") == 0 ||
 				strcasecmp(argv[2], "next_on_output") == 0 ||
@@ -110,14 +111,13 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		} else if (strcasecmp(argv[2], "back_and_forth") == 0) {
 			if (!(ws = workspace_by_name(argv[2]))) {
 				if (prev_workspace_name) {
-					ws = workspace_create(NULL, prev_workspace_name);
+					ws_name = strdup(prev_workspace_name);
 				} else {
 					return cmd_results_new(CMD_FAILURE, "move",
 							"No workspace was previously active.");
 				}
 			}
 		} else {
-			char *ws_name = NULL;
 			if (strcasecmp(argv[2], "number") == 0) {
 				// move "container to workspace number x"
 				if (argc < 4) {
@@ -141,12 +141,26 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 					ws = workspace_by_name(ws_name);
 				}
 			}
-
-			if (!ws) {
-				ws = workspace_create(NULL, ws_name);
-			}
-			free(ws_name);
 		}
+		if (!ws) {
+			// We have to create the workspace, but if the container is
+			// sticky and the workspace is going to be created on the same
+			// output, we'll bail out first.
+			if (container_is_floating(current) && current->is_sticky) {
+				struct sway_container *old_output =
+					container_parent(current, C_OUTPUT);
+				struct sway_container *new_output =
+					workspace_get_initial_output(ws_name);
+				if (old_output == new_output) {
+					free(ws_name);
+					return cmd_results_new(CMD_FAILURE, "move",
+							"Can't move sticky container to another workspace "
+							"on the same output");
+				}
+			}
+			ws = workspace_create(NULL, ws_name);
+		}
+		free(ws_name);
 		destination = seat_get_focus_inactive(config->handler_context.seat, ws);
 	} else if (strcasecmp(argv[1], "output") == 0) {
 		struct sway_container *source = container_parent(current, C_OUTPUT);
@@ -171,6 +185,16 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		destination = dest_view->swayc;
 	} else {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
+	}
+
+	if (container_is_floating(current) && current->is_sticky) {
+		struct sway_container *old_output = container_parent(current, C_OUTPUT);
+		struct sway_container *new_output = destination->type == C_OUTPUT ?
+			destination : container_parent(destination, C_OUTPUT);
+		if (old_output == new_output) {
+			return cmd_results_new(CMD_FAILURE, "move", "Can't move sticky "
+					"container to another workspace on the same output");
+		}
 	}
 
 	// move container, arrange windows and return focus
