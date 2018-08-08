@@ -603,7 +603,7 @@ void view_unmap(struct sway_view *view) {
 	struct sway_container *surviving_ancestor = container_destroy(view->swayc);
 
 	// If the workspace wasn't reaped
-	if (surviving_ancestor->type >= C_WORKSPACE) {
+	if (surviving_ancestor && surviving_ancestor->type >= C_WORKSPACE) {
 		struct sway_container *ws = surviving_ancestor->type == C_WORKSPACE ?
 			surviving_ancestor :
 			container_parent(surviving_ancestor, C_WORKSPACE);
