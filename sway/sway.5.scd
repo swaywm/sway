@@ -170,16 +170,16 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *reload*
 	Reloads the sway config file and applies any changes.
 
-*resize* shrink|grow width|height [<amount>] [px|ppt]
+*resize* shrink|grow width|height [<amount> [px|ppt]]
 	Resizes the currently focused container by _amount_, specified in pixels or
-	percentage points. If omitted, floating containers are resized in px and
-	tiled containers by ppt. If omitted, the default _amount_ is 10.
+	percentage points. If the units are omitted, floating containers are resized
+	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
 
-*resize set* <width> [px] <height> [px]
-	Sets the width and height of the currently focused container to _width_
-	pixels and _height_ pixels. The [px] parameters are optional and have no
-	effect. This command only accepts a size in pixels. Width and height may be
-	specified in either order.
+*resize set* <width> [px|ppt] <height> [px|ppt]
+	Sets the width and height of the currently focused container to _width_ and
+	_height_, specified in pixels or percentage points. If the units are
+	omitted, floating containers are resized in px and tiled containers by ppt.
+	If _width_ or _height_ is 0, no resize is done on that axis.
 
 *scratchpad show*
 	Shows a window from the scratchpad. Repeatedly using this command will
