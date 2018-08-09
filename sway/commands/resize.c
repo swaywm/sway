@@ -231,14 +231,14 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 				double pixels = -amount / minor_weight;
 				if (major_weight && (sibling_size + pixels / 2) < min_sane) {
 					return; // Too small
-				} else if ((sibling_size + pixels) < min_sane) {
+				} else if (!major_weight && sibling_size + pixels < min_sane) {
 					return; // Too small
 				}
 			} else if (sibling_pos > parent_pos && major_weight) {
 				double pixels = -amount / major_weight;
 				if (minor_weight && (sibling_size + pixels / 2) < min_sane) {
 					return; // Too small
-				} else if ((sibling_size + pixels) < min_sane) {
+				} else if (!minor_weight && sibling_size + pixels < min_sane) {
 					return; // Too small
 				}
 			}
@@ -407,8 +407,43 @@ static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
  */
 static struct cmd_results *resize_set_tiled(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
-	return cmd_results_new(CMD_INVALID, "resize",
-			"'resize set' is not implemented for tiled views");
+	if (width->amount) {
+		if (width->unit == RESIZE_UNIT_PPT ||
+				width->unit == RESIZE_UNIT_DEFAULT) {
+			// Convert to px
+			struct sway_container *parent = con->parent;
+			while (parent->type >= C_WORKSPACE && parent->layout != L_HORIZ) {
+				parent = parent->parent;
+			}
+			if (parent->type >= C_WORKSPACE) {
+				width->amount = parent->width * width->amount / 100;
+				width->unit = RESIZE_UNIT_PX;
+			}
+		}
+		if (width->unit == RESIZE_UNIT_PX) {
+			resize_tiled(width->amount - con->width, RESIZE_AXIS_HORIZONTAL);
+		}
+	}
+
+	if (height->amount) {
+		if (height->unit == RESIZE_UNIT_PPT ||
+				height->unit == RESIZE_UNIT_DEFAULT) {
+			// Convert to px
+			struct sway_container *parent = con->parent;
+			while (parent->type >= C_WORKSPACE && parent->layout != L_VERT) {
+				parent = parent->parent;
+			}
+			if (parent->type >= C_WORKSPACE) {
+				height->amount = parent->height * height->amount / 100;
+				height->unit = RESIZE_UNIT_PX;
+			}
+		}
+		if (height->unit == RESIZE_UNIT_PX) {
+			resize_tiled(height->amount - con->height, RESIZE_AXIS_VERTICAL);
+		}
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 /**
