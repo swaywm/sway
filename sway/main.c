@@ -182,26 +182,6 @@ static void log_kernel() {
 	pclose(f);
 }
 
-static void security_sanity_check() {
-	// TODO: Notify users visually if this has issues
-	struct stat s;
-	if (stat("/proc", &s)) {
-		wlr_log(WLR_ERROR,
-			"!! DANGER !! /proc is not available - sway CANNOT enforce security rules!");
-	}
-#ifdef __linux__
-	cap_flag_value_t v;
-	cap_t cap = cap_get_proc();
-	if (!cap || cap_get_flag(cap, CAP_SYS_PTRACE, CAP_PERMITTED, &v) != 0 || v != CAP_SET) {
-		wlr_log(WLR_ERROR,
-			"!! DANGER !! Sway does not have CAP_SYS_PTRACE and cannot enforce security rules for processes running as other users.");
-	}
-	if (cap) {
-		cap_free(cap);
-	}
-#endif
-}
-
 static void executable_sanity_check() {
 #ifdef __linux__
 		struct stat sb;
@@ -429,8 +409,6 @@ int main(int argc, char **argv) {
 	if (config_path) {
 		free(config_path);
 	}
-
-	security_sanity_check();
 
 	if (!terminate_request) {
 		if (!server_start_backend(&server)) {
