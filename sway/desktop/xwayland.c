@@ -59,7 +59,7 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, map);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	wl_list_insert(&root_container.sway_root->xwayland_unmanaged,
+	wl_list_insert(root_container.sway_root->xwayland_unmanaged.prev,
 		&surface->link);
 
 	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
