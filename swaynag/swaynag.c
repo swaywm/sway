@@ -110,6 +110,9 @@ static struct wl_surface_listener surface_listener = {
 
 static void update_cursor(struct swaynag *swaynag) {
 	struct swaynag_pointer *pointer = &swaynag->pointer;
+	if (swaynag->pointer.cursor_theme) {
+		wl_cursor_theme_destroy(swaynag->pointer.cursor_theme);
+	}
 	pointer->cursor_theme = wl_cursor_theme_load(NULL, 24 * swaynag->scale,
 			swaynag->shm);
 	struct wl_cursor *cursor =
