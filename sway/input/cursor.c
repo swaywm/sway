@@ -356,27 +356,35 @@ static void handle_resize_floating_motion(struct sway_seat *seat,
 
 static void handle_resize_tiling_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
-	int amount = 0;
+	int amount_x = 0;
+	int amount_y = 0;
 	int moved_x = cursor->cursor->x - seat->op_ref_lx;
 	int moved_y = cursor->cursor->y - seat->op_ref_ly;
+	enum wlr_edges edge_x = WLR_EDGE_NONE;
+	enum wlr_edges edge_y = WLR_EDGE_NONE;
 	struct sway_container *con = seat->op_container;
-	switch (seat->op_resize_edge) {
-	case WLR_EDGE_TOP:
-		amount = (seat->op_ref_height - moved_y) - con->height;
-		break;
-	case WLR_EDGE_BOTTOM:
-		amount = (seat->op_ref_height + moved_y) - con->height;
-		break;
-	case WLR_EDGE_LEFT:
-		amount = (seat->op_ref_width - moved_x) - con->width;
-		break;
-	case WLR_EDGE_RIGHT:
-		amount = (seat->op_ref_width + moved_x) - con->width;
-		break;
-	case WLR_EDGE_NONE:
-		break;
+
+	if (seat->op_resize_edge & WLR_EDGE_TOP) {
+		amount_y = (seat->op_ref_height - moved_y) - con->height;
+		edge_y = WLR_EDGE_TOP;
+	} else if (seat->op_resize_edge & WLR_EDGE_BOTTOM) {
+		amount_y = (seat->op_ref_height + moved_y) - con->height;
+		edge_y = WLR_EDGE_BOTTOM;
 	}
-	container_resize_tiled(seat->op_container, seat->op_resize_edge, amount);
+	if (seat->op_resize_edge & WLR_EDGE_LEFT) {
+		amount_x = (seat->op_ref_width - moved_x) - con->width;
+		edge_x = WLR_EDGE_LEFT;
+	} else if (seat->op_resize_edge & WLR_EDGE_RIGHT) {
+		amount_x = (seat->op_ref_width + moved_x) - con->width;
+		edge_x = WLR_EDGE_RIGHT;
+	}
+
+	if (amount_x != 0) {
+		container_resize_tiled(seat->op_container, edge_x, amount_x);
+	}
+	if (amount_y != 0) {
+		container_resize_tiled(seat->op_container, edge_y, amount_y);
+	}
 }
 
 void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
@@ -655,10 +663,25 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		return;
 	}
 
-	// Handle beginning floating move
+	// Handle tiling resize via mod
 	bool mod_pressed = keyboard &&
 		(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
+	if (!is_floating) {
+		uint32_t btn_resize = config->floating_mod_inverse ?
+			BTN_LEFT : BTN_RIGHT;
+		if (button == btn_resize) {
+			edge = 0;
+			edge |= cursor->cursor->x > cont->x + cont->width / 2 ?
+				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
+			edge |= cursor->cursor->y > cont->y + cont->height / 2 ?
+				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+			seat_set_focus(seat, cont);
+			seat_begin_resize_tiling(seat, cont, button, edge);
+			return;
+		}
+	}
 
+	// Handle beginning floating move
 	if (is_floating_or_child && !is_fullscreen_or_child) {
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && state == WLR_BUTTON_PRESSED &&
@@ -688,6 +711,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
 		if (button == btn_resize) {
+			edge = 0;
 			edge |= cursor->cursor->x > floater->x + floater->width / 2 ?
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
 			edge |= cursor->cursor->y > floater->y + floater->height / 2 ?
