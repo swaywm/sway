@@ -77,6 +77,15 @@ int list_seq_find(list_t *list, int compare(const void *item, const void *data),
 	return -1;
 }
 
+int list_find(list_t *list, void *item) {
+	for (int i = 0; i < list->length; i++) {
+		if (list->items[i] == item) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 void list_swap(list_t *list, int src, int dest) {
 	void *tmp = list->items[src];
 	list->items[src] = list->items[dest];

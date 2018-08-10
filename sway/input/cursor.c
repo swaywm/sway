@@ -12,6 +12,7 @@
 #include "list.h"
 #include "log.h"
 #include "config.h"
+#include "sway/commands.h"
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
@@ -136,6 +137,44 @@ static struct sway_container *container_at_coords(
 	return output->swayc;
 }
 
+/**
+ * Determine if the edge of the given container is on the edge of the
+ * workspace/output.
+ */
+static bool edge_is_external(struct sway_container *cont, enum wlr_edges edge) {
+	enum sway_container_layout layout = L_NONE;
+	switch (edge) {
+	case WLR_EDGE_TOP:
+	case WLR_EDGE_BOTTOM:
+		layout = L_VERT;
+		break;
+	case WLR_EDGE_LEFT:
+	case WLR_EDGE_RIGHT:
+		layout = L_HORIZ;
+		break;
+	case WLR_EDGE_NONE:
+		sway_assert(false, "Never reached");
+		return false;
+	}
+
+	// Iterate the parents until we find one with the layout we want,
+	// then check if the child has siblings between it and the edge.
+	while (cont->type != C_OUTPUT) {
+		if (cont->parent->layout == layout) {
+			int index = list_find(cont->parent->children, cont);
+			if (index > 0 && (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_TOP)) {
+				return false;
+			}
+			if (index < cont->parent->children->length - 1 &&
+					(edge == WLR_EDGE_RIGHT || edge == WLR_EDGE_BOTTOM)) {
+				return false;
+			}
+		}
+		cont = cont->parent;
+	}
+	return true;
+}
+
 static enum wlr_edges find_resize_edge(struct sway_container *cont,
 		struct sway_cursor *cursor) {
 	if (cont->type != C_VIEW) {
@@ -159,6 +198,11 @@ static enum wlr_edges find_resize_edge(struct sway_container *cont,
 	if (cursor->cursor->y >= cont->y + cont->height - view->border_thickness) {
 		edge |= WLR_EDGE_BOTTOM;
 	}
+
+	if (edge && !container_is_floating(cont) && edge_is_external(cont, edge)) {
+		return WLR_EDGE_NONE;
+	}
+
 	return edge;
 }
 
@@ -209,7 +253,7 @@ static void calculate_floating_constraints(struct sway_container *con,
 	}
 }
 
-static void handle_resize_motion(struct sway_seat *seat,
+static void handle_resize_floating_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
 	struct sway_container *con = seat->op_container;
 	enum wlr_edges edge = seat->op_resize_edge;
@@ -301,6 +345,31 @@ static void handle_resize_motion(struct sway_seat *seat,
 	arrange_windows(con);
 }
 
+static void handle_resize_tiling_motion(struct sway_seat *seat,
+		struct sway_cursor *cursor) {
+	int amount = 0;
+	int moved_x = cursor->cursor->x - seat->op_ref_lx;
+	int moved_y = cursor->cursor->y - seat->op_ref_ly;
+	struct sway_container *con = seat->op_container;
+	switch (seat->op_resize_edge) {
+	case WLR_EDGE_TOP:
+		amount = (seat->op_ref_height - moved_y) - con->height;
+		break;
+	case WLR_EDGE_BOTTOM:
+		amount = (seat->op_ref_height + moved_y) - con->height;
+		break;
+	case WLR_EDGE_LEFT:
+		amount = (seat->op_ref_width - moved_x) - con->width;
+		break;
+	case WLR_EDGE_RIGHT:
+		amount = (seat->op_ref_width + moved_x) - con->width;
+		break;
+	case WLR_EDGE_NONE:
+		break;
+	}
+	container_resize_tiled(seat->op_container, seat->op_resize_edge, amount);
+}
+
 void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		bool allow_refocusing) {
 	if (time_msec == 0) {
@@ -310,10 +379,18 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	struct sway_seat *seat = cursor->seat;
 
 	if (seat->operation != OP_NONE) {
-		if (seat->operation == OP_MOVE) {
+		switch (seat->operation) {
+		case OP_MOVE:
 			handle_move_motion(seat, cursor);
-		} else {
-			handle_resize_motion(seat, cursor);
+			break;
+		case OP_RESIZE_FLOATING:
+			handle_resize_floating_motion(seat, cursor);
+			break;
+		case OP_RESIZE_TILING:
+			handle_resize_tiling_motion(seat, cursor);
+			break;
+		case OP_NONE:
+			break;
 		}
 		cursor->previous.x = cursor->cursor->x;
 		cursor->previous.y = cursor->cursor->y;
@@ -375,8 +452,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		if (client != cursor->image_client) {
 			cursor_set_image(cursor, "left_ptr", client);
 		}
-	} else if (c && container_is_floating(c)) {
-		// Try a floating container's resize edge
+	} else if (c) {
+		// Try a container's resize edge
 		enum wlr_edges edge = find_resize_edge(c, cursor);
 		const char *image = edge == WLR_EDGE_NONE ?
 			"left_ptr" : wlr_xcursor_get_resize_name(edge);
@@ -467,7 +544,7 @@ static void dispatch_cursor_button_floating(struct sway_cursor *cursor,
 			edge |= cursor->cursor->y > floater->y + floater->height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
 		}
-		seat_begin_resize(seat, floater, button, edge);
+		seat_begin_resize_floating(seat, floater, button, edge);
 		return;
 	}
 
@@ -592,6 +669,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		// TODO: do we want to pass on the event?
 	}
 
+	enum wlr_edges edge = cont ? find_resize_edge(cont, cursor) : WLR_EDGE_NONE;
+
 	if (surface && wlr_surface_is_layer_surface(surface)) {
 		struct wlr_layer_surface *layer =
 			wlr_layer_surface_from_wlr_surface(surface);
@@ -599,6 +678,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			seat_set_focus_layer(cursor->seat, layer);
 		}
 		seat_pointer_notify_button(cursor->seat, time_msec, button, state);
+	} else if (edge && button == BTN_LEFT &&
+			!container_is_floating(cont)) {
+		seat_set_focus(cursor->seat, cont);
+		seat_begin_resize_tiling(cursor->seat, cont, BTN_LEFT, edge);
 	} else if (cont && container_is_floating_or_child(cont)) {
 		dispatch_cursor_button_floating(cursor, time_msec, button, state,
 				surface, sx, sy, cont);

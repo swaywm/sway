@@ -1,6 +1,7 @@
 #ifndef _SWAY_COMMANDS_H
 #define _SWAY_COMMANDS_H
 
+#include <wlr/util/edges.h>
 #include "config.h"
 
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
@@ -83,6 +84,12 @@ char *cmd_results_to_json(struct cmd_results *results);
 
 struct cmd_results *add_color(const char *name,
 		char *buffer, const char *color);
+
+/**
+ * TODO: Move this function and its dependent functions to container.c.
+ */
+void container_resize_tiled(struct sway_container *parent, enum wlr_edges edge,
+		int amount);
 
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;

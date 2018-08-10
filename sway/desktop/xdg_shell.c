@@ -331,7 +331,8 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	struct wlr_xdg_toplevel_resize_event *e = data;
 	struct sway_seat *seat = e->seat->seat->data;
 	if (e->serial == seat->last_button_serial) {
-		seat_begin_resize(seat, view->swayc, seat->last_button, e->edges);
+		seat_begin_resize_floating(seat, view->swayc,
+				seat->last_button, e->edges);
 	}
 }
 
