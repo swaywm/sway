@@ -980,9 +980,6 @@ void seat_begin_resize_tiling(struct sway_seat *seat,
 	seat->op_ref_con_ly = con->y;
 	seat->op_ref_width = con->width;
 	seat->op_ref_height = con->height;
-
-	const char *image = wlr_xcursor_get_resize_name(edge);
-	cursor_set_image(seat->cursor, image, NULL);
 }
 
 void seat_end_mouse_operation(struct sway_seat *seat) {

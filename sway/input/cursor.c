@@ -472,9 +472,17 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	} else if (c) {
 		// Try a container's resize edge
 		enum wlr_edges edge = find_resize_edge(c, cursor);
-		const char *image = edge == WLR_EDGE_NONE ?
-			"left_ptr" : wlr_xcursor_get_resize_name(edge);
-		cursor_set_image(cursor, image, NULL);
+		if (edge == WLR_EDGE_NONE) {
+			cursor_set_image(cursor, "left_ptr", NULL);
+		} else if (container_is_floating(c)) {
+			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
+		} else {
+			if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
+				cursor_set_image(cursor, "col-resize", NULL);
+			} else {
+				cursor_set_image(cursor, "row-resize", NULL);
+			}
+		}
 	} else {
 		cursor_set_image(cursor, "left_ptr", NULL);
 	}
@@ -676,6 +684,18 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
 			edge |= cursor->cursor->y > cont->y + cont->height / 2 ?
 				WLR_EDGE_BOTTOM : WLR_EDGE_TOP;
+
+			const char *image = NULL;
+			if (edge == (WLR_EDGE_LEFT | WLR_EDGE_TOP)) {
+				image = "nw-resize";
+			} else if (edge == (WLR_EDGE_TOP | WLR_EDGE_RIGHT)) {
+				image = "ne-resize";
+			} else if (edge == (WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM)) {
+				image = "se-resize";
+			} else if (edge == (WLR_EDGE_BOTTOM | WLR_EDGE_LEFT)) {
+				image = "sw-resize";
+			}
+			cursor_set_image(seat->cursor, image, NULL);
 			seat_set_focus(seat, cont);
 			seat_begin_resize_tiling(seat, cont, button, edge);
 			return;
