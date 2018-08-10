@@ -26,7 +26,16 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 			return error;
 		}
 
-		tmp = join_args(argv + 1, argc - 1);
+		--argc; ++argv;
+	}
+
+	if (argv[0][0] == '\'' || argv[0][0] == '"') {
+		if (argc > 0) {
+			return cmd_results_new(CMD_INVALID, "exec_always",
+					"command cannot be partially quoted");
+		}
+		tmp = strdup(argv[0]);
+		strip_quotes(tmp);
 	} else {
 		tmp = join_args(argv, argc);
 	}
