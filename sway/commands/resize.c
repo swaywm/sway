@@ -133,12 +133,29 @@ static enum resize_axis parse_resize_axis(const char *axis) {
 	return RESIZE_AXIS_INVALID;
 }
 
+static enum resize_axis normalize_axis(enum resize_axis axis) {
+	switch (axis) {
+	case RESIZE_AXIS_HORIZONTAL:
+	case RESIZE_AXIS_LEFT:
+	case RESIZE_AXIS_RIGHT:
+		return RESIZE_AXIS_HORIZONTAL;
+	case RESIZE_AXIS_VERTICAL:
+	case RESIZE_AXIS_UP:
+	case RESIZE_AXIS_DOWN:
+		return RESIZE_AXIS_VERTICAL;
+	case RESIZE_AXIS_INVALID:
+		sway_assert(false, "Never reached");
+	}
+	sway_assert(false, "Never reached");
+	return RESIZE_AXIS_INVALID;
+}
+
 static int parallel_coord(struct sway_container *c, enum resize_axis a) {
-	return a == RESIZE_AXIS_HORIZONTAL ? c->x : c->y;
+	return normalize_axis(a) == RESIZE_AXIS_HORIZONTAL ? c->x : c->y;
 }
 
 static int parallel_size(struct sway_container *c, enum resize_axis a) {
-	return a == RESIZE_AXIS_HORIZONTAL ? c->width : c->height;
+	return normalize_axis(a) == RESIZE_AXIS_HORIZONTAL ? c->width : c->height;
 }
 
 static void resize_tiled(int amount, enum resize_axis axis) {
@@ -149,7 +166,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 	}
 
 	enum sway_container_layout parallel_layout =
-		axis == RESIZE_AXIS_HORIZONTAL ? L_HORIZ : L_VERT;
+		normalize_axis(axis) == RESIZE_AXIS_HORIZONTAL ? L_HORIZ : L_VERT;
 	int minor_weight = 0;
 	int major_weight = 0;
 	while (parent->parent) {
@@ -185,6 +202,15 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 			"Found the proper parent: %p. It has %d l conts, and %d r conts",
 			parent->parent, minor_weight, major_weight);
 
+	// Implement up/down/left/right direction by zeroing one of the weights,
+	// then setting the axis to be horizontal or vertical
+	if (axis == RESIZE_AXIS_UP || axis == RESIZE_AXIS_LEFT) {
+		major_weight = 0;
+	} else if (axis == RESIZE_AXIS_RIGHT || axis == RESIZE_AXIS_DOWN) {
+		minor_weight = 0;
+	}
+	axis = normalize_axis(axis);
+
 	int min_sane = axis == RESIZE_AXIS_HORIZONTAL ? MIN_SANE_W : MIN_SANE_H;
 
 	//TODO: Ensure rounding is done in such a way that there are NO pixel leaks
@@ -201,18 +227,18 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		int parent_size = parallel_size(parent, axis);
 
 		if (sibling_pos != focused_pos) {
-			if (sibling_pos < parent_pos) {
+			if (sibling_pos < parent_pos && minor_weight) {
 				double pixels = -amount / minor_weight;
 				if (major_weight && (sibling_size + pixels / 2) < min_sane) {
 					return; // Too small
-				} else if ((sibling_size + pixels) < min_sane) {
+				} else if (!major_weight && sibling_size + pixels < min_sane) {
 					return; // Too small
 				}
-			} else if (sibling_pos > parent_pos) {
+			} else if (sibling_pos > parent_pos && major_weight) {
 				double pixels = -amount / major_weight;
 				if (minor_weight && (sibling_size + pixels / 2) < min_sane) {
 					return; // Too small
-				} else if ((sibling_size + pixels) < min_sane) {
+				} else if (!minor_weight && sibling_size + pixels < min_sane) {
 					return; // Too small
 				}
 			}
@@ -237,7 +263,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 		int parent_pos = parallel_coord(parent, axis);
 
 		if (sibling_pos != focused_pos) {
-			if (sibling_pos < parent_pos) {
+			if (sibling_pos < parent_pos && minor_weight) {
 				double pixels = -1 * amount;
 				pixels /= minor_weight;
 				if (major_weight) {
@@ -245,7 +271,7 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 				} else {
 					container_recursive_resize(sibling, pixels, major_edge);
 				}
-			} else if (sibling_pos > parent_pos) {
+			} else if (sibling_pos > parent_pos && major_weight) {
 				double pixels = -1 * amount;
 				pixels /= major_weight;
 				if (minor_weight) {
@@ -355,7 +381,6 @@ static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
 	}
 	if (amount->unit == RESIZE_UNIT_PPT) {
 		float pct = amount->amount / 100.0f;
-		// TODO: Make left/right/up/down resize in that direction?
 		switch (axis) {
 		case RESIZE_AXIS_LEFT:
 		case RESIZE_AXIS_RIGHT:
@@ -382,8 +407,43 @@ static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
  */
 static struct cmd_results *resize_set_tiled(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
-	return cmd_results_new(CMD_INVALID, "resize",
-			"'resize set' is not implemented for tiled views");
+	if (width->amount) {
+		if (width->unit == RESIZE_UNIT_PPT ||
+				width->unit == RESIZE_UNIT_DEFAULT) {
+			// Convert to px
+			struct sway_container *parent = con->parent;
+			while (parent->type >= C_WORKSPACE && parent->layout != L_HORIZ) {
+				parent = parent->parent;
+			}
+			if (parent->type >= C_WORKSPACE) {
+				width->amount = parent->width * width->amount / 100;
+				width->unit = RESIZE_UNIT_PX;
+			}
+		}
+		if (width->unit == RESIZE_UNIT_PX) {
+			resize_tiled(width->amount - con->width, RESIZE_AXIS_HORIZONTAL);
+		}
+	}
+
+	if (height->amount) {
+		if (height->unit == RESIZE_UNIT_PPT ||
+				height->unit == RESIZE_UNIT_DEFAULT) {
+			// Convert to px
+			struct sway_container *parent = con->parent;
+			while (parent->type >= C_WORKSPACE && parent->layout != L_VERT) {
+				parent = parent->parent;
+			}
+			if (parent->type >= C_WORKSPACE) {
+				height->amount = parent->height * height->amount / 100;
+				height->unit = RESIZE_UNIT_PX;
+			}
+		}
+		if (height->unit == RESIZE_UNIT_PX) {
+			resize_tiled(height->amount - con->height, RESIZE_AXIS_VERTICAL);
+		}
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
 /**
