@@ -132,7 +132,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos_x> [px] <pos_y> [px]
+*move* [absolute] position <pos\_x> [px] <pos\_y> [px]
 	Moves the focused container to the specified position.
 
 *move* [absolute] position center|mouse
@@ -154,7 +154,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window [to] workspace back_and_forth
+*move* container|window [to] workspace back\_and\_forth
 	Moves the focused container to previously focused workspace.
 
 *move* container|window|workspace [to] output <name>
