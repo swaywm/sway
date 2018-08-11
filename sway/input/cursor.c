@@ -675,7 +675,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Handle tiling resize via mod
 	bool mod_pressed = keyboard &&
 		(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
-	if (!is_floating && mod_pressed && state == WLR_BUTTON_PRESSED) {
+	if (!is_floating_or_child && mod_pressed && state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
 		if (button == btn_resize) {
