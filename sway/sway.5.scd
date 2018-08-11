@@ -219,12 +219,19 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 The following commands may be used either in the configuration file or at
 runtime.
 
-*assign* <criteria> [→] <workspace>
+*assign* <criteria> [→] [workspace] [number] <workspace>
 	Assigns views matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
 		for\_window <criteria> move container to workspace <workspace>
+
+*assign* <criteria> [→] output left|right|up|down|<name>
+	Assigns views matching _criteria_ (see *CRITERIA* for details) to the
+	specified output. The → (U+2192) is optional and cosmetic. This command is
+	equivalent to:
+
+		for\_window <criteria> move container to output <output>
 
 *bindsym* [--release|--locked] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You

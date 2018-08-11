@@ -22,27 +22,38 @@ struct cmd_results *cmd_assign(int argc, char **argv) {
 		return error;
 	}
 
-	++argv;
-	int target_len = argc - 1;
+	--argc; ++argv;
 
 	if (strncmp(*argv, "→", strlen("→")) == 0) {
-		if (argc < 3) {
+		if (argc < 2) {
 			free(criteria);
 			return cmd_results_new(CMD_INVALID, "assign", "Missing workspace");
 		}
+		--argc;
 		++argv;
-		--target_len;
 	}
 
 	if (strcmp(*argv, "output") == 0) {
 		criteria->type = CT_ASSIGN_OUTPUT;
-		++argv;
-		--target_len;
+		--argc; ++argv;
 	} else {
-		criteria->type = CT_ASSIGN_WORKSPACE;
+		if (strcmp(*argv, "workspace") == 0) {
+			--argc; ++argv;
+		}
+		if (strcmp(*argv, "number") == 0) {
+			--argc; ++argv;
+			if (argv[0][0] < '0' || argv[0][0] > '9') {
+				free(criteria);
+				return cmd_results_new(CMD_INVALID, "assign",
+						"Invalid workspace number '%s'", argv[0]);
+			}
+			criteria->type = CT_ASSIGN_WORKSPACE_NUMBER;
+		} else {
+			criteria->type = CT_ASSIGN_WORKSPACE;
+		}
 	}
 
-	criteria->target = join_args(argv, target_len);
+	criteria->target = join_args(argv, argc);
 
 	list_add(config->criteria, criteria);
 	wlr_log(WLR_DEBUG, "assign: '%s' -> '%s' added", criteria->raw,
