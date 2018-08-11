@@ -822,7 +822,7 @@ void config_update_font_height(bool recalculate) {
 	size_t prev_max_height = config->font_height;
 	config->font_height = 0;
 
-	container_for_each_descendant_dfs(&root_container,
+	container_for_each_descendant(&root_container,
 			find_font_height_iterator, &recalculate);
 
 	// Also consider floating views
@@ -830,7 +830,7 @@ void config_update_font_height(bool recalculate) {
 		struct sway_container *output = root_container.children->items[i];
 		for (int j = 0; j < output->children->length; ++j) {
 			struct sway_container *ws = output->children->items[j];
-			container_for_each_descendant_dfs(ws->sway_workspace->floating,
+			container_for_each_descendant(ws->sway_workspace->floating,
 					find_font_height_iterator, &recalculate);
 		}
 	}

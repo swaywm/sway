@@ -239,15 +239,9 @@ struct sway_container *tiling_container_at(
 		struct wlr_surface **surface, double *sx, double *sy);
 
 /**
- * Apply the function for each descendant of the container breadth first.
- */
-void container_for_each_descendant_bfs(struct sway_container *container,
-		void (*f)(struct sway_container *container, void *data), void *data);
-
-/**
  * Apply the function for each child of the container depth first.
  */
-void container_for_each_descendant_dfs(struct sway_container *container,
+void container_for_each_descendant(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 /**

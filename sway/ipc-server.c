@@ -631,7 +631,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_WORKSPACES:
 	{
 		json_object *workspaces = json_object_new_array();
-		container_for_each_descendant_dfs(&root_container,
+		container_for_each_descendant(&root_container,
 				ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
 		client_valid =

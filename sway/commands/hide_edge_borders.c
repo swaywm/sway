@@ -31,7 +31,7 @@ struct cmd_results *cmd_hide_edge_borders(int argc, char **argv) {
 				"<none|vertical|horizontal|both|smart>'");
 	}
 
-	container_for_each_descendant_dfs(&root_container, _configure_view, NULL);
+	container_for_each_descendant(&root_container, _configure_view, NULL);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
