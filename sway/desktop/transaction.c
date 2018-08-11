@@ -213,6 +213,18 @@ static void transaction_apply(struct sway_transaction *transaction) {
 }
 
 static void transaction_progress_queue() {
+	// Check if any transactions in the queue are in a partially ready state.
+	// If so, we shouldn't progress any transactions, even ones which are fully
+	// ready at the front of the queue, because the views in the ready
+	// transactions might have committed past it to a transaction which isn't
+	// yet ready.
+	for (int i = 0; i < server.transactions->length; ++i) {
+		struct sway_transaction *transaction = server.transactions->items[i];
+		if (transaction->num_waiting != 0 &&
+				transaction->num_waiting != transaction->num_configures) {
+			return;
+		}
+	}
 	while (server.transactions->length) {
 		struct sway_transaction *transaction = server.transactions->items[0];
 		if (transaction->num_waiting) {
