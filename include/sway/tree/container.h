@@ -256,12 +256,6 @@ void container_for_each_descendant_dfs(struct sway_container *container,
 bool container_has_ancestor(struct sway_container *container,
 		struct sway_container *ancestor);
 
-/**
- * Returns true if the given container is a child descendant of this container.
- */
-bool container_has_child(struct sway_container *con,
-		struct sway_container *child);
-
 int container_count_descendants_of_type(struct sway_container *con,
 		enum sway_container_type type);
 

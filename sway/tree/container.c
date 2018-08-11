@@ -817,19 +817,6 @@ bool container_has_ancestor(struct sway_container *descendant,
 	return false;
 }
 
-static bool find_child_func(struct sway_container *con, void *data) {
-	struct sway_container *child = data;
-	return con == child;
-}
-
-bool container_has_child(struct sway_container *con,
-		struct sway_container *child) {
-	if (con == NULL || con->type == C_VIEW) {
-		return false;
-	}
-	return container_find(con, find_child_func, child);
-}
-
 int container_count_descendants_of_type(struct sway_container *con,
 		enum sway_container_type type) {
 	int children = 0;
