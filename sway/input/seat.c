@@ -145,14 +145,14 @@ static struct sway_container *seat_get_focus_by_type(struct sway_seat *seat,
 			continue;
 		}
 
-		if (container_has_child(container, current->container)) {
+		if (container_has_ancestor(current->container, container)) {
 			if (only_tiling &&
 					container_is_floating_or_child(current->container)) {
 				continue;
 			}
 			return current->container;
 		}
-		if (floating && container_has_child(floating, current->container)) {
+		if (floating && container_has_ancestor(current->container, floating)) {
 			return current->container;
 		}
 	}
@@ -190,7 +190,7 @@ static void handle_seat_container_destroy(struct wl_listener *listener,
 
 	bool set_focus =
 		focus != NULL &&
-		(focus == con || container_has_child(con, focus)) &&
+		(focus == con || container_has_ancestor(focus, con)) &&
 		con->type != C_WORKSPACE;
 
 	seat_container_destroy(seat_con);
