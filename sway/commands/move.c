@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 #include <strings.h>
@@ -124,7 +125,11 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 					return cmd_results_new(CMD_INVALID, "move",
 							expected_syntax);
 				}
-				ws_name = strdup(argv[3]);
+				if (!isdigit(argv[3][0])) {
+					return cmd_results_new(CMD_INVALID, "move",
+							"Invalid workspace number '%s'", argv[3]);
+				}
+				ws_name = join_args(argv + 3, argc - 3);
 				ws = workspace_by_number(ws_name);
 			} else {
 				ws_name = join_args(argv + 2, argc - 2);

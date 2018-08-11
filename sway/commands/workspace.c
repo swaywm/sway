@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <ctype.h>
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
@@ -60,8 +61,12 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		struct sway_container *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (argc < 2) {
-				cmd_results_new(CMD_INVALID, "workspace",
+				return cmd_results_new(CMD_INVALID, "workspace",
 						"Expected workspace number");
+			}
+			if (!isdigit(argv[1][0])) {
+				return cmd_results_new(CMD_INVALID, "workspace",
+						"Invalid workspace number '%s'", argv[1]);
 			}
 			if (!(ws = workspace_by_number(argv[1]))) {
 				char *name = join_args(argv + 1, argc - 1);
