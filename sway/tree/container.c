@@ -25,21 +25,6 @@
 #include "log.h"
 #include "stringop.h"
 
-static list_t *bfs_queue;
-
-static list_t *get_bfs_queue() {
-	if (!bfs_queue) {
-		bfs_queue = create_list();
-		if (!bfs_queue) {
-			wlr_log(WLR_ERROR, "could not allocate list for bfs queue");
-			return NULL;
-		}
-	}
-	bfs_queue->length = 0;
-
-	return bfs_queue;
-}
-
 const char *container_type_to_str(enum sway_container_type type) {
 	switch (type) {
 	case C_ROOT:
@@ -450,7 +435,7 @@ struct sway_container *container_close(struct sway_container *con) {
 	if (con->type == C_VIEW) {
 		view_close(con->sway_view);
 	} else {
-		container_for_each_descendant_dfs(con, container_close_func, NULL);
+		container_for_each_descendant(con, container_close_func, NULL);
 	}
 
 	return parent;
@@ -760,7 +745,7 @@ struct sway_container *container_at(struct sway_container *workspace,
 	return NULL;
 }
 
-void container_for_each_descendant_dfs(struct sway_container *container,
+void container_for_each_descendant(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
 	if (!container) {
@@ -769,41 +754,17 @@ void container_for_each_descendant_dfs(struct sway_container *container,
 	if (container->children)  {
 		for (int i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
-			container_for_each_descendant_dfs(child, f, data);
+			container_for_each_descendant(child, f, data);
 		}
 	}
 	if (container->type == C_WORKSPACE)  {
 		struct sway_container *floating = container->sway_workspace->floating;
 		for (int i = 0; i < floating->children->length; ++i) {
 			struct sway_container *child = floating->children->items[i];
-			container_for_each_descendant_dfs(child, f, data);
+			container_for_each_descendant(child, f, data);
 		}
 	}
 	f(container, data);
-}
-
-void container_for_each_descendant_bfs(struct sway_container *con,
-		void (*f)(struct sway_container *con, void *data), void *data) {
-	list_t *queue = get_bfs_queue();
-	if (!queue) {
-		return;
-	}
-
-	if (queue == NULL) {
-		wlr_log(WLR_ERROR, "could not allocate list");
-		return;
-	}
-
-	list_add(queue, con);
-
-	struct sway_container *current = NULL;
-	while (queue->length) {
-		current = queue->items[0];
-		list_del(queue, 0);
-		f(current, data);
-		// TODO floating containers
-		list_cat(queue, current->children);
-	}
 }
 
 bool container_has_ancestor(struct sway_container *descendant,
@@ -1276,8 +1237,7 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 		container_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 	}
 
-	container_for_each_descendant_dfs(container,
-			set_fullscreen_iterator, &enable);
+	container_for_each_descendant(container, set_fullscreen_iterator, &enable);
 
 	container->is_fullscreen = enable;
 

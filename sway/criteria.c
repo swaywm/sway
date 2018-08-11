@@ -167,7 +167,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			return false;
 		}
 		list_t *urgent_views = create_list();
-		container_for_each_descendant_dfs(&root_container,
+		container_for_each_descendant(&root_container,
 				find_urgent_iterator, urgent_views);
 		list_stable_sort(urgent_views, cmp_urgent);
 		struct sway_view *target;
@@ -228,7 +228,7 @@ list_t *criteria_get_views(struct criteria *criteria) {
 		.criteria = criteria,
 		.matches = matches,
 	};
-	container_for_each_descendant_dfs(&root_container,
+	container_for_each_descendant(&root_container,
 		criteria_get_views_iterator, &data);
 
 	// Scratchpad items which are hidden are not in the tree.

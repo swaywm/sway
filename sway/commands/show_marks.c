@@ -24,7 +24,7 @@ struct cmd_results *cmd_show_marks(int argc, char **argv) {
 	config->show_marks = parse_boolean(argv[0], config->show_marks);
 
 	if (config->show_marks) {
-		container_for_each_descendant_dfs(&root_container,
+		container_for_each_descendant(&root_container,
 				rebuild_marks_iterator, NULL);
 	}
 

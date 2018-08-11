@@ -52,7 +52,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 		view_find_and_unmark(mark);
 	} else {
 		// Remove all marks from all views
-		container_for_each_descendant_dfs(&root_container,
+		container_for_each_descendant(&root_container,
 				remove_all_marks_iterator, NULL);
 	}
 	free(mark);
