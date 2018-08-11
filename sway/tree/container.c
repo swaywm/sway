@@ -769,7 +769,7 @@ void container_for_each_descendant(struct sway_container *container,
 
 bool container_has_ancestor(struct sway_container *descendant,
 		struct sway_container *ancestor) {
-	while (descendant->type != C_ROOT) {
+	while (descendant && descendant->type != C_ROOT) {
 		descendant = descendant->parent;
 		if (descendant == ancestor) {
 			return true;
