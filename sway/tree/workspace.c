@@ -120,6 +120,8 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 		name = argsep(&cmdlist, ",;");
 	}
 
+	// TODO: support "move container to workspace" bindings as well
+
 	if (strcmp("workspace", cmd) == 0 && name) {
 		char *_target = strdup(name);
 		_target = do_var_replacement(_target);
@@ -189,8 +191,8 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 char *workspace_next_name(const char *output_name) {
 	wlr_log(WLR_DEBUG, "Workspace: Generating new workspace name for output %s",
 			output_name);
-	// Scan all workspace bindings to find the next available workspace name,
-	// if none are found/available then default to a number
+	// Scan for available workspace names by looking through output-workspace
+	// assignments primarily, falling back to bindings and numbers.
 	struct sway_mode *mode = config->current_mode;
 
 	int order = INT_MAX;
@@ -202,6 +204,15 @@ char *workspace_next_name(const char *output_name) {
 	for (int i = 0; i < mode->keycode_bindings->length; ++i) {
 		workspace_name_from_binding(mode->keycode_bindings->items[i],
 				output_name, &order, &target);
+	}
+	for (int i = 0; i < config->workspace_outputs->length; ++i) {
+		// Unlike with bindings, this does not guarantee order
+		const struct workspace_output *wso = config->workspace_outputs->items[i];
+		if (strcmp(wso->output, output_name) == 0
+				&& workspace_by_name(wso->workspace) == NULL) {
+			free(target);
+			target = strdup(wso->workspace);
+		}
 	}
 	if (target != NULL) {
 		return target;
