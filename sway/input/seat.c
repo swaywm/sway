@@ -942,14 +942,14 @@ void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
 	cursor_set_image(seat->cursor, "grab", NULL);
 }
 
-void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
-		uint32_t button, enum wlr_edges edge) {
+void seat_begin_resize_floating(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button, enum wlr_edges edge) {
 	if (!seat->cursor) {
 		wlr_log(WLR_DEBUG, "Ignoring resize request due to no cursor device");
 		return;
 	}
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
-	seat->operation = OP_RESIZE;
+	seat->operation = OP_RESIZE_FLOATING;
 	seat->op_container = con;
 	seat->op_resize_preserve_ratio = keyboard &&
 		(wlr_keyboard_get_modifiers(keyboard) & WLR_MODIFIER_SHIFT);
@@ -968,20 +968,26 @@ void seat_begin_resize(struct sway_seat *seat, struct sway_container *con,
 	cursor_set_image(seat->cursor, image, NULL);
 }
 
+void seat_begin_resize_tiling(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button, enum wlr_edges edge) {
+	seat->operation = OP_RESIZE_TILING;
+	seat->op_container = con;
+	seat->op_resize_edge = edge;
+	seat->op_button = button;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+	seat->op_ref_con_lx = con->x;
+	seat->op_ref_con_ly = con->y;
+	seat->op_ref_width = con->width;
+	seat->op_ref_height = con->height;
+}
+
 void seat_end_mouse_operation(struct sway_seat *seat) {
-	switch (seat->operation) {
-	case OP_MOVE:
-		{
-			// We "move" the container to its own location so it discovers its
-			// output again.
-			struct sway_container *con = seat->op_container;
-			container_floating_move_to(con, con->x, con->y);
-		}
-	case OP_RESIZE:
-		// Don't need to do anything here.
-		break;
-	case OP_NONE:
-		break;
+	if (seat->operation == OP_MOVE) {
+		// We "move" the container to its own location so it discovers its
+		// output again.
+		struct sway_container *con = seat->op_container;
+		container_floating_move_to(con, con->x, con->y);
 	}
 	seat->operation = OP_NONE;
 	seat->op_container = NULL;

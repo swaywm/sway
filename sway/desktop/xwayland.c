@@ -432,7 +432,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	}
 	struct wlr_xwayland_resize_event *e = data;
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	seat_begin_resize(seat, view->swayc, seat->last_button, e->edges);
+	seat_begin_resize_floating(seat, view->swayc, seat->last_button, e->edges);
 }
 
 static void handle_set_title(struct wl_listener *listener, void *data) {

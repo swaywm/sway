@@ -33,6 +33,7 @@ struct sway_transaction {
 	list_t *instructions;   // struct sway_transaction_instruction *
 	size_t num_waiting;
 	size_t num_configures;
+	uint32_t con_ids;       // Bitwise XOR of view container IDs
 	struct timespec create_time;
 	struct timespec commit_time;
 };
@@ -212,17 +213,43 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	}
 }
 
+static void transaction_commit(struct sway_transaction *transaction);
+
 static void transaction_progress_queue() {
-	while (server.transactions->length) {
-		struct sway_transaction *transaction = server.transactions->items[0];
-		if (transaction->num_waiting) {
-			return;
-		}
-		transaction_apply(transaction);
-		transaction_destroy(transaction);
-		list_del(server.transactions, 0);
+	if (!server.transactions->length) {
+		return;
 	}
-	idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
+	// There's only ever one committed transaction,
+	// and it's the first one in the queue.
+	struct sway_transaction *transaction = server.transactions->items[0];
+	if (transaction->num_waiting) {
+		return;
+	}
+	transaction_apply(transaction);
+	transaction_destroy(transaction);
+	list_del(server.transactions, 0);
+
+	if (!server.transactions->length) {
+		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
+		return;
+	}
+
+	// If there's a bunch of consecutive transactions which all apply to the
+	// same views, skip all except the last one.
+	while (server.transactions->length >= 2) {
+		struct sway_transaction *a = server.transactions->items[0];
+		struct sway_transaction *b = server.transactions->items[1];
+		if (a->con_ids == b->con_ids) {
+			list_del(server.transactions, 0);
+			transaction_destroy(a);
+		} else {
+			break;
+		}
+	}
+
+	transaction = server.transactions->items[0];
+	transaction_commit(transaction);
+	transaction_progress_queue();
 }
 
 static int handle_timeout(void *data) {
@@ -276,6 +303,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 					instruction->state.view_width,
 					instruction->state.view_height);
 			++transaction->num_waiting;
+			transaction->con_ids ^= con->id;
 
 			// From here on we are rendering a saved buffer of the view, which
 			// means we can send a frame done event to make the client redraw it
@@ -293,17 +321,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 	if (server.debug_txn_timings) {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->commit_time);
 	}
-	if (server.transactions->length || transaction->num_waiting) {
-		list_add(server.transactions, transaction);
-	} else {
-		// There are no other transactions in progress, and this one has nothing
-		// to wait for, so we can skip the queue.
-		wlr_log(WLR_DEBUG, "Transaction %p has nothing to wait for", transaction);
-		transaction_apply(transaction);
-		transaction_destroy(transaction);
-		idle_inhibit_v1_check_active(server.idle_inhibit_manager_v1);
-		return;
-	}
 
 	if (transaction->num_waiting) {
 		// Set up a timer which the views must respond within
@@ -317,6 +334,9 @@ static void transaction_commit(struct sway_transaction *transaction) {
 					strerror(errno));
 			handle_timeout(transaction);
 		}
+	} else {
+		wlr_log(WLR_DEBUG,
+				"Transaction %p has nothing to wait for", transaction);
 	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
@@ -403,5 +423,15 @@ void transaction_commit_dirty(void) {
 		container->dirty = false;
 	}
 	server.dirty_containers->length = 0;
-	transaction_commit(transaction);
+
+	list_add(server.transactions, transaction);
+
+	// There's only ever one committed transaction,
+	// and it's the first one in the queue.
+	if (server.transactions->length == 1) {
+		transaction_commit(transaction);
+		// Attempting to progress the queue here is useful
+		// if the transaction has nothing to wait for.
+		transaction_progress_queue();
+	}
 }

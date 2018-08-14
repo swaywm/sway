@@ -158,8 +158,8 @@ static int parallel_size(struct sway_container *c, enum resize_axis a) {
 	return normalize_axis(a) == RESIZE_AXIS_HORIZONTAL ? c->width : c->height;
 }
 
-static void resize_tiled(int amount, enum resize_axis axis) {
-	struct sway_container *parent = config->handler_context.current_container;
+static void resize_tiled(struct sway_container *parent, int amount,
+		enum resize_axis axis) {
 	struct sway_container *focused = parent;
 	if (!parent) {
 		return;
@@ -297,6 +297,28 @@ static void resize_tiled(int amount, enum resize_axis axis) {
 	arrange_windows(parent->parent);
 }
 
+void container_resize_tiled(struct sway_container *parent,
+		enum wlr_edges edge, int amount) {
+	enum resize_axis axis = RESIZE_AXIS_INVALID;
+	switch (edge) {
+	case WLR_EDGE_TOP:
+		axis = RESIZE_AXIS_UP;
+		break;
+	case WLR_EDGE_RIGHT:
+		axis = RESIZE_AXIS_RIGHT;
+		break;
+	case WLR_EDGE_BOTTOM:
+		axis = RESIZE_AXIS_DOWN;
+		break;
+	case WLR_EDGE_LEFT:
+		axis = RESIZE_AXIS_LEFT;
+		break;
+	case WLR_EDGE_NONE:
+		break;
+	}
+	resize_tiled(parent, amount, axis);
+}
+
 /**
  * Implement `resize <grow|shrink>` for a floating container.
  */
@@ -398,7 +420,7 @@ static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
 		}
 	}
 
-	resize_tiled(amount->amount, axis);
+	resize_tiled(current, amount->amount, axis);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -421,7 +443,8 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 			}
 		}
 		if (width->unit == RESIZE_UNIT_PX) {
-			resize_tiled(width->amount - con->width, RESIZE_AXIS_HORIZONTAL);
+			resize_tiled(con, width->amount - con->width,
+					RESIZE_AXIS_HORIZONTAL);
 		}
 	}
 
@@ -439,7 +462,8 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 			}
 		}
 		if (height->unit == RESIZE_UNIT_PX) {
-			resize_tiled(height->amount - con->height, RESIZE_AXIS_VERTICAL);
+			resize_tiled(con, height->amount - con->height,
+					RESIZE_AXIS_HORIZONTAL);
 		}
 	}
 
