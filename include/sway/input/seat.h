@@ -35,6 +35,14 @@ struct sway_drag_icon {
 	struct wl_listener destroy;
 };
 
+enum sway_seat_operation {
+	OP_NONE,
+	OP_DOWN,
+	OP_MOVE,
+	OP_RESIZE_FLOATING,
+	OP_RESIZE_TILING,
+};
+
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
@@ -54,14 +62,7 @@ struct sway_seat {
 	double touch_x, touch_y;
 
 	// Operations (drag and resize)
-	enum {
-		OP_NONE,
-		OP_MOUSEDOWN,
-		OP_MOVE,
-		OP_RESIZE_FLOATING,
-		OP_RESIZE_TILING,
-	} operation;
-
+	enum sway_seat_operation operation;
 	struct sway_container *op_container;
 	enum wlr_edges op_resize_edge;
 	uint32_t op_button;
@@ -158,7 +159,7 @@ bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
 
-void seat_begin_mousedown(struct sway_seat *seat, struct sway_container *con,
+void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button, double sx, double sy);
 
 void seat_begin_move(struct sway_seat *seat, struct sway_container *con,

@@ -215,7 +215,7 @@ static enum wlr_edges find_resize_edge(struct sway_container *cont,
 	return edge;
 }
 
-static void handle_mousedown_motion(struct sway_seat *seat,
+static void handle_down_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor, uint32_t time_msec) {
 	struct sway_container *con = seat->op_container;
 	if (seat_is_input_allowed(seat, con->sway_view->surface)) {
@@ -409,8 +409,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	if (seat->operation != OP_NONE) {
 		switch (seat->operation) {
-		case OP_MOUSEDOWN:
-			handle_mousedown_motion(seat, cursor, time_msec);
+		case OP_DOWN:
+			handle_down_motion(seat, cursor, time_msec);
 			break;
 		case OP_MOVE:
 			handle_move_motion(seat, cursor);
@@ -762,7 +762,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
 		seat_set_focus(seat, cont);
 		seat_pointer_notify_button(seat, time_msec, button, state);
-		seat_begin_mousedown(seat, cont, button, sx, sy);
+		seat_begin_down(seat, cont, button, sx, sy);
 		return;
 	}
 
