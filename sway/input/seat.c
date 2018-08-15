@@ -138,29 +138,19 @@ void seat_focus_inactive_children_for_each(struct sway_seat *seat,
 	}
 }
 
-static struct sway_container *seat_get_focus_inactive_callback(
-		struct sway_seat *seat,
-		bool (*callback)(struct sway_container *con, void *data), void *data) {
+struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
+		struct sway_container *ancestor) {
+	if (ancestor->type == C_VIEW) {
+		return ancestor;
+	}
 	struct sway_seat_container *current;
 	wl_list_for_each(current, &seat->focus_stack, link) {
-		if (callback(current->container, data)) {
-			return current->container;
+		struct sway_container *con = current->container;
+		if (con->type == C_VIEW && container_has_ancestor(con, ancestor)) {
+			return con;
 		}
 	}
 	return NULL;
-}
-
-static bool impl_focus_inactive_view(struct sway_container *con, void *data) {
-	struct sway_container *ancestor = data;
-	return con->type == C_VIEW && container_has_ancestor(con, ancestor);
-}
-
-struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
-		struct sway_container *container) {
-	if (container->type == C_VIEW) {
-		return container;
-	}
-	return seat_get_focus_inactive_callback(seat, impl_focus_inactive_view, container);
 }
 
 static void handle_seat_container_destroy(struct wl_listener *listener,
@@ -859,11 +849,6 @@ void seat_set_exclusive_client(struct sway_seat *seat,
 	seat->exclusive_client = client;
 }
 
-static bool impl_focus_inactive(struct sway_container *con, void *data) {
-	struct sway_container *ancestor = data;
-	return container_has_ancestor(con, ancestor);
-}
-
 struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 		struct sway_container *con) {
 	if (con->type == C_WORKSPACE && !con->children->length &&
@@ -873,38 +858,46 @@ struct sway_container *seat_get_focus_inactive(struct sway_seat *seat,
 	if (con->type == C_VIEW) {
 		return con;
 	}
-	return seat_get_focus_inactive_callback(seat, impl_focus_inactive, con);
-}
-
-static bool impl_focus_inactive_tiling(struct sway_container *con, void *data) {
-	struct sway_container *ancestor = data;
-	return con->layout != L_FLOATING && container_has_ancestor(con, ancestor)
-		&& !container_is_floating_or_child(con);
+	struct sway_seat_container *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		if (container_has_ancestor(current->container, con)) {
+			return current->container;
+		}
+	}
+	return NULL;
 }
 
 struct sway_container *seat_get_focus_inactive_tiling(struct sway_seat *seat,
-		struct sway_container *container) {
-	if (container->type == C_WORKSPACE && !container->children->length) {
-		return container;
+		struct sway_container *ancestor) {
+	if (ancestor->type == C_WORKSPACE && !ancestor->children->length) {
+		return ancestor;
 	}
-	return seat_get_focus_inactive_callback(seat,
-			impl_focus_inactive_tiling, container);
-}
-
-static bool impl_focus_inactive_floating(struct sway_container *con, void *data) {
-	struct sway_container *ancestor = data;
-	return con->layout != L_FLOATING && container_has_ancestor(con, ancestor)
-		&& container_is_floating_or_child(con);
+	struct sway_seat_container *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		struct sway_container *con = current->container;
+		if (con->layout != L_FLOATING && !container_is_floating_or_child(con) &&
+				container_has_ancestor(current->container, ancestor)) {
+			return con;
+		}
+	}
+	return NULL;
 }
 
 struct sway_container *seat_get_focus_inactive_floating(struct sway_seat *seat,
-		struct sway_container *container) {
-	if (container->type == C_WORKSPACE &&
-			!container->sway_workspace->floating->children->length) {
+		struct sway_container *ancestor) {
+	if (ancestor->type == C_WORKSPACE &&
+			!ancestor->sway_workspace->floating->children->length) {
 		return NULL;
 	}
-	return seat_get_focus_inactive_callback(seat,
-			impl_focus_inactive_floating, container);
+	struct sway_seat_container *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		struct sway_container *con = current->container;
+		if (con->layout != L_FLOATING && container_is_floating_or_child(con) &&
+				container_has_ancestor(current->container, ancestor)) {
+			return con;
+		}
+	}
+	return NULL;
 }
 
 static bool impl_focus_active_child(struct sway_container *con, void *data) {
@@ -913,11 +906,18 @@ static bool impl_focus_active_child(struct sway_container *con, void *data) {
 }
 
 struct sway_container *seat_get_active_child(struct sway_seat *seat,
-		struct sway_container *con) {
-	if (con->type == C_VIEW) {
-		return con;
+		struct sway_container *parent) {
+	if (parent->type == C_VIEW) {
+		return parent;
 	}
-	return seat_get_focus_inactive_callback(seat, impl_focus_active_child, con);
+	struct sway_seat_container *current;
+	wl_list_for_each(current, &seat->focus_stack, link) {
+		struct sway_container *con = current->container;
+		if (con->parent == parent && con->layout != L_FLOATING) {
+			return con;
+		}
+	}
+	return NULL;
 }
 
 struct sway_container *seat_get_focus(struct sway_seat *seat) {
