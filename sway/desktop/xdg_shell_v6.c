@@ -250,8 +250,9 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	if (!view->swayc) {
 		return;
 	}
-	if (view->swayc->instructions->length) {
-		transaction_notify_view_ready(view, xdg_surface_v6->configure_serial);
+	if (view->swayc->instruction) {
+		transaction_notify_view_ready_by_serial(view,
+				xdg_surface_v6->configure_serial);
 	}
 
 	view_damage_from(view);

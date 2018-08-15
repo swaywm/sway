@@ -151,7 +151,12 @@ struct sway_container {
 	struct wlr_texture *title_urgent;
 	size_t title_height;
 
-	list_t *instructions; // struct sway_transaction_instruction *
+	// The number of transactions which reference this container.
+	size_t ntxnrefs;
+
+	// If this container is a view and is waiting for the client to respond to a
+	// configure then this will be populated, otherwise NULL.
+	struct sway_transaction_instruction *instruction;
 
 	bool destroying;
 

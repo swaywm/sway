@@ -20,6 +20,8 @@
  * create and commits a transaction from the dirty containers.
  */
 
+struct sway_transaction_instruction;
+
 /**
  * Find all dirty containers, create and commit a transaction containing them,
  * and unmark them as dirty.
@@ -31,7 +33,8 @@ void transaction_commit_dirty(void);
  *
  * When all views in the transaction are ready, the layout will be applied.
  */
-void transaction_notify_view_ready(struct sway_view *view, uint32_t serial);
+void transaction_notify_view_ready_by_serial(struct sway_view *view,
+		uint32_t serial);
 
 /**
  * Notify the transaction system that a view is ready for the new layout, but
