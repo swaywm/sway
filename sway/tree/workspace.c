@@ -286,8 +286,8 @@ struct sway_container *workspace_by_name(const char *name) {
  * the end and beginning.  If next is false, the previous workspace is returned,
  * otherwise the next one is returned.
  */
-struct sway_container *workspace_output_prev_next_impl(
-		struct sway_container *output, bool next) {
+static struct sway_container *workspace_output_prev_next_impl(
+		struct sway_container *output, int dir) {
 	if (!output) {
 		return NULL;
 	}
@@ -302,27 +302,17 @@ struct sway_container *workspace_output_prev_next_impl(
 			focus :
 			container_parent(focus, C_WORKSPACE));
 
-	int i;
-	for (i = 0; i < output->children->length; i++) {
-		if (output->children->items[i] == workspace) {
-			return output->children->items[
-				wrap(i + (next ? 1 : -1), output->children->length)];
-		}
-	}
-
-	// Doesn't happen, at worst the for loop returns the previously active
-	// workspace
-	return NULL;
+	int index = list_find(output->children, workspace);
+	size_t new_index = wrap(index + dir, output->children->length);
+	return output->children->items[new_index];
 }
 
 /**
  * Get the previous or next workspace. If the first/last workspace on an output
- * is active, proceed to the previous/next output's previous/next workspace. If
- * next is false, the previous workspace is returned, otherwise the next one is
- * returned.
+ * is active, proceed to the previous/next output's previous/next workspace.
  */
-struct sway_container *workspace_prev_next_impl(
-		struct sway_container *workspace, bool next) {
+static struct sway_container *workspace_prev_next_impl(
+		struct sway_container *workspace, int dir) {
 	if (!workspace) {
 		return NULL;
 	}
@@ -331,52 +321,40 @@ struct sway_container *workspace_prev_next_impl(
 		return NULL;
 	}
 
-	struct sway_container *current_output = workspace->parent;
-	int offset = next ? 1 : -1;
-	int start = next ? 0 : 1;
-	int end;
-	if (next) {
-		end = current_output->children->length - 1;
+	struct sway_container *output = workspace->parent;
+	int index = list_find(output->children, workspace);
+	int new_index = index + dir;
+
+	if (new_index >= 0 && new_index < output->children->length) {
+		return output->children->items[index + dir];
+	}
+
+	// Look on a different output
+	int output_index = list_find(root_container.children, output);
+	new_index = wrap(output_index + dir, root_container.children->length);
+	output = root_container.children->items[new_index];
+
+	if (dir == 1) {
+		return output->children->items[0];
 	} else {
-		end = current_output->children->length;
+		return output->children->items[output->children->length - 1];
 	}
-	int i;
-	for (i = start; i < end; i++) {
-		if (current_output->children->items[i] == workspace) {
-			return current_output->children->items[i + offset];
-		}
-	}
-
-	// Given workspace is the first/last on the output, jump to the
-	// previous/next output
-	int num_outputs = root_container.children->length;
-	for (i = 0; i < num_outputs; i++) {
-		if (root_container.children->items[i] == current_output) {
-			struct sway_container *next_output = root_container.children->items[
-				wrap(i + offset, num_outputs)];
-			return workspace_output_prev_next_impl(next_output, next);
-		}
-	}
-
-	// Doesn't happen, at worst the for loop returns the previously active
-	// workspace on the active output
-	return NULL;
 }
 
 struct sway_container *workspace_output_next(struct sway_container *current) {
-	return workspace_output_prev_next_impl(current, true);
+	return workspace_output_prev_next_impl(current, 1);
 }
 
 struct sway_container *workspace_next(struct sway_container *current) {
-	return workspace_prev_next_impl(current, true);
+	return workspace_prev_next_impl(current, 1);
 }
 
 struct sway_container *workspace_output_prev(struct sway_container *current) {
-	return workspace_output_prev_next_impl(current, false);
+	return workspace_output_prev_next_impl(current, -1);
 }
 
 struct sway_container *workspace_prev(struct sway_container *current) {
-	return workspace_prev_next_impl(current, false);
+	return workspace_prev_next_impl(current, -1);
 }
 
 bool workspace_switch(struct sway_container *workspace,
