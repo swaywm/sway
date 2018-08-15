@@ -56,6 +56,7 @@ struct sway_seat {
 	// Operations (drag and resize)
 	enum {
 		OP_NONE,
+		OP_MOUSEDOWN,
 		OP_MOVE,
 		OP_RESIZE_FLOATING,
 		OP_RESIZE_TILING,
@@ -156,6 +157,9 @@ struct seat_config *seat_get_config(struct sway_seat *seat);
 bool seat_is_input_allowed(struct sway_seat *seat, struct wlr_surface *surface);
 
 void drag_icon_update_position(struct sway_drag_icon *icon);
+
+void seat_begin_mousedown(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, double sx, double sy);
 
 void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button);

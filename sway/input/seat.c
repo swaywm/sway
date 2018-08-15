@@ -954,6 +954,17 @@ struct seat_config *seat_get_config(struct sway_seat *seat) {
 	return NULL;
 }
 
+void seat_begin_mousedown(struct sway_seat *seat, struct sway_container *con,
+		uint32_t button, double sx, double sy) {
+	seat->operation = OP_MOUSEDOWN;
+	seat->op_container = con;
+	seat->op_button = button;
+	seat->op_ref_lx = seat->cursor->cursor->x;
+	seat->op_ref_ly = seat->cursor->cursor->y;
+	seat->op_ref_con_lx = sx;
+	seat->op_ref_con_ly = sy;
+}
+
 void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button) {
 	if (!seat->cursor) {
@@ -1007,6 +1018,7 @@ void seat_begin_resize_tiling(struct sway_seat *seat,
 }
 
 void seat_end_mouse_operation(struct sway_seat *seat) {
+	int operation = seat->operation;
 	if (seat->operation == OP_MOVE) {
 		// We "move" the container to its own location so it discovers its
 		// output again.
@@ -1015,7 +1027,17 @@ void seat_end_mouse_operation(struct sway_seat *seat) {
 	}
 	seat->operation = OP_NONE;
 	seat->op_container = NULL;
-	cursor_set_image(seat->cursor, "left_ptr", NULL);
+	if (operation == OP_MOUSEDOWN) {
+		// Set the cursor's previous coords to the x/y at the start of the
+		// operation, so the container change will be detected if using
+		// focus_follows_mouse and the cursor moved off the original container
+		// during the operation.
+		seat->cursor->previous.x = seat->op_ref_lx;
+		seat->cursor->previous.y = seat->op_ref_ly;
+		cursor_send_pointer_motion(seat->cursor, 0, true);
+	} else {
+		cursor_set_image(seat->cursor, "left_ptr", NULL);
+	}
 }
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
