@@ -284,7 +284,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	struct wlr_surface_state *surface_state = &xsurface->surface->current;
 
-	if (view->swayc->instructions->length) {
+	if (view->swayc->instruction) {
 		transaction_notify_view_ready_by_size(view,
 				surface_state->width, surface_state->height);
 	} else if (container_is_floating(view->swayc)) {

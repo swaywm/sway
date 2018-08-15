@@ -108,7 +108,6 @@ struct sway_container *container_create(enum sway_container_type type) {
 	c->layout = L_NONE;
 	c->type = type;
 	c->alpha = 1.0f;
-	c->instructions = create_list();
 
 	if (type != C_VIEW) {
 		c->children = create_list();
@@ -140,8 +139,8 @@ void container_free(struct sway_container *cont) {
 				"Tried to free container which wasn't marked as destroying")) {
 		return;
 	}
-	if (!sway_assert(cont->instructions->length == 0,
-				"Tried to free container with pending instructions")) {
+	if (!sway_assert(cont->ntxnrefs == 0, "Tried to free container "
+				"which is still referenced by transactions")) {
 		return;
 	}
 	free(cont->name);
@@ -150,7 +149,6 @@ void container_free(struct sway_container *cont) {
 	wlr_texture_destroy(cont->title_focused_inactive);
 	wlr_texture_destroy(cont->title_unfocused);
 	wlr_texture_destroy(cont->title_urgent);
-	list_free(cont->instructions);
 	list_free(cont->children);
 	list_free(cont->current.children);
 

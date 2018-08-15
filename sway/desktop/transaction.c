@@ -43,12 +43,14 @@ struct sway_transaction_instruction {
 	struct sway_container *container;
 	struct sway_container_state state;
 	uint32_t serial;
-	bool ready;
 };
 
 static struct sway_transaction *transaction_create() {
 	struct sway_transaction *transaction =
 		calloc(1, sizeof(struct sway_transaction));
+	if (!sway_assert(transaction, "Unable to allocate transaction")) {
+		return NULL;
+	}
 	transaction->instructions = create_list();
 	if (server.debug_txn_timings) {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->create_time);
@@ -62,13 +64,11 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 		struct sway_transaction_instruction *instruction =
 			transaction->instructions->items[i];
 		struct sway_container *con = instruction->container;
-		for (int j = 0; j < con->instructions->length; ++j) {
-			if (con->instructions->items[j] == instruction) {
-				list_del(con->instructions, j);
-				break;
-			}
+		con->ntxnrefs--;
+		if (con->instruction == instruction) {
+			con->instruction = NULL;
 		}
-		if (con->destroying && !con->instructions->length) {
+		if (con->destroying && con->ntxnrefs == 0) {
 			container_free(con);
 		}
 		free(instruction);
@@ -130,12 +130,16 @@ static void transaction_add_container(struct sway_transaction *transaction,
 		struct sway_container *container) {
 	struct sway_transaction_instruction *instruction =
 		calloc(1, sizeof(struct sway_transaction_instruction));
+	if (!sway_assert(instruction, "Unable to allocate instruction")) {
+		return;
+	}
 	instruction->transaction = transaction;
 	instruction->container = container;
 
 	copy_pending_state(container, &instruction->state);
 
 	list_add(transaction->instructions, instruction);
+	container->ntxnrefs++;
 }
 
 /**
@@ -195,21 +199,11 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		memcpy(&container->current, &instruction->state,
 				sizeof(struct sway_container_state));
 
-		if (container->type == C_VIEW) {
-			if (container->destroying) {
-				if (container->instructions->length == 1 &&
-						container->sway_view->saved_buffer) {
-					view_remove_saved_buffer(container->sway_view);
-				}
-			} else {
-				if (container->sway_view->saved_buffer) {
-					view_remove_saved_buffer(container->sway_view);
-				}
-				if (container->instructions->length > 1) {
-					view_save_buffer(container->sway_view);
-				}
-			}
+		if (container->type == C_VIEW && container->sway_view->saved_buffer) {
+			view_remove_saved_buffer(container->sway_view);
 		}
+
+		container->instruction = NULL;
 	}
 }
 
@@ -269,20 +263,8 @@ static bool should_configure(struct sway_container *con,
 	if (con->destroying) {
 		return false;
 	}
-	// The settled dimensions are what size the view will be once any pending
-	// configures have applied (excluding the one we might be configuring now).
-	// If these match the dimensions that this transaction wants then we don't
-	// need to configure it.
-	int settled_width = con->current.view_width;
-	int settled_height = con->current.view_height;
-	if (con->instructions->length) {
-		struct sway_transaction_instruction *last_instruction =
-			con->instructions->items[con->instructions->length - 1];
-		settled_width = last_instruction->state.view_width;
-		settled_height = last_instruction->state.view_height;
-	}
-	if (settled_width == instruction->state.view_width &&
-			settled_height == instruction->state.view_height) {
+	if (con->current.view_width == instruction->state.view_width &&
+			con->current.view_height == instruction->state.view_height) {
 		return false;
 	}
 	return true;
@@ -312,10 +294,10 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			struct timespec when;
 			wlr_surface_send_frame_done(con->sway_view->surface, &when);
 		}
-		if (con->type == C_VIEW && !con->sway_view->saved_buffer) {
+		if (con->type == C_VIEW) {
 			view_save_buffer(con->sway_view);
 		}
-		list_add(con->instructions, instruction);
+		con->instruction = instruction;
 	}
 	transaction->num_configures = transaction->num_waiting;
 	if (server.debug_txn_timings) {
@@ -347,7 +329,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 
 static void set_instruction_ready(
 		struct sway_transaction_instruction *instruction) {
-	instruction->ready = true;
 	struct sway_transaction *transaction = instruction->transaction;
 
 	if (server.debug_txn_timings) {
@@ -371,44 +352,25 @@ static void set_instruction_ready(
 			wl_event_source_timer_update(transaction->timer, 0);
 		}
 	}
-}
 
-/**
- * Mark all of the view's instructions as ready up to and including the
- * instruction at the given index. This allows the view to skip a configure.
- */
-static void set_instructions_ready(struct sway_view *view, int index) {
-	for (int i = 0; i <= index; ++i) {
-		struct sway_transaction_instruction *instruction =
-			view->swayc->instructions->items[i];
-		if (!instruction->ready) {
-			set_instruction_ready(instruction);
-		}
-	}
+	instruction->container->instruction = NULL;
 	transaction_progress_queue();
 }
 
-void transaction_notify_view_ready(struct sway_view *view, uint32_t serial) {
-	for (int i = 0; i < view->swayc->instructions->length; ++i) {
-		struct sway_transaction_instruction *instruction =
-			view->swayc->instructions->items[i];
-		if (instruction->serial == serial && !instruction->ready) {
-			set_instructions_ready(view, i);
-			return;
-		}
+void transaction_notify_view_ready_by_serial(struct sway_view *view,
+		uint32_t serial) {
+	struct sway_transaction_instruction *instruction = view->swayc->instruction;
+	if (view->swayc->instruction->serial == serial) {
+		set_instruction_ready(instruction);
 	}
 }
 
 void transaction_notify_view_ready_by_size(struct sway_view *view,
 		int width, int height) {
-	for (int i = 0; i < view->swayc->instructions->length; ++i) {
-		struct sway_transaction_instruction *instruction =
-			view->swayc->instructions->items[i];
-		if (!instruction->ready && instruction->state.view_width == width &&
-				instruction->state.view_height == height) {
-			set_instructions_ready(view, i);
-			return;
-		}
+	struct sway_transaction_instruction *instruction = view->swayc->instruction;
+	if (instruction->state.view_width == width &&
+			instruction->state.view_height == height) {
+		set_instruction_ready(instruction);
 	}
 }
 
@@ -417,6 +379,9 @@ void transaction_commit_dirty(void) {
 		return;
 	}
 	struct sway_transaction *transaction = transaction_create();
+	if (!transaction) {
+		return;
+	}
 	for (int i = 0; i < server.dirty_containers->length; ++i) {
 		struct sway_container *container = server.dirty_containers->items[i];
 		transaction_add_container(transaction, container);
