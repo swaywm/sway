@@ -20,14 +20,7 @@
 #include "log.h"
 
 static int index_child(const struct sway_container *child) {
-	struct sway_container *parent = child->parent;
-	for (int i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == child) {
-			return i;
-		}
-	}
-	// This happens if the child is a floating container
-	return -1;
+	return list_find(child->parent->children, child);
 }
 
 static void container_handle_fullscreen_reparent(struct sway_container *con,
@@ -125,11 +118,9 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	}
 
 	struct sway_container *parent = child->parent;
-	for (int i = 0; i < parent->children->length; ++i) {
-		if (parent->children->items[i] == child) {
-			list_del(parent->children, i);
-			break;
-		}
+	int index = index_child(child);
+	if (index != -1) {
+		list_del(parent->children, index);
 	}
 	child->parent = NULL;
 	container_notify_subtree_changed(parent);

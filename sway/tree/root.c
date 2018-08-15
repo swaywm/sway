@@ -84,11 +84,9 @@ void root_scratchpad_remove_container(struct sway_container *con) {
 		return;
 	}
 	con->scratchpad = false;
-	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
-		if (root_container.sway_root->scratchpad->items[i] == con) {
-			list_del(root_container.sway_root->scratchpad, i);
-			break;
-		}
+	int index = list_find(root_container.sway_root->scratchpad, con);
+	if (index != -1) {
+		list_del(root_container.sway_root->scratchpad, index);
 	}
 }
 
