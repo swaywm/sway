@@ -106,7 +106,8 @@ static void get_constraints(struct sway_view *view, double *min_width,
 	*max_height = state->max_height > 0 ? state->max_height : DBL_MAX;
 }
 
-static const char *get_string_prop(struct sway_view *view, enum sway_view_prop prop) {
+static const char *get_string_prop(struct sway_view *view,
+		enum sway_view_prop prop) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return NULL;
 	}
@@ -118,6 +119,16 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 	default:
 		return NULL;
 	}
+}
+
+static void get_geometry(struct sway_view *view, struct wlr_box *box) {
+	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
+		xdg_shell_v6_view_from_view(view);
+	if (xdg_shell_v6_view == NULL) {
+		return;
+	}
+	struct wlr_xdg_surface_v6 *surface = view->wlr_xdg_surface_v6;
+	wlr_xdg_surface_v6_get_geometry(surface, box);
 }
 
 static uint32_t configure(struct sway_view *view, double lx, double ly,
@@ -228,6 +239,7 @@ static void destroy(struct sway_view *view) {
 static const struct sway_view_impl view_impl = {
 	.get_constraints = get_constraints,
 	.get_string_prop = get_string_prop,
+	.get_geometry = get_geometry,
 	.configure = configure,
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
