@@ -234,10 +234,8 @@ static void render_saved_view(struct sway_view *view,
 		.width = view->saved_buffer_width,
 		.height = view->saved_buffer_height,
 	};
-	struct wlr_box geometry;
-	view_get_geometry(view, &geometry);
-	box.x -= geometry.x;
-	box.y -= geometry.y;
+	box.x -= view->saved_geometry.x;
+	box.y -= view->saved_geometry.y;
 
 	struct wlr_box output_box = {
 		.width = output->swayc->current.swayc_width,
