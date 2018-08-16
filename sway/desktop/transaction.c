@@ -170,23 +170,49 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		struct sway_container *container = instruction->container;
 
 		// Damage the old and new locations
-		struct wlr_box old_box = {
+		struct wlr_box old_con_box = {
 			.x = container->current.swayc_x,
 			.y = container->current.swayc_y,
 			.width = container->current.swayc_width,
 			.height = container->current.swayc_height,
 		};
-		struct wlr_box new_box = {
+		struct wlr_box new_con_box = {
 			.x = instruction->state.swayc_x,
 			.y = instruction->state.swayc_y,
 			.width = instruction->state.swayc_width,
 			.height = instruction->state.swayc_height,
 		};
+		// Handle geometry, which may overflow the bounds of the container
+		struct wlr_box old_surface_box = {0,0,0,0};
+		struct wlr_box new_surface_box = {0,0,0,0};
+		if (container->type == C_VIEW) {
+			struct sway_view *view = container->sway_view;
+			if (container->sway_view->saved_buffer) {
+				old_surface_box.x =
+					container->current.view_x - view->saved_geometry.x;
+				old_surface_box.y =
+					container->current.view_y - view->saved_geometry.y;
+				old_surface_box.width = view->saved_buffer_width;
+				old_surface_box.height = view->saved_buffer_height;
+			}
+			struct wlr_surface *surface = container->sway_view->surface;
+			if (surface) {
+				struct wlr_box geometry;
+				view_get_geometry(view, &geometry);
+				new_surface_box.x = instruction->state.view_x - geometry.x;
+				new_surface_box.y = instruction->state.view_y - geometry.y;
+				new_surface_box.width = surface->current.width;
+				new_surface_box.height = surface->current.height;
+			}
+		}
 		for (int j = 0; j < root_container.current.children->length; ++j) {
-			struct sway_container *output = root_container.current.children->items[j];
+			struct sway_container *output =
+				root_container.current.children->items[j];
 			if (output->sway_output) {
-				output_damage_box(output->sway_output, &old_box);
-				output_damage_box(output->sway_output, &new_box);
+				output_damage_box(output->sway_output, &old_con_box);
+				output_damage_box(output->sway_output, &new_con_box);
+				output_damage_box(output->sway_output, &old_surface_box);
+				output_damage_box(output->sway_output, &new_surface_box);
 			}
 		}
 
@@ -297,6 +323,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		}
 		if (con->type == C_VIEW) {
 			view_save_buffer(con->sway_view);
+			view_get_geometry(con->sway_view, &con->sway_view->saved_geometry);
 		}
 		con->instruction = instruction;
 	}
@@ -355,7 +382,9 @@ static void set_instruction_ready(
 	}
 
 	instruction->container->instruction = NULL;
-	transaction_progress_queue();
+	if (!txn_debug) {
+		transaction_progress_queue();
+	}
 }
 
 void transaction_notify_view_ready_by_serial(struct sway_view *view,

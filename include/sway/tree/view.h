@@ -88,6 +88,7 @@ struct sway_view {
 
 	struct wlr_buffer *saved_buffer;
 	int saved_buffer_width, saved_buffer_height;
+	struct wlr_box saved_geometry; // The "old" geometry during a transaction
 
 	bool destroying;
 
@@ -241,6 +242,8 @@ const char *view_get_shell(struct sway_view *view);
 
 void view_get_constraints(struct sway_view *view, double *min_width,
 		double *max_width, double *min_height, double *max_height);
+
+void view_get_geometry(struct sway_view *view, struct wlr_box *box);
 
 uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);

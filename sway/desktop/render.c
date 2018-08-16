@@ -192,10 +192,12 @@ static void render_view_toplevels(struct sway_view *view,
 		.damage = damage,
 		.alpha = alpha,
 	};
+	struct wlr_box geometry;
+	view_get_geometry(view, &geometry);
 	// Render all toplevels without descending into popups
 	output_surface_for_each_surface(output, view->surface,
-			view->swayc->current.view_x - output->wlr_output->lx,
-			view->swayc->current.view_y - output->wlr_output->ly,
+			view->swayc->current.view_x - output->wlr_output->lx - geometry.x,
+			view->swayc->current.view_y - output->wlr_output->ly - geometry.y,
 			render_surface_iterator, &data);
 }
 
@@ -232,6 +234,10 @@ static void render_saved_view(struct sway_view *view,
 		.width = view->saved_buffer_width,
 		.height = view->saved_buffer_height,
 	};
+	struct wlr_box geometry;
+	view_get_geometry(view, &geometry);
+	box.x -= geometry.x;
+	box.y -= geometry.y;
 
 	struct wlr_box output_box = {
 		.width = output->swayc->current.swayc_width,
