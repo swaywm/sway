@@ -266,7 +266,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 		render_view_toplevels(view, output, damage, view->swayc->alpha);
 	}
 
-	if (view->using_csd) {
+	if (view->swayc->current.using_csd) {
 		return;
 	}
 
@@ -585,7 +585,7 @@ static void render_container_simple(struct sway_output *output,
 				marks_texture = view->marks_unfocused;
 			}
 
-			if (!view->using_csd) {
+			if (!view->swayc->current.using_csd) {
 				if (state->border == B_NORMAL) {
 					render_titlebar(output, damage, child, state->swayc_x,
 							state->swayc_y, state->swayc_width, colors,
@@ -777,7 +777,7 @@ static void render_floating_container(struct sway_output *soutput,
 			marks_texture = view->marks_unfocused;
 		}
 
-		if (!view->using_csd) {
+		if (!view->swayc->current.using_csd) {
 			if (con->current.border == B_NORMAL) {
 				render_titlebar(soutput, damage, con, con->current.swayc_x,
 						con->current.swayc_y, con->current.swayc_width, colors,

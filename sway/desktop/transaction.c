@@ -107,6 +107,7 @@ static void copy_pending_state(struct sway_container *container,
 		state->border_left = view->border_left;
 		state->border_right = view->border_right;
 		state->border_bottom = view->border_bottom;
+		state->using_csd = view->using_csd;
 	} else if (container->type == C_WORKSPACE) {
 		state->ws_fullscreen = container->sway_workspace->fullscreen;
 		state->ws_floating = container->sway_workspace->floating;
