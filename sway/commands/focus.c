@@ -46,14 +46,13 @@ static struct cmd_results *focus_mode(struct sway_container *con,
 
 	struct sway_container *new_focus = NULL;
 	if (floating) {
-		new_focus = seat_get_focus_inactive(seat, ws->sway_workspace->floating);
+		new_focus = seat_get_focus_inactive_floating(seat, ws);
 	} else {
 		new_focus = seat_get_focus_inactive_tiling(seat, ws);
 	}
-	if (!new_focus) {
-		new_focus = ws;
+	if (new_focus) {
+		seat_set_focus(seat, new_focus);
 	}
-	seat_set_focus(seat, new_focus);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
