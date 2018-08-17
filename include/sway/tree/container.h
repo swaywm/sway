@@ -83,6 +83,7 @@ struct sway_container_state {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+	bool using_csd;
 
 	// Workspace properties
 	struct sway_container *ws_fullscreen;
