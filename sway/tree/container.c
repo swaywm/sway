@@ -1089,6 +1089,7 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 	con->y = view->y - top;
 	con->width = view->width + border_width * 2;
 	con->height = top + view->height + border_width;
+	container_set_dirty(con);
 }
 
 bool container_is_floating(struct sway_container *container) {

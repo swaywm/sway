@@ -282,11 +282,19 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	struct wlr_surface_state *surface_state = &xsurface->surface->current;
+	struct wlr_surface_state *state = &xsurface->surface->current;
 
 	if (view->swayc->instruction) {
 		transaction_notify_view_ready_by_size(view,
-				surface_state->width, surface_state->height);
+				state->width, state->height);
+	} else if ((state->width != view->width || state->height != view->height) &&
+				container_is_floating(view->swayc)) {
+		// eg. The Firefox "Save As" dialog when downloading a file
+		// It maps at a small size then changes afterwards.
+		view->width = state->width;
+		view->height = state->height;
+		container_set_geometry_from_floating_view(view->swayc);
+		transaction_commit_dirty();
 	}
 
 	view_damage_from(view);
