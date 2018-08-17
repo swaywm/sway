@@ -822,18 +822,7 @@ void config_update_font_height(bool recalculate) {
 	size_t prev_max_height = config->font_height;
 	config->font_height = 0;
 
-	container_for_each_descendant(&root_container,
-			find_font_height_iterator, &recalculate);
-
-	// Also consider floating views
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *output = root_container.children->items[i];
-		for (int j = 0; j < output->children->length; ++j) {
-			struct sway_container *ws = output->children->items[j];
-			container_for_each_descendant(ws->sway_workspace->floating,
-					find_font_height_iterator, &recalculate);
-		}
-	}
+	root_for_each_container(find_font_height_iterator, &recalculate);
 
 	if (config->font_height != prev_max_height) {
 		arrange_windows(&root_container);

@@ -244,8 +244,7 @@ struct sway_container *workspace_by_number(const char* name) {
 	if (wbnd.len <= 0) {
 		return NULL;
 	}
-	return container_find(&root_container,
-			_workspace_by_number, (void *) &wbnd);
+	return root_find_workspace(_workspace_by_number, (void *) &wbnd);
 }
 
 static bool _workspace_by_name(struct sway_container *view, void *data) {
@@ -274,11 +273,11 @@ struct sway_container *workspace_by_name(const char *name) {
 	} else if (strcmp(name, "current") == 0) {
 		return current_workspace;
 	} else if (strcasecmp(name, "back_and_forth") == 0) {
-		return prev_workspace_name ? container_find(&root_container,
-				_workspace_by_name, (void *)prev_workspace_name) : NULL;
+		return prev_workspace_name ?
+			root_find_workspace(_workspace_by_name, (void*)prev_workspace_name)
+			: NULL;
 	} else {
-		return container_find(&root_container, _workspace_by_name,
-				(void *)name);
+		return root_find_workspace(_workspace_by_name, (void*)name);
 	}
 }
 
@@ -518,8 +517,7 @@ struct sway_container *workspace_output_get_highest_available(
 			continue;
 		}
 
-		struct sway_container *output = container_find(&root_container,
-				_output_by_name, name);
+		struct sway_container *output = root_find_output(_output_by_name, name);
 		if (output) {
 			return output;
 		}
@@ -528,14 +526,69 @@ struct sway_container *workspace_output_get_highest_available(
 	return NULL;
 }
 
+static bool find_urgent_iterator(struct sway_container *con, void *data) {
+	return con->type == C_VIEW && view_is_urgent(con->sway_view);
+}
+
 void workspace_detect_urgent(struct sway_container *workspace) {
-	bool new_urgent = container_has_urgent_child(workspace);
+	bool new_urgent = (bool)workspace_find_container(workspace,
+			find_urgent_iterator, NULL);
 
 	if (workspace->sway_workspace->urgent != new_urgent) {
 		workspace->sway_workspace->urgent = new_urgent;
 		ipc_event_workspace(NULL, workspace, "urgent");
 		container_damage_whole(workspace);
 	}
+}
+
+void workspace_for_each_container(struct sway_container *ws,
+		void (*f)(struct sway_container *con, void *data), void *data) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	// Tiling
+	for (int i = 0; i < ws->children->length; ++i) {
+		struct sway_container *container = ws->children->items[i];
+		f(container, data);
+		container_for_each_child(container, f, data);
+	}
+	// Floating
+	for (int i = 0; i < ws->sway_workspace->floating->children->length; ++i) {
+		struct sway_container *container =
+			ws->sway_workspace->floating->children->items[i];
+		f(container, data);
+		container_for_each_child(container, f, data);
+	}
+}
+
+struct sway_container *workspace_find_container(struct sway_container *ws,
+		bool (*test)(struct sway_container *con, void *data), void *data) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return NULL;
+	}
+	struct sway_container *result = NULL;
+	// Tiling
+	for (int i = 0; i < ws->children->length; ++i) {
+		struct sway_container *child = ws->children->items[i];
+		if (test(child, data)) {
+			return child;
+		}
+		if ((result = container_find_child(child, test, data))) {
+			return result;
+		}
+	}
+	// Floating
+	for (int i = 0; i < ws->sway_workspace->floating->children->length; ++i) {
+		struct sway_container *child =
+			ws->sway_workspace->floating->children->items[i];
+		if (test(child, data)) {
+			return child;
+		}
+		if ((result = container_find_child(child, test, data))) {
+			return result;
+		}
+	}
+	return NULL;
 }
 
 struct sway_container *workspace_wrap_children(struct sway_container *ws) {

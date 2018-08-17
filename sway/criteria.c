@@ -167,8 +167,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			return false;
 		}
 		list_t *urgent_views = create_list();
-		container_for_each_descendant(&root_container,
-				find_urgent_iterator, urgent_views);
+		root_for_each_container(find_urgent_iterator, urgent_views);
 		list_stable_sort(urgent_views, cmp_urgent);
 		struct sway_view *target;
 		if (criteria->urgent == 'o') { // oldest
@@ -228,17 +227,7 @@ list_t *criteria_get_views(struct criteria *criteria) {
 		.criteria = criteria,
 		.matches = matches,
 	};
-	container_for_each_descendant(&root_container,
-		criteria_get_views_iterator, &data);
-
-	// Scratchpad items which are hidden are not in the tree.
-	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
-		struct sway_container *con =
-			root_container.sway_root->scratchpad->items[i];
-		if (!con->parent) {
-			criteria_get_views_iterator(con, &data);
-		}
-	}
+	root_for_each_container(criteria_get_views_iterator, &data);
 	return matches;
 }
 

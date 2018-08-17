@@ -303,15 +303,14 @@ struct send_frame_done_data {
 
 static void send_frame_done_container_iterator(struct sway_container *con,
 		void *_data) {
-	struct send_frame_done_data *data = _data;
-	if (!sway_assert(con->type == C_VIEW, "expected a view")) {
+	if (con->type != C_VIEW) {
 		return;
 	}
-
 	if (!view_is_visible(con->sway_view)) {
 		return;
 	}
 
+	struct send_frame_done_data *data = _data;
 	output_view_for_each_surface(data->output, con->sway_view,
 		send_frame_done_iterator, data->when);
 }
@@ -322,8 +321,8 @@ static void send_frame_done_container(struct sway_output *output,
 		.output = output,
 		.when = when,
 	};
-	container_descendants(con, C_VIEW,
-		send_frame_done_container_iterator, &data);
+	output_for_each_container(output->swayc,
+			send_frame_done_container_iterator, &data);
 }
 
 static void send_frame_done(struct sway_output *output, struct timespec *when) {

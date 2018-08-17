@@ -50,13 +50,13 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	if (strcasecmp(argv[2], "id") == 0) {
 #ifdef HAVE_XWAYLAND
 		xcb_window_t id = strtol(value, NULL, 0);
-		other = container_find(&root_container, test_id, (void *)&id);
+		other = root_find_container(test_id, (void *)&id);
 #endif
 	} else if (strcasecmp(argv[2], "con_id") == 0) {
 		size_t con_id = atoi(value);
-		other = container_find(&root_container, test_con_id, (void *)con_id);
+		other = root_find_container(test_con_id, (void *)con_id);
 	} else if (strcasecmp(argv[2], "mark") == 0) {
-		other = container_find(&root_container, test_mark, (void *)value);
+		other = root_find_container(test_mark, (void *)value);
 	} else {
 		free(value);
 		return cmd_results_new(CMD_INVALID, "swap", EXPECTED_SYNTAX);

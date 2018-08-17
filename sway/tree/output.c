@@ -103,6 +103,57 @@ struct sway_container *output_create(
 	return output;
 }
 
+void output_for_each_workspace(struct sway_container *output,
+		void (*f)(struct sway_container *con, void *data), void *data) {
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return;
+	}
+	for (int i = 0; i < output->children->length; ++i) {
+		struct sway_container *workspace = output->children->items[i];
+		f(workspace, data);
+	}
+}
+
+void output_for_each_container(struct sway_container *output,
+		void (*f)(struct sway_container *con, void *data), void *data) {
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return;
+	}
+	for (int i = 0; i < output->children->length; ++i) {
+		struct sway_container *workspace = output->children->items[i];
+		workspace_for_each_container(workspace, f, data);
+	}
+}
+
+struct sway_container *output_find_workspace(struct sway_container *output,
+		bool (*test)(struct sway_container *con, void *data), void *data) {
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return NULL;
+	}
+	for (int i = 0; i < output->children->length; ++i) {
+		struct sway_container *workspace = output->children->items[i];
+		if (test(workspace, data)) {
+			return workspace;
+		}
+	}
+	return NULL;
+}
+
+struct sway_container *output_find_container(struct sway_container *output,
+		bool (*test)(struct sway_container *con, void *data), void *data) {
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return NULL;
+	}
+	struct sway_container *result = NULL;
+	for (int i = 0; i < output->children->length; ++i) {
+		struct sway_container *workspace = output->children->items[i];
+		if ((result = workspace_find_container(workspace, test, data))) {
+			return result;
+		}
+	}
+	return NULL;
+}
+
 static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 	struct sway_container *a = *(void **)_a;
 	struct sway_container *b = *(void **)_b;
@@ -122,4 +173,3 @@ static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
 void output_sort_workspaces(struct sway_container *output) {
 	list_stable_sort(output->children, sort_workspace_cmp_qsort);
 }
-

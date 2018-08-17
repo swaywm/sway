@@ -256,3 +256,81 @@ void root_record_workspace_pid(pid_t pid) {
 			&pw->output_destroy);
 	wl_list_insert(&pid_workspaces, &pw->link);
 }
+
+void root_for_each_workspace(void (*f)(struct sway_container *con, void *data),
+		void *data) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		output_for_each_workspace(output, f, data);
+	}
+}
+
+void root_for_each_container(void (*f)(struct sway_container *con, void *data),
+		void *data) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		output_for_each_container(output, f, data);
+	}
+
+	// Scratchpad
+	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
+		struct sway_container *container =
+			root_container.sway_root->scratchpad->items[i];
+		// If the container has a parent then it's visible on a workspace
+		// and will have been iterated in the previous for loop. So we only
+		// iterate the hidden scratchpad containers here.
+		if (!container->parent) {
+			f(container, data);
+			container_for_each_child(container, f, data);
+		}
+	}
+}
+
+struct sway_container *root_find_output(
+		bool (*test)(struct sway_container *con, void *data), void *data) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		if (test(output, data)) {
+			return output;
+		}
+	}
+	return NULL;
+}
+
+struct sway_container *root_find_workspace(
+		bool (*test)(struct sway_container *con, void *data), void *data) {
+	struct sway_container *result = NULL;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		if ((result = output_find_workspace(output, test, data))) {
+			return result;
+		}
+	}
+	return NULL;
+}
+
+struct sway_container *root_find_container(
+		bool (*test)(struct sway_container *con, void *data), void *data) {
+	struct sway_container *result = NULL;
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		if ((result = output_find_container(output, test, data))) {
+			return result;
+		}
+	}
+
+	// Scratchpad
+	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
+		struct sway_container *container =
+			root_container.sway_root->scratchpad->items[i];
+		if (!container->parent) {
+			if (test(container, data)) {
+				return container;
+			}
+			if ((result = container_find_child(container, test, data))) {
+				return result;
+			}
+		}
+	}
+	return NULL;
+}

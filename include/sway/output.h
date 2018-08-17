@@ -95,4 +95,16 @@ void output_drag_icons_for_each_surface(struct sway_output *output,
 	struct wl_list *drag_icons, sway_surface_iterator_func_t iterator,
 	void *user_data);
 
+void output_for_each_workspace(struct sway_container *output,
+		void (*f)(struct sway_container *con, void *data), void *data);
+
+void output_for_each_container(struct sway_container *output,
+		void (*f)(struct sway_container *con, void *data), void *data);
+
+struct sway_container *output_find_workspace(struct sway_container *output,
+		bool (*test)(struct sway_container *con, void *data), void *data);
+
+struct sway_container *output_find_container(struct sway_container *output,
+		bool (*test)(struct sway_container *con, void *data), void *data);
+
 #endif

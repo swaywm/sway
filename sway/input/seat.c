@@ -313,9 +313,6 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 
 static void collect_focus_iter(struct sway_container *con, void *data) {
 	struct sway_seat *seat = data;
-	if (con->type > C_WORKSPACE) {
-		return;
-	}
 	struct sway_seat_container *seat_con =
 		seat_container_from_container(seat, con);
 	if (!seat_con) {
@@ -349,7 +346,8 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	// init the focus stack
 	wl_list_init(&seat->focus_stack);
 
-	container_for_each_descendant(&root_container, collect_focus_iter, seat);
+	root_for_each_workspace(collect_focus_iter, seat);
+	root_for_each_container(collect_focus_iter, seat);
 
 	wl_signal_add(&root_container.sway_root->events.new_container,
 		&seat->new_container);

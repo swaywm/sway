@@ -522,7 +522,7 @@ void ipc_client_disconnect(struct ipc_client *client) {
 
 static void ipc_get_workspaces_callback(struct sway_container *workspace,
 		void *data) {
-	if (workspace->type != C_WORKSPACE) {
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
 		return;
 	}
 	json_object *workspace_json = ipc_json_describe_container(workspace);
@@ -631,8 +631,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_WORKSPACES:
 	{
 		json_object *workspaces = json_object_new_array();
-		container_for_each_descendant(&root_container,
-				ipc_get_workspaces_callback, workspaces);
+		root_for_each_workspace(ipc_get_workspaces_callback, workspaces);
 		const char *json_string = json_object_to_json_string(workspaces);
 		client_valid =
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
@@ -729,8 +728,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_MARKS:
 	{
 		json_object *marks = json_object_new_array();
-		container_descendants(&root_container, C_VIEW, ipc_get_marks_callback,
-				marks);
+		root_for_each_container(ipc_get_marks_callback, marks);
 		const char *json_string = json_object_to_json_string(marks);
 		client_valid =
 			ipc_send_reply(client, json_string, (uint32_t)strlen(json_string));
