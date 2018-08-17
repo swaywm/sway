@@ -1030,12 +1030,13 @@ void container_set_floating(struct sway_container *container, bool enable) {
 	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
 
 	if (enable) {
-		container_remove_child(container);
+		struct sway_container *old_parent = container_remove_child(container);
 		container_add_child(workspace->sway_workspace->floating, container);
 		container_init_floating(container);
 		if (container->type == C_VIEW) {
 			view_set_tiled(container->sway_view, false);
 		}
+		container_reap_empty(old_parent);
 	} else {
 		// Returning to tiled
 		if (container->scratchpad) {
