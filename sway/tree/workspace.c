@@ -258,7 +258,8 @@ struct sway_container *workspace_by_name(const char *name) {
 	struct sway_container *current_workspace = NULL, *current_output = NULL;
 	struct sway_container *focus = seat_get_focus(seat);
 	if (focus) {
-		current_workspace = container_parent(focus, C_WORKSPACE);
+		current_workspace = focus->type == C_WORKSPACE ?
+			focus : container_parent(focus, C_WORKSPACE);
 		current_output = container_parent(focus, C_OUTPUT);
 	}
 
