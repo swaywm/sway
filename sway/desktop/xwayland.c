@@ -293,6 +293,8 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		// It maps at a small size then changes afterwards.
 		view->width = state->width;
 		view->height = state->height;
+		view->swayc->current.view_width = state->width;
+		view->swayc->current.view_height = state->height;
 		container_set_geometry_from_floating_view(view->swayc);
 		transaction_commit_dirty();
 	}
