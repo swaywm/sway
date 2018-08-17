@@ -963,6 +963,7 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_ref_ly = seat->cursor->cursor->y;
 	seat->op_ref_con_lx = sx;
 	seat->op_ref_con_ly = sy;
+	seat->op_moved = false;
 }
 
 void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
@@ -1034,7 +1035,9 @@ void seat_end_mouse_operation(struct sway_seat *seat) {
 		// during the operation.
 		seat->cursor->previous.x = seat->op_ref_lx;
 		seat->cursor->previous.y = seat->op_ref_ly;
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		if (seat->op_moved) {
+			cursor_send_pointer_motion(seat->cursor, 0, true);
+		}
 	} else {
 		cursor_set_image(seat->cursor, "left_ptr", NULL);
 	}

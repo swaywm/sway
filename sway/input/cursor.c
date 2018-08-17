@@ -225,6 +225,7 @@ static void handle_down_motion(struct sway_seat *seat,
 		double sy = seat->op_ref_con_ly + moved_y;
 		wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
 	}
+	seat->op_moved = true;
 }
 
 static void handle_move_motion(struct sway_seat *seat,

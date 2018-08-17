@@ -70,6 +70,7 @@ struct sway_seat {
 	double op_ref_lx, op_ref_ly;         // cursor's x/y at start of op
 	double op_ref_width, op_ref_height;  // container's size at start of op
 	double op_ref_con_lx, op_ref_con_ly; // container's x/y at start of op
+	bool op_moved;                       // if the mouse moved during a down op
 
 	uint32_t last_button;
 	uint32_t last_button_serial;
