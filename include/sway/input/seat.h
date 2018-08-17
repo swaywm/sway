@@ -166,6 +166,9 @@ void seat_begin_resize_floating(struct sway_seat *seat,
 void seat_begin_resize_tiling(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button, enum wlr_edges edge);
 
+struct sway_container *seat_get_focus_inactive_floating(struct sway_seat *seat,
+		struct sway_container *container);
+
 void seat_end_mouse_operation(struct sway_seat *seat);
 
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
