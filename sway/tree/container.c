@@ -737,10 +737,10 @@ void container_for_each_child(struct sway_container *container,
 				container->type == C_VIEW, "Expected a container or view")) {
 		return;
 	}
-	f(container, data);
 	if (container->children)  {
 		for (int i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
+			f(child, data);
 			container_for_each_child(child, f, data);
 		}
 	}
