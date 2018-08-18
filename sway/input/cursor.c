@@ -215,6 +215,19 @@ static enum wlr_edges find_resize_edge(struct sway_container *cont,
 	return edge;
 }
 
+static void handle_down_motion(struct sway_seat *seat,
+		struct sway_cursor *cursor, uint32_t time_msec) {
+	struct sway_container *con = seat->op_container;
+	if (seat_is_input_allowed(seat, con->sway_view->surface)) {
+		double moved_x = cursor->cursor->x - seat->op_ref_lx;
+		double moved_y = cursor->cursor->y - seat->op_ref_ly;
+		double sx = seat->op_ref_con_lx + moved_x;
+		double sy = seat->op_ref_con_ly + moved_y;
+		wlr_seat_pointer_notify_motion(seat->wlr_seat, time_msec, sx, sy);
+	}
+	seat->op_moved = true;
+}
+
 static void handle_move_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
 	struct sway_container *con = seat->op_container;
@@ -397,6 +410,9 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 
 	if (seat->operation != OP_NONE) {
 		switch (seat->operation) {
+		case OP_DOWN:
+			handle_down_motion(seat, cursor, time_msec);
+			break;
 		case OP_MOVE:
 			handle_move_motion(seat, cursor);
 			break;
@@ -741,6 +757,14 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			seat_begin_resize_floating(seat, floater, button, edge);
 			return;
 		}
+	}
+
+	// Handle mousedown on a container surface
+	if (surface && cont && state == WLR_BUTTON_PRESSED) {
+		seat_set_focus(seat, cont);
+		seat_pointer_notify_button(seat, time_msec, button, state);
+		seat_begin_down(seat, cont, button, sx, sy);
+		return;
 	}
 
 	// Handle clicking a container surface
