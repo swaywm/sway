@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <ctype.h>
 #include <string.h>
 #include <strings.h>
 #include "sway/ipc-server.h"
@@ -28,7 +29,7 @@ static void restore_workspaces(struct sway_container *output) {
 		}
 	}
 
-	container_sort_workspaces(output);
+	output_sort_workspaces(output);
 }
 
 struct sway_container *output_create(
@@ -100,5 +101,25 @@ struct sway_container *output_create(
 
 	container_create_notify(output);
 	return output;
+}
+
+static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
+	struct sway_container *a = *(void **)_a;
+	struct sway_container *b = *(void **)_b;
+
+	if (isdigit(a->name[0]) && isdigit(b->name[0])) {
+		int a_num = strtol(a->name, NULL, 10);
+		int b_num = strtol(b->name, NULL, 10);
+		return (a_num < b_num) ? -1 : (a_num > b_num);
+	} else if (isdigit(a->name[0])) {
+		return -1;
+	} else if (isdigit(b->name[0])) {
+		return 1;
+	}
+	return 0;
+}
+
+void output_sort_workspaces(struct sway_container *output) {
+	list_stable_sort(output->children, sort_workspace_cmp_qsort);
 }
 

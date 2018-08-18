@@ -75,7 +75,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 	workspace_output_add_priority(workspace, output);
 
 	container_add_child(output, workspace);
-	container_sort_workspaces(output);
+	output_sort_workspaces(output);
 	container_create_notify(workspace);
 
 	return workspace;
@@ -536,4 +536,16 @@ void workspace_detect_urgent(struct sway_container *workspace) {
 		ipc_event_workspace(NULL, workspace, "urgent");
 		container_damage_whole(workspace);
 	}
+}
+
+struct sway_container *workspace_wrap_children(struct sway_container *ws) {
+	struct sway_container *middle = container_create(C_CONTAINER);
+	middle->layout = ws->layout;
+	while (ws->children->length) {
+		struct sway_container *child = ws->children->items[0];
+		container_remove_child(child);
+		container_add_child(middle, child);
+	}
+	container_add_child(ws, middle);
+	return middle;
 }

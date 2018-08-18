@@ -361,12 +361,4 @@ bool container_is_floating_or_child(struct sway_container *container);
  */
 bool container_is_fullscreen_or_child(struct sway_container *container);
 
-/**
- * Wrap the children of parent in a new container. The new container will be the
- * only child of parent.
- *
- * The new container is returned.
- */
-struct sway_container *container_wrap_children(struct sway_container *parent);
-
 #endif
