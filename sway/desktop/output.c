@@ -140,23 +140,20 @@ void output_surface_for_each_surface(struct sway_output *output,
 void output_view_for_each_surface(struct sway_output *output,
 		struct sway_view *view, sway_surface_iterator_func_t iterator,
 		void *user_data) {
-	struct wlr_box geometry;
-	view_get_geometry(view, &geometry);
 	struct surface_iterator_data data = {
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
 		.ox = view->swayc->current.view_x - output->swayc->current.swayc_x
-			- geometry.x,
+			- view->geometry.x,
 		.oy = view->swayc->current.view_y - output->swayc->current.swayc_y
-			- geometry.y,
+			- view->geometry.y,
 		.width = view->swayc->current.view_width,
 		.height = view->swayc->current.view_height,
 		.rotation = 0, // TODO
 	};
 
-	view_for_each_surface(view,
-		output_for_each_surface_iterator, &data);
+	view_for_each_surface(view, output_for_each_surface_iterator, &data);
 }
 
 void output_view_for_each_popup(struct sway_output *output,

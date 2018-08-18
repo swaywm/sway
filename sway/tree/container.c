@@ -522,13 +522,8 @@ static void surface_at_view(struct sway_container *swayc, double lx, double ly,
 		return;
 	}
 	struct sway_view *sview = swayc->sway_view;
-	double view_sx = lx - sview->x;
-	double view_sy = ly - sview->y;
-
-	struct wlr_box geometry;
-	view_get_geometry(sview, &geometry);
-	view_sx += geometry.x;
-	view_sy += geometry.y;
+	double view_sx = lx - sview->x + sview->geometry.x;
+	double view_sy = ly - sview->y + sview->geometry.y;
 
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;

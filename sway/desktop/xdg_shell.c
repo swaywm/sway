@@ -7,6 +7,7 @@
 #include <wlr/util/edges.h>
 #include "log.h"
 #include "sway/decoration.h"
+#include "sway/desktop.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/server.h"
@@ -122,16 +123,6 @@ static const char *get_string_prop(struct sway_view *view,
 	}
 }
 
-static void get_geometry(struct sway_view *view, struct wlr_box *box) {
-	struct sway_xdg_shell_view *xdg_shell_view =
-		xdg_shell_view_from_view(view);
-	if (xdg_shell_view == NULL) {
-		return;
-	}
-	struct wlr_xdg_surface *surface = view->wlr_xdg_surface;
-	wlr_xdg_surface_get_geometry(surface, box);
-}
-
 static uint32_t configure(struct sway_view *view, double lx, double ly,
 		int width, int height) {
 	struct sway_xdg_shell_view *xdg_shell_view =
@@ -242,7 +233,6 @@ static void destroy(struct sway_view *view) {
 static const struct sway_view_impl view_impl = {
 	.get_constraints = get_constraints,
 	.get_string_prop = get_string_prop,
-	.get_geometry = get_geometry,
 	.configure = configure,
 	.set_activated = set_activated,
 	.set_tiled = set_tiled,
@@ -267,8 +257,24 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	}
 
 	if (view->swayc->instruction) {
+		wlr_xdg_surface_get_geometry(xdg_surface, &view->geometry);
 		transaction_notify_view_ready_by_serial(view,
 				xdg_surface->configure_serial);
+	} else {
+		struct wlr_box new_geo;
+		wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
+
+		if ((new_geo.width != view->width || new_geo.height != view->height) &&
+				container_is_floating(view->swayc)) {
+			// A floating view has unexpectedly sent a new size
+			desktop_damage_view(view);
+			view_update_size(view, new_geo.width, new_geo.height);
+			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+			desktop_damage_view(view);
+			transaction_commit_dirty();
+		} else {
+			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		}
 	}
 
 	view_damage_from(view);

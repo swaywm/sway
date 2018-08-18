@@ -22,3 +22,21 @@ void desktop_damage_whole_container(struct sway_container *con) {
 		}
 	}
 }
+
+void desktop_damage_box(struct wlr_box *box) {
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *cont = root_container.children->items[i];
+		output_damage_box(cont->sway_output, box);
+	}
+}
+
+void desktop_damage_view(struct sway_view *view) {
+	desktop_damage_whole_container(view->swayc);
+	struct wlr_box box = {
+		.x = view->swayc->current.view_x - view->geometry.x,
+		.y = view->swayc->current.view_y - view->geometry.y,
+		.width = view->surface->current.width,
+		.height = view->surface->current.height,
+	};
+	desktop_damage_box(&box);
+}
