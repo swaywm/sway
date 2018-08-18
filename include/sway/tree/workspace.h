@@ -50,4 +50,11 @@ struct sway_container *workspace_output_get_highest_available(
 
 void workspace_detect_urgent(struct sway_container *workspace);
 
+/**
+ * Wrap the workspace's tiling children in a new container.
+ * The new container will be the only direct tiling child of the workspace.
+ * The new container is returned.
+ */
+struct sway_container *workspace_wrap_children(struct sway_container *ws);
+
 #endif

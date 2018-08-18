@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200809L
-#include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -589,28 +588,6 @@ enum sway_container_layout container_get_default_layout(
 	} else {
 		return L_VERT;
 	}
-}
-
-static int sort_workspace_cmp_qsort(const void *_a, const void *_b) {
-	struct sway_container *a = *(void **)_a;
-	struct sway_container *b = *(void **)_b;
-	int retval = 0;
-
-	if (isdigit(a->name[0]) && isdigit(b->name[0])) {
-		int a_num = strtol(a->name, NULL, 10);
-		int b_num = strtol(b->name, NULL, 10);
-		retval = (a_num < b_num) ? -1 : (a_num > b_num);
-	} else if (isdigit(a->name[0])) {
-		retval = -1;
-	} else if (isdigit(b->name[0])) {
-		retval = 1;
-	}
-
-	return retval;
-}
-
-void container_sort_workspaces(struct sway_container *output) {
-	list_stable_sort(output->children, sort_workspace_cmp_qsort);
 }
 
 /**

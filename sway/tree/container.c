@@ -270,7 +270,7 @@ static struct sway_container *container_output_destroy(
 					container_destroy(workspace);
 				}
 
-				container_sort_workspaces(new_output);
+				output_sort_workspaces(new_output);
 			}
 		}
 	}
@@ -1304,16 +1304,4 @@ bool container_is_fullscreen_or_child(struct sway_container *container) {
 	} while (container && container->type != C_WORKSPACE);
 
 	return false;
-}
-
-struct sway_container *container_wrap_children(struct sway_container *parent) {
-	struct sway_container *middle = container_create(C_CONTAINER);
-	middle->layout = parent->layout;
-	while (parent->children->length) {
-		struct sway_container *child = parent->children->items[0];
-		container_remove_child(child);
-		container_add_child(middle, child);
-	}
-	container_add_child(parent, middle);
-	return middle;
 }

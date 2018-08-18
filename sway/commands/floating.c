@@ -8,6 +8,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "list.h"
 
 struct cmd_results *cmd_floating(int argc, char **argv) {
@@ -24,7 +25,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	if (container->type == C_WORKSPACE) {
 		// Wrap the workspace's children in a container so we can float it
 		struct sway_container *workspace = container;
-		container = container_wrap_children(container);
+		container = workspace_wrap_children(container);
 		workspace->layout = L_HORIZ;
 		seat_set_focus(config->handler_context.seat, container);
 	}

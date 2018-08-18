@@ -64,7 +64,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			return cmd_results_new(CMD_FAILURE, "move",
 					"Can't move an empty workspace");
 		}
-		current = container_wrap_children(current);
+		current = workspace_wrap_children(current);
 	} else if (current->type != C_CONTAINER && current->type != C_VIEW) {
 		return cmd_results_new(CMD_FAILURE, "move",
 				"Can only move containers and views.");
@@ -245,7 +245,7 @@ static void workspace_move_to_output(struct sway_container *workspace,
 	// Try to remove an empty workspace from the destination output.
 	container_reap_empty_recursive(new_output_focus);
 
-	container_sort_workspaces(output);
+	output_sort_workspaces(output);
 	seat_set_focus(seat, output);
 	workspace_output_raise_priority(workspace, old_output, output);
 	ipc_event_workspace(NULL, workspace, "move");
@@ -437,7 +437,7 @@ static struct cmd_results *move_to_scratchpad(struct sway_container *con) {
 	if (con->type == C_WORKSPACE) {
 		// Wrap the workspace's children in a container
 		struct sway_container *workspace = con;
-		con = container_wrap_children(con);
+		con = workspace_wrap_children(con);
 		workspace->layout = L_HORIZ;
 	}
 
