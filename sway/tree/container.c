@@ -509,8 +509,8 @@ static void surface_at_view(struct sway_container *swayc, double lx, double ly,
 		return;
 	}
 	struct sway_view *sview = swayc->sway_view;
-	double view_sx = lx - sview->x;
-	double view_sy = ly - sview->y;
+	double view_sx = lx - sview->x + sview->geometry.x;
+	double view_sy = ly - sview->y + sview->geometry.y;
 
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;
@@ -1065,6 +1065,7 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 	con->y = view->y - top;
 	con->width = view->width + border_width * 2;
 	con->height = top + view->height + border_width;
+	container_set_dirty(con);
 }
 
 bool container_is_floating(struct sway_container *container) {

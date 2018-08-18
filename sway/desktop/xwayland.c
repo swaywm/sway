@@ -277,18 +277,44 @@ static const struct sway_view_impl view_impl = {
 	.destroy = destroy,
 };
 
+static void get_geometry(struct sway_view *view, struct wlr_box *box) {
+	box->x = box->y = 0;
+	if (view->surface) {
+		box->width = view->surface->current.width;
+		box->height = view->surface->current.height;
+	} else {
+		box->width = 0;
+		box->height = 0;
+	}
+}
+
 static void handle_commit(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, commit);
 	struct sway_view *view = &xwayland_view->view;
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
-	struct wlr_surface_state *surface_state = &xsurface->surface->current;
+	struct wlr_surface_state *state = &xsurface->surface->current;
 
 	if (view->swayc->instruction) {
+		get_geometry(view, &view->geometry);
 		transaction_notify_view_ready_by_size(view,
-				surface_state->width, surface_state->height);
-	} else if (container_is_floating(view->swayc)) {
-		view_update_size(view, surface_state->width, surface_state->height);
+				state->width, state->height);
+	} else {
+		struct wlr_box new_geo;
+		get_geometry(view, &new_geo);
+
+		if ((new_geo.width != view->width || new_geo.height != view->height) &&
+				container_is_floating(view->swayc)) {
+			// A floating view has unexpectedly sent a new size
+			// eg. The Firefox "Save As" dialog when downloading a file
+			desktop_damage_view(view);
+			view_update_size(view, new_geo.width, new_geo.height);
+			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+			desktop_damage_view(view);
+			transaction_commit_dirty();
+		} else {
+			memcpy(&view->geometry, &new_geo, sizeof(struct wlr_box));
+		}
 	}
 
 	view_damage_from(view);
