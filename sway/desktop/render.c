@@ -229,13 +229,13 @@ static void render_saved_view(struct sway_view *view,
 		return;
 	}
 	struct wlr_box box = {
-		.x = view->swayc->current.view_x - output->swayc->current.swayc_x,
-		.y = view->swayc->current.view_y - output->swayc->current.swayc_y,
+		.x = view->swayc->current.view_x - output->swayc->current.swayc_x -
+			view->saved_geometry.x,
+		.y = view->swayc->current.view_y - output->swayc->current.swayc_y -
+			view->saved_geometry.y,
 		.width = view->saved_buffer_width,
 		.height = view->saved_buffer_height,
 	};
-	box.x -= view->saved_geometry.x;
-	box.y -= view->saved_geometry.y;
 
 	struct wlr_box output_box = {
 		.width = output->swayc->current.swayc_width,
