@@ -726,13 +726,13 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		}
 
 		// Via mod+click
-		struct sway_container *floater = cont;
-		while (floater->parent->layout != L_FLOATING) {
-			floater = floater->parent;
-		}
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
-		if (button == btn_resize) {
+		if (mod_pressed && button == btn_resize) {
+			struct sway_container *floater = cont;
+			while (floater->parent->layout != L_FLOATING) {
+				floater = floater->parent;
+			}
 			edge = 0;
 			edge |= cursor->cursor->x > floater->x + floater->width / 2 ?
 				WLR_EDGE_RIGHT : WLR_EDGE_LEFT;
