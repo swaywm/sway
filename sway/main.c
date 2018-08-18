@@ -235,14 +235,20 @@ static void drop_permissions(bool keep_caps) {
 }
 
 void enable_debug_flag(const char *flag) {
-	if (strcmp(flag, "render-tree") == 0) {
-		enable_debug_tree = true;
-	} else if (strncmp(flag, "damage=", 7) == 0) {
-		damage_debug = &flag[7];
-	} else if (strcmp(flag, "txn-debug") == 0) {
-		txn_debug = true;
+	if (strcmp(flag, "highlight-damage") == 0) {
+		debug.highlight_damage = true;
+	} else if (strcmp(flag, "noatomic") == 0) {
+		debug.noatomic = true;
+	} else if (strcmp(flag, "nodamage") == 0) {
+		debug.nodamage = true;
+	} else if (strcmp(flag, "render-tree") == 0) {
+		debug.render_tree = true;
+	} else if (strcmp(flag, "txn-wait") == 0) {
+		debug.txn_wait = true;
+	} else if (strcmp(flag, "txn-timings") == 0) {
+		debug.txn_timings = true;
 	} else if (strncmp(flag, "txn-timeout=", 12) == 0) {
-		txn_timeout_ms = atoi(&flag[12]);
+		server.txn_timeout_ms = atoi(&flag[12]);
 	}
 }
 

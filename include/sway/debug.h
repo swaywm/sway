@@ -1,15 +1,18 @@
 #ifndef SWAY_DEBUG_H
 #define SWAY_DEBUG_H
+#include <stdbool.h>
 
-// Tree
-extern bool enable_debug_tree;
+struct sway_debug {
+	bool highlight_damage; // Highlight regions of the screen being damaged
+	bool noatomic;         // Ignore atomic layout updates
+	bool nodamage;         // Render the full output on each frame
+	bool render_tree;      // Render the tree overlay
+	bool txn_timings;      // Log verbose messages about transactions
+	bool txn_wait;         // Always wait for the timeout before applying
+};
+
+extern struct sway_debug debug;
+
 void update_debug_tree();
-
-// Damage
-extern const char *damage_debug;
-
-// Transactions
-extern int txn_timeout_ms;
-extern bool txn_debug;
 
 #endif

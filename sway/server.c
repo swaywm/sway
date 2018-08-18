@@ -128,10 +128,11 @@ bool server_init(struct sway_server *server) {
 		return false;
 	}
 
-	const char *debug = getenv("SWAY_DEBUG");
-	if (debug != NULL && strcmp(debug, "txn_timings") == 0) {
-		server->debug_txn_timings = true;
+	// This may have been set already via -Dtxn-timeout
+	if (!server->txn_timeout_ms) {
+		server->txn_timeout_ms = 200;
 	}
+
 	server->dirty_containers = create_list();
 	server->transactions = create_list();
 
