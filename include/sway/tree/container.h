@@ -214,15 +214,11 @@ struct sway_container *container_destroy(struct sway_container *container);
 
 struct sway_container *container_close(struct sway_container *container);
 
-void container_descendants(struct sway_container *root,
-		enum sway_container_type type,
-		void (*func)(struct sway_container *item, void *data), void *data);
-
 /**
  * Search a container's descendants a container based on test criteria. Returns
  * the first container that passes the test.
  */
-struct sway_container *container_find(struct sway_container *container,
+struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
 /**
@@ -244,10 +240,7 @@ struct sway_container *tiling_container_at(
 		struct sway_container *con, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
 
-/**
- * Apply the function for each child of the container depth first.
- */
-void container_for_each_descendant(struct sway_container *container,
+void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data), void *data);
 
 /**

@@ -432,8 +432,10 @@ struct sway_container *container_close(struct sway_container *con) {
 
 	if (con->type == C_VIEW) {
 		view_close(con->sway_view);
-	} else {
-		container_for_each_descendant(con, container_close_func, NULL);
+	} else if (con->type == C_CONTAINER) {
+		container_for_each_child(con, container_close_func, NULL);
+	} else if (con->type == C_WORKSPACE) {
+		workspace_for_each_container(con, container_close_func, NULL);
 	}
 
 	return parent;
@@ -465,23 +467,12 @@ struct sway_container *container_view_create(struct sway_container *sibling,
 	return swayc;
 }
 
-void container_descendants(struct sway_container *root,
-		enum sway_container_type type,
-		void (*func)(struct sway_container *item, void *data), void *data) {
-	if (!root->children || !root->children->length) {
-		return;
-	}
-	for (int i = 0; i < root->children->length; ++i) {
-		struct sway_container *item = root->children->items[i];
-		if (item->type == type) {
-			func(item, data);
-		}
-		container_descendants(item, type, func, data);
-	}
-}
-
-struct sway_container *container_find(struct sway_container *container,
+struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data) {
+	if (!sway_assert(container->type == C_CONTAINER ||
+				container->type == C_VIEW, "Expected a container or view")) {
+		return NULL;
+	}
 	if (!container->children) {
 		return NULL;
 	}
@@ -489,15 +480,11 @@ struct sway_container *container_find(struct sway_container *container,
 		struct sway_container *child = container->children->items[i];
 		if (test(child, data)) {
 			return child;
-		} else {
-			struct sway_container *res = container_find(child, test, data);
-			if (res) {
-				return res;
-			}
 		}
-	}
-	if (container->type == C_WORKSPACE) {
-		return container_find(container->sway_workspace->floating, test, data);
+		struct sway_container *res = container_find_child(child, test, data);
+		if (res) {
+			return res;
+		}
 	}
 	return NULL;
 }
@@ -743,26 +730,20 @@ struct sway_container *container_at(struct sway_container *workspace,
 	return NULL;
 }
 
-void container_for_each_descendant(struct sway_container *container,
+void container_for_each_child(struct sway_container *container,
 		void (*f)(struct sway_container *container, void *data),
 		void *data) {
-	if (!container) {
+	if (!sway_assert(container->type == C_CONTAINER ||
+				container->type == C_VIEW, "Expected a container or view")) {
 		return;
 	}
+	f(container, data);
 	if (container->children)  {
 		for (int i = 0; i < container->children->length; ++i) {
 			struct sway_container *child = container->children->items[i];
-			container_for_each_descendant(child, f, data);
+			container_for_each_child(child, f, data);
 		}
 	}
-	if (container->type == C_WORKSPACE)  {
-		struct sway_container *floating = container->sway_workspace->floating;
-		for (int i = 0; i < floating->children->length; ++i) {
-			struct sway_container *child = floating->children->items[i];
-			container_for_each_descendant(child, f, data);
-		}
-	}
-	f(container, data);
 }
 
 bool container_has_ancestor(struct sway_container *descendant,
@@ -1198,13 +1179,12 @@ void container_set_dirty(struct sway_container *container) {
 	list_add(server.dirty_containers, container);
 }
 
-static bool find_urgent_iterator(struct sway_container *con,
-		void *data) {
+static bool find_urgent_iterator(struct sway_container *con, void *data) {
 	return con->type == C_VIEW && view_is_urgent(con->sway_view);
 }
 
 bool container_has_urgent_child(struct sway_container *container) {
-	return container_find(container, find_urgent_iterator, NULL);
+	return container_find_child(container, find_urgent_iterator, NULL);
 }
 
 void container_end_mouse_operation(struct sway_container *container) {
@@ -1236,7 +1216,7 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 		container_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 	}
 
-	container_for_each_descendant(container, set_fullscreen_iterator, &enable);
+	container_for_each_child(container, set_fullscreen_iterator, &enable);
 
 	container->is_fullscreen = enable;
 
