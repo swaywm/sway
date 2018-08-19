@@ -193,6 +193,9 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		}
 
 		container->instruction = NULL;
+		if (container->type == C_CONTAINER || container->type == C_VIEW) {
+			container_discover_outputs(container);
+		}
 	}
 }
 

@@ -120,7 +120,6 @@ struct sway_view {
 	} events;
 
 	struct wl_listener surface_new_subsurface;
-	struct wl_listener container_reparent;
 };
 
 struct sway_xdg_shell_v6_view {

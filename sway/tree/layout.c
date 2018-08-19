@@ -75,7 +75,6 @@ void container_insert_child(struct sway_container *parent,
 	list_insert(parent->children, i, child);
 	child->parent = parent;
 	container_handle_fullscreen_reparent(child, old_parent);
-	wl_signal_emit(&child->events.reparent, old_parent);
 }
 
 struct sway_container *container_add_sibling(struct sway_container *fixed,
@@ -91,7 +90,6 @@ struct sway_container *container_add_sibling(struct sway_container *fixed,
 	list_insert(parent->children, i + 1, active);
 	active->parent = parent;
 	container_handle_fullscreen_reparent(active, old_parent);
-	wl_signal_emit(&active->events.reparent, old_parent);
 	return active->parent;
 }
 
@@ -180,8 +178,6 @@ void container_move_to(struct sway_container *container,
 			container_add_child(destination, container);
 		}
 	}
-
-	wl_signal_emit(&container->events.reparent, old_parent);
 
 	if (container->type == C_VIEW) {
 		ipc_event_window(container, "move");
@@ -307,7 +303,6 @@ static void workspace_rejigger(struct sway_container *ws,
 
 	container_flatten(ws);
 	container_reap_empty_recursive(original_parent);
-	wl_signal_emit(&child->events.reparent, original_parent);
 	container_create_notify(new_parent);
 }
 
@@ -859,7 +854,6 @@ struct sway_container *container_split(struct sway_container *child,
 			struct sway_container *ws_child = workspace->children->items[0];
 			container_remove_child(ws_child);
 			container_add_child(cont, ws_child);
-			wl_signal_emit(&ws_child->events.reparent, workspace);
 		}
 
 		container_add_child(workspace, cont);
@@ -867,11 +861,9 @@ struct sway_container *container_split(struct sway_container *child,
 		workspace->layout = layout;
 		cont->layout = old_layout;
 	} else {
-		struct sway_container *old_parent = child->parent;
 		cont->layout = layout;
 		container_replace_child(child, cont);
 		container_add_child(cont, child);
-		wl_signal_emit(&child->events.reparent, old_parent);
 	}
 
 	if (set_focus) {
