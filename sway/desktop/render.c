@@ -834,9 +834,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 		goto renderer_end;
 	}
 
-	if (debug.highlight_damage) {
+	if (debug.damage == DAMAGE_HIGHLIGHT) {
 		wlr_renderer_clear(renderer, (float[]){1, 1, 0, 1});
-	} else if (debug.nodamage) {
+	} else if (debug.damage == DAMAGE_RERENDER) {
 		int width, height;
 		wlr_output_transformed_resolution(wlr_output, &width, &height);
 		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
@@ -918,7 +918,7 @@ renderer_end:
 		wlr_render_texture(renderer, root_container.sway_root->debug_tree,
 			wlr_output->transform_matrix, 0, 40, 1);
 	}
-	if (debug.highlight_damage) {
+	if (debug.damage == DAMAGE_HIGHLIGHT) {
 		int width, height;
 		wlr_output_transformed_resolution(wlr_output, &width, &height);
 		pixman_region32_union_rect(damage, damage, 0, 0, width, height);

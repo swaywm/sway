@@ -235,12 +235,12 @@ static void drop_permissions(bool keep_caps) {
 }
 
 void enable_debug_flag(const char *flag) {
-	if (strcmp(flag, "highlight-damage") == 0) {
-		debug.highlight_damage = true;
+	if (strcmp(flag, "damage=highlight") == 0) {
+		debug.damage = DAMAGE_HIGHLIGHT;
+	} else if (strcmp(flag, "damage=rerender") == 0) {
+		debug.damage = DAMAGE_RERENDER;
 	} else if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
-	} else if (strcmp(flag, "nodamage") == 0) {
-		debug.nodamage = true;
 	} else if (strcmp(flag, "render-tree") == 0) {
 		debug.render_tree = true;
 	} else if (strcmp(flag, "txn-wait") == 0) {

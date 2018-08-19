@@ -345,9 +345,7 @@ static void set_instruction_ready(
 	}
 
 	instruction->container->instruction = NULL;
-	if (!txn_debug) {
-		transaction_progress_queue();
-	}
+	transaction_progress_queue();
 }
 
 void transaction_notify_view_ready_by_serial(struct sway_view *view,
