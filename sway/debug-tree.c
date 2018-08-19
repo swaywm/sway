@@ -3,14 +3,18 @@
 #include <wlr/render/wlr_texture.h>
 #include <wlr/util/log.h>
 #include "config.h"
+#include "sway/debug.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
+#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "cairo.h"
 #include "config.h"
 #include "pango.h"
+
+struct sway_debug debug;
 
 static const char *layout_to_str(enum sway_container_layout layout) {
 	switch (layout) {
@@ -67,10 +71,8 @@ static int draw_container(cairo_t *cairo, struct sway_container *container,
 	return height;
 }
 
-bool enable_debug_tree = false;
-
 void update_debug_tree() {
-	if (!enable_debug_tree) {
+	if (!debug.render_tree) {
 		return;
 	}
 

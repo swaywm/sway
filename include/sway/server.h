@@ -54,8 +54,7 @@ struct sway_server {
 	struct wl_listener server_decoration;
 	struct wl_list decorations; // sway_server_decoration::link
 
-	bool debug_txn_timings;
-
+	size_t txn_timeout_ms;
 	list_t *transactions;
 	list_t *dirty_containers;
 };

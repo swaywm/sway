@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,26 +17,12 @@
 #include "list.h"
 #include "log.h"
 
-/**
- * How long we should wait for views to respond to the configure before giving
- * up and applying the transaction anyway.
- */
-int txn_timeout_ms = 200;
-
-/**
- * If enabled, sway will always wait for the transaction timeout before
- * applying it, rather than applying it when the views are ready. This allows us
- * to observe the rendered state while a transaction is in progress.
- */
-bool txn_debug = false;
-
 struct sway_transaction {
 	struct wl_event_source *timer;
 	list_t *instructions;   // struct sway_transaction_instruction *
 	size_t num_waiting;
 	size_t num_configures;
 	uint32_t con_ids;       // Bitwise XOR of view container IDs
-	struct timespec create_time;
 	struct timespec commit_time;
 };
 
@@ -53,9 +40,6 @@ static struct sway_transaction *transaction_create() {
 		return NULL;
 	}
 	transaction->instructions = create_list();
-	if (server.debug_txn_timings) {
-		clock_gettime(CLOCK_MONOTONIC, &transaction->create_time);
-	}
 	return transaction;
 }
 
@@ -150,19 +134,14 @@ static void transaction_add_container(struct sway_transaction *transaction,
  */
 static void transaction_apply(struct sway_transaction *transaction) {
 	wlr_log(WLR_DEBUG, "Applying transaction %p", transaction);
-	if (server.debug_txn_timings) {
+	if (debug.txn_timings) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
-		struct timespec *create = &transaction->create_time;
 		struct timespec *commit = &transaction->commit_time;
-		float ms_arranging = (commit->tv_sec - create->tv_sec) * 1000 +
-			(commit->tv_nsec - create->tv_nsec) / 1000000.0;
-		float ms_waiting = (now.tv_sec - commit->tv_sec) * 1000 +
+		float ms = (now.tv_sec - commit->tv_sec) * 1000 +
 			(now.tv_nsec - commit->tv_nsec) / 1000000.0;
-		float ms_total = ms_arranging + ms_waiting;
-		wlr_log(WLR_DEBUG, "Transaction %p: %.1fms arranging, %.1fms waiting, "
-			"%.1fms total (%.1f frames if 60Hz)", transaction,
-			ms_arranging, ms_waiting, ms_total, ms_total / (1000.0f / 60));
+		wlr_log(WLR_DEBUG, "Transaction %p: %.1fms waiting "
+				"(%.1f frames if 60Hz)", transaction, ms, ms / (1000.0f / 60));
 	}
 
 	// Apply the instruction state to the container's current state
@@ -312,8 +291,15 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		con->instruction = instruction;
 	}
 	transaction->num_configures = transaction->num_waiting;
-	if (server.debug_txn_timings) {
+	if (debug.txn_timings) {
 		clock_gettime(CLOCK_MONOTONIC, &transaction->commit_time);
+	}
+	if (debug.noatomic) {
+		transaction->num_waiting = 0;
+	} else if (debug.txn_wait) {
+		// Force the transaction to time out even if all views are ready.
+		// We do this by inflating the waiting counter.
+		transaction->num_waiting += 1000000;
 	}
 
 	if (transaction->num_waiting) {
@@ -321,16 +307,14 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		transaction->timer = wl_event_loop_add_timer(server.wl_event_loop,
 				handle_timeout, transaction);
 		if (transaction->timer) {
-			wl_event_source_timer_update(transaction->timer, txn_timeout_ms);
+			wl_event_source_timer_update(transaction->timer,
+					server.txn_timeout_ms);
 		} else {
 			wlr_log(WLR_ERROR, "Unable to create transaction timer (%s). "
 					"Some imperfect frames might be rendered.",
 					strerror(errno));
-			handle_timeout(transaction);
+			transaction->num_waiting = 0;
 		}
-	} else {
-		wlr_log(WLR_DEBUG,
-				"Transaction %p has nothing to wait for", transaction);
 	}
 
 	// The debug tree shows the pending/live tree. Here is a good place to
@@ -343,7 +327,7 @@ static void set_instruction_ready(
 		struct sway_transaction_instruction *instruction) {
 	struct sway_transaction *transaction = instruction->transaction;
 
-	if (server.debug_txn_timings) {
+	if (debug.txn_timings) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		struct timespec *start = &transaction->commit_time;
@@ -354,21 +338,16 @@ static void set_instruction_ready(
 				transaction->num_configures - transaction->num_waiting + 1,
 				transaction->num_configures, ms,
 				instruction->container->name);
-
 	}
 
 	// If the transaction has timed out then its num_waiting will be 0 already.
 	if (transaction->num_waiting > 0 && --transaction->num_waiting == 0) {
-		if (!txn_debug) {
-			wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
-			wl_event_source_timer_update(transaction->timer, 0);
-		}
+		wlr_log(WLR_DEBUG, "Transaction %p is ready", transaction);
+		wl_event_source_timer_update(transaction->timer, 0);
 	}
 
 	instruction->container->instruction = NULL;
-	if (!txn_debug) {
-		transaction_progress_queue();
-	}
+	transaction_progress_queue();
 }
 
 void transaction_notify_view_ready_by_serial(struct sway_view *view,
