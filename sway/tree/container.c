@@ -211,6 +211,14 @@ static struct sway_container *container_workspace_destroy(
 	return output;
 }
 
+static void untrack_output(struct sway_container *con, void *data) {
+	struct sway_output *output = data;
+	int index = list_find(con->outputs, output);
+	if (index != -1) {
+		list_del(con->outputs, index);
+	}
+}
+
 static struct sway_container *container_output_destroy(
 		struct sway_container *output) {
 	if (!sway_assert(output, "cannot destroy null output")) {
@@ -251,6 +259,8 @@ static struct sway_container *container_output_destroy(
 			}
 		}
 	}
+
+	root_for_each_container(untrack_output, output->sway_output);
 
 	wl_list_remove(&output->sway_output->mode.link);
 	wl_list_remove(&output->sway_output->transform.link);
