@@ -175,7 +175,9 @@ static void transaction_apply(struct sway_transaction *transaction) {
 				sizeof(struct sway_container_state));
 
 		if (container->type == C_VIEW && container->sway_view->saved_buffer) {
-			view_remove_saved_buffer(container->sway_view);
+			if (!container->destroying || container->ntxnrefs == 1) {
+				view_remove_saved_buffer(container->sway_view);
+			}
 		}
 
 		// Damage the new location
@@ -283,7 +285,7 @@ static void transaction_commit(struct sway_transaction *transaction) {
 			struct timespec when;
 			wlr_surface_send_frame_done(con->sway_view->surface, &when);
 		}
-		if (con->type == C_VIEW) {
+		if (con->type == C_VIEW && !con->sway_view->saved_buffer) {
 			view_save_buffer(con->sway_view);
 			memcpy(&con->sway_view->saved_geometry, &con->sway_view->geometry,
 					sizeof(struct wlr_box));
