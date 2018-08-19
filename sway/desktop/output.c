@@ -163,8 +163,10 @@ void output_view_for_each_popup(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
-		.ox = view->swayc->current.view_x - output->swayc->current.swayc_x,
-		.oy = view->swayc->current.view_y - output->swayc->current.swayc_y,
+		.ox = view->swayc->current.view_x - output->swayc->current.swayc_x
+			- view->geometry.x,
+		.oy = view->swayc->current.view_y - output->swayc->current.swayc_y
+			- view->geometry.y,
 		.width = view->swayc->current.view_width,
 		.height = view->swayc->current.view_height,
 		.rotation = 0, // TODO
