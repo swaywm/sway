@@ -316,31 +316,21 @@ static void send_frame_done_container_iterator(struct sway_container *con,
 		send_frame_done_iterator, data->when);
 }
 
-static void send_frame_done_container(struct sway_output *output,
-		struct sway_container *con, struct timespec *when) {
-	struct send_frame_done_data data = {
-		.output = output,
-		.when = when,
-	};
-	output_for_each_container(output->swayc,
-			send_frame_done_container_iterator, &data);
-}
-
 static void send_frame_done(struct sway_output *output, struct timespec *when) {
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto send_frame_overlay;
 	}
 
+	struct send_frame_done_data data = {
+		.output = output,
+		.when = when,
+	};
 	struct sway_container *workspace = output_get_active_workspace(output);
 	if (workspace->current.ws_fullscreen) {
-		if (workspace->current.ws_fullscreen->type == C_VIEW) {
-			output_view_for_each_surface(output,
-				workspace->current.ws_fullscreen->sway_view,
-				send_frame_done_iterator, when);
-		} else {
-			send_frame_done_container(output, workspace->current.ws_fullscreen,
-				when);
-		}
+		send_frame_done_container_iterator(
+				workspace->current.ws_fullscreen, &data);
+		container_for_each_child(workspace->current.ws_fullscreen,
+				send_frame_done_container_iterator, &data);
 #ifdef HAVE_XWAYLAND
 		send_frame_done_unmanaged(output,
 			&root_container.sway_root->xwayland_unmanaged, when);
@@ -351,9 +341,8 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 		send_frame_done_layer(output,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM], when);
 
-		send_frame_done_container(output, workspace, when);
-		send_frame_done_container(output, workspace->sway_workspace->floating,
-			when);
+		workspace_for_each_container(workspace,
+				send_frame_done_container_iterator, &data);
 
 #ifdef HAVE_XWAYLAND
 		send_frame_done_unmanaged(output,

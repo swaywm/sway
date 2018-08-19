@@ -531,7 +531,7 @@ static bool should_focus(struct sway_view *view) {
 	struct sway_container *parent = view->swayc->parent;
 	if (parent->type == C_WORKSPACE && prev_focus == parent) {
 		size_t num_children = parent->children->length +
-			parent->sway_workspace->floating->children->length;
+			parent->sway_workspace->floating->length;
 		if (num_children == 1) {
 			return true;
 		}
@@ -557,7 +557,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	// If we're about to launch the view into the floating container, then
 	// launch it as a tiled view in the root of the workspace instead.
 	if (container_is_floating(target_sibling)) {
-		target_sibling = target_sibling->parent->parent;
+		target_sibling = target_sibling->parent;
 	}
 
 	view->swayc = container_view_create(target_sibling, view);
@@ -1046,7 +1046,7 @@ bool view_is_visible(struct sway_view *view) {
 	// Check view isn't in a tabbed or stacked container on an inactive tab
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *container = view->swayc;
-	while (container->type != C_WORKSPACE && container->layout != L_FLOATING) {
+	while (container->type != C_WORKSPACE) {
 		if (container->parent->layout == L_TABBED ||
 				container->parent->layout == L_STACKED) {
 			if (seat_get_active_child(seat, container->parent) != container) {

@@ -40,7 +40,6 @@ enum sway_container_layout {
 	L_VERT,
 	L_STACKED,
 	L_TABBED,
-	L_FLOATING,
 };
 
 enum sway_container_border {
@@ -87,7 +86,7 @@ struct sway_container_state {
 
 	// Workspace properties
 	struct sway_container *ws_fullscreen;
-	struct sway_container *ws_floating;
+	list_t *ws_floating;
 };
 
 struct sway_container {

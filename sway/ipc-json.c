@@ -23,8 +23,6 @@ static const char *ipc_json_layout_description(enum sway_container_layout l) {
 		return "tabbed";
 	case L_STACKED:
 		return "stacked";
-	case L_FLOATING:
-		return "floating";
 	case L_NONE:
 		break;
 	}
@@ -180,10 +178,11 @@ static void ipc_json_describe_workspace(struct sway_container *workspace,
 
 	// Floating
 	json_object *floating_array = json_object_new_array();
-	struct sway_container *floating = workspace->sway_workspace->floating;
-	for (int i = 0; i < floating->children->length; ++i) {
-		struct sway_container *floater = floating->children->items[i];
-		json_object_array_add(floating_array, ipc_json_describe_container_recursive(floater));
+	list_t *floating = workspace->sway_workspace->floating;
+	for (int i = 0; i < floating->length; ++i) {
+		struct sway_container *floater = floating->items[i];
+		json_object_array_add(floating_array,
+				ipc_json_describe_container_recursive(floater));
 	}
 	json_object_object_add(object, "floating_nodes", floating_array);
 }

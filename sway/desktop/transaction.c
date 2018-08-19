@@ -111,8 +111,9 @@ static void copy_pending_state(struct sway_container *container,
 		state->using_csd = view->using_csd;
 	} else if (container->type == C_WORKSPACE) {
 		state->ws_fullscreen = container->sway_workspace->fullscreen;
-		state->ws_floating = container->sway_workspace->floating;
+		state->ws_floating = create_list();
 		state->children = create_list();
+		list_cat(state->ws_floating, container->sway_workspace->floating);
 		list_cat(state->children, container->children);
 	} else {
 		state->children = create_list();
@@ -189,6 +190,7 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		// Any child containers which are being deleted will be cleaned up in
 		// transaction_destroy().
 		list_free(container->current.children);
+		list_free(container->current.ws_floating);
 
 		memcpy(&container->current, &instruction->state,
 				sizeof(struct sway_container_state));

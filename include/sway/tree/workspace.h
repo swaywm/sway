@@ -9,7 +9,7 @@ struct sway_view;
 struct sway_workspace {
 	struct sway_container *swayc;
 	struct sway_container *fullscreen;
-	struct sway_container *floating;
+	list_t *floating; // struct sway_container
 	list_t *output_priority;
 	bool urgent;
 };
@@ -62,5 +62,8 @@ struct sway_container *workspace_find_container(struct sway_container *ws,
  * The new container is returned.
  */
 struct sway_container *workspace_wrap_children(struct sway_container *ws);
+
+void workspace_add_floating(struct sway_container *workspace,
+		struct sway_container *con);
 
 #endif

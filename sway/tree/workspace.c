@@ -67,9 +67,7 @@ struct sway_container *workspace_create(struct sway_container *output,
 		return NULL;
 	}
 	swayws->swayc = workspace;
-	swayws->floating = container_create(C_CONTAINER);
-	swayws->floating->parent = swayws->swayc;
-	swayws->floating->layout = L_FLOATING;
+	swayws->floating = create_list();
 	swayws->output_priority = create_list();
 	workspace->sway_workspace = swayws;
 	workspace_output_add_priority(workspace, output);
@@ -392,17 +390,15 @@ bool workspace_switch(struct sway_container *workspace,
 	struct sway_container *next_output = workspace->parent;
 	struct sway_container *next_output_prev_ws =
 		seat_get_active_child(seat, next_output);
-	struct sway_container *floating =
-		next_output_prev_ws->sway_workspace->floating;
+	list_t *floating = next_output_prev_ws->sway_workspace->floating;
 	bool has_sticky = false;
 	if (workspace != next_output_prev_ws) {
-		for (int i = 0; i < floating->children->length; ++i) {
-			struct sway_container *floater = floating->children->items[i];
+		for (int i = 0; i < floating->length; ++i) {
+			struct sway_container *floater = floating->items[i];
 			if (floater->is_sticky) {
 				has_sticky = true;
 				container_remove_child(floater);
-				container_add_child(workspace->sway_workspace->floating,
-						floater);
+				workspace_add_floating(workspace, floater);
 				if (floater == focus) {
 					seat_set_focus(seat, NULL);
 					seat_set_focus(seat, floater);
@@ -455,9 +451,9 @@ bool workspace_is_empty(struct sway_container *ws) {
 		return false;
 	}
 	// Sticky views are not considered to be part of this workspace
-	struct sway_container *floating = ws->sway_workspace->floating;
-	for (int i = 0; i < floating->children->length; ++i) {
-		struct sway_container *floater = floating->children->items[i];
+	list_t *floating = ws->sway_workspace->floating;
+	for (int i = 0; i < floating->length; ++i) {
+		struct sway_container *floater = floating->items[i];
 		if (!floater->is_sticky) {
 			return false;
 		}
@@ -548,9 +544,9 @@ void workspace_for_each_container(struct sway_container *ws,
 		container_for_each_child(container, f, data);
 	}
 	// Floating
-	for (int i = 0; i < ws->sway_workspace->floating->children->length; ++i) {
+	for (int i = 0; i < ws->sway_workspace->floating->length; ++i) {
 		struct sway_container *container =
-			ws->sway_workspace->floating->children->items[i];
+			ws->sway_workspace->floating->items[i];
 		f(container, data);
 		container_for_each_child(container, f, data);
 	}
@@ -573,9 +569,8 @@ struct sway_container *workspace_find_container(struct sway_container *ws,
 		}
 	}
 	// Floating
-	for (int i = 0; i < ws->sway_workspace->floating->children->length; ++i) {
-		struct sway_container *child =
-			ws->sway_workspace->floating->children->items[i];
+	for (int i = 0; i < ws->sway_workspace->floating->length; ++i) {
+		struct sway_container *child = ws->sway_workspace->floating->items[i];
 		if (test(child, data)) {
 			return child;
 		}
@@ -596,4 +591,19 @@ struct sway_container *workspace_wrap_children(struct sway_container *ws) {
 	}
 	container_add_child(ws, middle);
 	return middle;
+}
+
+void workspace_add_floating(struct sway_container *workspace,
+		struct sway_container *con) {
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	if (!sway_assert(con->parent == NULL, "Expected an orphan container")) {
+		return;
+	}
+
+	list_add(workspace->sway_workspace->floating, con);
+	con->parent = workspace;
+	container_set_dirty(workspace);
+	container_set_dirty(con);
 }
