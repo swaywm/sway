@@ -133,10 +133,15 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	tiled containers.
 
 *move* [absolute] position <pos\_x> [px] <pos\_y> [px]
-	Moves the focused container to the specified position.
+	Moves the focused container to the specified position in the workspace. If
+	_absolute_ is used, the position is relative to all outputs.
 
-*move* [absolute] position center|mouse
-	Moves the focused container to be centered on the workspace or mouse.
+*move* [absolute] position center
+	Moves the focused container to be centered on the workspace. If _absolute_
+	is used, it is moved to the center of all outputs.
+
+*move* position cursor|mouse|pointer
+	Moves the focused container to be centered on the cursor.
 
 *move* container|window [to] mark <mark>
 	Moves the focused container to the specified mark.

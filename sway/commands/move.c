@@ -359,7 +359,8 @@ static struct cmd_results *move_in_direction(struct sway_container *container,
 
 static const char *expected_position_syntax =
 	"Expected 'move [absolute] position <x> [px] <y> [px]' or "
-	"'move [absolute] position center|mouse'";
+	"'move [absolute] position center' or "
+	"'move position cursor|mouse|pointer'";
 
 static struct cmd_results *move_to_position(struct sway_container *container,
 		int argc, char **argv) {
@@ -371,7 +372,10 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 	if (!argc) {
 		return cmd_results_new(CMD_FAILURE, "move", expected_position_syntax);
 	}
+
+	bool absolute = false;
 	if (strcmp(argv[0], "absolute") == 0) {
+		absolute = true;
 		--argc;
 		++argv;
 	}
@@ -385,7 +389,8 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 	if (!argc) {
 		return cmd_results_new(CMD_FAILURE, "move", expected_position_syntax);
 	}
-	if (strcmp(argv[0], "mouse") == 0) {
+	if (strcmp(argv[0], "cursor") == 0 || strcmp(argv[0], "mouse") == 0 ||
+			strcmp(argv[0], "pointer") == 0) {
 		struct sway_seat *seat = config->handler_context.seat;
 		if (!seat->cursor) {
 			return cmd_results_new(CMD_FAILURE, "move", "No cursor device");
@@ -395,9 +400,15 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 		container_floating_move_to(container, lx, ly);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	} else if (strcmp(argv[0], "center") == 0) {
-		struct sway_container *ws = container_parent(container, C_WORKSPACE);
-		double lx = ws->x + (ws->width - container->width) / 2;
-		double ly = ws->y + (ws->height - container->height) / 2;
+		double lx, ly;
+		if (absolute) {
+			lx = root_container.x + (root_container.width - container->width) / 2;
+			ly = root_container.y + (root_container.height - container->height) / 2;
+		} else {
+			struct sway_container *ws = container_parent(container, C_WORKSPACE);
+			lx = ws->x + (ws->width - container->width) / 2;
+			ly = ws->y + (ws->height - container->height) / 2;
+		}
 		container_floating_move_to(container, lx, ly);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -429,6 +440,11 @@ static struct cmd_results *move_to_position(struct sway_container *container,
 				"Invalid position specified");
 	}
 
+	if (!absolute) {
+		struct sway_container *ws = container_parent(container, C_WORKSPACE);
+		lx += ws->x;
+		ly += ws->y;
+	}
 	container_floating_move_to(container, lx, ly);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
