@@ -82,11 +82,6 @@ struct sway_container *workspace_create(struct sway_container *output,
 }
 
 char *prev_workspace_name = NULL;
-struct workspace_by_number_data {
-	int len;
-	const char *cset;
-	const char *name;
-};
 
 void next_name_map(struct sway_container *ws, void *data) {
 	int *count = data;
@@ -154,7 +149,7 @@ static void workspace_name_from_binding(const struct sway_binding * binding,
 			wlr_log(WLR_DEBUG, "Isolated name from workspace number: '%s'", _target);
 
 			// Make sure the workspace number doesn't already exist
-			if (workspace_by_number(_target)) {
+			if (isdigit(_target[0]) && workspace_by_number(_target)) {
 				free(_target);
 				free(dup);
 				return;
@@ -233,18 +228,18 @@ static bool _workspace_by_number(struct sway_container *view, void *data) {
 	if (view->type != C_WORKSPACE) {
 		return false;
 	}
-	struct workspace_by_number_data *wbnd = data;
-	int a = strspn(view->name, wbnd->cset);
-	return a == wbnd->len && strncmp(view->name, wbnd->name, a) == 0;
+	char *name = data;
+	char *view_name = view->name;
+	while (isdigit(*name)) {
+		if (*name++ != *view_name++) {
+			return false;
+		}
+	}
+	return !isdigit(*view_name);
 }
 
 struct sway_container *workspace_by_number(const char* name) {
-	struct workspace_by_number_data wbnd = {0, "1234567890", name};
-	wbnd.len = strspn(name, wbnd.cset);
-	if (wbnd.len <= 0) {
-		return NULL;
-	}
-	return root_find_workspace(_workspace_by_number, (void *) &wbnd);
+	return root_find_workspace(_workspace_by_number, (void *) name);
 }
 
 static bool _workspace_by_name(struct sway_container *view, void *data) {

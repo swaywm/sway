@@ -450,12 +450,22 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
-			CT_ASSIGN_WORKSPACE | CT_ASSIGN_OUTPUT);
+			CT_ASSIGN_WORKSPACE | CT_ASSIGN_WORKSPACE_NUMBER | CT_ASSIGN_OUTPUT);
 	struct sway_container *ws = NULL;
 	for (int i = 0; i < criterias->length; ++i) {
 		struct criteria *criteria = criterias->items[i];
-		if (criteria->type == CT_ASSIGN_WORKSPACE) {
-			ws = workspace_by_name(criteria->target);
+		if (criteria->type == CT_ASSIGN_OUTPUT) {
+			struct sway_container *output = output_by_name(criteria->target);
+			if (output) {
+				ws = seat_get_active_child(seat, output);
+				break;
+			}
+		} else {
+			// CT_ASSIGN_WORKSPACE(_NUMBER)
+			ws = criteria->type == CT_ASSIGN_WORKSPACE_NUMBER ?
+				workspace_by_number(criteria->target) :
+				workspace_by_name(criteria->target);
+
 			if (!ws) {
 				if (strcasecmp(criteria->target, "back_and_forth") == 0) {
 					if (prev_workspace_name) {
@@ -466,13 +476,6 @@ static struct sway_container *select_workspace(struct sway_view *view) {
 				}
 			}
 			break;
-		} else {
-			// CT_ASSIGN_OUTPUT
-			struct sway_container *output = output_by_name(criteria->target);
-			if (output) {
-				ws = seat_get_active_child(seat, output);
-				break;
-			}
 		}
 	}
 	list_free(criterias);

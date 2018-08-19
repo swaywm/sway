@@ -51,7 +51,7 @@ The following commands may only be used in the configuration file.
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
 
-*set* <name> <value>
+*set* $<name> <value>
 	Sets variable $_name_ to _value_. You can use the new variable in the
 	arguments of future commands.
 
@@ -132,7 +132,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	If unspecified, the default is 10 pixels. Pixels are ignored when moving
 	tiled containers.
 
-*move* [absolute] position <pos_x> [px] <pos_y> [px]
+*move* [absolute] position <pos\_x> [px] <pos\_y> [px]
 	Moves the focused container to the specified position.
 
 *move* [absolute] position center|mouse
@@ -154,7 +154,7 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 	Moves the focused container to the previous or next workspace on this
 	output, wrapping around if already at the first or last workspace.
 
-*move* container|window [to] workspace back_and_forth
+*move* container|window [to] workspace back\_and\_forth
 	Moves the focused container to previously focused workspace.
 
 *move* container|window|workspace [to] output <name>
@@ -166,6 +166,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 
 *move* [to] scratchpad
 	Moves the focused window to the scratchpad.
+
+*nop* <comment>
+	A no operation command that can be used to override default behaviour. The
+	optional comment argument is ignored, but logged for debugging purposes.
 
 *reload*
 	Reloads the sway config file and applies any changes.
@@ -215,12 +219,19 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 The following commands may be used either in the configuration file or at
 runtime.
 
-*assign* <criteria> [→] <workspace>
+*assign* <criteria> [→] [workspace] [number] <workspace>
 	Assigns views matching _criteria_ (see *CRITERIA* for details) to
 	_workspace_. The → (U+2192) is optional and cosmetic. This command is
 	equivalent to:
 
 		for\_window <criteria> move container to workspace <workspace>
+
+*assign* <criteria> [→] output left|right|up|down|<name>
+	Assigns views matching _criteria_ (see *CRITERIA* for details) to the
+	specified output. The → (U+2192) is optional and cosmetic. This command is
+	equivalent to:
+
+		for\_window <criteria> move container to output <output>
 
 *bindsym* [--release|--locked] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You

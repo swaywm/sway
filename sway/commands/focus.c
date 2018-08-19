@@ -52,6 +52,10 @@ static struct cmd_results *focus_mode(struct sway_container *con,
 	}
 	if (new_focus) {
 		seat_set_focus(seat, new_focus);
+	} else {
+		return cmd_results_new(CMD_FAILURE, "focus",
+				"Failed to find a %s container in workspace",
+				floating ? "floating" : "tiling");
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <ctype.h>
 #include <string.h>
 #include <strings.h>
 #include "log.h"
@@ -34,6 +35,10 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 		}
 	} else if (strcasecmp(argv[1], "number") == 0) {
 		// 'rename workspace number x to new_name'
+		if (!isdigit(argv[2][0])) {
+			return cmd_results_new(CMD_INVALID, "rename",
+					"Invalid workspace number '%s'", argv[2]);
+		}
 		workspace = workspace_by_number(argv[2]);
 		while (argn < argc && strcasecmp(argv[argn], "to") != 0) {
 			++argn;
@@ -67,7 +72,8 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 			strcasecmp(new_name, "next_on_output") == 0 ||
 			strcasecmp(new_name, "prev_on_output") == 0 ||
 			strcasecmp(new_name, "back_and_forth") == 0 ||
-			strcasecmp(new_name, "current") == 0) {
+			strcasecmp(new_name, "current") == 0 ||
+			strcasecmp(new_name, "number") == 0) {
 		free(new_name);
 		return cmd_results_new(CMD_INVALID, "rename",
 				"Cannot use special workspace name '%s'", argv[argn]);

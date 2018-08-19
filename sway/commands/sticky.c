@@ -36,5 +36,21 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 
 	container->is_sticky = wants_sticky;
 
+	if (wants_sticky) {
+		// move container to focused workspace
+		struct sway_container *output = container_parent(container, C_OUTPUT);
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		struct sway_container *focus = seat_get_focus_inactive(seat, output);
+		struct sway_container *focused_workspace = container_parent(focus, C_WORKSPACE);
+		struct sway_container *current_workspace = container_parent(container, C_WORKSPACE);
+		if (current_workspace != focused_workspace) {
+			container_move_to(container, focused_workspace);
+			arrange_windows(focused_workspace);
+			if (!container_reap_empty(current_workspace)) {
+				arrange_windows(current_workspace);
+			}
+		}
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
