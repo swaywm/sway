@@ -33,7 +33,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	// If the container is in a floating split container,
 	// operate on the split container instead of the child.
 	if (container_is_floating_or_child(container)) {
-		while (container->parent->layout != L_FLOATING) {
+		while (container->parent->type != C_WORKSPACE) {
 			container = container->parent;
 		}
 	}

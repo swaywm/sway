@@ -72,7 +72,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 			|| container_has_ancestor(other, current)) {
 		error = cmd_results_new(CMD_FAILURE, "swap",
 				"Cannot swap ancestor and descendant");
-	} else if (current->layout == L_FLOATING || other->layout == L_FLOATING) {
+	} else if (container_is_floating(current) || container_is_floating(other)) {
 		error = cmd_results_new(CMD_FAILURE, "swap",
 				"Swapping with floating containers is not supported");
 	}

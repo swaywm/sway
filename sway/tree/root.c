@@ -105,7 +105,7 @@ void root_scratchpad_show(struct sway_container *con) {
 	if (con->parent) {
 		container_remove_child(con);
 	}
-	container_add_child(ws->sway_workspace->floating, con);
+	workspace_add_floating(ws, con);
 
 	// Make sure the container's center point overlaps this workspace
 	double center_lx = con->x + con->width / 2;

@@ -724,7 +724,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && state == WLR_BUTTON_PRESSED &&
 				(mod_pressed || on_titlebar)) {
-			while (cont->parent->layout != L_FLOATING) {
+			while (cont->parent->type != C_WORKSPACE) {
 				cont = cont->parent;
 			}
 			seat_begin_move(seat, cont, button);
@@ -746,7 +746,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			BTN_LEFT : BTN_RIGHT;
 		if (mod_pressed && button == btn_resize) {
 			struct sway_container *floater = cont;
-			while (floater->parent->layout != L_FLOATING) {
+			while (floater->parent->type != C_WORKSPACE) {
 				floater = floater->parent;
 			}
 			edge = 0;

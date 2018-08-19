@@ -117,9 +117,11 @@ struct sway_container *container_remove_child(struct sway_container *child) {
 	}
 
 	struct sway_container *parent = child->parent;
-	int index = index_child(child);
+	list_t *list = container_is_floating(child) ?
+		parent->sway_workspace->floating : parent->children;
+	int index = list_find(list, child);
 	if (index != -1) {
-		list_del(parent->children, index);
+		list_del(list, index);
 	}
 	child->parent = NULL;
 	container_notify_subtree_changed(parent);
@@ -160,7 +162,8 @@ void container_move_to(struct sway_container *container,
 		struct sway_container *old_output =
 			container_parent(container, C_OUTPUT);
 		old_parent = container_remove_child(container);
-		container_add_child(new_ws->sway_workspace->floating, container);
+		workspace_add_floating(new_ws, container);
+		container_handle_fullscreen_reparent(container, old_parent);
 		// If changing output, center it within the workspace
 		if (old_output != new_ws->parent && !container->is_fullscreen) {
 			container_floating_move_to_center(container);
@@ -431,9 +434,6 @@ void container_move(struct sway_container *container,
 				if ((index == parent->children->length - 1 && offs > 0)
 						|| (index == 0 && offs < 0)) {
 					if (current->parent == container->parent) {
-						if (parent->parent->layout == L_FLOATING) {
-							return;
-						}
 						if (!parent->is_fullscreen &&
 								(parent->layout == L_TABBED ||
 								 parent->layout == L_STACKED)) {
@@ -457,13 +457,9 @@ void container_move(struct sway_container *container,
 					sibling = parent->children->items[index + offs];
 					wlr_log(WLR_DEBUG, "Selecting sibling id:%zd", sibling->id);
 				}
-			} else if (!parent->is_fullscreen &&
-					parent->parent->layout != L_FLOATING &&
-					(parent->layout == L_TABBED ||
+			} else if (!parent->is_fullscreen && (parent->layout == L_TABBED ||
 						parent->layout == L_STACKED)) {
 				move_out_of_tabs_stacks(container, current, move_dir, offs);
-				return;
-			} else if (parent->parent->layout == L_FLOATING) {
 				return;
 			} else {
 				wlr_log(WLR_DEBUG, "Moving up to find a parallel container");
@@ -802,13 +798,15 @@ struct sway_container *container_replace_child(struct sway_container *child,
 	if (parent == NULL) {
 		return NULL;
 	}
-	int i = index_child(child);
 
-	// TODO floating
+	list_t *list = container_is_floating(child) ?
+		parent->sway_workspace->floating : parent->children;
+	int i = list_find(list, child);
+
 	if (new_child->parent) {
 		container_remove_child(new_child);
 	}
-	parent->children->items[i] = new_child;
+	list->items[i] = new_child;
 	new_child->parent = parent;
 	child->parent = NULL;
 
@@ -973,7 +971,8 @@ void container_swap(struct sway_container *con1, struct sway_container *con2) {
 				"Cannot swap ancestor and descendant")) {
 		return;
 	}
-	if (!sway_assert(con1->layout != L_FLOATING && con2->layout != L_FLOATING,
+	if (!sway_assert(!container_is_floating(con1)
+				&& !container_is_floating(con2),
 				"Swapping with floating containers is not supported")) {
 		return;
 	}

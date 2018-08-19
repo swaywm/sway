@@ -144,9 +144,9 @@ static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 
 static void arrange_children_of(struct sway_container *parent);
 
-static void arrange_floating(struct sway_container *floating) {
-	for (int i = 0; i < floating->children->length; ++i) {
-		struct sway_container *floater = floating->children->items[i];
+static void arrange_floating(list_t *floating) {
+	for (int i = 0; i < floating->length; ++i) {
+		struct sway_container *floater = floating->items[i];
 		if (floater->type == C_VIEW) {
 			view_autoconfigure(floater->sway_view);
 		} else {
@@ -154,7 +154,6 @@ static void arrange_floating(struct sway_container *floating) {
 		}
 		container_set_dirty(floater);
 	}
-	container_set_dirty(floating);
 }
 
 static void arrange_children_of(struct sway_container *parent) {
@@ -178,9 +177,6 @@ static void arrange_children_of(struct sway_container *parent) {
 		break;
 	case L_NONE:
 		apply_horiz_layout(parent);
-		break;
-	case L_FLOATING:
-		arrange_floating(parent);
 		break;
 	}
 

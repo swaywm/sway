@@ -16,7 +16,7 @@ static void scratchpad_toggle_auto(void) {
 	// If the focus is in a floating split container,
 	// operate on the split container instead of the child.
 	if (container_is_floating_or_child(focus)) {
-		while (focus->parent->layout != L_FLOATING) {
+		while (focus->parent->type != C_WORKSPACE) {
 			focus = focus->parent;
 		}
 	}
@@ -33,9 +33,8 @@ static void scratchpad_toggle_auto(void) {
 
 	// Check if there is an unfocused scratchpad window on the current workspace
 	// and focus it.
-	for (int i = 0; i < ws->sway_workspace->floating->children->length; ++i) {
-		struct sway_container *floater =
-			ws->sway_workspace->floating->children->items[i];
+	for (int i = 0; i < ws->sway_workspace->floating->length; ++i) {
+		struct sway_container *floater = ws->sway_workspace->floating->items[i];
 		if (floater->scratchpad && focus != floater) {
 			wlr_log(WLR_DEBUG,
 					"Focusing other scratchpad window (%s) in this workspace",
@@ -103,7 +102,7 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		// If the container is in a floating split container,
 		// operate on the split container instead of the child.
 		if (container_is_floating_or_child(con)) {
-			while (con->parent->layout != L_FLOATING) {
+			while (con->parent->type != C_WORKSPACE) {
 				con = con->parent;
 			}
 		}

@@ -67,7 +67,11 @@ void container_update_textures_recursive(struct sway_container *con) {
 		}
 
 		if (con->type == C_WORKSPACE) {
-			container_update_textures_recursive(con->sway_workspace->floating);
+			for (int i = 0; i < con->sway_workspace->floating->length; ++i) {
+				struct sway_container *floater =
+					con->sway_workspace->floating->items[i];
+				container_update_textures_recursive(floater);
+			}
 		}
 	}
 }
@@ -131,6 +135,7 @@ struct sway_container *container_create(enum sway_container_type type) {
 static void container_workspace_free(struct sway_workspace *ws) {
 	list_foreach(ws->output_priority, free);
 	list_free(ws->output_priority);
+	list_free(ws->floating);
 	free(ws);
 }
 
@@ -222,14 +227,13 @@ static struct sway_container *container_workspace_destroy(
 		for (int i = 0; i < workspace->children->length; i++) {
 			container_move_to(workspace->children->items[i], new_workspace);
 		}
-		struct sway_container *floating = workspace->sway_workspace->floating;
-		for (int i = 0; i < floating->children->length; i++) {
-			container_move_to(floating->children->items[i],
-					new_workspace->sway_workspace->floating);
+		list_t *floating = workspace->sway_workspace->floating;
+		for (int i = 0; i < floating->length; i++) {
+			struct sway_container *floater = floating->items[i];
+			container_remove_child(floater);
+			workspace_add_floating(new_workspace, floater);
 		}
 	}
-
-	container_destroy_noreaping(workspace->sway_workspace->floating);
 
 	return output;
 }
@@ -339,10 +343,6 @@ static struct sway_container *container_destroy_noreaping(
 }
 
 bool container_reap_empty(struct sway_container *con) {
-	if (con->layout == L_FLOATING) {
-		// Don't reap the magical floating container that each workspace has
-		return false;
-	}
 	switch (con->type) {
 	case C_ROOT:
 	case C_OUTPUT:
@@ -626,9 +626,8 @@ static struct sway_container *floating_container_at(double lx, double ly,
 			}
 			// Items at the end of the list are on top, so iterate the list in
 			// reverse.
-			for (int k = ws->floating->children->length - 1; k >= 0; --k) {
-				struct sway_container *floater =
-					ws->floating->children->items[k];
+			for (int k = ws->floating->length - 1; k >= 0; --k) {
+				struct sway_container *floater = ws->floating->items[k];
 				struct wlr_box box = {
 					.x = floater->x,
 					.y = floater->y,
@@ -664,9 +663,6 @@ struct sway_container *tiling_container_at(
 		return container_at_tabbed(con, lx, ly, surface, sx, sy);
 	case L_STACKED:
 		return container_at_stacked(con, lx, ly, surface, sx, sy);
-	case L_FLOATING:
-		sway_assert(false, "Didn't expect to see floating here");
-		return NULL;
 	case L_NONE:
 		return NULL;
 	}
@@ -880,9 +876,6 @@ static size_t get_tree_representation(struct sway_container *parent, char *buffe
 	case L_STACKED:
 		lenient_strcat(buffer, "S[");
 		break;
-	case L_FLOATING:
-		lenient_strcat(buffer, "F[");
-		break;
 	case L_NONE:
 		lenient_strcat(buffer, "D[");
 		break;
@@ -1012,7 +1005,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 
 	if (enable) {
 		struct sway_container *old_parent = container_remove_child(container);
-		container_add_child(workspace->sway_workspace->floating, container);
+		workspace_add_floating(workspace, container);
 		container_init_floating(container);
 		if (container->type == C_VIEW) {
 			view_set_tiled(container->sway_view, false);
@@ -1069,11 +1062,8 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 }
 
 bool container_is_floating(struct sway_container *container) {
-	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
-	if (!workspace) {
-		return false;
-	}
-	return container->parent == workspace->sway_workspace->floating;
+	return container->parent && container->parent->type == C_WORKSPACE &&
+		list_find(container->parent->sway_workspace->floating, container) != -1;
 }
 
 void container_get_box(struct sway_container *container, struct wlr_box *box) {
@@ -1153,7 +1143,7 @@ void container_floating_move_to(struct sway_container *con,
 		output_get_active_workspace(new_output->sway_output);
 	if (old_workspace != new_workspace) {
 		container_remove_child(con);
-		container_add_child(new_workspace->sway_workspace->floating, con);
+		workspace_add_floating(new_workspace, con);
 		arrange_windows(old_workspace);
 		arrange_windows(new_workspace);
 		workspace_detect_urgent(old_workspace);
@@ -1266,14 +1256,10 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 }
 
 bool container_is_floating_or_child(struct sway_container *container) {
-	do {
-		if (container->parent && container->parent->layout == L_FLOATING) {
-			return true;
-		}
+	while (container->parent && container->parent->type != C_WORKSPACE) {
 		container = container->parent;
-	} while (container && container->type != C_WORKSPACE);
-
-	return false;
+	}
+	return container_is_floating(container);
 }
 
 bool container_is_fullscreen_or_child(struct sway_container *container) {

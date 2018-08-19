@@ -449,7 +449,7 @@ static struct cmd_results *move_to_scratchpad(struct sway_container *con) {
 	// If the container is in a floating split container,
 	// operate on the split container instead of the child.
 	if (container_is_floating_or_child(con)) {
-		while (con->parent->layout != L_FLOATING) {
+		while (con->parent->type != C_WORKSPACE) {
 			con = con->parent;
 		}
 	}

@@ -754,8 +754,6 @@ static void render_container(struct sway_output *output,
 	case L_TABBED:
 		render_container_tabbed(output, damage, con, parent_focused);
 		break;
-	case L_FLOATING:
-		sway_assert(false, "Didn't expect to see floating here");
 	}
 }
 
@@ -806,8 +804,7 @@ static void render_floating(struct sway_output *soutput,
 			if (!workspace_is_visible(ws)) {
 				continue;
 			}
-			list_t *floating =
-				ws->current.ws_floating->current.children;
+			list_t *floating = ws->current.ws_floating;
 			for (int k = 0; k < floating->length; ++k) {
 				struct sway_container *floater = floating->items[k];
 				render_floating_container(soutput, damage, floater);
