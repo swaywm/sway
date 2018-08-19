@@ -75,4 +75,8 @@ struct sway_container *workspace_wrap_children(struct sway_container *ws);
 void workspace_add_floating(struct sway_container *workspace,
 		struct sway_container *con);
 
+void workspace_remove_gaps(struct sway_container *ws);
+
+void workspace_add_gaps(struct sway_container *ws);
+
 #endif
