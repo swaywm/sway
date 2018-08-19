@@ -88,6 +88,14 @@ struct sway_view {
 	struct wlr_buffer *saved_buffer;
 	int saved_buffer_width, saved_buffer_height;
 
+	// The geometry for whatever the client is committing, regardless of
+	// transaction state. Updated on every commit.
+	struct wlr_box geometry;
+
+	// The "old" geometry during a transaction. Used to damage the old location
+	// when a transaction is applied.
+	struct wlr_box saved_geometry;
+
 	bool destroying;
 
 	list_t *executed_criteria; // struct criteria *
@@ -284,8 +292,6 @@ void view_destroy(struct sway_view *view);
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 
 void view_unmap(struct sway_view *view);
-
-void view_update_position(struct sway_view *view, double lx, double ly);
 
 void view_update_size(struct sway_view *view, int width, int height);
 

@@ -6,6 +6,7 @@
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
 #include "sway/debug.h"
+#include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
 #include "sway/output.h"
@@ -169,25 +170,17 @@ static void transaction_apply(struct sway_transaction *transaction) {
 			transaction->instructions->items[i];
 		struct sway_container *container = instruction->container;
 
-		// Damage the old and new locations
-		struct wlr_box old_box = {
-			.x = container->current.swayc_x,
-			.y = container->current.swayc_y,
-			.width = container->current.swayc_width,
-			.height = container->current.swayc_height,
-		};
-		struct wlr_box new_box = {
-			.x = instruction->state.swayc_x,
-			.y = instruction->state.swayc_y,
-			.width = instruction->state.swayc_width,
-			.height = instruction->state.swayc_height,
-		};
-		for (int j = 0; j < root_container.current.children->length; ++j) {
-			struct sway_container *output = root_container.current.children->items[j];
-			if (output->sway_output) {
-				output_damage_box(output->sway_output, &old_box);
-				output_damage_box(output->sway_output, &new_box);
-			}
+		// Damage the old location
+		desktop_damage_whole_container(container);
+		if (container->type == C_VIEW && container->sway_view->saved_buffer) {
+			struct sway_view *view = container->sway_view;
+			struct wlr_box box = {
+				.x = container->current.view_x - view->saved_geometry.x,
+				.y = container->current.view_y - view->saved_geometry.y,
+				.width = view->saved_buffer_width,
+				.height = view->saved_buffer_height,
+			};
+			desktop_damage_box(&box);
 		}
 
 		// There are separate children lists for each instruction state, the
@@ -202,6 +195,20 @@ static void transaction_apply(struct sway_transaction *transaction) {
 
 		if (container->type == C_VIEW && container->sway_view->saved_buffer) {
 			view_remove_saved_buffer(container->sway_view);
+		}
+
+		// Damage the new location
+		desktop_damage_whole_container(container);
+		if (container->type == C_VIEW && container->sway_view->surface) {
+			struct sway_view *view = container->sway_view;
+			struct wlr_surface *surface = view->surface;
+			struct wlr_box box = {
+				.x = container->current.view_x - view->geometry.x,
+				.y = container->current.view_y - view->geometry.y,
+				.width = surface->current.width,
+				.height = surface->current.height,
+			};
+			desktop_damage_box(&box);
 		}
 
 		container->instruction = NULL;
@@ -297,6 +304,8 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		}
 		if (con->type == C_VIEW) {
 			view_save_buffer(con->sway_view);
+			memcpy(&con->sway_view->saved_geometry, &con->sway_view->geometry,
+					sizeof(struct wlr_box));
 		}
 		con->instruction = instruction;
 	}
@@ -355,7 +364,9 @@ static void set_instruction_ready(
 	}
 
 	instruction->container->instruction = NULL;
-	transaction_progress_queue();
+	if (!txn_debug) {
+		transaction_progress_queue();
+	}
 }
 
 void transaction_notify_view_ready_by_serial(struct sway_view *view,
