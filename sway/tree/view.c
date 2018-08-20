@@ -889,8 +889,10 @@ void view_add_mark(struct sway_view *view, char *mark) {
 
 static void update_marks_texture(struct sway_view *view,
 		struct wlr_texture **texture, struct border_colors *class) {
-	struct sway_output *output =
-		view->swayc->outputs->items[view->swayc->outputs->length - 1];
+	struct sway_output *output = container_get_effective_output(view->swayc);
+	if (!output) {
+		return;
+	}
 	if (*texture) {
 		wlr_texture_destroy(*texture);
 		*texture = NULL;

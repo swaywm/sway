@@ -764,8 +764,7 @@ void container_damage_whole(struct sway_container *container) {
  * Return the output which will be used for scale purposes.
  * This is the most recently entered output.
  */
-static struct sway_output *container_get_effective_output(
-		struct sway_container *con) {
+struct sway_output *container_get_effective_output(struct sway_container *con) {
 	if (con->outputs->length == 0) {
 		return NULL;
 	}
