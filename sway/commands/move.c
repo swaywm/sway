@@ -247,7 +247,7 @@ static void workspace_move_to_output(struct sway_container *workspace,
 	}
 
 	// Try to remove an empty workspace from the destination output.
-	container_reap_empty_recursive(new_output_focus);
+	container_reap_empty(new_output_focus);
 
 	output_sort_workspaces(output);
 	seat_set_focus(seat, output);

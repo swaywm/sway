@@ -284,9 +284,9 @@ void view_for_each_popup(struct sway_view *view,
 void view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
 
-void view_free(struct sway_view *view);
-
 void view_destroy(struct sway_view *view);
+
+void view_begin_destroy(struct sway_view *view);
 
 void view_map(struct sway_view *view, struct wlr_surface *wlr_surface);
 

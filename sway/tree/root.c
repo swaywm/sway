@@ -39,6 +39,7 @@ void root_create(void) {
 	wl_list_init(&root_container.sway_root->drag_icons);
 	wl_signal_init(&root_container.sway_root->events.new_container);
 	root_container.sway_root->scratchpad = create_list();
+	root_container.sway_root->saved_workspaces = create_list();
 
 	root_container.sway_root->output_layout_change.notify =
 		output_layout_handle_change;
@@ -50,6 +51,7 @@ void root_destroy(void) {
 	// sway_root
 	wl_list_remove(&root_container.sway_root->output_layout_change.link);
 	list_free(root_container.sway_root->scratchpad);
+	list_free(root_container.sway_root->saved_workspaces);
 	wlr_output_layout_destroy(root_container.sway_root->output_layout);
 	free(root_container.sway_root);
 

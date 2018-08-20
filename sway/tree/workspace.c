@@ -79,6 +79,65 @@ struct sway_container *workspace_create(struct sway_container *output,
 	return workspace;
 }
 
+void workspace_destroy(struct sway_container *workspace) {
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	if (!sway_assert(workspace->destroying,
+				"Tried to free workspace which wasn't marked as destroying")) {
+		return;
+	}
+	if (!sway_assert(workspace->ntxnrefs == 0, "Tried to free workspace "
+				"which is still referenced by transactions")) {
+		return;
+	}
+	// sway_workspace
+	struct sway_workspace *ws = workspace->sway_workspace;
+	list_foreach(ws->output_priority, free);
+	list_free(ws->output_priority);
+	list_free(ws->floating);
+	free(ws);
+
+	// swayc
+	free(workspace->name);
+	free(workspace->formatted_title);
+	wlr_texture_destroy(workspace->title_focused);
+	wlr_texture_destroy(workspace->title_focused_inactive);
+	wlr_texture_destroy(workspace->title_unfocused);
+	wlr_texture_destroy(workspace->title_urgent);
+	list_free(workspace->children);
+	list_free(workspace->current.children);
+	list_free(workspace->outputs);
+	free(workspace);
+}
+
+void workspace_begin_destroy(struct sway_container *workspace) {
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Destroying workspace '%s'", workspace->name);
+	wl_signal_emit(&workspace->events.destroy, workspace);
+	ipc_event_workspace(NULL, workspace, "empty"); // intentional
+
+	workspace->destroying = true;
+	container_set_dirty(workspace);
+
+	if (workspace->parent) {
+		container_remove_child(workspace);
+	}
+}
+
+void workspace_consider_destroy(struct sway_container *ws) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	if (ws->children->length == 0 && ws->sway_workspace->floating->length == 0
+			&& seat_get_active_child(seat, ws->parent) != ws) {
+		workspace_begin_destroy(ws);
+	}
+}
+
 char *prev_workspace_name = NULL;
 
 void next_name_map(struct sway_container *ws, void *data) {
@@ -421,9 +480,7 @@ bool workspace_switch(struct sway_container *workspace,
 		// no op. We therefore need to send the IPC event and clean up the old
 		// workspace here.
 		ipc_event_workspace(active_ws, workspace, "focus");
-		if (!workspace_is_visible(active_ws) && workspace_is_empty(active_ws)) {
-			container_destroy(active_ws);
-		}
+		workspace_consider_destroy(active_ws);
 	}
 	seat_set_focus(seat, next);
 	struct sway_container *output = container_parent(workspace, C_OUTPUT);

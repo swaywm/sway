@@ -448,7 +448,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->map.link);
 	wl_list_remove(&xdg_shell_view->unmap.link);
 	view->wlr_xdg_surface = NULL;
-	view_destroy(view);
+	view_begin_destroy(view);
 }
 
 struct sway_view *view_from_wlr_xdg_surface(

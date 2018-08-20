@@ -694,13 +694,11 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	// clean up unfocused empty workspace on new output
 	if (new_output_last_ws) {
-		if (!workspace_is_visible(new_output_last_ws)
-				&& workspace_is_empty(new_output_last_ws)) {
-			if (last_workspace == new_output_last_ws) {
-				last_focus = NULL;
-				last_workspace = NULL;
-			}
-			container_destroy(new_output_last_ws);
+		workspace_consider_destroy(new_output_last_ws);
+		if (new_output_last_ws->destroying &&
+				last_workspace == new_output_last_ws) {
+			last_focus = NULL;
+			last_workspace = NULL;
 		}
 	}
 
@@ -716,12 +714,9 @@ void seat_set_focus_warp(struct sway_seat *seat,
 			if (notify && last_workspace != new_workspace) {
 				 ipc_event_workspace(last_workspace, new_workspace, "focus");
 			}
-			if (!workspace_is_visible(last_workspace)
-					&& workspace_is_empty(last_workspace)) {
-				if (last_workspace == last_focus) {
-					last_focus = NULL;
-				}
-				container_destroy(last_workspace);
+			workspace_consider_destroy(last_workspace);
+			if (last_workspace->destroying && last_workspace == last_focus) {
+				last_focus = NULL;
 			}
 		}
 

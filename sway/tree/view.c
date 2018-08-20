@@ -35,7 +35,7 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	wl_signal_init(&view->events.unmap);
 }
 
-void view_free(struct sway_view *view) {
+void view_destroy(struct sway_view *view) {
 	if (!sway_assert(view->surface == NULL, "Tried to free mapped view")) {
 		return;
 	}
@@ -75,14 +75,14 @@ void view_free(struct sway_view *view) {
  * destroying flag will make the view get freed when the transaction is
  * finished.
  */
-void view_destroy(struct sway_view *view) {
+void view_begin_destroy(struct sway_view *view) {
 	if (!sway_assert(view->surface == NULL, "Tried to destroy a mapped view")) {
 		return;
 	}
 	view->destroying = true;
 
 	if (!view->swayc) {
-		view_free(view);
+		view_destroy(view);
 	}
 }
 
@@ -560,7 +560,9 @@ void view_unmap(struct sway_view *view) {
 	}
 
 	bool was_fullscreen = view->swayc->is_fullscreen;
-	struct sway_container *surviving_ancestor = container_destroy(view->swayc);
+	struct sway_container *parent = view->swayc->parent;
+	container_begin_destroy(view->swayc);
+	struct sway_container *surviving_ancestor = container_reap_empty(parent);
 
 	// If the workspace wasn't reaped
 	if (surviving_ancestor && surviving_ancestor->type >= C_WORKSPACE) {
