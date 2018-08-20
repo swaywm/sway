@@ -34,9 +34,10 @@ int main(int argc, char **argv) {
 	button_close->type = SWAYNAG_ACTION_DISMISS;
 	list_add(swaynag.buttons, button_close);
 
-	swaynag.details.button_details.text = strdup("Toggle Details");
-	swaynag.details.button_details.type = SWAYNAG_ACTION_EXPAND;
-
+	swaynag.details.button_details =
+		calloc(sizeof(struct swaynag_button), 1);
+	swaynag.details.button_details->text = strdup("Toggle Details");
+	swaynag.details.button_details->type = SWAYNAG_ACTION_EXPAND;
 
 	char *config_path = NULL;
 	bool debug = false;
@@ -99,9 +100,10 @@ int main(int argc, char **argv) {
 	swaynag_types_free(types);
 
 	if (swaynag.details.message) {
-		list_add(swaynag.buttons, &swaynag.details.button_details);
+		list_add(swaynag.buttons, swaynag.details.button_details);
 	} else {
-		free(swaynag.details.button_details.text);
+		free(swaynag.details.button_details->text);
+		free(swaynag.details.button_details);
 	}
 
 	wlr_log(WLR_DEBUG, "Output: %s", swaynag.type->output);
@@ -123,7 +125,8 @@ int main(int argc, char **argv) {
 
 cleanup:
 	swaynag_types_free(types);
-	free(swaynag.details.button_details.text);
+	free(swaynag.details.button_details->text);
+	free(swaynag.details.button_details);
 	swaynag_destroy(&swaynag);
 	return exit_code;
 }
