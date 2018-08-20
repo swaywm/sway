@@ -180,8 +180,8 @@ int swaynag_parse_options(int argc, char **argv, struct swaynag *swaynag,
 			break;
 		case 'L': // Detailed Button Text
 			if (swaynag) {
-				free(swaynag->details.button_details.text);
-				swaynag->details.button_details.text = strdup(optarg);
+				free(swaynag->details.button_details->text);
+				swaynag->details.button_details->text = strdup(optarg);
 			}
 			break;
 		case 'm': // Message
