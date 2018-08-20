@@ -236,7 +236,12 @@ void view_autoconfigure(struct sway_view *view) {
 		view->border_top = false;
 	}
 
-	switch (view->border) {
+	enum sway_container_border border = view->border;
+	if (view->using_csd) {
+		border = B_NONE;
+	}
+
+	switch (border) {
 	case B_NONE:
 		x = con->x;
 		y = con->y + y_offset;
