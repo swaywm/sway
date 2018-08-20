@@ -138,6 +138,9 @@ struct sway_container {
 
 	struct sway_container *parent;
 
+	// Outputs currently being intersected
+	list_t *outputs; // struct sway_output
+
 	// Indicates that the container is a scratchpad container.
 	// Both hidden and visible scratchpad containers have scratchpad=true.
 	// Hidden scratchpad containers have a NULL parent.
@@ -166,12 +169,7 @@ struct sway_container {
 
 	struct {
 		struct wl_signal destroy;
-		// Raised after the tree updates, but before arrange_windows
-		// Passed the previous parent
-		struct wl_signal reparent;
 	} events;
-
-	struct wl_listener reparent;
 };
 
 struct sway_container *container_create(enum sway_container_type type);
@@ -352,5 +350,13 @@ bool container_is_floating_or_child(struct sway_container *container);
  * container.
  */
 bool container_is_fullscreen_or_child(struct sway_container *container);
+
+/**
+ * Return the output which will be used for scale purposes.
+ * This is the most recently entered output.
+ */
+struct sway_output *container_get_effective_output(struct sway_container *con);
+
+void container_discover_outputs(struct sway_container *con);
 
 #endif

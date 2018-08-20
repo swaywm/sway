@@ -236,7 +236,6 @@ static void workspace_move_to_output(struct sway_container *workspace,
 		seat_get_focus_inactive(seat, output);
 
 	container_add_child(output, workspace);
-	wl_signal_emit(&workspace->events.reparent, old_output);
 
 	// If moving the last workspace from the old output, create a new workspace
 	// on the old output

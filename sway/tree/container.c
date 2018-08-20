@@ -76,31 +76,6 @@ void container_update_textures_recursive(struct sway_container *con) {
 	}
 }
 
-static void handle_reparent(struct wl_listener *listener,
-		void *data) {
-	struct sway_container *container =
-		wl_container_of(listener, container, reparent);
-	struct sway_container *old_parent = data;
-
-	struct sway_container *old_output = old_parent;
-	if (old_output != NULL && old_output->type != C_OUTPUT) {
-		old_output = container_parent(old_output, C_OUTPUT);
-	}
-
-	struct sway_container *new_output = container->parent;
-	if (new_output != NULL && new_output->type != C_OUTPUT) {
-		new_output = container_parent(new_output, C_OUTPUT);
-	}
-
-	if (old_output && new_output) {
-		float old_scale = old_output->sway_output->wlr_output->scale;
-		float new_scale = new_output->sway_output->wlr_output->scale;
-		if (old_scale != new_scale) {
-			container_update_textures_recursive(container);
-		}
-	}
-}
-
 struct sway_container *container_create(enum sway_container_type type) {
 	// next id starts at 1 because 0 is assigned to root_container in layout.c
 	static size_t next_id = 1;
@@ -117,12 +92,9 @@ struct sway_container *container_create(enum sway_container_type type) {
 		c->children = create_list();
 		c->current.children = create_list();
 	}
+	c->outputs = create_list();
 
 	wl_signal_init(&c->events.destroy);
-	wl_signal_init(&c->events.reparent);
-
-	wl_signal_add(&c->events.reparent, &c->reparent);
-	c->reparent.notify = handle_reparent;
 
 	c->has_gaps = false;
 	c->gaps_inner = 0;
@@ -156,6 +128,7 @@ void container_free(struct sway_container *cont) {
 	wlr_texture_destroy(cont->title_urgent);
 	list_free(cont->children);
 	list_free(cont->current.children);
+	list_free(cont->outputs);
 
 	switch (cont->type) {
 	case C_ROOT:
@@ -238,6 +211,14 @@ static struct sway_container *container_workspace_destroy(
 	return output;
 }
 
+static void untrack_output(struct sway_container *con, void *data) {
+	struct sway_output *output = data;
+	int index = list_find(con->outputs, output);
+	if (index != -1) {
+		list_del(con->outputs, index);
+	}
+}
+
 static struct sway_container *container_output_destroy(
 		struct sway_container *output) {
 	if (!sway_assert(output, "cannot destroy null output")) {
@@ -278,6 +259,8 @@ static struct sway_container *container_output_destroy(
 			}
 		}
 	}
+
+	root_for_each_container(untrack_output, output->sway_output);
 
 	wl_list_remove(&output->sway_output->mode.link);
 	wl_list_remove(&output->sway_output->transform.link);
@@ -777,13 +760,24 @@ void container_damage_whole(struct sway_container *container) {
 	}
 }
 
+/**
+ * Return the output which will be used for scale purposes.
+ * This is the most recently entered output.
+ */
+struct sway_output *container_get_effective_output(struct sway_container *con) {
+	if (con->outputs->length == 0) {
+		return NULL;
+	}
+	return con->outputs->items[con->outputs->length - 1];
+}
+
 static void update_title_texture(struct sway_container *con,
 		struct wlr_texture **texture, struct border_colors *class) {
 	if (!sway_assert(con->type == C_CONTAINER || con->type == C_VIEW,
 			"Unexpected type %s", container_type_to_str(con->type))) {
 		return;
 	}
-	struct sway_container *output = container_parent(con, C_OUTPUT);
+	struct sway_output *output = container_get_effective_output(con);
 	if (!output) {
 		return;
 	}
@@ -795,7 +789,7 @@ static void update_title_texture(struct sway_container *con,
 		return;
 	}
 
-	double scale = output->sway_output->wlr_output->scale;
+	double scale = output->wlr_output->scale;
 	int width = 0;
 	int height = con->title_height * scale;
 
@@ -823,7 +817,7 @@ static void update_title_texture(struct sway_container *con,
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(
-			output->sway_output->wlr_output->backend);
+			output->wlr_output->backend);
 	*texture = wlr_texture_from_pixels(
 			renderer, WL_SHM_FORMAT_ARGB8888, stride, width, height, data);
 	cairo_surface_destroy(surface);
@@ -1271,4 +1265,68 @@ bool container_is_fullscreen_or_child(struct sway_container *container) {
 	} while (container && container->type != C_WORKSPACE);
 
 	return false;
+}
+
+static void surface_send_enter_iterator(struct wlr_surface *surface,
+		int x, int y, void *data) {
+	struct wlr_output *wlr_output = data;
+	wlr_surface_send_enter(surface, wlr_output);
+}
+
+static void surface_send_leave_iterator(struct wlr_surface *surface,
+		int x, int y, void *data) {
+	struct wlr_output *wlr_output = data;
+	wlr_surface_send_leave(surface, wlr_output);
+}
+
+void container_discover_outputs(struct sway_container *con) {
+	if (!sway_assert(con->type == C_CONTAINER || con->type == C_VIEW,
+				"Expected a container or view")) {
+		return;
+	}
+	struct wlr_box con_box = {
+		.x = con->current.swayc_x,
+		.y = con->current.swayc_y,
+		.width = con->current.swayc_width,
+		.height = con->current.swayc_height,
+	};
+	struct sway_output *old_output = container_get_effective_output(con);
+
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *output = root_container.children->items[i];
+		struct sway_output *sway_output = output->sway_output;
+		struct wlr_box output_box;
+		container_get_box(output, &output_box);
+		struct wlr_box intersection;
+		bool intersects =
+			wlr_box_intersection(&con_box, &output_box, &intersection);
+		int index = list_find(con->outputs, sway_output);
+
+		if (intersects && index == -1) {
+			// Send enter
+			wlr_log(WLR_DEBUG, "Con %p entered output %p", con, sway_output);
+			if (con->type == C_VIEW) {
+				view_for_each_surface(con->sway_view,
+						surface_send_enter_iterator, sway_output->wlr_output);
+			}
+			list_add(con->outputs, sway_output);
+		} else if (!intersects && index != -1) {
+			// Send leave
+			wlr_log(WLR_DEBUG, "Con %p left output %p", con, sway_output);
+			if (con->type == C_VIEW) {
+				view_for_each_surface(con->sway_view,
+					surface_send_leave_iterator, sway_output->wlr_output);
+			}
+			list_del(con->outputs, index);
+		}
+	}
+	struct sway_output *new_output = container_get_effective_output(con);
+	double old_scale = old_output ? old_output->wlr_output->scale : -1;
+	double new_scale = new_output ? new_output->wlr_output->scale : -1;
+	if (old_scale != new_scale) {
+		container_update_title_textures(con);
+		if (con->type == C_VIEW) {
+			view_update_marks_textures(con->sway_view);
+		}
+	}
 }

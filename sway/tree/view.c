@@ -364,48 +364,6 @@ static void view_handle_surface_new_subsurface(struct wl_listener *listener,
 	view_subsurface_create(view, subsurface);
 }
 
-static void surface_send_enter_iterator(struct wlr_surface *surface,
-		int x, int y, void *data) {
-	struct wlr_output *wlr_output = data;
-	wlr_surface_send_enter(surface, wlr_output);
-}
-
-static void surface_send_leave_iterator(struct wlr_surface *surface,
-		int x, int y, void *data) {
-	struct wlr_output *wlr_output = data;
-	wlr_surface_send_leave(surface, wlr_output);
-}
-
-static void view_handle_container_reparent(struct wl_listener *listener,
-		void *data) {
-	struct sway_view *view =
-		wl_container_of(listener, view, container_reparent);
-	struct sway_container *old_parent = data;
-
-	struct sway_container *old_output = old_parent;
-	if (old_output != NULL && old_output->type != C_OUTPUT) {
-		old_output = container_parent(old_output, C_OUTPUT);
-	}
-
-	struct sway_container *new_output = view->swayc->parent;
-	if (new_output != NULL && new_output->type != C_OUTPUT) {
-		new_output = container_parent(new_output, C_OUTPUT);
-	}
-
-	if (old_output == new_output) {
-		return;
-	}
-
-	if (old_output != NULL) {
-		view_for_each_surface(view, surface_send_leave_iterator,
-			old_output->sway_output->wlr_output);
-	}
-	if (new_output != NULL) {
-		view_for_each_surface(view, surface_send_enter_iterator,
-			new_output->sway_output->wlr_output);
-	}
-}
-
 static bool view_has_executed_criteria(struct sway_view *view,
 		struct criteria *criteria) {
 	for (int i = 0; i < view->executed_criteria->length; ++i) {
@@ -567,9 +525,6 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		&view->surface_new_subsurface);
 	view->surface_new_subsurface.notify = view_handle_surface_new_subsurface;
 
-	wl_signal_add(&view->swayc->events.reparent, &view->container_reparent);
-	view->container_reparent.notify = view_handle_container_reparent;
-
 	if (view->impl->wants_floating && view->impl->wants_floating(view)) {
 		view->border = config->floating_border;
 		view->border_thickness = config->floating_border_thickness;
@@ -587,15 +542,12 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 	view_update_title(view, false);
 	container_notify_subtree_changed(view->swayc->parent);
 	view_execute_criteria(view);
-
-	view_handle_container_reparent(&view->container_reparent, NULL);
 }
 
 void view_unmap(struct sway_view *view) {
 	wl_signal_emit(&view->events.unmap, view);
 
 	wl_list_remove(&view->surface_new_subsurface.link);
-	wl_list_remove(&view->container_reparent.link);
 
 	if (view->urgent_timer) {
 		wl_event_source_remove(view->urgent_timer);
@@ -937,7 +889,7 @@ void view_add_mark(struct sway_view *view, char *mark) {
 
 static void update_marks_texture(struct sway_view *view,
 		struct wlr_texture **texture, struct border_colors *class) {
-	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
+	struct sway_output *output = container_get_effective_output(view->swayc);
 	if (!output) {
 		return;
 	}
@@ -973,7 +925,7 @@ static void update_marks_texture(struct sway_view *view,
 	}
 	free(part);
 
-	double scale = output->sway_output->wlr_output->scale;
+	double scale = output->wlr_output->scale;
 	int width = 0;
 	int height = view->swayc->title_height * scale;
 
@@ -999,7 +951,7 @@ static void update_marks_texture(struct sway_view *view,
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	struct wlr_renderer *renderer = wlr_backend_get_renderer(
-			output->sway_output->wlr_output->backend);
+			output->wlr_output->backend);
 	*texture = wlr_texture_from_pixels(
 			renderer, WL_SHM_FORMAT_ARGB8888, stride, width, height, data);
 	cairo_surface_destroy(surface);
