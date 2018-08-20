@@ -205,6 +205,7 @@ char *workspace_next_name(const char *output_name) {
 				&& workspace_by_name(wso->workspace) == NULL) {
 			free(target);
 			target = strdup(wso->workspace);
+			break;
 		}
 	}
 	if (target != NULL) {
