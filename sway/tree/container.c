@@ -1201,6 +1201,7 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 		container_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 	}
 
+	set_fullscreen_iterator(container, &enable);
 	container_for_each_child(container, set_fullscreen_iterator, &enable);
 
 	container->is_fullscreen = enable;
