@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <wlr/util/edges.h>
 #include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
@@ -250,10 +251,10 @@ static void resize_tiled(struct sway_container *parent, int amount,
 		}
 	}
 
-	enum resize_edge minor_edge = axis == RESIZE_AXIS_HORIZONTAL ?
-		RESIZE_EDGE_LEFT : RESIZE_EDGE_TOP;
-	enum resize_edge major_edge = axis == RESIZE_AXIS_HORIZONTAL ?
-		RESIZE_EDGE_RIGHT : RESIZE_EDGE_BOTTOM;
+	enum wlr_edges minor_edge = axis == RESIZE_AXIS_HORIZONTAL ?
+		WLR_EDGE_LEFT : WLR_EDGE_TOP;
+	enum wlr_edges major_edge = axis == RESIZE_AXIS_HORIZONTAL ?
+		WLR_EDGE_RIGHT : WLR_EDGE_BOTTOM;
 
 	for (int i = 0; i < parent->parent->children->length; i++) {
 		struct sway_container *sibling = parent->parent->children->items[i];

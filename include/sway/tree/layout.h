@@ -15,13 +15,7 @@ enum movement_direction {
 	MOVE_CHILD,
 };
 
-enum resize_edge {
-	RESIZE_EDGE_NONE   = 0,
-	RESIZE_EDGE_LEFT   = 1,
-	RESIZE_EDGE_RIGHT  = 2,
-	RESIZE_EDGE_TOP    = 4,
-	RESIZE_EDGE_BOTTOM = 8,
-};
+enum wlr_edges;
 
 struct sway_container;
 
@@ -52,7 +46,7 @@ struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);
 
 void container_recursive_resize(struct sway_container *container,
-		double amount, enum resize_edge edge);
+		double amount, enum wlr_edges edge);
 
 void container_swap(struct sway_container *con1, struct sway_container *con2);
 
