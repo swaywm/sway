@@ -876,13 +876,13 @@ struct sway_container *container_split(struct sway_container *child,
 }
 
 void container_recursive_resize(struct sway_container *container,
-		double amount, enum resize_edge edge) {
+		double amount, enum wlr_edges edge) {
 	bool layout_match = true;
 	wlr_log(WLR_DEBUG, "Resizing %p with amount: %f", container, amount);
-	if (edge == RESIZE_EDGE_LEFT || edge == RESIZE_EDGE_RIGHT) {
+	if (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_RIGHT) {
 		container->width += amount;
 		layout_match = container->layout == L_HORIZ;
-	} else if (edge == RESIZE_EDGE_TOP || edge == RESIZE_EDGE_BOTTOM) {
+	} else if (edge == WLR_EDGE_TOP || edge == WLR_EDGE_BOTTOM) {
 		container->height += amount;
 		layout_match = container->layout == L_VERT;
 	}
