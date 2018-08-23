@@ -209,7 +209,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 	return res;
 }
 
-struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
+struct cmd_results *execute_command(const char *_exec, struct sway_seat *seat) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
 	// error string we could e.g. concatenate all errors there.)
@@ -218,7 +218,6 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	char *head = exec;
 	char *cmdlist;
 	char *cmd;
-	list_t *views = NULL;
 
 	if (seat == NULL) {
 		// passing a NULL seat means we just pick the default seat
@@ -228,25 +227,20 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 		}
 	}
 
-	config->handler_context.seat = seat;
-
 	head = exec;
 	do {
 		// Extract criteria (valid for this command list only).
-		config->handler_context.using_criteria = false;
+		struct criteria *criteria = NULL;
 		if (*head == '[') {
 			char *error = NULL;
-			struct criteria *criteria = criteria_parse(head, &error);
+			criteria = criteria_parse(head, &error);
 			if (!criteria) {
 				results = cmd_results_new(CMD_INVALID, head,
 					"%s", error);
 				free(error);
 				goto cleanup;
 			}
-			views = criteria_get_views(criteria);
 			head += strlen(criteria->raw);
-			criteria_destroy(criteria);
-			config->handler_context.using_criteria = true;
 			// Skip leading whitespace
 			head += strspn(head, whitespace);
 		}
@@ -280,6 +274,9 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				}
 				results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
 				free_argv(argc, argv);
+				if (criteria) {
+					criteria_destroy(criteria);
+				}
 				goto cleanup;
 			}
 
@@ -289,51 +286,66 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				unescape_string(argv[i]);
 			}
 
-			if (!config->handler_context.using_criteria) {
-				// without criteria, the command acts upon the focused
-				// container
-				config->handler_context.current_container =
-					seat_get_focus_inactive(seat, &root_container);
-				if (!sway_assert(config->handler_context.current_container,
-						"could not get focus-inactive for root container")) {
-					return NULL;
-				}
-				struct cmd_results *res = handler->handle(argc-1, argv+1);
-				if (res->status != CMD_SUCCESS) {
-					free_argv(argc, argv);
-					if (results) {
-						free_cmd_results(results);
-					}
-					results = res;
-					goto cleanup;
-				}
-				free_cmd_results(res);
-			} else {
-				for (int i = 0; i < views->length; ++i) {
-					struct sway_view *view = views->items[i];
-					config->handler_context.current_container = view->swayc;
-					struct cmd_results *res = handler->handle(argc-1, argv+1);
-					if (res->status != CMD_SUCCESS) {
-						free_argv(argc, argv);
-						if (results) {
-							free_cmd_results(results);
-						}
-						results = res;
-						goto cleanup;
-					}
-					free_cmd_results(res);
-				}
-			}
+			struct stored_command command;
+			command.handle = handler->handle;
+			command.argv = argv;
+			command.argc = argc;
+			command.criteria = criteria;
+			struct cmd_results *res = execute_stored_command(&command, seat);
 			free_argv(argc, argv);
+
+			if (res->status != CMD_SUCCESS) {
+				if (results) {
+					free_cmd_results(results);
+				}
+				results = res;
+				if (criteria) {
+					criteria_destroy(criteria);
+				}
+				goto cleanup;
+			}
+			free_cmd_results(res);
+
 		} while(cmdlist);
 	} while(head);
 cleanup:
 	free(exec);
-	list_free(views);
 	if (!results) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 	return results;
+}
+
+struct cmd_results *execute_stored_command(const struct stored_command* command,
+		struct sway_seat* seat) {
+	config->handler_context.seat = seat;
+
+	if (!command->criteria) {
+		// without criteria, the command acts upon the focused container
+		config->handler_context.using_criteria = true;
+		config->handler_context.current_container =
+			seat_get_focus_inactive(seat, &root_container);
+		if (!sway_assert(config->handler_context.current_container,
+				"could not get focus-inactive for root container")) {
+			return NULL;
+		}
+		return command->handle(command->argc-1, command->argv+1);
+	} else {
+		config->handler_context.using_criteria = false;
+		list_t *views = criteria_get_views(command->criteria);
+		for (int i = 0; i < views->length; ++i) {
+			struct sway_view *view = views->items[i];
+			config->handler_context.current_container = view->swayc;
+			struct cmd_results *res = command->handle(command->argc-1, command->argv+1);
+			if (res->status != CMD_SUCCESS) {
+				return res;
+			}
+			free_cmd_results(res);
+		}
+
+		list_free(views);
+	}
+	return NULL;
 }
 
 // this is like execute_command above, except:
