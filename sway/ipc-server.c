@@ -379,7 +379,7 @@ void ipc_event_binding(struct sway_binding *binding) {
 	wlr_log(WLR_DEBUG, "Sending binding event");
 
 	json_object *json_binding = json_object_new_object();
-	json_object_object_add(json_binding, "command", json_object_new_string(binding->command));
+	json_object_object_add(json_binding, "command", json_object_new_string(binding->command_str));
 
 	const char *names[10];
 	int len = get_modifier_names(names, binding->modifiers);

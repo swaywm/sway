@@ -48,7 +48,8 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 	if (!config->reading) {
 		if (!find_handler(argv[0], bar_config_handlers,
-					sizeof(bar_config_handlers))) {
+				sizeof(bar_config_handlers), config->reading,
+				config->active)) {
 			return cmd_results_new(CMD_FAILURE, "bar",
 					"Can only be used in config file.");
 		}
@@ -58,8 +59,10 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 
 	if (argc > 1) {
 		struct bar_config *bar = NULL;
-		if (!find_handler(argv[0], bar_handlers, sizeof(bar_handlers))
-				&& find_handler(argv[1], bar_handlers, sizeof(bar_handlers))) {
+		if (!find_handler(argv[0], bar_handlers, sizeof(bar_handlers),
+				  config->reading, config->active)
+				&& find_handler(argv[1], bar_handlers, sizeof(bar_handlers),
+						config->reading, config->active)) {
 			for (int i = 0; i < config->bars->length; ++i) {
 				struct bar_config *item = config->bars->items[i];
 				if (strcmp(item->id, argv[0]) == 0) {

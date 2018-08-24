@@ -162,7 +162,7 @@ static bool workspace_valid_on_output(const char *output_name,
 
 static void workspace_name_from_binding(const struct sway_binding * binding,
 		const char* output_name, int *min_order, char **earliest_name) {
-	char *cmdlist = strdup(binding->command);
+	char *cmdlist = strdup(binding->command_str);
 	char *dup = cmdlist;
 	char *name = NULL;
 

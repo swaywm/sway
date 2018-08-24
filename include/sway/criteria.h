@@ -36,6 +36,9 @@ struct criteria {
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest
 	char *workspace;
+	// optional refcount for users (like struct stored_command) for which
+	// a criterion may be referenced multiple times.
+	int refcount;
 };
 
 bool criteria_is_empty(struct criteria *criteria);
