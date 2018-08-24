@@ -10,6 +10,7 @@
 #include "log.h"
 
 static void restore_workspaces(struct sway_container *output) {
+	// Workspace output priority
 	for (int i = 0; i < root_container.children->length; i++) {
 		struct sway_container *other = root_container.children->items[i];
 		if (other == output) {
@@ -28,6 +29,15 @@ static void restore_workspaces(struct sway_container *output) {
 			}
 		}
 	}
+
+	// Saved workspaces
+	list_t *saved = root_container.sway_root->saved_workspaces;
+	for (int i = 0; i < saved->length; ++i) {
+		struct sway_container *ws = saved->items[i];
+		container_add_child(output, ws);
+		ipc_event_workspace(NULL, ws, "move");
+	}
+	saved->length = 0;
 
 	output_sort_workspaces(output);
 }
@@ -68,7 +78,7 @@ struct sway_container *output_create(
 	output->sway_output = sway_output;
 	output->name = strdup(name);
 	if (output->name == NULL) {
-		container_destroy(output);
+		output_begin_destroy(output);
 		return NULL;
 	}
 
@@ -101,6 +111,102 @@ struct sway_container *output_create(
 
 	container_create_notify(output);
 	return output;
+}
+
+static void output_evacuate(struct sway_container *output) {
+	if (!output->children->length) {
+		return;
+	}
+	struct sway_container *fallback_output = NULL;
+	if (root_container.children->length > 1) {
+		fallback_output = root_container.children->items[0];
+		if (fallback_output == output) {
+			fallback_output = root_container.children->items[1];
+		}
+	}
+
+	while (output->children->length) {
+		struct sway_container *workspace = output->children->items[0];
+
+		struct sway_container *new_output =
+			workspace_output_get_highest_available(workspace, output);
+		if (!new_output) {
+			new_output = fallback_output;
+		}
+
+		container_remove_child(workspace);
+
+		if (new_output) {
+			workspace_output_add_priority(workspace, new_output);
+			container_add_child(new_output, workspace);
+			output_sort_workspaces(new_output);
+			ipc_event_workspace(NULL, workspace, "move");
+		} else {
+			list_add(root_container.sway_root->saved_workspaces, workspace);
+		}
+	}
+}
+
+void output_destroy(struct sway_container *output) {
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return;
+	}
+	if (!sway_assert(output->destroying,
+				"Tried to free output which wasn't marked as destroying")) {
+		return;
+	}
+	if (!sway_assert(output->ntxnrefs == 0, "Tried to free output "
+				"which is still referenced by transactions")) {
+		return;
+	}
+	free(output->name);
+	free(output->formatted_title);
+	wlr_texture_destroy(output->title_focused);
+	wlr_texture_destroy(output->title_focused_inactive);
+	wlr_texture_destroy(output->title_unfocused);
+	wlr_texture_destroy(output->title_urgent);
+	list_free(output->children);
+	list_free(output->current.children);
+	list_free(output->outputs);
+	free(output);
+
+	// NOTE: We don't actually destroy the sway_output here
+}
+
+static void untrack_output(struct sway_container *con, void *data) {
+	struct sway_output *output = data;
+	int index = list_find(con->outputs, output);
+	if (index != -1) {
+		list_del(con->outputs, index);
+	}
+}
+
+void output_begin_destroy(struct sway_container *output) {
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
+	wl_signal_emit(&output->events.destroy, output);
+
+	output_evacuate(output);
+
+	output->destroying = true;
+	container_set_dirty(output);
+
+	root_for_each_container(untrack_output, output->sway_output);
+
+	wl_list_remove(&output->sway_output->mode.link);
+	wl_list_remove(&output->sway_output->transform.link);
+	wl_list_remove(&output->sway_output->scale.link);
+	wl_list_remove(&output->sway_output->damage_destroy.link);
+	wl_list_remove(&output->sway_output->damage_frame.link);
+
+	output->sway_output->swayc = NULL;
+	output->sway_output = NULL;
+
+	if (output->parent) {
+		container_remove_child(output);
+	}
 }
 
 void output_for_each_workspace(struct sway_container *output,

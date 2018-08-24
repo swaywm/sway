@@ -302,7 +302,7 @@ static void workspace_rejigger(struct sway_container *ws,
 		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
 
 	container_flatten(ws);
-	container_reap_empty_recursive(original_parent);
+	container_reap_empty(original_parent);
 	container_create_notify(new_parent);
 }
 
@@ -325,7 +325,7 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 		container_insert_child(new_parent->parent, container, offs < 0 ? 0 : 1);
 	} else {
 		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
-		container_reap_empty_recursive(new_parent->parent);
+		container_reap_empty(new_parent->parent);
 		container_flatten(new_parent->parent);
 	}
 	container_create_notify(new_parent);
