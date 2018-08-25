@@ -1123,3 +1123,8 @@ void container_discover_outputs(struct sway_container *con) {
 		}
 	}
 }
+
+int container_sibling_index(const struct sway_container *child) {
+	return list_find(child->parent->children, child);
+}
+

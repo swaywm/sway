@@ -31,6 +31,199 @@ static bool parse_movement_direction(const char *name,
 	return true;
 }
 
+/**
+ * Get swayc in the direction of newly entered output.
+ */
+static struct sway_container *get_swayc_in_output_direction(
+		struct sway_container *output, enum movement_direction dir,
+		struct sway_seat *seat) {
+	if (!output) {
+		return NULL;
+	}
+
+	struct sway_container *ws = seat_get_focus_inactive(seat, output);
+	if (ws->type != C_WORKSPACE) {
+		ws = container_parent(ws, C_WORKSPACE);
+	}
+
+	if (ws == NULL) {
+		wlr_log(WLR_ERROR, "got an output without a workspace");
+		return NULL;
+	}
+
+	if (ws->children->length > 0) {
+		switch (dir) {
+		case MOVE_LEFT:
+			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
+				// get most right child of new output
+				return ws->children->items[ws->children->length-1];
+			} else {
+				return seat_get_focus_inactive(seat, ws);
+			}
+		case MOVE_RIGHT:
+			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
+				// get most left child of new output
+				return ws->children->items[0];
+			} else {
+				return seat_get_focus_inactive(seat, ws);
+			}
+		case MOVE_UP:
+		case MOVE_DOWN: {
+			struct sway_container *focused =
+				seat_get_focus_inactive(seat, ws);
+			if (focused && focused->parent) {
+				struct sway_container *parent = focused->parent;
+				if (parent->layout == L_VERT) {
+					if (dir == MOVE_UP) {
+						// get child furthest down on new output
+						int idx = parent->children->length - 1;
+						return parent->children->items[idx];
+					} else if (dir == MOVE_DOWN) {
+						// get child furthest up on new output
+						return parent->children->items[0];
+					}
+				}
+				return focused;
+			}
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	return ws;
+}
+
+static struct sway_container *container_get_in_direction(
+		struct sway_container *container, struct sway_seat *seat,
+		enum movement_direction dir) {
+	struct sway_container *parent = container->parent;
+
+	if (dir == MOVE_CHILD) {
+		return seat_get_focus_inactive(seat, container);
+	}
+	if (container->is_fullscreen) {
+		if (dir == MOVE_PARENT) {
+			return NULL;
+		}
+		container = container_parent(container, C_OUTPUT);
+		parent = container->parent;
+	} else {
+		if (dir == MOVE_PARENT) {
+			if (parent->type == C_OUTPUT || container_is_floating(container)) {
+				return NULL;
+			} else {
+				return parent;
+			}
+		}
+	}
+
+	struct sway_container *wrap_candidate = NULL;
+	while (true) {
+		bool can_move = false;
+		int desired;
+		int idx = list_find(container->parent->children, container);
+		if (idx == -1) {
+			return NULL;
+		}
+		if (parent->type == C_ROOT) {
+			enum wlr_direction wlr_dir = 0;
+			if (!sway_assert(sway_dir_to_wlr(dir, &wlr_dir),
+						"got invalid direction: %d", dir)) {
+				return NULL;
+			}
+			int lx = container->x + container->width / 2;
+			int ly = container->y + container->height / 2;
+			struct wlr_output_layout *layout =
+				root_container.sway_root->output_layout;
+			struct wlr_output *wlr_adjacent =
+				wlr_output_layout_adjacent_output(layout, wlr_dir,
+					container->sway_output->wlr_output, lx, ly);
+			struct sway_container *adjacent =
+				output_from_wlr_output(wlr_adjacent);
+
+			if (!adjacent || adjacent == container) {
+				if (!wrap_candidate) {
+					return NULL;
+				}
+				return seat_get_focus_inactive_view(seat, wrap_candidate);
+			}
+			struct sway_container *next =
+				get_swayc_in_output_direction(adjacent, dir, seat);
+			if (next == NULL) {
+				return NULL;
+			}
+			struct sway_container *next_workspace = next;
+			if (next_workspace->type != C_WORKSPACE) {
+				next_workspace = container_parent(next_workspace, C_WORKSPACE);
+			}
+			sway_assert(next_workspace, "Next container has no workspace");
+			if (next_workspace->sway_workspace->fullscreen) {
+				return seat_get_focus_inactive(seat,
+						next_workspace->sway_workspace->fullscreen);
+			}
+			if (next->children && next->children->length) {
+				// TODO consider floating children as well
+				return seat_get_focus_inactive_view(seat, next);
+			} else {
+				return next;
+			}
+		} else {
+			if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+				if (parent->layout == L_HORIZ || parent->layout == L_TABBED) {
+					can_move = true;
+					desired = idx + (dir == MOVE_LEFT ? -1 : 1);
+				}
+			} else {
+				if (parent->layout == L_VERT || parent->layout == L_STACKED) {
+					can_move = true;
+					desired = idx + (dir == MOVE_UP ? -1 : 1);
+				}
+			}
+		}
+
+		if (can_move) {
+			// TODO handle floating
+			if (desired < 0 || desired >= parent->children->length) {
+				can_move = false;
+				int len = parent->children->length;
+				if (config->focus_wrapping != WRAP_NO && !wrap_candidate
+						&& len > 1) {
+					if (desired < 0) {
+						wrap_candidate = parent->children->items[len-1];
+					} else {
+						wrap_candidate = parent->children->items[0];
+					}
+					if (config->focus_wrapping == WRAP_FORCE) {
+						return seat_get_focus_inactive_view(seat,
+								wrap_candidate);
+					}
+				}
+			} else {
+				struct sway_container *desired_con =
+					parent->children->items[desired];
+				wlr_log(WLR_DEBUG,
+					"cont %d-%p dir %i sibling %d: %p", idx,
+					container, dir, desired, desired_con);
+				return seat_get_focus_inactive_view(seat, desired_con);
+			}
+		}
+
+		if (!can_move) {
+			container = parent;
+			parent = parent->parent;
+			if (!parent) {
+				// wrapping is the last chance
+				if (!wrap_candidate) {
+					return NULL;
+				}
+				return seat_get_focus_inactive_view(seat, wrap_candidate);
+			}
+		}
+	}
+}
+
 static struct cmd_results *focus_mode(struct sway_container *con,
 		struct sway_seat *seat, bool floating) {
 	struct sway_container *ws = con->type == C_WORKSPACE ?

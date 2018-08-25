@@ -52,6 +52,412 @@ static struct sway_container *output_in_direction(const char *direction,
 	return output_by_name(direction);
 }
 
+static void container_move_to(struct sway_container *container,
+		struct sway_container *destination) {
+	if (!sway_assert(container->type == C_CONTAINER ||
+				container->type == C_VIEW, "Expected a container or view")) {
+		return;
+	}
+	if (container == destination
+			|| container_has_ancestor(container, destination)) {
+		return;
+	}
+	struct sway_container *old_parent = NULL;
+	struct sway_container *new_parent = NULL;
+	if (container_is_floating(container)) {
+		// Resolve destination into a workspace
+		struct sway_container *new_ws = NULL;
+		if (destination->type == C_OUTPUT) {
+			new_ws = output_get_active_workspace(destination->sway_output);
+		} else if (destination->type == C_WORKSPACE) {
+			new_ws = destination;
+		} else {
+			new_ws = container_parent(destination, C_WORKSPACE);
+		}
+		if (!new_ws) {
+			// This can happen if the user has run "move container to mark foo",
+			// where mark foo is on a hidden scratchpad container.
+			return;
+		}
+		struct sway_container *old_output =
+			container_parent(container, C_OUTPUT);
+		old_parent = container_remove_child(container);
+		workspace_add_floating(new_ws, container);
+		container_handle_fullscreen_reparent(container, old_parent);
+		// If changing output, center it within the workspace
+		if (old_output != new_ws->parent && !container->is_fullscreen) {
+			container_floating_move_to_center(container);
+		}
+	} else {
+		old_parent = container_remove_child(container);
+		container->width = container->height = 0;
+		container->saved_width = container->saved_height = 0;
+
+		if (destination->type == C_VIEW) {
+			new_parent = container_add_sibling(destination, container);
+		} else {
+			new_parent = destination;
+			container_add_child(destination, container);
+		}
+	}
+
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "move");
+	}
+	container_notify_subtree_changed(old_parent);
+	container_notify_subtree_changed(new_parent);
+
+	// If view was moved to a fullscreen workspace, refocus the fullscreen view
+	struct sway_container *new_workspace = container;
+	if (new_workspace->type != C_WORKSPACE) {
+		new_workspace = container_parent(new_workspace, C_WORKSPACE);
+	}
+	if (new_workspace->sway_workspace->fullscreen) {
+		struct sway_seat *seat;
+		struct sway_container *focus, *focus_ws;
+		wl_list_for_each(seat, &input_manager->seats, link) {
+			focus = seat_get_focus(seat);
+			focus_ws = focus;
+			if (focus_ws->type != C_WORKSPACE) {
+				focus_ws = container_parent(focus_ws, C_WORKSPACE);
+			}
+			if (focus_ws == new_workspace) {
+				struct sway_container *new_focus = seat_get_focus_inactive(seat,
+						new_workspace->sway_workspace->fullscreen);
+				seat_set_focus(seat, new_focus);
+			}
+		}
+	}
+	// Update workspace urgent state
+	struct sway_container *old_workspace = old_parent;
+	if (old_workspace->type != C_WORKSPACE) {
+		old_workspace = container_parent(old_workspace, C_WORKSPACE);
+	}
+	if (new_workspace != old_workspace) {
+		workspace_detect_urgent(new_workspace);
+		if (old_workspace) {
+			workspace_detect_urgent(old_workspace);
+		}
+	}
+}
+
+static bool is_parallel(enum sway_container_layout layout,
+		enum movement_direction dir) {
+	switch (layout) {
+	case L_TABBED:
+	case L_HORIZ:
+		return dir == MOVE_LEFT || dir == MOVE_RIGHT;
+	case L_STACKED:
+	case L_VERT:
+		return dir == MOVE_UP || dir == MOVE_DOWN;
+	default:
+		return false;
+	}
+}
+
+static enum movement_direction invert_movement(enum movement_direction dir) {
+	switch (dir) {
+	case MOVE_LEFT:
+		return MOVE_RIGHT;
+	case MOVE_RIGHT:
+		return MOVE_LEFT;
+	case MOVE_UP:
+		return MOVE_DOWN;
+	case MOVE_DOWN:
+		return MOVE_UP;
+	default:
+		sway_assert(0, "This function expects left|right|up|down");
+		return MOVE_LEFT;
+	}
+}
+
+static int move_offs(enum movement_direction move_dir) {
+	return move_dir == MOVE_LEFT || move_dir == MOVE_UP ? -1 : 1;
+}
+
+/* Gets the index of the most extreme member based on the movement offset */
+static int container_limit(struct sway_container *container,
+		enum movement_direction move_dir) {
+	return move_offs(move_dir) < 0 ? 0 : container->children->length;
+}
+
+/* Takes one child, sets it aside, wraps the rest of the children in a new
+ * container, switches the layout of the workspace, and drops the child back in.
+ * In other words, rejigger it. */
+static void workspace_rejigger(struct sway_container *ws,
+		struct sway_container *child, enum movement_direction move_dir) {
+	struct sway_container *original_parent = child->parent;
+	struct sway_container *new_parent =
+		container_split(ws, ws->layout);
+
+	container_remove_child(child);
+	for (int i = 0; i < ws->children->length; ++i) {
+		struct sway_container *_child = ws->children->items[i];
+		container_move_to(new_parent, _child);
+	}
+
+	int index = move_offs(move_dir);
+	container_insert_child(ws, child, index < 0 ? 0 : 1);
+	ws->layout =
+		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
+
+	container_flatten(ws);
+	container_reap_empty(original_parent);
+	container_create_notify(new_parent);
+}
+
+static void move_out_of_tabs_stacks(struct sway_container *container,
+		struct sway_container *current, enum movement_direction move_dir,
+		int offs) {
+	if (container->parent == current->parent
+			&& current->parent->children->length == 1) {
+		wlr_log(WLR_DEBUG, "Changing layout of %zd", current->parent->id);
+		current->parent->layout = move_dir ==
+			MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
+		return;
+	}
+
+	wlr_log(WLR_DEBUG, "Moving out of tab/stack into a split");
+	bool is_workspace = current->parent->type == C_WORKSPACE;
+	struct sway_container *new_parent = container_split(current->parent,
+		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT);
+	if (is_workspace) {
+		container_insert_child(new_parent->parent, container, offs < 0 ? 0 : 1);
+	} else {
+		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
+		container_reap_empty(new_parent->parent);
+		container_flatten(new_parent->parent);
+	}
+	container_create_notify(new_parent);
+	container_notify_subtree_changed(new_parent);
+}
+
+static void container_move(struct sway_container *container,
+		enum movement_direction move_dir, int move_amt) {
+	if (!sway_assert(
+				container->type != C_CONTAINER || container->type != C_VIEW,
+				"Can only move containers and views")) {
+		return;
+	}
+	int offs = move_offs(move_dir);
+
+	struct sway_container *sibling = NULL;
+	struct sway_container *current = container;
+	struct sway_container *parent = current->parent;
+	struct sway_container *top = &root_container;
+
+	// If moving a fullscreen view, only consider outputs
+	if (container->is_fullscreen) {
+		current = container_parent(container, C_OUTPUT);
+	} else if (container_is_fullscreen_or_child(container) ||
+			container_is_floating_or_child(container)) {
+		// If we've fullscreened a split container, only allow the child to move
+		// around within the fullscreen parent.
+		// Same with floating a split container.
+		struct sway_container *ws = container_parent(container, C_WORKSPACE);
+		top = ws->sway_workspace->fullscreen;
+	}
+
+	struct sway_container *new_parent = container_flatten(parent);
+	if (new_parent != parent) {
+		// Special case: we were the last one in this container, so leave
+		return;
+	}
+
+	while (!sibling) {
+		if (current == top) {
+			return;
+		}
+
+		parent = current->parent;
+		wlr_log(WLR_DEBUG, "Visiting %p %s '%s'", current,
+				container_type_to_str(current->type), current->name);
+
+		int index = container_sibling_index(current);
+
+		switch (current->type) {
+		case C_OUTPUT: {
+			enum wlr_direction wlr_dir = 0;
+			if (!sway_assert(sway_dir_to_wlr(move_dir, &wlr_dir),
+						"got invalid direction: %d", move_dir)) {
+				return;
+			}
+			double ref_lx = current->x + current->width / 2;
+			double ref_ly = current->y + current->height / 2;
+			struct wlr_output *next = wlr_output_layout_adjacent_output(
+				root_container.sway_root->output_layout, wlr_dir,
+				current->sway_output->wlr_output, ref_lx, ref_ly);
+			if (!next) {
+				wlr_log(WLR_DEBUG, "Hit edge of output, nowhere else to go");
+				return;
+			}
+			struct sway_output *next_output = next->data;
+			current = next_output->swayc;
+			wlr_log(WLR_DEBUG, "Selected next output (%s)", current->name);
+			// Select workspace and get outta here
+			current = seat_get_focus_inactive(
+					config->handler_context.seat, current);
+			if (current->type != C_WORKSPACE) {
+				current = container_parent(current, C_WORKSPACE);
+			}
+			sibling = current;
+			break;
+		}
+		case C_WORKSPACE:
+			if (!is_parallel(current->layout, move_dir)) {
+				if (current->children->length >= 2) {
+					wlr_log(WLR_DEBUG, "Rejiggering the workspace (%d kiddos)",
+							current->children->length);
+					workspace_rejigger(current, container, move_dir);
+					return;
+				} else {
+					wlr_log(WLR_DEBUG, "Selecting output");
+					current = current->parent;
+				}
+			} else if (current->layout == L_TABBED
+					|| current->layout == L_STACKED) {
+				wlr_log(WLR_DEBUG, "Rejiggering out of tabs/stacks");
+				workspace_rejigger(current, container, move_dir);
+			} else {
+				wlr_log(WLR_DEBUG, "Selecting output");
+				current = current->parent;
+			}
+			break;
+		case C_CONTAINER:
+		case C_VIEW:
+			if (is_parallel(parent->layout, move_dir)) {
+				if ((index == parent->children->length - 1 && offs > 0)
+						|| (index == 0 && offs < 0)) {
+					if (current->parent == container->parent) {
+						if (!parent->is_fullscreen &&
+								(parent->layout == L_TABBED ||
+								 parent->layout == L_STACKED)) {
+							move_out_of_tabs_stacks(container, current,
+									move_dir, offs);
+							return;
+						} else {
+							wlr_log(WLR_DEBUG, "Hit limit, selecting parent");
+							current = current->parent;
+						}
+					} else {
+						wlr_log(WLR_DEBUG, "Hit limit, "
+								"promoting descendant to sibling");
+						// Special case
+						container_insert_child(current->parent, container,
+								index + (offs < 0 ? 0 : 1));
+						container->width = container->height = 0;
+						return;
+					}
+				} else {
+					sibling = parent->children->items[index + offs];
+					wlr_log(WLR_DEBUG, "Selecting sibling id:%zd", sibling->id);
+				}
+			} else if (!parent->is_fullscreen && (parent->layout == L_TABBED ||
+						parent->layout == L_STACKED)) {
+				move_out_of_tabs_stacks(container, current, move_dir, offs);
+				return;
+			} else {
+				wlr_log(WLR_DEBUG, "Moving up to find a parallel container");
+				current = current->parent;
+			}
+			break;
+		default:
+			sway_assert(0, "Not expecting to see container of type %s here",
+					container_type_to_str(current->type));
+			return;
+		}
+	}
+
+	// Part two: move stuff around
+	int index = container_sibling_index(container);
+	struct sway_container *old_parent = container->parent;
+
+	while (sibling) {
+		switch (sibling->type) {
+		case C_VIEW:
+			if (sibling->parent == container->parent) {
+				wlr_log(WLR_DEBUG, "Swapping siblings");
+				sibling->parent->children->items[index + offs] = container;
+				sibling->parent->children->items[index] = sibling;
+			} else {
+				wlr_log(WLR_DEBUG, "Promoting to sibling of cousin");
+				container_insert_child(sibling->parent, container,
+						container_sibling_index(sibling) + (offs > 0 ? 0 : 1));
+				container->width = container->height = 0;
+			}
+			sibling = NULL;
+			break;
+		case C_WORKSPACE: // Note: only in the case of moving between outputs
+		case C_CONTAINER:
+			if (is_parallel(sibling->layout, move_dir)) {
+				int limit = container_limit(sibling, invert_movement(move_dir));
+				wlr_log(WLR_DEBUG, "limit: %d", limit);
+				wlr_log(WLR_DEBUG,
+						"Reparenting container (parallel) to index %d "
+						"(move dir: %d)", limit, move_dir);
+				container_insert_child(sibling, container, limit);
+				container->width = container->height = 0;
+				sibling = NULL;
+			} else {
+				wlr_log(WLR_DEBUG, "Reparenting container (perpendicular)");
+				struct sway_container *focus_inactive = seat_get_focus_inactive(
+						config->handler_context.seat, sibling);
+				if (focus_inactive && focus_inactive != sibling) {
+					while (focus_inactive->parent != sibling) {
+						focus_inactive = focus_inactive->parent;
+					}
+					wlr_log(WLR_DEBUG, "Focus inactive: id:%zd",
+							focus_inactive->id);
+					sibling = focus_inactive;
+					continue;
+				} else if (sibling->children->length) {
+					wlr_log(WLR_DEBUG, "No focus-inactive, adding arbitrarily");
+					container_remove_child(container);
+					container_add_sibling(sibling->children->items[0], container);
+				} else {
+					wlr_log(WLR_DEBUG, "No kiddos, adding container alone");
+					container_remove_child(container);
+					container_add_child(sibling, container);
+				}
+				container->width = container->height = 0;
+				sibling = NULL;
+			}
+			break;
+		default:
+			sway_assert(0, "Not expecting to see container of type %s here",
+					container_type_to_str(sibling->type));
+			return;
+		}
+	}
+
+	container_notify_subtree_changed(old_parent);
+	container_notify_subtree_changed(container->parent);
+
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "move");
+	}
+
+	if (old_parent) {
+		seat_set_focus(config->handler_context.seat, old_parent);
+		seat_set_focus(config->handler_context.seat, container);
+	}
+
+	struct sway_container *last_ws = old_parent;
+	struct sway_container *next_ws = container->parent;
+	if (last_ws && last_ws->type != C_WORKSPACE) {
+		last_ws = container_parent(last_ws, C_WORKSPACE);
+	}
+	if (next_ws && next_ws->type != C_WORKSPACE) {
+		next_ws = container_parent(next_ws, C_WORKSPACE);
+	}
+	if (last_ws && next_ws && last_ws != next_ws) {
+		ipc_event_workspace(last_ws, next_ws, "focus");
+		workspace_detect_urgent(last_ws);
+		workspace_detect_urgent(next_ws);
+	}
+	container_end_mouse_operation(container);
+}
+
 static struct cmd_results *cmd_move_container(struct sway_container *current,
 		int argc, char **argv) {
 	struct cmd_results *error = NULL;
