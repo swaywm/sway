@@ -32,7 +32,7 @@ void root_create(void) {
 
 	root_container.sway_root = calloc(1, sizeof(*root_container.sway_root));
 	root_container.sway_root->output_layout = wlr_output_layout_create();
-	wl_list_init(&root_container.sway_root->outputs);
+	wl_list_init(&root_container.sway_root->all_outputs);
 #ifdef HAVE_XWAYLAND
 	wl_list_init(&root_container.sway_root->xwayland_unmanaged);
 #endif

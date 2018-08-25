@@ -21,7 +21,7 @@ struct sway_root {
 
 	struct wlr_texture *debug_tree;
 
-	struct wl_list outputs; // sway_output::link
+	struct wl_list all_outputs; // sway_output::link
 
 	list_t *scratchpad; // struct sway_container
 	list_t *saved_workspaces; // For when there's no connected outputs
