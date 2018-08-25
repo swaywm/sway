@@ -26,7 +26,20 @@ static const char *expected_syntax =
 	"'move <container|window|workspace> [to] output <name|direction>' or "
 	"'move <container|window> [to] mark <mark>'";
 
-static struct sway_container *output_in_direction(const char *direction,
+enum wlr_direction opposite_direction(enum wlr_direction d) {
+	switch (d) {
+		case WLR_DIRECTION_UP:
+			return WLR_DIRECTION_DOWN;
+		case WLR_DIRECTION_DOWN:
+			return WLR_DIRECTION_UP;
+		case WLR_DIRECTION_RIGHT:
+			return WLR_DIRECTION_LEFT;
+		default:
+			return WLR_DIRECTION_RIGHT;
+	}
+}
+
+static struct sway_container *output_in_direction(const char *direction_string,
 		struct wlr_output *reference, int ref_lx, int ref_ly) {
 	struct {
 		char *name;
@@ -37,19 +50,34 @@ static struct sway_container *output_in_direction(const char *direction,
 		{ "left", WLR_DIRECTION_LEFT },
 		{ "right", WLR_DIRECTION_RIGHT },
 	};
+
+	enum wlr_direction direction;
+
 	for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
-		if (strcasecmp(names[i].name, direction) == 0) {
-			struct wlr_output *adjacent = wlr_output_layout_adjacent_output(
-					root_container.sway_root->output_layout,
-					names[i].direction, reference, ref_lx, ref_ly);
-			if (adjacent) {
-				struct sway_output *sway_output = adjacent->data;
-				return sway_output->swayc;
-			}
+		if (strcasecmp(names[i].name, direction_string) == 0) {
+			direction = names[i].direction;
 			break;
 		}
 	}
-	return output_by_name(direction);
+
+	if (direction) {
+		struct wlr_output *target = wlr_output_layout_adjacent_output(
+				root_container.sway_root->output_layout,
+				direction, reference, ref_lx, ref_ly);
+
+		if (!target) {
+			target = wlr_output_layout_farthest_output(
+					root_container.sway_root->output_layout,
+					opposite_direction(direction), reference, ref_lx, ref_ly);
+		}
+
+		if (target) {
+			struct sway_output *sway_output = target->data;
+			return sway_output->swayc;
+		}
+	}
+
+	return output_by_name(direction_string);
 }
 
 static void container_move_to(struct sway_container *container,
