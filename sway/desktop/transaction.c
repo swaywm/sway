@@ -54,7 +54,22 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 			con->instruction = NULL;
 		}
 		if (con->destroying && con->ntxnrefs == 0) {
-			container_free(con);
+			switch (con->type) {
+			case C_ROOT:
+				break;
+			case C_OUTPUT:
+				output_destroy(con);
+				break;
+			case C_WORKSPACE:
+				workspace_destroy(con);
+				break;
+			case C_CONTAINER:
+			case C_VIEW:
+				container_destroy(con);
+				break;
+			case C_TYPES:
+				break;
+			}
 		}
 		free(instruction);
 	}

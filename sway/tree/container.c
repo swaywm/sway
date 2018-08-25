@@ -104,209 +104,52 @@ struct sway_container *container_create(enum sway_container_type type) {
 	return c;
 }
 
-static void container_workspace_free(struct sway_workspace *ws) {
-	list_foreach(ws->output_priority, free);
-	list_free(ws->output_priority);
-	list_free(ws->floating);
-	free(ws);
-}
-
-void container_free(struct sway_container *cont) {
-	if (!sway_assert(cont->destroying,
+void container_destroy(struct sway_container *con) {
+	if (!sway_assert(con->type == C_CONTAINER || con->type == C_VIEW,
+				"Expected a container or view")) {
+		return;
+	}
+	if (!sway_assert(con->destroying,
 				"Tried to free container which wasn't marked as destroying")) {
 		return;
 	}
-	if (!sway_assert(cont->ntxnrefs == 0, "Tried to free container "
+	if (!sway_assert(con->ntxnrefs == 0, "Tried to free container "
 				"which is still referenced by transactions")) {
 		return;
 	}
-	free(cont->name);
-	free(cont->formatted_title);
-	wlr_texture_destroy(cont->title_focused);
-	wlr_texture_destroy(cont->title_focused_inactive);
-	wlr_texture_destroy(cont->title_unfocused);
-	wlr_texture_destroy(cont->title_urgent);
-	list_free(cont->children);
-	list_free(cont->current.children);
-	list_free(cont->outputs);
+	free(con->name);
+	free(con->formatted_title);
+	wlr_texture_destroy(con->title_focused);
+	wlr_texture_destroy(con->title_focused_inactive);
+	wlr_texture_destroy(con->title_unfocused);
+	wlr_texture_destroy(con->title_urgent);
+	list_free(con->children);
+	list_free(con->current.children);
+	list_free(con->outputs);
 
-	switch (cont->type) {
-	case C_ROOT:
-		break;
-	case C_OUTPUT:
-		break;
-	case C_WORKSPACE:
-		container_workspace_free(cont->sway_workspace);
-		break;
-	case C_CONTAINER:
-		break;
-	case C_VIEW:
-		{
-			struct sway_view *view = cont->sway_view;
-			view->swayc = NULL;
-			free(view->title_format);
-			view->title_format = NULL;
+	if (con->type == C_VIEW) {
+		struct sway_view *view = con->sway_view;
+		view->swayc = NULL;
+		free(view->title_format);
+		view->title_format = NULL;
 
-			if (view->destroying) {
-				view_free(view);
-			}
+		if (view->destroying) {
+			view_destroy(view);
 		}
-		break;
-	case C_TYPES:
-		sway_assert(false, "Didn't expect to see C_TYPES here");
-		break;
 	}
 
-	free(cont);
+	free(con);
 }
 
-static struct sway_container *container_destroy_noreaping(
-		struct sway_container *con);
-
-static struct sway_container *container_workspace_destroy(
-		struct sway_container *workspace) {
-	if (!sway_assert(workspace, "cannot destroy null workspace")) {
-		return NULL;
-	}
-
-	struct sway_container *output = container_parent(workspace, C_OUTPUT);
-
-	// If we're destroying the output, it will be NULL here. Return the root so
-	// that it doesn't appear that the workspace has refused to be destoyed,
-	// which would leave it in a broken state with no parent.
-	if (output == NULL) {
-		return &root_container;
-	}
-
-	// Do not destroy this if it's the last workspace on this output
-	if (output->children->length == 1) {
-		return NULL;
-	}
-
-	wlr_log(WLR_DEBUG, "destroying workspace '%s'", workspace->name);
-
-	if (!workspace_is_empty(workspace)) {
-		// Move children to a different workspace on this output
-		struct sway_container *new_workspace = NULL;
-		for (int i = 0; i < output->children->length; i++) {
-			if (output->children->items[i] != workspace) {
-				new_workspace = output->children->items[i];
-				break;
-			}
-		}
-
-		wlr_log(WLR_DEBUG, "moving children to different workspace '%s' -> '%s'",
-			workspace->name, new_workspace->name);
-		for (int i = 0; i < workspace->children->length; i++) {
-			container_move_to(workspace->children->items[i], new_workspace);
-		}
-		list_t *floating = workspace->sway_workspace->floating;
-		for (int i = 0; i < floating->length; i++) {
-			struct sway_container *floater = floating->items[i];
-			container_remove_child(floater);
-			workspace_add_floating(new_workspace, floater);
-		}
-	}
-
-	return output;
-}
-
-static void untrack_output(struct sway_container *con, void *data) {
-	struct sway_output *output = data;
-	int index = list_find(con->outputs, output);
-	if (index != -1) {
-		list_del(con->outputs, index);
-	}
-}
-
-static struct sway_container *container_output_destroy(
-		struct sway_container *output) {
-	if (!sway_assert(output, "cannot destroy null output")) {
-		return NULL;
-	}
-
-	if (output->children->length > 0) {
-		// TODO save workspaces when there are no outputs.
-		// TODO also check if there will ever be no outputs except for exiting
-		// program
-		if (root_container.children->length > 1) {
-			// Move workspace from this output to another output
-			struct sway_container *fallback_output =
-				root_container.children->items[0];
-			if (fallback_output == output) {
-				fallback_output = root_container.children->items[1];
-			}
-
-			while (output->children->length) {
-				struct sway_container *workspace = output->children->items[0];
-
-				struct sway_container *new_output =
-					workspace_output_get_highest_available(workspace, output);
-				if (!new_output) {
-					new_output = fallback_output;
-					workspace_output_add_priority(workspace, new_output);
-				}
-
-				container_remove_child(workspace);
-				if (!workspace_is_empty(workspace)) {
-					container_add_child(new_output, workspace);
-					ipc_event_workspace(NULL, workspace, "move");
-				} else {
-					container_destroy(workspace);
-				}
-
-				output_sort_workspaces(new_output);
-			}
-		}
-	}
-
-	root_for_each_container(untrack_output, output->sway_output);
-
-	wl_list_remove(&output->sway_output->mode.link);
-	wl_list_remove(&output->sway_output->transform.link);
-	wl_list_remove(&output->sway_output->scale.link);
-
-	wl_list_remove(&output->sway_output->damage_destroy.link);
-	wl_list_remove(&output->sway_output->damage_frame.link);
-
-	output->sway_output->swayc = NULL;
-	output->sway_output = NULL;
-
-	wlr_log(WLR_DEBUG, "OUTPUT: Destroying output '%s'", output->name);
-
-	return &root_container;
-}
-
-/**
- * Implement the actual destroy logic, without reaping.
- */
-static struct sway_container *container_destroy_noreaping(
-		struct sway_container *con) {
-	if (con == NULL) {
-		return NULL;
-	}
-	if (con->destroying) {
-		return NULL;
+void container_begin_destroy(struct sway_container *con) {
+	if (!sway_assert(con->type == C_CONTAINER || con->type == C_VIEW,
+				"Expected a container or view")) {
+		return;
 	}
 
 	wl_signal_emit(&con->events.destroy, con);
-
-	// emit IPC event
 	if (con->type == C_VIEW) {
 		ipc_event_window(con, "close");
-	} else if (con->type == C_WORKSPACE) {
-		ipc_event_workspace(NULL, con, "empty");
-	}
-
-	// The below functions move their children to somewhere else.
-	if (con->type == C_OUTPUT) {
-		container_output_destroy(con);
-	} else if (con->type == C_WORKSPACE) {
-		// Workspaces will refuse to be destroyed if they're the last workspace
-		// on their output.
-		if (!container_workspace_destroy(con)) {
-			return NULL;
-		}
 	}
 
 	container_end_mouse_operation(con);
@@ -318,50 +161,21 @@ static struct sway_container *container_destroy_noreaping(
 		root_scratchpad_remove_container(con);
 	}
 
-	if (!con->parent) {
-		return NULL;
+	if (con->parent) {
+		container_remove_child(con);
 	}
-
-	return container_remove_child(con);
 }
 
-bool container_reap_empty(struct sway_container *con) {
-	switch (con->type) {
-	case C_ROOT:
-	case C_OUTPUT:
-		// dont reap these
-		break;
-	case C_WORKSPACE:
-		if (!workspace_is_visible(con) && workspace_is_empty(con)) {
-			wlr_log(WLR_DEBUG, "Destroying workspace via reaper");
-			container_destroy_noreaping(con);
-			return true;
-		}
-		break;
-	case C_CONTAINER:
-		if (con->children->length == 0) {
-			container_destroy_noreaping(con);
-			return true;
-		}
-	case C_VIEW:
-		break;
-	case C_TYPES:
-		sway_assert(false, "container_reap_empty called on an invalid "
-			"container");
-		break;
-	}
-
-	return false;
-}
-
-struct sway_container *container_reap_empty_recursive(
-		struct sway_container *con) {
-	while (con) {
+struct sway_container *container_reap_empty(struct sway_container *con) {
+	while (con && con->type == C_CONTAINER) {
 		struct sway_container *next = con->parent;
-		if (!container_reap_empty(con)) {
-			break;
+		if (con->children->length == 0) {
+			container_begin_destroy(con);
 		}
 		con = next;
+	}
+	if (con && con->type == C_WORKSPACE) {
+		workspace_consider_destroy(con);
 	}
 	return con;
 }
@@ -371,32 +185,10 @@ struct sway_container *container_flatten(struct sway_container *container) {
 		struct sway_container *child = container->children->items[0];
 		struct sway_container *parent = container->parent;
 		container_replace_child(container, child);
-		container_destroy_noreaping(container);
+		container_begin_destroy(container);
 		container = parent;
 	}
 	return container;
-}
-
-/**
- * container_destroy() is the first step in destroying a container. We'll emit
- * events, detach it from the tree and mark it as destroying. The container will
- * remain in memory until it's no longer used by a transaction, then it will be
- * freed via container_free().
- *
- * This function just wraps container_destroy_noreaping(), then does reaping.
- */
-struct sway_container *container_destroy(struct sway_container *con) {
-	if (con->is_fullscreen) {
-		struct sway_container *ws = container_parent(con, C_WORKSPACE);
-		ws->sway_workspace->fullscreen = NULL;
-	}
-	struct sway_container *parent = container_destroy_noreaping(con);
-
-	if (!parent) {
-		return NULL;
-	}
-
-	return container_reap_empty_recursive(parent);
 }
 
 static void container_close_func(struct sway_container *container, void *data) {
@@ -1201,6 +993,7 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 		container_set_fullscreen(workspace->sway_workspace->fullscreen, false);
 	}
 
+	set_fullscreen_iterator(container, &enable);
 	container_for_each_child(container, set_fullscreen_iterator, &enable);
 
 	container->is_fullscreen = enable;

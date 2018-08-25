@@ -206,10 +206,30 @@ static void arrange_workspace(struct sway_container *workspace) {
 	wlr_log(WLR_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
 	remove_gaps(workspace);
+
+	double prev_x = workspace->x;
+	double prev_y = workspace->y;
 	workspace->width = area->width;
 	workspace->height = area->height;
 	workspace->x = output->x + area->x;
 	workspace->y = output->y + area->y;
+
+	// Adjust any floating containers
+	double diff_x = workspace->x - prev_x;
+	double diff_y = workspace->y - prev_y;
+	for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
+		struct sway_container *floater =
+			workspace->sway_workspace->floating->items[i];
+		container_floating_translate(floater, diff_x, diff_y);
+		double center_x = floater->x + floater->width / 2;
+		double center_y = floater->y + floater->height / 2;
+		struct wlr_box workspace_box;
+		container_get_box(workspace, &workspace_box);
+		if (!wlr_box_contains_point(&workspace_box, center_x, center_y)) {
+			container_floating_move_to_center(floater);
+		}
+	}
+
 	add_gaps(workspace);
 	container_set_dirty(workspace);
 	wlr_log(WLR_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,

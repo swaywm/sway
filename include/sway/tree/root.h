@@ -24,6 +24,7 @@ struct sway_root {
 	struct wl_list outputs; // sway_output::link
 
 	list_t *scratchpad; // struct sway_container
+	list_t *saved_workspaces; // For when there's no connected outputs
 
 	struct {
 		struct wl_signal new_container;

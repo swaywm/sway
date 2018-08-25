@@ -18,6 +18,15 @@ extern char *prev_workspace_name;
 
 struct sway_container *workspace_get_initial_output(const char *name);
 
+struct sway_container *workspace_create(struct sway_container *output,
+		const char *name);
+
+void workspace_destroy(struct sway_container *workspace);
+
+void workspace_begin_destroy(struct sway_container *workspace);
+
+void workspace_consider_destroy(struct sway_container *ws);
+
 char *workspace_next_name(const char *output_name);
 
 bool workspace_switch(struct sway_container *workspace,

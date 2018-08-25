@@ -39,6 +39,12 @@ struct sway_output {
 	} events;
 };
 
+struct sway_container *output_create(struct sway_output *sway_output);
+
+void output_destroy(struct sway_container *output);
+
+void output_begin_destroy(struct sway_container *output);
+
 typedef void (*sway_surface_iterator_func_t)(struct sway_output *output,
 	struct wlr_surface *surface, struct wlr_box *box, float rotation,
 	void *user_data);

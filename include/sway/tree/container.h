@@ -176,27 +176,6 @@ struct sway_container *container_create(enum sway_container_type type);
 
 const char *container_type_to_str(enum sway_container_type type);
 
-struct sway_container *output_create(struct sway_output *sway_output);
-
-/**
- * Create a new container container. A container container can be a a child of
- * a workspace container or another container container.
- */
-struct sway_container *container_container_create();
-
-/**
- * Create a new output. Outputs are children of the root container and have no
- * order in the tree structure.
- */
-struct sway_container *output_create(struct sway_output *sway_output);
-
-/**
- * Create a new workspace container. Workspaces are children of an output
- * container and are ordered alphabetically by name.
- */
-struct sway_container *workspace_create(struct sway_container *output,
-		const char *name);
-
 /*
  * Create a new view container. A view can be a child of a workspace container
  * or a container container and are rendered in the order and structure of
@@ -205,9 +184,9 @@ struct sway_container *workspace_create(struct sway_container *output,
 struct sway_container *container_view_create(
 		struct sway_container *sibling, struct sway_view *sway_view);
 
-void container_free(struct sway_container *cont);
+void container_destroy(struct sway_container *con);
 
-struct sway_container *container_destroy(struct sway_container *container);
+void container_begin_destroy(struct sway_container *con);
 
 struct sway_container *container_close(struct sway_container *container);
 
@@ -255,10 +234,7 @@ void container_update_textures_recursive(struct sway_container *con);
 
 void container_damage_whole(struct sway_container *container);
 
-bool container_reap_empty(struct sway_container *con);
-
-struct sway_container *container_reap_empty_recursive(
-		struct sway_container *con);
+struct sway_container *container_reap_empty(struct sway_container *con);
 
 struct sway_container *container_flatten(struct sway_container *container);
 

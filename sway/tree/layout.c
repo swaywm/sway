@@ -302,7 +302,7 @@ static void workspace_rejigger(struct sway_container *ws,
 		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
 
 	container_flatten(ws);
-	container_reap_empty_recursive(original_parent);
+	container_reap_empty(original_parent);
 	container_create_notify(new_parent);
 }
 
@@ -325,7 +325,7 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 		container_insert_child(new_parent->parent, container, offs < 0 ? 0 : 1);
 	} else {
 		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
-		container_reap_empty_recursive(new_parent->parent);
+		container_reap_empty(new_parent->parent);
 		container_flatten(new_parent->parent);
 	}
 	container_create_notify(new_parent);
@@ -876,13 +876,13 @@ struct sway_container *container_split(struct sway_container *child,
 }
 
 void container_recursive_resize(struct sway_container *container,
-		double amount, enum resize_edge edge) {
+		double amount, enum wlr_edges edge) {
 	bool layout_match = true;
 	wlr_log(WLR_DEBUG, "Resizing %p with amount: %f", container, amount);
-	if (edge == RESIZE_EDGE_LEFT || edge == RESIZE_EDGE_RIGHT) {
+	if (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_RIGHT) {
 		container->width += amount;
 		layout_match = container->layout == L_HORIZ;
-	} else if (edge == RESIZE_EDGE_TOP || edge == RESIZE_EDGE_BOTTOM) {
+	} else if (edge == WLR_EDGE_TOP || edge == WLR_EDGE_BOTTOM) {
 		container->height += amount;
 		layout_match = container->layout == L_VERT;
 	}
