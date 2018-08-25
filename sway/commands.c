@@ -170,12 +170,12 @@ static int handler_compare(const void *_a, const void *_b) {
 }
 
 struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
-		int handlers_size) {
+		int handlers_size, bool reading, bool active) {
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
 	wlr_log(WLR_DEBUG, "find_handler(%s)", line);
 
-	bool config_loading = config->reading || !config->active;
+	bool config_loading = reading || !active;
 
 	if (!config_loading) {
 		res = bsearch(&d, command_handlers,
@@ -209,16 +209,12 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 	return res;
 }
 
-struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
-	// Even though this function will process multiple commands we will only
-	// return the last error, if any (for now). (Since we have access to an
-	// error string we could e.g. concatenate all errors there.)
-	struct cmd_results *results = NULL;
-	char *exec = strdup(_exec);
-	char *head = exec;
-	char *cmdlist;
-	char *cmd;
-	list_t *views = NULL;
+struct cmd_results *execute_command(const char *_exec, struct sway_seat *seat) {
+	list_t *subcommands = parse_command(_exec, false);
+	if (!subcommands) {
+		return cmd_results_new(CMD_INVALID, _exec,
+				"Failed to allocate list of commands");
+	}
 
 	if (seat == NULL) {
 		// passing a NULL seat means we just pick the default seat
@@ -228,41 +224,82 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 		}
 	}
 
-	config->handler_context.seat = seat;
+	// Even though this function will process multiple commands we will only
+	// return the last error, if any (for now). (Since we have access to an
+	// error string we could e.g. concatenate all errors there.)
+	struct cmd_results *results = NULL;
+	for (int i = 0; i < subcommands->length; i++) {
+		struct stored_command *command = subcommands->items[i];
+		struct cmd_results *res = execute_stored_command(command, seat);
+		if (res->status != CMD_SUCCESS) {
+			if (results) {
+				free_cmd_results(results);
+			}
+			results = res;
+			goto cleanup;
+		}
+	}
+cleanup:
+	for (int i = 0; i < subcommands->length; i++) {
+		free_stored_command(subcommands->items[i]);
+	}
+	list_free(subcommands);
+	if (!results) {
+		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	}
+	return results;
+}
 
-	head = exec;
+void free_stored_command(struct stored_command *command) {
+	free_argv(command->argc, command->argv);
+	if (command->criteria) {
+		command->criteria->refcount--;
+		if (command->criteria->refcount <= 0) {
+			criteria_destroy(command->criteria);
+		}
+	}
+	free(command);
+}
+
+list_t *parse_command(const char *_exec, bool for_runtime) {
+	char *exec = strdup(_exec);
+	if (!exec) {
+		return NULL;
+	}
+	list_t *stored_list = create_list();
+
+	bool abort = false;
+
+	char *head = exec;
 	do {
 		// Extract criteria (valid for this command list only).
-		config->handler_context.using_criteria = false;
+		struct criteria *criteria = NULL;
 		if (*head == '[') {
 			char *error = NULL;
-			struct criteria *criteria = criteria_parse(head, &error);
+			criteria = criteria_parse(head, &error);
 			if (!criteria) {
-				results = cmd_results_new(CMD_INVALID, head,
-					"%s", error);
+				wlr_log(WLR_ERROR, "%s", error);
 				free(error);
 				goto cleanup;
 			}
-			views = criteria_get_views(criteria);
+			criteria->refcount++;
 			head += strlen(criteria->raw);
-			criteria_destroy(criteria);
-			config->handler_context.using_criteria = true;
 			// Skip leading whitespace
 			head += strspn(head, whitespace);
 		}
 		// Split command list
-		cmdlist = argsep(&head, ";");
+		char *cmdlist = argsep(&head, ";");
 		cmdlist += strspn(cmdlist, whitespace);
 		do {
 			// Split commands
-			cmd = argsep(&cmdlist, ",");
+			char *cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
 				wlr_log(WLR_INFO, "Ignoring empty command.");
 				continue;
 			}
 			wlr_log(WLR_INFO, "Handling command '%s'", cmd);
-			//TODO better handling of argv
+			// TODO better handling of argv
 			int argc;
 			char **argv = split_args(cmd, &argc);
 			if (strcmp(argv[0], "exec") != 0) {
@@ -273,14 +310,20 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 					}
 				}
 			}
-			struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
+			// Identify the command
+			struct cmd_handler *handler;
+			if (for_runtime) {
+				handler = find_handler(argv[0], NULL, 0, false, true);
+			} else {
+				handler = find_handler(argv[0], NULL, 0,
+						config->reading, config->active);
+			}
+
 			if (!handler) {
-				if (results) {
-					free_cmd_results(results);
-				}
-				results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
+				wlr_log(WLR_ERROR, "Unknown/invalid command");
 				free_argv(argc, argv);
-				goto cleanup;
+				abort = true;
+				break;
 			}
 
 			// Var replacement, for all but first argument of set
@@ -289,51 +332,79 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				unescape_string(argv[i]);
 			}
 
-			if (!config->handler_context.using_criteria) {
-				// without criteria, the command acts upon the focused
-				// container
-				config->handler_context.current_container =
-					seat_get_focus_inactive(seat, &root_container);
-				if (!sway_assert(config->handler_context.current_container,
-						"could not get focus-inactive for root container")) {
-					return NULL;
-				}
-				struct cmd_results *res = handler->handle(argc-1, argv+1);
-				if (res->status != CMD_SUCCESS) {
-					free_argv(argc, argv);
-					if (results) {
-						free_cmd_results(results);
-					}
-					results = res;
-					goto cleanup;
-				}
-				free_cmd_results(res);
-			} else {
-				for (int i = 0; i < views->length; ++i) {
-					struct sway_view *view = views->items[i];
-					config->handler_context.current_container = view->swayc;
-					struct cmd_results *res = handler->handle(argc-1, argv+1);
-					if (res->status != CMD_SUCCESS) {
-						free_argv(argc, argv);
-						if (results) {
-							free_cmd_results(results);
-						}
-						results = res;
-						goto cleanup;
-					}
-					free_cmd_results(res);
-				}
+			struct stored_command *command = (struct stored_command *)
+					calloc(1, sizeof(struct stored_command));
+			if (!command) {
+				wlr_log(WLR_ERROR, "Unknown/invalid command");
+				abort = true;
+				break;
 			}
-			free_argv(argc, argv);
+
+			// TODO: handle realloc failure case for list_add
+			list_add(stored_list, command);
+
+			command->handle = handler->handle;
+			command->argv = argv;
+			command->argc = argc;
+			command->criteria = criteria;
+			if (criteria) {
+				command->criteria->refcount++;
+			}
 		} while(cmdlist);
+
+		if (criteria) {
+			criteria->refcount--;
+			if (criteria->refcount <= 0) {
+				criteria_destroy(criteria);
+			}
+		}
+		if (abort) {
+			break;
+		}
 	} while(head);
+
 cleanup:
 	free(exec);
-	list_free(views);
-	if (!results) {
-		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return stored_list;
+}
+
+struct cmd_results *execute_stored_command(const struct stored_command *command,
+		struct sway_seat *seat) {
+	if (seat == NULL) {
+		// passing a NULL seat means we just pick the default seat
+		seat = input_manager_get_default_seat(input_manager);
+		if (!sway_assert(seat, "could not find a seat to run the command on")) {
+			return NULL;
+		}
 	}
-	return results;
+	config->handler_context.seat = seat;
+
+	if (!command->criteria) {
+		// without criteria, the command acts upon the focused container
+		config->handler_context.using_criteria = true;
+		config->handler_context.current_container =
+			seat_get_focus_inactive(seat, &root_container);
+		if (!sway_assert(config->handler_context.current_container,
+				"could not get focus-inactive for root container")) {
+			return NULL;
+		}
+		return command->handle(command->argc-1, command->argv+1);
+	} else {
+		config->handler_context.using_criteria = false;
+		list_t *views = criteria_get_views(command->criteria);
+		for (int i = 0; i < views->length; ++i) {
+			struct sway_view *view = views->items[i];
+			config->handler_context.current_container = view->swayc;
+			struct cmd_results *res = command->handle(command->argc-1, command->argv+1);
+			if (res->status != CMD_SUCCESS) {
+				return res;
+			}
+			free_cmd_results(res);
+		}
+
+		list_free(views);
+	}
+	return NULL;
 }
 
 // this is like execute_command above, except:
@@ -366,7 +437,8 @@ struct cmd_results *config_command(char *exec) {
 		goto cleanup;
 	}
 	wlr_log(WLR_INFO, "handling config command '%s'", exec);
-	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
+	struct cmd_handler *handler = find_handler(argv[0], NULL, 0,
+			config->reading, config->active);
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
@@ -402,7 +474,7 @@ struct cmd_results *config_subcommand(char **argv, int argc,
 	free(command);
 
 	struct cmd_handler *handler = find_handler(argv[0], handlers,
-			handlers_size);
+			handlers_size, config->reading, config->active);
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
 		return cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
@@ -436,7 +508,8 @@ struct cmd_results *config_commands_command(char *exec) {
 		goto cleanup;
 	}
 
-	struct cmd_handler *handler = find_handler(cmd, NULL, 0);
+	struct cmd_handler *handler = find_handler(cmd, NULL, 0,
+			config->reading, config->active);
 	if (!handler && strcmp(cmd, "*") != 0) {
 		results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
 		goto cleanup;

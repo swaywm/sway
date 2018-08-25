@@ -47,19 +47,31 @@ static void free_mode(struct sway_mode *mode) {
 	free(mode->name);
 	if (mode->keysym_bindings) {
 		for (i = 0; i < mode->keysym_bindings->length; i++) {
-			free_sway_binding(mode->keysym_bindings->items[i]);
+			struct sway_binding* binding = mode->keysym_bindings->items[i];
+			binding->refcount--;
+			if (binding->refcount <= 0) {
+				free_sway_binding(binding);
+			}
 		}
 		list_free(mode->keysym_bindings);
 	}
 	if (mode->keycode_bindings) {
 		for (i = 0; i < mode->keycode_bindings->length; i++) {
-			free_sway_binding(mode->keycode_bindings->items[i]);
+			struct sway_binding* binding = mode->keycode_bindings->items[i];
+			binding->refcount--;
+			if (binding->refcount <= 0) {
+				free_sway_binding(binding);
+			}
 		}
 		list_free(mode->keycode_bindings);
 	}
 	if (mode->mouse_bindings) {
 		for (i = 0; i < mode->mouse_bindings->length; i++) {
-			free_sway_binding(mode->mouse_bindings->items[i]);
+			struct sway_binding* binding = mode->mouse_bindings->items[i];
+			binding->refcount--;
+			if (binding->refcount <= 0) {
+				free_sway_binding(binding);
+			}
 		}
 		list_free(mode->mouse_bindings);
 	}

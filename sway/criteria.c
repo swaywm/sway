@@ -525,6 +525,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	}
 	++head;
 
+	// zero allocation also ensures the optional refcount defaults to zero
 	struct criteria *criteria = calloc(sizeof(struct criteria), 1);
 	char *name = NULL, *value = NULL;
 	bool in_quotes = false;

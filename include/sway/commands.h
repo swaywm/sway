@@ -47,11 +47,31 @@ struct cmd_results *checkarg(int argc, const char *name,
 		enum expected_args type, int val);
 
 struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
-		int handlers_size);
+		int handlers_size, bool reading, bool active);
 /**
  * Parse and executes a command.
  */
-struct cmd_results *execute_command(char *command,  struct sway_seat *seat);
+struct cmd_results *execute_command(const char *command,  struct sway_seat *seat);
+
+struct stored_command {
+	sway_cmd *handle;
+	int argc;
+	char **argv;
+	struct criteria *criteria;
+};
+void free_stored_command(struct stored_command *command);
+
+/**
+ * Parses a command, and returns a list of stored_commands. If `for_runtime`
+ * is true, then command handler lookup is performed as though it were runtime;
+ * otherwise, as appropriate for the current `config` state.
+ */
+list_t *parse_command(const char *command, bool for_runtime);
+/**
+ * Executes a pre-parsed command. (Returns NULL if command was not unsuccessful: TODO, fix)
+ */
+struct cmd_results *execute_stored_command(const struct stored_command *command,
+		struct sway_seat *seat);
 /**
  * Parse and handles a command during config file loading.
  *

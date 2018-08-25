@@ -38,7 +38,9 @@ enum binding_flags {
 };
 
 /**
- * A key binding and an associated command.
+ * A key binding and an associated command. In order to extend the lifetime
+ * of a binding slightly while executing the reload command, bindings are
+ * reference counted, and should only be freed if the reference count is <= 0.
  */
 struct sway_binding {
 	enum binding_input_type type;
@@ -46,15 +48,9 @@ struct sway_binding {
 	uint32_t flags;
 	list_t *keys; // sorted in ascending order
 	uint32_t modifiers;
-	char *command;
-};
-
-/**
- * A mouse binding and an associated command.
- */
-struct sway_mouse_binding {
-	uint32_t button;
-	char *command;
+	char *command_str; // original command string for IPC compatibility
+	list_t *command; // a preparsed list of struct stored_command
+	int refcount;
 };
 
 /**

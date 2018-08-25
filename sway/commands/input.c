@@ -53,7 +53,8 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 	struct cmd_results *res;
 
 	if (find_handler(argv[1], input_config_handlers,
-			sizeof(input_config_handlers))) {
+			sizeof(input_config_handlers), config->reading,
+			config->active)) {
 		if (config->reading) {
 			res = config_subcommand(argv + 1, argc - 1,
 				input_config_handlers, sizeof(input_config_handlers));
