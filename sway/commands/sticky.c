@@ -8,6 +8,7 @@
 #include "sway/tree/container.h"
 #include "sway/tree/layout.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "list.h"
 
 struct cmd_results *cmd_sticky(int argc, char **argv) {
@@ -44,7 +45,9 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 		struct sway_container *focused_workspace = container_parent(focus, C_WORKSPACE);
 		struct sway_container *current_workspace = container_parent(container, C_WORKSPACE);
 		if (current_workspace != focused_workspace) {
-			container_move_to(container, focused_workspace);
+			container_remove_child(container);
+			workspace_add_floating(focused_workspace, container);
+			container_handle_fullscreen_reparent(container, current_workspace);
 			arrange_windows(focused_workspace);
 			if (!container_reap_empty(current_workspace)) {
 				arrange_windows(current_workspace);

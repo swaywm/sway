@@ -335,4 +335,6 @@ struct sway_output *container_get_effective_output(struct sway_container *con);
 
 void container_discover_outputs(struct sway_container *con);
 
+int container_sibling_index(const struct sway_container *child);
+
 #endif

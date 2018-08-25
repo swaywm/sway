@@ -19,8 +19,14 @@ enum wlr_edges;
 
 struct sway_container;
 
+void container_handle_fullscreen_reparent(struct sway_container *con,
+		struct sway_container *old_parent);
+
 void container_add_child(struct sway_container *parent,
 		struct sway_container *child);
+
+void container_insert_child(struct sway_container *parent,
+		struct sway_container *child, int i);
 
 struct sway_container *container_add_sibling(struct sway_container *parent,
 		struct sway_container *child);
@@ -30,17 +36,10 @@ struct sway_container *container_remove_child(struct sway_container *child);
 struct sway_container *container_replace_child(struct sway_container *child,
 		struct sway_container *new_child);
 
-void container_move_to(struct sway_container* container,
-		struct sway_container* destination);
-
-void container_move(struct sway_container *container,
-		enum movement_direction dir, int move_amt);
+bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
 
 enum sway_container_layout container_get_default_layout(
 		struct sway_container *con);
-
-struct sway_container *container_get_in_direction(struct sway_container
-		*container, struct sway_seat *seat, enum movement_direction dir);
 
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);

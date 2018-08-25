@@ -209,6 +209,19 @@ void output_begin_destroy(struct sway_container *output) {
 	}
 }
 
+struct sway_container *output_from_wlr_output(struct wlr_output *output) {
+	if (output == NULL) {
+		return NULL;
+	}
+	for (int i = 0; i < root_container.children->length; ++i) {
+		struct sway_container *o = root_container.children->items[i];
+		if (o->type == C_OUTPUT && o->sway_output->wlr_output == output) {
+			return o;
+		}
+	}
+	return NULL;
+}
+
 void output_for_each_workspace(struct sway_container *output,
 		void (*f)(struct sway_container *con, void *data), void *data) {
 	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
