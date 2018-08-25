@@ -21,6 +21,7 @@ struct sway_root {
 
 	struct wlr_texture *debug_tree;
 
+	// Includes disabled outputs
 	struct wl_list all_outputs; // sway_output::link
 
 	list_t *scratchpad; // struct sway_container
