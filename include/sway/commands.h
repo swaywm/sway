@@ -51,7 +51,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 /**
  * Parse and executes a command.
  */
-struct cmd_results *execute_command(char *command,  struct sway_seat *seat);
+struct cmd_results *execute_command(const char *command, struct sway_seat *seat);
 /**
  * Parse and handles a command during config file loading.
  *

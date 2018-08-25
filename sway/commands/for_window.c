@@ -8,8 +8,16 @@
 
 struct cmd_results *cmd_for_window(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "for_window", EXPECTED_AT_LEAST, 2))) {
+	if ((error = checkarg(argc, "for_window", EXPECTED_EQUAL_TO, 2))) {
 		return error;
+	}
+
+	// the arguments to cmd_for_window are specially preprocessed,
+	// so that the command to be executed is provided as the final argument.
+	char *cmdlist = strdup(argv[1]);
+	if (!cmdlist) {
+		return cmd_results_new(CMD_FAILURE, "for_window",
+				"Unable to allocate a copy of the command");
 	}
 
 	char *err_str = NULL;
@@ -21,7 +29,7 @@ struct cmd_results *cmd_for_window(int argc, char **argv) {
 	}
 
 	criteria->type = CT_COMMAND;
-	criteria->cmdlist = join_args(argv + 1, argc - 1);
+	criteria->cmdlist = cmdlist;
 
 	list_add(config->criteria, criteria);
 	wlr_log(WLR_DEBUG, "for_window: '%s' -> '%s' added", criteria->raw, criteria->cmdlist);
