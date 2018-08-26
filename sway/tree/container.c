@@ -146,10 +146,10 @@ void container_begin_destroy(struct sway_container *con) {
 		return;
 	}
 
-	wl_signal_emit(&con->events.destroy, con);
 	if (con->type == C_VIEW) {
 		ipc_event_window(con, "close");
 	}
+	wl_signal_emit(&con->events.destroy, con);
 
 	container_end_mouse_operation(con);
 
