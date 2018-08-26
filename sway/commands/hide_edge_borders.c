@@ -1,6 +1,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/container.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 
 static void _configure_view(struct sway_container *con, void *data) {

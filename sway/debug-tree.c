@@ -9,7 +9,7 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/root.h"
 #include "cairo.h"
 #include "config.h"
 #include "pango.h"

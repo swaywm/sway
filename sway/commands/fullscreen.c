@@ -5,7 +5,6 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
-#include "sway/tree/layout.h"
 #include "util.h"
 
 struct cmd_results *cmd_fullscreen(int argc, char **argv) {

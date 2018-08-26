@@ -1,14 +1,140 @@
+#define _POSIX_C_SOURCE 200809L
 #include <strings.h>
 #include <wlr/util/log.h>
 #include "config.h"
+#include "log.h"
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "stringop.h"
 
 static const char* EXPECTED_SYNTAX =
 	"Expected 'swap container with id|con_id|mark <arg>'";
+
+static void swap_places(struct sway_container *con1,
+		struct sway_container *con2) {
+	struct sway_container *temp = malloc(sizeof(struct sway_container));
+	temp->x = con1->x;
+	temp->y = con1->y;
+	temp->width = con1->width;
+	temp->height = con1->height;
+	temp->parent = con1->parent;
+
+	con1->x = con2->x;
+	con1->y = con2->y;
+	con1->width = con2->width;
+	con1->height = con2->height;
+
+	con2->x = temp->x;
+	con2->y = temp->y;
+	con2->width = temp->width;
+	con2->height = temp->height;
+
+	int temp_index = container_sibling_index(con1);
+	container_insert_child(con2->parent, con1, container_sibling_index(con2));
+	container_insert_child(temp->parent, con2, temp_index);
+
+	free(temp);
+}
+
+static void swap_focus(struct sway_container *con1,
+		struct sway_container *con2, struct sway_seat *seat,
+		struct sway_container *focus) {
+	if (focus == con1 || focus == con2) {
+		struct sway_container *ws1 = container_parent(con1, C_WORKSPACE);
+		struct sway_container *ws2 = container_parent(con2, C_WORKSPACE);
+		if (focus == con1 && (con2->parent->layout == L_TABBED
+					|| con2->parent->layout == L_STACKED)) {
+			if (workspace_is_visible(ws2)) {
+				seat_set_focus_warp(seat, con2, false, true);
+			}
+			seat_set_focus(seat, ws1 != ws2 ? con2 : con1);
+		} else if (focus == con2 && (con1->parent->layout == L_TABBED
+					|| con1->parent->layout == L_STACKED)) {
+			if (workspace_is_visible(ws1)) {
+				seat_set_focus_warp(seat, con1, false, true);
+			}
+			seat_set_focus(seat, ws1 != ws2 ? con1 : con2);
+		} else if (ws1 != ws2) {
+			seat_set_focus(seat, focus == con1 ? con2 : con1);
+		} else {
+			seat_set_focus(seat, focus);
+		}
+	} else {
+		seat_set_focus(seat, focus);
+	}
+}
+
+static void container_swap(struct sway_container *con1,
+		struct sway_container *con2) {
+	if (!sway_assert(con1 && con2, "Cannot swap with nothing")) {
+		return;
+	}
+	if (!sway_assert(con1->type >= C_CONTAINER && con2->type >= C_CONTAINER,
+				"Can only swap containers and views")) {
+		return;
+	}
+	if (!sway_assert(!container_has_ancestor(con1, con2)
+				&& !container_has_ancestor(con2, con1),
+				"Cannot swap ancestor and descendant")) {
+		return;
+	}
+	if (!sway_assert(!container_is_floating(con1)
+				&& !container_is_floating(con2),
+				"Swapping with floating containers is not supported")) {
+		return;
+	}
+
+	wlr_log(WLR_DEBUG, "Swapping containers %zu and %zu", con1->id, con2->id);
+
+	int fs1 = con1->is_fullscreen;
+	int fs2 = con2->is_fullscreen;
+	if (fs1) {
+		container_set_fullscreen(con1, false);
+	}
+	if (fs2) {
+		container_set_fullscreen(con2, false);
+	}
+
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_container *focus = seat_get_focus(seat);
+	struct sway_container *vis1 = container_parent(
+			seat_get_focus_inactive(seat, container_parent(con1, C_OUTPUT)),
+			C_WORKSPACE);
+	struct sway_container *vis2 = container_parent(
+			seat_get_focus_inactive(seat, container_parent(con2, C_OUTPUT)),
+			C_WORKSPACE);
+
+	char *stored_prev_name = NULL;
+	if (prev_workspace_name) {
+		stored_prev_name = strdup(prev_workspace_name);
+	}
+
+	swap_places(con1, con2);
+
+	if (!workspace_is_visible(vis1)) {
+		seat_set_focus(seat, seat_get_focus_inactive(seat, vis1));
+	}
+	if (!workspace_is_visible(vis2)) {
+		seat_set_focus(seat, seat_get_focus_inactive(seat, vis2));
+	}
+
+	swap_focus(con1, con2, seat, focus);
+
+	if (stored_prev_name) {
+		free(prev_workspace_name);
+		prev_workspace_name = stored_prev_name;
+	}
+
+	if (fs1) {
+		container_set_fullscreen(con2, true);
+	}
+	if (fs2) {
+		container_set_fullscreen(con1, true);
+	}
+}
 
 static bool test_con_id(struct sway_container *container, void *con_id) {
 	return container->id == (size_t)con_id;

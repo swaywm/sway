@@ -1,7 +1,6 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/output.h"
-#include "sway/tree/layout.h"
 #include "list.h"
 #include "log.h"
 

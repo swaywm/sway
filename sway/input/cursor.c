@@ -20,6 +20,7 @@
 #include "sway/layers.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"

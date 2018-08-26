@@ -2,6 +2,7 @@
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/output.h"
 #include "list.h"

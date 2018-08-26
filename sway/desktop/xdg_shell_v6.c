@@ -12,7 +12,6 @@
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 
 static const struct sway_view_child_impl popup_impl;

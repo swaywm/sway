@@ -23,7 +23,7 @@
 #include "sway/desktop/transaction.h"
 #include "sway/server.h"
 #include "sway/swaynag.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/root.h"
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
 #include "readline.h"

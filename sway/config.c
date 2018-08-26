@@ -27,7 +27,7 @@
 #include "sway/criteria.h"
 #include "sway/swaynag.h"
 #include "sway/tree/arrange.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/root.h"
 #include "sway/tree/workspace.h"
 #include "cairo.h"
 #include "pango.h"

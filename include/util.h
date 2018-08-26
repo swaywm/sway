@@ -4,8 +4,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <sys/types.h> 
+#include <sys/types.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <xkbcommon/xkbcommon.h>
+
+enum movement_direction {
+	MOVE_LEFT,
+	MOVE_RIGHT,
+	MOVE_UP,
+	MOVE_DOWN,
+	MOVE_PARENT,
+	MOVE_CHILD,
+};
 
 /**
  * Wrap i into the range [0, max[
@@ -70,5 +80,7 @@ char* resolve_path(const char* path);
 
 char *b64_encode(const char* binaryData, size_t len, size_t *flen);
 unsigned char *b64_decode(const char *ascii, size_t len, size_t *flen);
+
+bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
 
 #endif
