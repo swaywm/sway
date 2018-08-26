@@ -209,15 +209,93 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 	return res;
 }
 
-struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
+/**
+ * A command is followed by its list of arguments. For instance, "floating" and
+ * ["toggle"]. This function is passed that list, in split_args format, and then
+ * strips quotes, unescapes the content, and expands variables. Some commands
+ * require slightly different preprocessing. (Variable expansion happens
+ * after unescaping so we don't double-unescape variable values.)
+ *
+ * The function returns the new (possibly smaller) value of argc, and if so
+ * zeros out the trailing values of argv.
+ */
+static int preprocess_arg(sway_cmd handle, char **argv, int argc) {
+	if (handle == cmd_exec) {
+		// Quotes are not stripped
+		for (int i = 0; i < argc; ++i) {
+			unescape_string(argv[i]);
+			argv[i] = do_var_replacement(argv[i]);
+		}
+	} else if (handle == cmd_for_window) {
+		// After first argument, merge remainder without preprocessing
+		if (*argv[0] == '\"' || *argv[0] == '\'') {
+			strip_quotes(argv[0]);
+		}
+		unescape_string(argv[0]);
+		argv[0] = do_var_replacement(argv[0]);
+		if (argc >= 2) {
+			// Compress the last arguments to one.
+			char *joined = join_args(argv + 1, argc - 1);
+			argv[1] = joined;
+			while (argc > 2) {
+				argc--;
+				free(argv[argc]);
+				argv[argc] = NULL;
+			}
+		}
+	} else if (handle == cmd_bindcode || handle == cmd_bindsym) {
+		// After the argument after the last '--X' option, merge
+		// remaining arguments without preprocessing.
+		int i = 0;
+		for (; i < argc; i++) {
+			if (*argv[i] == '\"' || *argv[i] == '\'') {
+				strip_quotes(argv[i]);
+			}
+			unescape_string(argv[i]);
+			argv[i] = do_var_replacement(argv[i]);
+			if (argv[i][0] != '-' || argv[i][1] != '-') {
+				break;
+			}
+		}
+		if (i < argc) {
+			if (*argv[i] == '\"' || *argv[i] == '\'') {
+				strip_quotes(argv[i]);
+			}
+			unescape_string(argv[i]);
+			argv[i] = do_var_replacement(argv[i]);
+		}
+		if (i + 1 < argc) {
+			char *joined = join_args(argv + i + 1, argc - i - 1);
+			argv[i + 1] = joined;
+			while (argc > i + 2) {
+				argc--;
+				free(argv[argc]);
+				argv[argc] = NULL;
+			}
+		}
+	} else {
+		// Default case: strip quotes, unescape, and expand variables
+		// When setting a variable, the first argument is ignored.
+		int start = handle == cmd_set ? 1 : 0;
+		for (int i = start; i < argc; ++i) {
+			if (*argv[i] == '\"' || *argv[i] == '\'') {
+				strip_quotes(argv[i]);
+			}
+			unescape_string(argv[i]);
+			argv[i] = do_var_replacement(argv[i]);
+		}
+	}
+
+	return argc;
+}
+
+struct cmd_results *execute_command(const char *_exec, struct sway_seat *seat) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
 	// error string we could e.g. concatenate all errors there.)
 	struct cmd_results *results = NULL;
 	char *exec = strdup(_exec);
 	char *head = exec;
-	char *cmdlist;
-	char *cmd;
 	list_t *views = NULL;
 
 	if (seat == NULL) {
@@ -251,43 +329,42 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			head += strspn(head, whitespace);
 		}
 		// Split command list
-		cmdlist = argsep(&head, ";");
+		char *cmdlist = argsep(&head, ";");
 		cmdlist += strspn(cmdlist, whitespace);
 		do {
 			// Split commands
-			cmd = argsep(&cmdlist, ",");
+			char *cmd = argsep(&cmdlist, ",");
 			cmd += strspn(cmd, whitespace);
 			if (strcmp(cmd, "") == 0) {
 				wlr_log(WLR_INFO, "Ignoring empty command.");
 				continue;
 			}
 			wlr_log(WLR_INFO, "Handling command '%s'", cmd);
-			//TODO better handling of argv
+
+			// Identify which command to execute.
 			int argc;
-			char **argv = split_args(cmd, &argc);
-			if (strcmp(argv[0], "exec") != 0) {
-				int i;
-				for (i = 1; i < argc; ++i) {
-					if (*argv[i] == '\"' || *argv[i] == '\'') {
-						strip_quotes(argv[i]);
-					}
+			char **argv = split_args(exec, &argc);
+			if (!argv) {
+				if (results) {
+					free_cmd_results(results);
 				}
+				results = cmd_results_new(CMD_INVALID, cmd,
+						"Allocation failure");
+				goto cleanup;
 			}
+
 			struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
 			if (!handler) {
 				if (results) {
 					free_cmd_results(results);
 				}
-				results = cmd_results_new(CMD_INVALID, cmd, "Unknown/invalid command");
-				free_argv(argc, argv);
+				results = cmd_results_new(CMD_INVALID, cmd,
+						"Unknown/invalid command");
 				goto cleanup;
 			}
 
-			// Var replacement, for all but first argument of set
-			for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
-				argv[i] = do_var_replacement(argv[i]);
-				unescape_string(argv[i]);
-			}
+			// Process command arguments
+			argc = preprocess_arg(handler->handle, argv + 1, argc - 1) + 1;
 
 			if (!config->handler_context.using_criteria) {
 				// without criteria, the command acts upon the focused
@@ -298,7 +375,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 						"could not get focus-inactive for root container")) {
 					return NULL;
 				}
-				struct cmd_results *res = handler->handle(argc-1, argv+1);
+				struct cmd_results *res = handler->handle(argc - 1, argv + 1);
 				if (res->status != CMD_SUCCESS) {
 					free_argv(argc, argv);
 					if (results) {
@@ -312,7 +389,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 				for (int i = 0; i < views->length; ++i) {
 					struct sway_view *view = views->items[i];
 					config->handler_context.current_container = view->swayc;
-					struct cmd_results *res = handler->handle(argc-1, argv+1);
+					struct cmd_results *res = handler->handle(argc - 1, argv + 1);
 					if (res->status != CMD_SUCCESS) {
 						free_argv(argc, argv);
 						if (results) {
@@ -324,7 +401,9 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 					free_cmd_results(res);
 				}
 			}
-			free_argv(argc, argv);
+			if (argc) {
+				free_argv(argc, argv);
+			}
 		} while(cmdlist);
 	} while(head);
 cleanup:
@@ -372,18 +451,9 @@ struct cmd_results *config_command(char *exec) {
 		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
 		goto cleanup;
 	}
-	int i;
-	// Var replacement, for all but first argument of set
-	// TODO commands
-	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
-		argv[i] = do_var_replacement(argv[i]);
-		unescape_string(argv[i]);
-	}
-	// Strip quotes for first argument.
-	// TODO This part needs to be handled much better
-	if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
-		strip_quotes(argv[1]);
-	}
+
+	argc = preprocess_arg(handler->handle, argv + 1, argc - 1) + 1;
+
 	if (handler->handle) {
 		results = handler->handle(argc-1, argv+1);
 	} else {
@@ -407,11 +477,9 @@ struct cmd_results *config_subcommand(char **argv, int argc,
 		char *input = argv[0] ? argv[0] : "(empty)";
 		return cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
 	}
-	// Strip quotes for first argument.
-	// TODO This part needs to be handled much better
-	if (argc > 1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
-		strip_quotes(argv[1]);
-	}
+
+	argc = preprocess_arg(handler->handle, argv + 1, argc - 1) + 1;
+
 	if (handler->handle) {
 		return handler->handle(argc - 1, argv + 1);
 	}

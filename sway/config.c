@@ -748,7 +748,6 @@ bool read_config(FILE *file, struct sway_config *config,
 }
 
 char *do_var_replacement(char *str) {
-	int i;
 	char *find = str;
 	while ((find = strchr(find, '$'))) {
 		// Skip if escaped.
@@ -758,15 +757,8 @@ char *do_var_replacement(char *str) {
 				continue;
 			}
 		}
-		// Unescape double $ and move on
-		if (find[1] == '$') {
-			size_t length = strlen(find + 1);
-			memmove(find, find + 1, length);
-			find[length] = '\0';
-			++find;
-			continue;
-		}
 		// Find matching variable
+		int i;
 		for (i = 0; i < config->symbols->length; ++i) {
 			struct sway_variable *var = config->symbols->items[i];
 			int vnlen = strlen(var->name);

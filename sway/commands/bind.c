@@ -206,14 +206,20 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		binding->type = BINDING_MOUSE;
 	}
 
-	if (argc < 2) {
+	// the arguments to bindsym and bindcode are specially preprocessed,
+	// so that the command to be executed is provided as the final argument.
+	if (argc != 2) {
 		free_sway_binding(binding);
 		return cmd_results_new(CMD_FAILURE, bindtype,
-			"Invalid %s command "
-			"(expected at least 2 non-option arguments, got %d)", bindtype, argc);
+			"Invalid %s command (expected exactly one non-option "
+			"argument, followed by a command)", bindtype);
 	}
-
-	binding->command = join_args(argv + 1, argc - 1);
+	binding->command = strdup(argv[1]);
+	if (!binding->command) {
+		free_sway_binding(binding);
+		return cmd_results_new(CMD_FAILURE, bindtype,
+			"Unable to allocate a copy of the command");
+	}
 
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
