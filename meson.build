@@ -205,3 +205,14 @@ if (get_option('bash_completions'))
 
 	install_data(bash_files, install_dir: bash_install_dir)
 endif
+
+if (get_option('fish_completions'))
+	fish_files = files(
+		'completions/fish/sway.fish',
+		'completions/fish/swaylock.fish',
+		'completions/fish/swaymsg.fish',
+	)
+	fish_install_dir = datadir + '/fish/completions'
+
+	install_data(fish_files, install_dir: fish_install_dir)
+endif
