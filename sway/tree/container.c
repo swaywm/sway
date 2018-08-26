@@ -1124,7 +1124,38 @@ void container_discover_outputs(struct sway_container *con) {
 	}
 }
 
+void container_remove_gaps(struct sway_container *c) {
+	if (!sway_assert(c->type == C_CONTAINER || c->type == C_VIEW,
+				"Expected a container or view")) {
+		return;
+	}
+	if (c->current_gaps == 0) {
+		return;
+	}
+
+	c->width += c->current_gaps * 2;
+	c->height += c->current_gaps * 2;
+	c->x -= c->current_gaps;
+	c->y -= c->current_gaps;
+	c->current_gaps = 0;
+}
+
+void container_add_gaps(struct sway_container *c) {
+	if (!sway_assert(c->type == C_CONTAINER || c->type == C_VIEW,
+				"Expected a container or view")) {
+		return;
+	}
+	if (c->current_gaps > 0 || c->type != C_VIEW) {
+		return;
+	}
+
+	c->current_gaps = c->has_gaps ? c->gaps_inner : config->gaps_inner;
+	c->x += c->current_gaps;
+	c->y += c->current_gaps;
+	c->width -= 2 * c->current_gaps;
+	c->height -= 2 * c->current_gaps;
+}
+
 int container_sibling_index(const struct sway_container *child) {
 	return list_find(child->parent->children, child);
 }
-

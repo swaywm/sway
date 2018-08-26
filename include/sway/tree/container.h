@@ -335,6 +335,10 @@ struct sway_output *container_get_effective_output(struct sway_container *con);
 
 void container_discover_outputs(struct sway_container *con);
 
+void container_remove_gaps(struct sway_container *container);
+
+void container_add_gaps(struct sway_container *container);
+
 int container_sibling_index(const struct sway_container *child);
 
 #endif

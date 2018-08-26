@@ -665,3 +665,38 @@ void workspace_add_floating(struct sway_container *workspace,
 	container_set_dirty(workspace);
 	container_set_dirty(con);
 }
+
+void workspace_remove_gaps(struct sway_container *ws) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	if (ws->current_gaps == 0) {
+		return;
+	}
+
+	ws->width += ws->current_gaps * 2;
+	ws->height += ws->current_gaps * 2;
+	ws->x -= ws->current_gaps;
+	ws->y -= ws->current_gaps;
+	ws->current_gaps = 0;
+}
+
+void workspace_add_gaps(struct sway_container *ws) {
+	if (!sway_assert(ws->type == C_WORKSPACE, "Expected a workspace")) {
+		return;
+	}
+	if (ws->current_gaps > 0) {
+		return;
+	}
+	bool should_apply =
+		config->edge_gaps || (config->smart_gaps && ws->children->length > 1);
+	if (!should_apply) {
+		return;
+	}
+
+	ws->current_gaps = ws->has_gaps ? ws->gaps_inner : config->gaps_inner;
+	ws->x += ws->current_gaps;
+	ws->y += ws->current_gaps;
+	ws->width -= 2 * ws->current_gaps;
+	ws->height -= 2 * ws->current_gaps;
+}

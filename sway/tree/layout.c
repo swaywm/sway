@@ -218,7 +218,8 @@ struct sway_container *container_split(struct sway_container *child,
 
 	wlr_log(WLR_DEBUG, "creating container %p around %p", cont, child);
 
-	remove_gaps(child);
+	child->type == C_WORKSPACE ? workspace_remove_gaps(child)
+		: container_remove_gaps(child);
 
 	cont->prev_split_layout = L_NONE;
 	cont->width = child->width;
@@ -229,7 +230,7 @@ struct sway_container *container_split(struct sway_container *child,
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 	bool set_focus = (seat_get_focus(seat) == child);
 
-	add_gaps(cont);
+	container_add_gaps(cont);
 
 	if (child->type == C_WORKSPACE) {
 		struct sway_container *workspace = child;
