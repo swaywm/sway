@@ -593,7 +593,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	}
 
 	struct sway_container *last_focus = seat_get_focus(seat);
-	if (container && last_focus == container) {
+	if (last_focus == container) {
 		return;
 	}
 
@@ -601,14 +601,26 @@ void seat_set_focus_warp(struct sway_seat *seat,
 	if (last_workspace && last_workspace->type != C_WORKSPACE) {
 		last_workspace = container_parent(last_workspace, C_WORKSPACE);
 	}
+
+	if (container == NULL) {
+		// Close any popups on the old focus
+		if (last_focus->type == C_VIEW) {
+			view_close_popups(last_focus->sway_view);
+		}
+		seat_send_unfocus(last_focus, seat);
+		seat->has_focus = false;
+		update_debug_tree();
+		return;
+	}
+
 	struct sway_container *new_workspace = container;
-	if (new_workspace && new_workspace->type != C_WORKSPACE) {
+	if (new_workspace->type != C_WORKSPACE) {
 		new_workspace = container_parent(new_workspace, C_WORKSPACE);
 	}
 
-	if (last_workspace && last_workspace == new_workspace
+	if (last_workspace == new_workspace
 			&& last_workspace->sway_workspace->fullscreen
-			&& container && !container_is_fullscreen_or_child(container)) {
+			&& !container_is_fullscreen_or_child(container)) {
 		return;
 	}
 
@@ -617,17 +629,17 @@ void seat_set_focus_warp(struct sway_seat *seat,
 		last_output = container_parent(last_output, C_OUTPUT);
 	}
 	struct sway_container *new_output = container;
-	if (new_output && new_output->type != C_OUTPUT) {
+	if (new_output->type != C_OUTPUT) {
 		new_output = container_parent(new_output, C_OUTPUT);
 	}
 
 	// find new output's old workspace, which might have to be removed if empty
 	struct sway_container *new_output_last_ws = NULL;
-	if (last_output && new_output && last_output != new_output) {
+	if (last_output != new_output) {
 		new_output_last_ws = seat_get_active_child(seat, new_output);
 	}
 
-	if (container && container->parent) {
+	if (container->parent) {
 		struct sway_seat_container *seat_con =
 			seat_container_from_container(seat, container);
 		if (seat_con == NULL) {
@@ -642,8 +654,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 			wl_list_insert(&seat->focus_stack, &parent->link);
 			container_set_dirty(parent->container);
 
-			parent =
-				seat_container_from_container(seat,
+			parent = seat_container_from_container(seat,
 					parent->container->parent);
 		}
 
@@ -652,19 +663,33 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 		if (last_focus) {
 			seat_send_unfocus(last_focus, seat);
+			container_set_dirty(last_focus);
 		}
 		seat_send_focus(container, seat);
 
 		container_set_dirty(container);
 		container_set_dirty(container->parent); // for focused_inactive_child
-		if (last_focus) {
-			container_set_dirty(last_focus);
-		}
+	}
+
+	// emit ipc events
+	if (notify && new_workspace && last_workspace != new_workspace) {
+		 ipc_event_workspace(last_workspace, new_workspace, "focus");
+	}
+	if (container->type == C_VIEW) {
+		ipc_event_window(container, "focus");
+	}
+
+	if (new_output_last_ws) {
+		workspace_consider_destroy(new_output_last_ws);
+	}
+
+	// Close any popups on the old focus
+	if (last_focus && last_focus->type == C_VIEW) {
+		view_close_popups(last_focus->sway_view);
 	}
 
 	// If urgent, either unset the urgency or start a timer to unset it
-	if (container && container->type == C_VIEW &&
-			view_is_urgent(container->sway_view) &&
+	if (container->type == C_VIEW && view_is_urgent(container->sway_view) &&
 			!container->sway_view->urgent_timer) {
 		struct sway_view *view = container->sway_view;
 		if (last_workspace && last_workspace != new_workspace &&
@@ -686,41 +711,20 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	// If we've focused a floating container, bring it to the front.
 	// We do this by putting it at the end of the floating list.
-	if (container && container_is_floating(container)) {
-		list_move_to_end(
-				container->parent->sway_workspace->floating, container);
+	struct sway_container *floater = container;
+	while (floater->parent && floater->parent->type != C_WORKSPACE) {
+		floater = floater->parent;
 	}
-
-	// clean up unfocused empty workspace on new output
-	if (new_output_last_ws) {
-		workspace_consider_destroy(new_output_last_ws);
-		if (new_output_last_ws->destroying &&
-				last_workspace == new_output_last_ws) {
-			last_focus = NULL;
-			last_workspace = NULL;
-		}
-	}
-
-	// Close any popups on the old focus
-	if (last_focus && last_focus != container) {
-		if (last_focus->type == C_VIEW) {
-			view_close_popups(last_focus->sway_view);
-		}
+	if (container_is_floating(floater)) {
+		list_move_to_end(floater->parent->sway_workspace->floating, floater);
 	}
 
 	if (last_focus) {
 		if (last_workspace) {
-			if (notify && last_workspace != new_workspace) {
-				 ipc_event_workspace(last_workspace, new_workspace, "focus");
-			}
 			workspace_consider_destroy(last_workspace);
-			if (last_workspace->destroying && last_workspace == last_focus) {
-				last_focus = NULL;
-			}
 		}
 
-		if (config->mouse_warping && warp) {
-			if (new_output && last_output && new_output != last_output) {
+		if (config->mouse_warping && warp && new_output != last_output) {
 				double x = container->x + container->width / 2.0;
 				double y = container->y + container->height / 2.0;
 				struct wlr_output *wlr_output =
@@ -731,20 +735,11 @@ void seat_set_focus_warp(struct sway_seat *seat,
 						seat->cursor->cursor->y)) {
 					wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
 					cursor_send_pointer_motion(seat->cursor, 0, true);
-				}
 			}
 		}
 	}
 
-	if (container) {
-		if (container->type == C_VIEW) {
-			ipc_event_window(container, "focus");
-		} else if (container->type == C_WORKSPACE) {
-			ipc_event_workspace(NULL, container, "focus");
-		}
-	}
-
-	seat->has_focus = (container != NULL);
+	seat->has_focus = true;
 
 	update_debug_tree();
 }
