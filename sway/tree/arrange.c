@@ -13,27 +13,18 @@
 #include "list.h"
 #include "log.h"
 
-static void apply_horiz_layout(struct sway_container *parent) {
-	size_t num_children = parent->children->length;
-	if (!num_children) {
+static void apply_horiz_layout(list_t *children, struct wlr_box *parent) {
+	if (!children->length) {
 		return;
 	}
-	size_t parent_offset = 0;
-	if (parent->parent->layout == L_TABBED) {
-		parent_offset = container_titlebar_height();
-	} else if (parent->parent->layout == L_STACKED) {
-		parent_offset = container_titlebar_height() *
-			parent->parent->children->length;
-	}
-	size_t parent_height = parent->height - parent_offset;
 
 	// Calculate total width of children
 	double total_width = 0;
-	for (size_t i = 0; i < num_children; ++i) {
-		struct sway_container *child = parent->children->items[i];
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
 		if (child->width <= 0) {
-			if (num_children > 1) {
-				child->width = parent->width / (num_children - 1);
+			if (children->length > 1) {
+				child->width = parent->width / (children->length - 1);
 			} else {
 				child->width = parent->width;
 			}
@@ -46,63 +37,48 @@ static void apply_horiz_layout(struct sway_container *parent) {
 	// Resize windows
 	wlr_log(WLR_DEBUG, "Arranging %p horizontally", parent);
 	double child_x = parent->x;
-	for (size_t i = 0; i < num_children; ++i) {
-		struct sway_container *child = parent->children->items[i];
-		wlr_log(WLR_DEBUG,
-				"Calculating arrangement for %p:%d (will scale %f by %f)",
-				child, child->type, child->width, scale);
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
 		child->x = child_x;
-		child->y = parent->y + parent_offset;
+		child->y = parent->y;
 		child->width = floor(child->width * scale);
-		child->height = parent_height;
+		child->height = parent->height;
 		child_x += child->width;
 
 		// Make last child use remaining width of parent
-		if (i == num_children - 1) {
+		if (i == children->length - 1) {
 			child->width = parent->x + parent->width - child->x;
 		}
 		container_add_gaps(child);
 	}
 }
 
-static void apply_vert_layout(struct sway_container *parent) {
-	size_t num_children = parent->children->length;
-	if (!num_children) {
+static void apply_vert_layout(list_t *children, struct wlr_box *parent) {
+	if (!children->length) {
 		return;
 	}
-	size_t parent_offset = 0;
-	if (parent->parent->layout == L_TABBED) {
-		parent_offset = container_titlebar_height();
-	} else if (parent->parent->layout == L_STACKED) {
-		parent_offset =
-			container_titlebar_height() * parent->parent->children->length;
-	}
-	size_t parent_height = parent->height + parent_offset;
 
 	// Calculate total height of children
 	double total_height = 0;
-	for (size_t i = 0; i < num_children; ++i) {
-		struct sway_container *child = parent->children->items[i];
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
 		if (child->height <= 0) {
-			if (num_children > 1) {
-				child->height = parent_height / (num_children - 1);
+			if (children->length > 1) {
+				child->height = parent->height / (children->length - 1);
 			} else {
-				child->height = parent_height;
+				child->height = parent->height;
 			}
 		}
 		container_remove_gaps(child);
 		total_height += child->height;
 	}
-	double scale = parent_height / total_height;
+	double scale = parent->height / total_height;
 
 	// Resize
 	wlr_log(WLR_DEBUG, "Arranging %p vertically", parent);
-	double child_y = parent->y + parent_offset;
-	for (size_t i = 0; i < num_children; ++i) {
-		struct sway_container *child = parent->children->items[i];
-		wlr_log(WLR_DEBUG,
-				"Calculating arrangement for %p:%d (will scale %f by %f)",
-				child, child->type, child->height, scale);
+	double child_y = parent->y;
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
 		child->x = parent->x;
 		child->y = child_y;
 		child->width = parent->width;
@@ -110,28 +86,21 @@ static void apply_vert_layout(struct sway_container *parent) {
 		child_y += child->height;
 
 		// Make last child use remaining height of parent
-		if (i == num_children - 1) {
-			child->height =
-				parent->y + parent_offset + parent_height - child->y;
+		if (i == children->length - 1) {
+			child->height = parent->y + parent->height - child->y;
 		}
 		container_add_gaps(child);
 	}
 }
 
-static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
-	if (!parent->children->length) {
+static void apply_tabbed_layout(list_t *children, struct wlr_box *parent) {
+	if (!children->length) {
 		return;
 	}
-	size_t parent_offset = 0;
-	if (parent->parent->layout == L_TABBED) {
-		parent_offset = container_titlebar_height();
-	} else if (parent->parent->layout == L_STACKED) {
-		parent_offset =
-			container_titlebar_height() * parent->parent->children->length;
-	}
+	size_t parent_offset = container_titlebar_height();
 	size_t parent_height = parent->height - parent_offset;
-	for (int i = 0; i < parent->children->length; ++i) {
-		struct sway_container *child = parent->children->items[i];
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
 		container_remove_gaps(child);
 		child->x = parent->x;
 		child->y = parent->y + parent_offset;
@@ -141,63 +110,81 @@ static void apply_tabbed_or_stacked_layout(struct sway_container *parent) {
 	}
 }
 
-static void arrange_children_of(struct sway_container *parent);
+static void apply_stacked_layout(list_t *children, struct wlr_box *parent) {
+	if (!children->length) {
+		return;
+	}
+	size_t parent_offset = container_titlebar_height() * children->length;
+	size_t parent_height = parent->height - parent_offset;
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+		container_remove_gaps(child);
+		child->x = parent->x;
+		child->y = parent->y + parent_offset;
+		child->width = parent->width;
+		child->height = parent_height;
+		container_add_gaps(child);
+	}
+}
 
 static void arrange_floating(list_t *floating) {
 	for (int i = 0; i < floating->length; ++i) {
 		struct sway_container *floater = floating->items[i];
-		if (floater->type == C_VIEW) {
-			view_autoconfigure(floater->sway_view);
-		} else {
-			arrange_children_of(floater);
-		}
-		container_set_dirty(floater);
+		arrange_container(floater);
 	}
 }
 
-static void arrange_children_of(struct sway_container *parent) {
-	if (config->reloading) {
-		return;
-	}
-	wlr_log(WLR_DEBUG, "Arranging layout for %p %s %fx%f+%f,%f", parent,
-		parent->name, parent->width, parent->height, parent->x, parent->y);
-
+static void arrange_children(list_t *children,
+		enum sway_container_layout layout, struct wlr_box *parent) {
 	// Calculate x, y, width and height of children
-	switch (parent->layout) {
+	switch (layout) {
 	case L_HORIZ:
-		apply_horiz_layout(parent);
+		apply_horiz_layout(children, parent);
 		break;
 	case L_VERT:
-		apply_vert_layout(parent);
+		apply_vert_layout(children, parent);
 		break;
 	case L_TABBED:
+		apply_tabbed_layout(children, parent);
+		break;
 	case L_STACKED:
-		apply_tabbed_or_stacked_layout(parent);
+		apply_stacked_layout(children, parent);
 		break;
 	case L_NONE:
-		apply_horiz_layout(parent);
+		apply_horiz_layout(children, parent);
 		break;
 	}
 
 	// Recurse into child containers
-	for (int i = 0; i < parent->children->length; ++i) {
-		struct sway_container *child = parent->children->items[i];
-		if (parent->has_gaps && !child->has_gaps) {
-			child->has_gaps = true;
-			child->gaps_inner = parent->gaps_inner;
-			child->gaps_outer = parent->gaps_outer;
-		}
-		if (child->type == C_VIEW) {
-			view_autoconfigure(child->sway_view);
-		} else {
-			arrange_children_of(child);
-		}
-		container_set_dirty(child);
+	for (int i = 0; i < children->length; ++i) {
+		struct sway_container *child = children->items[i];
+		arrange_container(child);
 	}
 }
 
-static void arrange_workspace(struct sway_container *workspace) {
+void arrange_container(struct sway_container *container) {
 	if (config->reloading) {
+		return;
+	}
+	if (container->type == C_VIEW) {
+		view_autoconfigure(container->sway_view);
+		container_set_dirty(container);
+		return;
+	}
+	if (!sway_assert(container->type == C_CONTAINER, "Expected a container")) {
+		return;
+	}
+	struct wlr_box box;
+	container_get_box(container, &box);
+	arrange_children(container->children, container->layout, &box);
+	container_set_dirty(container);
+}
+
+void arrange_workspace(struct sway_container *workspace) {
+	if (config->reloading) {
+		return;
+	}
+	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
 		return;
 	}
 	struct sway_container *output = workspace->parent;
@@ -241,20 +228,20 @@ static void arrange_workspace(struct sway_container *workspace) {
 		fs->y = workspace->parent->y;
 		fs->width = workspace->parent->width;
 		fs->height = workspace->parent->height;
-		if (fs->type == C_VIEW) {
-			view_autoconfigure(fs->sway_view);
-		} else {
-			arrange_children_of(fs);
-		}
-		container_set_dirty(fs);
+		arrange_container(fs);
 	} else {
+		struct wlr_box box;
+		container_get_box(workspace, &box);
+		arrange_children(workspace->children, workspace->layout, &box);
 		arrange_floating(workspace->sway_workspace->floating);
-		arrange_children_of(workspace);
 	}
 }
 
-static void arrange_output(struct sway_container *output) {
+void arrange_output(struct sway_container *output) {
 	if (config->reloading) {
+		return;
+	}
+	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
 		return;
 	}
 	const struct wlr_box *output_box = wlr_output_layout_get_box(
@@ -273,7 +260,7 @@ static void arrange_output(struct sway_container *output) {
 	}
 }
 
-static void arrange_root() {
+void arrange_root(void) {
 	if (config->reloading) {
 		return;
 	}
@@ -304,12 +291,8 @@ void arrange_windows(struct sway_container *container) {
 		arrange_workspace(container);
 		break;
 	case C_CONTAINER:
-		arrange_children_of(container);
-		container_set_dirty(container);
-		break;
 	case C_VIEW:
-		view_autoconfigure(container->sway_view);
-		container_set_dirty(container);
+		arrange_container(container);
 		break;
 	case C_TYPES:
 		break;

@@ -8,6 +8,7 @@
 #include "log.h"
 #include "sway/decoration.h"
 #include "sway/desktop.h"
+#include "sway/desktop/transaction.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/server.h"

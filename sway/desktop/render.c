@@ -660,7 +660,7 @@ static void render_container_tabbed(struct sway_output *output,
 				pstate->swayc_width - width_gap_adjustment - tab_width * i;
 		}
 
-		render_titlebar(output, damage, child, x, cstate->swayc_y, tab_width,
+		render_titlebar(output, damage, child, x, pstate->swayc_y, tab_width,
 				colors, title_texture, marks_texture);
 
 		if (child == current) {
@@ -721,9 +721,9 @@ static void render_container_stacked(struct sway_output *output,
 			marks_texture = view ? view->marks_unfocused : NULL;
 		}
 
-		int y = cstate->swayc_y + titlebar_height * i;
-		render_titlebar(output, damage, child, cstate->swayc_x, y,
-				cstate->swayc_width, colors, title_texture, marks_texture);
+		int y = pstate->swayc_y + titlebar_height * i;
+		render_titlebar(output, damage, child, pstate->swayc_x, y,
+				pstate->swayc_width, colors, title_texture, marks_texture);
 
 		if (child == current) {
 			current_colors = colors;
