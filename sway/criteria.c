@@ -6,6 +6,7 @@
 #include "sway/criteria.h"
 #include "sway/tree/container.h"
 #include "sway/config.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "stringop.h"
 #include "list.h"

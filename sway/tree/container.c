@@ -19,7 +19,6 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
-#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
@@ -1158,4 +1157,224 @@ void container_add_gaps(struct sway_container *c) {
 
 int container_sibling_index(const struct sway_container *child) {
 	return list_find(child->parent->children, child);
+}
+
+void container_handle_fullscreen_reparent(struct sway_container *con,
+		struct sway_container *old_parent) {
+	if (!con->is_fullscreen) {
+		return;
+	}
+	struct sway_container *old_workspace = old_parent;
+	if (old_workspace && old_workspace->type != C_WORKSPACE) {
+		old_workspace = container_parent(old_workspace, C_WORKSPACE);
+	}
+	struct sway_container *new_workspace = container_parent(con, C_WORKSPACE);
+	if (old_workspace == new_workspace) {
+		return;
+	}
+	// Unmark the old workspace as fullscreen
+	if (old_workspace) {
+		old_workspace->sway_workspace->fullscreen = NULL;
+	}
+
+	// Mark the new workspace as fullscreen
+	if (new_workspace->sway_workspace->fullscreen) {
+		container_set_fullscreen(
+				new_workspace->sway_workspace->fullscreen, false);
+	}
+	new_workspace->sway_workspace->fullscreen = con;
+
+	// Resize container to new output dimensions
+	struct sway_container *output = new_workspace->parent;
+	con->x = output->x;
+	con->y = output->y;
+	con->width = output->width;
+	con->height = output->height;
+
+	if (con->type == C_VIEW) {
+		struct sway_view *view = con->sway_view;
+		view->x = output->x;
+		view->y = output->y;
+		view->width = output->width;
+		view->height = output->height;
+	} else {
+		arrange_windows(new_workspace);
+	}
+}
+
+void container_insert_child(struct sway_container *parent,
+		struct sway_container *child, int i) {
+	struct sway_container *old_parent = child->parent;
+	if (old_parent) {
+		container_remove_child(child);
+	}
+	wlr_log(WLR_DEBUG, "Inserting id:%zd at index %d", child->id, i);
+	list_insert(parent->children, i, child);
+	child->parent = parent;
+	container_handle_fullscreen_reparent(child, old_parent);
+}
+
+struct sway_container *container_add_sibling(struct sway_container *fixed,
+		struct sway_container *active) {
+	// TODO handle floating
+	struct sway_container *old_parent = NULL;
+	if (active->parent) {
+		old_parent = active->parent;
+		container_remove_child(active);
+	}
+	struct sway_container *parent = fixed->parent;
+	int i = container_sibling_index(fixed);
+	list_insert(parent->children, i + 1, active);
+	active->parent = parent;
+	container_handle_fullscreen_reparent(active, old_parent);
+	return active->parent;
+}
+
+void container_add_child(struct sway_container *parent,
+		struct sway_container *child) {
+	wlr_log(WLR_DEBUG, "Adding %p (%d, %fx%f) to %p (%d, %fx%f)",
+			child, child->type, child->width, child->height,
+			parent, parent->type, parent->width, parent->height);
+	struct sway_container *old_parent = child->parent;
+	list_add(parent->children, child);
+	child->parent = parent;
+	container_handle_fullscreen_reparent(child, old_parent);
+	if (old_parent) {
+		container_set_dirty(old_parent);
+	}
+	container_set_dirty(child);
+}
+
+struct sway_container *container_remove_child(struct sway_container *child) {
+	if (child->is_fullscreen) {
+		struct sway_container *workspace = container_parent(child, C_WORKSPACE);
+		workspace->sway_workspace->fullscreen = NULL;
+	}
+
+	struct sway_container *parent = child->parent;
+	list_t *list = container_is_floating(child) ?
+		parent->sway_workspace->floating : parent->children;
+	int index = list_find(list, child);
+	if (index != -1) {
+		list_del(list, index);
+	}
+	child->parent = NULL;
+	container_notify_subtree_changed(parent);
+
+	container_set_dirty(parent);
+	container_set_dirty(child);
+
+	return parent;
+}
+
+enum sway_container_layout container_get_default_layout(
+		struct sway_container *con) {
+	if (con->type != C_OUTPUT) {
+		con = container_parent(con, C_OUTPUT);
+	}
+
+	if (!sway_assert(con != NULL,
+			"container_get_default_layout must be called on an attached"
+			" container below the root container")) {
+		return 0;
+	}
+
+	if (config->default_layout != L_NONE) {
+		return config->default_layout;
+	} else if (config->default_orientation != L_NONE) {
+		return config->default_orientation;
+	} else if (con->width >= con->height) {
+		return L_HORIZ;
+	} else {
+		return L_VERT;
+	}
+}
+
+struct sway_container *container_replace_child(struct sway_container *child,
+		struct sway_container *new_child) {
+	struct sway_container *parent = child->parent;
+	if (parent == NULL) {
+		return NULL;
+	}
+
+	list_t *list = container_is_floating(child) ?
+		parent->sway_workspace->floating : parent->children;
+	int i = list_find(list, child);
+
+	if (new_child->parent) {
+		container_remove_child(new_child);
+	}
+	list->items[i] = new_child;
+	new_child->parent = parent;
+	child->parent = NULL;
+
+	// Set geometry for new child
+	new_child->x = child->x;
+	new_child->y = child->y;
+	new_child->width = child->width;
+	new_child->height = child->height;
+
+	// reset geometry for child
+	child->width = 0;
+	child->height = 0;
+
+	return parent;
+}
+
+struct sway_container *container_split(struct sway_container *child,
+		enum sway_container_layout layout) {
+	// TODO floating: cannot split a floating container
+	if (!sway_assert(child, "child cannot be null")) {
+		return NULL;
+	}
+	if (child->type == C_WORKSPACE && child->children->length == 0) {
+		// Special case: this just behaves like splitt
+		child->prev_split_layout = child->layout;
+		child->layout = layout;
+		return child;
+	}
+
+	struct sway_container *cont = container_create(C_CONTAINER);
+
+	wlr_log(WLR_DEBUG, "creating container %p around %p", cont, child);
+
+	child->type == C_WORKSPACE ? workspace_remove_gaps(child)
+		: container_remove_gaps(child);
+
+	cont->prev_split_layout = L_NONE;
+	cont->width = child->width;
+	cont->height = child->height;
+	cont->x = child->x;
+	cont->y = child->y;
+
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	bool set_focus = (seat_get_focus(seat) == child);
+
+	container_add_gaps(cont);
+
+	if (child->type == C_WORKSPACE) {
+		struct sway_container *workspace = child;
+		while (workspace->children->length) {
+			struct sway_container *ws_child = workspace->children->items[0];
+			container_remove_child(ws_child);
+			container_add_child(cont, ws_child);
+		}
+
+		container_add_child(workspace, cont);
+		enum sway_container_layout old_layout = workspace->layout;
+		workspace->layout = layout;
+		cont->layout = old_layout;
+	} else {
+		cont->layout = layout;
+		container_replace_child(child, cont);
+		container_add_child(cont, child);
+	}
+
+	if (set_focus) {
+		seat_set_focus(seat, cont);
+		seat_set_focus(seat, child);
+	}
+
+	container_notify_subtree_changed(cont);
+	return cont;
 }

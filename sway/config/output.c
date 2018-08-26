@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include "sway/config.h"
 #include "sway/output.h"
+#include "sway/tree/root.h"
 #include "log.h"
 
 int output_name_cmp(const void *item, const void *data) {

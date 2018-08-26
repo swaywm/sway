@@ -6,9 +6,11 @@
 #include "sway/input/seat.h"
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/root.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "stringop.h"
+#include "util.h"
 
 static bool parse_movement_direction(const char *name,
 		enum movement_direction *out) {

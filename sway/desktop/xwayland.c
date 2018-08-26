@@ -14,7 +14,6 @@
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 
 static const char *atom_map[ATOM_LAST] = {

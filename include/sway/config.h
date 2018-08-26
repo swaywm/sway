@@ -8,8 +8,8 @@
 #include <xkbcommon/xkbcommon.h>
 #include "list.h"
 #include "swaynag.h"
-#include "tree/layout.h"
 #include "tree/container.h"
+#include "sway/tree/root.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
 // TODO: Refactor this shit

@@ -14,7 +14,6 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
-#include "sway/tree/layout.h"
 #include "log.h"
 
 static void apply_exclusive(struct wlr_box *usable_area,

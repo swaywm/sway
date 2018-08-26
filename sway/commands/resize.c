@@ -159,6 +159,27 @@ static int parallel_size(struct sway_container *c, enum resize_axis a) {
 	return normalize_axis(a) == RESIZE_AXIS_HORIZONTAL ? c->width : c->height;
 }
 
+static void container_recursive_resize(struct sway_container *container,
+		double amount, enum wlr_edges edge) {
+	bool layout_match = true;
+	wlr_log(WLR_DEBUG, "Resizing %p with amount: %f", container, amount);
+	if (edge == WLR_EDGE_LEFT || edge == WLR_EDGE_RIGHT) {
+		container->width += amount;
+		layout_match = container->layout == L_HORIZ;
+	} else if (edge == WLR_EDGE_TOP || edge == WLR_EDGE_BOTTOM) {
+		container->height += amount;
+		layout_match = container->layout == L_VERT;
+	}
+	if (container->children) {
+		for (int i = 0; i < container->children->length; i++) {
+			struct sway_container *child = container->children->items[i];
+			double amt = layout_match ?
+				amount / container->children->length : amount;
+			container_recursive_resize(child, amt, edge);
+		}
+	}
+}
+
 static void resize_tiled(struct sway_container *parent, int amount,
 		enum resize_axis axis) {
 	struct sway_container *focused = parent;

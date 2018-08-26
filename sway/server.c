@@ -24,7 +24,7 @@
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
-#include "sway/tree/layout.h"
+#include "sway/tree/root.h"
 #include "config.h"
 #ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"

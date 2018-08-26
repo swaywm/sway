@@ -6,7 +6,6 @@
 #include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
-#include "sway/tree/layout.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"

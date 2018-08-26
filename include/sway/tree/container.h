@@ -53,6 +53,9 @@ struct sway_output;
 struct sway_workspace;
 struct sway_view;
 
+enum movement_direction;
+enum wlr_direction;
+
 struct sway_container_state {
 	// Container/swayc properties
 	enum sway_container_layout layout;
@@ -340,5 +343,30 @@ void container_remove_gaps(struct sway_container *container);
 void container_add_gaps(struct sway_container *container);
 
 int container_sibling_index(const struct sway_container *child);
+
+void container_handle_fullscreen_reparent(struct sway_container *con,
+		struct sway_container *old_parent);
+
+void container_add_child(struct sway_container *parent,
+		struct sway_container *child);
+
+void container_insert_child(struct sway_container *parent,
+		struct sway_container *child, int i);
+
+struct sway_container *container_add_sibling(struct sway_container *parent,
+		struct sway_container *child);
+
+struct sway_container *container_remove_child(struct sway_container *child);
+
+struct sway_container *container_replace_child(struct sway_container *child,
+		struct sway_container *new_child);
+
+bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
+
+enum sway_container_layout container_get_default_layout(
+		struct sway_container *con);
+
+struct sway_container *container_split(struct sway_container *child,
+		enum sway_container_layout layout);
 
 #endif

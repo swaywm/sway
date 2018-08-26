@@ -19,6 +19,7 @@
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 
 static const char *expected_syntax =
 	"Expected 'move <left|right|up|down> <[px] px>' or "
