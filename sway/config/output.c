@@ -289,7 +289,8 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	bool wildcard = strcmp(oc->name, "*") == 0;
 	char id[128];
 	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
+	wl_list_for_each(sway_output,
+			&root_container.sway_root->all_outputs, link) {
 		char *name = sway_output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), sway_output);
 		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
@@ -349,7 +350,8 @@ static void default_output_config(struct output_config *oc,
 
 void create_default_output_configs(void) {
 	struct sway_output *sway_output;
-	wl_list_for_each(sway_output, &root_container.sway_root->outputs, link) {
+	wl_list_for_each(sway_output,
+			&root_container.sway_root->all_outputs, link) {
 		char *name = sway_output->wlr_output->name;
 		struct output_config *oc = new_output_config(name);
 		default_output_config(oc, sway_output->wlr_output);

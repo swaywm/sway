@@ -556,7 +556,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 	wl_signal_add(&wlr_output->events.destroy, &output->destroy);
 	output->destroy.notify = handle_destroy;
 
-	wl_list_insert(&root_container.sway_root->outputs, &output->link);
+	wl_list_insert(&root_container.sway_root->all_outputs, &output->link);
 
 	if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *mode =
