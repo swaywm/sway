@@ -128,13 +128,18 @@ static void output_evacuate(struct sway_container *output) {
 	while (output->children->length) {
 		struct sway_container *workspace = output->children->items[0];
 
+		container_remove_child(workspace);
+
+		if (workspace_is_empty(workspace)) {
+			workspace_begin_destroy(workspace);
+			continue;
+		}
+
 		struct sway_container *new_output =
 			workspace_output_get_highest_available(workspace, output);
 		if (!new_output) {
 			new_output = fallback_output;
 		}
-
-		container_remove_child(workspace);
 
 		if (new_output) {
 			workspace_output_add_priority(workspace, new_output);
