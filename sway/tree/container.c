@@ -476,10 +476,11 @@ struct sway_container *container_at(struct sway_container *workspace,
 		return NULL;
 	}
 	struct sway_container *c;
-	// Focused view's popups
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus =
 		seat_get_focus_inactive(seat, &root_container);
+	bool is_floating = focus && container_is_floating_or_child(focus);
+	// Focused view's popups
 	if (focus && focus->type == C_VIEW) {
 		surface_at_view(focus, lx, ly, surface, sx, sy);
 		if (*surface && surface_is_popup(*surface)) {
@@ -487,11 +488,27 @@ struct sway_container *container_at(struct sway_container *workspace,
 		}
 		*surface = NULL;
 	}
-	// Floating
+	// If focused is floating, focused view's non-popups
+	if (focus && focus->type == C_VIEW && is_floating) {
+		surface_at_view(focus, lx, ly, surface, sx, sy);
+		if (*surface) {
+			return focus;
+		}
+		*surface = NULL;
+	}
+	// Floating (non-focused)
 	if ((c = floating_container_at(lx, ly, surface, sx, sy))) {
 		return c;
 	}
-	// Tiling
+	// If focused is tiling, focused view's non-popups
+	if (focus && focus->type == C_VIEW && !is_floating) {
+		surface_at_view(focus, lx, ly, surface, sx, sy);
+		if (*surface) {
+			return focus;
+		}
+		*surface = NULL;
+	}
+	// Tiling (non-focused)
 	if ((c = tiling_container_at(workspace, lx, ly, surface, sx, sy))) {
 		return c;
 	}
