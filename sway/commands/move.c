@@ -52,7 +52,7 @@ static struct sway_container *output_in_direction(const char *direction_string,
 		{ "right", WLR_DIRECTION_RIGHT },
 	};
 
-	enum wlr_direction direction;
+	enum wlr_direction direction = 0;
 
 	for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
 		if (strcasecmp(names[i].name, direction_string) == 0) {
