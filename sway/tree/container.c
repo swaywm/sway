@@ -42,14 +42,12 @@ const char *container_type_to_str(enum sway_container_type type) {
 }
 
 void container_create_notify(struct sway_container *container) {
-	// TODO send ipc event type based on the container type
-	wl_signal_emit(&root_container.sway_root->events.new_container, container);
-
 	if (container->type == C_VIEW) {
 		ipc_event_window(container, "new");
 	} else if (container->type == C_WORKSPACE) {
 		ipc_event_workspace(NULL, container, "init");
 	}
+	wl_signal_emit(&root_container.sway_root->events.new_container, container);
 }
 
 void container_update_textures_recursive(struct sway_container *con) {
@@ -146,10 +144,10 @@ void container_begin_destroy(struct sway_container *con) {
 		return;
 	}
 
-	wl_signal_emit(&con->events.destroy, con);
 	if (con->type == C_VIEW) {
 		ipc_event_window(con, "close");
 	}
+	wl_signal_emit(&con->events.destroy, con);
 
 	container_end_mouse_operation(con);
 
