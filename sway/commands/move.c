@@ -529,8 +529,10 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		argv++;
 	}
 
+	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_container *old_parent = current->parent;
 	struct sway_container *old_ws = container_parent(current, C_WORKSPACE);
+	struct sway_container *old_output = container_parent(current, C_OUTPUT);
 	struct sway_container *destination = NULL;
 
 	// determine destination
@@ -586,9 +588,7 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			// We have to create the workspace, but if the container is
 			// sticky and the workspace is going to be created on the same
 			// output, we'll bail out first.
-			if (container_is_floating(current) && current->is_sticky) {
-				struct sway_container *old_output =
-					container_parent(current, C_OUTPUT);
+			if (current->is_sticky) {
 				struct sway_container *new_output =
 					workspace_get_initial_output(ws_name);
 				if (old_output == new_output) {
@@ -601,17 +601,15 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 			ws = workspace_create(NULL, ws_name);
 		}
 		free(ws_name);
-		destination = seat_get_focus_inactive(config->handler_context.seat, ws);
+		destination = seat_get_focus_inactive(seat, ws);
 	} else if (strcasecmp(argv[1], "output") == 0) {
-		struct sway_container *source = container_parent(current, C_OUTPUT);
 		struct sway_container *dest_output = output_in_direction(argv[2],
-				source->sway_output->wlr_output, current->x, current->y);
+				old_output->sway_output->wlr_output, current->x, current->y);
 		if (!dest_output) {
 			return cmd_results_new(CMD_FAILURE, "move workspace",
 				"Can't find output with name/direction '%s'", argv[2]);
 		}
-		destination = seat_get_focus_inactive(
-				config->handler_context.seat, dest_output);
+		destination = seat_get_focus_inactive(seat, dest_output);
 		if (!destination) {
 			// We've never been to this output before
 			destination = dest_output->children->items[0];
@@ -627,21 +625,28 @@ static struct cmd_results *cmd_move_container(struct sway_container *current,
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}
 
-	if (container_is_floating(current) && current->is_sticky) {
-		struct sway_container *old_output = container_parent(current, C_OUTPUT);
-		struct sway_container *new_output = destination->type == C_OUTPUT ?
-			destination : container_parent(destination, C_OUTPUT);
-		if (old_output == new_output) {
-			return cmd_results_new(CMD_FAILURE, "move", "Can't move sticky "
-					"container to another workspace on the same output");
-		}
+	struct sway_container *new_output = destination->type == C_OUTPUT ?
+		destination : container_parent(destination, C_OUTPUT);
+	if (current->is_sticky && old_output == new_output) {
+		return cmd_results_new(CMD_FAILURE, "move", "Can't move sticky "
+				"container to another workspace on the same output");
 	}
+
+	struct sway_container *new_output_last_ws = old_output == new_output ?
+		NULL : seat_get_active_child(seat, new_output);
+	struct sway_container *new_workspace = destination->type == C_WORKSPACE ?
+		destination : container_parent(destination, C_WORKSPACE);
 
 	// move container, arrange windows and return focus
 	container_move_to(current, destination);
-	struct sway_container *focus =
-		seat_get_focus_inactive(config->handler_context.seat, old_parent);
-	seat_set_focus_warp(config->handler_context.seat, focus, true, false);
+	if (new_output_last_ws && new_output_last_ws != new_workspace) {
+		// change focus on destination output back to its last active workspace
+		struct sway_container *new_output_last_focus =
+			seat_get_focus_inactive(seat, new_output_last_ws);
+		seat_set_focus_warp(seat, new_output_last_focus, false, false);
+	}
+	struct sway_container *focus = seat_get_focus_inactive(seat, old_parent);
+	seat_set_focus_warp(seat, focus, true, false);
 	container_reap_empty(old_parent);
 	container_reap_empty(destination->parent);
 
