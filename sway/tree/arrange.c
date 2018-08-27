@@ -216,16 +216,18 @@ static void arrange_workspace(struct sway_container *workspace) {
 	// Adjust any floating containers
 	double diff_x = workspace->x - prev_x;
 	double diff_y = workspace->y - prev_y;
-	for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
-		struct sway_container *floater =
-			workspace->sway_workspace->floating->items[i];
-		container_floating_translate(floater, diff_x, diff_y);
-		double center_x = floater->x + floater->width / 2;
-		double center_y = floater->y + floater->height / 2;
-		struct wlr_box workspace_box;
-		container_get_box(workspace, &workspace_box);
-		if (!wlr_box_contains_point(&workspace_box, center_x, center_y)) {
-			container_floating_move_to_center(floater);
+	if (diff_x != 0 || diff_y != 0) {
+		for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
+			struct sway_container *floater =
+				workspace->sway_workspace->floating->items[i];
+			container_floating_translate(floater, diff_x, diff_y);
+			double center_x = floater->x + floater->width / 2;
+			double center_y = floater->y + floater->height / 2;
+			struct wlr_box workspace_box;
+			container_get_box(workspace, &workspace_box);
+			if (!wlr_box_contains_point(&workspace_box, center_x, center_y)) {
+				container_floating_move_to_center(floater);
+			}
 		}
 	}
 
