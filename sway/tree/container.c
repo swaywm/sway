@@ -1159,11 +1159,23 @@ void container_add_gaps(struct sway_container *c) {
 				"Expected a container or view")) {
 		return;
 	}
-	if (c->current_gaps > 0 || c->type != C_VIEW) {
+	if (c->current_gaps > 0) {
+		return;
+	}
+	// Linear containers don't have gaps because it'd create double gaps
+	if (c->type == C_CONTAINER &&
+			c->layout != L_TABBED && c->layout != L_STACKED) {
+		return;
+	}
+	// Children of tabbed/stacked containers re-use the gaps of the container
+	enum sway_container_layout layout = c->parent->layout;
+	if (layout == L_TABBED || layout == L_STACKED) {
 		return;
 	}
 
-	c->current_gaps = c->has_gaps ? c->gaps_inner : config->gaps_inner;
+	struct sway_container *ws = container_parent(c, C_WORKSPACE);
+
+	c->current_gaps = ws->has_gaps ? ws->gaps_inner : config->gaps_inner;
 	c->x += c->current_gaps;
 	c->y += c->current_gaps;
 	c->width -= 2 * c->current_gaps;
@@ -1353,19 +1365,15 @@ struct sway_container *container_split(struct sway_container *child,
 
 	wlr_log(WLR_DEBUG, "creating container %p around %p", cont, child);
 
-	child->type == C_WORKSPACE ? workspace_remove_gaps(child)
-		: container_remove_gaps(child);
-
 	cont->prev_split_layout = L_NONE;
 	cont->width = child->width;
 	cont->height = child->height;
 	cont->x = child->x;
 	cont->y = child->y;
+	cont->current_gaps = child->current_gaps;
 
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 	bool set_focus = (seat_get_focus(seat) == child);
-
-	container_add_gaps(cont);
 
 	if (child->type == C_WORKSPACE) {
 		struct sway_container *workspace = child;
