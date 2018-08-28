@@ -103,7 +103,7 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			parent->prev_split_layout = prev;
 		}
 		container_notify_subtree_changed(parent);
-		arrange_windows(parent);
+		arrange_windows(parent->parent);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

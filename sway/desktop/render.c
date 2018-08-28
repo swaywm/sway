@@ -619,9 +619,7 @@ static void render_container_tabbed(struct sway_output *output,
 	struct sway_container *current = pstate->focused_inactive_child;
 	struct border_colors *current_colors = &config->border_colors.unfocused;
 
-	double width_gap_adjustment = 2 * pstate->current_gaps;
-	int tab_width =
-		(pstate->swayc_width - width_gap_adjustment) / pstate->children->length;
+	int tab_width = (pstate->swayc_width) / pstate->children->length;
 
 	// Render tabs
 	for (int i = 0; i < pstate->children->length; ++i) {
@@ -656,8 +654,7 @@ static void render_container_tabbed(struct sway_output *output,
 
 		// Make last tab use the remaining width of the parent
 		if (i == pstate->children->length - 1) {
-			tab_width =
-				pstate->swayc_width - width_gap_adjustment - tab_width * i;
+			tab_width = pstate->swayc_width - tab_width * i;
 		}
 
 		render_titlebar(output, damage, child, x, pstate->swayc_y, tab_width,
