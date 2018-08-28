@@ -22,7 +22,6 @@ struct sway_transaction {
 	list_t *instructions;   // struct sway_transaction_instruction *
 	size_t num_waiting;
 	size_t num_configures;
-	uint32_t con_ids;       // Bitwise XOR of view container IDs
 	struct timespec commit_time;
 };
 
@@ -218,6 +217,22 @@ static void transaction_apply(struct sway_transaction *transaction) {
 
 static void transaction_commit(struct sway_transaction *transaction);
 
+// Return true if both transactions operate on the same containers
+static bool transaction_same_containers(struct sway_transaction *a,
+		struct sway_transaction *b) {
+	if (a->instructions->length != b->instructions->length) {
+		return false;
+	}
+	for (int i = 0; i < a->instructions->length; ++i) {
+		struct sway_transaction_instruction *a_inst = a->instructions->items[i];
+		struct sway_transaction_instruction *b_inst = b->instructions->items[i];
+		if (a_inst->container != b_inst->container) {
+			return false;
+		}
+	}
+	return true;
+}
+
 static void transaction_progress_queue() {
 	if (!server.transactions->length) {
 		return;
@@ -242,7 +257,7 @@ static void transaction_progress_queue() {
 	while (server.transactions->length >= 2) {
 		struct sway_transaction *a = server.transactions->items[0];
 		struct sway_transaction *b = server.transactions->items[1];
-		if (a->con_ids == b->con_ids) {
+		if (transaction_same_containers(a, b)) {
 			list_del(server.transactions, 0);
 			transaction_destroy(a);
 		} else {
@@ -294,7 +309,6 @@ static void transaction_commit(struct sway_transaction *transaction) {
 					instruction->state.view_width,
 					instruction->state.view_height);
 			++transaction->num_waiting;
-			transaction->con_ids ^= con->id;
 
 			// From here on we are rendering a saved buffer of the view, which
 			// means we can send a frame done event to make the client redraw it
