@@ -173,6 +173,9 @@ struct sway_container *container_reap_empty(struct sway_container *con) {
 	}
 	if (con && con->type == C_WORKSPACE) {
 		workspace_consider_destroy(con);
+		if (con->destroying) {
+			con = con->parent;
+		}
 	}
 	return con;
 }
