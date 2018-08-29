@@ -126,7 +126,7 @@ static void copy_pending_state(struct sway_container *container,
 		// Set focused_inactive_child to the direct tiling child
 		struct sway_container *focus =
 			seat_get_focus_inactive_tiling(seat, container);
-		if (focus && focus->type == C_CONTAINER) {
+		if (focus && focus->type > C_WORKSPACE) {
 			while (focus->parent->type != C_WORKSPACE) {
 				focus = focus->parent;
 			}
