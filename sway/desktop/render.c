@@ -238,8 +238,8 @@ static void render_saved_view(struct sway_view *view,
 	};
 
 	struct wlr_box output_box = {
-		.width = output->wlr_output->width,
-		.height = output->wlr_output->height,
+		.width = output->width,
+		.height = output->height,
 	};
 
 	struct wlr_box intersection;

@@ -219,8 +219,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 		struct sway_container *fs = workspace->fullscreen;
 		fs->x = output->wlr_output->lx;
 		fs->y = output->wlr_output->ly;
-		fs->width = output->wlr_output->width;
-		fs->height = output->wlr_output->height;
+		fs->width = output->width;
+		fs->height = output->height;
 		arrange_container(fs);
 	} else {
 		struct wlr_box box;

@@ -98,8 +98,8 @@ static bool get_surface_box(struct surface_iterator_data *data,
 	wlr_box_rotated_bounds(&box, data->rotation, &rotated_box);
 
 	struct wlr_box output_box = {
-		.width = output->wlr_output->width,
-		.height = output->wlr_output->height,
+		.width = output->width,
+		.height = output->height,
 	};
 
 	struct wlr_box intersection;
@@ -249,8 +249,8 @@ bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
 		struct sway_layer_surface *sway_layer_surface =
 			layer_from_wlr_layer_surface(wlr_layer_surface);
 		pixman_box32_t output_box = {
-			.x2 = output->wlr_output->width,
-			.y2 = output->wlr_output->height,
+			.x2 = output->width,
+			.y2 = output->height,
 		};
 		pixman_region32_t surface_opaque_box;
 		pixman_region32_init(&surface_opaque_box);

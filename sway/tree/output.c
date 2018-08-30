@@ -75,6 +75,11 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	apply_output_config(oc, output);
 	list_add(root->outputs, output);
 
+	output->lx = wlr_output->lx;
+	output->ly = wlr_output->ly;
+	wlr_output_transformed_resolution(wlr_output,
+			&output->width, &output->height);
+
 	restore_workspaces(output);
 
 	if (!output->workspaces->length) {
@@ -265,8 +270,8 @@ struct sway_output *output_get_in_direction(struct sway_output *reference,
 				"got invalid direction: %d", direction)) {
 		return NULL;
 	}
-	int lx = reference->wlr_output->lx + reference->wlr_output->width / 2;
-	int ly = reference->wlr_output->ly + reference->wlr_output->height / 2;
+	int lx = reference->wlr_output->lx + reference->width / 2;
+	int ly = reference->wlr_output->ly + reference->height / 2;
 	struct wlr_output *wlr_adjacent = wlr_output_layout_adjacent_output(
 			root->output_layout, wlr_dir, reference->wlr_output, lx, ly);
 	if (!wlr_adjacent) {
@@ -346,10 +351,10 @@ void output_sort_workspaces(struct sway_output *output) {
 }
 
 void output_get_box(struct sway_output *output, struct wlr_box *box) {
-	box->x = output->wlr_output->lx;
-	box->y = output->wlr_output->ly;
-	box->width = output->wlr_output->width;
-	box->height = output->wlr_output->height;
+	box->x = output->lx;
+	box->y = output->ly;
+	box->width = output->width;
+	box->height = output->height;
 }
 
 enum sway_container_layout output_get_default_layout(
@@ -360,7 +365,7 @@ enum sway_container_layout output_get_default_layout(
 	if (config->default_orientation != L_NONE) {
 		return config->default_orientation;
 	}
-	if (output->wlr_output->height > output->wlr_output->width) {
+	if (output->height > output->width) {
 		return L_VERT;
 	}
 	return L_HORIZ;

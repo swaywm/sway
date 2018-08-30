@@ -28,6 +28,9 @@ struct sway_output {
 	struct timespec last_frame;
 	struct wlr_output_damage *damage;
 
+	int lx, ly;
+	int width, height;
+
 	bool enabled;
 	list_t *workspaces;
 

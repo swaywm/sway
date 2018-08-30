@@ -167,10 +167,10 @@ void view_autoconfigure(struct sway_view *view) {
 	struct sway_output *output = view->container->workspace->output;
 
 	if (view->container->is_fullscreen) {
-		view->x = output->wlr_output->lx;
-		view->y = output->wlr_output->ly;
-		view->width = output->wlr_output->width;
-		view->height = output->wlr_output->height;
+		view->x = output->lx;
+		view->y = output->ly;
+		view->width = output->width;
+		view->height = output->height;
 		return;
 	}
 

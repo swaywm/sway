@@ -43,10 +43,10 @@ static char *get_string(struct sway_node *node) {
 	case N_OUTPUT:
 		snprintf(buffer, 512, "N_OUTPUT id:%zd '%s' %dx%d@%d,%d", node->id,
 				node->sway_output->wlr_output->name,
-				node->sway_output->wlr_output->width,
-				node->sway_output->wlr_output->height,
-				node->sway_output->wlr_output->lx,
-				node->sway_output->wlr_output->ly);
+				node->sway_output->width,
+				node->sway_output->height,
+				node->sway_output->lx,
+				node->sway_output->ly);
 		break;
 	case N_WORKSPACE:
 		snprintf(buffer, 512, "N_WORKSPACE id:%zd '%s' %s %dx%d@%.f,%.f",
@@ -128,11 +128,11 @@ void update_debug_tree() {
 	int width = 640, height = 480;
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		if (output->wlr_output->width > width) {
-			width = output->wlr_output->width;
+		if (output->width > width) {
+			width = output->width;
 		}
-		if (output->wlr_output->height > height) {
-			height = output->wlr_output->height;
+		if (output->height > height) {
+			height = output->height;
 		}
 	}
 	cairo_surface_t *surface =
