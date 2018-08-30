@@ -15,8 +15,7 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 	if ((error = checkarg(argc, "sticky", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	struct sway_container *container =
-		config->handler_context.current_container;
+	struct sway_container *container = config->handler_context.container;
 	if (!container_is_floating(container)) {
 		return cmd_results_new(CMD_FAILURE, "sticky",
 			"Can't set sticky on a tiled container");
@@ -37,20 +36,16 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 	container->is_sticky = wants_sticky;
 
 	if (wants_sticky) {
-		// move container to focused workspace
-		struct sway_container *output = container_parent(container, C_OUTPUT);
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct sway_container *focus = seat_get_focus_inactive(seat, output);
-		struct sway_container *focused_workspace = container_parent(focus, C_WORKSPACE);
-		struct sway_container *current_workspace = container_parent(container, C_WORKSPACE);
-		if (current_workspace != focused_workspace) {
-			container_remove_child(container);
-			workspace_add_floating(focused_workspace, container);
-			container_handle_fullscreen_reparent(container, current_workspace);
-			arrange_windows(focused_workspace);
-			if (!container_reap_empty(current_workspace)) {
-				arrange_windows(current_workspace);
-			}
+		// move container to active workspace
+		struct sway_workspace *active_workspace =
+			output_get_active_workspace(container->workspace->output);
+		if (container->workspace != active_workspace) {
+			struct sway_workspace *old_workspace = container->workspace;
+			container_detach(container);
+			workspace_add_floating(active_workspace, container);
+			container_handle_fullscreen_reparent(container);
+			arrange_workspace(active_workspace);
+			workspace_consider_destroy(old_workspace);
 		}
 	}
 

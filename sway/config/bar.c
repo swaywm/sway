@@ -12,6 +12,7 @@
 #include <strings.h>
 #include <signal.h>
 #include "sway/config.h"
+#include "sway/output.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
@@ -218,17 +219,6 @@ void invoke_swaybar(struct bar_config *bar) {
 	close(filedes[1]);
 }
 
-static bool active_output(const char *name) {
-	struct sway_container *cont = NULL;
-	for (int i = 0; i < root_container.children->length; ++i) {
-		cont = root_container.children->items[i];
-		if (cont->type == C_OUTPUT && strcasecmp(name, cont->name) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void load_swaybars() {
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
@@ -236,7 +226,7 @@ void load_swaybars() {
 		if (bar->outputs) {
 			for (int j = 0; j < bar->outputs->length; ++j) {
 				char *o = bar->outputs->items[j];
-				if (!strcmp(o, "*") || active_output(o)) {
+				if (!strcmp(o, "*") || output_by_name(o)) {
 					apply = true;
 					break;
 				}

@@ -25,14 +25,11 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	}
 
 	int argn = 1;
-	struct sway_container *workspace;
+	struct sway_workspace *workspace = NULL;
 
 	if (strcasecmp(argv[1], "to") == 0) {
 		// 'rename workspace to new_name'
-		workspace = config->handler_context.current_container;
-		if (workspace->type != C_WORKSPACE) {
-			workspace = container_parent(workspace, C_WORKSPACE);
-		}
+		workspace = config->handler_context.workspace;
 	} else if (strcasecmp(argv[1], "number") == 0) {
 		// 'rename workspace number x to new_name'
 		if (!isdigit(argv[2][0])) {
@@ -78,7 +75,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "rename",
 				"Cannot use special workspace name '%s'", argv[argn]);
 	}
-	struct sway_container *tmp_workspace = workspace_by_name(new_name);
+	struct sway_workspace *tmp_workspace = workspace_by_name(new_name);
 	if (tmp_workspace) {
 		free(new_name);
 		return cmd_results_new(CMD_INVALID, "rename",
@@ -89,7 +86,7 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	free(workspace->name);
 	workspace->name = new_name;
 
-	output_sort_workspaces(workspace->parent);
+	output_sort_workspaces(workspace->output);
 	ipc_event_workspace(NULL, workspace, "rename");
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

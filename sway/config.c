@@ -825,6 +825,6 @@ void config_update_font_height(bool recalculate) {
 	root_for_each_container(find_font_height_iterator, &recalculate);
 
 	if (config->font_height != prev_max_height) {
-		arrange_windows(&root_container);
+		arrange_root();
 	}
 }

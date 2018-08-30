@@ -13,13 +13,12 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		return error;
 	}
 
-	struct sway_container *container =
-		config->handler_context.current_container;
-	if (container->type != C_VIEW) {
+	struct sway_container *container = config->handler_context.container;
+	if (!container->view) {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Only views can have borders");
 	}
-	struct sway_view *view = container->sway_view;
+	struct sway_view *view = container->view;
 
 	if (strcmp(argv[0], "none") == 0) {
 		view->border = B_NONE;
@@ -38,11 +37,11 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		view->border_thickness = atoi(argv[1]);
 	}
 
-	if (container_is_floating(view->swayc)) {
-		container_set_geometry_from_floating_view(view->swayc);
+	if (container_is_floating(view->container)) {
+		container_set_geometry_from_floating_view(view->container);
 	}
 
-	arrange_windows(view->swayc);
+	arrange_container(view->container);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	if (seat->cursor) {

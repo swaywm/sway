@@ -33,6 +33,7 @@
 #include "sway/input/seat.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "list.h"
 #include "log.h"
 #include "util.h"
@@ -291,8 +292,8 @@ static void ipc_send_event(const char *json_string, enum ipc_command_type event)
 	}
 }
 
-void ipc_event_workspace(struct sway_container *old,
-		struct sway_container *new, const char *change) {
+void ipc_event_workspace(struct sway_workspace *old,
+		struct sway_workspace *new, const char *change) {
 	if (!ipc_has_event_listeners(IPC_EVENT_WORKSPACE)) {
 		return;
 	}
@@ -301,14 +302,14 @@ void ipc_event_workspace(struct sway_container *old,
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (old) {
 		json_object_object_add(obj, "old",
-				ipc_json_describe_container_recursive(old));
+				ipc_json_describe_node_recursive(&old->node));
 	} else {
 		json_object_object_add(obj, "old", NULL);
 	}
 
 	if (new) {
 		json_object_object_add(obj, "current",
-				ipc_json_describe_container_recursive(new));
+				ipc_json_describe_node_recursive(&new->node));
 	} else {
 		json_object_object_add(obj, "current", NULL);
 	}
@@ -325,7 +326,8 @@ void ipc_event_window(struct sway_container *window, const char *change) {
 	wlr_log(WLR_DEBUG, "Sending window::%s event", change);
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
-	json_object_object_add(obj, "container", ipc_json_describe_container_recursive(window));
+	json_object_object_add(obj, "container",
+			ipc_json_describe_node_recursive(&window->node));
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_WINDOW);
@@ -521,30 +523,20 @@ void ipc_client_disconnect(struct ipc_client *client) {
 	free(client);
 }
 
-static void ipc_get_workspaces_callback(struct sway_container *workspace,
+static void ipc_get_workspaces_callback(struct sway_workspace *workspace,
 		void *data) {
-	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
-		return;
-	}
-	json_object *workspace_json = ipc_json_describe_container(workspace);
+	json_object *workspace_json = ipc_json_describe_node(&workspace->node);
 	// override the default focused indicator because
 	// it's set differently for the get_workspaces reply
-	struct sway_seat *seat =
-		input_manager_get_default_seat(input_manager);
-	struct sway_container *focused_ws = seat_get_focus(seat);
-	if (focused_ws != NULL && focused_ws->type != C_WORKSPACE) {
-		focused_ws = container_parent(focused_ws, C_WORKSPACE);
-	}
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
 	bool focused = workspace == focused_ws;
 	json_object_object_del(workspace_json, "focused");
 	json_object_object_add(workspace_json, "focused",
 			json_object_new_boolean(focused));
 	json_object_array_add((json_object *)data, workspace_json);
 
-	focused_ws = seat_get_focus_inactive(seat, workspace->parent);
-	if (focused_ws->type != C_WORKSPACE) {
-		focused_ws = container_parent(focused_ws, C_WORKSPACE);
-	}
+	focused_ws = output_get_active_workspace(workspace->output);
 	bool visible = workspace == focused_ws;
 	json_object_object_add(workspace_json, "visible",
 			json_object_new_boolean(visible));
@@ -552,9 +544,9 @@ static void ipc_get_workspaces_callback(struct sway_container *workspace,
 
 static void ipc_get_marks_callback(struct sway_container *con, void *data) {
 	json_object *marks = (json_object *)data;
-	if (con->type == C_VIEW && con->sway_view->marks) {
-		for (int i = 0; i < con->sway_view->marks->length; ++i) {
-			char *mark = (char *)con->sway_view->marks->items[i];
+	if (con->view && con->view->marks) {
+		for (int i = 0; i < con->view->marks->length; ++i) {
+			char *mark = (char *)con->view->marks->items[i];
 			json_object_array_add(marks, json_object_new_string(mark));
 		}
 	}
@@ -608,16 +600,14 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	case IPC_GET_OUTPUTS:
 	{
 		json_object *outputs = json_object_new_array();
-		for (int i = 0; i < root_container.children->length; ++i) {
-			struct sway_container *container = root_container.children->items[i];
-			if (container->type == C_OUTPUT) {
-				json_object_array_add(outputs,
-					ipc_json_describe_container(container));
-			}
+		for (int i = 0; i < root->outputs->length; ++i) {
+			struct sway_output *output = root->outputs->items[i];
+			json_object_array_add(outputs,
+				ipc_json_describe_node(&output->node));
 		}
 		struct sway_output *output;
-		wl_list_for_each(output, &root_container.sway_root->all_outputs, link) {
-			if (!output->swayc) {
+		wl_list_for_each(output, &root->all_outputs, link) {
+			if (!output->enabled) {
 				json_object_array_add(outputs,
 						ipc_json_describe_disabled_output(output));
 			}
@@ -717,8 +707,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 
 	case IPC_GET_TREE:
 	{
-		json_object *tree =
-			ipc_json_describe_container_recursive(&root_container);
+		json_object *tree = ipc_json_describe_node_recursive(&root->node);
 		const char *json_string = json_object_to_json_string(tree);
 		client_valid =
 			ipc_send_reply(client, json_string, (uint32_t) strlen(json_string));

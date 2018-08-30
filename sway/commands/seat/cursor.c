@@ -42,8 +42,8 @@ struct cmd_results *seat_cmd_cursor(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
 		}
 		// map absolute coords (0..1,0..1) to root container coords
-		float x = strtof(argv[1], NULL) / root_container.width;
-		float y = strtof(argv[2], NULL) / root_container.height;
+		float x = strtof(argv[1], NULL) / root->width;
+		float y = strtof(argv[2], NULL) / root->height;
 		wlr_cursor_warp_absolute(cursor->cursor, NULL, x, y);
 		cursor_send_pointer_motion(cursor, 0, true);
 	} else {

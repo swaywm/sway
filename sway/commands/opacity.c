@@ -19,8 +19,7 @@ struct cmd_results *cmd_opacity(int argc, char **argv) {
 		return error;
 	}
 
-	struct sway_container *con =
-		config->handler_context.current_container;
+	struct sway_container *con = config->handler_context.container;
 
 	float opacity = 0.0f;
 

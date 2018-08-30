@@ -11,8 +11,8 @@
 #include "util.h"
 
 static void rebuild_marks_iterator(struct sway_container *con, void *data) {
-	if (con->type == C_VIEW) {
-		view_update_marks_textures(con->sway_view);
+	if (con->view) {
+		view_update_marks_textures(con->view);
 	}
 }
 
@@ -28,9 +28,9 @@ struct cmd_results *cmd_show_marks(int argc, char **argv) {
 		root_for_each_container(rebuild_marks_iterator, NULL);
 	}
 
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *con = root_container.children->items[i];
-		output_damage_whole(con->sway_output);
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		output_damage_whole(output);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

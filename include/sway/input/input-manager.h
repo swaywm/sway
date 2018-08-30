@@ -37,10 +37,10 @@ struct sway_input_manager {
 struct sway_input_manager *input_manager_create(struct sway_server *server);
 
 bool input_manager_has_focus(struct sway_input_manager *input,
-		struct sway_container *container);
+		struct sway_node *node);
 
 void input_manager_set_focus(struct sway_input_manager *input,
-		struct sway_container *container);
+		struct sway_node *node);
 
 void input_manager_configure_xcursor(struct sway_input_manager *input);
 

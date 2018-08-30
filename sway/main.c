@@ -42,7 +42,6 @@ void sway_terminate(int exit_code) {
 }
 
 void sig_handler(int signal) {
-	//close_views(&root_container);
 	sway_terminate(EXIT_SUCCESS);
 }
 
@@ -395,7 +394,7 @@ int main(int argc, char **argv) {
 
 	wlr_log(WLR_INFO, "Starting sway version " SWAY_VERSION);
 
-	root_create();
+	root = root_create();
 
 	if (!server_init(&server)) {
 		return 1;
@@ -450,7 +449,8 @@ int main(int argc, char **argv) {
 	wlr_log(WLR_INFO, "Shutting down sway");
 
 	server_fini(&server);
-	root_destroy();
+	root_destroy(root);
+	root = NULL;
 
 	if (config) {
 		free_config(config);

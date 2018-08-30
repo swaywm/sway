@@ -212,6 +212,24 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 	return res;
 }
 
+static void set_config_node(struct sway_node *node) {
+	config->handler_context.node = node;
+	switch (node->type) {
+	case N_CONTAINER:
+		config->handler_context.container = node->sway_container;
+		config->handler_context.workspace = node->sway_container->workspace;
+		break;
+	case N_WORKSPACE:
+		config->handler_context.container = NULL;
+		config->handler_context.workspace = node->sway_workspace;
+		break;
+	default:
+		config->handler_context.container = NULL;
+		config->handler_context.workspace = NULL;
+		break;
+	}
+}
+
 struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
@@ -295,12 +313,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			if (!config->handler_context.using_criteria) {
 				// without criteria, the command acts upon the focused
 				// container
-				config->handler_context.current_container =
-					seat_get_focus_inactive(seat, &root_container);
-				if (!sway_assert(config->handler_context.current_container,
-						"could not get focus-inactive for root container")) {
-					return NULL;
-				}
+				set_config_node(seat_get_focus_inactive(seat, &root->node));
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status != CMD_SUCCESS) {
 					free_argv(argc, argv);
@@ -314,7 +327,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			} else {
 				for (int i = 0; i < views->length; ++i) {
 					struct sway_view *view = views->items[i];
-					config->handler_context.current_container = view->swayc;
+					set_config_node(&view->container->node);
 					struct cmd_results *res = handler->handle(argc-1, argv+1);
 					if (res->status != CMD_SUCCESS) {
 						free_argv(argc, argv);

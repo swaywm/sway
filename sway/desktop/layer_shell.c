@@ -14,6 +14,7 @@
 #include "sway/output.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 
 static void apply_exclusive(struct wlr_box *usable_area,
@@ -176,7 +177,7 @@ void arrange_layers(struct sway_output *output) {
 				sizeof(struct wlr_box)) != 0) {
 		wlr_log(WLR_DEBUG, "Usable area changed, rearranging output");
 		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
-		arrange_output(output->swayc);
+		arrange_output(output);
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom
@@ -256,7 +257,7 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 		return;
 	}
 	struct sway_output *output = wlr_output->data;
-	if (output == NULL || output->swayc == NULL) {
+	if (output == NULL) {
 		return;
 	}
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
@@ -283,9 +284,9 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->surface_commit.link);
 	if (sway_layer->layer_surface->output != NULL) {
 		struct sway_output *output = sway_layer->layer_surface->output->data;
-		if (output != NULL && output->swayc != NULL) {
+		if (output != NULL) {
 			arrange_layers(output);
-			arrange_windows(output->swayc);
+			arrange_output(output);
 			transaction_commit_dirty();
 		}
 		wl_list_remove(&sway_layer->output_destroy.link);
@@ -332,23 +333,21 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 
 	if (!layer_surface->output) {
 		// Assign last active output
-		struct sway_container *output = NULL;
+		struct sway_output *output = NULL;
 		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		if (seat) {
-			output = seat_get_focus_inactive(seat, &root_container);
+			struct sway_workspace *ws = seat_get_focused_workspace(seat);
+			output = ws->output;
 		}
 		if (!output) {
-			if (!sway_assert(root_container.children->length,
+			if (!sway_assert(root->outputs->length,
 						"cannot auto-assign output for layer")) {
 				wlr_layer_surface_close(layer_surface);
 				return;
 			}
-			output = root_container.children->items[0];
+			output = root->outputs->items[0];
 		}
-		if (output->type != C_OUTPUT) {
-			output = container_parent(output, C_OUTPUT);
-		}
-		layer_surface->output = output->sway_output->wlr_output;
+		layer_surface->output = output->wlr_output;
 	}
 
 	struct sway_layer_surface *sway_layer =

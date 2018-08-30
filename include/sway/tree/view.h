@@ -58,7 +58,7 @@ struct sway_view {
 	enum sway_view_type type;
 	const struct sway_view_impl *impl;
 
-	struct sway_container *swayc; // NULL for unmapped views
+	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
 
 	// Geometry of the view itself (excludes borders) in layout coordinates
@@ -254,7 +254,7 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
 
 /**
- * Configure the view's position and size based on the swayc's position and
+ * Configure the view's position and size based on the container's position and
  * size, taking borders into consideration.
  */
 void view_autoconfigure(struct sway_view *view);

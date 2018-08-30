@@ -1,7 +1,6 @@
 #ifndef _SWAY_TRANSACTION_H
 #define _SWAY_TRANSACTION_H
-#include <wlr/render/wlr_texture.h>
-#include "sway/tree/container.h"
+#include <stdint.h>
 
 /**
  * Transactions enable us to perform atomic layout updates.
@@ -21,6 +20,7 @@
  */
 
 struct sway_transaction_instruction;
+struct sway_view;
 
 /**
  * Find all dirty containers, create and commit a transaction containing them,

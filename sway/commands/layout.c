@@ -4,21 +4,20 @@
 #include "sway/commands.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 
-static bool parse_layout_string(char *s, enum sway_container_layout *ptr) {
+static enum sway_container_layout parse_layout_string(char *s) {
 	if (strcasecmp(s, "splith") == 0) {
-		*ptr = L_HORIZ;
+		return L_HORIZ;
 	} else if (strcasecmp(s, "splitv") == 0) {
-		*ptr = L_VERT;
+		return L_VERT;
 	} else if (strcasecmp(s, "tabbed") == 0) {
-		*ptr = L_TABBED;
+		return L_TABBED;
 	} else if (strcasecmp(s, "stacking") == 0) {
-		*ptr = L_STACKED;
-	} else {
-		return false;
+		return L_STACKED;
 	}
-	return true;
+	return L_NONE;
 }
 
 static const char* expected_syntax =
@@ -26,84 +25,129 @@ static const char* expected_syntax =
 	"'layout toggle [split|all]' or "
 	"'layout toggle [split|tabbed|stacking|splitv|splith] [split|tabbed|stacking|splitv|splith]...'";
 
+static enum sway_container_layout get_layout_toggle(int argc, char **argv,
+		enum sway_container_layout layout,
+		enum sway_container_layout prev_split_layout) {
+	// "layout toggle"
+	if (argc == 0) {
+		return layout == L_HORIZ ? L_VERT : L_HORIZ;
+	}
+
+	if (argc == 2) {
+		// "layout toggle split" (same as "layout toggle")
+		if (strcasecmp(argv[1], "split") == 0) {
+			return layout == L_HORIZ ? L_VERT : L_HORIZ;
+		}
+		// "layout toggle all"
+		if (strcasecmp(argv[1], "all") == 0) {
+			return layout == L_HORIZ ? L_VERT :
+				layout == L_VERT ? L_STACKED :
+				layout == L_STACKED ? L_TABBED : L_HORIZ;
+		}
+		return L_NONE;
+	}
+
+	enum sway_container_layout parsed;
+	int curr = 1;
+	for (; curr < argc; curr++) {
+		parsed = parse_layout_string(argv[curr]);
+		if (parsed == layout || (strcmp(argv[curr], "split") == 0 &&
+				 (layout == L_VERT || layout == L_HORIZ))) {
+			break;
+		}
+	}
+	for (int i = curr + 1; i != curr; ++i) {
+		// cycle round to find next valid layout
+		if (i >= argc) {
+			i = 1;
+		}
+		parsed = parse_layout_string(argv[i]);
+		if (parsed != L_NONE) {
+			return parsed;
+		}
+		if (strcmp(argv[i], "split") == 0) {
+			return layout == L_HORIZ ? L_VERT :
+				layout == L_VERT ? L_HORIZ : prev_split_layout;
+		}
+		// invalid layout strings are silently ignored
+	}
+	return L_NONE;
+}
+
+static enum sway_container_layout get_layout(int argc, char **argv,
+		enum sway_container_layout layout,
+		enum sway_container_layout prev_split_layout) {
+	// Check if assigned directly
+	enum sway_container_layout parsed = parse_layout_string(argv[0]);
+	if (parsed != L_NONE) {
+		return parsed;
+	}
+
+	if (strcasecmp(argv[0], "default") == 0) {
+		return prev_split_layout;
+	}
+
+	if (strcasecmp(argv[0], "toggle") == 0) {
+		argc--; argv++;
+		return get_layout_toggle(argc, argv, layout, prev_split_layout);
+	}
+
+	return L_NONE;
+}
+
 struct cmd_results *cmd_layout(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "layout", EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}
-	struct sway_container *parent = config->handler_context.current_container;
+	struct sway_container *container = config->handler_context.container;
+	struct sway_workspace *workspace = config->handler_context.workspace;
 
-	if (container_is_floating(parent)) {
+	if (container && container_is_floating(container)) {
 		return cmd_results_new(CMD_FAILURE, "layout",
 				"Unable to change layout of floating windows");
 	}
 
-	while (parent->type == C_VIEW) {
-		parent = parent->parent;
+	// Typically we change the layout of the current container, but if the
+	// current container is a view (it usually is) then we'll change the layout
+	// of the parent instead, as it doesn't make sense for views to have layout.
+	if (container && container->view) {
+		container = container->parent;
 	}
 
-	enum sway_container_layout prev = parent->layout;
-	bool assigned_directly = parse_layout_string(argv[0], &parent->layout);
-	if (!assigned_directly) {
-		if (strcasecmp(argv[0], "default") == 0) {
-			parent->layout = parent->prev_split_layout;
-		} else if (strcasecmp(argv[0], "toggle") == 0) {
-			if (argc == 1) {
-				parent->layout =
-					parent->layout == L_STACKED ? L_TABBED :
-					parent->layout == L_TABBED ? parent->prev_split_layout : L_STACKED;
-			} else if (argc == 2) {
-				if (strcasecmp(argv[1], "all") == 0) {
-					parent->layout =
-						parent->layout == L_HORIZ ? L_VERT :
-						parent->layout == L_VERT ? L_STACKED :
-						parent->layout == L_STACKED ? L_TABBED : L_HORIZ;
-				} else if (strcasecmp(argv[1], "split") == 0) {
-					parent->layout =
-						parent->layout == L_HORIZ ? L_VERT :
-						parent->layout == L_VERT ? L_HORIZ : parent->prev_split_layout;
-				} else {
-					return cmd_results_new(CMD_INVALID, "layout", expected_syntax);
-				}
-			} else {
-				enum sway_container_layout parsed_layout;
-				int curr = 1;
-				for (; curr < argc; curr++) {
-					bool valid = parse_layout_string(argv[curr], &parsed_layout);
-					if ((valid && parsed_layout == parent->layout) ||
-							(strcmp(argv[curr], "split") == 0 &&
-							(parent->layout == L_VERT || parent->layout == L_HORIZ))) {
-						break;
-					}
-				}
-				for (int i = curr + 1; i != curr; ++i) {
-					// cycle round to find next valid layout
-					if (i >= argc) {
-						i = 1;
-					}
-					if (parse_layout_string(argv[i], &parent->layout)) {
-						break;
-					} else if (strcmp(argv[i], "split") == 0) {
-						parent->layout =
-							parent->layout == L_HORIZ ? L_VERT :
-							parent->layout == L_VERT ? L_HORIZ : parent->prev_split_layout;
-						break;
-					} // invalid layout strings are silently ignored
-				}
+	// We could be working with a container OR a workspace. These are different
+	// structures, so we set up pointers to they layouts so we can refer them in
+	// an abstract way.
+	enum sway_container_layout new_layout = L_NONE;
+	enum sway_container_layout old_layout = L_NONE;
+	if (container) {
+		old_layout = container->layout;
+		new_layout = get_layout(argc, argv,
+				container->layout, container->prev_split_layout);
+	} else {
+		old_layout = workspace->layout;
+		new_layout = get_layout(argc, argv,
+				workspace->layout, workspace->prev_split_layout);
+	}
+	if (new_layout == L_NONE) {
+		return cmd_results_new(CMD_INVALID, "layout", expected_syntax);
+	}
+	if (new_layout != old_layout) {
+		if (container) {
+			if (old_layout != L_TABBED && old_layout != L_STACKED) {
+				container->prev_split_layout = old_layout;
 			}
+			container->layout = new_layout;
+			container_update_representation(container);
+			arrange_container(container);
 		} else {
-			return cmd_results_new(CMD_INVALID, "layout", expected_syntax);
+			if (old_layout != L_TABBED && old_layout != L_STACKED) {
+				workspace->prev_split_layout = old_layout;
+			}
+			workspace->layout = new_layout;
+			workspace_update_representation(workspace);
+			arrange_workspace(workspace);
 		}
-	}
-	if (parent->layout == L_NONE) {
-		parent->layout = container_get_default_layout(parent);
-	}
-	if (prev != parent->layout) {
-		if (prev != L_TABBED && prev != L_STACKED) {
-			parent->prev_split_layout = prev;
-		}
-		container_notify_subtree_changed(parent);
-		arrange_windows(parent->parent);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

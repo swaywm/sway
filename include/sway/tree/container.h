@@ -5,8 +5,7 @@
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_surface.h>
 #include "list.h"
-
-extern struct sway_container root_container;
+#include "sway/tree/node.h"
 
 struct sway_view;
 struct sway_seat;
@@ -16,23 +15,6 @@ struct sway_seat;
 // Padding includes titlebar border
 #define TITLEBAR_H_PADDING 3
 #define TITLEBAR_V_PADDING 4
-
-/**
- * Different kinds of containers.
- *
- * This enum is in order. A container will never be inside of a container below
- * it on this list.
- */
-enum sway_container_type {
-	C_ROOT,
-	C_OUTPUT,
-	C_WORKSPACE,
-	C_CONTAINER,
-	C_VIEW,
-
-	// Keep last
-	C_TYPES,
-};
 
 enum sway_container_layout {
 	L_NONE,
@@ -57,18 +39,14 @@ enum movement_direction;
 enum wlr_direction;
 
 struct sway_container_state {
-	// Container/swayc properties
+	// Container properties
 	enum sway_container_layout layout;
-	double swayc_x, swayc_y;
-	double swayc_width, swayc_height;
+	double con_x, con_y;
+	double con_width, con_height;
 
 	bool is_fullscreen;
 
-	bool has_gaps;
-	double current_gaps;
-	double gaps_inner;
-	double gaps_outer;
-
+	struct sway_workspace *workspace;
 	struct sway_container *parent;
 	list_t *children;
 
@@ -86,35 +64,19 @@ struct sway_container_state {
 	bool border_left;
 	bool border_right;
 	bool using_csd;
-
-	// Workspace properties
-	struct sway_container *ws_fullscreen;
-	list_t *ws_floating;
 };
 
 struct sway_container {
-	union {
-		// TODO: Encapsulate state for other node types as well like C_CONTAINER
-		struct sway_root *sway_root;
-		struct sway_output *sway_output;
-		struct sway_workspace *sway_workspace;
-		struct sway_view *sway_view;
-	};
-
-	/**
-	 * A unique ID to identify this container. Primarily used in the
-	 * get_tree JSON output.
-	 */
-	size_t id;
+	struct sway_node node;
+	struct sway_view *view;
 
 	// The pending state is the main container properties, and the current state is in the below struct.
 	// This means most places of the code can refer to the main variables (pending state) and it'll just work.
 	struct sway_container_state current;
 
-	char *name;            // The view's title (unformatted)
+	char *title;           // The view's title (unformatted)
 	char *formatted_title; // The title displayed in the title bar
 
-	enum sway_container_type type;
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_split_layout;
 
@@ -132,14 +94,13 @@ struct sway_container {
 
 	// The gaps currently applied to the container.
 	double current_gaps;
-
 	bool has_gaps;
 	double gaps_inner;
 	double gaps_outer;
 
-	list_t *children;
-
-	struct sway_container *parent;
+	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
+	struct sway_container *parent;    // NULL if container in root of workspace
+	list_t *children;                 // struct sway_container
 
 	// Outputs currently being intersected
 	list_t *outputs; // struct sway_output
@@ -157,41 +118,16 @@ struct sway_container {
 	struct wlr_texture *title_urgent;
 	size_t title_height;
 
-	// The number of transactions which reference this container.
-	size_t ntxnrefs;
-
-	// If this container is a view and is waiting for the client to respond to a
-	// configure then this will be populated, otherwise NULL.
-	struct sway_transaction_instruction *instruction;
-
-	bool destroying;
-
-	// If true, indicates that the container has pending state that differs from
-	// the current.
-	bool dirty;
-
 	struct {
 		struct wl_signal destroy;
 	} events;
 };
 
-struct sway_container *container_create(enum sway_container_type type);
-
-const char *container_type_to_str(enum sway_container_type type);
-
-/*
- * Create a new view container. A view can be a child of a workspace container
- * or a container container and are rendered in the order and structure of
- * how they are attached to the tree.
- */
-struct sway_container *container_view_create(
-		struct sway_container *sibling, struct sway_view *sway_view);
+struct sway_container *container_create(struct sway_view *view);
 
 void container_destroy(struct sway_container *con);
 
 void container_begin_destroy(struct sway_container *con);
-
-struct sway_container *container_close(struct sway_container *container);
 
 /**
  * Search a container's descendants a container based on test criteria. Returns
@@ -201,22 +137,16 @@ struct sway_container *container_find_child(struct sway_container *container,
 		bool (*test)(struct sway_container *view, void *data), void *data);
 
 /**
- * Finds a parent container with the given struct sway_containerype.
- */
-struct sway_container *container_parent(struct sway_container *container,
-		enum sway_container_type type);
-
-/**
  * Find a container at the given coordinates. Returns the the surface and
  * surface-local coordinates of the given layout coordinates if the container
  * is a view and the view contains a surface at those coordinates.
  */
-struct sway_container *container_at(struct sway_container *workspace,
+struct sway_container *container_at(struct sway_workspace *workspace,
 		double lx, double ly, struct wlr_surface **surface,
 		double *sx, double *sy);
 
 struct sway_container *tiling_container_at(
-		struct sway_container *con, double lx, double ly,
+		struct sway_node *parent, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy);
 
 void container_for_each_child(struct sway_container *container,
@@ -228,16 +158,11 @@ void container_for_each_child(struct sway_container *container,
 bool container_has_ancestor(struct sway_container *container,
 		struct sway_container *ancestor);
 
-int container_count_descendants_of_type(struct sway_container *con,
-		enum sway_container_type type);
-
-void container_create_notify(struct sway_container *container);
-
 void container_update_textures_recursive(struct sway_container *con);
 
 void container_damage_whole(struct sway_container *container);
 
-struct sway_container *container_reap_empty(struct sway_container *con);
+void container_reap_empty(struct sway_container *con);
 
 struct sway_container *container_flatten(struct sway_container *container);
 
@@ -248,11 +173,10 @@ void container_update_title_textures(struct sway_container *container);
  */
 void container_calculate_title_height(struct sway_container *container);
 
-/**
- * Notify a container that a tree modification has changed in its children,
- * so the container can update its tree representation.
- */
-void container_notify_subtree_changed(struct sway_container *container);
+size_t container_build_representation(enum sway_container_layout layout,
+		list_t *children, char *buffer);
+
+void container_update_representation(struct sway_container *container);
 
 /**
  * Return the height of a regular title bar.
@@ -288,8 +212,7 @@ void container_floating_translate(struct sway_container *con,
 /**
  * Choose an output for the floating container's new position.
  */
-struct sway_container *container_floating_find_output(
-		struct sway_container *con);
+struct sway_output *container_floating_find_output(struct sway_container *con);
 
 /**
  * Move a floating container to a new layout-local position.
@@ -301,12 +224,6 @@ void container_floating_move_to(struct sway_container *con,
  * Move a floating container to the center of the workspace.
  */
 void container_floating_move_to_center(struct sway_container *con);
-
-/**
- * Mark a container as dirty if it isn't already. Dirty containers will be
- * included in the next transaction then unmarked as dirty.
- */
-void container_set_dirty(struct sway_container *container);
 
 bool container_has_urgent_child(struct sway_container *container);
 
@@ -342,10 +259,18 @@ void container_remove_gaps(struct sway_container *container);
 
 void container_add_gaps(struct sway_container *container);
 
+enum sway_container_layout container_parent_layout(struct sway_container *con);
+
+enum sway_container_layout container_current_parent_layout(
+		struct sway_container *con);
+
+list_t *container_get_siblings(const struct sway_container *container);
+
 int container_sibling_index(const struct sway_container *child);
 
-void container_handle_fullscreen_reparent(struct sway_container *con,
-		struct sway_container *old_parent);
+list_t *container_get_current_siblings(struct sway_container *container);
+
+void container_handle_fullscreen_reparent(struct sway_container *con);
 
 void container_add_child(struct sway_container *parent,
 		struct sway_container *child);
@@ -353,18 +278,15 @@ void container_add_child(struct sway_container *parent,
 void container_insert_child(struct sway_container *parent,
 		struct sway_container *child, int i);
 
-struct sway_container *container_add_sibling(struct sway_container *parent,
-		struct sway_container *child);
+void container_add_sibling(struct sway_container *parent,
+		struct sway_container *child, int offset);
 
-struct sway_container *container_remove_child(struct sway_container *child);
+void container_detach(struct sway_container *child);
 
-struct sway_container *container_replace_child(struct sway_container *child,
-		struct sway_container *new_child);
+void container_replace(struct sway_container *container,
+		struct sway_container *replacement);
 
 bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
-
-enum sway_container_layout container_get_default_layout(
-		struct sway_container *con);
 
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);

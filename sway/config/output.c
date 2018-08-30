@@ -174,21 +174,16 @@ void terminate_swaybg(pid_t pid) {
 	}
 }
 
-void apply_output_config(struct output_config *oc, struct sway_container *output) {
-	assert(output->type == C_OUTPUT);
-
-	struct wlr_output_layout *output_layout =
-		root_container.sway_root->output_layout;
-	struct wlr_output *wlr_output = output->sway_output->wlr_output;
+void apply_output_config(struct output_config *oc, struct sway_output *output) {
+	struct wlr_output *wlr_output = output->wlr_output;
 
 	if (oc && oc->enabled == 0) {
-		if (output->sway_output->bg_pid != 0) {
-			terminate_swaybg(output->sway_output->bg_pid);
-			output->sway_output->bg_pid = 0;
+		if (output->bg_pid != 0) {
+			terminate_swaybg(output->bg_pid);
+			output->bg_pid = 0;
 		}
-		output_begin_destroy(output);
-		wlr_output_layout_remove(root_container.sway_root->output_layout,
-			wlr_output);
+		output_disable(output);
+		wlr_output_layout_remove(root->output_layout, wlr_output);
 		return;
 	}
 
@@ -213,21 +208,21 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 	// Find position for it
 	if (oc && (oc->x != -1 || oc->y != -1)) {
 		wlr_log(WLR_DEBUG, "Set %s position to %d, %d", oc->name, oc->x, oc->y);
-		wlr_output_layout_add(output_layout, wlr_output, oc->x, oc->y);
+		wlr_output_layout_add(root->output_layout, wlr_output, oc->x, oc->y);
 	} else {
-		wlr_output_layout_add_auto(output_layout, wlr_output);
+		wlr_output_layout_add_auto(root->output_layout, wlr_output);
 	}
 
 	int output_i;
-	for (output_i = 0; output_i < root_container.children->length; ++output_i) {
-		if (root_container.children->items[output_i] == output) {
+	for (output_i = 0; output_i < root->outputs->length; ++output_i) {
+		if (root->outputs->items[output_i] == output) {
 			break;
 		}
 	}
 
 	if (oc && oc->background) {
-		if (output->sway_output->bg_pid != 0) {
-			terminate_swaybg(output->sway_output->bg_pid);
+		if (output->bg_pid != 0) {
+			terminate_swaybg(output->bg_pid);
 		}
 
 		wlr_log(WLR_DEBUG, "Setting background for output %d to %s",
@@ -249,8 +244,8 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		wlr_log(WLR_DEBUG, "-> %s", command);
 
 		char *const cmd[] = { "sh", "-c", command, NULL };
-		output->sway_output->bg_pid = fork();
-		if (output->sway_output->bg_pid == 0) {
+		output->bg_pid = fork();
+		if (output->bg_pid == 0) {
 			execvp(cmd[0], cmd);
 		} else {
 			free(command);
@@ -293,12 +288,11 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 	bool wildcard = strcmp(oc->name, "*") == 0;
 	char id[128];
 	struct sway_output *sway_output;
-	wl_list_for_each(sway_output,
-			&root_container.sway_root->all_outputs, link) {
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
 		char *name = sway_output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), sway_output);
 		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
-			if (!sway_output->swayc) {
+			if (!sway_output->enabled) {
 				if (!oc->enabled) {
 					if (!wildcard) {
 						break;
@@ -306,7 +300,7 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 					continue;
 				}
 
-				output_enable(sway_output);
+				output_enable(sway_output, oc);
 			}
 
 			struct output_config *current = oc;
@@ -316,7 +310,7 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 					current = tmp;
 				}
 			}
-			apply_output_config(current, sway_output->swayc);
+			apply_output_config(current, sway_output);
 
 			if (!wildcard) {
 				// Stop looking if the output config isn't applicable to all
@@ -354,8 +348,7 @@ static void default_output_config(struct output_config *oc,
 
 void create_default_output_configs(void) {
 	struct sway_output *sway_output;
-	wl_list_for_each(sway_output,
-			&root_container.sway_root->all_outputs, link) {
+	wl_list_for_each(sway_output, &root->all_outputs, link) {
 		char *name = sway_output->wlr_output->name;
 		struct output_config *oc = new_output_config(name);
 		default_output_config(oc, sway_output->wlr_output);

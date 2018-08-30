@@ -407,7 +407,9 @@ struct sway_config {
 		struct output_config *output_config;
 		struct seat_config *seat_config;
 		struct sway_seat *seat;
-		struct sway_container *current_container;
+		struct sway_node *node;
+		struct sway_container *container;
+		struct sway_workspace *workspace;
 		bool using_criteria;
 		struct {
 			int argc;
@@ -486,8 +488,7 @@ struct output_config *new_output_config(const char *name);
 
 void merge_output_config(struct output_config *dst, struct output_config *src);
 
-void apply_output_config(struct output_config *oc,
-		struct sway_container *output);
+void apply_output_config(struct output_config *oc, struct sway_output *output);
 
 struct output_config *store_output_config(struct output_config *oc);
 
