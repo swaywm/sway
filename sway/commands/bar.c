@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 600
 #include <string.h>
 #include <strings.h>
 #include <wlr/util/log.h>

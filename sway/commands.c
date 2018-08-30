@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 600
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
