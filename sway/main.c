@@ -366,13 +366,15 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__FreeBSD__)
 	if (getuid() != geteuid() || getgid() != getegid()) {
+#ifdef __linux__
 		// Retain capabilities after setuid()
 		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0)) {
 			wlr_log(WLR_ERROR, "Cannot keep caps after setuid()");
 			exit(EXIT_FAILURE);
 		}
+#endif
 		suid = true;
 	}
 #endif
@@ -382,7 +384,7 @@ int main(int argc, char **argv) {
 	detect_proprietary();
 	detect_raspi();
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__FreeBSD__)
 	drop_permissions(suid);
 #endif
 	// handle SIGTERM signals
