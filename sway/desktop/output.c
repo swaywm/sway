@@ -547,7 +547,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	struct output_config *oc = output_find_config(output);
 
-	if (oc && oc->enabled) {
+	if (!oc || oc->enabled) {
 		output_enable(output, oc);
 	}
 

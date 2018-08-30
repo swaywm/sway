@@ -253,9 +253,6 @@ struct output_config *output_find_config(struct sway_output *output) {
 		oc = all;
 	}
 
-	if (oc && !oc->enabled) {
-		return NULL;
-	}
 	return oc;
 }
 
