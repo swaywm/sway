@@ -255,6 +255,10 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		// A workspace is focused, so just jump to the next output
 		struct sway_output *new_output =
 			output_get_in_direction(workspace->output, direction);
+		if (!new_output) {
+			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		}
+
 		struct sway_node *node =
 			get_node_in_output_direction(new_output, direction);
 		seat_set_focus(seat, node);
