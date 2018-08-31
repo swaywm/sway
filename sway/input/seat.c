@@ -614,6 +614,13 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		new_output_last_ws = output_get_active_workspace(new_output);
 	}
 
+	// Unfocus the previous focus
+	if (last_focus) {
+		seat_send_unfocus(last_focus, seat);
+		node_set_dirty(last_focus);
+		node_set_dirty(node_get_parent(last_focus));
+	}
+
 	// Put the container parents on the focus stack, then the workspace, then
 	// the focused container.
 	if (container) {
@@ -640,15 +647,6 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		wl_list_remove(&seat_node->link);
 		wl_list_insert(&seat->focus_stack, &seat_node->link);
 		node_set_dirty(&container->node);
-
-		if (last_focus) {
-			seat_send_unfocus(last_focus, seat);
-			node_set_dirty(last_focus);
-			struct sway_node *last_parent = node_get_parent(last_focus);
-			if (last_parent) {
-				node_set_dirty(last_parent);
-			}
-		}
 		seat_send_focus(&container->node, seat);
 	}
 
