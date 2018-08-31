@@ -635,7 +635,7 @@ void seat_set_focus_warp(struct sway_seat *seat,
 
 	// find new output's old workspace, which might have to be removed if empty
 	struct sway_container *new_output_last_ws = NULL;
-	if (last_output != new_output) {
+	if (new_output && last_output != new_output) {
 		new_output_last_ws = seat_get_active_child(seat, new_output);
 	}
 
