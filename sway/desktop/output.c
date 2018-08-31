@@ -505,10 +505,6 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 
 static void handle_mode(struct wl_listener *listener, void *data) {
 	struct sway_output *output = wl_container_of(listener, output, mode);
-	output->lx = output->wlr_output->lx;
-	output->ly = output->wlr_output->ly;
-	wlr_output_effective_resolution(output->wlr_output,
-			&output->width, &output->height);
 	arrange_layers(output);
 	arrange_output(output);
 	transaction_commit_dirty();

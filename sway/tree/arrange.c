@@ -217,8 +217,8 @@ void arrange_workspace(struct sway_workspace *workspace) {
 			workspace->x, workspace->y);
 	if (workspace->fullscreen) {
 		struct sway_container *fs = workspace->fullscreen;
-		fs->x = output->wlr_output->lx;
-		fs->y = output->wlr_output->ly;
+		fs->x = output->lx;
+		fs->y = output->ly;
 		fs->width = output->width;
 		fs->height = output->height;
 		arrange_container(fs);
@@ -234,8 +234,13 @@ void arrange_output(struct sway_output *output) {
 	if (config->reloading) {
 		return;
 	}
-	// Outputs have no pending x/y/width/height,
-	// so all we do here is arrange the workspaces.
+	const struct wlr_box *output_box = wlr_output_layout_get_box(
+			root->output_layout, output->wlr_output);
+	output->lx = output_box->x;
+	output->ly = output_box->y;
+	output->width = output_box->width;
+	output->height = output_box->height;
+
 	for (int i = 0; i < output->workspaces->length; ++i) {
 		struct sway_workspace *workspace = output->workspaces->items[i];
 		arrange_workspace(workspace);
