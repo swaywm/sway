@@ -176,7 +176,7 @@ void arrange_layers(struct sway_output *output) {
 				sizeof(struct wlr_box)) != 0) {
 		wlr_log(WLR_DEBUG, "Usable area changed, rearranging output");
 		memcpy(&output->usable_area, &usable_area, sizeof(struct wlr_box));
-		container_set_dirty(output->swayc);
+		arrange_output(output->swayc);
 	}
 
 	// Arrange non-exlusive surfaces from top->bottom
@@ -247,7 +247,6 @@ static void handle_surface_commit(struct wl_listener *listener, void *data) {
 			layer_surface->surface, false);
 	}
 
-	arrange_windows(output->swayc);
 	transaction_commit_dirty();
 }
 
