@@ -779,7 +779,7 @@ void seat_set_focus_layer(struct sway_seat *seat,
 			wlr_log(WLR_DEBUG, "Returning focus to %p %s '%s'", previous,
 					container_type_to_str(previous->type), previous->name);
 			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, NULL);
 			seat_set_focus(seat, previous);
 		}
 		return;
