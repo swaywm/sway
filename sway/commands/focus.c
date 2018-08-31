@@ -54,7 +54,7 @@ static struct sway_node *get_node_in_output_direction(
 			} else {
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
-			return &container->node;
+			break;
 		case MOVE_RIGHT:
 			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
 				// get most left child of new output
@@ -62,7 +62,7 @@ static struct sway_node *get_node_in_output_direction(
 			} else {
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
-			return &container->node;
+			break;
 		case MOVE_UP:
 			if (ws->layout == L_VERT || ws->layout == L_STACKED) {
 				// get most bottom child of new output
@@ -70,7 +70,7 @@ static struct sway_node *get_node_in_output_direction(
 			} else {
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
-			return &container->node;
+			break;
 		case MOVE_DOWN: {
 			if (ws->layout == L_VERT || ws->layout == L_STACKED) {
 				// get most top child of new output
@@ -78,11 +78,16 @@ static struct sway_node *get_node_in_output_direction(
 			} else {
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
-			return &container->node;
+			break;
 		}
 		default:
 			break;
 		}
+	}
+
+	if (container) {
+		container = seat_get_focus_inactive_view(seat, &container->node);
+		return &container->node;
 	}
 
 	return &ws->node;
