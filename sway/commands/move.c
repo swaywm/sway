@@ -622,7 +622,8 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 	workspace_consider_destroy(new_output_old_ws);
 
 	output_sort_workspaces(output);
-	seat_set_focus(seat, &output->node);
+	struct sway_node *focus = seat_get_focus_inactive(seat, &workspace->node);
+	seat_set_focus(seat, focus);
 	workspace_output_raise_priority(workspace, old_output, output);
 	ipc_event_workspace(NULL, workspace, "move");
 }
