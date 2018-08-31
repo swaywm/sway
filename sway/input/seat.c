@@ -709,13 +709,20 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		}
 
 		if (config->mouse_warping && warp && new_output != last_output) {
-				double x = container->x + container->width / 2.0;
-				double y = container->y + container->height / 2.0;
-				if (!wlr_output_layout_contains_point(root->output_layout,
-						new_output->wlr_output, seat->cursor->cursor->x,
-						seat->cursor->cursor->y)) {
-					wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
-					cursor_send_pointer_motion(seat->cursor, 0, true);
+			double x = 0;
+			double y = 0;
+			if (container) {
+				x = container->x + container->width / 2.0;
+				y = container->y + container->height / 2.0;
+			} else {
+				x = new_workspace->x + new_workspace->width / 2.0;
+				y = new_workspace->y + new_workspace->height / 2.0;
+			}
+			if (!wlr_output_layout_contains_point(root->output_layout,
+					new_output->wlr_output, seat->cursor->cursor->x,
+					seat->cursor->cursor->y)) {
+				wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
+				cursor_send_pointer_motion(seat->cursor, 0, true);
 			}
 		}
 	}
