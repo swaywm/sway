@@ -217,3 +217,13 @@ if (get_option('fish_completions'))
 
 	install_data(fish_files, install_dir: fish_install_dir)
 endif
+
+if (get_option('interactive-tests'))
+	# A test to run the just built sway executable, with all the auxilliaries
+	# in the path.
+	sway_paths_find_cmd = 'find @0@ -maxdepth 1 -type d -name \'sway*\' -printf \':%p\''.format(meson.current_build_dir())
+	sway_paths = run_command('sh', '-c', sway_paths_find_cmd).stdout().strip()
+	current_env = environment()
+	current_env.append('PATH', sway_paths)
+	test('sway', sway_exec, env : current_env, is_parallel : false, timeout : 3600)
+endif

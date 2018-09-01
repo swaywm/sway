@@ -177,7 +177,7 @@ if get_option('enable-xwayland')
 	sway_deps += xcb
 endif
 
-executable(
+sway_exec = executable(
 	'sway',
 	sway_sources,
 	include_directories: [sway_inc],
