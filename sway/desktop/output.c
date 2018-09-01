@@ -559,12 +559,6 @@ void handle_new_output(struct wl_listener *listener, void *data) {
 
 	wl_list_insert(&root_container.sway_root->all_outputs, &output->link);
 
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode =
-			wl_container_of(wlr_output->modes.prev, mode, link);
-		wlr_output_set_mode(wlr_output, mode);
-	}
-
 	output_enable(output);
 }
 
