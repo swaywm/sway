@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <strings.h>
 #include <pcre.h>
 #include "sway/criteria.h"
 #include "sway/tree/container.h"
@@ -25,7 +26,7 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->id
 #endif
 		&& !criteria->window_role
-		&& !criteria->window_type
+		&& criteria->window_type == ATOM_LAST
 		&& !criteria->floating
 		&& !criteria->tiling
 		&& !criteria->urgent
@@ -48,6 +49,23 @@ void criteria_destroy(struct criteria *criteria) {
 
 static int regex_cmp(const char *item, const pcre *regex) {
 	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
+}
+
+static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
+#ifdef HAVE_XWAYLAND
+	if (view->type != SWAY_VIEW_XWAYLAND) {
+		return false;
+	}
+	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
+	struct sway_xwayland *xwayland = &server.xwayland;
+	xcb_atom_t desired_atom = xwayland->atoms[name];
+	for (size_t i = 0; i < surface->window_type_len; ++i) {
+		if (surface->window_type[i] == desired_atom) {
+			return true;
+		}
+	}
+#endif
+	return false;
 }
 
 static int cmp_urgent(const void *_a, const void *_b) {
@@ -144,9 +162,8 @@ static bool criteria_matches_view(struct criteria *criteria,
 		// TODO
 	}
 
-	if (criteria->window_type) {
-		uint32_t type = view_get_window_type(view);
-		if (!type || type != criteria->window_type) {
+	if (criteria->window_type != ATOM_LAST) {
+		if (!view_has_window_type(view, criteria->window_type)) {
 			return false;
 		}
 	}
@@ -252,6 +269,21 @@ static bool generate_regex(pcre **regex, char *value) {
 	}
 
 	return true;
+}
+
+static enum atom_name parse_window_type(const char *type) {
+	if (strcasecmp(type, "normal") == 0) {
+		return NET_WM_WINDOW_TYPE_NORMAL;
+	} else if (strcasecmp(type, "dialog") == 0) {
+		return NET_WM_WINDOW_TYPE_DIALOG;
+	} else if (strcasecmp(type, "utility") == 0) {
+		return NET_WM_WINDOW_TYPE_UTILITY;
+	} else if (strcasecmp(type, "toolbar") == 0) {
+		return NET_WM_WINDOW_TYPE_TOOLBAR;
+	} else if (strcasecmp(type, "splash") == 0) {
+		return NET_WM_WINDOW_TYPE_SPLASH;
+	}
+	return ATOM_LAST; // ie. invalid
 }
 
 enum criteria_token {
@@ -434,7 +466,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 		generate_regex(&criteria->window_role, effective_value);
 		break;
 	case T_WINDOW_TYPE:
-		// TODO: This is a string but will be stored as an enum or integer
+		criteria->window_type = parse_window_type(effective_value);
 		break;
 #ifdef HAVE_XWAYLAND
 	case T_ID:
@@ -526,7 +558,8 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	}
 	++head;
 
-	struct criteria *criteria = calloc(sizeof(struct criteria), 1);
+	struct criteria *criteria = calloc(1, sizeof(struct criteria));
+	criteria->window_type = ATOM_LAST; // default value
 	char *name = NULL, *value = NULL;
 	bool in_quotes = false;
 
