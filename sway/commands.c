@@ -118,6 +118,8 @@ static struct cmd_handler handlers[] = {
 	{ "input", cmd_input },
 	{ "mode", cmd_mode },
 	{ "mouse_warping", cmd_mouse_warping },
+	{ "new_float", cmd_default_floating_border },
+	{ "new_window", cmd_default_border },
 	{ "no_focus", cmd_no_focus },
 	{ "output", cmd_output },
 	{ "seat", cmd_seat },
