@@ -27,15 +27,15 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		view->border = B_NORMAL;
 	} else if (strcmp(argv[0], "pixel") == 0) {
 		view->border = B_PIXEL;
-		if (argc == 2) {
-			view->border_thickness = atoi(argv[1]);
-		}
 	} else if (strcmp(argv[0], "toggle") == 0) {
 		view->border = (view->border + 1) % 3;
 	} else {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Expected 'border <none|normal|pixel|toggle>' "
 				"or 'border pixel <px>'");
+	}
+	if (argc == 2) {
+		view->border_thickness = atoi(argv[1]);
 	}
 
 	if (container_is_floating(view->swayc)) {
