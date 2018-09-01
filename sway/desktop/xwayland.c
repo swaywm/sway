@@ -17,6 +17,7 @@
 #include "sway/tree/view.h"
 
 static const char *atom_map[ATOM_LAST] = {
+	"_NET_WM_WINDOW_TYPE_NORMAL",
 	"_NET_WM_WINDOW_TYPE_DIALOG",
 	"_NET_WM_WINDOW_TYPE_UTILITY",
 	"_NET_WM_WINDOW_TYPE_TOOLBAR",
