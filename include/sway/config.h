@@ -60,7 +60,7 @@ struct sway_mouse_binding {
 /**
  * Focus on window activation.
  */
-enum fowa {
+enum sway_fowa {
 	FOWA_SMART,
 	FOWA_URGENT,
 	FOWA_FOCUS,
@@ -350,7 +350,7 @@ struct sway_config {
 	size_t font_height;
 	bool pango_markup;
 	size_t urgent_timeout;
-	enum fowa focus_on_window_activation;
+	enum sway_fowa focus_on_window_activation;
 
 	// Flags
 	bool focus_follows_mouse;
