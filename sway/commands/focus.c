@@ -95,9 +95,6 @@ static struct sway_node *get_node_in_output_direction(
 
 static struct sway_node *node_get_in_direction(struct sway_container *container,
 		struct sway_seat *seat, enum movement_direction dir) {
-	if (dir == MOVE_CHILD) {
-		return seat_get_active_child(seat, &container->node);
-	}
 	if (container->is_fullscreen) {
 		if (dir == MOVE_PARENT) {
 			return NULL;
@@ -256,8 +253,20 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 			"or 'focus output <direction|name>'");
 	}
 
+	if (direction == MOVE_CHILD) {
+		struct sway_node *focus = seat_get_active_child(seat, node);
+		if (focus) {
+			seat_set_focus(seat, focus);
+		}
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	}
+
 	if (node->type == N_WORKSPACE) {
-		// A workspace is focused, so just jump to the next output
+		if (direction == MOVE_PARENT) {
+			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+		}
+
+		// Jump to the next output
 		struct sway_output *new_output =
 			output_get_in_direction(workspace->output, direction);
 		if (!new_output) {
