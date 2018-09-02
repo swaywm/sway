@@ -218,7 +218,9 @@ static bool wants_floating(struct sway_view *view) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	struct sway_xwayland *xwayland = &server.xwayland;
 
-	// TODO: return true if the NET_WM_STATE is MODAL
+	if (surface->modal) {
+		return true;
+	}
 
 	for (size_t i = 0; i < surface->window_type_len; ++i) {
 		xcb_atom_t type = surface->window_type[i];
