@@ -167,6 +167,7 @@ struct sway_xwayland_view {
 	struct wl_listener request_maximize;
 	struct wl_listener request_configure;
 	struct wl_listener request_fullscreen;
+	struct wl_listener request_activate;
 	struct wl_listener set_title;
 	struct wl_listener set_class;
 	struct wl_listener set_window_type;
@@ -258,6 +259,11 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 void view_autoconfigure(struct sway_view *view);
 
 void view_set_activated(struct sway_view *view, bool activated);
+
+/**
+ * Called when the view requests to be focused.
+ */
+void view_request_activate(struct sway_view *view);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
 

@@ -280,6 +280,29 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+void view_request_activate(struct sway_view *view) {
+	if (config->focus_on_window_activation == FOWA_NONE) {
+		return;
+	}
+	if (config->focus_on_window_activation == FOWA_FOCUS) {
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		seat_set_focus(seat, view->swayc);
+		return;
+	}
+	if (config->focus_on_window_activation == FOWA_URGENT) {
+		view_set_urgent(view, true);
+		return;
+	}
+	// FOWA_SMART
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	if (workspace_is_visible(ws)) {
+		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		seat_set_focus(seat, view->swayc);
+	} else {
+		view_set_urgent(view, true);
+	}
+}
+
 void view_set_tiled(struct sway_view *view, bool tiled) {
 	if (!tiled) {
 		view->using_csd = true;
