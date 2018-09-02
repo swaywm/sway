@@ -106,7 +106,7 @@ endif
 
 add_project_arguments('-DSYSCONFDIR="/@0@"'.format(sysconfdir), language : 'c')
 
-version = get_option('sway_version')
+version = get_option('sway-version')
 if version != ''
 	version = '"@0@"'.format(version)
 else
@@ -168,7 +168,7 @@ install_data(
 	install_dir: datadir + '/wayland-sessions'
 )
 
-if (get_option('default_wallpaper'))
+if (get_option('default-wallpaper'))
 	wallpaper_files = files(
 		'assets/Sway_Wallpaper_Blue_768x1024.png',
 		'assets/Sway_Wallpaper_Blue_768x1024_Portrait.png',
@@ -184,7 +184,7 @@ if (get_option('default_wallpaper'))
 	install_data(wallpaper_files, install_dir: wallpaper_install_dir)
 endif
 
-if (get_option('zsh_completions'))
+if (get_option('zsh-completions'))
 	zsh_files = files(
 		'completions/zsh/_sway',
 		'completions/zsh/_swaylock',
@@ -195,7 +195,7 @@ if (get_option('zsh_completions'))
 	install_data(zsh_files, install_dir: zsh_install_dir)
 endif
 
-if (get_option('bash_completions'))
+if (get_option('bash-completions'))
 	bash_files = files(
 		'completions/bash/sway',
 		'completions/bash/swayidle',
@@ -207,7 +207,7 @@ if (get_option('bash_completions'))
 	install_data(bash_files, install_dir: bash_install_dir)
 endif
 
-if (get_option('fish_completions'))
+if (get_option('fish-completions'))
 	fish_files = files(
 		'completions/fish/sway.fish',
 		'completions/fish/swaylock.fish',
