@@ -120,6 +120,8 @@ else
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
+add_project_arguments('-D_LD_LIBRARY_PATH="@0@"'.format(get_option('ld-library-path')), language: 'c')
+
 sway_inc = include_directories('include')
 
 subdir('include')
