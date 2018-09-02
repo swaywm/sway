@@ -560,11 +560,11 @@ void view_unmap(struct sway_view *view) {
 	container_begin_destroy(view->container);
 	if (parent) {
 		container_reap_empty(parent);
-	} else {
+	} else if (ws) {
 		workspace_consider_destroy(ws);
 	}
 
-	if (!ws->node.destroying) {
+	if (ws && !ws->node.destroying) {
 		arrange_workspace(ws);
 		workspace_detect_urgent(ws);
 	}
