@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 600
+#define _POSIX_C_SOURCE 200809
 #include <limits.h>
 #include <string.h>
 #include <strings.h>
