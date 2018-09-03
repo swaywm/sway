@@ -1148,6 +1148,8 @@ struct sway_container *container_split(struct sway_container *child,
 	struct sway_container *cont = container_create(NULL);
 	cont->width = child->width;
 	cont->height = child->height;
+	cont->x = child->x;
+	cont->y = child->y;
 	cont->current_gaps = child->current_gaps;
 	cont->layout = layout;
 
