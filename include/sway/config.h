@@ -58,6 +58,16 @@ struct sway_mouse_binding {
 };
 
 /**
+ * Focus on window activation.
+ */
+enum sway_fowa {
+	FOWA_SMART,
+	FOWA_URGENT,
+	FOWA_FOCUS,
+	FOWA_NONE,
+};
+
+/**
  * A "mode" of keybindings created via the `mode` command.
  */
 struct sway_mode {
@@ -340,6 +350,7 @@ struct sway_config {
 	size_t font_height;
 	bool pango_markup;
 	size_t urgent_timeout;
+	enum sway_fowa focus_on_window_activation;
 
 	// Flags
 	bool focus_follows_mouse;

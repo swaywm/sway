@@ -401,3 +401,17 @@ char *argsep(char **stringp, const char *delim) {
 	found:
 	return start;
 }
+
+const char *strcasestr(const char *haystack, const char *needle) {
+	size_t needle_len = strlen(needle);
+	const char *pos = haystack;
+	const char *end = pos + strlen(haystack) - needle_len;
+
+	while (pos <= end) {
+		if (strncasecmp(pos, needle, needle_len) == 0) {
+			return pos;
+		}
+		++pos;
+	}
+	return NULL;
+}

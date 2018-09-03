@@ -310,7 +310,7 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 	bool reload = false;
 	// if this is a reload command we need to make a duplicate of the
 	// binding since it will be gone after the reload has completed.
-	if (strcasecmp(binding->command, "reload") == 0) {
+	if (strcasestr(binding->command, "reload")) {
 		reload = true;
 		binding_copy = sway_binding_dup(binding);
 		if (!binding_copy) {

@@ -46,4 +46,6 @@ char *cmdsep(char **stringp, const char *delim);
 // Split string into 2 by delim, handle quotes
 char *argsep(char **stringp, const char *delim);
 
+const char *strcasestr(const char *haystack, const char *needle);
+
 #endif
