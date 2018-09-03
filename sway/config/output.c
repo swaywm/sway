@@ -196,6 +196,10 @@ void apply_output_config(struct output_config *oc, struct sway_container *output
 		wlr_log(WLR_DEBUG, "Set %s mode to %dx%d (%f GHz)", oc->name, oc->width,
 			oc->height, oc->refresh_rate);
 		set_mode(wlr_output, oc->width, oc->height, oc->refresh_rate);
+	} else if (!wl_list_empty(&wlr_output->modes)) {
+		struct wlr_output_mode *mode =
+			wl_container_of(wlr_output->modes.prev, mode, link);
+		wlr_output_set_mode(wlr_output, mode);
 	}
 	if (oc && oc->scale > 0) {
 		wlr_log(WLR_DEBUG, "Set %s scale to %f", oc->name, oc->scale);
