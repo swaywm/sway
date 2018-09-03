@@ -346,7 +346,8 @@ static void render_titlebar(struct sway_output *output,
 	float output_scale = output->wlr_output->scale;
 	enum sway_container_layout layout = state->parent->current.layout;
 	list_t *children = state->parent->current.children;
-	bool is_last_child = children->items[children->length - 1] == con;
+	bool is_last_child = children->length == 0 ||
+		children->items[children->length - 1] == con;
 	double output_x = output->swayc->current.swayc_x;
 	double output_y = output->swayc->current.swayc_y;
 
