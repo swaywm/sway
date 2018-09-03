@@ -218,7 +218,9 @@ static bool wants_floating(struct sway_view *view) {
 	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
 	struct sway_xwayland *xwayland = &server.xwayland;
 
-	// TODO: return true if the NET_WM_STATE is MODAL
+	if (surface->modal) {
+		return true;
+	}
 
 	for (size_t i = 0; i < surface->window_type_len; ++i) {
 		xcb_atom_t type = surface->window_type[i];
@@ -335,6 +337,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
 	wl_list_remove(&xwayland_view->request_move.link);
 	wl_list_remove(&xwayland_view->request_resize.link);
+	wl_list_remove(&xwayland_view->request_activate.link);
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_window_type.link);
@@ -461,6 +464,19 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	seat_begin_resize_floating(seat, view->swayc, seat->last_button, e->edges);
 }
 
+static void handle_request_activate(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, request_activate);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
+	view_request_activate(view);
+
+	transaction_commit_dirty();
+}
+
 static void handle_set_title(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, set_title);
@@ -552,6 +568,10 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 	wl_signal_add(&xsurface->events.request_fullscreen,
 		&xwayland_view->request_fullscreen);
 	xwayland_view->request_fullscreen.notify = handle_request_fullscreen;
+
+	wl_signal_add(&xsurface->events.request_activate,
+		&xwayland_view->request_activate);
+	xwayland_view->request_activate.notify = handle_request_activate;
 
 	wl_signal_add(&xsurface->events.request_move,
 		&xwayland_view->request_move);

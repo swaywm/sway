@@ -280,6 +280,29 @@ void view_set_activated(struct sway_view *view, bool activated) {
 	}
 }
 
+void view_request_activate(struct sway_view *view) {
+	struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+
+	switch (config->focus_on_window_activation) {
+	case FOWA_SMART:
+		if (workspace_is_visible(ws)) {
+			seat_set_focus(seat, view->swayc);
+		} else {
+			view_set_urgent(view, true);
+		}
+		break;
+	case FOWA_URGENT:
+		view_set_urgent(view, true);
+		break;
+	case FOWA_FOCUS:
+		seat_set_focus(seat, view->swayc);
+		break;
+	case FOWA_NONE:
+		break;
+	}
+}
+
 void view_set_tiled(struct sway_view *view, bool tiled) {
 	if (!tiled) {
 		view->using_csd = true;
