@@ -88,7 +88,6 @@ static enum sway_container_layout get_layout(int argc, char **argv,
 	}
 
 	if (strcasecmp(argv[0], "toggle") == 0) {
-		argc--; argv++;
 		return get_layout_toggle(argc, argv, layout, prev_split_layout);
 	}
 
