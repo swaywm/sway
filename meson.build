@@ -38,7 +38,7 @@ pango          = dependency('pango')
 pangocairo     = dependency('pangocairo')
 gdk_pixbuf     = dependency('gdk-pixbuf-2.0', required: false)
 pixman         = dependency('pixman-1')
-libcap         = dependency('libcap')
+libcap         = dependency('libcap', required: false)
 libinput       = dependency('libinput', version: '>=1.6.0')
 libpam         = cc.find_library('pam')
 systemd        = dependency('libsystemd', required: false)
@@ -104,7 +104,7 @@ if scdoc.found()
 	endforeach
 endif
 
-add_project_arguments('-DSYSCONFDIR="/@0@"'.format(sysconfdir), language : 'c')
+add_project_arguments('-DSYSCONFDIR="/@0@/@1@"'.format(prefix, sysconfdir), language : 'c')
 
 version = get_option('sway-version')
 if version != ''

@@ -140,6 +140,10 @@ bool server_init(struct sway_server *server) {
 
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
+#ifdef HAVE_XWAYLAND
+	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
+#endif
+	wl_display_destroy_clients(server->wl_display);
 	wl_display_destroy(server->wl_display);
 	list_free(server->dirty_containers);
 	list_free(server->transactions);
