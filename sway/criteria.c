@@ -24,9 +24,9 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->con_id
 #ifdef HAVE_XWAYLAND
 		&& !criteria->id
+		&& criteria->window_type == ATOM_LAST
 #endif
 		&& !criteria->window_role
-		&& criteria->window_type == ATOM_LAST
 		&& !criteria->floating
 		&& !criteria->tiling
 		&& !criteria->urgent
@@ -51,8 +51,8 @@ static int regex_cmp(const char *item, const pcre *regex) {
 	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
 }
 
-static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 #ifdef HAVE_XWAYLAND
+static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 	if (view->type != SWAY_VIEW_XWAYLAND) {
 		return false;
 	}
@@ -64,9 +64,9 @@ static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 			return true;
 		}
 	}
-#endif
 	return false;
 }
+#endif
 
 static int cmp_urgent(const void *_a, const void *_b) {
 	struct sway_view *a = *(void **)_a;
@@ -162,11 +162,13 @@ static bool criteria_matches_view(struct criteria *criteria,
 		// TODO
 	}
 
+#ifdef HAVE_XWAYLAND
 	if (criteria->window_type != ATOM_LAST) {
 		if (!view_has_window_type(view, criteria->window_type)) {
 			return false;
 		}
 	}
+#endif
 
 	if (criteria->floating) {
 		if (!container_is_floating(view->swayc)) {
@@ -271,6 +273,7 @@ static bool generate_regex(pcre **regex, char *value) {
 	return true;
 }
 
+#ifdef HAVE_XWAYLAND
 static enum atom_name parse_window_type(const char *type) {
 	if (strcasecmp(type, "normal") == 0) {
 		return NET_WM_WINDOW_TYPE_NORMAL;
@@ -285,6 +288,7 @@ static enum atom_name parse_window_type(const char *type) {
 	}
 	return ATOM_LAST; // ie. invalid
 }
+#endif
 
 enum criteria_token {
 	T_APP_ID,
@@ -294,6 +298,7 @@ enum criteria_token {
 	T_FLOATING,
 #ifdef HAVE_XWAYLAND
 	T_ID,
+	T_WINDOW_TYPE,
 #endif
 	T_INSTANCE,
 	T_SHELL,
@@ -301,7 +306,6 @@ enum criteria_token {
 	T_TITLE,
 	T_URGENT,
 	T_WINDOW_ROLE,
-	T_WINDOW_TYPE,
 	T_WORKSPACE,
 
 	T_INVALID,
@@ -319,6 +323,8 @@ static enum criteria_token token_from_name(char *name) {
 #ifdef HAVE_XWAYLAND
 	} else if (strcmp(name, "id") == 0) {
 		return T_ID;
+	} else if (strcmp(name, "window_type") == 0) {
+		return T_WINDOW_TYPE;
 #endif
 	} else if (strcmp(name, "instance") == 0) {
 		return T_INSTANCE;
@@ -330,8 +336,6 @@ static enum criteria_token token_from_name(char *name) {
 		return T_URGENT;
 	} else if (strcmp(name, "window_role") == 0) {
 		return T_WINDOW_ROLE;
-	} else if (strcmp(name, "window_type") == 0) {
-		return T_WINDOW_TYPE;
 	} else if (strcmp(name, "workspace") == 0) {
 		return T_WORKSPACE;
 	}
@@ -397,10 +401,10 @@ static char *get_focused_prop(enum criteria_token token) {
 	case T_FLOATING:
 #ifdef HAVE_XWAYLAND
 	case T_ID:
+	case T_WINDOW_TYPE:
 #endif
 	case T_TILING:
 	case T_URGENT:
-	case T_WINDOW_TYPE:
 	case T_INVALID:
 		break;
 	}
@@ -465,10 +469,10 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_WINDOW_ROLE:
 		generate_regex(&criteria->window_role, effective_value);
 		break;
+#ifdef HAVE_XWAYLAND
 	case T_WINDOW_TYPE:
 		criteria->window_type = parse_window_type(effective_value);
 		break;
-#ifdef HAVE_XWAYLAND
 	case T_ID:
 		criteria->id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
@@ -559,7 +563,9 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	++head;
 
 	struct criteria *criteria = calloc(1, sizeof(struct criteria));
+#ifdef HAVE_XWAYLAND
 	criteria->window_type = ATOM_LAST; // default value
+#endif
 	char *name = NULL, *value = NULL;
 	bool in_quotes = false;
 

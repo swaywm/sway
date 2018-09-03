@@ -29,9 +29,9 @@ struct criteria {
 	uint32_t con_id; // internal ID
 #ifdef HAVE_XWAYLAND
 	uint32_t id; // X11 window ID
+	enum atom_name window_type;
 #endif
 	pcre *window_role;
-	enum atom_name window_type;
 	bool floating;
 	bool tiling;
 	char urgent; // 'l' for latest or 'o' for oldest
