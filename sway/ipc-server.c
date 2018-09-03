@@ -253,8 +253,8 @@ int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data) {
 		return 0;
 	}
 
-	client->payload_length = buf32[0];
-	client->current_command = (enum ipc_command_type)buf32[1];
+	memcpy(&client->payload_length, &buf32[0], sizeof(buf32[0]));
+	memcpy(&client->current_command, &buf32[1], sizeof(buf32[1]));
 
 	if (read_available - received >= (long)client->payload_length) {
 		ipc_client_handle_command(client);
@@ -832,8 +832,8 @@ bool ipc_send_reply(struct ipc_client *client, const char *payload, uint32_t pay
 	uint32_t *data32 = (uint32_t*)(data + sizeof(ipc_magic));
 
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	data32[0] = payload_length;
-	data32[1] = client->current_command;
+	memcpy(&data32[0], &payload_length, sizeof(payload_length));
+	memcpy(&data32[1], &client->current_command, sizeof(client->current_command));
 
 	while (client->write_buffer_len + ipc_header_size + payload_length >=
 				 client->write_buffer_size) {

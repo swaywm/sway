@@ -78,8 +78,8 @@ struct ipc_response *ipc_recv_response(int socketfd) {
 	}
 
 	total = 0;
-	response->size = data32[0];
-	response->type = data32[1];
+	memcpy(&response->size, &data32[0], sizeof(data32[0]));
+	memcpy(&response->type, &data32[1], sizeof(data32[1]));
 	char *payload = malloc(response->size + 1);
 	if (!payload) {
 		goto error_2;
@@ -112,8 +112,8 @@ char *ipc_single_command(int socketfd, uint32_t type, const char *payload, uint3
 	char data[ipc_header_size];
 	uint32_t *data32 = (uint32_t *)(data + sizeof(ipc_magic));
 	memcpy(data, ipc_magic, sizeof(ipc_magic));
-	data32[0] = *len;
-	data32[1] = type;
+	memcpy(&data32[0], len, sizeof(*len));
+	memcpy(&data32[1], &type, sizeof(type));
 
 	if (write(socketfd, data, ipc_header_size) == -1) {
 		sway_abort("Unable to send IPC header");
