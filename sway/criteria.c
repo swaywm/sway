@@ -18,15 +18,15 @@ bool criteria_is_empty(struct criteria *criteria) {
 	return !criteria->title
 		&& !criteria->shell
 		&& !criteria->app_id
-		&& !criteria->class
-		&& !criteria->instance
 		&& !criteria->con_mark
 		&& !criteria->con_id
 #ifdef HAVE_XWAYLAND
+		&& !criteria->class
 		&& !criteria->id
+		&& !criteria->instance
+		&& !criteria->window_role
 		&& criteria->window_type == ATOM_LAST
 #endif
-		&& !criteria->window_role
 		&& !criteria->floating
 		&& !criteria->tiling
 		&& !criteria->urgent
@@ -37,10 +37,12 @@ void criteria_destroy(struct criteria *criteria) {
 	pcre_free(criteria->title);
 	pcre_free(criteria->shell);
 	pcre_free(criteria->app_id);
+#ifdef HAVE_XWAYLAND
 	pcre_free(criteria->class);
 	pcre_free(criteria->instance);
-	pcre_free(criteria->con_mark);
 	pcre_free(criteria->window_role);
+#endif
+	pcre_free(criteria->con_mark);
 	free(criteria->workspace);
 	free(criteria->cmdlist);
 	free(criteria->raw);
@@ -115,21 +117,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			return false;
 		}
 	}
-
-	if (criteria->class) {
-		const char *class = view_get_class(view);
-		if (!class || regex_cmp(class, criteria->class) != 0) {
-			return false;
-		}
-	}
-
-	if (criteria->instance) {
-		const char *instance = view_get_instance(view);
-		if (!instance || regex_cmp(instance, criteria->instance) != 0) {
-			return false;
-		}
-	}
-
+	
 	if (criteria->con_mark) {
 		bool exists = false;
 		for (int i = 0; i < view->marks->length; ++i) {
@@ -156,13 +144,25 @@ static bool criteria_matches_view(struct criteria *criteria,
 			return false;
 		}
 	}
-#endif
+
+	if (criteria->class) {
+		const char *class = view_get_class(view);
+		if (!class || regex_cmp(class, criteria->class) != 0) {
+			return false;
+		}
+	}
+
+	if (criteria->instance) {
+		const char *instance = view_get_instance(view);
+		if (!instance || regex_cmp(instance, criteria->instance) != 0) {
+			return false;
+		}
+	}
 
 	if (criteria->window_role) {
 		// TODO
 	}
 
-#ifdef HAVE_XWAYLAND
 	if (criteria->window_type != ATOM_LAST) {
 		if (!view_has_window_type(view, criteria->window_type)) {
 			return false;
@@ -292,20 +292,20 @@ static enum atom_name parse_window_type(const char *type) {
 
 enum criteria_token {
 	T_APP_ID,
-	T_CLASS,
 	T_CON_ID,
 	T_CON_MARK,
 	T_FLOATING,
 #ifdef HAVE_XWAYLAND
+	T_CLASS,
 	T_ID,
+	T_INSTANCE,
+	T_WINDOW_ROLE,
 	T_WINDOW_TYPE,
 #endif
-	T_INSTANCE,
 	T_SHELL,
 	T_TILING,
 	T_TITLE,
 	T_URGENT,
-	T_WINDOW_ROLE,
 	T_WORKSPACE,
 
 	T_INVALID,
@@ -314,28 +314,28 @@ enum criteria_token {
 static enum criteria_token token_from_name(char *name) {
 	if (strcmp(name, "app_id") == 0) {
 		return T_APP_ID;
-	} else if (strcmp(name, "class") == 0) {
-		return T_CLASS;
 	} else if (strcmp(name, "con_id") == 0) {
 		return T_CON_ID;
 	} else if (strcmp(name, "con_mark") == 0) {
 		return T_CON_MARK;
 #ifdef HAVE_XWAYLAND
+	} else if (strcmp(name, "class") == 0) {
+		return T_CLASS;
 	} else if (strcmp(name, "id") == 0) {
 		return T_ID;
+	} else if (strcmp(name, "instance") == 0) {
+		return T_INSTANCE;
+	} else if (strcmp(name, "window_role") == 0) {
+		return T_WINDOW_ROLE;
 	} else if (strcmp(name, "window_type") == 0) {
 		return T_WINDOW_TYPE;
 #endif
-	} else if (strcmp(name, "instance") == 0) {
-		return T_INSTANCE;
 	} else if (strcmp(name, "shell") == 0) {
 		return T_SHELL;
 	} else if (strcmp(name, "title") == 0) {
 		return T_TITLE;
 	} else if (strcmp(name, "urgent") == 0) {
 		return T_URGENT;
-	} else if (strcmp(name, "window_role") == 0) {
-		return T_WINDOW_ROLE;
 	} else if (strcmp(name, "workspace") == 0) {
 		return T_WORKSPACE;
 	}
@@ -364,19 +364,10 @@ static char *get_focused_prop(enum criteria_token token) {
 	case T_APP_ID:
 		value = view_get_app_id(view);
 		break;
-	case T_CLASS:
-		value = view_get_class(view);
-		break;
-	case T_INSTANCE:
-		value = view_get_instance(view);
-		break;
 	case T_SHELL:
 		value = view_get_shell(view);
 		break;
 	case T_TITLE:
-		value = view_get_class(view);
-		break;
-	case T_WINDOW_ROLE:
 		value = view_get_class(view);
 		break;
 	case T_WORKSPACE:
@@ -400,7 +391,16 @@ static char *get_focused_prop(enum criteria_token token) {
 	case T_CON_MARK: // These do not support __focused__
 	case T_FLOATING:
 #ifdef HAVE_XWAYLAND
+	case T_CLASS:
+		value = view_get_class(view);
+		break;
 	case T_ID:
+	case T_INSTANCE:
+		value = view_get_instance(view);
+		break;
+	case T_WINDOW_ROLE:
+		value = view_get_class(view);
+		break;
 	case T_WINDOW_TYPE:
 #endif
 	case T_TILING:
@@ -451,12 +451,6 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_APP_ID:
 		generate_regex(&criteria->app_id, effective_value);
 		break;
-	case T_CLASS:
-		generate_regex(&criteria->class, effective_value);
-		break;
-	case T_INSTANCE:
-		generate_regex(&criteria->instance, effective_value);
-		break;
 	case T_CON_ID:
 		criteria->con_id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
@@ -466,18 +460,24 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_CON_MARK:
 		generate_regex(&criteria->con_mark, effective_value);
 		break;
-	case T_WINDOW_ROLE:
-		generate_regex(&criteria->window_role, effective_value);
-		break;
 #ifdef HAVE_XWAYLAND
-	case T_WINDOW_TYPE:
-		criteria->window_type = parse_window_type(effective_value);
+	case T_CLASS:
+		generate_regex(&criteria->class, effective_value);
 		break;
 	case T_ID:
 		criteria->id = strtoul(effective_value, &endptr, 10);
 		if (*endptr != 0) {
 			error = strdup("The value for 'id' should be numeric");
 		}
+		break;
+	case T_INSTANCE:
+		generate_regex(&criteria->instance, effective_value);
+		break;
+	case T_WINDOW_ROLE:
+		generate_regex(&criteria->window_role, effective_value);
+		break;
+	case T_WINDOW_TYPE:
+		criteria->window_type = parse_window_type(effective_value);
 		break;
 #endif
 	case T_FLOATING:
