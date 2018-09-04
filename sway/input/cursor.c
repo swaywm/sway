@@ -126,16 +126,6 @@ static struct sway_node *node_at_coords(
 	return &ws->node;
 }
 
-static struct sway_container *container_at_coords(struct sway_seat *seat,
-		double lx, double ly,
-		struct wlr_surface **surface, double *sx, double *sy) {
-	struct sway_node *node = node_at_coords(seat, lx, ly, surface, sx, sy);
-	if (node && node->type == N_CONTAINER) {
-		return node->sway_container;
-	}
-	return NULL;
-}
-
 /**
  * Determine if the edge of the given container is on the edge of the
  * workspace/output.
@@ -630,8 +620,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
-	struct sway_container *cont = container_at_coords(seat,
+	struct sway_node *node = node_at_coords(seat,
 			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_container *cont = node && node->type == N_CONTAINER ?
+		node->sway_container : NULL;
 	bool is_floating = cont && container_is_floating(cont);
 	bool is_floating_or_child = cont && container_is_floating_or_child(cont);
 	bool is_fullscreen_or_child = cont && container_is_fullscreen_or_child(cont);
@@ -660,6 +652,12 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 	if (binding) {
 		seat_execute_command(seat, binding);
+		return;
+	}
+
+	// Handle clicking an empty workspace
+	if (node && node->type == N_WORKSPACE) {
+		seat_set_focus(seat, node);
 		return;
 	}
 
@@ -801,7 +799,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
-	container_at_coords(seat, lx, ly, &surface, &sx, &sy);
+	node_at_coords(seat, lx, ly, &surface, &sx, &sy);
 
 	seat->touch_id = event->touch_id;
 	seat->touch_x = lx;
@@ -843,7 +841,7 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	wlr_cursor_absolute_to_layout_coords(cursor->cursor, event->device,
 			event->x, event->y, &lx, &ly);
 	double sx, sy;
-	container_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
+	node_at_coords(cursor->seat, lx, ly, &surface, &sx, &sy);
 
 	if (seat->touch_id == event->touch_id) {
 		seat->touch_x = lx;
