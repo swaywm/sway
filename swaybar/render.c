@@ -111,7 +111,7 @@ static void render_block(struct window *window, struct config *config, struct st
 	// render background
 	if (block->background != 0x0) {
 		cairo_set_source_u32(window->cairo, block->background);
-		cairo_rectangle(window->cairo, pos - 0.5, 1, block_width, (window->height * window->scale) - 2);
+		cairo_rectangle(window->cairo, pos - 0.5, 1, width, (window->height * window->scale) - 2);
 		cairo_fill(window->cairo);
 	}
 
