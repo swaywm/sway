@@ -160,7 +160,10 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->window_role) {
-		// TODO
+		const char *role = view_get_window_role(view);
+		if (!role || regex_cmp(role, criteria->window_role) != 0) {
+			return false;
+		}
 	}
 
 	if (criteria->window_type != ATOM_LAST) {
@@ -368,7 +371,7 @@ static char *get_focused_prop(enum criteria_token token) {
 		value = view_get_shell(view);
 		break;
 	case T_TITLE:
-		value = view_get_class(view);
+		value = view_get_title(view);
 		break;
 	case T_WORKSPACE:
 		{
@@ -388,21 +391,21 @@ static char *get_focused_prop(enum criteria_token token) {
 		snprintf(id_str, id_size, "%zu", id);
 		value = id_str;
 		break;
-	case T_CON_MARK: // These do not support __focused__
-	case T_FLOATING:
 #ifdef HAVE_XWAYLAND
 	case T_CLASS:
 		value = view_get_class(view);
 		break;
-	case T_ID:
 	case T_INSTANCE:
 		value = view_get_instance(view);
 		break;
 	case T_WINDOW_ROLE:
-		value = view_get_class(view);
+		value = view_get_window_role(view);
 		break;
-	case T_WINDOW_TYPE:
+	case T_WINDOW_TYPE: // These do not support __focused__
+	case T_ID:
 #endif
+	case T_CON_MARK:
+	case T_FLOATING:
 	case T_TILING:
 	case T_URGENT:
 	case T_INVALID:

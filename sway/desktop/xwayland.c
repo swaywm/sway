@@ -154,6 +154,8 @@ static const char *get_string_prop(struct sway_view *view, enum sway_view_prop p
 		return view->wlr_xwayland_surface->class;
 	case VIEW_PROP_INSTANCE:
 		return view->wlr_xwayland_surface->instance;
+	case VIEW_PROP_WINDOW_ROLE:
+		return view->wlr_xwayland_surface->role;
 	default:
 		return NULL;
 	}
@@ -340,6 +342,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->request_activate.link);
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
+	wl_list_remove(&xwayland_view->set_role.link);
 	wl_list_remove(&xwayland_view->set_window_type.link);
 	wl_list_remove(&xwayland_view->set_hints.link);
 	wl_list_remove(&xwayland_view->map.link);
@@ -500,6 +503,17 @@ static void handle_set_class(struct wl_listener *listener, void *data) {
 	view_execute_criteria(view);
 }
 
+static void handle_set_role(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_role);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+	if (!xsurface->mapped) {
+		return;
+	}
+	view_execute_criteria(view);
+}
+
 static void handle_set_window_type(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, set_window_type);
@@ -586,6 +600,9 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&xsurface->events.set_class, &xwayland_view->set_class);
 	xwayland_view->set_class.notify = handle_set_class;
+
+	wl_signal_add(&xsurface->events.set_role, &xwayland_view->set_role);
+	xwayland_view->set_role.notify = handle_set_role;
 
 	wl_signal_add(&xsurface->events.set_window_type,
 			&xwayland_view->set_window_type);
