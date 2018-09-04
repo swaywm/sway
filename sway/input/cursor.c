@@ -91,7 +91,7 @@ static struct sway_node *node_at_coords(
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
 				ox, oy, sx, sy))) {
-		return &ws->node;
+		return NULL;
 	}
 	if (ws->fullscreen) {
 		struct sway_container *con =
@@ -104,7 +104,7 @@ static struct sway_node *node_at_coords(
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
 				ox, oy, sx, sy))) {
-		return &ws->node;
+		return NULL;
 	}
 
 	struct sway_container *c;
@@ -115,12 +115,12 @@ static struct sway_node *node_at_coords(
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
 				ox, oy, sx, sy))) {
-		return &ws->node;
+		return NULL;
 	}
 	if ((*surface = layer_surface_at(output,
 				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
 				ox, oy, sx, sy))) {
-		return &ws->node;
+		return NULL;
 	}
 
 	return &ws->node;
