@@ -1028,7 +1028,9 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 
 	ipc_event_window(view->container, "urgent");
 
-	workspace_detect_urgent(view->container->workspace);
+	if (view->container->workspace) {
+		workspace_detect_urgent(view->container->workspace);
+	}
 }
 
 bool view_is_urgent(struct sway_view *view) {
