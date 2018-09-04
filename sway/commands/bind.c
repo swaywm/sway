@@ -214,6 +214,9 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	}
 
 	binding->command = join_args(argv + 1, argc - 1);
+	if (strcasestr(binding->command, "reload")) {
+		binding->flags |= BINDING_RELOAD;
+	}
 
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
@@ -307,11 +310,9 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 		binding->command);
 
 	struct sway_binding *binding_copy = binding;
-	bool reload = false;
 	// if this is a reload command we need to make a duplicate of the
 	// binding since it will be gone after the reload has completed.
-	if (strcasestr(binding->command, "reload")) {
-		reload = true;
+	if (binding->flags & BINDING_RELOAD) {
 		binding_copy = sway_binding_dup(binding);
 		if (!binding_copy) {
 			wlr_log(WLR_ERROR, "Failed to duplicate binding during reload");
@@ -328,7 +329,7 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 			binding->command, results->error);
 	}
 
-	if (reload) { // free the binding if we made a copy
+	if (binding->flags & BINDING_RELOAD) { // free the binding if we made a copy
 		free_sway_binding(binding_copy);
 	}
 	free_cmd_results(results);
