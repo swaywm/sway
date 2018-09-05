@@ -187,7 +187,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 	if (block->background) {
 		cairo_set_source_u32(cairo, block->background);
 		cairo_rectangle(cairo, pos - 0.5 * output->scale,
-				output->scale, block_width, height);
+				output->scale, width, height);
 		cairo_fill(cairo);
 	}
 
