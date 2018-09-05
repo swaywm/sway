@@ -278,12 +278,11 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 				raw_modifiers, false, input_inhibited);
 
 		if (binding_pressed) {
-			seat_execute_command(seat, binding_pressed);
-			handled = true;
-
 			if ((binding_pressed->flags & BINDING_RELOAD) == 0) {
 				next_repeat_binding = binding_pressed;
 			}
+			seat_execute_command(seat, binding_pressed);
+			handled = true;
 		}
 	}
 

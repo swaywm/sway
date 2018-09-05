@@ -329,7 +329,7 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 			binding->command, results->error);
 	}
 
-	if (binding->flags & BINDING_RELOAD) { // free the binding if we made a copy
+	if (binding_copy->flags & BINDING_RELOAD) {
 		free_sway_binding(binding_copy);
 	}
 	free_cmd_results(results);
