@@ -168,11 +168,8 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 
 		// the structure change might have caused it to move up to the top of
 		// the focus stack without sending focus notifications to the view
-		if (seat_get_focus(seat) == next_focus) {
-			seat_send_focus(next_focus, seat);
-		} else {
-			seat_set_focus(seat, next_focus);
-		}
+		seat_send_focus(next_focus, seat);
+		seat_set_focus(seat, next_focus);
 	}
 }
 
