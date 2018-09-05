@@ -164,6 +164,10 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 }
 
 void view_autoconfigure(struct sway_view *view) {
+	if (!view->container->workspace) {
+		// Hidden in the scratchpad
+		return;
+	}
 	struct sway_output *output = view->container->workspace->output;
 
 	if (view->container->is_fullscreen) {

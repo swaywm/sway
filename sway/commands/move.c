@@ -41,7 +41,7 @@ enum wlr_direction opposite_direction(enum wlr_direction d) {
 }
 
 static struct sway_output *output_in_direction(const char *direction_string,
-		struct wlr_output *reference, int ref_lx, int ref_ly) {
+		struct sway_output *reference, int ref_lx, int ref_ly) {
 	struct {
 		char *name;
 		enum wlr_direction direction;
@@ -61,14 +61,15 @@ static struct sway_output *output_in_direction(const char *direction_string,
 		}
 	}
 
-	if (direction) {
+	if (reference && direction) {
 		struct wlr_output *target = wlr_output_layout_adjacent_output(
-				root->output_layout, direction, reference, ref_lx, ref_ly);
+				root->output_layout, direction, reference->wlr_output,
+				ref_lx, ref_ly);
 
 		if (!target) {
 			target = wlr_output_layout_farthest_output(
 					root->output_layout, opposite_direction(direction),
-					reference, ref_lx, ref_ly);
+					reference->wlr_output, ref_lx, ref_ly);
 		}
 
 		if (target) {
@@ -246,7 +247,7 @@ static void container_move_to_container(struct sway_container *container,
 
 	// Update workspace urgent state
 	workspace_detect_urgent(destination->workspace);
-	if (old_workspace != destination->workspace) {
+	if (old_workspace && old_workspace != destination->workspace) {
 		workspace_detect_urgent(old_workspace);
 	}
 }
@@ -452,7 +453,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_container *old_parent = container->parent;
 	struct sway_workspace *old_ws = container->workspace;
-	struct sway_output *old_output = old_ws->output;
+	struct sway_output *old_output = old_ws ? old_ws->output : NULL;
 	struct sway_node *destination = NULL;
 
 	// determine destination
@@ -496,7 +497,8 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 			if (!no_auto_back_and_forth && config->auto_back_and_forth &&
 					prev_workspace_name) {
 				// auto back and forth move
-				if (old_ws->name && strcmp(old_ws->name, ws_name) == 0) {
+				if (old_ws && old_ws->name &&
+						strcmp(old_ws->name, ws_name) == 0) {
 					// if target workspace is the current one
 					free(ws_name);
 					ws_name = strdup(prev_workspace_name);
@@ -524,7 +526,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		destination = seat_get_focus_inactive(seat, &ws->node);
 	} else if (strcasecmp(argv[1], "output") == 0) {
 		struct sway_output *new_output = output_in_direction(argv[2],
-				old_output->wlr_output, container->x, container->y);
+				old_output, container->x, container->y);
 		if (!new_output) {
 			return cmd_results_new(CMD_FAILURE, "move workspace",
 				"Can't find output with name/direction '%s'", argv[2]);
@@ -541,7 +543,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}
 
-	if (container->is_sticky &&
+	if (container->is_sticky && old_output &&
 			node_has_ancestor(destination, &old_output->node)) {
 		return cmd_results_new(CMD_FAILURE, "move", "Can't move sticky "
 				"container to another workspace on the same output");
@@ -552,6 +554,9 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		NULL : output_get_active_workspace(new_output);
 
 	// move container, arrange windows and return focus
+	if (container->scratchpad) {
+		root_scratchpad_remove_container(container);
+	}
 	switch (destination->type) {
 	case N_WORKSPACE:
 		container_move_to_workspace(container, destination->sway_workspace);
@@ -580,18 +585,20 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	struct sway_node *focus = NULL;
 	if (old_parent) {
 		focus = seat_get_focus_inactive(seat, &old_parent->node);
-	} else {
+	} else if (old_ws) {
 		focus = seat_get_focus_inactive(seat, &old_ws->node);
 	}
 	seat_set_focus_warp(seat, focus, true, false);
 
 	if (old_parent) {
 		container_reap_empty(old_parent);
-	} else {
+	} else if (old_ws) {
 		workspace_consider_destroy(old_ws);
 	}
 
-	arrange_workspace(old_ws);
+	if (old_ws) {
+		arrange_workspace(old_ws);
+	}
 	arrange_node(node_get_parent(destination));
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -650,7 +657,7 @@ static struct cmd_results *cmd_move_workspace(int argc, char **argv) {
 	int center_x = workspace->width / 2 + workspace->x,
 		center_y = workspace->height / 2 + workspace->y;
 	struct sway_output *new_output = output_in_direction(argv[2],
-			old_output->wlr_output, center_x, center_y);
+			old_output, center_x, center_y);
 	if (!new_output) {
 		return cmd_results_new(CMD_FAILURE, "move workspace",
 			"Can't find output with name/direction '%s'", argv[2]);

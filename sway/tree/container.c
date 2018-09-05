@@ -1116,9 +1116,11 @@ void container_detach(struct sway_container *child) {
 	struct sway_container *old_parent = child->parent;
 	struct sway_workspace *old_workspace = child->workspace;
 	list_t *siblings = container_get_siblings(child);
-	int index = list_find(siblings, child);
-	if (index != -1) {
-		list_del(siblings, index);
+	if (siblings) {
+		int index = list_find(siblings, child);
+		if (index != -1) {
+			list_del(siblings, index);
+		}
 	}
 	child->parent = NULL;
 	child->workspace = NULL;
@@ -1127,7 +1129,7 @@ void container_detach(struct sway_container *child) {
 	if (old_parent) {
 		container_update_representation(old_parent);
 		node_set_dirty(&old_parent->node);
-	} else {
+	} else if (old_workspace) {
 		workspace_update_representation(old_workspace);
 		node_set_dirty(&old_workspace->node);
 	}
