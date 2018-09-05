@@ -178,12 +178,21 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	if (oc && oc->enabled == 0) {
-		if (output->bg_pid != 0) {
-			terminate_swaybg(output->bg_pid);
-			output->bg_pid = 0;
+		if (output->enabled) {
+			if (output->bg_pid != 0) {
+				terminate_swaybg(output->bg_pid);
+				output->bg_pid = 0;
+			}
+			output_disable(output);
+			wlr_output_layout_remove(root->output_layout, wlr_output);
 		}
-		output_disable(output);
-		wlr_output_layout_remove(root->output_layout, wlr_output);
+		wlr_output_enable(wlr_output, false);
+		return;
+	} else if (!output->enabled) {
+		if (!oc || oc->dpms_state != DPMS_OFF) {
+			wlr_output_enable(wlr_output, true);
+		}
+		output_enable(output, oc);
 		return;
 	}
 
@@ -251,7 +260,7 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 			free(command);
 		}
 	}
-	if (oc && oc->dpms_state != DPMS_IGNORE) {
+	if (oc) {
 		switch (oc->dpms_state) {
 		case DPMS_ON:
 			wlr_log(WLR_DEBUG, "Turning on screen");
@@ -292,17 +301,6 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 		char *name = sway_output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), sway_output);
 		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
-			if (!sway_output->enabled) {
-				if (!oc->enabled) {
-					if (!wildcard) {
-						break;
-					}
-					continue;
-				}
-
-				output_enable(sway_output, oc);
-			}
-
 			struct output_config *current = oc;
 			if (wildcard) {
 				struct output_config *tmp = get_output_config(name, id);
