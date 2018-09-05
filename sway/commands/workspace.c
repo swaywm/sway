@@ -58,7 +58,7 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 
 
-		struct sway_container *ws = NULL;
+		struct sway_workspace *ws = NULL;
 		if (strcasecmp(argv[0], "number") == 0) {
 			if (argc < 2) {
 				return cmd_results_new(CMD_INVALID, "workspace",

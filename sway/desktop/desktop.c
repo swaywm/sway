@@ -4,37 +4,32 @@
 
 void desktop_damage_surface(struct wlr_surface *surface, double lx, double ly,
 		bool whole) {
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *cont = root_container.children->items[i];
-		if (cont->type == C_OUTPUT) {
-			output_damage_surface(cont->sway_output,
-				lx - cont->current.swayc_x, ly - cont->current.swayc_y,
-				surface, whole);
-		}
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		output_damage_surface(output, lx - output->wlr_output->lx,
+				ly - output->wlr_output->ly, surface, whole);
 	}
 }
 
 void desktop_damage_whole_container(struct sway_container *con) {
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *cont = root_container.children->items[i];
-		if (cont->type == C_OUTPUT) {
-			output_damage_whole_container(cont->sway_output, con);
-		}
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		output_damage_whole_container(output, con);
 	}
 }
 
 void desktop_damage_box(struct wlr_box *box) {
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *cont = root_container.children->items[i];
-		output_damage_box(cont->sway_output, box);
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		output_damage_box(output, box);
 	}
 }
 
 void desktop_damage_view(struct sway_view *view) {
-	desktop_damage_whole_container(view->swayc);
+	desktop_damage_whole_container(view->container);
 	struct wlr_box box = {
-		.x = view->swayc->current.view_x - view->geometry.x,
-		.y = view->swayc->current.view_y - view->geometry.y,
+		.x = view->container->current.view_x - view->geometry.x,
+		.y = view->container->current.view_y - view->geometry.y,
 		.width = view->surface->current.width,
 		.height = view->surface->current.height,
 	};

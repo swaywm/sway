@@ -293,12 +293,10 @@ static void handle_inhibit_deactivate(struct wl_listener *listener, void *data) 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		seat_set_exclusive_client(seat, NULL);
-		struct sway_container *previous = seat_get_focus(seat);
+		struct sway_node *previous = seat_get_focus(seat);
 		if (previous) {
-			wlr_log(WLR_DEBUG, "Returning focus to %p %s '%s'", previous,
-					container_type_to_str(previous->type), previous->name);
 			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, NULL);
 			seat_set_focus(seat, previous);
 		}
 	}
@@ -369,10 +367,10 @@ struct sway_input_manager *input_manager_create(
 }
 
 bool input_manager_has_focus(struct sway_input_manager *input,
-		struct sway_container *container) {
+		struct sway_node *node) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &input->seats, link) {
-		if (seat_get_focus(seat) == container) {
+		if (seat_get_focus(seat) == node) {
 			return true;
 		}
 	}
@@ -381,10 +379,10 @@ bool input_manager_has_focus(struct sway_input_manager *input,
 }
 
 void input_manager_set_focus(struct sway_input_manager *input,
-		struct sway_container *container) {
+		struct sway_node *node) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input->seats, link) {
-		seat_set_focus(seat, container);
+		seat_set_focus(seat, node);
 	}
 }
 

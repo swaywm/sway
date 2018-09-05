@@ -9,9 +9,9 @@
 #include "stringop.h"
 
 static void remove_all_marks_iterator(struct sway_container *con, void *data) {
-	if (con->type == C_VIEW) {
-		view_clear_marks(con->sway_view);
-		view_update_marks_textures(con->sway_view);
+	if (con->view) {
+		view_clear_marks(con->view);
+		view_update_marks_textures(con->view);
 	}
 }
 
@@ -24,13 +24,12 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 	// Determine the view
 	struct sway_view *view = NULL;
 	if (config->handler_context.using_criteria) {
-		struct sway_container *container =
-			config->handler_context.current_container;
-		if (container->type != C_VIEW) {
+		struct sway_container *container = config->handler_context.container;
+		if (!container->view) {
 			return cmd_results_new(CMD_INVALID, "unmark",
 					"Only views can have marks");
 		}
-		view = container->sway_view;
+		view = container->view;
 	}
 
 	// Determine the mark

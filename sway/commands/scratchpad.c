@@ -9,36 +9,34 @@
 
 static void scratchpad_toggle_auto(void) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
-	struct sway_container *ws = focus->type == C_WORKSPACE ?
-		focus : container_parent(focus, C_WORKSPACE);
+	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_workspace *ws = seat_get_focused_workspace(seat);
 
 	// If the focus is in a floating split container,
 	// operate on the split container instead of the child.
-	if (container_is_floating_or_child(focus)) {
-		while (focus->parent->type != C_WORKSPACE) {
+	if (focus && container_is_floating_or_child(focus)) {
+		while (focus->parent) {
 			focus = focus->parent;
 		}
 	}
 
-
 	// Check if the currently focused window is a scratchpad window and should
 	// be hidden again.
-	if (focus->scratchpad) {
+	if (focus && focus->scratchpad) {
 		wlr_log(WLR_DEBUG, "Focus is a scratchpad window - hiding %s",
-				focus->name);
+				focus->title);
 		root_scratchpad_hide(focus);
 		return;
 	}
 
 	// Check if there is an unfocused scratchpad window on the current workspace
 	// and focus it.
-	for (int i = 0; i < ws->sway_workspace->floating->length; ++i) {
-		struct sway_container *floater = ws->sway_workspace->floating->items[i];
+	for (int i = 0; i < ws->floating->length; ++i) {
+		struct sway_container *floater = ws->floating->items[i];
 		if (floater->scratchpad && focus != floater) {
 			wlr_log(WLR_DEBUG,
 					"Focusing other scratchpad window (%s) in this workspace",
-					floater->name);
+					floater->title);
 			root_scratchpad_show(floater);
 			return;
 		}
@@ -46,25 +44,23 @@ static void scratchpad_toggle_auto(void) {
 
 	// Check if there is a visible scratchpad window on another workspace.
 	// In this case we move it to the current workspace.
-	for (int i = 0; i < root_container.sway_root->scratchpad->length; ++i) {
-		struct sway_container *con =
-			root_container.sway_root->scratchpad->items[i];
+	for (int i = 0; i < root->scratchpad->length; ++i) {
+		struct sway_container *con = root->scratchpad->items[i];
 		if (con->parent) {
 			wlr_log(WLR_DEBUG,
 					"Moving a visible scratchpad window (%s) to this workspace",
-					con->name);
+					con->title);
 			root_scratchpad_show(con);
 			return;
 		}
 	}
 
 	// Take the container at the bottom of the scratchpad list
-	if (!sway_assert(root_container.sway_root->scratchpad->length,
-				"Scratchpad is empty")) {
+	if (!sway_assert(root->scratchpad->length, "Scratchpad is empty")) {
 		return;
 	}
-	struct sway_container *con = root_container.sway_root->scratchpad->items[0];
-	wlr_log(WLR_DEBUG, "Showing %s from list", con->name);
+	struct sway_container *con = root->scratchpad->items[0];
+	wlr_log(WLR_DEBUG, "Showing %s from list", con->title);
 	root_scratchpad_show(con);
 }
 
@@ -74,7 +70,7 @@ static void scratchpad_toggle_container(struct sway_container *con) {
 	}
 
 	// Check if it matches a currently visible scratchpad window and hide it.
-	if (con->parent) {
+	if (con->workspace) {
 		root_scratchpad_hide(con);
 		return;
 	}
@@ -91,18 +87,18 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "scratchpad",
 				"Expected 'scratchpad show'");
 	}
-	if (!root_container.sway_root->scratchpad->length) {
+	if (!root->scratchpad->length) {
 		return cmd_results_new(CMD_INVALID, "scratchpad",
 				"Scratchpad is empty");
 	}
 
 	if (config->handler_context.using_criteria) {
-		struct sway_container *con = config->handler_context.current_container;
+		struct sway_container *con = config->handler_context.container;
 
 		// If the container is in a floating split container,
 		// operate on the split container instead of the child.
 		if (container_is_floating_or_child(con)) {
-			while (con->parent->type != C_WORKSPACE) {
+			while (con->parent) {
 				con = con->parent;
 			}
 		}

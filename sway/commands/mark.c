@@ -18,13 +18,12 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	if ((error = checkarg(argc, "mark", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	struct sway_container *container =
-		config->handler_context.current_container;
-	if (container->type != C_VIEW) {
+	struct sway_container *container = config->handler_context.container;
+	if (!container->view) {
 		return cmd_results_new(CMD_INVALID, "mark",
 				"Only views can have marks");
 	}
-	struct sway_view *view = container->sway_view;
+	struct sway_view *view = container->view;
 
 	bool add = false, toggle = false;
 	while (argc > 0 && strncmp(*argv, "--", 2) == 0) {

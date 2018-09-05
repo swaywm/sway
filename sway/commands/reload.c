@@ -42,7 +42,7 @@ struct cmd_results *cmd_reload(int argc, char **argv) {
 	}
 	list_free(bar_ids);
 
-	arrange_windows(&root_container);
+	arrange_root();
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

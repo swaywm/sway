@@ -12,18 +12,18 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	if ((error = checkarg(argc, "fullscreen", EXPECTED_LESS_THAN, 2))) {
 		return error;
 	}
-	struct sway_container *container =
-		config->handler_context.current_container;
-	if (container->type == C_WORKSPACE && container->children->length == 0) {
+	struct sway_node *node = config->handler_context.node;
+	struct sway_container *container = config->handler_context.container;
+	struct sway_workspace *workspace = config->handler_context.workspace;
+	if (node->type == N_WORKSPACE && workspace->tiling->length == 0) {
 		return cmd_results_new(CMD_INVALID, "fullscreen",
 				"Can't fullscreen an empty workspace");
 	}
-	if (container->type == C_WORKSPACE) {
+	if (node->type == N_WORKSPACE) {
 		// Wrap the workspace's children in a container so we can fullscreen it
-		struct sway_container *workspace = container;
-		container = workspace_wrap_children(container);
+		container = workspace_wrap_children(workspace);
 		workspace->layout = L_HORIZ;
-		seat_set_focus(config->handler_context.seat, container);
+		seat_set_focus(config->handler_context.seat, &container->node);
 	}
 	bool enable = !container->is_fullscreen;
 
@@ -32,9 +32,7 @@ struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	}
 
 	container_set_fullscreen(container, enable);
-
-	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
-	arrange_windows(workspace->parent);
+	arrange_workspace(workspace);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

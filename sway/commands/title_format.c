@@ -11,13 +11,12 @@ struct cmd_results *cmd_title_format(int argc, char **argv) {
 	if ((error = checkarg(argc, "title_format", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	struct sway_container *container =
-		config->handler_context.current_container;
-	if (container->type != C_VIEW) {
+	struct sway_container *container = config->handler_context.container;
+	if (!container->view) {
 		return cmd_results_new(CMD_INVALID, "title_format",
 				"Only views can have a title_format");
 	}
-	struct sway_view *view = container->sway_view;
+	struct sway_view *view = container->view;
 	char *format = join_args(argv, argc);
 	if (view->title_format) {
 		free(view->title_format);

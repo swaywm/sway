@@ -5,8 +5,8 @@
 #include "sway/tree/view.h"
 
 static void _configure_view(struct sway_container *con, void *data) {
-	if (con->type == C_VIEW) {
-		view_autoconfigure(con->sway_view);
+	if (con->view) {
+		view_autoconfigure(con->view);
 	}
 }
 

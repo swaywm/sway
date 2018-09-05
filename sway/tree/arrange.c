@@ -166,29 +166,23 @@ void arrange_container(struct sway_container *container) {
 	if (config->reloading) {
 		return;
 	}
-	if (container->type == C_VIEW) {
-		view_autoconfigure(container->sway_view);
-		container_set_dirty(container);
-		return;
-	}
-	if (!sway_assert(container->type == C_CONTAINER, "Expected a container")) {
+	if (container->view) {
+		view_autoconfigure(container->view);
+		node_set_dirty(&container->node);
 		return;
 	}
 	struct wlr_box box;
 	container_get_box(container, &box);
 	arrange_children(container->children, container->layout, &box);
-	container_set_dirty(container);
+	node_set_dirty(&container->node);
 }
 
-void arrange_workspace(struct sway_container *workspace) {
+void arrange_workspace(struct sway_workspace *workspace) {
 	if (config->reloading) {
 		return;
 	}
-	if (!sway_assert(workspace->type == C_WORKSPACE, "Expected a workspace")) {
-		return;
-	}
-	struct sway_container *output = workspace->parent;
-	struct wlr_box *area = &output->sway_output->usable_area;
+	struct sway_output *output = workspace->output;
+	struct wlr_box *area = &output->usable_area;
 	wlr_log(WLR_DEBUG, "Usable area for ws: %dx%d@%d,%d",
 			area->width, area->height, area->x, area->y);
 	workspace_remove_gaps(workspace);
@@ -197,21 +191,20 @@ void arrange_workspace(struct sway_container *workspace) {
 	double prev_y = workspace->y;
 	workspace->width = area->width;
 	workspace->height = area->height;
-	workspace->x = output->x + area->x;
-	workspace->y = output->y + area->y;
+	workspace->x = output->wlr_output->lx + area->x;
+	workspace->y = output->wlr_output->ly + area->y;
 
 	// Adjust any floating containers
 	double diff_x = workspace->x - prev_x;
 	double diff_y = workspace->y - prev_y;
 	if (diff_x != 0 || diff_y != 0) {
-		for (int i = 0; i < workspace->sway_workspace->floating->length; ++i) {
-			struct sway_container *floater =
-				workspace->sway_workspace->floating->items[i];
+		for (int i = 0; i < workspace->floating->length; ++i) {
+			struct sway_container *floater = workspace->floating->items[i];
 			container_floating_translate(floater, diff_x, diff_y);
 			double center_x = floater->x + floater->width / 2;
 			double center_y = floater->y + floater->height / 2;
 			struct wlr_box workspace_box;
-			container_get_box(workspace, &workspace_box);
+			workspace_get_box(workspace, &workspace_box);
 			if (!wlr_box_contains_point(&workspace_box, center_x, center_y)) {
 				container_floating_move_to_center(floater);
 			}
@@ -219,43 +212,37 @@ void arrange_workspace(struct sway_container *workspace) {
 	}
 
 	workspace_add_gaps(workspace);
-	container_set_dirty(workspace);
+	node_set_dirty(&workspace->node);
 	wlr_log(WLR_DEBUG, "Arranging workspace '%s' at %f, %f", workspace->name,
 			workspace->x, workspace->y);
-	if (workspace->sway_workspace->fullscreen) {
-		struct sway_container *fs = workspace->sway_workspace->fullscreen;
-		fs->x = workspace->parent->x;
-		fs->y = workspace->parent->y;
-		fs->width = workspace->parent->width;
-		fs->height = workspace->parent->height;
+	if (workspace->fullscreen) {
+		struct sway_container *fs = workspace->fullscreen;
+		fs->x = output->lx;
+		fs->y = output->ly;
+		fs->width = output->width;
+		fs->height = output->height;
 		arrange_container(fs);
 	} else {
 		struct wlr_box box;
-		container_get_box(workspace, &box);
-		arrange_children(workspace->children, workspace->layout, &box);
-		arrange_floating(workspace->sway_workspace->floating);
+		workspace_get_box(workspace, &box);
+		arrange_children(workspace->tiling, workspace->layout, &box);
+		arrange_floating(workspace->floating);
 	}
 }
 
-void arrange_output(struct sway_container *output) {
+void arrange_output(struct sway_output *output) {
 	if (config->reloading) {
 		return;
 	}
-	if (!sway_assert(output->type == C_OUTPUT, "Expected an output")) {
-		return;
-	}
 	const struct wlr_box *output_box = wlr_output_layout_get_box(
-			root_container.sway_root->output_layout,
-			output->sway_output->wlr_output);
-	output->x = output_box->x;
-	output->y = output_box->y;
+			root->output_layout, output->wlr_output);
+	output->lx = output_box->x;
+	output->ly = output_box->y;
 	output->width = output_box->width;
 	output->height = output_box->height;
-	container_set_dirty(output);
-	wlr_log(WLR_DEBUG, "Arranging output '%s' at %f,%f",
-			output->name, output->x, output->y);
-	for (int i = 0; i < output->children->length; ++i) {
-		struct sway_container *workspace = output->children->items[i];
+
+	for (int i = 0; i < output->workspaces->length; ++i) {
+		struct sway_workspace *workspace = output->workspaces->items[i];
 		arrange_workspace(workspace);
 	}
 }
@@ -264,37 +251,31 @@ void arrange_root(void) {
 	if (config->reloading) {
 		return;
 	}
-	struct wlr_output_layout *output_layout =
-		root_container.sway_root->output_layout;
 	const struct wlr_box *layout_box =
-		wlr_output_layout_get_box(output_layout, NULL);
-	root_container.x = layout_box->x;
-	root_container.y = layout_box->y;
-	root_container.width = layout_box->width;
-	root_container.height = layout_box->height;
-	container_set_dirty(&root_container);
-	for (int i = 0; i < root_container.children->length; ++i) {
-		struct sway_container *output = root_container.children->items[i];
+		wlr_output_layout_get_box(root->output_layout, NULL);
+	root->x = layout_box->x;
+	root->y = layout_box->y;
+	root->width = layout_box->width;
+	root->height = layout_box->height;
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
 		arrange_output(output);
 	}
 }
 
-void arrange_windows(struct sway_container *container) {
-	switch (container->type) {
-	case C_ROOT:
+void arrange_node(struct sway_node *node) {
+	switch (node->type) {
+	case N_ROOT:
 		arrange_root();
 		break;
-	case C_OUTPUT:
-		arrange_output(container);
+	case N_OUTPUT:
+		arrange_output(node->sway_output);
 		break;
-	case C_WORKSPACE:
-		arrange_workspace(container);
+	case N_WORKSPACE:
+		arrange_workspace(node->sway_workspace);
 		break;
-	case C_CONTAINER:
-	case C_VIEW:
-		arrange_container(container);
-		break;
-	case C_TYPES:
+	case N_CONTAINER:
+		arrange_container(node->sway_container);
 		break;
 	}
 }

@@ -4,6 +4,7 @@
 #include "config.h"
 #include "log.h"
 #include "sway/commands.h"
+#include "sway/output.h"
 #include "sway/tree/arrange.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
@@ -43,37 +44,34 @@ static void swap_focus(struct sway_container *con1,
 		struct sway_container *con2, struct sway_seat *seat,
 		struct sway_container *focus) {
 	if (focus == con1 || focus == con2) {
-		struct sway_container *ws1 = container_parent(con1, C_WORKSPACE);
-		struct sway_container *ws2 = container_parent(con2, C_WORKSPACE);
-		if (focus == con1 && (con2->parent->layout == L_TABBED
-					|| con2->parent->layout == L_STACKED)) {
+		struct sway_workspace *ws1 = con1->workspace;
+		struct sway_workspace *ws2 = con2->workspace;
+		enum sway_container_layout layout1 = container_parent_layout(con1);
+		enum sway_container_layout layout2 = container_parent_layout(con2);
+		if (focus == con1 && (layout2 == L_TABBED || layout2 == L_STACKED)) {
 			if (workspace_is_visible(ws2)) {
-				seat_set_focus_warp(seat, con2, false, true);
+				seat_set_focus_warp(seat, &con2->node, false, true);
 			}
-			seat_set_focus(seat, ws1 != ws2 ? con2 : con1);
-		} else if (focus == con2 && (con1->parent->layout == L_TABBED
-					|| con1->parent->layout == L_STACKED)) {
+			seat_set_focus(seat, ws1 != ws2 ? &con2->node : &con1->node);
+		} else if (focus == con2 && (layout1 == L_TABBED
+					|| layout1 == L_STACKED)) {
 			if (workspace_is_visible(ws1)) {
-				seat_set_focus_warp(seat, con1, false, true);
+				seat_set_focus_warp(seat, &con1->node, false, true);
 			}
-			seat_set_focus(seat, ws1 != ws2 ? con1 : con2);
+			seat_set_focus(seat, ws1 != ws2 ? &con1->node : &con2->node);
 		} else if (ws1 != ws2) {
-			seat_set_focus(seat, focus == con1 ? con2 : con1);
+			seat_set_focus(seat, focus == con1 ? &con2->node : &con1->node);
 		} else {
-			seat_set_focus(seat, focus);
+			seat_set_focus(seat, &focus->node);
 		}
 	} else {
-		seat_set_focus(seat, focus);
+		seat_set_focus(seat, &focus->node);
 	}
 }
 
 static void container_swap(struct sway_container *con1,
 		struct sway_container *con2) {
 	if (!sway_assert(con1 && con2, "Cannot swap with nothing")) {
-		return;
-	}
-	if (!sway_assert(con1->type >= C_CONTAINER && con2->type >= C_CONTAINER,
-				"Can only swap containers and views")) {
 		return;
 	}
 	if (!sway_assert(!container_has_ancestor(con1, con2)
@@ -87,10 +85,11 @@ static void container_swap(struct sway_container *con1,
 		return;
 	}
 
-	wlr_log(WLR_DEBUG, "Swapping containers %zu and %zu", con1->id, con2->id);
+	wlr_log(WLR_DEBUG, "Swapping containers %zu and %zu",
+			con1->node.id, con2->node.id);
 
-	int fs1 = con1->is_fullscreen;
-	int fs2 = con2->is_fullscreen;
+	bool fs1 = con1->is_fullscreen;
+	bool fs2 = con2->is_fullscreen;
 	if (fs1) {
 		container_set_fullscreen(con1, false);
 	}
@@ -99,13 +98,11 @@ static void container_swap(struct sway_container *con1,
 	}
 
 	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
-	struct sway_container *vis1 = container_parent(
-			seat_get_focus_inactive(seat, container_parent(con1, C_OUTPUT)),
-			C_WORKSPACE);
-	struct sway_container *vis2 = container_parent(
-			seat_get_focus_inactive(seat, container_parent(con2, C_OUTPUT)),
-			C_WORKSPACE);
+	struct sway_container *focus = seat_get_focused_container(seat);
+	struct sway_workspace *vis1 =
+		output_get_active_workspace(con1->workspace->output);
+	struct sway_workspace *vis2 =
+		output_get_active_workspace(con2->workspace->output);
 
 	char *stored_prev_name = NULL;
 	if (prev_workspace_name) {
@@ -115,10 +112,10 @@ static void container_swap(struct sway_container *con1,
 	swap_places(con1, con2);
 
 	if (!workspace_is_visible(vis1)) {
-		seat_set_focus(seat, seat_get_focus_inactive(seat, vis1));
+		seat_set_focus(seat, seat_get_focus_inactive(seat, &vis1->node));
 	}
 	if (!workspace_is_visible(vis2)) {
-		seat_set_focus(seat, seat_get_focus_inactive(seat, vis2));
+		seat_set_focus(seat, seat_get_focus_inactive(seat, &vis2->node));
 	}
 
 	swap_focus(con1, con2, seat, focus);
@@ -137,23 +134,22 @@ static void container_swap(struct sway_container *con1,
 }
 
 static bool test_con_id(struct sway_container *container, void *con_id) {
-	return container->id == (size_t)con_id;
+	return container->node.id == (size_t)con_id;
 }
 
 static bool test_id(struct sway_container *container, void *id) {
 #ifdef HAVE_XWAYLAND
 	xcb_window_t *wid = id;
-	return (container->type == C_VIEW
-			&& container->sway_view->type == SWAY_VIEW_XWAYLAND
-			&& container->sway_view->wlr_xwayland_surface->window_id == *wid);
+	return (container->view && container->view->type == SWAY_VIEW_XWAYLAND
+			&& container->view->wlr_xwayland_surface->window_id == *wid);
 #else
 	return false;
 #endif
 }
 
 static bool test_mark(struct sway_container *container, void *mark) {
-	if (container->type == C_VIEW && container->sway_view->marks->length) {
-		return !list_seq_find(container->sway_view->marks,
+	if (container->view && container->view->marks->length) {
+		return !list_seq_find(container->view->marks,
 				(int (*)(const void *, const void *))strcmp, mark);
 	}
 	return false;
@@ -169,7 +165,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "swap", EXPECTED_SYNTAX);
 	}
 
-	struct sway_container *current = config->handler_context.current_container;
+	struct sway_container *current = config->handler_context.container;
 	struct sway_container *other;
 
 	char *value = join_args(argv + 3, argc - 3);
@@ -191,7 +187,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	if (!other) {
 		error = cmd_results_new(CMD_FAILURE, "swap",
 				"Failed to find %s '%s'", argv[2], value);
-	} else if (current->type < C_CONTAINER || other->type < C_CONTAINER) {
+	} else if (!current) {
 		error = cmd_results_new(CMD_FAILURE, "swap",
 				"Can only swap with containers and views");
 	} else if (container_has_ancestor(current, other)
@@ -211,9 +207,9 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 
 	container_swap(current, other);
 
-	arrange_windows(current->parent);
-	if (other->parent != current->parent) {
-		arrange_windows(other->parent);
+	arrange_node(node_get_parent(&current->node));
+	if (node_get_parent(&other->node) != node_get_parent(&current->node)) {
+		arrange_node(node_get_parent(&other->node));
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

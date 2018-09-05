@@ -9,6 +9,7 @@
 #include "sway/config.h"
 #include "sway/tree/root.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
@@ -87,12 +88,12 @@ static int cmp_urgent(const void *_a, const void *_b) {
 	return 0;
 }
 
-static void find_urgent_iterator(struct sway_container *swayc, void *data) {
-	if (swayc->type != C_VIEW || !view_is_urgent(swayc->sway_view)) {
+static void find_urgent_iterator(struct sway_container *con, void *data) {
+	if (!con->view || !view_is_urgent(con->view)) {
 		return;
 	}
 	list_t *urgent_views = data;
-	list_add(urgent_views, swayc->sway_view);
+	list_add(urgent_views, con->view);
 }
 
 static bool criteria_matches_view(struct criteria *criteria,
@@ -117,7 +118,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			return false;
 		}
 	}
-	
+
 	if (criteria->con_mark) {
 		bool exists = false;
 		for (int i = 0; i < view->marks->length; ++i) {
@@ -132,7 +133,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->con_id) { // Internal ID
-		if (!view->swayc || view->swayc->id != criteria->con_id) {
+		if (!view->container || view->container->node.id != criteria->con_id) {
 			return false;
 		}
 	}
@@ -174,13 +175,13 @@ static bool criteria_matches_view(struct criteria *criteria,
 #endif
 
 	if (criteria->floating) {
-		if (!container_is_floating(view->swayc)) {
+		if (!container_is_floating(view->container)) {
 			return false;
 		}
 	}
 
 	if (criteria->tiling) {
-		if (container_is_floating(view->swayc)) {
+		if (container_is_floating(view->container)) {
 			return false;
 		}
 	}
@@ -205,10 +206,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 	}
 
 	if (criteria->workspace) {
-		if (!view->swayc) {
-			return false;
-		}
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
+		struct sway_workspace *ws = view->container->workspace;
 		if (!ws || strcmp(ws->name, criteria->workspace) != 0) {
 			return false;
 		}
@@ -237,9 +235,9 @@ struct match_data {
 static void criteria_get_views_iterator(struct sway_container *container,
 		void *data) {
 	struct match_data *match_data = data;
-	if (container->type == C_VIEW) {
-		if (criteria_matches_view(match_data->criteria, container->sway_view)) {
-			list_add(match_data->matches, container->sway_view);
+	if (container->view) {
+		if (criteria_matches_view(match_data->criteria, container->view)) {
+			list_add(match_data->matches, container->view);
 		}
 	}
 }
@@ -355,12 +353,12 @@ static enum criteria_token token_from_name(char *name) {
  */
 static char *get_focused_prop(enum criteria_token token) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focus(seat);
+	struct sway_container *focus = seat_get_focused_container(seat);
 
-	if (!focus || focus->type != C_VIEW) {
+	if (!focus || !focus->view) {
 		return NULL;
 	}
-	struct sway_view *view = focus->sway_view;
+	struct sway_view *view = focus->view;
 	const char *value = NULL;
 
 	switch (token) {
@@ -374,18 +372,15 @@ static char *get_focused_prop(enum criteria_token token) {
 		value = view_get_title(view);
 		break;
 	case T_WORKSPACE:
-		{
-			struct sway_container *ws = container_parent(focus, C_WORKSPACE);
-			if (ws) {
-				value = ws->name;
-			}
+		if (focus->workspace) {
+			value = focus->workspace->name;
 		}
 		break;
 	case T_CON_ID:
-		if (view->swayc == NULL) {
+		if (view->container == NULL) {
 			return NULL;
 		}
-		size_t id = view->swayc->id;
+		size_t id = view->container->node.id;
 		size_t id_size = snprintf(NULL, 0, "%zu", id) + 1;
 		char *id_str = malloc(id_size);
 		snprintf(id_str, id_size, "%zu", id);

@@ -56,7 +56,7 @@ struct sway_server {
 
 	size_t txn_timeout_ms;
 	list_t *transactions;
-	list_t *dirty_containers;
+	list_t *dirty_nodes;
 };
 
 struct sway_server server;

@@ -2,6 +2,7 @@
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/workspace.h"
 #include "log.h"
 #include "stringop.h"
 #include <math.h>
@@ -43,7 +44,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 			return cmd_results_new(CMD_INVALID, "gaps",
 				"gaps edge_gaps on|off|toggle");
 		}
-		arrange_windows(&root_container);
+		arrange_root();
 	} else {
 		int amount_idx = 0; // the current index in argv
 		enum gaps_op op = GAPS_OP_SET;
@@ -124,7 +125,7 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		if (amount_idx == 0) { // gaps <amount>
 			config->gaps_inner = val;
 			config->gaps_outer = val;
-			arrange_windows(&root_container);
+			arrange_root();
 			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 		}
 		// Other variants. The middle-length variant (gaps inner|outer <amount>)
@@ -155,21 +156,27 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 			} else {
 				config->gaps_outer = total;
 			}
-			arrange_windows(&root_container);
+			arrange_root();
 		} else {
-			struct sway_container *c =
-				config->handler_context.current_container;
-			if (scope == GAPS_SCOPE_WORKSPACE && c->type != C_WORKSPACE) {
-				c = container_parent(c, C_WORKSPACE);
-			}
-			c->has_gaps = true;
-			if (inner) {
-				c->gaps_inner = total;
+			if (scope == GAPS_SCOPE_WORKSPACE) {
+				struct sway_workspace *ws = config->handler_context.workspace;
+				ws->has_gaps = true;
+				if (inner) {
+					ws->gaps_inner = total;
+				} else {
+					ws->gaps_outer = total;
+				}
+				arrange_workspace(ws);
 			} else {
-				c->gaps_outer = total;
+				struct sway_container *c = config->handler_context.container;
+				c->has_gaps = true;
+				if (inner) {
+					c->gaps_inner = total;
+				} else {
+					c->gaps_outer = total;
+				}
+				arrange_workspace(c->workspace);
 			}
-
-			arrange_windows(c->parent ? c->parent : &root_container);
 		}
 	}
 

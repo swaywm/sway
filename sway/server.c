@@ -61,8 +61,7 @@ bool server_init(struct sway_server *server) {
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
 
-	wlr_xdg_output_manager_create(server->wl_display,
-			root_container.sway_root->output_layout);
+	wlr_xdg_output_manager_create(server->wl_display, root->output_layout);
 
 	server->idle = wlr_idle_create(server->wl_display);
 	server->idle_inhibit_manager_v1 =
@@ -131,7 +130,7 @@ bool server_init(struct sway_server *server) {
 		server->txn_timeout_ms = 200;
 	}
 
-	server->dirty_containers = create_list();
+	server->dirty_nodes = create_list();
 	server->transactions = create_list();
 
 	input_manager = input_manager_create(server);
@@ -145,7 +144,7 @@ void server_fini(struct sway_server *server) {
 #endif
 	wl_display_destroy_clients(server->wl_display);
 	wl_display_destroy(server->wl_display);
-	list_free(server->dirty_containers);
+	list_free(server->dirty_nodes);
 	list_free(server->transactions);
 }
 

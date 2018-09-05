@@ -59,8 +59,7 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, surface, map);
 	struct wlr_xwayland_surface *xsurface = surface->wlr_xwayland_surface;
 
-	wl_list_insert(root_container.sway_root->xwayland_unmanaged.prev,
-		&surface->link);
+	wl_list_insert(root->xwayland_unmanaged.prev, &surface->link);
 
 	wl_signal_add(&xsurface->surface->events.commit, &surface->commit);
 	surface->commit.notify = unmanaged_handle_commit;
@@ -90,11 +89,10 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	if (seat->wlr_seat->keyboard_state.focused_surface ==
 			xsurface->surface) {
 		// Restore focus
-		struct sway_container *previous =
-			seat_get_focus_inactive(seat, &root_container);
+		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);
 		if (previous) {
 			// Hack to get seat to re-focus the return value of get_focus
-			seat_set_focus(seat, previous->parent);
+			seat_set_focus(seat, NULL);
 			seat_set_focus(seat, previous);
 		}
 	}
@@ -299,7 +297,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 	struct wlr_surface_state *state = &xsurface->surface->current;
 
-	if (view->swayc->instruction) {
+	if (view->container->node.instruction) {
 		get_geometry(view, &view->geometry);
 		transaction_notify_view_ready_by_size(view,
 				state->width, state->height);
@@ -308,7 +306,7 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 		get_geometry(view, &new_geo);
 
 		if ((new_geo.width != view->width || new_geo.height != view->height) &&
-				container_is_floating(view->swayc)) {
+				container_is_floating(view->container)) {
 			// A floating view has unexpectedly sent a new size
 			// eg. The Firefox "Save As" dialog when downloading a file
 			desktop_damage_view(view);
@@ -391,11 +389,14 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view_map(view, xsurface->surface);
 
 	if (xsurface->fullscreen) {
-		container_set_fullscreen(view->swayc, true);
-		struct sway_container *ws = container_parent(view->swayc, C_WORKSPACE);
-		arrange_windows(ws);
+		container_set_fullscreen(view->container, true);
+		arrange_workspace(view->container->workspace);
 	} else {
-		arrange_windows(view->swayc->parent);
+		if (view->container->parent) {
+			arrange_container(view->container->parent);
+		} else {
+			arrange_workspace(view->container->workspace);
+		}
 	}
 	transaction_commit_dirty();
 }
@@ -411,13 +412,14 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 			ev->width, ev->height);
 		return;
 	}
-	if (container_is_floating(view->swayc)) {
-		configure(view, view->swayc->current.view_x,
-				view->swayc->current.view_y, ev->width, ev->height);
+	if (container_is_floating(view->container)) {
+		configure(view, view->container->current.view_x,
+				view->container->current.view_y, ev->width, ev->height);
 	} else {
-		configure(view, view->swayc->current.view_x,
-				view->swayc->current.view_y, view->swayc->current.view_width,
-				view->swayc->current.view_height);
+		configure(view, view->container->current.view_x,
+				view->container->current.view_y,
+				view->container->current.view_width,
+				view->container->current.view_height);
 	}
 }
 
@@ -429,10 +431,9 @@ static void handle_request_fullscreen(struct wl_listener *listener, void *data) 
 	if (!xsurface->mapped) {
 		return;
 	}
-	container_set_fullscreen(view->swayc, xsurface->fullscreen);
+	container_set_fullscreen(view->container, xsurface->fullscreen);
 
-	struct sway_container *output = container_parent(view->swayc, C_OUTPUT);
-	arrange_windows(output);
+	arrange_workspace(view->container->workspace);
 	transaction_commit_dirty();
 }
 
@@ -444,11 +445,11 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	if (!container_is_floating(view->swayc)) {
+	if (!container_is_floating(view->container)) {
 		return;
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	seat_begin_move(seat, view->swayc, seat->last_button);
+	seat_begin_move(seat, view->container, seat->last_button);
 }
 
 static void handle_request_resize(struct wl_listener *listener, void *data) {
@@ -459,12 +460,13 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 	if (!xsurface->mapped) {
 		return;
 	}
-	if (!container_is_floating(view->swayc)) {
+	if (!container_is_floating(view->container)) {
 		return;
 	}
 	struct wlr_xwayland_resize_event *e = data;
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	seat_begin_resize_floating(seat, view->swayc, seat->last_button, e->edges);
+	seat_begin_resize_floating(seat, view->container,
+			seat->last_button, e->edges);
 }
 
 static void handle_request_activate(struct wl_listener *listener, void *data) {

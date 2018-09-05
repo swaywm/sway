@@ -15,24 +15,23 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	struct sway_container *container =
-		config->handler_context.current_container;
-	if (container->type == C_WORKSPACE && container->children->length == 0) {
+	struct sway_container *container = config->handler_context.container;
+	struct sway_workspace *workspace = config->handler_context.workspace;
+	if (!container && workspace->tiling->length == 0) {
 		return cmd_results_new(CMD_INVALID, "floating",
 				"Can't float an empty workspace");
 	}
-	if (container->type == C_WORKSPACE) {
+	if (!container) {
 		// Wrap the workspace's children in a container so we can float it
-		struct sway_container *workspace = container;
-		container = workspace_wrap_children(container);
+		container = workspace_wrap_children(workspace);
 		workspace->layout = L_HORIZ;
-		seat_set_focus(config->handler_context.seat, container);
+		seat_set_focus(config->handler_context.seat, &container->node);
 	}
 
 	// If the container is in a floating split container,
 	// operate on the split container instead of the child.
 	if (container_is_floating_or_child(container)) {
-		while (container->parent->type != C_WORKSPACE) {
+		while (container->parent) {
 			container = container->parent;
 		}
 	}
@@ -51,8 +50,7 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 
 	container_set_floating(container, wants_floating);
 
-	struct sway_container *workspace = container_parent(container, C_WORKSPACE);
-	arrange_windows(workspace);
+	arrange_workspace(container->workspace);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
