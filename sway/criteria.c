@@ -118,7 +118,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 			return false;
 		}
 	}
-	
+
 	if (criteria->con_mark) {
 		bool exists = false;
 		for (int i = 0; i < view->marks->length; ++i) {
@@ -235,7 +235,7 @@ struct match_data {
 static void criteria_get_views_iterator(struct sway_container *container,
 		void *data) {
 	struct match_data *match_data = data;
-	if (!container->view) {
+	if (container->view) {
 		if (criteria_matches_view(match_data->criteria, container->view)) {
 			list_add(match_data->matches, container->view);
 		}
