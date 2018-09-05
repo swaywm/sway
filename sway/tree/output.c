@@ -54,12 +54,6 @@ struct sway_output *output_create(struct wlr_output *wlr_output) {
 
 	wl_list_insert(&root->all_outputs, &output->link);
 
-	if (!wl_list_empty(&wlr_output->modes)) {
-		struct wlr_output_mode *mode =
-			wl_container_of(wlr_output->modes.prev, mode, link);
-		wlr_output_set_mode(wlr_output, mode);
-	}
-
 	output->workspaces = create_list();
 	output->current.workspaces = create_list();
 
