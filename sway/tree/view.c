@@ -219,14 +219,17 @@ void view_autoconfigure(struct sway_view *view) {
 	x = y = width = height = 0;
 	double y_offset = 0;
 
-	// In a tabbed or stacked container, the swayc's y is the bottom of the
-	// title area. We have to disable any top border because the title bar is
-	// rendered by the parent.
+	// In a tabbed or stacked container, the container's y is the top of the
+	// title area. We have to offset the surface y by the height of the title,
+	// bar, and disable any top border because we'll always have the title bar.
 	enum sway_container_layout layout = container_parent_layout(con);
-	if (layout == L_TABBED || layout == L_STACKED) {
-		view->border_top = false;
-	} else {
+	if (layout == L_TABBED) {
 		y_offset = container_titlebar_height();
+		view->border_top = false;
+	} else if (layout == L_STACKED) {
+		list_t *siblings = container_get_siblings(con);
+		y_offset = container_titlebar_height() * siblings->length;
+		view->border_top = false;
 	}
 
 	enum sway_container_border border = view->border;
@@ -237,17 +240,17 @@ void view_autoconfigure(struct sway_view *view) {
 	switch (border) {
 	case B_NONE:
 		x = con->x;
-		y = con->y;
+		y = con->y + y_offset;
 		width = con->width;
-		height = con->height;
+		height = con->height - y_offset;
 		break;
 	case B_PIXEL:
 		x = con->x + view->border_thickness * view->border_left;
-		y = con->y + view->border_thickness * view->border_top;
+		y = con->y + view->border_thickness * view->border_top + y_offset;
 		width = con->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
-		height = con->height
+		height = con->height - y_offset
 			- view->border_thickness * view->border_top
 			- view->border_thickness * view->border_bottom;
 		break;
@@ -257,9 +260,15 @@ void view_autoconfigure(struct sway_view *view) {
 		width = con->width
 			- view->border_thickness * view->border_left
 			- view->border_thickness * view->border_right;
-		y = con->y + y_offset;
-		height = con->height - y_offset
-			- view->border_thickness * view->border_bottom;
+		if (y_offset) {
+			y = con->y + y_offset;
+			height = con->height - y_offset
+				- view->border_thickness * view->border_bottom;
+		} else {
+			y = con->y + container_titlebar_height();
+			height = con->height - container_titlebar_height()
+				- view->border_thickness * view->border_bottom;
+		}
 		break;
 	}
 
