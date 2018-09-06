@@ -29,7 +29,7 @@ static enum sway_container_layout get_layout_toggle(int argc, char **argv,
 		enum sway_container_layout layout,
 		enum sway_container_layout prev_split_layout) {
 	// "layout toggle"
-	if (argc == 0) {
+	if (argc == 1) {
 		return layout == L_HORIZ ? L_VERT : L_HORIZ;
 	}
 
