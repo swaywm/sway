@@ -117,7 +117,8 @@ static void container_move_to_container_from_direction(
 		struct sway_container *container, struct sway_container *destination,
 		enum movement_direction move_dir) {
 	if (destination->view) {
-		if (destination->parent == container->parent) {
+		if (destination->parent == container->parent &&
+				destination->workspace == container->workspace) {
 			wlr_log(WLR_DEBUG, "Swapping siblings");
 			list_t *siblings = container_get_siblings(container);
 			int container_index = list_find(siblings, container);
