@@ -266,7 +266,7 @@ static void render_view(struct sway_output *output, pixman_region32_t *damage,
 	struct sway_view *view = con->view;
 	if (view->saved_buffer) {
 		render_saved_view(view, output, damage, view->container->alpha);
-	} else {
+	} else if (view->surface) {
 		render_view_toplevels(view, output, damage, view->container->alpha);
 	}
 
