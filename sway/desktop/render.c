@@ -871,7 +871,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 	}
 
-	struct sway_workspace *workspace = output_get_active_workspace(output);
+	struct sway_workspace *workspace = output->current.active_workspace;
 	struct sway_container *fullscreen_con = workspace->current.fullscreen;
 
 	if (output_has_opaque_overlay_layer_surface(output)) {
