@@ -102,6 +102,9 @@ static struct sway_node *node_get_in_direction(struct sway_container *container,
 		// Fullscreen container with a direction - go straight to outputs
 		struct sway_output *output = container->workspace->output;
 		struct sway_output *new_output = output_get_in_direction(output, dir);
+		if (!new_output) {
+			return NULL;
+		}
 		return get_node_in_output_direction(new_output, dir);
 	}
 	if (dir == MOVE_PARENT) {
