@@ -84,6 +84,11 @@ void container_begin_destroy(struct sway_container *con) {
 	if (con->view) {
 		ipc_event_window(con, "close");
 	}
+	// The workspace must have the fullscreen pointer cleared so that the
+	// seat code can find an appropriate new focus.
+	if (con->is_fullscreen && con->workspace) {
+		con->workspace->fullscreen = NULL;
+	}
 	wl_signal_emit(&con->node.events.destroy, &con->node);
 
 	container_end_mouse_operation(con);
