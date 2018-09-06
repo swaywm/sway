@@ -294,7 +294,7 @@ void view_request_activate(struct sway_view *view) {
 	switch (config->focus_on_window_activation) {
 	case FOWA_SMART:
 		if (workspace_is_visible(ws)) {
-			seat_set_focus(seat, &view->container->node);
+			seat_set_focus_container(seat, view->container);
 		} else {
 			view_set_urgent(view, true);
 		}
@@ -303,7 +303,7 @@ void view_request_activate(struct sway_view *view) {
 		view_set_urgent(view, true);
 		break;
 	case FOWA_FOCUS:
-		seat_set_focus(seat, &view->container->node);
+		seat_set_focus_container(seat, view->container);
 		break;
 	case FOWA_NONE:
 		break;
@@ -404,7 +404,7 @@ void view_execute_criteria(struct sway_view *view) {
 		}
 		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
-		seat_set_focus(seat, &view->container->node);
+		seat_set_focus_container(seat, view->container);
 		list_add(view->executed_criteria, criteria);
 		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
 		if (res->status != CMD_SUCCESS) {

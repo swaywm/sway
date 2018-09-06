@@ -102,6 +102,12 @@ void seat_configure_xcursor(struct sway_seat *seat);
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node);
 
+void seat_set_focus_container(struct sway_seat *seat,
+		struct sway_container *con);
+
+void seat_set_focus_workspace(struct sway_seat *seat,
+		struct sway_workspace *ws);
+
 void seat_set_focus_warp(struct sway_seat *seat,
 		struct sway_node *node, bool warp, bool notify);
 
