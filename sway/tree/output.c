@@ -85,7 +85,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &input_manager->seats, link) {
 			if (!seat->has_focus) {
-				seat_set_focus(seat, &ws->node);
+				seat_set_focus_workspace(seat, ws);
 			}
 		}
 		free(ws_name);

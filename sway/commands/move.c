@@ -624,7 +624,7 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 		char *ws_name = workspace_next_name(old_output->wlr_output->name);
 		struct sway_workspace *ws = workspace_create(old_output, ws_name);
 		free(ws_name);
-		seat_set_focus(seat, &ws->node);
+		seat_set_focus_workspace(seat, ws);
 	}
 
 	workspace_consider_destroy(new_output_old_ws);
@@ -734,8 +734,9 @@ static struct cmd_results *cmd_move_in_direction(
 		ipc_event_window(container, "move");
 	}
 
-	seat_set_focus(config->handler_context.seat, &new_ws->node);
-	seat_set_focus(config->handler_context.seat, &container->node);
+	// Hack to re-focus container
+	seat_set_focus_workspace(config->handler_context.seat, new_ws);
+	seat_set_focus_container(config->handler_context.seat, container);
 
 	if (old_ws != new_ws) {
 		ipc_event_workspace(old_ws, new_ws, "focus");

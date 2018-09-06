@@ -399,7 +399,7 @@ bool workspace_switch(struct sway_workspace *workspace,
 				workspace_add_floating(workspace, floater);
 				if (&floater->node == focus) {
 					seat_set_focus(seat, NULL);
-					seat_set_focus(seat, &floater->node);
+					seat_set_focus_container(seat, floater);
 				}
 				--i;
 			}

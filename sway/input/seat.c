@@ -734,6 +734,16 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	seat_set_focus_warp(seat, node, true, true);
 }
 
+void seat_set_focus_container(struct sway_seat *seat,
+		struct sway_container *con) {
+	seat_set_focus_warp(seat, con ? &con->node : NULL, true, true);
+}
+
+void seat_set_focus_workspace(struct sway_seat *seat,
+		struct sway_workspace *ws) {
+	seat_set_focus_warp(seat, ws ? &ws->node : NULL, true, true);
+}
+
 void seat_set_focus_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, bool unfocus) {
 	if (seat->focused_layer != NULL) {

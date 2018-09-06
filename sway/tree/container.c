@@ -871,7 +871,7 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 			focus_ws = seat_get_focused_workspace(seat);
 			if (focus_ws) {
 				if (focus_ws == workspace) {
-					seat_set_focus(seat, &container->node);
+					seat_set_focus_container(seat, container);
 				}
 			}
 		}
@@ -1159,8 +1159,8 @@ struct sway_container *container_split(struct sway_container *child,
 	container_add_child(cont, child);
 
 	if (set_focus) {
-		seat_set_focus(seat, &cont->node);
-		seat_set_focus(seat, &child->node);
+		seat_set_focus_container(seat, cont);
+		seat_set_focus_container(seat, child);
 	}
 
 	return cont;

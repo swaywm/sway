@@ -179,7 +179,7 @@ static struct cmd_results *focus_mode(struct sway_workspace *ws,
 		new_focus = seat_get_focus_inactive_tiling(seat, ws);
 	}
 	if (new_focus) {
-		seat_set_focus(seat, &new_focus->node);
+		seat_set_focus_container(seat, new_focus);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "focus",
 				"Failed to find a %s container in workspace",
@@ -230,8 +230,8 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 			"Command 'focus' cannot be used above the workspace level");
 	}
 
-	if (argc == 0) {
-		seat_set_focus(seat, node);
+	if (argc == 0 && container) {
+		seat_set_focus_container(seat, container);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 

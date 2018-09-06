@@ -675,7 +675,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Handle tiling resize via border
 	if (resize_edge && button == BTN_LEFT && state == WLR_BUTTON_PRESSED &&
 			!is_floating) {
-		seat_set_focus(seat, &cont->node);
+		seat_set_focus_container(seat, cont);
 		seat_begin_resize_tiling(seat, cont, button, edge);
 		return;
 	}
@@ -704,7 +704,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 				image = "sw-resize";
 			}
 			cursor_set_image(seat->cursor, image, NULL);
-			seat_set_focus(seat, &cont->node);
+			seat_set_focus_container(seat, cont);
 			seat_begin_resize_tiling(seat, cont, button, edge);
 			return;
 		}
@@ -753,7 +753,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 	// Handle mousedown on a container surface
 	if (surface && cont && state == WLR_BUTTON_PRESSED) {
-		seat_set_focus(seat, &cont->node);
+		seat_set_focus_container(seat, cont);
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		seat_begin_down(seat, cont, button, sx, sy);
 		return;
@@ -761,7 +761,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 	// Handle clicking a container surface
 	if (cont) {
-		seat_set_focus(seat, &cont->node);
+		seat_set_focus_container(seat, cont);
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
