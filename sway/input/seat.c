@@ -605,6 +605,13 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		last_workspace->output : NULL;
 	struct sway_output *new_output = new_workspace->output;
 
+	if (last_output) {
+		node_set_dirty(&last_output->node);
+	}
+	if (new_output) {
+		node_set_dirty(&new_output->node);
+	}
+
 	// find new output's old workspace, which might have to be removed if empty
 	struct sway_workspace *new_output_last_ws = NULL;
 	if (new_output && last_output != new_output) {
