@@ -153,8 +153,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 	}
 
 	if (parent_box.width != 0 && parent_box.height != 0) {
-		double percent = (output->width / parent_box.width) 
-				* (output->height / parent_box.height);
+		double percent = ((double)output->width / (double)parent_box.width) 
+				* ((double)output->height / (double)parent_box.height);
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 }
@@ -292,8 +292,8 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	}
 
 	if (parent_box.width != 0 && parent_box.height != 0) {
-		double percent = (c->width / parent_box.width) 
-				* (c->height / parent_box.height);
+		double percent = ((double)c->width / (double)parent_box.width) 
+				* ((double)c->height / (double)parent_box.height);
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 
