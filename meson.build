@@ -114,7 +114,7 @@ if scdoc.found()
 	endforeach
 endif
 
-add_project_arguments('-DSYSCONFDIR="/@0@/@1@"'.format(prefix, sysconfdir), language : 'c')
+add_project_arguments('-DSYSCONFDIR="@0@"'.format(sysconfdir), language : 'c')
 
 version = get_option('sway-version')
 if version != ''

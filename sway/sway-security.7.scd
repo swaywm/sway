@@ -81,22 +81,22 @@ to control a program's access:
 By default, the following Wayland globals are hidden by default unless a
 *permit* statement is issued for them:
 
-*zwlr\_data\_control\_manager\_v1*
+*data\_control\_manager*
 	Used to monitor all clipboard activity.
 
-*zwlr\_export\_dmabuf\_manager\_v1*, *zwlr\_screencopy\_manager\_v1*
+*export\_dmabuf\_manager*, *screencopy\_manager*
 	Both of these protocols are used to capture images of your screen.
 
-*zwlr\_gamma\_control\_manager\_v1*
+*gamma\_control\_manager*
 	Used to control gamma settings, i.e. Redshift functionality.
 
-*zwlr\_input\_inhibit\_manager\_v1*
+*input\_inhibit\_manager*
 	Used to obtain exclusive input access, by lock screens and the like.
 
-*zwlr\_layer\_shell\_v1*
+*layer\_shell*
 	Used for panels, wallpapers, notifications, and other desktop components.
 
-*zwp\_virtual\_keyboard\_manager\_v1*
+*virtual\_keyboard\_manager*
 	Used by on-screen keyboards.
 
 *IMPORTANT*: Sway is only able to enforce the security policy for clients which

@@ -263,14 +263,13 @@ enum sway_popup_during_fullscreen {
 };
 
 enum secure_feature {
-	FEATURE_FULLSCREEN       = 1 << 0,
-	FEATURE_DATA_CONTROL_MGR = 1 << 1,
-	FEATURE_DMABUF_EXPORT    = 1 << 2,
-	FEATURE_SCREENCOPY       = 1 << 3,
-	FEATURE_GAMMA_CONTROL    = 1 << 4,
-	FEATURE_INPUT_INHIBIT    = 1 << 5,
-	FEATURE_LAYER_SHELL      = 1 << 6,
-	FEATURE_VIRTUAL_KEYBOARD = 1 << 7,
+	FEATURE_DATA_CONTROL_MGR = 1 << 0,
+	FEATURE_DMABUF_EXPORT    = 1 << 1,
+	FEATURE_SCREENCOPY       = 1 << 2,
+	FEATURE_GAMMA_CONTROL    = 1 << 3,
+	FEATURE_INPUT_INHIBIT    = 1 << 4,
+	FEATURE_LAYER_SHELL      = 1 << 5,
+	FEATURE_VIRTUAL_KEYBOARD = 1 << 6,
 };
 
 struct feature_policy {

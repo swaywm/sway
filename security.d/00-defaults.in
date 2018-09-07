@@ -10,7 +10,6 @@
 # Override these defaults by writing new files in
 # @sysconfdir@/sway/security.d/*
 
-permit * fullscreen
-permit @prefix@/bin/swaylock zwlr_layer_shell_v1 zwlr_input_inhibt_manager_v1
-permit @prefix@/bin/swaybg zwlr_layer_shell_v1
-permit @prefix@/bin/swaybar zwlr_layer_shell_v1
+permit @prefix@/bin/swaylock layer_shell input_inhibit
+permit @prefix@/bin/swaybg layer_shell
+permit @prefix@/bin/swaybar layer_shell

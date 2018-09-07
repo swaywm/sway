@@ -14,4 +14,11 @@ struct feature_policy *get_feature_policy(
 struct wl_client *create_secure_client(struct wl_display *display,
 		int fd, const struct feature_policy *policy);
 
+struct feature_name {
+	char *name;
+	uint64_t value;
+};
+
+extern struct feature_name feature_names[];
+
 #endif
