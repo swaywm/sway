@@ -439,6 +439,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 		closedir(dir);
 
 		list_qsort(secconfigs, qstrcmp);
+
 		for (int i = 0; i < secconfigs->length; ++i) {
 			char *_path = secconfigs->items[i];
 			if (stat(_path, &s) || s.st_uid != 0 || s.st_gid != 0 ||

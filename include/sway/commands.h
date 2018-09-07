@@ -262,4 +262,7 @@ sway_cmd cmd_ipc_cmd;
 sway_cmd cmd_ipc_events;
 sway_cmd cmd_ipc_event_cmd;
 
+sway_cmd cmd_permit;
+sway_cmd cmd_reject;
+
 #endif

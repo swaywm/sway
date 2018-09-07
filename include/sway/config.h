@@ -330,8 +330,9 @@ struct sway_config {
 	enum focus_wrapping_mode focus_wrapping;
 	bool active;
 	bool failed;
-	bool reloading;
 	bool reading;
+	bool reloading;
+	bool secure;
 	bool validating;
 	bool auto_back_and_forth;
 	bool show_marks;
@@ -370,7 +371,8 @@ struct sway_config {
 	int32_t floating_minimum_height;
 
 	// Security
-	list_t *feature_policies;
+	list_t *feature_policies; // struct feature_policy
+	struct feature_policy default_policy;
 
 	// Context for command handlers
 	struct {

@@ -157,6 +157,12 @@ static struct cmd_handler command_handlers[] = {
 	{ "urgent", cmd_urgent },
 };
 
+/* Security config commands. Keep alphabetized */
+static struct cmd_handler security_handlers[] = {
+	{ "permit", cmd_permit },
+	{ "reject", cmd_reject },
+};
+
 static int handler_compare(const void *_a, const void *_b) {
 	const struct cmd_handler *a = _a;
 	const struct cmd_handler *b = _b;
@@ -168,6 +174,13 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 	struct cmd_handler d = { .command=line };
 	struct cmd_handler *res = NULL;
 	wlr_log(WLR_DEBUG, "find_handler(%s)", line);
+
+	if (config->secure) {
+		res = bsearch(&d, security_handlers,
+				sizeof(security_handlers) / sizeof(struct cmd_handler),
+				sizeof(struct cmd_handler), handler_compare);
+		return res;
+	}
 
 	bool config_loading = config->reading || !config->active;
 

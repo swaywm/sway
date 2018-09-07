@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 struct sway_debug {
+	bool insecure;         // Do not enforce security policies
 	bool noatomic;         // Ignore atomic layout updates
 	bool render_tree;      // Render the tree overlay
 	bool txn_timings;      // Log verbose messages about transactions

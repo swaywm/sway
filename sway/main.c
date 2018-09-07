@@ -200,6 +200,9 @@ void enable_debug_flag(const char *flag) {
 		debug.damage = DAMAGE_HIGHLIGHT;
 	} else if (strcmp(flag, "damage=rerender") == 0) {
 		debug.damage = DAMAGE_RERENDER;
+	} else if (strcmp(flag, "insecure") == 0) {
+		debug.insecure = true;
+		wlr_log(WLR_ERROR, "!!! DANGER !!! Sway is running in insecure mode.");
 	} else if (strcmp(flag, "noatomic") == 0) {
 		debug.noatomic = true;
 	} else if (strcmp(flag, "render-tree") == 0) {
