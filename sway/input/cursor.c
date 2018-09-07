@@ -395,6 +395,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	}
 
 	struct sway_seat *seat = cursor->seat;
+	struct wlr_seat *wlr_seat = seat->wlr_seat;
 
 	if (seat->operation != OP_NONE) {
 		switch (seat->operation) {
@@ -418,7 +419,6 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		return;
 	}
 
-	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 

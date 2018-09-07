@@ -222,16 +222,16 @@ void drag_icon_update_position(struct sway_drag_icon *icon) {
 	struct sway_seat *seat = icon->seat;
 	struct wlr_cursor *cursor = seat->cursor->cursor;
 	if (wlr_icon->is_pointer) {
-		icon->x = cursor->x + wlr_icon->sx;
-		icon->y = cursor->y + wlr_icon->sy;
+		icon->x = cursor->x;
+		icon->y = cursor->y;
 	} else {
 		struct wlr_touch_point *point =
 			wlr_seat_touch_get_point(seat->wlr_seat, wlr_icon->touch_id);
 		if (point == NULL) {
 			return;
 		}
-		icon->x = seat->touch_x + wlr_icon->sx;
-		icon->y = seat->touch_y + wlr_icon->sy;
+		icon->x = seat->touch_x;
+		icon->y = seat->touch_y;
 	}
 
 	drag_icon_damage_whole(icon);
@@ -289,6 +289,7 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 	wl_list_insert(&root->drag_icons, &icon->link);
 
 	drag_icon_update_position(icon);
+	seat_end_mouse_operation(seat);
 }
 
 static void collect_focus_iter(struct sway_node *node, void *data) {
