@@ -146,6 +146,8 @@ static void render_drag_icons(struct sway_output *output,
 		render_surface_iterator, &data);
 }
 
+// _box.x and .y are expected to be layout-local
+// _box.width and .height are expected to be output-buffer-local
 static void render_rect(struct wlr_output *wlr_output,
 		pixman_region32_t *output_damage, const struct wlr_box *_box,
 		float color[static 4]) {
@@ -404,9 +406,20 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(marks_texture,
 			&texture_box.width, &texture_box.height);
+		marks_ob_width = texture_box.width;
+
+		// The marks texture might be shorter than the config->font_height, in
+		// which case we need to pad it as evenly as possible above and below.
+		int ob_padding_total = config->font_height * output_scale -
+			texture_box.height;
+		int ob_padding_above = floor(ob_padding_total / 2);
+		int ob_padding_below = ceil(ob_padding_total / 2);
+
+		// Render texture
 		texture_box.x = (x - output_x + width - TITLEBAR_H_PADDING)
 			* output_scale - texture_box.width;
-		texture_box.y = (y - output_y + TITLEBAR_V_PADDING) * output_scale;
+		texture_box.y = (y - output_y + TITLEBAR_V_PADDING) * output_scale +
+			ob_padding_above;
 
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &texture_box,
@@ -418,17 +431,29 @@ static void render_titlebar(struct sway_output *output,
 		}
 		render_texture(output->wlr_output, output_damage, marks_texture,
 			&texture_box, matrix, con->alpha);
-		marks_ob_width = texture_box.width;
 
-		// Gap between the marks and bottom padding, for when the marks texture
-		// height is smaller than the config's font height
-		memcpy(&color, colors->background, sizeof(float) * 4);
-		premultiply_alpha(color, con->alpha);
-		box.x = texture_box.x;
-		box.y = texture_box.y + texture_box.height;
-		box.width = texture_box.width;
-		box.height = config->font_height * output_scale - texture_box.height;
-		if (box.height > 0) {
+		// Padding above
+		if (ob_padding_above > 0) {
+			memcpy(&color, colors->background, sizeof(float) * 4);
+			premultiply_alpha(color, con->alpha);
+			box.x = (x + width - TITLEBAR_H_PADDING) * output_scale -
+				texture_box.width;
+			box.y = (y + TITLEBAR_V_PADDING) * output_scale;
+			box.width = texture_box.width;
+			box.height = ob_padding_above;
+			render_rect(output->wlr_output, output_damage, &box, color);
+		}
+
+		// Padding below
+		if (ob_padding_below > 0) {
+			memcpy(&color, colors->background, sizeof(float) * 4);
+			premultiply_alpha(color, con->alpha);
+			box.x = (x + width - TITLEBAR_H_PADDING) * output_scale -
+				texture_box.width;
+			box.y = (y + TITLEBAR_V_PADDING) * output_scale +
+				ob_padding_above + texture_box.height;
+			box.width = texture_box.width;
+			box.height = ob_padding_below;
 			render_rect(output->wlr_output, output_damage, &box, color);
 		}
 	}
@@ -439,8 +464,19 @@ static void render_titlebar(struct sway_output *output,
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
+		title_ob_width = texture_box.width;
+
+		// The title texture might be shorter than the config->font_height, in
+		// which case we need to pad it as evenly as possible above and below.
+		int ob_padding_total = config->font_height * output_scale -
+			texture_box.height;
+		int ob_padding_above = floor(ob_padding_total / 2);
+		int ob_padding_below = ceil(ob_padding_total / 2);
+
+		// Render texture
 		texture_box.x = (x - output_x + TITLEBAR_H_PADDING) * output_scale;
-		texture_box.y = (y - output_y + TITLEBAR_V_PADDING) * output_scale;
+		texture_box.y = (y - output_y + TITLEBAR_V_PADDING) * output_scale +
+			ob_padding_above;
 
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &texture_box,
@@ -452,17 +488,27 @@ static void render_titlebar(struct sway_output *output,
 		}
 		render_texture(output->wlr_output, output_damage, title_texture,
 			&texture_box, matrix, con->alpha);
-		title_ob_width = texture_box.width;
 
-		// Gap between the title and bottom padding, for when the title texture
-		// height is smaller than the config's font height
-		memcpy(&color, colors->background, sizeof(float) * 4);
-		premultiply_alpha(color, con->alpha);
-		box.x = texture_box.x;
-		box.y = texture_box.y + texture_box.height;
-		box.width = texture_box.width;
-		box.height = config->font_height * output_scale - texture_box.height;
-		if (box.height > 0) {
+		// Padding above
+		if (ob_padding_above > 0) {
+			memcpy(&color, colors->background, sizeof(float) * 4);
+			premultiply_alpha(color, con->alpha);
+			box.x = (x + TITLEBAR_H_PADDING) * output_scale;
+			box.y = (y + TITLEBAR_V_PADDING) * output_scale;
+			box.width = texture_box.width;
+			box.height = ob_padding_above;
+			render_rect(output->wlr_output, output_damage, &box, color);
+		}
+
+		// Padding below
+		if (ob_padding_below > 0) {
+			memcpy(&color, colors->background, sizeof(float) * 4);
+			premultiply_alpha(color, con->alpha);
+			box.x = (x + TITLEBAR_H_PADDING) * output_scale;
+			box.y = (y + TITLEBAR_V_PADDING) * output_scale +
+				ob_padding_above + texture_box.height;
+			box.width = texture_box.width;
+			box.height = ob_padding_below;
 			render_rect(output->wlr_output, output_damage, &box, color);
 		}
 	}
