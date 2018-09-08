@@ -12,7 +12,7 @@ static uint32_t render_message(cairo_t *cairo, struct swaynag *swaynag) {
 	height -= swaynag->type->bar_border_thickness * swaynag->scale;
 
 	int text_width, text_height;
-	get_text_size(cairo, swaynag->type->font, &text_width, &text_height,
+	get_text_size(cairo, swaynag->type->font, &text_width, &text_height, NULL,
 			swaynag->scale, true, "%s", swaynag->message);
 
 	int padding = swaynag->type->message_padding * swaynag->scale;
@@ -34,7 +34,7 @@ static uint32_t render_message(cairo_t *cairo, struct swaynag *swaynag) {
 static void render_details_scroll_button(cairo_t *cairo,
 		struct swaynag *swaynag, struct swaynag_button *button) {
 	int text_width, text_height;
-	get_text_size(cairo, swaynag->type->font, &text_width, &text_height,
+	get_text_size(cairo, swaynag->type->font, &text_width, &text_height, NULL,
 			swaynag->scale, true, "%s", button->text);
 
 	int border = swaynag->type->button_border_thickness * swaynag->scale;
@@ -60,10 +60,10 @@ static void render_details_scroll_button(cairo_t *cairo,
 static int get_detailed_scroll_button_width(cairo_t *cairo,
 		struct swaynag *swaynag) {
 	int up_width, down_width, temp_height;
-	get_text_size(cairo, swaynag->type->font, &up_width, &temp_height,
+	get_text_size(cairo, swaynag->type->font, &up_width, &temp_height, NULL,
 			swaynag->scale, true,
 			"%s", swaynag->details.button_up.text);
-	get_text_size(cairo, swaynag->type->font, &down_width, &temp_height,
+	get_text_size(cairo, swaynag->type->font, &down_width, &temp_height, NULL,
 			swaynag->scale, true,
 			"%s", swaynag->details.button_down.text);
 
@@ -179,7 +179,7 @@ static uint32_t render_button(cairo_t *cairo, struct swaynag *swaynag,
 	struct swaynag_button *button = swaynag->buttons->items[button_index];
 
 	int text_width, text_height;
-	get_text_size(cairo, swaynag->type->font, &text_width, &text_height,
+	get_text_size(cairo, swaynag->type->font, &text_width, &text_height, NULL,
 			swaynag->scale, true, "%s", button->text);
 
 	int border = swaynag->type->button_border_thickness * swaynag->scale;

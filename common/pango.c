@@ -103,7 +103,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 }
 
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
-		double scale, bool markup, const char *fmt, ...) {
+		int *baseline, double scale, bool markup, const char *fmt, ...) {
 	static char buf[2048];
 
 	va_list args;
@@ -116,6 +116,9 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	PangoLayout *layout = get_pango_layout(cairo, font, buf, scale, markup);
 	pango_cairo_update_layout(cairo, layout);
 	pango_layout_get_pixel_size(layout, width, height);
+	if (baseline) {
+		*baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
+	}
 	g_object_unref(layout);
 }
 

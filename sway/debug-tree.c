@@ -84,7 +84,7 @@ static int draw_node(cairo_t *cairo, struct sway_node *node,
 		struct sway_node *focus, int x, int y) {
 	int text_width, text_height;
 	char *buffer = get_string(node);
-	get_text_size(cairo, "monospace", &text_width, &text_height,
+	get_text_size(cairo, "monospace", &text_width, &text_height, NULL,
 		1, false, buffer);
 	cairo_save(cairo);
 	cairo_rectangle(cairo, x + 2, y, text_width - 2, text_height);
