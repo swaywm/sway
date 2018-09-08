@@ -31,16 +31,14 @@ static const char *ipc_json_layout_description(enum sway_container_layout l) {
 }
 
 static const char *ipc_json_orientation_description(enum sway_container_layout l) {
-	switch (l) {
-	case L_VERT:
+	if (l == L_VERT) {
 		return "vertical";
-	case L_HORIZ:
-		return "horizontal";
-	case L_TABBED:
-	case L_STACKED:
-	case L_NONE:
-		break;
 	}
+
+	if (l == L_HORIZ) {
+		return "horizontal";
+	}
+
 	return "none";
 }
 
@@ -153,8 +151,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 	}
 
 	if (parent_box.width != 0 && parent_box.height != 0) {
-		double percent = ((double)output->width / (double)parent_box.width) 
-				* ((double)output->height / (double)parent_box.height);
+		double percent = ((double)output->width / parent_box.width)
+				* ((double)output->height / parent_box.height);
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 }
@@ -257,7 +255,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 	json_object_object_add(object, "deco_rect", ipc_json_create_rect(&deco_box));
 
-	struct wlr_box geometry = {0, 0, c->view->natural_width, c->view->natural_height };
+	struct wlr_box geometry = {0, 0, c->view->natural_width, c->view->natural_height};
 	json_object_object_add(object, "geometry", ipc_json_create_rect(&geometry));
 
 #ifdef HAVE_XWAYLAND
@@ -292,8 +290,8 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	}
 
 	if (parent_box.width != 0 && parent_box.height != 0) {
-		double percent = ((double)c->width / (double)parent_box.width) 
-				* ((double)c->height / (double)parent_box.height);
+		double percent = ((double)c->width / parent_box.width)
+				* ((double)c->height / parent_box.height);
 		json_object_object_add(object, "percent", json_object_new_double(percent));
 	}
 
