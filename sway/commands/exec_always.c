@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -57,6 +57,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		sigemptyset(&set);
 		sigprocmask(SIG_SETMASK, &set, NULL);
 		close(fd[0]);
+
 		if ((child = fork()) == 0) {
 			close(fd[1]);
 			execl("/bin/sh", "/bin/sh", "-c", cmd, (void *)NULL);
@@ -74,6 +75,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, "exec_always", "fork() failed");
 	}
 	close(fd[1]); // close write
+
 	ssize_t s = 0;
 	while ((size_t)s < sizeof(pid_t)) {
 		s += read(fd[0], ((uint8_t *)&child) + s, sizeof(pid_t) - s);

@@ -273,7 +273,7 @@ enum secure_feature {
 };
 
 struct feature_policy {
-	char *program;
+	char *command;
 	uint64_t permit_features;
 	uint64_t reject_features;
 };
