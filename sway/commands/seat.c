@@ -14,7 +14,7 @@ static struct cmd_handler seat_handlers[] = {
 
 struct cmd_results *cmd_seat(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "seat", EXPECTED_AT_LEAST, 1))) {
+	if ((error = checkarg(argc, "seat", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
 
