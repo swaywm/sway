@@ -935,7 +935,8 @@ static void update_marks_texture(struct sway_view *view,
 	int height = view->container->title_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
-	get_text_size(c, config->font, &width, NULL, scale, false, "%s", buffer);
+	get_text_size(c, config->font, &width, NULL, NULL, scale, false,
+			"%s", buffer);
 	cairo_destroy(c);
 
 	cairo_surface_t *surface = cairo_image_surface_create(

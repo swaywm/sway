@@ -349,6 +349,7 @@ struct sway_config {
 	enum sway_container_layout default_layout;
 	char *font;
 	size_t font_height;
+	size_t font_baseline;
 	bool pango_markup;
 	size_t urgent_timeout;
 	enum sway_fowa focus_on_window_activation;

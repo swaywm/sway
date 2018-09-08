@@ -117,6 +117,7 @@ struct sway_container {
 	struct wlr_texture *title_unfocused;
 	struct wlr_texture *title_urgent;
 	size_t title_height;
+	size_t title_baseline;
 
 	struct {
 		struct wl_signal destroy;

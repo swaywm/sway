@@ -20,7 +20,7 @@ int escape_markup_text(const char *src, char *dest, int dest_length);
 PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 		const char *text, double scale, bool markup);
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
-		double scale, bool markup, const char *fmt, ...);
+		int *baseline, double scale, bool markup, const char *fmt, ...);
 void pango_printf(cairo_t *cairo, const char *font,
 		double scale, bool markup, const char *fmt, ...);
 

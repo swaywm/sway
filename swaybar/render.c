@@ -33,8 +33,8 @@ static uint32_t render_status_line_error(cairo_t *cairo,
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
 
 	int text_width, text_height;
-	get_text_size(cairo, config->font,
-			&text_width, &text_height, output->scale, false, "%s", error);
+	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
+			output->scale, false, "%s", error);
 
 	uint32_t ideal_height = text_height + ws_vertical_padding * 2;
 	uint32_t ideal_surface_height = ideal_height / output->scale;
@@ -63,7 +63,7 @@ static uint32_t render_status_line_text(cairo_t *cairo,
 			config->colors.focused_statusline : config->colors.statusline);
 
 	int text_width, text_height;
-	get_text_size(cairo, config->font, &text_width, &text_height,
+	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
 			output->scale, config->pango_markup, "%s", text);
 
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
@@ -126,7 +126,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 	uint32_t height = surface_height * output->scale;
 
 	int text_width, text_height;
-	get_text_size(cairo, config->font, &text_width, &text_height,
+	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
 			output->scale, block->markup, "%s", block->full_text);
 
 	int margin = 3 * output->scale;
@@ -157,7 +157,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 	int sep_width, sep_height;
 	if (!edge) {
 		if (config->sep_symbol) {
-			get_text_size(cairo, config->font, &sep_width, &sep_height,
+			get_text_size(cairo, config->font, &sep_width, &sep_height, NULL,
 					output->scale, false, "%s", config->sep_symbol);
 			uint32_t _ideal_height = sep_height + ws_vertical_padding * 2;
 			uint32_t _ideal_surface_height = _ideal_height / output->scale;
@@ -297,7 +297,7 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	uint32_t height = surface_height * output->scale;
 
 	int text_width, text_height;
-	get_text_size(cairo, config->font, &text_width, &text_height,
+	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
 			output->scale, config->mode_pango_markup,
 			"%s", mode);
 
@@ -379,7 +379,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	uint32_t height = surface_height * output->scale;
 
 	int text_width, text_height;
-	get_text_size(cairo, config->font, &text_width, &text_height,
+	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
 			output->scale, config->pango_markup, "%s", name);
 
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;

@@ -455,8 +455,8 @@ static void update_title_texture(struct sway_container *con,
 	int height = con->title_height * scale;
 
 	cairo_t *c = cairo_create(NULL);
-	get_text_size(c, config->font, &width, NULL, scale, config->pango_markup,
-			"%s", con->formatted_title);
+	get_text_size(c, config->font, &width, NULL, NULL, scale,
+			config->pango_markup, "%s", con->formatted_title);
 	cairo_destroy(c);
 
 	cairo_surface_t *surface = cairo_image_surface_create(
@@ -505,10 +505,12 @@ void container_calculate_title_height(struct sway_container *container) {
 	}
 	cairo_t *cairo = cairo_create(NULL);
 	int height;
-	get_text_size(cairo, config->font, NULL, &height, 1, config->pango_markup,
-			"%s", container->formatted_title);
+	int baseline;
+	get_text_size(cairo, config->font, NULL, &height, &baseline, 1,
+			config->pango_markup, "%s", container->formatted_title);
 	cairo_destroy(cairo);
 	container->title_height = height;
+	container->title_baseline = baseline;
 }
 
 /**

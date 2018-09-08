@@ -466,12 +466,12 @@ static void render_titlebar(struct sway_output *output,
 			&texture_box.width, &texture_box.height);
 		title_ob_width = texture_box.width;
 
-		// The title texture might be shorter than the config->font_height, in
-		// which case we need to pad it as evenly as possible above and below.
-		int ob_padding_total = config->font_height * output_scale -
-			texture_box.height;
-		int ob_padding_above = floor(ob_padding_total / 2);
-		int ob_padding_below = ceil(ob_padding_total / 2);
+		// The title texture might be shorter than the config->font_height,
+		// in which case we need to pad it above and below.
+		int ob_padding_above = (config->font_baseline - con->title_baseline)
+			* output_scale;
+		int ob_padding_below = (config->font_height - con->title_height)
+			* output_scale - ob_padding_above;
 
 		// Render texture
 		texture_box.x = (x - output_x + TITLEBAR_H_PADDING) * output_scale;
