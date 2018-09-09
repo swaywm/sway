@@ -93,7 +93,13 @@ bool server_init(struct sway_server *server) {
 	server->xwayland_ready.notify = handle_xwayland_ready;
 
 	// TODO: configurable cursor theme and size
-	server->xwayland.xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
+	char *cursor_theme = getenv("SWAY_CURSOR_THEME");
+	int cursor_size = atoi(getenv("SWAY_CURSOR_SIZE"));
+	if (cursor_size <= 0) {
+		cursor_size = 24;
+	}
+
+	server->xwayland.xcursor_manager = wlr_xcursor_manager_create(cursor_theme, cursor_size);
 	wlr_xcursor_manager_load(server->xwayland.xcursor_manager, 1);
 	struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
 		server->xwayland.xcursor_manager, "left_ptr", 1);
@@ -103,6 +109,7 @@ bool server_init(struct sway_server *server) {
 			image->width * 4, image->width, image->height, image->hotspot_x,
 			image->hotspot_y);
 	}
+
 #endif
 
 	server->server_decoration_manager =

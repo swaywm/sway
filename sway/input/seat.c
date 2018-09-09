@@ -507,11 +507,15 @@ void seat_remove_device(struct sway_seat *seat,
 
 void seat_configure_xcursor(struct sway_seat *seat) {
 	// TODO configure theme and size
-	const char *cursor_theme = NULL;
+	const char *cursor_theme = getenv("SWAY_CURSOR_THEME");
+	int cursor_size = atoi(getenv("SWAY_CURSOR_SIZE"));
+	if (cursor_size <= 0) {
+		cursor_size = 24;
+	}
 
 	if (!seat->cursor->xcursor_manager) {
 		seat->cursor->xcursor_manager =
-			wlr_xcursor_manager_create(cursor_theme, 24);
+			wlr_xcursor_manager_create(cursor_theme, cursor_size);
 		if (sway_assert(seat->cursor->xcursor_manager,
 					"Cannot create XCursor manager for theme %s",
 					cursor_theme)) {
