@@ -417,8 +417,14 @@ void bar_setup(struct swaybar *bar,
 		}
 	}
 
+	const char *cursor_theme = getenv("SWAY_CURSOR_THEME");
+	int cursor_size = atoi(getenv("SWAY_CURSOR_SIZE"));
+	if (cursor_size <= 0) {
+		cursor_size = 24;
+	}
+
 	pointer->cursor_theme = wl_cursor_theme_load(
-				NULL, 24 * max_scale, bar->shm);
+				cursor_theme, cursor_size * max_scale, bar->shm);
 	assert(pointer->cursor_theme);
 	struct wl_cursor *cursor;
 	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
