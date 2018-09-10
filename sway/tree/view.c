@@ -584,8 +584,8 @@ void view_unmap(struct sway_view *view) {
 	}
 
 	transaction_commit_dirty();
-	cursor_send_pointer_motion(config->handler_context.seat->cursor, 0, true);
 	view->surface = NULL;
+	cursor_send_pointer_motion(config->handler_context.seat->cursor, 0, true);
 }
 
 void view_update_size(struct sway_view *view, int width, int height) {
