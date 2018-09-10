@@ -7,6 +7,7 @@
 #include <strings.h>
 #include "stringop.h"
 #include "sway/input/input-manager.h"
+#include "sway/input/cursor.h"
 #include "sway/input/seat.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
@@ -400,6 +401,7 @@ bool workspace_switch(struct sway_workspace *workspace,
 				if (&floater->node == focus) {
 					seat_set_focus(seat, NULL);
 					seat_set_focus_container(seat, floater);
+					cursor_send_pointer_motion(seat->cursor, 0, true);
 				}
 				--i;
 			}
@@ -422,6 +424,7 @@ bool workspace_switch(struct sway_workspace *workspace,
 	}
 	seat_set_focus(seat, next);
 	arrange_workspace(workspace);
+	cursor_send_pointer_motion(seat->cursor, 0, true);
 	return true;
 }
 
