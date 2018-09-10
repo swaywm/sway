@@ -337,7 +337,10 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
 		if (seat) {
 			struct sway_workspace *ws = seat_get_focused_workspace(seat);
-			output = ws->output;
+
+			if (ws != NULL) {
+				output = ws->output;
+			}
 		}
 		if (!output) {
 			if (!sway_assert(root->outputs->length,
