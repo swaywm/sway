@@ -303,6 +303,9 @@ static struct sway_container *floating_container_at(double lx, double ly,
 struct sway_container *tiling_container_at(struct sway_node *parent,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
+	if (parent == NULL) {
+		return NULL;
+	}
 	if (node_is_view(parent)) {
 		surface_at_view(parent->sway_container, lx, ly, surface, sx, sy);
 		return parent->sway_container;
