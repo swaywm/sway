@@ -10,6 +10,7 @@
 #include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
@@ -532,4 +533,6 @@ void transaction_commit_dirty(void) {
 		// if the transaction has nothing to wait for.
 		transaction_progress_queue();
 	}
+	if (config->handler_context.seat)
+		cursor_send_pointer_motion(config->handler_context.seat->cursor, 0, true);
 }
