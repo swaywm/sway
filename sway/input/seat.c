@@ -1050,9 +1050,8 @@ static void seat_end_move_tiling(struct sway_seat *seat) {
 	// Moving container into empty workspace
 	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
 		workspace_add_tiling(new_ws, con);
-
-	// Moving container before/after another
 	} else if (target_node->type == N_CONTAINER) {
+		// Moving container before/after another
 		struct sway_container *target = target_node->sway_container;
 		enum sway_container_layout layout = container_parent_layout(target);
 		if (edge && !is_parallel(layout, edge)) {
@@ -1061,9 +1060,8 @@ static void seat_end_move_tiling(struct sway_seat *seat) {
 			container_split(target, new_layout);
 		}
 		container_add_sibling(target, con, after);
-
-	// Target is a workspace which requires splitting
 	} else {
+		// Target is a workspace which requires splitting
 		enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
 			edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
 		workspace_split(new_ws, new_layout);

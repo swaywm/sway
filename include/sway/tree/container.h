@@ -283,7 +283,7 @@ void container_insert_child(struct sway_container *parent,
  * Side should be 0 to add before, or 1 to add after.
  */
 void container_add_sibling(struct sway_container *parent,
-		struct sway_container *child, int side);
+		struct sway_container *child, bool after);
 
 void container_detach(struct sway_container *child);
 

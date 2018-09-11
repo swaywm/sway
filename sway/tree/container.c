@@ -1093,13 +1093,13 @@ void container_insert_child(struct sway_container *parent,
 }
 
 void container_add_sibling(struct sway_container *fixed,
-		struct sway_container *active, int side) {
+		struct sway_container *active, bool after) {
 	if (active->workspace) {
 		container_detach(active);
 	}
 	list_t *siblings = container_get_siblings(fixed);
 	int index = list_find(siblings, fixed);
-	list_insert(siblings, index + side, active);
+	list_insert(siblings, index + after, active);
 	active->parent = fixed->parent;
 	active->workspace = fixed->workspace;
 	container_for_each_child(active, set_workspace, NULL);

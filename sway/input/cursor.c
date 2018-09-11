@@ -26,6 +26,10 @@
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+// When doing a tiling drag, this is the thickness of the dropzone
+// when dragging to the edge of a layout container.
+#define DROP_LAYOUT_BORDER 30
+
 static uint32_t get_current_time_msec() {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -229,7 +233,7 @@ static void handle_move_floating_motion(struct sway_seat *seat,
 }
 
 static void resize_box(struct wlr_box *box, enum wlr_edges edge,
-		size_t thickness) {
+		int thickness) {
 	switch (edge) {
 	case WLR_EDGE_TOP:
 		box->height = thickness;
@@ -297,15 +301,17 @@ static void handle_move_tiling_motion(struct sway_seat *seat,
 		con->parent ? container_get_box(con->parent, &parent) :
 			workspace_get_box(con->workspace, &parent);
 		if (layout == L_HORIZ || layout == L_TABBED) {
-			if (cursor->cursor->y < parent.y + 30) {
+			if (cursor->cursor->y < parent.y + DROP_LAYOUT_BORDER) {
 				edge = WLR_EDGE_TOP;
-			} else if (cursor->cursor->y > parent.y + parent.height - 30) {
+			} else if (cursor->cursor->y > parent.y + parent.height
+					- DROP_LAYOUT_BORDER) {
 				edge = WLR_EDGE_BOTTOM;
 			}
 		} else if (layout == L_VERT || layout == L_STACKED) {
-			if (cursor->cursor->x < parent.x + 30) {
+			if (cursor->cursor->x < parent.x + DROP_LAYOUT_BORDER) {
 				edge = WLR_EDGE_LEFT;
-			} else if (cursor->cursor->x > parent.x + parent.width - 30) {
+			} else if (cursor->cursor->x > parent.x + parent.width
+					- DROP_LAYOUT_BORDER) {
 				edge = WLR_EDGE_RIGHT;
 			}
 		}
@@ -313,7 +319,7 @@ static void handle_move_tiling_motion(struct sway_seat *seat,
 			seat->op_target_node = node_get_parent(&con->node);
 			seat->op_target_edge = edge;
 			node_get_box(seat->op_target_node, &seat->op_drop_box);
-			resize_box(&seat->op_drop_box, edge, 30);
+			resize_box(&seat->op_drop_box, edge, DROP_LAYOUT_BORDER);
 			desktop_damage_box(&seat->op_drop_box);
 			return;
 		}
@@ -890,8 +896,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 
 	// Handle moving a tiling container
-	if (config->tiling_drag && mod_pressed && !is_floating_or_child &&
-			!cont->is_fullscreen) {
+	if (config->tiling_drag && mod_pressed && state == WLR_BUTTON_PRESSED &&
+			!is_floating_or_child && !cont->is_fullscreen) {
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		seat_begin_move_tiling(seat, cont, button);
 		return;
