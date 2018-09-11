@@ -557,6 +557,7 @@ struct sway_container *workspace_find_container(struct sway_workspace *ws,
 }
 
 struct sway_container *workspace_wrap_children(struct sway_workspace *ws) {
+	struct sway_container *fs = ws->fullscreen;
 	struct sway_container *middle = container_create(NULL);
 	middle->layout = ws->layout;
 	while (ws->tiling->length) {
@@ -565,6 +566,7 @@ struct sway_container *workspace_wrap_children(struct sway_workspace *ws) {
 		container_add_child(middle, child);
 	}
 	workspace_add_tiling(ws, middle);
+	ws->fullscreen = fs;
 	return middle;
 }
 

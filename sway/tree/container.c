@@ -1063,7 +1063,8 @@ list_t *container_get_current_siblings(struct sway_container *container) {
 }
 
 void container_handle_fullscreen_reparent(struct sway_container *con) {
-	if (!con->is_fullscreen || con->workspace->fullscreen == con) {
+	if (!con->is_fullscreen || !con->workspace ||
+			con->workspace->fullscreen == con) {
 		return;
 	}
 	if (con->workspace->fullscreen) {
