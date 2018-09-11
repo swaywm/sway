@@ -901,7 +901,10 @@ static void render_dropzones(struct sway_output *output,
 			memcpy(&color, config->border_colors.focused.indicator,
 					sizeof(float) * 4);
 			premultiply_alpha(color, 0.5);
-			render_rect(output->wlr_output, damage, &seat->op_drop_box, color);
+			struct wlr_box box;
+			memcpy(&box, &seat->op_drop_box, sizeof(struct wlr_box));
+			scale_box(&box, output->wlr_output->scale);
+			render_rect(output->wlr_output, damage, &box, color);
 		}
 	}
 }
