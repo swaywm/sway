@@ -1,7 +1,15 @@
 #include "log.h"
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/output.h"
 #include "sway/tree/container.h"
+
+static void rebuild_textures_iterator(struct sway_container *con, void *data) {
+	if (con->view) {
+		view_update_marks_textures(con->view);
+	}
+	container_update_title_textures(con);
+}
 
 /**
  * Parse the hex string into an integer.
@@ -77,6 +85,15 @@ static struct cmd_results *handle_command(int argc, char **argv,
 	if (!parse_color_float(argv[4], class->child_border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
 				"Unable to parse child border color");
+	}
+
+	if (config->active) {
+		root_for_each_container(rebuild_textures_iterator, NULL);
+
+		for (int i = 0; i < root->outputs->length; ++i) {
+			struct sway_output *output = root->outputs->items[i];
+			output_damage_whole(output);
+		}
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
