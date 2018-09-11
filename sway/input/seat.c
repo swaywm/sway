@@ -1076,7 +1076,8 @@ static void seat_end_move_tiling(struct sway_seat *seat) {
 	list_t *siblings = container_get_siblings(con);
 	if (siblings->length > 1) {
 		int index = list_find(siblings, con);
-		struct sway_container *sibling = index == 0 ? siblings->items[1] : siblings->items[index - 1];
+		struct sway_container *sibling = index == 0 ?
+			siblings->items[1] : siblings->items[index - 1];
 		con->width = sibling->width;
 		con->height = sibling->height;
 	}
