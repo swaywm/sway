@@ -583,7 +583,10 @@ void view_unmap(struct sway_view *view) {
 		workspace_detect_urgent(ws);
 	}
 
-	cursor_send_pointer_motion(config->handler_context.seat->cursor, 0, true);
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		cursor_send_pointer_motion(seat->cursor, 0, true);
+	}
 
 	transaction_commit_dirty();
 	view->surface = NULL;
