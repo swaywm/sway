@@ -529,7 +529,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 
 	view->container = container_create(view);
 	if (target_sibling) {
-		container_add_sibling(target_sibling, view->container);
+		container_add_sibling(target_sibling, view->container, 1);
 	} else {
 		workspace_add_tiling(ws, view->container);
 	}
