@@ -554,7 +554,10 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	struct sway_workspace *new_output_last_ws = old_output == new_output ?
 		NULL : output_get_active_workspace(new_output);
 
-	// move container, arrange windows and return focus
+	// save focus, in case it needs to be restored
+	struct sway_node *focus = seat_get_focus(seat);
+
+	// move container
 	if (container->scratchpad) {
 		root_scratchpad_remove_container(container);
 	}
@@ -574,30 +577,37 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	case N_ROOT:
 		break;
 	}
+
+	// restore focus on destination output back to its last active workspace
 	struct sway_workspace *new_workspace =
 		output_get_active_workspace(new_output);
 	if (new_output_last_ws && new_output_last_ws != new_workspace) {
-		// change focus on destination output back to its last active workspace
 		struct sway_node *new_output_last_focus =
 			seat_get_focus_inactive(seat, &new_output_last_ws->node);
 		seat_set_focus_warp(seat, new_output_last_focus, false, false);
 	}
 
-	struct sway_node *focus = NULL;
-	if (old_parent) {
-		focus = seat_get_focus_inactive(seat, &old_parent->node);
-	} else if (old_ws) {
-		focus = seat_get_focus_inactive(seat, &old_ws->node);
+	// restore focus
+	if (focus == &container->node) {
+		focus = NULL;
+		if (old_parent) {
+			focus = seat_get_focus_inactive(seat, &old_parent->node);
+		}
+		if (!focus && old_ws) {
+			focus = seat_get_focus_inactive(seat, &old_ws->node);
+		}
 	}
 	seat_set_focus_warp(seat, focus, true, false);
 
+	// clean-up, destroying parents if the container was the last child
 	if (old_parent) {
 		container_reap_empty(old_parent);
 	} else if (old_ws) {
 		workspace_consider_destroy(old_ws);
 	}
 
-	if (old_ws) {
+	// arrange windows
+	if (old_ws && !old_ws->node.destroying) {
 		arrange_workspace(old_ws);
 	}
 	arrange_node(node_get_parent(destination));
