@@ -83,6 +83,7 @@ sway_sources = files(
 	'commands/swaybg_command.c',
 	'commands/swaynag_command.c',
 	'commands/swap.c',
+	'commands/tiling_drag.c',
 	'commands/title_format.c',
 	'commands/unmark.c',
 	'commands/urgent.c',

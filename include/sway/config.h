@@ -365,6 +365,7 @@ struct sway_config {
 	bool validating;
 	bool auto_back_and_forth;
 	bool show_marks;
+	bool tiling_drag;
 
 	bool edge_gaps;
 	bool smart_gaps;
