@@ -218,7 +218,7 @@ static struct sway_container *container_at_tabbed(struct sway_node *parent,
 
 	// Surfaces
 	struct sway_node *current = seat_get_active_child(seat, parent);
-	return tiling_container_at(current, lx, ly, surface, sx, sy);
+	return current ? tiling_container_at(current, lx, ly, surface, sx, sy) : NULL;
 }
 
 /**
@@ -246,7 +246,7 @@ static struct sway_container *container_at_stacked(struct sway_node *parent,
 
 	// Surfaces
 	struct sway_node *current = seat_get_active_child(seat, parent);
-	return tiling_container_at(current, lx, ly, surface, sx, sy);
+	return current ? tiling_container_at(current, lx, ly, surface, sx, sy) : NULL;
 }
 
 /**

@@ -14,6 +14,7 @@
 #include "sway/criteria.h"
 #include "sway/commands.h"
 #include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/input/seat.h"
@@ -581,6 +582,8 @@ void view_unmap(struct sway_view *view) {
 		arrange_workspace(ws);
 		workspace_detect_urgent(ws);
 	}
+
+	cursor_send_pointer_motion(config->handler_context.seat->cursor, 0, true);
 
 	transaction_commit_dirty();
 	view->surface = NULL;
