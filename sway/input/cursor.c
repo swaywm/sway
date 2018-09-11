@@ -218,7 +218,7 @@ static void handle_down_motion(struct sway_seat *seat,
 	seat->op_moved = true;
 }
 
-static void handle_move_motion(struct sway_seat *seat,
+static void handle_move_floating_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
 	struct sway_container *con = seat->op_container;
 	desktop_damage_whole_container(con);
@@ -402,8 +402,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		case OP_DOWN:
 			handle_down_motion(seat, cursor, time_msec);
 			break;
-		case OP_MOVE:
-			handle_move_motion(seat, cursor);
+		case OP_MOVE_FLOATING:
+			handle_move_floating_motion(seat, cursor);
 			break;
 		case OP_RESIZE_FLOATING:
 			handle_resize_floating_motion(seat, cursor);
@@ -719,7 +719,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			while (cont->parent) {
 				cont = cont->parent;
 			}
-			seat_begin_move(seat, cont, button);
+			seat_begin_move_floating(seat, cont, button);
 			return;
 		}
 	}

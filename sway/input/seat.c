@@ -963,13 +963,13 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_moved = false;
 }
 
-void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
-		uint32_t button) {
+void seat_begin_move_floating(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button) {
 	if (!seat->cursor) {
 		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
 		return;
 	}
-	seat->operation = OP_MOVE;
+	seat->operation = OP_MOVE_FLOATING;
 	seat->op_container = con;
 	seat->op_button = button;
 	cursor_set_image(seat->cursor, "grab", NULL);
@@ -1017,7 +1017,7 @@ void seat_begin_resize_tiling(struct sway_seat *seat,
 
 void seat_end_mouse_operation(struct sway_seat *seat) {
 	enum sway_seat_operation operation = seat->operation;
-	if (seat->operation == OP_MOVE) {
+	if (seat->operation == OP_MOVE_FLOATING) {
 		// We "move" the container to its own location so it discovers its
 		// output again.
 		struct sway_container *con = seat->op_container;

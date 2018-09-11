@@ -38,7 +38,7 @@ struct sway_drag_icon {
 enum sway_seat_operation {
 	OP_NONE,
 	OP_DOWN,
-	OP_MOVE,
+	OP_MOVE_FLOATING,
 	OP_RESIZE_FLOATING,
 	OP_RESIZE_TILING,
 };
@@ -172,8 +172,8 @@ void drag_icon_update_position(struct sway_drag_icon *icon);
 void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 		uint32_t button, double sx, double sy);
 
-void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
-		uint32_t button);
+void seat_begin_move_floating(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button);
 
 void seat_begin_resize_floating(struct sway_seat *seat,
 		struct sway_container *con, uint32_t button, enum wlr_edges edge);
