@@ -891,6 +891,24 @@ static void render_floating(struct sway_output *soutput,
 	}
 }
 
+static void render_dropzones(struct sway_output *output,
+		pixman_region32_t *damage) {
+	struct sway_seat *seat;
+	wl_list_for_each(seat, &input_manager->seats, link) {
+		if (seat->operation == OP_MOVE_TILING && seat->op_target_node
+				&& node_get_output(seat->op_target_node) == output) {
+			float color[4];
+			memcpy(&color, config->border_colors.focused.indicator,
+					sizeof(float) * 4);
+			premultiply_alpha(color, 0.5);
+			struct wlr_box box;
+			memcpy(&box, &seat->op_drop_box, sizeof(struct wlr_box));
+			scale_box(&box, output->wlr_output->scale);
+			render_rect(output->wlr_output, damage, &box, color);
+		}
+	}
+}
+
 void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_t *damage) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -972,6 +990,8 @@ void output_render(struct sway_output *output, struct timespec *when,
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
+
+	render_dropzones(output, damage);
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *focus = seat_get_focused_container(seat);

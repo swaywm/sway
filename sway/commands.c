@@ -127,6 +127,7 @@ static struct cmd_handler handlers[] = {
 	{ "set", cmd_set },
 	{ "show_marks", cmd_show_marks },
 	{ "smart_gaps", cmd_smart_gaps },
+	{ "tiling_drag", cmd_tiling_drag },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };

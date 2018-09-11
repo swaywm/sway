@@ -26,6 +26,10 @@
 #include "sway/tree/workspace.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+// When doing a tiling drag, this is the thickness of the dropzone
+// when dragging to the edge of a layout container.
+#define DROP_LAYOUT_BORDER 30
+
 static uint32_t get_current_time_msec() {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -218,7 +222,7 @@ static void handle_down_motion(struct sway_seat *seat,
 	seat->op_moved = true;
 }
 
-static void handle_move_motion(struct sway_seat *seat,
+static void handle_move_floating_motion(struct sway_seat *seat,
 		struct sway_cursor *cursor) {
 	struct sway_container *con = seat->op_container;
 	desktop_damage_whole_container(con);
@@ -226,6 +230,143 @@ static void handle_move_motion(struct sway_seat *seat,
 			cursor->cursor->x - cursor->previous.x,
 			cursor->cursor->y - cursor->previous.y);
 	desktop_damage_whole_container(con);
+}
+
+static void resize_box(struct wlr_box *box, enum wlr_edges edge,
+		int thickness) {
+	switch (edge) {
+	case WLR_EDGE_TOP:
+		box->height = thickness;
+		break;
+	case WLR_EDGE_LEFT:
+		box->width = thickness;
+		break;
+	case WLR_EDGE_RIGHT:
+		box->x = box->x + box->width - thickness;
+		box->width = thickness;
+		break;
+	case WLR_EDGE_BOTTOM:
+		box->y = box->y + box->height - thickness;
+		box->height = thickness;
+		break;
+	case WLR_EDGE_NONE:
+		box->x += thickness;
+		box->y += thickness;
+		box->width -= thickness * 2;
+		box->height -= thickness * 2;
+		break;
+	}
+}
+
+static void handle_move_tiling_motion(struct sway_seat *seat,
+		struct sway_cursor *cursor) {
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	struct sway_node *node = node_at_coords(seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	// Damage the old location
+	desktop_damage_box(&seat->op_drop_box);
+
+	if (!node) {
+		// Eg. hovered over a layer surface such as swaybar
+		seat->op_target_node = NULL;
+		seat->op_target_edge = WLR_EDGE_NONE;
+		return;
+	}
+
+	if (node->type == N_WORKSPACE) {
+		// Emtpy workspace
+		seat->op_target_node = node;
+		seat->op_target_edge = WLR_EDGE_NONE;
+		workspace_get_box(node->sway_workspace, &seat->op_drop_box);
+		desktop_damage_box(&seat->op_drop_box);
+		return;
+	}
+
+	// Deny moving within own workspace if this is the only child
+	struct sway_container *con = node->sway_container;
+	if (workspace_num_tiling_views(seat->op_container->workspace) == 1 &&
+			con->workspace == seat->op_container->workspace) {
+		seat->op_target_node = NULL;
+		seat->op_target_edge = WLR_EDGE_NONE;
+		return;
+	}
+
+	// Traverse the ancestors, trying to find a layout container perpendicular
+	// to the edge. Eg. close to the top or bottom of a horiz layout.
+	while (con) {
+		enum wlr_edges edge = WLR_EDGE_NONE;
+		enum sway_container_layout layout = container_parent_layout(con);
+		struct wlr_box parent;
+		con->parent ? container_get_box(con->parent, &parent) :
+			workspace_get_box(con->workspace, &parent);
+		if (layout == L_HORIZ || layout == L_TABBED) {
+			if (cursor->cursor->y < parent.y + DROP_LAYOUT_BORDER) {
+				edge = WLR_EDGE_TOP;
+			} else if (cursor->cursor->y > parent.y + parent.height
+					- DROP_LAYOUT_BORDER) {
+				edge = WLR_EDGE_BOTTOM;
+			}
+		} else if (layout == L_VERT || layout == L_STACKED) {
+			if (cursor->cursor->x < parent.x + DROP_LAYOUT_BORDER) {
+				edge = WLR_EDGE_LEFT;
+			} else if (cursor->cursor->x > parent.x + parent.width
+					- DROP_LAYOUT_BORDER) {
+				edge = WLR_EDGE_RIGHT;
+			}
+		}
+		if (edge) {
+			seat->op_target_node = node_get_parent(&con->node);
+			seat->op_target_edge = edge;
+			node_get_box(seat->op_target_node, &seat->op_drop_box);
+			resize_box(&seat->op_drop_box, edge, DROP_LAYOUT_BORDER);
+			desktop_damage_box(&seat->op_drop_box);
+			return;
+		}
+		con = con->parent;
+	}
+
+	// Use the hovered view - but we must be over the actual surface
+	con = node->sway_container;
+	if (!con->view->surface || node == &seat->op_container->node) {
+		seat->op_target_node = NULL;
+		seat->op_target_edge = WLR_EDGE_NONE;
+		return;
+	}
+
+	// Find the closest edge
+	size_t thickness = fmin(con->view->width, con->view->height) * 0.3;
+	size_t closest_dist = INT_MAX;
+	size_t dist;
+	seat->op_target_edge = WLR_EDGE_NONE;
+	if ((dist = cursor->cursor->y - con->y) < closest_dist) {
+		closest_dist = dist;
+		seat->op_target_edge = WLR_EDGE_TOP;
+	}
+	if ((dist = cursor->cursor->x - con->x) < closest_dist) {
+		closest_dist = dist;
+		seat->op_target_edge = WLR_EDGE_LEFT;
+	}
+	if ((dist = con->x + con->width - cursor->cursor->x) < closest_dist) {
+		closest_dist = dist;
+		seat->op_target_edge = WLR_EDGE_RIGHT;
+	}
+	if ((dist = con->y + con->height - cursor->cursor->y) < closest_dist) {
+		closest_dist = dist;
+		seat->op_target_edge = WLR_EDGE_BOTTOM;
+	}
+
+	if (closest_dist > thickness) {
+		seat->op_target_edge = WLR_EDGE_NONE;
+	}
+
+	seat->op_target_node = node;
+	seat->op_drop_box.x = con->view->x;
+	seat->op_drop_box.y = con->view->y;
+	seat->op_drop_box.width = con->view->width;
+	seat->op_drop_box.height = con->view->height;
+	resize_box(&seat->op_drop_box, seat->op_target_edge, thickness);
+	desktop_damage_box(&seat->op_drop_box);
 }
 
 static void calculate_floating_constraints(struct sway_container *con,
@@ -402,8 +543,11 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		case OP_DOWN:
 			handle_down_motion(seat, cursor, time_msec);
 			break;
-		case OP_MOVE:
-			handle_move_motion(seat, cursor);
+		case OP_MOVE_FLOATING:
+			handle_move_floating_motion(seat, cursor);
+			break;
+		case OP_MOVE_TILING:
+			handle_move_tiling_motion(seat, cursor);
 			break;
 		case OP_RESIZE_FLOATING:
 			handle_resize_floating_motion(seat, cursor);
@@ -719,7 +863,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			while (cont->parent) {
 				cont = cont->parent;
 			}
-			seat_begin_move(seat, cont, button);
+			seat_begin_move_floating(seat, cont, button);
 			return;
 		}
 	}
@@ -749,6 +893,14 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			seat_begin_resize_floating(seat, floater, button, edge);
 			return;
 		}
+	}
+
+	// Handle moving a tiling container
+	if (config->tiling_drag && mod_pressed && state == WLR_BUTTON_PRESSED &&
+			!is_floating_or_child && !cont->is_fullscreen) {
+		seat_pointer_notify_button(seat, time_msec, button, state);
+		seat_begin_move_tiling(seat, cont, button);
+		return;
 	}
 
 	// Handle mousedown on a container surface

@@ -126,4 +126,6 @@ void workspace_update_representation(struct sway_workspace *ws);
 
 void workspace_get_box(struct sway_workspace *workspace, struct wlr_box *box);
 
+size_t workspace_num_tiling_views(struct sway_workspace *ws);
+
 #endif

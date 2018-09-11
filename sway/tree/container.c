@@ -835,7 +835,13 @@ void container_end_mouse_operation(struct sway_container *container) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input_manager->seats, link) {
 		if (seat->op_container == container) {
+			seat->op_target_node = NULL; // ensure tiling move doesn't apply
 			seat_end_mouse_operation(seat);
+		}
+		// If the user is doing a tiling drag over this container,
+		// keep the operation active but unset the target container.
+		if (seat->op_target_node == &container->node) {
+			seat->op_target_node = NULL;
 		}
 	}
 }
@@ -1057,7 +1063,8 @@ list_t *container_get_current_siblings(struct sway_container *container) {
 }
 
 void container_handle_fullscreen_reparent(struct sway_container *con) {
-	if (!con->is_fullscreen || con->workspace->fullscreen == con) {
+	if (!con->is_fullscreen || !con->workspace ||
+			con->workspace->fullscreen == con) {
 		return;
 	}
 	if (con->workspace->fullscreen) {
@@ -1086,13 +1093,13 @@ void container_insert_child(struct sway_container *parent,
 }
 
 void container_add_sibling(struct sway_container *fixed,
-		struct sway_container *active) {
+		struct sway_container *active, bool after) {
 	if (active->workspace) {
 		container_detach(active);
 	}
 	list_t *siblings = container_get_siblings(fixed);
 	int index = list_find(siblings, fixed);
-	list_insert(siblings, index + 1, active);
+	list_insert(siblings, index + after, active);
 	active->parent = fixed->parent;
 	active->workspace = fixed->workspace;
 	container_for_each_child(active, set_workspace, NULL);
@@ -1145,7 +1152,7 @@ void container_detach(struct sway_container *child) {
 
 void container_replace(struct sway_container *container,
 		struct sway_container *replacement) {
-	container_add_sibling(container, replacement);
+	container_add_sibling(container, replacement, 1);
 	container_detach(container);
 }
 

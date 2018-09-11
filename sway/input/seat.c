@@ -963,15 +963,25 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_moved = false;
 }
 
-void seat_begin_move(struct sway_seat *seat, struct sway_container *con,
-		uint32_t button) {
+void seat_begin_move_floating(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button) {
 	if (!seat->cursor) {
 		wlr_log(WLR_DEBUG, "Ignoring move request due to no cursor device");
 		return;
 	}
-	seat->operation = OP_MOVE;
+	seat->operation = OP_MOVE_FLOATING;
 	seat->op_container = con;
 	seat->op_button = button;
+	cursor_set_image(seat->cursor, "grab", NULL);
+}
+
+void seat_begin_move_tiling(struct sway_seat *seat,
+		struct sway_container *con, uint32_t button) {
+	seat->operation = OP_MOVE_TILING;
+	seat->op_container = con;
+	seat->op_button = button;
+	seat->op_target_node = NULL;
+	seat->op_target_edge = 0;
 	cursor_set_image(seat->cursor, "grab", NULL);
 }
 
@@ -1015,13 +1025,76 @@ void seat_begin_resize_tiling(struct sway_seat *seat,
 	seat->op_ref_height = con->height;
 }
 
+static bool is_parallel(enum sway_container_layout layout,
+		enum wlr_edges edge) {
+	bool layout_is_horiz = layout == L_HORIZ || layout == L_TABBED;
+	bool edge_is_horiz = edge == WLR_EDGE_LEFT || edge == WLR_EDGE_RIGHT;
+	return layout_is_horiz == edge_is_horiz;
+}
+
+static void seat_end_move_tiling(struct sway_seat *seat) {
+	struct sway_container *con = seat->op_container;
+	struct sway_container *old_parent = con->parent;
+	struct sway_workspace *old_ws = con->workspace;
+	struct sway_node *target_node = seat->op_target_node;
+	struct sway_workspace *new_ws = target_node->type == N_WORKSPACE ?
+		target_node->sway_workspace : target_node->sway_container->workspace;
+	enum wlr_edges edge = seat->op_target_edge;
+	int after = edge != WLR_EDGE_TOP && edge != WLR_EDGE_LEFT;
+
+	container_detach(con);
+	if (old_parent) {
+		container_reap_empty(old_parent);
+	}
+
+	// Moving container into empty workspace
+	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
+		workspace_add_tiling(new_ws, con);
+	} else if (target_node->type == N_CONTAINER) {
+		// Moving container before/after another
+		struct sway_container *target = target_node->sway_container;
+		enum sway_container_layout layout = container_parent_layout(target);
+		if (edge && !is_parallel(layout, edge)) {
+			enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
+				edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
+			container_split(target, new_layout);
+		}
+		container_add_sibling(target, con, after);
+	} else {
+		// Target is a workspace which requires splitting
+		enum sway_container_layout new_layout = edge == WLR_EDGE_TOP ||
+			edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
+		workspace_split(new_ws, new_layout);
+		workspace_insert_tiling(new_ws, con, after);
+	}
+
+	// This is a bit dirty, but we'll set the dimensions to that of a sibling.
+	// I don't think there's any other way to make it consistent without
+	// changing how we auto-size containers.
+	list_t *siblings = container_get_siblings(con);
+	if (siblings->length > 1) {
+		int index = list_find(siblings, con);
+		struct sway_container *sibling = index == 0 ?
+			siblings->items[1] : siblings->items[index - 1];
+		con->width = sibling->width;
+		con->height = sibling->height;
+	}
+
+	arrange_workspace(old_ws);
+	if (new_ws != old_ws) {
+		arrange_workspace(new_ws);
+	}
+}
+
 void seat_end_mouse_operation(struct sway_seat *seat) {
 	enum sway_seat_operation operation = seat->operation;
-	if (seat->operation == OP_MOVE) {
+	if (seat->operation == OP_MOVE_FLOATING) {
 		// We "move" the container to its own location so it discovers its
 		// output again.
 		struct sway_container *con = seat->op_container;
 		container_floating_move_to(con, con->x, con->y);
+	} else if (seat->operation == OP_MOVE_TILING && seat->op_target_node) {
+		seat_end_move_tiling(seat);
 	}
 	seat->operation = OP_NONE;
 	seat->op_container = NULL;
