@@ -115,6 +115,10 @@ static enum hotspot_event_handling block_hotspot_callback(struct swaybar_output 
 	return i3bar_block_send_click(status, block, x, y, button);
 }
 
+static void i3bar_block_unref_callback(void *data) {
+	i3bar_block_unref(data);
+}
+
 static uint32_t render_status_block(cairo_t *cairo,
 		struct swaybar_config *config, struct swaybar_output *output,
 		struct i3bar_block *block, double *x,
@@ -179,8 +183,9 @@ static uint32_t render_status_block(cairo_t *cairo,
 	hotspot->width = width;
 	hotspot->height = height;
 	hotspot->callback = block_hotspot_callback;
-	hotspot->destroy = NULL;
+	hotspot->destroy = i3bar_block_unref_callback;
 	hotspot->data = block;
+	block->ref_count++;
 	wl_list_insert(&output->hotspots, &hotspot->link);
 
 	double pos = *x;
