@@ -36,6 +36,7 @@ struct i3bar_protocol_state {
 
 struct i3bar_block {
 	struct wl_list link;
+	int ref_count;
 	char *full_text, *short_text, *align;
 	bool urgent;
 	uint32_t *color;
@@ -73,7 +74,7 @@ void status_line_free(struct status_line *status);
 bool i3bar_handle_readable(struct status_line *status);
 enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, enum x11_button button);
-void i3bar_block_free(struct i3bar_block *block);
+void i3bar_block_unref(struct i3bar_block *block);
 enum x11_button wl_button_to_x11_button(uint32_t button);
 enum x11_button wl_axis_to_x11_button(uint32_t axis, wl_fixed_t value);
 

@@ -8,11 +8,10 @@
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 
-void i3bar_block_free(struct i3bar_block *block) {
+static void i3bar_block_free(struct i3bar_block *block) {
 	if (!block) {
 		return;
 	}
-	wl_list_remove(&block->link);
 	free(block->full_text);
 	free(block->short_text);
 	free(block->align);
@@ -22,10 +21,17 @@ void i3bar_block_free(struct i3bar_block *block) {
 	free(block);
 }
 
+void i3bar_block_unref(struct i3bar_block *block) {
+	if (--block->ref_count == 0) {
+		i3bar_block_free(block);
+	}
+}
+
 static bool i3bar_parse_json(struct status_line *status, const char *text) {
 	struct i3bar_block *block, *tmp;
 	wl_list_for_each_safe(block, tmp, &status->blocks, link) {
-		i3bar_block_free(block);
+		wl_list_remove(&block->link);
+		i3bar_block_unref(block);
 	}
 	json_object *results = json_tokener_parse(text);
 	if (!results) {
@@ -61,6 +67,7 @@ static bool i3bar_parse_json(struct status_line *status, const char *text) {
 		json_object_object_get_ex(json, "border_right", &border_right);
 
 		struct i3bar_block *block = calloc(1, sizeof(struct i3bar_block));
+		block->ref_count = 1;
 		block->full_text = full_text ?
 			strdup(json_object_get_string(full_text)) : NULL;
 		block->short_text = short_text ?

@@ -130,7 +130,7 @@ void status_line_free(struct status_line *status) {
 	case PROTOCOL_I3BAR:;
 		struct i3bar_block *block, *tmp;
 		wl_list_for_each_safe(block, tmp, &status->blocks, link) {
-			i3bar_block_free(block);
+			i3bar_block_unref(block);
 		}
 		free(status->i3bar_state.buffer);
 		break;
