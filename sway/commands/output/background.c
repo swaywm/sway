@@ -71,7 +71,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			return cmd_res;
 		}
 		free(src);
-		src = strdup(p.we_wordv[0]);
+		src = join_args(p.we_wordv, p.we_wordc);
 		wordfree(&p);
 		if (!src) {
 			wlr_log(WLR_ERROR, "Failed to duplicate string");
