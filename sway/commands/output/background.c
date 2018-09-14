@@ -61,7 +61,7 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 				"Missing background scaling mode.");
 		}
 
-		wordexp_t p;
+		wordexp_t p = {0};
 		char *src = join_args(argv, j);
 		while (strstr(src, "  ")) {
 			src = realloc(src, strlen(src) + 2);
@@ -123,6 +123,22 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			}
 			free(src);
 		} else {
+			// Escape spaces and quotes in the final path for swaybg
+			for (size_t i = 0; i < strlen(src); i++) {
+				switch (src[i]) {
+					case ' ':
+					case '\'':
+					case '\"':
+						src = realloc(src, strlen(src) + 2);
+						memmove(src + i + 1, src + i, strlen(src + i) + 1);
+						*(src + i) = '\\';
+						i++;
+						break;
+					default:
+						break;
+				}
+			}
+
 			output->background = src;
 			output->background_option = strdup(mode);
 		}
