@@ -769,7 +769,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 }
 
 void seat_set_focus_layer(struct sway_seat *seat,
-		struct wlr_layer_surface *layer) {
+		struct wlr_layer_surface_v1 *layer) {
 	if (!layer && seat->focused_layer) {
 		seat->focused_layer = NULL;
 		struct sway_node *previous = seat_get_focus_inactive(seat, &root->node);

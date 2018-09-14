@@ -3,7 +3,7 @@
 #include <string.h>
 #include <wayland-server.h>
 #include <wlr/types/wlr_box.h>
-#include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/log.h>
@@ -86,8 +86,8 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 	wlr_output_effective_resolution(output->wlr_output,
 			&full_area.width, &full_area.height);
 	wl_list_for_each(sway_layer, list, link) {
-		struct wlr_layer_surface *layer = sway_layer->layer_surface;
-		struct wlr_layer_surface_state *state = &layer->current;
+		struct wlr_layer_surface_v1 *layer = sway_layer->layer_surface;
+		struct wlr_layer_surface_v1_state *state = &layer->current;
 		if (exclusive != (state->exclusive_zone > 0)) {
 			continue;
 		}
@@ -146,7 +146,7 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		}
 		if (box.width < 0 || box.height < 0) {
 			// TODO: Bubble up a protocol error?
-			wlr_layer_surface_close(layer);
+			wlr_layer_surface_v1_close(layer);
 			continue;
 		}
 		// Apply
@@ -154,7 +154,7 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
 		apply_exclusive(usable_area, state->anchor, state->exclusive_zone,
 				state->margin.top, state->margin.right,
 				state->margin.bottom, state->margin.left);
-		wlr_layer_surface_configure(layer, box.width, box.height);
+		wlr_layer_surface_v1_configure(layer, box.width, box.height);
 	}
 }
 
@@ -223,13 +223,13 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&sway_layer->link);
 	wl_list_init(&sway_layer->link);
 	sway_layer->layer_surface->output = NULL;
-	wlr_layer_surface_close(sway_layer->layer_surface);
+	wlr_layer_surface_v1_close(sway_layer->layer_surface);
 }
 
 static void handle_surface_commit(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *layer =
 		wl_container_of(listener, layer, surface_commit);
-	struct wlr_layer_surface *layer_surface = layer->layer_surface;
+	struct wlr_layer_surface_v1 *layer_surface = layer->layer_surface;
 	struct wlr_output *wlr_output = layer_surface->output;
 	if (wlr_output == NULL) {
 		return;
@@ -312,13 +312,13 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	unmap(sway_layer);
 }
 
-struct sway_layer_surface *layer_from_wlr_layer_surface(
-		struct wlr_layer_surface *layer_surface) {
+struct sway_layer_surface *layer_from_wlr_layer_surface_v1(
+		struct wlr_layer_surface_v1 *layer_surface) {
 	return layer_surface->data;
 }
 
 void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
-	struct wlr_layer_surface *layer_surface = data;
+	struct wlr_layer_surface_v1 *layer_surface = data;
 	struct sway_server *server =
 		wl_container_of(listener, server, layer_shell_surface);
 	wlr_log(WLR_DEBUG, "new layer surface: namespace %s layer %d anchor %d "
@@ -345,7 +345,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 		if (!output) {
 			if (!sway_assert(root->outputs->length,
 						"cannot auto-assign output for layer")) {
-				wlr_layer_surface_close(layer_surface);
+				wlr_layer_surface_v1_close(layer_surface);
 				return;
 			}
 			output = root->outputs->items[0];
@@ -382,7 +382,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 
 	// Temporarily set the layer's current state to client_pending
 	// So that we can easily arrange it
-	struct wlr_layer_surface_state old_state = layer_surface->current;
+	struct wlr_layer_surface_v1_state old_state = layer_surface->current;
 	layer_surface->current = layer_surface->client_pending;
 	arrange_layers(output);
 	layer_surface->current = old_state;

@@ -1,7 +1,7 @@
 #ifndef _SWAY_INPUT_SEAT_H
 #define _SWAY_INPUT_SEAT_H
 
-#include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/edges.h>
 #include "sway/input/input-manager.h"
@@ -53,7 +53,7 @@ struct sway_seat {
 	struct wl_list focus_stack; // list of containers in focus order
 
 	// If the focused layer is set, views cannot receive keyboard focus
-	struct wlr_layer_surface *focused_layer;
+	struct wlr_layer_surface_v1 *focused_layer;
 
 	// If exclusive_client is set, no other clients will receive input events
 	struct wl_client *exclusive_client;
@@ -119,7 +119,7 @@ void seat_set_focus_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, bool unfocus);
 
 void seat_set_focus_layer(struct sway_seat *seat,
-		struct wlr_layer_surface *layer);
+		struct wlr_layer_surface_v1 *layer);
 
 void seat_set_exclusive_client(struct sway_seat *seat,
 		struct wl_client *client);

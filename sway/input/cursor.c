@@ -807,8 +807,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 	// Handle clicking a layer surface
 	if (surface && wlr_surface_is_layer_surface(surface)) {
-		struct wlr_layer_surface *layer =
-			wlr_layer_surface_from_wlr_surface(surface);
+		struct wlr_layer_surface_v1 *layer =
+			wlr_layer_surface_v1_from_wlr_surface(surface);
 		if (layer->current.keyboard_interactive) {
 			seat_set_focus_layer(seat, layer);
 		}

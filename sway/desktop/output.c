@@ -182,9 +182,9 @@ void output_layer_for_each_surface(struct sway_output *output,
 		void *user_data) {
 	struct sway_layer_surface *layer_surface;
 	wl_list_for_each(layer_surface, layer_surfaces, link) {
-		struct wlr_layer_surface *wlr_layer_surface =
+		struct wlr_layer_surface_v1 *wlr_layer_surface_v1 =
 			layer_surface->layer_surface;
-		output_surface_for_each_surface(output, wlr_layer_surface->surface,
+		output_surface_for_each_surface(output, wlr_layer_surface_v1->surface,
 			layer_surface->geo.x, layer_surface->geo.y, iterator,
 			user_data);
 	}
@@ -240,15 +240,15 @@ struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 }
 
 bool output_has_opaque_overlay_layer_surface(struct sway_output *output) {
-	struct wlr_layer_surface *wlr_layer_surface;
-	wl_list_for_each(wlr_layer_surface, &server.layer_shell->surfaces, link) {
-		if (wlr_layer_surface->output != output->wlr_output ||
-				wlr_layer_surface->layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY) {
+	struct wlr_layer_surface_v1 *wlr_layer_surface_v1;
+	wl_list_for_each(wlr_layer_surface_v1, &server.layer_shell->surfaces, link) {
+		if (wlr_layer_surface_v1->output != output->wlr_output ||
+				wlr_layer_surface_v1->layer != ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY) {
 			continue;
 		}
-		struct wlr_surface *wlr_surface = wlr_layer_surface->surface;
+		struct wlr_surface *wlr_surface = wlr_layer_surface_v1->surface;
 		struct sway_layer_surface *sway_layer_surface =
-			layer_from_wlr_layer_surface(wlr_layer_surface);
+			layer_from_wlr_layer_surface_v1(wlr_layer_surface_v1);
 		pixman_box32_t output_box = {
 			.x2 = output->width,
 			.y2 = output->height,
