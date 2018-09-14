@@ -63,6 +63,12 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 
 		wordexp_t p;
 		char *src = join_args(argv, j);
+		while (strstr(src, "  ")) {
+			src = realloc(src, strlen(src) + 2);
+			char *ptr = strstr(src, "  ") + 1;
+			memmove(ptr + 1, ptr, strlen(ptr) + 1);
+			*ptr = '\\';
+		}
 		if (wordexp(src, &p, 0) != 0 || p.we_wordv[0] == NULL) {
 			struct cmd_results *cmd_res = cmd_results_new(CMD_INVALID, "output",
 				"Invalid syntax (%s)", src);
