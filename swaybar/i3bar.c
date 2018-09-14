@@ -8,22 +8,19 @@
 #include "swaybar/config.h"
 #include "swaybar/status_line.h"
 
-static void i3bar_block_free(struct i3bar_block *block) {
-	if (!block) {
+void i3bar_block_unref(struct i3bar_block *block) {
+	if (block == NULL) {
 		return;
 	}
-	free(block->full_text);
-	free(block->short_text);
-	free(block->align);
-	free(block->name);
-	free(block->instance);
-	free(block->color);
-	free(block);
-}
 
-void i3bar_block_unref(struct i3bar_block *block) {
 	if (--block->ref_count == 0) {
-		i3bar_block_free(block);
+		free(block->full_text);
+		free(block->short_text);
+		free(block->align);
+		free(block->name);
+		free(block->instance);
+		free(block->color);
+		free(block);
 	}
 }
 
