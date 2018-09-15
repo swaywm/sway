@@ -61,7 +61,7 @@ bool server_init(struct sway_server *server) {
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
 
-	wlr_xdg_output_manager_create(server->wl_display, root->output_layout);
+	wlr_xdg_output_manager_v1_create(server->wl_display, root->output_layout);
 
 	server->idle = wlr_idle_create(server->wl_display);
 	server->idle_inhibit_manager_v1 =
