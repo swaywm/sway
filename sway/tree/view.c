@@ -34,8 +34,6 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->marks = create_list();
 	view->allow_request_urgent = true;
 	wl_signal_init(&view->events.unmap);
-
-	view->container = container_create(view);
 }
 
 void view_destroy(struct sway_view *view) {
