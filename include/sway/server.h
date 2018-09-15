@@ -7,7 +7,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/types/wlr_xdg_shell.h>
@@ -35,7 +35,7 @@ struct sway_server {
 	struct wlr_idle *idle;
 	struct sway_idle_inhibit_manager_v1 *idle_inhibit_manager_v1;
 
-	struct wlr_layer_shell *layer_shell;
+	struct wlr_layer_shell_v1 *layer_shell;
 	struct wl_listener layer_shell_surface;
 
 	struct wlr_xdg_shell_v6 *xdg_shell_v6;

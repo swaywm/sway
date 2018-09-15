@@ -11,7 +11,7 @@
 #include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
-#include <wlr/types/wlr_layer_shell.h>
+#include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
@@ -67,7 +67,7 @@ bool server_init(struct sway_server *server) {
 	server->idle_inhibit_manager_v1 =
 		sway_idle_inhibit_manager_v1_create(server->wl_display, server->idle);
 
-	server->layer_shell = wlr_layer_shell_create(server->wl_display);
+	server->layer_shell = wlr_layer_shell_v1_create(server->wl_display);
 	wl_signal_add(&server->layer_shell->events.new_surface,
 		&server->layer_shell_surface);
 	server->layer_shell_surface.notify = handle_layer_shell_surface;

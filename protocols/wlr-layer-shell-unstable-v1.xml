@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="wlr_layer_shell_unstable_v1">
+<protocol name="wlr_layer_shell_v1_unstable_v1">
   <copyright>
     Copyright © 2017 Drew DeVault
 
