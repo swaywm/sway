@@ -7,12 +7,24 @@
 #include <unistd.h>
 #include <wlr/util/log.h>
 #include "swaybar/config.h"
+#include "swaybar/event_loop.h"
 #include "swaybar/status_line.h"
 #include "readline.h"
 
+static void status_line_close_fds(struct status_line *status) {
+	if (status->read_fd != -1) {
+		remove_event(status->read_fd);
+		close(status->read_fd);
+		status->read_fd = -1;
+	}
+	if (status->write_fd != -1) {
+		close(status->write_fd);
+		status->write_fd = -1;
+	}
+}
+
 void status_error(struct status_line *status, const char *text) {
-	close(status->read_fd);
-	close(status->write_fd);
+	status_line_close_fds(status);
 	status->protocol = PROTOCOL_ERROR;
 	status->text = text;
 }
@@ -123,8 +135,7 @@ struct status_line *status_line_init(char *cmd) {
 }
 
 void status_line_free(struct status_line *status) {
-	close(status->read_fd);
-	close(status->write_fd);
+	status_line_close_fds(status);
 	kill(status->pid, SIGTERM);
 	switch (status->protocol) {
 	case PROTOCOL_I3BAR: {
