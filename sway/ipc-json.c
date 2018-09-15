@@ -314,9 +314,21 @@ struct focus_inactive_data {
 static void focus_inactive_children_iterator(struct sway_node *node,
 		void *_data) {
 	struct focus_inactive_data *data = _data;
-	if (node_get_parent(node) == data->node) {
-		json_object_array_add(data->object, json_object_new_int(node->id));
+	json_object *focus = data->object;
+	if (data->node == &root->node) {
+		int len = json_object_array_length(focus);
+		struct sway_output *output = node_get_output(node);
+		size_t id = output->node.id;
+		for (int i = 0; i < len; ++i) {
+			if ((size_t) json_object_get_int(json_object_array_get_idx(focus, i)) == id) {
+				return;
+			}
+		}
+		node = &output->node;
+	} else if (node_get_parent(node) != data->node) {
+		return;
 	}
+	json_object_array_add(focus, json_object_new_int(node->id));
 }
 
 json_object *ipc_json_describe_node(struct sway_node *node) {
