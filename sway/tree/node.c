@@ -74,8 +74,10 @@ void node_get_box(struct sway_node *node, struct wlr_box *box) {
 
 struct sway_output *node_get_output(struct sway_node *node) {
 	switch (node->type) {
-	case N_CONTAINER:
-		return node->sway_container->workspace->output;
+	case N_CONTAINER: {
+		struct sway_workspace *ws = node->sway_container->workspace;
+		return ws ? ws->output : NULL;
+    }
 	case N_WORKSPACE:
 		return node->sway_workspace->output;
 	case N_OUTPUT:
