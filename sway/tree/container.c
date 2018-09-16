@@ -202,6 +202,9 @@ static struct sway_container *container_at_tabbed(struct sway_node *parent,
 	}
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	list_t *children = node_get_children(parent);
+	if (!children->length) {
+		return NULL;
+	}
 
 	// Tab titles
 	int title_height = container_titlebar_height();
