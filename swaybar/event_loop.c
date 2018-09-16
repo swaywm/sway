@@ -105,7 +105,7 @@ bool remove_timer(timer_t timer) {
 	return false;
 }
 
-void event_loop_poll() {
+void event_loop_poll(void) {
 	poll(event_loop.fds.items, event_loop.fds.length, -1);
 
 	for (int i = 0; i < event_loop.fds.length; ++i) {
@@ -146,7 +146,7 @@ void event_loop_poll() {
 	}
 }
 
-void init_event_loop() {
+void init_event_loop(void) {
 	event_loop.fds.length = 0;
 	event_loop.fds.capacity = 10;
 	event_loop.fds.items = malloc(
