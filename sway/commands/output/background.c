@@ -123,19 +123,13 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 			}
 			free(src);
 		} else {
-			// Escape spaces and quotes in the final path for swaybg
+			// Escape double quotes in the final path for swaybg
 			for (size_t i = 0; i < strlen(src); i++) {
-				switch (src[i]) {
-					case ' ':
-					case '\'':
-					case '\"':
-						src = realloc(src, strlen(src) + 2);
-						memmove(src + i + 1, src + i, strlen(src + i) + 1);
-						*(src + i) = '\\';
-						i++;
-						break;
-					default:
-						break;
+				if (src[i] == '"') {
+					src = realloc(src, strlen(src) + 2);
+					memmove(src + i + 1, src + i, strlen(src + i) + 1);
+					*(src + i) = '\\';
+					i++;
 				}
 			}
 
