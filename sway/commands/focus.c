@@ -261,7 +261,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	}
 
 	if (direction == MOVE_CHILD) {
-		struct sway_node *focus = seat_get_active_child(seat, node);
+		struct sway_node *focus = seat_get_active_tiling_child(seat, node);
 		if (focus) {
 			seat_set_focus(seat, focus);
 			cursor_send_pointer_motion(seat->cursor, 0, true);

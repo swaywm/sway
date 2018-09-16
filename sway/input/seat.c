@@ -880,7 +880,7 @@ struct sway_container *seat_get_focus_inactive_floating(struct sway_seat *seat,
 	return NULL;
 }
 
-struct sway_node *seat_get_active_child(struct sway_seat *seat,
+struct sway_node *seat_get_active_tiling_child(struct sway_seat *seat,
 		struct sway_node *parent) {
 	if (node_is_view(parent)) {
 		return parent;
@@ -888,9 +888,17 @@ struct sway_node *seat_get_active_child(struct sway_seat *seat,
 	struct sway_seat_node *current;
 	wl_list_for_each(current, &seat->focus_stack, link) {
 		struct sway_node *node = current->node;
-		if (node_get_parent(node) == parent) {
-			return node;
+		if (node_get_parent(node) != parent) {
+			continue;
 		}
+		if (parent->type == N_WORKSPACE) {
+			// Only consider tiling children
+			struct sway_workspace *ws = parent->sway_workspace;
+			if (list_find(ws->tiling, node->sway_container) == -1) {
+				continue;
+			}
+		}
+		return node;
 	}
 	return NULL;
 }

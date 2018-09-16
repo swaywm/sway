@@ -176,7 +176,8 @@ static void copy_container_state(struct sway_container *container,
 	state->focused = seat_get_focus(seat) == &container->node;
 
 	if (!container->view) {
-		struct sway_node *focus = seat_get_active_child(seat, &container->node);
+		struct sway_node *focus =
+			seat_get_active_tiling_child(seat, &container->node);
 		state->focused_inactive_child = focus ? focus->sway_container : NULL;
 	}
 }

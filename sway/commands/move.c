@@ -149,7 +149,7 @@ static void container_move_to_container_from_direction(
 	}
 
 	wlr_log(WLR_DEBUG, "Reparenting container (perpendicular)");
-	struct sway_node *focus_inactive = seat_get_active_child(
+	struct sway_node *focus_inactive = seat_get_active_tiling_child(
 			config->handler_context.seat, &destination->node);
 	if (!focus_inactive || focus_inactive == &destination->node) {
 		// The container has no children
