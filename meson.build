@@ -70,6 +70,10 @@ if elogind.found()
 	swayidle_deps += elogind
 endif
 
+if get_option('enable-tray')
+    conf_data.set('ENABLE_TRAY', true)
+endif
+
 scdoc = find_program('scdoc', required: false)
 
 if scdoc.found()

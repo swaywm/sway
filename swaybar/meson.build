@@ -8,6 +8,10 @@ executable(
 		'main.c',
 		'render.c',
 		'status_line.c',
+        'tray/dbus.c',
+        'tray/sni_host.c',
+        'tray/sni_watcher.c',
+        'tray/tray.c',
 	],
 	include_directories: [sway_inc],
 	dependencies: [
@@ -19,6 +23,7 @@ executable(
 		pango,
 		pangocairo,
 		rt,
+        systemd,
 		wayland_client,
 		wayland_cursor,
 		wlroots,

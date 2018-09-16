@@ -2,7 +2,7 @@
 #define _SWAYBAR_SNI_H
 
 #include <stdbool.h>
-#include <client/cairo.h>
+#include <cairo.h>
 
 struct StatusNotifierItem {
 	/* Name registered to sni watcher */

@@ -22,6 +22,9 @@
 #include "swaybar/status_line.h"
 #include "swaybar/bar.h"
 #include "swaybar/ipc.h"
+#ifdef ENABLE_TRAY
+#include "swaybar/tray/tray.h"
+#endif
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
@@ -448,6 +451,9 @@ void bar_setup(struct swaybar *bar,
 	}
 	ipc_get_workspaces(bar);
 	render_all_frames(bar);
+#ifdef ENABLE_TRAY
+	tray_init(bar);
+#endif
 }
 
 static void display_in(int fd, short mask, void *data) {

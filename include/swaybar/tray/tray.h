@@ -17,16 +17,16 @@ struct tray {
 /**
  * Processes a mouse event on the bar
  */
-void tray_mouse_event(struct output *output, int x, int y,
-		uint32_t button, uint32_t state);
+//void tray_mouse_event(struct output *output, int x, int y,
+//		uint32_t button, uint32_t state);
 
-uint32_t tray_render(struct output *output, struct config *config);
+//uint32_t tray_render(struct output *output, struct config *config);
 
-void tray_upkeep(struct bar *bar);
+//void tray_upkeep(struct swaybar *bar);
 
 /**
  * Initializes the tray with D-Bus
  */
-void init_tray(struct bar *bar);
+void tray_init(struct swaybar *bar);
 
 #endif /* _SWAYBAR_TRAY_H */
