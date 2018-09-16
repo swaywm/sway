@@ -44,7 +44,7 @@ void idle_inhibit_v1_check_active(
 	struct sway_idle_inhibitor_v1 *inhibitor;
 	bool inhibited = false;
 	wl_list_for_each(inhibitor, &manager->inhibitors, link) {
-		if (!inhibitor->view) {
+		if (!inhibitor->view || !inhibitor->view->container) {
 			/* Cannot guess if view is visible so assume it is */
 			inhibited = true;
 			break;
