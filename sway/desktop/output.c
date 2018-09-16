@@ -232,7 +232,7 @@ static void scale_box(struct wlr_box *box, float scale) {
 
 struct sway_workspace *output_get_active_workspace(struct sway_output *output) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_node *focus = seat_get_active_child(seat, &output->node);
+	struct sway_node *focus = seat_get_active_tiling_child(seat, &output->node);
 	if (!focus) {
 		return output->workspaces->items[0];
 	}

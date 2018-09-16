@@ -155,7 +155,7 @@ struct sway_container *seat_get_focus_inactive_view(struct sway_seat *seat,
 /**
  * Return the immediate child of container which was most recently focused.
  */
-struct sway_node *seat_get_active_child(struct sway_seat *seat,
+struct sway_node *seat_get_active_tiling_child(struct sway_seat *seat,
 		struct sway_node *parent);
 
 /**
