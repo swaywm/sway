@@ -289,7 +289,7 @@ static void move_out_of_tabs_stacks(struct sway_container *container,
 	}
 
 	wlr_log(WLR_DEBUG, "Moving out of tab/stack into a split");
-	if (container->parent) {
+	if (current->parent) {
 		struct sway_container *new_parent =
 			container_split(current->parent, layout);
 		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
