@@ -2,6 +2,8 @@
 #define _SWAYBAR_BAR_H
 #include <wayland-client.h>
 #include "pool-buffer.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "xdg-output-unstable-v1-client-protocol.h"
 
 struct swaybar_config;
 struct swaybar_output;
@@ -47,6 +49,7 @@ struct swaybar {
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
+	struct zxdg_output_manager_v1 *xdg_output_manager;
 	struct wl_shm *shm;
 	struct wl_seat *seat;
 
@@ -65,6 +68,7 @@ struct swaybar_output {
 	struct wl_list link;
 	struct swaybar *bar;
 	struct wl_output *output;
+	struct zxdg_output_v1 *xdg_output;
 	struct wl_surface *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
 	uint32_t wl_name;
@@ -73,7 +77,6 @@ struct swaybar_output {
 	struct wl_list hotspots;
 
 	char *name;
-	size_t index;
 	bool focused;
 
 	uint32_t width, height;

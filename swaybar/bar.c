@@ -27,6 +27,7 @@
 #include "log.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "xdg-output-unstable-v1-client-protocol.h"
 
 static void bar_init(struct swaybar *bar) {
 	bar->config = init_config();
@@ -313,13 +314,48 @@ struct wl_output_listener output_listener = {
 	.scale = output_scale,
 };
 
-static bool bar_uses_output(struct swaybar *bar, size_t output_index) {
+static void xdg_output_handle_logical_position(void *data,
+		struct zxdg_output_v1 *xdg_output, int32_t x, int32_t y) {
+	// Who cares
+}
+
+static void xdg_output_handle_logical_size(void *data,
+		struct zxdg_output_v1 *xdg_output, int32_t width, int32_t height) {
+	// Who cares
+}
+
+static void xdg_output_handle_done(void *data,
+		struct zxdg_output_v1 *xdg_output) {
+	// Who cares
+}
+
+static void xdg_output_handle_name(void *data,
+		struct zxdg_output_v1 *xdg_output, const char *name) {
+	struct swaybar_output *output = data;
+	free(output->name);
+	output->name = strdup(name);
+}
+
+static void xdg_output_handle_description(void *data,
+		struct zxdg_output_v1 *xdg_output, const char *description) {
+	// Who cares
+}
+
+struct zxdg_output_v1_listener xdg_output_listener = {
+	.logical_position = xdg_output_handle_logical_position,
+	.logical_size = xdg_output_handle_logical_size,
+	.done = xdg_output_handle_done,
+	.name = xdg_output_handle_name,
+	.description = xdg_output_handle_description,
+};
+
+static bool bar_uses_output(struct swaybar *bar, const char *name) {
 	if (bar->config->all_outputs) {
 		return true;
 	}
 	struct config_output *coutput;
 	wl_list_for_each(coutput, &bar->config->outputs, link) {
-		if (coutput->index == output_index) {
+		if (strcmp(coutput->name, name) == 0) {
 			return true;
 		}
 	}
@@ -340,25 +376,23 @@ static void handle_global(void *data, struct wl_registry *registry,
 		bar->shm = wl_registry_bind(registry, name,
 				&wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
-		static size_t output_index = 0;
-		if (bar_uses_output(bar, output_index)) {
-			struct swaybar_output *output =
-				calloc(1, sizeof(struct swaybar_output));
-			output->bar = bar;
-			output->output = wl_registry_bind(registry, name,
-					&wl_output_interface, 3);
-			wl_output_add_listener(output->output, &output_listener, output);
-			output->scale = 1;
-			output->index = output_index;
-			output->wl_name = name;
-			wl_list_init(&output->workspaces);
-			wl_list_init(&output->hotspots);
-			wl_list_insert(&bar->outputs, &output->link);
-		}
-		++output_index;
+		struct swaybar_output *output =
+			calloc(1, sizeof(struct swaybar_output));
+		output->bar = bar;
+		output->output = wl_registry_bind(registry, name,
+				&wl_output_interface, 3);
+		wl_output_add_listener(output->output, &output_listener, output);
+		output->scale = 1;
+		output->wl_name = name;
+		wl_list_init(&output->workspaces);
+		wl_list_init(&output->hotspots);
+		wl_list_insert(&bar->outputs, &output->link);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		bar->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);
+	} else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0) {
+		bar->xdg_output_manager = wl_registry_bind(registry, name,
+			&zxdg_output_manager_v1_interface, 2);
 	}
 }
 
@@ -404,21 +438,39 @@ void bar_setup(struct swaybar *bar,
 	struct wl_registry *registry = wl_display_get_registry(bar->display);
 	wl_registry_add_listener(registry, &registry_listener, bar);
 	wl_display_roundtrip(bar->display);
-	assert(bar->compositor && bar->layer_shell && bar->shm);
+	assert(bar->compositor && bar->layer_shell && bar->shm &&
+		bar->xdg_output_manager);
+
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		output->xdg_output = zxdg_output_manager_v1_get_xdg_output(
+			bar->xdg_output_manager, output->output);
+		zxdg_output_v1_add_listener(output->xdg_output, &xdg_output_listener,
+			output);
+	}
 	wl_display_roundtrip(bar->display);
+
+	struct swaybar_output *output_tmp;
+	wl_list_for_each_safe(output, output_tmp, &bar->outputs, link) {
+		if (!bar_uses_output(bar, output->name)) {
+			zxdg_output_v1_destroy(output->xdg_output);
+			wl_output_destroy(output->output);
+			wl_list_remove(&output->link);
+			free(output);
+		}
+	}
 
 	struct swaybar_pointer *pointer = &bar->pointer;
 
 	int max_scale = 1;
-	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		if (output->scale > max_scale) {
 			max_scale = output->scale;
 		}
 	}
 
-	pointer->cursor_theme = wl_cursor_theme_load(
-				NULL, 24 * max_scale, bar->shm);
+	pointer->cursor_theme =
+		wl_cursor_theme_load(NULL, 24 * max_scale, bar->shm);
 	assert(pointer->cursor_theme);
 	struct wl_cursor *cursor;
 	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
@@ -428,13 +480,6 @@ void bar_setup(struct swaybar *bar,
 	assert(pointer->cursor_surface);
 
 	wl_list_for_each(output, &bar->outputs, link) {
-		struct config_output *coutput;
-		wl_list_for_each(coutput, &bar->config->outputs, link) {
-			if (coutput->index == output->index) {
-				output->name = strdup(coutput->name);
-				break;
-			}
-		}
 		output->surface = wl_compositor_create_surface(bar->compositor);
 		assert(output->surface);
 		output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
