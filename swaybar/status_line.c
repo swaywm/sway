@@ -30,27 +30,17 @@ void status_error(struct status_line *status, const char *text) {
 }
 
 bool status_handle_readable(struct status_line *status) {
+	ssize_t read_bytes = 1;
 	char *line;
 	switch (status->protocol) {
-	case PROTOCOL_ERROR:
-		return false;
 	case PROTOCOL_I3BAR:
 		if (i3bar_handle_readable(status) > 0) {
 			return true;
 		}
 		break;
-	case PROTOCOL_TEXT:
-		line = read_line_buffer(status->read,
-				status->text_state.buffer, status->text_state.buffer_size);
-		if (!line) {
-			status_error(status, "[error reading from status command]");
-		} else {
-			status->text = line;
-		}
-		return true;
 	case PROTOCOL_UNDEF:
 		line = read_line_buffer(status->read,
-				status->text_state.buffer, status->text_state.buffer_size);
+				status->buffer, status->buffer_size);
 		if (!line) {
 			status_error(status, "[error reading from status command]");
 			return false;
@@ -81,7 +71,7 @@ bool status_handle_readable(struct status_line *status) {
 			}
 
 			status->protocol = PROTOCOL_I3BAR;
-			free(status->text_state.buffer);
+			free(status->buffer);
 			wl_list_init(&status->blocks);
 			status->i3bar_state.buffer_size = 4096;
 			status->i3bar_state.buffer =
@@ -91,14 +81,32 @@ bool status_handle_readable(struct status_line *status) {
 			status->text = line;
 		}
 		return true;
+	case PROTOCOL_TEXT:
+		errno = 0;
+		while (true) {
+			if (status->buffer[read_bytes - 1] == '\n') {
+				status->buffer[read_bytes - 1] = '\0';
+			}
+			read_bytes = getline(&status->buffer,
+					&status->buffer_size, status->read);
+			if (errno == EAGAIN) {
+				clearerr(status->read);
+				return true;
+			} else if (errno) {
+				status_error(status, "[error reading from status command]");
+				return true;
+			}
+		}
+	default:
+		return false;
 	}
 	return false;
 }
 
 struct status_line *status_line_init(char *cmd) {
 	struct status_line *status = calloc(1, sizeof(struct status_line));
-	status->text_state.buffer_size = 8192;
-	status->text_state.buffer = malloc(status->text_state.buffer_size);
+	status->buffer_size = 8192;
+	status->buffer = malloc(status->buffer_size);
 
 	int pipe_read_fd[2];
 	int pipe_write_fd[2];
@@ -148,7 +156,7 @@ void status_line_free(struct status_line *status) {
 		break;
 	}
 	default:
-		free(status->text_state.buffer);
+		free(status->buffer);
 		break;
 	}
 	free(status);

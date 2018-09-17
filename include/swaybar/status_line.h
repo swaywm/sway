@@ -12,11 +12,6 @@ enum status_protocol {
 	PROTOCOL_I3BAR,
 };
 
-struct text_protocol_state {
-	char *buffer;
-	size_t buffer_size;
-};
-
 enum json_node_type {
 	JSON_NODE_UNKNOWN,
 	JSON_NODE_ARRAY,
@@ -63,7 +58,8 @@ struct status_line {
 	const char *text;
 	struct wl_list blocks; // i3bar_block::link
 
-	struct text_protocol_state text_state;
+	char *buffer;
+	size_t buffer_size;
 	struct i3bar_protocol_state i3bar_state;
 };
 
