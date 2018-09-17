@@ -176,6 +176,21 @@ bool i3bar_handle_readable(struct status_line *status) {
 					json_object_put(test_object);
 				}
 
+				// in order to print the json for debugging purposes
+				// the last character is temporarily replaced with a null character
+				// (the last character is used in case the buffer is full)
+				char *last_char_pos =
+					&status->buffer[buffer_pos + status->tokener->char_offset - 1];
+				char last_char = *last_char_pos;
+				while (isspace(last_char)) {
+					last_char = *--last_char_pos;
+				}
+				*last_char_pos = '\0';
+				size_t offset = strspn(&status->buffer[buffer_pos], " \f\n\r\t\v");
+				wlr_log(WLR_DEBUG, "Received i3bar json: '%s%c'",
+						&status->buffer[buffer_pos + offset], last_char);
+				*last_char_pos = last_char;
+
 				buffer_pos += status->tokener->char_offset;
 				status->expecting_comma = true;
 
@@ -221,6 +236,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 	}
 
 	if (last_object) {
+		wlr_log(WLR_DEBUG, "Rendering last received json");
 		i3bar_parse_json(status, last_object);
 		json_object_put(last_object);
 		return true;
