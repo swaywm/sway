@@ -177,7 +177,7 @@ static uint32_t render_status_block(cairo_t *cairo,
 		*x -= margin;
 	}
 
-	if (output->bar->status->i3bar_state.click_events) {
+	if (output->bar->status->click_events) {
 		struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 		hotspot->x = *x;
 		hotspot->y = 0;

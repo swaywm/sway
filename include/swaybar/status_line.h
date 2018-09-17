@@ -1,5 +1,6 @@
 #ifndef _SWAYBAR_STATUS_LINE_H
 #define _SWAYBAR_STATUS_LINE_H
+#include <json-c/json.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -10,23 +11,6 @@ enum status_protocol {
 	PROTOCOL_ERROR,
 	PROTOCOL_TEXT,
 	PROTOCOL_I3BAR,
-};
-
-enum json_node_type {
-	JSON_NODE_UNKNOWN,
-	JSON_NODE_ARRAY,
-	JSON_NODE_STRING,
-};
-
-struct i3bar_protocol_state {
-	bool click_events;
-	char *buffer;
-	size_t buffer_size;
-	size_t buffer_index;
-	const char *current_node;
-	bool escape;
-	size_t depth;
-	enum json_node_type nodes[16];
 };
 
 struct i3bar_block {
@@ -58,9 +42,13 @@ struct status_line {
 	const char *text;
 	struct wl_list blocks; // i3bar_block::link
 
+	bool click_events;
 	char *buffer;
 	size_t buffer_size;
-	struct i3bar_protocol_state i3bar_state;
+	size_t buffer_index;
+	bool started;
+	bool expecting_comma;
+	json_tokener *tokener;
 };
 
 struct status_line *status_line_init(char *cmd);

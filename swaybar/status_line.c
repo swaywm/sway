@@ -32,11 +32,6 @@ void status_error(struct status_line *status, const char *text) {
 bool status_handle_readable(struct status_line *status) {
 	ssize_t read_bytes = 1;
 	switch (status->protocol) {
-	case PROTOCOL_I3BAR:
-		if (i3bar_handle_readable(status) > 0) {
-			return true;
-		}
-		break;
 	case PROTOCOL_UNDEF:
 		errno = 0;
 		read_bytes = getline(&status->buffer,
@@ -61,7 +56,7 @@ bool status_handle_readable(struct status_line *status) {
 			if (json_object_object_get_ex(header, "click_events", &click_events)
 					&& json_object_get_boolean(click_events)) {
 				wlr_log(WLR_DEBUG, "Enabling click events.");
-				status->i3bar_state.click_events = true;
+				status->click_events = true;
 				if (write(status->write_fd, "[\n", 2) != 2) {
 					status_error(status, "[failed to write to status command]");
 					json_object_put(header);
@@ -70,13 +65,11 @@ bool status_handle_readable(struct status_line *status) {
 			}
 			json_object_put(header);
 
-			status->protocol = PROTOCOL_I3BAR;
-			free(status->buffer);
 			wl_list_init(&status->blocks);
-			status->i3bar_state.buffer_size = 4096;
-			status->i3bar_state.buffer =
-				malloc(status->i3bar_state.buffer_size);
-			return false;
+			status->tokener = json_tokener_new();
+			status->buffer_index = getdelim(&status->buffer,
+					&status->buffer_size, EOF, status->read);
+			return i3bar_handle_readable(status);
 		}
 
 		wlr_log(WLR_DEBUG, "Using text protocol.");
@@ -99,10 +92,11 @@ bool status_handle_readable(struct status_line *status) {
 				return true;
 			}
 		}
+	case PROTOCOL_I3BAR:
+		return i3bar_handle_readable(status);
 	default:
 		return false;
 	}
-	return false;
 }
 
 struct status_line *status_line_init(char *cmd) {
@@ -147,19 +141,14 @@ struct status_line *status_line_init(char *cmd) {
 void status_line_free(struct status_line *status) {
 	status_line_close_fds(status);
 	kill(status->pid, SIGTERM);
-	switch (status->protocol) {
-	case PROTOCOL_I3BAR: {
+	if (status->protocol == PROTOCOL_I3BAR) {
 		struct i3bar_block *block, *tmp;
 		wl_list_for_each_safe(block, tmp, &status->blocks, link) {
 			wl_list_remove(&block->link);
 			i3bar_block_unref(block);
 		}
-		free(status->i3bar_state.buffer);
-		break;
 	}
-	default:
-		free(status->buffer);
-		break;
-	}
+	json_tokener_free(status->tokener);
+	free(status->buffer);
 	free(status);
 }
