@@ -214,7 +214,7 @@ enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 	json_object_object_add(event_json, "button", json_object_new_int(button));
 	json_object_object_add(event_json, "x", json_object_new_int(x));
 	json_object_object_add(event_json, "y", json_object_new_int(y));
-	if (dprintf(status->write_fd, "%s\n",
+	if (dprintf(status->write_fd, "%s,\n",
 				json_object_to_json_string(event_json)) < 0) {
 		status_error(status, "[failed to write click event]");
 	}
