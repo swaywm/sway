@@ -711,7 +711,8 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 			workspace_consider_destroy(last_workspace);
 		}
 
-		if (config->mouse_warping && warp && new_output != last_output) {
+		if (config->mouse_warping && warp &&
+				new_output != last_output && new_output) {
 			double x = 0;
 			double y = 0;
 			if (container) {
