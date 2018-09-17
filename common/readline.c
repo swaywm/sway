@@ -70,28 +70,3 @@ char *peek_line(FILE *file, int line_offset, long *position) {
 	fseek(file, pos, SEEK_SET);
 	return line;
 }
-
-char *read_line_buffer(FILE *file, char *string, size_t string_len) {
-	size_t length = 0;
-	if (!string) {
-		return NULL;
-	}
-	while (1) {
-		int c = getc(file);
-		if (c == EOF || c == '\n' || c == '\0') {
-			break;
-		}
-		if (c == '\r') {
-			continue;
-		}
-		string[length++] = c;
-		if (string_len <= length) {
-			return NULL;
-		}
-	}
-	if (length + 1 == string_len) {
-		return NULL;
-	}
-	string[length] = '\0';
-	return string;
-}
