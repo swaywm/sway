@@ -147,8 +147,8 @@ void status_line_free(struct status_line *status) {
 			wl_list_remove(&block->link);
 			i3bar_block_unref(block);
 		}
+		json_tokener_free(status->tokener);
 	}
-	json_tokener_free(status->tokener);
 	free(status->buffer);
 	free(status);
 }
