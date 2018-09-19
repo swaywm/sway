@@ -140,6 +140,13 @@ void free_input_config(struct input_config *ic) {
 		return;
 	}
 	free(ic->identifier);
+	free(ic->xkb_layout);
+	free(ic->xkb_model);
+	free(ic->xkb_options);
+	free(ic->xkb_rules);
+	free(ic->xkb_variant);
+	free(ic->mapped_from_region);
+	free(ic->mapped_to_output);
 	free(ic);
 }
 
