@@ -424,6 +424,7 @@ int main(int argc, char **argv) {
 	}
 
 	config->active = true;
+	load_swaybars();
 	// Execute commands until there are none left
 	wlr_log(WLR_DEBUG, "Running deferred commands");
 	while (config->cmd_queue->length) {

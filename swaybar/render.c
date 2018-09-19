@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -480,6 +481,8 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 }
 
 void render_frame(struct swaybar *bar, struct swaybar_output *output) {
+	assert(output->surface != NULL);
+
 	struct swaybar_hotspot *hotspot, *tmp;
 	wl_list_for_each_safe(hotspot, tmp, &output->hotspots, link) {
 		if (hotspot->destroy) {
