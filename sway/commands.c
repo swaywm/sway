@@ -391,13 +391,11 @@ struct cmd_results *config_command(char *exec) {
 	// Var replacement, for all but first argument of set
 	// TODO commands
 	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
+		if (*argv[i] == '\"' || *argv[i] == '\'') {
+			strip_quotes(argv[i]);
+		}
 		argv[i] = do_var_replacement(argv[i]);
 		unescape_string(argv[i]);
-	}
-	// Strip quotes for first argument.
-	// TODO This part needs to be handled much better
-	if (argc>1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
-		strip_quotes(argv[1]);
 	}
 	if (handler->handle) {
 		results = handler->handle(argc-1, argv+1);
@@ -421,11 +419,6 @@ struct cmd_results *config_subcommand(char **argv, int argc,
 	if (!handler) {
 		char *input = argv[0] ? argv[0] : "(empty)";
 		return cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
-	}
-	// Strip quotes for first argument.
-	// TODO This part needs to be handled much better
-	if (argc > 1 && (*argv[1] == '\"' || *argv[1] == '\'')) {
-		strip_quotes(argv[1]);
 	}
 	if (handler->handle) {
 		return handler->handle(argc - 1, argv + 1);
