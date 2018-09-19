@@ -143,6 +143,7 @@ static struct cmd_handler config_handlers[] = {
 /* Runtime-only commands. Keep alphabetized */
 static struct cmd_handler command_handlers[] = {
 	{ "border", cmd_border },
+	{ "create_output", cmd_create_output },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
 	{ "fullscreen", cmd_fullscreen },
