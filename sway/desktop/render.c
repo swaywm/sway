@@ -914,9 +914,14 @@ void output_render(struct sway_output *output, struct timespec *when,
 	struct wlr_output *wlr_output = output->wlr_output;
 
 	struct wlr_renderer *renderer =
-	wlr_backend_get_renderer(wlr_output->backend);
+		wlr_backend_get_renderer(wlr_output->backend);
 	if (!sway_assert(renderer != NULL,
 			"expected the output backend to have a renderer")) {
+		return;
+	}
+
+	struct sway_workspace *workspace = output->current.active_workspace;
+	if (workspace == NULL) {
 		return;
 	}
 
@@ -935,13 +940,11 @@ void output_render(struct sway_output *output, struct timespec *when,
 		pixman_region32_union_rect(damage, damage, 0, 0, width, height);
 	}
 
-	struct sway_workspace *workspace = output->current.active_workspace;
-	struct sway_container *fullscreen_con = workspace->current.fullscreen;
-
 	if (output_has_opaque_overlay_layer_surface(output)) {
 		goto render_overlay;
 	}
 
+	struct sway_container *fullscreen_con = workspace->current.fullscreen;
 	if (fullscreen_con) {
 		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
 
