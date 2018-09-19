@@ -61,6 +61,8 @@ struct sway_view {
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
 
+	pid_t pid;
+
 	// Geometry of the view itself (excludes borders) in layout coordinates
 	double x, y;
 	int width, height;

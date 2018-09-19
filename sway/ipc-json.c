@@ -221,6 +221,8 @@ static const char *describe_container_border(enum sway_container_border border) 
 }
 
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
+	json_object_object_add(object, "pid", json_object_new_int(c->view->pid));
+
 	const char *app_id = view_get_app_id(c->view);
 	json_object_object_add(object, "app_id",
 			app_id ? json_object_new_string(app_id) : NULL);
