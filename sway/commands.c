@@ -215,18 +215,23 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 
 static void set_config_node(struct sway_node *node) {
 	config->handler_context.node = node;
+	config->handler_context.container = NULL;
+	config->handler_context.workspace = NULL;
+
+	if (node == NULL) {
+		return;
+	}
+
 	switch (node->type) {
 	case N_CONTAINER:
 		config->handler_context.container = node->sway_container;
 		config->handler_context.workspace = node->sway_container->workspace;
 		break;
 	case N_WORKSPACE:
-		config->handler_context.container = NULL;
 		config->handler_context.workspace = node->sway_workspace;
 		break;
-	default:
-		config->handler_context.container = NULL;
-		config->handler_context.workspace = NULL;
+	case N_ROOT:
+	case N_OUTPUT:
 		break;
 	}
 }
