@@ -204,6 +204,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 					status->buffer_index -= buffer_pos;
 					memmove(status->buffer, &status->buffer[buffer_pos],
 							status->buffer_index);
+					buffer_pos = 0;
 				} else {
 					// expand buffer
 					status->buffer_size *= 2;
