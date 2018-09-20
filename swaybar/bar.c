@@ -558,6 +558,7 @@ void bar_run(struct swaybar *bar) {
 	}
 	while (1) {
 		event_loop_poll();
+		wl_display_flush(bar->display);
 	}
 }
 
