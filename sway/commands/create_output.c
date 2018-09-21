@@ -1,6 +1,9 @@
+#include <wlr/config.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/wayland.h>
+#ifdef WLR_HAS_X11_BACKEND
 #include <wlr/backend/x11.h>
+#endif
 #include "sway/commands.h"
 #include "sway/server.h"
 #include "log.h"
@@ -14,10 +17,13 @@ static void create_output(struct wlr_backend *backend, void *data) {
 	if (wlr_backend_is_wl(backend)) {
 		wlr_wl_output_create(backend);
 		*done = true;
-	} else if (wlr_backend_is_x11(backend)) {
+	}
+#ifdef WLR_HAS_X11_BACKEND
+	else if (wlr_backend_is_x11(backend)) {
 		wlr_x11_output_create(backend);
 		*done = true;
 	}
+#endif
 }
 
 /**
