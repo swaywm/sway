@@ -7,65 +7,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include "log.h"
+#include "stringop.h"
 
-int escape_markup_text(const char *src, char *dest, int dest_length) {
-	int length = 0;
+size_t escape_markup_text(const char *src, char *dest) {
+	size_t length = 0;
+	if (dest) {
+		dest[0] = '\0';
+	}
 
 	while (src[0]) {
 		switch (src[0]) {
 		case '&':
 			length += 5;
-			if (dest && dest_length - length >= 0) {
-				dest += sprintf(dest, "%s", "&amp;");
-			} else {
-				dest_length = -1;
-			}
+			lenient_strcat(dest, "&amp;");
 			break;
 		case '<':
 			length += 4;
-			if (dest && dest_length - length >= 0) {
-				dest += sprintf(dest, "%s", "&lt;");
-			} else {
-				dest_length = -1;
-			}
+			lenient_strcat(dest, "&lt;");
 			break;
 		case '>':
 			length += 4;
-			if (dest && dest_length - length >= 0) {
-				dest += sprintf(dest, "%s", "&gt;");
-			} else {
-				dest_length = -1;
-			}
+			lenient_strcat(dest, "&gt;");
 			break;
 		case '\'':
 			length += 6;
-			if (dest && dest_length - length >= 0) {
-				dest += sprintf(dest, "%s", "&apos;");
-			} else {
-				dest_length = -1;
-			}
+			lenient_strcat(dest, "&apos;");
 			break;
 		case '"':
 			length += 6;
-			if (dest && dest_length - length >= 0) {
-				dest += sprintf(dest, "%s", "&quot;");
-			} else {
-				dest_length = -1;
-			}
+			lenient_strcat(dest, "&quot;");
 			break;
 		default:
-			length += 1;
-			if (dest && dest_length - length >= 0) {
-				*(dest++) = *src;
-			} else {
-				dest_length = -1;
+			if (dest) {
+				dest[length] = *src;
+				dest[length + 1] = '\0';
 			}
+			length += 1;
 		}
 		src++;
-	}
-	// if we could not fit the escaped string in dest, return -1
-	if (dest && dest_length == -1) {
-		return -1;
 	}
 	return length;
 }
@@ -75,11 +54,9 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs;
 	if (markup) {
-		char *buf;
 		GError *error = NULL;
-		if (pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, &error)) {
-			pango_layout_set_markup(layout, buf, -1);
-			free(buf);
+		if (pango_parse_markup(text, -1, 0, &attrs, NULL, NULL, &error)) {
+			pango_layout_set_markup(layout, text, -1);
 		} else {
 			wlr_log(WLR_ERROR, "pango_parse_markup '%s' -> error %s", text,
 					error->message);
