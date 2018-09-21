@@ -143,6 +143,7 @@ static struct cmd_handler config_handlers[] = {
 /* Runtime-only commands. Keep alphabetized */
 static struct cmd_handler command_handlers[] = {
 	{ "border", cmd_border },
+	{ "create_output", cmd_create_output },
 	{ "exit", cmd_exit },
 	{ "floating", cmd_floating },
 	{ "fullscreen", cmd_fullscreen },
@@ -215,18 +216,23 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 
 static void set_config_node(struct sway_node *node) {
 	config->handler_context.node = node;
+	config->handler_context.container = NULL;
+	config->handler_context.workspace = NULL;
+
+	if (node == NULL) {
+		return;
+	}
+
 	switch (node->type) {
 	case N_CONTAINER:
 		config->handler_context.container = node->sway_container;
 		config->handler_context.workspace = node->sway_container->workspace;
 		break;
 	case N_WORKSPACE:
-		config->handler_context.container = NULL;
 		config->handler_context.workspace = node->sway_workspace;
 		break;
-	default:
-		config->handler_context.container = NULL;
-		config->handler_context.workspace = NULL;
+	case N_ROOT:
+	case N_OUTPUT:
 		break;
 	}
 }

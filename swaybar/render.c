@@ -120,14 +120,14 @@ static void i3bar_block_unref_callback(void *data) {
 }
 
 static uint32_t render_status_block(cairo_t *cairo,
-		struct swaybar_config *config, struct swaybar_output *output,
-		struct i3bar_block *block, double *x,
+		struct swaybar_output *output, struct i3bar_block *block, double *x,
 		uint32_t surface_height, bool focused, bool edge) {
 	if (!block->full_text || !*block->full_text) {
 		return 0;
 	}
 
 	uint32_t height = surface_height * output->scale;
+	struct swaybar_config *config = output->bar->config;
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
@@ -177,16 +177,18 @@ static uint32_t render_status_block(cairo_t *cairo,
 		*x -= margin;
 	}
 
-	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
-	hotspot->x = *x;
-	hotspot->y = 0;
-	hotspot->width = width;
-	hotspot->height = height;
-	hotspot->callback = block_hotspot_callback;
-	hotspot->destroy = i3bar_block_unref_callback;
-	hotspot->data = block;
-	block->ref_count++;
-	wl_list_insert(&output->hotspots, &hotspot->link);
+	if (output->bar->status->click_events) {
+		struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
+		hotspot->x = *x;
+		hotspot->y = 0;
+		hotspot->width = width;
+		hotspot->height = height;
+		hotspot->callback = block_hotspot_callback;
+		hotspot->destroy = i3bar_block_unref_callback;
+		hotspot->data = block;
+		block->ref_count++;
+		wl_list_insert(&output->hotspots, &hotspot->link);
+	}
 
 	double pos = *x;
 	if (block->background) {
@@ -268,7 +270,7 @@ static uint32_t render_status_line_i3bar(cairo_t *cairo,
 	bool edge = true;
 	struct i3bar_block *block;
 	wl_list_for_each(block, &status->blocks, link) {
-		uint32_t h = render_status_block(cairo, config, output,
+		uint32_t h = render_status_block(cairo, output,
 				block, x, surface_height, focused, edge);
 		max_height = h > max_height ? h : max_height;
 		edge = false;

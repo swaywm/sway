@@ -19,8 +19,8 @@ bool remove_event(int fd);
 bool remove_timer(timer_t timer);
 
 // Blocks and returns after sending callbacks
-void event_loop_poll();
+void event_loop_poll(void);
 
-void init_event_loop();
+void init_event_loop(void);
 
 #endif
