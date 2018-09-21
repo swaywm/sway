@@ -5,7 +5,7 @@ i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
 [IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)もあります。
 
-**注意**: Swayは現在*凍結中*であり、Swayとwlrootsの統合が完了するまで、新たな機能は追加されません。バグフィックスは行われます。詳しくは[この記事](https://drewdevault.com/2017/10/09/Future-of-sway.html)をご覧ください。wlrootsとの統合状況については、[このチケット](https://github.com/swaywm/sway/issues/1390)をご覧ください。
+**注意**: Swayは現在*凍結中*であり、wlcからwlrootsへの移植が完了するまで新たな機能は追加されません。2018年9月以降に発見されるバグは0.15では対応されません。詳しくは[この記事](https://drewdevault.com/2017/10/09/Future-of-sway.html)をご覧ください。wlrootsとの統合状況については、[このチケット](https://github.com/swaywm/sway/issues/1390)をご覧ください。
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
