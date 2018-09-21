@@ -199,6 +199,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 				}
 				buffer_pos = status->buffer_index = 0;
 			} else if (json_tokener_get_error(status->tokener) == json_tokener_continue) {
+				json_tokener_reset(status->tokener);
 				if (status->buffer_index < status->buffer_size) {
 					// move the object to the start of the buffer
 					status->buffer_index -= buffer_pos;
