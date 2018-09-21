@@ -195,11 +195,15 @@ void damage_state(struct swaylock_state *state) {
 	}
 }
 
-static void handle_wl_output_geometry(void *data, struct wl_output *output,
+static void handle_wl_output_geometry(void *data, struct wl_output *wl_output,
 		int32_t x, int32_t y, int32_t width_mm, int32_t height_mm,
 		int32_t subpixel, const char *make, const char *model,
 		int32_t transform) {
-	// Who cares
+	struct swaylock_surface *surface = data;
+	surface->subpixel = subpixel;
+	if (surface->state->run_display) {
+		damage_surface(surface);
+	}
 }
 
 static void handle_wl_output_mode(void *data, struct wl_output *output,

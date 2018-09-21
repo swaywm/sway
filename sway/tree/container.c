@@ -465,11 +465,17 @@ static void update_title_texture(struct sway_container *con,
 	cairo_surface_t *surface = cairo_image_surface_create(
 			CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cairo = cairo_create(surface);
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
+	cairo_font_options_t *fo = cairo_font_options_create();
+	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
+	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
+	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(output->wlr_output->subpixel));
+	cairo_set_font_options(cairo, fo);
+	cairo_font_options_destroy(fo);
 	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
 			class->background[2], class->background[3]);
 	cairo_paint(cairo);
 	PangoContext *pango = pango_cairo_create_context(cairo);
-	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
 			class->text[2], class->text[3]);
 	cairo_move_to(cairo, 0, 0);

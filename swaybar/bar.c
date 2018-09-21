@@ -319,10 +319,14 @@ static bool bar_uses_output(struct swaybar *bar, const char *name) {
 	return false;
 }
 
-static void output_geometry(void *data, struct wl_output *output, int32_t x,
+static void output_geometry(void *data, struct wl_output *wl_output, int32_t x,
 		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
 		const char *make, const char *model, int32_t transform) {
-	// Who cares
+	struct swaybar_output *output = data;
+	output->subpixel = subpixel;
+	if (output->surface) {
+		render_frame(output->bar, output);
+	}
 }
 
 static void output_mode(void *data, struct wl_output *output, uint32_t flags,
