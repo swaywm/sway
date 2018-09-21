@@ -9,10 +9,10 @@ Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the
 [IRC channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-**Notice**: You are viewing the **unstable** and **unsupported** master branch
-of sway, where work is ongoing to port it to
-[wlroots](https://github.com/swaywm/wlroots). The supported branch is the 0.15
-branch, and end users are encouraged to use the stable releases cut from it.
+**Notice**: work is well underway to port sway to
+[wlroots](https://github.com/swaywm/wlroots). This is **unstable** and
+**unsupported** - we accept patches, but are not fond of bug reports. We are no
+longer accepting bugs for 0.15.
 
 If you'd like to support sway development, please contribute to [SirCmpwn's
 Patreon page](https://patreon.com/sircmpwn).
