@@ -165,7 +165,7 @@ cleanup:
 	return NULL;
 }
 
-void invoke_swaybar(struct bar_config *bar) {
+static void invoke_swaybar(struct bar_config *bar) {
 	// Pipe to communicate errors
 	int filedes[2];
 	if (pipe(filedes) == -1) {
@@ -219,27 +219,13 @@ void invoke_swaybar(struct bar_config *bar) {
 	close(filedes[1]);
 }
 
-void load_swaybars() {
+void load_swaybars(void) {
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
-		bool apply = false;
-		if (bar->outputs) {
-			for (int j = 0; j < bar->outputs->length; ++j) {
-				char *o = bar->outputs->items[j];
-				if (!strcmp(o, "*") || output_by_name(o)) {
-					apply = true;
-					break;
-				}
-			}
-		} else {
-			apply = true;
+		if (bar->pid != 0) {
+			terminate_swaybar(bar->pid);
 		}
-		if (apply) {
-			if (bar->pid != 0) {
-				terminate_swaybar(bar->pid);
-			}
-			wlr_log(WLR_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
-			invoke_swaybar(bar);
-		}
+		wlr_log(WLR_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
+		invoke_swaybar(bar);
 	}
 }

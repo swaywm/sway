@@ -109,8 +109,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 
 	wl_signal_emit(&root->events.new_node, &output->node);
 
-	load_swaybars();
-
 	arrange_layers(output);
 	arrange_root();
 }

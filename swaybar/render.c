@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -480,6 +481,8 @@ static uint32_t render_to_cairo(cairo_t *cairo,
 }
 
 void render_frame(struct swaybar *bar, struct swaybar_output *output) {
+	assert(output->surface != NULL);
+
 	struct swaybar_hotspot *hotspot, *tmp;
 	wl_list_for_each_safe(hotspot, tmp, &output->hotspots, link) {
 		if (hotspot->destroy) {
@@ -507,7 +510,6 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 		// TODO: this could infinite loop if the compositor assigns us a
 		// different height than what we asked for
 		wl_surface_commit(output->surface);
-		wl_display_roundtrip(bar->display);
 	} else if (height > 0) {
 		// Replay recording into shm and send it off
 		output->current_buffer = get_next_buffer(bar->shm,
@@ -533,7 +535,6 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 		wl_surface_damage(output->surface, 0, 0,
 				output->width, output->height);
 		wl_surface_commit(output->surface);
-		wl_display_roundtrip(bar->display);
 	}
 	cairo_surface_destroy(recorder);
 	cairo_destroy(cairo);

@@ -48,8 +48,13 @@ static void swaybar_output_free(struct swaybar_output *output) {
 		return;
 	}
 	wlr_log(WLR_DEBUG, "Removing output %s", output->name);
-	zwlr_layer_surface_v1_destroy(output->layer_surface);
-	wl_surface_destroy(output->surface);
+	if (output->layer_surface != NULL) {
+		zwlr_layer_surface_v1_destroy(output->layer_surface);
+	}
+	if (output->surface != NULL) {
+		wl_surface_destroy(output->surface);
+	}
+	zxdg_output_v1_destroy(output->xdg_output);
 	wl_output_destroy(output->output);
 	destroy_buffer(&output->buffers[0]);
 	destroy_buffer(&output->buffers[1]);
@@ -283,6 +288,37 @@ const struct wl_seat_listener seat_listener = {
 	.name = seat_handle_name,
 };
 
+static void add_layer_surface(struct swaybar_output *output) {
+	if (output->surface != NULL) {
+		return;
+	}
+	struct swaybar *bar = output->bar;
+
+	output->surface = wl_compositor_create_surface(bar->compositor);
+	assert(output->surface);
+	output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+			bar->layer_shell, output->surface, output->output,
+			ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");
+	assert(output->layer_surface);
+	zwlr_layer_surface_v1_add_listener(output->layer_surface,
+			&layer_surface_listener, output);
+	zwlr_layer_surface_v1_set_anchor(output->layer_surface,
+			bar->config->position);
+}
+
+static bool bar_uses_output(struct swaybar *bar, const char *name) {
+	if (bar->config->all_outputs) {
+		return true;
+	}
+	struct config_output *coutput;
+	wl_list_for_each(coutput, &bar->config->outputs, link) {
+		if (strcmp(coutput->name, name) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static void output_geometry(void *data, struct wl_output *output, int32_t x,
 		int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel,
 		const char *make, const char *model, int32_t transform) {
@@ -326,7 +362,22 @@ static void xdg_output_handle_logical_size(void *data,
 
 static void xdg_output_handle_done(void *data,
 		struct zxdg_output_v1 *xdg_output) {
-	// Who cares
+	struct swaybar_output *output = data;
+	struct swaybar *bar = output->bar;
+
+	assert(output->name != NULL);
+	if (!bar_uses_output(bar, output->name)) {
+		swaybar_output_free(output);
+		return;
+	}
+
+	if (wl_list_empty(&output->link)) {
+		wl_list_remove(&output->link);
+		wl_list_insert(&bar->outputs, &output->link);
+
+		add_layer_surface(output);
+		render_frame(bar, output);
+	}
 }
 
 static void xdg_output_handle_name(void *data,
@@ -349,17 +400,15 @@ struct zxdg_output_v1_listener xdg_output_listener = {
 	.description = xdg_output_handle_description,
 };
 
-static bool bar_uses_output(struct swaybar *bar, const char *name) {
-	if (bar->config->all_outputs) {
-		return true;
+static void add_xdg_output(struct swaybar_output *output) {
+	if (output->xdg_output != NULL) {
+		return;
 	}
-	struct config_output *coutput;
-	wl_list_for_each(coutput, &bar->config->outputs, link) {
-		if (strcmp(coutput->name, name) == 0) {
-			return true;
-		}
-	}
-	return false;
+	assert(output->bar->xdg_output_manager != NULL);
+	output->xdg_output = zxdg_output_manager_v1_get_xdg_output(
+		output->bar->xdg_output_manager, output->output);
+	zxdg_output_v1_add_listener(output->xdg_output, &xdg_output_listener,
+		output);
 }
 
 static void handle_global(void *data, struct wl_registry *registry,
@@ -386,7 +435,10 @@ static void handle_global(void *data, struct wl_registry *registry,
 		output->wl_name = name;
 		wl_list_init(&output->workspaces);
 		wl_list_init(&output->hotspots);
-		wl_list_insert(&bar->outputs, &output->link);
+		wl_list_init(&output->link);
+		if (bar->xdg_output_manager != NULL) {
+			add_xdg_output(output);
+		}
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		bar->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);
@@ -416,7 +468,9 @@ static const struct wl_registry_listener registry_listener = {
 static void render_all_frames(struct swaybar *bar) {
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
-		render_frame(bar, output);
+		if (output->surface != NULL) {
+			render_frame(bar, output);
+		}
 	}
 }
 
@@ -443,22 +497,9 @@ void bar_setup(struct swaybar *bar,
 
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
-		output->xdg_output = zxdg_output_manager_v1_get_xdg_output(
-			bar->xdg_output_manager, output->output);
-		zxdg_output_v1_add_listener(output->xdg_output, &xdg_output_listener,
-			output);
+		add_xdg_output(output);
 	}
 	wl_display_roundtrip(bar->display);
-
-	struct swaybar_output *output_tmp;
-	wl_list_for_each_safe(output, output_tmp, &bar->outputs, link) {
-		if (!bar_uses_output(bar, output->name)) {
-			zxdg_output_v1_destroy(output->xdg_output);
-			wl_output_destroy(output->output);
-			wl_list_remove(&output->link);
-			free(output);
-		}
-	}
 
 	struct swaybar_pointer *pointer = &bar->pointer;
 
@@ -479,18 +520,6 @@ void bar_setup(struct swaybar *bar,
 	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
 	assert(pointer->cursor_surface);
 
-	wl_list_for_each(output, &bar->outputs, link) {
-		output->surface = wl_compositor_create_surface(bar->compositor);
-		assert(output->surface);
-		output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-				bar->layer_shell, output->surface, output->output,
-				ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM, "panel");
-		assert(output->layer_surface);
-		zwlr_layer_surface_v1_add_listener(output->layer_surface,
-				&layer_surface_listener, output);
-		zwlr_layer_surface_v1_set_anchor(output->layer_surface,
-				bar->config->position);
-	}
 	ipc_get_workspaces(bar);
 	render_all_frames(bar);
 }
@@ -529,6 +558,7 @@ void bar_run(struct swaybar *bar) {
 	}
 	while (1) {
 		event_loop_poll();
+		wl_display_flush(bar->display);
 	}
 }
 
