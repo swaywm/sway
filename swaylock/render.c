@@ -39,6 +39,13 @@ void render_frame(struct swaylock_surface *surface) {
 	}
 
 	cairo_t *cairo = surface->current_buffer->cairo;
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
+	cairo_font_options_t *fo = cairo_font_options_create();
+	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
+	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
+	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(surface->subpixel));
+	cairo_set_font_options(cairo, fo);
+	cairo_font_options_destroy(fo);
 	cairo_identity_matrix(cairo);
 
 	cairo_save(cairo);

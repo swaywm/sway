@@ -495,6 +495,13 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);
 	cairo_t *cairo = cairo_create(recorder);
+	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
+	cairo_font_options_t *fo = cairo_font_options_create();
+	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
+	cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_SUBPIXEL);
+	cairo_font_options_set_subpixel_order(fo, to_cairo_subpixel_order(output->subpixel));
+	cairo_set_font_options(cairo, fo);
+	cairo_font_options_destroy(fo);
 	cairo_save(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cairo);
