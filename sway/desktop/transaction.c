@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <wlr/types/wlr_buffer.h>
+#include "sway/config.h"
 #include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
@@ -390,6 +391,16 @@ static bool should_configure(struct sway_node *node,
 	}
 	struct sway_container_state *cstate = &node->sway_container->current;
 	struct sway_container_state *istate = instruction->container_state;
+#ifdef HAVE_XWAYLAND
+	// Xwayland views are position-aware and need to be reconfigured
+	// when their position changes.
+	if (node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {
+		if (cstate->view_x != istate->view_x ||
+				cstate->view_y != istate->view_y) {
+			return true;
+		}
+	}
+#endif
 	if (cstate->view_width == istate->view_width &&
 			cstate->view_height == istate->view_height) {
 		return false;
