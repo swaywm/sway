@@ -67,9 +67,13 @@ bool status_handle_readable(struct status_line *status) {
 
 			wl_list_init(&status->blocks);
 			status->tokener = json_tokener_new();
-			status->buffer_index = getdelim(&status->buffer,
-					&status->buffer_size, EOF, status->read);
-			return i3bar_handle_readable(status);
+			read_bytes = getdelim(&status->buffer, &status->buffer_size, EOF, status->read);
+			if (read_bytes > 0) {
+				status->buffer_index = read_bytes;
+				return i3bar_handle_readable(status);
+			} else {
+				return false;
+			}
 		}
 
 		wlr_log(WLR_DEBUG, "Using text protocol.");
