@@ -785,14 +785,9 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 }
 
 static char *escape_title(char *buffer) {
-	int length = escape_markup_text(buffer, NULL, 0);
+	size_t length = escape_markup_text(buffer, NULL);
 	char *escaped_title = calloc(length + 1, sizeof(char));
-	int result = escape_markup_text(buffer, escaped_title, length);
-	if (result != length) {
-		wlr_log(WLR_ERROR, "Could not escape title: %s", buffer);
-		free(escaped_title);
-		return buffer;
-	}
+	escape_markup_text(buffer, escaped_title);
 	free(buffer);
 	return escaped_title;
 }
