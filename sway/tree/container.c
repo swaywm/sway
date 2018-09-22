@@ -215,8 +215,7 @@ static struct sway_container *container_at_tabbed(struct sway_node *parent,
 			child_index = children->length - 1;
 		}
 		struct sway_container *child = children->items[child_index];
-		struct sway_node *node = seat_get_focus_inactive(seat, &child->node);
-		return node->sway_container;
+		return child;
 	}
 
 	// Surfaces
@@ -243,8 +242,7 @@ static struct sway_container *container_at_stacked(struct sway_node *parent,
 	int child_index = (ly - box.y) / title_height;
 	if (child_index < children->length) {
 		struct sway_container *child = children->items[child_index];
-		struct sway_node *node = seat_get_focus_inactive(seat, &child->node);
-		return node->sway_container;
+		return child;
 	}
 
 	// Surfaces
