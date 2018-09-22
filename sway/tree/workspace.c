@@ -389,13 +389,11 @@ bool workspace_switch(struct sway_workspace *workspace,
 	struct sway_output *next_output = workspace->output;
 	struct sway_workspace *next_output_prev_ws =
 		output_get_active_workspace(next_output);
-	bool has_sticky = false;
 	if (workspace != next_output_prev_ws) {
 		for (int i = 0; i < next_output_prev_ws->floating->length; ++i) {
 			struct sway_container *floater =
 				next_output_prev_ws->floating->items[i];
 			if (floater->is_sticky) {
-				has_sticky = true;
 				container_detach(floater);
 				workspace_add_floating(workspace, floater);
 				if (&floater->node == focus) {
@@ -413,14 +411,6 @@ bool workspace_switch(struct sway_workspace *workspace,
 	struct sway_node *next = seat_get_focus_inactive(seat, &workspace->node);
 	if (next == NULL) {
 		next = &workspace->node;
-	}
-	if (has_sticky) {
-		// If there's a sticky container, we might be setting focus to the same
-		// container that's already focused, so seat_set_focus is effectively a
-		// no op. We therefore need to send the IPC event and clean up the old
-		// workspace here.
-		ipc_event_workspace(active_ws, workspace, "focus");
-		workspace_consider_destroy(active_ws);
 	}
 	seat_set_focus(seat, next);
 	arrange_workspace(workspace);
