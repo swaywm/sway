@@ -54,9 +54,11 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoAttrList *attrs;
 	if (markup) {
+		char *buf;
 		GError *error = NULL;
-		if (pango_parse_markup(text, -1, 0, &attrs, NULL, NULL, &error)) {
-			pango_layout_set_markup(layout, text, -1);
+		if (pango_parse_markup(text, -1, 0, &attrs, &buf, NULL, &error)) {
+			pango_layout_set_text(layout, buf, -1);
+			free(buf);
 		} else {
 			wlr_log(WLR_ERROR, "pango_parse_markup '%s' -> error %s", text,
 					error->message);
