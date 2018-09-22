@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "cairo.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -113,6 +114,10 @@ void pango_printf(cairo_t *cairo, const char *font,
 	va_end(args);
 
 	PangoLayout *layout = get_pango_layout(cairo, font, buf, scale, markup);
+	cairo_font_options_t *fo = cairo_font_options_create();
+	cairo_get_font_options(cairo, fo);
+	pango_cairo_context_set_font_options(pango_layout_get_context(layout), fo);
+	cairo_font_options_destroy(fo);
 	pango_cairo_update_layout(cairo, layout);
 	pango_cairo_show_layout(cairo, layout);
 	g_object_unref(layout);
