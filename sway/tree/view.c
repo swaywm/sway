@@ -391,8 +391,6 @@ static bool view_has_executed_criteria(struct sway_view *view,
 }
 
 void view_execute_criteria(struct sway_view *view) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_node *prior_focus = seat_get_focus(seat);
 	list_t *criterias = criteria_for_view(view, CT_COMMAND);
 	for (int i = 0; i < criterias->length; i++) {
 		struct criteria *criteria = criterias->items[i];
@@ -403,16 +401,12 @@ void view_execute_criteria(struct sway_view *view) {
 		}
 		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
-		seat_set_focus_container(seat, view->container);
 		list_add(view->executed_criteria, criteria);
-		struct cmd_results *res = execute_command(criteria->cmdlist, NULL);
-		if (res->status != CMD_SUCCESS) {
-			wlr_log(WLR_ERROR, "Command '%s' failed: %s", res->input, res->error);
-		}
+		struct cmd_results *res = execute_command(
+				criteria->cmdlist, NULL, view->container);
 		free_cmd_results(res);
 	}
 	list_free(criterias);
-	seat_set_focus(seat, prior_focus);
 }
 
 static struct sway_workspace *select_workspace(struct sway_view *view) {

@@ -237,7 +237,8 @@ static void set_config_node(struct sway_node *node) {
 	}
 }
 
-struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
+struct cmd_results *execute_command(char *_exec, struct sway_seat *seat,
+		struct sway_container *con) {
 	// Even though this function will process multiple commands we will only
 	// return the last error, if any (for now). (Since we have access to an
 	// error string we could e.g. concatenate all errors there.)
@@ -254,6 +255,15 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 		if (!sway_assert(seat, "could not find a seat to run the command on")) {
 			return NULL;
 		}
+	}
+
+	// This is the container or workspace which this command will run on.
+	// Ignored if the command string contains criteria.
+	struct sway_node *node;
+	if (con) {
+		node = &con->node;
+	} else {
+		node = seat_get_focus_inactive(seat, &root->node);
 	}
 
 	config->handler_context.seat = seat;
@@ -318,9 +328,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat) {
 			}
 
 			if (!config->handler_context.using_criteria) {
-				// without criteria, the command acts upon the focused
-				// container
-				set_config_node(seat_get_focus_inactive(seat, &root->node));
+				set_config_node(node);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				if (res->status != CMD_SUCCESS) {
 					free_argv(argc, argv);
