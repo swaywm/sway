@@ -7,6 +7,16 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 
+static void set_border(struct sway_view *view,
+		enum sway_container_border new_border) {
+	if (view->border == B_CSD && new_border != B_CSD) {
+		view_set_csd(view, false);
+	} else if (view->border != B_CSD && new_border == B_CSD) {
+		view_set_csd(view, true);
+	}
+	view->border = new_border;
+}
+
 struct cmd_results *cmd_border(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "border", EXPECTED_AT_LEAST, 1))) {
@@ -21,13 +31,15 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	struct sway_view *view = container->view;
 
 	if (strcmp(argv[0], "none") == 0) {
-		view->border = B_NONE;
+		set_border(view, B_NONE);
 	} else if (strcmp(argv[0], "normal") == 0) {
-		view->border = B_NORMAL;
+		set_border(view, B_NORMAL);
 	} else if (strcmp(argv[0], "pixel") == 0) {
-		view->border = B_PIXEL;
+		set_border(view, B_PIXEL);
+	} else if (strcmp(argv[0], "csd") == 0) {
+		set_border(view, B_CSD);
 	} else if (strcmp(argv[0], "toggle") == 0) {
-		view->border = (view->border + 1) % 3;
+		set_border(view, (view->border + 1) % 4);
 	} else {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Expected 'border <none|normal|pixel|toggle>' "

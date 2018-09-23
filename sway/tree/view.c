@@ -5,6 +5,7 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_server_decoration.h>
 #include "config.h"
 #ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
@@ -13,6 +14,7 @@
 #include "log.h"
 #include "sway/criteria.h"
 #include "sway/commands.h"
+#include "sway/decoration.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
 #include "sway/ipc-server.h"
@@ -231,12 +233,8 @@ void view_autoconfigure(struct sway_view *view) {
 		view->border_top = false;
 	}
 
-	enum sway_container_border border = view->border;
-	if (view->using_csd) {
-		border = B_NONE;
-	}
-
-	switch (border) {
+	switch (view->border) {
+	case B_CSD:
 	case B_NONE:
 		x = con->x;
 		y = con->y + y_offset;
@@ -309,16 +307,17 @@ void view_request_activate(struct sway_view *view) {
 	}
 }
 
-void view_set_tiled(struct sway_view *view, bool tiled) {
-	if (!tiled) {
-		view->using_csd = true;
-		if (view->impl->has_client_side_decorations) {
-			view->using_csd = view->impl->has_client_side_decorations(view);
-		}
-	} else {
-		view->using_csd = false;
+void view_set_csd(struct sway_view *view, bool enabled) {
+	if (view->decoration) {
+		uint32_t mode = enabled ? WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT :
+			WLR_SERVER_DECORATION_MANAGER_MODE_SERVER;
+		wlr_log(WLR_INFO, "decoration mode %i", mode);
+		wlr_server_decoration_set_mode(
+				view->decoration->wlr_server_decoration, mode);
 	}
+}
 
+void view_set_tiled(struct sway_view *view, bool tiled) {
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
 	}

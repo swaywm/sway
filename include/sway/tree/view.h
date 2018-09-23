@@ -60,6 +60,7 @@ struct sway_view {
 
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
+	struct sway_server_decoration *decoration;
 
 	pid_t pid;
 
@@ -81,7 +82,6 @@ struct sway_view {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
-	bool using_csd;
 
 	struct timespec urgent;
 	bool allow_request_urgent;
@@ -267,6 +267,8 @@ void view_set_activated(struct sway_view *view, bool activated);
  * Called when the view requests to be focused.
  */
 void view_request_activate(struct sway_view *view);
+
+void view_set_csd(struct sway_view *view, bool enabled);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
 

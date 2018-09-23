@@ -5,6 +5,7 @@
 
 struct sway_server_decoration {
 	struct wlr_server_decoration *wlr_server_decoration;
+	struct sway_view *view;
 	struct wl_list link;
 
 	struct wl_listener destroy;
