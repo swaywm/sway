@@ -259,6 +259,12 @@ static void container_move_to_container(struct sway_container *container,
  * In other words, rejigger it. */
 static void workspace_rejigger(struct sway_workspace *ws,
 		struct sway_container *child, enum movement_direction move_dir) {
+	if (!child->parent && ws->tiling->length == 1) {
+		ws->layout =
+			move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
+		workspace_update_representation(ws);
+		return;
+	}
 	container_detach(child);
 	workspace_wrap_children(ws);
 
@@ -343,10 +349,8 @@ static bool container_move_in_direction(struct sway_container *container,
 	// Maybe rejigger the workspace
 	struct sway_workspace *ws = container->workspace;
 	if (!is_parallel(ws->layout, move_dir)) {
-		if (ws->tiling->length >= 2) {
-			workspace_rejigger(ws, container, move_dir);
-			return true;
-		}
+		workspace_rejigger(ws, container, move_dir);
+		return true;
 	} else if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
 		workspace_rejigger(ws, container, move_dir);
 		return true;
