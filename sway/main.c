@@ -429,7 +429,7 @@ int main(int argc, char **argv) {
 	wlr_log(WLR_DEBUG, "Running deferred commands");
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
-		struct cmd_results *res = execute_command(line, NULL);
+		struct cmd_results *res = execute_command(line, NULL, NULL);
 		if (res->status != CMD_SUCCESS) {
 			wlr_log(WLR_ERROR, "Error on line '%s': %s", line, res->error);
 		}

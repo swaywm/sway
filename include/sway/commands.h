@@ -4,6 +4,8 @@
 #include <wlr/util/edges.h>
 #include "config.h"
 
+struct sway_container;
+
 typedef struct cmd_results *sway_cmd(int argc, char **argv);
 
 struct cmd_handler {
@@ -50,8 +52,13 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
 		int handlers_size);
 /**
  * Parse and executes a command.
+ *
+ * If the command string contains criteria then the command will be executed on
+ * all matching containers. Otherwise, it'll run on the `con` container. If
+ * `con` is NULL then it'll run on the currently focused container.
  */
-struct cmd_results *execute_command(char *command,  struct sway_seat *seat);
+struct cmd_results *execute_command(char *command,  struct sway_seat *seat,
+		struct sway_container *con);
 /**
  * Parse and handles a command during config file loading.
  *

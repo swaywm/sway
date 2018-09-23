@@ -580,7 +580,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
-		struct cmd_results *results = execute_command(buf, NULL);
+		struct cmd_results *results = execute_command(buf, NULL, NULL);
 		transaction_commit_dirty();
 		char *json = cmd_results_to_json(results);
 		int length = strlen(json);

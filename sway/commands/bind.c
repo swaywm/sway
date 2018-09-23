@@ -321,7 +321,7 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 	}
 
 	config->handler_context.seat = seat;
-	struct cmd_results *results = execute_command(binding->command, NULL);
+	struct cmd_results *results = execute_command(binding->command, NULL, NULL);
 	if (results->status == CMD_SUCCESS) {
 		ipc_event_binding(binding_copy);
 	} else {

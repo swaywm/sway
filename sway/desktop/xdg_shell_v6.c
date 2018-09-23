@@ -398,7 +398,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	} else {
 		if (view->container->parent) {
 			arrange_container(view->container->parent);
-		} else {
+		} else if (view->container->workspace) {
 			arrange_workspace(view->container->workspace);
 		}
 	}
