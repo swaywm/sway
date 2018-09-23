@@ -368,11 +368,20 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 			caps |= WL_SEAT_CAPABILITY_TOUCH;
 			break;
 		case WLR_INPUT_DEVICE_TABLET_TOOL:
+			caps |= WL_SEAT_CAPABILITY_POINTER;
+			break;
 		case WLR_INPUT_DEVICE_TABLET_PAD:
 			break;
 		}
 	}
 	wlr_seat_set_capabilities(seat->wlr_seat, caps);
+
+	// Hide cursor if seat doesn't have pointer capability
+	if ((caps & WL_SEAT_CAPABILITY_POINTER) == 0) {
+		wlr_cursor_set_image(seat->cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+	} else {
+		cursor_set_image(seat->cursor, "left_ptr", NULL);
+	}
 }
 
 static void seat_apply_input_config(struct sway_seat *seat,
