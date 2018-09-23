@@ -270,39 +270,6 @@ static void workspace_rejigger(struct sway_workspace *ws,
 	child->width = child->height = 0;
 }
 
-static void move_out_of_tabs_stacks(struct sway_container *container,
-		struct sway_container *current, enum movement_direction move_dir,
-		int offs) {
-	enum sway_container_layout layout = move_dir ==
-		MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
-	list_t *siblings = container_get_siblings(container);
-	if (container == current && siblings->length == 1) {
-		wlr_log(WLR_DEBUG, "Changing layout of parent");
-		if (container->parent) {
-			container->parent->layout = layout;
-			container_update_representation(container);
-		} else {
-			container->workspace->layout = layout;
-			workspace_update_representation(container->workspace);
-		}
-		return;
-	}
-
-	wlr_log(WLR_DEBUG, "Moving out of tab/stack into a split");
-	if (current->parent) {
-		struct sway_container *new_parent =
-			container_split(current->parent, layout);
-		container_insert_child(new_parent, container, offs < 0 ? 0 : 1);
-		container_reap_empty(new_parent);
-		container_flatten(new_parent);
-	} else {
-		// Changing a workspace
-		struct sway_workspace *workspace = container->workspace;
-		workspace_split(workspace, layout);
-		workspace_insert_tiling(workspace, container, offs < 0 ? 0 : 1);
-	}
-}
-
 // Returns true if moved
 static bool container_move_in_direction(struct sway_container *container,
 		enum movement_direction move_dir) {
@@ -334,7 +301,6 @@ static bool container_move_in_direction(struct sway_container *container,
 	int offs = move_dir == MOVE_LEFT || move_dir == MOVE_UP ? -1 : 1;
 
 	while (current) {
-		struct sway_container *parent = current->parent;
 		list_t *siblings = container_get_siblings(current);
 		enum sway_container_layout layout = container_parent_layout(current);
 		int index = list_find(siblings, current);
@@ -343,15 +309,8 @@ static bool container_move_in_direction(struct sway_container *container,
 		if (is_parallel(layout, move_dir)) {
 			if (desired == -1 || desired == siblings->length) {
 				if (current->parent == container->parent) {
-					if (!(parent && parent->is_fullscreen) &&
-							(layout == L_TABBED || layout == L_STACKED)) {
-						move_out_of_tabs_stacks(container, current,
-								move_dir, offs);
-						return true;
-					} else {
-						current = current->parent;
-						continue;
-					}
+					current = current->parent;
+					continue;
 				} else {
 					// Special case
 					if (current->parent) {
@@ -369,10 +328,6 @@ static bool container_move_in_direction(struct sway_container *container,
 						siblings->items[desired], move_dir);
 				return true;
 			}
-		} else if (!(parent && parent->is_fullscreen) &&
-				(layout == L_TABBED || layout == L_STACKED)) {
-			move_out_of_tabs_stacks(container, current, move_dir, offs);
-			return true;
 		}
 
 		current = current->parent;
