@@ -266,10 +266,11 @@ static void workspace_rejigger(struct sway_workspace *ws,
 		return;
 	}
 	container_detach(child);
-	workspace_wrap_children(ws);
+	struct sway_container *new_parent = workspace_wrap_children(ws);
 
 	int index = move_dir == MOVE_LEFT || move_dir == MOVE_UP ? 0 : 1;
 	workspace_insert_tiling(ws, child, index);
+	container_flatten(new_parent);
 	ws->layout =
 		move_dir == MOVE_LEFT || move_dir == MOVE_RIGHT ? L_HORIZ : L_VERT;
 	workspace_update_representation(ws);
