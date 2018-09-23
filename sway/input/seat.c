@@ -348,15 +348,31 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	seat->input = input;
 	wl_list_init(&seat->devices);
 
-	wlr_seat_set_capabilities(seat->wlr_seat,
-		WL_SEAT_CAPABILITY_KEYBOARD |
-		WL_SEAT_CAPABILITY_POINTER |
-		WL_SEAT_CAPABILITY_TOUCH);
-
-
 	wl_list_insert(&input->seats, &seat->link);
 
 	return seat;
+}
+
+static void seat_update_capabilities(struct sway_seat *seat) {
+	uint32_t caps = 0;
+	struct sway_seat_device *seat_device;
+	wl_list_for_each(seat_device, &seat->devices, link) {
+		switch (seat_device->input_device->wlr_device->type) {
+		case WLR_INPUT_DEVICE_KEYBOARD:
+			caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+			break;
+		case WLR_INPUT_DEVICE_POINTER:
+			caps |= WL_SEAT_CAPABILITY_POINTER;
+			break;
+		case WLR_INPUT_DEVICE_TOUCH:
+			caps |= WL_SEAT_CAPABILITY_TOUCH;
+			break;
+		case WLR_INPUT_DEVICE_TABLET_TOOL:
+		case WLR_INPUT_DEVICE_TABLET_PAD:
+			break;
+		}
+	}
+	wlr_seat_set_capabilities(seat->wlr_seat, caps);
 }
 
 static void seat_apply_input_config(struct sway_seat *seat,
@@ -489,6 +505,8 @@ void seat_add_device(struct sway_seat *seat,
 	wl_list_insert(&seat->devices, &seat_device->link);
 
 	seat_configure_device(seat, input_device);
+
+	seat_update_capabilities(seat);
 }
 
 void seat_remove_device(struct sway_seat *seat,
@@ -503,6 +521,8 @@ void seat_remove_device(struct sway_seat *seat,
 		input_device->identifier, seat->wlr_seat->name);
 
 	seat_device_destroy(seat_device);
+
+	seat_update_capabilities(seat);
 }
 
 void seat_configure_xcursor(struct sway_seat *seat) {
