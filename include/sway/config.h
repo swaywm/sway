@@ -458,11 +458,9 @@ struct input_config *new_input_config(const char* identifier);
 
 void merge_input_config(struct input_config *dst, struct input_config *src);
 
-struct input_config *copy_input_config(struct input_config *ic);
+struct input_config *store_input_config(struct input_config *ic);
 
 void free_input_config(struct input_config *ic);
-
-void apply_input_config(struct input_config *input);
 
 int seat_name_cmp(const void *item, const void *data);
 

@@ -9,18 +9,15 @@ struct cmd_results *input_cmd_xkb_model(int argc, char **argv) {
 	if ((error = checkarg(argc, "xkb_model", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	struct input_config *current_input_config =
-		config->handler_context.input_config;
-	if (!current_input_config) {
-		return cmd_results_new(CMD_FAILURE, "xkb_model", "No input device defined.");
+	struct input_config *ic = config->handler_context.input_config;
+	if (!ic) {
+		return cmd_results_new(CMD_FAILURE, "xkb_model",
+				"No input device defined.");
 	}
-	struct input_config *new_config =
-		new_input_config(current_input_config->identifier);
 
-	new_config->xkb_model = strdup(argv[0]);
+	ic->xkb_model = strdup(argv[0]);
 
-	wlr_log(WLR_DEBUG, "apply-xkb_model for device: %s model: %s",
-		current_input_config->identifier, new_config->xkb_model);
-	apply_input_config(new_config);
+	wlr_log(WLR_DEBUG, "set-xkb_model for config: %s model: %s",
+			ic->identifier, ic->xkb_model);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

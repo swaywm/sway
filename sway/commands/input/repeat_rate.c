@@ -9,23 +9,18 @@ struct cmd_results *input_cmd_repeat_rate(int argc, char **argv) {
 	if ((error = checkarg(argc, "repeat_rate", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	struct input_config *current_input_config =
-		config->handler_context.input_config;
-	if (!current_input_config) {
+	struct input_config *ic = config->handler_context.input_config;
+	if (!ic) {
 		return cmd_results_new(CMD_FAILURE,
 			"repeat_rate", "No input device defined.");
 	}
-	struct input_config *new_config =
-		new_input_config(current_input_config->identifier);
 
 	int repeat_rate = atoi(argv[0]);
 	if (repeat_rate < 0) {
-		free_input_config(new_config);
 		return cmd_results_new(CMD_INVALID, "repeat_rate",
 			"Repeat rate cannot be negative");
 	}
-	new_config->repeat_rate = repeat_rate;
+	ic->repeat_rate = repeat_rate;
 
-	apply_input_config(new_config);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

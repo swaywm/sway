@@ -389,8 +389,10 @@ void input_manager_set_focus(struct sway_input_manager *input,
 void input_manager_apply_input_config(struct sway_input_manager *input,
 		struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
+	bool wildcard = strcmp(input_config->identifier, "*") == 0;
 	wl_list_for_each(input_device, &input->devices, link) {
-		if (strcmp(input_device->identifier, input_config->identifier) == 0) {
+		if (strcmp(input_device->identifier, input_config->identifier) == 0
+				|| wildcard) {
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
 				input_manager_libinput_config_pointer(input_device);
 			}
@@ -480,13 +482,16 @@ struct sway_seat *input_manager_get_default_seat(
 }
 
 struct input_config *input_device_get_config(struct sway_input_device *device) {
+	struct input_config *wildcard_config = NULL;
 	struct input_config *input_config = NULL;
 	for (int i = 0; i < config->input_configs->length; ++i) {
 		input_config = config->input_configs->items[i];
 		if (strcmp(input_config->identifier, device->identifier) == 0) {
 			return input_config;
+		} else if (strcmp(input_config->identifier, "*") == 0) {
+			wildcard_config = input_config;
 		}
 	}
 
-	return NULL;
+	return wildcard_config;
 }

@@ -40,10 +40,6 @@ struct input_config *new_input_config(const char* identifier) {
 }
 
 void merge_input_config(struct input_config *dst, struct input_config *src) {
-	if (src->identifier) {
-		free(dst->identifier);
-		dst->identifier = strdup(src->identifier);
-	}
 	if (src->accel_profile != INT_MIN) {
 		dst->accel_profile = src->accel_profile;
 	}
@@ -125,14 +121,51 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	}
 }
 
-struct input_config *copy_input_config(struct input_config *ic) {
-	struct input_config *copy = calloc(1, sizeof(struct input_config));
-	if (copy == NULL) {
-		wlr_log(WLR_ERROR, "could not allocate input config");
-		return NULL;
+static void merge_wildcard_on_all(struct input_config *wildcard) {
+	for (int i = 0; i < config->input_configs->length; i++) {
+		struct input_config *ic = config->input_configs->items[i];
+		if (strcmp(wildcard->identifier, ic->identifier) != 0) {
+			wlr_log(WLR_DEBUG, "Merging input * config on %s", ic->identifier);
+			merge_input_config(ic, wildcard);
+		}
 	}
-	merge_input_config(copy, ic);
-	return copy;
+}
+
+struct input_config *store_input_config(struct input_config *ic) {
+	bool wildcard = strcmp(ic->identifier, "*") == 0;
+	if (wildcard) {
+		merge_wildcard_on_all(ic);
+	}
+
+	int i = list_seq_find(config->input_configs, input_identifier_cmp,
+			ic->identifier);
+	if (i >= 0) {
+		wlr_log(WLR_DEBUG, "Merging on top of existing input config");
+		struct input_config *current = config->input_configs->items[i];
+		merge_input_config(current, ic);
+		free_input_config(ic);
+		ic = current;
+	} else if (!wildcard) {
+		wlr_log(WLR_DEBUG, "Adding non-wildcard input config");
+		i = list_seq_find(config->input_configs, input_identifier_cmp, "*");
+		if (i >= 0) {
+			wlr_log(WLR_DEBUG, "Merging on top of input * config");
+			struct input_config *current = new_input_config(ic->identifier);
+			merge_input_config(current, config->input_configs->items[i]);
+			merge_input_config(current, ic);
+			free_input_config(ic);
+			ic = current;
+		}
+		list_add(config->input_configs, ic);
+	} else {
+		// New wildcard config. Just add it
+		wlr_log(WLR_DEBUG, "Adding input * config");
+		list_add(config->input_configs, ic);
+	}
+
+	wlr_log(WLR_DEBUG, "Config stored for input %s", ic->identifier);
+
+	return ic;
 }
 
 void free_input_config(struct input_config *ic) {
