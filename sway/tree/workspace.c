@@ -369,7 +369,6 @@ struct sway_workspace *workspace_prev(struct sway_workspace *current) {
 bool workspace_switch(struct sway_workspace *workspace,
 		bool no_auto_back_and_forth) {
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_node *focus = seat_get_focus_inactive(seat, &root->node);
 	struct sway_workspace *active_ws = seat_get_focused_workspace(seat);
 
 	if (!no_auto_back_and_forth && config->auto_back_and_forth
@@ -390,27 +389,6 @@ bool workspace_switch(struct sway_workspace *workspace,
 			return false;
 		}
 		strcpy(prev_workspace_name, active_ws->name);
-	}
-
-	// Move sticky containers to new workspace
-	struct sway_output *next_output = workspace->output;
-	struct sway_workspace *next_output_prev_ws =
-		output_get_active_workspace(next_output);
-	if (workspace != next_output_prev_ws) {
-		for (int i = 0; i < next_output_prev_ws->floating->length; ++i) {
-			struct sway_container *floater =
-				next_output_prev_ws->floating->items[i];
-			if (floater->is_sticky) {
-				container_detach(floater);
-				workspace_add_floating(workspace, floater);
-				if (&floater->node == focus) {
-					seat_set_focus(seat, NULL);
-					seat_set_focus_container(seat, floater);
-					cursor_send_pointer_motion(seat->cursor, 0, true);
-				}
-				--i;
-			}
-		}
 	}
 
 	wlr_log(WLR_DEBUG, "Switching to workspace %p:%s",
