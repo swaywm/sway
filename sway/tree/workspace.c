@@ -54,10 +54,6 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 		return NULL;
 	}
 	node_init(&ws->node, N_WORKSPACE, ws);
-	ws->x = output->lx;
-	ws->y = output->ly;
-	ws->width = output->width;
-	ws->height = output->height;
 	ws->name = name ? strdup(name) : NULL;
 	ws->prev_split_layout = L_NONE;
 	ws->layout = output_get_default_layout(output);

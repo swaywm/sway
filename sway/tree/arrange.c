@@ -186,6 +186,7 @@ void arrange_workspace(struct sway_workspace *workspace) {
 			area->width, area->height, area->x, area->y);
 	workspace_remove_gaps(workspace);
 
+	bool first_arrange = workspace->width == 0 && workspace->height == 0;
 	double prev_x = workspace->x;
 	double prev_y = workspace->y;
 	workspace->width = area->width;
@@ -196,7 +197,7 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	// Adjust any floating containers
 	double diff_x = workspace->x - prev_x;
 	double diff_y = workspace->y - prev_y;
-	if (diff_x != 0 || diff_y != 0) {
+	if (!first_arrange && (diff_x != 0 || diff_y != 0)) {
 		for (int i = 0; i < workspace->floating->length; ++i) {
 			struct sway_container *floater = workspace->floating->items[i];
 			container_floating_translate(floater, diff_x, diff_y);
