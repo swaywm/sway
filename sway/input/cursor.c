@@ -911,9 +911,10 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 		return;
 	}
 
-	// Handle clicking a container surface
+	// Handle clicking a container surface or decorations
 	if (cont) {
-		seat_set_focus_container(seat, cont);
+		node = seat_get_focus_inactive(seat, &cont->node);
+		seat_set_focus(seat, node);
 		seat_pointer_notify_button(seat, time_msec, button, state);
 		return;
 	}
@@ -930,12 +931,52 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	transaction_commit_dirty();
 }
 
+static void dispatch_cursor_axis(struct sway_cursor *cursor,
+		struct wlr_event_pointer_axis *event) {
+	struct sway_seat *seat = cursor->seat;
+
+	// Determine what's under the cursor
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+	struct sway_node *node = node_at_coords(seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	struct sway_container *cont = node && node->type == N_CONTAINER ?
+		node->sway_container : NULL;
+	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
+	bool on_border = edge != WLR_EDGE_NONE;
+	bool on_titlebar = cont && !on_border && !surface;
+
+	// Scrolling on a tabbed or stacked title bar
+	if (on_titlebar) {
+		enum sway_container_layout layout = container_parent_layout(cont);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			struct sway_node *active =
+				seat_get_active_tiling_child(seat, node_get_parent(node));
+			list_t *siblings = container_get_siblings(cont);
+			int desired = list_find(siblings, active->sway_container) +
+				event->delta_discrete;
+			if (desired < 0) {
+				desired = 0;
+			} else if (desired >= siblings->length) {
+				desired = siblings->length - 1;
+			}
+			struct sway_container *new_focus = siblings->items[desired];
+			node = seat_get_focus_inactive(seat, &new_focus->node);
+			seat_set_focus(seat, node);
+			return;
+		}
+	}
+
+	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
+		event->orientation, event->delta, event->delta_discrete, event->source);
+}
+
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_axis *event = data;
-	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-		event->orientation, event->delta, event->delta_discrete, event->source);
+	dispatch_cursor_axis(cursor, event);
+	transaction_commit_dirty();
 }
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
