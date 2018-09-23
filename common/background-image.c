@@ -58,6 +58,7 @@ void render_background_image(cairo_t *cairo, cairo_surface_t *image,
 	double width = cairo_image_surface_get_width(image);
 	double height = cairo_image_surface_get_height(image);
 
+	cairo_save(cairo);
 	switch (mode) {
 	case BACKGROUND_MODE_STRETCH:
 		cairo_scale(cairo,
@@ -116,4 +117,5 @@ void render_background_image(cairo_t *cairo, cairo_surface_t *image,
 		break;
 	}
 	cairo_paint(cairo);
+	cairo_restore(cairo);
 }

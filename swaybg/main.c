@@ -73,6 +73,10 @@ static void render_frame(struct swaybg_state *state) {
 		return;
 	}
 	cairo_t *cairo = state->current_buffer->cairo;
+	cairo_save(cairo);
+	cairo_set_operator(cairo, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cairo);
+	cairo_restore(cairo);
 	if (state->args->mode == BACKGROUND_MODE_SOLID_COLOR) {
 		cairo_set_source_u32(cairo, state->context.color);
 		cairo_paint(cairo);
