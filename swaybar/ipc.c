@@ -237,7 +237,6 @@ static bool ipc_parse_config(
 }
 
 void ipc_get_workspaces(struct swaybar *bar) {
-	bar->focused_output = NULL;
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		free_workspaces(&output->workspaces);

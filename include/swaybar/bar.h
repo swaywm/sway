@@ -54,7 +54,6 @@ struct swaybar {
 	struct wl_seat *seat;
 
 	struct swaybar_config *config;
-	struct swaybar_output *focused_output;
 	struct swaybar_pointer pointer;
 	struct status_line *status;
 
