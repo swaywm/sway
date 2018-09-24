@@ -378,7 +378,7 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 
 	// Hide cursor if seat doesn't have pointer capability
 	if ((caps & WL_SEAT_CAPABILITY_POINTER) == 0) {
-		wlr_cursor_set_image(seat->cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+		cursor_set_image(seat->cursor, NULL, NULL);
 	} else {
 		cursor_set_image(seat->cursor, "left_ptr", NULL);
 	}
@@ -561,8 +561,7 @@ void seat_configure_xcursor(struct sway_seat *seat) {
 			output->name, (double)output->scale);
 	}
 
-	wlr_xcursor_manager_set_cursor_image(seat->cursor->xcursor_manager,
-		"left_ptr", seat->cursor->cursor);
+	cursor_set_image(seat->cursor, "left_ptr", NULL);
 	wlr_cursor_warp(seat->cursor->cursor, NULL, seat->cursor->cursor->x,
 		seat->cursor->cursor->y);
 }

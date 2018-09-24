@@ -1006,8 +1006,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	if (seat_is_input_allowed(seat, surface)) {
 		wlr_seat_touch_notify_down(wlr_seat, surface, event->time_msec,
 				event->touch_id, sx, sy);
-		cursor->image_client = NULL;
-		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+		cursor_set_image(cursor, NULL, NULL);
 	}
 }
 
@@ -1175,11 +1174,13 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
 		struct wl_client *client) {
-	if (!cursor->image || strcmp(cursor->image, image) != 0) {
+	if (!image) {
+		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
+	} else if (!cursor->image || strcmp(cursor->image, image) != 0) {
 		wlr_xcursor_manager_set_cursor_image(cursor->xcursor_manager, image,
 				cursor->cursor);
-		cursor->image = image;
 	}
+	cursor->image = image;
 	cursor->image_client = client;
 }
 
