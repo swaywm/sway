@@ -8,6 +8,7 @@ static void server_decoration_handle_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_server_decoration *deco =
 		wl_container_of(listener, deco, destroy);
+	deco->view->decoration = NULL;
 	wl_list_remove(&deco->destroy.link);
 	wl_list_remove(&deco->mode.link);
 	wl_list_remove(&deco->link);
@@ -49,6 +50,8 @@ void handle_server_decoration(struct wl_listener *listener, void *data) {
 	}
 
 	deco->wlr_server_decoration = wlr_deco;
+	deco->view = view_from_wlr_surface(wlr_deco->surface);
+	deco->view->decoration = deco;
 
 	wl_signal_add(&wlr_deco->events.destroy, &deco->destroy);
 	deco->destroy.notify = server_decoration_handle_destroy;
