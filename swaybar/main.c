@@ -96,7 +96,10 @@ int main(int argc, char **argv) {
 
 	signal(SIGTERM, sig_handler);
 
-	bar_setup(&swaybar, socket_path, bar_id);
+	if (!bar_setup(&swaybar, socket_path, bar_id)) {
+		free(socket_path);
+		return 1;
+	}
 
 	free(socket_path);
 	free(bar_id);

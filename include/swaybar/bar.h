@@ -95,9 +95,7 @@ struct swaybar_workspace {
 	bool urgent;
 };
 
-void bar_setup(struct swaybar *bar,
-	const char *socket_path,
-	const char *bar_id);
+bool bar_setup(struct swaybar *bar, const char *socket_path, const char *bar_id);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 

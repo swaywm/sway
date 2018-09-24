@@ -478,14 +478,16 @@ static void render_all_frames(struct swaybar *bar) {
 	}
 }
 
-void bar_setup(struct swaybar *bar,
+bool bar_setup(struct swaybar *bar,
 		const char *socket_path, const char *bar_id) {
 	bar_init(bar);
 	init_event_loop();
 
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
-	ipc_initialize(bar, bar_id);
+	if (!ipc_initialize(bar, bar_id)) {
+		return false;
+	}
 	if (bar->config->status_command) {
 		bar->status = status_line_init(bar->config->status_command);
 	}
@@ -526,6 +528,7 @@ void bar_setup(struct swaybar *bar,
 
 	ipc_get_workspaces(bar);
 	render_all_frames(bar);
+	return true;
 }
 
 static void display_in(int fd, short mask, void *data) {
