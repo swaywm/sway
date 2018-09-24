@@ -16,12 +16,13 @@
 #else
 #include <linux/input-event-codes.h>
 #endif
-#include "swaybar/render.h"
+#include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/event_loop.h"
-#include "swaybar/status_line.h"
-#include "swaybar/bar.h"
+#include "swaybar/i3bar.h"
 #include "swaybar/ipc.h"
+#include "swaybar/status_line.h"
+#include "swaybar/render.h"
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"

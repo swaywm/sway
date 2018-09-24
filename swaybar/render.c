@@ -10,6 +10,7 @@
 #include "pool-buffer.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/i3bar.h"
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
