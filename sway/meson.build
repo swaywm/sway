@@ -10,6 +10,7 @@ sway_sources = files(
 	'security.c',
 	'server.c',
 	'swaynag.c',
+	'xdg_decoration.c',
 
 	'desktop/desktop.c',
 	'desktop/idle_inhibit_v1.c',

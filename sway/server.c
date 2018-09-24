@@ -16,6 +16,7 @@
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
 #include <wlr/util/log.h>
 #include "list.h"
@@ -114,6 +115,14 @@ bool server_init(struct sway_server *server) {
 		&server->server_decoration);
 	server->server_decoration.notify = handle_server_decoration;
 	wl_list_init(&server->decorations);
+
+	server->xdg_decoration_manager =
+		wlr_xdg_decoration_manager_v1_create(server->wl_display);
+	wl_signal_add(
+			&server->xdg_decoration_manager->events.new_toplevel_decoration,
+			&server->xdg_decoration);
+	server->xdg_decoration.notify = handle_xdg_decoration;
+	wl_list_init(&server->xdg_decorations);
 
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);

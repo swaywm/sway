@@ -11,6 +11,7 @@
 #include "sway/input/seat.h"
 
 struct sway_container;
+struct sway_xdg_decoration;
 
 enum sway_view_type {
 	SWAY_VIEW_XDG_SHELL_V6,
@@ -44,7 +45,6 @@ struct sway_view_impl {
 	void (*set_tiled)(struct sway_view *view, bool tiled);
 	void (*set_fullscreen)(struct sway_view *view, bool fullscreen);
 	bool (*wants_floating)(struct sway_view *view);
-	bool (*has_client_side_decorations)(struct sway_view *view);
 	void (*for_each_surface)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*for_each_popup)(struct sway_view *view,
@@ -60,6 +60,7 @@ struct sway_view {
 
 	struct sway_container *container; // NULL if unmapped and transactions finished
 	struct wlr_surface *surface; // NULL for unmapped views
+	struct sway_xdg_decoration *xdg_decoration;
 
 	pid_t pid;
 
@@ -76,12 +77,12 @@ struct sway_view {
 
 	char *title_format;
 	enum sway_container_border border;
+	enum sway_container_border saved_border;
 	int border_thickness;
 	bool border_top;
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
-	bool using_csd;
 
 	struct timespec urgent;
 	bool allow_request_urgent;
@@ -127,8 +128,6 @@ struct sway_view {
 struct sway_xdg_shell_v6_view {
 	struct sway_view view;
 
-	enum wlr_server_decoration_manager_mode deco_mode;
-
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
@@ -144,8 +143,6 @@ struct sway_xdg_shell_v6_view {
 
 struct sway_xdg_shell_view {
 	struct sway_view view;
-
-	enum wlr_server_decoration_manager_mode deco_mode;
 
 	struct wl_listener commit;
 	struct wl_listener request_move;
@@ -175,6 +172,7 @@ struct sway_xwayland_view {
 	struct wl_listener set_role;
 	struct wl_listener set_window_type;
 	struct wl_listener set_hints;
+	struct wl_listener set_decorations;
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
@@ -267,6 +265,17 @@ void view_set_activated(struct sway_view *view, bool activated);
  * Called when the view requests to be focused.
  */
 void view_request_activate(struct sway_view *view);
+
+/**
+ * If possible, instructs the client to change their decoration mode.
+ */
+void view_set_csd_from_server(struct sway_view *view, bool enabled);
+
+/**
+ * Updates the view's border setting when the client unexpectedly changes their
+ * decoration mode.
+ */
+void view_set_csd_from_client(struct sway_view *view, bool enabled);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
 

@@ -54,6 +54,10 @@ struct sway_server {
 	struct wl_listener server_decoration;
 	struct wl_list decorations; // sway_server_decoration::link
 
+	struct wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
+	struct wl_listener xdg_decoration;
+	struct wl_list xdg_decorations; // sway_xdg_decoration::link
+
 	size_t txn_timeout_ms;
 	list_t *transactions;
 	list_t *dirty_nodes;
@@ -78,5 +82,6 @@ void handle_xdg_shell_surface(struct wl_listener *listener, void *data);
 void handle_xwayland_surface(struct wl_listener *listener, void *data);
 #endif
 void handle_server_decoration(struct wl_listener *listener, void *data);
+void handle_xdg_decoration(struct wl_listener *listener, void *data);
 
 #endif

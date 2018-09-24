@@ -216,6 +216,8 @@ static const char *describe_container_border(enum sway_container_border border) 
 		return "pixel";
 	case B_NORMAL:
 		return "normal";
+	case B_CSD:
+		return "csd";
 	}
 	return "unknown";
 }

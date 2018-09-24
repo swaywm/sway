@@ -5,6 +5,8 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_xdg_decoration_v1.h>
 #include "config.h"
 #ifdef HAVE_XWAYLAND
 #include <wlr/xwayland.h>
@@ -23,6 +25,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "sway/config.h"
+#include "sway/xdg_decoration.h"
 #include "pango.h"
 #include "stringop.h"
 
@@ -231,12 +234,8 @@ void view_autoconfigure(struct sway_view *view) {
 		view->border_top = false;
 	}
 
-	enum sway_container_border border = view->border;
-	if (view->using_csd) {
-		border = B_NONE;
-	}
-
-	switch (border) {
+	switch (view->border) {
+	case B_CSD:
 	case B_NONE:
 		x = con->x;
 		y = con->y + y_offset;
@@ -309,16 +308,26 @@ void view_request_activate(struct sway_view *view) {
 	}
 }
 
-void view_set_tiled(struct sway_view *view, bool tiled) {
-	if (!tiled) {
-		view->using_csd = true;
-		if (view->impl->has_client_side_decorations) {
-			view->using_csd = view->impl->has_client_side_decorations(view);
-		}
-	} else {
-		view->using_csd = false;
+void view_set_csd_from_server(struct sway_view *view, bool enabled) {
+	if (view->xdg_decoration) {
+		uint32_t mode = enabled ?
+			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE :
+			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+		wlr_xdg_toplevel_decoration_v1_set_mode(
+				view->xdg_decoration->wlr_xdg_decoration, mode);
 	}
+}
 
+void view_set_csd_from_client(struct sway_view *view, bool enabled) {
+	if (enabled && view->border != B_CSD) {
+		view->saved_border = view->border;
+		view->border = B_CSD;
+	} else if (!enabled && view->border == B_CSD) {
+		view->border = view->saved_border;
+	}
+}
+
+void view_set_tiled(struct sway_view *view, bool tiled) {
 	if (view->impl->set_tiled) {
 		view->impl->set_tiled(view, tiled);
 	}
