@@ -66,7 +66,15 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			input_handlers, sizeof(input_handlers));
 	}
 
-	free_input_config(config->handler_context.input_config);
+	if (!res || res->status == CMD_SUCCESS) {
+		struct input_config *ic =
+			store_input_config(config->handler_context.input_config);
+
+		input_manager_apply_input_config(input_manager, ic);
+	} else {
+		free_input_config(config->handler_context.input_config);
+	}
+
 	config->handler_context.input_config = NULL;
 
 	return res;

@@ -55,22 +55,6 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 	return error;
 }
 
-void apply_input_config(struct input_config *input) {
-	int i;
-	i = list_seq_find(config->input_configs, input_identifier_cmp, input->identifier);
-	if (i >= 0) {
-		// merge existing config
-		struct input_config *ic = config->input_configs->items[i];
-		merge_input_config(ic, input);
-		free_input_config(input);
-		input = ic;
-	} else {
-		list_add(config->input_configs, input);
-	}
-
-	input_manager_apply_input_config(input_manager, input);
-}
-
 void apply_seat_config(struct seat_config *seat_config) {
 	int i;
 	i = list_seq_find(config->seat_configs, seat_name_cmp, seat_config->name);
