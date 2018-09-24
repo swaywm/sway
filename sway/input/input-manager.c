@@ -233,7 +233,8 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	wlr_log(WLR_DEBUG, "adding device: '%s'",
 		input_device->identifier);
 
-	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
+	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
+			input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 		input_manager_libinput_config_pointer(input_device);
 	}
 
@@ -393,7 +394,8 @@ void input_manager_apply_input_config(struct sway_input_manager *input,
 	wl_list_for_each(input_device, &input->devices, link) {
 		if (strcmp(input_device->identifier, input_config->identifier) == 0
 				|| wildcard) {
-			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER) {
+			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
+					input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 				input_manager_libinput_config_pointer(input_device);
 			}
 
