@@ -221,6 +221,7 @@ static void config_defaults(struct sway_config *config) {
 
 	// Flags
 	config->focus_follows_mouse = true;
+	config->raise_floating = true;
 	config->mouse_warping = true;
 	config->focus_wrapping = WRAP_YES;
 	config->validating = false;

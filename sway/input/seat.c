@@ -734,7 +734,7 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 
 	// If we've focused a floating container, bring it to the front.
 	// We do this by putting it at the end of the floating list.
-	if (container) {
+	if (container && config->raise_floating) {
 		struct sway_container *floater = container;
 		while (floater->parent) {
 			floater = floater->parent;
@@ -1017,6 +1017,19 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_ref_con_lx = sx;
 	seat->op_ref_con_ly = sy;
 	seat->op_moved = false;
+
+	// If we've focused a floating container, bring it to the front.
+	// We do this by putting it at the end of the floating list.
+	if (con && !config->raise_floating) {
+		struct sway_container *floater = con;
+		while (floater->parent) {
+			floater = floater->parent;
+		}
+		if (container_is_floating(floater)) {
+			list_move_to_end(floater->workspace->floating, floater);
+			node_set_dirty(&floater->workspace->node);
+		}
+	}
 }
 
 void seat_begin_move_floating(struct sway_seat *seat,
