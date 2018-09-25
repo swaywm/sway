@@ -38,9 +38,14 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	} else if (strcmp(argv[0], "pixel") == 0) {
 		set_border(view, B_PIXEL);
 	} else if (strcmp(argv[0], "csd") == 0) {
+		if (!view->xdg_decoration) {
+			return cmd_results_new(CMD_INVALID, "border",
+					"This window doesn't support client side decorations");
+		}
 		set_border(view, B_CSD);
 	} else if (strcmp(argv[0], "toggle") == 0) {
-		set_border(view, (view->border + 1) % 4);
+		int num_available = view->xdg_decoration ? 4 : 3;
+		set_border(view, (view->border + 1) % num_available);
 	} else {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Expected 'border <none|normal|pixel|toggle>' "
