@@ -441,6 +441,11 @@ The default colors are:
 	devices. A list of input device names may be obtained via *swaymsg -t
 	get\_inputs*.
 
+*raise\_floating* yes|no
+	Controls the behaviour of floating windows. A _yes_ (the default) will
+	raise windows on gaining focus. A _no_ will only raise floating windows
+	by clicking anywhere in the window.
+
 *seat* <seat> <seat-subcommands...>
 	For details on seat subcommands, see *sway-input*(5).
 
