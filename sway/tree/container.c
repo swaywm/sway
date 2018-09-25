@@ -985,7 +985,8 @@ void container_discover_outputs(struct sway_container *con) {
 		}
 	}
 	struct sway_output *new_output = container_get_effective_output(con);
-	double old_scale = old_output ? old_output->wlr_output->scale : -1;
+	double old_scale = old_output && old_output->enabled ?
+		old_output->wlr_output->scale : -1;
 	double new_scale = new_output ? new_output->wlr_output->scale : -1;
 	if (old_scale != new_scale) {
 		container_update_title_textures(con);
