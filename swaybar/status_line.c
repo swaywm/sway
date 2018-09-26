@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <json-c/json.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,18 +35,35 @@ bool status_handle_readable(struct status_line *status) {
 	switch (status->protocol) {
 	case PROTOCOL_UNDEF:
 		errno = 0;
-		read_bytes = getline(&status->buffer,
-				&status->buffer_size, status->read);
-		if (errno == EAGAIN) {
-			clearerr(status->read);
-		} else if (errno) {
+		int available_bytes;
+		if (ioctl(status->read_fd, FIONREAD, &available_bytes) == -1) {
+			wlr_log(WLR_ERROR, "Unable to read status command output size");
 			status_error(status, "[error reading from status command]");
 			return true;
 		}
 
+		if ((size_t)available_bytes + 1 > status->buffer_size) {
+			// need room for leading '\0' too
+			status->buffer_size = available_bytes + 1;
+			status->buffer = realloc(status->buffer, status->buffer_size);
+		}
+		if (status->buffer == NULL) {
+			wlr_log_errno(WLR_ERROR, "Unable to read status line");
+			status_error(status, "[error reading from status command]");
+			return true;
+		}
+
+		read_bytes = read(status->read_fd, status->buffer, available_bytes);
+		if (read_bytes != available_bytes) {
+			status_error(status, "[error reading from status command]");
+			return true;
+		}
+		status->buffer[available_bytes] = 0;
+
 		// the header must be sent completely the first time round
+		char *newline = strchr(status->buffer, '\n');
 		json_object *header, *version;
-		if (status->buffer[read_bytes - 1] == '\n'
+		if (newline != NULL
 				&& (header = json_tokener_parse(status->buffer))
 				&& json_object_object_get_ex(header, "version", &version)
 				&& json_object_get_int(version) == 1) {
@@ -67,13 +85,9 @@ bool status_handle_readable(struct status_line *status) {
 
 			wl_list_init(&status->blocks);
 			status->tokener = json_tokener_new();
-			read_bytes = getdelim(&status->buffer, &status->buffer_size, EOF, status->read);
-			if (read_bytes > 0) {
-				status->buffer_index = read_bytes;
-				return i3bar_handle_readable(status);
-			} else {
-				return false;
-			}
+			status->buffer_index = strlen(newline + 1);
+			memmove(status->buffer, newline + 1, status->buffer_index + 1);
+			return i3bar_handle_readable(status);
 		}
 
 		wlr_log(WLR_DEBUG, "Using text protocol.");
