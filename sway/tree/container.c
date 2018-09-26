@@ -67,12 +67,10 @@ void container_destroy(struct sway_container *con) {
 	list_free(con->outputs);
 
 	if (con->view) {
-		struct sway_view *view = con->view;
-		view->container = NULL;
-		free(view->title_format);
-		view->title_format = NULL;
-
-		if (view->destroying) {
+		if (con->view->container == con) {
+			con->view->container = NULL;
+		}
+		if (con->view->destroying) {
 			view_destroy(con->view);
 		}
 	}
