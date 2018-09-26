@@ -1,8 +1,5 @@
 // See https://i3wm.org/docs/ipc.html for protocol information
-#ifndef __FreeBSD__
-// Any value will hide SOCK_CLOEXEC on FreeBSD (__BSD_VISIBLE=0)
-#define _XOPEN_SOURCE 700
-#endif
+#define _POSIX_C_SOURCE 200112L
 #ifdef __linux__
 #include <linux/input-event-codes.h>
 #elif __FreeBSD__
@@ -89,9 +86,15 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 }
 
 void ipc_init(struct sway_server *server) {
-	ipc_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+	ipc_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ipc_socket == -1) {
 		sway_abort("Unable to create IPC socket");
+	}
+	if (fcntl(ipc_socket, F_SETFD, FD_CLOEXEC) == -1) {
+		sway_abort("Unable to set CLOEXEC on IPC socket");
+	}
+	if (fcntl(ipc_socket, F_SETFL, O_NONBLOCK) == -1) {
+		sway_abort("Unable to set NONBLOCK on IPC socket");
 	}
 
 	ipc_sockaddr = ipc_user_sockaddr();
