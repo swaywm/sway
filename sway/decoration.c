@@ -28,7 +28,7 @@ static void server_decoration_handle_mode(struct wl_listener *listener,
 
 	bool csd = deco->wlr_server_decoration->mode ==
 			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-	view_set_csd_from_client(view, csd);
+	view_update_csd_from_client(view, csd);
 
 	arrange_container(view->container);
 	transaction_commit_dirty();

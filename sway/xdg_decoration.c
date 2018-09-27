@@ -26,7 +26,7 @@ static void xdg_decoration_handle_surface_commit(struct wl_listener *listener,
 		WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
 	struct sway_view *view = decoration->view;
 
-	view_set_csd_from_client(view, csd);
+	view_update_csd_from_client(view, csd);
 
 	arrange_container(view->container);
 	transaction_commit_dirty();

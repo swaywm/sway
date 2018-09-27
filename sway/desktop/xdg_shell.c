@@ -381,7 +381,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		decoration_from_surface(xdg_surface->surface);
 	bool csd = !deco || deco->wlr_server_decoration->mode ==
 		WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-	view_set_csd_from_client(view, csd);
+	view_update_csd_from_client(view, csd);
 
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		container_set_fullscreen(view->container, true);

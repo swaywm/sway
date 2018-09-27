@@ -318,7 +318,7 @@ void view_set_csd_from_server(struct sway_view *view, bool enabled) {
 	}
 }
 
-void view_set_csd_from_client(struct sway_view *view, bool enabled) {
+void view_update_csd_from_client(struct sway_view *view, bool enabled) {
 	if (enabled && view->border != B_CSD) {
 		view->saved_border = view->border;
 		view->border = B_CSD;

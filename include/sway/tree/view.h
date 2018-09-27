@@ -275,7 +275,7 @@ void view_set_csd_from_server(struct sway_view *view, bool enabled);
  * Updates the view's border setting when the client unexpectedly changes their
  * decoration mode.
  */
-void view_set_csd_from_client(struct sway_view *view, bool enabled);
+void view_update_csd_from_client(struct sway_view *view, bool enabled);
 
 void view_set_tiled(struct sway_view *view, bool tiled);
 

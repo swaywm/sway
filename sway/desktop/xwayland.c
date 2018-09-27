@@ -250,7 +250,7 @@ static void handle_set_decorations(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
 
 	bool csd = xsurface->decorations != WLR_XWAYLAND_SURFACE_DECORATIONS_ALL;
-	view_set_csd_from_client(view, csd);
+	view_update_csd_from_client(view, csd);
 }
 
 static void _close(struct sway_view *view) {
