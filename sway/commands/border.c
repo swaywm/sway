@@ -7,15 +7,49 @@
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
 
+// A couple of things here:
+// - view->border should never be B_CSD when the view is tiled, even when CSD is
+//   in use (we set using_csd instead and render a sway border).
+// - view->saved_border should be the last applied border when switching to CSD.
+// - view->using_csd should always reflect whether CSD is applied or not.
 static void set_border(struct sway_view *view,
 		enum sway_container_border new_border) {
-	if (view->border == B_CSD && new_border != B_CSD) {
+	if (view->using_csd && new_border != B_CSD) {
 		view_set_csd_from_server(view, false);
-	} else if (view->border != B_CSD && new_border == B_CSD) {
+	} else if (!view->using_csd && new_border == B_CSD) {
 		view_set_csd_from_server(view, true);
+		view->saved_border = view->border;
 	}
-	view->saved_border = view->border;
-	view->border = new_border;
+	if (new_border != B_CSD || container_is_floating(view->container)) {
+		view->border = new_border;
+	}
+	view->using_csd = new_border == B_CSD;
+}
+
+static void border_toggle(struct sway_view *view) {
+	if (view->using_csd) {
+		set_border(view, B_NONE);
+		return;
+	}
+	switch (view->border) {
+	case B_NONE:
+		set_border(view, B_PIXEL);
+		break;
+	case B_PIXEL:
+		set_border(view, B_NORMAL);
+		break;
+	case B_NORMAL:
+		if (view->xdg_decoration) {
+			set_border(view, B_CSD);
+		} else {
+			set_border(view, B_NONE);
+		}
+		break;
+	case B_CSD:
+		// view->using_csd should be true so it would have returned above
+		sway_assert(false, "Unreachable");
+		break;
+	}
 }
 
 struct cmd_results *cmd_border(int argc, char **argv) {
@@ -44,8 +78,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		}
 		set_border(view, B_CSD);
 	} else if (strcmp(argv[0], "toggle") == 0) {
-		int num_available = view->xdg_decoration ? 4 : 3;
-		set_border(view, (view->border + 1) % num_available);
+		border_toggle(view);
 	} else {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Expected 'border <none|normal|pixel|toggle>' "

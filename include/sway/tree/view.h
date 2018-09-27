@@ -76,8 +76,19 @@ struct sway_view {
 	int natural_width, natural_height;
 
 	char *title_format;
+
+	// Our border types are B_NONE, B_PIXEL, B_NORMAL and B_CSD. We normally
+	// just assign this to the border property and ignore the other two.
+	// However, when a view using CSD is tiled, we want to render our own
+	// borders as well. So in this case the border property becomes one of the
+	// first three, and using_csd is true.
+	// Lastly, views can change their decoration mode at any time. When an SSD
+	// view becomes CSD without our approval, we save the SSD border type so it
+	// can be restored if/when the view returns from CSD to SSD.
 	enum sway_container_border border;
 	enum sway_container_border saved_border;
+	bool using_csd;
+
 	int border_thickness;
 	bool border_top;
 	bool border_bottom;

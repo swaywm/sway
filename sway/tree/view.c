@@ -309,6 +309,7 @@ void view_request_activate(struct sway_view *view) {
 }
 
 void view_set_csd_from_server(struct sway_view *view, bool enabled) {
+	wlr_log(WLR_DEBUG, "Telling view %p to set CSD to %i", view, enabled);
 	if (view->xdg_decoration) {
 		uint32_t mode = enabled ?
 			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE :
@@ -316,15 +317,20 @@ void view_set_csd_from_server(struct sway_view *view, bool enabled) {
 		wlr_xdg_toplevel_decoration_v1_set_mode(
 				view->xdg_decoration->wlr_xdg_decoration, mode);
 	}
+	view->using_csd = enabled;
 }
 
 void view_update_csd_from_client(struct sway_view *view, bool enabled) {
+	wlr_log(WLR_DEBUG, "View %p updated CSD to %i", view, enabled);
 	if (enabled && view->border != B_CSD) {
 		view->saved_border = view->border;
-		view->border = B_CSD;
+		if (container_is_floating(view->container)) {
+			view->border = B_CSD;
+		}
 	} else if (!enabled && view->border == B_CSD) {
 		view->border = view->saved_border;
 	}
+	view->using_csd = enabled;
 }
 
 void view_set_tiled(struct sway_view *view, bool tiled) {

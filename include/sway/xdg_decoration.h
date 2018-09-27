@@ -10,7 +10,7 @@ struct sway_xdg_decoration {
 	struct sway_view *view;
 
 	struct wl_listener destroy;
-	struct wl_listener surface_commit;
+	struct wl_listener request_mode;
 };
 
 struct sway_xdg_decoration *xdg_decoration_from_surface(
