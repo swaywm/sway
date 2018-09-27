@@ -52,6 +52,9 @@ void merge_input_config(struct input_config *dst, struct input_config *src) {
 	if (src->dwt != INT_MIN) {
 		dst->dwt = src->dwt;
 	}
+	if (src->left_handed != INT_MIN) {
+		dst->left_handed = src->left_handed;
+	}
 	if (src->middle_emulation != INT_MIN) {
 		dst->middle_emulation = src->middle_emulation;
 	}
