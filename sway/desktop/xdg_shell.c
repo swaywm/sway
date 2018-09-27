@@ -377,11 +377,13 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	view_map(view, view->wlr_xdg_surface->surface);
 
-	struct sway_server_decoration *deco =
-		decoration_from_surface(xdg_surface->surface);
-	bool csd = !deco || deco->wlr_server_decoration->mode ==
-		WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-	view_update_csd_from_client(view, csd);
+	if (!view->xdg_decoration) {
+		struct sway_server_decoration *deco =
+			decoration_from_surface(xdg_surface->surface);
+		bool csd = !deco || deco->wlr_server_decoration->mode ==
+			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
+		view_update_csd_from_client(view, csd);
+	}
 
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		container_set_fullscreen(view->container, true);
