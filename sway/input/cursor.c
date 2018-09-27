@@ -567,15 +567,15 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	struct wlr_surface *surface = NULL;
 	double sx, sy;
 
-	// Find the node beneath the pointer's previous position
-	struct sway_node *prev_node = node_at_coords(seat,
-			cursor->previous.x, cursor->previous.y, &surface, &sx, &sy);
+	struct sway_node *prev_node = cursor->previous.node;
+	struct sway_node *node = node_at_coords(seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+
 	// Update the stored previous position
 	cursor->previous.x = cursor->cursor->x;
 	cursor->previous.y = cursor->cursor->y;
+	cursor->previous.node = node;
 
-	struct sway_node *node = node_at_coords(seat,
-			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
 	if (node && config->focus_follows_mouse && allow_refocusing) {
 		struct sway_node *focus = seat_get_focus(seat);
 		if (focus && node->type == N_WORKSPACE) {

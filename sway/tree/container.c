@@ -369,6 +369,13 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 	}
 	// If focused is floating, focused view's non-popups
 	if (focus && focus->view && is_floating) {
+		// only switch to unfocused container if focused container has no menus open
+		bool has_subsurfaces = wl_list_length(&focus->view->surface->subsurfaces) > 0;
+		c = floating_container_at(lx, ly, surface, sx, sy);
+		if (!has_subsurfaces && c && c->view && *surface && c != focus) {
+			return c;
+		}
+
 		surface_at_view(focus, lx, ly, surface, sx, sy);
 		if (*surface) {
 			return focus;
