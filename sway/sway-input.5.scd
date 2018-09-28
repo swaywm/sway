@@ -7,7 +7,6 @@ sway-input - input configuration file and commands
 # DESCRIPTION
 
 Sway allows for configuration of devices within the sway configuration file.
-sway-input commands must be used inside an _input { }_ block in the config.
 To obtain a list of available device identifiers, run *swaymsg -t get\_inputs*.
 
 # INPUT COMMANDS
@@ -116,8 +115,7 @@ The following commands may only be used in the configuration file.
 
 ## SEAT CONFIGURATION
 
-Configure options for multiseat mode. sway-seat commands must be used inside a
-_seat { }_ block in the config.
+Configure options for multiseat mode.
 
 A *seat* is a collection of input devices that act independently of each other.
 Seats are identified by name and the default seat is _seat0_ if no seats are

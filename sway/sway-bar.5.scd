@@ -6,8 +6,7 @@ sway-bar - bar configuration file and commands
 
 # DESCRIPTION
 
-Sway allows configuring swaybar in the sway configuration file. Swaybar
-commands must be used inside a _bar { }_ block in the config file.
+Sway allows configuring swaybar in the sway configuration file.
 
 # COMMANDS
 

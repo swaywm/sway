@@ -19,6 +19,24 @@ bindsym Shift+XF86AudioRaiseVolume exec \\
 	pactl set-sink-volume @DEFAULT_SINK@ -1%
 ```
 
+Commands can also be given as a block in the form *command { <subcommands...>
+}*. Anything before the opening *{* will be prepended to the lines inside the
+block. For example:
+
+```
+output eDP-1 {
+	background ~/wallpaper.png
+	resolution 1920x1080
+}
+```
+
+is identical to
+
+```
+output eDP-1 background ~/wallpaper.png
+output eDP-1 resolution 1920x1080
+```
+
 These commands can be executed in your config file, via *swaymsg*(1), or via
 the bindsym command.
 
@@ -37,10 +55,8 @@ which you may only select one. *[...]* is used for optional arguments, and
 
 The following commands may only be used in the configuration file.
 
-*bar {* <commands...> *}*
-	_commands..._ after *{* will be interpreted as bar commands. For
-	details, see *sway-bar*(5). A newline is required between *{* and the
-	first command, and *}* must be alone on a line.
+*bar* [<bar-id>] <bar-subcommands...>
+	For details on bar subcommands, see *sway-bar*(5).
 
 *default\_orientation* horizontal|vertical|auto
 	Sets the default container layout for tiled containers.
@@ -50,10 +66,6 @@ The following commands may only be used in the configuration file.
 	path relative to the parent config, and expands shell syntax (see
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
-
-*set* $<name> <value>
-	Sets variable $_name_ to _value_. You can use the new variable in the
-	arguments of future commands.
 
 *swaybg\_command* <command>
 	Executes custom background _command_. Default is _swaybg_. Refer to
@@ -424,20 +436,15 @@ The default colors are:
 *hide\_edge\_borders* none|vertical|horizontal|both|smart
 	Hides window borders adjacent to the screen edges. Default is _none_.
 
-*input* <input\_device> *{* <commands...> *}*
-	_commands..._ after *{* will be interpreted as input commands applying to
-	the specified input device. For details, see *sway-input*(5). A newline is
-	required between *{* and the first command, and *}* must be alone on a
-	line.
+*input* <input\_device> <input-subcommands...>
+	For details on input subcommands, see *sway-input*(5).
 
 	\* may be used in lieu of a specific device name to configure all input
 	devices. A list of input device names may be obtained via *swaymsg -t
 	get\_inputs*.
 
-*seat* <seat> *{* <commands...> *}*
-	_commands..._ after *{* will be interpreted as seat commands applying to
-	the specified seat. For details, see *sway-input*(5). A newline is required
-	between *{* and the first command, and *}* must be alone on a line.
+*seat* <seat> <seat-subcommands...>
+	For details on seat subcommands, see *sway-input*(5).
 
 *seat* <seat> cursor move|set <x> <y>
 	Move specified seat's cursor relative to current position or wrap to
@@ -465,10 +472,8 @@ The default colors are:
 *mode* <mode>
 	Switches to the specified mode. The default mode _default_.
 
-*mode* [--pango\_markup] <mode> *{* <commands...> *}*
-	_commands..._ after *{* will be added to the specified mode. A newline is
-	required between *{* and the first command, and *}* must be alone on a
-	line. Only *bindsym* and *bindcode* commands are permitted in mode blocks.
+*mode* [--pango\_markup] <mode> <mode-subcommands...>
+	The only two valid _mode-subcommands..._ are *bindsym* and *bindcode*.
 	If _--pango\_markup_ is given, then _mode_ will be interpreted as pango
 	markup.
 
@@ -533,8 +538,15 @@ You may combine output commands into one, like so:
 	output HDMI-A-1 mode 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
 
 You can get a list of output names with *swaymsg -t get\_outputs*. You may also
-match any output by using the output name "\*". Be sure to add this output
-config after the others, or it will be matched instead of the others.
+match any output by using the output name "\*".
+
+*set* $<name> <value>
+	Sets variable $_name_ to _value_. You can use the new variable in the
+	arguments of future commands. When the variable is used, it can be escaped
+	with an additional $ (ie $$_name_) to have the replacement happen at run
+	time instead of when reading the config. However, it does not always make
+	sense for the variable to be replaced at run time since some arguments do
+	need to be known at config time.
 
 *show\_marks* yes|no
 	If *show\_marks* is yes, marks will be displayed in the window borders.
