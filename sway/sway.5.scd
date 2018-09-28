@@ -51,10 +51,6 @@ The following commands may only be used in the configuration file.
 	*wordexp*(3) for details). The same include file can only be included once;
 	subsequent attempts will be ignored.
 
-*set* $<name> <value>
-	Sets variable $_name_ to _value_. You can use the new variable in the
-	arguments of future commands.
-
 *swaybg\_command* <command>
 	Executes custom background _command_. Default is _swaybg_. Refer to
 	*output* below for more information.
@@ -535,6 +531,14 @@ You may combine output commands into one, like so:
 You can get a list of output names with *swaymsg -t get\_outputs*. You may also
 match any output by using the output name "\*". Be sure to add this output
 config after the others, or it will be matched instead of the others.
+
+*set* $<name> <value>
+	Sets variable $_name_ to _value_. You can use the new variable in the
+	arguments of future commands. When the variable is used, it can be escaped
+	with an additional $ (ie $$_name_) to have the replacement happen at run
+	time instead of when reading the config. However, it does not always make
+	sense for the variable to be replaced at run time since some arguments do
+	need to be known at config time.
 
 *show\_marks* yes|no
 	If *show\_marks* is yes, marks will be displayed in the window borders.
