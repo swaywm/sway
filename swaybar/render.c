@@ -473,7 +473,22 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaybar_output *output) {
 	return max_height > output->height ? max_height : output->height;
 }
 
-void render_frame(struct swaybar *bar, struct swaybar_output *output) {
+static void output_frame_handle_done(void *data, struct wl_callback *callback,
+		uint32_t time) {
+	wl_callback_destroy(callback);
+	struct swaybar_output *output = data;
+	output->frame_scheduled = false;
+	if (output->dirty) {
+		render_frame(output);
+		output->dirty = false;
+	}
+}
+
+static const struct wl_callback_listener output_frame_listener = {
+	.done = output_frame_handle_done
+};
+
+void render_frame(struct swaybar_output *output) {
 	assert(output->surface != NULL);
 
 	struct swaybar_hotspot *hotspot, *tmp;
@@ -518,6 +533,8 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 				output->width * output->scale,
 				output->height * output->scale);
 		if (!output->current_buffer) {
+			cairo_surface_destroy(recorder);
+			cairo_destroy(cairo);
 			return;
 		}
 		cairo_t *shm = output->current_buffer->cairo;
@@ -535,6 +552,11 @@ void render_frame(struct swaybar *bar, struct swaybar_output *output) {
 				output->current_buffer->buffer, 0, 0);
 		wl_surface_damage(output->surface, 0, 0,
 				output->width, output->height);
+
+		struct wl_callback *frame_callback = wl_surface_frame(output->surface);
+		wl_callback_add_listener(frame_callback, &output_frame_listener, output);
+		output->frame_scheduled = true;
+
 		wl_surface_commit(output->surface);
 	}
 	cairo_surface_destroy(recorder);

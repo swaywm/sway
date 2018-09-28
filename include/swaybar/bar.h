@@ -83,6 +83,8 @@ struct swaybar_output {
 	enum wl_output_subpixel subpixel;
 	struct pool_buffer buffers[2];
 	struct pool_buffer *current_buffer;
+	bool dirty;
+	bool frame_scheduled;
 };
 
 struct swaybar_workspace {
