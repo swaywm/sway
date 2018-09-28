@@ -141,9 +141,16 @@ static void ipc_parse_colors(
 	}
 }
 
-static void ipc_parse_config(
+static bool ipc_parse_config(
 		struct swaybar_config *config, const char *payload) {
 	json_object *bar_config = json_tokener_parse(payload);
+	json_object *success;
+	if (json_object_object_get_ex(bar_config, "success", &success)
+			&& !json_object_get_boolean(success)) {
+		wlr_log(WLR_ERROR, "No bar with that ID. Use 'swaymsg -t get_bar_config to get the available bar configs.");
+		json_object_put(bar_config);
+		return false;
+	}
 	json_object *markup, *mode, *hidden_bar, *position, *status_command;
 	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
@@ -226,10 +233,10 @@ static void ipc_parse_config(
 	}
 
 	json_object_put(bar_config);
+	return true;
 }
 
 void ipc_get_workspaces(struct swaybar *bar) {
-	bar->focused_output = NULL;
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		free_workspaces(&output->workspaces);
@@ -312,11 +319,14 @@ static void ipc_get_outputs(struct swaybar *bar) {
 	free(res);
 }
 
-void ipc_initialize(struct swaybar *bar, const char *bar_id) {
+bool ipc_initialize(struct swaybar *bar, const char *bar_id) {
 	uint32_t len = strlen(bar_id);
 	char *res = ipc_single_command(bar->ipc_socketfd,
 			IPC_GET_BAR_CONFIG, bar_id, &len);
-	ipc_parse_config(bar->config, res);
+	if (!ipc_parse_config(bar->config, res)) {
+		free(res);
+		return false;
+	}
 	free(res);
 	ipc_get_outputs(bar);
 
@@ -324,6 +334,7 @@ void ipc_initialize(struct swaybar *bar, const char *bar_id) {
 	len = strlen(subscribe);
 	free(ipc_single_command(bar->ipc_event_socketfd,
 			IPC_SUBSCRIBE, subscribe, &len));
+	return true;
 }
 
 bool handle_ipc_readable(struct swaybar *bar) {

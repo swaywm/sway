@@ -54,7 +54,6 @@ struct swaybar {
 	struct wl_seat *seat;
 
 	struct swaybar_config *config;
-	struct swaybar_output *focused_output;
 	struct swaybar_pointer pointer;
 	struct status_line *status;
 
@@ -95,9 +94,7 @@ struct swaybar_workspace {
 	bool urgent;
 };
 
-void bar_setup(struct swaybar *bar,
-	const char *socket_path,
-	const char *bar_id);
+bool bar_setup(struct swaybar *bar, const char *socket_path, const char *bar_id);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 

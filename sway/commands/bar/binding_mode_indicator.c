@@ -21,7 +21,9 @@ struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
 		config->current_bar->binding_mode_indicator = false;
 		wlr_log(WLR_DEBUG, "Disabling binding mode indicator on bar: %s",
 				config->current_bar->id);
+	} else {
+		return cmd_results_new(CMD_INVALID, "binding_mode_indicator",
+				"Invalid value %s", argv[0]);
 	}
-	return cmd_results_new(CMD_INVALID, "binding_mode_indicator",
-			"Invalid value %s", argv[0]);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

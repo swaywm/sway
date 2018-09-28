@@ -7,7 +7,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
+#include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/i3bar.h"
 #include "swaybar/event_loop.h"
 #include "swaybar/status_line.h"
 #include "readline.h"
