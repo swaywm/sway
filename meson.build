@@ -74,6 +74,11 @@ if elogind.found()
 	swayidle_deps += elogind
 endif
 
+if not systemd.found() and not elogind.found()
+    warning('The sway binary must be setuid when compiled without (e)logind')
+    warning('You must do this manually post-install: chmod a+s /path/to/sway')
+endif
+
 scdoc = find_program('scdoc', required: false)
 
 if scdoc.found()
@@ -139,10 +144,7 @@ subdir('swaybg')
 subdir('swaybar')
 subdir('swayidle')
 subdir('swaynag')
-
-if libpam.found()
-    subdir('swaylock')
-endif
+subdir('swaylock')
 
 config = configuration_data()
 config.set('sysconfdir', join_paths(prefix, sysconfdir))

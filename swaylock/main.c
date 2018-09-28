@@ -845,6 +845,9 @@ static int load_config(char *path, struct swaylock_state *state,
 static struct swaylock_state state;
 
 int main(int argc, char **argv) {
+	wlr_log_init(WLR_DEBUG, NULL);
+	initialize_pw_backend();
+
 	enum line_mode line_mode = LM_LINE;
 	state.args = (struct swaylock_args){
 		.mode = BACKGROUND_MODE_SOLID_COLOR,
@@ -856,8 +859,6 @@ int main(int argc, char **argv) {
 	};
 	wl_list_init(&state.images);
 	set_default_colors(&state.args.colors);
-
-	wlr_log_init(WLR_DEBUG, NULL);
 
 	char *config_path = NULL;
 	int result = parse_options(argc, argv, NULL, NULL, &config_path);
