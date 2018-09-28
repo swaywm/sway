@@ -167,13 +167,12 @@ struct output_config {
 };
 
 /**
- * Maps a workspace name to an output name.
- *
- * Set via `workspace <x> output <y>`
+ * Stores configuration for a workspace, regardless of whether the workspace
+ * exists.
  */
-struct workspace_output {
-	char *output;
+struct workspace_config {
 	char *workspace;
+	char *output;
 };
 
 struct bar_config {
@@ -327,7 +326,7 @@ struct sway_config {
 	list_t *modes;
 	list_t *bars;
 	list_t *cmd_queue;
-	list_t *workspace_outputs;
+	list_t *workspace_configs;
 	list_t *output_configs;
 	list_t *input_configs;
 	list_t *seat_configs;
@@ -517,6 +516,8 @@ void terminate_swaybg(pid_t pid);
 struct bar_config *default_bar_config(void);
 
 void free_bar_config(struct bar_config *bar);
+
+void free_workspace_config(struct workspace_config *wsc);
 
 /**
  * Updates the value of config->font_height based on the max title height

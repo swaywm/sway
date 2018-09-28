@@ -95,7 +95,12 @@ void free_config(struct sway_config *config) {
 		list_free(config->bars);
 	}
 	list_free(config->cmd_queue);
-	list_free(config->workspace_outputs);
+	if (config->workspace_configs) {
+		for (int i = 0; i < config->workspace_configs->length; i++) {
+			free_workspace_config(config->workspace_configs->items[i]);
+		}
+		list_free(config->workspace_configs);
+	}
 	if (config->output_configs) {
 		for (int i = 0; i < config->output_configs->length; i++) {
 			free_output_config(config->output_configs->items[i]);
@@ -175,7 +180,7 @@ static void config_defaults(struct sway_config *config) {
 	if (!(config->symbols = create_list())) goto cleanup;
 	if (!(config->modes = create_list())) goto cleanup;
 	if (!(config->bars = create_list())) goto cleanup;
-	if (!(config->workspace_outputs = create_list())) goto cleanup;
+	if (!(config->workspace_configs = create_list())) goto cleanup;
 	if (!(config->criteria = create_list())) goto cleanup;
 	if (!(config->no_focus = create_list())) goto cleanup;
 	if (!(config->input_configs = create_list())) goto cleanup;
@@ -804,7 +809,7 @@ char *do_var_replacement(char *str) {
 // would compare two structs in full, while this method only compares the
 // workspace.
 int workspace_output_cmp_workspace(const void *a, const void *b) {
-	const struct workspace_output *wsa = a, *wsb = b;
+	const struct workspace_config *wsa = a, *wsb = b;
 	return lenient_strcmp(wsa->workspace, wsb->workspace);
 }
 

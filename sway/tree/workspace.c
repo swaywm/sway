@@ -20,17 +20,23 @@
 #include "log.h"
 #include "util.h"
 
+struct workspace_config *workspace_find_config(const char *ws_name) {
+	for (int i = 0; i < config->workspace_configs->length; ++i) {
+		struct workspace_config *wsc = config->workspace_configs->items[i];
+		if (strcmp(wsc->workspace, ws_name) == 0) {
+			return wsc;
+		}
+	}
+	return NULL;
+}
+
 struct sway_output *workspace_get_initial_output(const char *name) {
-	// Search for workspace<->output pair
-	for (int i = 0; i < config->workspace_outputs->length; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcasecmp(wso->workspace, name) == 0) {
-			// Find output to use if it exists
-			struct sway_output *output = output_by_name(wso->output);
-			if (output) {
-				return output;
-			}
-			break;
+	// Check workspace configs for a workspace<->output pair
+	struct workspace_config *wsc = workspace_find_config(name);
+	if (wsc && wsc->output) {
+		struct sway_output *output = output_by_name(wsc->output);
+		if (output) {
+			return output;
 		}
 	}
 	// Otherwise put it on the focused output
@@ -121,17 +127,8 @@ void next_name_map(struct sway_container *ws, void *data) {
 
 static bool workspace_valid_on_output(const char *output_name,
 		const char *ws_name) {
-	int i;
-	for (i = 0; i < config->workspace_outputs->length; ++i) {
-		struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcasecmp(wso->workspace, ws_name) == 0) {
-			if (strcasecmp(wso->output, output_name) != 0) {
-				return false;
-			}
-		}
-	}
-
-	return true;
+	struct workspace_config *wsc = workspace_find_config(ws_name);
+	return !wsc || !wsc->output || strcmp(wsc->output, output_name) == 0;
 }
 
 static void workspace_name_from_binding(const struct sway_binding * binding,
@@ -231,13 +228,13 @@ char *workspace_next_name(const char *output_name) {
 		workspace_name_from_binding(mode->keycode_bindings->items[i],
 				output_name, &order, &target);
 	}
-	for (int i = 0; i < config->workspace_outputs->length; ++i) {
+	for (int i = 0; i < config->workspace_configs->length; ++i) {
 		// Unlike with bindings, this does not guarantee order
-		const struct workspace_output *wso = config->workspace_outputs->items[i];
-		if (strcmp(wso->output, output_name) == 0
-				&& workspace_by_name(wso->workspace) == NULL) {
+		const struct workspace_config *wsc = config->workspace_configs->items[i];
+		if (wsc->output && strcmp(wsc->output, output_name) == 0
+				&& workspace_by_name(wsc->workspace) == NULL) {
 			free(target);
-			target = strdup(wso->workspace);
+			target = strdup(wsc->workspace);
 			break;
 		}
 	}
