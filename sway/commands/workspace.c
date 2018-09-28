@@ -10,6 +10,26 @@
 #include "log.h"
 #include "stringop.h"
 
+static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
+	struct workspace_config *wsc = workspace_find_config(ws_name);
+	if (wsc) {
+		return wsc;
+	}
+	wsc = calloc(1, sizeof(struct workspace_config));
+	if (!wsc) {
+		return NULL;
+	}
+	wsc->workspace = strdup(ws_name);
+	list_add(config->workspace_configs, wsc);
+	return wsc;
+}
+
+void free_workspace_config(struct workspace_config *wsc) {
+	free(wsc->workspace);
+	free(wsc->output);
+	free(wsc);
+}
+
 struct cmd_results *cmd_workspace(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1))) {
@@ -28,21 +48,15 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO, output_location + 2))) {
 			return error;
 		}
-		struct workspace_output *wso = calloc(1, sizeof(struct workspace_output));
-		if (!wso) {
+		char *ws_name = join_args(argv, argc - 2);
+		struct workspace_config *wsc = workspace_config_find_or_create(ws_name);
+		free(ws_name);
+		if (!wsc) {
 			return cmd_results_new(CMD_FAILURE, "workspace output",
 					"Unable to allocate workspace output");
 		}
-		wso->workspace = join_args(argv, argc - 2);
-		wso->output = strdup(argv[output_location + 1]);
-		int i = -1;
-		if ((i = list_seq_find(config->workspace_outputs, workspace_output_cmp_workspace, wso)) != -1) {
-			struct workspace_output *old = config->workspace_outputs->items[i];
-			free(old); // workspaces can only be assigned to a single output
-			list_del(config->workspace_outputs, i);
-		}
-		wlr_log(WLR_DEBUG, "Assigning workspace %s to output %s", wso->workspace, wso->output);
-		list_add(config->workspace_outputs, wso);
+		free(wsc->output);
+		wsc->output = strdup(argv[output_location + 1]);
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
