@@ -128,7 +128,7 @@ void next_name_map(struct sway_container *ws, void *data) {
 static bool workspace_valid_on_output(const char *output_name,
 		const char *ws_name) {
 	struct workspace_config *wsc = workspace_find_config(ws_name);
-	return !wsc || strcmp(wsc->output, output_name) == 0;
+	return !wsc || !wsc->output || strcmp(wsc->output, output_name) == 0;
 }
 
 static void workspace_name_from_binding(const struct sway_binding * binding,
