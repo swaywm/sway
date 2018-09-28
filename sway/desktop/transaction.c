@@ -31,14 +31,14 @@ struct sway_transaction_instruction {
 	struct sway_transaction *transaction;
 	struct sway_node *node;
 	union {
-		struct sway_output_state *output_state;
-		struct sway_workspace_state *workspace_state;
-		struct sway_container_state *container_state;
+		struct sway_output_state output_state;
+		struct sway_workspace_state workspace_state;
+		struct sway_container_state container_state;
 	};
 	uint32_t serial;
 };
 
-static struct sway_transaction *transaction_create() {
+static struct sway_transaction *transaction_create(void) {
 	struct sway_transaction *transaction =
 		calloc(1, sizeof(struct sway_transaction));
 	if (!sway_assert(transaction, "Unable to allocate transaction")) {
@@ -86,14 +86,7 @@ static void transaction_destroy(struct sway_transaction *transaction) {
 
 static void copy_output_state(struct sway_output *output,
 		struct sway_transaction_instruction *instruction) {
-	struct sway_output_state *state =
-		calloc(1, sizeof(struct sway_output_state));
-	if (!state) {
-		wlr_log(WLR_ERROR, "Could not allocate output state");
-		return;
-	}
-	instruction->output_state = state;
-
+	struct sway_output_state *state = &instruction->output_state;
 	state->workspaces = create_list();
 	list_cat(state->workspaces, output->workspaces);
 
@@ -102,13 +95,7 @@ static void copy_output_state(struct sway_output *output,
 
 static void copy_workspace_state(struct sway_workspace *ws,
 		struct sway_transaction_instruction *instruction) {
-	struct sway_workspace_state *state =
-		calloc(1, sizeof(struct sway_workspace_state));
-	if (!state) {
-		wlr_log(WLR_ERROR, "Could not allocate workspace state");
-		return;
-	}
-	instruction->workspace_state = state;
+	struct sway_workspace_state *state = &instruction->workspace_state;
 
 	state->fullscreen = ws->fullscreen;
 	state->x = ws->x;
@@ -138,13 +125,7 @@ static void copy_workspace_state(struct sway_workspace *ws,
 
 static void copy_container_state(struct sway_container *container,
 		struct sway_transaction_instruction *instruction) {
-	struct sway_container_state *state =
-		calloc(1, sizeof(struct sway_container_state));
-	if (!state) {
-		wlr_log(WLR_ERROR, "Could not allocate container state");
-		return;
-	}
-	instruction->container_state = state;
+	struct sway_container_state *state = &instruction->container_state;
 
 	state->layout = container->layout;
 	state->con_x = container->x;
@@ -301,15 +282,15 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		case N_ROOT:
 			break;
 		case N_OUTPUT:
-			apply_output_state(node->sway_output, instruction->output_state);
+			apply_output_state(node->sway_output, &instruction->output_state);
 			break;
 		case N_WORKSPACE:
 			apply_workspace_state(node->sway_workspace,
-					instruction->workspace_state);
+					&instruction->workspace_state);
 			break;
 		case N_CONTAINER:
 			apply_container_state(node->sway_container,
-					instruction->container_state);
+					&instruction->container_state);
 			break;
 		}
 
@@ -335,7 +316,7 @@ static bool transaction_same_nodes(struct sway_transaction *a,
 	return true;
 }
 
-static void transaction_progress_queue() {
+static void transaction_progress_queue(void) {
 	if (!server.transactions->length) {
 		return;
 	}
@@ -390,7 +371,7 @@ static bool should_configure(struct sway_node *node,
 		return false;
 	}
 	struct sway_container_state *cstate = &node->sway_container->current;
-	struct sway_container_state *istate = instruction->container_state;
+	struct sway_container_state *istate = &instruction->container_state;
 #ifdef HAVE_XWAYLAND
 	// Xwayland views are position-aware and need to be reconfigured
 	// when their position changes.
@@ -418,10 +399,10 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_node *node = instruction->node;
 		if (should_configure(node, instruction)) {
 			instruction->serial = view_configure(node->sway_container->view,
-					instruction->container_state->view_x,
-					instruction->container_state->view_y,
-					instruction->container_state->view_width,
-					instruction->container_state->view_height);
+					instruction->container_state.view_x,
+					instruction->container_state.view_y,
+					instruction->container_state.view_width,
+					instruction->container_state.view_height);
 			++transaction->num_waiting;
 
 			// From here on we are rendering a saved buffer of the view, which
@@ -513,8 +494,8 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 		int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
-	if (instruction->container_state->view_width == width &&
-			instruction->container_state->view_height == height) {
+	if (instruction->container_state.view_width == width &&
+			instruction->container_state.view_height == height) {
 		set_instruction_ready(instruction);
 	}
 }
