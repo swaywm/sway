@@ -989,12 +989,16 @@ bool view_is_visible(struct sway_view *view) {
 		floater = floater->parent;
 	}
 	bool is_sticky = container_is_floating(floater) && floater->is_sticky;
+	if (!is_sticky && !workspace_is_visible(workspace)) {
+		return false;
+	}
 	// Check view isn't in a tabbed or stacked container on an inactive tab
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	struct sway_container *con = view->container;
 	while (con) {
 		enum sway_container_layout layout = container_parent_layout(con);
-		if (layout == L_TABBED || layout == L_STACKED) {
+		if ((layout == L_TABBED || layout == L_STACKED)
+				&& !container_is_floating(con)) {
 			struct sway_node *parent = con->parent ?
 				&con->parent->node : &con->workspace->node;
 			if (seat_get_active_tiling_child(seat, parent) != &con->node) {
@@ -1007,10 +1011,6 @@ bool view_is_visible(struct sway_view *view) {
 	if (workspace->fullscreen &&
 			!container_is_fullscreen_or_child(view->container)) {
 		return false;
-	}
-	// Check the workspace is visible
-	if (!is_sticky) {
-		return workspace_is_visible(workspace);
 	}
 	return true;
 }
