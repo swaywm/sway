@@ -237,7 +237,7 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 		wlr_log(WLR_DEBUG, "Setting background for output %d to %s",
 				output_i, oc->background);
 
-		size_t len = snprintf(NULL, 0, "%s %d %s %s %s",
+		size_t len = snprintf(NULL, 0, "%s %d \"%s\" %s %s",
 				config->swaybg_command ? config->swaybg_command : "swaybg",
 				output_i, oc->background, oc->background_option,
 				oc->background_fallback ? oc->background_fallback : "");
@@ -246,7 +246,7 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 			wlr_log(WLR_DEBUG, "Unable to allocate swaybg command");
 			return;
 		}
-		snprintf(command, len + 1, "%s %d %s %s %s",
+		snprintf(command, len + 1, "%s %d \"%s\" %s %s",
 				config->swaybg_command ? config->swaybg_command : "swaybg",
 				output_i, oc->background, oc->background_option,
 				oc->background_fallback ? oc->background_fallback : "");
