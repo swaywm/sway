@@ -9,6 +9,7 @@
 static struct cmd_handler input_handlers[] = {
 	{ "accel_profile", input_cmd_accel_profile },
 	{ "click_method", input_cmd_click_method },
+	{ "drag", input_cmd_drag },
 	{ "drag_lock", input_cmd_drag_lock },
 	{ "dwt", input_cmd_dwt },
 	{ "events", input_cmd_events },

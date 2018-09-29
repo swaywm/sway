@@ -120,6 +120,13 @@ static void input_manager_libinput_config_pointer(
 		libinput_device_config_click_set_method(libinput_device,
 			ic->click_method);
 	}
+	if (ic->drag != INT_MIN) {
+		wlr_log(WLR_DEBUG,
+			"libinput_config_pointer(%s) tap_set_drag_enabled(%d)",
+			ic->identifier, ic->click_method);
+		libinput_device_config_tap_set_drag_enabled(libinput_device,
+			ic->drag);
+	}
 	if (ic->drag_lock != INT_MIN) {
 		wlr_log(WLR_DEBUG,
 			"libinput_config_pointer(%s) tap_set_drag_lock_enabled(%d)",
