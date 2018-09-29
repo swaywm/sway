@@ -68,6 +68,9 @@ static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "gaps",
 				"Expected 'gaps inner|outer <px>'");
 	}
+	if (amount < 0) {
+		amount = 0;
+	}
 
 	if (inner) {
 		config->gaps_inner = amount;
@@ -91,6 +94,9 @@ static void configure_gaps(struct sway_workspace *ws, void *_data) {
 	case GAPS_OP_SUBTRACT:
 		*prop -= data->amount;
 		break;
+	}
+	if (*prop < 0) {
+		*prop = 0;
 	}
 	arrange_workspace(ws);
 }
