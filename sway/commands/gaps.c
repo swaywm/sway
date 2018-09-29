@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 #include "sway/commands.h"
 #include "sway/config.h"
 #include "sway/tree/arrange.h"
@@ -13,172 +14,167 @@ enum gaps_op {
 	GAPS_OP_SUBTRACT
 };
 
-enum gaps_scope {
-	GAPS_SCOPE_ALL,
-	GAPS_SCOPE_WORKSPACE,
-	GAPS_SCOPE_CURRENT
+struct gaps_data {
+	bool inner;
+	enum gaps_op operation;
+	int amount;
 };
 
+// gaps edge_gaps on|off|toggle
+static struct cmd_results *gaps_edge_gaps(int argc, char **argv) {
+	struct cmd_results *error;
+	if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2))) {
+		return error;
+	}
+
+	if (strcmp(argv[1], "on") == 0) {
+		config->edge_gaps = true;
+	} else if (strcmp(argv[1], "off") == 0) {
+		config->edge_gaps = false;
+	} else if (strcmp(argv[1], "toggle") == 0) {
+		if (!config->active) {
+			return cmd_results_new(CMD_INVALID, "gaps",
+					"Cannot toggle gaps while not running.");
+		}
+		config->edge_gaps = !config->edge_gaps;
+	} else {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"gaps edge_gaps on|off|toggle");
+	}
+	arrange_root();
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+// gaps inner|outer <px>
+static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
+	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 2);
+	if (error) {
+		return error;
+	}
+
+	bool inner;
+	if (strcasecmp(argv[0], "inner") == 0) {
+		inner = true;
+	} else if (strcasecmp(argv[0], "outer") == 0) {
+		inner = false;
+	} else {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer <px>'");
+	}
+
+	char *end;
+	int amount = strtol(argv[1], &end, 10);
+	if (strlen(end) && strcasecmp(end, "px") != 0) {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer <px>'");
+	}
+
+	if (inner) {
+		config->gaps_inner = amount;
+	} else {
+		config->gaps_outer = amount;
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static void configure_gaps(struct sway_workspace *ws, void *_data) {
+	struct gaps_data *data = _data;
+	int *prop = data->inner ? &ws->gaps_inner : &ws->gaps_outer;
+
+	switch (data->operation) {
+	case GAPS_OP_SET:
+		*prop = data->amount;
+		break;
+	case GAPS_OP_ADD:
+		*prop += data->amount;
+		break;
+	case GAPS_OP_SUBTRACT:
+		*prop -= data->amount;
+		break;
+	}
+	arrange_workspace(ws);
+}
+
+// gaps inner|outer current|all set|plus|minus <px>
+static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
+	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 4);
+	if (error) {
+		return error;
+	}
+
+	struct gaps_data data;
+
+	if (strcasecmp(argv[0], "inner") == 0) {
+		data.inner = true;
+	} else if (strcasecmp(argv[0], "outer") == 0) {
+		data.inner = false;
+	} else {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer current|all set|plus|minus <px>'");
+	}
+
+	bool all;
+	if (strcasecmp(argv[1], "current") == 0) {
+		all = false;
+	} else if (strcasecmp(argv[1], "all") == 0) {
+		all = true;
+	} else {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer current|all set|plus|minus <px>'");
+	}
+
+	if (strcasecmp(argv[2], "set") == 0) {
+		data.operation = GAPS_OP_SET;
+	} else if (strcasecmp(argv[2], "plus") == 0) {
+		data.operation = GAPS_OP_ADD;
+	} else if (strcasecmp(argv[2], "minus") == 0) {
+		data.operation = GAPS_OP_SUBTRACT;
+	} else {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer current|all set|plus|minus <px>'");
+	}
+
+	char *end;
+	data.amount = strtol(argv[3], &end, 10);
+	if (strlen(end) && strcasecmp(end, "px") != 0) {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer current|all set|plus|minus <px>'");
+	}
+
+	if (all) {
+		root_for_each_workspace(configure_gaps, &data);
+	} else {
+		configure_gaps(config->handler_context.workspace, &data);
+	}
+
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+// gaps edge_gaps on|off|toggle
+// gaps inner|outer <px> - sets defaults for workspaces
+// gaps inner|outer current|all set|plus|minus <px> - runtime only
 struct cmd_results *cmd_gaps(int argc, char **argv) {
-	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 1);
+	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2);
 	if (error) {
 		return error;
 	}
 
 	if (strcmp(argv[0], "edge_gaps") == 0) {
-		if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2))) {
-			return error;
-		}
-
-		if (strcmp(argv[1], "on") == 0) {
-			config->edge_gaps = true;
-		} else if (strcmp(argv[1], "off") == 0) {
-			config->edge_gaps = false;
-		} else if (strcmp(argv[1], "toggle") == 0) {
-			if (!config->active) {
-				return cmd_results_new(CMD_INVALID, "gaps",
-					"Cannot toggle gaps while not running.");
-			}
-			config->edge_gaps = !config->edge_gaps;
-		} else {
-			return cmd_results_new(CMD_INVALID, "gaps",
-				"gaps edge_gaps on|off|toggle");
-		}
-		arrange_root();
-	} else {
-		int amount_idx = 0; // the current index in argv
-		enum gaps_op op = GAPS_OP_SET;
-		enum gaps_scope scope = GAPS_SCOPE_ALL;
-		bool inner = true;
-
-		if (strcmp(argv[0], "inner") == 0) {
-			amount_idx++;
-			inner = true;
-		} else if (strcmp(argv[0], "outer") == 0) {
-			amount_idx++;
-			inner = false;
-		}
-
-		// If one of the long variants of the gaps command is used
-		// (which starts with inner|outer) check the number of args
-		if (amount_idx > 0) { // if we've seen inner|outer
-			if (argc > 2) { // check the longest variant
-				error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 4);
-				if (error) {
-					return error;
-				}
-			} else { // check the next longest format
-				error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 2);
-				if (error) {
-					return error;
-				}
-			}
-		} else {
-			error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 1);
-			if (error) {
-				return error;
-			}
-		}
-
-		if (argc == 4) {
-			// Long format: all|workspace|current.
-			if (strcmp(argv[amount_idx], "all") == 0) {
-				amount_idx++;
-				scope = GAPS_SCOPE_ALL;
-			} else if (strcmp(argv[amount_idx], "workspace") == 0) {
-				amount_idx++;
-				scope = GAPS_SCOPE_WORKSPACE;
-			} else if (strcmp(argv[amount_idx], "current") == 0) {
-				amount_idx++;
-				scope = GAPS_SCOPE_CURRENT;
-			}
-
-			// Long format: set|plus|minus
-			if (strcmp(argv[amount_idx], "set") == 0) {
-				amount_idx++;
-				op = GAPS_OP_SET;
-			} else if (strcmp(argv[amount_idx], "plus") == 0) {
-				amount_idx++;
-				op = GAPS_OP_ADD;
-			} else if (strcmp(argv[amount_idx], "minus") == 0) {
-				amount_idx++;
-				op = GAPS_OP_SUBTRACT;
-			}
-		}
-
-		char *end;
-		double val = strtod(argv[amount_idx], &end);
-
-		if (strlen(end) && val == 0.0) { // invalid <amount>
-			// guess which variant of the command was attempted
-			if (argc == 1) {
-				return cmd_results_new(CMD_INVALID, "gaps", "gaps <amount>");
-			}
-			if (argc == 2) {
-				return cmd_results_new(CMD_INVALID, "gaps",
-					"gaps inner|outer <amount>");
-			}
-			return cmd_results_new(CMD_INVALID, "gaps",
-				"gaps inner|outer all|workspace|current set|plus|minus <amount>");
-		}
-
-		if (amount_idx == 0) { // gaps <amount>
-			config->gaps_inner = val;
-			config->gaps_outer = val;
-			arrange_root();
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-		}
-		// Other variants. The middle-length variant (gaps inner|outer <amount>)
-		// just defaults the scope to "all" and defaults the op to "set".
-
-		double total;
-		switch (op) {
-			case GAPS_OP_SUBTRACT: {
-				total = (inner ? config->gaps_inner : config->gaps_outer) - val;
-				if (total < 0) {
-					total = 0;
-				}
-				break;
-			}
-			case GAPS_OP_ADD: {
-				total = (inner ? config->gaps_inner : config->gaps_outer) + val;
-				break;
-			}
-			case GAPS_OP_SET: {
-				total = val;
-				break;
-			}
-		}
-
-		if (scope == GAPS_SCOPE_ALL) {
-			if (inner) {
-				config->gaps_inner = total;
-			} else {
-				config->gaps_outer = total;
-			}
-			arrange_root();
-		} else {
-			if (scope == GAPS_SCOPE_WORKSPACE) {
-				struct sway_workspace *ws = config->handler_context.workspace;
-				ws->has_gaps = true;
-				if (inner) {
-					ws->gaps_inner = total;
-				} else {
-					ws->gaps_outer = total;
-				}
-				arrange_workspace(ws);
-			} else {
-				struct sway_container *c = config->handler_context.container;
-				c->has_gaps = true;
-				if (inner) {
-					c->gaps_inner = total;
-				} else {
-					c->gaps_outer = total;
-				}
-				arrange_workspace(c->workspace);
-			}
-		}
+		return gaps_edge_gaps(argc, argv);
 	}
 
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	if (argc == 2) {
+		return gaps_set_defaults(argc, argv);
+	}
+	if (argc == 4) {
+		if (config->active) {
+			return gaps_set_runtime(argc, argv);
+		} else {
+			return cmd_results_new(CMD_INVALID, "gaps",
+					"This syntax can only be used when sway is running");
+		}
+	}
+	return cmd_results_new(CMD_INVALID, "gaps",
+			"Expected 'gaps inner|outer <px>' or "
+			"'gaps inner|outer current|all set|plus|minus <px>'");
 }

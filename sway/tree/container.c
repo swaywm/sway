@@ -1022,7 +1022,7 @@ void container_add_gaps(struct sway_container *c) {
 
 	struct sway_workspace *ws = c->workspace;
 
-	c->current_gaps = ws->has_gaps ? ws->gaps_inner : config->gaps_inner;
+	c->current_gaps = ws->gaps_inner;
 	c->x += c->current_gaps;
 	c->y += c->current_gaps;
 	c->width -= 2 * c->current_gaps;
