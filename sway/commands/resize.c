@@ -179,11 +179,11 @@ static void container_recursive_resize(struct sway_container *container,
 	}
 }
 
-static void resize_tiled(struct sway_container *parent, int amount,
+static bool resize_tiled(struct sway_container *parent, int amount,
 		enum resize_axis axis) {
 	struct sway_container *focused = parent;
 	if (!parent) {
-		return;
+		return false;
 	}
 
 	enum sway_container_layout parallel_layout =
@@ -216,7 +216,7 @@ static void resize_tiled(struct sway_container *parent, int amount,
 	}
 	if (!parent) {
 		// Can't resize in this direction
-		return;
+		return false;
 	}
 
 	// Implement up/down/left/right direction by zeroing one of the weights,
@@ -248,22 +248,22 @@ static void resize_tiled(struct sway_container *parent, int amount,
 			if (sibling_pos < parent_pos && minor_weight) {
 				double pixels = -amount / minor_weight;
 				if (major_weight && (sibling_size + pixels / 2) < min_sane) {
-					return; // Too small
+					return false; // Too small
 				} else if (!major_weight && sibling_size + pixels < min_sane) {
-					return; // Too small
+					return false; // Too small
 				}
 			} else if (sibling_pos > parent_pos && major_weight) {
 				double pixels = -amount / major_weight;
 				if (minor_weight && (sibling_size + pixels / 2) < min_sane) {
-					return; // Too small
+					return false; // Too small
 				} else if (!minor_weight && sibling_size + pixels < min_sane) {
-					return; // Too small
+					return false; // Too small
 				}
 			}
 		} else {
 			double pixels = amount;
 			if (parent_size + pixels < min_sane) {
-				return; // Too small
+				return false; // Too small
 			}
 		}
 	}
@@ -317,9 +317,10 @@ static void resize_tiled(struct sway_container *parent, int amount,
 	} else {
 		arrange_workspace(parent->workspace);
 	}
+	return true;
 }
 
-void container_resize_tiled(struct sway_container *parent,
+bool container_resize_tiled(struct sway_container *parent,
 		enum wlr_edges edge, int amount) {
 	enum resize_axis axis = RESIZE_AXIS_INVALID;
 	switch (edge) {
@@ -338,7 +339,7 @@ void container_resize_tiled(struct sway_container *parent,
 	case WLR_EDGE_NONE:
 		break;
 	}
-	resize_tiled(parent, amount, axis);
+	return resize_tiled(parent, amount, axis);
 }
 
 /**
@@ -395,6 +396,10 @@ static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
 	case RESIZE_AXIS_INVALID:
 		return cmd_results_new(CMD_INVALID, "resize", "Invalid axis/direction");
 	}
+	if (grow_x == 0 && grow_y == 0) {
+		return cmd_results_new(CMD_INVALID, "resize",
+				"Cannot resize any further");
+	}
 	con->x += grow_x;
 	con->y += grow_y;
 	con->width += grow_width;
@@ -442,7 +447,10 @@ static struct cmd_results *resize_adjust_tiled(enum resize_axis axis,
 		}
 	}
 
-	resize_tiled(current, amount->amount, axis);
+	if (!resize_tiled(current, amount->amount, axis)) {
+		return cmd_results_new(CMD_INVALID, "resize",
+				"Cannot resize any further");
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 

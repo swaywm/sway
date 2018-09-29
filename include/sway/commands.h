@@ -95,7 +95,7 @@ struct cmd_results *add_color(const char *name,
 /**
  * TODO: Move this function and its dependent functions to container.c.
  */
-void container_resize_tiled(struct sway_container *parent, enum wlr_edges edge,
+bool container_resize_tiled(struct sway_container *parent, enum wlr_edges edge,
 		int amount);
 
 sway_cmd cmd_assign;
