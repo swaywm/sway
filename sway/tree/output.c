@@ -113,6 +113,20 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	arrange_root();
 }
 
+static void evacuate_sticky(struct sway_workspace *old_ws,
+		struct sway_output *new_output) {
+	struct sway_workspace *new_ws = output_get_active_workspace(new_output);
+	while (old_ws->floating->length) {
+		struct sway_container *sticky = old_ws->floating->items[0];
+		container_detach(sticky);
+		workspace_add_floating(new_ws, sticky);
+		container_handle_fullscreen_reparent(sticky);
+		container_floating_move_to_center(sticky);
+		ipc_event_window(sticky, "move");
+	}
+	workspace_detect_urgent(new_ws);
+}
+
 static void output_evacuate(struct sway_output *output) {
 	if (!output->workspaces->length) {
 		return;
@@ -130,15 +144,19 @@ static void output_evacuate(struct sway_output *output) {
 
 		workspace_detach(workspace);
 
-		if (workspace_is_empty(workspace)) {
-			workspace_begin_destroy(workspace);
-			continue;
-		}
-
 		struct sway_output *new_output =
 			workspace_output_get_highest_available(workspace, output);
 		if (!new_output) {
 			new_output = fallback_output;
+		}
+
+		if (workspace_is_empty(workspace)) {
+			// If floating is not empty, there are sticky containers to move
+			if (workspace->floating->length) {
+				evacuate_sticky(workspace, new_output);
+			}
+			workspace_begin_destroy(workspace);
+			continue;
 		}
 
 		if (new_output) {
