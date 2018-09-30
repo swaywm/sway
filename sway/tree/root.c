@@ -273,6 +273,12 @@ void root_for_each_container(void (*f)(struct sway_container *con, void *data),
 			container_for_each_child(container, f, data);
 		}
 	}
+
+	// Saved workspaces
+	for (int i = 0; i < root->saved_workspaces->length; ++i) {
+		struct sway_workspace *ws = root->saved_workspaces->items[i];
+		workspace_for_each_container(ws, f, data);
+	}
 }
 
 struct sway_output *root_find_output(
@@ -320,6 +326,15 @@ struct sway_container *root_find_container(
 			}
 		}
 	}
+
+	// Saved workspaces
+	for (int i = 0; i < root->saved_workspaces->length; ++i) {
+		struct sway_workspace *ws = root->saved_workspaces->items[i];
+		if ((result = workspace_find_container(ws, test, data))) {
+			return result;
+		}
+	}
+
 	return NULL;
 }
 
