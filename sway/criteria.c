@@ -339,6 +339,8 @@ static enum criteria_token token_from_name(char *name) {
 		return T_URGENT;
 	} else if (strcmp(name, "workspace") == 0) {
 		return T_WORKSPACE;
+	} else if (strcmp(name, "floating") == 0) {
+		return T_FLOATING;
 	}
 	return T_INVALID;
 }
