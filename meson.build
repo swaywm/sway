@@ -128,7 +128,16 @@ else
 endif
 add_project_arguments('-DSWAY_VERSION=@0@'.format(version), language: 'c')
 
-add_project_arguments('-D_LD_LIBRARY_PATH="@0@"'.format(get_option('ld-library-path')), language: 'c')
+if get_option('use_rpath')
+	if get_option('custom_rpath') == ''
+		# default to platform specific libdir, one level up from the binary
+		rpathdir = join_paths('$ORIGIN', '..', '$LIB')
+	else
+		rpathdir = get_option('custom_rpath')
+	endif
+else
+	rpathdir = ''
+endif
 
 sway_inc = include_directories('include')
 

@@ -241,14 +241,6 @@ int main(int argc, char **argv) {
 		"      --get-socketpath   Gets the IPC socket path and prints it, then exits.\n"
 		"\n";
 
-	// Security:
-	unsetenv("LD_PRELOAD");
-#ifdef _LD_LIBRARY_PATH
-	setenv("LD_LIBRARY_PATH", _LD_LIBRARY_PATH, 1);
-#else
-	unsetenv("LD_LIBRARY_PATH");
-#endif
-
 	int c;
 	while (1) {
 		int option_index = 0;
