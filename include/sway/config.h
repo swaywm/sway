@@ -449,8 +449,6 @@ void free_sway_variable(struct sway_variable *var);
  */
 char *do_var_replacement(char *str);
 
-struct cmd_results *check_security_config();
-
 int input_identifier_cmp(const void *item, const void *data);
 
 struct input_config *new_input_config(const char* identifier);
