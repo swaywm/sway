@@ -32,7 +32,7 @@ void sway_terminate(int exit_code) {
 	exit(exit_code);
 }
 
-static void daemonize() {
+static void daemonize(void) {
 	int fds[2];
 	if (pipe(fds) != 0) {
 		wlr_log(WLR_ERROR, "Failed to pipe");

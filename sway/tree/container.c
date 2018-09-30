@@ -593,7 +593,7 @@ void container_update_representation(struct sway_container *con) {
 	}
 }
 
-size_t container_titlebar_height() {
+size_t container_titlebar_height(void) {
 	return config->font_height + TITLEBAR_V_PADDING * 2;
 }
 

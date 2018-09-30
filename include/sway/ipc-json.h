@@ -4,7 +4,7 @@
 #include "sway/tree/container.h"
 #include "sway/input/input-manager.h"
 
-json_object *ipc_json_get_version();
+json_object *ipc_json_get_version(void);
 
 json_object *ipc_json_describe_disabled_output(struct sway_output *o);
 json_object *ipc_json_describe_node(struct sway_node *node);

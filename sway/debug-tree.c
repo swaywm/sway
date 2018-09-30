@@ -120,7 +120,7 @@ static int draw_node(cairo_t *cairo, struct sway_node *node,
 	return height;
 }
 
-void update_debug_tree() {
+void update_debug_tree(void) {
 	if (!debug.render_tree) {
 		return;
 	}

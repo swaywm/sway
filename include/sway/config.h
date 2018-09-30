@@ -469,7 +469,7 @@ struct seat_config *copy_seat_config(struct seat_config *seat);
 
 void free_seat_config(struct seat_config *ic);
 
-struct seat_attachment_config *seat_attachment_config_new();
+struct seat_attachment_config *seat_attachment_config_new(void);
 
 struct seat_attachment_config *seat_config_get_attachment(
 		struct seat_config *seat_config, char *identifier);

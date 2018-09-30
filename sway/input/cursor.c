@@ -30,7 +30,7 @@
 // when dragging to the edge of a layout container.
 #define DROP_LAYOUT_BORDER 30
 
-static uint32_t get_current_time_msec() {
+static uint32_t get_current_time_msec(void) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	return now.tv_nsec / 1000;

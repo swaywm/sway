@@ -41,7 +41,7 @@ void sig_handler(int signal) {
 	sway_terminate(EXIT_SUCCESS);
 }
 
-void detect_raspi() {
+void detect_raspi(void) {
 	bool raspi = false;
 	FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
 	if (!f) {
@@ -81,7 +81,7 @@ void detect_raspi() {
 	}
 }
 
-void detect_proprietary() {
+void detect_proprietary(void) {
 	FILE *f = fopen("/proc/modules", "r");
 	if (!f) {
 		return;
@@ -116,7 +116,7 @@ void run_as_ipc_client(char *command, char *socket_path) {
 	close(socketfd);
 }
 
-static void log_env() {
+static void log_env(void) {
 	const char *log_vars[] = {
 		"PATH",
 		"LD_LIBRARY_PATH",
@@ -131,7 +131,7 @@ static void log_env() {
 	}
 }
 
-static void log_distro() {
+static void log_distro(void) {
 	const char *paths[] = {
 		"/etc/lsb-release",
 		"/etc/os-release",
@@ -158,7 +158,7 @@ static void log_distro() {
 	}
 }
 
-static void log_kernel() {
+static void log_kernel(void) {
 	FILE *f = popen("uname -a", "r");
 	if (!f) {
 		wlr_log(WLR_INFO, "Unable to determine kernel version");

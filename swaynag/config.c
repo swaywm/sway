@@ -11,7 +11,7 @@
 #include "util.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-static char *read_from_stdin() {
+static char *read_from_stdin(void) {
 	char *buffer = NULL;
 	while (!feof(stdin)) {
 		char *line = read_line(stdin);

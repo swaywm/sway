@@ -42,7 +42,7 @@ static const char *ipc_json_orientation_description(enum sway_container_layout l
 	return "none";
 }
 
-json_object *ipc_json_get_version() {
+json_object *ipc_json_get_version(void) {
 	int major = 0, minor = 0, patch = 0;
 	json_object *version = json_object_new_object();
 
