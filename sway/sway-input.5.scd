@@ -67,6 +67,9 @@ The following commands may only be used in the configuration file.
 *input* <identifier> click\_method none|button\_areas|clickfinger
 	Changes the click method for the specified device.
 
+*input* <identifier> drag enabled|disabled
+	Enables or disables tap-and-drag for specified input device.
+
 *input* <identifier> drag\_lock enabled|disabled
 	Enables or disables drag lock for specified input device.
 

@@ -93,6 +93,7 @@ struct input_config {
 
 	int accel_profile;
 	int click_method;
+	int drag;
 	int drag_lock;
 	int dwt;
 	int left_handed;
