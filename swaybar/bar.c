@@ -517,14 +517,13 @@ static void set_bar_dirty(struct swaybar *bar) {
 	}
 }
 
-bool bar_setup(struct swaybar *bar,
-		const char *socket_path, const char *bar_id) {
+bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	bar_init(bar);
 	init_event_loop();
 
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
-	if (!ipc_initialize(bar, bar_id)) {
+	if (!ipc_initialize(bar)) {
 		return false;
 	}
 	if (bar->config->status_command) {
@@ -625,4 +624,5 @@ void bar_teardown(struct swaybar *bar) {
 	if (bar->status) {
 		status_line_free(bar->status);
 	}
+	free(bar->id);
 }

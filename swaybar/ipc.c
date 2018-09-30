@@ -345,10 +345,10 @@ void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
 			IPC_COMMAND, bind->command, &len));
 }
 
-bool ipc_initialize(struct swaybar *bar, const char *bar_id) {
-	uint32_t len = strlen(bar_id);
+bool ipc_initialize(struct swaybar *bar) {
+	uint32_t len = strlen(bar->id);
 	char *res = ipc_single_command(bar->ipc_socketfd,
-			IPC_GET_BAR_CONFIG, bar_id, &len);
+			IPC_GET_BAR_CONFIG, bar->id, &len);
 	if (!ipc_parse_config(bar->config, res)) {
 		free(res);
 		return false;

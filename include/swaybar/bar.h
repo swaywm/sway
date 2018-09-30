@@ -46,6 +46,8 @@ struct swaybar_hotspot {
 };
 
 struct swaybar {
+	char *id;
+
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
@@ -96,7 +98,7 @@ struct swaybar_workspace {
 	bool urgent;
 };
 
-bool bar_setup(struct swaybar *bar, const char *socket_path, const char *bar_id);
+bool bar_setup(struct swaybar *bar, const char *socket_path);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 
