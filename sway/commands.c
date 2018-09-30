@@ -394,6 +394,7 @@ struct cmd_results *config_command(char *exec) {
 		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
+				&& handler->handle != cmd_set
 				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
 			strip_quotes(argv[i]);
 		}
