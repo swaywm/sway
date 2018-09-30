@@ -72,6 +72,16 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	free(output);
 }
 
+static void set_output_dirty(struct swaybar_output *output) {
+	if (output->frame_scheduled) {
+		output->dirty = true;
+		return;
+	}
+	if (output->surface) {
+		render_frame(output);
+	}
+}
+
 static void layer_surface_configure(void *data,
 		struct zwlr_layer_surface_v1 *surface,
 		uint32_t serial, uint32_t width, uint32_t height) {
@@ -79,7 +89,7 @@ static void layer_surface_configure(void *data,
 	output->width = width;
 	output->height = height;
 	zwlr_layer_surface_v1_ack_configure(surface, serial);
-	render_frame(output->bar, output);
+	set_output_dirty(output);
 }
 
 static void layer_surface_closed(void *_output,
@@ -325,27 +335,22 @@ static void output_geometry(void *data, struct wl_output *wl_output, int32_t x,
 		const char *make, const char *model, int32_t transform) {
 	struct swaybar_output *output = data;
 	output->subpixel = subpixel;
-	if (output->surface) {
-		render_frame(output->bar, output);
-	}
 }
 
-static void output_mode(void *data, struct wl_output *output, uint32_t flags,
+static void output_mode(void *data, struct wl_output *wl_output, uint32_t flags,
 		int32_t width, int32_t height, int32_t refresh) {
 	// Who cares
 }
 
-static void output_done(void *data, struct wl_output *output) {
-	// Who cares
+static void output_done(void *data, struct wl_output *wl_output) {
+	struct swaybar_output *output = data;
+	set_output_dirty(output);
 }
 
 static void output_scale(void *data, struct wl_output *wl_output,
 		int32_t factor) {
 	struct swaybar_output *output = data;
 	output->scale = factor;
-	if (output->surface) {
-		render_frame(output->bar, output);
-	}
 }
 
 struct wl_output_listener output_listener = {
@@ -381,7 +386,7 @@ static void xdg_output_handle_done(void *data,
 		wl_list_insert(&bar->outputs, &output->link);
 
 		add_layer_surface(output);
-		render_frame(bar, output);
+		set_output_dirty(output);
 	}
 }
 
@@ -470,12 +475,10 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = handle_global_remove,
 };
 
-static void render_all_frames(struct swaybar *bar) {
+static void set_bar_dirty(struct swaybar *bar) {
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
-		if (output->surface != NULL) {
-			render_frame(bar, output);
-		}
+		set_output_dirty(output);
 	}
 }
 
@@ -528,7 +531,7 @@ bool bar_setup(struct swaybar *bar,
 	assert(pointer->cursor_surface);
 
 	ipc_get_workspaces(bar);
-	render_all_frames(bar);
+	set_bar_dirty(bar);
 	return true;
 }
 
@@ -543,7 +546,7 @@ static void display_in(int fd, short mask, void *data) {
 static void ipc_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
 	if (handle_ipc_readable(bar)) {
-		render_all_frames(bar);
+		set_bar_dirty(bar);
 	}
 }
 
@@ -551,10 +554,10 @@ static void status_in(int fd, short mask, void *data) {
 	struct swaybar *bar = data;
 	if (mask & (POLLHUP | POLLERR)) {
 		status_error(bar->status, "[error reading from status command]");
-		render_all_frames(bar);
+		set_bar_dirty(bar);
 		remove_event(fd);
 	} else if (status_handle_readable(bar->status)) {
-		render_all_frames(bar);
+		set_bar_dirty(bar);
 	}
 }
 
