@@ -1,5 +1,6 @@
 option('sway-version', type : 'string', description: 'The version string reported in `sway --version`.')
-option('ld-library-path', type: 'string', value: '', description: 'The LD_LIBRARY_PATH environment variable.')
+option('use_rpath', type: 'boolean', value: false, description: 'install binaries with rpath set')
+option('custom_rpath', type: 'string', value: '', description: 'override rpath with a custom one')
 option('default-wallpaper', type: 'boolean', value: true, description: 'Install the default wallpaper.')
 option('zsh-completions', type: 'boolean', value: true, description: 'Install zsh shell completions.')
 option('bash-completions', type: 'boolean', value: true, description: 'Install bash shell completions.')

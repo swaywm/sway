@@ -187,5 +187,6 @@ executable(
 	include_directories: [sway_inc],
 	dependencies: sway_deps,
 	link_with: [lib_sway_common],
+	install_rpath : rpathdir,
 	install: true
 )
