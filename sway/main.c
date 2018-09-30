@@ -12,10 +12,6 @@
 #include <sys/wait.h>
 #include <sys/un.h>
 #include <unistd.h>
-#ifdef __linux__
-#include <sys/capability.h>
-#include <sys/prctl.h>
-#endif
 #include <wlr/util/log.h>
 #include "sway/commands.h"
 #include "sway/config.h"
@@ -45,7 +41,7 @@ void sig_handler(int signal) {
 	sway_terminate(EXIT_SUCCESS);
 }
 
-void detect_raspi() {
+void detect_raspi(void) {
 	bool raspi = false;
 	FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
 	if (!f) {
@@ -85,7 +81,7 @@ void detect_raspi() {
 	}
 }
 
-void detect_proprietary() {
+void detect_proprietary(void) {
 	FILE *f = fopen("/proc/modules", "r");
 	if (!f) {
 		return;
@@ -120,7 +116,7 @@ void run_as_ipc_client(char *command, char *socket_path) {
 	close(socketfd);
 }
 
-static void log_env() {
+static void log_env(void) {
 	const char *log_vars[] = {
 		"PATH",
 		"LD_LIBRARY_PATH",
@@ -135,7 +131,7 @@ static void log_env() {
 	}
 }
 
-static void log_distro() {
+static void log_distro(void) {
 	const char *paths[] = {
 		"/etc/lsb-release",
 		"/etc/os-release",
@@ -162,7 +158,7 @@ static void log_distro() {
 	}
 }
 
-static void log_kernel() {
+static void log_kernel(void) {
 	FILE *f = popen("uname -a", "r");
 	if (!f) {
 		wlr_log(WLR_INFO, "Unable to determine kernel version");
@@ -181,28 +177,8 @@ static void log_kernel() {
 	pclose(f);
 }
 
-static void executable_sanity_check() {
-#ifdef __linux__
-		struct stat sb;
-		char *exe = realpath("/proc/self/exe", NULL);
-		stat(exe, &sb);
-		// We assume that cap_get_file returning NULL implies ENODATA
-		if (sb.st_mode & (S_ISUID|S_ISGID) && cap_get_file(exe)) {
-			wlr_log(WLR_ERROR,
-				"sway executable has both the s(g)uid bit AND file caps set.");
-			wlr_log(WLR_ERROR,
-				"This is strongly discouraged (and completely broken).");
-			wlr_log(WLR_ERROR,
-				"Please clear one of them (either the suid bit, or the file caps).");
-			wlr_log(WLR_ERROR,
-				"If unsure, strip the file caps.");
-			exit(EXIT_FAILURE);
-		}
-		free(exe);
-#endif
-}
 
-static void drop_permissions(bool keep_caps) {
+static void drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		if (setgid(getgid()) != 0) {
 			wlr_log(WLR_ERROR, "Unable to drop root");
@@ -217,20 +193,6 @@ static void drop_permissions(bool keep_caps) {
 		wlr_log(WLR_ERROR, "Root privileges can be restored.");
 		exit(EXIT_FAILURE);
 	}
-#ifdef __linux__
-	if (keep_caps) {
-		// Drop every cap except CAP_SYS_PTRACE
-		cap_t caps = cap_init();
-		cap_value_t keep = CAP_SYS_PTRACE;
-		wlr_log(WLR_INFO, "Dropping extra capabilities");
-		if (cap_set_flag(caps, CAP_PERMITTED, 1, &keep, CAP_SET) ||
-			cap_set_flag(caps, CAP_EFFECTIVE, 1, &keep, CAP_SET) ||
-			cap_set_proc(caps)) {
-			wlr_log(WLR_ERROR, "Failed to drop extra capabilities");
-			exit(EXIT_FAILURE);
-		}
-	}
-#endif
 }
 
 void enable_debug_flag(const char *flag) {
@@ -347,7 +309,7 @@ int main(int argc, char **argv) {
 			wlr_log(WLR_ERROR, "Don't use options with the IPC client");
 			exit(EXIT_FAILURE);
 		}
-		drop_permissions(false);
+		drop_permissions();
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
 			wlr_log(WLR_ERROR, "Unable to retrieve socket path");
@@ -358,34 +320,17 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	executable_sanity_check();
-	bool suid = false;
-
 	if (!server_privileged_prepare(&server)) {
 		return 1;
 	}
-
-#if defined(__linux__) || defined(__FreeBSD__)
-	if (getuid() != geteuid() || getgid() != getegid()) {
-#ifdef __linux__
-		// Retain capabilities after setuid()
-		if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0)) {
-			wlr_log(WLR_ERROR, "Cannot keep caps after setuid()");
-			exit(EXIT_FAILURE);
-		}
-#endif
-		suid = true;
-	}
-#endif
 
 	log_kernel();
 	log_distro();
 	detect_proprietary();
 	detect_raspi();
 
-#if defined(__linux__) || defined(__FreeBSD__)
-	drop_permissions(suid);
-#endif
+	drop_permissions();
+
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
 

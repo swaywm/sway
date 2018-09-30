@@ -22,7 +22,7 @@ uint32_t parse_position(const char *position) {
 	}
 }
 
-struct swaybar_config *init_config() {
+struct swaybar_config *init_config(void) {
 	struct swaybar_config *config = calloc(1, sizeof(struct swaybar_config));
 	config->status_command = NULL;
 	config->pango_markup = false;

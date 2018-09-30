@@ -50,7 +50,7 @@ struct swaybar_config {
 	} colors;
 };
 
-struct swaybar_config *init_config();
+struct swaybar_config *init_config(void);
 void free_config(struct swaybar_config *config);
 uint32_t parse_position(const char *position);
 

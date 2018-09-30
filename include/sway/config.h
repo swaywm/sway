@@ -449,8 +449,6 @@ void free_sway_variable(struct sway_variable *var);
  */
 char *do_var_replacement(char *str);
 
-struct cmd_results *check_security_config();
-
 int input_identifier_cmp(const void *item, const void *data);
 
 struct input_config *new_input_config(const char* identifier);
@@ -471,7 +469,7 @@ struct seat_config *copy_seat_config(struct seat_config *seat);
 
 void free_seat_config(struct seat_config *ic);
 
-struct seat_attachment_config *seat_attachment_config_new();
+struct seat_attachment_config *seat_attachment_config_new(void);
 
 struct seat_attachment_config *seat_config_get_attachment(
 		struct seat_config *seat_config, char *identifier);

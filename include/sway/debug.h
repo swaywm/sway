@@ -17,6 +17,6 @@ struct sway_debug {
 
 extern struct sway_debug debug;
 
-void update_debug_tree();
+void update_debug_tree(void);
 
 #endif

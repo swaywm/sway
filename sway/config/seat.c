@@ -30,7 +30,7 @@ struct seat_config *new_seat_config(const char* name) {
 	return seat;
 }
 
-struct seat_attachment_config *seat_attachment_config_new() {
+struct seat_attachment_config *seat_attachment_config_new(void) {
 	struct seat_attachment_config *attachment =
 		calloc(1, sizeof(struct seat_attachment_config));
 	if (!attachment) {
