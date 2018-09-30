@@ -68,6 +68,20 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	ws->output_priority = create_list();
 	workspace_output_add_priority(ws, output);
 
+	ws->gaps_outer = config->gaps_outer;
+	ws->gaps_inner = config->gaps_inner;
+	if (name) {
+		struct workspace_config *wsc = workspace_find_config(name);
+		if (wsc) {
+			if (wsc->gaps_outer != -1) {
+				ws->gaps_outer = wsc->gaps_outer;
+			}
+			if (wsc->gaps_inner != -1) {
+				ws->gaps_inner = wsc->gaps_inner;
+			}
+		}
+	}
+
 	output_add_workspace(output, ws);
 	output_sort_workspaces(output);
 
@@ -632,13 +646,13 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		return;
 	}
 
-	ws->current_gaps = ws->has_gaps ? ws->gaps_outer : config->gaps_outer;
+	ws->current_gaps = ws->gaps_outer;
 
 	if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
 		// We have to add inner gaps for this, because children of tabbed and
 		// stacked containers don't apply their own gaps - they assume the
 		// tabbed/stacked container is using gaps.
-		ws->current_gaps += ws->has_gaps ? ws->gaps_inner : config->gaps_inner;
+		ws->current_gaps += ws->gaps_inner;
 	}
 
 	ws->x += ws->current_gaps;

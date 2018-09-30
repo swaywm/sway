@@ -419,19 +419,17 @@ The default colors are:
 	inner gap is nonzero. When _off_, gaps will only be added between views.
 	_toggle_ cannot be used in the configuration file.
 
-*gaps* <amount>
-	Sets _amount_ pixels of gap between windows and around each workspace.
-
 *gaps* inner|outer <amount>
-	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the former
-	affects spacing between views and the latter affects the space around each
-	workspace.
+	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
+	affects spacing around each view and outer affects the spacing around each
+	workspace. Outer gaps are in addition to inner gaps.
 
-*gaps* inner|outer all|workspace|current set|plus|minus <amount>
-	Changes the gaps for the _inner_ or _outer_ gap. _all_ changes the gaps for
-	all views or workspace, _workspace_ changes gaps for all views in current
-	workspace (or current workspace), and _current_ changes gaps for the current
-	view or workspace.
+	This affects new workspaces only, and is used when the workspace doesn't
+	have its own gaps settings (see: workspace <ws> gaps inner|outer <amount>).
+
+*gaps* inner|outer all|current set|plus|minus <amount>
+	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
+	_current_ workspace.
 
 *hide\_edge\_borders* none|vertical|horizontal|both|smart
 	Hides window borders adjacent to the screen edges. Default is _none_.
@@ -579,6 +577,10 @@ match any output by using the output name "\*".
 
 *workspace* back_and_forth
 	Switches to the previously focused workspace.
+
+*workspace* <name> gaps inner|outer <amount>
+	Specifies that workspace _name_ should have the given gaps settings when it
+	is created.
 
 *workspace* <name> output <output>
 	Specifies that workspace _name_ should be shown on the specified _output_.

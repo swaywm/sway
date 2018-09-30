@@ -138,15 +138,14 @@ struct cmd_results *cmd_layout(int argc, char **argv) {
 			}
 			container->layout = new_layout;
 			container_update_representation(container);
-			arrange_container(container);
 		} else {
 			if (old_layout != L_TABBED && old_layout != L_STACKED) {
 				workspace->prev_split_layout = old_layout;
 			}
 			workspace->layout = new_layout;
 			workspace_update_representation(workspace);
-			arrange_workspace(workspace);
 		}
+		arrange_workspace(workspace);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

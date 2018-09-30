@@ -174,6 +174,8 @@ struct output_config {
 struct workspace_config {
 	char *workspace;
 	char *output;
+	int gaps_inner;
+	int gaps_outer;
 };
 
 struct bar_config {
