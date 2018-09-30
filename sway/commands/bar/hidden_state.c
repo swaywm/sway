@@ -32,7 +32,7 @@ static struct cmd_results *bar_set_hidden_state(struct bar_config *bar,
 	}
 	// free old mode
 	free(old_state);
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return NULL;
 }
 
 struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
@@ -50,24 +50,20 @@ struct cmd_results *bar_cmd_hidden_state(int argc, char **argv) {
 
 	const char *state = argv[0];
 	if (config->reading) {
-		return bar_set_hidden_state(config->current_bar, state);
-	}
-
-	const char *id = NULL;
-	if (argc == 2) {
-		id = argv[1];
-	}
-	struct bar_config *bar;
-	for (int i = 0; i < config->bars->length; ++i) {
-		bar = config->bars->items[i];
-		if (id && strcmp(id, bar->id) == 0) {
-			return bar_set_hidden_state(bar, state);
-		}
-
-		error = bar_set_hidden_state(bar, state);
-		if (error) {
-			return error;
+		error = bar_set_hidden_state(config->current_bar, state);
+	} else {
+		const char *id = argc == 2 ? argv[1] : NULL;
+		for (int i = 0; i < config->bars->length; ++i) {
+			struct bar_config *bar = config->bars->items[i];
+			if (id) {
+				if (strcmp(id, bar->id) == 0) {
+					error = bar_set_hidden_state(bar, state);
+					break;
+				}
+			} else if ((error = bar_set_hidden_state(bar, state))) {
+				break;
+			}
 		}
 	}
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	return error ? error : cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
