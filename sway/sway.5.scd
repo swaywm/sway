@@ -431,7 +431,7 @@ The default colors are:
 	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
 	_current_ workspace.
 
-*hide\_edge\_borders* none|vertical|horizontal|both|smart
+*hide\_edge\_borders* none|vertical|horizontal|both|smart|smart\_no\_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_.
 
 *input* <input\_device> <input-subcommands...>
@@ -455,6 +455,12 @@ The default colors are:
 
 *kill*
 	Kills (closes) the currently focused container and all of its children.
+
+*smart\_borders* on|no\_gaps|off
+	If smart\_borders are _on_, borders will only be enabled if the workspace
+	only has one visible child (identical to _hide\_edge\_borders_ smart). If
+	smart\_borders is set to _no\_gaps_, borders will only be enabled if the
+	workspace only has one visible child and gaps greater than zero.
 
 *smart\_gaps* on|off
 	If smart\_gaps are _on_ gaps will only be enabled if a workspace has more
