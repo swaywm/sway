@@ -640,10 +640,16 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 	if (ws->current_gaps > 0) {
 		return;
 	}
-	bool should_apply =
-		config->edge_gaps || (config->smart_gaps && ws->tiling->length > 1);
-	if (!should_apply) {
+	if (!config->edge_gaps) {
 		return;
+	}
+	if (config->smart_gaps) {
+		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+		struct sway_container *focus =
+			seat_get_focus_inactive_view(seat, &ws->node);
+		if (focus && focus->view && view_is_only_visible(focus->view)) {
+			return;
+		}
 	}
 
 	ws->current_gaps = ws->gaps_outer;

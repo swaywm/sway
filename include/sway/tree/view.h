@@ -256,6 +256,13 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	int height);
 
 /**
+ * Whether or not the view is the only visible view in its tree. If the view
+ * is tiling, there may be floating views. If the view is floating, there may
+ * be tiling views or views in a different floating container.
+ */
+bool view_is_only_visible(struct sway_view *view);
+
+/**
  * Configure the view's position and size based on the container's position and
  * size, taking borders into consideration.
  */

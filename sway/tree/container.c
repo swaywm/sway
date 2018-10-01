@@ -1021,10 +1021,28 @@ void container_add_gaps(struct sway_container *c) {
 	if (!c->view && c->layout != L_TABBED && c->layout != L_STACKED) {
 		return;
 	}
-	// Children of tabbed/stacked containers re-use the gaps of the container
-	enum sway_container_layout layout = container_parent_layout(c);
-	if (layout == L_TABBED || layout == L_STACKED) {
-		return;
+	// Descendants of tabbed/stacked containers re-use the gaps of the container
+	struct sway_container *temp = c;
+	while (temp) {
+		enum sway_container_layout layout = container_parent_layout(temp);
+		if (layout == L_TABBED || layout == L_STACKED) {
+			return;
+		}
+		temp = temp->parent;
+	}
+	// If smart gaps is on, don't add gaps if there is only one view visible
+	if (config->smart_gaps) {
+		struct sway_view *view = c->view;
+		if (!view) {
+			struct sway_seat *seat =
+				input_manager_get_default_seat(input_manager);
+			struct sway_container *focus =
+				seat_get_focus_inactive_view(seat, &c->node);
+			view = focus ? focus->view : NULL;
+		}
+		if (view && view_is_only_visible(view)) {
+			return;
+		}
 	}
 
 	struct sway_workspace *ws = c->workspace;

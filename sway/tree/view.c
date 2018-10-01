@@ -162,6 +162,23 @@ uint32_t view_configure(struct sway_view *view, double lx, double ly, int width,
 	return 0;
 }
 
+bool view_is_only_visible(struct sway_view *view) {
+	bool only_view = true;
+	struct sway_container *con = view->container;
+	while (con) {
+		enum sway_container_layout layout = container_parent_layout(con);
+		if (layout != L_TABBED && layout != L_STACKED) {
+			list_t *siblings = container_get_siblings(con);
+			if (siblings && siblings->length > 1) {
+				only_view = false;
+				break;
+			}
+		}
+		con = con->parent;
+	}
+	return only_view;
+}
+
 void view_autoconfigure(struct sway_view *view) {
 	if (!view->container->workspace) {
 		// Hidden in the scratchpad
@@ -178,24 +195,9 @@ void view_autoconfigure(struct sway_view *view) {
 	}
 
 	struct sway_workspace *ws = view->container->workspace;
-
-	bool other_views = false;
-	if (config->hide_edge_borders == E_SMART) {
-		struct sway_container *con = view->container;
-		while (con) {
-			enum sway_container_layout layout = container_parent_layout(con);
-			if (layout != L_TABBED && layout != L_STACKED) {
-				list_t *siblings = container_get_siblings(con);
-				if (siblings && siblings->length > 1) {
-					other_views = true;
-					break;
-				}
-			}
-			con = con->parent;
-		}
-	}
-
 	struct sway_container *con = view->container;
+	bool other_views = config->hide_edge_borders == E_SMART ?
+		!view_is_only_visible(view) : false;
 
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;

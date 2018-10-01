@@ -760,6 +760,12 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 
 	seat->has_focus = true;
 
+	if (config->smart_gaps) {
+		// When smart gaps is on, gaps may change when the focus changes so
+		// the workspace needs to be arranged
+		arrange_workspace(new_workspace);
+	}
+
 	update_debug_tree();
 }
 
