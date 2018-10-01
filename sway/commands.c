@@ -391,7 +391,11 @@ struct cmd_results *config_command(char *exec) {
 	// Var replacement, for all but first argument of set
 	// TODO commands
 	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
-		if (*argv[i] == '\"' || *argv[i] == '\'') {
+		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always
+				&& handler->handle != cmd_bindsym
+				&& handler->handle != cmd_bindcode
+				&& handler->handle != cmd_set
+				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
 			strip_quotes(argv[i]);
 		}
 		argv[i] = do_var_replacement(argv[i]);
