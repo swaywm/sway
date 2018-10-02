@@ -23,6 +23,7 @@ struct status_line {
 	struct wl_list blocks; // i3bar_block::link
 
 	bool click_events;
+	bool clicked;
 	char *buffer;
 	size_t buffer_size;
 	size_t buffer_index;
