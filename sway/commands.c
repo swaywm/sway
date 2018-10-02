@@ -110,6 +110,7 @@ static struct cmd_handler handlers[] = {
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
 	{ "show_marks", cmd_show_marks },
+	{ "smart_borders", cmd_smart_borders },
 	{ "smart_gaps", cmd_smart_gaps },
 	{ "tiling_drag", cmd_tiling_drag },
 	{ "workspace", cmd_workspace },

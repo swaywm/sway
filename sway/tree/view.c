@@ -179,6 +179,17 @@ bool view_is_only_visible(struct sway_view *view) {
 	return only_view;
 }
 
+static bool gaps_to_edge(struct sway_view *view) {
+	struct sway_container *con = view->container;
+	while (con) {
+		if (con->current_gaps > 0) {
+			return true;
+		}
+		con = con->parent;
+	}
+	return view->container->workspace->current_gaps > 0;
+}
+
 void view_autoconfigure(struct sway_view *view) {
 	if (!view->container->workspace) {
 		// Hidden in the scratchpad
@@ -196,23 +207,27 @@ void view_autoconfigure(struct sway_view *view) {
 
 	struct sway_workspace *ws = view->container->workspace;
 	struct sway_container *con = view->container;
-	bool other_views = config->hide_edge_borders == E_SMART ?
-		!view_is_only_visible(view) : false;
+
+	bool smart = config->hide_edge_borders == E_SMART ||
+		config->hide_edge_borders == E_SMART_NO_GAPS;
+	bool other_views = smart && !view_is_only_visible(view);
+	bool no_gaps = config->hide_edge_borders != E_SMART_NO_GAPS
+		|| !gaps_to_edge(view);
 
 	view->border_top = view->border_bottom = true;
 	view->border_left = view->border_right = true;
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_VERTICAL
-			|| (config->hide_edge_borders == E_SMART && !other_views)) {
-		view->border_left = con->x != ws->x;
-		int right_x = con->x + con->width;
+			|| (smart && !other_views && no_gaps)) {
+		view->border_left = con->x - con->current_gaps != ws->x;
+		int right_x = con->x + con->width + con->current_gaps;
 		view->border_right = right_x != ws->x + ws->width;
 	}
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_HORIZONTAL
-			|| (config->hide_edge_borders == E_SMART && !other_views)) {
-		view->border_top = con->y != ws->y;
-		int bottom_y = con->y + con->height;
+			|| (smart && !other_views && no_gaps)) {
+		view->border_top = con->y - con->current_gaps != ws->y;
+		int bottom_y = con->y + con->height + con->current_gaps;
 		view->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
