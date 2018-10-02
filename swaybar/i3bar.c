@@ -260,7 +260,7 @@ bool i3bar_handle_readable(struct status_line *status) {
 
 enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 		struct i3bar_block *block, int x, int y, enum x11_button button) {
-	wlr_log(WLR_DEBUG, "block %s clicked", block->name ? block->name : "(nil)");
+	wlr_log(WLR_DEBUG, "block %s clicked", block->name);
 	if (!block->name || !status->click_events) {
 		return HOTSPOT_PROCESS;
 	}
@@ -276,10 +276,11 @@ enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 	json_object_object_add(event_json, "button", json_object_new_int(button));
 	json_object_object_add(event_json, "x", json_object_new_int(x));
 	json_object_object_add(event_json, "y", json_object_new_int(y));
-	if (dprintf(status->write_fd, "%s,\n",
+	if (dprintf(status->write_fd, "%s%s\n", status->clicked ? "," : "",
 				json_object_to_json_string(event_json)) < 0) {
 		status_error(status, "[failed to write click event]");
 	}
+	status->clicked = true;
 	json_object_put(event_json);
 	return HOTSPOT_IGNORE;
 }
