@@ -144,32 +144,43 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 	struct sway_node *parent = node_get_parent(node);
 	struct sway_node *focus = seat_get_focus(seat);
 
-	bool set_focus =
-		focus != NULL &&
-		(focus == node || node_has_ancestor(focus, node)) &&
-		node->type == N_CONTAINER;
+	if (node->type == N_WORKSPACE) {
+		seat_node_destroy(seat_node);
+		return;
+	}
+
+	// Even though the container being destroyed might be nowhere near the
+	// focused container, we still need to set focus_inactive on a sibling of
+	// the container being destroyed.
+	bool needs_new_focus = focus &&
+		(focus == node || node_has_ancestor(focus, node));
 
 	seat_node_destroy(seat_node);
 
-	if (set_focus) {
-		struct sway_node *next_focus = NULL;
-		while (next_focus == NULL) {
-			struct sway_container *con =
-				seat_get_focus_inactive_view(seat, parent);
-			next_focus = con ? &con->node : NULL;
+	// Find new focus_inactive (ie. sibling, or workspace if no siblings left)
+	struct sway_node *next_focus = NULL;
+	while (next_focus == NULL) {
+		struct sway_container *con =
+			seat_get_focus_inactive_view(seat, parent);
+		next_focus = con ? &con->node : NULL;
 
-			if (next_focus == NULL && parent->type == N_WORKSPACE) {
-				next_focus = parent;
-				break;
-			}
-
-			parent = node_get_parent(parent);
+		if (next_focus == NULL && parent->type == N_WORKSPACE) {
+			next_focus = parent;
+			break;
 		}
 
-		// the structure change might have caused it to move up to the top of
+		parent = node_get_parent(parent);
+	}
+
+	if (needs_new_focus) {
+		// The structure change might have caused it to move up to the top of
 		// the focus stack without sending focus notifications to the view
 		seat_send_focus(next_focus, seat);
 		seat_set_focus(seat, next_focus);
+	} else {
+		// Setting focus_inactive
+		seat_set_focus_warp(seat, next_focus, false, false);
+		seat_set_focus_warp(seat, focus, false, false);
 	}
 }
 
