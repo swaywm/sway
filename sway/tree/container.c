@@ -356,16 +356,33 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 struct sway_container *container_at(struct sway_workspace *workspace,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	struct sway_container *c = NULL;
+	struct sway_container *c;
 
-	// First cast a ray to handle floating windows
+	// Focused view's popups
+	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_container *focus = seat_get_focused_container(seat);
+	bool is_floating = focus && container_is_floating_or_child(focus);
+	// Focused view's popups
+	if (focus && focus->view) {
+		c = surface_at_view(focus, lx, ly, surface, sx, sy);
+		if (c && surface_is_popup(*surface)) {
+			return c;
+		}
+		*surface = NULL;
+	}
+	// Cast a ray to handle floating windows
 	for (int i = workspace->floating->length - 1; i >= 0; --i) {
 		struct sway_container *cn = workspace->floating->items[i];
 		if (cn->view && (c = surface_at_view(cn, lx, ly, surface, sx, sy))) {
 			return c;
 		}
 	}
-
+	// If focused is tiling, focused view's non-popups
+	if (focus && focus->view && !is_floating) {
+		if ((c = surface_at_view(focus, lx, ly, surface, sx, sy))) {
+			return c;
+		}
+	}
 	// Tiling (non-focused)
 	if ((c = tiling_container_at(&workspace->node, lx, ly, surface, sx, sy))) {
 		return c;
