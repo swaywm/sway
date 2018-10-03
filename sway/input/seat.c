@@ -952,6 +952,9 @@ struct sway_node *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
 	}
+	if (wl_list_length(&seat->focus_stack) == 0) {
+		return NULL;
+	}
 	struct sway_seat_node *current =
 		wl_container_of(seat->focus_stack.next, current, link);
 	return current->node;
