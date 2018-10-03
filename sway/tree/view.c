@@ -341,7 +341,7 @@ void view_update_csd_from_client(struct sway_view *view, bool enabled) {
 	wlr_log(WLR_DEBUG, "View %p updated CSD to %i", view, enabled);
 	if (enabled && view->border != B_CSD) {
 		view->saved_border = view->border;
-		if (container_is_floating(view->container)) {
+		if (view->container && container_is_floating(view->container)) {
 			view->border = B_CSD;
 		}
 	} else if (!enabled && view->border == B_CSD) {
