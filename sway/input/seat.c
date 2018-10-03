@@ -606,6 +606,18 @@ static int handle_urgent_timeout(void *data) {
 	return 0;
 }
 
+static void container_raise_floating(struct sway_container *con) {
+	// Bring container to front by putting it at the end of the floating list.
+	struct sway_container *floater = con;
+	while (floater->parent) {
+		floater = floater->parent;
+	}
+	if (container_is_floating(floater)) {
+		list_move_to_end(floater->workspace->floating, floater);
+		node_set_dirty(&floater->workspace->node);
+	}
+}
+
 void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		bool warp, bool notify) {
 	if (seat->focused_layer) {
@@ -733,16 +745,8 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	}
 
 	// If we've focused a floating container, bring it to the front.
-	// We do this by putting it at the end of the floating list.
-	if (container) {
-		struct sway_container *floater = container;
-		while (floater->parent) {
-			floater = floater->parent;
-		}
-		if (container_is_floating(floater)) {
-			list_move_to_end(floater->workspace->floating, floater);
-			node_set_dirty(&floater->workspace->node);
-		}
+	if (container && config->raise_floating) {
+		container_raise_floating(container);
 	}
 
 	if (last_focus) {
@@ -1017,6 +1021,11 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_ref_con_lx = sx;
 	seat->op_ref_con_ly = sy;
 	seat->op_moved = false;
+
+	// In case the container was not raised by gaining focus, raise on click
+	if (con && !config->raise_floating) {
+		container_raise_floating(con);
+	}
 }
 
 void seat_begin_move_floating(struct sway_seat *seat,

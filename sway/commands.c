@@ -107,6 +107,7 @@ static struct cmd_handler handlers[] = {
 	{ "new_window", cmd_default_border },
 	{ "no_focus", cmd_no_focus },
 	{ "output", cmd_output },
+	{ "raise_floating", cmd_raise_floating },
 	{ "seat", cmd_seat },
 	{ "set", cmd_set },
 	{ "show_marks", cmd_show_marks },
