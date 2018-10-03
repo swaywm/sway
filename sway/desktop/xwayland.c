@@ -243,12 +243,14 @@ static bool wants_floating(struct sway_view *view) {
 	return false;
 }
 
-static bool has_client_side_decorations(struct sway_view *view) {
-	if (xwayland_view_from_view(view) == NULL) {
-		return false;
-	}
-	struct wlr_xwayland_surface *surface = view->wlr_xwayland_surface;
-	return surface->decorations != WLR_XWAYLAND_SURFACE_DECORATIONS_ALL;
+static void handle_set_decorations(struct wl_listener *listener, void *data) {
+	struct sway_xwayland_view *xwayland_view =
+		wl_container_of(listener, xwayland_view, set_decorations);
+	struct sway_view *view = &xwayland_view->view;
+	struct wlr_xwayland_surface *xsurface = view->wlr_xwayland_surface;
+
+	bool csd = xsurface->decorations != WLR_XWAYLAND_SURFACE_DECORATIONS_ALL;
+	view_update_csd_from_client(view, csd);
 }
 
 static void _close(struct sway_view *view) {
@@ -274,7 +276,6 @@ static const struct sway_view_impl view_impl = {
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
-	.has_client_side_decorations = has_client_side_decorations,
 	.close = _close,
 	.destroy = destroy,
 };
@@ -343,6 +344,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->set_role.link);
 	wl_list_remove(&xwayland_view->set_window_type.link);
 	wl_list_remove(&xwayland_view->set_hints.link);
+	wl_list_remove(&xwayland_view->set_decorations.link);
 	wl_list_remove(&xwayland_view->map.link);
 	wl_list_remove(&xwayland_view->unmap.link);
 	view_begin_destroy(&xwayland_view->view);
@@ -612,6 +614,10 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 
 	wl_signal_add(&xsurface->events.set_hints, &xwayland_view->set_hints);
 	xwayland_view->set_hints.notify = handle_set_hints;
+
+	wl_signal_add(&xsurface->events.set_decorations,
+			&xwayland_view->set_decorations);
+	xwayland_view->set_decorations.notify = handle_set_decorations;
 
 	wl_signal_add(&xsurface->events.unmap, &xwayland_view->unmap);
 	xwayland_view->unmap.notify = handle_unmap;

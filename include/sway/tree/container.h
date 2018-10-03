@@ -28,6 +28,7 @@ enum sway_container_border {
 	B_NONE,
 	B_PIXEL,
 	B_NORMAL,
+	B_CSD,
 };
 
 struct sway_root;
@@ -63,7 +64,6 @@ struct sway_container_state {
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
-	bool using_csd;
 };
 
 struct sway_container {

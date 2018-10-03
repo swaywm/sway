@@ -148,7 +148,6 @@ static void copy_container_state(struct sway_container *container,
 		state->border_left = view->border_left;
 		state->border_right = view->border_right;
 		state->border_bottom = view->border_bottom;
-		state->using_csd = view->using_csd;
 	} else {
 		state->children = create_list();
 		list_cat(state->children, container->children);

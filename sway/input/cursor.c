@@ -175,7 +175,8 @@ static enum wlr_edges find_edge(struct sway_container *cont,
 		return WLR_EDGE_NONE;
 	}
 	struct sway_view *view = cont->view;
-	if (view->border == B_NONE || !view->border_thickness || view->using_csd) {
+	if (view->border == B_NONE || !view->border_thickness ||
+			view->border == B_CSD) {
 		return WLR_EDGE_NONE;
 	}
 

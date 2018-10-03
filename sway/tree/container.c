@@ -669,6 +669,9 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_init_floating(container);
 		if (container->view) {
 			view_set_tiled(container->view, false);
+			if (container->view->using_csd) {
+				container->view->border = B_CSD;
+			}
 		}
 		if (old_parent) {
 			container_reap_empty(old_parent);
@@ -695,6 +698,9 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		}
 		if (container->view) {
 			view_set_tiled(container->view, true);
+			if (container->view->using_csd) {
+				container->view->border = container->view->saved_border;
+			}
 		}
 		container->is_sticky = false;
 	}
@@ -715,7 +721,7 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 	size_t border_width = 0;
 	size_t top = 0;
 
-	if (!view->using_csd) {
+	if (view->border != B_CSD) {
 		border_width = view->border_thickness * (view->border != B_NONE);
 		top = view->border == B_NORMAL ?
 			container_titlebar_height() : border_width;

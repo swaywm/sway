@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include "sway/decoration.h"
+#include "sway/desktop/transaction.h"
 #include "sway/server.h"
+#include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "log.h"
 
@@ -24,20 +26,12 @@ static void server_decoration_handle_mode(struct wl_listener *listener,
 		return;
 	}
 
-	switch (view->type) {
-	case SWAY_VIEW_XDG_SHELL_V6:;
-		struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
-			(struct sway_xdg_shell_v6_view *)view;
-		xdg_shell_v6_view->deco_mode = deco->wlr_server_decoration->mode;
-		break;
-	case SWAY_VIEW_XDG_SHELL:;
-		struct sway_xdg_shell_view *xdg_shell_view =
-			(struct sway_xdg_shell_view *)view;
-		xdg_shell_view->deco_mode = deco->wlr_server_decoration->mode;
-		break;
-	default:
-		break;
-	}
+	bool csd = deco->wlr_server_decoration->mode ==
+			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
+	view_update_csd_from_client(view, csd);
+
+	arrange_container(view->container);
+	transaction_commit_dirty();
 }
 
 void handle_server_decoration(struct wl_listener *listener, void *data) {
