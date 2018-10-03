@@ -151,10 +151,10 @@ struct sway_container *container_find_child(struct sway_container *container,
 	return NULL;
 }
 
-static void surface_at_view(struct sway_container *con, double lx, double ly,
+static struct sway_container *surface_at_view(struct sway_container *con, double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	if (!sway_assert(con->view, "Expected a view")) {
-		return;
+		return NULL;
 	}
 	struct sway_view *view = con->view;
 	double view_sx = lx - view->x + view->geometry.x;
@@ -184,7 +184,9 @@ static void surface_at_view(struct sway_container *con, double lx, double ly,
 		*sx = _sx;
 		*sy = _sy;
 		*surface = _surface;
+		return con;
 	}
+	return NULL;
 }
 
 /**
@@ -354,46 +356,16 @@ static bool surface_is_popup(struct wlr_surface *surface) {
 struct sway_container *container_at(struct sway_workspace *workspace,
 		double lx, double ly,
 		struct wlr_surface **surface, double *sx, double *sy) {
-	struct sway_container *c;
-	// Focused view's popups
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
-	struct sway_container *focus = seat_get_focused_container(seat);
-	bool is_floating = focus && container_is_floating_or_child(focus);
-	// Focused view's popups
-	if (focus && focus->view) {
-		surface_at_view(focus, lx, ly, surface, sx, sy);
-		if (*surface && surface_is_popup(*surface)) {
-			return focus;
-		}
-		*surface = NULL;
-	}
-	// If focused is floating, focused view's non-popups
-	if (focus && focus->view && is_floating) {
-		// only switch to unfocused container if focused container has no menus open
-		bool has_subsurfaces = wl_list_length(&focus->view->surface->subsurfaces) > 0;
-		c = floating_container_at(lx, ly, surface, sx, sy);
-		if (!has_subsurfaces && c && c->view && *surface && c != focus) {
+	struct sway_container *c = NULL;
+
+	// First cast a ray to handle floating windows
+	for (int i = workspace->floating->length - 1; i >= 0; --i) {
+		struct sway_container *cn = workspace->floating->items[i];
+		if (cn->view && (c = surface_at_view(cn, lx, ly, surface, sx, sy))) {
 			return c;
 		}
+	}
 
-		surface_at_view(focus, lx, ly, surface, sx, sy);
-		if (*surface) {
-			return focus;
-		}
-		*surface = NULL;
-	}
-	// Floating (non-focused)
-	if ((c = floating_container_at(lx, ly, surface, sx, sy))) {
-		return c;
-	}
-	// If focused is tiling, focused view's non-popups
-	if (focus && focus->view && !is_floating) {
-		surface_at_view(focus, lx, ly, surface, sx, sy);
-		if (*surface) {
-			return focus;
-		}
-		*surface = NULL;
-	}
 	// Tiling (non-focused)
 	if ((c = tiling_container_at(&workspace->node, lx, ly, surface, sx, sy))) {
 		return c;
