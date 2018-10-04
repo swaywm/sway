@@ -136,7 +136,7 @@ static bool keyboard_execute_compositor_binding(struct sway_keyboard *keyboard,
 				keysym <= XKB_KEY_XF86Switch_VT_12) {
 			if (wlr_backend_is_multi(server.backend)) {
 				struct wlr_session *session =
-					wlr_multi_get_session(server.backend);
+					wlr_backend_get_session(server.backend);
 				if (session) {
 					unsigned vt = keysym - XKB_KEY_XF86Switch_VT_1 + 1;
 					wlr_session_change_vt(session, vt);
