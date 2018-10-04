@@ -800,9 +800,6 @@ void seat_set_focus_workspace(struct sway_seat *seat,
 
 void seat_set_focus_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, bool unfocus) {
-	if (seat->focused_layer != NULL) {
-		return;
-	}
 	if (seat->has_focus && unfocus) {
 		struct sway_node *focus = seat_get_focus(seat);
 		seat_send_unfocus(focus, seat);

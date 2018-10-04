@@ -216,12 +216,48 @@ void arrange_layers(struct sway_output *output) {
 	}
 }
 
+static struct sway_layer_surface *find_any_layer_by_client(
+		struct wl_client *client, struct wlr_output *ignore_output) {
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		if (output->wlr_output == ignore_output) {
+			continue;
+		}
+		// For now we'll only check the overlay layer
+		struct sway_layer_surface *lsurface;
+		wl_list_for_each(lsurface,
+				&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], link) {
+			struct wl_resource *resource = lsurface->layer_surface->resource;
+			if (wl_resource_get_client(resource) == client) {
+				return lsurface;
+			}
+		}
+	}
+	return NULL;
+}
+
 static void handle_output_destroy(struct wl_listener *listener, void *data) {
 	struct sway_layer_surface *sway_layer =
 		wl_container_of(listener, sway_layer, output_destroy);
+	// Determine if this layer is being used by an exclusive client. If it is,
+	// try and find another layer owned by this client to pass focus to.
+	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct wl_client *client =
+		wl_resource_get_client(sway_layer->layer_surface->resource);
+	bool set_focus = seat->exclusive_client == client;
+
 	wl_list_remove(&sway_layer->output_destroy.link);
 	wl_list_remove(&sway_layer->link);
 	wl_list_init(&sway_layer->link);
+
+	if (set_focus) {
+		struct sway_layer_surface *layer =
+			find_any_layer_by_client(client, sway_layer->layer_surface->output);
+		if (layer) {
+			seat_set_focus_layer(seat, layer->layer_surface);
+		}
+	}
+
 	sway_layer->layer_surface->output = NULL;
 	wlr_layer_surface_v1_close(sway_layer->layer_surface);
 }
