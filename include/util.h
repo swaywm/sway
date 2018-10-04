@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <xkbcommon/xkbcommon.h>
 
@@ -77,9 +76,6 @@ bool parse_boolean(const char *boolean, bool current);
  * to a dangling symlink, NULL is returned.
  */
 char* resolve_path(const char* path);
-
-char *b64_encode(const char* binaryData, size_t len, size_t *flen);
-unsigned char *b64_decode(const char *ascii, size_t len, size_t *flen);
 
 bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
 
