@@ -754,11 +754,12 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 	struct sway_seat *seat = cursor->seat;
 
-	// Handle ending seat operation
-	if (cursor->seat->operation != OP_NONE &&
-			button == cursor->seat->op_button && state == WLR_BUTTON_RELEASED) {
-		seat_end_mouse_operation(seat);
-		seat_pointer_notify_button(seat, time_msec, button, state);
+	// Handle existing seat operation
+	if (cursor->seat->operation != OP_NONE) {
+		if (button == cursor->seat->op_button && state == WLR_BUTTON_RELEASED) {
+			seat_end_mouse_operation(seat);
+			seat_pointer_notify_button(seat, time_msec, button, state);
+		}
 		return;
 	}
 
