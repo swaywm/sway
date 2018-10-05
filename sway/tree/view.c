@@ -371,7 +371,7 @@ void view_close_popups(struct sway_view *view) {
 void view_damage_from(struct sway_view *view) {
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		output_damage_from_view(output, view);
+		output_damage_view_surfaces(output, view);
 	}
 }
 
