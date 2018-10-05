@@ -369,11 +369,20 @@ static void damage_handle_frame(struct wl_listener *listener, void *data) {
 	pixman_region32_t damage;
 	pixman_region32_init(&damage);
 	if (!wlr_output_damage_make_current(output->damage, &needs_swap, &damage)) {
+		pixman_region32_fini(&damage);
 		return;
 	}
 
 	if (needs_swap) {
 		output_render(output, &now, &damage);
+	} else {
+		// TODO: Remove this once wlroots is changed to schedule frames using
+		// backends.
+		output->wlr_output->frame_pending = true;
+		if (output->wlr_output->idle_frame) {
+			wl_event_source_remove(output->wlr_output->idle_frame);
+			output->wlr_output->idle_frame = NULL;
+		}
 	}
 
 	pixman_region32_fini(&damage);
