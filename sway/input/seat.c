@@ -157,6 +157,11 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 
 	seat_node_destroy(seat_node);
 
+	if (!parent) {
+		// Destroying a container that is no longer in the tree
+		return;
+	}
+
 	// Find new focus_inactive (ie. sibling, or workspace if no siblings left)
 	struct sway_node *next_focus = NULL;
 	while (next_focus == NULL) {
