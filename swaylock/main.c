@@ -277,7 +277,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 				&wl_shm_interface, 1);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		struct wl_seat *seat = wl_registry_bind(
-				registry, name, &wl_seat_interface, 1);
+				registry, name, &wl_seat_interface, 3);
 		wl_seat_add_listener(seat, &seat_listener, state);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		state->layer_shell = wl_registry_bind(
