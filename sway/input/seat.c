@@ -667,10 +667,8 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	}
 
 	// find new output's old workspace, which might have to be removed if empty
-	struct sway_workspace *new_output_last_ws = NULL;
-	if (new_output && last_output != new_output) {
-		new_output_last_ws = output_get_active_workspace(new_output);
-	}
+	struct sway_workspace *new_output_last_ws =
+		new_output ? output_get_active_workspace(new_output) : NULL;
 
 	// Unfocus the previous focus
 	if (last_focus) {
@@ -719,8 +717,17 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		ipc_event_window(container, "focus");
 	}
 
-	if (new_output_last_ws) {
-		workspace_consider_destroy(new_output_last_ws);
+	// Move sticky containers to new workspace
+	if (new_output_last_ws && new_workspace != new_output_last_ws) {
+		for (int i = 0; i < new_output_last_ws->floating->length; ++i) {
+			struct sway_container *floater =
+				new_output_last_ws->floating->items[i];
+			if (floater->is_sticky) {
+				container_detach(floater);
+				workspace_add_floating(new_workspace, floater);
+				--i;
+			}
+		}
 	}
 
 	// Close any popups on the old focus
@@ -754,11 +761,14 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		container_raise_floating(container);
 	}
 
-	if (last_focus) {
-		if (last_workspace) {
-			workspace_consider_destroy(last_workspace);
-		}
+	if (new_output_last_ws) {
+		workspace_consider_destroy(new_output_last_ws);
+	}
+	if (last_workspace && last_workspace != new_output_last_ws) {
+		workspace_consider_destroy(last_workspace);
+	}
 
+	if (last_focus) {
 		if (config->mouse_warping && warp && new_output != last_output) {
 			double x = 0;
 			double y = 0;
