@@ -5,7 +5,7 @@
 #include "status_line.h"
 
 struct i3bar_block {
-	struct wl_list link;
+	struct wl_list link; // status_link::blocks
 	int ref_count;
 	char *full_text, *short_text, *align;
 	bool urgent;

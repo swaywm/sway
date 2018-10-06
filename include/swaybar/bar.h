@@ -37,7 +37,7 @@ enum hotspot_event_handling {
 };
 
 struct swaybar_hotspot {
-	struct wl_list link;
+	struct wl_list link; // swaybar_output::hotspots
 	int x, y, width, height;
 	enum hotspot_event_handling (*callback)(struct swaybar_output *output,
 			int x, int y, enum x11_button button, void *data);
@@ -62,11 +62,11 @@ struct swaybar {
 	int ipc_event_socketfd;
 	int ipc_socketfd;
 
-	struct wl_list outputs;
+	struct wl_list outputs; // swaybar_output::link
 };
 
 struct swaybar_output {
-	struct wl_list link;
+	struct wl_list link; // swaybar::outputs
 	struct swaybar *bar;
 	struct wl_output *output;
 	struct zxdg_output_v1 *xdg_output;
@@ -74,8 +74,8 @@ struct swaybar_output {
 	struct zwlr_layer_surface_v1 *layer_surface;
 	uint32_t wl_name;
 
-	struct wl_list workspaces;
-	struct wl_list hotspots;
+	struct wl_list workspaces; // swaybar_workspace::link
+	struct wl_list hotspots; // swaybar_hotspot::link
 
 	char *name;
 	bool focused;
@@ -90,7 +90,7 @@ struct swaybar_output {
 };
 
 struct swaybar_workspace {
-	struct wl_list link;
+	struct wl_list link; // swaybar_output::workspaces
 	int num;
 	char *name;
 	bool focused;
