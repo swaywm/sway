@@ -23,13 +23,11 @@ static void popup_get_root_coords(struct sway_view_child *child,
 		int *root_sx, int *root_sy) {
 	struct sway_xdg_popup_v6 *popup = (struct sway_xdg_popup_v6 *)child;
 	struct wlr_xdg_surface_v6 *surface = popup->wlr_xdg_surface_v6;
-	*root_sx = -surface->geometry.x;
-	*root_sy = -surface->geometry.y;
-	while (surface && surface->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
-		*root_sx += surface->popup->geometry.x;
-		*root_sy += surface->popup->geometry.y;
-		surface = surface->popup->parent;
-	}
+
+	wlr_xdg_popup_v6_get_toplevel_coords(surface->popup,
+		-surface->geometry.x + surface->popup->geometry.x,
+		-surface->geometry.y + surface->popup->geometry.y,
+		root_sx, root_sy);
 }
 
 static void popup_destroy(struct sway_view_child *child) {
