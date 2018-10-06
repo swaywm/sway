@@ -26,6 +26,9 @@ else
     warning('The swaylock binary must be setuid when compiled without libpam')
     warning('You must do this manually post-install: chmod a+s /path/to/swaylock')
     sources += ['shadow.c']
+    if crypt.found()
+        dependencies += [crypt]
+    endif
 endif
 
 executable('swaylock',
