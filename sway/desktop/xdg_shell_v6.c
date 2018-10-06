@@ -19,6 +19,19 @@
 
 static const struct sway_view_child_impl popup_impl;
 
+static void popup_get_root_coords(struct sway_view_child *child,
+		int *root_sx, int *root_sy) {
+	struct sway_xdg_popup_v6 *popup = (struct sway_xdg_popup_v6 *)child;
+	struct wlr_xdg_surface_v6 *surface = popup->wlr_xdg_surface_v6;
+	*root_sx = -surface->geometry.x;
+	*root_sy = -surface->geometry.y;
+	while (surface && surface->role == WLR_XDG_SURFACE_V6_ROLE_POPUP) {
+		*root_sx += surface->popup->geometry.x;
+		*root_sy += surface->popup->geometry.y;
+		surface = surface->popup->parent;
+	}
+}
+
 static void popup_destroy(struct sway_view_child *child) {
 	if (!sway_assert(child->impl == &popup_impl,
 			"Expected an xdg_shell_v6 popup")) {
@@ -31,6 +44,7 @@ static void popup_destroy(struct sway_view_child *child) {
 }
 
 static const struct sway_view_child_impl popup_impl = {
+	.get_root_coords = popup_get_root_coords,
 	.destroy = popup_destroy,
 };
 
@@ -83,6 +97,9 @@ static struct sway_xdg_popup_v6 *popup_create(
 	popup->new_popup.notify = popup_handle_new_popup;
 	wl_signal_add(&xdg_surface->events.destroy, &popup->destroy);
 	popup->destroy.notify = popup_handle_destroy;
+
+	wl_signal_add(&xdg_surface->events.map, &popup->child.surface_map);
+	wl_signal_add(&xdg_surface->events.unmap, &popup->child.surface_unmap);
 
 	popup_unconstrain(popup);
 
