@@ -6,8 +6,20 @@
 #include <unistd.h>
 #include <wlr/util/log.h>
 #include "swaylock/swaylock.h"
+#ifdef __GLIBC__
+// GNU, you damn slimy bastard
+#include <crypt.h>
+#endif
 
 static int comm[2][2];
+
+static void clear_buffer(void *buf, size_t bytes) {
+	volatile char *buffer = buf;
+	volatile char zero = '\0';
+	for (size_t i = 0; i < bytes; ++i) {
+		buffer[i] = zero;
+	}
+}
 
 void run_child(void) {
 	/* This code runs as root */
@@ -25,6 +37,17 @@ void run_child(void) {
 		}
 		encpw = swent->sp_pwdp;
 	}
+
+	/* We don't need any additional logging here because the parent process will
+	 * also fail here and will handle logging for us. */
+	if (setgid(getgid()) != 0) {
+		exit(EXIT_FAILURE);
+	}
+	if (setuid(getuid()) != 0) {
+		exit(EXIT_FAILURE);
+	}
+
+	/* This code does not run as root */
 	wlr_log(WLR_DEBUG, "prepared to authorize user %s", pwent->pw_name);
 
 	size_t size;
@@ -60,10 +83,14 @@ void run_child(void) {
 		result = strcmp(c, encpw) == 0;
 		if (write(comm[1][1], &result, sizeof(result)) != sizeof(result)) {
 			wlr_log_errno(WLR_ERROR, "failed to write pw check result");
+			clear_buffer(buf, size);
 			exit(EXIT_FAILURE);
 		}
+		clear_buffer(buf, size);
 		free(buf);
 	}
+
+	clear_buffer(encpw, strlen(encpw));
 	exit(EXIT_SUCCESS);
 }
 
