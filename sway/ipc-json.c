@@ -273,7 +273,8 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 static void ipc_json_describe_container(struct sway_container *c, json_object *object) {
 	json_object_object_add(object, "name",
 			c->title ? json_object_new_string(c->title) : NULL);
-	json_object_object_add(object, "type", json_object_new_string("con"));
+	json_object_object_add(object, "type",
+			json_object_new_string(container_is_floating(c) ? "floating_con" : "con"));
 
 	json_object_object_add(object, "layout",
 		json_object_new_string(ipc_json_layout_description(c->layout)));
