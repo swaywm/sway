@@ -392,10 +392,7 @@ void output_damage_whole(struct sway_output *output) {
 
 static void damage_surface_iterator(struct sway_output *output,
 		struct wlr_surface *surface, struct wlr_box *_box, float rotation,
-		void *_data) {
-	bool *data = _data;
-	bool whole = *data;
-
+		void *data) {
 	struct wlr_box box = *_box;
 	scale_box(&box, output->wlr_output->scale);
 
@@ -426,11 +423,6 @@ static void damage_surface_iterator(struct sway_output *output,
 		pixman_region32_fini(&damage);
 	}
 
-	if (whole) {
-		wlr_box_rotated_bounds(&box, rotation, &box);
-		wlr_output_damage_add_box(output->damage, &box);
-	}
-
 	wlr_output_schedule_frame(output->wlr_output);
 }
 
@@ -440,17 +432,12 @@ void output_damage_surface(struct sway_output *output, double ox, double oy,
 		damage_surface_iterator, &whole);
 }
 
-static void output_damage_view(struct sway_output *output,
-		struct sway_view *view, bool whole) {
+void output_damage_from_view(struct sway_output *output,
+		struct sway_view *view) {
 	if (!view_is_visible(view)) {
 		return;
 	}
-	output_view_for_each_surface(output, view, damage_surface_iterator, &whole);
-}
-
-void output_damage_from_view(struct sway_output *output,
-		struct sway_view *view) {
-	output_damage_view(output, view, false);
+	output_view_for_each_surface(output, view, damage_surface_iterator, NULL);
 }
 
 // Expecting an unscaled box in layout coordinates
@@ -461,15 +448,6 @@ void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
 	box.y -= output->wlr_output->ly;
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);
-}
-
-static void output_damage_whole_container_iterator(struct sway_container *con,
-		void *data) {
-	if (!sway_assert(con->view, "expected a view")) {
-		return;
-	}
-	struct sway_output *output = data;
-	output_damage_view(output, con->view, true);
 }
 
 void output_damage_whole_container(struct sway_output *output,
