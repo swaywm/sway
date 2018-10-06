@@ -283,6 +283,10 @@ struct wl_pointer_listener pointer_listener = {
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		enum wl_seat_capability caps) {
 	struct swaybar *bar = data;
+	if (bar->pointer.pointer != NULL) {
+		wl_pointer_release(bar->pointer.pointer);
+		bar->pointer.pointer = NULL;
+	}
 	if ((caps & WL_SEAT_CAPABILITY_POINTER)) {
 		bar->pointer.pointer = wl_seat_get_pointer(wl_seat);
 		wl_pointer_add_listener(bar->pointer.pointer, &pointer_listener, bar);
@@ -429,7 +433,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 				&wl_compositor_interface, 3);
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		bar->seat = wl_registry_bind(registry, name,
-				&wl_seat_interface, 1);
+				&wl_seat_interface, 3);
 		wl_seat_add_listener(bar->seat, &seat_listener, bar);
 	} else if (strcmp(interface, wl_shm_interface.name) == 0) {
 		bar->shm = wl_registry_bind(registry, name,
