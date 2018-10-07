@@ -189,6 +189,21 @@ static void for_each_popup(struct sway_view *view,
 		user_data);
 }
 
+static bool is_transient_for(struct sway_view *child,
+		struct sway_view *ancestor) {
+	if (xdg_shell_v6_view_from_view(child) == NULL) {
+		return false;
+	}
+	struct wlr_xdg_surface_v6 *surface = child->wlr_xdg_surface_v6;
+	while (surface) {
+		if (surface->toplevel->parent == ancestor->wlr_xdg_surface_v6) {
+			return true;
+		}
+		surface = surface->toplevel->parent;
+	}
+	return false;
+}
+
 static void _close(struct sway_view *view) {
 	if (xdg_shell_v6_view_from_view(view) == NULL) {
 		return;
@@ -230,6 +245,7 @@ static const struct sway_view_impl view_impl = {
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.for_each_popup = for_each_popup,
+	.is_transient_for = is_transient_for,
 	.close = _close,
 	.close_popups = close_popups,
 	.destroy = destroy,
@@ -379,6 +395,18 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	bool csd = !deco || deco->wlr_server_decoration->mode ==
 			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
 	view_update_csd_from_client(view, csd);
+
+	if (config->popup_during_fullscreen == POPUP_LEAVE &&
+			view->container->workspace &&
+			view->container->workspace->fullscreen &&
+			xdg_surface->toplevel->parent) {
+		struct wlr_xdg_surface_v6 *psurface = xdg_surface->toplevel->parent;
+		struct sway_xdg_shell_v6_view *parent = psurface->data;
+		struct sway_view *sway_view = &parent->view;
+		if (sway_view->container && sway_view->container->is_fullscreen) {
+			container_set_fullscreen(sway_view->container, false);
+		}
+	}
 
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		container_set_fullscreen(view->container, true);

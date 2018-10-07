@@ -549,6 +549,12 @@ You may combine output commands into one, like so:
 You can get a list of output names with *swaymsg -t get\_outputs*. You may also
 match any output by using the output name "\*".
 
+*popup\_during\_fullscreen* smart|ignore|leave\_fullscreen
+	Determines what to do when a fullscreen view opens a dialog.
+	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
+	dialog will not be rendered. If _leave\_fullscreen_, the view will exit
+	fullscreen mode and the dialog will be rendered.
+
 *set* $<name> <value>
 	Sets variable $_name_ to _value_. You can use the new variable in the
 	arguments of future commands. When the variable is used, it can be escaped

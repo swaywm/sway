@@ -15,6 +15,7 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/container.h"
 #include "sway/tree/view.h"
+#include "sway/tree/workspace.h"
 
 static const char *atom_map[ATOM_LAST] = {
 	"_NET_WM_WINDOW_TYPE_NORMAL",
@@ -253,6 +254,21 @@ static void handle_set_decorations(struct wl_listener *listener, void *data) {
 	view_update_csd_from_client(view, csd);
 }
 
+static bool is_transient_for(struct sway_view *child,
+		struct sway_view *ancestor) {
+	if (xwayland_view_from_view(child) == NULL) {
+		return false;
+	}
+	struct wlr_xwayland_surface *surface = child->wlr_xwayland_surface;
+	while (surface) {
+		if (surface->parent == ancestor->wlr_xwayland_surface) {
+			return true;
+		}
+		surface = surface->parent;
+	}
+	return false;
+}
+
 static void _close(struct sway_view *view) {
 	if (xwayland_view_from_view(view) == NULL) {
 		return;
@@ -276,6 +292,7 @@ static const struct sway_view_impl view_impl = {
 	.set_tiled = set_tiled,
 	.set_fullscreen = set_fullscreen,
 	.wants_floating = wants_floating,
+	.is_transient_for = is_transient_for,
 	.close = _close,
 	.destroy = destroy,
 };
@@ -389,6 +406,18 @@ static void handle_map(struct wl_listener *listener, void *data) {
 
 	// Put it back into the tree
 	view_map(view, xsurface->surface);
+
+	if (config->popup_during_fullscreen == POPUP_LEAVE &&
+			view->container->workspace &&
+			view->container->workspace->fullscreen &&
+			xsurface->parent) {
+		struct wlr_xwayland_surface *psurface = xsurface->parent;
+		struct sway_xwayland_view *parent = psurface->data;
+		struct sway_view *sway_view = &parent->view;
+		if (sway_view->container && sway_view->container->is_fullscreen) {
+			container_set_fullscreen(sway_view->container, false);
+		}
+	}
 
 	if (xsurface->fullscreen) {
 		container_set_fullscreen(view->container, true);

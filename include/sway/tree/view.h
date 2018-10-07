@@ -49,6 +49,8 @@ struct sway_view_impl {
 		wlr_surface_iterator_func_t iterator, void *user_data);
 	void (*for_each_popup)(struct sway_view *view,
 		wlr_surface_iterator_func_t iterator, void *user_data);
+	bool (*is_transient_for)(struct sway_view *child,
+			struct sway_view *ancestor);
 	void (*close)(struct sway_view *view);
 	void (*close_popups)(struct sway_view *view);
 	void (*destroy)(struct sway_view *view);
@@ -395,5 +397,7 @@ bool view_is_urgent(struct sway_view *view);
 void view_remove_saved_buffer(struct sway_view *view);
 
 void view_save_buffer(struct sway_view *view);
+
+bool view_is_transient_for(struct sway_view *child, struct sway_view *ancestor);
 
 #endif

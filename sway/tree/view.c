@@ -1042,7 +1042,14 @@ bool view_is_visible(struct sway_view *view) {
 	// Check view isn't hidden by another fullscreen view
 	if (workspace->fullscreen &&
 			!container_is_fullscreen_or_child(view->container)) {
-		return false;
+		// However, if we're transient for the fullscreen view and we allow
+		// "popups" during fullscreen then it might be visible
+		bool is_transient = config->popup_during_fullscreen == POPUP_SMART &&
+				workspace->fullscreen->view &&
+				view_is_transient_for(view, workspace->fullscreen->view);
+		if (!is_transient) {
+			return false;
+		}
 	}
 	return true;
 }
@@ -1094,4 +1101,10 @@ void view_save_buffer(struct sway_view *view) {
 		view->saved_buffer_width = view->surface->current.width;
 		view->saved_buffer_height = view->surface->current.height;
 	}
+}
+
+bool view_is_transient_for(struct sway_view *child,
+		struct sway_view *ancestor) {
+	return child->impl->is_transient_for &&
+		child->impl->is_transient_for(child, ancestor);
 }

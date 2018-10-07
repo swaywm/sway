@@ -98,6 +98,22 @@ static struct sway_node *node_at_coords(
 		return NULL;
 	}
 	if (ws->fullscreen) {
+		// Try transient containers
+		if (config->popup_during_fullscreen == POPUP_SMART &&
+				ws->fullscreen->view) {
+			for (int i = 0; i < ws->floating->length; ++i) {
+				struct sway_container *floater = ws->floating->items[i];
+				if (floater->view && view_is_transient_for(
+							floater->view, ws->fullscreen->view)) {
+					struct sway_container *con = tiling_container_at(
+							&floater->node, lx, ly, surface, sx, sy);
+					if (con) {
+						return &con->node;
+					}
+				}
+			}
+		}
+		// Try fullscreen container
 		struct sway_container *con =
 			tiling_container_at(&ws->fullscreen->node, lx, ly, surface, sx, sy);
 		if (con) {
