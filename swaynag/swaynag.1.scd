@@ -40,7 +40,7 @@ _swaynag_ [options...]
 
 *-L, --detailed-button* <text>
 	Set the text for the button that toggles details. This has no effect if
-	there is not a detailed message. The default is _Toggle Details_.
+	there is not a detailed message. The default is _Toggle details_.
 
 *-m, --message* <msg>
 	Set the message text.

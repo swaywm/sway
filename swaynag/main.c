@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 
 	swaynag.details.button_details =
 		calloc(sizeof(struct swaynag_button), 1);
-	swaynag.details.button_details->text = strdup("Toggle Details");
+	swaynag.details.button_details->text = strdup("Toggle details");
 	swaynag.details.button_details->type = SWAYNAG_ACTION_EXPAND;
 
 	char *config_path = NULL;
