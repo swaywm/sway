@@ -103,6 +103,7 @@ sway_cmd cmd_bar;
 sway_cmd cmd_bindcode;
 sway_cmd cmd_bindsym;
 sway_cmd cmd_border;
+sway_cmd cmd_client_noop;
 sway_cmd cmd_client_focused;
 sway_cmd cmd_client_focused_inactive;
 sway_cmd cmd_client_unfocused;
