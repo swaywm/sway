@@ -630,6 +630,25 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	container_set_geometry_from_floating_view(view->container);
 }
 
+static void subsurface_get_root_coords(struct sway_view_child *child,
+		int *root_sx, int *root_sy) {
+	struct wlr_surface *surface = child->surface;
+	*root_sx = -child->view->geometry.x;
+	*root_sy = -child->view->geometry.y;
+
+	while (surface && wlr_surface_is_subsurface(surface)) {
+		struct wlr_subsurface *subsurface =
+			wlr_subsurface_from_wlr_surface(surface);
+		*root_sx += subsurface->current.x;
+		*root_sy += subsurface->current.y;
+		surface = subsurface->parent;
+	}
+}
+
+static const struct sway_view_child_impl subsurface_impl = {
+	.get_root_coords = subsurface_get_root_coords,
+};
+
 static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *subsurface) {
 	struct sway_view_child *child = calloc(1, sizeof(struct sway_view_child));
@@ -637,7 +656,7 @@ static void view_subsurface_create(struct sway_view *view,
 		wlr_log(WLR_ERROR, "Allocation failed");
 		return;
 	}
-	view_child_init(child, NULL, view, subsurface->surface);
+	view_child_init(child, &subsurface_impl, view, subsurface->surface);
 }
 
 static void view_child_damage(struct sway_view_child *child, bool whole) {
