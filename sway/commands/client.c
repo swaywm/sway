@@ -64,27 +64,27 @@ static struct cmd_results *handle_command(int argc, char **argv,
 
 	if (!parse_color_float(argv[0], class->border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
-				"Unable to parse border color");
+				"Unable to parse border color '%s'", argv[0]);
 	}
 
 	if (!parse_color_float(argv[1], class->background)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
-				"Unable to parse background color");
+				"Unable to parse background color '%s'", argv[1]);
 	}
 
 	if (!parse_color_float(argv[2], class->text)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
-				"Unable to parse text color");
+				"Unable to parse text color '%s'", argv[2]);
 	}
 
 	if (!parse_color_float(argv[3], class->indicator)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
-				"Unable to parse indicator color");
+				"Unable to parse indicator color '%s'", argv[3]);
 	}
 
 	if (!parse_color_float(argv[4], class->child_border)) {
 		return cmd_results_new(CMD_INVALID, cmd_name,
-				"Unable to parse child border color");
+				"Unable to parse child border color '%s'", argv[4]);
 	}
 
 	if (config->active) {
@@ -113,4 +113,9 @@ struct cmd_results *cmd_client_unfocused(int argc, char **argv) {
 
 struct cmd_results *cmd_client_urgent(int argc, char **argv) {
 	return handle_command(argc, argv, &config->border_colors.urgent, "client.urgent");
+}
+
+struct cmd_results *cmd_client_noop(int argc, char **argv) {
+	wlr_log(WLR_INFO, "Warning: %s is ignored by sway", argv[-1]);
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
