@@ -404,12 +404,11 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	if (config->popup_during_fullscreen == POPUP_LEAVE &&
 			view->container->workspace &&
 			view->container->workspace->fullscreen &&
+			view->container->workspace->fullscreen->view &&
 			xdg_surface->toplevel->parent) {
-		struct wlr_xdg_surface *psurface = xdg_surface->toplevel->parent;
-		struct sway_xdg_shell_view *parent = psurface->data;
-		struct sway_view *sway_view = &parent->view;
-		if (sway_view->container && sway_view->container->is_fullscreen) {
-			container_set_fullscreen(sway_view->container, false);
+		struct sway_container *fs = view->container->workspace->fullscreen;
+		if (is_transient_for(view, fs->view)) {
+			container_set_fullscreen(fs, false);
 		}
 	}
 
