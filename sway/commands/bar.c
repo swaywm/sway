@@ -46,14 +46,14 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		return error;
 	}
 
-	if (!config->reading) {
-		if (!find_handler(argv[0], bar_config_handlers,
-					sizeof(bar_config_handlers))) {
-			return cmd_results_new(CMD_FAILURE, "bar",
-					"Can only be used in config file.");
+	if (find_handler(argv[0], bar_config_handlers,
+				sizeof(bar_config_handlers))) {
+		if (config->reading) {
+			return config_subcommand(argv, argc, bar_config_handlers,
+					sizeof(bar_config_handlers));
 		}
-		return config_subcommand(argv, argc, bar_config_handlers,
-				sizeof(bar_config_handlers));
+		return cmd_results_new(CMD_FAILURE, "bar",
+				"Can only be used in config file.");
 	}
 
 	if (argc > 1) {
