@@ -60,6 +60,11 @@ Sway allows configuring swaybar in the sway configuration file.
 *height* <height>
 	Sets the height of the bar. Default height will match the font size.
 
+*bindsym* [--release] button<n> <command>
+	Executes _command_ when mouse button _n_ has been pressed (or if _released_
+	is given, when mouse button _n_ has been released). To disable the default
+	behavior for a button, use the command _nop_.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.

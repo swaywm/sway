@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-client.h>
+#include "list.h"
 #include "util.h"
 
 struct box_colors {
@@ -17,6 +18,12 @@ struct config_output {
 	size_t index;
 };
 
+struct swaybar_binding {
+	uint32_t button;
+	char *command;
+	bool release;
+};
+
 struct swaybar_config {
 	char *status_command;
 	bool pango_markup;
@@ -29,6 +36,7 @@ struct swaybar_config {
 	bool binding_mode_indicator;
 	bool wrap_scroll;
 	bool workspace_buttons;
+	list_t *bindings;
 	struct wl_list outputs; // config_output::link
 	bool all_outputs;
 	int height;

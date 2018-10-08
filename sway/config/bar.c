@@ -28,6 +28,16 @@ static void terminate_swaybar(pid_t pid) {
 	}
 }
 
+void free_bar_binding(struct bar_binding *binding) {
+	if (!binding) {
+		return;
+	}
+	if (binding->command) {
+		free(binding->command);
+	}
+	free(binding);
+}
+
 void free_bar_config(struct bar_config *bar) {
 	if (!bar) {
 		return;
@@ -39,7 +49,11 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->status_command);
 	free(bar->font);
 	free(bar->separator_symbol);
-	// TODO: Free mouse bindings
+	while (bar->bindings->length) {
+		struct bar_binding *binding = bar->bindings->items[0];
+		list_del(bar->bindings, 0);
+		free_bar_binding(binding);
+	}
 	list_free(bar->bindings);
 	if (bar->outputs) {
 		free_flat_list(bar->outputs);

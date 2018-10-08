@@ -239,6 +239,12 @@ struct bar_config {
 	} colors;
 };
 
+struct bar_binding {
+	uint32_t button;
+	bool release;
+	char *command;
+};
+
 struct border_colors {
 	float border[4];
 	float background[4];
@@ -526,6 +532,8 @@ void terminate_swaybg(pid_t pid);
 struct bar_config *default_bar_config(void);
 
 void free_bar_config(struct bar_config *bar);
+
+void free_bar_binding(struct bar_binding *binding);
 
 void free_workspace_config(struct workspace_config *wsc);
 
