@@ -192,6 +192,21 @@ static void for_each_popup(struct sway_view *view,
 	wlr_xdg_surface_for_each_popup(view->wlr_xdg_surface, iterator, user_data);
 }
 
+static bool is_transient_for(struct sway_view *child,
+		struct sway_view *ancestor) {
+	if (xdg_shell_view_from_view(child) == NULL) {
+		return false;
+	}
+	struct wlr_xdg_surface *surface = child->wlr_xdg_surface;
+	while (surface) {
+		if (surface->toplevel->parent == ancestor->wlr_xdg_surface) {
+			return true;
+		}
+		surface = surface->toplevel->parent;
+	}
+	return false;
+}
+
 static void _close(struct sway_view *view) {
 	if (xdg_shell_view_from_view(view) == NULL) {
 		return;
@@ -233,6 +248,7 @@ static const struct sway_view_impl view_impl = {
 	.wants_floating = wants_floating,
 	.for_each_surface = for_each_surface,
 	.for_each_popup = for_each_popup,
+	.is_transient_for = is_transient_for,
 	.close = _close,
 	.close_popups = close_popups,
 	.destroy = destroy,
@@ -395,6 +411,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 			arrange_workspace(view->container->workspace);
 		}
 	}
+
 	transaction_commit_dirty();
 
 	xdg_shell_view->commit.notify = handle_commit;

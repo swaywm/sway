@@ -292,4 +292,7 @@ bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);
 
+bool container_is_transient_for(struct sway_container *child,
+		struct sway_container *ancestor);
+
 #endif

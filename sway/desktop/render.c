@@ -961,6 +961,14 @@ void output_render(struct sway_output *output, struct timespec *when,
 			render_container(output, damage, fullscreen_con,
 					fullscreen_con->current.focused);
 		}
+
+		for (int i = 0; i < workspace->current.floating->length; ++i) {
+			struct sway_container *floater =
+				workspace->current.floating->items[i];
+			if (container_is_transient_for(floater, fullscreen_con)) {
+				render_floating_container(output, damage, floater);
+			}
+		}
 #ifdef HAVE_XWAYLAND
 		render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif

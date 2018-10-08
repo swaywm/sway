@@ -256,6 +256,12 @@ enum edge_border_types {
 	E_SMART_NO_GAPS, /**< hide both if one window and gaps to edge is zero */
 };
 
+enum sway_popup_during_fullscreen {
+	POPUP_SMART,
+	POPUP_IGNORE,
+	POPUP_LEAVE,
+};
+
 enum command_context {
 	CONTEXT_CONFIG = 1,
 	CONTEXT_BINDING = 2,
@@ -355,6 +361,7 @@ struct sway_config {
 	bool pango_markup;
 	size_t urgent_timeout;
 	enum sway_fowa focus_on_window_activation;
+	enum sway_popup_during_fullscreen popup_during_fullscreen;
 
 	// Flags
 	bool focus_follows_mouse;
