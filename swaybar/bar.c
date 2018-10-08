@@ -572,8 +572,8 @@ void bar_run(struct swaybar *bar) {
 		add_event(bar->status->read_fd, POLLIN, status_in, bar);
 	}
 	while (1) {
-		event_loop_poll();
 		wl_display_flush(bar->display);
+		event_loop_poll();
 	}
 }
 

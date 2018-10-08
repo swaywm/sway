@@ -99,10 +99,6 @@ struct bar_config *default_bar_config(void) {
 	if (!(bar->bindings = create_list())) {
 		goto cleanup;
 	}
-	if (!(bar->status_command =
-			strdup("while date +'%Y-%m-%d %l:%M:%S %p'; do sleep 1; done"))) {
-		goto cleanup;
-	}
 	// set default colors
 	if (!(bar->colors.background = strndup("#000000ff", 9))) {
 		goto cleanup;
