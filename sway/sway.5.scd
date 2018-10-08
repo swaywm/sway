@@ -81,6 +81,9 @@ The following commands may only be used in the configuration file.
 	arguments. This should be placed at the top of the config for the best
 	results.
 
+	It can be disabled by setting the command to a single dash:
+	_swaynag\_command -_
+
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 

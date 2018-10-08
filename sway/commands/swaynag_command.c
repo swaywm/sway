@@ -9,12 +9,17 @@ struct cmd_results *cmd_swaynag_command(int argc, char **argv) {
 		return error;
 	}
 
-	if (config->swaynag_command) {
-		free(config->swaynag_command);
+	free(config->swaynag_command);
+	config->swaynag_command = NULL;
+
+	char *new_command = join_args(argv, argc);
+	if (strcmp(new_command, "-") != 0) {
+		config->swaybg_command = new_command;
+		wlr_log(WLR_DEBUG, "Using custom swaynag command: %s",
+				config->swaynag_command);
+	} else {
+		free(new_command);
 	}
-	config->swaynag_command = join_args(argv, argc);
-	wlr_log(WLR_DEBUG, "Using custom swaynag command: %s",
-			config->swaynag_command);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
