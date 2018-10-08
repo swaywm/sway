@@ -264,29 +264,27 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	// Identify and execute active pressed binding
-	struct sway_binding *next_repeat_binding = NULL;
+	struct sway_binding *binding = NULL;
 	if (event->state == WLR_KEY_PRESSED) {
-		struct sway_binding *binding_pressed = NULL;
 		get_active_binding(&keyboard->state_keycodes,
-				config->current_mode->keycode_bindings, &binding_pressed,
+				config->current_mode->keycode_bindings, &binding,
 				code_modifiers, false, input_inhibited);
 		get_active_binding(&keyboard->state_keysyms_translated,
-				config->current_mode->keysym_bindings, &binding_pressed,
+				config->current_mode->keysym_bindings, &binding,
 				translated_modifiers, false, input_inhibited);
 		get_active_binding(&keyboard->state_keysyms_raw,
-				config->current_mode->keysym_bindings, &binding_pressed,
+				config->current_mode->keysym_bindings, &binding,
 				raw_modifiers, false, input_inhibited);
 
-		if (binding_pressed) {
-			next_repeat_binding = binding_pressed;
-			seat_execute_command(seat, binding_pressed);
+		if (binding) {
+			seat_execute_command(seat, binding);
 			handled = true;
 		}
 	}
 
 	// Set up (or clear) keyboard repeat for a pressed binding
-	if (next_repeat_binding && wlr_device->keyboard->repeat_info.delay > 0) {
-		keyboard->repeat_binding = next_repeat_binding;
+	if (binding && wlr_device->keyboard->repeat_info.delay > 0) {
+		keyboard->repeat_binding = binding;
 		if (wl_event_source_timer_update(keyboard->key_repeat_source,
 				wlr_device->keyboard->repeat_info.delay) < 0) {
 			wlr_log(WLR_DEBUG, "failed to set key repeat timer");
