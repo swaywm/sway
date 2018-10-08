@@ -27,6 +27,8 @@ struct cmd_results *seat_cmd_fallback(int argc, char **argv) {
 			"Expected 'fallback <true|false>'");
 	}
 
-	apply_seat_config(new_config);
+	if (!config->validating) {
+		apply_seat_config(new_config);
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

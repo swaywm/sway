@@ -457,6 +457,12 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	success = success && load_config(path, config,
 			&config->swaynag_config_errors);
 
+	if (validating) {
+		free_config(config);
+		config = old_config;
+		return success;
+	}
+
 	if (is_active) {
 		for (int i = 0; i < config->output_configs->length; i++) {
 			apply_output_config_to_outputs(config->output_configs->items[i]);

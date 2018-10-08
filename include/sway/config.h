@@ -35,7 +35,6 @@ enum binding_flags {
 	BINDING_BORDER=4,    // mouse only; trigger on container border
 	BINDING_CONTENTS=8,  // mouse only; trigger on container contents
 	BINDING_TITLEBAR=16, // mouse only; trigger on container titlebar
-	BINDING_RELOAD=32,   // the binding runs the reload command
 };
 
 /**
