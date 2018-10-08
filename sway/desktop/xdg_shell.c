@@ -401,17 +401,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		view_update_csd_from_client(view, csd);
 	}
 
-	if (config->popup_during_fullscreen == POPUP_LEAVE &&
-			view->container->workspace &&
-			view->container->workspace->fullscreen &&
-			view->container->workspace->fullscreen->view &&
-			xdg_surface->toplevel->parent) {
-		struct sway_container *fs = view->container->workspace->fullscreen;
-		if (is_transient_for(view, fs->view)) {
-			container_set_fullscreen(fs, false);
-		}
-	}
-
 	if (xdg_surface->toplevel->client_pending.fullscreen) {
 		container_set_fullscreen(view->container, true);
 		arrange_workspace(view->container->workspace);

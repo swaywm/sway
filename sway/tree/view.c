@@ -575,6 +575,16 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		view_set_tiled(view, true);
 	}
 
+	if (config->popup_during_fullscreen == POPUP_LEAVE &&
+			view->container->workspace &&
+			view->container->workspace->fullscreen &&
+			view->container->workspace->fullscreen->view) {
+		struct sway_container *fs = view->container->workspace->fullscreen;
+		if (view_is_transient_for(view, fs->view)) {
+			container_set_fullscreen(fs, false);
+		}
+	}
+
 	if (should_focus(view)) {
 		input_manager_set_focus(input_manager, &view->container->node);
 	}

@@ -407,17 +407,6 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// Put it back into the tree
 	view_map(view, xsurface->surface);
 
-	if (config->popup_during_fullscreen == POPUP_LEAVE &&
-			view->container->workspace &&
-			view->container->workspace->fullscreen &&
-			view->container->workspace->fullscreen->view &&
-			xsurface->parent) {
-		struct sway_container *fs = view->container->workspace->fullscreen;
-		if (is_transient_for(view, fs->view)) {
-			container_set_fullscreen(fs, false);
-		}
-	}
-
 	if (xsurface->fullscreen) {
 		container_set_fullscreen(view->container, true);
 		arrange_workspace(view->container->workspace);
