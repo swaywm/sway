@@ -20,6 +20,8 @@ struct cmd_results *bar_cmd_status_command(int argc, char **argv) {
 		config->current_bar->status_command = new_command;
 		wlr_log(WLR_DEBUG, "Feeding bar with status command: %s",
 				config->current_bar->status_command);
+	} else {
+		free(new_command);
 	}
 
 	if (config->active && !config->validating) {

@@ -71,6 +71,9 @@ The following commands may only be used in the configuration file.
 	Executes custom background _command_. Default is _swaybg_. Refer to
 	*output* below for more information.
 
+	It can be disabled by setting the command to a single dash:
+	_swaybg\_command -_
+
 *swaynag\_command* <command>
 	Executes custom command for _swaynag_. Default is _swaynag_. Additional
 	arguments may be appended to the end. This should only be used to either
