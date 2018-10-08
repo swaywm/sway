@@ -208,6 +208,7 @@ struct sway_xwayland_unmanaged {
 struct sway_view_child;
 
 struct sway_view_child_impl {
+	void (*get_root_coords)(struct sway_view_child *child, int *sx, int *sy);
 	void (*destroy)(struct sway_view_child *child);
 };
 
@@ -222,6 +223,8 @@ struct sway_view_child {
 
 	struct wl_listener surface_commit;
 	struct wl_listener surface_new_subsurface;
+	struct wl_listener surface_map;
+	struct wl_listener surface_unmap;
 	struct wl_listener surface_destroy;
 	struct wl_listener view_unmap;
 };
