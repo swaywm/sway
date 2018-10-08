@@ -1044,10 +1044,8 @@ bool view_is_visible(struct sway_view *view) {
 			!container_is_fullscreen_or_child(view->container)) {
 		// However, if we're transient for the fullscreen view and we allow
 		// "popups" during fullscreen then it might be visible
-		bool is_transient = config->popup_during_fullscreen == POPUP_SMART &&
-				workspace->fullscreen->view &&
-				view_is_transient_for(view, workspace->fullscreen->view);
-		if (!is_transient) {
+		if (!container_is_transient_for(view->container,
+					workspace->fullscreen)) {
 			return false;
 		}
 	}

@@ -962,14 +962,10 @@ void output_render(struct sway_output *output, struct timespec *when,
 					fullscreen_con->current.focused);
 		}
 
-		if (config->popup_during_fullscreen == POPUP_SMART &&
-				fullscreen_con->view) {
-			for (int i = 0; i < workspace->floating->length; ++i) {
-				struct sway_container *floater = workspace->floating->items[i];
-				if (floater->view && view_is_transient_for(
-							floater->view, fullscreen_con->view)) {
-					render_floating_container(output, damage, floater);
-				}
+		for (int i = 0; i < workspace->floating->length; ++i) {
+			struct sway_container *floater = workspace->floating->items[i];
+			if (container_is_transient_for(floater, fullscreen_con)) {
+				render_floating_container(output, damage, floater);
 			}
 		}
 #ifdef HAVE_XWAYLAND

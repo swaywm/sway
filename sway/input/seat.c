@@ -656,11 +656,7 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	if (new_workspace && new_workspace->fullscreen && container &&
 			!container_is_fullscreen_or_child(container)) {
 		// Unless it's a transient container
-		bool is_transient = new_workspace->fullscreen->view &&
-			config->popup_during_fullscreen == POPUP_SMART &&
-			container->view && view_is_transient_for(
-					container->view, new_workspace->fullscreen->view);
-		if (!is_transient) {
+		if (!container_is_transient_for(container, new_workspace->fullscreen)) {
 			return;
 		}
 	}

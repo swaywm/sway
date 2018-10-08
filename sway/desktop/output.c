@@ -329,15 +329,12 @@ static void send_frame_done(struct sway_output *output, struct timespec *when) {
 				workspace->current.fullscreen, &data);
 		container_for_each_child(workspace->current.fullscreen,
 				send_frame_done_container_iterator, &data);
-		if (config->popup_during_fullscreen == POPUP_SMART &&
-				workspace->current.fullscreen->view) {
-			for (int i = 0; i < workspace->current.floating->length; ++i) {
-				struct sway_container *floater =
-					workspace->current.floating->items[i];
-				if (floater->view && view_is_transient_for(floater->view,
-							workspace->current.fullscreen->view)) {
-					send_frame_done_container_iterator(floater, &data);
-				}
+		for (int i = 0; i < workspace->current.floating->length; ++i) {
+			struct sway_container *floater =
+				workspace->current.floating->items[i];
+			if (container_is_transient_for(floater,
+						workspace->current.fullscreen)) {
+				send_frame_done_container_iterator(floater, &data);
 			}
 		}
 #ifdef HAVE_XWAYLAND
