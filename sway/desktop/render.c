@@ -962,8 +962,9 @@ void output_render(struct sway_output *output, struct timespec *when,
 					fullscreen_con->current.focused);
 		}
 
-		for (int i = 0; i < workspace->floating->length; ++i) {
-			struct sway_container *floater = workspace->floating->items[i];
+		for (int i = 0; i < workspace->current.floating->length; ++i) {
+			struct sway_container *floater =
+				workspace->current.floating->items[i];
 			if (container_is_transient_for(floater, fullscreen_con)) {
 				render_floating_container(output, damage, floater);
 			}
