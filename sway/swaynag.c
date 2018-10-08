@@ -11,6 +11,10 @@
 
 bool swaynag_spawn(const char *swaynag_command,
 		struct swaynag_instance *swaynag) {
+	if (!swaynag_command) {
+		return true;
+	}
+
 	if (swaynag->detailed) {
 		if (pipe(swaynag->fd) != 0) {
 			wlr_log(WLR_ERROR, "Failed to create pipe for swaynag");
@@ -58,6 +62,10 @@ void swaynag_kill(struct swaynag_instance *swaynag) {
 
 void swaynag_log(const char *swaynag_command, struct swaynag_instance *swaynag,
 		const char *fmt, ...) {
+	if (!swaynag_command) {
+		return;
+	}
+
 	if (!swaynag->detailed) {
 		wlr_log(WLR_ERROR, "Attempting to write to non-detailed swaynag inst");
 		return;

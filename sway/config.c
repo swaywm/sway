@@ -136,6 +136,8 @@ void free_config(struct sway_config *config) {
 	free(config->floating_scroll_left_cmd);
 	free(config->floating_scroll_right_cmd);
 	free(config->font);
+	free(config->swaybg_command);
+	free(config->swaynag_command);
 	free((char *)config->current_config_path);
 	free((char *)config->current_config);
 	free(config);
@@ -166,7 +168,7 @@ static void set_color(float dest[static 4], uint32_t color) {
 }
 
 static void config_defaults(struct sway_config *config) {
-	config->swaynag_command = strdup("swaynag");
+	if (!(config->swaynag_command = strdup("swaynag"))) goto cleanup;
 	config->swaynag_config_errors = (struct swaynag_instance){
 		.args = "--type error "
 			"--message 'There are errors in your config file' "
@@ -240,6 +242,8 @@ static void config_defaults(struct sway_config *config) {
 	config->gaps_outer = 0;
 
 	if (!(config->active_bar_modifiers = create_list())) goto cleanup;
+
+	if (!(config->swaybg_command = strdup("swaybg"))) goto cleanup;
 
 	if (!(config->config_chain = create_list())) goto cleanup;
 	config->current_config_path = NULL;

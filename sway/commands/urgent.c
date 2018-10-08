@@ -12,6 +12,9 @@ struct cmd_results *cmd_urgent(int argc, char **argv) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;
+	if (!container) {
+		return cmd_results_new(CMD_FAILURE, "urgent", "No current container");
+	}
 	if (!container->view) {
 		return cmd_results_new(CMD_INVALID, "urgent",
 				"Only views can be urgent");
