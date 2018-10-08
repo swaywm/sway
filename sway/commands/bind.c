@@ -30,33 +30,6 @@ void free_sway_binding(struct sway_binding *binding) {
 	free(binding);
 }
 
-static struct sway_binding *sway_binding_dup(struct sway_binding *sb) {
-	struct sway_binding *new_sb = calloc(1, sizeof(struct sway_binding));
-	if (!new_sb) {
-		return NULL;
-	}
-
-	new_sb->type = sb->type;
-	new_sb->order = sb->order;
-	new_sb->flags = sb->flags;
-	new_sb->modifiers = sb->modifiers;
-	new_sb->command = strdup(sb->command);
-
-	new_sb->keys = create_list();
-	int i;
-	for (i = 0; i < sb->keys->length; ++i) {
-		xkb_keysym_t *key = malloc(sizeof(xkb_keysym_t));
-		if (!key) {
-			free_sway_binding(new_sb);
-			return NULL;
-		}
-		*key = *(xkb_keysym_t *)sb->keys->items[i];
-		list_add(new_sb->keys, key);
-	}
-
-	return new_sb;
-}
-
 /**
  * Returns true if the bindings have the same key and modifier combinations.
  * Note that keyboard layout is not considered, so the bindings might actually
@@ -214,9 +187,6 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	}
 
 	binding->command = join_args(argv + 1, argc - 1);
-	if (strcasestr(binding->command, "reload")) {
-		binding->flags |= BINDING_RELOAD;
-	}
 
 	list_t *split = split_string(argv[0], "+");
 	for (int i = 0; i < split->length; ++i) {
@@ -306,31 +276,16 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
  * Execute the command associated to a binding
  */
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) {
-	wlr_log(WLR_DEBUG, "running command for binding: %s",
-		binding->command);
-
-	struct sway_binding *binding_copy = binding;
-	// if this is a reload command we need to make a duplicate of the
-	// binding since it will be gone after the reload has completed.
-	if (binding->flags & BINDING_RELOAD) {
-		binding_copy = sway_binding_dup(binding);
-		if (!binding_copy) {
-			wlr_log(WLR_ERROR, "Failed to duplicate binding during reload");
-			return;
-		}
-	}
+	wlr_log(WLR_DEBUG, "running command for binding: %s", binding->command);
 
 	config->handler_context.seat = seat;
 	struct cmd_results *results = execute_command(binding->command, NULL, NULL);
 	if (results->status == CMD_SUCCESS) {
-		ipc_event_binding(binding_copy);
+		ipc_event_binding(binding);
 	} else {
 		wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
 			binding->command, results->error);
 	}
 
-	if (binding_copy->flags & BINDING_RELOAD) {
-		free_sway_binding(binding_copy);
-	}
 	free_cmd_results(results);
 }
