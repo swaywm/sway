@@ -17,7 +17,6 @@ static struct cmd_handler bar_handlers[] = {
 	{ "height", bar_cmd_height },
 	{ "hidden_state", bar_cmd_hidden_state },
 	{ "icon_theme", bar_cmd_icon_theme },
-	{ "id", bar_cmd_id },
 	{ "mode", bar_cmd_mode },
 	{ "modifier", bar_cmd_modifier },
 	{ "output", bar_cmd_output },
@@ -27,7 +26,6 @@ static struct cmd_handler bar_handlers[] = {
 	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
-	{ "swaybar_command", bar_cmd_swaybar_command },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },
 	{ "workspace_buttons", bar_cmd_workspace_buttons },
@@ -36,8 +34,8 @@ static struct cmd_handler bar_handlers[] = {
 
 // Must be in alphabetical order for bsearch
 static struct cmd_handler bar_config_handlers[] = {
-	{ "hidden_state", bar_cmd_hidden_state },
-	{ "mode", bar_cmd_mode }
+	{ "id", bar_cmd_id },
+	{ "swaybar_command", bar_cmd_swaybar_command },
 };
 
 struct cmd_results *cmd_bar(int argc, char **argv) {
@@ -46,16 +44,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		return error;
 	}
 
-	if (find_handler(argv[0], bar_config_handlers,
-				sizeof(bar_config_handlers))) {
-		if (config->reading) {
-			return config_subcommand(argv, argc, bar_config_handlers,
-					sizeof(bar_config_handlers));
-		}
-		return cmd_results_new(CMD_FAILURE, "bar",
-				"Can only be used in config file.");
-	}
-
+	bool spawn = false;
 	if (argc > 1) {
 		struct bar_config *bar = NULL;
 		if (!find_handler(argv[0], bar_handlers, sizeof(bar_handlers))
@@ -69,6 +58,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 				}
 			}
 			if (!bar) {
+				spawn = !config->reading;
 				wlr_log(WLR_DEBUG, "Creating bar: %s", argv[0]);
 				bar = default_bar_config();
 				if (!bar) {
@@ -83,7 +73,7 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 	}
 
-	if (!config->current_bar) {
+	if (!config->current_bar && config->reading) {
 		// Create new bar with default values
 		struct bar_config *bar = default_bar_config();
 		if (!bar) {
@@ -111,5 +101,23 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Creating bar %s", bar->id);
 	}
 
-	return config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
+	if (find_handler(argv[0], bar_config_handlers,
+				sizeof(bar_config_handlers))) {
+		if (config->reading) {
+			return config_subcommand(argv, argc, bar_config_handlers,
+					sizeof(bar_config_handlers));
+		}
+		return cmd_results_new(CMD_INVALID, "bar",
+				"Can only be used in the config file.");
+	}
+
+	struct cmd_results *res =
+		config_subcommand(argv, argc, bar_handlers, sizeof(bar_handlers));
+	if (!config->reading) {
+		if (spawn) {
+			load_swaybar(config->current_bar);
+		}
+		config->current_bar = NULL;
+	}
+	return res;
 }

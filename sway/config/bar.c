@@ -226,13 +226,17 @@ static void invoke_swaybar(struct bar_config *bar) {
 	close(filedes[1]);
 }
 
+void load_swaybar(struct bar_config *bar) {
+	if (bar->pid != 0) {
+		terminate_swaybar(bar->pid);
+	}
+	wlr_log(WLR_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
+	invoke_swaybar(bar);
+}
+
 void load_swaybars(void) {
 	for (int i = 0; i < config->bars->length; ++i) {
 		struct bar_config *bar = config->bars->items[i];
-		if (bar->pid != 0) {
-			terminate_swaybar(bar->pid);
-		}
-		wlr_log(WLR_DEBUG, "Invoking swaybar for bar id '%s'", bar->id);
-		invoke_swaybar(bar);
+		load_swaybar(bar);
 	}
 }
