@@ -243,10 +243,10 @@ void view_autoconfigure(struct sway_view *view) {
 	// title area. We have to offset the surface y by the height of the title,
 	// bar, and disable any top border because we'll always have the title bar.
 	enum sway_container_layout layout = container_parent_layout(con);
-	if (layout == L_TABBED) {
+	if (layout == L_TABBED && !container_is_floating(con)) {
 		y_offset = container_titlebar_height();
 		view->border_top = false;
-	} else if (layout == L_STACKED) {
+	} else if (layout == L_STACKED && !container_is_floating(con)) {
 		list_t *siblings = container_get_siblings(con);
 		y_offset = container_titlebar_height() * siblings->length;
 		view->border_top = false;
