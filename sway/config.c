@@ -73,8 +73,6 @@ void free_config(struct sway_config *config) {
 
 	memset(&config->handler_context, 0, sizeof(config->handler_context));
 
-	free(config->swaynag_command);
-
 	// TODO: handle all currently unhandled lists as we add implementations
 	if (config->symbols) {
 		for (int i = 0; i < config->symbols->length; ++i) {
