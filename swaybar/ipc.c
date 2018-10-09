@@ -338,6 +338,8 @@ static void ipc_get_outputs(struct swaybar *bar) {
 }
 
 void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
+	wlr_log(WLR_DEBUG, "Executing binding for button %u (release=%d): `%s`",
+			bind->button, bind->release, bind->command);
 	uint32_t len = strlen(bind->command);
 	free(ipc_single_command(bar->ipc_socketfd,
 			IPC_COMMAND, bind->command, &len));

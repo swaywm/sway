@@ -72,16 +72,22 @@ struct swaybar_config *init_config(void) {
 	return config;
 }
 
+static void free_binding(struct swaybar_binding *binding) {
+	if (!binding) {
+		return;
+	}
+	free(binding->command);
+	free(binding);
+}
+
 void free_config(struct swaybar_config *config) {
 	free(config->status_command);
 	free(config->font);
 	free(config->mode);
 	free(config->sep_symbol);
-	while (config->bindings->length) {
-		struct swaybar_binding *binding = config->bindings->items[0];
-		list_del(config->bindings, 0);
-		free(binding->command);
-		free(binding);
+	for (int i = 0; i < config->bindings->length; i++) {
+		struct swaybar_binding *binding = config->bindings->items[i];
+		free_binding(binding);
 	}
 	list_free(config->bindings);
 	struct config_output *coutput, *tmp;

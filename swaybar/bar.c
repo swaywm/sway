@@ -149,9 +149,6 @@ static bool check_bindings(struct swaybar *bar, uint32_t x11_button,
 	bool released = state == WL_POINTER_BUTTON_STATE_RELEASED;
 	for (int i = 0; i < bar->config->bindings->length; i++) {
 		struct swaybar_binding *binding = bar->config->bindings->items[i];
-		wlr_log(WLR_DEBUG, "Checking [%u, %d] against [%u, %d, %s]",
-				x11_button, released,
-				binding->button, binding->release, binding->command);
 		if (binding->button == x11_button && binding->release == released) {
 			ipc_execute_binding(bar, binding);
 			return true;
@@ -201,8 +198,12 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
+	// If there is a button press binding, execute it, skip default behavior,
+	// and check button release bindings
 	if (check_bindings(bar, wl_axis_to_x11_button(axis, value),
-				WL_POINTER_BUTTON_STATE_PRESSED)) {
+			WL_POINTER_BUTTON_STATE_PRESSED)) {
+		check_bindings(bar, wl_axis_to_x11_button(axis, value),
+				WL_POINTER_BUTTON_STATE_RELEASED);
 		return;
 	}
 
@@ -273,6 +274,10 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	}
 
 	ipc_send_workspace_command(bar, new->name);
+
+	// Check button release bindings
+	check_bindings(bar, wl_axis_to_x11_button(axis, value),
+			WL_POINTER_BUTTON_STATE_RELEASED);
 }
 
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {

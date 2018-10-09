@@ -33,12 +33,12 @@ struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 	binding->button = 0;
 	if (strncasecmp(argv[0], "button", strlen("button")) == 0 &&
 			strlen(argv[0]) == strlen("button0")) {
-		binding->button = argv[0][strlen("button")] - '1' + 1;
+		binding->button = argv[0][strlen("button")] - '0';
 	}
-	if (binding->button == 0) {
+	if (binding->button < 1 || binding->button > 9) {
 		free_bar_binding(binding);
 		return cmd_results_new(CMD_FAILURE, "bar bindsym",
-				"Only button<n> is supported");
+				"Only button<1-9> is supported");
 	}
 
 	binding->command = join_args(argv + 1, argc - 1);

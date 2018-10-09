@@ -32,9 +32,7 @@ void free_bar_binding(struct bar_binding *binding) {
 	if (!binding) {
 		return;
 	}
-	if (binding->command) {
-		free(binding->command);
-	}
+	free(binding->command);
 	free(binding);
 }
 
@@ -49,9 +47,8 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->status_command);
 	free(bar->font);
 	free(bar->separator_symbol);
-	while (bar->bindings->length) {
-		struct bar_binding *binding = bar->bindings->items[0];
-		list_del(bar->bindings, 0);
+	for (int i = 0; i < bar->bindings->length; i++) {
+		struct bar_binding *binding = bar->bindings->items[i];
 		free_bar_binding(binding);
 	}
 	list_free(bar->bindings);
