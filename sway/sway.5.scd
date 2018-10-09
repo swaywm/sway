@@ -598,7 +598,7 @@ match any output by using the output name "\*".
 *workspace* prev\_on\_output|next\_on\_output
 	Switches to the next workspace on the current output.
 
-*workspace* back_and_forth
+*workspace* back\_and\_forth
 	Switches to the previously focused workspace.
 
 *workspace* <name> gaps inner|outer <amount>
