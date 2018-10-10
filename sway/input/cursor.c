@@ -877,6 +877,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 			while (cont->parent) {
 				cont = cont->parent;
 			}
+			seat_set_focus_container(seat, cont);
 			seat_begin_move_floating(seat, cont, button);
 			return;
 		}
