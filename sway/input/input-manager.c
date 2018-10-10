@@ -94,6 +94,28 @@ static bool input_has_seat_configuration(struct sway_input_manager *input) {
 	return false;
 }
 
+static void input_manager_libinput_config_keyboard(
+		struct sway_input_device *input_device) {
+	struct wlr_input_device *wlr_device = input_device->wlr_device;
+	struct input_config *ic = input_device_get_config(input_device);
+	struct libinput_device *libinput_device;
+
+	if (!ic || !wlr_input_device_is_libinput(wlr_device)) {
+		return;
+	}
+
+	libinput_device = wlr_libinput_get_device_handle(wlr_device);
+	wlr_log(WLR_DEBUG, "input_manager_libinput_config_keyboard(%s)",
+		ic->identifier);
+
+	if (ic->send_events != INT_MIN) {
+		wlr_log(WLR_DEBUG, "libinput_config_keyboard(%s) send_events_set_mode(%d)",
+			ic->identifier, ic->send_events);
+		libinput_device_config_send_events_set_mode(libinput_device,
+			ic->send_events);
+	}
+}
+
 static void input_manager_libinput_config_pointer(
 		struct sway_input_device *input_device) {
 	struct wlr_input_device *wlr_device = input_device->wlr_device;
@@ -243,6 +265,8 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
 			input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 		input_manager_libinput_config_pointer(input_device);
+	} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
+		input_manager_libinput_config_keyboard(input_device);
 	}
 
 	wl_signal_add(&device->events.destroy, &input_device->device_destroy);
@@ -404,6 +428,8 @@ void input_manager_apply_input_config(struct sway_input_manager *input,
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
 					input_device->wlr_device->type == WLR_INPUT_DEVICE_TABLET_TOOL) {
 				input_manager_libinput_config_pointer(input_device);
+			} else if (input_device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
+				input_manager_libinput_config_keyboard(input_device);
 			}
 
 			struct sway_seat *seat = NULL;
