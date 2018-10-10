@@ -13,6 +13,8 @@ struct cmd_results *bar_cmd_id(int argc, char **argv) {
 	const char *oldname = config->current_bar->id;
 	if (strcmp(name, oldname) == 0) {
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);  // NOP
+	} else if (strcmp(name, "id") == 0) {
+		return cmd_results_new(CMD_INVALID, "id", "id cannot be 'id'");
 	}
 	// check if id is used by a previously defined bar
 	for (int i = 0; i < config->bars->length; ++i) {

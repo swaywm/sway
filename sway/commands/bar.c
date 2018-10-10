@@ -38,6 +38,12 @@ static struct cmd_handler bar_config_handlers[] = {
 	{ "swaybar_command", bar_cmd_swaybar_command },
 };
 
+// Determines whether the subcommand is valid in any bar handler struct
+static bool is_subcommand(char *name) {
+	return find_handler(name, bar_handlers, sizeof(bar_handlers)) ||
+		find_handler(name, bar_config_handlers, sizeof(bar_config_handlers));
+}
+
 struct cmd_results *cmd_bar(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "bar", EXPECTED_AT_LEAST, 1))) {
@@ -47,8 +53,8 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 	bool spawn = false;
 	if (argc > 1) {
 		struct bar_config *bar = NULL;
-		if (!find_handler(argv[0], bar_handlers, sizeof(bar_handlers))
-				&& find_handler(argv[1], bar_handlers, sizeof(bar_handlers))) {
+		if (!is_subcommand(argv[0]) ||
+				(strcmp(argv[0], "id") != 0 && is_subcommand(argv[1]))) {
 			for (int i = 0; i < config->bars->length; ++i) {
 				struct bar_config *item = config->bars->items[i];
 				if (strcmp(item->id, argv[0]) == 0) {
@@ -106,6 +112,15 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		if (config->reading) {
 			return config_subcommand(argv, argc, bar_config_handlers,
 					sizeof(bar_config_handlers));
+		} else if (spawn) {
+			for (int i = config->bars->length - 1; i >= 0; i--) {
+				struct bar_config *bar = config->bars->items[i];
+				if (bar == config->current_bar) {
+					list_del(config->bars, i);
+					free_bar_config(bar);
+					break;
+				}
+			}
 		}
 		return cmd_results_new(CMD_INVALID, "bar",
 				"Can only be used in the config file.");
