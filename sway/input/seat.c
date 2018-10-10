@@ -1042,7 +1042,7 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_moved = false;
 
 	// In case the container was not raised by gaining focus, raise on click
-	if (con && !config->raise_floating) {
+	if (!config->raise_floating) {
 		container_raise_floating(con);
 	}
 }
@@ -1056,6 +1056,12 @@ void seat_begin_move_floating(struct sway_seat *seat,
 	seat->operation = OP_MOVE_FLOATING;
 	seat->op_container = con;
 	seat->op_button = button;
+
+	// In case the container was not raised by gaining focus, raise on click
+	if (!config->raise_floating) {
+		container_raise_floating(con);
+	}
+
 	cursor_set_image(seat->cursor, "grab", NULL);
 }
 
@@ -1089,6 +1095,11 @@ void seat_begin_resize_floating(struct sway_seat *seat,
 	seat->op_ref_con_ly = con->y;
 	seat->op_ref_width = con->width;
 	seat->op_ref_height = con->height;
+	//
+	// In case the container was not raised by gaining focus, raise on click
+	if (!config->raise_floating) {
+		container_raise_floating(con);
+	}
 
 	const char *image = edge == WLR_EDGE_NONE ?
 		"se-resize" : wlr_xcursor_get_resize_name(edge);
