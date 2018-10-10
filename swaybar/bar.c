@@ -144,6 +144,19 @@ static void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer,
 	bar->pointer.y = wl_fixed_to_int(surface_y);
 }
 
+static bool check_bindings(struct swaybar *bar, uint32_t x11_button,
+		uint32_t state) {
+	bool released = state == WL_POINTER_BUTTON_STATE_RELEASED;
+	for (int i = 0; i < bar->config->bindings->length; i++) {
+		struct swaybar_binding *binding = bar->config->bindings->items[i];
+		if (binding->button == x11_button && binding->release == released) {
+			ipc_execute_binding(bar, binding);
+			return true;
+		}
+	}
+	return false;
+}
+
 static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
 	struct swaybar *bar = data;
@@ -152,6 +165,11 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 	if (!sway_assert(output, "button with no active output")) {
 		return;
 	}
+
+	if (check_bindings(bar, wl_button_to_x11_button(button), state)) {
+		return;
+	}
+
 	if (state != WL_POINTER_BUTTON_STATE_PRESSED) {
 		return;
 	}
@@ -177,6 +195,15 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	struct swaybar_pointer *pointer = &bar->pointer;
 	struct swaybar_output *output = bar->pointer.current;
 	if (!sway_assert(output, "axis with no active output")) {
+		return;
+	}
+
+	// If there is a button press binding, execute it, skip default behavior,
+	// and check button release bindings
+	if (check_bindings(bar, wl_axis_to_x11_button(axis, value),
+			WL_POINTER_BUTTON_STATE_PRESSED)) {
+		check_bindings(bar, wl_axis_to_x11_button(axis, value),
+				WL_POINTER_BUTTON_STATE_RELEASED);
 		return;
 	}
 
@@ -247,6 +274,10 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 	}
 
 	ipc_send_workspace_command(bar, new->name);
+
+	// Check button release bindings
+	check_bindings(bar, wl_axis_to_x11_button(axis, value),
+			WL_POINTER_BUTTON_STATE_RELEASED);
 }
 
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {

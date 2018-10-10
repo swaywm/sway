@@ -3,6 +3,8 @@
 #include <string.h>
 #include "swaybar/config.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "stringop.h"
+#include "list.h"
 
 uint32_t parse_position(const char *position) {
 	uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
@@ -34,6 +36,7 @@ struct swaybar_config *init_config(void) {
 	config->binding_mode_indicator = true;
 	config->wrap_scroll = false;
 	config->workspace_buttons = true;
+	config->bindings = create_list();
 	wl_list_init(&config->outputs);
 
 	/* height */
@@ -69,11 +72,24 @@ struct swaybar_config *init_config(void) {
 	return config;
 }
 
+static void free_binding(struct swaybar_binding *binding) {
+	if (!binding) {
+		return;
+	}
+	free(binding->command);
+	free(binding);
+}
+
 void free_config(struct swaybar_config *config) {
 	free(config->status_command);
 	free(config->font);
 	free(config->mode);
 	free(config->sep_symbol);
+	for (int i = 0; i < config->bindings->length; i++) {
+		struct swaybar_binding *binding = config->bindings->items[i];
+		free_binding(binding);
+	}
+	list_free(config->bindings);
 	struct config_output *coutput, *tmp;
 	wl_list_for_each_safe(coutput, tmp, &config->outputs, link) {
 		wl_list_remove(&coutput->link);

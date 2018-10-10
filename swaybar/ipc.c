@@ -7,6 +7,7 @@
 #include "swaybar/config.h"
 #include "swaybar/ipc.h"
 #include "ipc-client.h"
+#include "list.h"
 
 void ipc_send_workspace_command(struct swaybar *bar, const char *ws) {
 	const char *fmt = "workspace \"%s\"";
@@ -154,6 +155,7 @@ static bool ipc_parse_config(
 	json_object *markup, *mode, *hidden_bar, *position, *status_command;
 	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons, *strip_workspace_numbers;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol, *outputs;
+	json_object *bindings;
 	json_object_object_get_ex(bar_config, "mode", &mode);
 	json_object_object_get_ex(bar_config, "hidden_bar", &hidden_bar);
 	json_object_object_get_ex(bar_config, "position", &position);
@@ -169,6 +171,7 @@ static bool ipc_parse_config(
 	json_object_object_get_ex(bar_config, "colors", &colors);
 	json_object_object_get_ex(bar_config, "outputs", &outputs);
 	json_object_object_get_ex(bar_config, "pango_markup", &markup);
+	json_object_object_get_ex(bar_config, "bindings", &bindings);
 	if (status_command) {
 		free(config->status_command);
 		config->status_command = strdup(json_object_get_string(status_command));
@@ -201,6 +204,21 @@ static bool ipc_parse_config(
 	}
 	if (markup) {
 		config->pango_markup = json_object_get_boolean(markup);
+	}
+	if (bindings) {
+		int length = json_object_array_length(bindings);
+		for (int i = 0; i < length; ++i) {
+			json_object *bindobj = json_object_array_get_idx(bindings, i);
+			struct swaybar_binding *binding =
+				calloc(1, sizeof(struct swaybar_binding));
+			binding->button = json_object_get_int(
+					json_object_object_get(bindobj, "input_code"));
+			binding->command = strdup(json_object_get_string(
+					json_object_object_get(bindobj, "command")));
+			binding->release = json_object_get_boolean(
+					json_object_object_get(bindobj, "release"));
+			list_add(config->bindings, binding);
+		}
 	}
 
 	struct config_output *output, *tmp;
@@ -317,6 +335,14 @@ static void ipc_get_outputs(struct swaybar *bar) {
 	}
 	json_object_put(outputs);
 	free(res);
+}
+
+void ipc_execute_binding(struct swaybar *bar, struct swaybar_binding *bind) {
+	wlr_log(WLR_DEBUG, "Executing binding for button %u (release=%d): `%s`",
+			bind->button, bind->release, bind->command);
+	uint32_t len = strlen(bind->command);
+	free(ipc_single_command(bar->ipc_socketfd,
+			IPC_COMMAND, bind->command, &len));
 }
 
 bool ipc_initialize(struct swaybar *bar, const char *bar_id) {

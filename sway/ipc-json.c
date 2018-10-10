@@ -623,6 +623,22 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 
 	json_object_object_add(json, "colors", colors);
 
+	if (bar->bindings->length > 0) {
+		json_object *bindings = json_object_new_array();
+		for (int i = 0; i < bar->bindings->length; ++i) {
+			struct bar_binding *binding = bar->bindings->items[i];
+			json_object *bind = json_object_new_object();
+			json_object_object_add(bind, "input_code",
+					json_object_new_int(binding->button));
+			json_object_object_add(bind, "command",
+					json_object_new_string(binding->command));
+			json_object_object_add(bind, "release",
+					json_object_new_boolean(binding->release));
+			json_object_array_add(bindings, bind);
+		}
+		json_object_object_add(json, "bindings", bindings);
+	}
+
 	// Add outputs if defined
 	if (bar->outputs && bar->outputs->length > 0) {
 		json_object *outputs = json_object_new_array();
