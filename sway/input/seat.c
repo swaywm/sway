@@ -772,7 +772,9 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	}
 
 	if (last_focus) {
-		if (config->mouse_warping && warp && new_output != last_output) {
+		if (config->mouse_warping && warp &&
+				(new_output != last_output ||
+				config->mouse_warping == WARP_CONTAINER)) {
 			double x = 0;
 			double y = 0;
 			if (container) {
@@ -782,9 +784,11 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 				x = new_workspace->x + new_workspace->width / 2.0;
 				y = new_workspace->y + new_workspace->height / 2.0;
 			}
+
 			if (!wlr_output_layout_contains_point(root->output_layout,
 					new_output->wlr_output, seat->cursor->cursor->x,
-					seat->cursor->cursor->y)) {
+					seat->cursor->cursor->y)
+					|| config->mouse_warping == WARP_CONTAINER) {
 				wlr_cursor_warp(seat->cursor->cursor, NULL, x, y);
 				cursor_send_pointer_motion(seat->cursor, 0, true);
 			}
@@ -1038,7 +1042,7 @@ void seat_begin_down(struct sway_seat *seat, struct sway_container *con,
 	seat->op_moved = false;
 
 	// In case the container was not raised by gaining focus, raise on click
-	if (con && !config->raise_floating) {
+	if (!config->raise_floating) {
 		container_raise_floating(con);
 	}
 }
@@ -1052,6 +1056,12 @@ void seat_begin_move_floating(struct sway_seat *seat,
 	seat->operation = OP_MOVE_FLOATING;
 	seat->op_container = con;
 	seat->op_button = button;
+
+	// In case the container was not raised by gaining focus, raise on click
+	if (!config->raise_floating) {
+		container_raise_floating(con);
+	}
+
 	cursor_set_image(seat->cursor, "grab", NULL);
 }
 
@@ -1085,6 +1095,11 @@ void seat_begin_resize_floating(struct sway_seat *seat,
 	seat->op_ref_con_ly = con->y;
 	seat->op_ref_width = con->width;
 	seat->op_ref_height = con->height;
+	//
+	// In case the container was not raised by gaining focus, raise on click
+	if (!config->raise_floating) {
+		container_raise_floating(con);
+	}
 
 	const char *image = edge == WLR_EDGE_NONE ?
 		"se-resize" : wlr_xcursor_get_resize_name(edge);

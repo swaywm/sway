@@ -492,9 +492,10 @@ The default colors are:
 	If _--pango\_markup_ is given, then _mode_ will be interpreted as pango
 	markup.
 
-*mouse\_warping* output|none
+*mouse\_warping* output|container|none
 	If _output_ is specified, the mouse will be moved to new outputs as you
-	move focus between them. Default is _output_.
+	move focus between them. If _container_ is specified, the mouse will be
+	moved to the middle of the container on switch. Default is _output_.
 
 *no\_focus* <criteria>
 	Prevents windows matching <criteria> from being focused automatically when
@@ -598,7 +599,7 @@ match any output by using the output name "\*".
 *workspace* prev\_on\_output|next\_on\_output
 	Switches to the next workspace on the current output.
 
-*workspace* back_and_forth
+*workspace* back\_and\_forth
 	Switches to the previously focused workspace.
 
 *workspace* <name> gaps inner|outer <amount>

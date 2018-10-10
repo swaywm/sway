@@ -345,7 +345,7 @@ int main(int argc, char **argv) {
 			cmdtype = strdup(optarg);
 			break;
 		case 'v':
-			fprintf(stdout, "sway version " SWAY_VERSION "\n");
+			fprintf(stdout, "swaymsg version " SWAY_VERSION "\n");
 			exit(EXIT_SUCCESS);
 			break;
 		default:

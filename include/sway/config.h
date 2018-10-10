@@ -331,6 +331,12 @@ enum focus_wrapping_mode {
 	WRAP_FORCE
 };
 
+enum mouse_warping_mode {
+	WARP_NO,
+	WARP_OUTPUT,
+	WARP_CONTAINER
+};
+
 /**
  * The configuration struct. The result of loading a config file.
  */
@@ -372,7 +378,7 @@ struct sway_config {
 	// Flags
 	bool focus_follows_mouse;
 	bool raise_floating;
-	bool mouse_warping;
+	enum mouse_warping_mode mouse_warping;
 	enum focus_wrapping_mode focus_wrapping;
 	bool active;
 	bool failed;
