@@ -534,11 +534,11 @@ The default colors are:
 	__fallback\_color__ should be specified as _#RRGGBB_. Alpha is not
 	supported.
 
-**output** <name> background|bg <color> solid\_color
+*output* <name> background|bg <color> solid\_color
 	Sets the background of the given output to the specified color. _color_
 	should be specified as _#RRGGBB_. Alpha is not supported.
 
-**output** <name> transform <transform>
+*output* <name> transform <transform>
 	Sets the background transform to the given value. Can be one of "90", "180",
 	"270" for rotation; or "flipped", "flipped-90", "flipped-180", "flipped-270"
 	to apply a rotation and flip, or "normal" to apply no transform.
