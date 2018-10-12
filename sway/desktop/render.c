@@ -33,11 +33,27 @@ struct render_data {
 	float alpha;
 };
 
+/**
+ * Apply scale to a width or height.
+ *
+ * One does not simply multiply the width by the scale. We allow fractional
+ * scaling, which means the resulting scaled width might be a decimal.
+ * So we round it.
+ *
+ * But even this can produce undesirable results depending on the X or Y offset
+ * of the box. For example, with a scale of 1.5, a box with width=1 should not
+ * scale to 2px if its X coordinate is 1, because the X coordinate would have
+ * scaled to 2px.
+ */
+static int scale_length(int length, int offset, float scale) {
+	return round((offset + length) * scale) - round(offset * scale);
+}
+
 static void scale_box(struct wlr_box *box, float scale) {
-	box->x *= scale;
-	box->y *= scale;
-	box->width *= scale;
-	box->height *= scale;
+	box->width = scale_length(box->width, box->x, scale);
+	box->height = scale_length(box->height, box->y, scale);
+	box->x = round(box->x * scale);
+	box->y = round(box->y * scale);
 }
 
 static void scissor_output(struct wlr_output *wlr_output,
@@ -392,14 +408,23 @@ static void render_titlebar(struct sway_output *output,
 		render_rect(output->wlr_output, output_damage, &box, color);
 
 		// Single pixel right edge
-		box.x = (x + width - TITLEBAR_BORDER_THICKNESS) * output_scale;
+		box.x = x + width - TITLEBAR_BORDER_THICKNESS;
+		box.y = y + TITLEBAR_BORDER_THICKNESS;
+		box.width = TITLEBAR_BORDER_THICKNESS;
+		box.height =
+			container_titlebar_height() - TITLEBAR_BORDER_THICKNESS * 2;
+		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
 	size_t inner_width = width - TITLEBAR_H_PADDING * 2;
+	int bg_y = y + TITLEBAR_BORDER_THICKNESS;
+	int ob_bg_height = scale_length(
+			(TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS) * 2 +
+			config->font_height, bg_y, output_scale);
 
 	// Marks
-	size_t marks_ob_width = 0; // output-buffer-local
+	int marks_ob_width = 0; // output-buffer-local
 	if (config->show_marks && marks_texture) {
 		struct wlr_box texture_box;
 		wlr_texture_get_size(marks_texture,
@@ -408,15 +433,14 @@ static void render_titlebar(struct sway_output *output,
 
 		// The marks texture might be shorter than the config->font_height, in
 		// which case we need to pad it as evenly as possible above and below.
-		int ob_padding_total = config->font_height * output_scale -
-			texture_box.height;
-		int ob_padding_above = floor(ob_padding_total / 2);
-		int ob_padding_below = ceil(ob_padding_total / 2);
+		int ob_padding_total = ob_bg_height - texture_box.height;
+		int ob_padding_above = floor(ob_padding_total / 2.0);
+		int ob_padding_below = ceil(ob_padding_total / 2.0);
 
 		// Render texture
-		texture_box.x = (x - output_x + width - TITLEBAR_H_PADDING)
-			* output_scale - texture_box.width;
-		texture_box.y = (y - output_y + TITLEBAR_V_PADDING) * output_scale +
+		texture_box.x = round((x - output_x + width - TITLEBAR_H_PADDING)
+				* output_scale) - texture_box.width;
+		texture_box.y = round((bg_y - output_y) * output_scale) +
 			ob_padding_above;
 
 		float matrix[9];
@@ -431,29 +455,18 @@ static void render_titlebar(struct sway_output *output,
 			&texture_box, matrix, con->alpha);
 
 		// Padding above
-		if (ob_padding_above > 0) {
-			memcpy(&color, colors->background, sizeof(float) * 4);
-			premultiply_alpha(color, con->alpha);
-			box.x = (x + width - TITLEBAR_H_PADDING) * output_scale -
-				texture_box.width;
-			box.y = (y + TITLEBAR_V_PADDING) * output_scale;
-			box.width = texture_box.width;
-			box.height = ob_padding_above;
-			render_rect(output->wlr_output, output_damage, &box, color);
-		}
+		memcpy(&color, colors->background, sizeof(float) * 4);
+		premultiply_alpha(color, con->alpha);
+		box.x = texture_box.x + round(output_x * output_scale);
+		box.y = round((y + TITLEBAR_BORDER_THICKNESS) * output_scale);
+		box.width = texture_box.width;
+		box.height = ob_padding_above;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
 		// Padding below
-		if (ob_padding_below > 0) {
-			memcpy(&color, colors->background, sizeof(float) * 4);
-			premultiply_alpha(color, con->alpha);
-			box.x = (x + width - TITLEBAR_H_PADDING) * output_scale -
-				texture_box.width;
-			box.y = (y + TITLEBAR_V_PADDING) * output_scale +
-				ob_padding_above + texture_box.height;
-			box.width = texture_box.width;
-			box.height = ob_padding_below;
-			render_rect(output->wlr_output, output_damage, &box, color);
-		}
+		box.y += ob_padding_above + texture_box.height;
+		box.height = ob_padding_below;
+		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
 	// Title text
@@ -466,89 +479,73 @@ static void render_titlebar(struct sway_output *output,
 
 		// The title texture might be shorter than the config->font_height,
 		// in which case we need to pad it above and below.
-		int ob_padding_above = (config->font_baseline - con->title_baseline)
-			* output_scale;
-		int ob_padding_below = (config->font_height - con->title_height)
-			* output_scale - ob_padding_above;
+		int ob_padding_above = round((config->font_baseline -
+					con->title_baseline + TITLEBAR_V_PADDING -
+					TITLEBAR_BORDER_THICKNESS) * output_scale);
+		int ob_padding_below = ob_bg_height - ob_padding_above -
+			texture_box.height;
 
 		// Render texture
-		texture_box.x = (x - output_x + TITLEBAR_H_PADDING) * output_scale;
-		texture_box.y = (y - output_y + TITLEBAR_V_PADDING) * output_scale +
-			ob_padding_above;
+		texture_box.x =
+			round((x - output_x + TITLEBAR_H_PADDING) * output_scale);
+		texture_box.y =
+			round((bg_y - output_y) * output_scale) + ob_padding_above;
 
 		float matrix[9];
 		wlr_matrix_project_box(matrix, &texture_box,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		if (inner_width * output_scale - marks_ob_width < texture_box.width) {
-			texture_box.width = inner_width * output_scale - marks_ob_width;
+		int inner_x = x - output_x + TITLEBAR_H_PADDING;
+		int ob_inner_width = scale_length(inner_width, inner_x, output_scale);
+		if (ob_inner_width - marks_ob_width < texture_box.width) {
+			texture_box.width = ob_inner_width - marks_ob_width;
 		}
 		render_texture(output->wlr_output, output_damage, title_texture,
 			&texture_box, matrix, con->alpha);
 
 		// Padding above
-		if (ob_padding_above > 0) {
-			memcpy(&color, colors->background, sizeof(float) * 4);
-			premultiply_alpha(color, con->alpha);
-			box.x = (x + TITLEBAR_H_PADDING) * output_scale;
-			box.y = (y + TITLEBAR_V_PADDING) * output_scale;
-			box.width = texture_box.width;
-			box.height = ob_padding_above;
-			render_rect(output->wlr_output, output_damage, &box, color);
-		}
+		memcpy(&color, colors->background, sizeof(float) * 4);
+		premultiply_alpha(color, con->alpha);
+		box.x = texture_box.x + round(output_x * output_scale);
+		box.y = round((y + TITLEBAR_BORDER_THICKNESS) * output_scale);
+		box.width = texture_box.width;
+		box.height = ob_padding_above;
+		render_rect(output->wlr_output, output_damage, &box, color);
 
 		// Padding below
-		if (ob_padding_below > 0) {
-			memcpy(&color, colors->background, sizeof(float) * 4);
-			premultiply_alpha(color, con->alpha);
-			box.x = (x + TITLEBAR_H_PADDING) * output_scale;
-			box.y = (y + TITLEBAR_V_PADDING) * output_scale +
-				ob_padding_above + texture_box.height;
-			box.width = texture_box.width;
-			box.height = ob_padding_below;
-			render_rect(output->wlr_output, output_damage, &box, color);
-		}
+		box.y += ob_padding_above + texture_box.height;
+		box.height = ob_padding_below;
+		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	// Padding above title
-	memcpy(&color, colors->background, sizeof(float) * 4);
-	premultiply_alpha(color, con->alpha);
-	box.x = x + (layout == L_TABBED) * TITLEBAR_BORDER_THICKNESS;
-	box.y = y + TITLEBAR_BORDER_THICKNESS;
-	box.width = width - (layout == L_TABBED) * TITLEBAR_BORDER_THICKNESS * 2;
-	box.height = TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS;
-	scale_box(&box, output_scale);
-	render_rect(output->wlr_output, output_damage, &box, color);
-
-	// Padding below title
-	box.y = (y + TITLEBAR_V_PADDING + config->font_height) * output_scale;
-	render_rect(output->wlr_output, output_damage, &box, color);
-
 	// Filler between title and marks
-	box.width = inner_width * output_scale - title_ob_width - marks_ob_width;
+	box.width =
+		round(inner_width * output_scale) - title_ob_width - marks_ob_width;
 	if (box.width > 0) {
-		box.x = (x + TITLEBAR_H_PADDING) * output_scale + title_ob_width;
-		box.y = (y + TITLEBAR_V_PADDING) * output_scale;
-		box.height = config->font_height * output_scale;
+		box.x = round((x + TITLEBAR_H_PADDING) * output_scale) + title_ob_width;
+		box.y = round(bg_y * output_scale);
+		box.height = ob_bg_height;
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
 	// Padding left of title
 	left_offset = (layout == L_TABBED) * TITLEBAR_BORDER_THICKNESS;
 	box.x = x + left_offset;
-	box.y = y + TITLEBAR_V_PADDING;
+	box.y = y + TITLEBAR_BORDER_THICKNESS;
 	box.width = TITLEBAR_H_PADDING - left_offset;
-	box.height = config->font_height;
+	box.height = (TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS) * 2 +
+		config->font_height;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Padding right of marks
 	right_offset = (layout == L_TABBED) * TITLEBAR_BORDER_THICKNESS;
 	box.x = x + width - TITLEBAR_H_PADDING;
-	box.y = y + TITLEBAR_V_PADDING;
+	box.y = y + TITLEBAR_BORDER_THICKNESS;
 	box.width = TITLEBAR_H_PADDING - right_offset;
-	box.height = config->font_height;
+	box.height = (TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS) * 2 +
+		config->font_height;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
