@@ -396,6 +396,10 @@ bool determine_bar_visibility(struct swaybar *bar, bool moving_layer) {
 				destroy_layer_surface(output);
 			}
 		}
+		wlr_log(WLR_DEBUG, "Sending %s signal to status command",
+				visible ? "cont" : "stop");
+		kill(bar->status->pid,
+				visible ? bar->status->cont_signal : bar->status->stop_signal);
 	}
 	return visible;
 }

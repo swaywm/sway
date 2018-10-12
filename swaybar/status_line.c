@@ -83,6 +83,17 @@ bool status_handle_readable(struct status_line *status) {
 					return true;
 				}
 			}
+
+			json_object *signal;
+			if (json_object_object_get_ex(header, "stop_signal", &signal)) {
+				status->stop_signal = json_object_get_int(signal);
+				wlr_log(WLR_DEBUG, "Setting stop signal to %d", status->stop_signal);
+			}
+			if (json_object_object_get_ex(header, "cont_signal", &signal)) {
+				status->cont_signal = json_object_get_int(signal);
+				wlr_log(WLR_DEBUG, "Setting cont signal to %d", status->cont_signal);
+			}
+
 			json_object_put(header);
 
 			wl_list_init(&status->blocks);
@@ -121,6 +132,9 @@ bool status_handle_readable(struct status_line *status) {
 
 struct status_line *status_line_init(char *cmd) {
 	struct status_line *status = calloc(1, sizeof(struct status_line));
+	status->stop_signal = SIGSTOP;
+	status->cont_signal = SIGCONT;
+
 	status->buffer_size = 8192;
 	status->buffer = malloc(status->buffer_size);
 
