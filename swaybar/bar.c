@@ -567,8 +567,11 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
 	assert(pointer->cursor_surface);
 
-	ipc_get_workspaces(bar);
-	set_bar_dirty(bar);
+	if (bar->config->workspace_buttons) {
+		if (ipc_get_workspaces(bar)) {
+			set_bar_dirty(bar);
+		}
+	}
 	return true;
 }
 
