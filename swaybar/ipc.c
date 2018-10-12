@@ -372,17 +372,20 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	if (!resp) {
 		return false;
 	}
+
+	json_object *result = json_tokener_parse(resp->payload);
+	if (!result) {
+		wlr_log(WLR_ERROR, "failed to parse payload as json");
+		free_ipc_response(resp);
+		return false;
+	}
+
+	bool bar_is_dirty = true;
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
 		ipc_get_workspaces(bar);
 		break;
 	case IPC_EVENT_MODE: {
-		json_object *result = json_tokener_parse(resp->payload);
-		if (!result) {
-			free_ipc_response(resp);
-			wlr_log(WLR_ERROR, "failed to parse payload as json");
-			return false;
-		}
 		json_object *json_change, *json_pango_markup;
 		if (json_object_object_get_ex(result, "change", &json_change)) {
 			const char *change = json_object_get_string(json_change);
@@ -390,21 +393,20 @@ bool handle_ipc_readable(struct swaybar *bar) {
 			bar->mode = strcmp(change, "default") != 0 ? strdup(change) : NULL;
 		} else {
 			wlr_log(WLR_ERROR, "failed to parse response");
-			json_object_put(result);
-			free_ipc_response(resp);
-			return false;
+			bar_is_dirty = false;
+			break;
 		}
 		if (json_object_object_get_ex(result,
 					"pango_markup", &json_pango_markup)) {
 			bar->mode_pango_markup = json_object_get_boolean(json_pango_markup);
 		}
-		json_object_put(result);
 		break;
 	}
 	default:
-		free_ipc_response(resp);
-		return false;
+		bar_is_dirty = false;
+		break;
 	}
+	json_object_put(result);
 	free_ipc_response(resp);
-	return true;
+	return bar_is_dirty;
 }
