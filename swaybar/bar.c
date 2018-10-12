@@ -35,6 +35,17 @@ static void bar_init(struct swaybar *bar) {
 	wl_list_init(&bar->outputs);
 }
 
+void free_hotspots(struct wl_list *list) {
+	struct swaybar_hotspot *hotspot, *tmp;
+	wl_list_for_each_safe(hotspot, tmp, list, link) {
+		wl_list_remove(&hotspot->link);
+		if (hotspot->destroy) {
+			hotspot->destroy(hotspot->data);
+		}
+		free(hotspot);
+	}
+}
+
 void free_workspaces(struct wl_list *list) {
 	struct swaybar_workspace *ws, *tmp;
 	wl_list_for_each_safe(ws, tmp, list, link) {
@@ -59,14 +70,8 @@ static void swaybar_output_free(struct swaybar_output *output) {
 	wl_output_destroy(output->output);
 	destroy_buffer(&output->buffers[0]);
 	destroy_buffer(&output->buffers[1]);
+	free_hotspots(&output->hotspots);
 	free_workspaces(&output->workspaces);
-	struct swaybar_hotspot *hotspot, *hotspot_tmp;
-	wl_list_for_each_safe(hotspot, hotspot_tmp, &output->hotspots, link) {
-		if (hotspot->destroy) {
-			hotspot->destroy(hotspot->data);
-		}
-		free(hotspot);
-	}
 	wl_list_remove(&output->link);
 	free(output->name);
 	free(output);
@@ -75,9 +80,7 @@ static void swaybar_output_free(struct swaybar_output *output) {
 static void set_output_dirty(struct swaybar_output *output) {
 	if (output->frame_scheduled) {
 		output->dirty = true;
-		return;
-	}
-	if (output->surface) {
+	} else if (output->surface) {
 		render_frame(output);
 	}
 }

@@ -491,14 +491,7 @@ static const struct wl_callback_listener output_frame_listener = {
 void render_frame(struct swaybar_output *output) {
 	assert(output->surface != NULL);
 
-	struct swaybar_hotspot *hotspot, *tmp;
-	wl_list_for_each_safe(hotspot, tmp, &output->hotspots, link) {
-		if (hotspot->destroy) {
-			hotspot->destroy(hotspot->data);
-		}
-		wl_list_remove(&hotspot->link);
-		free(hotspot);
-	}
+	free_hotspots(&output->hotspots);
 
 	cairo_surface_t *recorder = cairo_recording_surface_create(
 			CAIRO_CONTENT_COLOR_ALPHA, NULL);

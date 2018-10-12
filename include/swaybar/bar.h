@@ -102,6 +102,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 
+void free_hotspots(struct wl_list *list);
 void free_workspaces(struct wl_list *list);
 
 #endif
