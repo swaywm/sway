@@ -262,7 +262,7 @@ static bool ipc_parse_config(
 	return true;
 }
 
-void ipc_get_workspaces(struct swaybar *bar) {
+bool ipc_get_workspaces(struct swaybar *bar) {
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		free_workspaces(&output->workspaces);
@@ -274,8 +274,10 @@ void ipc_get_workspaces(struct swaybar *bar) {
 	json_object *results = json_tokener_parse(res);
 	if (!results) {
 		free(res);
-		return;
+		return false;
 	}
+
+	bar->visible_by_urgency = false;
 	size_t length = json_object_array_length(results);
 	json_object *ws_json;
 	json_object *num, *name, *visible, *focused, *out, *urgent;
@@ -302,12 +304,16 @@ void ipc_get_workspaces(struct swaybar *bar) {
 					output->focused = true;
 				}
 				ws->urgent = json_object_get_boolean(urgent);
+				if (ws->urgent) {
+					bar->visible_by_urgency = true;
+				}
 				wl_list_insert(&output->workspaces, &ws->link);
 			}
 		}
 	}
 	json_object_put(results);
 	free(res);
+	return determine_bar_visibility(bar, false);
 }
 
 static void ipc_get_outputs(struct swaybar *bar) {
@@ -436,7 +442,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	bool bar_is_dirty = true;
 	switch (resp->type) {
 	case IPC_EVENT_WORKSPACE:
-		ipc_get_workspaces(bar);
+		bar_is_dirty = ipc_get_workspaces(bar);
 		break;
 	case IPC_EVENT_MODE: {
 		json_object *json_change, *json_pango_markup;
