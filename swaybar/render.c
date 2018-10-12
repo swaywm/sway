@@ -494,6 +494,9 @@ static const struct wl_callback_listener output_frame_listener = {
 
 void render_frame(struct swaybar_output *output) {
 	assert(output->surface != NULL);
+	if (!output->layer_surface) {
+		return;
+	}
 
 	free_hotspots(&output->hotspots);
 
@@ -519,7 +522,9 @@ void render_frame(struct swaybar_output *output) {
 	if (height != output->height) {
 		// Reconfigure surface
 		zwlr_layer_surface_v1_set_size(output->layer_surface, 0, height);
-		zwlr_layer_surface_v1_set_exclusive_zone(output->layer_surface, height);
+		if (strcmp(output->bar->config->mode, "dock") == 0) {
+			zwlr_layer_surface_v1_set_exclusive_zone(output->layer_surface, height);
+		}
 		// TODO: this could infinite loop if the compositor assigns us a
 		// different height than what we asked for
 		wl_surface_commit(output->surface);
