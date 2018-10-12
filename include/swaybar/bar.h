@@ -47,6 +47,8 @@ struct swaybar_hotspot {
 
 struct swaybar {
 	char *id;
+	char *mode;
+	bool mode_pango_markup;
 
 	struct wl_display *display;
 	struct wl_compositor *compositor;

@@ -386,12 +386,8 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		json_object *json_change, *json_pango_markup;
 		if (json_object_object_get_ex(result, "change", &json_change)) {
 			const char *change = json_object_get_string(json_change);
-			free(bar->config->mode);
-			if (strcmp(change, "default") == 0) {
-				bar->config->mode = NULL;
-			} else {
-				bar->config->mode = strdup(change);
-			}
+			free(bar->mode);
+			bar->mode = strcmp(change, "default") != 0 ? strdup(change) : NULL;
 		} else {
 			wlr_log(WLR_ERROR, "failed to parse response");
 			json_object_put(result);
@@ -400,8 +396,7 @@ bool handle_ipc_readable(struct swaybar *bar) {
 		}
 		if (json_object_object_get_ex(result,
 					"pango_markup", &json_pango_markup)) {
-			bar->config->mode_pango_markup = json_object_get_boolean(
-					json_pango_markup);
+			bar->mode_pango_markup = json_object_get_boolean(json_pango_markup);
 		}
 		json_object_put(result);
 		break;

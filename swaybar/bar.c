@@ -631,4 +631,5 @@ void bar_teardown(struct swaybar *bar) {
 		status_line_free(bar->status);
 	}
 	free(bar->id);
+	free(bar->mode);
 }

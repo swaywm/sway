@@ -296,11 +296,15 @@ static uint32_t render_status_line(cairo_t *cairo,
 
 static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 		struct swaybar_output *output, double x) {
+	const char *mode = output->bar->mode;
+	if (!mode) {
+		return 0;
+	}
+
 	struct swaybar_config *config = output->bar->config;
-	const char *mode = config->mode;
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
-			output->scale, config->mode_pango_markup,
+			output->scale, output->bar->mode_pango_markup,
 			"%s", mode);
 
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
@@ -333,8 +337,8 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	double text_y = height / 2.0 - text_height / 2.0;
 	cairo_set_source_u32(cairo, config->colors.binding_mode.text);
 	cairo_move_to(cairo, x + width / 2 - text_width / 2, (int)floor(text_y));
-	pango_printf(cairo, config->font, output->scale, config->mode_pango_markup,
-			"%s", mode);
+	pango_printf(cairo, config->font, output->scale,
+			output->bar->mode_pango_markup, "%s", mode);
 	return output->height;
 }
 
@@ -465,7 +469,7 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaybar_output *output) {
 			max_height = h > max_height ? h : max_height;
 		}
 	}
-	if (config->binding_mode_indicator && config->mode) {
+	if (config->binding_mode_indicator) {
 		uint32_t h = render_binding_mode_indicator(cairo, output, x);
 		max_height = h > max_height ? h : max_height;
 	}
