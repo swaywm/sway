@@ -16,6 +16,7 @@
 #include "stringop.h"
 #include "list.h"
 #include "log.h"
+#include "util.h"
 
 static void terminate_swaybar(pid_t pid) {
 	wlr_log(WLR_DEBUG, "Terminating swaybar %d", pid);
@@ -101,6 +102,7 @@ struct bar_config *default_bar_config(void) {
 	bar->binding_mode_indicator = true;
 	bar->verbose = false;
 	bar->pid = 0;
+	bar->modifier = get_modifier_mask_by_name("Mod4");
 	if (!(bar->mode = strdup("dock"))) {
 	       goto cleanup;
 	}

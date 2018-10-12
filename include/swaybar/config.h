@@ -32,6 +32,7 @@ struct swaybar_config {
 	char *sep_symbol;
 	char *mode;
 	char *hidden_state;
+	char *modifier;
 	bool strip_workspace_numbers;
 	bool binding_mode_indicator;
 	bool wrap_scroll;

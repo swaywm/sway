@@ -15,6 +15,7 @@ void ipc_event_workspace(struct sway_workspace *old,
 		struct sway_workspace *new, const char *change);
 void ipc_event_window(struct sway_container *window, const char *change);
 void ipc_event_barconfig_update(struct bar_config *bar);
+void ipc_event_bar_state_update(struct bar_config *bar);
 void ipc_event_mode(const char *mode, bool pango);
 void ipc_event_shutdown(const char *reason);
 void ipc_event_binding(struct sway_binding *binding);

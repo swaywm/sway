@@ -367,12 +367,26 @@ bool ipc_initialize(struct swaybar *bar) {
 	struct swaybar_config *config = bar->config;
 	char subscribe[128]; // suitably large buffer
 	len = snprintf(subscribe, 128,
-			"[ \"barconfig_update\" %s %s ]",
+			"[ \"barconfig_update\" , \"bar_state_update\" %s %s ]",
 			config->binding_mode_indicator ? ", \"mode\"" : "",
 			config->workspace_buttons ? ", \"workspace\"" : "");
 	free(ipc_single_command(bar->ipc_event_socketfd,
 			IPC_SUBSCRIBE, subscribe, &len));
 	return true;
+}
+
+static bool handle_bar_state_update(struct swaybar *bar, json_object *event) {
+	json_object *json_id;
+	json_object_object_get_ex(event, "id", &json_id);
+	const char *id = json_object_get_string(json_id);
+	if (strcmp(id, bar->id) != 0) {
+		return false;
+	}
+
+	json_object *visible_by_modifier;
+	json_object_object_get_ex(event, "visible_by_modifier", &visible_by_modifier);
+	bar->visible_by_modifier = json_object_get_boolean(visible_by_modifier);
+	return determine_bar_visibility(bar, false);
 }
 
 static bool handle_barconfig_update(struct swaybar *bar,
@@ -443,6 +457,9 @@ bool handle_ipc_readable(struct swaybar *bar) {
 	}
 	case IPC_EVENT_BARCONFIG_UPDATE:
 		bar_is_dirty = handle_barconfig_update(bar, result);
+		break;
+	case IPC_EVENT_BAR_STATE_UPDATE:
+		bar_is_dirty = handle_bar_state_update(bar, result);
 		break;
 	default:
 		bar_is_dirty = false;
