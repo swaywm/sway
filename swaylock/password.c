@@ -8,6 +8,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "swaylock/swaylock.h"
 #include "swaylock/seat.h"
+#include "loop.h"
 #include "unicode.h"
 
 void clear_password_buffer(struct swaylock_password *pw) {
@@ -37,6 +38,21 @@ static void append_ch(struct swaylock_password *pw, uint32_t codepoint) {
 	utf8_encode(&pw->buffer[pw->len], codepoint);
 	pw->buffer[pw->len + utf8_size] = 0;
 	pw->len += utf8_size;
+}
+
+static void clear_indicator(int fd, short mask, void *data) {
+	struct swaylock_state *state = data;
+	state->clear_indicator_timer = NULL;
+	state->auth_state = AUTH_STATE_IDLE;
+	damage_state(state);
+}
+
+static void schedule_indicator_clear(struct swaylock_state *state) {
+	if (state->clear_indicator_timer) {
+		loop_remove_event(state->eventloop, state->clear_indicator_timer);
+	}
+	state->clear_indicator_timer = loop_add_timer(
+			state->eventloop, 3000, clear_indicator, state);
 }
 
 void swaylock_handle_key(struct swaylock_state *state,
@@ -79,11 +95,13 @@ void swaylock_handle_key(struct swaylock_state *state,
 			state->auth_state = AUTH_STATE_CLEAR;
 		}
 		damage_state(state);
+		schedule_indicator_clear(state);
 		break;
 	case XKB_KEY_Escape:
 		clear_password_buffer(&state->password);
 		state->auth_state = AUTH_STATE_CLEAR;
 		damage_state(state);
+		schedule_indicator_clear(state);
 		break;
 	case XKB_KEY_Caps_Lock:
 		/* The state is getting active after this
@@ -91,6 +109,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 		state->xkb.caps_lock = !state->xkb.caps_lock;
 		state->auth_state = AUTH_STATE_INPUT_NOP;
 		damage_state(state);
+		schedule_indicator_clear(state);
 		break;
 	case XKB_KEY_Shift_L:
 	case XKB_KEY_Shift_R:
@@ -104,12 +123,14 @@ void swaylock_handle_key(struct swaylock_state *state,
 	case XKB_KEY_Super_R:
 		state->auth_state = AUTH_STATE_INPUT_NOP;
 		damage_state(state);
+		schedule_indicator_clear(state);
 		break;
 	case XKB_KEY_u:
 		if (state->xkb.control) {
 			clear_password_buffer(&state->password);
 			state->auth_state = AUTH_STATE_CLEAR;
 			damage_state(state);
+			schedule_indicator_clear(state);
 			break;
 		}
 		// fallthrough
@@ -118,6 +139,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 			append_ch(&state->password, codepoint);
 			state->auth_state = AUTH_STATE_INPUT;
 			damage_state(state);
+			schedule_indicator_clear(state);
 		}
 		break;
 	}

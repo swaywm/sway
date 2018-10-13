@@ -12,6 +12,7 @@
 struct loop_event {
 	void (*callback)(int fd, short mask, void *data);
 	void *data;
+	bool is_timer;
 };
 
 struct loop {
@@ -52,6 +53,11 @@ void loop_poll(struct loop *loop) {
 
 		if (pfd.revents & events) {
 			event->callback(pfd.fd, pfd.revents, event->data);
+
+			if (event->is_timer) {
+				loop_remove_event(loop, event);
+				--i;
+			}
 		}
 	}
 }
@@ -82,17 +88,24 @@ struct loop_event *loop_add_timer(struct loop *loop, int ms,
 	struct itimerspec its;
 	its.it_interval.tv_sec = 0;
 	its.it_interval.tv_nsec = 0;
-	its.it_value.tv_sec = ms / 1000000000;
-	its.it_value.tv_nsec = (ms * 1000000) % 1000000000;
+	its.it_value.tv_sec = ms / 1000;
+	its.it_value.tv_nsec = (ms % 1000) * 1000000;
 	timerfd_settime(fd, 0, &its, NULL);
 
-	return loop_add_fd(loop, fd, POLLIN, callback, data);
+	struct loop_event *event = loop_add_fd(loop, fd, POLLIN, callback, data);
+	event->is_timer = true;
+
+	return event;
 }
 
 bool loop_remove_event(struct loop *loop, struct loop_event *event) {
 	for (int i = 0; i < loop->events->length; ++i) {
 		if (loop->events->items[i] == event) {
 			list_del(loop->events, i);
+
+			if (event->is_timer) {
+				close(loop->fds[i].fd);
+			}
 
 			loop->fd_length--;
 			memmove(&loop->fds[i], &loop->fds[i + 1], sizeof(void*) * (loop->fd_length - i));
