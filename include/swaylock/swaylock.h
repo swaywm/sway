@@ -54,6 +54,7 @@ struct swaylock_password {
 };
 
 struct swaylock_state {
+	struct loop *eventloop;
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
