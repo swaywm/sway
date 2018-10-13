@@ -535,7 +535,8 @@ static bool should_focus(struct sway_view *view) {
 	return len == 0;
 }
 
-void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
+void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
+			  bool fullscreen, bool decoration) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
 	}
@@ -586,13 +587,28 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		}
 	}
 
-	if (should_focus(view)) {
-		input_manager_set_focus(input_manager, &view->container->node);
-	}
-
 	view_update_title(view, false);
 	container_update_representation(view->container);
 	view_execute_criteria(view);
+
+	if (decoration) {
+		view_update_csd_from_client(view, decoration);
+	}
+
+	if (fullscreen) {
+		container_set_fullscreen(view->container, true);
+		arrange_workspace(view->container->workspace);
+	} else {
+		if (view->container->parent) {
+			arrange_container(view->container->parent);
+		} else if (view->container->workspace) {
+			arrange_workspace(view->container->workspace);
+		}
+	}
+
+	if (should_focus(view)) {
+		input_manager_set_focus(input_manager, &view->container->node);
+	}
 }
 
 void view_unmap(struct sway_view *view) {
