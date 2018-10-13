@@ -72,6 +72,11 @@ static void schedule_password_clear(struct swaylock_state *state) {
 			state->eventloop, 10000, clear_password, state);
 }
 
+static void handle_preverify_timeout(int fd, short mask, void *data) {
+	struct swaylock_state *state = data;
+	state->verify_password_timer = NULL;
+}
+
 void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint) {
 	switch (keysym) {
@@ -83,7 +88,18 @@ void swaylock_handle_key(struct swaylock_state *state,
 
 		state->auth_state = AUTH_STATE_VALIDATING;
 		damage_state(state);
-		while (wl_display_dispatch(state->display) != -1 && state->run_display) {
+
+		// We generally want to wait until all surfaces are showing the
+		// "verifying" state before we go and verify the password, because
+		// verifying it is a blocking operation. However, if the surface is on
+		// an output with DPMS off then it won't update, so we set a timer.
+		state->verify_password_timer = loop_add_timer(
+				state->eventloop, 50, handle_preverify_timeout, state);
+
+		while (state->run_display && state->verify_password_timer) {
+			wl_display_flush(state->display);
+			loop_poll(state->eventloop);
+
 			bool ok = 1;
 			struct swaylock_surface *surface;
 			wl_list_for_each(surface, &state->surfaces, link) {
@@ -103,6 +119,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 		}
 		state->auth_state = AUTH_STATE_INVALID;
 		damage_state(state);
+		schedule_indicator_clear(state);
 		break;
 	case XKB_KEY_Delete:
 	case XKB_KEY_BackSpace:

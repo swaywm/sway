@@ -57,6 +57,7 @@ struct swaylock_state {
 	struct loop *eventloop;
 	struct loop_event *clear_indicator_timer; // clears the indicator
 	struct loop_event *clear_password_timer;  // clears the password buffer
+	struct loop_event *verify_password_timer;
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
