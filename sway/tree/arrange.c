@@ -180,6 +180,10 @@ void arrange_workspace(struct sway_workspace *workspace) {
 	if (config->reloading) {
 		return;
 	}
+	if (!workspace->output) {
+		// Happens when there are no outputs connected
+		return;
+	}
 	struct sway_output *output = workspace->output;
 	struct wlr_box *area = &output->usable_area;
 	wlr_log(WLR_DEBUG, "Usable area for ws: %dx%d@%d,%d",
