@@ -519,7 +519,7 @@ void render_frame(struct swaybar_output *output) {
 	if (config_height >= 0 && height < (uint32_t)config_height) {
 		height = config_height;
 	}
-	if (height != output->height) {
+	if (height != output->height || output->width == 0) {
 		// Reconfigure surface
 		zwlr_layer_surface_v1_set_size(output->layer_surface, 0, height);
 		if (strcmp(output->bar->config->mode, "dock") == 0) {

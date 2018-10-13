@@ -367,7 +367,6 @@ static void destroy_layer_surface(struct swaybar_output *output) {
 	zwlr_layer_surface_v1_destroy(output->layer_surface);
 	wl_surface_attach(output->surface, NULL, 0, 0); // detach buffer
 	output->layer_surface = NULL;
-	output->height = 0;
 	output->width = 0;
 	output->frame_scheduled = false;
 }
