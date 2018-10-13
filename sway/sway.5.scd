@@ -420,15 +420,11 @@ The default colors are:
 	_focus\_wrapping force_. This is only available for convenience. Please
 	use _focus\_wrapping_ instead when possible.
 
-*gaps* edge\_gaps on|off|toggle
-	When _on_, gaps will be added between windows and workspace edges if the
-	inner gap is nonzero. When _off_, gaps will only be added between views.
-	_toggle_ cannot be used in the configuration file.
-
 *gaps* inner|outer <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
 	affects spacing around each view and outer affects the spacing around each
-	workspace. Outer gaps are in addition to inner gaps.
+	workspace. Outer gaps are in addition to inner gaps. To reduce or remove
+	outer gaps, outer gaps can be set to a negative value.
 
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps inner|outer <amount>).

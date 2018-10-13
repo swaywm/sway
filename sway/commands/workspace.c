@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 500
 #include <ctype.h>
+#include <limits.h>
 #include <string.h>
 #include <strings.h>
 #include "sway/commands.h"
@@ -20,8 +21,8 @@ static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
 		return NULL;
 	}
 	wsc->workspace = strdup(ws_name);
-	wsc->gaps_inner = -1;
-	wsc->gaps_outer = -1;
+	wsc->gaps_inner = INT_MIN;
+	wsc->gaps_outer = INT_MIN;
 	list_add(config->workspace_configs, wsc);
 	return wsc;
 }
@@ -94,7 +95,16 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 			return cmd_results_new(CMD_FAILURE, "workspace gaps",
 					"Expected 'workspace <ws> gaps inner|outer <px>'");
 		}
-		*prop = val >= 0 ? val : 0;
+		*prop = val;
+
+		// Prevent invalid gaps configurations.
+		if (wsc->gaps_inner < 0) {
+			wsc->gaps_inner = 0;
+		}
+		if (wsc->gaps_outer < -wsc->gaps_inner) {
+			wsc->gaps_outer = -wsc->gaps_inner;
+		}
+
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);

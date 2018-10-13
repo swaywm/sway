@@ -20,31 +20,6 @@ struct gaps_data {
 	int amount;
 };
 
-// gaps edge_gaps on|off|toggle
-static struct cmd_results *gaps_edge_gaps(int argc, char **argv) {
-	struct cmd_results *error;
-	if ((error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2))) {
-		return error;
-	}
-
-	if (strcmp(argv[1], "on") == 0) {
-		config->edge_gaps = true;
-	} else if (strcmp(argv[1], "off") == 0) {
-		config->edge_gaps = false;
-	} else if (strcmp(argv[1], "toggle") == 0) {
-		if (!config->active) {
-			return cmd_results_new(CMD_INVALID, "gaps",
-					"Cannot toggle gaps while not running.");
-		}
-		config->edge_gaps = !config->edge_gaps;
-	} else {
-		return cmd_results_new(CMD_INVALID, "gaps",
-				"gaps edge_gaps on|off|toggle");
-	}
-	arrange_root();
-	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-}
-
 // gaps inner|outer <px>
 static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_EQUAL_TO, 2);
@@ -68,15 +43,17 @@ static struct cmd_results *gaps_set_defaults(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "gaps",
 				"Expected 'gaps inner|outer <px>'");
 	}
-	if (amount < 0) {
-		amount = 0;
-	}
-
 	if (inner) {
-		config->gaps_inner = amount;
+		config->gaps_inner = (amount >= 0) ? amount : 0;
 	} else {
 		config->gaps_outer = amount;
 	}
+
+	// Prevent negative outer gaps from moving windows out of the workspace.
+	if (config->gaps_outer < -config->gaps_inner) {
+		config->gaps_outer = -config->gaps_inner;
+	}
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -95,8 +72,12 @@ static void configure_gaps(struct sway_workspace *ws, void *_data) {
 		*prop -= data->amount;
 		break;
 	}
-	if (*prop < 0) {
-		*prop = 0;
+	// Prevent invalid gaps configurations.
+	if (ws->gaps_inner < 0) {
+		ws->gaps_inner = 0;
+	}
+	if (ws->gaps_outer < -ws->gaps_inner) {
+		ws->gaps_outer = -ws->gaps_inner;
 	}
 	arrange_workspace(ws);
 }
@@ -156,17 +137,12 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
-// gaps edge_gaps on|off|toggle
 // gaps inner|outer <px> - sets defaults for workspaces
 // gaps inner|outer current|all set|plus|minus <px> - runtime only
 struct cmd_results *cmd_gaps(int argc, char **argv) {
 	struct cmd_results *error = checkarg(argc, "gaps", EXPECTED_AT_LEAST, 2);
 	if (error) {
 		return error;
-	}
-
-	if (strcmp(argv[0], "edge_gaps") == 0) {
-		return gaps_edge_gaps(argc, argv);
 	}
 
 	if (argc == 2) {

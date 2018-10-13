@@ -73,10 +73,10 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	if (name) {
 		struct workspace_config *wsc = workspace_find_config(name);
 		if (wsc) {
-			if (wsc->gaps_outer != -1) {
+			if (wsc->gaps_outer != INT_MIN) {
 				ws->gaps_outer = wsc->gaps_outer;
 			}
-			if (wsc->gaps_inner != -1) {
+			if (wsc->gaps_inner != INT_MIN) {
 				ws->gaps_inner = wsc->gaps_inner;
 			}
 		}
@@ -616,9 +616,6 @@ void workspace_remove_gaps(struct sway_workspace *ws) {
 
 void workspace_add_gaps(struct sway_workspace *ws) {
 	if (ws->current_gaps > 0) {
-		return;
-	}
-	if (!config->edge_gaps) {
 		return;
 	}
 	if (config->smart_gaps) {
