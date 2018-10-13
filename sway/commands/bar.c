@@ -46,37 +46,34 @@ static bool is_subcommand(char *name) {
 
 struct cmd_results *cmd_bar(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bar", EXPECTED_AT_LEAST, 1))) {
+	if ((error = checkarg(argc, "bar", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
 
 	bool spawn = false;
-	if (argc > 1) {
-		struct bar_config *bar = NULL;
-		if (!is_subcommand(argv[0]) ||
-				(strcmp(argv[0], "id") != 0 && is_subcommand(argv[1]))) {
-			for (int i = 0; i < config->bars->length; ++i) {
-				struct bar_config *item = config->bars->items[i];
-				if (strcmp(item->id, argv[0]) == 0) {
-					wlr_log(WLR_DEBUG, "Selecting bar: %s", argv[0]);
-					bar = item;
-					break;
-				}
+	struct bar_config *bar = NULL;
+	if (strcmp(argv[0], "id") != 0 && is_subcommand(argv[1])) {
+		for (int i = 0; i < config->bars->length; ++i) {
+			struct bar_config *item = config->bars->items[i];
+			if (strcmp(item->id, argv[0]) == 0) {
+				wlr_log(WLR_DEBUG, "Selecting bar: %s", argv[0]);
+				bar = item;
+				break;
 			}
-			if (!bar) {
-				spawn = !config->reading;
-				wlr_log(WLR_DEBUG, "Creating bar: %s", argv[0]);
-				bar = default_bar_config();
-				if (!bar) {
-					return cmd_results_new(CMD_FAILURE, "bar",
-							"Unable to allocate bar state");
-				}
-
-				bar->id = strdup(argv[0]);
-			}
-			config->current_bar = bar;
-			++argv; --argc;
 		}
+		if (!bar) {
+			spawn = !config->reading;
+			wlr_log(WLR_DEBUG, "Creating bar: %s", argv[0]);
+			bar = default_bar_config();
+			if (!bar) {
+				return cmd_results_new(CMD_FAILURE, "bar",
+						"Unable to allocate bar state");
+			}
+
+			bar->id = strdup(argv[0]);
+		}
+		config->current_bar = bar;
+		++argv; --argc;
 	}
 
 	if (!config->current_bar && config->reading) {
@@ -88,18 +85,13 @@ struct cmd_results *cmd_bar(int argc, char **argv) {
 		}
 
 		// set bar id
-		for (int i = 0; i < config->bars->length; ++i) {
-			if (bar == config->bars->items[i]) {
-				const int len = 5 + numlen(i); // "bar-" + i + \0
-				bar->id = malloc(len * sizeof(char));
-				if (bar->id) {
-					snprintf(bar->id, len, "bar-%d", i);
-				} else {
-					return cmd_results_new(CMD_FAILURE,
-							"bar", "Unable to allocate bar ID");
-				}
-				break;
-			}
+		const int len = 5 + numlen(config->bars->length - 1); // "bar-"+i+\0
+		bar->id = malloc(len * sizeof(char));
+		if (bar->id) {
+			snprintf(bar->id, len, "bar-%d", config->bars->length - 1);
+		} else {
+			return cmd_results_new(CMD_FAILURE,
+					"bar", "Unable to allocate bar ID");
 		}
 
 		// Set current bar
