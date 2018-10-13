@@ -504,7 +504,16 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 	}
 
 	// Use the focused workspace
-	return seat_get_focused_workspace(seat);
+	struct sway_node *node = seat_get_focus_inactive(seat, &root->node);
+	if (node && node->type == N_WORKSPACE) {
+		return node->sway_workspace;
+	} else if (node && node->type == N_CONTAINER) {
+		return node->sway_container->workspace;
+	}
+
+	// If there's no focus_inactive workspace then we must be running without
+	// any outputs connected
+	return root->saved_workspaces->items[0];
 }
 
 static bool should_focus(struct sway_view *view) {
