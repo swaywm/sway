@@ -55,6 +55,23 @@ static void schedule_indicator_clear(struct swaylock_state *state) {
 			state->eventloop, 3000, clear_indicator, state);
 }
 
+static void clear_password(int fd, short mask, void *data) {
+	struct swaylock_state *state = data;
+	state->clear_password_timer = NULL;
+	state->auth_state = AUTH_STATE_CLEAR;
+	clear_password_buffer(&state->password);
+	damage_state(state);
+	schedule_indicator_clear(state);
+}
+
+static void schedule_password_clear(struct swaylock_state *state) {
+	if (state->clear_password_timer) {
+		loop_remove_event(state->eventloop, state->clear_password_timer);
+	}
+	state->clear_password_timer = loop_add_timer(
+			state->eventloop, 10000, clear_password, state);
+}
+
 void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint) {
 	switch (keysym) {
@@ -96,6 +113,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 		}
 		damage_state(state);
 		schedule_indicator_clear(state);
+		schedule_password_clear(state);
 		break;
 	case XKB_KEY_Escape:
 		clear_password_buffer(&state->password);
@@ -110,6 +128,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 		state->auth_state = AUTH_STATE_INPUT_NOP;
 		damage_state(state);
 		schedule_indicator_clear(state);
+		schedule_password_clear(state);
 		break;
 	case XKB_KEY_Shift_L:
 	case XKB_KEY_Shift_R:
@@ -124,6 +143,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 		state->auth_state = AUTH_STATE_INPUT_NOP;
 		damage_state(state);
 		schedule_indicator_clear(state);
+		schedule_password_clear(state);
 		break;
 	case XKB_KEY_u:
 		if (state->xkb.control) {
@@ -140,6 +160,7 @@ void swaylock_handle_key(struct swaylock_state *state,
 			state->auth_state = AUTH_STATE_INPUT;
 			damage_state(state);
 			schedule_indicator_clear(state);
+			schedule_password_clear(state);
 		}
 		break;
 	}
