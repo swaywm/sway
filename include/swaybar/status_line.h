@@ -14,6 +14,8 @@ enum status_protocol {
 };
 
 struct status_line {
+	struct swaybar *bar;
+
 	pid_t pid;
 	int read_fd, write_fd;
 	FILE *read, *write;
