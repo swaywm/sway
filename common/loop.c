@@ -48,6 +48,7 @@ void loop_destroy(struct loop *loop) {
 	list_foreach(loop->timers, free);
 	list_free(loop->fd_events);
 	list_free(loop->timers);
+	free(loop->fds);
 	free(loop);
 }
 
@@ -65,6 +66,9 @@ void loop_poll(struct loop *loop) {
 				ms = timer_ms;
 			}
 		}
+	}
+	if (ms < 0) {
+		ms = 0;
 	}
 
 	poll(loop->fds, loop->fd_length, ms);
