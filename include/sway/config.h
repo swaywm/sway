@@ -530,6 +530,8 @@ void free_sway_binding(struct sway_binding *sb);
 
 void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding);
 
+void load_swaybar(struct bar_config *bar);
+
 void load_swaybars(void);
 
 void terminate_swaybg(pid_t pid);
