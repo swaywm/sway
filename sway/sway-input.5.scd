@@ -143,4 +143,4 @@ in their own "seat").
 
 # SEE ALSO
 
-*sway*(5)
+*sway*(5) *sway-output*(5)

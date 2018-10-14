@@ -498,61 +498,6 @@ The default colors are:
 	Prevents windows matching <criteria> from being focused automatically when
 	they're created. This has no effect on the first window in a workspace.
 
-*output* <name> mode|resolution|res <WIDTHxHEIGHT>[@<RATE>[Hz]]
-	Configures the specified output to use the given mode. Modes are a
-	combination of width and height (in pixels) and a refresh rate that your
-	display can be configured to use. For a list of available modes for each
-	output, use *swaymsg -t get\_outputs*.
-
-	Examples:
-
-		output HDMI-A-1 mode 1920x1080
-
-		output HDMI-A-1 mode 1920x1080@60Hz
-
-*output* <name> position|pos <X> <Y>
-	Places the specified output at the specific position in the global
-	coordinate space.
-
-*output* <name> scale <factor>
-	Scales the specified output by the specified scale _factor_. An integer is
-	recommended, but fractional values are also supported. If a fractional
-	value are specified, be warned that it is not possible to faithfully
-	represent the contents of your windows - they will be rendered at the next
-	highest integral scale factor and downscaled. You may be better served by
-	setting an integral scale factor and adjusting the font size of your
-	applications to taste.
-
-*output* <name> background|bg <file> <mode> [<fallback\_color>]
-	Sets the wallpaper for the given output to the specified file, using the
-	given scaling mode (one of "stretch", "fill", "fit", "center", "tile"). If
-	the specified file cannot be accessed or if the image does fill the entire
-	output, a fallback color may be provided to cover the rest of the output.
-	__fallback\_color__ should be specified as _#RRGGBB_. Alpha is not
-	supported.
-
-*output* <name> background|bg <color> solid\_color
-	Sets the background of the given output to the specified color. _color_
-	should be specified as _#RRGGBB_. Alpha is not supported.
-
-*output* <name> transform <transform>
-	Sets the background transform to the given value. Can be one of "90", "180",
-	"270" for rotation; or "flipped", "flipped-90", "flipped-180", "flipped-270"
-	to apply a rotation and flip, or "normal" to apply no transform.
-
-*output* <name> disable|enable
-	Enables or disables the specified output (all outputs are enabled by
-	default).
-
-*NOTES FOR THE OUTPUT COMMANDS*
-
-You may combine output commands into one, like so:
-
-	output HDMI-A-1 mode 1920x1080 pos 1920,0 bg ~/wallpaper.png stretch
-
-You can get a list of output names with *swaymsg -t get\_outputs*. You may also
-match any output by using the output name "\*".
-
 *popup\_during\_fullscreen* smart|ignore|leave\_fullscreen
 	Determines what to do when a fullscreen view opens a dialog.
 	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
