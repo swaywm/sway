@@ -16,7 +16,7 @@
 
 static void status_line_close_fds(struct status_line *status) {
 	if (status->read_fd != -1) {
-		loop_remove_event(status->bar->eventloop, status->bar->status_event);
+		loop_remove_fd(status->bar->eventloop, status->read_fd);
 		close(status->read_fd);
 		status->read_fd = -1;
 	}

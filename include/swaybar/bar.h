@@ -69,7 +69,6 @@ struct swaybar {
 	struct status_line *status;
 
 	struct loop *eventloop;
-	struct loop_event *status_event;
 
 	int ipc_event_socketfd;
 	int ipc_socketfd;

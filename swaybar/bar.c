@@ -647,7 +647,7 @@ static void status_in(int fd, short mask, void *data) {
 	if (mask & (POLLHUP | POLLERR)) {
 		status_error(bar->status, "[error reading from status command]");
 		set_bar_dirty(bar);
-		loop_remove_event(bar->eventloop, bar->status_event);
+		loop_remove_fd(bar->eventloop, fd);
 	} else if (status_handle_readable(bar->status)) {
 		set_bar_dirty(bar);
 	}
@@ -658,8 +658,8 @@ void bar_run(struct swaybar *bar) {
 			display_in, bar);
 	loop_add_fd(bar->eventloop, bar->ipc_event_socketfd, POLLIN, ipc_in, bar);
 	if (bar->status) {
-		bar->status_event = loop_add_fd(
-				bar->eventloop, bar->status->read_fd, POLLIN, status_in, bar);
+		loop_add_fd(bar->eventloop, bar->status->read_fd, POLLIN,
+				status_in, bar);
 	}
 	while (1) {
 		wl_display_flush(bar->display);

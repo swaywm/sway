@@ -40,7 +40,7 @@ static void append_ch(struct swaylock_password *pw, uint32_t codepoint) {
 	pw->len += utf8_size;
 }
 
-static void clear_indicator(int fd, short mask, void *data) {
+static void clear_indicator(void *data) {
 	struct swaylock_state *state = data;
 	state->clear_indicator_timer = NULL;
 	state->auth_state = AUTH_STATE_IDLE;
@@ -49,13 +49,13 @@ static void clear_indicator(int fd, short mask, void *data) {
 
 static void schedule_indicator_clear(struct swaylock_state *state) {
 	if (state->clear_indicator_timer) {
-		loop_remove_event(state->eventloop, state->clear_indicator_timer);
+		loop_remove_timer(state->eventloop, state->clear_indicator_timer);
 	}
 	state->clear_indicator_timer = loop_add_timer(
 			state->eventloop, 3000, clear_indicator, state);
 }
 
-static void clear_password(int fd, short mask, void *data) {
+static void clear_password(void *data) {
 	struct swaylock_state *state = data;
 	state->clear_password_timer = NULL;
 	state->auth_state = AUTH_STATE_CLEAR;
@@ -66,13 +66,13 @@ static void clear_password(int fd, short mask, void *data) {
 
 static void schedule_password_clear(struct swaylock_state *state) {
 	if (state->clear_password_timer) {
-		loop_remove_event(state->eventloop, state->clear_password_timer);
+		loop_remove_timer(state->eventloop, state->clear_password_timer);
 	}
 	state->clear_password_timer = loop_add_timer(
 			state->eventloop, 10000, clear_password, state);
 }
 
-static void handle_preverify_timeout(int fd, short mask, void *data) {
+static void handle_preverify_timeout(void *data) {
 	struct swaylock_state *state = data;
 	state->verify_password_timer = NULL;
 }

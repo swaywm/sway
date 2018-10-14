@@ -1,18 +1,24 @@
+#include <limits.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <poll.h>
-#include <sys/timerfd.h>
+#include <time.h>
 #include <unistd.h>
 #include "list.h"
 #include "log.h"
 #include "loop.h"
 
-struct loop_event {
+struct loop_fd_event {
 	void (*callback)(int fd, short mask, void *data);
 	void *data;
-	bool is_timer;
+};
+
+struct loop_timer {
+	void (*callback)(void *data);
+	void *data;
+	struct timespec expiry;
 };
 
 struct loop {
@@ -20,7 +26,8 @@ struct loop {
 	int fd_length;
 	int fd_capacity;
 
-	list_t *events; // struct loop_event
+	list_t *fd_events; // struct loop_fd_event
+	list_t *timers; // struct loop_timer
 };
 
 struct loop *loop_create(void) {
@@ -31,86 +38,136 @@ struct loop *loop_create(void) {
 	}
 	loop->fd_capacity = 10;
 	loop->fds = malloc(sizeof(struct pollfd) * loop->fd_capacity);
-	loop->events = create_list();
+	loop->fd_events = create_list();
+	loop->timers = create_list();
 	return loop;
 }
 
 void loop_destroy(struct loop *loop) {
-	list_foreach(loop->events, free);
-	list_free(loop->events);
+	list_foreach(loop->fd_events, free);
+	list_foreach(loop->timers, free);
+	list_free(loop->fd_events);
+	list_free(loop->timers);
 	free(loop);
 }
 
 void loop_poll(struct loop *loop) {
-	poll(loop->fds, loop->fd_length, -1);
+	// Calculate next timer in ms
+	int ms = INT_MAX;
+	if (loop->timers->length) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		for (int i = 0; i < loop->timers->length; ++i) {
+			struct loop_timer *timer = loop->timers->items[i];
+			int timer_ms = (timer->expiry.tv_sec - now.tv_sec) * 1000;
+			timer_ms += (timer->expiry.tv_nsec - now.tv_nsec) / 1000000;
+			if (timer_ms < ms) {
+				ms = timer_ms;
+			}
+		}
+	}
 
+	poll(loop->fds, loop->fd_length, ms);
+
+	// Dispatch fds
 	for (int i = 0; i < loop->fd_length; ++i) {
 		struct pollfd pfd = loop->fds[i];
-		struct loop_event *event = loop->events->items[i];
+		struct loop_fd_event *event = loop->fd_events->items[i];
 
 		// Always send these events
 		unsigned events = pfd.events | POLLHUP | POLLERR;
 
 		if (pfd.revents & events) {
 			event->callback(pfd.fd, pfd.revents, event->data);
+		}
+	}
 
-			if (event->is_timer) {
-				loop_remove_event(loop, event);
+	// Dispatch timers
+	if (loop->timers->length) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		for (int i = 0; i < loop->timers->length; ++i) {
+			struct loop_timer *timer = loop->timers->items[i];
+			bool expired = timer->expiry.tv_sec < now.tv_sec ||
+				(timer->expiry.tv_sec == now.tv_sec &&
+				 timer->expiry.tv_nsec < now.tv_nsec);
+			if (expired) {
+				timer->callback(timer->data);
+				loop_remove_timer(loop, timer);
 				--i;
 			}
 		}
 	}
 }
 
-struct loop_event *loop_add_fd(struct loop *loop, int fd, short mask,
+void loop_add_fd(struct loop *loop, int fd, short mask,
 		void (*callback)(int fd, short mask, void *data), void *data) {
+	struct loop_fd_event *event = calloc(1, sizeof(struct loop_fd_event));
+	if (!event) {
+		wlr_log(WLR_ERROR, "Unable to allocate memory for event");
+		return;
+	}
+	event->callback = callback;
+	event->data = data;
+	list_add(loop->fd_events, event);
+
 	struct pollfd pfd = {fd, mask, 0};
 
 	if (loop->fd_length == loop->fd_capacity) {
 		loop->fd_capacity += 10;
-		loop->fds = realloc(loop->fds, sizeof(struct pollfd) * loop->fd_capacity);
+		loop->fds = realloc(loop->fds,
+				sizeof(struct pollfd) * loop->fd_capacity);
 	}
 
 	loop->fds[loop->fd_length++] = pfd;
-
-	struct loop_event *event = calloc(1, sizeof(struct loop_event));
-	event->callback = callback;
-	event->data = data;
-
-	list_add(loop->events, event);
-
-	return event;
 }
 
-struct loop_event *loop_add_timer(struct loop *loop, int ms,
-		void (*callback)(int fd, short mask, void *data), void *data) {
-	int fd = timerfd_create(CLOCK_MONOTONIC, 0);
-	struct itimerspec its;
-	its.it_interval.tv_sec = 0;
-	its.it_interval.tv_nsec = 0;
-	its.it_value.tv_sec = ms / 1000;
-	its.it_value.tv_nsec = (ms % 1000) * 1000000;
-	timerfd_settime(fd, 0, &its, NULL);
+struct loop_timer *loop_add_timer(struct loop *loop, int ms,
+		void (*callback)(void *data), void *data) {
+	struct loop_timer *timer = calloc(1, sizeof(struct loop_timer));
+	if (!timer) {
+		wlr_log(WLR_ERROR, "Unable to allocate memory for timer");
+		return NULL;
+	}
+	timer->callback = callback;
+	timer->data = data;
 
-	struct loop_event *event = loop_add_fd(loop, fd, POLLIN, callback, data);
-	event->is_timer = true;
+	clock_gettime(CLOCK_MONOTONIC, &timer->expiry);
+	timer->expiry.tv_sec += ms / 1000;
 
-	return event;
+	long int nsec = (ms % 1000) * 1000000;
+	if (timer->expiry.tv_nsec + nsec >= 1000000000) {
+		timer->expiry.tv_sec++;
+		nsec -= 1000000000;
+	}
+	timer->expiry.tv_nsec += nsec;
+
+	list_add(loop->timers, timer);
+
+	return timer;
 }
 
-bool loop_remove_event(struct loop *loop, struct loop_event *event) {
-	for (int i = 0; i < loop->events->length; ++i) {
-		if (loop->events->items[i] == event) {
-			list_del(loop->events, i);
-
-			if (event->is_timer) {
-				close(loop->fds[i].fd);
-			}
+bool loop_remove_fd(struct loop *loop, int fd) {
+	for (int i = 0; i < loop->fd_length; ++i) {
+		if (loop->fds[i].fd == fd) {
+			free(loop->fd_events->items[i]);
+			list_del(loop->fd_events, i);
 
 			loop->fd_length--;
-			memmove(&loop->fds[i], &loop->fds[i + 1], sizeof(void*) * (loop->fd_length - i));
+			memmove(&loop->fds[i], &loop->fds[i + 1],
+					sizeof(void*) * (loop->fd_length - i));
 
-			free(event);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool loop_remove_timer(struct loop *loop, struct loop_timer *timer) {
+	for (int i = 0; i < loop->timers->length; ++i) {
+		if (loop->timers->items[i] == timer) {
+			list_del(loop->timers, i);
+			free(timer);
 			return true;
 		}
 	}
