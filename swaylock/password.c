@@ -14,7 +14,7 @@ void clear_password_buffer(struct swaylock_password *pw) {
 	// Use volatile keyword so so compiler can't optimize this out.
 	volatile char *buffer = pw->buffer;
 	volatile char zero = '\0';
-	for (size_t i = 0; i < sizeof(buffer); ++i) {
+	for (size_t i = 0; i < sizeof(pw->buffer); ++i) {
 		buffer[i] = zero;
 	}
 	pw->len = 0;
