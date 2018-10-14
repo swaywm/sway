@@ -81,7 +81,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 		border_toggle(view);
 	} else {
 		return cmd_results_new(CMD_INVALID, "border",
-				"Expected 'border <none|normal|pixel|toggle>' "
+				"Expected 'border <none|normal|pixel|csd|toggle>' "
 				"or 'border pixel <px>'");
 	}
 	if (argc == 2) {

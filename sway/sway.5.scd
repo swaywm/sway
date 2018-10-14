@@ -87,14 +87,15 @@ The following commands may only be used in the configuration file.
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 
-*border* normal|pixel [<n>]
+*border* none|normal|csd|pixel [<n>]
 	Set border style for focused window. _normal_ includes a border of
 	thickness _n_ and a title bar. _pixel_ is a border without title bar _n_
-	pixels thick. Default is _normal_ with border thickness 2.
+	pixels thick. Default is _normal_ with border thickness 2. _csd_ is short
+	for client-side-decorations, which allows the client to draw its own
+	decorations.
 
-*border* none|toggle
-	Set border style for focused window to _none_ or _toggle_ between the
-	available border styles: _normal_, _pixel_, _none_.
+*border* toggle
+	Cycles through the available border styles.
 
 *exit*
 	Exit sway and end your Wayland session.
