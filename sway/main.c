@@ -287,7 +287,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// TODO: switch logging over to wlroots?
 	if (debug) {
 		wlr_log_init(WLR_DEBUG, NULL);
 	} else if (verbose || validate) {
