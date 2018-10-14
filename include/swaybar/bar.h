@@ -8,6 +8,7 @@
 struct swaybar_config;
 struct swaybar_output;
 struct swaybar_workspace;
+struct loop;
 
 struct swaybar_pointer {
 	struct wl_pointer *pointer;
@@ -65,6 +66,8 @@ struct swaybar {
 	struct swaybar_config *config;
 	struct swaybar_pointer pointer;
 	struct status_line *status;
+
+	struct loop *eventloop;
 
 	int ipc_event_socketfd;
 	int ipc_socketfd;

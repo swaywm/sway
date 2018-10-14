@@ -21,6 +21,7 @@
 #include "pool-buffer.h"
 #include "cairo.h"
 #include "log.h"
+#include "loop.h"
 #include "readline.h"
 #include "stringop.h"
 #include "util.h"
@@ -844,6 +845,10 @@ static int load_config(char *path, struct swaylock_state *state,
 
 static struct swaylock_state state;
 
+static void display_in(int fd, short mask, void *data) {
+	wl_display_dispatch(state.display);
+}
+
 int main(int argc, char **argv) {
 	wlr_log_init(WLR_DEBUG, NULL);
 	initialize_pw_backend();
@@ -946,9 +951,14 @@ int main(int argc, char **argv) {
 		daemonize();
 	}
 
+	state.eventloop = loop_create();
+	loop_add_fd(state.eventloop, wl_display_get_fd(state.display), POLL_IN,
+			display_in, NULL);
+
 	state.run_display = true;
-	while (wl_display_dispatch(state.display) != -1 && state.run_display) {
-		// This space intentionally left blank
+	while (state.run_display) {
+		wl_display_flush(state.display);
+		loop_poll(state.eventloop);
 	}
 
 	free(state.args.font);

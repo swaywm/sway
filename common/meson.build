@@ -5,6 +5,7 @@ lib_sway_common = static_library(
 		'cairo.c',
 		'ipc-client.c',
 		'log.c',
+		'loop.c',
 		'list.c',
 		'pango.c',
 		'readline.c',

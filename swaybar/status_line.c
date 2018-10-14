@@ -7,16 +7,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
+#include "loop.h"
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
-#include "swaybar/event_loop.h"
 #include "swaybar/status_line.h"
 #include "readline.h"
 
 static void status_line_close_fds(struct status_line *status) {
 	if (status->read_fd != -1) {
-		remove_event(status->read_fd);
+		loop_remove_fd(status->bar->eventloop, status->read_fd);
 		close(status->read_fd);
 		status->read_fd = -1;
 	}

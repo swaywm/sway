@@ -18,7 +18,6 @@
 #endif
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
-#include "swaybar/event_loop.h"
 #include "swaybar/i3bar.h"
 #include "swaybar/ipc.h"
 #include "swaybar/status_line.h"
@@ -26,6 +25,7 @@
 #include "ipc-client.h"
 #include "list.h"
 #include "log.h"
+#include "loop.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
@@ -573,7 +573,7 @@ static void set_bar_dirty(struct swaybar *bar) {
 
 bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	bar_init(bar);
-	init_event_loop();
+	bar->eventloop = loop_create();
 
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
 	bar->ipc_event_socketfd = ipc_open_socket(socket_path);
@@ -582,6 +582,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	}
 	if (bar->config->status_command) {
 		bar->status = status_line_init(bar->config->status_command);
+		bar->status->bar = bar;
 	}
 
 	bar->display = wl_display_connect(NULL);
@@ -646,21 +647,23 @@ static void status_in(int fd, short mask, void *data) {
 	if (mask & (POLLHUP | POLLERR)) {
 		status_error(bar->status, "[error reading from status command]");
 		set_bar_dirty(bar);
-		remove_event(fd);
+		loop_remove_fd(bar->eventloop, fd);
 	} else if (status_handle_readable(bar->status)) {
 		set_bar_dirty(bar);
 	}
 }
 
 void bar_run(struct swaybar *bar) {
-	add_event(wl_display_get_fd(bar->display), POLLIN, display_in, bar);
-	add_event(bar->ipc_event_socketfd, POLLIN, ipc_in, bar);
+	loop_add_fd(bar->eventloop, wl_display_get_fd(bar->display), POLLIN,
+			display_in, bar);
+	loop_add_fd(bar->eventloop, bar->ipc_event_socketfd, POLLIN, ipc_in, bar);
 	if (bar->status) {
-		add_event(bar->status->read_fd, POLLIN, status_in, bar);
+		loop_add_fd(bar->eventloop, bar->status->read_fd, POLLIN,
+				status_in, bar);
 	}
 	while (1) {
 		wl_display_flush(bar->display);
-		event_loop_poll();
+		loop_poll(bar->eventloop);
 	}
 }
 
