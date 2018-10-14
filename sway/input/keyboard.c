@@ -9,6 +9,7 @@
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
 #include "sway/input/seat.h"
+#include "sway/ipc-server.h"
 #include "log.h"
 
 /**
@@ -66,10 +67,10 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
 	bool last_key_was_a_modifier = raw_modifiers != state->last_raw_modifiers;
 	state->last_raw_modifiers = raw_modifiers;
 
-    if (last_key_was_a_modifier && state->last_keycode) {
-        // Last pressed key before this one was a modifier
-        state_erase_key(state, state->last_keycode);
-    }
+	if (last_key_was_a_modifier && state->last_keycode) {
+		// Last pressed key before this one was a modifier
+		state_erase_key(state, state->last_keycode);
+	}
 
 	if (event->state == WLR_KEY_PRESSED) {
 		// Add current key to set; there may be duplicates
@@ -235,7 +236,6 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 				code_modifiers);
 	}
 
-
 	bool handled = false;
 
 	// Identify active release binding
@@ -337,6 +337,19 @@ static int handle_keyboard_repeat(void *data) {
 	return 0;
 }
 
+static void determine_bar_visibility(uint32_t modifiers) {
+	for (int i = 0; i < config->bars->length; ++i) {
+		struct bar_config *bar = config->bars->items[i];
+		if (strcmp(bar->mode, bar->hidden_state) == 0) { // both are "hide"
+			bool should_be_visible = (~modifiers & bar->modifier) == 0;
+			if (bar->visible_by_modifier != should_be_visible) {
+				bar->visible_by_modifier = should_be_visible;
+				ipc_event_bar_state_update(bar);
+			}
+		}
+	}
+}
+
 static void handle_keyboard_modifiers(struct wl_listener *listener,
 		void *data) {
 	struct sway_keyboard *keyboard =
@@ -346,6 +359,9 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 		keyboard->seat_device->input_device->wlr_device;
 	wlr_seat_set_keyboard(wlr_seat, wlr_device);
 	wlr_seat_keyboard_notify_modifiers(wlr_seat, &wlr_device->keyboard->modifiers);
+
+	uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_device->keyboard);
+	determine_bar_visibility(modifiers);
 }
 
 struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
@@ -464,7 +480,7 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	keyboard->keyboard_key.notify = handle_keyboard_key;
 
 	wl_list_remove(&keyboard->keyboard_modifiers.link);
-	wl_signal_add( &wlr_device->keyboard->events.modifiers,
+	wl_signal_add(&wlr_device->keyboard->events.modifiers,
 		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
 }

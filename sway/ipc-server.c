@@ -349,6 +349,22 @@ void ipc_event_barconfig_update(struct bar_config *bar) {
 	json_object_put(json);
 }
 
+void ipc_event_bar_state_update(struct bar_config *bar) {
+	if (!ipc_has_event_listeners(IPC_EVENT_BAR_STATE_UPDATE)) {
+		return;
+	}
+	wlr_log(WLR_DEBUG, "Sending bar_state_update event");
+
+	json_object *json = json_object_new_object();
+	json_object_object_add(json, "id", json_object_new_string(bar->id));
+	json_object_object_add(json, "visible_by_modifier",
+			json_object_new_boolean(bar->visible_by_modifier));
+
+	const char *json_string = json_object_to_json_string(json);
+	ipc_send_event(json_string, IPC_EVENT_BAR_STATE_UPDATE);
+	json_object_put(json);
+}
+
 void ipc_event_mode(const char *mode, bool pango) {
 	if (!ipc_has_event_listeners(IPC_EVENT_MODE)) {
 		return;
@@ -651,6 +667,8 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
 			} else if (strcmp(event_type, "barconfig_update") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
+			} else if (strcmp(event_type, "bar_state_update") == 0) {
+				client->subscribed_events |= event_mask(IPC_EVENT_BAR_STATE_UPDATE);
 			} else if (strcmp(event_type, "mode") == 0) {
 				client->subscribed_events |= event_mask(IPC_EVENT_MODE);
 			} else if (strcmp(event_type, "shutdown") == 0) {

@@ -65,6 +65,22 @@ Sway allows configuring swaybar in the sway configuration file.
 	is given, when mouse button _n_ has been released). To disable the default
 	behavior for a button, use the command _nop_.
 
+*mode* dock|hide|invisible
+	Specifies the visibility of the bar. In _dock_ mode, it is permanently
+	visible at one edge of the screen. In _hide_ mode, it is hidden unless the
+	modifier key is pressed, though this behaviour depends on the hidden state.
+	In _invisible_ mode, it is permanently hidden. Default is _dock_.
+
+*hidden\_state* hide|show
+	Specifies the behaviour of the bar when it is in _hide_ mode. When the
+	hidden state is _hide_, then it is normally hidden, and only unhidden by
+	pressing the modifier key or in case of urgency hints. When the hidden
+	state is _show_, then it is permanently visible, drawn on top of the
+	currently visible workspace. Default is _hide_.
+
+*modifier* <Modifier>|none
+	Specifies the modifier key that shows a hidden bar. Default is _Mod4_.
+
 ## TRAY
 
 Swaybar provides a system tray where third-party applications may place icons.

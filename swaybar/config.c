@@ -30,7 +30,8 @@ struct swaybar_config *init_config(void) {
 	config->pango_markup = false;
 	config->position = parse_position("bottom");
 	config->font = strdup("monospace 10");
-	config->mode = NULL;
+	config->mode = strdup("dock");
+	config->hidden_state = strdup("hide");
 	config->sep_symbol = NULL;
 	config->strip_workspace_numbers = false;
 	config->binding_mode_indicator = true;
@@ -84,6 +85,7 @@ void free_config(struct swaybar_config *config) {
 	free(config->status_command);
 	free(config->font);
 	free(config->mode);
+	free(config->hidden_state);
 	free(config->sep_symbol);
 	for (int i = 0; i < config->bindings->length; i++) {
 		struct swaybar_binding *binding = config->bindings->items[i];

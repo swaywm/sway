@@ -191,6 +191,7 @@ struct bar_config {
 	 * In "show" mode, it will always be shown on top of the active workspace.
 	 */
 	char *hidden_state;
+	bool visible_by_modifier; // only relevant in "hide" mode
 	/**
 	 * Id name used to identify the bar through IPC.
 	 *

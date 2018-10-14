@@ -22,6 +22,9 @@ struct status_line {
 	const char *text;
 	struct wl_list blocks; // i3bar_block::link
 
+	int stop_signal;
+	int cont_signal;
+
 	bool click_events;
 	bool clicked;
 	char *buffer;
