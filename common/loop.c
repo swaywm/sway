@@ -159,7 +159,7 @@ bool loop_remove_fd(struct loop *loop, int fd) {
 
 			loop->fd_length--;
 			memmove(&loop->fds[i], &loop->fds[i + 1],
-					sizeof(void*) * (loop->fd_length - i));
+					sizeof(struct pollfd) * (loop->fd_length - i));
 
 			return true;
 		}

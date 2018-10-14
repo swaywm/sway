@@ -9,7 +9,6 @@ struct swaybar_config;
 struct swaybar_output;
 struct swaybar_workspace;
 struct loop;
-struct loop_event;
 
 struct swaybar_pointer {
 	struct wl_pointer *pointer;
