@@ -28,14 +28,6 @@ Neue Versionen werden mit
 [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) 
 signiert und [auf Github](https://github.com/swaywm/sway/releases) veröffentlicht.
 
-## Status
-
-- [i3-Features](https://github.com/swaywm/sway/issues/2)
-- [IPC-Features](https://github.com/swaywm/sway/issues/98)
-- [i3bar-Features](https://github.com/swaywm/sway/issues/343)
-- [i3-gaps-Features](https://github.com/swaywm/sway/issues/307)
-- [Sicherheitsfeatures](https://github.com/swaywm/sway/issues/984)
-
 ## Installation
 
 ### Als Paket

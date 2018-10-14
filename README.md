@@ -9,11 +9,6 @@ Read the [FAQ](https://github.com/swaywm/sway/wiki). Join the
 [IRC channel](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on
 irc.freenode.net).
 
-**Notice**: work is well underway to port sway to
-[wlroots](https://github.com/swaywm/wlroots). This is **unstable** and
-**unsupported** - we accept patches, but are not fond of bug reports. We are no
-longer accepting bugs for 0.15.
-
 If you'd like to support sway development, please contribute to [SirCmpwn's
 Patreon page](https://patreon.com/sircmpwn).
 
@@ -21,14 +16,6 @@ Patreon page](https://patreon.com/sircmpwn).
 
 Releases are signed with [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
 and published [on GitHub](https://github.com/swaywm/sway/releases).
-
-## Status
-
-- [i3 feature support](https://github.com/swaywm/sway/issues/2)
-- [IPC feature support](https://github.com/swaywm/sway/issues/98)
-- [i3bar feature support](https://github.com/swaywm/sway/issues/343)
-- [i3-gaps feature support](https://github.com/swaywm/sway/issues/307)
-- [security features](https://github.com/swaywm/sway/issues/984)
 
 ## Installation
 

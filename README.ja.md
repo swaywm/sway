@@ -5,26 +5,17 @@ i3互換な[Wayland](http://wayland.freedesktop.org/)コンポジタです。
 [FAQ](https://github.com/swaywm/sway/wiki)も合わせてご覧ください。
 [IRC チャンネル](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway on irc.freenode.net)もあります。
 
-**注意**: Swayは現在*凍結中*であり、wlcからwlrootsへの移植が完了するまで新たな機能は追加されません。2018年9月以降に発見されるバグは0.15では対応されません。詳しくは[この記事](https://drewdevault.com/2017/10/09/Future-of-sway.html)をご覧ください。wlrootsとの統合状況については、[このチケット](https://github.com/swaywm/sway/issues/1390)をご覧ください。
-
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 Swayの開発を支援したい場合は、[SirCmpwnのPatreon](https://patreon.com/sircmpwn)や、特定の機能に対する[報奨金のページ](https://github.com/swaywm/sway/issues/986)から寄付ができます。誰でも報奨金を請求できますし、自分の欲しい機能に報奨金を懸ける事も出来ます。またSwayのメンテナンスを支援するには、Patreonがより有用です。
 
 ## 日本語サポート
+
 SirCmpwnは、日本語でのサポートをIRCとGitHubで行います。タイムゾーンはUTC-4です。
 
 ## リリースの署名
 
 Swayのリリースは[B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)で署名され、[GitHub](https://github.com/swaywm/sway/releases)で公開されています。
-
-## 開発状況
-
-- [i3の機能のサポート](https://github.com/swaywm/sway/issues/2)
-- [IPCの機能のサポート](https://github.com/swaywm/sway/issues/98)
-- [i3barの機能のサポート](https://github.com/swaywm/sway/issues/343)
-- [i3-gapsの機能のサポート](https://github.com/swaywm/sway/issues/307)
-- [セキュリティ機能](https://github.com/swaywm/sway/issues/984)
 
 ## インストール
 

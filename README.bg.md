@@ -5,8 +5,6 @@
 [IRC канала](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-**Внимание**: На този етап в Sway няма да бъдат добавяни нови функции, докато не приключим с интеграцията на Sway и wlroots. Все още се оправят бъгове.
-
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 Ако желаете, може да дарите на [Patreon страницата на автора](https://patreon.com/sircmpwn), което ще помогне за цялостното здраве и развитие на проекта.
@@ -20,14 +18,6 @@ irc.freenode.net).
 
 Версии подписани с ключ [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
 и публикувани в [GitHub](https://github.com/swaywm/sway/releases).
-
-## Статус
-
-- [i3 поддръжка](https://github.com/swaywm/sway/issues/2)
-- [i3-bar поддръжка](https://github.com/swaywm/sway/issues/343)
-- [i3-gaps поддръжка](https://github.com/swaywm/sway/issues/307)
-- [IPC поддръжка](https://github.com/swaywm/sway/issues/98)
-- [Сигурност](https://github.com/swaywm/sway/issues/984)
 
 ## Инсталация
 

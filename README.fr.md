@@ -24,14 +24,6 @@ maintenance de Sway.
 Les nouvelles versions sont signées avec [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
 et publiées [sur GitHub](https://github.com/swaywm/sway/releases).
 
-## Statut
-
-- [support des fonctionnalités d'i3](https://github.com/swaywm/sway/issues/2)
-- [support des fonctionnalités d'IPC](https://github.com/swaywm/sway/issues/98)
-- [support des fonctionnalités d'i3bar](https://github.com/swaywm/sway/issues/343)
-- [support des fonctionnalités d'i3-gaps](https://github.com/swaywm/sway/issues/307)
-- [fonctionnalités de sécurité](https://github.com/swaywm/sway/issues/984)
-
 ## Installation
 
 ### À partir de paquets

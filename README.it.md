@@ -25,14 +25,6 @@ Questa traduzione non è ancora completa. [Clicca qui per maggiori informazioni]
 Le release sono firmate con [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
 e pubblicate [su GitHub](https://github.com/swaywm/sway/releases).
 
-## Status
-
-- [supporto funzionalità i3](https://github.com/swaywm/sway/issues/2)
-- [supporto funzionalità IPC](https://github.com/swaywm/sway/issues/98)
-- [supporto funzionalità i3bar](https://github.com/swaywm/sway/issues/343)
-- [supporto funzionalità i3-gaps](https://github.com/swaywm/sway/issues/307)
-- [sicurezza](https://github.com/swaywm/sway/issues/984)
-
 ## Installazione
 
 ### Dai pacchetti

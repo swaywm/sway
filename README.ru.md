@@ -6,8 +6,6 @@ i3-совместимый [Wayland](http://wayland.freedesktop.org/) компо�
 [IRC каналу](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway на
 irc.freenode.net).
 
-**Внимание**: на данный момент ведется активная интеграция wlroots, в связи с чем разработка sway приостановлена, однако патчи продолжают приниматься.
-
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
 При желании поддержать разработку Sway вы можете пожертвовать [автору
@@ -25,14 +23,6 @@ DarkReef оказывает поддержку на русском языке в
 
 Версии подписаны ключом [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A)
 и опубликованы [на GitHub'е](https://github.com/swaywm/sway/releases).
-
-## Статус
-
-- [Поддержка i3](https://github.com/swaywm/sway/issues/2)
-- [Поддержка i3-bar](https://github.com/swaywm/sway/issues/343)
-- [Поддержка i3-gaps](https://github.com/swaywm/sway/issues/307)
-- [Поддержка IPC](https://github.com/swaywm/sway/issues/98)
-- [Безопасность](https://github.com/swaywm/sway/issues/984)
 
 ## Установка
 

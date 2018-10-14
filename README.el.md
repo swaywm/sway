@@ -23,14 +23,6 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 
 Οι εκδόσεις υπογράφονται ως [B22DA89A](http://pgp.mit.edu/pks/lookup?op=vindex&search=0x52CB6609B22DA89A) και δημοσιεύονται στο [GitHub](https://github.com/swaywm/sway/releases).
 
-## Κατάσταση
-
-- [Υποστήριξη δυνατοτήτων του i3](https://github.com/swaywm/sway/issues/2)
-- [Υποστήριξη δυνατοτήτων IPC](https://github.com/swaywm/sway/issues/98)
-- [Υποστήριξη δυνατοτήτων i3bar](https://github.com/swaywm/sway/issues/343)
-- [Υποστήριξη δυνατοτήτων i3-gaps](https://github.com/swaywm/sway/issues/307)
-- [Δυνατότητες Ασφαλείας](https://github.com/swaywm/sway/issues/984)
-
 ## Εγκατάσταση
 
 ### Από Πακέτα
