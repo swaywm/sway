@@ -222,7 +222,12 @@ int main(int argc, const char **argv) {
 	}
 
 	state.display = wl_display_connect(NULL);
-	assert(state.display);
+	if (!state.display) {
+		wlr_log(WLR_ERROR, "Unable to connect to the compositor. "
+				"If your compositor is running, check or set the "
+				"WAYLAND_DISPLAY environment variable.");
+		return 1;
+	}
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
