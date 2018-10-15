@@ -623,6 +623,15 @@ static void container_raise_floating(struct sway_container *con) {
 	}
 }
 
+static void set_workspace(struct sway_seat *seat,
+		struct sway_workspace *new_ws) {
+	if (seat->workspace == new_ws) {
+		return;
+	}
+	ipc_event_workspace(seat->workspace, new_ws, "focus");
+	seat->workspace = new_ws;
+}
+
 void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 	struct sway_seat_node *seat_node = seat_node_from_node(seat, node);
 	wl_list_remove(&seat_node->link);
@@ -709,9 +718,7 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	}
 
 	// emit ipc events
-	if (new_workspace && last_workspace != new_workspace) {
-		 ipc_event_workspace(last_workspace, new_workspace, "focus");
-	}
+	set_workspace(seat, new_workspace);
 	if (container && container->view) {
 		ipc_event_window(container, "focus");
 	}

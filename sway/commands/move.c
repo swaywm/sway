@@ -704,7 +704,7 @@ static struct cmd_results *cmd_move_in_direction(
 	}
 
 	// Hack to re-focus container
-	seat_set_focus_workspace(config->handler_context.seat, new_ws);
+	seat_set_raw_focus(config->handler_context.seat, &new_ws->node);
 	seat_set_focus_container(config->handler_context.seat, container);
 
 	if (old_ws != new_ws) {
