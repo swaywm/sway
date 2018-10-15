@@ -388,7 +388,9 @@ int main(int argc, char *argv[]) {
 
 	state.display = wl_display_connect(NULL);
 	if (state.display == NULL) {
-		wlr_log(WLR_ERROR, "Failed to create display");
+		wlr_log(WLR_ERROR, "Unable to connect to the compositor. "
+				"If your compositor is running, check or set the "
+				"WAYLAND_DISPLAY environment variable.");
 		return -3;
 	}
 
