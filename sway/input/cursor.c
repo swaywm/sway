@@ -9,6 +9,7 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_idle.h>
+#include <wlr/types/wlr_box.h>
 #include "list.h"
 #include "log.h"
 #include "config.h"
@@ -1271,4 +1272,44 @@ struct sway_cursor *sway_cursor_create(struct sway_seat *seat) {
 	cursor->cursor = wlr_cursor;
 
 	return cursor;
+
+}
+
+/**
+ * Warps the cursor to the middle of the container argument.
+ * Does nothing if the cursor is already inside the container.
+ * If container is NULL, returns without doing anything.
+ */
+void cursor_warp_to_container(struct sway_cursor *cursor,
+		struct sway_container *container) {
+	if (!container) {
+		return;
+	}
+
+	struct wlr_box box;
+	container_get_box(container, &box);
+	if (wlr_box_contains_point(&box, cursor->cursor->x, cursor->cursor->y)) {
+		return;
+	}
+
+	double x = container->x + container->width / 2.0;
+	double y = container->y + container->height / 2.0;
+
+	wlr_cursor_warp(cursor->cursor, NULL, x, y);
+}
+
+/**
+ * Warps the cursor to the middle of the workspace argument.
+ * If workspace is NULL, returns without doing anything.
+ */
+void cursor_warp_to_workspace(struct sway_cursor *cursor,
+		struct sway_workspace *workspace) {
+	if (!workspace) {
+		return;
+	}
+
+	double x = workspace->x + workspace->width / 2.0;
+	double y = workspace->y + workspace->height / 2.0;
+
+	wlr_cursor_warp(cursor->cursor, NULL, x, y);
 }

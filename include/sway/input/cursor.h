@@ -46,6 +46,11 @@ void dispatch_cursor_button(struct sway_cursor *cursor, uint32_t time_msec,
 	uint32_t button, enum wlr_button_state state);
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
-		struct wl_client *client);
+	struct wl_client *client);
 
+void cursor_warp_to_container(struct sway_cursor *cursor,
+	struct sway_container *container);
+
+void cursor_warp_to_workspace(struct sway_cursor *cursor,
+		struct sway_workspace *workspace);
 #endif
