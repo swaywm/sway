@@ -637,7 +637,16 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input_manager->seats, link) {
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		if (config->mouse_warping == WARP_CONTAINER) {
+			struct sway_node *node = seat_get_focus(seat);
+			if (node && node->type == N_CONTAINER) {
+				cursor_warp_to_container(seat->cursor, node->sway_container);
+			} else if (node && node->type == N_WORKSPACE) {
+				cursor_warp_to_workspace(seat->cursor, node->sway_workspace);
+			}
+		} else {
+			cursor_send_pointer_motion(seat->cursor, 0, true);
+		}
 	}
 
 	transaction_commit_dirty();
