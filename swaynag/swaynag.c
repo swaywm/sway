@@ -342,7 +342,11 @@ static const struct wl_registry_listener registry_listener = {
 
 void swaynag_setup(struct swaynag *swaynag) {
 	swaynag->display = wl_display_connect(NULL);
-	assert(swaynag->display);
+	if (!swaynag->display) {
+		sway_abort("Unable to connect to the compositor. "
+				"If your compositor is running, check or set the "
+				"WAYLAND_DISPLAY environment variable.");
+	}
 
 	swaynag->scale = 1;
 	wl_list_init(&swaynag->outputs);

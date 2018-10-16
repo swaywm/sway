@@ -586,7 +586,11 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	}
 
 	bar->display = wl_display_connect(NULL);
-	assert(bar->display);
+	if (!bar->display) {
+		sway_abort("Unable to connect to the compositor. "
+				"If your compositor is running, check or set the "
+				"WAYLAND_DISPLAY environment variable.");
+	}
 
 	struct wl_registry *registry = wl_display_get_registry(bar->display);
 	wl_registry_add_listener(registry, &registry_listener, bar);

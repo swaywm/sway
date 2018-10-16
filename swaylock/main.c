@@ -634,13 +634,9 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 			}
 			break;
 		case 'v':
-#if defined SWAY_GIT_VERSION && defined SWAY_GIT_BRANCH && defined SWAY_VERSION_DATE
-			fprintf(stdout, "swaylock version %s (%s, branch \"%s\")\n",
-					SWAY_GIT_VERSION, SWAY_VERSION_DATE, SWAY_GIT_BRANCH);
-#else
-			fprintf(stdout, "version unknown\n");
-#endif
-			return 1;
+			fprintf(stdout, "swaylock version " SWAY_VERSION "\n");
+			exit(EXIT_SUCCESS);
+			break;
 		case LO_BS_HL_COLOR:
 			if (state) {
 				state->args.colors.bs_highlight = parse_color(optarg);
@@ -908,7 +904,11 @@ int main(int argc, char **argv) {
 	wl_list_init(&state.surfaces);
 	state.xkb.context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	state.display = wl_display_connect(NULL);
-	assert(state.display);
+	if (!state.display) {
+		sway_abort("Unable to connect to the compositor. "
+				"If your compositor is running, check or set the "
+				"WAYLAND_DISPLAY environment variable.");
+	}
 
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
