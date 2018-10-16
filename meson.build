@@ -157,7 +157,7 @@ subdir('swaynag')
 subdir('swaylock')
 
 config = configuration_data()
-config.set('sysconfdir', join_paths(prefix, sysconfdir))
+config.set('sysconfdir', sysconfdir)
 config.set('datadir', join_paths(prefix, datadir))
 config.set('prefix', prefix)
 
