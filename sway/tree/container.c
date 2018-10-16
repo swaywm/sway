@@ -1202,8 +1202,8 @@ struct sway_container *container_split(struct sway_container *child,
 	container_add_child(cont, child);
 
 	if (set_focus) {
-		seat_set_focus_container(seat, cont);
-		seat_set_focus_container(seat, child);
+		seat_set_raw_focus(seat, &cont->node);
+		seat_set_raw_focus(seat, &child->node);
 	}
 
 	return cont;

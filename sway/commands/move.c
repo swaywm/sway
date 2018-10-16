@@ -543,7 +543,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 	if (new_output_last_ws && new_output_last_ws != new_workspace) {
 		struct sway_node *new_output_last_focus =
 			seat_get_focus_inactive(seat, &new_output_last_ws->node);
-		seat_set_focus_warp(seat, new_output_last_focus, false, false);
+		seat_set_raw_focus(seat, new_output_last_focus);
 	}
 
 	// restore focus
@@ -556,7 +556,7 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 			focus = seat_get_focus_inactive(seat, &old_ws->node);
 		}
 	}
-	seat_set_focus_warp(seat, focus, true, false);
+	seat_set_focus(seat, focus);
 
 	// clean-up, destroying parents if the container was the last child
 	if (old_parent) {
@@ -593,7 +593,7 @@ static void workspace_move_to_output(struct sway_workspace *workspace,
 		char *ws_name = workspace_next_name(old_output->wlr_output->name);
 		struct sway_workspace *ws = workspace_create(old_output, ws_name);
 		free(ws_name);
-		seat_set_focus_workspace(seat, ws);
+		seat_set_raw_focus(seat, &ws->node);
 	}
 
 	workspace_consider_destroy(new_output_old_ws);
@@ -704,7 +704,7 @@ static struct cmd_results *cmd_move_in_direction(
 	}
 
 	// Hack to re-focus container
-	seat_set_focus_workspace(config->handler_context.seat, new_ws);
+	seat_set_raw_focus(config->handler_context.seat, &new_ws->node);
 	seat_set_focus_container(config->handler_context.seat, container);
 
 	if (old_ws != new_ws) {

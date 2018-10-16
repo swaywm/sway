@@ -184,8 +184,8 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		seat_set_focus(seat, next_focus);
 	} else {
 		// Setting focus_inactive
-		seat_set_focus_warp(seat, next_focus, false, false);
-		seat_set_focus_warp(seat, focus, false, false);
+		seat_set_raw_focus(seat, next_focus);
+		seat_set_raw_focus(seat, focus);
 	}
 }
 
@@ -623,8 +623,25 @@ static void container_raise_floating(struct sway_container *con) {
 	}
 }
 
+static void set_workspace(struct sway_seat *seat,
+		struct sway_workspace *new_ws) {
+	if (seat->workspace == new_ws) {
+		return;
+	}
+	ipc_event_workspace(seat->workspace, new_ws, "focus");
+	seat->workspace = new_ws;
+}
+
+void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
+	struct sway_seat_node *seat_node = seat_node_from_node(seat, node);
+	wl_list_remove(&seat_node->link);
+	wl_list_insert(&seat->focus_stack, &seat_node->link);
+	node_set_dirty(node);
+	node_set_dirty(node_get_parent(node));
+}
+
 void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
-		bool warp, bool notify) {
+		bool warp) {
 	if (seat->focused_layer) {
 		return;
 	}
@@ -688,34 +705,20 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	if (container) {
 		struct sway_container *parent = container->parent;
 		while (parent) {
-			struct sway_seat_node *seat_node =
-				seat_node_from_node(seat, &parent->node);
-			wl_list_remove(&seat_node->link);
-			wl_list_insert(&seat->focus_stack, &seat_node->link);
-			node_set_dirty(&parent->node);
+			seat_set_raw_focus(seat, &parent->node);
 			parent = parent->parent;
 		}
 	}
 	if (new_workspace) {
-		struct sway_seat_node *seat_node =
-			seat_node_from_node(seat, &new_workspace->node);
-		wl_list_remove(&seat_node->link);
-		wl_list_insert(&seat->focus_stack, &seat_node->link);
-		node_set_dirty(&new_workspace->node);
+		seat_set_raw_focus(seat, &new_workspace->node);
 	}
 	if (container) {
-		struct sway_seat_node *seat_node =
-			seat_node_from_node(seat, &container->node);
-		wl_list_remove(&seat_node->link);
-		wl_list_insert(&seat->focus_stack, &seat_node->link);
-		node_set_dirty(&container->node);
+		seat_set_raw_focus(seat, &container->node);
 		seat_send_focus(&container->node, seat);
 	}
 
 	// emit ipc events
-	if (notify && new_workspace && last_workspace != new_workspace) {
-		 ipc_event_workspace(last_workspace, new_workspace, "focus");
-	}
+	set_workspace(seat, new_workspace);
 	if (container && container->view) {
 		ipc_event_window(container, "focus");
 	}
@@ -807,17 +810,17 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 }
 
 void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
-	seat_set_focus_warp(seat, node, true, true);
+	seat_set_focus_warp(seat, node, true);
 }
 
 void seat_set_focus_container(struct sway_seat *seat,
 		struct sway_container *con) {
-	seat_set_focus_warp(seat, con ? &con->node : NULL, true, true);
+	seat_set_focus_warp(seat, con ? &con->node : NULL, true);
 }
 
 void seat_set_focus_workspace(struct sway_seat *seat,
 		struct sway_workspace *ws) {
-	seat_set_focus_warp(seat, ws ? &ws->node : NULL, true, true);
+	seat_set_focus_warp(seat, ws ? &ws->node : NULL, true);
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,

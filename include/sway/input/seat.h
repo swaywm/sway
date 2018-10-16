@@ -51,6 +51,7 @@ struct sway_seat {
 
 	bool has_focus;
 	struct wl_list focus_stack; // list of containers in focus order
+	struct sway_workspace *workspace;
 
 	// If the focused layer is set, views cannot receive keyboard focus
 	struct wlr_layer_surface_v1 *focused_layer;
@@ -112,8 +113,16 @@ void seat_set_focus_container(struct sway_seat *seat,
 void seat_set_focus_workspace(struct sway_seat *seat,
 		struct sway_workspace *ws);
 
+/**
+ * Manipulate the focus stack without triggering any other behaviour.
+ *
+ * This can be used to set focus_inactive by calling the function a second time
+ * with the real focus.
+ */
+void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node);
+
 void seat_set_focus_warp(struct sway_seat *seat,
-		struct sway_node *node, bool warp, bool notify);
+		struct sway_node *node, bool warp);
 
 void seat_set_focus_surface(struct sway_seat *seat,
 		struct wlr_surface *surface, bool unfocus);
