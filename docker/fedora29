@@ -1,0 +1,29 @@
+# This Dockerfile is not pure and should not be used as anything other than a reference.
+# You can build an image by running `docker build -t sway -f fedora29 .`
+
+FROM fedora:29
+
+# Install build dependencies.
+RUN dnf install -y git gcc meson ninja-build 
+
+# Install dependencies.
+RUN dnf install -y wlroots-devel wayland-devel wayland-protocols-devel libinput-devel cairo-devel libpcap-devel json-c-devel pam-devel pango-devel pcre-devel gdk-pixbuf2-devel pixman-devel mesa-libEGL-devel mesa-libGLES-devel mesa-libgbm-devel libxkbcommon-devel libudev-devel
+
+RUN git clone https://github.com/swaywm/wlroots /root/wlroots
+WORKDIR /root/wlroots
+
+# Build wlroots and install it to /usr/local/lib64/wlroots.
+RUN meson build
+RUN ninja -C build install
+
+RUN git clone https://github.com/swaywm/sway /root/sway
+WORKDIR /root/sway
+
+# This environment variable is necessary to tell Meson where to find the wlroots shared object.
+# Set it by running `export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig`. You should add this to your .bashrc.
+# Be sure that it is set before you run `meson build`
+ARG PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig
+
+# Build Sway and install it to /usr/local/bin.
+RUN meson build
+RUN ninja -C build install
