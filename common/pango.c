@@ -10,7 +10,7 @@
 #include "log.h"
 #include "stringop.h"
 
-static const char *overflow = "[buffer overflow]";
+static const char overflow[] = "[buffer overflow]";
 static const int max_chars = 16384;
 
 size_t escape_markup_text(const char *src, char *dest) {
