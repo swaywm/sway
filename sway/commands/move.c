@@ -483,7 +483,8 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 			ws = workspace_create(NULL, ws_name);
 		}
 		free(ws_name);
-		destination = seat_get_focus_inactive(seat, &ws->node);
+		struct sway_container *dst = seat_get_focus_inactive_tiling(seat, ws);
+		destination = dst ? &dst->node : &ws->node;
 	} else if (strcasecmp(argv[1], "output") == 0) {
 		struct sway_output *new_output = output_in_direction(argv[2],
 				old_output, container->x, container->y);
