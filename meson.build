@@ -114,7 +114,13 @@ if scdoc.found()
 	endforeach
 endif
 
-add_project_arguments('-DSYSCONFDIR="/@0@"'.format(sysconfdir), language : 'c')
+# If prefix is '/usr', sysconfdir will be explicitly set to '/etc' by Meson to
+# enforce FHS compliance, so we should look for configs there as well.
+if prefix == '/usr'
+	add_project_arguments('-DSYSCONFDIR="/@0@"'.format(sysconfdir), language : 'c')
+else
+	add_project_arguments('-DSYSCONFDIR="/@0@/@1@"'.format(prefix, sysconfdir), language : 'c')
+endif
 
 version = get_option('sway-version')
 if version != ''
@@ -157,9 +163,16 @@ subdir('swaynag')
 subdir('swaylock')
 
 config = configuration_data()
-config.set('sysconfdir', sysconfdir)
 config.set('datadir', join_paths(prefix, datadir))
 config.set('prefix', prefix)
+
+# If prefix is '/usr', sysconfdir will be explicitly set to '/etc' by Meson to
+# enforce FHS compliance, so we should look for configs there as well.
+if prefix == '/usr'
+	config.set('sysconfdir', sysconfdir)
+else
+	config.set('sysconfdir', join_paths(prefix, sysconfdir))
+endif
 
 configure_file(
 	configuration: config,
