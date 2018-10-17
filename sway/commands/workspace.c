@@ -142,7 +142,11 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				strcasecmp(argv[0], "current") == 0) {
 			ws = workspace_by_name(argv[0]);
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
-			if (!(ws = workspace_by_name(argv[0])) && prev_workspace_name) {
+			if (!prev_workspace_name) {
+				return cmd_results_new(CMD_INVALID, "workspace",
+						"There is no previous workspace");
+			}
+			if (!(ws = workspace_by_name(argv[0]))) {
 				ws = workspace_create(NULL, prev_workspace_name);
 			}
 		} else {
