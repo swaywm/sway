@@ -10,6 +10,9 @@
 #include "log.h"
 #include "stringop.h"
 
+static const char *overflow = "[buffer overflow]";
+static const int max_chars = 16384;
+
 size_t escape_markup_text(const char *src, char *dest) {
 	size_t length = 0;
 	if (dest) {
@@ -84,12 +87,12 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 
 void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 		int *baseline, double scale, bool markup, const char *fmt, ...) {
-	static char buf[2048];
+	char buf[max_chars];
 
 	va_list args;
 	va_start(args, fmt);
-	if (vsnprintf(buf, 2048, fmt, args) >= 2048) {
-		strcpy(buf, "[buffer overflow]");
+	if (vsnprintf(buf, sizeof(buf), fmt, args) >= max_chars) {
+		strcpy(&buf[sizeof(buf) - sizeof(overflow)], overflow);
 	}
 	va_end(args);
 
@@ -104,12 +107,12 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 
 void pango_printf(cairo_t *cairo, const char *font,
 		double scale, bool markup, const char *fmt, ...) {
-	static char buf[2048];
+	char buf[max_chars];
 
 	va_list args;
 	va_start(args, fmt);
-	if (vsnprintf(buf, 2048, fmt, args) >= 2048) {
-		strcpy(buf, "[buffer overflow]");
+	if (vsnprintf(buf, sizeof(buf), fmt, args) >= max_chars) {
+		strcpy(&buf[sizeof(buf) - sizeof(overflow)], overflow);
 	}
 	va_end(args);
 
