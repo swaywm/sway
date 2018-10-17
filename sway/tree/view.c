@@ -544,7 +544,8 @@ static bool should_focus(struct sway_view *view) {
 	return len == 0;
 }
 
-void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
+void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
+			  bool fullscreen, bool decoration) {
 	if (!sway_assert(view->surface == NULL, "cannot map mapped view")) {
 		return;
 	}
@@ -595,13 +596,28 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface) {
 		}
 	}
 
-	if (should_focus(view)) {
-		input_manager_set_focus(input_manager, &view->container->node);
-	}
-
 	view_update_title(view, false);
 	container_update_representation(view->container);
 	view_execute_criteria(view);
+
+	if (decoration) {
+		view_update_csd_from_client(view, decoration);
+	}
+
+	if (fullscreen) {
+		container_set_fullscreen(view->container, true);
+		arrange_workspace(view->container->workspace);
+	} else {
+		if (view->container->parent) {
+			arrange_container(view->container->parent);
+		} else if (view->container->workspace) {
+			arrange_workspace(view->container->workspace);
+		}
+	}
+
+	if (should_focus(view)) {
+		input_manager_set_focus(input_manager, &view->container->node);
+	}
 }
 
 void view_unmap(struct sway_view *view) {
@@ -630,7 +646,16 @@ void view_unmap(struct sway_view *view) {
 
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &input_manager->seats, link) {
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		if (config->mouse_warping == WARP_CONTAINER) {
+			struct sway_node *node = seat_get_focus(seat);
+			if (node && node->type == N_CONTAINER) {
+				cursor_warp_to_container(seat->cursor, node->sway_container);
+			} else if (node && node->type == N_WORKSPACE) {
+				cursor_warp_to_workspace(seat->cursor, node->sway_workspace);
+			}
+		} else {
+			cursor_send_pointer_motion(seat->cursor, 0, true);
+		}
 	}
 
 	transaction_commit_dirty();

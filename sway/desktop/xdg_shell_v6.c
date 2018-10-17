@@ -402,25 +402,14 @@ static void handle_map(struct wl_listener *listener, void *data) {
 		view->natural_width = view->wlr_xdg_surface_v6->surface->current.width;
 		view->natural_height = view->wlr_xdg_surface_v6->surface->current.height;
 	}
-
-	view_map(view, view->wlr_xdg_surface_v6->surface);
-
 	struct sway_server_decoration *deco =
-		decoration_from_surface(xdg_surface->surface);
-	bool csd = !deco || deco->wlr_server_decoration->mode ==
-			WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
-	view_update_csd_from_client(view, csd);
+			decoration_from_surface(xdg_surface->surface);
+	bool csd = !deco || deco->wlr_server_decoration->mode
+		== WLR_SERVER_DECORATION_MANAGER_MODE_CLIENT;
 
-	if (xdg_surface->toplevel->client_pending.fullscreen) {
-		container_set_fullscreen(view->container, true);
-		arrange_workspace(view->container->workspace);
-	} else {
-		if (view->container->parent) {
-			arrange_container(view->container->parent);
-		} else if (view->container->workspace) {
-			arrange_workspace(view->container->workspace);
-		}
-	}
+	view_map(view, view->wlr_xdg_surface_v6->surface,
+		xdg_surface->toplevel->client_pending.fullscreen, csd);
+
 	transaction_commit_dirty();
 
 	xdg_shell_v6_view->commit.notify = handle_commit;
