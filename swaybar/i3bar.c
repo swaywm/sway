@@ -9,6 +9,7 @@
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
 #include "swaybar/i3bar.h"
+#include "swaybar/input.h"
 #include "swaybar/status_line.h"
 
 void i3bar_block_unref(struct i3bar_block *block) {
@@ -283,33 +284,4 @@ enum hotspot_event_handling i3bar_block_send_click(struct status_line *status,
 	status->clicked = true;
 	json_object_put(event_json);
 	return HOTSPOT_IGNORE;
-}
-
-enum x11_button wl_button_to_x11_button(uint32_t button) {
-	switch (button) {
-	case BTN_LEFT:
-		return LEFT;
-	case BTN_MIDDLE:
-		return MIDDLE;
-	case BTN_RIGHT:
-		return RIGHT;
-	case BTN_SIDE:
-		return BACK;
-	case BTN_EXTRA:
-		return FORWARD;
-	default:
-		return NONE;
-	}
-}
-
-enum x11_button wl_axis_to_x11_button(uint32_t axis, wl_fixed_t value) {
-	switch (axis) {
-	case WL_POINTER_AXIS_VERTICAL_SCROLL:
-		return wl_fixed_to_double(value) < 0 ? SCROLL_UP : SCROLL_DOWN;
-	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
-		return wl_fixed_to_double(value) < 0 ? SCROLL_LEFT : SCROLL_RIGHT;
-	default:
-		wlr_log(WLR_DEBUG, "Unexpected axis value on mouse scroll");
-		return NONE;
-	}
 }
