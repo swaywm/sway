@@ -25,7 +25,7 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 	struct sway_view *view = NULL;
 	if (config->handler_context.using_criteria) {
 		struct sway_container *container = config->handler_context.container;
-		if (!container->view) {
+		if (!container || !container->view) {
 			return cmd_results_new(CMD_INVALID, "unmark",
 					"Only views can have marks");
 		}
