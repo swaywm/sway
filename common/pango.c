@@ -92,7 +92,7 @@ void get_text_size(cairo_t *cairo, const char *font, int *width, int *height,
 	va_list args;
 	va_start(args, fmt);
 	if (vsnprintf(buf, sizeof(buf), fmt, args) >= max_chars) {
-		strcpy(&buf[sizeof(buf) - sizeof(overflow)], overflow);
+		strcpy(&buf[sizeof(buf) - strlen(overflow) - 1], overflow);
 	}
 	va_end(args);
 
@@ -112,7 +112,7 @@ void pango_printf(cairo_t *cairo, const char *font,
 	va_list args;
 	va_start(args, fmt);
 	if (vsnprintf(buf, sizeof(buf), fmt, args) >= max_chars) {
-		strcpy(&buf[sizeof(buf) - sizeof(overflow)], overflow);
+		strcpy(&buf[sizeof(buf) - strlen(overflow) - 1], overflow);
 	}
 	va_end(args);
 
