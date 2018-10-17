@@ -19,7 +19,7 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;
-	if (!container->view) {
+	if (!container || !container->view) {
 		return cmd_results_new(CMD_INVALID, "mark",
 				"Only views can have marks");
 	}

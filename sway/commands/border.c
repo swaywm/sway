@@ -59,7 +59,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	}
 
 	struct sway_container *container = config->handler_context.container;
-	if (!container->view) {
+	if (!container || !container->view) {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Only views can have borders");
 	}

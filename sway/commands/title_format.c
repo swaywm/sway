@@ -12,7 +12,7 @@ struct cmd_results *cmd_title_format(int argc, char **argv) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;
-	if (!container->view) {
+	if (!container || !container->view) {
 		return cmd_results_new(CMD_INVALID, "title_format",
 				"Only views can have a title_format");
 	}
