@@ -34,6 +34,24 @@ static bool parse_movement_direction(const char *name,
 	return true;
 }
 
+static void consider_warp_to_focus(struct sway_seat *seat) {
+	struct sway_node *focus = seat_get_focus(seat);
+	if (config->mouse_warping == WARP_NO || !focus || !seat->prev_focus) {
+		return;
+	}
+	if (config->mouse_warping == WARP_OUTPUT &&
+			node_get_output(focus) == node_get_output(seat->prev_focus)) {
+		return;
+	}
+
+	if (focus->type == N_CONTAINER) {
+		cursor_warp_to_container(seat->cursor, focus->sway_container);
+	} else {
+		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
+	}
+	cursor_send_pointer_motion(seat->cursor, 0, false);
+}
+
 /**
  * Get node in the direction of newly entered output.
  */
@@ -181,7 +199,7 @@ static struct cmd_results *focus_mode(struct sway_workspace *ws,
 	}
 	if (new_focus) {
 		seat_set_focus_container(seat, new_focus);
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		consider_warp_to_focus(seat);
 	} else {
 		return cmd_results_new(CMD_FAILURE, "focus",
 				"Failed to find a %s container in workspace",
@@ -214,7 +232,7 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 	free(identifier);
 	if (output) {
 		seat_set_focus(seat, seat_get_focus_inactive(seat, &output->node));
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		consider_warp_to_focus(seat);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
@@ -235,6 +253,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 
 	if (argc == 0 && container) {
 		seat_set_focus_container(seat, container);
+		consider_warp_to_focus(seat);
 		cursor_send_pointer_motion(seat->cursor, 0, true);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -264,7 +283,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		struct sway_node *focus = seat_get_active_tiling_child(seat, node);
 		if (focus) {
 			seat_set_focus(seat, focus);
-			cursor_send_pointer_motion(seat->cursor, 0, true);
+			consider_warp_to_focus(seat);
 		}
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
@@ -284,7 +303,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		struct sway_node *node =
 			get_node_in_output_direction(new_output, direction);
 		seat_set_focus(seat, node);
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		consider_warp_to_focus(seat);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 
@@ -292,7 +311,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		node_get_in_direction(container, seat, direction);
 	if (next_focus) {
 		seat_set_focus(seat, next_focus);
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		consider_warp_to_focus(seat);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
