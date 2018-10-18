@@ -203,4 +203,6 @@ void seat_end_mouse_operation(struct sway_seat *seat);
 void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 		uint32_t button, enum wlr_button_state state);
 
+void seat_consider_warp_to_focus(struct sway_seat *seat);
+
 #endif
