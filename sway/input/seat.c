@@ -640,13 +640,13 @@ void seat_set_raw_focus(struct sway_seat *seat, struct sway_node *node) {
 	node_set_dirty(node_get_parent(node));
 }
 
-void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
-		bool warp) {
+void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	if (seat->focused_layer) {
 		return;
 	}
 
 	struct sway_node *last_focus = seat_get_focus(seat);
+	seat->prev_focus = last_focus;
 	if (last_focus == node) {
 		return;
 	}
@@ -678,8 +678,6 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		}
 	}
 
-	struct sway_output *last_output = last_workspace ?
-		last_workspace->output : NULL;
 	struct sway_output *new_output = new_workspace->output;
 
 	if (last_workspace != new_workspace && new_output) {
@@ -774,21 +772,6 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 		workspace_consider_destroy(last_workspace);
 	}
 
-	if (last_focus && warp) {
-		if (container && config->mouse_warping == WARP_CONTAINER) {
-			cursor_warp_to_container(seat->cursor, container);
-			cursor_send_pointer_motion(seat->cursor, 0, true);
-		} else if (new_output != last_output &&
-				   config->mouse_warping >= WARP_OUTPUT) {
-			if (container) {
-				cursor_warp_to_container(seat->cursor, container);
-			} else {
-				cursor_warp_to_workspace(seat->cursor, new_workspace);
-			}
-			cursor_send_pointer_motion(seat->cursor, 0, true);
-		}
-	}
-
 	seat->has_focus = true;
 
 	if (config->smart_gaps) {
@@ -800,18 +783,14 @@ void seat_set_focus_warp(struct sway_seat *seat, struct sway_node *node,
 	update_debug_tree();
 }
 
-void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
-	seat_set_focus_warp(seat, node, true);
-}
-
 void seat_set_focus_container(struct sway_seat *seat,
 		struct sway_container *con) {
-	seat_set_focus_warp(seat, con ? &con->node : NULL, true);
+	seat_set_focus(seat, con ? &con->node : NULL);
 }
 
 void seat_set_focus_workspace(struct sway_seat *seat,
 		struct sway_workspace *ws) {
-	seat_set_focus_warp(seat, ws ? &ws->node : NULL, true);
+	seat_set_focus(seat, ws ? &ws->node : NULL);
 }
 
 void seat_set_focus_surface(struct sway_seat *seat,

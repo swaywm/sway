@@ -597,7 +597,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			struct sway_output *focused_output = node_get_output(focus);
 			struct sway_output *output = node_get_output(node);
 			if (output != focused_output) {
-				seat_set_focus_warp(seat, node, false);
+				seat_set_focus(seat, node);
 			}
 		} else if (node->type == N_CONTAINER && node->sway_container->view) {
 			// Focus node if the following are true:
@@ -607,14 +607,14 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 			if (!wlr_seat_keyboard_has_grab(cursor->seat->wlr_seat) &&
 					node != prev_node &&
 					view_is_visible(node->sway_container->view)) {
-				seat_set_focus_warp(seat, node, false);
+				seat_set_focus(seat, node);
 			} else {
 				struct sway_node *next_focus =
 					seat_get_focus_inactive(seat, &root->node);
 				if (next_focus && next_focus->type == N_CONTAINER &&
 						next_focus->sway_container->view &&
 						view_is_visible(next_focus->sway_container->view)) {
-					seat_set_focus_warp(seat, next_focus, false);
+					seat_set_focus(seat, next_focus);
 				}
 			}
 		}
