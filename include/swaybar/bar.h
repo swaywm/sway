@@ -1,6 +1,7 @@
 #ifndef _SWAYBAR_BAR_H
 #define _SWAYBAR_BAR_H
 #include <wayland-client.h>
+#include "input.h"
 #include "pool-buffer.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
@@ -9,42 +10,6 @@ struct swaybar_config;
 struct swaybar_output;
 struct swaybar_workspace;
 struct loop;
-
-struct swaybar_pointer {
-	struct wl_pointer *pointer;
-	struct wl_cursor_theme *cursor_theme;
-	struct wl_cursor_image *cursor_image;
-	struct wl_surface *cursor_surface;
-	struct swaybar_output *current;
-	int x, y;
-};
-
-enum x11_button {
-	NONE,
-	LEFT,
-	MIDDLE,
-	RIGHT,
-	SCROLL_UP,
-	SCROLL_DOWN,
-	SCROLL_LEFT,
-	SCROLL_RIGHT,
-	BACK,
-	FORWARD,
-};
-
-enum hotspot_event_handling {
-	HOTSPOT_IGNORE,
-	HOTSPOT_PROCESS,
-};
-
-struct swaybar_hotspot {
-	struct wl_list link; // swaybar_output::hotspots
-	int x, y, width, height;
-	enum hotspot_event_handling (*callback)(struct swaybar_output *output,
-			int x, int y, enum x11_button button, void *data);
-	void (*destroy)(void *data);
-	void *data;
-};
 
 struct swaybar {
 	char *id;
@@ -125,7 +90,6 @@ void bar_teardown(struct swaybar *bar);
  * Returns true if the bar is now visible, otherwise false.
  */
 bool determine_bar_visibility(struct swaybar *bar, bool moving_layer);
-void free_hotspots(struct wl_list *list);
 void free_workspaces(struct wl_list *list);
 
 #endif
