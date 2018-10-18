@@ -727,19 +727,23 @@ static void state_add_button(struct sway_cursor *cursor, uint32_t button) {
  * Return the mouse binding which matches modifier, click location, release,
  * and pressed button state, otherwise return null.
  */
-static struct sway_binding* get_active_mouse_binding(const struct sway_cursor *cursor,
-		list_t *bindings, uint32_t modifiers, bool release, bool on_titlebar,
-				     bool on_border, bool on_content) {
+static struct sway_binding* get_active_mouse_binding(
+		const struct sway_cursor *cursor, list_t *bindings, uint32_t modifiers,
+		bool release, bool on_titlebar, bool on_border, bool on_content,
+		const char *identifier) {
 	uint32_t click_region = (on_titlebar ? BINDING_TITLEBAR : 0) |
 			(on_border ? BINDING_BORDER : 0) |
 			(on_content ? BINDING_CONTENTS : 0);
 
+	struct sway_binding *current = NULL;
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
 		if (modifiers ^ binding->modifiers ||
 				cursor->pressed_button_count != (size_t)binding->keys->length ||
 				release != (binding->flags & BINDING_RELEASE) ||
-				!(click_region & binding->flags)) {
+				!(click_region & binding->flags) ||
+				(strcmp(binding->input, identifier) != 0 &&
+				 strcmp(binding->input, "*") != 0)) {
 			continue;
 		}
 
@@ -755,13 +759,20 @@ static struct sway_binding* get_active_mouse_binding(const struct sway_cursor *c
 			continue;
 		}
 
-		return binding;
+		if (!current || strcmp(current->input, "*") == 0) {
+			current = binding;
+			if (strcmp(current->input, identifier) == 0) {
+				// If a binding is found for the exact input, quit searching
+				break;
+			}
+		}
 	}
-	return NULL;
+	return current;
 }
 
 void dispatch_cursor_button(struct sway_cursor *cursor,
-		uint32_t time_msec, uint32_t button, enum wlr_button_state state) {
+		struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
+		enum wlr_button_state state) {
 	if (time_msec == 0) {
 		time_msec = get_current_time_msec();
 	}
@@ -797,18 +808,21 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat->wlr_seat);
 	uint32_t modifiers = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
 
+	char *device_identifier = device ? input_device_get_identifier(device)
+		: strdup("*");
 	struct sway_binding *binding = NULL;
 	if (state == WLR_BUTTON_PRESSED) {
 		state_add_button(cursor, button);
 		binding = get_active_mouse_binding(cursor,
 			config->current_mode->mouse_bindings, modifiers, false,
-			on_titlebar, on_border, on_contents);
+			on_titlebar, on_border, on_contents, device_identifier);
 	} else {
 		binding = get_active_mouse_binding(cursor,
 			config->current_mode->mouse_bindings, modifiers, true,
-			on_titlebar, on_border, on_contents);
+			on_titlebar, on_border, on_contents, device_identifier);
 		state_erase_button(cursor, button);
 	}
+	free(device_identifier);
 	if (binding) {
 		seat_execute_command(seat, binding);
 		return;
@@ -942,7 +956,7 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_button *event = data;
-	dispatch_cursor_button(cursor,
+	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
 	transaction_commit_dirty();
 }
@@ -1128,7 +1142,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_tip);
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_tip *event = data;
-	dispatch_cursor_button(cursor, event->time_msec,
+	dispatch_cursor_button(cursor, event->device, event->time_msec,
 			BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
 				WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
 	transaction_commit_dirty();
@@ -1143,14 +1157,14 @@ static void handle_tool_button(struct wl_listener *listener, void *data) {
 	switch (event->state) {
 	case WLR_BUTTON_PRESSED:
 		if (cursor->tool_buttons == 0) {
-			dispatch_cursor_button(cursor,
+			dispatch_cursor_button(cursor, event->device,
 					event->time_msec, BTN_RIGHT, event->state);
 		}
 		cursor->tool_buttons++;
 		break;
 	case WLR_BUTTON_RELEASED:
 		if (cursor->tool_buttons == 1) {
-			dispatch_cursor_button(cursor,
+			dispatch_cursor_button(cursor, event->device,
 					event->time_msec, BTN_RIGHT, event->state);
 		}
 		cursor->tool_buttons--;

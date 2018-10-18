@@ -42,8 +42,9 @@ void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
 void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	bool allow_refocusing);
-void dispatch_cursor_button(struct sway_cursor *cursor, uint32_t time_msec,
-	uint32_t button, enum wlr_button_state state);
+void dispatch_cursor_button(struct sway_cursor *cursor,
+	struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
+	enum wlr_button_state state);
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
 	struct wl_client *client);

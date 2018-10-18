@@ -63,5 +63,6 @@ struct sway_seat *input_manager_current_seat(struct sway_input_manager *input);
 
 struct input_config *input_device_get_config(struct sway_input_device *device);
 
+char *input_device_get_identifier(struct wlr_input_device *device);
 
 #endif

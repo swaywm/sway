@@ -87,7 +87,7 @@ static void update_shortcut_state(struct sway_shortcut_state *state,
  */
 static void get_active_binding(const struct sway_shortcut_state *state,
 		list_t *bindings, struct sway_binding **current_binding,
-		uint32_t modifiers, bool release, bool locked) {
+		uint32_t modifiers, bool release, bool locked, const char *input) {
 	for (int i = 0; i < bindings->length; ++i) {
 		struct sway_binding *binding = bindings->items[i];
 		bool binding_locked = binding->flags & BINDING_LOCKED;
@@ -96,7 +96,9 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		if (modifiers ^ binding->modifiers ||
 				state->npressed != (size_t)binding->keys->length ||
 				release != binding_release ||
-				locked > binding_locked) {
+				locked > binding_locked ||
+				(strcmp(binding->input, input) != 0 &&
+				 strcmp(binding->input, "*") != 0)) {
 			continue;
 		}
 
@@ -112,13 +114,19 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 			continue;
 		}
 
-		if (*current_binding && *current_binding != binding) {
+		if (*current_binding && *current_binding != binding &&
+				strcmp((*current_binding)->input, binding->input) == 0) {
 			wlr_log(WLR_DEBUG, "encountered duplicate bindings %d and %d",
 					(*current_binding)->order, binding->order);
-		} else {
+		} else if (!*current_binding ||
+				strcmp((*current_binding)->input, "*") == 0) {
 			*current_binding = binding;
+
+			if (strcmp((*current_binding)->input, input) == 0) {
+				// If a binding is found for the exact input, quit searching
+				return;
+			}
 		}
-		return;
 	}
 }
 
@@ -202,6 +210,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct wlr_seat *wlr_seat = seat->wlr_seat;
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
+	char *device_identifier = input_device_get_identifier(wlr_device);
 	wlr_idle_notify_activity(seat->input->server->idle, wlr_seat);
 	struct wlr_event_keyboard_key *event = data;
 	bool input_inhibited = seat->exclusive_client != NULL;
@@ -242,13 +251,13 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct sway_binding *binding_released = NULL;
 	get_active_binding(&keyboard->state_keycodes,
 			config->current_mode->keycode_bindings, &binding_released,
-			code_modifiers, true, input_inhibited);
+			code_modifiers, true, input_inhibited, device_identifier);
 	get_active_binding(&keyboard->state_keysyms_translated,
 			config->current_mode->keysym_bindings, &binding_released,
-			translated_modifiers, true, input_inhibited);
+			translated_modifiers, true, input_inhibited, device_identifier);
 	get_active_binding(&keyboard->state_keysyms_raw,
 			config->current_mode->keysym_bindings, &binding_released,
-			raw_modifiers, true, input_inhibited);
+			raw_modifiers, true, input_inhibited, device_identifier);
 
 	// Execute stored release binding once no longer active
 	if (keyboard->held_binding && binding_released != keyboard->held_binding &&
@@ -268,13 +277,14 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	if (event->state == WLR_KEY_PRESSED) {
 		get_active_binding(&keyboard->state_keycodes,
 				config->current_mode->keycode_bindings, &binding,
-				code_modifiers, false, input_inhibited);
+				code_modifiers, false, input_inhibited, device_identifier);
 		get_active_binding(&keyboard->state_keysyms_translated,
 				config->current_mode->keysym_bindings, &binding,
-				translated_modifiers, false, input_inhibited);
+				translated_modifiers, false, input_inhibited,
+				device_identifier);
 		get_active_binding(&keyboard->state_keysyms_raw,
 				config->current_mode->keysym_bindings, &binding,
-				raw_modifiers, false, input_inhibited);
+				raw_modifiers, false, input_inhibited, device_identifier);
 
 		if (binding) {
 			seat_execute_command(seat, binding);
@@ -315,6 +325,8 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	}
 
 	transaction_commit_dirty();
+
+	free(device_identifier);
 }
 
 static int handle_keyboard_repeat(void *data) {

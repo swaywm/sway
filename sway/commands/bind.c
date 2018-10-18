@@ -26,6 +26,7 @@ void free_sway_binding(struct sway_binding *binding) {
 	if (binding->keys) {
 		free_flat_list(binding->keys);
 	}
+	free(binding->input);
 	free(binding->command);
 	free(binding);
 }
@@ -37,6 +38,10 @@ void free_sway_binding(struct sway_binding *binding) {
  */
 static bool binding_key_compare(struct sway_binding *binding_a,
 		struct sway_binding *binding_b) {
+	if (strcmp(binding_a->input, binding_b->input) != 0) {
+		return false;
+	}
+
 	if (binding_a->type != binding_b->type) {
 		return false;
 	}
@@ -149,6 +154,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		return cmd_results_new(CMD_FAILURE, bindtype,
 				"Unable to allocate binding");
 	}
+	binding->input = strdup("*");
 	binding->keys = create_list();
 	binding->modifiers = 0;
 	binding->flags = 0;
@@ -168,6 +174,10 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			binding->flags |= BINDING_BORDER;
 		} else if (strcmp("--exclude-titlebar", argv[0]) == 0) {
 			exclude_titlebar = true;
+		} else if (strncmp("--input-device=", argv[0],
+					strlen("--input-device=")) == 0) {
+			free(binding->input);
+			binding->input = strdup(argv[0] + strlen("--input-device="));
 		} else {
 			break;
 		}
@@ -257,8 +267,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		list_add(mode_bindings, binding);
 	}
 
-	wlr_log(WLR_DEBUG, "%s - Bound %s to command %s",
-		bindtype, argv[0], binding->command);
+	wlr_log(WLR_DEBUG, "%s - Bound %s to command `%s` for device '%s'",
+		bindtype, argv[0], binding->command, binding->input);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 
 }

@@ -45,7 +45,7 @@ struct sway_seat *input_manager_get_seat(
 	return seat_create(input, seat_name);
 }
 
-static char *get_device_identifier(struct wlr_input_device *device) {
+char *input_device_get_identifier(struct wlr_input_device *device) {
 	int vendor = device->vendor;
 	int product = device->product;
 	char *name = strdup(device->name);
@@ -278,7 +278,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	device->data = input_device;
 
 	input_device->wlr_device = device;
-	input_device->identifier = get_device_identifier(device);
+	input_device->identifier = input_device_get_identifier(device);
 	wl_list_insert(&input->devices, &input_device->link);
 
 	wlr_log(WLR_DEBUG, "adding device: '%s'",
@@ -375,7 +375,7 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	device->data = input_device;
 
 	input_device->wlr_device = device;
-	input_device->identifier = get_device_identifier(device);
+	input_device->identifier = input_device_get_identifier(device);
 	wl_list_insert(&input_manager->devices, &input_device->link);
 
 	wlr_log(WLR_DEBUG, "adding virtual keyboard: '%s'",
