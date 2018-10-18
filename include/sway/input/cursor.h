@@ -40,8 +40,20 @@ struct sway_cursor {
 
 void sway_cursor_destroy(struct sway_cursor *cursor);
 struct sway_cursor *sway_cursor_create(struct sway_seat *seat);
-void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
-	bool allow_refocusing);
+
+/**
+ * "Rebase" a cursor on top of whatever view is underneath it.
+ *
+ * This chooses a cursor icon and sends a motion event to the surface.
+ */
+void cursor_rebase(struct sway_cursor *cursor);
+
+/**
+ * Like cursor_rebase, but also allows focus to change when the cursor enters a
+ * new container.
+ */
+void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec);
+
 void dispatch_cursor_button(struct sway_cursor *cursor,
 	struct wlr_input_device *device, uint32_t time_msec, uint32_t button,
 	enum wlr_button_state state);
