@@ -153,7 +153,9 @@ bool server_init(struct sway_server *server) {
 	server->dirty_nodes = create_list();
 	server->transactions = create_list();
 
-	input_manager = input_manager_create(server);
+	server->input = input_manager_create(server);
+	input_manager_get_default_seat(); // create seat0
+
 	return true;
 }
 

@@ -83,7 +83,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		struct sway_workspace *ws = workspace_create(output, ws_name);
 		// Set each seat's focus if not already set
 		struct sway_seat *seat = NULL;
-		wl_list_for_each(seat, &input_manager->seats, link) {
+		wl_list_for_each(seat, &server.input->seats, link) {
 			if (!seat->has_focus) {
 				seat_set_focus_workspace(seat, ws);
 			}
@@ -97,7 +97,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	}
 	wl_signal_init(&output->events.destroy);
 
-	input_manager_configure_xcursor(input_manager);
+	input_manager_configure_xcursor();
 
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	wl_signal_add(&wlr_output->events.transform, &output->transform);

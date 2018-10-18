@@ -340,7 +340,7 @@ static void focus_inactive_children_iterator(struct sway_node *node,
 }
 
 json_object *ipc_json_describe_node(struct sway_node *node) {
-	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_seat *seat = input_manager_get_default_seat();
 	bool focused = seat_get_focus(seat) == node;
 
 	json_object *object = json_object_new_object();

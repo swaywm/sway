@@ -47,7 +47,6 @@ enum sway_seat_operation {
 struct sway_seat {
 	struct wlr_seat *wlr_seat;
 	struct sway_cursor *cursor;
-	struct sway_input_manager *input;
 
 	bool has_focus;
 	struct wl_list focus_stack; // list of containers in focus order
@@ -89,8 +88,7 @@ struct sway_seat {
 	struct wl_list link; // input_manager::seats
 };
 
-struct sway_seat *seat_create(struct sway_input_manager *input,
-		const char *seat_name);
+struct sway_seat *seat_create(const char *seat_name);
 
 void seat_destroy(struct sway_seat *seat);
 

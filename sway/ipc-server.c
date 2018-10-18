@@ -547,7 +547,7 @@ static void ipc_get_workspaces_callback(struct sway_workspace *workspace,
 	json_object *workspace_json = ipc_json_describe_node(&workspace->node);
 	// override the default focused indicator because
 	// it's set differently for the get_workspaces reply
-	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_seat *seat = input_manager_get_default_seat();
 	struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
 	bool focused = workspace == focused_ws;
 	json_object_object_del(workspace_json, "focused");
@@ -702,7 +702,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *inputs = json_object_new_array();
 		struct sway_input_device *device = NULL;
-		wl_list_for_each(device, &input_manager->devices, link) {
+		wl_list_for_each(device, &server.input->devices, link) {
 			json_object_array_add(inputs, ipc_json_describe_input(device));
 		}
 		const char *json_string = json_object_to_json_string(inputs);
@@ -716,7 +716,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	{
 		json_object *seats = json_object_new_array();
 		struct sway_seat *seat = NULL;
-		wl_list_for_each(seat, &input_manager->seats, link) {
+		wl_list_for_each(seat, &server.input->seats, link) {
 			json_object_array_add(seats, ipc_json_describe_seat(seat));
 		}
 		const char *json_string = json_object_to_json_string(seats);

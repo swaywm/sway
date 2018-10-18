@@ -211,7 +211,7 @@ void arrange_layers(struct sway_output *output) {
 	}
 
 	struct sway_seat *seat;
-	wl_list_for_each(seat, &input_manager->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_set_focus_layer(seat, topmost ? topmost->layer_surface : NULL);
 	}
 }
@@ -241,7 +241,7 @@ static void handle_output_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, sway_layer, output_destroy);
 	// Determine if this layer is being used by an exclusive client. If it is,
 	// try and find another layer owned by this client to pass focus to.
-	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_seat *seat = input_manager_get_default_seat();
 	struct wl_client *client =
 		wl_resource_get_client(sway_layer->layer_surface->resource);
 	bool set_focus = seat->exclusive_client == client;
@@ -299,7 +299,7 @@ static void unmap(struct sway_layer_surface *sway_layer) {
 	output_damage_surface(output, sway_layer->geo.x, sway_layer->geo.y,
 		sway_layer->layer_surface->surface, true);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	if (seat->focused_layer == sway_layer->layer_surface) {
 		seat_set_focus_layer(seat, NULL);
 	}
@@ -370,7 +370,7 @@ void handle_layer_shell_surface(struct wl_listener *listener, void *data) {
 	if (!layer_surface->output) {
 		// Assign last active output
 		struct sway_output *output = NULL;
-		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+		struct sway_seat *seat = input_manager_get_default_seat();
 		if (seat) {
 			struct sway_workspace *ws = seat_get_focused_workspace(seat);
 

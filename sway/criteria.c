@@ -356,7 +356,7 @@ static enum criteria_token token_from_name(char *name) {
  * criteria is only executed once per view.
  */
 static char *get_focused_prop(enum criteria_token token) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
 
 	if (!focus || !focus->view) {

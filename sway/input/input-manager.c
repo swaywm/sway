@@ -17,32 +17,28 @@
 #include "list.h"
 #include "log.h"
 
-static const char *default_seat = "seat0";
-
-// TODO make me not global
-struct sway_input_manager *input_manager;
+#define DEFAULT_SEAT "seat0"
 
 struct input_config *current_input_config = NULL;
 struct seat_config *current_seat_config = NULL;
 
-struct sway_seat *input_manager_current_seat(struct sway_input_manager *input) {
+struct sway_seat *input_manager_current_seat(void) {
 	struct sway_seat *seat = config->handler_context.seat;
 	if (!seat) {
-		seat = input_manager_get_default_seat(input_manager);
+		seat = input_manager_get_default_seat();
 	}
 	return seat;
 }
 
-struct sway_seat *input_manager_get_seat(
-		struct sway_input_manager *input, const char *seat_name) {
+struct sway_seat *input_manager_get_seat(const char *seat_name) {
 	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		if (strcmp(seat->wlr_seat->name, seat_name) == 0) {
 			return seat;
 		}
 	}
 
-	return seat_create(input, seat_name);
+	return seat_create(seat_name);
 }
 
 char *input_device_get_identifier(struct wlr_input_device *device) {
@@ -72,9 +68,9 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 }
 
 static struct sway_input_device *input_sway_device_from_wlr(
-		struct sway_input_manager *input, struct wlr_input_device *device) {
+		struct wlr_input_device *device) {
 	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &input->devices, link) {
+	wl_list_for_each(input_device, &server.input->devices, link) {
 		if (input_device->wlr_device == device) {
 			return input_device;
 		}
@@ -82,9 +78,9 @@ static struct sway_input_device *input_sway_device_from_wlr(
 	return NULL;
 }
 
-static bool input_has_seat_configuration(struct sway_input_manager *input) {
+static bool input_has_seat_configuration(void) {
 	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		struct seat_config *seat_config = seat_get_config(seat);
 		if (seat_config) {
 			return true;
@@ -244,8 +240,7 @@ static void input_manager_libinput_config_pointer(
 static void handle_device_destroy(struct wl_listener *listener, void *data) {
 	struct wlr_input_device *device = data;
 
-	struct sway_input_device *input_device =
-		input_sway_device_from_wlr(input_manager, device);
+	struct sway_input_device *input_device = input_sway_device_from_wlr(device);
 
 	if (!sway_assert(input_device, "could not find sway device")) {
 		return;
@@ -255,7 +250,7 @@ static void handle_device_destroy(struct wl_listener *listener, void *data) {
 		input_device->identifier);
 
 	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input_manager->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_remove_device(seat, input_device);
 	}
 
@@ -297,9 +292,9 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	input_device->device_destroy.notify = handle_device_destroy;
 
 	struct sway_seat *seat = NULL;
-	if (!input_has_seat_configuration(input)) {
+	if (!input_has_seat_configuration()) {
 		wlr_log(WLR_DEBUG, "no seat configuration, using default seat");
-		seat = input_manager_get_seat(input, default_seat);
+		seat = input_manager_get_seat(DEFAULT_SEAT);
 		seat_add_device(seat, input_device);
 		return;
 	}
@@ -364,7 +359,7 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
 	struct wlr_input_device *device = &keyboard->input_device;
 
-	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_seat *seat = input_manager_get_default_seat();
 
 	// TODO: The user might want this on a different seat
 	struct sway_input_device *input_device =
@@ -387,20 +382,15 @@ void handle_virtual_keyboard(struct wl_listener *listener, void *data) {
 	seat_add_device(seat, input_device);
 }
 
-struct sway_input_manager *input_manager_create(
-		struct sway_server *server) {
+struct sway_input_manager *input_manager_create(struct sway_server *server) {
 	struct sway_input_manager *input =
 		calloc(1, sizeof(struct sway_input_manager));
 	if (!input) {
 		return NULL;
 	}
-	input->server = server;
 
 	wl_list_init(&input->devices);
 	wl_list_init(&input->seats);
-
-	// create the default seat
-	input_manager_get_seat(input, default_seat);
 
 	input->new_input.notify = handle_new_input;
 	wl_signal_add(&server->backend->events.new_input, &input->new_input);
@@ -422,10 +412,9 @@ struct sway_input_manager *input_manager_create(
 	return input;
 }
 
-bool input_manager_has_focus(struct sway_input_manager *input,
-		struct sway_node *node) {
+bool input_manager_has_focus(struct sway_node *node) {
 	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		if (seat_get_focus(seat) == node) {
 			return true;
 		}
@@ -434,19 +423,17 @@ bool input_manager_has_focus(struct sway_input_manager *input,
 	return false;
 }
 
-void input_manager_set_focus(struct sway_input_manager *input,
-		struct sway_node *node) {
+void input_manager_set_focus(struct sway_node *node) {
 	struct sway_seat *seat;
-	wl_list_for_each(seat, &input->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_set_focus(seat, node);
 	}
 }
 
-void input_manager_apply_input_config(struct sway_input_manager *input,
-		struct input_config *input_config) {
+void input_manager_apply_input_config(struct input_config *input_config) {
 	struct sway_input_device *input_device = NULL;
 	bool wildcard = strcmp(input_config->identifier, "*") == 0;
-	wl_list_for_each(input_device, &input->devices, link) {
+	wl_list_for_each(input_device, &server.input->devices, link) {
 		if (strcmp(input_device->identifier, input_config->identifier) == 0
 				|| wildcard) {
 			if (input_device->wlr_device->type == WLR_INPUT_DEVICE_POINTER ||
@@ -459,18 +446,17 @@ void input_manager_apply_input_config(struct sway_input_manager *input,
 			}
 
 			struct sway_seat *seat = NULL;
-			wl_list_for_each(seat, &input->seats, link) {
+			wl_list_for_each(seat, &server.input->seats, link) {
 				seat_configure_device(seat, input_device);
 			}
 		}
 	}
 }
 
-void input_manager_apply_seat_config(struct sway_input_manager *input,
-		struct seat_config *seat_config) {
+void input_manager_apply_seat_config(struct seat_config *seat_config) {
 	wlr_log(WLR_DEBUG, "applying new seat config for seat %s",
 		seat_config->name);
-	struct sway_seat *seat = input_manager_get_seat(input, seat_config->name);
+	struct sway_seat *seat = input_manager_get_seat(seat_config->name);
 	if (!seat) {
 		return;
 	}
@@ -480,10 +466,10 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 	// for every device, try to add it to a seat and if no seat has it
 	// attached, add it to the fallback seats.
 	struct sway_input_device *input_device = NULL;
-	wl_list_for_each(input_device, &input->devices, link) {
+	wl_list_for_each(input_device, &server.input->devices, link) {
 		list_t *seat_list = create_list();
 		struct sway_seat *seat = NULL;
-		wl_list_for_each(seat, &input->seats, link) {
+		wl_list_for_each(seat, &server.input->seats, link) {
 			struct seat_config *seat_config = seat_get_config(seat);
 			if (!seat_config) {
 				continue;
@@ -496,7 +482,7 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 		}
 
 		if (seat_list->length) {
-			wl_list_for_each(seat, &input->seats, link) {
+			wl_list_for_each(seat, &server.input->seats, link) {
 				bool attached = false;
 				for (int i = 0; i < seat_list->length; ++i) {
 					if (seat == seat_list->items[i]) {
@@ -511,7 +497,7 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 				}
 			}
 		} else {
-			wl_list_for_each(seat, &input->seats, link) {
+			wl_list_for_each(seat, &server.input->seats, link) {
 				struct seat_config *seat_config = seat_get_config(seat);
 				if (seat_config && seat_config->fallback == 1) {
 					seat_add_device(seat, input_device);
@@ -524,18 +510,17 @@ void input_manager_apply_seat_config(struct sway_input_manager *input,
 	}
 }
 
-void input_manager_configure_xcursor(struct sway_input_manager *input) {
+void input_manager_configure_xcursor(void) {
 	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_configure_xcursor(seat);
 	}
 }
 
-struct sway_seat *input_manager_get_default_seat(
-		struct sway_input_manager *input) {
+struct sway_seat *input_manager_get_default_seat(void) {
 	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &input->seats, link) {
-		if (strcmp(seat->wlr_seat->name, "seat0") == 0) {
+	wl_list_for_each(seat, &server.input->seats, link) {
+		if (strcmp(seat->wlr_seat->name, DEFAULT_SEAT) == 0) {
 			return seat;
 		}
 	}

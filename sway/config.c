@@ -151,8 +151,7 @@ static void destroy_removed_seats(struct sway_config *old_config,
 		/* Also destroy seats that aren't present in new config */
 		if (new_config && list_seq_find(new_config->seat_configs,
 				seat_name_cmp, seat_config->name) < 0) {
-			seat = input_manager_get_seat(input_manager,
-				seat_config->name);
+			seat = input_manager_get_seat(seat_config->name);
 			seat_destroy(seat);
 		}
 	}

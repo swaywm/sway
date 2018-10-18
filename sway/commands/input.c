@@ -71,7 +71,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		struct input_config *ic =
 			store_input_config(config->handler_context.input_config);
 
-		input_manager_apply_input_config(input_manager, ic);
+		input_manager_apply_input_config(ic);
 	} else {
 		free_input_config(config->handler_context.input_config);
 	}

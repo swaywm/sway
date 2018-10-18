@@ -70,9 +70,8 @@ static void unmanaged_handle_map(struct wl_listener *listener, void *data) {
 	desktop_damage_surface(xsurface->surface, surface->lx, surface->ly, true);
 
 	if (wlr_xwayland_or_surface_wants_focus(xsurface)) {
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
-		struct wlr_xwayland *xwayland =
-			seat->input->server->xwayland.wlr_xwayland;
+		struct sway_seat *seat = input_manager_current_seat();
+		struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 		wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 		seat_set_focus_surface(seat, xsurface->surface, false);
 	}
@@ -86,7 +85,7 @@ static void unmanaged_handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&surface->link);
 	wl_list_remove(&surface->commit.link);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	if (seat->wlr_seat->keyboard_state.focused_surface ==
 			xsurface->surface) {
 		// Restore focus
@@ -457,7 +456,7 @@ static void handle_request_move(struct wl_listener *listener, void *data) {
 	if (!container_is_floating(view->container)) {
 		return;
 	}
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	seat_begin_move_floating(seat, view->container, seat->last_button);
 }
 
@@ -473,7 +472,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 		return;
 	}
 	struct wlr_xwayland_resize_event *e = data;
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	seat_begin_resize_floating(seat, view->container,
 			seat->last_button, e->edges);
 }
