@@ -5,7 +5,6 @@
 #include <linux/input-event-codes.h>
 #endif
 #include <wayland-client.h>
-#include <wayland-cursor.h>
 #include <wlr/util/log.h>
 #include "list.h"
 #include "log.h"
@@ -66,20 +65,6 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
 			break;
 		}
 	}
-	int max_scale = 1;
-	struct swaybar_output *_output;
-	wl_list_for_each(_output, &bar->outputs, link) {
-		if (_output->scale > max_scale) {
-			max_scale = _output->scale;
-		}
-	}
-	wl_surface_set_buffer_scale(pointer->cursor_surface, max_scale);
-	wl_surface_attach(pointer->cursor_surface,
-			wl_cursor_image_get_buffer(pointer->cursor_image), 0, 0);
-	wl_pointer_set_cursor(wl_pointer, serial, pointer->cursor_surface,
-			pointer->cursor_image->hotspot_x / max_scale,
-			pointer->cursor_image->hotspot_y / max_scale);
-	wl_surface_commit(pointer->cursor_surface);
 }
 
 static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,

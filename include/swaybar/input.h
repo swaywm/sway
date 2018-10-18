@@ -8,9 +8,6 @@ struct swaybar_output;
 
 struct swaybar_pointer {
 	struct wl_pointer *pointer;
-	struct wl_cursor_theme *cursor_theme;
-	struct wl_cursor_image *cursor_image;
-	struct wl_surface *cursor_surface;
 	struct swaybar_output *current;
 	int x, y;
 };

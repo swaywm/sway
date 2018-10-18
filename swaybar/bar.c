@@ -9,7 +9,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <wayland-client.h>
-#include <wayland-cursor.h>
 #include <wlr/util/log.h>
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
@@ -357,25 +356,6 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 		add_xdg_output(output);
 	}
 	wl_display_roundtrip(bar->display);
-
-	struct swaybar_pointer *pointer = &bar->pointer;
-
-	int max_scale = 1;
-	wl_list_for_each(output, &bar->outputs, link) {
-		if (output->scale > max_scale) {
-			max_scale = output->scale;
-		}
-	}
-
-	pointer->cursor_theme =
-		wl_cursor_theme_load(NULL, 24 * max_scale, bar->shm);
-	assert(pointer->cursor_theme);
-	struct wl_cursor *cursor;
-	cursor = wl_cursor_theme_get_cursor(pointer->cursor_theme, "left_ptr");
-	assert(cursor);
-	pointer->cursor_image = cursor->images[0];
-	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
-	assert(pointer->cursor_surface);
 
 	if (bar->config->workspace_buttons) {
 		if (ipc_get_workspaces(bar)) {
