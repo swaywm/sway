@@ -1187,3 +1187,21 @@ void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 	seat->last_button_serial = wlr_seat_pointer_notify_button(seat->wlr_seat,
 			time_msec, button, state);
 }
+
+void seat_consider_warp_to_focus(struct sway_seat *seat) {
+	struct sway_node *focus = seat_get_focus(seat);
+	if (config->mouse_warping == WARP_NO || !focus || !seat->prev_focus) {
+		return;
+	}
+	if (config->mouse_warping == WARP_OUTPUT &&
+			node_get_output(focus) == node_get_output(seat->prev_focus)) {
+		return;
+	}
+
+	if (focus->type == N_CONTAINER) {
+		cursor_warp_to_container(seat->cursor, focus->sway_container);
+	} else {
+		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
+	}
+	cursor_send_pointer_motion(seat->cursor, 0, false);
+}
