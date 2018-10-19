@@ -4,6 +4,7 @@
 #else
 #include <linux/input-event-codes.h>
 #endif
+#include <stdlib.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wlr/util/log.h>
