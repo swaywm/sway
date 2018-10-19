@@ -385,7 +385,6 @@ static void load_image(char *arg, struct swaylock_state *state) {
 		return;
 	}
 	wl_list_insert(&state->images, &image->link);
-	state->args.mode = BACKGROUND_MODE_FILL;
 	wlr_log(WLR_DEBUG, "Loaded image %s for output %s",
 			image->path, image->output_name ? image->output_name : "*");
 }
@@ -851,7 +850,7 @@ int main(int argc, char **argv) {
 
 	enum line_mode line_mode = LM_LINE;
 	state.args = (struct swaylock_args){
-		.mode = BACKGROUND_MODE_SOLID_COLOR,
+		.mode = BACKGROUND_MODE_FILL,
 		.font = strdup("sans-serif"),
 		.radius = 50,
 		.thickness = 10,
