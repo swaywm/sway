@@ -43,6 +43,7 @@ enum binding_flags {
 struct sway_binding {
 	enum binding_input_type type;
 	int order;
+	char *input;
 	uint32_t flags;
 	list_t *keys; // sorted in ascending order
 	uint32_t modifiers;

@@ -80,6 +80,6 @@ static struct cmd_results *press_or_release(struct sway_cursor *cursor,
 			return cmd_results_new(CMD_INVALID, "cursor", expected_syntax);
 		}
 	}
-	dispatch_cursor_button(cursor, 0, button, state);
+	dispatch_cursor_button(cursor, NULL, 0, button, state);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

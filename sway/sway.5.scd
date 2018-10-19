@@ -257,20 +257,22 @@ runtime.
 
 		for\_window <criteria> move container to output <output>
 
-*bindsym* [--release|--locked] <key combo> <command>
+*bindsym* [--release|--locked] [--input-device=<device>] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
 	released. Unless the flag _--locked_ is set, the command will not be run
-	when a screen locking program is active.
+	when a screen locking program is active. If _input-device_ is given, the
+	binding will only be executed for that input device and will be executed
+	instead of any binding that is generic to all devices.
 
 	Example:
 
 		# Execute firefox when alt, shift, and f are pressed together
 		bindsym Mod1+Shift+f exec firefox
 
-	*bindcode* [--release|--locked] <code> <command> is also available for
-	binding with key codes instead of key names.
+	*bindcode* [--release|--locked] [--input-device=<device>] <code> <command>
+	is also available for binding with key codes instead of key names.
 
 *client.<class>* <border> <background> <text> <indicator> <child\_border>
 	Configures the color of window borders and title bars. All 5 colors are
