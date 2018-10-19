@@ -1110,9 +1110,6 @@ static void seat_end_move_tiling(struct sway_seat *seat) {
 	int after = edge != WLR_EDGE_TOP && edge != WLR_EDGE_LEFT;
 
 	container_detach(con);
-	if (old_parent) {
-		container_reap_empty(old_parent);
-	}
 
 	// Moving container into empty workspace
 	if (target_node->type == N_WORKSPACE && edge == WLR_EDGE_NONE) {
@@ -1133,6 +1130,10 @@ static void seat_end_move_tiling(struct sway_seat *seat) {
 			edge == WLR_EDGE_BOTTOM ? L_VERT : L_HORIZ;
 		workspace_split(new_ws, new_layout);
 		workspace_insert_tiling(new_ws, con, after);
+	}
+
+	if (old_parent) {
+		container_reap_empty(old_parent);
 	}
 
 	// This is a bit dirty, but we'll set the dimensions to that of a sibling.
