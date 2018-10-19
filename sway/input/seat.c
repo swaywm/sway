@@ -646,7 +646,6 @@ void seat_set_focus(struct sway_seat *seat, struct sway_node *node) {
 	}
 
 	struct sway_node *last_focus = seat_get_focus(seat);
-	seat->prev_focus = last_focus;
 	if (last_focus == node) {
 		return;
 	}
@@ -1190,12 +1189,17 @@ void seat_pointer_notify_button(struct sway_seat *seat, uint32_t time_msec,
 
 void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	struct sway_node *focus = seat_get_focus(seat);
-	if (config->mouse_warping == WARP_NO || !focus || !seat->prev_focus) {
+	if (config->mouse_warping == WARP_NO || !focus) {
 		return;
 	}
-	if (config->mouse_warping == WARP_OUTPUT &&
-			node_get_output(focus) == node_get_output(seat->prev_focus)) {
-		return;
+	if (config->mouse_warping == WARP_OUTPUT) {
+		struct sway_output *output = node_get_output(focus);
+		struct wlr_box box;
+		output_get_box(output, &box);
+		if (wlr_box_contains_point(&box,
+					seat->cursor->cursor->x, seat->cursor->cursor->y)) {
+			return;
+		}
 	}
 
 	if (focus->type == N_CONTAINER) {
