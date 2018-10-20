@@ -379,7 +379,6 @@ struct sway_config {
 
 	// Flags
 	bool focus_follows_mouse;
-	bool raise_floating;
 	enum mouse_warping_mode mouse_warping;
 	enum focus_wrapping_mode focus_wrapping;
 	bool active;
