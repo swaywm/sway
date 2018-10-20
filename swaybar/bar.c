@@ -28,7 +28,6 @@
 
 static void bar_init(struct swaybar *bar) {
 	bar->config = init_config();
-	bar->visible = true;
 	wl_list_init(&bar->outputs);
 }
 
@@ -227,9 +226,6 @@ static void xdg_output_handle_done(void *data,
 
 		output->surface = wl_compositor_create_surface(bar->compositor);
 		assert(output->surface);
-		if (bar->visible) {
-			add_layer_surface(output);
-		}
 	}
 }
 
@@ -377,10 +373,15 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
 	assert(pointer->cursor_surface);
 
+	bar->visible = true;
 	if (bar->config->workspace_buttons) {
-		if (ipc_get_workspaces(bar)) {
-			set_bar_dirty(bar);
+		ipc_get_workspaces(bar);
+	}
+	if (determine_bar_visibility(bar, false)) {
+		wl_list_for_each(output, &bar->outputs, link) {
+			add_layer_surface(output);
 		}
+		set_bar_dirty(bar);
 	}
 	return true;
 }
