@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include <string.h>
+#include <wlr/util/log.h>
 #include "swaybar/config.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "stringop.h"
@@ -9,17 +10,12 @@
 uint32_t parse_position(const char *position) {
 	uint32_t horiz = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-	uint32_t vert = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-		ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	if (strcmp("top", position) == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | horiz;
 	} else if (strcmp("bottom", position) == 0) {
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | horiz;
-	} else if (strcmp("left", position) == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | vert;
-	} else if (strcmp("right", position) == 0) {
-		return ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | vert;
 	} else {
+		wlr_log(WLR_ERROR, "Invalid position: %s, defaulting to bottom", position);
 		return ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | horiz;
 	}
 }
