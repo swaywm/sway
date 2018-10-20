@@ -68,7 +68,7 @@ void apply_seat_config(struct seat_config *seat_config) {
 		list_add(config->seat_configs, seat_config);
 	}
 
-	input_manager_apply_seat_config(input_manager, seat_config);
+	input_manager_apply_seat_config(seat_config);
 }
 
 /* Keep alphabetized */
@@ -240,7 +240,7 @@ struct cmd_results *execute_command(char *_exec, struct sway_seat *seat,
 
 	if (seat == NULL) {
 		// passing a NULL seat means we just pick the default seat
-		seat = input_manager_get_default_seat(input_manager);
+		seat = input_manager_get_default_seat();
 		if (!sway_assert(seat, "could not find a seat to run the command on")) {
 			return NULL;
 		}

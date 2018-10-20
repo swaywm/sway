@@ -95,8 +95,7 @@ static void seat_send_focus(struct sway_node *node, struct sway_seat *seat) {
 	if (view && seat_is_input_allowed(seat, view->surface)) {
 #ifdef HAVE_XWAYLAND
 		if (view->type == SWAY_VIEW_XWAYLAND) {
-			struct wlr_xwayland *xwayland =
-				seat->input->server->xwayland.wlr_xwayland;
+			struct wlr_xwayland *xwayland = server.xwayland.wlr_xwayland;
 			wlr_xwayland_set_seat(xwayland, seat->wlr_seat);
 		}
 #endif
@@ -328,14 +327,13 @@ static void collect_focus_container_iter(struct sway_container *container,
 	collect_focus_iter(&container->node, data);
 }
 
-struct sway_seat *seat_create(struct sway_input_manager *input,
-		const char *seat_name) {
+struct sway_seat *seat_create(const char *seat_name) {
 	struct sway_seat *seat = calloc(1, sizeof(struct sway_seat));
 	if (!seat) {
 		return NULL;
 	}
 
-	seat->wlr_seat = wlr_seat_create(input->server->wl_display, seat_name);
+	seat->wlr_seat = wlr_seat_create(server.wl_display, seat_name);
 	if (!sway_assert(seat->wlr_seat, "could not allocate seat")) {
 		free(seat);
 		return NULL;
@@ -361,10 +359,9 @@ struct sway_seat *seat_create(struct sway_input_manager *input,
 	wl_signal_add(&seat->wlr_seat->events.new_drag_icon, &seat->new_drag_icon);
 	seat->new_drag_icon.notify = handle_new_drag_icon;
 
-	seat->input = input;
 	wl_list_init(&seat->devices);
 
-	wl_list_insert(&input->seats, &seat->link);
+	wl_list_insert(&server.input->seats, &seat->link);
 
 	return seat;
 }

@@ -680,7 +680,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 
 static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, motion);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
@@ -692,7 +692,7 @@ static void handle_cursor_motion_absolute(
 		struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, motion_absolute);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
 	cursor_send_pointer_motion(cursor, event->time_msec);
@@ -970,7 +970,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 
 static void handle_cursor_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, button);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_button *event = data;
 	dispatch_cursor_button(cursor, event->device,
 			event->time_msec, event->button, event->state);
@@ -1019,7 +1019,7 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, axis);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_axis *event = data;
 	dispatch_cursor_axis(cursor, event);
 	transaction_commit_dirty();
@@ -1027,7 +1027,7 @@ static void handle_cursor_axis(struct wl_listener *listener, void *data) {
 
 static void handle_touch_down(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_down);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_down *event = data;
 
 	struct sway_seat *seat = cursor->seat;
@@ -1058,7 +1058,7 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 
 static void handle_touch_up(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, touch_up);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_up *event = data;
 	struct wlr_seat *seat = cursor->seat->wlr_seat;
 	// TODO: fall back to cursor simulation if client has not bound to touch
@@ -1068,7 +1068,7 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor =
 		wl_container_of(listener, cursor, touch_motion);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_touch_motion *event = data;
 
 	struct sway_seat *seat = cursor->seat;
@@ -1132,7 +1132,7 @@ static void apply_mapping_from_region(struct wlr_input_device *device,
 
 static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_axis);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_axis *event = data;
 	struct sway_input_device *input_device = event->device->data;
 
@@ -1156,7 +1156,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 
 static void handle_tool_tip(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_tip);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_tip *event = data;
 	dispatch_cursor_button(cursor, event->device, event->time_msec,
 			BTN_LEFT, event->state == WLR_TABLET_TOOL_TIP_DOWN ?
@@ -1166,7 +1166,7 @@ static void handle_tool_tip(struct wl_listener *listener, void *data) {
 
 static void handle_tool_button(struct wl_listener *listener, void *data) {
 	struct sway_cursor *cursor = wl_container_of(listener, cursor, tool_button);
-	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
+	wlr_idle_notify_activity(server.idle, cursor->seat->wlr_seat);
 	struct wlr_event_tablet_tool_button *event = data;
 	// TODO: the user may want to configure which tool buttons are mapped to
 	// which simulated pointer buttons

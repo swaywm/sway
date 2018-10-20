@@ -140,7 +140,7 @@ void update_debug_tree(void) {
 	cairo_t *cairo = cairo_create(surface);
 	PangoContext *pango = pango_cairo_create_context(cairo);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_node *focus = seat_get_focus(seat);
 
 	cairo_set_source_u32(cairo, 0x000000FF);

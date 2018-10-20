@@ -103,7 +103,7 @@ static void workspace_focus_fullscreen(struct sway_workspace *workspace) {
 	}
 	struct sway_seat *seat;
 	struct sway_workspace *focus_ws;
-	wl_list_for_each(seat, &input_manager->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		focus_ws = seat_get_focused_workspace(seat);
 		if (focus_ws == workspace) {
 			struct sway_node *new_focus =

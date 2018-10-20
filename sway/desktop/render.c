@@ -885,7 +885,7 @@ static void render_floating(struct sway_output *soutput,
 static void render_dropzones(struct sway_output *output,
 		pixman_region32_t *damage) {
 	struct sway_seat *seat;
-	wl_list_for_each(seat, &input_manager->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		if (seat->operation == OP_MOVE_TILING && seat->op_target_node
 				&& node_get_output(seat->op_target_node) == output) {
 			float color[4];
@@ -995,7 +995,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 	render_dropzones(output, damage);
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
 	if (focus && focus->view) {
 		render_view_popups(focus->view, output, damage, focus->alpha);

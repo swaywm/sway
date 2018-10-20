@@ -211,7 +211,7 @@ static void handle_keyboard_key(struct wl_listener *listener, void *data) {
 	struct wlr_input_device *wlr_device =
 		keyboard->seat_device->input_device->wlr_device;
 	char *device_identifier = input_device_get_identifier(wlr_device);
-	wlr_idle_notify_activity(seat->input->server->idle, wlr_seat);
+	wlr_idle_notify_activity(server.idle, wlr_seat);
 	struct wlr_event_keyboard_key *event = data;
 	bool input_inhibited = seat->exclusive_client != NULL;
 

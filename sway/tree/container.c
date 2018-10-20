@@ -200,7 +200,7 @@ static struct sway_container *container_at_tabbed(struct sway_node *parent,
 	if (ly < box.y || ly > box.y + box.height) {
 		return NULL;
 	}
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	list_t *children = node_get_children(parent);
 	if (!children->length) {
 		return NULL;
@@ -234,7 +234,7 @@ static struct sway_container *container_at_stacked(struct sway_node *parent,
 	if (ly < box.y || ly > box.y + box.height) {
 		return NULL;
 	}
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	list_t *children = node_get_children(parent);
 
 	// Title bars
@@ -358,7 +358,7 @@ struct sway_container *container_at(struct sway_workspace *workspace,
 		struct wlr_surface **surface, double *sx, double *sy) {
 	struct sway_container *c;
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *focus = seat_get_focused_container(seat);
 	bool is_floating = focus && container_is_floating_or_child(focus);
 	// Focused view's popups
@@ -651,7 +651,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		return;
 	}
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *workspace = container->workspace;
 
 	if (enable) {
@@ -843,7 +843,7 @@ bool container_has_urgent_child(struct sway_container *container) {
 
 void container_end_mouse_operation(struct sway_container *container) {
 	struct sway_seat *seat;
-	wl_list_for_each(seat, &input_manager->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		if (seat->op_container == container) {
 			seat->op_target_node = NULL; // ensure tiling move doesn't apply
 			seat_end_mouse_operation(seat);
@@ -890,7 +890,7 @@ void container_set_fullscreen(struct sway_container *container, bool enable) {
 
 		struct sway_seat *seat;
 		struct sway_workspace *focus_ws;
-		wl_list_for_each(seat, &input_manager->seats, link) {
+		wl_list_for_each(seat, &server.input->seats, link) {
 			focus_ws = seat_get_focused_workspace(seat);
 			if (focus_ws) {
 				if (focus_ws == workspace) {
@@ -1033,7 +1033,7 @@ void container_add_gaps(struct sway_container *c) {
 		struct sway_view *view = c->view;
 		if (!view) {
 			struct sway_seat *seat =
-				input_manager_get_default_seat(input_manager);
+				input_manager_get_default_seat();
 			struct sway_container *focus =
 				seat_get_focus_inactive_view(seat, &c->node);
 			view = focus ? focus->view : NULL;
@@ -1187,7 +1187,7 @@ void container_replace(struct sway_container *container,
 
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout) {
-	struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+	struct sway_seat *seat = input_manager_get_default_seat();
 	bool set_focus = (seat_get_focus(seat) == &child->node);
 
 	struct sway_container *cont = container_create(NULL);

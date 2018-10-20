@@ -305,7 +305,7 @@ void view_request_activate(struct sway_view *view) {
 	if (!ws) { // hidden scratchpad container
 		return;
 	}
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 
 	switch (config->focus_on_window_activation) {
 	case FOWA_SMART:
@@ -443,7 +443,7 @@ void view_execute_criteria(struct sway_view *view) {
 }
 
 static struct sway_workspace *select_workspace(struct sway_view *view) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 
 	// Check if there's any `assign` criteria for the view
 	list_t *criterias = criteria_for_view(view,
@@ -517,7 +517,7 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 }
 
 static bool should_focus(struct sway_view *view) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *prev_con = seat_get_focused_container(seat);
 	struct sway_workspace *prev_ws = seat_get_focused_workspace(seat);
 	struct sway_workspace *map_ws = view->container->workspace;
@@ -551,7 +551,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 	view->surface = wlr_surface;
 
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *ws = select_workspace(view);
 	struct sway_node *node = seat_get_focus_inactive(seat, &ws->node);
 	struct sway_container *target_sibling = node->type == N_CONTAINER ?
@@ -616,7 +616,7 @@ void view_map(struct sway_view *view, struct wlr_surface *wlr_surface,
 	}
 
 	if (should_focus(view)) {
-		input_manager_set_focus(input_manager, &view->container->node);
+		input_manager_set_focus(&view->container->node);
 	}
 }
 
@@ -645,7 +645,7 @@ void view_unmap(struct sway_view *view) {
 	}
 
 	struct sway_seat *seat;
-	wl_list_for_each(seat, &input_manager->seats, link) {
+	wl_list_for_each(seat, &server.input->seats, link) {
 		if (config->mouse_warping == WARP_CONTAINER) {
 			struct sway_node *node = seat_get_focus(seat);
 			if (node && node->type == N_CONTAINER) {
@@ -1106,7 +1106,7 @@ bool view_is_visible(struct sway_view *view) {
 		return false;
 	}
 	// Check view isn't in a tabbed or stacked container on an inactive tab
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_container *con = view->container;
 	while (con) {
 		enum sway_container_layout layout = container_parent_layout(con);
@@ -1138,7 +1138,7 @@ void view_set_urgent(struct sway_view *view, bool enable) {
 		return;
 	}
 	if (enable) {
-		struct sway_seat *seat = input_manager_current_seat(input_manager);
+		struct sway_seat *seat = input_manager_current_seat();
 		if (seat_get_focused_container(seat) == view->container) {
 			return;
 		}

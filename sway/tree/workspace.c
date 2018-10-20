@@ -40,7 +40,7 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 		}
 	}
 	// Otherwise put it on the focused output
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *focus = seat_get_focused_workspace(seat);
 	return focus->output;
 }
@@ -295,7 +295,7 @@ static bool _workspace_by_name(struct sway_workspace *ws, void *data) {
 }
 
 struct sway_workspace *workspace_by_name(const char *name) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *current = seat_get_focused_workspace(seat);
 
 	if (strcmp(name, "prev") == 0) {
@@ -324,7 +324,7 @@ struct sway_workspace *workspace_by_name(const char *name) {
  */
 static struct sway_workspace *workspace_output_prev_next_impl(
 		struct sway_output *output, int dir) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *workspace = seat_get_focused_workspace(seat);
 
 	int index = list_find(output->workspaces, workspace);
@@ -376,7 +376,7 @@ struct sway_workspace *workspace_prev(struct sway_workspace *current) {
 
 bool workspace_switch(struct sway_workspace *workspace,
 		bool no_auto_back_and_forth) {
-	struct sway_seat *seat = input_manager_current_seat(input_manager);
+	struct sway_seat *seat = input_manager_current_seat();
 	struct sway_workspace *active_ws = seat_get_focused_workspace(seat);
 
 	if (!no_auto_back_and_forth && config->auto_back_and_forth
@@ -627,7 +627,7 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 		return;
 	}
 	if (config->smart_gaps) {
-		struct sway_seat *seat = input_manager_get_default_seat(input_manager);
+		struct sway_seat *seat = input_manager_get_default_seat();
 		struct sway_container *focus =
 			seat_get_focus_inactive_tiling(seat, ws);
 		if (focus && !focus->view) {
