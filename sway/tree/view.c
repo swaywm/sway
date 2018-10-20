@@ -653,9 +653,8 @@ void view_unmap(struct sway_view *view) {
 			} else if (node && node->type == N_WORKSPACE) {
 				cursor_warp_to_workspace(seat->cursor, node->sway_workspace);
 			}
-		} else {
-			cursor_send_pointer_motion(seat->cursor, 0, true);
 		}
+		cursor_rebase(seat->cursor);
 	}
 
 	transaction_commit_dirty();

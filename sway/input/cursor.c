@@ -543,8 +543,57 @@ static void handle_resize_tiling_motion(struct sway_seat *seat,
 	}
 }
 
-void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
-		bool allow_refocusing) {
+static void cursor_do_rebase(struct sway_cursor *cursor, uint32_t time_msec,
+		struct sway_node *node, struct wlr_surface *surface,
+		double sx, double sy) {
+	// Handle cursor image
+	if (surface) {
+		// Reset cursor if switching between clients
+		struct wl_client *client = wl_resource_get_client(surface->resource);
+		if (client != cursor->image_client) {
+			cursor_set_image(cursor, "left_ptr", client);
+		}
+	} else if (node && node->type == N_CONTAINER) {
+		// Try a node's resize edge
+		enum wlr_edges edge = find_resize_edge(node->sway_container, cursor);
+		if (edge == WLR_EDGE_NONE) {
+			cursor_set_image(cursor, "left_ptr", NULL);
+		} else if (container_is_floating(node->sway_container)) {
+			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
+		} else {
+			if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
+				cursor_set_image(cursor, "col-resize", NULL);
+			} else {
+				cursor_set_image(cursor, "row-resize", NULL);
+			}
+		}
+	} else {
+		cursor_set_image(cursor, "left_ptr", NULL);
+	}
+
+	// Send pointer enter/leave
+	struct wlr_seat *wlr_seat = cursor->seat->wlr_seat;
+	if (surface) {
+		if (seat_is_input_allowed(cursor->seat, surface)) {
+			wlr_seat_pointer_notify_enter(wlr_seat, surface, sx, sy);
+			wlr_seat_pointer_notify_motion(wlr_seat, time_msec, sx, sy);
+		}
+	} else {
+		wlr_seat_pointer_clear_focus(wlr_seat);
+	}
+}
+
+void cursor_rebase(struct sway_cursor *cursor) {
+	uint32_t time_msec = get_current_time_msec();
+	struct wlr_surface *surface;
+	double sx, sy;
+	cursor->previous.node = node_at_coords(cursor->seat,
+			cursor->cursor->x, cursor->cursor->y, &surface, &sx, &sy);
+	cursor_do_rebase(cursor, time_msec, cursor->previous.node, surface, sx, sy);
+}
+
+void cursor_send_pointer_motion(struct sway_cursor *cursor,
+		uint32_t time_msec) {
 	if (time_msec == 0) {
 		time_msec = get_current_time_msec();
 	}
@@ -589,7 +638,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 	cursor->previous.y = cursor->cursor->y;
 	cursor->previous.node = node;
 
-	if (node && config->focus_follows_mouse && allow_refocusing) {
+	if (node && config->focus_follows_mouse) {
 		struct sway_node *focus = seat_get_focus(seat);
 		if (focus && node->type == N_WORKSPACE) {
 			// Only follow the mouse if it would move to a new output
@@ -620,40 +669,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor, uint32_t time_msec,
 		}
 	}
 
-	// Handle cursor image
-	if (surface) {
-		// Reset cursor if switching between clients
-		struct wl_client *client = wl_resource_get_client(surface->resource);
-		if (client != cursor->image_client) {
-			cursor_set_image(cursor, "left_ptr", client);
-		}
-	} else if (node && node->type == N_CONTAINER) {
-		// Try a node's resize edge
-		enum wlr_edges edge = find_resize_edge(node->sway_container, cursor);
-		if (edge == WLR_EDGE_NONE) {
-			cursor_set_image(cursor, "left_ptr", NULL);
-		} else if (container_is_floating(node->sway_container)) {
-			cursor_set_image(cursor, wlr_xcursor_get_resize_name(edge), NULL);
-		} else {
-			if (edge & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-				cursor_set_image(cursor, "col-resize", NULL);
-			} else {
-				cursor_set_image(cursor, "row-resize", NULL);
-			}
-		}
-	} else {
-		cursor_set_image(cursor, "left_ptr", NULL);
-	}
-
-	// send pointer enter/leave
-	if (surface != NULL) {
-		if (seat_is_input_allowed(seat, surface)) {
-			wlr_seat_pointer_notify_enter(wlr_seat, surface, sx, sy);
-			wlr_seat_pointer_notify_motion(wlr_seat, time_msec, sx, sy);
-		}
-	} else {
-		wlr_seat_pointer_clear_focus(wlr_seat);
-	}
+	cursor_do_rebase(cursor, time_msec, node, surface, sx, sy);
 
 	struct wlr_drag_icon *wlr_drag_icon;
 	wl_list_for_each(wlr_drag_icon, &wlr_seat->drag_icons, link) {
@@ -668,7 +684,7 @@ static void handle_cursor_motion(struct wl_listener *listener, void *data) {
 	struct wlr_event_pointer_motion *event = data;
 	wlr_cursor_move(cursor->cursor, event->device,
 		event->delta_x, event->delta_y);
-	cursor_send_pointer_motion(cursor, event->time_msec, true);
+	cursor_send_pointer_motion(cursor, event->time_msec);
 	transaction_commit_dirty();
 }
 
@@ -679,7 +695,7 @@ static void handle_cursor_motion_absolute(
 	wlr_idle_notify_activity(cursor->seat->input->server->idle, cursor->seat->wlr_seat);
 	struct wlr_event_pointer_motion_absolute *event = data;
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, event->x, event->y);
-	cursor_send_pointer_motion(cursor, event->time_msec, true);
+	cursor_send_pointer_motion(cursor, event->time_msec);
 	transaction_commit_dirty();
 }
 
@@ -1134,7 +1150,7 @@ static void handle_tool_axis(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_cursor_warp_absolute(cursor->cursor, event->device, x, y);
-	cursor_send_pointer_motion(cursor, event->time_msec, true);
+	cursor_send_pointer_motion(cursor, event->time_msec);
 	transaction_commit_dirty();
 }
 

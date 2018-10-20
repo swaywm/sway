@@ -399,7 +399,7 @@ bool workspace_switch(struct sway_workspace *workspace,
 	}
 	seat_set_focus(seat, next);
 	arrange_workspace(workspace);
-	cursor_send_pointer_motion(seat->cursor, 0, true);
+	cursor_rebase(seat->cursor);
 	return true;
 }
 

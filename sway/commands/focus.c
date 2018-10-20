@@ -236,7 +236,7 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	if (argc == 0 && container) {
 		seat_set_focus_container(seat, container);
 		seat_consider_warp_to_focus(seat);
-		cursor_send_pointer_motion(seat->cursor, 0, true);
+		cursor_rebase(seat->cursor);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 	}
 

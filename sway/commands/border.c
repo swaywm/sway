@@ -96,7 +96,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 
 	struct sway_seat *seat = input_manager_current_seat(input_manager);
 	if (seat->cursor) {
-		cursor_send_pointer_motion(seat->cursor, 0, false);
+		cursor_rebase(seat->cursor);
 	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);

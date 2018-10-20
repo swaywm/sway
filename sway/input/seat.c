@@ -1174,7 +1174,7 @@ void seat_end_mouse_operation(struct sway_seat *seat) {
 		seat->cursor->previous.x = seat->op_ref_lx;
 		seat->cursor->previous.y = seat->op_ref_ly;
 		if (seat->op_moved) {
-			cursor_send_pointer_motion(seat->cursor, 0, true);
+			cursor_send_pointer_motion(seat->cursor, 0);
 		}
 	} else {
 		cursor_set_image(seat->cursor, "left_ptr", NULL);
@@ -1208,5 +1208,5 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	} else {
 		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
 	}
-	cursor_send_pointer_motion(seat->cursor, 0, false);
+	cursor_rebase(seat->cursor);
 }
