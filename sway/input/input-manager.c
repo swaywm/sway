@@ -30,6 +30,10 @@ struct sway_seat *input_manager_current_seat(void) {
 	return seat;
 }
 
+struct sway_seat *input_manager_get_default_seat(void) {
+	return input_manager_get_seat(DEFAULT_SEAT);
+}
+
 struct sway_seat *input_manager_get_seat(const char *seat_name) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
@@ -294,7 +298,7 @@ static void handle_new_input(struct wl_listener *listener, void *data) {
 	struct sway_seat *seat = NULL;
 	if (!input_has_seat_configuration()) {
 		wlr_log(WLR_DEBUG, "no seat configuration, using default seat");
-		seat = input_manager_get_seat(DEFAULT_SEAT);
+		seat = input_manager_get_default_seat();
 		seat_add_device(seat, input_device);
 		return;
 	}
@@ -515,16 +519,6 @@ void input_manager_configure_xcursor(void) {
 	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_configure_xcursor(seat);
 	}
-}
-
-struct sway_seat *input_manager_get_default_seat(void) {
-	struct sway_seat *seat = NULL;
-	wl_list_for_each(seat, &server.input->seats, link) {
-		if (strcmp(seat->wlr_seat->name, DEFAULT_SEAT) == 0) {
-			return seat;
-		}
-	}
-	return seat;
 }
 
 struct input_config *input_device_get_config(struct sway_input_device *device) {
