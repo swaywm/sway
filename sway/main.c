@@ -22,6 +22,7 @@
 #include "sway/tree/root.h"
 #include "sway/ipc-server.h"
 #include "ipc-client.h"
+#include "log.h"
 #include "readline.h"
 #include "stringop.h"
 #include "util.h"
@@ -81,7 +82,7 @@ void detect_raspi(void) {
 	}
 }
 
-void detect_proprietary(void) {
+void detect_proprietary(int allow_unsupported_gpu) {
 	FILE *f = fopen("/proc/modules", "r");
 	if (!f) {
 		return;
@@ -92,15 +93,30 @@ void detect_proprietary(void) {
 			break;
 		}
 		if (strstr(line, "nvidia")) {
-			fprintf(stderr, "\x1B[1;31mWarning: Proprietary Nvidia drivers are "
-				"NOT supported. Use Nouveau.\x1B[0m\n");
 			free(line);
+			if (allow_unsupported_gpu) {
+				wlr_log(WLR_ERROR,
+						"!!! Proprietary Nvidia drivers are in use !!!");
+			} else {
+				wlr_log(WLR_ERROR,
+					"Proprietary Nvidia drivers are NOT supported. "
+					"Use Nouveau. To launch sway anyway, launch with "
+					"--my-next-gpu-wont-be-nvidia and DO NOT report issues.");
+				exit(EXIT_FAILURE);
+			}
 			break;
 		}
 		if (strstr(line, "fglrx")) {
-			fprintf(stderr, "\x1B[1;31mWarning: Proprietary AMD drivers do "
-				"NOT support Wayland. Use radeon.\x1B[0m\n");
 			free(line);
+			if (allow_unsupported_gpu) {
+				wlr_log(WLR_ERROR,
+						"!!! Proprietary AMD drivers are in use !!!");
+			} else {
+				wlr_log(WLR_ERROR, "Proprietary AMD drivers do NOT support "
+					"Wayland. Use radeon. To try anyway, launch sway with "
+					"--unsupported-gpu and DO NOT report issues.");
+				exit(EXIT_FAILURE);
+			}
 			break;
 		}
 		free(line);
@@ -214,7 +230,7 @@ void enable_debug_flag(const char *flag) {
 }
 
 int main(int argc, char **argv) {
-	static int verbose = 0, debug = 0, validate = 0;
+	static int verbose = 0, debug = 0, validate = 0, allow_unsupported_gpu = 0;
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
@@ -224,6 +240,8 @@ int main(int argc, char **argv) {
 		{"version", no_argument, NULL, 'v'},
 		{"verbose", no_argument, NULL, 'V'},
 		{"get-socketpath", no_argument, NULL, 'p'},
+		{"unsupported-gpu", no_argument, NULL, 'u'},
+		{"my-next-gpu-wont-be-nvidia", no_argument, NULL, 'u'},
 		{0, 0, 0, 0}
 	};
 
@@ -264,6 +282,9 @@ int main(int argc, char **argv) {
 			break;
 		case 'D': // extended debug options
 			enable_debug_flag(optarg);
+			break;
+		case 'u':
+			allow_unsupported_gpu = 1;
 			break;
 		case 'v': // version
 			fprintf(stdout, "sway version " SWAY_VERSION "\n");
@@ -317,7 +338,7 @@ int main(int argc, char **argv) {
 
 	log_kernel();
 	log_distro();
-	detect_proprietary();
+	detect_proprietary(allow_unsupported_gpu);
 	detect_raspi();
 
 	drop_permissions();
