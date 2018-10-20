@@ -89,6 +89,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 			}
 		}
 		free(ws_name);
+		ipc_event_workspace(NULL, ws, "init");
 	}
 
 	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);

@@ -119,6 +119,11 @@ void workspace_begin_destroy(struct sway_workspace *workspace) {
 
 	if (workspace->output) {
 		workspace_detach(workspace);
+	} else {
+		int index = list_find(root->saved_workspaces, workspace);
+		if (index != -1) {
+			list_del(root->saved_workspaces, index);
+		}
 	}
 
 	workspace->node.destroying = true;
@@ -126,10 +131,13 @@ void workspace_begin_destroy(struct sway_workspace *workspace) {
 }
 
 void workspace_consider_destroy(struct sway_workspace *ws) {
-	if (ws->tiling->length == 0 && ws->floating->length == 0
-			&& output_get_active_workspace(ws->output) != ws) {
-		workspace_begin_destroy(ws);
+	if (ws->tiling->length || ws->floating->length) {
+		return;
 	}
+	if (ws->output && output_get_active_workspace(ws->output) == ws) {
+		return;
+	}
+	workspace_begin_destroy(ws);
 }
 
 char *prev_workspace_name = NULL;
