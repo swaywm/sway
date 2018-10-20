@@ -25,9 +25,12 @@ static void popup_get_root_coords(struct sway_view_child *child,
 	struct sway_xdg_popup *popup = (struct sway_xdg_popup *)child;
 	struct wlr_xdg_surface *surface = popup->wlr_xdg_surface;
 
+	int x_offset = -child->view->geometry.x - surface->geometry.x;
+	int y_offset = -child->view->geometry.y - surface->geometry.y;
+
 	wlr_xdg_popup_get_toplevel_coords(surface->popup,
-		-surface->geometry.x + surface->popup->geometry.x,
-		-surface->geometry.y + surface->popup->geometry.y,
+		x_offset + surface->popup->geometry.x,
+		y_offset + surface->popup->geometry.y,
 		root_sx, root_sy);
 }
 
