@@ -429,8 +429,8 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 			ws = workspace_by_name(argv[2]);
 		} else if (strcasecmp(argv[2], "back_and_forth") == 0) {
 			if (!(ws = workspace_by_name(argv[2]))) {
-				if (prev_workspace_name) {
-					ws_name = strdup(prev_workspace_name);
+				if (seat->prev_workspace_name) {
+					ws_name = strdup(seat->prev_workspace_name);
 				} else {
 					return cmd_results_new(CMD_FAILURE, "move",
 							"No workspace was previously active.");
@@ -455,13 +455,13 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 			}
 
 			if (!no_auto_back_and_forth && config->auto_back_and_forth &&
-					prev_workspace_name) {
+					seat->prev_workspace_name) {
 				// auto back and forth move
 				if (old_ws && old_ws->name &&
 						strcmp(old_ws->name, ws_name) == 0) {
 					// if target workspace is the current one
 					free(ws_name);
-					ws_name = strdup(prev_workspace_name);
+					ws_name = strdup(seat->prev_workspace_name);
 					ws = workspace_by_name(ws_name);
 				}
 			}

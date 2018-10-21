@@ -116,8 +116,8 @@ static void container_swap(struct sway_container *con1,
 		output_get_active_workspace(con2->workspace->output);
 
 	char *stored_prev_name = NULL;
-	if (prev_workspace_name) {
-		stored_prev_name = strdup(prev_workspace_name);
+	if (seat->prev_workspace_name) {
+		stored_prev_name = strdup(seat->prev_workspace_name);
 	}
 
 	swap_places(con1, con2);
@@ -132,8 +132,8 @@ static void container_swap(struct sway_container *con1,
 	swap_focus(con1, con2, seat, focus);
 
 	if (stored_prev_name) {
-		free(prev_workspace_name);
-		prev_workspace_name = stored_prev_name;
+		free(seat->prev_workspace_name);
+		seat->prev_workspace_name = stored_prev_name;
 	}
 
 	if (fs1) {

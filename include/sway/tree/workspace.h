@@ -45,8 +45,6 @@ struct sway_workspace {
 	struct sway_workspace_state current;
 };
 
-extern char *prev_workspace_name;
-
 struct workspace_config *workspace_find_config(const char *ws_name);
 
 struct sway_output *workspace_get_initial_output(const char *name);
