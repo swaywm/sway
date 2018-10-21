@@ -268,6 +268,28 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 				json_object_new_int(view_get_x11_window_id(c->view)));
 	}
 #endif
+
+	/*
+	 * The "window_properties" object is mostly redundant with other existing
+	 * fields in the view object, but is still somewhat necessary for drop-in
+	 * compatibility with existing i3 ipc tools/libs that expect them
+	 * (e.g. the i3ipc python module).
+	 */
+	json_object *window_props = json_object_new_object();
+
+	// Some tools for i3 break when windows don't have a class.
+	if (!class) {
+		class = app_id;
+	}
+
+	json_object_object_add(window_props, "class",
+			class ? json_object_new_string(class) : NULL);
+	json_object_object_add(window_props, "instance",
+			app_id ? json_object_new_string(app_id) : NULL);
+	json_object_object_add(window_props, "title",
+			c->title ? json_object_new_string(c->title) : NULL);
+
+	json_object_object_add(object, "window_properties", window_props);
 }
 
 static void ipc_json_describe_container(struct sway_container *c, json_object *object) {
