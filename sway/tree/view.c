@@ -465,8 +465,8 @@ static struct sway_workspace *select_workspace(struct sway_view *view) {
 
 			if (!ws) {
 				if (strcasecmp(criteria->target, "back_and_forth") == 0) {
-					if (prev_workspace_name) {
-						ws = workspace_create(NULL, prev_workspace_name);
+					if (seat->prev_workspace_name) {
+						ws = workspace_create(NULL, seat->prev_workspace_name);
 					}
 				} else {
 					ws = workspace_create(NULL, criteria->target);

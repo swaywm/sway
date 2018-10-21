@@ -142,12 +142,13 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 				strcasecmp(argv[0], "current") == 0) {
 			ws = workspace_by_name(argv[0]);
 		} else if (strcasecmp(argv[0], "back_and_forth") == 0) {
-			if (!prev_workspace_name) {
+			struct sway_seat *seat = config->handler_context.seat;
+			if (!seat->prev_workspace_name) {
 				return cmd_results_new(CMD_INVALID, "workspace",
 						"There is no previous workspace");
 			}
 			if (!(ws = workspace_by_name(argv[0]))) {
-				ws = workspace_create(NULL, prev_workspace_name);
+				ws = workspace_create(NULL, seat->prev_workspace_name);
 			}
 		} else {
 			char *name = join_args(argv, argc);

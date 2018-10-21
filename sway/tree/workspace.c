@@ -140,13 +140,6 @@ void workspace_consider_destroy(struct sway_workspace *ws) {
 	workspace_begin_destroy(ws);
 }
 
-char *prev_workspace_name = NULL;
-
-void next_name_map(struct sway_container *ws, void *data) {
-	int *count = data;
-	++count;
-}
-
 static bool workspace_valid_on_output(const char *output_name,
 		const char *ws_name) {
 	struct workspace_config *wsc = workspace_find_config(ws_name);
@@ -309,9 +302,12 @@ struct sway_workspace *workspace_by_name(const char *name) {
 	} else if (strcmp(name, "current") == 0) {
 		return current;
 	} else if (strcasecmp(name, "back_and_forth") == 0) {
-		return prev_workspace_name ?
-			root_find_workspace(_workspace_by_name, (void*)prev_workspace_name)
-			: NULL;
+		struct sway_seat *seat = input_manager_current_seat();
+		if (!seat->prev_workspace_name) {
+			return NULL;
+		}
+		return root_find_workspace(_workspace_by_name,
+				(void*)seat->prev_workspace_name);
 	} else {
 		return root_find_workspace(_workspace_by_name, (void*)name);
 	}
@@ -380,23 +376,24 @@ bool workspace_switch(struct sway_workspace *workspace,
 	struct sway_workspace *active_ws = seat_get_focused_workspace(seat);
 
 	if (!no_auto_back_and_forth && config->auto_back_and_forth
-			&& active_ws == workspace
-			&& prev_workspace_name) {
-		struct sway_workspace *new_ws = workspace_by_name(prev_workspace_name);
+			&& active_ws == workspace && seat->prev_workspace_name) {
+		struct sway_workspace *new_ws =
+			workspace_by_name(seat->prev_workspace_name);
 		workspace = new_ws ?
 			new_ws :
-			workspace_create(NULL, prev_workspace_name);
+			workspace_create(NULL, seat->prev_workspace_name);
 	}
 
-	if (!prev_workspace_name || (strcmp(prev_workspace_name, active_ws->name)
+	if (!seat->prev_workspace_name ||
+			(strcmp(seat->prev_workspace_name, active_ws->name)
 				&& active_ws != workspace)) {
-		free(prev_workspace_name);
-		prev_workspace_name = malloc(strlen(active_ws->name) + 1);
-		if (!prev_workspace_name) {
+		free(seat->prev_workspace_name);
+		seat->prev_workspace_name = malloc(strlen(active_ws->name) + 1);
+		if (!seat->prev_workspace_name) {
 			wlr_log(WLR_ERROR, "Unable to allocate previous workspace name");
 			return false;
 		}
-		strcpy(prev_workspace_name, active_ws->name);
+		strcpy(seat->prev_workspace_name, active_ws->name);
 	}
 
 	wlr_log(WLR_DEBUG, "Switching to workspace %p:%s",

@@ -51,6 +51,7 @@ struct sway_seat {
 	bool has_focus;
 	struct wl_list focus_stack; // list of containers in focus order
 	struct sway_workspace *workspace;
+	char *prev_workspace_name; // for workspace back_and_forth
 
 	// If the focused layer is set, views cannot receive keyboard focus
 	struct wlr_layer_surface_v1 *focused_layer;

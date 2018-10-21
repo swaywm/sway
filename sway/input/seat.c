@@ -51,6 +51,8 @@ void seat_destroy(struct sway_seat *seat) {
 	wl_list_remove(&seat->new_drag_icon.link);
 	wl_list_remove(&seat->link);
 	wlr_seat_destroy(seat->wlr_seat);
+	free(seat->prev_workspace_name);
+	free(seat);
 }
 
 static struct sway_seat_node *seat_node_from_node(
