@@ -286,6 +286,16 @@ static enum atom_name parse_window_type(const char *type) {
 		return NET_WM_WINDOW_TYPE_TOOLBAR;
 	} else if (strcasecmp(type, "splash") == 0) {
 		return NET_WM_WINDOW_TYPE_SPLASH;
+	} else if (strcasecmp(type, "menu") == 0) {
+		return NET_WM_WINDOW_TYPE_MENU;
+	} else if (strcasecmp(type, "dropdown_menu") == 0) {
+		return NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
+	} else if (strcasecmp(type, "popup_menu") == 0) {
+		return NET_WM_WINDOW_TYPE_POPUP_MENU;
+	} else if (strcasecmp(type, "tooltip") == 0) {
+		return NET_WM_WINDOW_TYPE_TOOLTIP;
+	} else if (strcasecmp(type, "notification") == 0) {
+		return NET_WM_WINDOW_TYPE_NOTIFICATION;
 	}
 	return ATOM_LAST; // ie. invalid
 }
