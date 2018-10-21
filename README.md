@@ -54,6 +54,24 @@ _\*\*Only required for swaylock_
 
 _\*\*\*Only required for tray support_
 
+#### Extra Fedora Requirements
+<details>
+  <summary>Extra Fedora Requirements</summary>
+
+  For the required version of wayland server (>= 16) to be installed through dnf you'll need to be on fedora >= 29.
+
+  Additionally in order to have meson and ninja run correctly you will need to install select *-devel packages along with the ninja-build package:
+
+  ```shell
+  sudo dnf install json-c-devel pcre-devel wayland-protocols-devel cairo-devel pango-devel wayland-devel ninja-build
+  ```
+
+  For the wlroots package, as of 10/21/2018, the version in dnf is 0.0.1. The current release of wlroots is at 1.0. 
+  It is recommended to install wlroots from source because of the mismatch in versions.
+</details>
+
+#### Build Commands
+
 Run these commands:
 
     meson build
