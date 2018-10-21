@@ -124,35 +124,43 @@ static void destroy_layer_surface(struct swaybar_output *output) {
 	output->frame_scheduled = false;
 }
 
+static void set_bar_dirty(struct swaybar *bar) {
+	struct swaybar_output *output;
+	wl_list_for_each(output, &bar->outputs, link) {
+		set_output_dirty(output);
+	}
+}
+
 bool determine_bar_visibility(struct swaybar *bar, bool moving_layer) {
 	struct swaybar_config *config = bar->config;
 	bool visible = !(strcmp(config->mode, "invisible") == 0 ||
 		(strcmp(config->mode, config->hidden_state) == 0 // both "hide"
 			&& !bar->visible_by_modifier && !bar->visible_by_urgency));
 
+	// Create/destroy layer surfaces as needed
 	struct swaybar_output *output;
-	if (visible == bar->visible) {
-		if (visible && moving_layer) {
-			// need to destroy layer surface to move to a different layer
-			wl_list_for_each(output, &bar->outputs, link) {
-				destroy_layer_surface(output);
-				add_layer_surface(output);
-			}
+	wl_list_for_each(output, &bar->outputs, link) {
+		// When moving to a different layer, we need to destroy and re-create
+		// the layer surface
+		if (!visible || moving_layer) {
+			destroy_layer_surface(output);
 		}
-	} else {
+
+		if (visible) {
+			add_layer_surface(output);
+		}
+	}
+	set_bar_dirty(bar);
+
+	if (visible != bar->visible) {
 		bar->visible = visible;
-		wl_list_for_each(output, &bar->outputs, link) {
-			if (visible) {
-				add_layer_surface(output);
-			} else {
-				destroy_layer_surface(output);
-			}
-		}
+
 		wlr_log(WLR_DEBUG, "Sending %s signal to status command",
 				visible ? "cont" : "stop");
 		kill(bar->status->pid,
 				visible ? bar->status->cont_signal : bar->status->stop_signal);
 	}
+
 	return visible;
 }
 
@@ -226,6 +234,8 @@ static void xdg_output_handle_done(void *data,
 
 		output->surface = wl_compositor_create_surface(bar->compositor);
 		assert(output->surface);
+
+		determine_bar_visibility(bar, false);
 	}
 }
 
@@ -314,13 +324,6 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = handle_global_remove,
 };
 
-static void set_bar_dirty(struct swaybar *bar) {
-	struct swaybar_output *output;
-	wl_list_for_each(output, &bar->outputs, link) {
-		set_output_dirty(output);
-	}
-}
-
 bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	bar_init(bar);
 	bar->eventloop = loop_create();
@@ -348,15 +351,13 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	assert(bar->compositor && bar->layer_shell && bar->shm &&
 		bar->xdg_output_manager);
 
-	struct swaybar_output *output;
-	wl_list_for_each(output, &bar->outputs, link) {
-		add_xdg_output(output);
-	}
+	// Second roundtrip for xdg-output
 	wl_display_roundtrip(bar->display);
 
 	struct swaybar_pointer *pointer = &bar->pointer;
 
 	int max_scale = 1;
+	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		if (output->scale > max_scale) {
 			max_scale = output->scale;
@@ -377,12 +378,7 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	if (bar->config->workspace_buttons) {
 		ipc_get_workspaces(bar);
 	}
-	if (determine_bar_visibility(bar, false)) {
-		wl_list_for_each(output, &bar->outputs, link) {
-			add_layer_surface(output);
-		}
-		set_bar_dirty(bar);
-	}
+	determine_bar_visibility(bar, false);
 	return true;
 }
 
