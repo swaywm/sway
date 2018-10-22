@@ -108,7 +108,7 @@ static void workspace_focus_fullscreen(struct sway_workspace *workspace) {
 		if (focus_ws == workspace) {
 			struct sway_node *new_focus =
 				seat_get_focus_inactive(seat, &workspace->fullscreen->node);
-			seat_set_focus(seat, new_focus);
+			seat_set_raw_focus(seat, new_focus);
 		}
 	}
 }
