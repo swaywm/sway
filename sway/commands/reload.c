@@ -5,8 +5,16 @@
 #include "sway/ipc-server.h"
 #include "sway/server.h"
 #include "sway/tree/arrange.h"
+#include "sway/tree/view.h"
 #include "list.h"
 #include "log.h"
+
+static void rebuild_textures_iterator(struct sway_container *con, void *data) {
+	if (con->view) {
+		view_update_marks_textures(con->view);
+	}
+	container_update_title_textures(con);
+}
 
 static void do_reload(void *data) {
 	// store bar ids to check against new bars for barconfig_update events
@@ -39,6 +47,9 @@ static void do_reload(void *data) {
 
 	list_foreach(bar_ids, free);
 	list_free(bar_ids);
+
+	config_update_font_height(true);
+	root_for_each_container(rebuild_textures_iterator, NULL);
 
 	arrange_root();
 }
