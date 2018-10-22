@@ -731,13 +731,6 @@ static void view_child_handle_surface_destroy(struct wl_listener *listener,
 	view_child_destroy(child);
 }
 
-static void view_child_handle_view_unmap(struct wl_listener *listener,
-		void *data) {
-	struct sway_view_child *child =
-		wl_container_of(listener, child, view_unmap);
-	view_child_destroy(child);
-}
-
 static void view_init_subsurfaces(struct sway_view *view,
 		struct wlr_surface *surface) {
 	struct wlr_subsurface *subsurface;
@@ -779,9 +772,6 @@ void view_child_init(struct sway_view_child *child,
 	child->surface_map.notify = view_child_handle_surface_map;
 	child->surface_unmap.notify = view_child_handle_surface_unmap;
 
-	wl_signal_add(&view->events.unmap, &child->view_unmap);
-	child->view_unmap.notify = view_child_handle_view_unmap;
-
 	struct sway_output *output = child->view->container->workspace->output;
 	wlr_surface_send_enter(child->surface, output->wlr_output);
 
@@ -791,7 +781,6 @@ void view_child_init(struct sway_view_child *child,
 void view_child_destroy(struct sway_view_child *child) {
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);
-	wl_list_remove(&child->view_unmap.link);
 
 	if (child->impl && child->impl->destroy) {
 		child->impl->destroy(child);
