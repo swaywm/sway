@@ -69,7 +69,7 @@ The following commands may only be used in the configuration file.
 
 *swaybg\_command* <command>
 	Executes custom background _command_. Default is _swaybg_. Refer to
-	*output* below for more information.
+	*sway-output*(5) for more information.
 
 	It can be disabled by setting the command to a single dash:
 	_swaybg\_command -_
@@ -495,6 +495,12 @@ The default colors are:
 	Prevents windows matching <criteria> from being focused automatically when
 	they're created. This has no effect on the first window in a workspace.
 
+*output* <output\_name> <output-subcommands...>
+	For details on output subcommands, see *sway-output*(5).
+
+	\* may be used in lieu of a specific output name to configure all outputs.
+	A list of output names may be obtained via *swaymsg -t get\_outputs*.
+
 *popup\_during\_fullscreen* smart|ignore|leave\_fullscreen
 	Determines what to do when a fullscreen view opens a dialog.
 	If _smart_ (the default), the dialog will be displayed. If _ignore_, the
@@ -669,4 +675,4 @@ The following attributes may be matched with:
 
 # SEE ALSO
 
-*sway*(1) *sway-input*(5) *sway-bar*(5)
+*sway*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5)
