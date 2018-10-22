@@ -925,6 +925,11 @@ int main(int argc, char **argv) {
 	}
 
 	zwlr_input_inhibit_manager_v1_get_inhibitor(state.input_inhibit_manager);
+	if (wl_display_roundtrip(state.display) == -1) {
+		wlr_log(WLR_ERROR, "Exiting - failed to inhibit input:"
+				" is another lockscreen already running?");
+		return 2;
+	}
 
 	if (state.zxdg_output_manager) {
 		struct swaylock_surface *surface;
