@@ -232,7 +232,12 @@ int main(int argc, const char **argv) {
 	struct wl_registry *registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(registry, &registry_listener, &state);
 	wl_display_roundtrip(state.display);
-	assert(state.compositor && state.layer_shell && state.output && state.shm);
+	assert(state.compositor && state.layer_shell && state.shm);
+
+	if (state.output == NULL) {
+		wlr_log(WLR_ERROR, "Could not find output %d", args.output_idx);
+		return 1;
+	}
 
 	// Second roundtrip to get output properties
 	wl_display_roundtrip(state.display);
