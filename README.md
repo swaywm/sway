@@ -46,6 +46,7 @@ Install dependencies:
 * pam **
 * dbus >= 1.10 ***
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
+* git
 
 _\*Only required for swaybar, swaybg, and swaylock_
 
