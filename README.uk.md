@@ -59,6 +59,7 @@ Sway доступний у багатьох дистрибутивах Linux (а
 * gdk-pixbuf2 *
 * pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
+* git
 
 _\*Лише для swaybar, swaybg та swaylock_
 
