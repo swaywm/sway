@@ -26,11 +26,6 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
 
-static void bar_init(struct swaybar *bar) {
-	bar->config = init_config();
-	wl_list_init(&bar->outputs);
-}
-
 void free_workspaces(struct wl_list *list) {
 	struct swaybar_workspace *ws, *tmp;
 	wl_list_for_each_safe(ws, tmp, list, link) {
@@ -327,7 +322,9 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 bool bar_setup(struct swaybar *bar, const char *socket_path) {
-	bar_init(bar);
+	bar->visible = true;
+	bar->config = init_config();
+	wl_list_init(&bar->outputs);
 	bar->eventloop = loop_create();
 
 	bar->ipc_socketfd = ipc_open_socket(socket_path);
@@ -376,7 +373,6 @@ bool bar_setup(struct swaybar *bar, const char *socket_path) {
 	pointer->cursor_surface = wl_compositor_create_surface(bar->compositor);
 	assert(pointer->cursor_surface);
 
-	bar->visible = true;
 	if (bar->config->workspace_buttons) {
 		ipc_get_workspaces(bar);
 	}
