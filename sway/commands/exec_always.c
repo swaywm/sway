@@ -16,7 +16,7 @@
 struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (!config->active) return cmd_results_new(CMD_DEFER, NULL, NULL);
-	if ((error = checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0))) {
+	if ((error = checkarg(argc, argv[-1], EXPECTED_MORE_THAN, 0))) {
 		return error;
 	}
 
@@ -24,7 +24,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
 		wlr_log(WLR_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		--argc; ++argv;
-		if ((error = checkarg(argc, "exec_always", EXPECTED_MORE_THAN, 0))) {
+		if ((error = checkarg(argc, argv[-1], EXPECTED_MORE_THAN, 0))) {
 			return error;
 		}
 	}
@@ -71,7 +71,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	} else if (pid < 0) {
 		close(fd[0]);
 		close(fd[1]);
-		return cmd_results_new(CMD_FAILURE, "exec_always", "fork() failed");
+		return cmd_results_new(CMD_FAILURE, argv[-1], "fork() failed");
 	}
 	close(fd[1]); // close write
 	ssize_t s = 0;
@@ -85,7 +85,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 		wlr_log(WLR_DEBUG, "Child process created with pid %d", child);
 		root_record_workspace_pid(child);
 	} else {
-		return cmd_results_new(CMD_FAILURE, "exec_always",
+		return cmd_results_new(CMD_FAILURE, argv[-1],
 			"Second fork() failed");
 	}
 
