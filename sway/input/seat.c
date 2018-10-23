@@ -389,12 +389,15 @@ static void seat_update_capabilities(struct sway_seat *seat) {
 			break;
 		}
 	}
-	wlr_seat_set_capabilities(seat->wlr_seat, caps);
 
-	// Hide cursor if seat doesn't have pointer capability
+	// Hide cursor if seat doesn't have pointer capability.
+	// We must call cursor_set_image while the wlr_seat has the capabilities
+	// otherwise it's a no op.
 	if ((caps & WL_SEAT_CAPABILITY_POINTER) == 0) {
 		cursor_set_image(seat->cursor, NULL, NULL);
+		wlr_seat_set_capabilities(seat->wlr_seat, caps);
 	} else {
+		wlr_seat_set_capabilities(seat->wlr_seat, caps);
 		cursor_set_image(seat->cursor, "left_ptr", NULL);
 	}
 }
