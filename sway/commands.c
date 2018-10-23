@@ -18,41 +18,28 @@
 
 // Returns error object, or NULL if check succeeds.
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
-	struct cmd_results *error = NULL;
+	const char *error_name = NULL;
 	switch (type) {
-	case EXPECTED_MORE_THAN:
-		if (argc > val) {
-			return NULL;
-		}
-		error = cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-			"(expected more than %d argument%s, got %d)",
-			name, val, (char*[2]){"s", ""}[argc==1], argc);
-		break;
 	case EXPECTED_AT_LEAST:
-		if (argc >= val) {
-			return NULL;
+		if (argc < val) {
+			error_name = "at least ";
 		}
-		error = cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-			"(expected at least %d argument%s, got %d)",
-			name, val, (char*[2]){"s", ""}[argc==1], argc);
 		break;
-	case EXPECTED_LESS_THAN:
-		if (argc  < val) {
-			return NULL;
-		};
-		error = cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-			"(expected less than %d argument%s, got %d)",
-			name, val, (char*[2]){"s", ""}[argc==1], argc);
+	case EXPECTED_AT_MOST:
+		if (argc > val) {
+			error_name = "at most ";
+		}
 		break;
 	case EXPECTED_EQUAL_TO:
-		if (argc == val) {
-			return NULL;
-		};
-		error = cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-			"(expected %d arguments, got %d)", name, val, argc);
-		break;
+		if (argc != val) {
+			error_name = "";
+		}
 	}
-	return error;
+	return error_name ?
+		cmd_results_new(CMD_INVALID, name, "Invalid %s command "
+				"(expected %s%d argument%s, got %d)",
+				name, error_name, val, val != 1 ? "s" : "", argc)
+		: NULL;
 }
 
 void apply_seat_config(struct seat_config *seat_config) {

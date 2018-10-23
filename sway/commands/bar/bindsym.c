@@ -10,7 +10,7 @@
 
 struct cmd_results *bar_cmd_bindsym(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "bar bindsym", EXPECTED_MORE_THAN, 1))) {
+	if ((error = checkarg(argc, "bar bindsym", EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
 	if (!config->current_bar) {

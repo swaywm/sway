@@ -145,7 +145,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	const char *bindtype = bindcode ? "bindcode" : "bindsym";
 
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, bindtype, EXPECTED_MORE_THAN, 1))) {
+	if ((error = checkarg(argc, bindtype, EXPECTED_AT_LEAST, 2))) {
 		return error;
 	}
 

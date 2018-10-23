@@ -15,7 +15,7 @@ static bool parse_opacity(const char *opacity, float *val) {
 
 struct cmd_results *cmd_opacity(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "layout", EXPECTED_EQUAL_TO, 1))) {
+	if ((error = checkarg(argc, "opacity", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
 
