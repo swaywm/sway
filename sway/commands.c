@@ -25,9 +25,9 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 			error_name = "at least ";
 		}
 		break;
-	case EXPECTED_LESS_THAN:
-		if (argc >= val) {
-			error_name = "less than ";
+	case EXPECTED_AT_MOST:
+		if (argc > val) {
+			error_name = "at most ";
 		}
 		break;
 	case EXPECTED_EQUAL_TO:

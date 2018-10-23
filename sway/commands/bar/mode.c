@@ -41,7 +41,7 @@ struct cmd_results *bar_cmd_mode(int argc, char **argv) {
 	if ((error = checkarg(argc, "mode", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	if ((error = checkarg(argc, "mode", EXPECTED_LESS_THAN, 3))) {
+	if ((error = checkarg(argc, "mode", EXPECTED_AT_MOST, 2))) {
 		return error;
 	}
 	if (config->reading && argc > 1) {

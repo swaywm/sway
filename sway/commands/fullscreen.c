@@ -9,7 +9,7 @@
 
 struct cmd_results *cmd_fullscreen(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if ((error = checkarg(argc, "fullscreen", EXPECTED_LESS_THAN, 2))) {
+	if ((error = checkarg(argc, "fullscreen", EXPECTED_AT_MOST, 1))) {
 		return error;
 	}
 	struct sway_node *node = config->handler_context.node;
