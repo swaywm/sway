@@ -47,6 +47,7 @@ Sway съществува в репотата (хранилищата) на мн
 * pam **
 * dbus >= 1.10 ***
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (Нужен за man страници)
+* git
 
 _\*Нужен само за swaybar, swaybg и swaylock_
 
