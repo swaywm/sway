@@ -1,5 +1,6 @@
 #define _XOPEN_SOURCE 500
 #include <assert.h>
+#include <errno.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,7 +98,10 @@ void swaylock_handle_key(struct swaylock_state *state,
 				state->eventloop, 50, handle_preverify_timeout, state);
 
 		while (state->run_display && state->verify_password_timer) {
-			wl_display_flush(state->display);
+			errno = 0;
+			if (wl_display_flush(state->display) == -1 && errno != EAGAIN) {
+				break;
+			}
 			loop_poll(state->eventloop);
 
 			bool ok = 1;
