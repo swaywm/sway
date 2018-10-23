@@ -103,6 +103,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	wl_signal_add(&wlr_output->events.mode, &output->mode);
 	wl_signal_add(&wlr_output->events.transform, &output->transform);
 	wl_signal_add(&wlr_output->events.scale, &output->scale);
+	wl_signal_add(&wlr_output->events.present, &output->present);
 	wl_signal_add(&output->damage->events.frame, &output->damage_frame);
 	wl_signal_add(&output->damage->events.destroy, &output->damage_destroy);
 
@@ -214,6 +215,7 @@ void output_disable(struct sway_output *output) {
 	wl_list_remove(&output->mode.link);
 	wl_list_remove(&output->transform.link);
 	wl_list_remove(&output->scale.link);
+	wl_list_remove(&output->present.link);
 	wl_list_remove(&output->damage_destroy.link);
 	wl_list_remove(&output->damage_frame.link);
 

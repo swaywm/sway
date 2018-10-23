@@ -135,6 +135,9 @@ bool server_init(struct sway_server *server) {
 	server->xdg_decoration.notify = handle_xdg_decoration;
 	wl_list_init(&server->xdg_decorations);
 
+	server->presentation =
+		wlr_presentation_create(server->wl_display, server->backend);
+
 	wlr_export_dmabuf_manager_v1_create(server->wl_display);
 	wlr_screencopy_manager_v1_create(server->wl_display);
 
