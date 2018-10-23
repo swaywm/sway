@@ -53,6 +53,7 @@ Sway доступен во многих дистрибутивах и наход
 * pam **
 * dbus >= 1.10 ***
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
+* git
 
 _\*Требуется только для swaybar, swaybg и swaylock_
 

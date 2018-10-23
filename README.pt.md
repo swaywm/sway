@@ -59,6 +59,7 @@ Antes de iniciar a compilação, instale as dependências:
 * gdk-pixbuf2 *
 * pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (man pages)
+* git
 
 _\*Dependência apenas de swaybar, swaybg, e swaylock_
 
