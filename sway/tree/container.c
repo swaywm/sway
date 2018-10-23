@@ -727,8 +727,14 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 }
 
 bool container_is_floating(struct sway_container *container) {
-	return !container->parent && container->workspace &&
-		list_find(container->workspace->floating, container) != -1;
+	if (!container->parent && container->workspace &&
+			list_find(container->workspace->floating, container) != -1) {
+		return true;
+	}
+	if (container->scratchpad) {
+		return true;
+	}
+	return false;
 }
 
 void container_get_box(struct sway_container *container, struct wlr_box *box) {
