@@ -42,6 +42,7 @@ Swayは沢山のディストリビューションで提供されています。"
 * gdk-pixbuf2 *
 * pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です)
+* git
 
 _\*swaybar,swaybg,swaylockでのみ必要です_
 
