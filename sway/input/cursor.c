@@ -1220,6 +1220,9 @@ static void handle_request_set_cursor(struct wl_listener *listener,
 
 void cursor_set_image(struct sway_cursor *cursor, const char *image,
 		struct wl_client *client) {
+	if (!(cursor->seat->wlr_seat->capabilities & WL_SEAT_CAPABILITY_POINTER)) {
+		return;
+	}
 	if (!image) {
 		wlr_cursor_set_image(cursor->cursor, NULL, 0, 0, 0, 0, 0, 0);
 	} else if (!cursor->image || strcmp(cursor->image, image) != 0) {
