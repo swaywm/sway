@@ -50,6 +50,7 @@ To username μου στο Freenode είναι kon14 και θα με βρείτ�
 * gdk-pixbuf2 *
 * pam **
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
+* git
 
 _\*Απαιτείται μόνο για swaybar, swaybg, and swaylock_
 
