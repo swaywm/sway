@@ -39,7 +39,6 @@ struct cmd_results {
 };
 
 enum expected_args {
-	EXPECTED_MORE_THAN,
 	EXPECTED_AT_LEAST,
 	EXPECTED_LESS_THAN,
 	EXPECTED_EQUAL_TO

@@ -16,7 +16,7 @@
 struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if (!config->active) return cmd_results_new(CMD_DEFER, NULL, NULL);
-	if ((error = checkarg(argc, argv[-1], EXPECTED_MORE_THAN, 0))) {
+	if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
 
@@ -24,7 +24,7 @@ struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	if (strcmp(argv[0], "--no-startup-id") == 0) {
 		wlr_log(WLR_INFO, "exec switch '--no-startup-id' not supported, ignored.");
 		--argc; ++argv;
-		if ((error = checkarg(argc, argv[-1], EXPECTED_MORE_THAN, 0))) {
+		if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
 			return error;
 		}
 	}

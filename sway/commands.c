@@ -20,14 +20,6 @@
 struct cmd_results *checkarg(int argc, const char *name, enum expected_args type, int val) {
 	struct cmd_results *error = NULL;
 	switch (type) {
-	case EXPECTED_MORE_THAN:
-		if (argc > val) {
-			return NULL;
-		}
-		error = cmd_results_new(CMD_INVALID, name, "Invalid %s command "
-			"(expected more than %d argument%s, got %d)",
-			name, val, (char*[2]){"s", ""}[argc==1], argc);
-		break;
 	case EXPECTED_AT_LEAST:
 		if (argc >= val) {
 			return NULL;
