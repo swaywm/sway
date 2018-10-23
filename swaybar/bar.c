@@ -419,7 +419,10 @@ void bar_run(struct swaybar *bar) {
 				status_in, bar);
 	}
 	while (1) {
-		wl_display_flush(bar->display);
+		errno = 0;
+		if (wl_display_flush(bar->display) == -1 && errno != EAGAIN) {
+			break;
+		}
 		loop_poll(bar->eventloop);
 	}
 }
