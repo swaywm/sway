@@ -186,7 +186,10 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 	} else {
 		// Setting focus_inactive
 		seat_set_raw_focus(seat, next_focus);
-		seat_set_raw_focus(seat, focus);
+
+		if (focus) {
+			seat_set_raw_focus(seat, focus);
+		}
 	}
 }
 
