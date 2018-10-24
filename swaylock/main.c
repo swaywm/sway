@@ -279,7 +279,10 @@ static void handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		struct wl_seat *seat = wl_registry_bind(
 				registry, name, &wl_seat_interface, 3);
-		wl_seat_add_listener(seat, &seat_listener, state);
+		struct swaylock_seat *swaylock_seat =
+			calloc(1, sizeof(struct swaylock_seat));
+		swaylock_seat->state = state;
+		wl_seat_add_listener(seat, &seat_listener, swaylock_seat);
 	} else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
 		state->layer_shell = wl_registry_bind(
 				registry, name, &zwlr_layer_shell_v1_interface, 1);

@@ -144,22 +144,22 @@ static const struct wl_pointer_listener pointer_listener = {
 
 static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 		enum wl_seat_capability caps) {
-	struct swaylock_state *state = data;
-	if (state->pointer) {
-		wl_pointer_release(state->pointer);
-		state->pointer = NULL;
+	struct swaylock_seat *seat = data;
+	if (seat->pointer) {
+		wl_pointer_release(seat->pointer);
+		seat->pointer = NULL;
 	}
-	if (state->keyboard) {
-		wl_keyboard_release(state->keyboard);
-		state->keyboard = NULL;
+	if (seat->keyboard) {
+		wl_keyboard_release(seat->keyboard);
+		seat->keyboard = NULL;
 	}
 	if ((caps & WL_SEAT_CAPABILITY_POINTER)) {
-		state->pointer = wl_seat_get_pointer(wl_seat);
-		wl_pointer_add_listener(state->pointer, &pointer_listener, NULL);
+		seat->pointer = wl_seat_get_pointer(wl_seat);
+		wl_pointer_add_listener(seat->pointer, &pointer_listener, NULL);
 	}
 	if ((caps & WL_SEAT_CAPABILITY_KEYBOARD)) {
-		state->keyboard = wl_seat_get_keyboard(wl_seat);
-		wl_keyboard_add_listener(state->keyboard, &keyboard_listener, state);
+		seat->keyboard = wl_seat_get_keyboard(wl_seat);
+		wl_keyboard_add_listener(seat->keyboard, &keyboard_listener, seat->state);
 	}
 }
 
