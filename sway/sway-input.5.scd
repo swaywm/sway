@@ -46,6 +46,11 @@ The following commands may only be used in the configuration file.
 *input* <identifier> xkb\_numlock enabled|disabled
 	Initially enables or disables NumLock on startup, the default is disabled.
 
+The following commands may only be used while sway is running.
+
+*input* <identifier> xkb\_current\_layout <layout\_index>
+	Switches the current layout of the keyboard.
+
 ## MAPPING CONFIGURATION
 
 *input* <identifier> map\_to\_output <identifier>

@@ -38,6 +38,11 @@ static struct cmd_handler input_config_handlers[] = {
 	{ "xkb_numlock", input_cmd_xkb_numlock },
 };
 
+// must be in order for the bsearch
+static struct cmd_handler input_runtime_handlers[] = {
+	{ "xkb_current_layout", input_cmd_xkb_current_layout },
+};
+
 struct cmd_results *cmd_input(int argc, char **argv) {
 	struct cmd_results *error = NULL;
 	if ((error = checkarg(argc, "input", EXPECTED_AT_LEAST, 2))) {
@@ -51,6 +56,7 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE, NULL, "Couldn't allocate config");
 	}
 
+	bool apply_config = true;
 	struct cmd_results *res;
 
 	if (find_handler(argv[1], input_config_handlers,
@@ -62,12 +68,22 @@ struct cmd_results *cmd_input(int argc, char **argv) {
 			res = cmd_results_new(CMD_FAILURE, "input",
 				"Can only be used in config file.");
 		}
+    } else if (find_handler(argv[1], input_runtime_handlers,
+			sizeof(input_runtime_handlers))) {
+		apply_config = false;
+		if (!config->reading) {
+			res = config_subcommand(argv + 1, argc - 1,
+				input_runtime_handlers, sizeof(input_runtime_handlers));
+		} else {
+			res = cmd_results_new(CMD_FAILURE, "input",
+				"Can only be used while sway is running.");
+		}
 	} else {
 		res = config_subcommand(argv + 1, argc - 1,
 			input_handlers, sizeof(input_handlers));
 	}
 
-	if (!res || res->status == CMD_SUCCESS) {
+	if (apply_config && (!res || res->status == CMD_SUCCESS)) {
 		struct input_config *ic =
 			store_input_config(config->handler_context.input_config);
 
