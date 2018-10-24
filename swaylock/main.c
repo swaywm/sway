@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200112L
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <stdbool.h>
@@ -844,7 +845,9 @@ static int load_config(char *path, struct swaylock_state *state,
 static struct swaylock_state state;
 
 static void display_in(int fd, short mask, void *data) {
-	wl_display_dispatch(state.display);
+	if (wl_display_dispatch(state.display) == -1) {
+		state.run_display = false;
+	}
 }
 
 int main(int argc, char **argv) {
@@ -928,6 +931,11 @@ int main(int argc, char **argv) {
 	}
 
 	zwlr_input_inhibit_manager_v1_get_inhibitor(state.input_inhibit_manager);
+	if (wl_display_roundtrip(state.display) == -1) {
+		wlr_log(WLR_ERROR, "Exiting - failed to inhibit input:"
+				" is another lockscreen already running?");
+		return 2;
+	}
 
 	if (state.zxdg_output_manager) {
 		struct swaylock_surface *surface;
@@ -959,7 +967,10 @@ int main(int argc, char **argv) {
 
 	state.run_display = true;
 	while (state.run_display) {
-		wl_display_flush(state.display);
+		errno = 0;
+		if (wl_display_flush(state.display) == -1 && errno != EAGAIN) {
+			break;
+		}
 		loop_poll(state.eventloop);
 	}
 
