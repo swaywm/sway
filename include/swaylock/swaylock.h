@@ -62,8 +62,6 @@ struct swaylock_state {
 	struct wl_compositor *compositor;
 	struct zwlr_layer_shell_v1 *layer_shell;
 	struct zwlr_input_inhibit_manager_v1 *input_inhibit_manager;
-	struct wl_pointer *pointer;
-	struct wl_keyboard *keyboard;
 	struct wl_shm *shm;
 	struct wl_list surfaces;
 	struct wl_list images;
