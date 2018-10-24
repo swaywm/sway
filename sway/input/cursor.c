@@ -996,8 +996,9 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	if (on_titlebar) {
 		enum sway_container_layout layout = container_parent_layout(cont);
 		if (layout == L_TABBED || layout == L_STACKED) {
+			struct sway_node *tabcontainer = node_get_parent(node);
 			struct sway_node *active =
-				seat_get_active_tiling_child(seat, node_get_parent(node));
+				seat_get_active_tiling_child(seat, tabcontainer);
 			list_t *siblings = container_get_siblings(cont);
 			int desired = list_find(siblings, active->sway_container) +
 				event->delta_discrete;
@@ -1006,9 +1007,19 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 			} else if (desired >= siblings->length) {
 				desired = siblings->length - 1;
 			}
-			struct sway_container *new_focus = siblings->items[desired];
-			node = seat_get_focus_inactive(seat, &new_focus->node);
-			seat_set_focus(seat, node);
+			struct sway_node *old_focus = seat_get_focus(seat);
+			struct sway_container *new_sibling_con = siblings->items[desired];
+			struct sway_node *new_sibling = &new_sibling_con->node;
+			struct sway_node *new_focus =
+				seat_get_focus_inactive(seat, new_sibling);
+			if (node_has_ancestor(old_focus, tabcontainer)) {
+				seat_set_focus(seat, new_focus);
+			} else {
+				// Scrolling when focus is not in the tabbed container at all
+				seat_set_raw_focus(seat, new_sibling);
+				seat_set_raw_focus(seat, new_focus);
+				seat_set_raw_focus(seat, old_focus);
+			}
 			return;
 		}
 	}
