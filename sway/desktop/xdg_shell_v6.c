@@ -8,6 +8,7 @@
 #include "sway/decoration.h"
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/seat.h"
 #include "sway/output.h"
@@ -393,6 +394,11 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_v6_view->set_app_id.link);
 }
 
+static void do_rebase(void *data) {
+	struct sway_cursor *cursor = data;
+	cursor_rebase(cursor);
+}
+
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_v6_view *xdg_shell_v6_view =
 		wl_container_of(listener, xdg_shell_v6_view, map);
@@ -413,7 +419,8 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view_map(view, view->wlr_xdg_surface_v6->surface,
 		xdg_surface->toplevel->client_pending.fullscreen, csd);
 
-	transaction_commit_dirty();
+	struct sway_seat *seat = input_manager_current_seat();
+	transaction_commit_dirty_with_callback(do_rebase, seat->cursor);
 
 	xdg_shell_v6_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
