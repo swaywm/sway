@@ -8,12 +8,12 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xdg_shell_v6.h>
 #include <wlr/types/wlr_xdg_shell.h>
-// TODO WLR: make Xwayland optional
-#include "list.h"
 #include "config.h"
+#include "list.h"
 #ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif
@@ -57,6 +57,8 @@ struct sway_server {
 	struct wlr_xdg_decoration_manager_v1 *xdg_decoration_manager;
 	struct wl_listener xdg_decoration;
 	struct wl_list xdg_decorations; // sway_xdg_decoration::link
+
+	struct wlr_presentation *presentation;
 
 	size_t txn_timeout_ms;
 	list_t *transactions;
