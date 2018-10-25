@@ -108,6 +108,9 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);
+		} else if (!root->outputs->length) {
+			return cmd_results_new(CMD_INVALID, "workspace",
+					"Can't run this command while there's no outputs connected.");
 		}
 
 		bool no_auto_back_and_forth = false;
