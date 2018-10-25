@@ -20,6 +20,10 @@ struct cmd_results *cmd_rename(int argc, char **argv) {
 	if ((error = checkarg(argc, "rename", EXPECTED_AT_LEAST, 3))) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "rename",
+				"Can't run this command while there's no outputs connected.");
+	}
 	if (strcasecmp(argv[0], "workspace") != 0) {
 		return cmd_results_new(CMD_INVALID, "rename", expected_syntax);
 	}

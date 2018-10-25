@@ -88,6 +88,10 @@ static struct cmd_results *gaps_set_runtime(int argc, char **argv) {
 	if (error) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Can't run this command while there's no outputs connected.");
+	}
 
 	struct gaps_data data;
 

@@ -171,6 +171,10 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	if ((error = checkarg(argc, "swap", EXPECTED_AT_LEAST, 4))) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "swap",
+				"Can't run this command while there's no outputs connected.");
+	}
 
 	if (strcasecmp(argv[0], "container") || strcasecmp(argv[1], "with")) {
 		return cmd_results_new(CMD_INVALID, "swap", EXPECTED_SYNTAX);
