@@ -13,6 +13,13 @@ You may combine output commands into one, like so:
 You can get a list of output names with *swaymsg -t get\_outputs*. You may also
 match any output by using the output name "\*".
 
+Some outputs may have different names when disconnecting and reconnecting. To
+identify these, the name can be substituted for a string consisting of the make,
+model and serial which you can get from *swaymsg -t get\_outputs*. Each value
+must be separated by one space. For example:
+
+	output "Some Company ABC123 0x00000000" pos 1920,0
+
 # COMMANDS
 
 *output* <name> mode|resolution|res <WIDTHxHEIGHT>[@<RATE>[Hz]]
