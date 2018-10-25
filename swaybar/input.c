@@ -180,6 +180,10 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 		return;
 	}
 
+	if (!sway_assert(!wl_list_empty(&output->workspaces), "axis with no workspaces")) {
+		return;
+	}
+
 	struct swaybar_workspace *first =
 		wl_container_of(output->workspaces.next, first, link);
 	struct swaybar_workspace *last =
