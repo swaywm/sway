@@ -655,7 +655,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		struct json_object *request = json_tokener_parse(buf);
 		if (request == NULL) {
 			client_valid = ipc_send_reply(client, "{\"success\": false}", 18);
-			wlr_log_errno(WLR_INFO, "Failed to read request");
+			wlr_log(WLR_INFO, "Failed to parse subscribe request");
 			goto exit_cleanup;
 		}
 
@@ -684,7 +684,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client_valid =
 					ipc_send_reply(client, "{\"success\": false}", 18);
 				json_object_put(request);
-				wlr_log_errno(WLR_INFO, "Failed to parse request");
+				wlr_log(WLR_INFO, "Unsupported event type in subscribe request");
 				goto exit_cleanup;
 			}
 		}
