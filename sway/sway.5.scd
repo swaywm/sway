@@ -267,9 +267,10 @@ runtime.
 	instead of any binding that is generic to all devices.
 
 	Example:
-
+```
 		# Execute firefox when alt, shift, and f are pressed together
 		bindsym Mod1+Shift+f exec firefox
+```
 
 	*bindcode* [--release|--locked] [--input-device=<device>] <code> <command>
 	is also available for binding with key codes instead of key names.
