@@ -353,12 +353,14 @@ struct cmd_results *config_command(char *exec) {
 	struct cmd_results *results = NULL;
 	int argc;
 	char **argv = split_args(exec, &argc);
+
+	// Check for empty lines
 	if (!argc) {
 		results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
 		goto cleanup;
 	}
 
-	// Start block
+	// Check for the start of a block
 	if (argc > 1 && strcmp(argv[argc - 1], "{") == 0) {
 		char *block = join_args(argv, argc - 1);
 		results = cmd_results_new(CMD_BLOCK, block, NULL);
@@ -366,22 +368,54 @@ struct cmd_results *config_command(char *exec) {
 		goto cleanup;
 	}
 
-	// Endblock
+	// Check for the end of a block
 	if (strcmp(argv[argc - 1], "}") == 0) {
 		results = cmd_results_new(CMD_BLOCK_END, NULL, NULL);
 		goto cleanup;
 	}
-	wlr_log(WLR_INFO, "handling config command '%s'", exec);
+
+	// Make sure the command is not stored in a variable
+	if (*argv[0] == '$') {
+		argv[0] = do_var_replacement(argv[0]);
+		char *temp = join_args(argv, argc);
+		free_argv(argc, argv);
+		argv = split_args(temp, &argc);
+		free(temp);
+		if (!argc) {
+			results = cmd_results_new(CMD_SUCCESS, NULL, NULL);
+			goto cleanup;
+		}
+	}
+
+	// Determine the command handler
+	wlr_log(WLR_INFO, "Config command: %s", exec);
 	struct cmd_handler *handler = find_handler(argv[0], NULL, 0);
-	if (!handler) {
+	if (!handler || !handler->handle) {
 		char *input = argv[0] ? argv[0] : "(empty)";
-		results = cmd_results_new(CMD_INVALID, input, "Unknown/invalid command");
+		char *error = handler
+			? "This command is shimmed, but unimplemented"
+			: "Unknown/invalid command";
+		results = cmd_results_new(CMD_INVALID, input, error);
 		goto cleanup;
 	}
-	int i;
-	// Var replacement, for all but first argument of set
-	// TODO commands
-	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
+
+	// Do variable replacement
+	if (handler->handle == cmd_set && argc > 1 && *argv[1] == '$') {
+		// Escape the variable name so it does not get replaced by one shorter
+		char *temp = calloc(1, strlen(argv[1]) + 2);
+		temp[0] = '$';
+		strcpy(&temp[1], argv[1]);
+		free(argv[1]);
+		argv[1] = temp;
+	}
+	char *command = do_var_replacement(join_args(argv, argc));
+	wlr_log(WLR_INFO, "After replacement: %s", command);
+	free_argv(argc, argv);
+	argv = split_args(command, &argc);
+	free(command);
+
+	// Strip quotes and unescape the string
+	for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
@@ -389,14 +423,11 @@ struct cmd_results *config_command(char *exec) {
 				&& (*argv[i] == '\"' || *argv[i] == '\'')) {
 			strip_quotes(argv[i]);
 		}
-		argv[i] = do_var_replacement(argv[i]);
 		unescape_string(argv[i]);
 	}
-	if (handler->handle) {
-		results = handler->handle(argc-1, argv+1);
-	} else {
-		results = cmd_results_new(CMD_INVALID, argv[0], "This command is shimmed, but unimplemented");
-	}
+
+	// Run command
+	results = handler->handle(argc - 1, argv + 1);
 
 cleanup:
 	free_argv(argc, argv);
