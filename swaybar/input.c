@@ -152,10 +152,9 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 
 	// If there is a button press binding, execute it, skip default behavior,
 	// and check button release bindings
-	if (check_bindings(bar, wl_axis_to_x11_button(axis, value),
-			WL_POINTER_BUTTON_STATE_PRESSED)) {
-		check_bindings(bar, wl_axis_to_x11_button(axis, value),
-				WL_POINTER_BUTTON_STATE_RELEASED);
+	enum x11_button button = wl_axis_to_x11_button(axis, value);
+	if (check_bindings(bar, button, WL_POINTER_BUTTON_STATE_PRESSED)) {
+		check_bindings(bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 		return;
 	}
 
@@ -168,68 +167,59 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
 			if (HOTSPOT_IGNORE == hotspot->callback(
-					output, pointer->x, pointer->y,
-					wl_axis_to_x11_button(axis, value), hotspot->data)) {
+					output, pointer->x, pointer->y, button, hotspot->data)) {
 				return;
 			}
 		}
 	}
 
+	struct swaybar_config *config = bar->config;
 	double amt = wl_fixed_to_double(value);
-	if (amt == 0.0) {
+	if (amt == 0.0 || !config->workspace_buttons) {
+		check_bindings(bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 		return;
 	}
 
-	// last doesn't actually need initialization,
-	// but gcc (7.3.1) is too dumb to figure it out
-	struct swaybar_workspace *first = NULL;
-	struct swaybar_workspace *active = NULL;
-	struct swaybar_workspace *last = NULL;
-
-	struct swaybar_workspace *iter;
-	wl_list_for_each(iter, &output->workspaces, link) {
-		if (!first) {
-			first = iter;
-		}
-
-		if (iter->visible) {
-			active = iter;
-		}
-
-		last = iter;
+	if (!sway_assert(!wl_list_empty(&output->workspaces), "axis with no workspaces")) {
+		return;
 	}
 
-	if (!sway_assert(active, "axis with null workspace")) {
+	struct swaybar_workspace *first =
+		wl_container_of(output->workspaces.next, first, link);
+	struct swaybar_workspace *last =
+		wl_container_of(output->workspaces.prev, last, link);
+
+	struct swaybar_workspace *active;
+	wl_list_for_each(active, &output->workspaces, link) {
+		if (active->visible) {
+			break;
+		}
+	}
+	if (!sway_assert(active->visible, "axis with null workspace")) {
 		return;
 	}
 
 	struct swaybar_workspace *new;
-
-	if (amt > 0.0) {
+	if (amt < 0.0) {
 		if (active == first) {
-			if (!bar->config->wrap_scroll) {
-				return;
-			}
-			new = last;
+			new = config->wrap_scroll ? last : NULL;
+		} else {
+			new = wl_container_of(active->link.prev, new, link);
 		}
-
-		new = wl_container_of(active->link.prev, new, link);
 	} else {
 		if (active == last) {
-			if (!bar->config->wrap_scroll) {
-				return;
-			}
-			new = first;
+			new = config->wrap_scroll ? first : NULL;
+		} else {
+			new = wl_container_of(active->link.next, new, link);
 		}
-
-		new = wl_container_of(active->link.next, new, link);
 	}
 
-	ipc_send_workspace_command(bar, new->name);
+	if (new) {
+		ipc_send_workspace_command(bar, new->name);
+	}
 
 	// Check button release bindings
-	check_bindings(bar, wl_axis_to_x11_button(axis, value),
-			WL_POINTER_BUTTON_STATE_RELEASED);
+	check_bindings(bar, button, WL_POINTER_BUTTON_STATE_RELEASED);
 }
 
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
