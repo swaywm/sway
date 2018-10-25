@@ -1196,5 +1196,4 @@ void seat_consider_warp_to_focus(struct sway_seat *seat) {
 	} else {
 		cursor_warp_to_workspace(seat->cursor, focus->sway_workspace);
 	}
-	cursor_rebase(seat->cursor);
 }

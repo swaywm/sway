@@ -29,13 +29,6 @@ struct sway_view;
 void transaction_commit_dirty(void);
 
 /**
- * Same as above, but runs the specific callback when the transaction is
- * applied.
- */
-void transaction_commit_dirty_with_callback(
-		void (*callback)(void *data), void *data);
-
-/**
  * Notify the transaction system that a view is ready for the new layout.
  *
  * When all views in the transaction are ready, the layout will be applied.
