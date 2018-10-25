@@ -11,6 +11,8 @@
 #include "sway/desktop.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/desktop/transaction.h"
+#include "sway/input/cursor.h"
+#include "sway/input/input-manager.h"
 #include "sway/output.h"
 #include "sway/tree/container.h"
 #include "sway/tree/node.h"
@@ -25,8 +27,6 @@ struct sway_transaction {
 	size_t num_waiting;
 	size_t num_configures;
 	struct timespec commit_time;
-	void (*callback)(void *data);
-	void *callback_data;
 };
 
 struct sway_transaction_instruction {
@@ -298,8 +298,11 @@ static void transaction_apply(struct sway_transaction *transaction) {
 		node->instruction = NULL;
 	}
 
-	if (transaction->callback) {
-		transaction->callback(transaction->callback_data);
+	if (root->outputs->length) {
+		struct sway_seat *seat;
+		wl_list_for_each(seat, &server.input->seats, link) {
+			cursor_rebase(seat->cursor);
+		}
 	}
 }
 
@@ -505,7 +508,14 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 	}
 }
 
-static void do_commit_dirty(struct sway_transaction *transaction) {
+void transaction_commit_dirty(void) {
+	if (!server.dirty_nodes->length) {
+		return;
+	}
+	struct sway_transaction *transaction = transaction_create();
+	if (!transaction) {
+		return;
+	}
 	for (int i = 0; i < server.dirty_nodes->length; ++i) {
 		struct sway_node *node = server.dirty_nodes->items[i];
 		transaction_add_node(transaction, node);
@@ -523,29 +533,4 @@ static void do_commit_dirty(struct sway_transaction *transaction) {
 		// if the transaction has nothing to wait for.
 		transaction_progress_queue();
 	}
-}
-
-void transaction_commit_dirty(void) {
-	if (!server.dirty_nodes->length) {
-		return;
-	}
-	struct sway_transaction *transaction = transaction_create();
-	if (!transaction) {
-		return;
-	}
-	do_commit_dirty(transaction);
-}
-
-void transaction_commit_dirty_with_callback(
-		void (*callback)(void *data), void *data) {
-	if (!server.dirty_nodes->length) {
-		return;
-	}
-	struct sway_transaction *transaction = transaction_create();
-	if (!transaction) {
-		return;
-	}
-	transaction->callback = callback;
-	transaction->callback_data = data;
-	do_commit_dirty(transaction);
 }

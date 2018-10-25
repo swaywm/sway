@@ -661,7 +661,6 @@ void view_unmap(struct sway_view *view) {
 				cursor_warp_to_workspace(seat->cursor, node->sway_workspace);
 			}
 		}
-		cursor_rebase(seat->cursor);
 	}
 
 	transaction_commit_dirty();

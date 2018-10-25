@@ -391,11 +391,6 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xwayland_view->commit.link);
 }
 
-static void do_rebase(void *data) {
-	struct sway_cursor *cursor = data;
-	cursor_rebase(cursor);
-}
-
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xwayland_view *xwayland_view =
 		wl_container_of(listener, xwayland_view, map);
@@ -422,8 +417,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	// Put it back into the tree
 	view_map(view, xsurface->surface, xsurface->fullscreen, false);
 
-	struct sway_seat *seat = input_manager_current_seat();
-	transaction_commit_dirty_with_callback(do_rebase, seat->cursor);
+	transaction_commit_dirty();
 }
 
 static void handle_request_configure(struct wl_listener *listener, void *data) {

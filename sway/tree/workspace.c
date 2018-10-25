@@ -404,7 +404,6 @@ bool workspace_switch(struct sway_workspace *workspace,
 	}
 	seat_set_focus(seat, next);
 	arrange_workspace(workspace);
-	cursor_rebase(seat->cursor);
 	return true;
 }
 

@@ -397,11 +397,6 @@ static void handle_unmap(struct wl_listener *listener, void *data) {
 	wl_list_remove(&xdg_shell_view->set_app_id.link);
 }
 
-static void do_rebase(void *data) {
-	struct sway_cursor *cursor = data;
-	cursor_rebase(cursor);
-}
-
 static void handle_map(struct wl_listener *listener, void *data) {
 	struct sway_xdg_shell_view *xdg_shell_view =
 		wl_container_of(listener, xdg_shell_view, map);
@@ -428,8 +423,7 @@ static void handle_map(struct wl_listener *listener, void *data) {
 	view_map(view, view->wlr_xdg_surface->surface,
 		xdg_surface->toplevel->client_pending.fullscreen, csd);
 
-	struct sway_seat *seat = input_manager_current_seat();
-	transaction_commit_dirty_with_callback(do_rebase, seat->cursor);
+	transaction_commit_dirty();
 
 	xdg_shell_view->commit.notify = handle_commit;
 	wl_signal_add(&xdg_surface->surface->events.commit,
