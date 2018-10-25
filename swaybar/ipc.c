@@ -307,7 +307,7 @@ bool ipc_get_workspaces(struct swaybar *bar) {
 				if (ws->urgent) {
 					bar->visible_by_urgency = true;
 				}
-				wl_list_insert(&output->workspaces, &ws->link);
+				wl_list_insert(output->workspaces.prev, &ws->link);
 			}
 		}
 	}

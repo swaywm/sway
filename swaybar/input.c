@@ -205,7 +205,7 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 
 	struct swaybar_workspace *new;
 
-	if (amt > 0.0) {
+	if (amt < 0.0) {
 		if (active == first) {
 			if (!bar->config->wrap_scroll) {
 				return;
