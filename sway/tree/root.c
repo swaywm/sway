@@ -59,13 +59,13 @@ void root_scratchpad_add_container(struct sway_container *con) {
 	if (!sway_assert(!con->scratchpad, "Container is already in scratchpad")) {
 		return;
 	}
-	con->scratchpad = true;
-	list_add(root->scratchpad, con);
 
 	struct sway_container *parent = con->parent;
 	struct sway_workspace *workspace = con->workspace;
 	container_set_floating(con, true);
 	container_detach(con);
+	con->scratchpad = true;
+	list_add(root->scratchpad, con);
 
 	struct sway_seat *seat = input_manager_current_seat();
 	if (parent) {
