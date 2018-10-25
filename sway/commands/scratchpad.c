@@ -87,6 +87,10 @@ struct cmd_results *cmd_scratchpad(int argc, char **argv) {
 		return cmd_results_new(CMD_INVALID, "scratchpad",
 				"Expected 'scratchpad show'");
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "scratchpad",
+				"Can't run this command while there's no outputs connected.");
+	}
 	if (!root->scratchpad->length) {
 		return cmd_results_new(CMD_INVALID, "scratchpad",
 				"Scratchpad is empty");

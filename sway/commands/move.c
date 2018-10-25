@@ -844,6 +844,10 @@ struct cmd_results *cmd_move(int argc, char **argv) {
 	if ((error = checkarg(argc, "move", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "move",
+				"Can't run this command while there's no outputs connected.");
+	}
 
 	if (strcasecmp(argv[0], "left") == 0) {
 		return cmd_move_in_direction(MOVE_LEFT, argc, argv);

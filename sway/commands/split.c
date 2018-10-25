@@ -28,6 +28,10 @@ struct cmd_results *cmd_split(int argc, char **argv) {
 	if ((error = checkarg(argc, "split", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "split",
+				"Can't run this command while there's no outputs connected.");
+	}
 	if (strcasecmp(argv[0], "v") == 0 || strcasecmp(argv[0], "vertical") == 0) {
 		return do_split(L_VERT);
 	} else if (strcasecmp(argv[0], "h") == 0 ||

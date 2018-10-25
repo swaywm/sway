@@ -15,6 +15,10 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 	if ((error = checkarg(argc, "floating", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "floating",
+				"Can't run this command while there's no outputs connected.");
+	}
 	struct sway_container *container = config->handler_context.container;
 	struct sway_workspace *workspace = config->handler_context.workspace;
 	if (!container && workspace->tiling->length == 0) {

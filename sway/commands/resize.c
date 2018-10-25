@@ -671,6 +671,10 @@ static struct cmd_results *cmd_resize_adjust(int argc, char **argv,
 }
 
 struct cmd_results *cmd_resize(int argc, char **argv) {
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "resize",
+				"Can't run this command while there's no outputs connected.");
+	}
 	struct sway_container *current = config->handler_context.container;
 	if (!current) {
 		return cmd_results_new(CMD_INVALID, "resize", "Cannot resize nothing");

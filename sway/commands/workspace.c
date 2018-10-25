@@ -38,6 +38,10 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 	if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
+	if (!root->outputs->length) {
+		return cmd_results_new(CMD_INVALID, "workspace",
+				"Can't run this command while there's no outputs connected.");
+	}
 
 	int output_location = -1;
 	int gaps_location = -1;
