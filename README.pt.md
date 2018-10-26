@@ -1,9 +1,12 @@
 # sway [![](https://api.travis-ci.org/swaywm/sway.svg)](https://travis-ci.org/swaywm/sway) [![Doe através do fosspay](https://drewdevault.com/donate/static/donate-with-fosspay.png)](https://drewdevault.com/donate?project=4)
 
-"**S**irCmpwn's **Way**land compositor" é um compositor [Wayland](http://wayland.freedesktop.org/)
-compatível com o i3. Leia o [FAQ](https://github.com/swaywm/sway/wiki). Participe do
+"**S**irCmpwn's **Way**land compositor" é um compositor [Wayland](http://wayland.freedesktop.org/) **em desenvolvimento**
+compatível com o i3.
+Leia o [FAQ](https://github.com/swaywm/sway/wiki). Participe do
 [canal IRC](http://webchat.freenode.net/?channels=sway&uio=d4) (#sway no
 irc.freenode.net).
+
+**Aviso**: O desenvolvimento do Sway está **parado** até terminarmos de integrar o Sway e o wlroot. Nenhuma outra funcionalidade será adicionada, apenas correções de bugs serão feitas, para mais informações leia [este artigo](https://drewdevault.com/2017/10/09/Future-of-sway.html)(*em inglês*). Para seguir o estágio de integração do wlroots veja [este ticket](https://github.com/swaywm/sway/issues/1390)(*em inglês*).
 
 [![](https://sr.ht/ICd5.png)](https://sr.ht/ICd5.png)
 
@@ -102,4 +105,3 @@ para `~/.config/sway/config`. É comum esse arquivo estar localizado em
 Execute `sway` a partir de um terminal do Linux. Alguns gerenciadores de *display*
 podem funcionar, porém o Sway não procura manter compatibilidade com esses (segundo
 relatos, o gdm funciona bem com o Sway).
-
