@@ -676,11 +676,8 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		container_detach(container);
 		struct sway_container *reference =
 			seat_get_focus_inactive_tiling(seat, workspace);
-		if (reference && reference->view) {
-			reference = reference->parent;
-		}
 		if (reference) {
-			container_add_child(reference, container);
+			container_add_sibling(reference, container, 1);
 			container->width = reference->width;
 			container->height = reference->height;
 		} else {
