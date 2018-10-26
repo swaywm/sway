@@ -185,7 +185,11 @@ static void handle_seat_node_destroy(struct wl_listener *listener, void *data) {
 		seat_set_focus(seat, next_focus);
 	} else {
 		// Setting focus_inactive
+		focus = seat_get_focus_inactive(seat, &root->node);
 		seat_set_raw_focus(seat, next_focus);
+		if (focus->type == N_CONTAINER) {
+			seat_set_raw_focus(seat, &focus->sway_container->workspace->node);
+		}
 		seat_set_raw_focus(seat, focus);
 	}
 }
