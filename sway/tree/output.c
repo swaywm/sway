@@ -72,7 +72,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	wl_signal_init(&output->events.destroy);
 
 	output->enabled = true;
-	apply_output_config(oc, output);
 	list_add(root->outputs, output);
 
 	output->lx = wlr_output->lx;
@@ -97,6 +96,9 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		free(ws_name);
 		ipc_event_workspace(NULL, ws, "init");
 	}
+
+
+	apply_output_config(oc, output);
 
 	input_manager_configure_xcursor();
 
