@@ -948,7 +948,7 @@ struct sway_node *seat_get_focus(struct sway_seat *seat) {
 	if (!seat->has_focus) {
 		return NULL;
 	}
-	if (wl_list_length(&seat->focus_stack) == 0) {
+	if (wl_list_empty(&seat->focus_stack)) {
 		return NULL;
 	}
 	struct sway_seat_node *current =
