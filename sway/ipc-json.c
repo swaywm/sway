@@ -266,13 +266,16 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 		json_object *window_props = json_object_new_object();
 
 		const char *class = view_get_class(c->view);
-		json_object_object_add(window_props, "class",
-				class ? json_object_new_string(class) : NULL);
+		if (class) {
+			json_object_object_add(window_props, "class", json_object_new_string(class));
+		}
 		const char *instance = view_get_instance(c->view);
-		json_object_object_add(window_props, "instance",
-				instance ? json_object_new_string(instance) : NULL);
-		json_object_object_add(window_props, "title",
-				c->title ? json_object_new_string(c->title) : NULL);
+		if (instance) {
+			json_object_object_add(window_props, "instance", json_object_new_string(instance));
+		}
+		if (c->title) {
+			json_object_object_add(window_props, "title", json_object_new_string(c->title));
+		}
 
 		// the transient_for key is always present in i3's output
 		uint32_t parent_id = view_get_x11_parent_id(c->view);
@@ -281,8 +284,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 		const char *role = view_get_window_role(c->view);
 		if (role) {
-			json_object_object_add(window_props, "window_role",
-					json_object_new_string(role));
+			json_object_object_add(window_props, "window_role", json_object_new_string(role));
 		}
 
 		json_object_object_add(object, "window_properties", window_props);
