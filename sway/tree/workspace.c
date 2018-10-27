@@ -35,6 +35,10 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 	struct workspace_config *wsc = workspace_find_config(name);
 	if (wsc && wsc->output) {
 		struct sway_output *output = output_by_name(wsc->output);
+		if (!output) {
+			output = output_by_identifier(wsc->output);
+		}
+		
 		if (output) {
 			return output;
 		}
@@ -143,7 +147,11 @@ void workspace_consider_destroy(struct sway_workspace *ws) {
 static bool workspace_valid_on_output(const char *output_name,
 		const char *ws_name) {
 	struct workspace_config *wsc = workspace_find_config(ws_name);
-	return !wsc || !wsc->output || strcmp(wsc->output, output_name) == 0;
+	char identifier[128];
+	struct sway_output *output = output_by_name(output_name);
+	output_get_identifier(identifier, sizeof(identifier), output);
+		
+	return !wsc || !wsc->output || strcmp(wsc->output, output_name) == 0 || strcasecmp(identifier, output_name) == 0;
 }
 
 static void workspace_name_from_binding(const struct sway_binding * binding,

@@ -39,6 +39,19 @@ struct sway_output *output_by_name(const char *name) {
 	return NULL;
 }
 
+struct sway_output *output_by_identifier(const char *identifier) {
+	for (int i = 0; i < root->outputs->length; ++i) {
+		struct sway_output *output = root->outputs->items[i];
+		char output_identifier[128];
+		snprintf(output_identifier, sizeof(output_identifier), "%s %s %s", output->wlr_output->make,
+			output->wlr_output->model, output->wlr_output->serial);
+		if (strcasecmp(output_identifier, identifier) == 0) {
+			return output;
+		}
+	}
+	return NULL;
+}
+
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
  * the child position is (*sx, *sy) and its size is (sw, sh).
