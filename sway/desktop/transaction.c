@@ -301,7 +301,9 @@ static void transaction_apply(struct sway_transaction *transaction) {
 	if (root->outputs->length) {
 		struct sway_seat *seat;
 		wl_list_for_each(seat, &server.input->seats, link) {
-			cursor_rebase(seat->cursor);
+			if (seat->operation == OP_NONE) {
+				cursor_rebase(seat->cursor);
+			}
 		}
 	}
 }
