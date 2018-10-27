@@ -66,6 +66,7 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 	}
 	struct wlr_output *wlr_output = output->wlr_output;
 	output->enabled = true;
+	apply_output_config(oc, output);
 	list_add(root->outputs, output);
 
 	output->lx = wlr_output->lx;
@@ -96,8 +97,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		wl_list_init(&output->layers[i]);
 	}
 	wl_signal_init(&output->events.destroy);
-
-	apply_output_config(oc, output);
 
 	input_manager_configure_xcursor();
 
