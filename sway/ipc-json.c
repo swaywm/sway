@@ -229,10 +229,6 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "app_id",
 			app_id ? json_object_new_string(app_id) : NULL);
 
-	const char *class = view_get_class(c->view);
-	json_object_object_add(object, "class",
-			class ? json_object_new_string(class) : NULL);
-
 	json_object *marks = json_object_new_array();
 	list_t *view_marks = c->view->marks;
 	for (int i = 0; i < view_marks->length; ++i) {
@@ -269,6 +265,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 		json_object *window_props = json_object_new_object();
 
+		const char *class = view_get_class(c->view);
 		json_object_object_add(window_props, "class",
 				class ? json_object_new_string(class) : NULL);
 		const char *instance = view_get_instance(c->view);
