@@ -258,7 +258,7 @@ void view_autoconfigure(struct sway_view *view) {
 		}
 	}
 
-	double x, y, width, height = 0;
+	double x = 0, y = 0, width = 0, height = 0;
 	switch (view->border) {
 	case B_CSD:
 	case B_NONE:
