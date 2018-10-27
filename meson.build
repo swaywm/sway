@@ -244,6 +244,7 @@ endif
 if (get_option('fish-completions'))
 	fish_files = files(
 		'completions/fish/sway.fish',
+		'completions/fish/swayidle.fish',
 		'completions/fish/swaylock.fish',
 		'completions/fish/swaymsg.fish',
 	)
