@@ -247,6 +247,7 @@ if (get_option('fish-completions'))
 		'completions/fish/swayidle.fish',
 		'completions/fish/swaylock.fish',
 		'completions/fish/swaymsg.fish',
+		'completions/fish/swaynag.fish',
 	)
 	fish_install_dir = datadir + '/fish/completions'
 
