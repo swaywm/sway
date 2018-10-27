@@ -21,19 +21,24 @@ Locks your Wayland session.
 	All leading dashes should be omitted and the equals sign is required for
 	flags that take an argument.
 
-*-c, --color* <rrggbb[aa]>
-	Turn the screen into the given color. If -i is used, this sets the
-	background of the image to the given color. Defaults to white (FFFFFF), or
-	transparent (00000000) if an image is in use.
-
 *-e, --ignore-empty-password*
 	When an empty password is provided by the user, do not validate it.
 
 *-f, --daemonize*
 	Detach from the controlling terminal after locking.
 
+	Note: this is the default bahavior of i3lock.
+
 *-h, --help*
 	Show help message and quit.
+
+*-v, --version*
+	Show the version number and quit.
+
+# APPEARANCE
+
+*-u, --no-unlock-indicator*
+	Disable the unlock indicator.
 
 *-i, --image* [<output>:]<path>
 	Display the given image, optionally only on the given output. Use -c to set
@@ -45,13 +50,10 @@ Locks your Wayland session.
 *-t, --tiling*
 	Same as --scaling=tile.
 
-*-u, --no-unlock-indicator*
-	Disable the unlock indicator.
-
-*-v, --version*
-	Show the version number and quit.
-
-# APPEARANCE
+*-c, --color* <rrggbb[aa]>
+	Turn the screen into the given color. If -i is used, this sets the
+	background of the image to the given color. Defaults to white (FFFFFF), or
+	transparent (00000000) if an image is in use.
 
 *--bs-hl-color* <rrggbb[aa]>
 	Sets the color of backspace highlight segments.
