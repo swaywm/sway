@@ -86,6 +86,8 @@ void output_damage_whole_container(struct sway_output *output,
 
 struct sway_output *output_by_name(const char *name);
 
+struct sway_output *output_by_identifier(const char *identifier);
+
 void output_sort_workspaces(struct sway_output *output);
 
 struct output_config *output_find_config(struct sway_output *output);
