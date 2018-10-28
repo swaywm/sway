@@ -23,6 +23,8 @@ struct sway_server {
 	struct wl_event_loop *wl_event_loop;
 	const char *socket;
 
+	struct wl_event_source *sigchld_source;
+
 	struct wlr_backend *backend;
 
 	struct wlr_compositor *compositor;

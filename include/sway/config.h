@@ -535,8 +535,6 @@ void load_swaybar(struct bar_config *bar);
 
 void load_swaybars(void);
 
-void terminate_swaybg(pid_t pid);
-
 struct bar_config *default_bar_config(void);
 
 void free_bar_config(struct bar_config *bar);

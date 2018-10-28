@@ -164,23 +164,31 @@ static void set_mode(struct wlr_output *output, int width, int height,
 	}
 }
 
-void terminate_swaybg(pid_t pid) {
-	int ret = kill(pid, SIGTERM);
-	if (ret != 0) {
-		wlr_log(WLR_ERROR, "Unable to terminate swaybg [pid: %d]", pid);
-	} else {
-		int status;
-		waitpid(pid, &status, 0);
+static void terminate_swaybg(struct wl_display *display, pid_t pid) {
+	struct wl_client *client;
+	wl_client_for_each(client, wl_display_get_client_list(display)) {
+		pid_t p;
+		wl_client_get_credentials(client, &p, NULL, NULL);
+
+		if (p == pid) {
+			wl_client_destroy(client);
+			break;
+		}
+	}
+
+	if (kill(pid, SIGTERM) != 0) {
+		wlr_log_errno(WLR_ERROR, "Unable to terminate swaybg [pid: %d]", (int)pid);
 	}
 }
 
 void apply_output_config(struct output_config *oc, struct sway_output *output) {
 	struct wlr_output *wlr_output = output->wlr_output;
+	struct wl_display *display = output->server->wl_display;
 
 	if (oc && oc->enabled == 0) {
 		if (output->enabled) {
 			if (output->bg_pid != 0) {
-				terminate_swaybg(output->bg_pid);
+				terminate_swaybg(display, output->bg_pid);
 				output->bg_pid = 0;
 			}
 			output_disable(output);
@@ -230,7 +238,7 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 	}
 
 	if (output->bg_pid != 0) {
-		terminate_swaybg(output->bg_pid);
+		terminate_swaybg(display, output->bg_pid);
 	}
 	if (oc && oc->background && config->swaybg_command) {
 		wlr_log(WLR_DEBUG, "Setting background for output %d to %s",

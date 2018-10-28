@@ -1,7 +1,9 @@
 #define _POSIX_C_SOURCE 200112L
 #include <assert.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 #include <wayland-server.h>
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
@@ -29,6 +31,14 @@
 #ifdef HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif
+
+static int sigchld_handler(int signum, void *data) {
+	while (waitpid(0, NULL, WNOHANG) > 0) {
+		// Do nothing
+	}
+
+	return 0;
+}
 
 bool server_privileged_prepare(struct sway_server *server) {
 	wlr_log(WLR_DEBUG, "Preparing Wayland server initialization");
@@ -82,6 +92,9 @@ bool server_init(struct sway_server *server) {
 	wl_signal_add(&server->xdg_shell->events.new_surface,
 		&server->xdg_shell_surface);
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
+
+	server->sigchld_source = wl_event_loop_add_signal(server->wl_event_loop,
+		SIGCHLD, sigchld_handler, NULL);
 
 	// TODO: configurable cursor theme and size
 	int cursor_size = 24;
