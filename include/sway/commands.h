@@ -1,6 +1,7 @@
 #ifndef _SWAY_COMMANDS_H
 #define _SWAY_COMMANDS_H
 
+#include <json-c/json.h>
 #include <wlr/util/edges.h>
 #include "config.h"
 
@@ -83,9 +84,9 @@ void free_cmd_results(struct cmd_results *results);
 /**
  * Serializes a list of cmd_results to a JSON string.
  *
- * Free the JSON string later on.
+ * Free the JSON object later on.
  */
-char *cmd_results_to_json(list_t *res_list);
+json_object *cmd_results_to_json(list_t *res_list);
 
 struct cmd_results *add_color(char *buffer, const char *color);
 

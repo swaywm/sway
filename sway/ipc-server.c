@@ -15,12 +15,9 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <wayland-server.h>
-#include "sway/commands.h"
 #include "sway/config.h"
-#include "sway/desktop/transaction.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
-#include "sway/output.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
@@ -42,21 +39,6 @@ static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
 #define IPC_HEADER_SIZE (sizeof(ipc_magic) + 8)
 
-struct ipc_client {
-	struct wl_event_source *event_source;
-	struct wl_event_source *writable_event_source;
-	struct sway_server *server;
-	int fd;
-	uint32_t security_policy;
-	enum ipc_command_type subscribed_events;
-	size_t write_buffer_len;
-	size_t write_buffer_size;
-	char *write_buffer;
-	// The following are for storing data between event_loop calls
-	uint32_t pending_length;
-	enum ipc_command_type pending_type;
-};
-
 struct sockaddr_un *ipc_user_sockaddr(void);
 int ipc_handle_connection(int fd, uint32_t mask, void *data);
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
@@ -64,8 +46,6 @@ int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data);
 void ipc_client_disconnect(struct ipc_client *client);
 void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_length,
 	enum ipc_command_type payload_type);
-bool ipc_send_reply(struct ipc_client *client, enum ipc_command_type payload_type,
-	const char *payload, uint32_t payload_length);
 
 static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	if (ipc_event_source) {
@@ -196,6 +176,7 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 		close(client_fd);
 		return 0;
 	}
+	client->impl = &ipc_client_sway;
 
 	sway_log(SWAY_DEBUG, "New client: fd %d", client_fd);
 	list_add(ipc_client_list, client);
@@ -472,7 +453,7 @@ void ipc_event_binding(struct sway_binding *binding) {
 	json_object_put(json);
 }
 
-static void ipc_event_tick(const char *payload) {
+void ipc_event_tick(const char *payload) {
 	if (!ipc_has_event_listeners(IPC_EVENT_TICK)) {
 		return;
 	}
@@ -551,33 +532,6 @@ void ipc_client_disconnect(struct ipc_client *client) {
 	free(client);
 }
 
-static void ipc_get_workspaces_callback(struct sway_workspace *workspace,
-		void *data) {
-	json_object *workspace_json = ipc_json_describe_node(&workspace->node);
-	// override the default focused indicator because
-	// it's set differently for the get_workspaces reply
-	struct sway_seat *seat = input_manager_get_default_seat();
-	struct sway_workspace *focused_ws = seat_get_focused_workspace(seat);
-	bool focused = workspace == focused_ws;
-	json_object_object_del(workspace_json, "focused");
-	json_object_object_add(workspace_json, "focused",
-			json_object_new_boolean(focused));
-	json_object_array_add((json_object *)data, workspace_json);
-
-	focused_ws = output_get_active_workspace(workspace->output);
-	bool visible = workspace == focused_ws;
-	json_object_object_add(workspace_json, "visible",
-			json_object_new_boolean(visible));
-}
-
-static void ipc_get_marks_callback(struct sway_container *con, void *data) {
-	json_object *marks = (json_object *)data;
-	for (int i = 0; i < con->marks->length; ++i) {
-		char *mark = (char *)con->marks->items[i];
-		json_object_array_add(marks, json_object_new_string(mark));
-	}
-}
-
 void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_length,
 		enum ipc_command_type payload_type) {
 	if (!sway_assert(client != NULL, "client != NULL")) {
@@ -603,275 +557,23 @@ void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_lengt
 	}
 	buf[payload_length] = '\0';
 
-	switch (payload_type) {
-	case IPC_COMMAND:
-	{
-		char *line = strtok(buf, "\n");
-		while (line) {
-			size_t line_length = strlen(line);
-			if (line + line_length >= buf + payload_length) {
-				break;
-			}
-			line[line_length] = ';';
-			line = strtok(NULL, "\n");
-		}
-
-		list_t *res_list = execute_command(buf, NULL, NULL);
-		transaction_commit_dirty();
-		char *json = cmd_results_to_json(res_list);
-		int length = strlen(json);
-		ipc_send_reply(client, payload_type, json, (uint32_t)length);
-		free(json);
-		while (res_list->length) {
-			struct cmd_results *results = res_list->items[0];
-			free_cmd_results(results);
-			list_del(res_list, 0);
-		}
-		list_free(res_list);
-		goto exit_cleanup;
+	ipc_handler handler = NULL;
+	if (payload_type >= 0 && (size_t) payload_type < client->impl->num_commands) {
+		handler = client->impl->commands[payload_type];
 	}
 
-	case IPC_SEND_TICK:
-	{
-		ipc_event_tick(buf);
-		ipc_send_reply(client, payload_type, "{\"success\": true}", 17);
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_OUTPUTS:
-	{
-		json_object *outputs = json_object_new_array();
-		for (int i = 0; i < root->outputs->length; ++i) {
-			struct sway_output *output = root->outputs->items[i];
-			json_object *output_json = ipc_json_describe_node(&output->node);
-
-			// override the default focused indicator because it's set
-			// differently for the get_outputs reply
-			struct sway_seat *seat = input_manager_get_default_seat();
-			struct sway_workspace *focused_ws =
-				seat_get_focused_workspace(seat);
-			bool focused = focused_ws && output == focused_ws->output;
-			json_object_object_del(output_json, "focused");
-			json_object_object_add(output_json, "focused",
-				json_object_new_boolean(focused));
-
-			const char *subpixel = sway_wl_output_subpixel_to_string(output->wlr_output->subpixel);
-			json_object_object_add(output_json, "subpixel_hinting", json_object_new_string(subpixel));
-			json_object_array_add(outputs, output_json);
-		}
-		struct sway_output *output;
-		wl_list_for_each(output, &root->all_outputs, link) {
-			if (!output->enabled && output != root->noop_output) {
-				json_object_array_add(outputs,
-						ipc_json_describe_disabled_output(output));
-			}
-		}
-		const char *json_string = json_object_to_json_string(outputs);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(outputs); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_WORKSPACES:
-	{
-		json_object *workspaces = json_object_new_array();
-		root_for_each_workspace(ipc_get_workspaces_callback, workspaces);
-		const char *json_string = json_object_to_json_string(workspaces);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(workspaces); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_SUBSCRIBE:
-	{
-		// TODO: Check if they're permitted to use these events
-		struct json_object *request = json_tokener_parse(buf);
-		if (request == NULL || !json_object_is_type(request, json_type_array)) {
-			const char msg[] = "{\"success\": false}";
-			ipc_send_reply(client, payload_type, msg, strlen(msg));
-			sway_log(SWAY_INFO, "Failed to parse subscribe request");
-			goto exit_cleanup;
-		}
-
-		bool is_tick = false;
-		// parse requested event types
-		for (size_t i = 0; i < json_object_array_length(request); i++) {
-			const char *event_type = json_object_get_string(json_object_array_get_idx(request, i));
-			if (strcmp(event_type, "workspace") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_WORKSPACE);
-			} else if (strcmp(event_type, "barconfig_update") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_BARCONFIG_UPDATE);
-			} else if (strcmp(event_type, "bar_state_update") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_BAR_STATE_UPDATE);
-			} else if (strcmp(event_type, "mode") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_MODE);
-			} else if (strcmp(event_type, "shutdown") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_SHUTDOWN);
-			} else if (strcmp(event_type, "window") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_WINDOW);
-			} else if (strcmp(event_type, "binding") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_BINDING);
-			} else if (strcmp(event_type, "tick") == 0) {
-				client->subscribed_events |= event_mask(IPC_EVENT_TICK);
-				is_tick = true;
-			} else {
-				const char msg[] = "{\"success\": false}";
-				ipc_send_reply(client, payload_type, msg, strlen(msg));
-				json_object_put(request);
-				sway_log(SWAY_INFO, "Unsupported event type in subscribe request");
-				goto exit_cleanup;
-			}
-		}
-
-		json_object_put(request);
-		const char msg[] = "{\"success\": true}";
-		ipc_send_reply(client, payload_type, msg, strlen(msg));
-		if (is_tick) {
-			const char tickmsg[] = "{\"first\": true, \"payload\": \"\"}";
-			ipc_send_reply(client, IPC_EVENT_TICK, tickmsg,
-				strlen(tickmsg));
-		}
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_INPUTS:
-	{
-		json_object *inputs = json_object_new_array();
-		struct sway_input_device *device = NULL;
-		wl_list_for_each(device, &server.input->devices, link) {
-			json_object_array_add(inputs, ipc_json_describe_input(device));
-		}
-		const char *json_string = json_object_to_json_string(inputs);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(inputs); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_SEATS:
-	{
-		json_object *seats = json_object_new_array();
-		struct sway_seat *seat = NULL;
-		wl_list_for_each(seat, &server.input->seats, link) {
-			json_object_array_add(seats, ipc_json_describe_seat(seat));
-		}
-		const char *json_string = json_object_to_json_string(seats);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(seats); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_TREE:
-	{
-		json_object *tree = ipc_json_describe_node_recursive(&root->node);
-		const char *json_string = json_object_to_json_string(tree);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(tree);
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_MARKS:
-	{
-		json_object *marks = json_object_new_array();
-		root_for_each_container(ipc_get_marks_callback, marks);
-		const char *json_string = json_object_to_json_string(marks);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(marks);
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_VERSION:
-	{
-		json_object *version = ipc_json_get_version();
-		const char *json_string = json_object_to_json_string(version);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(version); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_BAR_CONFIG:
-	{
-		if (!buf[0]) {
-			// Send list of configured bar IDs
-			json_object *bars = json_object_new_array();
-			for (int i = 0; i < config->bars->length; ++i) {
-				struct bar_config *bar = config->bars->items[i];
-				json_object_array_add(bars, json_object_new_string(bar->id));
-			}
-			const char *json_string = json_object_to_json_string(bars);
-			ipc_send_reply(client, payload_type, json_string,
-				(uint32_t)strlen(json_string));
-			json_object_put(bars); // free
-		} else {
-			// Send particular bar's details
-			struct bar_config *bar = NULL;
-			for (int i = 0; i < config->bars->length; ++i) {
-				bar = config->bars->items[i];
-				if (strcmp(buf, bar->id) == 0) {
-					break;
-				}
-				bar = NULL;
-			}
-			if (!bar) {
-				const char *error = "{ \"success\": false, \"error\": \"No bar with that ID\" }";
-				ipc_send_reply(client, payload_type, error,
-					(uint32_t)strlen(error));
-				goto exit_cleanup;
-			}
-			json_object *json = ipc_json_describe_bar_config(bar);
+	if (handler) {
+		json_object *json = handler(client, &payload_type, buf);
+		if (json) {
 			const char *json_string = json_object_to_json_string(json);
 			ipc_send_reply(client, payload_type, json_string,
 				(uint32_t)strlen(json_string));
-			json_object_put(json); // free
+			json_object_put(json);
 		}
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_BINDING_MODES:
-	{
-		json_object *modes = json_object_new_array();
-		for (int i = 0; i < config->modes->length; i++) {
-			struct sway_mode *mode = config->modes->items[i];
-			json_object_array_add(modes, json_object_new_string(mode->name));
-		}
-		const char *json_string = json_object_to_json_string(modes);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(modes); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_GET_CONFIG:
-	{
-		json_object *json = json_object_new_object();
-		json_object_object_add(json, "config", json_object_new_string(config->current_config));
-		const char *json_string = json_object_to_json_string(json);
-		ipc_send_reply(client, payload_type, json_string,
-			(uint32_t)strlen(json_string));
-		json_object_put(json); // free
-		goto exit_cleanup;
-	}
-
-	case IPC_SYNC:
-	{
-		// It was decided sway will not support this, just return success:false
-		const char msg[] = "{\"success\": false}";
-		ipc_send_reply(client, payload_type, msg, strlen(msg));
-		goto exit_cleanup;
-	}
-
-	default:
+	} else {
 		sway_log(SWAY_INFO, "Unknown IPC command type %x", payload_type);
-		goto exit_cleanup;
 	}
 
-exit_cleanup:
 	free(buf);
 	return;
 }

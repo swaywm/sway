@@ -22,6 +22,21 @@
 static const int i3_output_id = INT32_MAX;
 static const int i3_scratch_id = INT32_MAX - 1;
 
+json_object *ipc_json_success(void) {
+	json_object *reply = json_object_new_object();
+	json_object_object_add(reply, "success", json_object_new_boolean(true));
+	return reply;
+}
+
+json_object *ipc_json_failure(const char *error) {
+	json_object *reply = json_object_new_object();
+	json_object_object_add(reply, "success", json_object_new_boolean(false));
+	if (error) {
+		json_object_object_add(reply, "error", json_object_new_string(error));
+	}
+	return reply;
+}
+
 static const char *ipc_json_layout_description(enum sway_container_layout l) {
 	switch (l) {
 	case L_VERT:

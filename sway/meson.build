@@ -5,6 +5,7 @@ sway_sources = files(
 	'decoration.c',
 	'ipc-json.c',
 	'ipc-server.c',
+	'ipc-sway.c',
 	'main.c',
 	'security.c',
 	'server.c',
