@@ -65,6 +65,12 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		return;
 	}
 	struct wlr_output *wlr_output = output->wlr_output;
+	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
+	for (size_t i = 0; i < len; ++i) {
+		wl_list_init(&output->layers[i]);
+	}
+	wl_signal_init(&output->events.destroy);
+
 	output->enabled = true;
 	apply_output_config(oc, output);
 	list_add(root->outputs, output);
@@ -91,12 +97,6 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		free(ws_name);
 		ipc_event_workspace(NULL, ws, "init");
 	}
-
-	size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
-	for (size_t i = 0; i < len; ++i) {
-		wl_list_init(&output->layers[i]);
-	}
-	wl_signal_init(&output->events.destroy);
 
 	input_manager_configure_xcursor();
 
