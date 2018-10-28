@@ -431,6 +431,7 @@ void input_manager_set_focus(struct sway_node *node) {
 	struct sway_seat *seat;
 	wl_list_for_each(seat, &server.input->seats, link) {
 		seat_set_focus(seat, node);
+		seat_consider_warp_to_focus(seat);
 	}
 }
 
