@@ -3,6 +3,7 @@ sway_sources = files(
 	'config.c',
 	'criteria.c',
 	'decoration.c',
+	'ipc-i3.c',
 	'ipc-json.c',
 	'ipc-server.c',
 	'ipc-sway.c',

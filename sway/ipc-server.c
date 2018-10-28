@@ -30,9 +30,15 @@
 #include "log.h"
 #include "util.h"
 
-static int ipc_socket = -1;
-static struct wl_event_source *ipc_event_source =  NULL;
-static struct sockaddr_un *ipc_sockaddr = NULL;
+struct ipc {
+	int socket;
+	struct wl_event_source *event_source;
+	struct sockaddr_un *sockaddr;
+};
+
+static struct ipc sway_ipc = { .socket = -1 };
+static struct ipc i3_ipc = { .socket = -1 };
+
 static list_t *ipc_client_list = NULL;
 static struct wl_listener ipc_display_destroy;
 
@@ -40,7 +46,6 @@ static const char ipc_magic[] = {'i', '3', '-', 'i', 'p', 'c'};
 
 #define IPC_HEADER_SIZE (sizeof(ipc_magic) + 8)
 
-struct sockaddr_un *ipc_user_sockaddr(void);
 int ipc_handle_connection(int fd, uint32_t mask, void *data);
 int ipc_client_handle_readable(int client_fd, uint32_t mask, void *data);
 int ipc_client_handle_writable(int client_fd, uint32_t mask, void *data);
@@ -48,66 +53,77 @@ void ipc_client_disconnect(struct ipc_client *client);
 void ipc_client_handle_command(struct ipc_client *client, uint32_t payload_length,
 	enum ipc_command_type payload_type);
 
-static void handle_display_destroy(struct wl_listener *listener, void *data) {
-	if (ipc_event_source) {
-		wl_event_source_remove(ipc_event_source);
+static void ipc_destroy(struct ipc *ipc) {
+	if (ipc->event_source) {
+		wl_event_source_remove(ipc->event_source);
 	}
-	close(ipc_socket);
-	unlink(ipc_sockaddr->sun_path);
+	close(ipc->socket);
+	unlink(ipc->sockaddr->sun_path);
+}
+
+static void handle_display_destroy(struct wl_listener *listener, void *data) {
+	ipc_destroy(&sway_ipc);
+	ipc_destroy(&i3_ipc);
 
 	while (ipc_client_list->length) {
 		ipc_client_disconnect(ipc_client_list->items[ipc_client_list->length-1]);
 	}
 	list_free(ipc_client_list);
 
-	free(ipc_sockaddr);
+	free(sway_ipc.sockaddr);
+	free(i3_ipc.sockaddr);
 
 	wl_list_remove(&ipc_display_destroy.link);
 }
 
-void ipc_init(struct sway_server *server) {
-	ipc_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (ipc_socket == -1) {
+static void ipc_init_socket(struct sway_server *server, struct ipc *ipc,
+		const char *envvar, const char *sockpath_suffix) {
+
+	ipc->sockaddr = ipc_user_sockaddr(sockpath_suffix);
+	ipc->socket = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (ipc->socket == -1) {
 		sway_abort("Unable to create IPC socket");
 	}
-	if (fcntl(ipc_socket, F_SETFD, FD_CLOEXEC) == -1) {
+	if (fcntl(ipc->socket, F_SETFD, FD_CLOEXEC) == -1) {
 		sway_abort("Unable to set CLOEXEC on IPC socket");
 	}
-	if (fcntl(ipc_socket, F_SETFL, O_NONBLOCK) == -1) {
+	if (fcntl(ipc->socket, F_SETFL, O_NONBLOCK) == -1) {
 		sway_abort("Unable to set NONBLOCK on IPC socket");
 	}
 
-	ipc_sockaddr = ipc_user_sockaddr();
-
 	// We want to use socket name set by user, not existing socket from another sway instance.
-	if (getenv("SWAYSOCK") != NULL && access(getenv("SWAYSOCK"), F_OK) == -1) {
-		strncpy(ipc_sockaddr->sun_path, getenv("SWAYSOCK"), sizeof(ipc_sockaddr->sun_path) - 1);
-		ipc_sockaddr->sun_path[sizeof(ipc_sockaddr->sun_path) - 1] = 0;
+	if (getenv(envvar) != NULL && access(getenv(envvar), F_OK) == -1) {
+		strncpy(ipc->sockaddr->sun_path, getenv(envvar), sizeof(ipc->sockaddr->sun_path) - 1);
+		ipc->sockaddr->sun_path[sizeof(ipc->sockaddr->sun_path) - 1] = 0;
 	}
 
-	unlink(ipc_sockaddr->sun_path);
-	if (bind(ipc_socket, (struct sockaddr *)ipc_sockaddr, sizeof(*ipc_sockaddr)) == -1) {
+	unlink(ipc->sockaddr->sun_path);
+	if (bind(ipc->socket, (struct sockaddr *)ipc->sockaddr, sizeof(*ipc->sockaddr)) == -1) {
 		sway_abort("Unable to bind IPC socket");
 	}
 
-	if (listen(ipc_socket, 3) == -1) {
+	if (listen(ipc->socket, 3) == -1) {
 		sway_abort("Unable to listen on IPC socket");
 	}
 
-	// Set i3 IPC socket path so that i3-msg works out of the box
-	setenv("I3SOCK", ipc_sockaddr->sun_path, 1);
-	setenv("SWAYSOCK", ipc_sockaddr->sun_path, 1);
+	setenv(envvar, ipc->sockaddr->sun_path, 1);
 
+	ipc->event_source = wl_event_loop_add_fd(server->wl_event_loop, ipc->socket,
+			WL_EVENT_READABLE, ipc_handle_connection, server);
+}
+
+void ipc_init(struct sway_server *server) {
 	ipc_client_list = create_list();
 
 	ipc_display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(server->wl_display, &ipc_display_destroy);
 
-	ipc_event_source = wl_event_loop_add_fd(server->wl_event_loop, ipc_socket,
-			WL_EVENT_READABLE, ipc_handle_connection, server);
+	ipc_init_socket(server, &sway_ipc, "SWAYSOCK", "");
+	// Set i3 IPC socket path so that i3-msg works out of the box
+	ipc_init_socket(server, &i3_ipc, "I3SOCK", ".i3");
 }
 
-struct sockaddr_un *ipc_user_sockaddr(void) {
+struct sockaddr_un *ipc_user_sockaddr(const char *suffix) {
 	struct sockaddr_un *ipc_sockaddr = malloc(sizeof(struct sockaddr_un));
 	if (ipc_sockaddr == NULL) {
 		sway_abort("Can't allocate ipc_sockaddr");
@@ -122,7 +138,7 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 		dir = "/tmp";
 	}
 	if (path_size <= snprintf(ipc_sockaddr->sun_path, path_size,
-			"%s/sway-ipc.%i.%i.sock", dir, getuid(), getpid())) {
+			"%s/sway-ipc%s.%i.%i.sock", dir, suffix, getuid(), getpid())) {
 		sway_abort("Socket path won't fit into ipc_sockaddr->sun_path");
 	}
 
@@ -130,12 +146,11 @@ struct sockaddr_un *ipc_user_sockaddr(void) {
 }
 
 int ipc_handle_connection(int fd, uint32_t mask, void *data) {
-	(void) fd;
 	struct sway_server *server = data;
 	sway_log(SWAY_DEBUG, "Event on IPC listening socket");
 	assert(mask == WL_EVENT_READABLE);
 
-	int client_fd = accept(ipc_socket, NULL, NULL);
+	int client_fd = accept(fd, NULL, NULL);
 	if (client_fd == -1) {
 		sway_log_errno(SWAY_ERROR, "Unable to accept IPC client connection");
 		return 0;
@@ -177,7 +192,16 @@ int ipc_handle_connection(int fd, uint32_t mask, void *data) {
 		close(client_fd);
 		return 0;
 	}
-	client->impl = &ipc_client_sway;
+
+	if (fd == sway_ipc.socket) {
+		client->impl = &ipc_client_sway;
+	} else if (fd == i3_ipc.socket) {
+		client->impl = &ipc_client_i3;
+	} else {
+		sway_log(SWAY_ERROR, "Got connection event from unknown source");
+		close(client_fd);
+		return 0;
+	}
 
 	sway_log(SWAY_DEBUG, "New client: fd %d", client_fd);
 	list_add(ipc_client_list, client);

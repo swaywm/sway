@@ -10,7 +10,7 @@ struct sway_server;
 
 void ipc_init(struct sway_server *server);
 
-struct sockaddr_un *ipc_user_sockaddr(void);
+struct sockaddr_un *ipc_user_sockaddr(const char *suffix);
 
 void ipc_event_workspace(struct sway_workspace *old,
 		struct sway_workspace *new, const char *change);
@@ -50,5 +50,6 @@ struct ipc_client_impl {
 };
 
 extern const struct ipc_client_impl ipc_client_sway;
+extern const struct ipc_client_impl ipc_client_i3;
 
 #endif
