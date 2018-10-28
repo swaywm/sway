@@ -1,9 +1,11 @@
 #include <json-c/json.h>
 #include <stdbool.h>
+#include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/desktop/transaction.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
+#include "sway/ipc-sway.h"
 #include "sway/output.h"
 #include "sway/tree/workspace.h"
 #include "log.h"
@@ -47,7 +49,8 @@ json_object *ipc_sway_get_outputs(struct ipc_client *client,
 	json_object *outputs = json_object_new_array();
 	for (int i = 0; i < root->outputs->length; ++i) {
 		struct sway_output *output = root->outputs->items[i];
-		json_object *output_json = ipc_json_describe_node(&output->node);
+		json_object *output_json = ipc_json_describe_node(&output->node,
+				&ipc_json_sway_descriptors);
 
 		// override the default focused indicator because it's set
 		// differently for the get_outputs reply
@@ -75,7 +78,8 @@ json_object *ipc_sway_get_outputs(struct ipc_client *client,
 
 static void ipc_get_workspaces_callback(struct sway_workspace *workspace,
 		void *data) {
-	json_object *workspace_json = ipc_json_describe_node(&workspace->node);
+	json_object *workspace_json = ipc_json_describe_node(&workspace->node,
+			&ipc_json_sway_descriptors);
 	// override the default focused indicator because
 	// it's set differently for the get_workspaces reply
 	struct sway_seat *seat = input_manager_get_default_seat();
@@ -176,7 +180,7 @@ json_object *ipc_sway_get_seats(struct ipc_client *client,
 
 json_object *ipc_sway_get_tree(struct ipc_client *client,
 		enum ipc_command_type *type, char *buf) {
-	return ipc_json_describe_node_recursive(&root->node);
+	return ipc_json_describe_node_recursive(&root->node, &ipc_json_sway_descriptors);
 }
 
 static void ipc_get_marks_callback(struct sway_container *con, void *data) {
@@ -248,6 +252,61 @@ json_object *ipc_sway_sync(struct ipc_client *client,
 	// It was decided sway will not support this, just return success:false
 	return ipc_json_failure(NULL);
 }
+
+static void ipc_sway_json_describe_view(struct sway_container *c, json_object *object) {
+	const char *app_id = view_get_app_id(c->view);
+	json_object_object_add(object, "app_id",
+			app_id ? json_object_new_string(app_id) : NULL);
+
+#if HAVE_XWAYLAND
+	if (c->view->type == SWAY_VIEW_XWAYLAND) {
+		json_object_object_add(object, "window",
+				json_object_new_int(view_get_x11_window_id(c->view)));
+
+		json_object *window_props = json_object_new_object();
+
+		const char *class = view_get_class(c->view);
+		if (class) {
+			json_object_object_add(window_props, "class", json_object_new_string(class));
+		}
+		const char *instance = view_get_instance(c->view);
+		if (instance) {
+			json_object_object_add(window_props, "instance", json_object_new_string(instance));
+		}
+		if (c->title) {
+			json_object_object_add(window_props, "title", json_object_new_string(c->title));
+		}
+
+		// the transient_for key is always present in i3's output
+		uint32_t parent_id = view_get_x11_parent_id(c->view);
+		json_object_object_add(window_props, "transient_for",
+				parent_id ? json_object_new_int(parent_id) : NULL);
+
+		const char *role = view_get_window_role(c->view);
+		if (role) {
+			json_object_object_add(window_props, "window_role", json_object_new_string(role));
+		}
+
+		json_object_object_add(object, "window_properties", window_props);
+	}
+#endif
+}
+
+static void ipc_sway_json_describe_container(struct sway_node *node, json_object *object) {
+	struct sway_container *c = node->sway_container;
+	ipc_json_describe_container(node->sway_container, object);
+	if (c->view) {
+		ipc_json_describe_view_common(node->sway_container, object);
+		ipc_sway_json_describe_view(node->sway_container, object);
+	}
+}
+
+const ipc_json_descriptor_map ipc_json_sway_descriptors = {
+	[N_ROOT]        = ipc_json_describe_root,
+	[N_WORKSPACE]   = ipc_json_describe_workspace,
+	[N_OUTPUT]      = ipc_json_describe_output,
+	[N_CONTAINER]   = ipc_sway_json_describe_container,
+};
 
 static const ipc_handler sway_commands[] = {
 	[IPC_COMMAND]           = ipc_sway_command,

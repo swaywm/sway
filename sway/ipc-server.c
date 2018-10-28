@@ -18,6 +18,7 @@
 #include "sway/config.h"
 #include "sway/ipc-json.h"
 #include "sway/ipc-server.h"
+#include "sway/ipc-sway.h"
 #include "sway/server.h"
 #include "sway/input/input-manager.h"
 #include "sway/input/keyboard.h"
@@ -291,14 +292,14 @@ void ipc_event_workspace(struct sway_workspace *old,
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	if (old) {
 		json_object_object_add(obj, "old",
-				ipc_json_describe_node_recursive(&old->node));
+				ipc_json_describe_node_recursive(&old->node, &ipc_json_sway_descriptors));
 	} else {
 		json_object_object_add(obj, "old", NULL);
 	}
 
 	if (new) {
 		json_object_object_add(obj, "current",
-				ipc_json_describe_node_recursive(&new->node));
+				ipc_json_describe_node_recursive(&new->node, &ipc_json_sway_descriptors));
 	} else {
 		json_object_object_add(obj, "current", NULL);
 	}
@@ -316,7 +317,7 @@ void ipc_event_window(struct sway_container *window, const char *change) {
 	json_object *obj = json_object_new_object();
 	json_object_object_add(obj, "change", json_object_new_string(change));
 	json_object_object_add(obj, "container",
-			ipc_json_describe_node_recursive(&window->node));
+			ipc_json_describe_node_recursive(&window->node, &ipc_json_sway_descriptors));
 
 	const char *json_string = json_object_to_json_string(obj);
 	ipc_send_event(json_string, IPC_EVENT_WINDOW);

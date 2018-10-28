@@ -17,6 +17,8 @@ enum sway_node_type {
 	N_CONTAINER,
 };
 
+#define NUM_NODE_TYPES ((size_t)(N_CONTAINER + 1))
+
 struct sway_node {
 	enum sway_node_type type;
 	union {

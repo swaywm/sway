@@ -31,4 +31,6 @@ json_object *ipc_sway_send_tick(struct ipc_client *client,
 json_object *ipc_sway_subscribe(struct ipc_client *client,
 		enum ipc_command_type *type, char *buf);
 
+extern const ipc_json_descriptor_map ipc_json_sway_descriptors;
+
 #endif
