@@ -14,6 +14,9 @@
 #include "swaybar/ipc.h"
 #include "swaybar/render.h"
 #include "swaybar/status_line.h"
+#if HAVE_TRAY
+#include "swaybar/tray/tray.h"
+#endif
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static const int WS_HORIZONTAL_PADDING = 5;
@@ -453,6 +456,12 @@ static uint32_t render_to_cairo(cairo_t *cairo, struct swaybar_output *output) {
 	 * utilize the available space.
 	 */
 	double x = output->width * output->scale;
+#if HAVE_TRAY
+	if (bar->tray) {
+		uint32_t h = render_tray(cairo, output, &x);
+		max_height = h > max_height ? h : max_height;
+	}
+#endif
 	if (bar->status) {
 		uint32_t h = render_status_line(cairo, output, &x);
 		max_height = h > max_height ? h : max_height;

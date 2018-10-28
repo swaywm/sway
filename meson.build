@@ -66,6 +66,7 @@ endif
 conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
 conf_data.set10('HAVE_SYSTEMD', systemd.found())
 conf_data.set10('HAVE_ELOGIND', elogind.found())
+conf_data.set10('HAVE_TRAY', get_option('enable-tray') and (systemd.found() or elogind.found()))
 
 if not systemd.found() and not elogind.found()
 	warning('The sway binary must be setuid when compiled without (e)logind')
