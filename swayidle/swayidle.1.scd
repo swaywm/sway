@@ -22,11 +22,13 @@ swayidle listens for idle activity on your Wayland compositor and executes tasks
 on various idle-related events. You can specify any number of events at the
 command line.
 
+Sending SIGUSR1 to swayidle will immediately enter idle state.
+
 # EVENTS
 
 *timeout* <timeout> <timeout command> [resume <resume command>]
 	Execute _timeout command_ if there is no activity for <timeout> seconds.
-	
+
 	If you specify "resume <resume command>", _resume command_ will be run when
 	there is activity again.
 
@@ -39,11 +41,11 @@ All commands are executed in a shell.
 # EXAMPLE
 
 ```
- swayidle \
-     timeout 300 'swaylock -c 000000' \
-     timeout 600 'swaymsg "output * dpms off"' \
+swayidle \
+	timeout 300 'swaylock -c 000000' \
+	timeout 600 'swaymsg "output * dpms off"' \
 		resume 'swaymsg "output * dpms on"' \
-     before-sleep 'swaylock -c 000000'
+	before-sleep 'swaylock -c 000000'
 ```
 
 This will lock your screen after 300 seconds of inactivity, then turn off your
@@ -58,4 +60,4 @@ https://github.com/swaywm/sway.
 
 # SEE ALSO
 
-*sway*(5) *swaymsg*(1) *sway-input*(5) *sway-bar*(5)
+*sway*(5) *swaymsg*(1) *sway-input*(5) *sway-output*(5) *sway-bar*(5)
