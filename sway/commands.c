@@ -60,6 +60,7 @@ void apply_seat_config(struct seat_config *seat_config) {
 
 /* Keep alphabetized */
 static struct cmd_handler handlers[] = {
+	{ "append_layout", cmd_append_layout },
 	{ "assign", cmd_assign },
 	{ "bar", cmd_bar },
 	{ "bindcode", cmd_bindcode },

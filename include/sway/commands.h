@@ -97,6 +97,7 @@ struct cmd_results *add_color(const char *name,
 void container_resize_tiled(struct sway_container *parent, enum wlr_edges edge,
 		int amount);
 
+sway_cmd cmd_append_layout;
 sway_cmd cmd_assign;
 sway_cmd cmd_bar;
 sway_cmd cmd_bindcode;

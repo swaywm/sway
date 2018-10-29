@@ -31,6 +31,7 @@ sway_sources = files(
 	'config/seat.c',
 	'config/input.c',
 
+	'commands/append_layout.c',
 	'commands/assign.c',
 	'commands/bar.c',
 	'commands/bind.c',

@@ -69,6 +69,7 @@ struct sway_container_state {
 struct sway_container {
 	struct sway_node node;
 	struct sway_view *view;
+	list_t *swallow_criteria;
 
 	// The pending state is the main container properties, and the current state is in the below struct.
 	// This means most places of the code can refer to the main variables (pending state) and it'll just work.
