@@ -23,7 +23,7 @@ static bool success_object(json_object *result) {
 	json_object *success;
 
 	if (!json_object_object_get_ex(result, "success", &success)) {
-		return false;
+		return true;
 	}
 
 	return json_object_get_boolean(success);
