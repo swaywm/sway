@@ -197,17 +197,18 @@ static void log_kernel(void) {
 static void drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		if (setgid(getgid()) != 0) {
-			wlr_log(WLR_ERROR, "Unable to drop root");
+			wlr_log(WLR_ERROR, "Unable to drop root, refusing to start");
 			exit(EXIT_FAILURE);
 		}
 		if (setuid(getuid()) != 0) {
-			wlr_log(WLR_ERROR, "Unable to drop root");
+			wlr_log(WLR_ERROR, "Unable to drop root, refusing to start");
 			exit(EXIT_FAILURE);
 		}
 	}
 	if (setuid(0) != -1) {
-		wlr_log(WLR_ERROR, "Root privileges can be restored.");
-		exit(EXIT_FAILURE);
+		wlr_log(WLR_ERROR, "Unable to drop root (we shouldn't be able to "
+			"restore it after setuid), refusing to start");
+		return false;
 	}
 }
 
