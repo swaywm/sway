@@ -175,24 +175,3 @@ failed:
 	free(current);
 	return NULL;
 }
-
-bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out) {
-	switch (dir) {
-	case MOVE_UP:
-		*out = WLR_DIRECTION_UP;
-		break;
-	case MOVE_DOWN:
-		*out = WLR_DIRECTION_DOWN;
-		break;
-	case MOVE_LEFT:
-		*out = WLR_DIRECTION_LEFT;
-		break;
-	case MOVE_RIGHT:
-		*out = WLR_DIRECTION_RIGHT;
-		break;
-	default:
-		return false;
-	}
-
-	return true;
-}

@@ -7,15 +7,6 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <xkbcommon/xkbcommon.h>
 
-enum movement_direction {
-	MOVE_LEFT,
-	MOVE_RIGHT,
-	MOVE_UP,
-	MOVE_DOWN,
-	MOVE_PARENT,
-	MOVE_CHILD,
-};
-
 /**
  * Wrap i into the range [0, max[
  */
@@ -76,7 +67,5 @@ bool parse_boolean(const char *boolean, bool current);
  * to a dangling symlink, NULL is returned.
  */
 char* resolve_path(const char* path);
-
-bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
 
 #endif

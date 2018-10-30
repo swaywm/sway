@@ -36,7 +36,6 @@ struct sway_output;
 struct sway_workspace;
 struct sway_view;
 
-enum movement_direction;
 enum wlr_direction;
 
 struct sway_container_state {
@@ -286,8 +285,6 @@ void container_detach(struct sway_container *child);
 
 void container_replace(struct sway_container *container,
 		struct sway_container *replacement);
-
-bool sway_dir_to_wlr(enum movement_direction dir, enum wlr_direction *out);
 
 struct sway_container *container_split(struct sway_container *child,
 		enum sway_container_layout layout);
