@@ -242,23 +242,23 @@ void view_autoconfigure(struct sway_view *view) {
 		view->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
+	double x, y, width, height;
+	x = y = width = height = 0;
+	double y_offset = 0;
+
 	// In a tabbed or stacked container, the container's y is the top of the
 	// title area. We have to offset the surface y by the height of the title,
 	// bar, and disable any top border because we'll always have the title bar.
-	double y_offset = 0;
 	enum sway_container_layout layout = container_parent_layout(con);
-	list_t *siblings = container_get_siblings(con);
-	if (siblings->length > 1 && !container_is_floating(con)) {
-		if (layout == L_TABBED) {
-			y_offset = container_titlebar_height();
-			view->border_top = false;
-		} else if (layout == L_STACKED) {
-			y_offset = container_titlebar_height() * siblings->length;
-			view->border_top = false;
-		}
+	if (layout == L_TABBED && !container_is_floating(con)) {
+		y_offset = container_titlebar_height();
+		view->border_top = false;
+	} else if (layout == L_STACKED && !container_is_floating(con)) {
+		list_t *siblings = container_get_siblings(con);
+		y_offset = container_titlebar_height() * siblings->length;
+		view->border_top = false;
 	}
 
-	double x, y, width, height = 0;
 	switch (view->border) {
 	case B_CSD:
 	case B_NONE:
