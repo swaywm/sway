@@ -1,4 +1,5 @@
 #include <strings.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/log.h>
 #include "log.h"
 #include "sway/commands.h"
@@ -13,20 +14,16 @@
 #include "stringop.h"
 #include "util.h"
 
-static bool parse_movement_direction(const char *name,
-		enum movement_direction *out) {
+static bool parse_direction(const char *name,
+		enum wlr_direction *out) {
 	if (strcasecmp(name, "left") == 0) {
-		*out = MOVE_LEFT;
+		*out = WLR_DIRECTION_LEFT;
 	} else if (strcasecmp(name, "right") == 0) {
-		*out = MOVE_RIGHT;
+		*out = WLR_DIRECTION_RIGHT;
 	} else if (strcasecmp(name, "up") == 0) {
-		*out = MOVE_UP;
+		*out = WLR_DIRECTION_UP;
 	} else if (strcasecmp(name, "down") == 0) {
-		*out = MOVE_DOWN;
-	} else if (strcasecmp(name, "parent") == 0) {
-		*out = MOVE_PARENT;
-	} else if (strcasecmp(name, "child") == 0) {
-		*out = MOVE_CHILD;
+		*out = WLR_DIRECTION_DOWN;
 	} else {
 		return false;
 	}
@@ -38,7 +35,7 @@ static bool parse_movement_direction(const char *name,
  * Get node in the direction of newly entered output.
  */
 static struct sway_node *get_node_in_output_direction(
-		struct sway_output *output, enum movement_direction dir) {
+		struct sway_output *output, enum wlr_direction dir) {
 	struct sway_seat *seat = config->handler_context.seat;
 	struct sway_workspace *ws = output_get_active_workspace(output);
 	if (ws->fullscreen) {
@@ -48,7 +45,7 @@ static struct sway_node *get_node_in_output_direction(
 
 	if (ws->tiling->length > 0) {
 		switch (dir) {
-		case MOVE_LEFT:
+		case WLR_DIRECTION_LEFT:
 			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
 				// get most right child of new output
 				container = ws->tiling->items[ws->tiling->length-1];
@@ -56,7 +53,7 @@ static struct sway_node *get_node_in_output_direction(
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
 			break;
-		case MOVE_RIGHT:
+		case WLR_DIRECTION_RIGHT:
 			if (ws->layout == L_HORIZ || ws->layout == L_TABBED) {
 				// get most left child of new output
 				container = ws->tiling->items[0];
@@ -64,7 +61,7 @@ static struct sway_node *get_node_in_output_direction(
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
 			break;
-		case MOVE_UP:
+		case WLR_DIRECTION_UP:
 			if (ws->layout == L_VERT || ws->layout == L_STACKED) {
 				// get most bottom child of new output
 				container = ws->tiling->items[ws->tiling->length-1];
@@ -72,16 +69,13 @@ static struct sway_node *get_node_in_output_direction(
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
 			break;
-		case MOVE_DOWN: {
+		case WLR_DIRECTION_DOWN:
 			if (ws->layout == L_VERT || ws->layout == L_STACKED) {
 				// get most top child of new output
 				container = ws->tiling->items[0];
 			} else {
 				container = seat_get_focus_inactive_tiling(seat, ws);
 			}
-			break;
-		}
-		default:
 			break;
 		}
 	}
@@ -95,11 +89,8 @@ static struct sway_node *get_node_in_output_direction(
 }
 
 static struct sway_node *node_get_in_direction(struct sway_container *container,
-		struct sway_seat *seat, enum movement_direction dir) {
+		struct sway_seat *seat, enum wlr_direction dir) {
 	if (container->is_fullscreen) {
-		if (dir == MOVE_PARENT) {
-			return NULL;
-		}
 		// Fullscreen container with a direction - go straight to outputs
 		struct sway_output *output = container->workspace->output;
 		struct sway_output *new_output = output_get_in_direction(output, dir);
@@ -107,9 +98,6 @@ static struct sway_node *node_get_in_direction(struct sway_container *container,
 			return NULL;
 		}
 		return get_node_in_output_direction(new_output, dir);
-	}
-	if (dir == MOVE_PARENT) {
-		return node_get_parent(&container->node);
 	}
 
 	struct sway_container *wrap_candidate = NULL;
@@ -122,15 +110,15 @@ static struct sway_node *node_get_in_direction(struct sway_container *container,
 			container_parent_layout(current);
 		list_t *siblings = container_get_siblings(current);
 
-		if (dir == MOVE_LEFT || dir == MOVE_RIGHT) {
+		if (dir == WLR_DIRECTION_LEFT || dir == WLR_DIRECTION_RIGHT) {
 			if (parent_layout == L_HORIZ || parent_layout == L_TABBED) {
 				can_move = true;
-				desired = idx + (dir == MOVE_LEFT ? -1 : 1);
+				desired = idx + (dir == WLR_DIRECTION_LEFT ? -1 : 1);
 			}
 		} else {
 			if (parent_layout == L_VERT || parent_layout == L_STACKED) {
 				can_move = true;
-				desired = idx + (dir == MOVE_UP ? -1 : 1);
+				desired = idx + (dir == WLR_DIRECTION_UP ? -1 : 1);
 			}
 		}
 
@@ -200,9 +188,8 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 	struct sway_output *output = output_by_name(identifier);
 
 	if (!output) {
-		enum movement_direction direction;
-		if (!parse_movement_direction(identifier, &direction) ||
-				direction == MOVE_PARENT || direction == MOVE_CHILD) {
+		enum wlr_direction direction;
+		if (!parse_direction(identifier, &direction)) {
 			free(identifier);
 			return cmd_results_new(CMD_INVALID, "focus",
 				"There is no output with that name");
@@ -217,6 +204,31 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 		seat_consider_warp_to_focus(seat);
 	}
 
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *focus_parent(void) {
+	struct sway_seat *seat = config->handler_context.seat;
+	struct sway_container *con = config->handler_context.container;
+	if (!con || con->is_fullscreen) {
+		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+	}
+	struct sway_node *parent = node_get_parent(&con->node);
+	if (parent) {
+		seat_set_focus(seat, parent);
+		seat_consider_warp_to_focus(seat);
+	}
+	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
+}
+
+static struct cmd_results *focus_child(void) {
+	struct sway_seat *seat = config->handler_context.seat;
+	struct sway_node *node = config->handler_context.node;
+	struct sway_node *focus = seat_get_active_tiling_child(seat, node);
+	if (focus) {
+		seat_set_focus(seat, focus);
+		seat_consider_warp_to_focus(seat);
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
 
@@ -257,27 +269,21 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 		return focus_output(seat, argc, argv);
 	}
 
-	enum movement_direction direction = 0;
-	if (!parse_movement_direction(argv[0], &direction)) {
+	if (strcasecmp(argv[0], "parent") == 0) {
+		return focus_parent();
+	}
+	if (strcasecmp(argv[0], "child") == 0) {
+		return focus_child();
+	}
+
+	enum wlr_direction direction = 0;
+	if (!parse_direction(argv[0], &direction)) {
 		return cmd_results_new(CMD_INVALID, "focus",
 			"Expected 'focus <direction|parent|child|mode_toggle|floating|tiling>' "
 			"or 'focus output <direction|name>'");
 	}
 
-	if (direction == MOVE_CHILD) {
-		struct sway_node *focus = seat_get_active_tiling_child(seat, node);
-		if (focus) {
-			seat_set_focus(seat, focus);
-			seat_consider_warp_to_focus(seat);
-		}
-		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-	}
-
 	if (node->type == N_WORKSPACE) {
-		if (direction == MOVE_PARENT) {
-			return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-		}
-
 		// Jump to the next output
 		struct sway_output *new_output =
 			output_get_in_direction(workspace->output, direction);

@@ -274,16 +274,14 @@ struct sway_output *output_from_wlr_output(struct wlr_output *output) {
 }
 
 struct sway_output *output_get_in_direction(struct sway_output *reference,
-		enum movement_direction direction) {
-	enum wlr_direction wlr_dir = 0;
-	if (!sway_assert(sway_dir_to_wlr(direction, &wlr_dir),
-				"got invalid direction: %d", direction)) {
+		enum wlr_direction direction) {
+	if (!sway_assert(direction, "got invalid direction: %d", direction)) {
 		return NULL;
 	}
 	int lx = reference->wlr_output->lx + reference->width / 2;
 	int ly = reference->wlr_output->ly + reference->height / 2;
 	struct wlr_output *wlr_adjacent = wlr_output_layout_adjacent_output(
-			root->output_layout, wlr_dir, reference->wlr_output, lx, ly);
+			root->output_layout, direction, reference->wlr_output, lx, ly);
 	if (!wlr_adjacent) {
 		return NULL;
 	}
