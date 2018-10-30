@@ -19,7 +19,6 @@ struct sway_root *root;
 static void output_layout_handle_change(struct wl_listener *listener,
 		void *data) {
 	arrange_root();
-	transaction_commit_dirty();
 }
 
 struct sway_root *root_create(void) {
