@@ -781,13 +781,6 @@ static void render_containers_stacked(struct sway_output *output,
 
 static void render_containers(struct sway_output *output,
 		pixman_region32_t *damage, struct parent_data *parent) {
-	if (parent->children->length == 1) {
-		struct sway_container *child = parent->children->items[0];
-		if (child->view) {
-			render_containers_linear(output, damage, parent);
-			return;
-		}
-	}
 	switch (parent->layout) {
 	case L_NONE:
 	case L_HORIZ:
