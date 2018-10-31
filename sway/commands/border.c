@@ -12,37 +12,41 @@
 //   in use (we set using_csd instead and render a sway border).
 // - view->saved_border should be the last applied border when switching to CSD.
 // - view->using_csd should always reflect whether CSD is applied or not.
-static void set_border(struct sway_view *view,
+static void set_border(struct sway_container *con,
 		enum sway_container_border new_border) {
-	if (view->using_csd && new_border != B_CSD) {
-		view_set_csd_from_server(view, false);
-	} else if (!view->using_csd && new_border == B_CSD) {
-		view_set_csd_from_server(view, true);
-		view->saved_border = view->border;
+	if (con->view) {
+		if (con->view->using_csd && new_border != B_CSD) {
+			view_set_csd_from_server(con->view, false);
+		} else if (!con->view->using_csd && new_border == B_CSD) {
+			view_set_csd_from_server(con->view, true);
+			con->saved_border = con->border;
+		}
 	}
-	if (new_border != B_CSD || container_is_floating(view->container)) {
-		view->border = new_border;
+	if (new_border != B_CSD || container_is_floating(con)) {
+		con->border = new_border;
 	}
-	view->using_csd = new_border == B_CSD;
+	if (con->view) {
+		con->view->using_csd = new_border == B_CSD;
+	}
 }
 
-static void border_toggle(struct sway_view *view) {
-	if (view->using_csd) {
-		set_border(view, B_NONE);
+static void border_toggle(struct sway_container *con) {
+	if (con->view && con->view->using_csd) {
+		set_border(con, B_NONE);
 		return;
 	}
-	switch (view->border) {
+	switch (con->border) {
 	case B_NONE:
-		set_border(view, B_PIXEL);
+		set_border(con, B_PIXEL);
 		break;
 	case B_PIXEL:
-		set_border(view, B_NORMAL);
+		set_border(con, B_NORMAL);
 		break;
 	case B_NORMAL:
-		if (view->xdg_decoration) {
-			set_border(view, B_CSD);
+		if (con->view && con->view->xdg_decoration) {
+			set_border(con, B_CSD);
 		} else {
-			set_border(view, B_NONE);
+			set_border(con, B_NONE);
 		}
 		break;
 	case B_CSD:
@@ -66,33 +70,33 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	struct sway_view *view = container->view;
 
 	if (strcmp(argv[0], "none") == 0) {
-		set_border(view, B_NONE);
+		set_border(container, B_NONE);
 	} else if (strcmp(argv[0], "normal") == 0) {
-		set_border(view, B_NORMAL);
+		set_border(container, B_NORMAL);
 	} else if (strcmp(argv[0], "pixel") == 0) {
-		set_border(view, B_PIXEL);
+		set_border(container, B_PIXEL);
 	} else if (strcmp(argv[0], "csd") == 0) {
-		if (!view->xdg_decoration) {
+		if (!view || !view->xdg_decoration) {
 			return cmd_results_new(CMD_INVALID, "border",
 					"This window doesn't support client side decorations");
 		}
-		set_border(view, B_CSD);
+		set_border(container, B_CSD);
 	} else if (strcmp(argv[0], "toggle") == 0) {
-		border_toggle(view);
+		border_toggle(container);
 	} else {
 		return cmd_results_new(CMD_INVALID, "border",
 				"Expected 'border <none|normal|pixel|csd|toggle>' "
 				"or 'border pixel <px>'");
 	}
 	if (argc == 2) {
-		view->border_thickness = atoi(argv[1]);
+		container->border_thickness = atoi(argv[1]);
 	}
 
-	if (container_is_floating(view->container)) {
-		container_set_geometry_from_floating_view(view->container);
+	if (container_is_floating(container)) {
+		container_set_geometry_from_floating_view(container);
 	}
 
-	arrange_container(view->container);
+	arrange_container(container);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
