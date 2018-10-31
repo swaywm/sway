@@ -59,10 +59,13 @@ must be separated by one space. For example:
 	Sets the background of the given output to the specified color. _color_
 	should be specified as _#RRGGBB_. Alpha is not supported.
 
-*output* <name> transform <transform>
+*output* <name> transform <transform> [clockwise|anticlockwise]
 	Sets the background transform to the given value. Can be one of "90", "180",
 	"270" for rotation; or "flipped", "flipped-90", "flipped-180", "flipped-270"
-	to apply a rotation and flip, or "normal" to apply no transform.
+	to apply a rotation and flip, or "normal" to apply no transform. If a single
+	output is chosen and a rotation direction is specified 
+	(_clockwise_ or _anticlockwise_) then the transform is added or 
+	subtracted from the current tranform.
 
 *output* <name> disable|enable
 	Enables or disables the specified output (all outputs are enabled by
