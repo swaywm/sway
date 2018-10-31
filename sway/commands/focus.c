@@ -196,6 +196,17 @@ static struct cmd_results *focus_output(struct sway_seat *seat,
 		}
 		struct sway_workspace *ws = seat_get_focused_workspace(seat);
 		output = output_get_in_direction(ws->output, direction);
+
+		if (!output) {
+			int center_lx = ws->output->lx + ws->output->width / 2;
+			int center_ly = ws->output->ly + ws->output->height / 2;
+			struct wlr_output *target = wlr_output_layout_farthest_output(
+					root->output_layout, opposite_direction(direction),
+					ws->output->wlr_output, center_lx, center_ly);
+			if (target) {
+				output = output_from_wlr_output(target);
+			}
+		}
 	}
 
 	free(identifier);
