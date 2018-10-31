@@ -1,4 +1,11 @@
-Please include the following four components in your bug report: sway version, debug log, configuration (if applicable), and an explanation of steps taken to reproduce the issue.
+If you are using the nvidia proprietary driver for any reason, you have two choices:
+
+1. Uninstall it and use nouveau instead
+2. Use X11+i3 and close your browser tab
+
+If `lsmod | grep nvidia | wc -l` shows anything other than zero, your bug report is not welcome here.
+
+Otherwise, please include the following four components in your bug report: sway version, debug log, configuration (if applicable), and an explanation of steps taken to reproduce the issue.
 
 Obtain your version like so:
 
