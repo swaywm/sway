@@ -230,9 +230,9 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 			app_id ? json_object_new_string(app_id) : NULL);
 
 	json_object *marks = json_object_new_array();
-	list_t *view_marks = c->view->marks;
-	for (int i = 0; i < view_marks->length; ++i) {
-		json_object_array_add(marks, json_object_new_string(view_marks->items[i]));
+	list_t *con_marks = c->marks;
+	for (int i = 0; i < con_marks->length; ++i) {
+		json_object_array_add(marks, json_object_new_string(con_marks->items[i]));
 	}
 
 	json_object_object_add(object, "marks", marks);

@@ -488,12 +488,12 @@ static struct cmd_results *cmd_move_container(int argc, char **argv) {
 		}
 		destination = seat_get_focus_inactive(seat, &new_output->node);
 	} else if (strcasecmp(argv[1], "mark") == 0) {
-		struct sway_view *dest_view = view_find_mark(argv[2]);
-		if (dest_view == NULL) {
+		struct sway_container *dest_con = container_find_mark(argv[2]);
+		if (dest_con == NULL) {
 			return cmd_results_new(CMD_FAILURE, "move",
 					"Mark '%s' not found", argv[2]);
 		}
-		destination = &dest_view->container->node;
+		destination = &dest_con->node;
 	} else {
 		return cmd_results_new(CMD_INVALID, "move", expected_syntax);
 	}

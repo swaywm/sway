@@ -11,9 +11,7 @@
 #include "util.h"
 
 static void rebuild_marks_iterator(struct sway_container *con, void *data) {
-	if (con->view) {
-		view_update_marks_textures(con->view);
-	}
+	container_update_marks_textures(con);
 }
 
 struct cmd_results *cmd_show_marks(int argc, char **argv) {

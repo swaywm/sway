@@ -9,10 +9,8 @@
 #include "stringop.h"
 
 static void remove_all_marks_iterator(struct sway_container *con, void *data) {
-	if (con->view) {
-		view_clear_marks(con->view);
-		view_update_marks_textures(con->view);
-	}
+	container_clear_marks(con);
+	container_update_marks_textures(con);
 }
 
 // unmark                  Remove all marks from all views
@@ -21,15 +19,10 @@ static void remove_all_marks_iterator(struct sway_container *con, void *data) {
 // [criteria] unmark foo   Remove single mark from matched view
 
 struct cmd_results *cmd_unmark(int argc, char **argv) {
-	// Determine the view
-	struct sway_view *view = NULL;
+	// Determine the container
+	struct sway_container *con = NULL;
 	if (config->handler_context.using_criteria) {
-		struct sway_container *container = config->handler_context.container;
-		if (!container || !container->view) {
-			return cmd_results_new(CMD_INVALID, "unmark",
-					"Only views can have marks");
-		}
-		view = container->view;
+		con = config->handler_context.container;
 	}
 
 	// Determine the mark
@@ -38,20 +31,20 @@ struct cmd_results *cmd_unmark(int argc, char **argv) {
 		mark = join_args(argv, argc);
 	}
 
-	if (view && mark) {
-		// Remove the mark from the given view
-		if (view_has_mark(view, mark)) {
-			view_find_and_unmark(mark);
+	if (con && mark) {
+		// Remove the mark from the given container
+		if (container_has_mark(con, mark)) {
+			container_find_and_unmark(mark);
 		}
-	} else if (view && !mark) {
-		// Clear all marks from the given view
-		view_clear_marks(view);
-		view_update_marks_textures(view);
-	} else if (!view && mark) {
-		// Remove mark from whichever view has it
-		view_find_and_unmark(mark);
+	} else if (con && !mark) {
+		// Clear all marks from the given container
+		container_clear_marks(con);
+		container_update_marks_textures(con);
+	} else if (!con && mark) {
+		// Remove mark from whichever container has it
+		container_find_and_unmark(mark);
 	} else {
-		// Remove all marks from all views
+		// Remove all marks from all containers
 		root_for_each_container(remove_all_marks_iterator, NULL);
 	}
 	free(mark);

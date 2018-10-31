@@ -5,9 +5,7 @@
 #include "sway/tree/container.h"
 
 static void rebuild_textures_iterator(struct sway_container *con, void *data) {
-	if (con->view) {
-		view_update_marks_textures(con->view);
-	}
+	container_update_marks_textures(con);
 	container_update_title_textures(con);
 }
 

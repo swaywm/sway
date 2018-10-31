@@ -127,6 +127,12 @@ struct sway_container {
 	size_t title_height;
 	size_t title_baseline;
 
+	list_t *marks; // char *
+	struct wlr_texture *marks_focused;
+	struct wlr_texture *marks_focused_inactive;
+	struct wlr_texture *marks_unfocused;
+	struct wlr_texture *marks_urgent;
+
 	struct {
 		struct wl_signal destroy;
 	} events;
@@ -303,5 +309,27 @@ struct sway_container *container_split(struct sway_container *child,
 
 bool container_is_transient_for(struct sway_container *child,
 		struct sway_container *ancestor);
+
+/**
+ * Find any container that has the given mark and return it.
+ */
+struct sway_container *container_find_mark(char *mark);
+
+/**
+ * Find any container that has the given mark and remove the mark from the
+ * container. Returns true if it matched a container.
+ */
+bool container_find_and_unmark(char *mark);
+
+/**
+ * Remove all marks from the container.
+ */
+void container_clear_marks(struct sway_container *container);
+
+bool container_has_mark(struct sway_container *container, char *mark);
+
+void container_add_mark(struct sway_container *container, char *mark);
+
+void container_update_marks_textures(struct sway_container *container);
 
 #endif

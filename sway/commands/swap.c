@@ -159,8 +159,8 @@ static bool test_id(struct sway_container *container, void *id) {
 }
 
 static bool test_mark(struct sway_container *container, void *mark) {
-	if (container->view && container->view->marks->length) {
-		return !list_seq_find(container->view->marks,
+	if (container->marks->length) {
+		return !list_seq_find(container->marks,
 				(int (*)(const void *, const void *))strcmp, mark);
 	}
 	return false;

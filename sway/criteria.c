@@ -121,8 +121,9 @@ static bool criteria_matches_view(struct criteria *criteria,
 
 	if (criteria->con_mark) {
 		bool exists = false;
-		for (int i = 0; i < view->marks->length; ++i) {
-			if (regex_cmp(view->marks->items[i], criteria->con_mark) == 0) {
+		struct sway_container *con = view->container;
+		for (int i = 0; i < con->marks->length; ++i) {
+			if (regex_cmp(con->marks->items[i], criteria->con_mark) == 0) {
 				exists = true;
 				break;
 			}
