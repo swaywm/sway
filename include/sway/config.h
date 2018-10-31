@@ -571,6 +571,9 @@ struct seat_attachment_config *seat_config_get_attachment(
 
 struct seat_config *store_seat_config(struct seat_config *seat);
 
+void seat_config_remove_attachment(
+	struct seat_config *seat_config, char *identifier);
+
 int output_name_cmp(const void *item, const void *data);
 
 void output_get_identifier(char *identifier, size_t len,

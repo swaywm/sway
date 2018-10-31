@@ -191,3 +191,14 @@ struct seat_attachment_config *seat_config_get_attachment(
 
 	return NULL;
 }
+
+void seat_config_remove_attachment(struct seat_config *seat_config, char *identifier) {
+	for (int i = 0; i < seat_config->attachments->length; ++i) {
+		struct seat_attachment_config *attachment = seat_config->attachments->items[i];
+		if (strcmp(attachment->identifier, identifier) == 0) {
+			list_del(seat_config->attachments, i);
+			seat_attachment_config_free(attachment);
+			break;
+		}
+	}
+}

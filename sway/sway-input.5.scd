@@ -150,6 +150,11 @@ sitting in their own "seat").
 	Attach an input device to this seat by its input identifier. A special
 	value of "\*" will attach all devices to the seat.
 
+*seat* <name> detach <input\_identifier>
+	Detaches an input device from this seat by its input identifier.
+
+	Note: the fallback seat will catch input devices with no seat.
+
 *seat* <seat> cursor move|set <x> <y>
 	Move specified seat's cursor relative to current position or wrap to
 	absolute coordinates (with respect to the global coordinate space).

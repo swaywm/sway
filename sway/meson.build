@@ -82,6 +82,7 @@ sway_sources = files(
 	'commands/seat.c',
 	'commands/seat/attach.c',
 	'commands/seat/cursor.c',
+	'commands/seat/detach.c',
 	'commands/seat/fallback.c',
 	'commands/seat/hide_cursor.c',
 	'commands/seat/pointer_constraint.c',

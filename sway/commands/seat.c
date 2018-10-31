@@ -10,6 +10,7 @@
 static struct cmd_handler seat_handlers[] = {
 	{ "attach", seat_cmd_attach },
 	{ "cursor", seat_cmd_cursor },
+	{ "detach", seat_cmd_detach },
 	{ "fallback", seat_cmd_fallback },
 	{ "hide_cursor", seat_cmd_hide_cursor },
 	{ "pointer_constraint", seat_cmd_pointer_constraint },

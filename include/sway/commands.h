@@ -265,6 +265,7 @@ sway_cmd output_cmd_transform;
 
 sway_cmd seat_cmd_attach;
 sway_cmd seat_cmd_cursor;
+sway_cmd seat_cmd_detach;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
 sway_cmd seat_cmd_pointer_constraint;
