@@ -2,6 +2,7 @@
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/config.h"
+#include "sway/input/input-manager.h"
 
 struct cmd_results *seat_cmd_detach(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -23,5 +24,8 @@ struct cmd_results *seat_cmd_detach(int argc, char **argv) {
 	if (!config->validating) {
 		input_manager_apply_seat_config(new_seat_config(current_seat_config->name));
 	}
+
+	input_manager_seat_consider_destroy(current_seat_config->name);
+
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

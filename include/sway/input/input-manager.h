@@ -53,6 +53,8 @@ struct sway_seat *input_manager_get_seat(const char *seat_name, bool create);
  */
 void input_manager_verify_fallback_seat(void);
 
+void input_manager_seat_consider_destroy(const char *seat_name);
+
 /**
  * Gets the last seat the user interacted with
  */

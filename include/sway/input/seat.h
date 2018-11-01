@@ -94,6 +94,8 @@ struct sway_seat *seat_create(const char *seat_name);
 
 void seat_destroy(struct sway_seat *seat);
 
+void seat_consider_destroy(struct sway_seat *seat);
+
 void seat_add_device(struct sway_seat *seat,
 		struct sway_input_device *device);
 

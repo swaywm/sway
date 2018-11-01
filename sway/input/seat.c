@@ -59,6 +59,12 @@ static void seat_node_destroy(struct sway_seat_node *seat_node) {
 	free(seat_node);
 }
 
+void seat_consider_destroy(struct sway_seat *seat) {
+	if (wl_list_empty(&seat->devices)) {
+		seat_destroy(seat);
+	}
+}
+
 /**
  * Activate all views within this container recursively.
  */

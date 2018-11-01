@@ -729,6 +729,11 @@ void input_manager_apply_seat_config(struct seat_config *seat_config) {
 	}
 }
 
+void input_manager_seat_consider_destroy(const char *seat_name) {
+	struct sway_seat *seat = input_manager_get_seat(seat_name, false);
+	seat_consider_destroy(seat);
+}
+
 void input_manager_configure_xcursor(void) {
 	struct sway_seat *seat = NULL;
 	wl_list_for_each(seat, &server.input->seats, link) {
