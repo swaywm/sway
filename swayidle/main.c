@@ -366,15 +366,22 @@ static int handle_signal(int sig, void *data) {
 }
 
 static int display_event(int fd, uint32_t mask, void *data) {
-	if (mask & WL_EVENT_HANGUP) {
+	if ((mask & WL_EVENT_HANGUP) || (mask & WL_EVENT_ERROR)) {
 		sway_terminate(0);
 	}
-	if (wl_display_dispatch(state.display) < 0) {
+
+	int count = 0;
+	if (mask & WL_EVENT_READABLE) {
+		count = wl_display_dispatch(state.display);
+	} else {
+		count = wl_display_dispatch_pending(state.display);
+		wl_display_flush(state.display);
+	}
+	if (count < 0) {
 		wlr_log_errno(WLR_ERROR, "wl_display_dispatch failed, exiting");
 		sway_terminate(0);
 	}
-	wl_display_flush(state.display);
-	return 0;
+	return count;
 }
 
 static void register_idle_timeout(void *item) {
