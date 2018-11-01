@@ -59,4 +59,6 @@ uint32_t parse_color(const char *color);
  */
 bool parse_boolean(const char *boolean, bool current);
 
+enum wlr_direction opposite_direction(enum wlr_direction d);
+
 #endif

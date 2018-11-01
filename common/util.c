@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 700
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -137,4 +138,19 @@ bool parse_boolean(const char *boolean, bool current) {
 	}
 	// All other values are false to match i3
 	return false;
+}
+
+enum wlr_direction opposite_direction(enum wlr_direction d) {
+	switch (d) {
+	case WLR_DIRECTION_UP:
+		return WLR_DIRECTION_DOWN;
+	case WLR_DIRECTION_DOWN:
+		return WLR_DIRECTION_UP;
+	case WLR_DIRECTION_RIGHT:
+		return WLR_DIRECTION_LEFT;
+	case WLR_DIRECTION_LEFT:
+		return WLR_DIRECTION_RIGHT;
+	}
+	assert(false);
+	return 0;
 }

@@ -27,19 +27,6 @@ static const char *expected_syntax =
 	"'move <container|window|workspace> [to] output <name|direction>' or "
 	"'move <container|window> [to] mark <mark>'";
 
-enum wlr_direction opposite_direction(enum wlr_direction d) {
-	switch (d) {
-		case WLR_DIRECTION_UP:
-			return WLR_DIRECTION_DOWN;
-		case WLR_DIRECTION_DOWN:
-			return WLR_DIRECTION_UP;
-		case WLR_DIRECTION_RIGHT:
-			return WLR_DIRECTION_LEFT;
-		default:
-			return WLR_DIRECTION_RIGHT;
-	}
-}
-
 static struct sway_output *output_in_direction(const char *direction_string,
 		struct sway_output *reference, int ref_lx, int ref_ly) {
 	struct {
