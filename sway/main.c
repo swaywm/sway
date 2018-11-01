@@ -29,7 +29,7 @@
 
 static bool terminate_request = false;
 static int exit_value = 0;
-struct sway_server server;
+struct sway_server server = {0};
 
 void sway_terminate(int exit_code) {
 	terminate_request = true;
@@ -194,21 +194,23 @@ static void log_kernel(void) {
 }
 
 
-static void drop_permissions(void) {
+static bool drop_permissions(void) {
 	if (getuid() != geteuid() || getgid() != getegid()) {
 		if (setgid(getgid()) != 0) {
-			wlr_log(WLR_ERROR, "Unable to drop root");
-			exit(EXIT_FAILURE);
+			wlr_log(WLR_ERROR, "Unable to drop root, refusing to start");
+			return false;
 		}
 		if (setuid(getuid()) != 0) {
-			wlr_log(WLR_ERROR, "Unable to drop root");
-			exit(EXIT_FAILURE);
+			wlr_log(WLR_ERROR, "Unable to drop root, refusing to start");
+			return false;
 		}
 	}
 	if (setuid(0) != -1) {
-		wlr_log(WLR_ERROR, "Root privileges can be restored.");
-		exit(EXIT_FAILURE);
+		wlr_log(WLR_ERROR, "Unable to drop root (we shouldn't be able to "
+			"restore it after setuid), refusing to start");
+		return false;
 	}
+	return true;
 }
 
 void enable_debug_flag(const char *flag) {
@@ -317,11 +319,13 @@ int main(int argc, char **argv) {
 	}
 
 	if (optind < argc) { // Behave as IPC client
-		if(optind != 1) {
+		if (optind != 1) {
 			wlr_log(WLR_ERROR, "Don't use options with the IPC client");
 			exit(EXIT_FAILURE);
 		}
-		drop_permissions();
+		if (!drop_permissions()) {
+			exit(EXIT_FAILURE);
+		}
 		char *socket_path = getenv("SWAYSOCK");
 		if (!socket_path) {
 			wlr_log(WLR_ERROR, "Unable to retrieve socket path");
@@ -341,7 +345,10 @@ int main(int argc, char **argv) {
 	detect_proprietary(allow_unsupported_gpu);
 	detect_raspi();
 
-	drop_permissions();
+	if (!drop_permissions()) {
+		server_fini(&server);
+		exit(EXIT_FAILURE);
+	}
 
 	// handle SIGTERM signals
 	signal(SIGTERM, sig_handler);
