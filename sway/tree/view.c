@@ -35,7 +35,6 @@ void view_init(struct sway_view *view, enum sway_view_type type,
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
-	view->marks = create_list();
 	view->allow_request_urgent = true;
 	wl_signal_init(&view->events.unmap);
 }
@@ -55,13 +54,6 @@ void view_destroy(struct sway_view *view) {
 	}
 	list_free(view->executed_criteria);
 
-	list_foreach(view->marks, free);
-	list_free(view->marks);
-
-	wlr_texture_destroy(view->marks_focused);
-	wlr_texture_destroy(view->marks_focused_inactive);
-	wlr_texture_destroy(view->marks_unfocused);
-	wlr_texture_destroy(view->marks_urgent);
 	free(view->title_format);
 
 	if (view->impl->destroy) {
@@ -935,153 +927,6 @@ void view_update_title(struct sway_view *view, bool force) {
 	container_update_title_textures(view->container);
 
 	ipc_event_window(view->container, "title");
-}
-
-static bool find_by_mark_iterator(struct sway_container *con,
-		void *data) {
-	char *mark = data;
-	return con->view && view_has_mark(con->view, mark);
-}
-
-struct sway_view *view_find_mark(char *mark) {
-	struct sway_container *container = root_find_container(
-			find_by_mark_iterator, mark);
-	if (!container) {
-		return NULL;
-	}
-	return container->view;
-}
-
-bool view_find_and_unmark(char *mark) {
-	struct sway_container *container = root_find_container(
-		find_by_mark_iterator, mark);
-	if (!container) {
-		return false;
-	}
-	struct sway_view *view = container->view;
-
-	for (int i = 0; i < view->marks->length; ++i) {
-		char *view_mark = view->marks->items[i];
-		if (strcmp(view_mark, mark) == 0) {
-			free(view_mark);
-			list_del(view->marks, i);
-			view_update_marks_textures(view);
-			ipc_event_window(container, "mark");
-			return true;
-		}
-	}
-	return false;
-}
-
-void view_clear_marks(struct sway_view *view) {
-	list_foreach(view->marks, free);
-	view->marks->length = 0;
-	ipc_event_window(view->container, "mark");
-}
-
-bool view_has_mark(struct sway_view *view, char *mark) {
-	for (int i = 0; i < view->marks->length; ++i) {
-		char *item = view->marks->items[i];
-		if (strcmp(item, mark) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void view_add_mark(struct sway_view *view, char *mark) {
-	list_add(view->marks, strdup(mark));
-	ipc_event_window(view->container, "mark");
-}
-
-static void update_marks_texture(struct sway_view *view,
-		struct wlr_texture **texture, struct border_colors *class) {
-	struct sway_output *output =
-		container_get_effective_output(view->container);
-	if (!output) {
-		return;
-	}
-	if (*texture) {
-		wlr_texture_destroy(*texture);
-		*texture = NULL;
-	}
-	if (!view->marks->length) {
-		return;
-	}
-
-	size_t len = 0;
-	for (int i = 0; i < view->marks->length; ++i) {
-		char *mark = view->marks->items[i];
-		if (mark[0] != '_') {
-			len += strlen(mark) + 2;
-		}
-	}
-	char *buffer = calloc(len + 1, 1);
-	char *part = malloc(len + 1);
-
-	if (!sway_assert(buffer && part, "Unable to allocate memory")) {
-		free(buffer);
-		return;
-	}
-
-	for (int i = 0; i < view->marks->length; ++i) {
-		char *mark = view->marks->items[i];
-		if (mark[0] != '_') {
-			sprintf(part, "[%s]", mark);
-			strcat(buffer, part);
-		}
-	}
-	free(part);
-
-	double scale = output->wlr_output->scale;
-	int width = 0;
-	int height = view->container->title_height * scale;
-
-	cairo_t *c = cairo_create(NULL);
-	get_text_size(c, config->font, &width, NULL, NULL, scale, false,
-			"%s", buffer);
-	cairo_destroy(c);
-
-	cairo_surface_t *surface = cairo_image_surface_create(
-			CAIRO_FORMAT_ARGB32, width, height);
-	cairo_t *cairo = cairo_create(surface);
-	cairo_set_source_rgba(cairo, class->background[0], class->background[1],
-			class->background[2], class->background[3]);
-	cairo_paint(cairo);
-	PangoContext *pango = pango_cairo_create_context(cairo);
-	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
-	cairo_set_source_rgba(cairo, class->text[0], class->text[1],
-			class->text[2], class->text[3]);
-	cairo_move_to(cairo, 0, 0);
-
-	pango_printf(cairo, config->font, scale, false, "%s", buffer);
-
-	cairo_surface_flush(surface);
-	unsigned char *data = cairo_image_surface_get_data(surface);
-	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	struct wlr_renderer *renderer = wlr_backend_get_renderer(
-			output->wlr_output->backend);
-	*texture = wlr_texture_from_pixels(
-			renderer, WL_SHM_FORMAT_ARGB8888, stride, width, height, data);
-	cairo_surface_destroy(surface);
-	g_object_unref(pango);
-	cairo_destroy(cairo);
-	free(buffer);
-}
-
-void view_update_marks_textures(struct sway_view *view) {
-	if (!config->show_marks) {
-		return;
-	}
-	update_marks_texture(view, &view->marks_focused,
-			&config->border_colors.focused);
-	update_marks_texture(view, &view->marks_focused_inactive,
-			&config->border_colors.focused_inactive);
-	update_marks_texture(view, &view->marks_unfocused,
-			&config->border_colors.unfocused);
-	update_marks_texture(view, &view->marks_urgent,
-			&config->border_colors.urgent);
-	container_damage_whole(view->container);
 }
 
 bool view_is_visible(struct sway_view *view) {

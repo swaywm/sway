@@ -625,19 +625,19 @@ static void render_containers_linear(struct sway_output *output,
 			if (view_is_urgent(view)) {
 				colors = &config->border_colors.urgent;
 				title_texture = child->title_urgent;
-				marks_texture = view->marks_urgent;
+				marks_texture = child->marks_urgent;
 			} else if (state->focused || parent->focused) {
 				colors = &config->border_colors.focused;
 				title_texture = child->title_focused;
-				marks_texture = view->marks_focused;
+				marks_texture = child->marks_focused;
 			} else if (child == parent->active_child) {
 				colors = &config->border_colors.focused_inactive;
 				title_texture = child->title_focused_inactive;
-				marks_texture = view->marks_focused_inactive;
+				marks_texture = child->marks_focused_inactive;
 			} else {
 				colors = &config->border_colors.unfocused;
 				title_texture = child->title_unfocused;
-				marks_texture = view->marks_unfocused;
+				marks_texture = child->marks_unfocused;
 			}
 
 			if (state->border == B_NORMAL) {
@@ -681,19 +681,19 @@ static void render_containers_tabbed(struct sway_output *output,
 		if (urgent) {
 			colors = &config->border_colors.urgent;
 			title_texture = child->title_urgent;
-			marks_texture = view ? view->marks_urgent : NULL;
+			marks_texture = child->marks_urgent;
 		} else if (cstate->focused || parent->focused) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
-			marks_texture = view ? view->marks_focused : NULL;
+			marks_texture = child->marks_focused;
 		} else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
-			marks_texture = view ? view->marks_focused_inactive : NULL;
+			marks_texture = child->marks_focused_inactive;
 		} else {
 			colors = &config->border_colors.unfocused;
 			title_texture = child->title_unfocused;
-			marks_texture = view ? view->marks_unfocused : NULL;
+			marks_texture = child->marks_unfocused;
 		}
 
 		int x = cstate->con_x + tab_width * i;
@@ -746,19 +746,19 @@ static void render_containers_stacked(struct sway_output *output,
 		if (urgent) {
 			colors = &config->border_colors.urgent;
 			title_texture = child->title_urgent;
-			marks_texture = view ? view->marks_urgent : NULL;
+			marks_texture = child->marks_urgent;
 		} else if (cstate->focused || parent->focused) {
 			colors = &config->border_colors.focused;
 			title_texture = child->title_focused;
-			marks_texture = view ? view->marks_focused : NULL;
+			marks_texture = child->marks_focused;
 		} else if (child == parent->active_child) {
 			colors = &config->border_colors.focused_inactive;
 			title_texture = child->title_focused_inactive;
-			marks_texture = view ? view->marks_focused_inactive : NULL;
+			marks_texture = child->marks_focused_inactive;
 		} else {
 			colors = &config->border_colors.unfocused;
 			title_texture = child->title_unfocused;
-			marks_texture = view ? view->marks_unfocused : NULL;
+			marks_texture = child->marks_unfocused;
 		}
 
 		int y = parent->box.y + titlebar_height * i;
@@ -841,15 +841,15 @@ static void render_floating_container(struct sway_output *soutput,
 		if (view_is_urgent(view)) {
 			colors = &config->border_colors.urgent;
 			title_texture = con->title_urgent;
-			marks_texture = view->marks_urgent;
+			marks_texture = con->marks_urgent;
 		} else if (con->current.focused) {
 			colors = &config->border_colors.focused;
 			title_texture = con->title_focused;
-			marks_texture = view->marks_focused;
+			marks_texture = con->marks_focused;
 		} else {
 			colors = &config->border_colors.unfocused;
 			title_texture = con->title_unfocused;
-			marks_texture = view->marks_unfocused;
+			marks_texture = con->marks_unfocused;
 		}
 
 		if (con->current.border == B_NORMAL) {

@@ -19,11 +19,10 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 		return error;
 	}
 	struct sway_container *container = config->handler_context.container;
-	if (!container || !container->view) {
+	if (!container) {
 		return cmd_results_new(CMD_INVALID, "mark",
-				"Only views can have marks");
+				"Only containers can have marks");
 	}
-	struct sway_view *view = container->view;
 
 	bool add = false, toggle = false;
 	while (argc > 0 && strncmp(*argv, "--", 2) == 0) {
@@ -47,22 +46,24 @@ struct cmd_results *cmd_mark(int argc, char **argv) {
 	}
 
 	char *mark = join_args(argv, argc);
-	bool had_mark = view_has_mark(view, mark);
+	bool had_mark = container_has_mark(container, mark);
 
 	if (!add) {
 		// Replacing
-		view_clear_marks(view);
+		container_clear_marks(container);
 	}
 
-	view_find_and_unmark(mark);
+	container_find_and_unmark(mark);
 
 	if (!toggle || !had_mark) {
-		view_add_mark(view, mark);
+		container_add_mark(container, mark);
 	}
 
 	free(mark);
-	view_update_marks_textures(view);
-	view_execute_criteria(view);
+	container_update_marks_textures(container);
+	if (container->view) {
+		view_execute_criteria(container->view);
+	}
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

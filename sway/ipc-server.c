@@ -563,11 +563,9 @@ static void ipc_get_workspaces_callback(struct sway_workspace *workspace,
 
 static void ipc_get_marks_callback(struct sway_container *con, void *data) {
 	json_object *marks = (json_object *)data;
-	if (con->view && con->view->marks) {
-		for (int i = 0; i < con->view->marks->length; ++i) {
-			char *mark = (char *)con->view->marks->items[i];
-			json_object_array_add(marks, json_object_new_string(mark));
-		}
+	for (int i = 0; i < con->marks->length; ++i) {
+		char *mark = (char *)con->marks->items[i];
+		json_object_array_add(marks, json_object_new_string(mark));
 	}
 }
 

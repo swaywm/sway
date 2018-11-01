@@ -100,12 +100,6 @@ struct sway_view {
 	bool destroying;
 
 	list_t *executed_criteria; // struct criteria *
-	list_t *marks;             // char *
-
-	struct wlr_texture *marks_focused;
-	struct wlr_texture *marks_focused_inactive;
-	struct wlr_texture *marks_unfocused;
-	struct wlr_texture *marks_urgent;
 
 	union {
 		struct wlr_xdg_surface_v6 *wlr_xdg_surface_v6;
@@ -351,28 +345,6 @@ void view_update_title(struct sway_view *view, bool force);
  * before.
  */
 void view_execute_criteria(struct sway_view *view);
-
-/**
- * Find any view that has the given mark and return it.
- */
-struct sway_view *view_find_mark(char *mark);
-
-/**
- * Find any view that has the given mark and remove the mark from the view.
- * Returns true if it matched a view.
- */
-bool view_find_and_unmark(char *mark);
-
-/**
- * Remove all marks from the view.
- */
-void view_clear_marks(struct sway_view *view);
-
-bool view_has_mark(struct sway_view *view, char *mark);
-
-void view_add_mark(struct sway_view *view, char *mark);
-
-void view_update_marks_textures(struct sway_view *view);
 
 /**
  * Returns true if there's a possibility the view may be rendered on screen.

@@ -532,9 +532,7 @@ static void handle_transform(struct wl_listener *listener, void *data) {
 
 static void update_textures(struct sway_container *con, void *data) {
 	container_update_title_textures(con);
-	if (con->view) {
-		view_update_marks_textures(con->view);
-	}
+	container_update_marks_textures(con);
 }
 
 static void handle_scale(struct wl_listener *listener, void *data) {
