@@ -639,8 +639,8 @@ void container_init_floating(struct sway_container *con) {
 		view->y = ws->y + (ws->height - view->height) / 2;
 
 		// If the view's border is B_NONE then these properties are ignored.
-		view->border_top = view->border_bottom = true;
-		view->border_left = view->border_right = true;
+		con->border_top = con->border_bottom = true;
+		con->border_left = con->border_right = true;
 
 		container_set_geometry_from_floating_view(con);
 	}
@@ -662,7 +662,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		if (container->view) {
 			view_set_tiled(container->view, false);
 			if (container->view->using_csd) {
-				container->view->border = B_CSD;
+				container->border = B_CSD;
 			}
 		}
 		if (old_parent) {
@@ -688,7 +688,7 @@ void container_set_floating(struct sway_container *container, bool enable) {
 		if (container->view) {
 			view_set_tiled(container->view, true);
 			if (container->view->using_csd) {
-				container->view->border = container->view->saved_border;
+				container->border = container->saved_border;
 			}
 		}
 		container->is_sticky = false;
@@ -710,9 +710,9 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 	size_t border_width = 0;
 	size_t top = 0;
 
-	if (view->border != B_CSD) {
-		border_width = view->border_thickness * (view->border != B_NONE);
-		top = view->border == B_NORMAL ?
+	if (con->border != B_CSD) {
+		border_width = con->border_thickness * (con->border != B_NONE);
+		top = con->border == B_NORMAL ?
 			container_titlebar_height() : border_width;
 	}
 

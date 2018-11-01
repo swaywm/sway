@@ -137,6 +137,12 @@ static void copy_container_state(struct sway_container *container,
 	state->is_fullscreen = container->is_fullscreen;
 	state->parent = container->parent;
 	state->workspace = container->workspace;
+	state->border = container->border;
+	state->border_thickness = container->border_thickness;
+	state->border_top = container->border_top;
+	state->border_left = container->border_left;
+	state->border_right = container->border_right;
+	state->border_bottom = container->border_bottom;
 
 	if (container->view) {
 		struct sway_view *view = container->view;
@@ -144,12 +150,6 @@ static void copy_container_state(struct sway_container *container,
 		state->view_y = view->y;
 		state->view_width = view->width;
 		state->view_height = view->height;
-		state->border = view->border;
-		state->border_thickness = view->border_thickness;
-		state->border_top = view->border_top;
-		state->border_left = view->border_left;
-		state->border_right = view->border_right;
-		state->border_bottom = view->border_bottom;
 	} else {
 		state->children = create_list();
 		list_cat(state->children, container->children);

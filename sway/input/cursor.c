@@ -187,23 +187,22 @@ static enum wlr_edges find_edge(struct sway_container *cont,
 	if (!cont->view) {
 		return WLR_EDGE_NONE;
 	}
-	struct sway_view *view = cont->view;
-	if (view->border == B_NONE || !view->border_thickness ||
-			view->border == B_CSD) {
+	if (cont->border == B_NONE || !cont->border_thickness ||
+			cont->border == B_CSD) {
 		return WLR_EDGE_NONE;
 	}
 
 	enum wlr_edges edge = 0;
-	if (cursor->cursor->x < cont->x + view->border_thickness) {
+	if (cursor->cursor->x < cont->x + cont->border_thickness) {
 		edge |= WLR_EDGE_LEFT;
 	}
-	if (cursor->cursor->y < cont->y + view->border_thickness) {
+	if (cursor->cursor->y < cont->y + cont->border_thickness) {
 		edge |= WLR_EDGE_TOP;
 	}
-	if (cursor->cursor->x >= cont->x + cont->width - view->border_thickness) {
+	if (cursor->cursor->x >= cont->x + cont->width - cont->border_thickness) {
 		edge |= WLR_EDGE_RIGHT;
 	}
-	if (cursor->cursor->y >= cont->y + cont->height - view->border_thickness) {
+	if (cursor->cursor->y >= cont->y + cont->height - cont->border_thickness) {
 		edge |= WLR_EDGE_BOTTOM;
 	}
 

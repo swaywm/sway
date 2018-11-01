@@ -53,16 +53,16 @@ struct sway_container_state {
 	struct sway_container *focused_inactive_child;
 	bool focused;
 
-	// View properties
-	double view_x, view_y;
-	double view_width, view_height;
-
 	enum sway_container_border border;
 	int border_thickness;
 	bool border_top;
 	bool border_bottom;
 	bool border_left;
 	bool border_right;
+
+	// View properties
+	double view_x, view_y;
+	double view_width, view_height;
 };
 
 struct sway_container {
@@ -90,6 +90,18 @@ struct sway_container {
 	double saved_width, saved_height;
 
 	bool is_fullscreen;
+
+	enum sway_container_border border;
+
+	// Used when the view changes to CSD unexpectedly. This will be a non-B_CSD
+	// border which we use to restore when the view returns to SSD.
+	enum sway_container_border saved_border;
+
+	int border_thickness;
+	bool border_top;
+	bool border_bottom;
+	bool border_left;
+	bool border_right;
 
 	// The gaps currently applied to the container.
 	double current_gaps;
