@@ -81,16 +81,16 @@ static int release_lock(void *data) {
 }
 
 static void acquire_sleep_lock(void) {
-	sd_bus_message *msg;
-	sd_bus_error error;
+	sd_bus_message *msg = NULL;
+	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int ret = sd_bus_call_method(bus, "org.freedesktop.login1",
 			"/org/freedesktop/login1",
 			"org.freedesktop.login1.Manager", "Inhibit",
 			&error, &msg, "ssss", "sleep", "swayidle",
 			"Setup Up Lock Screen", "delay");
 	if (ret < 0) {
-		wlr_log(WLR_ERROR, "Failed to send Inhibit signal: %s",
-				strerror(-ret));
+		wlr_log(WLR_ERROR, "Failed to send Inhibit signal: %s", error.message);
+		sd_bus_error_free(&error);
 		return;
 	}
 
@@ -98,10 +98,11 @@ static void acquire_sleep_lock(void) {
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
 			strerror(-ret));
-		return;
+	} else {
+		wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
 	}
-
-	wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(msg);
 }
 
 static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
