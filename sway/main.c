@@ -88,38 +88,26 @@ void detect_proprietary(int allow_unsupported_gpu) {
 		return;
 	}
 	while (!feof(f)) {
-		char *line;
-		if (!(line = read_line(f))) {
+		char *line = read_line(f);
+		if (!line) {
 			break;
 		}
-		if (strstr(line, "nvidia")) {
-			free(line);
-			if (allow_unsupported_gpu) {
-				wlr_log(WLR_ERROR,
-						"!!! Proprietary Nvidia drivers are in use !!!");
-			} else {
-				wlr_log(WLR_ERROR,
-					"Proprietary Nvidia drivers are NOT supported. "
-					"Use Nouveau. To launch sway anyway, launch with "
-					"--my-next-gpu-wont-be-nvidia and DO NOT report issues.");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		}
-		if (strstr(line, "fglrx")) {
-			free(line);
-			if (allow_unsupported_gpu) {
-				wlr_log(WLR_ERROR,
-						"!!! Proprietary AMD drivers are in use !!!");
-			} else {
-				wlr_log(WLR_ERROR, "Proprietary AMD drivers do NOT support "
-					"Wayland. Use radeon. To try anyway, launch sway with "
-					"--unsupported-gpu and DO NOT report issues.");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		}
+		const char *prop_driver = strstr(line, "nvidia") ? "Nvidia" :
+			strstr(line, "fglrx") ? "AMD" : NULL;
 		free(line);
+		if (prop_driver) {
+			if (allow_unsupported_gpu) {
+				wlr_log(WLR_ERROR,
+						"!!! Proprietary %s drivers are in use !!!", prop_driver);
+				break;
+			} else {
+				wlr_log(WLR_ERROR,
+					"Proprietary %s drivers are NOT supported. "
+					"Use Nouveau. To launch sway anyway, launch with "
+					"--unsupported-gpu and DO NOT report issues.", prop_driver);
+				exit(EXIT_FAILURE);
+			}
+		}
 	}
 	fclose(f);
 }
