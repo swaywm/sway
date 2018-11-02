@@ -32,27 +32,22 @@ channel or shoot an email to sir@cmpwn.com for advice.
 
 Install dependencies:
 
-* meson
+* meson \*
 * [wlroots](https://github.com/swaywm/wlroots)
 * wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
+* wayland-protocols \*
 * pcre
-* json-c >= 0.13
+* json-c
 * pango
 * cairo
-* gdk-pixbuf2 *
-* pam **
-* dbus >= 1.10 ***
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (required for man pages)
-* git
+* gdk-pixbuf2 \*\*
+* pam \*\*\* (optional: PAM support for swaylock)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
+* git \*
 
-_\*Only required for swaybar, swaybg, and swaylock_
+_\*Compile-time dep_
 
-_\*\*Only required for swaylock_
-
-_\*\*\*Only required for tray support_
+_\*\*optional: required for swaybg and swaylock_
 
 Run these commands:
 

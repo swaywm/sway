@@ -29,24 +29,22 @@ Swayは沢山のディストリビューションで提供されています。"
 
 次の依存パッケージをインストールしてください:
 
-* meson
-* [wlc](https://github.com/Cloudef/wlc)
+* meson \*
+* [wlroots](https://github.com/swaywm/wlroots)
 * wayland
-* xwayland
-* libinput >= 1.6.0
-* libcap
+* wayland-protocols \*
 * pcre
-* json-c >= 0.13
+* json-c
 * pango
 * cairo
-* gdk-pixbuf2 *
-* pam **
-* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です)
-* git
+* gdk-pixbuf2 \*\*
+* pam \*\*\* (オプション: swaylockとPAMで必要)
+* [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です) \*
+* git \*
 
-_\*swaybar,swaybg,swaylockでのみ必要です_
+_\*コンパイルの時_
 
-_\*\*swaylockでのみ必要です_
+_\*\*オプション: swaybgとswaylockでのみ必要です_
 
 次のコマンドを実行してください:
 
