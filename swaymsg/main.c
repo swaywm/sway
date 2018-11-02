@@ -183,13 +183,15 @@ static void pretty_print_output(json_object *o) {
 	json_object_object_get_ex(rect, "height", &height);
 	json_object *modes;
 	json_object_object_get_ex(o, "modes", &modes);
+	json_object *current_mode;
+	json_object_object_get_ex(o, "current_mode", &current_mode);
 
 	if (json_object_get_boolean(active)) {
 		printf(
 			"Output %s '%s %s %s'%s\n"
 			"  Current mode: %dx%d @ %f Hz\n"
 			"  Position: %d,%d\n"
-			"  Scale factor: %dx\n"
+			"  Scale factor: %f\n"
 			"  Transform: %s\n"
 			"  Workspace: %s\n",
 			json_object_get_string(name),
@@ -197,10 +199,13 @@ static void pretty_print_output(json_object *o) {
 			json_object_get_string(model),
 			json_object_get_string(serial),
 			json_object_get_boolean(focused) ? " (focused)" : "",
-			json_object_get_int(width), json_object_get_int(height),
+			json_object_get_int(
+				json_object_object_get(current_mode, "width")),
+			json_object_get_int(
+				json_object_object_get(current_mode, "height")),
 			(float)json_object_get_int(refresh) / 1000,
 			json_object_get_int(x), json_object_get_int(y),
-			json_object_get_int(scale),
+			json_object_get_double(scale),
 			json_object_get_string(transform),
 			json_object_get_string(ws)
 		);
