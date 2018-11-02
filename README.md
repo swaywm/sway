@@ -41,7 +41,7 @@ Install dependencies:
 * pango
 * cairo
 * gdk-pixbuf2 \*\*
-* pam \*\*\* (optional: PAM support for swaylock)
+* pam (optional: PAM support for swaylock)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (optional: man pages) \*
 * git \*
 

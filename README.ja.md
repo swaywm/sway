@@ -38,7 +38,7 @@ Swayは沢山のディストリビューションで提供されています。"
 * pango
 * cairo
 * gdk-pixbuf2 \*\*
-* pam \*\*\* (オプション: swaylockとPAMで必要)
+* pam (オプション: swaylockとPAMで必要)
 * [scdoc](https://git.sr.ht/~sircmpwn/scdoc) (manで必要です) \*
 * git \*
 
