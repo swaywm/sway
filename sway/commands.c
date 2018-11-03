@@ -415,7 +415,13 @@ struct cmd_results *config_command(char *exec) {
 	free(command);
 
 	// Strip quotes and unescape the string
-	for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
+	int i;
+	for (i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
+		if (strcmp(argv[i], "#") == 0) {
+			wlr_log(WLR_DEBUG, "Inline comment detected at argv[%d]."
+					"Ignoring all further arguments.", i);
+			break;
+		}
 		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
@@ -427,7 +433,7 @@ struct cmd_results *config_command(char *exec) {
 	}
 
 	// Run command
-	results = handler->handle(argc - 1, argv + 1);
+	results = handler->handle(i - 1, argv + 1);
 
 cleanup:
 	free_argv(argc, argv);
