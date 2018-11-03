@@ -136,12 +136,17 @@ static void ipc_json_describe_output(struct sway_output *output,
 			json_object_new_int(mode->width));
 		json_object_object_add(mode_object, "height",
 			json_object_new_int(mode->height));
-		json_object_object_add(mode_object, "refresh",
-			json_object_new_int(mode->refresh));
 		json_object_array_add(modes_array, mode_object);
 	}
 
 	json_object_object_add(object, "modes", modes_array);
+
+	json_object *current_mode_object = json_object_new_object();
+	json_object_object_add(current_mode_object, "width",
+		json_object_new_int(wlr_output->width));
+	json_object_object_add(current_mode_object, "height",
+		json_object_new_int(wlr_output->height));
+	json_object_object_add(object, "current_mode", current_mode_object);
 
 	struct sway_node *parent = node_get_parent(&output->node);
 	struct wlr_box parent_box = {0, 0, 0, 0};
