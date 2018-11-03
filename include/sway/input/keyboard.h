@@ -24,6 +24,7 @@ struct sway_shortcut_state {
 	uint32_t last_keycode;
 	uint32_t last_raw_modifiers;
 	size_t npressed;
+	uint32_t current_key;
 };
 
 struct sway_keyboard {

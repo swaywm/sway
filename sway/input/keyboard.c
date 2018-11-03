@@ -32,6 +32,7 @@ static void state_erase_key(struct sway_shortcut_state *state,
 		state->pressed_keys[state->npressed] = 0;
 		state->pressed_keycodes[state->npressed] = 0;
 	}
+	state->current_key = 0;
 }
 
 /**
@@ -56,6 +57,7 @@ static void state_add_key(struct sway_shortcut_state *state,
 	state->pressed_keys[i] = key_id;
 	state->pressed_keycodes[i] = keycode;
 	state->npressed++;
+	state->current_key = key_id;
 }
 
 /**
@@ -94,7 +96,6 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 		bool binding_release = binding->flags & BINDING_RELEASE;
 
 		if (modifiers ^ binding->modifiers ||
-				state->npressed != (size_t)binding->keys->length ||
 				release != binding_release ||
 				locked > binding_locked ||
 				(strcmp(binding->input, input) != 0 &&
@@ -102,13 +103,22 @@ static void get_active_binding(const struct sway_shortcut_state *state,
 			continue;
 		}
 
-		bool match = true;
-		for (size_t j = 0; j < state->npressed; j++) {
-			uint32_t key = *(uint32_t *)binding->keys->items[j];
-			if (key != state->pressed_keys[j]) {
-				match = false;
-				break;
+		bool match = false;
+		if (state->npressed == (size_t)binding->keys->length) {
+			match = true;
+			for (size_t j = 0; j < state->npressed; j++) {
+				uint32_t key = *(uint32_t *)binding->keys->items[j];
+				if (key != state->pressed_keys[j]) {
+					match = false;
+					break;
+				}
 			}
+		} else if (binding->keys->length == 1) {
+			/*
+			 * If no multiple-key binding has matched, try looking for
+			 * single-key bindings that match the newly-pressed key.
+			 */
+			match = state->current_key == *(uint32_t *)binding->keys->items[0];
 		}
 		if (!match) {
 			continue;
