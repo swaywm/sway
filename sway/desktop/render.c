@@ -936,16 +936,19 @@ void output_render(struct sway_output *output, struct timespec *when,
 	}
 
 	struct sway_container *fullscreen_con = workspace->current.fullscreen;
+
+	static const float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
+	static const float fullscreen_clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	int nrects;
+	pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
+	for (int i = 0; i < nrects; ++i) {
+		scissor_output(wlr_output, &rects[i]);
+		wlr_renderer_clear(renderer,
+				fullscreen_con ? fullscreen_clear_color : clear_color);
+	}
+
 	if (fullscreen_con) {
-		float clear_color[] = {0.0f, 0.0f, 0.0f, 1.0f};
-
-		int nrects;
-		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			scissor_output(wlr_output, &rects[i]);
-			wlr_renderer_clear(renderer, clear_color);
-		}
-
 		// TODO: handle views smaller than the output
 		if (fullscreen_con->view) {
 			if (fullscreen_con->view->saved_buffer) {
@@ -966,19 +969,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 				render_floating_container(output, damage, floater);
 			}
 		}
-#ifdef HAVE_XWAYLAND
-		render_unmanaged(output, damage, &root->xwayland_unmanaged);
-#endif
 	} else {
-		float clear_color[] = {0.25f, 0.25f, 0.25f, 1.0f};
-
-		int nrects;
-		pixman_box32_t *rects = pixman_region32_rectangles(damage, &nrects);
-		for (int i = 0; i < nrects; ++i) {
-			scissor_output(wlr_output, &rects[i]);
-			wlr_renderer_clear(renderer, clear_color);
-		}
-
 		render_layer(output, damage,
 			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND]);
 		render_layer(output, damage,
@@ -986,12 +977,11 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		render_workspace(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
-#ifdef HAVE_XWAYLAND
-		render_unmanaged(output, damage, &root->xwayland_unmanaged);
-#endif
-		render_layer(output, damage,
-			&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 	}
+#ifdef HAVE_XWAYLAND
+	render_unmanaged(output, damage, &root->xwayland_unmanaged);
+#endif
+	render_layer(output, damage, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP]);
 
 	render_dropzones(output, damage);
 
