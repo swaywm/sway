@@ -136,6 +136,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 			json_object_new_int(mode->width));
 		json_object_object_add(mode_object, "height",
 			json_object_new_int(mode->height));
+		json_object_object_add(mode_object, "refresh",
+			json_object_new_int(mode->refresh));
 		json_object_array_add(modes_array, mode_object);
 	}
 
