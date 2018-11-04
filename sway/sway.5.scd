@@ -364,6 +364,7 @@ The default colors are:
 :  #000000
 :  #0c0c0c
 
+
 *debuglog* on|off|toggle
 	Enables, disables or toggles debug logging. _toggle_ cannot be used in the
 	configuration file.
