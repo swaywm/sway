@@ -111,6 +111,8 @@ struct sway_view {
 	} events;
 
 	struct wl_listener surface_new_subsurface;
+
+	list_t *kbd_layouts; // struct sway_layout_per_kbd *
 };
 
 struct sway_xdg_shell_v6_view {
@@ -309,7 +311,7 @@ void view_for_each_popup(struct sway_view *view,
 
 // view implementation
 
-void view_init(struct sway_view *view, enum sway_view_type type,
+bool view_init(struct sway_view *view, enum sway_view_type type,
 	const struct sway_view_impl *impl);
 
 void view_destroy(struct sway_view *view);

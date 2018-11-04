@@ -595,7 +595,11 @@ void handle_xwayland_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl);
+	if (!view_init(&xwayland_view->view, SWAY_VIEW_XWAYLAND, &view_impl)) {
+		sway_assert(false, "Failed to init view");
+		return;
+	}
+
 	xwayland_view->view.wlr_xwayland_surface = xsurface;
 
 	wl_signal_add(&xsurface->events.destroy, &xwayland_view->destroy);

@@ -492,7 +492,11 @@ void handle_xdg_shell_v6_surface(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	view_init(&xdg_shell_v6_view->view, SWAY_VIEW_XDG_SHELL_V6, &view_impl);
+	if (!view_init(&xdg_shell_v6_view->view, SWAY_VIEW_XDG_SHELL_V6, &view_impl)) {
+		sway_assert(false, "Failed to init view");
+		return;
+	}
+
 	xdg_shell_v6_view->view.wlr_xdg_surface_v6 = xdg_surface;
 
 	xdg_shell_v6_view->map.notify = handle_map;

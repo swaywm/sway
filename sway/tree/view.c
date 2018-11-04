@@ -18,6 +18,7 @@
 #include "sway/desktop.h"
 #include "sway/desktop/transaction.h"
 #include "sway/input/cursor.h"
+#include "sway/input/keyboard.h"
 #include "sway/ipc-server.h"
 #include "sway/output.h"
 #include "sway/input/seat.h"
@@ -30,13 +31,36 @@
 #include "pango.h"
 #include "stringop.h"
 
-void view_init(struct sway_view *view, enum sway_view_type type,
+static bool view_setup_kbd_layouts(struct sway_view *view) {
+	struct sway_seat *seat = NULL;
+	wl_list_for_each(seat, &server.input->seats, link) {
+		struct sway_seat_device *device = NULL;
+		wl_list_for_each(device, &seat->devices, link) {
+			struct wlr_input_device *wlr_input_device = device->input_device->wlr_device;
+			if (wlr_input_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+				continue;
+			}
+			struct sway_layout_per_kbd *lpk = calloc(1, sizeof(struct sway_layout_per_kbd));
+			if (!sway_assert(lpk, "Failed to allocate sway_layout_per_kbd")) {
+				return false;
+			}
+			lpk->kbd = wlr_input_device->keyboard;
+			lpk->layout = device->keyboard->default_kbd_layout;
+			list_add(view->kbd_layouts, lpk);
+		}
+	}
+	return true;
+}
+
+bool view_init(struct sway_view *view, enum sway_view_type type,
 		const struct sway_view_impl *impl) {
 	view->type = type;
 	view->impl = impl;
 	view->executed_criteria = create_list();
+	view->kbd_layouts = create_list();
 	view->allow_request_urgent = true;
 	wl_signal_init(&view->events.unmap);
+	return view_setup_kbd_layouts(view);
 }
 
 void view_destroy(struct sway_view *view) {
@@ -55,6 +79,7 @@ void view_destroy(struct sway_view *view) {
 	list_free(view->executed_criteria);
 
 	free(view->title_format);
+	list_free_items_and_destroy(view->kbd_layouts);
 
 	if (view->impl->destroy) {
 		view->impl->destroy(view);
