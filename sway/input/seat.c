@@ -55,9 +55,6 @@ void seat_destroy(struct sway_seat *seat) {
 	free(seat);
 }
 
-static struct sway_seat_node *seat_node_from_node(
-		struct sway_seat *seat, struct sway_node *node);
-
 static void seat_node_destroy(struct sway_seat_node *seat_node) {
 	wl_list_remove(&seat_node->destroy.link);
 	wl_list_remove(&seat_node->link);
