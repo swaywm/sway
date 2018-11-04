@@ -133,6 +133,10 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *fullscreen*
 	Toggles fullscreen for the focused view.
 
+*gaps* inner|outer all|current set|plus|minus <amount>
+	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
+	_current_ workspace.
+
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
 
@@ -432,10 +436,6 @@ The default colors are:
 
 	This affects new workspaces only, and is used when the workspace doesn't
 	have its own gaps settings (see: workspace <ws> gaps inner|outer <amount>).
-
-*gaps* inner|outer all|current set|plus|minus <amount>
-	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
-	_current_ workspace.
 
 *hide\_edge\_borders* none|vertical|horizontal|both|smart|smart\_no\_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_.
