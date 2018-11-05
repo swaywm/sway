@@ -156,6 +156,14 @@ static struct sway_node *node_get_in_direction(struct sway_container *container,
 	if (new_output) {
 		return get_node_in_output_direction(new_output, dir);
 	}
+
+	// If there is a wrap candidate, return its focus inactive view
+	if (wrap_candidate) {
+		struct sway_container *wrap_inactive = seat_get_focus_inactive_view(
+				seat, &wrap_candidate->node);
+		return &wrap_inactive->node;
+	}
+
 	return NULL;
 }
 
