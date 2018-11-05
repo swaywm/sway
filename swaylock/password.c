@@ -80,6 +80,10 @@ static void handle_preverify_timeout(void *data) {
 
 void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint) {
+	if (state->within_grace) {
+		state->run_display = false;
+		return;
+	}
 	switch (keysym) {
 	case XKB_KEY_KP_Enter: /* fallthrough */
 	case XKB_KEY_Return:

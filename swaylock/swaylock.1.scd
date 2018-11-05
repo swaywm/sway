@@ -29,6 +29,9 @@ Locks your Wayland session.
 
 	Note: this is the default bahavior of i3lock.
 
+*-g, --grace*
+	Set a grace time (in seconds) before the display is actually locked.
+
 *-h, --help*
 	Show help message and quit.
 

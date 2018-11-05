@@ -70,6 +70,7 @@ struct swaylock_state {
 	struct swaylock_xkb xkb;
 	enum auth_state auth_state;
 	bool run_display;
+	bool within_grace;
 	struct zxdg_output_manager_v1 *zxdg_output_manager;
 };
 

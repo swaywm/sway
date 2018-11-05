@@ -430,6 +430,9 @@ enum line_mode {
 	LM_RING,
 };
 
+
+static int grace_time = 0;
+
 static int parse_options(int argc, char **argv, struct swaylock_state *state,
 		enum line_mode *line_mode, char **config_path) {
 	enum long_option_codes {
@@ -460,6 +463,7 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 	static struct option long_options[] = {
 		{"config", required_argument, NULL, 'C'},
 		{"color", required_argument, NULL, 'c'},
+		{"grace", required_argument, NULL, 'g'},
 		{"ignore-empty-password", no_argument, NULL, 'e'},
 		{"daemonize", no_argument, NULL, 'f'},
 		{"help", no_argument, NULL, 'h'},
@@ -507,6 +511,8 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 			"When an empty password is provided, do not validate it.\n"
 		"  -f, --daemonize                "
 			"Detach from the controlling terminal after locking.\n"
+		"  -g  --grace                    "
+		        "Grace time in seconds before the display is actually locked"
 		"  -h, --help                     "
 			"Show help message and quit.\n"
 		"  -i, --image [<output>:]<path>  "
@@ -577,7 +583,7 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 	optind = 1;
 	while (1) {
 		int opt_idx = 0;
-		c = getopt_long(argc, argv, "c:efhi:nrs:tuvC:", long_options, &opt_idx);
+		c = getopt_long(argc, argv, "c:efg:hi:nrs:tuvC:", long_options, &opt_idx);
 		if (c == -1) {
 			break;
 		}
@@ -602,6 +608,9 @@ static int parse_options(int argc, char **argv, struct swaylock_state *state,
 			if (state) {
 				state->args.daemonize = true;
 			}
+			break;
+		case 'g':
+			grace_time = atoi(optarg);
 			break;
 		case 'i':
 			if (state) {
@@ -850,6 +859,10 @@ static void display_in(int fd, short mask, void *data) {
 	}
 }
 
+static void expire_grace(void *data) {
+	state.within_grace = false;
+}
+
 int main(int argc, char **argv) {
 	wlr_log_init(WLR_DEBUG, NULL);
 	initialize_pw_backend();
@@ -962,6 +975,12 @@ int main(int argc, char **argv) {
 	}
 
 	state.eventloop = loop_create();
+	if (grace_time) {
+		state.within_grace = true;
+		loop_add_timer(state.eventloop, grace_time*1000, expire_grace, NULL);
+	} else {
+		state.within_grace = false;
+	}
 	loop_add_fd(state.eventloop, wl_display_get_fd(state.display), POLL_IN,
 			display_in, NULL);
 
