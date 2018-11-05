@@ -347,9 +347,7 @@ void sway_terminate(int exit_code) {
 
 static void register_zero_idle_timeout(void *item) {
 	struct swayidle_timeout_cmd *cmd = item;
-	// A zero timeout never actually triggers. Adding a 50ms timeout is most
-	// likely not the correct fix either, but will work
-	register_timeout(cmd, 50);
+	register_timeout(cmd, 0);
 }
 
 static int handle_signal(int sig, void *data) {
