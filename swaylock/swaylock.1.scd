@@ -27,7 +27,7 @@ Locks your Wayland session.
 *-f, --daemonize*
 	Detach from the controlling terminal after locking.
 
-	Note: this is the default bahavior of i3lock.
+	Note: this is the default behavior of i3lock.
 
 *-g, --grace*
 	Set a grace time (in seconds) before the display is actually locked.
