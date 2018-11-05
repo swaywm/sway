@@ -15,7 +15,7 @@
 
 struct cmd_results *cmd_exec_always(int argc, char **argv) {
 	struct cmd_results *error = NULL;
-	if (!config->active) return cmd_results_new(CMD_DEFER, NULL, NULL);
+	if (!config->active || config->validating) return cmd_results_new(CMD_DEFER, NULL, NULL);
 	if ((error = checkarg(argc, argv[-1], EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
