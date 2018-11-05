@@ -389,7 +389,8 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 	config_defaults(config);
 	config->validating = validating;
 	if (is_active) {
-		wlr_log(WLR_DEBUG, "Performing configuration file reload");
+		wlr_log(WLR_DEBUG, "Performing configuration file %s",
+			validating ? "validation" : "reload");
 		config->reloading = true;
 		config->active = true;
 

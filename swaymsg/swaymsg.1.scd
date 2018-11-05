@@ -50,6 +50,10 @@ _swaymsg_ [options...] [message]
 	Gets a JSON-encoded layout tree of all open windows, containers, outputs,
 	workspaces, and so on.
 
+*get\_seats*
+	Gets a JSON-encoded list of all seats,
+	its properties and all assigned devices.
+
 *get\_marks*
 	Get a JSON-encoded list of marks.
 

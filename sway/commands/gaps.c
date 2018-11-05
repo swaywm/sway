@@ -149,16 +149,17 @@ struct cmd_results *cmd_gaps(int argc, char **argv) {
 		return error;
 	}
 
+	bool config_loading = !config->active || config->reloading;
+
 	if (argc == 2) {
 		return gaps_set_defaults(argc, argv);
 	}
-	if (argc == 4) {
-		if (config->active) {
-			return gaps_set_runtime(argc, argv);
-		} else {
-			return cmd_results_new(CMD_INVALID, "gaps",
-					"This syntax can only be used when sway is running");
-		}
+	if (argc == 4 && !config_loading) {
+		return gaps_set_runtime(argc, argv);
+	}
+	if (config_loading) {
+		return cmd_results_new(CMD_INVALID, "gaps",
+				"Expected 'gaps inner|outer <px>'");
 	}
 	return cmd_results_new(CMD_INVALID, "gaps",
 			"Expected 'gaps inner|outer <px>' or "
