@@ -638,7 +638,7 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	cursor->previous.node = node;
 
 	if (node && (config->focus_follows_mouse == FOLLOWS_YES ||
-		config->focus_follows_mouse == FOLLOWS_ALWAYS)) {
+			config->focus_follows_mouse == FOLLOWS_ALWAYS)) {
 		struct sway_node *focus = seat_get_focus(seat);
 		if (focus && node->type == N_WORKSPACE) {
 			// Only follow the mouse if it would move to a new output
