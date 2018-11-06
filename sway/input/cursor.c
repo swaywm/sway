@@ -637,7 +637,8 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 	cursor->previous.y = cursor->cursor->y;
 	cursor->previous.node = node;
 
-	if (node && config->focus_follows_mouse) {
+	if (node && (config->focus_follows_mouse == FOLLOWS_YES ||
+		config->focus_follows_mouse == FOLLOWS_ALWAYS)) {
 		struct sway_node *focus = seat_get_focus(seat);
 		if (focus && node->type == N_WORKSPACE) {
 			// Only follow the mouse if it would move to a new output
@@ -652,9 +653,10 @@ void cursor_send_pointer_motion(struct sway_cursor *cursor,
 			// - cursor is over a new view, i.e. entered a new window; and
 			// - the new view is visible, i.e. not hidden in a stack or tab; and
 			// - the seat does not have a keyboard grab
-			if (!wlr_seat_keyboard_has_grab(cursor->seat->wlr_seat) &&
+			if ((!wlr_seat_keyboard_has_grab(cursor->seat->wlr_seat) &&
 					node != prev_node &&
-					view_is_visible(node->sway_container->view)) {
+					view_is_visible(node->sway_container->view)) ||
+					config->focus_follows_mouse == FOLLOWS_ALWAYS) {
 				seat_set_focus(seat, node);
 			} else {
 				struct sway_node *next_focus =

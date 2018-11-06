@@ -8,7 +8,12 @@ struct cmd_results *cmd_focus_follows_mouse(int argc, char **argv) {
 	if ((error = checkarg(argc, "focus_follows_mouse", EXPECTED_EQUAL_TO, 1))) {
 		return error;
 	}
-	config->focus_follows_mouse =
-		parse_boolean(argv[0], config->focus_follows_mouse);
+	if(strcmp(argv[0], "no") == 0) {
+		config->focus_follows_mouse = FOLLOWS_NO;
+	} else if(strcmp(argv[0], "yes") == 0) {
+		config->focus_follows_mouse = FOLLOWS_YES;
+	} else if(strcmp(argv[0], "always") == 0) {
+		config->focus_follows_mouse = FOLLOWS_ALWAYS;
+	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
