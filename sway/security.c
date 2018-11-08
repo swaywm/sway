@@ -46,12 +46,13 @@ err:
 	return NULL;
 }
 
-static bool command_from_pid(char cmd[static PATH_MAX + 1], pid_t pid) {
+static bool command_from_pid(char cmd[static PATH_MAX], pid_t pid) {
 #ifdef __linux__
 	char link_path[PATH_MAX];
 	snprintf(link_path, sizeof(link_path), "/proc/%d/exe", pid);
 
-	ssize_t n = readlink(link_path, cmd, PATH_MAX);
+	// PATH_MAX includes the terminating NULL byte
+	ssize_t n = readlink(link_path, cmd, PATH_MAX - 1);
 	if (n < 0) {
 		wlr_log_errno(WLR_ERROR, "Failed to readlink() %s", link_path);
 		return false;
@@ -59,6 +60,7 @@ static bool command_from_pid(char cmd[static PATH_MAX + 1], pid_t pid) {
 	cmd[n] = '\0';
 	return true;
 #else
+	// TODO: BSDs
 	return false;
 #endif
 }
@@ -78,7 +80,7 @@ static bool global_filter(const struct wl_client *client,
 #endif
 	}
 
-	char cmd[PATH_MAX + 1];
+	char cmd[PATH_MAX];
 	if (!command_from_pid(cmd, pid)) {
 		wlr_log(WLR_ERROR, "Failed to get command path from PID %d", pid);
 		return false;
