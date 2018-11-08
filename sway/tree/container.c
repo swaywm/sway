@@ -1009,19 +1009,25 @@ void container_discover_outputs(struct sway_container *con) {
 }
 
 void container_remove_gaps(struct sway_container *c) {
-	if (c->current_gaps == 0) {
+	if (c->current_gaps.top == 0 && c->current_gaps.right == 0 &&
+			c->current_gaps.bottom == 0 && c->current_gaps.left == 0) {
 		return;
 	}
 
-	c->width += c->current_gaps * 2;
-	c->height += c->current_gaps * 2;
-	c->x -= c->current_gaps;
-	c->y -= c->current_gaps;
-	c->current_gaps = 0;
+	c->width += c->current_gaps.left + c->current_gaps.right;
+	c->height += c->current_gaps.top + c->current_gaps.bottom;
+	c->x -= c->current_gaps.left;
+	c->y -= c->current_gaps.top;
+
+	c->current_gaps.top = 0;
+	c->current_gaps.right = 0;
+	c->current_gaps.bottom = 0;
+	c->current_gaps.left = 0;
 }
 
 void container_add_gaps(struct sway_container *c) {
-	if (c->current_gaps > 0) {
+	if (c->current_gaps.top > 0 || c->current_gaps.right > 0 ||
+			c->current_gaps.bottom > 0 || c->current_gaps.left > 0) {
 		return;
 	}
 	// Linear containers don't have gaps because it'd create double gaps
@@ -1054,11 +1060,15 @@ void container_add_gaps(struct sway_container *c) {
 
 	struct sway_workspace *ws = c->workspace;
 
-	c->current_gaps = ws->gaps_inner;
-	c->x += c->current_gaps;
-	c->y += c->current_gaps;
-	c->width -= 2 * c->current_gaps;
-	c->height -= 2 * c->current_gaps;
+	c->current_gaps.top = c->y == ws->y ? ws->gaps_inner : 0;
+	c->current_gaps.right = ws->gaps_inner;
+	c->current_gaps.bottom = ws->gaps_inner;
+	c->current_gaps.left = c->x == ws->x ? ws->gaps_inner : 0;
+
+	c->x += c->current_gaps.left;
+	c->y += c->current_gaps.top;
+	c->width -= c->current_gaps.left + c->current_gaps.right;
+	c->height -= c->current_gaps.top + c->current_gaps.bottom;
 }
 
 enum sway_container_layout container_parent_layout(struct sway_container *con) {

@@ -185,7 +185,8 @@ bool view_is_only_visible(struct sway_view *view) {
 static bool gaps_to_edge(struct sway_view *view) {
 	struct sway_container *con = view->container;
 	while (con) {
-		if (con->current_gaps > 0) {
+		if (con->current_gaps.top > 0 || con->current_gaps.right > 0 ||
+				con->current_gaps.bottom > 0 || con->current_gaps.left > 0) {
 			return true;
 		}
 		con = con->parent;
@@ -222,15 +223,15 @@ void view_autoconfigure(struct sway_view *view) {
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_VERTICAL
 			|| (smart && !other_views && no_gaps)) {
-		con->border_left = con->x - con->current_gaps != ws->x;
-		int right_x = con->x + con->width + con->current_gaps;
+		con->border_left = con->x - con->current_gaps.left != ws->x;
+		int right_x = con->x + con->width + con->current_gaps.right;
 		con->border_right = right_x != ws->x + ws->width;
 	}
 	if (config->hide_edge_borders == E_BOTH
 			|| config->hide_edge_borders == E_HORIZONTAL
 			|| (smart && !other_views && no_gaps)) {
-		con->border_top = con->y - con->current_gaps != ws->y;
-		int bottom_y = con->y + con->height + con->current_gaps;
+		con->border_top = con->y - con->current_gaps.top != ws->y;
+		int bottom_y = con->y + con->height + con->current_gaps.bottom;
 		con->border_bottom = bottom_y != ws->y + ws->height;
 	}
 
