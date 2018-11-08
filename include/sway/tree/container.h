@@ -104,7 +104,12 @@ struct sway_container {
 	bool border_right;
 
 	// The gaps currently applied to the container.
-	double current_gaps;
+	struct {
+		int top;
+		int right;
+		int bottom;
+		int left;
+	} current_gaps;
 
 	struct sway_workspace *workspace; // NULL when hidden in the scratchpad
 	struct sway_container *parent;    // NULL if container in root of workspace
