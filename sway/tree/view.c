@@ -191,7 +191,8 @@ static bool gaps_to_edge(struct sway_view *view) {
 		}
 		con = con->parent;
 	}
-	return view->container->workspace->current_gaps > 0;
+	struct side_gaps gaps = view->container->workspace->current_gaps;
+	return gaps.top > 0 || gaps.right > 0 || gaps.bottom > 0 || gaps.left > 0;
 }
 
 void view_autoconfigure(struct sway_view *view) {

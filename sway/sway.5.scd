@@ -133,9 +133,12 @@ They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 *fullscreen*
 	Toggles fullscreen for the focused view.
 
-*gaps* inner|outer all|current set|plus|minus <amount>
+*gaps* inner|outer|horizontal|vertical|top|right|bottom|left all|current
+set|plus|minus <amount>
 	Changes the _inner_ or _outer_ gaps for either _all_ workspaces or the
-	_current_ workspace.
+	_current_ workspace. _outer_ gaps can be altered per side with _top_,
+	_right_, _bottom_, and _left_ or per direction with _horizontal_ and
+	_vertical_.
 
 *layout* default|splith|splitv|stacking|tabbed
 	Sets the layout mode of the focused container.
@@ -429,14 +432,16 @@ The default colors are:
 	_focus\_wrapping force_. This is only available for convenience. Please
 	use _focus\_wrapping_ instead when possible.
 
-*gaps* inner|outer <amount>
+*gaps* inner|outer|horizontal|vertical|top|right|bottom|left <amount>
 	Sets default _amount_ pixels of _inner_ or _outer_ gap, where the inner
 	affects spacing around each view and outer affects the spacing around each
 	workspace. Outer gaps are in addition to inner gaps. To reduce or remove
-	outer gaps, outer gaps can be set to a negative value.
+	outer gaps, outer gaps can be set to a negative value. _outer_ gaps can
+	also be specified per side with _top_, _right_, _bottom_, and _left_ or
+	per direction with _horizontal_ and _vertical_.
 
 	This affects new workspaces only, and is used when the workspace doesn't
-	have its own gaps settings (see: workspace <ws> gaps inner|outer <amount>).
+	have its own gaps settings (see: workspace <ws> gaps ...).
 
 *hide\_edge\_borders* none|vertical|horizontal|both|smart|smart\_no\_gaps
 	Hides window borders adjacent to the screen edges. Default is _none_.
@@ -549,7 +554,8 @@ The default colors are:
 *workspace* back\_and\_forth
 	Switches to the previously focused workspace.
 
-*workspace* <name> gaps inner|outer <amount>
+*workspace* <name> gaps inner|outer|horizontal|vertical|top|right|bottom|left
+<amount>
 	Specifies that workspace _name_ should have the given gaps settings when it
 	is created.
 

@@ -49,6 +49,21 @@ struct sway_output *workspace_get_initial_output(const char *name) {
 	return focus->output;
 }
 
+static void prevent_invalid_outer_gaps(struct sway_workspace *ws) {
+	if (ws->gaps_outer.top < -ws->gaps_inner) {
+		ws->gaps_outer.top = -ws->gaps_inner;
+	}
+	if (ws->gaps_outer.right < -ws->gaps_inner) {
+		ws->gaps_outer.right = -ws->gaps_inner;
+	}
+	if (ws->gaps_outer.bottom < -ws->gaps_inner) {
+		ws->gaps_outer.bottom = -ws->gaps_inner;
+	}
+	if (ws->gaps_outer.left < -ws->gaps_inner) {
+		ws->gaps_outer.left = -ws->gaps_inner;
+	}
+}
+
 struct sway_workspace *workspace_create(struct sway_output *output,
 		const char *name) {
 	if (output == NULL) {
@@ -77,12 +92,24 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	if (name) {
 		struct workspace_config *wsc = workspace_find_config(name);
 		if (wsc) {
-			if (wsc->gaps_outer != INT_MIN) {
-				ws->gaps_outer = wsc->gaps_outer;
+			if (wsc->gaps_outer.top != INT_MIN) {
+				ws->gaps_outer.top = wsc->gaps_outer.top;
+			}
+			if (wsc->gaps_outer.right != INT_MIN) {
+				ws->gaps_outer.right = wsc->gaps_outer.right;
+			}
+			if (wsc->gaps_outer.bottom != INT_MIN) {
+				ws->gaps_outer.bottom = wsc->gaps_outer.bottom;
+			}
+			if (wsc->gaps_outer.left != INT_MIN) {
+				ws->gaps_outer.left = wsc->gaps_outer.left;
 			}
 			if (wsc->gaps_inner != INT_MIN) {
 				ws->gaps_inner = wsc->gaps_inner;
 			}
+			// Since default outer gaps can be smaller than the negation of
+			// workspace specific inner gaps, check outer gaps again
+			prevent_invalid_outer_gaps(ws);
 		}
 	}
 
@@ -615,19 +642,25 @@ void workspace_insert_tiling(struct sway_workspace *workspace,
 }
 
 void workspace_remove_gaps(struct sway_workspace *ws) {
-	if (ws->current_gaps == 0) {
+	if (ws->current_gaps.top == 0 && ws->current_gaps.right == 0 &&
+			ws->current_gaps.bottom == 0 && ws->current_gaps.left == 0) {
 		return;
 	}
 
-	ws->width += ws->current_gaps * 2;
-	ws->height += ws->current_gaps * 2;
-	ws->x -= ws->current_gaps;
-	ws->y -= ws->current_gaps;
-	ws->current_gaps = 0;
+	ws->width += ws->current_gaps.left + ws->current_gaps.right;
+	ws->height += ws->current_gaps.top + ws->current_gaps.bottom;
+	ws->x -= ws->current_gaps.left;
+	ws->y -= ws->current_gaps.top;
+
+	ws->current_gaps.top = 0;
+	ws->current_gaps.right = 0;
+	ws->current_gaps.bottom = 0;
+	ws->current_gaps.left = 0;
 }
 
 void workspace_add_gaps(struct sway_workspace *ws) {
-	if (ws->current_gaps > 0) {
+	if (ws->current_gaps.top > 0 || ws->current_gaps.right > 0 ||
+			ws->current_gaps.bottom > 0 || ws->current_gaps.left > 0) {
 		return;
 	}
 	if (config->smart_gaps) {
@@ -643,18 +676,20 @@ void workspace_add_gaps(struct sway_workspace *ws) {
 	}
 
 	ws->current_gaps = ws->gaps_outer;
-
 	if (ws->layout == L_TABBED || ws->layout == L_STACKED) {
 		// We have to add inner gaps for this, because children of tabbed and
 		// stacked containers don't apply their own gaps - they assume the
 		// tabbed/stacked container is using gaps.
-		ws->current_gaps += ws->gaps_inner;
+		ws->current_gaps.top += ws->gaps_inner;
+		ws->current_gaps.right += ws->gaps_inner;
+		ws->current_gaps.bottom += ws->gaps_inner;
+		ws->current_gaps.left += ws->gaps_inner;
 	}
 
-	ws->x += ws->current_gaps;
-	ws->y += ws->current_gaps;
-	ws->width -= 2 * ws->current_gaps;
-	ws->height -= 2 * ws->current_gaps;
+	ws->x += ws->current_gaps.left;
+	ws->y += ws->current_gaps.top;
+	ws->width -= ws->current_gaps.left + ws->current_gaps.right;
+	ws->height -= ws->current_gaps.top + ws->current_gaps.bottom;
 }
 
 struct sway_container *workspace_split(struct sway_workspace *workspace,
