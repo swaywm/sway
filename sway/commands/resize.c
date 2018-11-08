@@ -499,7 +499,7 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
 		}
 		if (height->unit == RESIZE_UNIT_PX) {
 			resize_tiled(con, height->amount - con->height,
-					RESIZE_AXIS_HORIZONTAL);
+					RESIZE_AXIS_VERTICAL);
 		}
 	}
 
@@ -538,34 +538,45 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 /**
  * resize set <args>
  *
- * args: <width> [px|ppt] <height> [px|ppt]
+ * args: [width] <width> [px|ppt]
+ *     : height <height> [px|ppt]
+ *     : [width] <width> [px|ppt] [height] <height> [px|ppt]
  */
 static struct cmd_results *cmd_resize_set(int argc, char **argv) {
 	struct cmd_results *error;
-	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 2))) {
+	if ((error = checkarg(argc, "resize", EXPECTED_AT_LEAST, 1))) {
 		return error;
 	}
-	const char *usage = "Expected 'resize set <width> <height>'";
+	const char *usage = "Expected 'resize set [width] <width> [px|ppt]' or "
+		"'resize set height <height> [px|ppt]' or "
+		"'resize set [width] <width> [px|ppt] [height] <height> [px|ppt]'";
 
 	// Width
-	struct resize_amount width;
-	int num_consumed_args = parse_resize_amount(argc, argv, &width);
-	argc -= num_consumed_args;
-	argv += num_consumed_args;
-	if (width.unit == RESIZE_UNIT_INVALID) {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
+	struct resize_amount width = {0};
+	if (argc >= 2 && !strcmp(argv[0], "width") && strcmp(argv[1], "height")) {
+		argc--; argv++;
 	}
-	if (!argc) {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
+	if (strcmp(argv[0], "height")) {
+		int num_consumed_args = parse_resize_amount(argc, argv, &width);
+		argc -= num_consumed_args;
+		argv += num_consumed_args;
+		if (width.unit == RESIZE_UNIT_INVALID) {
+			return cmd_results_new(CMD_INVALID, "resize set", usage);
+		}
 	}
 
 	// Height
-	struct resize_amount height;
-	num_consumed_args = parse_resize_amount(argc, argv, &height);
-	argc -= num_consumed_args;
-	argv += num_consumed_args;
-	if (height.unit == RESIZE_UNIT_INVALID) {
-		return cmd_results_new(CMD_INVALID, "resize", usage);
+	struct resize_amount height = {0};
+	if (argc) {
+		if (argc >= 2 && !strcmp(argv[0], "height")) {
+			argc--; argv++;
+		}
+		int num_consumed_args = parse_resize_amount(argc, argv, &height);
+		argc -= num_consumed_args;
+		argv += num_consumed_args;
+		if (width.unit == RESIZE_UNIT_INVALID) {
+			return cmd_results_new(CMD_INVALID, "resize set", usage);
+		}
 	}
 
 	// If 0, don't resize that dimension
