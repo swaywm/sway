@@ -181,7 +181,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 	}
 
 	struct sway_container *current = config->handler_context.container;
-	struct sway_container *other;
+	struct sway_container *other = NULL;
 
 	char *value = join_args(argv + 3, argc - 3);
 	if (strcasecmp(argv[2], "id") == 0) {
