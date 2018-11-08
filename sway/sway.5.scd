@@ -419,8 +419,10 @@ The default colors are:
 	specified direction while holding the floating modifier. Resets the
 	command, when given no arguments.
 
-*focus\_follows\_mouse* yes|no
-	If set to _yes_, moving your mouse over a window will focus that window.
+*focus\_follows\_mouse* yes|no|always
+	If set to _yes_, moving your mouse over a window will focus that window. If
+	set to _always_, the window under the cursor will always be focused, even 
+	after switching between workspaces.
 
 *focus\_wrapping* yes|no|force
 	This option determines what to do when attempting to focus over the edge
