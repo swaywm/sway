@@ -4,27 +4,28 @@
 #include <pango/pangocairo.h>
 #include <signal.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <wlr/util/log.h>
-#include "sway/commands.h"
-#include "sway/config.h"
-#include "sway/debug.h"
-#include "sway/desktop/transaction.h"
-#include "sway/server.h"
-#include "sway/swaynag.h"
-#include "sway/tree/root.h"
-#include "sway/ipc-server.h"
 #include "ipc-client.h"
 #include "log.h"
 #include "readline.h"
 #include "stringop.h"
+#include "sway/commands.h"
+#include "sway/config.h"
+#include "sway/debug.h"
+#include "sway/desktop/transaction.h"
+#include "sway/ipc-server.h"
+#include "sway/security.h"
+#include "sway/server.h"
+#include "sway/swaynag.h"
+#include "sway/tree/root.h"
 #include "util.h"
 
 static bool terminate_request = false;
@@ -370,6 +371,10 @@ int main(int argc, char **argv) {
 	if (validate) {
 		bool valid = load_main_config(config_path, false, true);
 		return valid ? 0 : 1;
+	}
+
+	if (!load_security(server.wl_display)) {
+		sway_terminate(EXIT_FAILURE);
 	}
 
 	setenv("WAYLAND_DISPLAY", server.socket, true);
