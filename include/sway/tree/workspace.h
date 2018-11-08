@@ -32,9 +32,9 @@ struct sway_workspace {
 	enum sway_container_layout layout;
 	enum sway_container_layout prev_split_layout;
 
-	int current_gaps;
+	struct side_gaps current_gaps;
 	int gaps_inner;
-	int gaps_outer;
+	struct side_gaps gaps_outer;
 
 	struct sway_output *output; // NULL if no outputs are connected
 	list_t *floating;           // struct sway_container

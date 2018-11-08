@@ -22,7 +22,10 @@ static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
 	}
 	wsc->workspace = strdup(ws_name);
 	wsc->gaps_inner = INT_MIN;
-	wsc->gaps_outer = INT_MIN;
+	wsc->gaps_outer.top = INT_MIN;
+	wsc->gaps_outer.right = INT_MIN;
+	wsc->gaps_outer.bottom = INT_MIN;
+	wsc->gaps_outer.left = INT_MIN;
 	list_add(config->workspace_configs, wsc);
 	return wsc;
 }
@@ -31,6 +34,89 @@ void free_workspace_config(struct workspace_config *wsc) {
 	free(wsc->workspace);
 	free(wsc->output);
 	free(wsc);
+}
+
+static void prevent_invalid_outer_gaps(struct workspace_config *wsc) {
+	if (wsc->gaps_outer.top != INT_MIN && 
+			wsc->gaps_outer.top < -wsc->gaps_inner) {
+		wsc->gaps_outer.top = -wsc->gaps_inner;
+	}
+	if (wsc->gaps_outer.right != INT_MIN &&
+			wsc->gaps_outer.right < -wsc->gaps_inner) {
+		wsc->gaps_outer.right = -wsc->gaps_inner;
+	}
+	if (wsc->gaps_outer.bottom != INT_MIN &&
+			wsc->gaps_outer.bottom < -wsc->gaps_inner) {
+		wsc->gaps_outer.bottom = -wsc->gaps_inner;
+	}
+	if (wsc->gaps_outer.left != INT_MIN &&
+			wsc->gaps_outer.left < -wsc->gaps_inner) {
+		wsc->gaps_outer.left = -wsc->gaps_inner;
+	}
+}
+
+static struct cmd_results *cmd_workspace_gaps(int argc, char **argv,
+		int gaps_location) {
+	const char *expected = "Expected 'workspace <name> gaps "
+		"inner|outer|horizontal|vertical|top|right|bottom|left <px>'";
+	struct cmd_results *error = NULL;
+	if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO,
+					gaps_location + 3))) {
+		return error;
+	}
+	char *ws_name = join_args(argv, argc - 3);
+	struct workspace_config *wsc = workspace_config_find_or_create(ws_name);
+	free(ws_name);
+	if (!wsc) {
+		return cmd_results_new(CMD_FAILURE, "workspace gaps",
+				"Unable to allocate workspace output");
+	}
+
+	char *end;
+	int amount = strtol(argv[gaps_location + 2], &end, 10);
+	if (strlen(end)) {
+		free(end);
+		return cmd_results_new(CMD_FAILURE, "workspace gaps", expected);
+	}
+
+	bool valid = false;
+	char *type = argv[gaps_location + 1];
+	if (!strcasecmp(type, "inner")) {
+		valid = true;
+		wsc->gaps_inner = (amount >= 0) ? amount : 0;
+	} else {
+		if (!strcasecmp(type, "outer") || !strcasecmp(type, "vertical")
+				|| !strcasecmp(type, "top")) {
+			valid = true;
+			wsc->gaps_outer.top = amount;
+		}
+		if (!strcasecmp(type, "outer") || !strcasecmp(type, "horizontal")
+				|| !strcasecmp(type, "right")) {
+			valid = true;
+			wsc->gaps_outer.right = amount;
+		}
+		if (!strcasecmp(type, "outer") || !strcasecmp(type, "vertical")
+				|| !strcasecmp(type, "bottom")) {
+			valid = true;
+			wsc->gaps_outer.bottom = amount;
+		}
+		if (!strcasecmp(type, "outer") || !strcasecmp(type, "horizontal")
+				|| !strcasecmp(type, "left")) {
+			valid = true;
+			wsc->gaps_outer.left = amount;
+		}
+	}
+	if (!valid) {
+		return cmd_results_new(CMD_INVALID, "workspace gaps", expected);
+	}
+
+	// Prevent invalid gaps configurations.
+	if (wsc->gaps_inner != INT_MIN && wsc->gaps_inner < 0) {
+		wsc->gaps_inner = 0;
+	}
+	prevent_invalid_outer_gaps(wsc);
+
+	return error;
 }
 
 struct cmd_results *cmd_workspace(int argc, char **argv) {
@@ -68,43 +154,9 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		free(wsc->output);
 		wsc->output = strdup(argv[output_location + 1]);
 	} else if (gaps_location >= 0) {
-		if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO, gaps_location + 3))) {
+		if ((error = cmd_workspace_gaps(argc, argv, gaps_location))) {
 			return error;
 		}
-		char *ws_name = join_args(argv, argc - 3);
-		struct workspace_config *wsc = workspace_config_find_or_create(ws_name);
-		free(ws_name);
-		if (!wsc) {
-			return cmd_results_new(CMD_FAILURE, "workspace gaps",
-					"Unable to allocate workspace output");
-		}
-		int *prop = NULL;
-		if (strcasecmp(argv[gaps_location + 1], "inner") == 0) {
-			prop = &wsc->gaps_inner;
-		} else if (strcasecmp(argv[gaps_location + 1], "outer") == 0) {
-			prop = &wsc->gaps_outer;
-		} else {
-			return cmd_results_new(CMD_FAILURE, "workspace gaps",
-					"Expected 'workspace <ws> gaps inner|outer <px>'");
-		}
-		char *end;
-		int val = strtol(argv[gaps_location + 2], &end, 10);
-
-		if (strlen(end)) {
-			free(end);
-			return cmd_results_new(CMD_FAILURE, "workspace gaps",
-					"Expected 'workspace <ws> gaps inner|outer <px>'");
-		}
-		*prop = val;
-
-		// Prevent invalid gaps configurations.
-		if (wsc->gaps_inner < 0) {
-			wsc->gaps_inner = 0;
-		}
-		if (wsc->gaps_outer < -wsc->gaps_inner) {
-			wsc->gaps_outer = -wsc->gaps_inner;
-		}
-
 	} else {
 		if (config->reading || !config->active) {
 			return cmd_results_new(CMD_DEFER, "workspace", NULL);

@@ -168,6 +168,16 @@ struct output_config {
 };
 
 /**
+ * Stores size of gaps for each side
+ */
+struct side_gaps {
+	int top;
+	int right;
+	int bottom;
+	int left;
+};
+
+/**
  * Stores configuration for a workspace, regardless of whether the workspace
  * exists.
  */
@@ -175,7 +185,7 @@ struct workspace_config {
 	char *workspace;
 	char *output;
 	int gaps_inner;
-	int gaps_outer;
+	struct side_gaps gaps_outer;
 };
 
 struct bar_config {
@@ -398,7 +408,7 @@ struct sway_config {
 
 	bool smart_gaps;
 	int gaps_inner;
-	int gaps_outer;
+	struct side_gaps gaps_outer;
 
 	list_t *config_chain;
 	const char *current_config_path;
