@@ -68,9 +68,14 @@ static bool global_filter(const struct wl_client *client,
 	pid_t pid = 0;
 	wl_client_get_credentials((struct wl_client *)client, &pid, NULL, NULL);
 	if (pid == 0) {
+#ifdef __FreeBSD__
 		wlr_log(WLR_DEBUG, "Host doesn't support Wayland credentials, "
 			"cannot enforce security rules");
 		return true;
+#else
+		wlr_log(WLR_ERROR, "Failed to get Wayland connection credentials");
+		return false;
+#endif
 	}
 
 	char cmd[PATH_MAX + 1];
