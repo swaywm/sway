@@ -210,11 +210,23 @@ set|plus|minus <amount>
 	percentage points. If the units are omitted, floating containers are resized
 	in px and tiled containers by ppt. _amount_ will default to 10 if omitted.
 
-*resize set* <width> [px|ppt] <height> [px|ppt]
-	Sets the width and height of the currently focused container to _width_ and
-	_height_, specified in pixels or percentage points. If the units are
-	omitted, floating containers are resized in px and tiled containers by ppt.
-	If _width_ or _height_ is 0, no resize is done on that axis.
+*resize set* height <height> [px|ppt]
+	Sets the height of the container to _height_, specified in pixels or
+	percentage points. If the units are omitted, floating containers are
+	resized in px and tiled containers by ppt. If _height_ is 0, the container
+	will not be resized.
+
+*resize set* [width] <width> [px|ppt]
+	Sets the width of the container to _width_, specified in pixels or
+	percentage points. If the units are omitted, floating containers are
+	resized in px and tiled containers by ppt. If _width_ is 0, the container
+	will not be resized.
+
+*resize set* [width] <width> [px|ppt] [height] <height> [px|ppt]
+	Sets the width and height of the container to _width_ and _height_,
+	specified in pixels or percentage points. If the units are omitted,
+	floating containers are resized in px and tiled containers by ppt. If
+	_width_ or _height_ is 0, the container will not be resized on that axis.
 
 *scratchpad show*
 	Shows a window from the scratchpad. Repeatedly using this command will
