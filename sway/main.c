@@ -422,6 +422,8 @@ int main(int argc, char **argv) {
 	root_destroy(root);
 	root = NULL;
 
+	finish_security();
+
 	if (config) {
 		free_config(config);
 	}

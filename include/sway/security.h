@@ -6,6 +6,7 @@
 #include "sway/config.h"
 
 bool load_security(struct wl_display *display);
+void finish_security(void);
 bool check_security_rule(const char *cmd, const char *global);
 
 struct command_policy *alloc_command_policy(const char *command);

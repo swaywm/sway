@@ -123,6 +123,18 @@ bool load_security(struct wl_display *display) {
 	return true;
 }
 
+void finish_security(void) {
+	struct sway_security_rule *rule, *tmp;
+	wl_list_for_each_safe(rule, tmp, &rules, link) {
+		free(rule->command);
+		free(rule->global);
+		wl_list_remove(&rule->link);
+		free(rule);
+	}
+
+	wl_list_remove(&rules);
+}
+
 bool check_security_rule(const char *cmd, const char *global) {
 	struct sway_security_rule *rule;
 	wl_list_for_each(rule, &rules, link) {
