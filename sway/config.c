@@ -257,7 +257,6 @@ static void config_defaults(struct sway_config *config) {
 
 	// border colors
 	set_color(config->border_colors.focused.border, 0x4C7899);
-	set_color(config->border_colors.focused.border, 0x4C7899);
 	set_color(config->border_colors.focused.background, 0x285577);
 	set_color(config->border_colors.focused.text, 0xFFFFFFFF);
 	set_color(config->border_colors.focused.indicator, 0x2E9EF4);
