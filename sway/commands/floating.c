@@ -9,6 +9,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
+#include "util.h"
 
 struct cmd_results *cmd_floating(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -40,17 +41,8 @@ struct cmd_results *cmd_floating(int argc, char **argv) {
 		}
 	}
 
-	bool wants_floating;
-	if (strcasecmp(argv[0], "enable") == 0) {
-		wants_floating = true;
-	} else if (strcasecmp(argv[0], "disable") == 0) {
-		wants_floating = false;
-	} else if (strcasecmp(argv[0], "toggle") == 0) {
-		wants_floating = !container_is_floating(container);
-	} else {
-		return cmd_results_new(CMD_FAILURE, "floating",
-			"Expected 'floating <enable|disable|toggle>'");
-	}
+	bool wants_floating = 
+		parse_boolean(argv[0], container_is_floating(container));
 
 	container_set_floating(container, wants_floating);
 

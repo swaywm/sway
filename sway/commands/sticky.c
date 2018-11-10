@@ -9,6 +9,7 @@
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
 #include "list.h"
+#include "util.h"
 
 struct cmd_results *cmd_sticky(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -26,21 +27,9 @@ struct cmd_results *cmd_sticky(int argc, char **argv) {
 			"Can't set sticky on a tiled container");
 	}
 
-	bool wants_sticky;
-	if (strcasecmp(argv[0], "enable") == 0) {
-		wants_sticky = true;
-	} else if (strcasecmp(argv[0], "disable") == 0) {
-		wants_sticky = false;
-	} else if (strcasecmp(argv[0], "toggle") == 0) {
-		wants_sticky = !container->is_sticky;
-	} else {
-		return cmd_results_new(CMD_FAILURE, "sticky",
-			"Expected 'sticky <enable|disable|toggle>'");
-	}
+	container->is_sticky = parse_boolean(argv[0], container->is_sticky);
 
-	container->is_sticky = wants_sticky;
-
-	if (wants_sticky) {
+	if (container->is_sticky) {
 		// move container to active workspace
 		struct sway_workspace *active_workspace =
 			output_get_active_workspace(container->workspace->output);
