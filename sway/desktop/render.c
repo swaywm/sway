@@ -1019,6 +1019,7 @@ renderer_end:
 	}
 
 	wlr_renderer_scissor(renderer, NULL);
+	wlr_output_render_software_cursors(wlr_output, damage);
 	wlr_renderer_end(renderer);
 	if (!wlr_output_damage_swap_buffers(output->damage, when, damage)) {
 		return;
