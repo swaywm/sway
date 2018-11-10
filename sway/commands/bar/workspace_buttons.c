@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "log.h"
+#include "util.h"
 
 struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -12,17 +13,14 @@ struct cmd_results *bar_cmd_workspace_buttons(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE,
 				"workspace_buttons", "No bar defined.");
 	}
-	if (strcasecmp("yes", argv[0]) == 0) {
-		config->current_bar->workspace_buttons = true;
+	config->current_bar->workspace_buttons = 
+		parse_boolean(argv[0], config->current_bar->workspace_buttons);
+	if (config->current_bar->workspace_buttons) {
 		wlr_log(WLR_DEBUG, "Enabling workspace buttons on bar: %s",
 				config->current_bar->id);
-	} else if (strcasecmp("no", argv[0]) == 0) {
-		config->current_bar->workspace_buttons = false;
+	} else {
 		wlr_log(WLR_DEBUG, "Disabling workspace buttons on bar: %s",
 				config->current_bar->id);
-	} else {
-		return cmd_results_new(CMD_INVALID, "workspace_buttons",
-				"Invalid value %s", argv[0]);
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

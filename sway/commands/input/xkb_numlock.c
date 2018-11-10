@@ -3,6 +3,7 @@
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "util.h"
 
 struct cmd_results *input_cmd_xkb_numlock(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -15,14 +16,7 @@ struct cmd_results *input_cmd_xkb_numlock(int argc, char **argv) {
 			"No input device defined.");
 	}
 
-	if (strcasecmp(argv[0], "enabled") == 0) {
-		ic->xkb_numlock = 1;
-	} else if (strcasecmp(argv[0], "disabled") == 0) {
-		ic->xkb_numlock = 0;
-	} else {
-		return cmd_results_new(CMD_INVALID, "xkb_numlock",
-			"Expected 'xkb_numlock <enabled|disabled>'");
-	}
+	ic->xkb_numlock = parse_boolean(argv[0], false);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

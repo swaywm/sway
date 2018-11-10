@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "log.h"
+#include "util.h"
 
 struct cmd_results *bar_cmd_wrap_scroll(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -11,17 +12,14 @@ struct cmd_results *bar_cmd_wrap_scroll(int argc, char **argv) {
 	if (!config->current_bar) {
 		return cmd_results_new(CMD_FAILURE, "wrap_scroll", "No bar defined.");
 	}
-	if (strcasecmp("yes", argv[0]) == 0) {
-		config->current_bar->wrap_scroll = true;
+	config->current_bar->wrap_scroll = 
+			parse_boolean(argv[0], config->current_bar->wrap_scroll);
+	if (config->current_bar->wrap_scroll) {
 		wlr_log(WLR_DEBUG, "Enabling wrap scroll on bar: %s",
-				config->current_bar->id);
-	} else if (strcasecmp("no", argv[0]) == 0) {
-		config->current_bar->wrap_scroll = false;
+			config->current_bar->id);
+	} else {
 		wlr_log(WLR_DEBUG, "Disabling wrap scroll on bar: %s",
 				config->current_bar->id);
-	} else {
-		return cmd_results_new(CMD_INVALID,
-				"wrap_scroll", "Invalid value %s", argv[0]);
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }

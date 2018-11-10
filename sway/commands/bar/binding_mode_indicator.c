@@ -2,6 +2,7 @@
 #include <strings.h>
 #include "sway/commands.h"
 #include "log.h"
+#include "util.h"
 
 struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -13,17 +14,14 @@ struct cmd_results *bar_cmd_binding_mode_indicator(int argc, char **argv) {
 		return cmd_results_new(CMD_FAILURE,
 				"binding_mode_indicator", "No bar defined.");
 	}
-	if (strcasecmp("yes", argv[0]) == 0) {
-		config->current_bar->binding_mode_indicator = true;
+	config->current_bar->binding_mode_indicator = 
+		parse_boolean(argv[0], config->current_bar->binding_mode_indicator);
+	if (config->current_bar->binding_mode_indicator) {
 		wlr_log(WLR_DEBUG, "Enabling binding mode indicator on bar: %s",
 				config->current_bar->id);
-	} else if (strcasecmp("no", argv[0]) == 0) {
-		config->current_bar->binding_mode_indicator = false;
+	} else {
 		wlr_log(WLR_DEBUG, "Disabling binding mode indicator on bar: %s",
 				config->current_bar->id);
-	} else {
-		return cmd_results_new(CMD_INVALID, "binding_mode_indicator",
-				"Invalid value %s", argv[0]);
 	}
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
