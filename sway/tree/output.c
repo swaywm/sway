@@ -31,6 +31,13 @@ static void restore_workspaces(struct sway_output *output) {
 				j--;
 			}
 		}
+
+		if (other->workspaces->length == 0) {
+			char *next = workspace_next_name(other->wlr_output->name);
+			struct sway_workspace *ws = workspace_create(other, next);
+			free(next);
+			ipc_event_workspace(NULL, ws, "init");
+		}
 	}
 
 	// Saved workspaces

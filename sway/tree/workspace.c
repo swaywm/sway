@@ -33,14 +33,15 @@ struct workspace_config *workspace_find_config(const char *ws_name) {
 struct sway_output *workspace_get_initial_output(const char *name) {
 	// Check workspace configs for a workspace<->output pair
 	struct workspace_config *wsc = workspace_find_config(name);
-	if (wsc && wsc->output) {
-		struct sway_output *output = output_by_name(wsc->output);
-		if (!output) {
-			output = output_by_identifier(wsc->output);
-		}
-		
-		if (output) {
-			return output;
+	if (wsc) {
+		for (int i = 0; i < wsc->outputs->length; i++) {
+			struct sway_output *output = output_by_name(wsc->outputs->items[i]);
+			if (!output) {
+				output = output_by_identifier(wsc->outputs->items[i]);
+			}
+			if (output) {
+				return output;
+			}
 		}
 	}
 	// Otherwise put it on the focused output
@@ -85,7 +86,6 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 	ws->floating = create_list();
 	ws->tiling = create_list();
 	ws->output_priority = create_list();
-	workspace_output_add_priority(ws, output);
 
 	ws->gaps_outer = config->gaps_outer;
 	ws->gaps_inner = config->gaps_inner;
@@ -110,8 +110,16 @@ struct sway_workspace *workspace_create(struct sway_output *output,
 			// Since default outer gaps can be smaller than the negation of
 			// workspace specific inner gaps, check outer gaps again
 			prevent_invalid_outer_gaps(ws);
+
+			// Add output priorities
+			for (int i = 0; i < wsc->outputs->length; ++i) {
+				list_add(ws->output_priority, strdup(wsc->outputs->items[i]));
+			}
 		}
 	}
+
+	// If not already added, add the output to the lowest priority
+	workspace_output_add_priority(ws, output);
 
 	output_add_workspace(output, ws);
 	output_sort_workspaces(output);
@@ -134,8 +142,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 
 	free(workspace->name);
 	free(workspace->representation);
-	list_foreach(workspace->output_priority, free);
-	list_free(workspace->output_priority);
+	free_flat_list(workspace->output_priority);
 	list_free(workspace->floating);
 	list_free(workspace->tiling);
 	list_free(workspace->current.floating);
@@ -177,8 +184,19 @@ static bool workspace_valid_on_output(const char *output_name,
 	char identifier[128];
 	struct sway_output *output = output_by_name(output_name);
 	output_get_identifier(identifier, sizeof(identifier), output);
-		
-	return !wsc || !wsc->output || strcmp(wsc->output, output_name) == 0 || strcasecmp(identifier, output_name) == 0;
+
+	if (!wsc) {
+		return true;
+	}
+
+	for (int i = 0; i < wsc->outputs->length; i++) {
+		if (strcmp(wsc->outputs->items[i], output_name) == 0 ||
+				strcmp(wsc->outputs->items[i], identifier) == 0) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 static void workspace_name_from_binding(const struct sway_binding * binding,
@@ -281,10 +299,19 @@ char *workspace_next_name(const char *output_name) {
 	for (int i = 0; i < config->workspace_configs->length; ++i) {
 		// Unlike with bindings, this does not guarantee order
 		const struct workspace_config *wsc = config->workspace_configs->items[i];
-		if (wsc->output && strcmp(wsc->output, output_name) == 0
-				&& workspace_by_name(wsc->workspace) == NULL) {
-			free(target);
-			target = strdup(wsc->workspace);
+		if (workspace_by_name(wsc->workspace)) {
+			continue;
+		}
+		bool found = false;
+		for (int j = 0; j < wsc->outputs->length; ++j) {
+			if (strcmp(wsc->outputs->items[j], output_name) == 0) {
+				found = true;
+				free(target);
+				target = strdup(wsc->workspace);
+				break;
+			}
+		}
+		if (found) {
 			break;
 		}
 	}

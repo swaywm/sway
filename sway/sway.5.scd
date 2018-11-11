@@ -573,8 +573,12 @@ The default colors are:
 	Specifies that workspace _name_ should have the given gaps settings when it
 	is created.
 
-*workspace* <name> output <output>
-	Specifies that workspace _name_ should be shown on the specified _output_.
+*workspace* <name> output <outputs...>
+	Specifies that workspace _name_ should be shown on the specified _outputs_.
+	Multiple outputs can be listed and the first available will be used. If the
+	workspace gets placed on an output further down the list and an output that
+	is higher on the list becomes available, the workspace will be move to the
+	higher priority output.
 
 *workspace\_auto\_back\_and\_forth* yes|no
 	When _yes_, repeating a workspace switch command will switch back to the
