@@ -9,6 +9,6 @@ struct cmd_results *cmd_ws_auto_back_and_forth(int argc, char **argv) {
 		return error;
 	}
 	config->auto_back_and_forth = 
-		!parse_boolean(argv[0], config->auto_back_and_forth);
+		parse_boolean(argv[0], config->auto_back_and_forth);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
 }
