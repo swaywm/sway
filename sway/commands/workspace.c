@@ -21,6 +21,7 @@ static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
 		return NULL;
 	}
 	wsc->workspace = strdup(ws_name);
+	wsc->outputs = create_list();
 	wsc->gaps_inner = INT_MIN;
 	wsc->gaps_outer.top = INT_MIN;
 	wsc->gaps_outer.right = INT_MIN;
@@ -32,7 +33,7 @@ static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
 
 void free_workspace_config(struct workspace_config *wsc) {
 	free(wsc->workspace);
-	free(wsc->output);
+	free_flat_list(wsc->outputs);
 	free(wsc);
 }
 
@@ -141,18 +142,20 @@ struct cmd_results *cmd_workspace(int argc, char **argv) {
 		}
 	}
 	if (output_location >= 0) {
-		if ((error = checkarg(argc, "workspace", EXPECTED_EQUAL_TO, output_location + 2))) {
+		if ((error = checkarg(argc, "workspace", EXPECTED_AT_LEAST,
+						output_location + 2))) {
 			return error;
 		}
-		char *ws_name = join_args(argv, argc - 2);
+		char *ws_name = join_args(argv, output_location);
 		struct workspace_config *wsc = workspace_config_find_or_create(ws_name);
 		free(ws_name);
 		if (!wsc) {
 			return cmd_results_new(CMD_FAILURE, "workspace output",
 					"Unable to allocate workspace output");
 		}
-		free(wsc->output);
-		wsc->output = strdup(argv[output_location + 1]);
+		for (int i = output_location + 1; i < argc; ++i) {
+			list_add(wsc->outputs, strdup(argv[i]));
+		}
 	} else if (gaps_location >= 0) {
 		if ((error = cmd_workspace_gaps(argc, argv, gaps_location))) {
 			return error;

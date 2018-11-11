@@ -183,7 +183,7 @@ struct side_gaps {
  */
 struct workspace_config {
 	char *workspace;
-	char *output;
+	list_t *outputs;
 	int gaps_inner;
 	struct side_gaps gaps_outer;
 };
