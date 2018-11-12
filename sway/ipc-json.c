@@ -12,6 +12,7 @@
 #include "sway/input/seat.h"
 #include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_output.h>
+#include <xkbcommon/xkbcommon.h>
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
 static const char *ipc_json_layout_description(enum sway_container_layout l) {
@@ -502,6 +503,27 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 		json_object_new_int(device->wlr_device->product));
 	json_object_object_add(object, "type",
 		json_object_new_string(describe_device_type(device)));
+
+	if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
+		struct wlr_keyboard *keyboard = device->wlr_device->keyboard;
+		struct xkb_keymap *keymap = keyboard->keymap;
+		struct xkb_state *state = keyboard->xkb_state;
+		xkb_layout_index_t num_layouts = xkb_keymap_num_layouts(keymap);
+		xkb_layout_index_t layout_idx;
+		for (layout_idx = 0; layout_idx < num_layouts; layout_idx++) {
+			bool is_active =
+				xkb_state_layout_index_is_active(state,
+						layout_idx,
+						XKB_STATE_LAYOUT_EFFECTIVE);
+			if (is_active) {
+				const char *layout =
+					xkb_keymap_layout_get_name(keymap, layout_idx);
+				json_object_object_add(object, "xkb_active_layout_name",
+						json_object_new_string(layout));
+				break;
+			}
+		}
+	}
 
 	return object;
 }
