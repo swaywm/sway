@@ -469,15 +469,6 @@ void output_damage_box(struct sway_output *output, struct wlr_box *_box) {
 	wlr_output_damage_add_box(output->damage, &box);
 }
 
-static void output_damage_whole_container_iterator(struct sway_container *con,
-		void *data) {
-	if (!sway_assert(con->view, "expected a view")) {
-		return;
-	}
-	struct sway_output *output = data;
-	output_damage_view(output, con->view, true);
-}
-
 void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	// Pad the box by 1px, because the width is a double and might be a fraction
