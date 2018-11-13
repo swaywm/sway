@@ -412,6 +412,7 @@ void swaynag_destroy(struct swaynag *swaynag) {
 		free(button);
 	}
 	list_free(swaynag->buttons);
+	free(swaynag->details.button_details);
 	free(swaynag->details.message);
 	free(swaynag->details.button_up.text);
 	free(swaynag->details.button_down.text);

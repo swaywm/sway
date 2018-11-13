@@ -183,6 +183,9 @@ void status_line_free(struct status_line *status) {
 		}
 		json_tokener_free(status->tokener);
 	}
+	free(status->read);
+	free(status->write);
+	free((char*) status->text);
 	free(status->buffer);
 	free(status);
 }
