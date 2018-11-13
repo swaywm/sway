@@ -9,11 +9,17 @@ project(
 	],
 )
 
-add_project_arguments('-Wno-unused-parameter', language: 'c')
-add_project_arguments('-Wno-unused-function', language: 'c')
-add_project_arguments('-Wno-unused-result', language: 'c')
-add_project_arguments('-DWL_HIDE_DEPRECATED', language: 'c')
-add_project_arguments('-DWLR_USE_UNSTABLE', language: 'c')
+add_project_arguments(
+	[
+		'-DWL_HIDE_DEPRECATED',
+		'-DWLR_USE_UNSTABLE',
+
+		'-Wno-unused-parameter',
+		'-Wno-unused-result',
+		'-Wundef',
+	],
+	language: 'c',
+)
 
 cc = meson.get_compiler('c')
 

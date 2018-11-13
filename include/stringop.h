@@ -1,12 +1,7 @@
 #ifndef _SWAY_STRINGOP_H
 #define _SWAY_STRINGOP_H
-#include <stdlib.h>
-#include "list.h"
 
-#if !HAVE_DECL_SETENV
-// Not sure why we need to provide this
-extern int setenv(const char *, const char *, int);
-#endif
+#include "list.h"
 
 // array of whitespace characters to use for delims
 extern const char whitespace[];
