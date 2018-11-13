@@ -326,6 +326,7 @@ void free_output_config(struct output_config *oc) {
 	free(oc->name);
 	free(oc->background);
 	free(oc->background_option);
+	free(oc->background_fallback);
 	free(oc);
 }
 
