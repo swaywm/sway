@@ -13,7 +13,6 @@ static void server_decoration_handle_destroy(struct wl_listener *listener,
 	wl_list_remove(&deco->destroy.link);
 	wl_list_remove(&deco->mode.link);
 	wl_list_remove(&deco->link);
-	free(deco->wlr_server_decoration);
 	free(deco);
 }
 
