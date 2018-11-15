@@ -123,8 +123,6 @@ void free_config(struct sway_config *config) {
 		}
 		list_free(config->criteria);
 	}
-	free_mode(config->current_mode);
-	free_bar_config(config->current_bar);
 	list_free(config->no_focus);
 	list_free(config->active_bar_modifiers);
 	list_free(config->config_chain);
