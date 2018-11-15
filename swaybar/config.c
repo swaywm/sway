@@ -83,6 +83,7 @@ void free_config(struct swaybar_config *config) {
 	free(config->mode);
 	free(config->hidden_state);
 	free(config->sep_symbol);
+	free(config->modifier);
 	for (int i = 0; i < config->bindings->length; i++) {
 		struct swaybar_binding *binding = config->bindings->items[i];
 		free_binding(binding);
