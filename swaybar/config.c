@@ -30,6 +30,7 @@ struct swaybar_config *init_config(void) {
 	config->hidden_state = strdup("hide");
 	config->sep_symbol = NULL;
 	config->strip_workspace_numbers = false;
+	config->strip_workspace_name = false;
 	config->binding_mode_indicator = true;
 	config->wrap_scroll = false;
 	config->workspace_buttons = true;

@@ -114,6 +114,7 @@ sway_sources = files(
 	'commands/bar/separator_symbol.c',
 	'commands/bar/status_command.c',
 	'commands/bar/strip_workspace_numbers.c',
+	'commands/bar/strip_workspace_name.c',
 	'commands/bar/swaybar_command.c',
 	'commands/bar/tray_output.c',
 	'commands/bar/tray_padding.c',

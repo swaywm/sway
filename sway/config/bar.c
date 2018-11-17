@@ -99,6 +99,7 @@ struct bar_config *default_bar_config(void) {
 	bar->wrap_scroll = false;
 	bar->separator_symbol = NULL;
 	bar->strip_workspace_numbers = false;
+	bar->strip_workspace_name = false;
 	bar->binding_mode_indicator = true;
 	bar->verbose = false;
 	bar->pid = 0;

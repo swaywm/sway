@@ -342,19 +342,6 @@ static uint32_t render_binding_mode_indicator(cairo_t *cairo,
 	return output->height;
 }
 
-static const char *strip_workspace_number(const char *ws_name) {
-	size_t len = strlen(ws_name);
-	for (size_t i = 0; i < len; ++i) {
-		if (ws_name[i] < '0' || ws_name[i] > '9') {
-			if (':' == ws_name[i] && i < len - 1 && i > 0) {
-				return ws_name + i + 1;
-			}
-			return ws_name;
-		}
-	}
-	return ws_name;
-}
-
 static enum hotspot_event_handling workspace_hotspot_callback(struct swaybar_output *output,
 			int x, int y, enum x11_button button, void *data) {
 	if (button != LEFT) {
@@ -368,11 +355,6 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 		struct swaybar_output *output,
 		struct swaybar_workspace *ws, double *x) {
 	struct swaybar_config *config = output->bar->config;
-	const char *name = ws->name;
-	if (config->strip_workspace_numbers) {
-		name = strip_workspace_number(ws->name);
-	}
-
 	struct box_colors box_colors;
 	if (ws->urgent) {
 		box_colors = config->colors.urgent_workspace;
@@ -388,7 +370,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 
 	int text_width, text_height;
 	get_text_size(cairo, config->font, &text_width, &text_height, NULL,
-			output->scale, config->pango_markup, "%s", name);
+			output->scale, config->pango_markup, "%s", ws->label);
 
 	int ws_vertical_padding = WS_VERTICAL_PADDING * output->scale;
 	int ws_horizontal_padding = WS_HORIZONTAL_PADDING * output->scale;
@@ -421,7 +403,7 @@ static uint32_t render_workspace_button(cairo_t *cairo,
 	cairo_set_source_u32(cairo, box_colors.text);
 	cairo_move_to(cairo, *x + width / 2 - text_width / 2, (int)floor(text_y));
 	pango_printf(cairo, config->font, output->scale, config->pango_markup,
-			"%s", name);
+			"%s", ws->label);
 
 	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
 	hotspot->x = *x;

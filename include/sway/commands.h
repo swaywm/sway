@@ -198,6 +198,7 @@ sway_cmd bar_cmd_separator_symbol;
 sway_cmd bar_cmd_status_command;
 sway_cmd bar_cmd_pango_markup;
 sway_cmd bar_cmd_strip_workspace_numbers;
+sway_cmd bar_cmd_strip_workspace_name;
 sway_cmd bar_cmd_swaybar_command;
 sway_cmd bar_cmd_tray_output;
 sway_cmd bar_cmd_tray_padding;

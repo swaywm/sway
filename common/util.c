@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 700
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,7 +23,8 @@ int numlen(int n) {
 	if (n == 0) {
 		return 1;
 	}
-	return log10(n) + 1;
+	// Account for the '-' in negative numbers.
+	return log10(abs(n)) + (n > 0 ? 1 : 2);
 }
 
 static struct modifier_key {

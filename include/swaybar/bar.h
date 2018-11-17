@@ -68,6 +68,7 @@ struct swaybar_workspace {
 	struct wl_list link; // swaybar_output::workspaces
 	int num;
 	char *name;
+	char *label;
 	bool focused;
 	bool visible;
 	bool urgent;
