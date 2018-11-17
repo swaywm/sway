@@ -511,16 +511,40 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
  */
 static struct cmd_results *resize_set_floating(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
-	int min_width, max_width, min_height, max_height;
+	int min_width, max_width, min_height, max_height, grow_width, grow_height;
 	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
-	width->amount = fmax(min_width, fmin(width->amount, max_width));
-	height->amount = fmax(min_height, fmin(height->amount, max_height));
-	int grow_width = width->amount - con->width;
-	int grow_height = height->amount - con->height;
-	con->x -= grow_width / 2;
-	con->y -= grow_height / 2;
-	con->width = width->amount;
-	con->height = height->amount;
+
+	if (width->amount) {
+		if (width->unit == RESIZE_UNIT_PPT ||
+				width->unit == RESIZE_UNIT_DEFAULT) {
+			// Convert to px
+			width->amount = con->workspace->width * width->amount / 100;
+			width->unit = RESIZE_UNIT_PX;
+		}
+		if (width->unit == RESIZE_UNIT_PX) {
+			width->amount = fmax(min_width, fmin(width->amount, max_width));
+			grow_width = width->amount - con->width;
+
+			con->x -= grow_width / 2;
+			con->width = width->amount;
+		}
+	}
+
+	if (height->amount) {
+		if (height->unit == RESIZE_UNIT_PPT ||
+				height->unit == RESIZE_UNIT_DEFAULT) {
+			// Convert to px
+			height->amount = con->workspace->height * height->amount / 100;
+			height->unit = RESIZE_UNIT_PX;
+		}
+		if (height->unit == RESIZE_UNIT_PX) {
+			height->amount = fmax(min_height, fmin(height->amount, max_height));
+			grow_height = height->amount - con->height;
+
+			con->y -= grow_height / 2;
+			con->height = height->amount;
+		}
+	}
 
 	if (con->view) {
 		struct sway_view *view = con->view;
