@@ -511,7 +511,7 @@ static struct cmd_results *resize_set_tiled(struct sway_container *con,
  */
 static struct cmd_results *resize_set_floating(struct sway_container *con,
 		struct resize_amount *width, struct resize_amount *height) {
-	int min_width, max_width, min_height, max_height, grow_width, grow_height;
+	int min_width, max_width, min_height, max_height, grow_width = 0, grow_height = 0;
 	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
 
 	if (width->amount) {
