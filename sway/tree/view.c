@@ -196,22 +196,22 @@ static bool gaps_to_edge(struct sway_view *view) {
 }
 
 void view_autoconfigure(struct sway_view *view) {
-	if (!view->container->workspace) {
+	struct sway_container *con = view->container;
+	if (!con->workspace) {
 		// Hidden in the scratchpad
 		return;
 	}
-	struct sway_output *output = view->container->workspace->output;
+	struct sway_output *output = con->workspace->output;
 
-	if (view->container->is_fullscreen) {
-		view->x = output->lx;
-		view->y = output->ly;
-		view->width = output->width;
-		view->height = output->height;
+	if (con->is_fullscreen) {
+		con->content_x = output->lx;
+		con->content_y = output->ly;
+		con->content_width = output->width;
+		con->content_height = output->height;
 		return;
 	}
 
 	struct sway_workspace *ws = view->container->workspace;
-	struct sway_container *con = view->container;
 
 	bool smart = config->hide_edge_borders == E_SMART ||
 		config->hide_edge_borders == E_SMART_NO_GAPS;
@@ -289,10 +289,10 @@ void view_autoconfigure(struct sway_view *view) {
 		break;
 	}
 
-	view->x = x;
-	view->y = y;
-	view->width = width;
-	view->height = height;
+	con->content_x = x;
+	con->content_y = y;
+	con->content_width = width;
+	con->content_height = height;
 }
 
 void view_set_activated(struct sway_view *view, bool activated) {
@@ -667,11 +667,11 @@ void view_update_size(struct sway_view *view, int width, int height) {
 				"Expected a floating container")) {
 		return;
 	}
-	view->width = width;
-	view->height = height;
-	view->container->current.view_width = width;
-	view->container->current.view_height = height;
-	container_set_geometry_from_floating_view(view->container);
+	view->container->content_width = width;
+	view->container->content_height = height;
+	view->container->current.content_width = width;
+	view->container->current.content_height = height;
+	container_set_geometry_from_content(view->container);
 }
 
 static void subsurface_get_root_coords(struct sway_view_child *child,
@@ -707,7 +707,8 @@ static void view_child_damage(struct sway_view_child *child, bool whole) {
 	int sx, sy;
 	child->impl->get_root_coords(child, &sx, &sy);
 	desktop_damage_surface(child->surface,
-			child->view->x + sx, child->view->y + sy, whole);
+			child->view->container->content_x + sx,
+			child->view->container->content_y + sy, whole);
 }
 
 static void view_child_handle_surface_commit(struct wl_listener *listener,

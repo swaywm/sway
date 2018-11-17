@@ -160,12 +160,12 @@ void output_view_for_each_surface(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
-		.ox = view->container->current.view_x - output->wlr_output->lx
+		.ox = view->container->current.content_x - output->wlr_output->lx
 			- view->geometry.x,
-		.oy = view->container->current.view_y - output->wlr_output->ly
+		.oy = view->container->current.content_y - output->wlr_output->ly
 			- view->geometry.y,
-		.width = view->container->current.view_width,
-		.height = view->container->current.view_height,
+		.width = view->container->current.content_width,
+		.height = view->container->current.content_height,
 		.rotation = 0, // TODO
 	};
 
@@ -179,12 +179,12 @@ void output_view_for_each_popup(struct sway_output *output,
 		.user_iterator = iterator,
 		.user_data = user_data,
 		.output = output,
-		.ox = view->container->current.view_x - output->wlr_output->lx
+		.ox = view->container->current.content_x - output->wlr_output->lx
 			- view->geometry.x,
-		.oy = view->container->current.view_y - output->wlr_output->ly
+		.oy = view->container->current.content_y - output->wlr_output->ly
 			- view->geometry.y,
-		.width = view->container->current.view_width,
-		.height = view->container->current.view_height,
+		.width = view->container->current.content_width,
+		.height = view->container->current.content_height,
 		.rotation = 0, // TODO
 	};
 
@@ -473,10 +473,10 @@ void output_damage_whole_container(struct sway_output *output,
 		struct sway_container *con) {
 	// Pad the box by 1px, because the width is a double and might be a fraction
 	struct wlr_box box = {
-		.x = con->current.con_x - output->wlr_output->lx - 1,
-		.y = con->current.con_y - output->wlr_output->ly - 1,
-		.width = con->current.con_width + 2,
-		.height = con->current.con_height + 2,
+		.x = con->current.x - output->wlr_output->lx - 1,
+		.y = con->current.y - output->wlr_output->ly - 1,
+		.width = con->current.width + 2,
+		.height = con->current.height + 2,
 	};
 	scale_box(&box, output->wlr_output->scale);
 	wlr_output_damage_add_box(output->damage, &box);

@@ -404,13 +404,10 @@ static struct cmd_results *resize_adjust_floating(enum resize_axis axis,
 	con->width += grow_width;
 	con->height += grow_height;
 
-	if (con->view) {
-		struct sway_view *view = con->view;
-		view->x += grow_x;
-		view->y += grow_y;
-		view->width += grow_width;
-		view->height += grow_height;
-	}
+	con->content_x += grow_x;
+	con->content_y += grow_y;
+	con->content_width += grow_width;
+	con->content_height += grow_height;
 
 	arrange_container(con);
 
@@ -546,13 +543,10 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 		}
 	}
 
-	if (con->view) {
-		struct sway_view *view = con->view;
-		view->x -= grow_width / 2;
-		view->y -= grow_height / 2;
-		view->width += grow_width;
-		view->height += grow_height;
-	}
+	con->content_x -= grow_width / 2;
+	con->content_y -= grow_height / 2;
+	con->content_width += grow_width;
+	con->content_height += grow_height;
 
 	arrange_container(con);
 

@@ -67,10 +67,6 @@ struct sway_view {
 
 	pid_t pid;
 
-	// Geometry of the view itself (excludes borders) in layout coordinates
-	double x, y;
-	int width, height;
-
 	double saved_x, saved_y;
 	int saved_width, saved_height;
 
