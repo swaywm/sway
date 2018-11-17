@@ -863,8 +863,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 
 	// Handle tiling resize via border
-	if (resize_edge && button == BTN_LEFT && state == WLR_BUTTON_PRESSED &&
-			!is_floating) {
+	if (cont && resize_edge && button == BTN_LEFT &&
+			state == WLR_BUTTON_PRESSED && !is_floating) {
 		seat_set_focus_container(seat, cont);
 		seat_begin_resize_tiling(seat, cont, button, edge);
 		return;
@@ -873,7 +873,8 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	// Handle tiling resize via mod
 	bool mod_pressed = keyboard &&
 		(wlr_keyboard_get_modifiers(keyboard) & config->floating_mod);
-	if (!is_floating_or_child && mod_pressed && state == WLR_BUTTON_PRESSED) {
+	if (cont && !is_floating_or_child && mod_pressed &&
+			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_resize = config->floating_mod_inverse ?
 			BTN_LEFT : BTN_RIGHT;
 		if (button == btn_resize) {
@@ -901,7 +902,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 
 	// Handle beginning floating move
-	if (is_floating_or_child && !is_fullscreen_or_child &&
+	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
 			state == WLR_BUTTON_PRESSED) {
 		uint32_t btn_move = config->floating_mod_inverse ? BTN_RIGHT : BTN_LEFT;
 		if (button == btn_move && state == WLR_BUTTON_PRESSED &&
@@ -916,7 +917,7 @@ void dispatch_cursor_button(struct sway_cursor *cursor,
 	}
 
 	// Handle beginning floating resize
-	if (is_floating_or_child && !is_fullscreen_or_child &&
+	if (cont && is_floating_or_child && !is_fullscreen_or_child &&
 			state == WLR_BUTTON_PRESSED) {
 		// Via border
 		if (button == BTN_LEFT && resize_edge != WLR_EDGE_NONE) {
