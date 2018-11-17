@@ -83,40 +83,6 @@ bool server_init(struct sway_server *server) {
 		&server->xdg_shell_surface);
 	server->xdg_shell_surface.notify = handle_xdg_shell_surface;
 
-	// TODO: configurable cursor theme and size
-	int cursor_size = 24;
-	const char *cursor_theme = NULL;
-
-	char cursor_size_fmt[16];
-	snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%d", cursor_size);
-	setenv("XCURSOR_SIZE", cursor_size_fmt, 1);
-	if (cursor_theme != NULL) {
-		setenv("XCURSOR_THEME", cursor_theme, 1);
-	}
-
-#if HAVE_XWAYLAND
-	server->xwayland.wlr_xwayland =
-		wlr_xwayland_create(server->wl_display, server->compositor, true);
-	wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
-		&server->xwayland_surface);
-	server->xwayland_surface.notify = handle_xwayland_surface;
-	wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
-		&server->xwayland_ready);
-	server->xwayland_ready.notify = handle_xwayland_ready;
-
-	server->xwayland.xcursor_manager =
-		wlr_xcursor_manager_create(cursor_theme, cursor_size);
-	wlr_xcursor_manager_load(server->xwayland.xcursor_manager, 1);
-	struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
-		server->xwayland.xcursor_manager, "left_ptr", 1);
-	if (xcursor != NULL) {
-		struct wlr_xcursor_image *image = xcursor->images[0];
-		wlr_xwayland_set_cursor(server->xwayland.wlr_xwayland, image->buffer,
-			image->width * 4, image->width, image->height, image->hotspot_x,
-			image->hotspot_y);
-	}
-#endif
-
 	server->server_decoration_manager =
 		wlr_server_decoration_manager_create(server->wl_display);
 	wlr_server_decoration_manager_set_default_mode(
@@ -173,7 +139,44 @@ void server_fini(struct sway_server *server) {
 	list_free(server->transactions);
 }
 
-bool server_start_backend(struct sway_server *server) {
+bool server_start(struct sway_server *server) {
+	// TODO: configurable cursor theme and size
+	int cursor_size = 24;
+	const char *cursor_theme = NULL;
+
+	char cursor_size_fmt[16];
+	snprintf(cursor_size_fmt, sizeof(cursor_size_fmt), "%d", cursor_size);
+	setenv("XCURSOR_SIZE", cursor_size_fmt, 1);
+	if (cursor_theme != NULL) {
+		setenv("XCURSOR_THEME", cursor_theme, 1);
+	}
+
+#if HAVE_XWAYLAND
+	if (config->xwayland) {
+		wlr_log(WLR_DEBUG, "Initializing Xwayland");
+		server->xwayland.wlr_xwayland =
+			wlr_xwayland_create(server->wl_display, server->compositor, true);
+		wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
+			&server->xwayland_surface);
+		server->xwayland_surface.notify = handle_xwayland_surface;
+		wl_signal_add(&server->xwayland.wlr_xwayland->events.ready,
+			&server->xwayland_ready);
+		server->xwayland_ready.notify = handle_xwayland_ready;
+
+		server->xwayland.xcursor_manager =
+			wlr_xcursor_manager_create(cursor_theme, cursor_size);
+		wlr_xcursor_manager_load(server->xwayland.xcursor_manager, 1);
+		struct wlr_xcursor *xcursor = wlr_xcursor_manager_get_xcursor(
+			server->xwayland.xcursor_manager, "left_ptr", 1);
+		if (xcursor != NULL) {
+			struct wlr_xcursor_image *image = xcursor->images[0];
+			wlr_xwayland_set_cursor(server->xwayland.wlr_xwayland, image->buffer,
+				image->width * 4, image->width, image->height, image->hotspot_x,
+				image->hotspot_y);
+		}
+	}
+#endif
+
 	wlr_log(WLR_INFO, "Starting backend on wayland display '%s'",
 			server->socket);
 	if (!wlr_backend_start(server->backend)) {

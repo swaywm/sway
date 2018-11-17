@@ -84,6 +84,10 @@ The following commands may only be used in the configuration file.
 	It can be disabled by setting the command to a single dash:
 	_swaynag\_command -_
 
+*xwayland* enable|disable
+	Enables or disables Xwayland support, which allows X11 applications to be
+	used.
+
 The following commands cannot be used directly in the configuration file.
 They are expected to be used with *bindsym* or at runtime through *swaymsg*(1).
 
@@ -421,7 +425,7 @@ The default colors are:
 
 *focus\_follows\_mouse* yes|no|always
 	If set to _yes_, moving your mouse over a window will focus that window. If
-	set to _always_, the window under the cursor will always be focused, even 
+	set to _always_, the window under the cursor will always be focused, even
 	after switching between workspaces.
 
 *focus\_wrapping* yes|no|force

@@ -94,6 +94,7 @@ sway_sources = files(
 	'commands/workspace.c',
 	'commands/workspace_layout.c',
 	'commands/ws_auto_back_and_forth.c',
+	'commands/xwayland.c',
 
 	'commands/bar/activate_button.c',
 	'commands/bar/binding_mode_indicator.c',

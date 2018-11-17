@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (!terminate_request) {
-		if (!server_start_backend(&server)) {
+		if (!server_start(&server)) {
 			sway_terminate(EXIT_FAILURE);
 		}
 	}
