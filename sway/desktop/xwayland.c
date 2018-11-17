@@ -332,9 +332,11 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	} else {
 		struct wlr_box new_geo;
 		get_geometry(view, &new_geo);
+		struct sway_container *con = view->container;
 
-		if ((new_geo.width != view->width || new_geo.height != view->height) &&
-				container_is_floating(view->container)) {
+		if ((new_geo.width != con->content_width ||
+					new_geo.height != con->content_height) &&
+				container_is_floating(con)) {
 			// A floating view has unexpectedly sent a new size
 			// eg. The Firefox "Save As" dialog when downloading a file
 			desktop_damage_view(view);
@@ -432,13 +434,13 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 		return;
 	}
 	if (container_is_floating(view->container)) {
-		configure(view, view->container->current.view_x,
-				view->container->current.view_y, ev->width, ev->height);
+		configure(view, view->container->current.content_x,
+				view->container->current.content_y, ev->width, ev->height);
 	} else {
-		configure(view, view->container->current.view_x,
-				view->container->current.view_y,
-				view->container->current.view_width,
-				view->container->current.view_height);
+		configure(view, view->container->current.content_x,
+				view->container->current.content_y,
+				view->container->current.content_width,
+				view->container->current.content_height);
 	}
 }
 

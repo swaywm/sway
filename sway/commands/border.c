@@ -93,7 +93,7 @@ struct cmd_results *cmd_border(int argc, char **argv) {
 	}
 
 	if (container_is_floating(container)) {
-		container_set_geometry_from_floating_view(container);
+		container_set_geometry_from_content(container);
 	}
 
 	arrange_container(container);

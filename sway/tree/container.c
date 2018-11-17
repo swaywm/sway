@@ -165,8 +165,8 @@ static struct sway_container *surface_at_view(struct sway_container *con, double
 		return NULL;
 	}
 	struct sway_view *view = con->view;
-	double view_sx = lx - view->x + view->geometry.x;
-	double view_sy = ly - view->y + view->geometry.y;
+	double view_sx = lx - con->content_x + view->geometry.x;
+	double view_sy = ly - con->content_y + view->geometry.y;
 
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;
@@ -641,16 +641,18 @@ void container_init_floating(struct sway_container *con) {
 		con->y = ws->y + (ws->height - con->height) / 2;
 	} else {
 		struct sway_view *view = con->view;
-		view->width = fmax(min_width, fmin(view->natural_width, max_width));
-		view->height = fmax(min_height, fmin(view->natural_height, max_height));
-		view->x = ws->x + (ws->width - view->width) / 2;
-		view->y = ws->y + (ws->height - view->height) / 2;
+		con->content_width =
+			fmax(min_width, fmin(view->natural_width, max_width));
+		con->content_height =
+			fmax(min_height, fmin(view->natural_height, max_height));
+		con->content_x = ws->x + (ws->width - con->content_width) / 2;
+		con->content_y = ws->y + (ws->height - con->content_height) / 2;
 
 		// If the view's border is B_NONE then these properties are ignored.
 		con->border_top = con->border_bottom = true;
 		con->border_left = con->border_right = true;
 
-		container_set_geometry_from_floating_view(con);
+		container_set_geometry_from_content(con);
 	}
 }
 
@@ -707,14 +709,13 @@ void container_set_floating(struct sway_container *container, bool enable) {
 	ipc_event_window(container, "floating");
 }
 
-void container_set_geometry_from_floating_view(struct sway_container *con) {
+void container_set_geometry_from_content(struct sway_container *con) {
 	if (!sway_assert(con->view, "Expected a view")) {
 		return;
 	}
 	if (!sway_assert(container_is_floating(con), "Expected a floating view")) {
 		return;
 	}
-	struct sway_view *view = con->view;
 	size_t border_width = 0;
 	size_t top = 0;
 
@@ -724,10 +725,10 @@ void container_set_geometry_from_floating_view(struct sway_container *con) {
 			container_titlebar_height() : border_width;
 	}
 
-	con->x = view->x - border_width;
-	con->y = view->y - top;
-	con->width = view->width + border_width * 2;
-	con->height = top + view->height + border_width;
+	con->x = con->content_x - border_width;
+	con->y = con->content_y - top;
+	con->width = con->content_width + border_width * 2;
+	con->height = top + con->content_height + border_width;
 	node_set_dirty(&con->node);
 }
 
@@ -756,15 +757,16 @@ void container_floating_translate(struct sway_container *con,
 		double x_amount, double y_amount) {
 	con->x += x_amount;
 	con->y += y_amount;
-	if (con->view) {
-		con->view->x += x_amount;
-		con->view->y += y_amount;
-	} else {
+	con->content_x += x_amount;
+	con->content_y += y_amount;
+
+	if (con->children) {
 		for (int i = 0; i < con->children->length; ++i) {
 			struct sway_container *child = con->children->items[i];
 			container_floating_translate(child, x_amount, y_amount);
 		}
 	}
+
 	node_set_dirty(&con->node);
 }
 
@@ -964,10 +966,10 @@ static void surface_send_leave_iterator(struct wlr_surface *surface,
 
 void container_discover_outputs(struct sway_container *con) {
 	struct wlr_box con_box = {
-		.x = con->current.con_x,
-		.y = con->current.con_y,
-		.width = con->current.con_width,
-		.height = con->current.con_height,
+		.x = con->current.x,
+		.y = con->current.y,
+		.width = con->current.width,
+		.height = con->current.height,
 	};
 	struct sway_output *old_output = container_get_effective_output(con);
 

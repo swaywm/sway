@@ -75,8 +75,8 @@ static void popup_unconstrain(struct sway_xdg_popup *popup) {
 	// the output box expressed in the coordinate system of the toplevel parent
 	// of the popup
 	struct wlr_box output_toplevel_sx_box = {
-		.x = output->lx - view->x,
-		.y = output->ly - view->y,
+		.x = output->lx - view->container->content_x,
+		.y = output->ly - view->container->content_y,
 		.width = output->width,
 		.height = output->height,
 	};
@@ -286,9 +286,11 @@ static void handle_commit(struct wl_listener *listener, void *data) {
 	} else {
 		struct wlr_box new_geo;
 		wlr_xdg_surface_get_geometry(xdg_surface, &new_geo);
+		struct sway_container *con = view->container;
 
-		if ((new_geo.width != view->width || new_geo.height != view->height) &&
-				container_is_floating(view->container)) {
+		if ((new_geo.width != con->content_width ||
+					new_geo.height != con->content_height) &&
+				container_is_floating(con)) {
 			// A floating view has unexpectedly sent a new size
 			desktop_damage_view(view);
 			view_update_size(view, new_geo.width, new_geo.height);

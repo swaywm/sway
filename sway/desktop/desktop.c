@@ -28,8 +28,8 @@ void desktop_damage_box(struct wlr_box *box) {
 void desktop_damage_view(struct sway_view *view) {
 	desktop_damage_whole_container(view->container);
 	struct wlr_box box = {
-		.x = view->container->current.view_x - view->geometry.x,
-		.y = view->container->current.view_y - view->geometry.y,
+		.x = view->container->current.content_x - view->geometry.x,
+		.y = view->container->current.content_y - view->geometry.y,
 		.width = view->surface->current.width,
 		.height = view->surface->current.height,
 	};

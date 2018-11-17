@@ -348,7 +348,7 @@ static void handle_move_tiling_motion(struct sway_seat *seat,
 	}
 
 	// Find the closest edge
-	size_t thickness = fmin(con->view->width, con->view->height) * 0.3;
+	size_t thickness = fmin(con->content_width, con->content_height) * 0.3;
 	size_t closest_dist = INT_MAX;
 	size_t dist;
 	seat->op_target_edge = WLR_EDGE_NONE;
@@ -374,10 +374,10 @@ static void handle_move_tiling_motion(struct sway_seat *seat,
 	}
 
 	seat->op_target_node = node;
-	seat->op_drop_box.x = con->view->x;
-	seat->op_drop_box.y = con->view->y;
-	seat->op_drop_box.width = con->view->width;
-	seat->op_drop_box.height = con->view->height;
+	seat->op_drop_box.x = con->content_x;
+	seat->op_drop_box.y = con->content_y;
+	seat->op_drop_box.width = con->content_width;
+	seat->op_drop_box.height = con->content_height;
 	resize_box(&seat->op_drop_box, seat->op_target_edge, thickness);
 	desktop_damage_box(&seat->op_drop_box);
 }
@@ -498,13 +498,10 @@ static void handle_resize_floating_motion(struct sway_seat *seat,
 	con->width += relative_grow_width;
 	con->height += relative_grow_height;
 
-	if (con->view) {
-		struct sway_view *view = con->view;
-		view->x += relative_grow_x;
-		view->y += relative_grow_y;
-		view->width += relative_grow_width;
-		view->height += relative_grow_height;
-	}
+	con->content_x += relative_grow_x;
+	con->content_y += relative_grow_y;
+	con->content_width += relative_grow_width;
+	con->content_height += relative_grow_height;
 
 	arrange_container(con);
 }

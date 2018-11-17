@@ -41,8 +41,8 @@ enum wlr_direction;
 struct sway_container_state {
 	// Container properties
 	enum sway_container_layout layout;
-	double con_x, con_y;
-	double con_width, con_height;
+	double x, y;
+	double width, height;
 
 	bool is_fullscreen;
 
@@ -60,9 +60,8 @@ struct sway_container_state {
 	bool border_left;
 	bool border_right;
 
-	// View properties
-	double view_x, view_y;
-	double view_width, view_height;
+	double content_x, content_y;
+	double content_width, content_height;
 };
 
 struct sway_container {
@@ -88,6 +87,9 @@ struct sway_container {
 	double width, height;
 	double saved_x, saved_y;
 	double saved_width, saved_height;
+
+	double content_x, content_y;
+	int content_width, content_height;
 
 	bool is_fullscreen;
 
@@ -210,7 +212,7 @@ void container_init_floating(struct sway_container *container);
 
 void container_set_floating(struct sway_container *container, bool enable);
 
-void container_set_geometry_from_floating_view(struct sway_container *con);
+void container_set_geometry_from_content(struct sway_container *con);
 
 /**
  * Determine if the given container is itself floating.

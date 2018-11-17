@@ -130,10 +130,10 @@ static void copy_container_state(struct sway_container *container,
 	struct sway_container_state *state = &instruction->container_state;
 
 	state->layout = container->layout;
-	state->con_x = container->x;
-	state->con_y = container->y;
-	state->con_width = container->width;
-	state->con_height = container->height;
+	state->x = container->x;
+	state->y = container->y;
+	state->width = container->width;
+	state->height = container->height;
 	state->is_fullscreen = container->is_fullscreen;
 	state->parent = container->parent;
 	state->workspace = container->workspace;
@@ -143,14 +143,12 @@ static void copy_container_state(struct sway_container *container,
 	state->border_left = container->border_left;
 	state->border_right = container->border_right;
 	state->border_bottom = container->border_bottom;
+	state->content_x = container->content_x;
+	state->content_y = container->content_y;
+	state->content_width = container->content_width;
+	state->content_height = container->content_height;
 
-	if (container->view) {
-		struct sway_view *view = container->view;
-		state->view_x = view->x;
-		state->view_y = view->y;
-		state->view_width = view->width;
-		state->view_height = view->height;
-	} else {
+	if (!container->view) {
 		state->children = create_list();
 		list_cat(state->children, container->children);
 	}
@@ -217,8 +215,8 @@ static void apply_container_state(struct sway_container *container,
 	desktop_damage_whole_container(container);
 	if (view && view->saved_buffer) {
 		struct wlr_box box = {
-			.x = container->current.view_x - view->saved_geometry.x,
-			.y = container->current.view_y - view->saved_geometry.y,
+			.x = container->current.content_x - view->saved_geometry.x,
+			.y = container->current.content_y - view->saved_geometry.y,
 			.width = view->saved_buffer_width,
 			.height = view->saved_buffer_height,
 		};
@@ -245,8 +243,8 @@ static void apply_container_state(struct sway_container *container,
 	if (view && view->surface) {
 		struct wlr_surface *surface = view->surface;
 		struct wlr_box box = {
-			.x = container->current.view_x - view->geometry.x,
-			.y = container->current.view_y - view->geometry.y,
+			.x = container->current.content_x - view->geometry.x,
+			.y = container->current.content_y - view->geometry.y,
 			.width = surface->current.width,
 			.height = surface->current.height,
 		};
@@ -386,14 +384,14 @@ static bool should_configure(struct sway_node *node,
 	// Xwayland views are position-aware and need to be reconfigured
 	// when their position changes.
 	if (node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {
-		if (cstate->view_x != istate->view_x ||
-				cstate->view_y != istate->view_y) {
+		if (cstate->content_x != istate->content_x ||
+				cstate->content_y != istate->content_y) {
 			return true;
 		}
 	}
 #endif
-	if (cstate->view_width == istate->view_width &&
-			cstate->view_height == istate->view_height) {
+	if (cstate->content_width == istate->content_width &&
+			cstate->content_height == istate->content_height) {
 		return false;
 	}
 	return true;
@@ -409,10 +407,10 @@ static void transaction_commit(struct sway_transaction *transaction) {
 		struct sway_node *node = instruction->node;
 		if (should_configure(node, instruction)) {
 			instruction->serial = view_configure(node->sway_container->view,
-					instruction->container_state.view_x,
-					instruction->container_state.view_y,
-					instruction->container_state.view_width,
-					instruction->container_state.view_height);
+					instruction->container_state.content_x,
+					instruction->container_state.content_y,
+					instruction->container_state.content_width,
+					instruction->container_state.content_height);
 			++transaction->num_waiting;
 
 			// From here on we are rendering a saved buffer of the view, which
@@ -504,8 +502,8 @@ void transaction_notify_view_ready_by_size(struct sway_view *view,
 		int width, int height) {
 	struct sway_transaction_instruction *instruction =
 		view->container->node.instruction;
-	if (instruction->container_state.view_width == width &&
-			instruction->container_state.view_height == height) {
+	if (instruction->container_state.content_width == width &&
+			instruction->container_state.content_height == height) {
 		set_instruction_ready(instruction);
 	}
 }

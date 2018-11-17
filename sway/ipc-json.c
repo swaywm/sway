@@ -246,10 +246,10 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 	json_object_object_add(object, "marks", marks);
 
 	struct wlr_box window_box = {
-		c->view->x - c->x,
+		c->content_x - c->x,
 		(c->current.border == B_PIXEL) ? c->current.border_thickness : 0,
-		c->view->width,
-		c->view->height
+		c->content_width,
+		c->content_height
 	};
 
 	json_object_object_add(object, "window_rect", ipc_json_create_rect(&window_box));
@@ -258,7 +258,7 @@ static void ipc_json_describe_view(struct sway_container *c, json_object *object
 
 	if (c->current.border == B_NORMAL) {
 		deco_box.width = c->width;
-		deco_box.height = c->view->y - c->y;
+		deco_box.height = c->content_y - c->y;
 	}
 
 	json_object_object_add(object, "deco_rect", ipc_json_create_rect(&deco_box));
