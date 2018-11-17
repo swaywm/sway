@@ -18,10 +18,10 @@
 #include "config.h"
 #include "idle-client-protocol.h"
 #include "list.h"
-#ifdef SWAY_IDLE_HAS_SYSTEMD
+#if HAVE_SYSTEMD
 #include <systemd/sd-bus.h>
 #include <systemd/sd-login.h>
-#elif defined(SWAY_IDLE_HAS_ELOGIND)
+#elif HAVE_ELOGIND
 #include <elogind/sd-bus.h>
 #include <elogind/sd-login.h>
 #endif
@@ -66,7 +66,7 @@ static void cmd_exec(char *param) {
 	}
 }
 
-#if defined(SWAY_IDLE_HAS_SYSTEMD) || defined(SWAY_IDLE_HAS_ELOGIND)
+#if HAVE_SYSTEMD || HAVE_ELOGIND
 static int lock_fd = -1;
 static int ongoing_fd = -1;
 static struct sd_bus *bus = NULL;
@@ -414,7 +414,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool should_run = state.timeout_cmds->length > 0;
-#if defined(SWAY_IDLE_HAS_SYSTEMD) || defined(SWAY_IDLE_HAS_ELOGIND)
+#if HAVE_SYSTEMD || HAVE_ELOGIND
 	if (state.lock_cmd) {
 		should_run = true;
 		setup_sleep_listener();

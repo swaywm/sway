@@ -171,7 +171,7 @@ static struct sway_container *surface_at_view(struct sway_container *con, double
 	double _sx, _sy;
 	struct wlr_surface *_surface = NULL;
 	switch (view->type) {
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	case SWAY_VIEW_XWAYLAND:
 		_surface = wlr_surface_surface_at(view->surface,
 				view_sx, view_sy, &_sx, &_sy);

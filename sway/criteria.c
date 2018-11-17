@@ -21,7 +21,7 @@ bool criteria_is_empty(struct criteria *criteria) {
 		&& !criteria->app_id
 		&& !criteria->con_mark
 		&& !criteria->con_id
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 		&& !criteria->class
 		&& !criteria->id
 		&& !criteria->instance
@@ -42,7 +42,7 @@ void criteria_destroy(struct criteria *criteria) {
 	pcre_free(criteria->shell);
 	pcre_free(criteria->app_id);
 	pcre_free(criteria->con_mark);
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	pcre_free(criteria->class);
 	pcre_free(criteria->instance);
 	pcre_free(criteria->window_role);
@@ -55,7 +55,7 @@ static int regex_cmp(const char *item, const pcre *regex) {
 	return pcre_exec(regex, NULL, item, strlen(item), 0, 0, NULL, 0);
 }
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 static bool view_has_window_type(struct sway_view *view, enum atom_name name) {
 	if (view->type != SWAY_VIEW_XWAYLAND) {
 		return false;
@@ -140,7 +140,7 @@ static bool criteria_matches_view(struct criteria *criteria,
 		}
 	}
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	if (criteria->id) { // X11 window ID
 		uint32_t x11_window_id = view_get_x11_window_id(view);
 		if (!x11_window_id || x11_window_id != criteria->id) {
@@ -276,7 +276,7 @@ static bool generate_regex(pcre **regex, char *value) {
 	return true;
 }
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 static enum atom_name parse_window_type(const char *type) {
 	if (strcasecmp(type, "normal") == 0) {
 		return NET_WM_WINDOW_TYPE_NORMAL;
@@ -308,7 +308,7 @@ enum criteria_token {
 	T_CON_ID,
 	T_CON_MARK,
 	T_FLOATING,
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	T_CLASS,
 	T_ID,
 	T_INSTANCE,
@@ -331,7 +331,7 @@ static enum criteria_token token_from_name(char *name) {
 		return T_CON_ID;
 	} else if (strcmp(name, "con_mark") == 0) {
 		return T_CON_MARK;
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	} else if (strcmp(name, "class") == 0) {
 		return T_CLASS;
 	} else if (strcmp(name, "id") == 0) {
@@ -402,7 +402,7 @@ static char *get_focused_prop(enum criteria_token token) {
 		snprintf(id_str, id_size, "%zu", id);
 		value = id_str;
 		break;
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	case T_CLASS:
 		value = view_get_class(view);
 		break;
@@ -474,7 +474,7 @@ static bool parse_token(struct criteria *criteria, char *name, char *value) {
 	case T_CON_MARK:
 		generate_regex(&criteria->con_mark, effective_value);
 		break;
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	case T_CLASS:
 		generate_regex(&criteria->class, effective_value);
 		break;
@@ -577,7 +577,7 @@ struct criteria *criteria_parse(char *raw, char **error_arg) {
 	++head;
 
 	struct criteria *criteria = calloc(1, sizeof(struct criteria));
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	criteria->window_type = ATOM_LAST; // default value
 #endif
 	char *name = NULL, *value = NULL;

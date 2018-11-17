@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <cairo/cairo.h>
 #include "cairo.h"
-#ifdef HAVE_GDK_PIXBUF
+#if HAVE_GDK_PIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #endif
 
@@ -46,7 +46,7 @@ cairo_surface_t *cairo_image_surface_scale(cairo_surface_t *image,
 	return new;
 }
 
-#ifdef HAVE_GDK_PIXBUF
+#if HAVE_GDK_PIXBUF
 cairo_surface_t* gdk_cairo_image_surface_create_from_pixbuf(const GdkPixbuf *gdkbuf) {
 	int chan = gdk_pixbuf_get_n_channels(gdkbuf);
 	if (chan < 3) {
@@ -140,4 +140,4 @@ cairo_surface_t* gdk_cairo_image_surface_create_from_pixbuf(const GdkPixbuf *gdk
 	cairo_surface_mark_dirty(cs);
 	return cs;
 }
-#endif //HAVE_GDK_PIXBUF
+#endif // HAVE_GDK_PIXBUF

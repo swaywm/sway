@@ -204,7 +204,7 @@ void output_layer_for_each_surface(struct sway_output *output,
 	}
 }
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 void output_unmanaged_for_each_surface(struct sway_output *output,
 		struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
 		void *user_data) {
@@ -274,7 +274,7 @@ static void output_for_each_surface(struct sway_output *output,
 				for_each_surface_container_iterator(floater, &data);
 			}
 		}
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 		output_unmanaged_for_each_surface(output, &root->xwayland_unmanaged,
 			iterator, user_data);
 #endif
@@ -289,7 +289,7 @@ static void output_for_each_surface(struct sway_output *output,
 		workspace_for_each_container(workspace,
 			for_each_surface_container_iterator, &data);
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 		output_unmanaged_for_each_surface(output, &root->xwayland_unmanaged,
 			iterator, user_data);
 #endif
