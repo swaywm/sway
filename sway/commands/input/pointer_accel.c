@@ -1,8 +1,10 @@
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
+#include "util.h"
 
 struct cmd_results *input_cmd_pointer_accel(int argc, char **argv) {
 	struct cmd_results *error = NULL;
@@ -15,8 +17,11 @@ struct cmd_results *input_cmd_pointer_accel(int argc, char **argv) {
 			"pointer_accel", "No input device defined.");
 	}
 
-	float pointer_accel = atof(argv[0]);
-	if (pointer_accel < -1 || pointer_accel > 1) {
+	float pointer_accel = parse_float(argv[0]);
+	if (isnan(pointer_accel)) {
+		return cmd_results_new(CMD_INVALID, "pointer_accel",
+			"Invalid pointer accel; expected float.");
+	} if (pointer_accel < -1 || pointer_accel > 1) {
 		return cmd_results_new(CMD_INVALID, "pointer_accel",
 			"Input out of range [-1, 1]");
 	}

@@ -5,6 +5,7 @@
 #elif __FreeBSD__
 #include <dev/evdev/input-event-codes.h>
 #endif
+#include <float.h>
 #include <limits.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
@@ -979,6 +980,8 @@ static void handle_cursor_button(struct wl_listener *listener, void *data) {
 static void dispatch_cursor_axis(struct sway_cursor *cursor,
 		struct wlr_event_pointer_axis *event) {
 	struct sway_seat *seat = cursor->seat;
+	struct sway_input_device *input_device = event->device->data;
+	struct input_config *ic = input_device_get_config(input_device);
 
 	// Determine what's under the cursor
 	struct wlr_surface *surface = NULL;
@@ -990,6 +993,8 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	enum wlr_edges edge = cont ? find_edge(cont, cursor) : WLR_EDGE_NONE;
 	bool on_border = edge != WLR_EDGE_NONE;
 	bool on_titlebar = cont && !on_border && !surface;
+	float scroll_factor =
+		(ic == NULL || ic->scroll_factor == FLT_MIN) ? 1.0f : ic->scroll_factor;
 
 	// Scrolling on a tabbed or stacked title bar
 	if (on_titlebar) {
@@ -1000,7 +1005,7 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 				seat_get_active_tiling_child(seat, tabcontainer);
 			list_t *siblings = container_get_siblings(cont);
 			int desired = list_find(siblings, active->sway_container) +
-				event->delta_discrete;
+				round(scroll_factor * event->delta_discrete);
 			if (desired < 0) {
 				desired = 0;
 			} else if (desired >= siblings->length) {
@@ -1024,7 +1029,8 @@ static void dispatch_cursor_axis(struct sway_cursor *cursor,
 	}
 
 	wlr_seat_pointer_notify_axis(cursor->seat->wlr_seat, event->time_msec,
-		event->orientation, event->delta, event->delta_discrete, event->source);
+		event->orientation, scroll_factor * event->delta,
+		round(scroll_factor * event->delta_discrete), event->source);
 }
 
 static void handle_cursor_axis(struct wl_listener *listener, void *data) {

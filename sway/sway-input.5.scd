@@ -105,13 +105,17 @@ The following commands may only be used in the configuration file.
 *input* <identifier> repeat\_rate <characters per second>
 	Sets the frequency of key repeats once the repeat\_delay has passed.
 
-*input* <identifier> scroll\_method none|two\_finger|edge|on\_button\_down
-	Changes the scroll method for the specified input device.
-
 *input* <identifier> scroll\_button <button\_identifier>
 	Sets button used for scroll\_method on\_button\_down. The button identifier
 	can be obtained from `libinput debug-events`.
 	If set to 0, it disables the scroll\_button on\_button\_down.
+
+*input* <identifier> scroll\_factor <floating point value>
+	Changes the scroll factor for the specified input device. Scroll speed will
+	be scaled by the given value, which must be non-negative.
+
+*input* <identifier> scroll\_method none|two\_finger|edge|on\_button\_down
+	Changes the scroll method for the specified input device.
 
 *input* <identifier> tap enabled|disabled
 	Enables or disables tap for specified input device.

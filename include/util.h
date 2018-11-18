@@ -59,6 +59,12 @@ uint32_t parse_color(const char *color);
  */
 bool parse_boolean(const char *boolean, bool current);
 
+/**
+ * Given a string that represents a floating point value, return a float.
+ * Returns NAN on error.
+ */
+float parse_float(const char *value);
+
 enum wlr_direction opposite_direction(enum wlr_direction d);
 
 #endif

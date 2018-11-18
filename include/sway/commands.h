@@ -229,6 +229,7 @@ sway_cmd input_cmd_map_to_output;
 sway_cmd input_cmd_middle_emulation;
 sway_cmd input_cmd_natural_scroll;
 sway_cmd input_cmd_pointer_accel;
+sway_cmd input_cmd_scroll_factor;
 sway_cmd input_cmd_repeat_delay;
 sway_cmd input_cmd_repeat_rate;
 sway_cmd input_cmd_scroll_button;

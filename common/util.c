@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <float.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -138,6 +139,17 @@ bool parse_boolean(const char *boolean, bool current) {
 	}
 	// All other values are false to match i3
 	return false;
+}
+
+float parse_float(const char *value) {
+	errno = 0;
+	char *end;
+	float flt = strtof(value, &end);
+	if (*end || errno) {
+		wlr_log(WLR_DEBUG, "Invalid float value '%s', defaulting to NAN", value);
+		return NAN;
+	}
+	return flt;
 }
 
 enum wlr_direction opposite_direction(enum wlr_direction d) {
