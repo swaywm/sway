@@ -41,6 +41,12 @@ enum binding_flags {
 	BINDING_CODE=32,     // keyboard only; convert keysyms into keycodes
 };
 
+enum sway_keep_keyboard_layout {
+	KEYBOARD_LAYOUT_UNDEFINED = 0,
+	KEYBOARD_LAYOUT_GLOBAL,
+	KEYBOARD_LAYOUT_PER_WINDOW
+};
+
 /**
  * A key binding and an associated command.
  */
@@ -165,6 +171,7 @@ struct seat_config {
 	list_t *attachments; // list of seat_attachment configs
 	int hide_cursor_timeout;
 	enum seat_config_allow_constrain allow_constrain;
+	enum sway_keep_keyboard_layout keep_keyboard_layout;
 };
 
 enum config_dpms {

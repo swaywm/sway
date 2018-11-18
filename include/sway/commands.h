@@ -277,6 +277,7 @@ sway_cmd seat_cmd_attach;
 sway_cmd seat_cmd_cursor;
 sway_cmd seat_cmd_fallback;
 sway_cmd seat_cmd_hide_cursor;
+sway_cmd seat_cmd_keep_keyboard_layout;
 sway_cmd seat_cmd_pointer_constraint;
 
 sway_cmd cmd_ipc_cmd;

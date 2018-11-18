@@ -201,6 +201,9 @@ correct seat.
 	disables hiding the cursor. The minimal timeout is 100 and any value less
 	than that (aside from 0), will be increased to 100.
 
+*seat* <name> keep_keyboard_layout global|per_window
+	Controls whether to keep keyboard layout per window. Default is _global_.
+
 *seat* <name> pointer_constraint enable|disable|escape
 	Enables or disables the ability for clients to capture the cursor (enabled
 	by default) for the seat. This is primarily useful for video games. The
