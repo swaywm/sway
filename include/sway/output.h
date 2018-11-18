@@ -119,7 +119,7 @@ void output_layer_for_each_surface(struct sway_output *output,
 	struct wl_list *layer_surfaces, sway_surface_iterator_func_t iterator,
 	void *user_data);
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 void output_unmanaged_for_each_surface(struct sway_output *output,
 	struct wl_list *unmanaged, sway_surface_iterator_func_t iterator,
 	void *user_data);

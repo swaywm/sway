@@ -24,7 +24,7 @@ enum background_mode parse_background_mode(const char *mode) {
 
 cairo_surface_t *load_background_image(const char *path) {
 	cairo_surface_t *image;
-#ifdef HAVE_GDK_PIXBUF
+#if HAVE_GDK_PIXBUF
 	GError *err = NULL;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(path, &err);
 	if (!pixbuf) {
@@ -36,17 +36,17 @@ cairo_surface_t *load_background_image(const char *path) {
 	g_object_unref(pixbuf);
 #else
 	image = cairo_image_surface_create_from_png(path);
-#endif //HAVE_GDK_PIXBUF
+#endif // HAVE_GDK_PIXBUF
 	if (!image) {
 		wlr_log(WLR_ERROR, "Failed to read background image.");
 		return NULL;
 	}
 	if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS) {
 		wlr_log(WLR_ERROR, "Failed to read background image: %s."
-#ifndef HAVE_GDK_PIXBUF
+#if !HAVE_GDK_PIXBUF
 				"\nSway was compiled without gdk_pixbuf support, so only"
 				"\nPNG images can be loaded. This is the likely cause."
-#endif //HAVE_GDK_PIXBUF
+#endif // !HAVE_GDK_PIXBUF
 				, cairo_status_to_string(cairo_surface_status(image)));
 		return NULL;
 	}

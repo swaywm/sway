@@ -149,7 +149,7 @@ static bool test_con_id(struct sway_container *container, void *data) {
 	return container->node.id == *con_id;
 }
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 static bool test_id(struct sway_container *container, void *data) {
 	xcb_window_t *wid = data;
 	return (container->view && container->view->type == SWAY_VIEW_XWAYLAND
@@ -184,7 +184,7 @@ struct cmd_results *cmd_swap(int argc, char **argv) {
 
 	char *value = join_args(argv + 3, argc - 3);
 	if (strcasecmp(argv[2], "id") == 0) {
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 		xcb_window_t id = strtol(value, NULL, 0);
 		other = root_find_container(test_id, &id);
 #endif

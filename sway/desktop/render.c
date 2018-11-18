@@ -140,7 +140,7 @@ static void render_layer(struct sway_output *output,
 		render_surface_iterator, &data);
 }
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 static void render_unmanaged(struct sway_output *output,
 		pixman_region32_t *damage, struct wl_list *unmanaged) {
 	struct render_data data = {
@@ -966,7 +966,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 				render_floating_container(output, damage, floater);
 			}
 		}
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 		render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif
 	} else {
@@ -986,7 +986,7 @@ void output_render(struct sway_output *output, struct timespec *when,
 
 		render_workspace(output, damage, workspace, workspace->current.focused);
 		render_floating(output, damage);
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 		render_unmanaged(output, damage, &root->xwayland_unmanaged);
 #endif
 		render_layer(output, damage,

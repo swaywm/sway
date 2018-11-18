@@ -31,7 +31,7 @@ struct sway_root *root_create(void) {
 	node_init(&root->node, N_ROOT, root);
 	root->output_layout = wlr_output_layout_create();
 	wl_list_init(&root->all_outputs);
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	wl_list_init(&root->xwayland_unmanaged);
 #endif
 	wl_list_init(&root->drag_icons);

@@ -26,7 +26,7 @@
 #include "sway/server.h"
 #include "sway/tree/root.h"
 #include "config.h"
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif
 
@@ -94,7 +94,7 @@ bool server_init(struct sway_server *server) {
 		setenv("XCURSOR_THEME", cursor_theme, 1);
 	}
 
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	server->xwayland.wlr_xwayland =
 		wlr_xwayland_create(server->wl_display, server->compositor, true);
 	wl_signal_add(&server->xwayland.wlr_xwayland->events.new_surface,
@@ -164,7 +164,7 @@ bool server_init(struct sway_server *server) {
 
 void server_fini(struct sway_server *server) {
 	// TODO: free sway-specific resources
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	wlr_xwayland_destroy(server->xwayland.wlr_xwayland);
 #endif
 	wl_display_destroy_clients(server->wl_display);

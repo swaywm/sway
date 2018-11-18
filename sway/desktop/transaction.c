@@ -380,7 +380,7 @@ static bool should_configure(struct sway_node *node,
 	}
 	struct sway_container_state *cstate = &node->sway_container->current;
 	struct sway_container_state *istate = &instruction->container_state;
-#ifdef HAVE_XWAYLAND
+#if HAVE_XWAYLAND
 	// Xwayland views are position-aware and need to be reconfigured
 	// when their position changes.
 	if (node->sway_container->view->type == SWAY_VIEW_XWAYLAND) {

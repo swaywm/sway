@@ -59,30 +59,18 @@ git            = find_program('git', required: false)
 
 conf_data = configuration_data()
 
+conf_data.set10('HAVE_XWAYLAND', get_option('enable-xwayland'))
 if get_option('enable-xwayland')
-	conf_data.set('HAVE_XWAYLAND', true)
 	xcb = dependency('xcb')
-else
-	conf_data.set('HAVE_XWAYLAND', false)
 endif
 
-if gdk_pixbuf.found()
-	conf_data.set('HAVE_GDK_PIXBUF', true)
-endif
-
-if systemd.found()
-	conf_data.set('SWAY_IDLE_HAS_SYSTEMD', true)
-	swayidle_deps += systemd
-endif
-
-if elogind.found()
-	conf_data.set('SWAY_IDLE_HAS_ELOGIND', true)
-	swayidle_deps += elogind
-endif
+conf_data.set10('HAVE_GDK_PIXBUF', gdk_pixbuf.found())
+conf_data.set10('HAVE_SYSTEMD', systemd.found())
+conf_data.set10('HAVE_ELOGIND', elogind.found())
 
 if not systemd.found() and not elogind.found()
-    warning('The sway binary must be setuid when compiled without (e)logind')
-    warning('You must do this manually post-install: chmod a+s /path/to/sway')
+	warning('The sway binary must be setuid when compiled without (e)logind')
+	warning('You must do this manually post-install: chmod a+s /path/to/sway')
 endif
 
 scdoc = find_program('scdoc', required: false)
