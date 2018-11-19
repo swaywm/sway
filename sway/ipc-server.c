@@ -619,8 +619,19 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		json_object *outputs = json_object_new_array();
 		for (int i = 0; i < root->outputs->length; ++i) {
 			struct sway_output *output = root->outputs->items[i];
-			json_object_array_add(outputs,
-				ipc_json_describe_node(&output->node));
+			json_object *output_json = ipc_json_describe_node(&output->node);
+
+			// override the default focused indicator because it's set
+			// differently for the get_outputs reply
+			struct sway_seat *seat = input_manager_get_default_seat();
+			struct sway_workspace *focused_ws =
+				seat_get_focused_workspace(seat);
+			bool focused = focused_ws && output == focused_ws->output;
+			json_object_object_del(output_json, "focused");
+			json_object_object_add(output_json, "focused",
+				json_object_new_boolean(focused));
+
+			json_object_array_add(outputs, output_json);
 		}
 		struct sway_output *output;
 		wl_list_for_each(output, &root->all_outputs, link) {
