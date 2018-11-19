@@ -25,6 +25,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "secondary_button", bar_cmd_secondary_button },
 	{ "separator_symbol", bar_cmd_separator_symbol },
 	{ "status_command", bar_cmd_status_command },
+	{ "strip_workspace_name", bar_cmd_strip_workspace_name },
 	{ "strip_workspace_numbers", bar_cmd_strip_workspace_numbers },
 	{ "tray_output", bar_cmd_tray_output },
 	{ "tray_padding", bar_cmd_tray_padding },

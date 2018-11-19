@@ -581,6 +581,8 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 			json_object_new_boolean(bar->workspace_buttons));
 	json_object_object_add(json, "strip_workspace_numbers",
 			json_object_new_boolean(bar->strip_workspace_numbers));
+	json_object_object_add(json, "strip_workspace_name",
+			json_object_new_boolean(bar->strip_workspace_name));
 	json_object_object_add(json, "binding_mode_indicator",
 			json_object_new_boolean(bar->binding_mode_indicator));
 	json_object_object_add(json, "verbose",

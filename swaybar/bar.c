@@ -31,6 +31,7 @@ void free_workspaces(struct wl_list *list) {
 	wl_list_for_each_safe(ws, tmp, list, link) {
 		wl_list_remove(&ws->link);
 		free(ws->name);
+		free(ws->label);
 		free(ws);
 	}
 }

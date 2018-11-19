@@ -224,6 +224,7 @@ struct bar_config {
 	bool wrap_scroll;
 	char *separator_symbol;
 	bool strip_workspace_numbers;
+	bool strip_workspace_name;
 	bool binding_mode_indicator;
 	bool verbose;
 	pid_t pid;
