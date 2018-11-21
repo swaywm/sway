@@ -35,18 +35,17 @@ static const char *ipc_json_layout_description(enum sway_container_layout l) {
 }
 
 static const char *ipc_json_orientation_description(enum sway_container_layout l) {
-	if (l == L_VERT) {
+	switch (l) {
+	case L_VERT:
 		return "vertical";
-	}
-
-	if (l == L_HORIZ) {
+	case L_HORIZ:
 		return "horizontal";
+	default:
+		return "none";
 	}
-
-	return "none";
 }
 
-static const char *describe_container_border(enum sway_container_border border) {
+static const char *ipc_json_border_description(enum sway_container_border border) {
 	switch (border) {
 	case B_NONE:
 		return "none";
@@ -56,6 +55,44 @@ static const char *describe_container_border(enum sway_container_border border) 
 		return "normal";
 	case B_CSD:
 		return "csd";
+	}
+	return "unknown";
+}
+
+static const char *ipc_json_output_transform_description(enum wl_output_transform transform) {
+	switch (transform) {
+	case WL_OUTPUT_TRANSFORM_NORMAL:
+		return "normal";
+	case WL_OUTPUT_TRANSFORM_90:
+		return "90";
+	case WL_OUTPUT_TRANSFORM_180:
+		return "180";
+	case WL_OUTPUT_TRANSFORM_270:
+		return "270";
+	case WL_OUTPUT_TRANSFORM_FLIPPED:
+		return "flipped";
+	case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+		return "flipped-90";
+	case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+		return "flipped-180";
+	case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+		return "flipped-270";
+	}
+	return NULL;
+}
+
+static const char *ipc_json_device_type_description(struct sway_input_device *device) {
+	switch (device->wlr_device->type) {
+	case WLR_INPUT_DEVICE_POINTER:
+		return "pointer";
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		return "keyboard";
+	case WLR_INPUT_DEVICE_TOUCH:
+		return "touch";
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		return "tablet_tool";
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		return "tablet_pad";
 	}
 	return "unknown";
 }
@@ -106,12 +143,16 @@ static json_object *ipc_json_create_node(int id, char *name,
 
 	// set default values to be compatible with i3
 	json_object_object_add(object, "border",
-			json_object_new_string(describe_container_border(B_NONE)));
-	json_object_object_add(object, "current_border_width", json_object_new_int(0));
+			json_object_new_string(
+				ipc_json_border_description(B_NONE)));
+	json_object_object_add(object, "current_border_width",
+			json_object_new_int(0));
 	json_object_object_add(object, "layout",
-			json_object_new_string(ipc_json_layout_description(L_HORIZ)));
+			json_object_new_string(
+				ipc_json_layout_description(L_HORIZ)));
 	json_object_object_add(object, "orientation",
-			json_object_new_string(ipc_json_orientation_description(L_HORIZ)));
+			json_object_new_string(
+				ipc_json_orientation_description(L_HORIZ)));
 	json_object_object_add(object, "percent", NULL);
 	json_object_object_add(object, "window_rect", ipc_json_create_empty_rect());
 	json_object_object_add(object, "deco_rect", ipc_json_create_empty_rect());
@@ -128,28 +169,6 @@ static void ipc_json_describe_root(struct sway_root *root, json_object *object) 
 	json_object_object_add(object, "type", json_object_new_string("root"));
 }
 
-static const char *ipc_json_get_output_transform(enum wl_output_transform transform) {
-	switch (transform) {
-	case WL_OUTPUT_TRANSFORM_NORMAL:
-		return "normal";
-	case WL_OUTPUT_TRANSFORM_90:
-		return "90";
-	case WL_OUTPUT_TRANSFORM_180:
-		return "180";
-	case WL_OUTPUT_TRANSFORM_270:
-		return "270";
-	case WL_OUTPUT_TRANSFORM_FLIPPED:
-		return "flipped";
-	case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-		return "flipped-90";
-	case WL_OUTPUT_TRANSFORM_FLIPPED_180:
-		return "flipped-180";
-	case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-		return "flipped-270";
-	}
-	return NULL;
-}
-
 static void ipc_json_describe_output(struct sway_output *output,
 		json_object *object) {
 	struct wlr_output *wlr_output = output->wlr_output;
@@ -158,7 +177,8 @@ static void ipc_json_describe_output(struct sway_output *output,
 	json_object_object_add(object, "primary", json_object_new_boolean(false));
 	json_object_object_add(object, "layout", json_object_new_string("output"));
 	json_object_object_add(object, "orientation",
-			json_object_new_string(ipc_json_orientation_description(L_NONE)));
+			json_object_new_string(
+				ipc_json_orientation_description(L_NONE)));
 	json_object_object_add(object, "make",
 			json_object_new_string(wlr_output->make));
 	json_object_object_add(object, "model",
@@ -169,7 +189,7 @@ static void ipc_json_describe_output(struct sway_output *output,
 			json_object_new_double(wlr_output->scale));
 	json_object_object_add(object, "transform",
 		json_object_new_string(
-			ipc_json_get_output_transform(wlr_output->transform)));
+			ipc_json_output_transform_description(wlr_output->transform)));
 
 	struct sway_workspace *ws = output_get_active_workspace(output);
 	json_object_object_add(object, "current_workspace",
@@ -294,11 +314,12 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 	json_object_object_add(object, "representation", workspace->representation ?
 			json_object_new_string(workspace->representation) : NULL);
 
-	const char *layout = ipc_json_layout_description(workspace->layout);
-	json_object_object_add(object, "layout", json_object_new_string(layout));
-
-	const char *orientation = ipc_json_orientation_description(workspace->layout);
-	json_object_object_add(object, "orientation", json_object_new_string(orientation));
+	json_object_object_add(object, "layout",
+			json_object_new_string(
+				ipc_json_layout_description(workspace->layout)));
+	json_object_object_add(object, "orientation",
+			json_object_new_string(
+				ipc_json_orientation_description(workspace->layout)));
 
 	// Floating
 	json_object *floating_array = json_object_new_array();
@@ -387,10 +408,12 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 			json_object_new_string(container_is_floating(c) ? "floating_con" : "con"));
 
 	json_object_object_add(object, "layout",
-		json_object_new_string(ipc_json_layout_description(c->layout)));
+			json_object_new_string(
+				ipc_json_layout_description(c->layout)));
 
 	json_object_object_add(object, "orientation",
-			json_object_new_string(ipc_json_orientation_description(c->layout)));
+			json_object_new_string(
+				ipc_json_orientation_description(c->layout)));
 
 	bool urgent = c->view ?
 		view_is_urgent(c->view) : container_has_urgent_child(c);
@@ -411,7 +434,8 @@ static void ipc_json_describe_container(struct sway_container *c, json_object *o
 	}
 
 	json_object_object_add(object, "border",
-			json_object_new_string(describe_container_border(c->current.border)));
+			json_object_new_string(
+				ipc_json_border_description(c->current.border)));
 	json_object_object_add(object, "current_border_width",
 			json_object_new_int(c->current.border_thickness));
 	json_object_object_add(object, "floating_nodes", json_object_new_array());
@@ -530,22 +554,6 @@ json_object *ipc_json_describe_node_recursive(struct sway_node *node) {
 	return object;
 }
 
-static const char *describe_device_type(struct sway_input_device *device) {
-	switch (device->wlr_device->type) {
-	case WLR_INPUT_DEVICE_POINTER:
-		return "pointer";
-	case WLR_INPUT_DEVICE_KEYBOARD:
-		return "keyboard";
-	case WLR_INPUT_DEVICE_TOUCH:
-		return "touch";
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
-		return "tablet_tool";
-	case WLR_INPUT_DEVICE_TABLET_PAD:
-		return "tablet_pad";
-	}
-	return "unknown";
-}
-
 json_object *ipc_json_describe_input(struct sway_input_device *device) {
 	if (!(sway_assert(device, "Device must not be null"))) {
 		return NULL;
@@ -562,7 +570,8 @@ json_object *ipc_json_describe_input(struct sway_input_device *device) {
 	json_object_object_add(object, "product",
 		json_object_new_int(device->wlr_device->product));
 	json_object_object_add(object, "type",
-		json_object_new_string(describe_device_type(device)));
+		json_object_new_string(
+			ipc_json_device_type_description(device)));
 
 	if (device->wlr_device->type == WLR_INPUT_DEVICE_KEYBOARD) {
 		struct wlr_keyboard *keyboard = device->wlr_device->keyboard;
