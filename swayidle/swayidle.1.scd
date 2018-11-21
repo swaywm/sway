@@ -49,7 +49,7 @@ swayidle \
 ```
 
 This will lock your screen after 300 seconds of inactivity, then turn off your
-displays after another 600 seconds, and turn your screens back on when resumed.
+displays after another 300 seconds, and turn your screens back on when resumed.
 It will also lock your screen before your computer goes to sleep.
 
 # AUTHORS
