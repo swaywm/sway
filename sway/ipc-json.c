@@ -15,6 +15,9 @@
 #include <xkbcommon/xkbcommon.h>
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+static const int i3_output_id = INT32_MAX;
+static const int i3_scratch_id = INT32_MAX - 1;
+
 static const char *ipc_json_layout_description(enum sway_container_layout l) {
 	switch (l) {
 	case L_VERT:
@@ -41,6 +44,20 @@ static const char *ipc_json_orientation_description(enum sway_container_layout l
 	}
 
 	return "none";
+}
+
+static const char *describe_container_border(enum sway_container_border border) {
+	switch (border) {
+	case B_NONE:
+		return "none";
+	case B_PIXEL:
+		return "pixel";
+	case B_NORMAL:
+		return "normal";
+	case B_CSD:
+		return "csd";
+	}
+	return "unknown";
 }
 
 json_object *ipc_json_get_version(void) {
@@ -74,6 +91,37 @@ static json_object *ipc_json_create_empty_rect(void) {
 	struct wlr_box empty = {0, 0, 0, 0};
 
 	return ipc_json_create_rect(&empty);
+}
+
+static json_object *ipc_json_create_node(int id, char *name,
+		bool focused, json_object *focus, struct wlr_box *box) {
+	json_object *object = json_object_new_object();
+
+	json_object_object_add(object, "id", json_object_new_int(id));
+	json_object_object_add(object, "name",
+			name ? json_object_new_string(name) : NULL);
+	json_object_object_add(object, "rect", ipc_json_create_rect(box));
+	json_object_object_add(object, "focused", json_object_new_boolean(focused));
+	json_object_object_add(object, "focus", focus);
+
+	// set default values to be compatible with i3
+	json_object_object_add(object, "border",
+			json_object_new_string(describe_container_border(B_NONE)));
+	json_object_object_add(object, "current_border_width", json_object_new_int(0));
+	json_object_object_add(object, "layout",
+			json_object_new_string(ipc_json_layout_description(L_HORIZ)));
+	json_object_object_add(object, "orientation",
+			json_object_new_string(ipc_json_orientation_description(L_HORIZ)));
+	json_object_object_add(object, "percent", NULL);
+	json_object_object_add(object, "window_rect", ipc_json_create_empty_rect());
+	json_object_object_add(object, "deco_rect", ipc_json_create_empty_rect());
+	json_object_object_add(object, "geometry", ipc_json_create_empty_rect());
+	json_object_object_add(object, "window", NULL);
+	json_object_object_add(object, "urgent", json_object_new_boolean(false));
+	json_object_object_add(object, "floating_nodes", json_object_new_array());
+	json_object_object_add(object, "sticky", json_object_new_boolean(false));
+
+	return object;
 }
 
 static void ipc_json_describe_root(struct sway_root *root, json_object *object) {
@@ -187,6 +235,52 @@ json_object *ipc_json_describe_disabled_output(struct sway_output *output) {
 	return object;
 }
 
+static json_object *ipc_json_describe_scratchpad_output(void) {
+	struct wlr_box box;
+	root_get_box(root, &box);
+
+	// Create focus stack for __i3_scratch workspace
+	json_object *workspace_focus = json_object_new_array();
+	for (int i = root->scratchpad->length - 1; i >= 0; --i) {
+		struct sway_container *container = root->scratchpad->items[i];
+		json_object_array_add(workspace_focus,
+				json_object_new_int(container->node.id));
+	}
+
+	json_object *workspace = ipc_json_create_node(i3_scratch_id,
+				"__i3_scratch", false, workspace_focus, &box);
+	json_object_object_add(workspace, "type",
+			json_object_new_string("workspace"));
+
+	// List all hidden scratchpad containers as floating nodes
+	json_object *floating_array = json_object_new_array();
+	for (int i = 0; i < root->scratchpad->length; ++i) {
+		struct sway_container *container = root->scratchpad->items[i];
+		if (!container->workspace) {
+			json_object_array_add(floating_array,
+				ipc_json_describe_node_recursive(&container->node));
+		}
+	}
+	json_object_object_add(workspace, "floating_nodes", floating_array);
+
+	// Create focus stack for __i3 output
+	json_object *output_focus = json_object_new_array();
+	json_object_array_add(output_focus, json_object_new_int(i3_scratch_id));
+
+	json_object *output = ipc_json_create_node(i3_output_id,
+					"__i3", false, output_focus, &box);
+	json_object_object_add(output, "type",
+			json_object_new_string("output"));
+	json_object_object_add(output, "layout",
+			json_object_new_string("output"));
+
+	json_object *nodes = json_object_new_array();
+	json_object_array_add(nodes, workspace);
+	json_object_object_add(output, "nodes", nodes);
+
+	return output;
+}
+
 static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 		json_object *object) {
 	int num = isdigit(workspace->name[0]) ? atoi(workspace->name) : -1;
@@ -214,20 +308,6 @@ static void ipc_json_describe_workspace(struct sway_workspace *workspace,
 				ipc_json_describe_node_recursive(&floater->node));
 	}
 	json_object_object_add(object, "floating_nodes", floating_array);
-}
-
-static const char *describe_container_border(enum sway_container_border border) {
-	switch (border) {
-	case B_NONE:
-		return "none";
-	case B_PIXEL:
-		return "pixel";
-	case B_NORMAL:
-		return "normal";
-	case B_CSD:
-		return "csd";
-	}
-	return "unknown";
 }
 
 static void ipc_json_describe_view(struct sway_container *c, json_object *object) {
@@ -372,17 +452,10 @@ static void focus_inactive_children_iterator(struct sway_node *node,
 json_object *ipc_json_describe_node(struct sway_node *node) {
 	struct sway_seat *seat = input_manager_get_default_seat();
 	bool focused = seat_get_focus(seat) == node;
-
-	json_object *object = json_object_new_object();
 	char *name = node_get_name(node);
 
 	struct wlr_box box;
 	node_get_box(node, &box);
-	json_object_object_add(object, "id", json_object_new_int((int)node->id));
-	json_object_object_add(object, "name",
-			name ? json_object_new_string(name) : NULL);
-	json_object_object_add(object, "rect", ipc_json_create_rect(&box));
-	json_object_object_add(object, "focused", json_object_new_boolean(focused));
 
 	json_object *focus = json_object_new_array();
 	struct focus_inactive_data data = {
@@ -390,24 +463,9 @@ json_object *ipc_json_describe_node(struct sway_node *node) {
 		.object = focus,
 	};
 	seat_for_each_node(seat, focus_inactive_children_iterator, &data);
-	json_object_object_add(object, "focus", focus);
 
-	// set default values to be compatible with i3
-	json_object_object_add(object, "border",
-			json_object_new_string(describe_container_border(B_NONE)));
-	json_object_object_add(object, "current_border_width", json_object_new_int(0));
-	json_object_object_add(object, "layout",
-			json_object_new_string(ipc_json_layout_description(L_HORIZ)));
-	json_object_object_add(object, "orientation",
-			json_object_new_string(ipc_json_orientation_description(L_HORIZ)));
-	json_object_object_add(object, "percent", NULL);
-	json_object_object_add(object, "window_rect", ipc_json_create_empty_rect());
-	json_object_object_add(object, "deco_rect", ipc_json_create_empty_rect());
-	json_object_object_add(object, "geometry", ipc_json_create_empty_rect());
-	json_object_object_add(object, "window", NULL);
-	json_object_object_add(object, "urgent", json_object_new_boolean(false));
-	json_object_object_add(object, "floating_nodes", json_object_new_array());
-	json_object_object_add(object, "sticky", json_object_new_boolean(false));
+	json_object *object = ipc_json_create_node(
+				(int)node->id, name, focused, focus, &box);
 
 	switch (node->type) {
 	case N_ROOT:
@@ -434,6 +492,8 @@ json_object *ipc_json_describe_node_recursive(struct sway_node *node) {
 	json_object *children = json_object_new_array();
 	switch (node->type) {
 	case N_ROOT:
+		json_object_array_add(children,
+				ipc_json_describe_scratchpad_output());
 		for (i = 0; i < root->outputs->length; ++i) {
 			struct sway_output *output = root->outputs->items[i];
 			json_object_array_add(children,
