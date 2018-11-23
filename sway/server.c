@@ -8,24 +8,24 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
-#include <wlr/types/wlr_gamma_control.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
+#include <wlr/types/wlr_gamma_control.h>
+#include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
-#include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
 #include <wlr/util/log.h>
+#include "config.h"
 #include "list.h"
 #include "sway/config.h"
 #include "sway/desktop/idle_inhibit_v1.h"
 #include "sway/input/input-manager.h"
 #include "sway/server.h"
 #include "sway/tree/root.h"
-#include "config.h"
 #if HAVE_XWAYLAND
 #include "sway/xwayland.h"
 #endif
@@ -57,7 +57,7 @@ bool server_init(struct sway_server *server) {
 
 	wlr_gamma_control_manager_create(server->wl_display);
 	wlr_gamma_control_manager_v1_create(server->wl_display);
-	wlr_primary_selection_device_manager_create(server->wl_display);
+	wlr_gtk_primary_selection_device_manager_create(server->wl_display);
 
 	server->new_output.notify = handle_new_output;
 	wl_signal_add(&server->backend->events.new_output, &server->new_output);
