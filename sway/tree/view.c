@@ -824,12 +824,30 @@ struct sway_view *view_from_wlr_surface(struct wlr_surface *wlr_surface) {
 	return NULL;
 }
 
+static char *escape_pango_markup(const char *buffer) {
+	size_t length = escape_markup_text(buffer, NULL);
+	char *escaped_title = calloc(length + 1, sizeof(char));
+	escape_markup_text(buffer, escaped_title);
+	return escaped_title;
+}
+
 static size_t append_prop(char *buffer, const char *value) {
 	if (!value) {
 		return 0;
 	}
-	lenient_strcat(buffer, value);
-	return strlen(value);
+	// if using pango_markup in font, we need to escape all markup char
+	// from values to avoid messing with pango markup
+	if (!config->pango_markup) {
+		char *escaped_value = escape_pango_markup(value);
+
+		lenient_strcat(buffer, escaped_value);
+		size_t len = strlen(escaped_value);
+		free(escaped_value);
+		return len;
+	} else {
+		lenient_strcat(buffer, value);
+		return strlen(value);
+	}
 }
 
 /**
@@ -882,14 +900,6 @@ static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	return len;
 }
 
-static char *escape_title(char *buffer) {
-	size_t length = escape_markup_text(buffer, NULL);
-	char *escaped_title = calloc(length + 1, sizeof(char));
-	escape_markup_text(buffer, escaped_title);
-	free(buffer);
-	return escaped_title;
-}
-
 void view_update_title(struct sway_view *view, bool force) {
 	const char *title = view_get_title(view);
 
@@ -912,10 +922,6 @@ void view_update_title(struct sway_view *view, bool force) {
 			return;
 		}
 		parse_title_format(view, buffer);
-		// now we have the title, but needs to be escaped when using pango markup
-		if (config->pango_markup) {
-			buffer = escape_title(buffer);
-		}
 
 		view->container->title = strdup(title);
 		view->container->formatted_title = buffer;
