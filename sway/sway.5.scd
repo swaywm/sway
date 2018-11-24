@@ -436,6 +436,16 @@ The default colors are:
 *font* <font>
 	Sets font for use in title bars in Pango format.
 
+*titlebar\_border\_thickness* <thickness>
+	Thickness of the titlebar border in pixels
+
+*titlebar\_padding* <horizontal> [<vertical>]
+	Padding of the text in the titlebar. _horizontal_ value affects horizontal 
+	padding of the text while _vertical_ value affects vertical padding (space 
+	above and below text). Padding includes titlebar borders so their value 
+	should be greater than titlebar\_border\_thickness. If _vertical_ value is
+	not specified it is set to the _horizontal_ value. 
+
 *for\_window* <criteria> <command>
 	Whenever a window that matches _criteria_ appears, run list of commands.
 	See *CRITERIA* for more details.

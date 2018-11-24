@@ -368,6 +368,9 @@ static void render_titlebar(struct sway_output *output,
 		children->items[children->length - 1] == con;
 	double output_x = output->wlr_output->lx;
 	double output_y = output->wlr_output->ly;
+	int titlebar_border_thickness = config->titlebar_border_thickness;
+	int titlebar_h_padding = config->titlebar_h_padding;
+	int titlebar_v_padding = config->titlebar_v_padding;
 
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
@@ -375,7 +378,7 @@ static void render_titlebar(struct sway_output *output,
 	box.x = x;
 	box.y = y;
 	box.width = width;
-	box.height = TITLEBAR_BORDER_THICKNESS;
+	box.height = titlebar_border_thickness;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
@@ -391,36 +394,36 @@ static void render_titlebar(struct sway_output *output,
 		}
 	}
 	box.x = x + left_offset;
-	box.y = y + container_titlebar_height() - TITLEBAR_BORDER_THICKNESS;
+	box.y = y + container_titlebar_height() - titlebar_border_thickness;
 	box.width = width - left_offset - right_offset;
-	box.height = TITLEBAR_BORDER_THICKNESS;
+	box.height = titlebar_border_thickness;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	if (layout == L_TABBED) {
 		// Single pixel left edge
 		box.x = x;
-		box.y = y + TITLEBAR_BORDER_THICKNESS;
-		box.width = TITLEBAR_BORDER_THICKNESS;
+		box.y = y + titlebar_border_thickness;
+		box.width = titlebar_border_thickness;
 		box.height =
-			container_titlebar_height() - TITLEBAR_BORDER_THICKNESS * 2;
+			container_titlebar_height() - titlebar_border_thickness * 2;
 		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 
 		// Single pixel right edge
-		box.x = x + width - TITLEBAR_BORDER_THICKNESS;
-		box.y = y + TITLEBAR_BORDER_THICKNESS;
-		box.width = TITLEBAR_BORDER_THICKNESS;
+		box.x = x + width - titlebar_border_thickness;
+		box.y = y + titlebar_border_thickness;
+		box.width = titlebar_border_thickness;
 		box.height =
-			container_titlebar_height() - TITLEBAR_BORDER_THICKNESS * 2;
+			container_titlebar_height() - titlebar_border_thickness * 2;
 		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	size_t inner_width = width - TITLEBAR_H_PADDING * 2;
-	int bg_y = y + TITLEBAR_BORDER_THICKNESS;
+	size_t inner_width = width - titlebar_h_padding * 2;
+	int bg_y = y + titlebar_border_thickness;
 	int ob_bg_height = scale_length(
-			(TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS) * 2 +
+			(titlebar_v_padding - titlebar_border_thickness) * 2 +
 			config->font_height, bg_y, output_scale);
 
 	// Marks
@@ -438,7 +441,7 @@ static void render_titlebar(struct sway_output *output,
 		int ob_padding_below = ceil(ob_padding_total / 2.0);
 
 		// Render texture
-		texture_box.x = round((x - output_x + width - TITLEBAR_H_PADDING)
+		texture_box.x = round((x - output_x + width - titlebar_h_padding)
 				* output_scale) - texture_box.width;
 		texture_box.y = round((bg_y - output_y) * output_scale) +
 			ob_padding_above;
@@ -458,7 +461,7 @@ static void render_titlebar(struct sway_output *output,
 		memcpy(&color, colors->background, sizeof(float) * 4);
 		premultiply_alpha(color, con->alpha);
 		box.x = texture_box.x + round(output_x * output_scale);
-		box.y = round((y + TITLEBAR_BORDER_THICKNESS) * output_scale);
+		box.y = round((y + titlebar_border_thickness) * output_scale);
 		box.width = texture_box.width;
 		box.height = ob_padding_above;
 		render_rect(output->wlr_output, output_damage, &box, color);
@@ -480,14 +483,14 @@ static void render_titlebar(struct sway_output *output,
 		// The title texture might be shorter than the config->font_height,
 		// in which case we need to pad it above and below.
 		int ob_padding_above = round((config->font_baseline -
-					con->title_baseline + TITLEBAR_V_PADDING -
-					TITLEBAR_BORDER_THICKNESS) * output_scale);
+					con->title_baseline + titlebar_v_padding -
+					titlebar_border_thickness) * output_scale);
 		int ob_padding_below = ob_bg_height - ob_padding_above -
 			texture_box.height;
 
 		// Render texture
 		texture_box.x =
-			round((x - output_x + TITLEBAR_H_PADDING) * output_scale);
+			round((x - output_x + titlebar_h_padding) * output_scale);
 		texture_box.y =
 			round((bg_y - output_y) * output_scale) + ob_padding_above;
 
@@ -496,7 +499,7 @@ static void render_titlebar(struct sway_output *output,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		int inner_x = x - output_x + TITLEBAR_H_PADDING;
+		int inner_x = x - output_x + titlebar_h_padding;
 		int ob_inner_width = scale_length(inner_width, inner_x, output_scale);
 		if (ob_inner_width - marks_ob_width < texture_box.width) {
 			texture_box.width = ob_inner_width - marks_ob_width;
@@ -508,7 +511,7 @@ static void render_titlebar(struct sway_output *output,
 		memcpy(&color, colors->background, sizeof(float) * 4);
 		premultiply_alpha(color, con->alpha);
 		box.x = texture_box.x + round(output_x * output_scale);
-		box.y = round((y + TITLEBAR_BORDER_THICKNESS) * output_scale);
+		box.y = round((y + titlebar_border_thickness) * output_scale);
 		box.width = texture_box.width;
 		box.height = ob_padding_above;
 		render_rect(output->wlr_output, output_damage, &box, color);
@@ -523,28 +526,28 @@ static void render_titlebar(struct sway_output *output,
 	box.width =
 		round(inner_width * output_scale) - title_ob_width - marks_ob_width;
 	if (box.width > 0) {
-		box.x = round((x + TITLEBAR_H_PADDING) * output_scale) + title_ob_width;
+		box.x = round((x + titlebar_h_padding) * output_scale) + title_ob_width;
 		box.y = round(bg_y * output_scale);
 		box.height = ob_bg_height;
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
 	// Padding left of title
-	left_offset = (layout == L_TABBED) * TITLEBAR_BORDER_THICKNESS;
+	left_offset = (layout == L_TABBED) * titlebar_border_thickness;
 	box.x = x + left_offset;
-	box.y = y + TITLEBAR_BORDER_THICKNESS;
-	box.width = TITLEBAR_H_PADDING - left_offset;
-	box.height = (TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS) * 2 +
+	box.y = y + titlebar_border_thickness;
+	box.width = titlebar_h_padding - left_offset;
+	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
 		config->font_height;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	// Padding right of marks
-	right_offset = (layout == L_TABBED) * TITLEBAR_BORDER_THICKNESS;
-	box.x = x + width - TITLEBAR_H_PADDING;
-	box.y = y + TITLEBAR_BORDER_THICKNESS;
-	box.width = TITLEBAR_H_PADDING - right_offset;
-	box.height = (TITLEBAR_V_PADDING - TITLEBAR_BORDER_THICKNESS) * 2 +
+	right_offset = (layout == L_TABBED) * titlebar_border_thickness;
+	box.x = x + width - titlebar_h_padding;
+	box.y = y + titlebar_border_thickness;
+	box.width = titlebar_h_padding - right_offset;
+	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
 		config->font_height;
 	scale_box(&box, output_scale);
 	render_rect(output->wlr_output, output_damage, &box, color);
@@ -552,17 +555,17 @@ static void render_titlebar(struct sway_output *output,
 	if (connects_sides) {
 		// Left pixel in line with bottom bar
 		box.x = x;
-		box.y = y + container_titlebar_height() - TITLEBAR_BORDER_THICKNESS;
+		box.y = y + container_titlebar_height() - titlebar_border_thickness;
 		box.width = state->border_thickness * state->border_left;
-		box.height = TITLEBAR_BORDER_THICKNESS;
+		box.height = titlebar_border_thickness;
 		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 
 		// Right pixel in line with bottom bar
 		box.x = x + width - state->border_thickness * state->border_right;
-		box.y = y + container_titlebar_height() - TITLEBAR_BORDER_THICKNESS;
+		box.y = y + container_titlebar_height() - titlebar_border_thickness;
 		box.width = state->border_thickness * state->border_right;
-		box.height = TITLEBAR_BORDER_THICKNESS;
+		box.height = titlebar_border_thickness;
 		scale_box(&box, output_scale);
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}

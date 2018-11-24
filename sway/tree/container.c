@@ -594,7 +594,7 @@ void container_update_representation(struct sway_container *con) {
 }
 
 size_t container_titlebar_height(void) {
-	return config->font_height + TITLEBAR_V_PADDING * 2;
+	return config->font_height + config->titlebar_v_padding * 2;
 }
 
 void container_init_floating(struct sway_container *con) {

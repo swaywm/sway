@@ -103,6 +103,8 @@ static struct cmd_handler handlers[] = {
 	{ "smart_borders", cmd_smart_borders },
 	{ "smart_gaps", cmd_smart_gaps },
 	{ "tiling_drag", cmd_tiling_drag },
+	{ "titlebar_border_thickness", cmd_titlebar_border_thickness },
+	{ "titlebar_padding", cmd_titlebar_padding },
 	{ "workspace", cmd_workspace },
 	{ "workspace_auto_back_and_forth", cmd_ws_auto_back_and_forth },
 };

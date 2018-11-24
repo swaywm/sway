@@ -10,12 +10,6 @@
 struct sway_view;
 struct sway_seat;
 
-#define TITLEBAR_BORDER_THICKNESS 1
-
-// Padding includes titlebar border
-#define TITLEBAR_H_PADDING 3
-#define TITLEBAR_V_PADDING 4
-
 enum sway_container_layout {
 	L_NONE,
 	L_HORIZ,

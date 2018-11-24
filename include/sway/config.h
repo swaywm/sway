@@ -391,6 +391,9 @@ struct sway_config {
 	size_t font_height;
 	size_t font_baseline;
 	bool pango_markup;
+	int titlebar_border_thickness;
+	int titlebar_h_padding;
+	int titlebar_v_padding;
 	size_t urgent_timeout;
 	enum sway_fowa focus_on_window_activation;
 	enum sway_popup_during_fullscreen popup_during_fullscreen;
