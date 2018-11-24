@@ -373,7 +373,11 @@ static int display_event(int fd, uint32_t mask, void *data) {
 	int count = 0;
 	if (mask & WL_EVENT_READABLE) {
 		count = wl_display_dispatch(state.display);
-	} else {
+	}
+	if (mask & WL_EVENT_WRITABLE) {
+		wl_display_flush(state.display);
+	}
+	if (mask == 0) {
 		count = wl_display_dispatch_pending(state.display);
 		wl_display_flush(state.display);
 	}
@@ -438,7 +442,7 @@ int main(int argc, char *argv[]) {
 	wl_display_roundtrip(state.display);
 
 	struct wl_event_source *source = wl_event_loop_add_fd(state.event_loop,
-		wl_display_get_fd(state.display), WL_EVENT_READABLE,
+		wl_display_get_fd(state.display), WL_EVENT_READABLE | WL_EVENT_WRITABLE,
 		display_event, NULL);
 	wl_event_source_check(source);
 
