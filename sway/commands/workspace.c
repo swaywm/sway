@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
 #include <limits.h>
 #include <string.h>
@@ -38,7 +38,7 @@ void free_workspace_config(struct workspace_config *wsc) {
 }
 
 static void prevent_invalid_outer_gaps(struct workspace_config *wsc) {
-	if (wsc->gaps_outer.top != INT_MIN && 
+	if (wsc->gaps_outer.top != INT_MIN &&
 			wsc->gaps_outer.top < -wsc->gaps_inner) {
 		wsc->gaps_outer.top = -wsc->gaps_inner;
 	}

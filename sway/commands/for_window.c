@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include <string.h>
 #include "sway/commands.h"
 #include "sway/criteria.h"

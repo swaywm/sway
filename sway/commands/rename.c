@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>

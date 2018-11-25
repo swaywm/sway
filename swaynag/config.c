@@ -1,5 +1,4 @@
-#define _XOPEN_SOURCE 700
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200809L
 #include <getopt.h>
 #include <stdlib.h>
 #include <wordexp.h>
@@ -398,4 +397,3 @@ int swaynag_load_config(char *path, struct swaynag *swaynag, list_t *types) {
 	fclose(config);
 	return 0;
 }
-

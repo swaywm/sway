@@ -1,5 +1,4 @@
-#define _XOPEN_SOURCE 700
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200809L
 #include <getopt.h>
 #include <pango/pangocairo.h>
 #include <signal.h>
