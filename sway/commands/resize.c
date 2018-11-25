@@ -512,34 +512,42 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 	calculate_constraints(&min_width, &max_width, &min_height, &max_height);
 
 	if (width->amount) {
-		if (width->unit == RESIZE_UNIT_PPT ||
-				width->unit == RESIZE_UNIT_DEFAULT) {
+		switch (width->unit) {
+		case RESIZE_UNIT_PPT:
 			// Convert to px
 			width->amount = con->workspace->width * width->amount / 100;
 			width->unit = RESIZE_UNIT_PX;
-		}
-		if (width->unit == RESIZE_UNIT_PX) {
+			// Falls through
+		case RESIZE_UNIT_PX:
+		case RESIZE_UNIT_DEFAULT:
 			width->amount = fmax(min_width, fmin(width->amount, max_width));
 			grow_width = width->amount - con->width;
-
 			con->x -= grow_width / 2;
 			con->width = width->amount;
+			break;
+		case RESIZE_UNIT_INVALID:
+			sway_assert(false, "invalid width unit");
+			break;
 		}
 	}
 
 	if (height->amount) {
-		if (height->unit == RESIZE_UNIT_PPT ||
-				height->unit == RESIZE_UNIT_DEFAULT) {
+		switch (height->unit) {
+		case RESIZE_UNIT_PPT:
 			// Convert to px
 			height->amount = con->workspace->height * height->amount / 100;
 			height->unit = RESIZE_UNIT_PX;
-		}
-		if (height->unit == RESIZE_UNIT_PX) {
+			// Falls through
+		case RESIZE_UNIT_PX:
+		case RESIZE_UNIT_DEFAULT:
 			height->amount = fmax(min_height, fmin(height->amount, max_height));
 			grow_height = height->amount - con->height;
-
 			con->y -= grow_height / 2;
 			con->height = height->amount;
+			break;
+		case RESIZE_UNIT_INVALID:
+			sway_assert(false, "invalid height unit");
+			break;
 		}
 	}
 
