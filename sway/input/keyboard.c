@@ -386,27 +386,7 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 	determine_bar_visibility(modifiers);
 }
 
-struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
-		struct sway_seat_device *device) {
-	struct sway_keyboard *keyboard =
-		calloc(1, sizeof(struct sway_keyboard));
-	if (!sway_assert(keyboard, "could not allocate sway keyboard")) {
-		return NULL;
-	}
-
-	keyboard->seat_device = device;
-	device->keyboard = keyboard;
-
-	wl_list_init(&keyboard->keyboard_key.link);
-	wl_list_init(&keyboard->keyboard_modifiers.link);
-
-	keyboard->key_repeat_source = wl_event_loop_add_timer(server.wl_event_loop,
-			handle_keyboard_repeat, keyboard);
-
-	return keyboard;
-}
-
-void sway_keyboard_configure(struct sway_keyboard *keyboard) {
+static void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	struct xkb_rule_names rules;
 	memset(&rules, 0, sizeof(rules));
 	struct input_config *input_config =
@@ -505,6 +485,27 @@ void sway_keyboard_configure(struct sway_keyboard *keyboard) {
 	wl_signal_add(&wlr_device->keyboard->events.modifiers,
 		&keyboard->keyboard_modifiers);
 	keyboard->keyboard_modifiers.notify = handle_keyboard_modifiers;
+}
+
+struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
+		struct sway_seat_device *device) {
+	struct sway_keyboard *keyboard =
+		calloc(1, sizeof(struct sway_keyboard));
+	if (!sway_assert(keyboard, "could not allocate sway keyboard")) {
+		return NULL;
+	}
+
+	keyboard->seat_device = device;
+	device->keyboard = keyboard;
+
+	wl_list_init(&keyboard->keyboard_key.link);
+	wl_list_init(&keyboard->keyboard_modifiers.link);
+
+	keyboard->key_repeat_source = wl_event_loop_add_timer(server.wl_event_loop,
+			handle_keyboard_repeat, keyboard);
+
+	sway_keyboard_configure(device->keyboard);
+	return keyboard;
 }
 
 void sway_keyboard_destroy(struct sway_keyboard *keyboard) {
