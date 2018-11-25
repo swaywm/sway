@@ -43,6 +43,12 @@ struct swayidle_timeout_cmd {
 	char *resume_cmd;
 };
 
+void sway_terminate(int exit_code) {
+	wl_display_disconnect(state.display);
+	wl_event_loop_destroy(state.event_loop);
+	exit(exit_code);
+}
+
 static void cmd_exec(char *param) {
 	wlr_log(WLR_DEBUG, "Cmd exec %s", param);
 	pid_t pid = fork();
@@ -81,16 +87,16 @@ static int release_lock(void *data) {
 }
 
 static void acquire_sleep_lock(void) {
-	sd_bus_message *msg;
-	sd_bus_error error;
+	sd_bus_message *msg = NULL;
+	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int ret = sd_bus_call_method(bus, "org.freedesktop.login1",
 			"/org/freedesktop/login1",
 			"org.freedesktop.login1.Manager", "Inhibit",
 			&error, &msg, "ssss", "sleep", "swayidle",
 			"Setup Up Lock Screen", "delay");
 	if (ret < 0) {
-		wlr_log(WLR_ERROR, "Failed to send Inhibit signal: %s",
-				strerror(-ret));
+		wlr_log(WLR_ERROR, "Failed to send Inhibit signal: %s", error.message);
+		sd_bus_error_free(&error);
 		return;
 	}
 
@@ -98,10 +104,11 @@ static void acquire_sleep_lock(void) {
 	if (ret < 0) {
 		wlr_log(WLR_ERROR, "Failed to parse D-Bus response for Inhibit: %s",
 			strerror(-ret));
-		return;
+	} else {
+		wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
 	}
-
-	wlr_log(WLR_INFO, "Got sleep lock: %d", lock_fd);
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(msg);
 }
 
 static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
@@ -137,10 +144,28 @@ static int prepare_for_sleep(sd_bus_message *msg, void *userdata,
 
 static int dbus_event(int fd, uint32_t mask, void *data) {
 	sd_bus *bus = data;
-	while (sd_bus_process(bus, NULL) > 0) {
-		// Do nothing.
+
+	if ((mask & WL_EVENT_HANGUP) || (mask & WL_EVENT_ERROR)) {
+		sway_terminate(0);
 	}
-	return 1;
+
+	int count = 0;
+	if (mask & WL_EVENT_READABLE) {
+		count = sd_bus_process(bus, NULL);
+	}
+	if (mask & WL_EVENT_WRITABLE) {
+		sd_bus_flush(bus);
+	}
+	if (mask == 0) {
+		sd_bus_flush(bus);
+	}
+
+	if (count < 0) {
+		wlr_log_errno(WLR_ERROR, "sd_bus_process failed, exiting");
+		sway_terminate(0);
+	}
+
+	return count;
 }
 
 static void setup_sleep_listener(void) {
@@ -166,8 +191,10 @@ static void setup_sleep_listener(void) {
 	}
 	acquire_sleep_lock();
 
-	wl_event_loop_add_fd(state.event_loop, sd_bus_get_fd(bus),
-			WL_EVENT_READABLE, dbus_event, bus);
+	struct wl_event_source *source = wl_event_loop_add_fd(state.event_loop,
+		sd_bus_get_fd(bus), WL_EVENT_READABLE | WL_EVENT_WRITABLE,
+		dbus_event, bus);
+	wl_event_source_check(source);
 }
 #endif
 
@@ -339,12 +366,6 @@ static int parse_args(int argc, char *argv[]) {
 	return 0;
 }
 
-void sway_terminate(int exit_code) {
-	wl_display_disconnect(state.display);
-	wl_event_loop_destroy(state.event_loop);
-	exit(exit_code);
-}
-
 static void register_zero_idle_timeout(void *item) {
 	struct swayidle_timeout_cmd *cmd = item;
 	register_timeout(cmd, 0);
@@ -365,15 +386,26 @@ static int handle_signal(int sig, void *data) {
 }
 
 static int display_event(int fd, uint32_t mask, void *data) {
-	if (mask & WL_EVENT_HANGUP) {
+	if ((mask & WL_EVENT_HANGUP) || (mask & WL_EVENT_ERROR)) {
 		sway_terminate(0);
 	}
-	if (wl_display_dispatch(state.display) < 0) {
+
+	int count = 0;
+	if (mask & WL_EVENT_READABLE) {
+		count = wl_display_dispatch(state.display);
+	}
+	if (mask & WL_EVENT_WRITABLE) {
+		wl_display_flush(state.display);
+	}
+	if (mask == 0) {
+		count = wl_display_dispatch_pending(state.display);
+		wl_display_flush(state.display);
+	}
+	if (count < 0) {
 		wlr_log_errno(WLR_ERROR, "wl_display_dispatch failed, exiting");
 		sway_terminate(0);
 	}
-	wl_display_flush(state.display);
-	return 0;
+	return count;
 }
 
 static void register_idle_timeout(void *item) {
@@ -430,7 +462,7 @@ int main(int argc, char *argv[]) {
 	wl_display_roundtrip(state.display);
 
 	struct wl_event_source *source = wl_event_loop_add_fd(state.event_loop,
-		wl_display_get_fd(state.display), WL_EVENT_READABLE,
+		wl_display_get_fd(state.display), WL_EVENT_READABLE | WL_EVENT_WRITABLE,
 		display_event, NULL);
 	wl_event_source_check(source);
 
