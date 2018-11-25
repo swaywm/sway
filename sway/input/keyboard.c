@@ -403,6 +403,7 @@ struct sway_keyboard *sway_keyboard_create(struct sway_seat *seat,
 	keyboard->key_repeat_source = wl_event_loop_add_timer(server.wl_event_loop,
 			handle_keyboard_repeat, keyboard);
 
+	sway_keyboard_configure(device->keyboard);
 	return keyboard;
 }
 

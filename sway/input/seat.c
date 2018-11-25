@@ -443,10 +443,12 @@ static void seat_configure_keyboard(struct sway_seat *seat,
 		struct sway_seat_device *seat_device) {
 	if (!seat_device->keyboard) {
 		sway_keyboard_create(seat, seat_device);
+	} else {
+		sway_keyboard_configure(seat_device->keyboard);
 	}
+
 	struct wlr_keyboard *wlr_keyboard =
 		seat_device->input_device->wlr_device->keyboard;
-	sway_keyboard_configure(seat_device->keyboard);
 	wlr_seat_set_keyboard(seat->wlr_seat,
 			seat_device->input_device->wlr_device);
 	struct sway_node *focus = seat_get_focus(seat);
