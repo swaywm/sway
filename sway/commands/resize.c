@@ -524,7 +524,9 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 			grow_width = width->amount - con->width;
 			con->x -= grow_width / 2;
 			con->width = width->amount;
+			break;
 		case RESIZE_UNIT_INVALID:
+			sway_assert(false, "invalid width unit");
 			break;
 		}
 	}
@@ -542,7 +544,9 @@ static struct cmd_results *resize_set_floating(struct sway_container *con,
 			grow_height = height->amount - con->height;
 			con->y -= grow_height / 2;
 			con->height = height->amount;
+			break;
 		case RESIZE_UNIT_INVALID:
+			sway_assert(false, "invalid height unit");
 			break;
 		}
 	}
