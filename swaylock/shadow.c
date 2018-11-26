@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE // for crypt
 #include <pwd.h>
 #include <shadow.h>
 #include <stdbool.h>

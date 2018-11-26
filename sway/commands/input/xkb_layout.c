@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 700
+#define _POSIX_C_SOURCE 200809L
 #include "sway/config.h"
 #include "sway/commands.h"
 #include "sway/input/input-manager.h"
