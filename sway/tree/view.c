@@ -674,6 +674,8 @@ void view_update_size(struct sway_view *view, int width, int height) {
 	container_set_geometry_from_content(view->container);
 }
 
+static const struct sway_view_child_impl subsurface_impl;
+
 static void subsurface_get_root_coords(struct sway_view_child *child,
 		int *root_sx, int *root_sy) {
 	struct wlr_surface *surface = child->surface;
@@ -689,18 +691,47 @@ static void subsurface_get_root_coords(struct sway_view_child *child,
 	}
 }
 
+static void subsurface_destroy(struct sway_view_child *child) {
+	if (!sway_assert(child->impl == &subsurface_impl,
+			"Expected a subsurface")) {
+		return;
+	}
+	struct sway_subsurface *subsurface = (struct sway_subsurface *)child;
+	wl_list_remove(&subsurface->destroy.link);
+	free(subsurface);
+}
+
 static const struct sway_view_child_impl subsurface_impl = {
 	.get_root_coords = subsurface_get_root_coords,
+	.destroy = subsurface_destroy,
 };
 
+static void view_child_damage(struct sway_view_child *child, bool whole);
+
+static void subsurface_handle_destroy(struct wl_listener *listener,
+		void *data) {
+	struct sway_subsurface *subsurface =
+		wl_container_of(listener, subsurface, destroy);
+	struct sway_view_child *child = &subsurface->child;
+	if (child->view->container != NULL) {
+		view_child_damage(child, true);
+	}
+	view_child_destroy(child);
+}
+
 static void view_subsurface_create(struct sway_view *view,
-		struct wlr_subsurface *subsurface) {
-	struct sway_view_child *child = calloc(1, sizeof(struct sway_view_child));
-	if (child == NULL) {
+		struct wlr_subsurface *wlr_subsurface) {
+	struct sway_subsurface *subsurface =
+		calloc(1, sizeof(struct sway_subsurface));
+	if (subsurface == NULL) {
 		wlr_log(WLR_ERROR, "Allocation failed");
 		return;
 	}
-	view_child_init(child, &subsurface_impl, view, subsurface->surface);
+	view_child_init(&subsurface->child, &subsurface_impl, view,
+		wlr_subsurface->surface);
+
+	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
+	subsurface->destroy.notify = subsurface_handle_destroy;
 }
 
 static void view_child_damage(struct sway_view_child *child, bool whole) {

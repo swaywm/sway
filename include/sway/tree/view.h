@@ -203,6 +203,12 @@ struct sway_view_child {
 	struct wl_listener surface_destroy;
 };
 
+struct sway_subsurface {
+	struct sway_view_child child;
+
+	struct wl_listener destroy;
+};
+
 struct sway_xdg_popup_v6 {
 	struct sway_view_child child;
 
