@@ -192,8 +192,7 @@ static void setup_sleep_listener(void) {
 	acquire_sleep_lock();
 
 	struct wl_event_source *source = wl_event_loop_add_fd(state.event_loop,
-		sd_bus_get_fd(bus), WL_EVENT_READABLE | WL_EVENT_WRITABLE,
-		dbus_event, bus);
+		sd_bus_get_fd(bus), WL_EVENT_READABLE, dbus_event, bus);
 	wl_event_source_check(source);
 }
 #endif
@@ -401,10 +400,12 @@ static int display_event(int fd, uint32_t mask, void *data) {
 		count = wl_display_dispatch_pending(state.display);
 		wl_display_flush(state.display);
 	}
+
 	if (count < 0) {
 		wlr_log_errno(WLR_ERROR, "wl_display_dispatch failed, exiting");
 		sway_terminate(0);
 	}
+
 	return count;
 }
 
@@ -462,7 +463,7 @@ int main(int argc, char *argv[]) {
 	wl_display_roundtrip(state.display);
 
 	struct wl_event_source *source = wl_event_loop_add_fd(state.event_loop,
-		wl_display_get_fd(state.display), WL_EVENT_READABLE | WL_EVENT_WRITABLE,
+		wl_display_get_fd(state.display), WL_EVENT_READABLE,
 		display_event, NULL);
 	wl_event_source_check(source);
 
