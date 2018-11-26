@@ -835,11 +835,10 @@ static size_t append_prop(char *buffer, const char *value) {
 	if (!value) {
 		return 0;
 	}
-	// if using pango_markup in font, we need to escape all markup char
-	// from values to avoid messing with pango markup
-	if (!config->pango_markup) {
+	// If using pango_markup in font, we need to escape all markup chars
+	// from values to make sure tags are not inserted by clients
+	if (config->pango_markup) {
 		char *escaped_value = escape_pango_markup(value);
-
 		lenient_strcat(buffer, escaped_value);
 		size_t len = strlen(escaped_value);
 		free(escaped_value);
@@ -856,11 +855,7 @@ static size_t append_prop(char *buffer, const char *value) {
  */
 static size_t parse_title_format(struct sway_view *view, char *buffer) {
 	if (!view->title_format || strcmp(view->title_format, "%title") == 0) {
-		const char *title = view_get_title(view);
-		if (buffer && title) {
-			strcpy(buffer, title);
-		}
-		return title ? strlen(title) : 0;
+		return append_prop(buffer, view_get_title(view));
 	}
 
 	size_t len = 0;
