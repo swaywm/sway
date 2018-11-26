@@ -371,6 +371,7 @@ static void render_titlebar(struct sway_output *output,
 	int titlebar_border_thickness = config->titlebar_border_thickness;
 	int titlebar_h_padding = config->titlebar_h_padding;
 	int titlebar_v_padding = config->titlebar_v_padding;
+	enum alignment title_align = config->title_align;
 
 	// Single pixel bar above title
 	memcpy(&color, colors->border, sizeof(float) * 4);
@@ -420,19 +421,25 @@ static void render_titlebar(struct sway_output *output,
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	size_t inner_width = width - titlebar_h_padding * 2;
+	int inner_x = x - output_x + titlebar_h_padding;
 	int bg_y = y + titlebar_border_thickness;
+	size_t inner_width = width - titlebar_h_padding * 2;
+
+	// output-buffer local
+	int ob_inner_x = round(inner_x * output_scale);
+	int ob_inner_width = scale_length(inner_width, inner_x, output_scale);
 	int ob_bg_height = scale_length(
 			(titlebar_v_padding - titlebar_border_thickness) * 2 +
 			config->font_height, bg_y, output_scale);
 
 	// Marks
-	int marks_ob_width = 0; // output-buffer-local
+	int ob_marks_x = 0; // output-buffer-local
+	int ob_marks_width = 0; // output-buffer-local
 	if (config->show_marks && marks_texture) {
 		struct wlr_box texture_box;
 		wlr_texture_get_size(marks_texture,
 			&texture_box.width, &texture_box.height);
-		marks_ob_width = texture_box.width;
+		ob_marks_width = texture_box.width;
 
 		// The marks texture might be shorter than the config->font_height, in
 		// which case we need to pad it as evenly as possible above and below.
@@ -440,9 +447,15 @@ static void render_titlebar(struct sway_output *output,
 		int ob_padding_above = floor(ob_padding_total / 2.0);
 		int ob_padding_below = ceil(ob_padding_total / 2.0);
 
-		// Render texture
-		texture_box.x = round((x - output_x + width - titlebar_h_padding)
-				* output_scale) - texture_box.width;
+		// Render texture. If the title is on the right, the marks will be on
+		// the left. Otherwise, they will be on the right.
+		if (title_align == ALIGN_RIGHT || texture_box.width > ob_inner_width) {
+			texture_box.x = ob_inner_x;
+		} else {
+			texture_box.x = ob_inner_x + ob_inner_width - texture_box.width;
+		}
+		ob_marks_x = texture_box.x;
+
 		texture_box.y = round((bg_y - output_y) * output_scale) +
 			ob_padding_above;
 
@@ -451,8 +464,8 @@ static void render_titlebar(struct sway_output *output,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		if (inner_width * output_scale < texture_box.width) {
-			texture_box.width = inner_width * output_scale;
+		if (ob_inner_width < texture_box.width) {
+			texture_box.width = ob_inner_width;
 		}
 		render_texture(output->wlr_output, output_damage, marks_texture,
 			&texture_box, matrix, con->alpha);
@@ -473,12 +486,13 @@ static void render_titlebar(struct sway_output *output,
 	}
 
 	// Title text
-	size_t title_ob_width = 0; // output-buffer-local
+	int ob_title_x = 0;  // output-buffer-local
+	int ob_title_width = 0; // output-buffer-local
 	if (title_texture) {
 		struct wlr_box texture_box;
 		wlr_texture_get_size(title_texture,
 			&texture_box.width, &texture_box.height);
-		title_ob_width = texture_box.width;
+		ob_title_width = texture_box.width;
 
 		// The title texture might be shorter than the config->font_height,
 		// in which case we need to pad it above and below.
@@ -489,8 +503,26 @@ static void render_titlebar(struct sway_output *output,
 			texture_box.height;
 
 		// Render texture
-		texture_box.x =
-			round((x - output_x + titlebar_h_padding) * output_scale);
+		if (texture_box.width > ob_inner_width - ob_marks_width) {
+			texture_box.x = (title_align == ALIGN_RIGHT && ob_marks_width)
+				? ob_marks_x + ob_marks_width : ob_inner_x;
+		} else if (title_align == ALIGN_LEFT) {
+			texture_box.x = ob_inner_x;
+		} else if (title_align == ALIGN_CENTER) {
+			// If there are marks visible, center between the edge and marks.
+			// Otherwise, center in the inner area.
+			if (ob_marks_width) {
+				texture_box.x = (ob_inner_x + ob_marks_x) / 2
+					- texture_box.width / 2;
+			} else {
+				texture_box.x = ob_inner_x + ob_inner_width / 2
+					- texture_box.width / 2;
+			}
+		} else {
+			texture_box.x = ob_inner_x + ob_inner_width - texture_box.width;
+		}
+		ob_title_x = texture_box.x;
+
 		texture_box.y =
 			round((bg_y - output_y) * output_scale) + ob_padding_above;
 
@@ -499,11 +531,10 @@ static void render_titlebar(struct sway_output *output,
 			WL_OUTPUT_TRANSFORM_NORMAL,
 			0.0, output->wlr_output->transform_matrix);
 
-		int inner_x = x - output_x + titlebar_h_padding;
-		int ob_inner_width = scale_length(inner_width, inner_x, output_scale);
-		if (ob_inner_width - marks_ob_width < texture_box.width) {
-			texture_box.width = ob_inner_width - marks_ob_width;
+		if (ob_inner_width - ob_marks_width < texture_box.width) {
+			texture_box.width = ob_inner_width - ob_marks_width;
 		}
+
 		render_texture(output->wlr_output, output_damage, title_texture,
 			&texture_box, matrix, con->alpha);
 
@@ -522,17 +553,36 @@ static void render_titlebar(struct sway_output *output,
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
+	// Determine the left + right extends of the textures (output-buffer local)
+	int ob_left_x, ob_left_width, ob_right_x, ob_right_width;
+	if (ob_title_x < ob_marks_x) {
+		ob_left_x = ob_title_x;
+		ob_left_width = ob_title_width;
+		ob_right_x = ob_marks_x;
+		ob_right_width = ob_marks_width;
+	} else {
+		ob_left_x = ob_marks_x;
+		ob_left_width = ob_marks_width;
+		ob_right_x = ob_title_x;
+		ob_right_width = ob_title_width;
+	}
+	if (ob_left_x < ob_inner_x) {
+		ob_left_x = ob_inner_x;
+	} else if (ob_left_x + ob_left_width > ob_right_x + ob_right_width) {
+		ob_right_x = ob_left_x;
+		ob_right_width = ob_left_width;
+	}
+
 	// Filler between title and marks
-	box.width =
-		round(inner_width * output_scale) - title_ob_width - marks_ob_width;
+	box.width = ob_right_x - ob_left_x - ob_left_width;
 	if (box.width > 0) {
-		box.x = round((x + titlebar_h_padding) * output_scale) + title_ob_width;
+		box.x = ob_left_x + ob_left_width + round(output_x * output_scale);
 		box.y = round(bg_y * output_scale);
 		box.height = ob_bg_height;
 		render_rect(output->wlr_output, output_damage, &box, color);
 	}
 
-	// Padding left of title
+	// Padding on left side
 	left_offset = (layout == L_TABBED) * titlebar_border_thickness;
 	box.x = x + left_offset;
 	box.y = y + titlebar_border_thickness;
@@ -540,9 +590,13 @@ static void render_titlebar(struct sway_output *output,
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
 		config->font_height;
 	scale_box(&box, output_scale);
+	int left_x = ob_left_x + round(output_x * output_scale);
+	if (box.x + box.width < left_x) {
+		box.width += left_x - box.x - box.width;
+	}
 	render_rect(output->wlr_output, output_damage, &box, color);
 
-	// Padding right of marks
+	// Padding on right side
 	right_offset = (layout == L_TABBED) * titlebar_border_thickness;
 	box.x = x + width - titlebar_h_padding;
 	box.y = y + titlebar_border_thickness;
@@ -550,6 +604,11 @@ static void render_titlebar(struct sway_output *output,
 	box.height = (titlebar_v_padding - titlebar_border_thickness) * 2 +
 		config->font_height;
 	scale_box(&box, output_scale);
+	int right_rx = ob_right_x + ob_right_width + round(output_x * output_scale);
+	if (right_rx < box.x) {
+		box.width += box.x - right_rx;
+		box.x = right_rx;
+	}
 	render_rect(output->wlr_output, output_damage, &box, color);
 
 	if (connects_sides) {

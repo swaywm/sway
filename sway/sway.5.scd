@@ -555,6 +555,11 @@ The default colors are:
 	Set the opacity of the window between 0 (completely transparent) and 1
 	(completely opaque).
 
+*title\_align* left|center|right
+	Sets the title alignment. If _right_ is selected and _show\_marks_ is set
+	to _yes_, the marks will be shown on the _left_ side instead of the
+	_right_ side.
+
 *unmark* [<identifier>]
 	*unmark* will remove _identifier_ from the list of current marks on a
 	window. If _identifier_ is omitted, all marks are removed.
