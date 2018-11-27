@@ -713,9 +713,6 @@ static void subsurface_handle_destroy(struct wl_listener *listener,
 	struct sway_subsurface *subsurface =
 		wl_container_of(listener, subsurface, destroy);
 	struct sway_view_child *child = &subsurface->child;
-	if (child->view->container != NULL) {
-		view_child_damage(child, true);
-	}
 	view_child_destroy(child);
 }
 
@@ -812,6 +809,10 @@ void view_child_init(struct sway_view_child *child,
 }
 
 void view_child_destroy(struct sway_view_child *child) {
+	if (child->view->container != NULL) {
+		view_child_damage(child, true);
+	}
+
 	wl_list_remove(&child->surface_commit.link);
 	wl_list_remove(&child->surface_destroy.link);
 
