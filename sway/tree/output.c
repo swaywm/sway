@@ -88,11 +88,12 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 
 	restore_workspaces(output);
 
+	struct sway_workspace *ws = NULL;
 	if (!output->workspaces->length) {
 		// Create workspace
 		char *ws_name = workspace_next_name(wlr_output->name);
 		wlr_log(WLR_DEBUG, "Creating default workspace %s", ws_name);
-		struct sway_workspace *ws = workspace_create(output, ws_name);
+		ws = workspace_create(output, ws_name);
 		// Set each seat's focus if not already set
 		struct sway_seat *seat = NULL;
 		wl_list_for_each(seat, &server.input->seats, link) {
@@ -104,8 +105,14 @@ void output_enable(struct sway_output *output, struct output_config *oc) {
 		ipc_event_workspace(NULL, ws, "init");
 	}
 
-
 	apply_output_config(oc, output);
+
+	if (ws && config->default_orientation == L_NONE) {
+		// Since the output transformation and resolution could have changed
+		// due to applying the output config, the previously set layout for the
+		// created workspace may not be correct for `default_orientation auto`
+		ws->layout = output_get_default_layout(output);
+	}
 
 	input_manager_configure_xcursor();
 
