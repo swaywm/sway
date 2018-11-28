@@ -69,13 +69,16 @@ void root_scratchpad_add_container(struct sway_container *con) {
 	list_add(root->scratchpad, con);
 
 	struct sway_seat *seat = input_manager_current_seat();
+	struct sway_node *new_focus = NULL;
 	if (parent) {
 		arrange_container(parent);
-		seat_set_focus(seat, seat_get_focus_inactive(seat, &parent->node));
-	} else {
-		arrange_workspace(workspace);
-		seat_set_focus(seat, seat_get_focus_inactive(seat, &workspace->node));
+		new_focus = seat_get_focus_inactive(seat, &parent->node);
 	}
+	if (!new_focus) {
+		arrange_workspace(workspace);
+		new_focus = seat_get_focus_inactive(seat, &workspace->node);
+	}
+	seat_set_focus(seat, new_focus);
 
 	ipc_event_window(con, "move");
 }
