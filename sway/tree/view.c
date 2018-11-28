@@ -711,8 +711,6 @@ static const struct sway_view_child_impl subsurface_impl = {
 	.destroy = subsurface_destroy,
 };
 
-static void view_child_damage(struct sway_view_child *child, bool whole);
-
 static void subsurface_handle_destroy(struct wl_listener *listener,
 		void *data) {
 	struct sway_subsurface *subsurface =
@@ -720,6 +718,8 @@ static void subsurface_handle_destroy(struct wl_listener *listener,
 	struct sway_view_child *child = &subsurface->child;
 	view_child_destroy(child);
 }
+
+static void view_child_damage(struct sway_view_child *child, bool whole);
 
 static void view_subsurface_create(struct sway_view *view,
 		struct wlr_subsurface *wlr_subsurface) {
@@ -734,6 +734,9 @@ static void view_subsurface_create(struct sway_view *view,
 
 	wl_signal_add(&wlr_subsurface->events.destroy, &subsurface->destroy);
 	subsurface->destroy.notify = subsurface_handle_destroy;
+
+	subsurface->child.mapped = true;
+	view_child_damage(&subsurface->child, true);
 }
 
 static void view_child_damage(struct sway_view_child *child, bool whole) {
@@ -778,6 +781,7 @@ static void view_child_handle_surface_map(struct wl_listener *listener,
 		void *data) {
 	struct sway_view_child *child =
 		wl_container_of(listener, child, surface_map);
+	child->mapped = true;
 	view_child_damage(child, true);
 }
 
@@ -786,6 +790,7 @@ static void view_child_handle_surface_unmap(struct wl_listener *listener,
 	struct sway_view_child *child =
 		wl_container_of(listener, child, surface_unmap);
 	view_child_damage(child, true);
+	child->mapped = false;
 }
 
 void view_child_init(struct sway_view_child *child,
@@ -804,6 +809,7 @@ void view_child_init(struct sway_view_child *child,
 	wl_signal_add(&surface->events.destroy, &child->surface_destroy);
 	child->surface_destroy.notify = view_child_handle_surface_destroy;
 
+	// Not all child views have a map/unmap event
 	child->surface_map.notify = view_child_handle_surface_map;
 	child->surface_unmap.notify = view_child_handle_surface_unmap;
 
@@ -814,7 +820,7 @@ void view_child_init(struct sway_view_child *child,
 }
 
 void view_child_destroy(struct sway_view_child *child) {
-	if (child->view->container != NULL) {
+	if (child->mapped && child->view->container != NULL) {
 		view_child_damage(child, true);
 	}
 

@@ -195,6 +195,7 @@ struct sway_view_child {
 
 	struct sway_view *view;
 	struct wlr_surface *surface;
+	bool mapped;
 
 	struct wl_listener surface_commit;
 	struct wl_listener surface_new_subsurface;
