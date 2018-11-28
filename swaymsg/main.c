@@ -305,8 +305,9 @@ static void pretty_print(int type, json_object *resp) {
 }
 
 int main(int argc, char **argv) {
-	static int quiet = 0;
-	static int raw = 0;
+	static bool quiet = false;
+	static bool raw = false;
+	static bool monitor = false;
 	char *socket_path = NULL;
 	char *cmdtype = NULL;
 
@@ -314,6 +315,7 @@ int main(int argc, char **argv) {
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, 'h'},
+		{"monitor", no_argument, NULL, 'm'},
 		{"quiet", no_argument, NULL, 'q'},
 		{"raw", no_argument, NULL, 'r'},
 		{"socket", required_argument, NULL, 's'},
@@ -326,6 +328,7 @@ int main(int argc, char **argv) {
 		"Usage: swaymsg [options] [message]\n"
 		"\n"
 		"  -h, --help             Show help message and quit.\n"
+		"  -m, --monitor          Monitor until killed (-t SUBSCRIBE only)\n"
 		"  -q, --quiet            Be quiet.\n"
 		"  -r, --raw              Use raw output even if using a tty\n"
 		"  -s, --socket <socket>  Use the specified socket.\n"
@@ -337,16 +340,19 @@ int main(int argc, char **argv) {
 	int c;
 	while (1) {
 		int option_index = 0;
-		c = getopt_long(argc, argv, "hqrs:t:v", long_options, &option_index);
+		c = getopt_long(argc, argv, "hmqrs:t:v", long_options, &option_index);
 		if (c == -1) {
 			break;
 		}
 		switch (c) {
+		case 'm': // Monitor
+			monitor = true;
+			break;
 		case 'q': // Quiet
-			quiet = 1;
+			quiet = true;
 			break;
 		case 'r': // Raw
-			raw = 1;
+			raw = true;
 			break;
 		case 's': // Socket
 			socket_path = strdup(optarg);
@@ -400,11 +406,19 @@ int main(int argc, char **argv) {
 		type = IPC_GET_CONFIG;
 	} else if (strcasecmp(cmdtype, "send_tick") == 0) {
 		type = IPC_SEND_TICK;
+	} else if (strcasecmp(cmdtype, "subscribe") == 0) {
+		type = IPC_SUBSCRIBE;
 	} else {
 		sway_abort("Unknown message type %s", cmdtype);
 	}
 
 	free(cmdtype);
+
+	if (monitor && type != IPC_SUBSCRIBE) {
+		wlr_log(WLR_ERROR, "Monitor can only be used with -t SUBSCRIBE");
+		free(socket_path);
+		return 1;
+	}
 
 	char *command = NULL;
 	if (optind < argc) {
@@ -422,26 +436,56 @@ int main(int argc, char **argv) {
 		json_object *obj = json_tokener_parse(resp);
 
 		if (obj == NULL) {
-			fprintf(stderr, "ERROR: Could not parse json response from ipc. This is a bug in sway.");
+			fprintf(stderr, "ERROR: Could not parse json response from ipc. "
+					"This is a bug in sway.");
 			printf("%s\n", resp);
 			ret = 1;
 		} else {
 			if (!success(obj, true)) {
 				ret = 1;
 			}
-			if (raw) {
-				printf("%s\n", json_object_to_json_string_ext(obj,
-					JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
-			} else {
-				pretty_print(type, obj);
+			if (type != IPC_SUBSCRIBE  || ret != 0) {
+				if (raw) {
+					printf("%s\n", json_object_to_json_string_ext(obj,
+						JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+				} else {
+					pretty_print(type, obj);
+				}
 			}
 			json_object_put(obj);
 		}
 	}
-	close(socketfd);
-
 	free(command);
 	free(resp);
+
+	if (type == IPC_SUBSCRIBE && ret == 0) {
+		do {
+			struct ipc_response *reply = ipc_recv_response(socketfd);
+			if (!reply) {
+				break;
+			}
+
+			json_object *obj = json_tokener_parse(reply->payload);
+			if (obj == NULL) {
+				fprintf(stderr, "ERROR: Could not parse json response from ipc"
+						". This is a bug in sway.");
+				ret = 1;
+				break;
+			} else {
+				if (raw) {
+					printf("%s\n", json_object_to_json_string(obj));
+				} else {
+					printf("%s\n", json_object_to_json_string_ext(obj,
+						JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_SPACED));
+				}
+				json_object_put(obj);
+			}
+
+			free_ipc_response(reply);
+		} while (monitor);
+	}
+
+	close(socketfd);
 	free(socket_path);
 	return ret;
 }
