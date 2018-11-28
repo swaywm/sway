@@ -56,7 +56,7 @@ struct cmd_handler *find_handler(char *line, struct cmd_handler *cmd_handlers,
  * all matching containers. Otherwise, it'll run on the `con` container. If
  * `con` is NULL then it'll run on the currently focused container.
  */
-struct cmd_results *execute_command(char *command,  struct sway_seat *seat,
+list_t *execute_command(char *command,  struct sway_seat *seat,
 		struct sway_container *con);
 /**
  * Parse and handles a command during config file loading.
@@ -82,11 +82,11 @@ struct cmd_results *cmd_results_new(enum cmd_status status, const char* input, c
  */
 void free_cmd_results(struct cmd_results *results);
 /**
- * Serializes cmd_results to a JSON string.
+ * Serializes a list of cmd_results to a JSON string.
  *
  * Free the JSON string later on.
  */
-char *cmd_results_to_json(struct cmd_results *results);
+char *cmd_results_to_json(list_t *res_list);
 
 struct cmd_results *add_color(const char *name,
 		char *buffer, const char *color);

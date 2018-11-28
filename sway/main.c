@@ -392,11 +392,16 @@ int main(int argc, char **argv) {
 	wlr_log(WLR_DEBUG, "Running deferred commands");
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
-		struct cmd_results *res = execute_command(line, NULL, NULL);
-		if (res->status != CMD_SUCCESS) {
-			wlr_log(WLR_ERROR, "Error on line '%s': %s", line, res->error);
+		list_t *res_list = execute_command(line, NULL, NULL);
+		while (res_list->length) {
+			struct cmd_results *res = res_list->items[0];
+			if (res->status != CMD_SUCCESS) {
+				wlr_log(WLR_ERROR, "Error on line '%s': %s", line, res->error);
+			}
+			free_cmd_results(res);
+			list_del(res_list, 0);
 		}
-		free_cmd_results(res);
+		list_free(res_list);
 		free(line);
 		list_del(config->cmd_queue, 0);
 	}

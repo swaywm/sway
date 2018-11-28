@@ -437,9 +437,14 @@ void view_execute_criteria(struct sway_view *view) {
 		wlr_log(WLR_DEBUG, "for_window '%s' matches view %p, cmd: '%s'",
 				criteria->raw, view, criteria->cmdlist);
 		list_add(view->executed_criteria, criteria);
-		struct cmd_results *res = execute_command(
+		list_t *res_list = execute_command(
 				criteria->cmdlist, NULL, view->container);
-		free_cmd_results(res);
+		while (res_list->length) {
+			struct cmd_results *res = res_list->items[0];
+			free_cmd_results(res);
+			list_del(res_list, 0);
+		}
+		list_free(res_list);
 	}
 	list_free(criterias);
 }
