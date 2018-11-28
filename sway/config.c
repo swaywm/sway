@@ -700,6 +700,8 @@ bool read_config(FILE *file, struct sway_config *config,
 			free(line);
 			return false;
 		}
+		config->current_config_line_number = line_number;
+		config->current_config_line = line;
 		struct cmd_results *res;
 		if (block && strcmp(block, "<commands>") == 0) {
 			// Special case
@@ -761,8 +763,34 @@ bool read_config(FILE *file, struct sway_config *config,
 	}
 	list_foreach(stack, free);
 	list_free(stack);
+	config->current_config_line_number = 0;
+	config->current_config_line = NULL;
 
 	return success;
+}
+
+void config_add_swaynag_warning(char *fmt, ...) {
+	if (config->reading && !config->validating) {
+		va_list args;
+		va_start(args, fmt);
+		size_t length = vsnprintf(NULL, 0, fmt, args) + 1;
+		va_end(args);
+
+		char *temp = malloc(length + 1);
+		if (!temp) {
+			wlr_log(WLR_ERROR, "Failed to allocate buffer for warning.");
+			return;
+		}
+
+		va_start(args, fmt);
+		vsnprintf(temp, length, fmt, args);
+		va_end(args);
+
+		swaynag_log(config->swaynag_command, &config->swaynag_config_errors,
+			"Warning on line %i (%s) '%s': %s",
+			config->current_config_line_number, config->current_config_path,
+			config->current_config_line, temp);
+	}
 }
 
 char *do_var_replacement(char *str) {

@@ -116,11 +116,8 @@ struct cmd_results *output_cmd_background(int argc, char **argv) {
 		if (!can_access) {
 			wlr_log(WLR_ERROR, "Unable to access background file '%s': %s",
 					src, strerror(errno));
-			if (config->reading && !config->validating) {
-				swaynag_log(config->swaynag_command,
-						&config->swaynag_config_errors,
-						"Unable to access background file '%s'", src);
-			}
+			config_add_swaynag_warning("Unable to access background file '%s'",
+					src);
 			free(src);
 		} else {
 			// Escape double quotes in the final path for swaybg

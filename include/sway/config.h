@@ -425,6 +425,8 @@ struct sway_config {
 	list_t *config_chain;
 	const char *current_config_path;
 	const char *current_config;
+	int current_config_line_number;
+	char *current_config_line;
 
 	enum sway_container_border border;
 	enum sway_container_border floating_border;
@@ -488,6 +490,11 @@ bool load_include_configs(const char *path, struct sway_config *config,
  */
 bool read_config(FILE *file, struct sway_config *config,
 		struct swaynag_instance *swaynag);
+
+/**
+ * Adds a warning entry to the swaynag instance used for errors.
+ */
+void config_add_swaynag_warning(char *fmt, ...);
 
 /**
  * Free config struct
