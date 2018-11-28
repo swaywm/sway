@@ -12,7 +12,14 @@ _swaynag_ [options...]
 
 *-b, --button* <text> <action>
 	Create a button with the text _text_ that executes _action_ when pressed.
-	Multiple buttons can be defined by providing the flag multiple times.
+	If the environment variable `TERMINAL` is set, _action_ will be run inside
+	the terminal. Otherwise, it will fallback to running directly. Multiple
+	buttons can be defined by providing the flag multiple times.
+
+*-B, --button-no-terminal* <text> <action>
+	Create a button with the text _text_ that executes _action_ when pressed.
+	_action_ will be run directly instead of in a terminal. Multiple buttons
+	can be defined by providing the flag multiple times.
 
 *-c, --config* <path>
 	The config file to use. By default, the following paths are checked:

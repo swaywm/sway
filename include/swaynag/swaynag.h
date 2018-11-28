@@ -44,6 +44,7 @@ struct swaynag_button {
 	int y;
 	int width;
 	int height;
+	bool terminal;
 };
 
 struct swaynag_details {
