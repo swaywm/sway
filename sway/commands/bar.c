@@ -14,6 +14,7 @@ static struct cmd_handler bar_handlers[] = {
 	{ "colors", bar_cmd_colors },
 	{ "context_button", bar_cmd_context_button },
 	{ "font", bar_cmd_font },
+	{ "gaps", bar_cmd_gaps },
 	{ "height", bar_cmd_height },
 	{ "hidden_state", bar_cmd_hidden_state },
 	{ "icon_theme", bar_cmd_icon_theme },
