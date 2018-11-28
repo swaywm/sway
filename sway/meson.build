@@ -104,6 +104,7 @@ sway_sources = files(
 	'commands/bar/colors.c',
 	'commands/bar/context_button.c',
 	'commands/bar/font.c',
+	'commands/bar/gaps.c',
 	'commands/bar/height.c',
 	'commands/bar/hidden_state.c',
 	'commands/bar/icon_theme.c',

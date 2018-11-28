@@ -638,6 +638,18 @@ json_object *ipc_json_describe_bar_config(struct bar_config *bar) {
 			json_object_new_string(bar->status_command) : NULL);
 	json_object_object_add(json, "font",
 			json_object_new_string((bar->font) ? bar->font : config->font));
+
+	json_object *gaps = json_object_new_object();
+	json_object_object_add(gaps, "top",
+			json_object_new_int(bar->gaps.top));
+	json_object_object_add(gaps, "right",
+			json_object_new_int(bar->gaps.right));
+	json_object_object_add(gaps, "bottom",
+			json_object_new_int(bar->gaps.bottom));
+	json_object_object_add(gaps, "left",
+			json_object_new_int(bar->gaps.left));
+	json_object_object_add(json, "gaps", gaps);
+
 	if (bar->separator_symbol) {
 		json_object_object_add(json, "separator_symbol",
 				json_object_new_string(bar->separator_symbol));

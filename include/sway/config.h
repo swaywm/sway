@@ -227,6 +227,7 @@ struct bar_config {
 	bool strip_workspace_name;
 	bool binding_mode_indicator;
 	bool verbose;
+	struct side_gaps gaps;
 	pid_t pid;
 	struct {
 		char *background;

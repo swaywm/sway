@@ -153,7 +153,7 @@ static bool ipc_parse_config(
 		return false;
 	}
 	json_object *markup, *mode, *hidden_state, *position, *status_command;
-	json_object *font, *bar_height, *wrap_scroll, *workspace_buttons;
+	json_object *font, *gaps, *bar_height, *wrap_scroll, *workspace_buttons;
 	json_object *strip_workspace_numbers, *strip_workspace_name;
 	json_object *binding_mode_indicator, *verbose, *colors, *sep_symbol;
 	json_object *outputs, *bindings;
@@ -162,6 +162,7 @@ static bool ipc_parse_config(
 	json_object_object_get_ex(bar_config, "position", &position);
 	json_object_object_get_ex(bar_config, "status_command", &status_command);
 	json_object_object_get_ex(bar_config, "font", &font);
+	json_object_object_get_ex(bar_config, "gaps", &gaps);
 	json_object_object_get_ex(bar_config, "bar_height", &bar_height);
 	json_object_object_get_ex(bar_config, "wrap_scroll", &wrap_scroll);
 	json_object_object_get_ex(bar_config, "workspace_buttons", &workspace_buttons);
@@ -206,6 +207,24 @@ static bool ipc_parse_config(
 	}
 	if (bar_height) {
 		config->height = json_object_get_int(bar_height);
+	}
+	if (gaps) {
+		json_object *top = json_object_object_get(gaps, "top");
+		if (top) {
+			config->gaps.top = json_object_get_int(top);
+		}
+		json_object *right = json_object_object_get(gaps, "right");
+		if (right) {
+			config->gaps.right = json_object_get_int(right);
+		}
+		json_object *bottom = json_object_object_get(gaps, "bottom");
+		if (bottom) {
+			config->gaps.bottom = json_object_get_int(bottom);
+		}
+		json_object *left = json_object_object_get(gaps, "left");
+		if (left) {
+			config->gaps.left = json_object_get_int(left);
+		}
 	}
 	if (markup) {
 		config->pango_markup = json_object_get_boolean(markup);
@@ -445,6 +464,27 @@ static bool handle_barconfig_update(struct swaybar *bar,
 	json_object_object_get_ex(json_config, "mode", &json_mode);
 	config->mode = strdup(json_object_get_string(json_mode));
 	wlr_log(WLR_DEBUG, "Changing bar mode to %s", config->mode);
+
+	json_object *gaps;
+	json_object_object_get_ex(json_config, "gaps", &gaps);
+	if (gaps) {
+		json_object *top = json_object_object_get(gaps, "top");
+		if (top) {
+			config->gaps.top = json_object_get_int(top);
+		}
+		json_object *right = json_object_object_get(gaps, "right");
+		if (right) {
+			config->gaps.right = json_object_get_int(right);
+		}
+		json_object *bottom = json_object_object_get(gaps, "bottom");
+		if (bottom) {
+			config->gaps.bottom = json_object_get_int(bottom);
+		}
+		json_object *left = json_object_object_get(gaps, "left");
+		if (left) {
+			config->gaps.left = json_object_get_int(left);
+		}
+	}
 
 	return determine_bar_visibility(bar, true);
 }

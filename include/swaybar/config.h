@@ -42,6 +42,12 @@ struct swaybar_config {
 	struct wl_list outputs; // config_output::link
 	bool all_outputs;
 	int height;
+	struct {
+		int top;
+		int right;
+		int bottom;
+		int left;
+	} gaps;
 
 	struct {
 		uint32_t background;

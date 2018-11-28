@@ -506,6 +506,11 @@ void render_frame(struct swaybar_output *output) {
 	if (height != output->height || output->width == 0) {
 		// Reconfigure surface
 		zwlr_layer_surface_v1_set_size(output->layer_surface, 0, height);
+		zwlr_layer_surface_v1_set_margin(output->layer_surface,
+				output->bar->config->gaps.top,
+				output->bar->config->gaps.right,
+				output->bar->config->gaps.bottom,
+				output->bar->config->gaps.left);
 		if (strcmp(output->bar->config->mode, "dock") == 0) {
 			zwlr_layer_surface_v1_set_exclusive_zone(output->layer_surface, height);
 		}
