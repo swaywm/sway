@@ -255,8 +255,12 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	for (int i = 0; i < mode_bindings->length; ++i) {
 		struct sway_binding *config_binding = mode_bindings->items[i];
 		if (binding_key_compare(binding, config_binding)) {
-			wlr_log(WLR_DEBUG, "overwriting old binding with command '%s'",
-				config_binding->command);
+			wlr_log(WLR_INFO, "Overwriting binding '%s' for device '%s' "
+					"from `%s` to `%s`", argv[0], binding->input,
+					binding->command, config_binding->command);
+			config_add_swaynag_warning("Overwriting binding '%s' for device "
+					"'%s' to `%s` from `%s`", argv[0], binding->input,
+					binding->command, config_binding->command);
 			free_sway_binding(config_binding);
 			mode_bindings->items[i] = binding;
 			overwritten = true;
