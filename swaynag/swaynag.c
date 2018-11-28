@@ -49,14 +49,17 @@ static void swaynag_button_execute(struct swaynag *swaynag,
 			if (fork() == 0) {
 				// Child of the child. Will be reparented to the init process
 				char *terminal = getenv("TERMINAL");
-				if (terminal && strlen(terminal)) {
+				if (button->terminal && terminal && strlen(terminal)) {
 					wlr_log(WLR_DEBUG, "Found $TERMINAL: %s", terminal);
 					if (!terminal_execute(terminal, button->action)) {
 						swaynag_destroy(swaynag);
 						exit(EXIT_FAILURE);
 					}
 				} else {
-					wlr_log(WLR_DEBUG, "$TERMINAL not found. Running directly");
+					if (button->terminal) {
+						wlr_log(WLR_DEBUG,
+								"$TERMINAL not found. Running directly");
+					}
 					execl("/bin/sh", "/bin/sh", "-c", button->action, NULL);
 				}
 			}
