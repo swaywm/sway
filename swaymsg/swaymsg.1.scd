@@ -13,6 +13,12 @@ _swaymsg_ [options...] [message]
 *-h, --help*
 	Show help message and quit.
 
+*-m, --monitor*
+	Monitor for responses until killed instead of exiting after the first
+	response. This can only be used with the IPC message type _subscribe_. If
+	there is a malformed response or an invalid event type was requested,
+	swaymsg will stop monitoring and exit.
+
 *-q, --quiet*
 	Sends the IPC message but does not print the response from sway.
 
@@ -71,3 +77,8 @@ _swaymsg_ [options...] [message]
 
 *send\_tick*
 	Sends a tick event to all subscribed clients.
+
+*subscribe*
+	Subscribe to a list of event types. The argument for this type should be
+	provided in the form of a valid JSON array. If any of the types are invalid
+	or if an valid JSON array is not provided, this will result in an failure.
