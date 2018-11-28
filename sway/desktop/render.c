@@ -555,7 +555,12 @@ static void render_titlebar(struct sway_output *output,
 
 	// Determine the left + right extends of the textures (output-buffer local)
 	int ob_left_x, ob_left_width, ob_right_x, ob_right_width;
-	if (ob_title_x < ob_marks_x) {
+	if (ob_title_width == 0 && ob_marks_width == 0) {
+		ob_left_x = ob_inner_x;
+		ob_left_width = 0;
+		ob_right_x = ob_inner_x;
+		ob_right_width = 0;
+	} else if (ob_title_x < ob_marks_x) {
 		ob_left_x = ob_title_x;
 		ob_left_width = ob_title_width;
 		ob_right_x = ob_marks_x;
