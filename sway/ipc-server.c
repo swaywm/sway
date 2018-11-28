@@ -668,7 +668,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		// TODO: Check if they're permitted to use these events
 		struct json_object *request = json_tokener_parse(buf);
 		if (request == NULL) {
-			const char msg[] = "[{\"success\": false}]";
+			const char msg[] = "{\"success\": false}";
 			client_valid = ipc_send_reply(client, msg, strlen(msg));
 			wlr_log(WLR_INFO, "Failed to parse subscribe request");
 			goto exit_cleanup;
@@ -696,7 +696,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 				client->subscribed_events |= event_mask(IPC_EVENT_TICK);
 				is_tick = true;
 			} else {
-				const char msg[] = "[{\"success\": false}]";
+				const char msg[] = "{\"success\": false}";
 				client_valid = ipc_send_reply(client, msg, strlen(msg));
 				json_object_put(request);
 				wlr_log(WLR_INFO, "Unsupported event type in subscribe request");
@@ -705,7 +705,7 @@ void ipc_client_handle_command(struct ipc_client *client) {
 		}
 
 		json_object_put(request);
-		const char msg[] = "[{\"success\": true}]";
+		const char msg[] = "{\"success\": true}";
 		client_valid = ipc_send_reply(client, msg, strlen(msg));
 		if (is_tick) {
 			client->current_command = IPC_EVENT_TICK;
