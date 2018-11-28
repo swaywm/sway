@@ -597,13 +597,18 @@ void ipc_client_handle_command(struct ipc_client *client) {
 	switch (client->current_command) {
 	case IPC_COMMAND:
 	{
-		struct cmd_results *results = execute_command(buf, NULL, NULL);
+		list_t *res_list = execute_command(buf, NULL, NULL);
 		transaction_commit_dirty();
-		char *json = cmd_results_to_json(results);
+		char *json = cmd_results_to_json(res_list);
 		int length = strlen(json);
 		client_valid = ipc_send_reply(client, json, (uint32_t)length);
 		free(json);
-		free_cmd_results(results);
+		while (res_list->length) {
+			struct cmd_results *results = res_list->items[0];
+			free_cmd_results(results);
+			list_del(res_list, 0);
+		}
+		list_free(res_list);
 		goto exit_cleanup;
 	}
 
