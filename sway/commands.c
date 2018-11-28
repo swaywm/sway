@@ -420,6 +420,7 @@ struct cmd_results *config_command(char *exec) {
 	// Strip quotes and unescape the string
 	for (int i = handler->handle == cmd_set ? 2 : 1; i < argc; ++i) {
 		if (handler->handle != cmd_exec && handler->handle != cmd_exec_always
+				&& handler->handle != cmd_mode
 				&& handler->handle != cmd_bindsym
 				&& handler->handle != cmd_bindcode
 				&& handler->handle != cmd_set
