@@ -32,6 +32,9 @@ static bool success_object(json_object *result) {
 // Iterate results array and return false if any of them failed
 static bool success(json_object *r, bool fallback) {
 	if (!json_object_is_type(r, json_type_array)) {
+		if (json_object_is_type(r, json_type_object)) {
+			return success_object(r);
+		}
 		return fallback;
 	}
 
