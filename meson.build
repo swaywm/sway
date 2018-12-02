@@ -32,8 +32,6 @@ if is_freebsd
 	add_project_arguments('-D_C11_SOURCE', language: 'c')
 endif
 
-swayidle_deps = []
-
 jsonc          = dependency('json-c', version: '>=0.13')
 pcre           = dependency('libpcre')
 wlroots        = dependency('wlroots', fallback: ['wlroots', 'wlroots'])
