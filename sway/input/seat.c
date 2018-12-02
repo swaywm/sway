@@ -5,10 +5,12 @@
 #include <strings.h>
 #include <time.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_xcursor_manager.h>
-#include "log.h"
 #include "config.h"
+#include "log.h"
 #include "sway/debug.h"
 #include "sway/desktop.h"
 #include "sway/input/cursor.h"
@@ -44,6 +46,8 @@ void seat_destroy(struct sway_seat *seat) {
 	sway_cursor_destroy(seat->cursor);
 	wl_list_remove(&seat->new_node.link);
 	wl_list_remove(&seat->new_drag_icon.link);
+	wl_list_remove(&seat->request_set_selection.link);
+	wl_list_remove(&seat->request_set_primary_selection.link);
 	wl_list_remove(&seat->link);
 	wlr_seat_destroy(seat->wlr_seat);
 	free(seat->prev_workspace_name);
@@ -311,6 +315,22 @@ static void handle_new_drag_icon(struct wl_listener *listener, void *data) {
 	seatop_abort(seat);
 }
 
+static void handle_request_set_selection(struct wl_listener *listener,
+		void *data) {
+	struct sway_seat *seat =
+		wl_container_of(listener, seat, request_set_selection);
+	struct wlr_seat_request_set_selection_event *event = data;
+	wlr_seat_set_selection(seat->wlr_seat, event->source, event->serial);
+}
+
+static void handle_request_set_primary_selection(struct wl_listener *listener,
+		void *data) {
+	struct sway_seat *seat =
+		wl_container_of(listener, seat, request_set_primary_selection);
+	struct wlr_seat_request_set_primary_selection_event *event = data;
+	wlr_seat_set_primary_selection(seat->wlr_seat, event->source, event->serial);
+}
+
 static void collect_focus_iter(struct sway_node *node, void *data) {
 	struct sway_seat *seat = data;
 	struct sway_seat_node *seat_node = seat_node_from_node(seat, node);
@@ -370,6 +390,15 @@ struct sway_seat *seat_create(const char *seat_name) {
 
 	wl_signal_add(&seat->wlr_seat->events.new_drag_icon, &seat->new_drag_icon);
 	seat->new_drag_icon.notify = handle_new_drag_icon;
+
+	wl_signal_add(&seat->wlr_seat->events.request_set_selection,
+		&seat->request_set_selection);
+	seat->request_set_selection.notify = handle_request_set_selection;
+
+	wl_signal_add(&seat->wlr_seat->events.request_set_primary_selection,
+		&seat->request_set_primary_selection);
+	seat->request_set_primary_selection.notify =
+		handle_request_set_primary_selection;
 
 	wl_list_init(&seat->devices);
 
