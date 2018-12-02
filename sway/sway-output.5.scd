@@ -65,7 +65,7 @@ must be separated by one space. For example:
 	to apply a rotation and flip, or "normal" to apply no transform. If a single
 	output is chosen and a rotation direction is specified 
 	(_clockwise_ or _anticlockwise_) then the transform is added or 
-	subtracted from the current tranform.
+	subtracted from the current transform.
 
 *output* <name> disable|enable
 	Enables or disables the specified output (all outputs are enabled by
