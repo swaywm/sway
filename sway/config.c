@@ -316,28 +316,16 @@ static char *get_config_path(void) {
 		SYSCONFDIR "/i3/config",
 	};
 
-	char *curr_config_home = getenv("XDG_CONFIG_HOME");
-	if (!curr_config_home || !*curr_config_home) {
-		char *home = getenv("HOME");
-		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
-		if (!config_home) {
-			wlr_log(WLR_ERROR, "Unable to allocate $HOME/.config");
-		} else {
-			strcpy(config_home, home);
-			strcat(config_home, "/.config");
-			setenv("XDG_CONFIG_HOME", config_home, 1);
-			wlr_log(WLR_DEBUG, "Set XDG_CONFIG_HOME to %s", config_home);
-			free(config_home);
-		}
+	char *config_home = getenv("XDG_CONFIG_HOME");
+	if (!config_home || !*config_home) {
+		config_paths[1] = "$HOME/.config/sway/config";
+		config_paths[3] = "$HOME/.config/i3/config";
 	}
 
-	wordexp_t p;
-	char *path;
-
-	int i;
-	for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
-		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = strdup(p.we_wordv[0]);
+	for (size_t i = 0; i < sizeof(config_paths) / sizeof(char *); ++i) {
+		wordexp_t p;
+		if (wordexp(config_paths[i], &p, WRDE_UNDEF) == 0) {
+			char *path = strdup(p.we_wordv[0]);
 			wordfree(&p);
 			if (file_exists(path)) {
 				return path;
@@ -346,7 +334,7 @@ static char *get_config_path(void) {
 		}
 	}
 
-	return NULL; // Not reached
+	return NULL;
 }
 
 static bool load_config(const char *path, struct sway_config *config,
