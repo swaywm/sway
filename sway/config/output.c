@@ -277,17 +277,51 @@ void apply_output_config(struct output_config *oc, struct sway_output *output) {
 }
 
 static struct output_config *get_output_config(char *name, char *identifier) {
+	struct output_config *oc_name = NULL;
 	int i = list_seq_find(config->output_configs, output_name_cmp, name);
 	if (i >= 0) {
-		return config->output_configs->items[i];
+		oc_name = config->output_configs->items[i];
 	}
 
+	struct output_config *oc_id = NULL;
 	i = list_seq_find(config->output_configs, output_name_cmp, identifier);
 	if (i >= 0) {
-		return config->output_configs->items[i];
+		oc_id = config->output_configs->items[i];
 	}
 
-	return NULL;
+	struct output_config *result = NULL;
+	if (oc_name && oc_id) {
+		// Generate a config named `<identifier> on <name>` which contains a
+		// merged copy of the identifier on name. This will make sure that both
+		// identifier and name configs are respected, with identifier getting
+		// priority
+		size_t length = snprintf(NULL, 0, "%s on %s", identifier, name) + 1;
+		char *temp = malloc(length);
+		snprintf(temp, length, "%s on %s", identifier, name);
+
+		result = new_output_config(temp);
+		merge_output_config(result, oc_name);
+		merge_output_config(result, oc_id);
+
+		wlr_log(WLR_DEBUG, "Generated output config \"%s\" (enabled: %d)"
+			" (%dx%d@%fHz position %d,%d scale %f transform %d) (bg %s %s)"
+			" (dpms %d)", result->name, result->enabled, result->width,
+			result->height, result->refresh_rate, result->x, result->y,
+			result->scale, result->transform, result->background,
+			result->background_option, result->dpms_state);
+
+		free(temp);
+	} else if (oc_name) {
+		// No identifier config, just return a copy of the name config
+		result = new_output_config(name);
+		merge_output_config(result, oc_name);
+	} else if (oc_id) {
+		// No name config, just return a copy of the identifier config
+		result = new_output_config(identifier);
+		merge_output_config(result, oc_id);
+	}
+
+	return result;
 }
 
 void apply_output_config_to_outputs(struct output_config *oc) {
@@ -301,14 +335,17 @@ void apply_output_config_to_outputs(struct output_config *oc) {
 		char *name = sway_output->wlr_output->name;
 		output_get_identifier(id, sizeof(id), sway_output);
 		if (wildcard || !strcmp(name, oc->name) || !strcmp(id, oc->name)) {
-			struct output_config *current = oc;
+			struct output_config *current = new_output_config(oc->name);
+			merge_output_config(current, oc);
 			if (wildcard) {
 				struct output_config *tmp = get_output_config(name, id);
 				if (tmp) {
+					free_output_config(current);
 					current = tmp;
 				}
 			}
 			apply_output_config(current, sway_output);
+			free_output_config(current);
 
 			if (!wildcard) {
 				// Stop looking if the output config isn't applicable to all
@@ -348,8 +385,9 @@ static void default_output_config(struct output_config *oc,
 void create_default_output_configs(void) {
 	struct sway_output *sway_output;
 	wl_list_for_each(sway_output, &root->all_outputs, link) {
-		char *name = sway_output->wlr_output->name;
-		struct output_config *oc = new_output_config(name);
+		char id[128];
+		output_get_identifier(id, sizeof(id), sway_output);
+		struct output_config *oc = new_output_config(id);
 		default_output_config(oc, sway_output->wlr_output);
 		list_add(config->output_configs, oc);
 	}
