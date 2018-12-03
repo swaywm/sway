@@ -277,14 +277,16 @@ runtime.
 
 		for\_window <criteria> move container to output <output>
 
-*bindsym* [--release|--locked] [--input-device=<device>] <key combo> <command>
+*bindsym* [--release|--locked] [--input-device=<device>] [--no-warn] <key combo> <command>
 	Binds _key combo_ to execute the sway command _command_ when pressed. You
 	may use XKB key names here (*xev*(1) is a good tool for discovering these).
 	With the flag _--release_, the command is executed when the key combo is
 	released. Unless the flag _--locked_ is set, the command will not be run
 	when a screen locking program is active. If _input-device_ is given, the
 	binding will only be executed for that input device and will be executed
-	instead of any binding that is generic to all devices.
+	instead of any binding that is generic to all devices. By default, if you
+	overwrite a binding, swaynag will give you a warning. To silence this, use
+	the _--no-warn_ flag.
 
 	Example:
 ```
@@ -292,7 +294,7 @@ runtime.
 		bindsym Mod1+Shift+f exec firefox
 ```
 
-	*bindcode* [--release|--locked] [--input-device=<device>] <code> <command>
+	*bindcode* [--release|--locked] [--input-device=<device>] [--no-warn] <code> <command>
 	is also available for binding with key codes instead of key names.
 
 *client.<class>* <border> <background> <text> <indicator> <child\_border>

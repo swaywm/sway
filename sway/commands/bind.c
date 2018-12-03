@@ -161,6 +161,7 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	binding->type = bindcode ? BINDING_KEYCODE : BINDING_KEYSYM;
 
 	bool exclude_titlebar = false;
+	bool warn = true;
 
 	// Handle --release and --locked
 	while (argc > 0) {
@@ -178,6 +179,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 					strlen("--input-device=")) == 0) {
 			free(binding->input);
 			binding->input = strdup(argv[0] + strlen("--input-device="));
+		} else if (strcmp("--no-warn", argv[0]) == 0) {
+			warn = false;
 		} else {
 			break;
 		}
@@ -258,9 +261,12 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 			wlr_log(WLR_INFO, "Overwriting binding '%s' for device '%s' "
 					"from `%s` to `%s`", argv[0], binding->input,
 					binding->command, config_binding->command);
-			config_add_swaynag_warning("Overwriting binding '%s' for device "
-					"'%s' to `%s` from `%s`", argv[0], binding->input,
-					binding->command, config_binding->command);
+			if (warn) {
+				config_add_swaynag_warning("Overwriting binding"
+					"'%s' for device '%s' to `%s` from `%s`",
+					argv[0], binding->input, binding->command,
+					config_binding->command);
+			}
 			free_sway_binding(config_binding);
 			mode_bindings->items[i] = binding;
 			overwritten = true;
