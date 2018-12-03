@@ -269,6 +269,9 @@ struct cmd_results *cmd_focus(int argc, char **argv) {
 	}
 
 	if (argc == 0 && container) {
+		if (container->scratchpad && !container->workspace) {
+			root_scratchpad_show(container);
+		}
 		seat_set_focus_container(seat, container);
 		seat_consider_warp_to_focus(seat);
 		return cmd_results_new(CMD_SUCCESS, NULL, NULL);
