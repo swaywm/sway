@@ -316,7 +316,8 @@ static char *get_config_path(void) {
 		SYSCONFDIR "/i3/config",
 	};
 
-	if (!getenv("XDG_CONFIG_HOME")) {
+	char *curr_config_home = getenv("XDG_CONFIG_HOME");
+	if (!curr_config_home || !*curr_config_home) {
 		char *home = getenv("HOME");
 		char *config_home = malloc(strlen(home) + strlen("/.config") + 1);
 		if (!config_home) {
