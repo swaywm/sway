@@ -37,7 +37,8 @@ struct swaybar_hotspot {
 	struct wl_list link; // swaybar_output::hotspots
 	int x, y, width, height;
 	enum hotspot_event_handling (*callback)(struct swaybar_output *output,
-			int x, int y, enum x11_button button, void *data);
+		struct swaybar_hotspot *hotspot, int x, int y,
+		enum x11_button button, void *data);
 	void (*destroy)(void *data);
 	void *data;
 };

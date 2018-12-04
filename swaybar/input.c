@@ -133,8 +133,8 @@ static void wl_pointer_button(void *data, struct wl_pointer *wl_pointer,
 				&& y >= hotspot->y
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
-			if (HOTSPOT_IGNORE == hotspot->callback(output, pointer->x, pointer->y,
-					wl_button_to_x11_button(button), hotspot->data)) {
+			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
+					pointer->x, pointer->y, wl_button_to_x11_button(button), hotspot->data)) {
 				return;
 			}
 		}
@@ -166,8 +166,8 @@ static void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer,
 				&& y >= hotspot->y
 				&& x < hotspot->x + hotspot->width
 				&& y < hotspot->y + hotspot->height) {
-			if (HOTSPOT_IGNORE == hotspot->callback(
-					output, pointer->x, pointer->y, button, hotspot->data)) {
+			if (HOTSPOT_IGNORE == hotspot->callback(output, hotspot,
+					pointer->x, pointer->y, button, hotspot->data)) {
 				return;
 			}
 		}
