@@ -6,7 +6,7 @@
 
 list_t *create_list(void) {
 	list_t *list = malloc(sizeof(list_t));
-	if (!list) {
+	if (list == NULL) {
 		return NULL;
 	}
 	list->capacity = 10;
@@ -40,11 +40,17 @@ void list_foreach(list_t *list, void (*callback)(void *item)) {
 }
 
 void list_add(list_t *list, void *item) {
+	if (list == NULL || item == NULL) {
+		return;
+	}
 	list_resize(list);
 	list->items[list->length++] = item;
 }
 
 void list_insert(list_t *list, int index, void *item) {
+	if (list == NULL || item == NULL) {
+		return;
+	}
 	list_resize(list);
 	memmove(&list->items[index + 1], &list->items[index], sizeof(void*) * (list->length - index));
 	list->length++;
@@ -52,11 +58,17 @@ void list_insert(list_t *list, int index, void *item) {
 }
 
 void list_del(list_t *list, int index) {
+	if (list == NULL) {
+		return;
+	}
 	list->length--;
 	memmove(&list->items[index], &list->items[index + 1], sizeof(void*) * (list->length - index));
 }
 
 void list_cat(list_t *list, list_t *source) {
+	if (list == NULL || source == NULL) {
+		return;
+	}
 	int i;
 	for (i = 0; i < source->length; ++i) {
 		list_add(list, source->items[i]);
@@ -64,10 +76,16 @@ void list_cat(list_t *list, list_t *source) {
 }
 
 void list_qsort(list_t *list, int compare(const void *left, const void *right)) {
+	if (list == NULL) {
+		return;
+	}
 	qsort(list->items, list->length, sizeof(void *), compare);
 }
 
 int list_seq_find(list_t *list, int compare(const void *item, const void *data), const void *data) {
+	if (list == NULL || data == NULL) {
+		return -1;
+	}
 	for (int i = 0; i < list->length; i++) {
 		void *item = list->items[i];
 		if (compare(item, data) == 0) {
@@ -78,6 +96,9 @@ int list_seq_find(list_t *list, int compare(const void *item, const void *data),
 }
 
 int list_find(list_t *list, const void *item) {
+	if (list == NULL || item == NULL) {
+		return -1;
+	}
 	for (int i = 0; i < list->length; i++) {
 		if (list->items[i] == item) {
 			return i;
@@ -87,12 +108,18 @@ int list_find(list_t *list, const void *item) {
 }
 
 void list_swap(list_t *list, int src, int dest) {
+	if (list == NULL) {
+		return;
+	}
 	void *tmp = list->items[src];
 	list->items[src] = list->items[dest];
 	list->items[dest] = tmp;
 }
 
 void list_move_to_end(list_t *list, void *item) {
+	if (list == NULL || item == NULL) {
+		return;
+	}
 	int i;
 	for (i = 0; i < list->length; ++i) {
 		if (list->items[i] == item) {
@@ -152,6 +179,9 @@ static void list_inplace_sort(list_t *list, int first, int last, int compare(con
 }
 
 void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
+	if (list == NULL) {
+		return;
+	}
 	if (list->length > 1) {
 		list_inplace_sort(list, 0, list->length - 1, compare);
 	}
