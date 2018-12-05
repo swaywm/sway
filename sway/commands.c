@@ -232,15 +232,6 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 		}
 	}
 
-	// This is the container or workspace which this command will run on.
-	// Ignored if the command string contains criteria.
-	struct sway_node *node;
-	if (con) {
-		node = &con->node;
-	} else {
-		node = seat_get_focus_inactive(seat, &root->node);
-	}
-
 	config->handler_context.seat = seat;
 
 	head = exec;
@@ -301,6 +292,9 @@ list_t *execute_command(char *_exec, struct sway_seat *seat,
 			}
 
 			if (!config->handler_context.using_criteria) {
+				// The container or workspace which this command will run on.
+				struct sway_node *node = con ? &con->node :
+						seat_get_focus_inactive(seat, &root->node);
 				set_config_node(node);
 				struct cmd_results *res = handler->handle(argc-1, argv+1);
 				list_add(res_list, res);
