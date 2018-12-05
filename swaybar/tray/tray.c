@@ -4,6 +4,7 @@
 #include <string.h>
 #include "swaybar/bar.h"
 #include "swaybar/tray/tray.h"
+#include "swaybar/tray/watcher.h"
 #include "log.h"
 
 struct swaybar_tray *create_tray(struct swaybar *bar) {
@@ -23,6 +24,10 @@ struct swaybar_tray *create_tray(struct swaybar *bar) {
 	tray->bar = bar;
 	tray->bus = bus;
 	tray->fd = sd_bus_get_fd(tray->bus);
+
+	tray->watcher_xdg = create_watcher("freedesktop", tray->bus);
+	tray->watcher_kde = create_watcher("kde", tray->bus);
+
 	return tray;
 }
 
@@ -30,6 +35,8 @@ void destroy_tray(struct swaybar_tray *tray) {
 	if (!tray) {
 		return;
 	}
+	destroy_watcher(tray->watcher_xdg);
+	destroy_watcher(tray->watcher_kde);
 	sd_bus_flush_close_unref(tray->bus);
 	free(tray);
 }

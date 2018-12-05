@@ -12,12 +12,16 @@
 
 struct swaybar;
 struct swaybar_output;
+struct swaybar_watcher;
 
 struct swaybar_tray {
 	struct swaybar *bar;
 
 	int fd;
 	sd_bus *bus;
+
+	struct swaybar_watcher *watcher_xdg;
+	struct swaybar_watcher *watcher_kde;
 };
 
 struct swaybar_tray *create_tray(struct swaybar *bar);

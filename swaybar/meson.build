@@ -1,5 +1,6 @@
 tray_files = get_option('enable-tray') ? [
 	'tray/tray.c',
+	'tray/watcher.c'
 ] : []
 
 swaybar_deps = [
