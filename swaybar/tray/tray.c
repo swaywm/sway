@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "swaybar/bar.h"
+#include "swaybar/tray/icon.h"
 #include "swaybar/tray/tray.h"
 #include "swaybar/tray/watcher.h"
 #include "log.h"
@@ -28,6 +29,8 @@ struct swaybar_tray *create_tray(struct swaybar *bar) {
 	tray->watcher_xdg = create_watcher("freedesktop", tray->bus);
 	tray->watcher_kde = create_watcher("kde", tray->bus);
 
+	init_themes(&tray->themes, &tray->basedirs);
+
 	return tray;
 }
 
@@ -38,6 +41,7 @@ void destroy_tray(struct swaybar_tray *tray) {
 	destroy_watcher(tray->watcher_xdg);
 	destroy_watcher(tray->watcher_kde);
 	sd_bus_flush_close_unref(tray->bus);
+	finish_themes(tray->themes, tray->basedirs);
 	free(tray);
 }
 
