@@ -18,6 +18,10 @@ static struct cmd_results *do_split(int layout) {
 		workspace_split(ws, layout);
 	}
 
+	if (con->parent->parent) {
+		container_flatten(con->parent->parent);
+	}
+
 	arrange_workspace(ws);
 
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
