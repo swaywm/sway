@@ -215,12 +215,16 @@ struct wl_output_listener output_listener = {
 
 static void xdg_output_handle_logical_position(void *data,
 		struct zxdg_output_v1 *xdg_output, int32_t x, int32_t y) {
-	// Who cares
+	struct swaybar_output *output = data;
+	output->output_x = x;
+	output->output_y = y;
 }
 
 static void xdg_output_handle_logical_size(void *data,
 		struct zxdg_output_v1 *xdg_output, int32_t width, int32_t height) {
-	// Who cares
+	struct swaybar_output *output = data;
+	output->output_height = height;
+	output->output_width = width;
 }
 
 static void xdg_output_handle_done(void *data,

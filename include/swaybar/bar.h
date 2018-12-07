@@ -70,6 +70,8 @@ struct swaybar_output {
 	struct pool_buffer *current_buffer;
 	bool dirty;
 	bool frame_scheduled;
+
+	uint32_t output_height, output_width, output_x, output_y;
 };
 
 struct swaybar_workspace {

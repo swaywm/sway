@@ -5,6 +5,7 @@
 #include <string.h>
 #include "swaybar/bar.h"
 #include "swaybar/config.h"
+#include "swaybar/input.h"
 #include "swaybar/tray/host.h"
 #include "swaybar/tray/icon.h"
 #include "swaybar/tray/item.h"
@@ -13,6 +14,7 @@
 #include "cairo.h"
 #include "list.h"
 #include "log.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 // TODO menu
 
@@ -248,6 +250,83 @@ void destroy_sni(struct swaybar_sni *sni) {
 	free(sni);
 }
 
+static void handle_click(struct swaybar_sni *sni, int x, int y,
+		enum x11_button button, int delta) {
+	const char *method = sni->tray->bar->config->tray_bindings[button];
+	if (!method) {
+		static const char *default_bindings[10] = {
+			"nop",
+			"Activate",
+			"SecondaryActivate",
+			"ContextMenu",
+			"ScrollUp",
+			"ScrollDown",
+			"ScrollLeft",
+			"ScrollRight",
+			"nop",
+			"nop"
+		};
+		method = default_bindings[button];
+	}
+	if (strcmp(method, "nop") == 0) {
+		return;
+	}
+	if (sni->item_is_menu && strcmp(method, "Activate") == 0) {
+		method = "ContextMenu";
+	}
+
+	if (strncmp(method, "Scroll", strlen("Scroll")) == 0) {
+		char dir = method[strlen("Scroll")];
+		char *orientation = (dir = 'U' || dir == 'D') ? "vertical" : "horizontal";
+		int sign = (dir == 'U' || dir == 'L') ? -1 : 1;
+
+		int ret = sd_bus_call_method_async(sni->tray->bus, NULL, sni->service,
+				sni->path, sni->interface, "Scroll", NULL, NULL, "is",
+				delta*sign, orientation);
+		if (ret < 0) {
+			wlr_log(WLR_DEBUG, "Failed to scroll on SNI: %s", strerror(-ret));
+		}
+	} else {
+		int ret = sd_bus_call_method_async(sni->tray->bus, NULL, sni->service,
+				sni->path, sni->interface, method, NULL, NULL, "ii", x, y);
+		if (ret < 0) {
+			wlr_log(WLR_DEBUG, "Failed to click on SNI: %s", strerror(-ret));
+		}
+	}
+}
+
+static int cmp_sni_id(const void *item, const void *cmp_to) {
+	const struct swaybar_sni *sni = item;
+	return strcmp(sni->watcher_id, cmp_to);
+}
+
+static enum hotspot_event_handling icon_hotspot_callback(
+		struct swaybar_output *output, struct swaybar_hotspot *hotspot,
+		int x, int y, enum x11_button button, void *data) {
+	wlr_log(WLR_DEBUG, "Clicked on Status Notifier Item '%s'", (char *)data);
+
+	struct swaybar_tray *tray = output->bar->tray;
+	int idx = list_seq_find(tray->items, cmp_sni_id, data);
+
+	if (idx != -1) {
+		struct swaybar_sni *sni = tray->items->items[idx];
+		// guess global position since wayland doesn't expose it
+		struct swaybar_config *config = tray->bar->config;
+		int global_x = output->output_x + config->gaps.left + x;
+		bool top_bar = config->position & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+		int global_y = output->output_y + (top_bar ? config->gaps.top + y:
+				(int) output->output_height - config->gaps.bottom - y);
+
+		wlr_log(WLR_DEBUG, "Guessing click at (%d, %d)", global_x, global_y);
+		handle_click(sni, global_x, global_y, button, 1); // TODO get delta from event
+		return HOTSPOT_IGNORE;
+	} else {
+		wlr_log(WLR_DEBUG, "but it doesn't exist");
+	}
+
+	return HOTSPOT_PROCESS;
+}
+
 uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 		struct swaybar_sni *sni) {
 	uint32_t height = output->height * output->scale;
@@ -315,6 +394,16 @@ uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
 	cairo_set_operator(cairo, op);
 
 	cairo_surface_destroy(icon);
+
+	struct swaybar_hotspot *hotspot = calloc(1, sizeof(struct swaybar_hotspot));
+	hotspot->x = *x;
+	hotspot->y = 0;
+	hotspot->width = height;
+	hotspot->height = height;
+	hotspot->callback = icon_hotspot_callback;
+	hotspot->destroy = free;
+	hotspot->data = strdup(sni->watcher_id);
+	wl_list_insert(&output->hotspots, &hotspot->link);
 
 	return output->height;
 }
