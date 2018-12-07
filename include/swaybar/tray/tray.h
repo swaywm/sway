@@ -24,7 +24,7 @@ struct swaybar_tray {
 
 	struct swaybar_host host_xdg;
 	struct swaybar_host host_kde;
-	list_t *items; // char *
+	list_t *items; // struct swaybar_sni *
 	struct swaybar_watcher *watcher_xdg;
 	struct swaybar_watcher *watcher_kde;
 

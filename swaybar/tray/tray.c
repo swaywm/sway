@@ -5,6 +5,7 @@
 #include "swaybar/bar.h"
 #include "swaybar/tray/icon.h"
 #include "swaybar/tray/host.h"
+#include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
 #include "swaybar/tray/watcher.h"
 #include "list.h"
@@ -48,7 +49,7 @@ void destroy_tray(struct swaybar_tray *tray) {
 	finish_host(&tray->host_xdg);
 	finish_host(&tray->host_kde);
 	for (int i = 0; i < tray->items->length; ++i) {
-		free(tray->items->items[0]);
+		destroy_sni(tray->items->items[0]);
 	}
 	list_free(tray->items);
 	destroy_watcher(tray->watcher_xdg);

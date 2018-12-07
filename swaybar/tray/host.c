@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "swaybar/tray/host.h"
+#include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
 #include "list.h"
 #include "log.h"
@@ -12,15 +13,15 @@
 static const char *watcher_path = "/StatusNotifierWatcher";
 
 static int cmp_sni_id(const void *item, const void *cmp_to) {
-	const char *sni = item;
-	return strcmp(sni, cmp_to);
+	const struct swaybar_sni *sni = item;
+	return strcmp(sni->watcher_id, cmp_to);
 }
 
 static void add_sni(struct swaybar_tray *tray, char *id) {
 	int idx = list_seq_find(tray->items, cmp_sni_id, id);
 	if (idx == -1) {
 		wlr_log(WLR_DEBUG, "Registering Status Notifier Item '%s'", id);
-		char *sni = strdup(id);
+		struct swaybar_sni *sni = create_sni(id, tray);
 		if (sni) {
 			list_add(tray->items, sni);
 		}
@@ -53,7 +54,7 @@ static int handle_sni_unregistered(sd_bus_message *msg, void *data,
 	int idx = list_seq_find(tray->items, cmp_sni_id, id);
 	if (idx != -1) {
 		wlr_log(WLR_DEBUG, "Unregistering Status Notifier Item '%s'", id);
-		free(tray->items->items[idx]);
+		destroy_sni(tray->items->items[idx]);
 		list_del(tray->items, idx);
 	}
 	return ret;
