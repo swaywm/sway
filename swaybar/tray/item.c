@@ -1,13 +1,26 @@
 #define _POSIX_C_SOURCE 200809L
+#include <cairo.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "swaybar/bar.h"
+#include "swaybar/config.h"
 #include "swaybar/tray/host.h"
+#include "swaybar/tray/icon.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
+#include "background-image.h"
+#include "cairo.h"
 #include "list.h"
 #include "log.h"
 
 // TODO menu
+
+static bool sni_ready(struct swaybar_sni *sni) {
+	return sni->status && (sni->status[0] == 'N' ?
+			sni->attention_icon_name || sni->attention_icon_pixmap :
+			sni->icon_name || sni->icon_pixmap);
+}
 
 static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		const char *prop, list_t **dest) {
@@ -233,4 +246,75 @@ void destroy_sni(struct swaybar_sni *sni) {
 	free(sni->attention_icon_name);
 	free(sni->menu);
 	free(sni);
+}
+
+uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
+		struct swaybar_sni *sni) {
+	uint32_t height = output->height * output->scale;
+	int padding = output->bar->config->tray_padding;
+	int ideal_size = height - 2*padding;
+	if ((ideal_size < sni->min_size || ideal_size > sni->max_size) && sni_ready(sni)) {
+		bool icon_found = false;
+		char *icon_name = sni->status[0] == 'N' ?
+			sni->attention_icon_name : sni->icon_name;
+		if (icon_name) {
+			char *icon_path = find_icon(sni->tray->themes, sni->tray->basedirs,
+					icon_name, ideal_size, output->bar->config->icon_theme,
+					&sni->min_size, &sni->max_size);
+			if (icon_path) {
+				cairo_surface_destroy(sni->icon);
+				sni->icon = load_background_image(icon_path);
+				free(icon_path);
+				icon_found = true;
+			}
+		}
+		if (!icon_found) {
+			list_t *pixmaps = sni->status[0] == 'N' ?
+				sni->attention_icon_pixmap : sni->icon_pixmap;
+			if (pixmaps) {
+				int idx = -1;
+				unsigned smallest_error = -1; // UINT_MAX
+				for (int i = 0; i < pixmaps->length; ++i) {
+					struct swaybar_pixmap *pixmap = pixmaps->items[i];
+					unsigned error = (ideal_size - pixmap->size) *
+						(ideal_size < pixmap->size ? -1 : 1);
+					if (error < smallest_error) {
+						smallest_error = error;
+						idx = i;
+					}
+				}
+				struct swaybar_pixmap *pixmap = pixmaps->items[idx];
+				cairo_surface_destroy(sni->icon);
+				sni->icon = cairo_image_surface_create_for_data(pixmap->pixels,
+						CAIRO_FORMAT_ARGB32, pixmap->size, pixmap->size,
+						cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, pixmap->size));
+			}
+		}
+	}
+
+	if (!sni->icon) {
+		// TODO fallback
+		return 0;
+	}
+
+	cairo_surface_t *icon;
+	int actual_size = cairo_image_surface_get_height(sni->icon);
+	int icon_size = actual_size < ideal_size ?
+		actual_size * (ideal_size / actual_size) : ideal_size;
+	icon = cairo_image_surface_scale(sni->icon, icon_size, icon_size);
+
+	int padded_size = icon_size + 2*padding;
+	*x -= padded_size;
+	int y = floor((height - padded_size) / 2.0);
+
+	cairo_operator_t op = cairo_get_operator(cairo);
+	cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
+	cairo_set_source_surface(cairo, icon, *x + padding, y + padding);
+	cairo_rectangle(cairo, *x, y, padded_size, padded_size);
+	cairo_fill(cairo);
+	cairo_set_operator(cairo, op);
+
+	cairo_surface_destroy(icon);
+
+	return output->height;
 }

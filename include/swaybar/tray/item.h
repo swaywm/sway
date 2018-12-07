@@ -1,9 +1,13 @@
 #ifndef _SWAYBAR_TRAY_ITEM_H
 #define _SWAYBAR_TRAY_ITEM_H
 
+#include <cairo.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "swaybar/tray/tray.h"
 #include "list.h"
+
+struct swaybar_output;
 
 struct swaybar_pixmap {
 	int size;
@@ -34,5 +38,7 @@ struct swaybar_sni {
 
 struct swaybar_sni *create_sni(char *id, struct swaybar_tray *tray);
 void destroy_sni(struct swaybar_sni *sni);
+uint32_t render_sni(cairo_t *cairo, struct swaybar_output *output, double *x,
+		struct swaybar_sni *sni);
 
 #endif
