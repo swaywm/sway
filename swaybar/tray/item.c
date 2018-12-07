@@ -24,6 +24,13 @@ static bool sni_ready(struct swaybar_sni *sni) {
 			sni->icon_name || sni->icon_pixmap);
 }
 
+static void set_sni_dirty(struct swaybar_sni *sni) {
+	if (sni_ready(sni)) {
+		sni->min_size = sni->max_size = 0; // invalidate previous icon
+		set_bar_dirty(sni->tray->bar);
+	}
+}
+
 static int read_pixmap(sd_bus_message *msg, struct swaybar_sni *sni,
 		const char *prop, list_t **dest) {
 	int ret = sd_bus_message_enter_container(msg, 'a', "(iiay)");
@@ -124,6 +131,11 @@ static int get_property_callback(sd_bus_message *msg, void *data,
 			*str = strdup(*str);
 		}
 	}
+
+	if (strcmp(prop, "Status") == 0 || (sni->status && (sni->status[0] == 'N' ?
+				prop[0] == 'A' : strncmp(prop, "Icon", 4) == 0))) {
+		set_sni_dirty(sni);
+	}
 cleanup:
 	free(data);
 	return ret;
@@ -185,6 +197,7 @@ static int handle_new_status(sd_bus_message *msg, void *data, sd_bus_error *erro
 		free(sni->status);
 		sni->status = strdup(status);
 		wlr_log(WLR_DEBUG, "%s has new Status '%s'", sni->watcher_id, status);
+		set_sni_dirty(sni);
 	}
 	return ret;
 }

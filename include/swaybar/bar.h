@@ -88,6 +88,8 @@ bool bar_setup(struct swaybar *bar, const char *socket_path);
 void bar_run(struct swaybar *bar);
 void bar_teardown(struct swaybar *bar);
 
+void set_bar_dirty(struct swaybar *bar);
+
 /*
  * Determines whether the bar should be visible and changes it to be so.
  * If the current visibility of the bar is the different to what it should be,

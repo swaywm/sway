@@ -124,7 +124,7 @@ static void destroy_layer_surface(struct swaybar_output *output) {
 	output->frame_scheduled = false;
 }
 
-static void set_bar_dirty(struct swaybar *bar) {
+void set_bar_dirty(struct swaybar *bar) {
 	struct swaybar_output *output;
 	wl_list_for_each(output, &bar->outputs, link) {
 		set_output_dirty(output);

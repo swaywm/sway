@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "swaybar/bar.h"
 #include "swaybar/tray/host.h"
 #include "swaybar/tray/item.h"
 #include "swaybar/tray/tray.h"
@@ -56,6 +57,7 @@ static int handle_sni_unregistered(sd_bus_message *msg, void *data,
 		wlr_log(WLR_DEBUG, "Unregistering Status Notifier Item '%s'", id);
 		destroy_sni(tray->items->items[idx]);
 		list_del(tray->items, idx);
+		set_bar_dirty(tray->bar);
 	}
 	return ret;
 }
