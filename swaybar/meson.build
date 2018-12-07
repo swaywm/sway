@@ -1,4 +1,5 @@
 tray_files = get_option('enable-tray') ? [
+	'tray/host.c',
 	'tray/icon.c',
 	'tray/tray.c',
 	'tray/watcher.c'

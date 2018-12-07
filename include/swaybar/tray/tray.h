@@ -9,6 +9,7 @@
 #endif
 #include <cairo.h>
 #include <stdint.h>
+#include "swaybar/tray/host.h"
 #include "list.h"
 
 struct swaybar;
@@ -21,6 +22,9 @@ struct swaybar_tray {
 	int fd;
 	sd_bus *bus;
 
+	struct swaybar_host host_xdg;
+	struct swaybar_host host_kde;
+	list_t *items; // char *
 	struct swaybar_watcher *watcher_xdg;
 	struct swaybar_watcher *watcher_kde;
 
