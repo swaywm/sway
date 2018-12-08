@@ -45,10 +45,8 @@ struct loop *loop_create(void) {
 }
 
 void loop_destroy(struct loop *loop) {
-	list_foreach(loop->fd_events, free);
-	list_foreach(loop->timers, free);
-	list_free(loop->fd_events);
-	list_free(loop->timers);
+	free_flat_list(loop->fd_events);
+	free_flat_list(loop->timers);
 	free(loop->fds);
 	free(loop);
 }

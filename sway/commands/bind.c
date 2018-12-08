@@ -23,9 +23,7 @@ void free_sway_binding(struct sway_binding *binding) {
 		return;
 	}
 
-	if (binding->keys) {
-		free_flat_list(binding->keys);
-	}
+	free_flat_list(binding->keys);
 	free(binding->input);
 	free(binding->command);
 	free(binding);

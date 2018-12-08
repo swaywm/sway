@@ -53,9 +53,7 @@ void free_bar_config(struct bar_config *bar) {
 		free_bar_binding(binding);
 	}
 	list_free(bar->bindings);
-	if (bar->outputs) {
-		free_flat_list(bar->outputs);
-	}
+	free_flat_list(bar->outputs);
 	if (bar->pid != 0) {
 		terminate_swaybar(bar->pid);
 	}

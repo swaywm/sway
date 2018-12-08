@@ -21,6 +21,7 @@
 #include "sway/tree/arrange.h"
 #include "sway/tree/view.h"
 #include "sway/tree/workspace.h"
+#include "list.h"
 #include "log.h"
 #include "stringop.h"
 
@@ -67,8 +68,7 @@ void container_destroy(struct sway_container *con) {
 	list_free(con->current.children);
 	list_free(con->outputs);
 
-	list_foreach(con->marks, free);
-	list_free(con->marks);
+	free_flat_list(con->marks);
 	wlr_texture_destroy(con->marks_focused);
 	wlr_texture_destroy(con->marks_focused_inactive);
 	wlr_texture_destroy(con->marks_unfocused);
@@ -1267,7 +1267,9 @@ bool container_find_and_unmark(char *mark) {
 }
 
 void container_clear_marks(struct sway_container *con) {
-	list_foreach(con->marks, free);
+	for (int i = 0; i < con->marks->length; ++i) {
+		free(con->marks->items[i]);
+	}
 	con->marks->length = 0;
 	ipc_event_window(con, "mark");
 }

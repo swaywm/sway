@@ -365,11 +365,6 @@ static int parse_args(int argc, char *argv[]) {
 	return 0;
 }
 
-static void register_zero_idle_timeout(void *item) {
-	struct swayidle_timeout_cmd *cmd = item;
-	register_timeout(cmd, 0);
-}
-
 static int handle_signal(int sig, void *data) {
 	switch (sig) {
 	case SIGINT:
@@ -378,7 +373,9 @@ static int handle_signal(int sig, void *data) {
 		return 0;
 	case SIGUSR1:
 		wlr_log(WLR_DEBUG, "Got SIGUSR1");
-		list_foreach(state.timeout_cmds, register_zero_idle_timeout);
+		for (int i = 0; i < state.timeout_cmds->length; ++i) {
+			register_timeout(state.timeout_cmds->items[i], 0);
+		}
 		return 1;
 	}
 	assert(false); // not reached
@@ -407,11 +404,6 @@ static int display_event(int fd, uint32_t mask, void *data) {
 	}
 
 	return count;
-}
-
-static void register_idle_timeout(void *item) {
-	struct swayidle_timeout_cmd *cmd = item;
-	register_timeout(cmd, cmd->timeout);
 }
 
 int main(int argc, char *argv[]) {
@@ -458,7 +450,10 @@ int main(int argc, char *argv[]) {
 		sway_terminate(0);
 	}
 
-	list_foreach(state.timeout_cmds, register_idle_timeout);
+	for (int i = 0; i < state.timeout_cmds->length; ++i) {
+		struct swayidle_timeout_cmd *cmd = state.timeout_cmds->items[i];
+		register_timeout(cmd, cmd->timeout);
+	}
 
 	wl_display_roundtrip(state.display);
 

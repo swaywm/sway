@@ -654,8 +654,7 @@ bool read_config(FILE *file, struct sway_config *config,
 
 			if (read + length > config_size) {
 				wlr_log(WLR_ERROR, "Config file changed during reading");
-				list_foreach(stack, free);
-				list_free(stack);
+				free_flat_list(stack);
 				free(line);
 				return false;
 			}
@@ -684,8 +683,7 @@ bool read_config(FILE *file, struct sway_config *config,
 		}
 		char *expanded = expand_line(block, line, brace_detected > 0);
 		if (!expanded) {
-			list_foreach(stack, free);
-			list_free(stack);
+			free_flat_list(stack);
 			free(line);
 			return false;
 		}
@@ -750,8 +748,7 @@ bool read_config(FILE *file, struct sway_config *config,
 		free(line);
 		free_cmd_results(res);
 	}
-	list_foreach(stack, free);
-	list_free(stack);
+	free_flat_list(stack);
 	config->current_config_line_number = 0;
 	config->current_config_line = NULL;
 

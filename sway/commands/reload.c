@@ -24,8 +24,7 @@ static void do_reload(void *data) {
 
 	if (!load_main_config(config->current_config_path, true, false)) {
 		wlr_log(WLR_ERROR, "Error(s) reloading config");
-		list_foreach(bar_ids, free);
-		list_free(bar_ids);
+		free_flat_list(bar_ids);
 		return;
 	}
 
@@ -42,9 +41,7 @@ static void do_reload(void *data) {
 			}
 		}
 	}
-
-	list_foreach(bar_ids, free);
-	list_free(bar_ids);
+	free_flat_list(bar_ids);
 
 	config_update_font_height(true);
 	root_for_each_container(rebuild_textures_iterator, NULL);

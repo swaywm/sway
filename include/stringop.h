@@ -19,7 +19,6 @@ int lenient_strcmp(char *a, char *b);
 
 // Simply split a string with delims, free with `free_flat_list`
 list_t *split_string(const char *str, const char *delims);
-void free_flat_list(list_t *list);
 
 // Splits an argument string, keeping quotes intact
 char **split_args(const char *str, int *argc);
