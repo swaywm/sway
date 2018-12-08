@@ -78,7 +78,6 @@ static int key_qsort_cmp(const void *keyp_a, const void *keyp_b) {
 	return (key_a < key_b) ? -1 : ((key_a > key_b) ? 1 : 0);
 }
 
-
 /**
  * From a keycode, bindcode, or bindsym name and the most likely binding type,
  * identify the appropriate numeric value corresponding to the key. Return NULL
@@ -278,7 +277,6 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 	wlr_log(WLR_DEBUG, "%s - Bound %s to command `%s` for device '%s'",
 		bindtype, argv[0], binding->command, binding->input);
 	return cmd_results_new(CMD_SUCCESS, NULL, NULL);
-
 }
 
 struct cmd_results *cmd_bindsym(int argc, char **argv) {
@@ -289,7 +287,6 @@ struct cmd_results *cmd_bindcode(int argc, char **argv) {
 	return cmd_bindsym_or_bindcode(argc, argv, true);
 }
 
-
 /**
  * Execute the command associated to a binding
  */
@@ -299,15 +296,14 @@ void seat_execute_command(struct sway_seat *seat, struct sway_binding *binding) 
 	config->handler_context.seat = seat;
 	list_t *res_list = execute_command(binding->command, NULL, NULL);
 	bool success = true;
-	while (res_list->length) {
-		struct cmd_results *results = res_list->items[0];
+	for (int i = 0; i < res_list->length; ++i) {
+		struct cmd_results *results = res_list->items[i];
 		if (results->status != CMD_SUCCESS) {
 			wlr_log(WLR_DEBUG, "could not run command for binding: %s (%s)",
 				binding->command, results->error);
 			success = false;
 		}
 		free_cmd_results(results);
-		list_del(res_list, 0);
 	}
 	list_free(res_list);
 	if (success) {

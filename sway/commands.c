@@ -43,8 +43,7 @@ struct cmd_results *checkarg(int argc, const char *name, enum expected_args type
 }
 
 void apply_seat_config(struct seat_config *seat_config) {
-	int i;
-	i = list_seq_find(config->seat_configs, seat_name_cmp, seat_config->name);
+	int i = list_seq_find(config->seat_configs, seat_name_cmp, seat_config->name);
 	if (i >= 0) {
 		// merge existing config
 		struct seat_config *sc = config->seat_configs->items[i];

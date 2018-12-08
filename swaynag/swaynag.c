@@ -407,9 +407,8 @@ void swaynag_destroy(struct swaynag *swaynag) {
 	swaynag->run_display = false;
 
 	free(swaynag->message);
-	while (swaynag->buttons->length) {
-		struct swaynag_button *button = swaynag->buttons->items[0];
-		list_del(swaynag->buttons, 0);
+	for (int i = 0; i < swaynag->buttons->length; ++i) {
+		struct swaynag_button *button = swaynag->buttons->items[i];
 		free(button->text);
 		free(button->action);
 		free(button);

@@ -48,8 +48,7 @@ void list_del(list_t *list, int index) {
 }
 
 void list_cat(list_t *list, list_t *source) {
-	int i;
-	for (i = 0; i < source->length; ++i) {
+	for (int i = 0; i < source->length; ++i) {
 		list_add(list, source->items[i]);
 	}
 }

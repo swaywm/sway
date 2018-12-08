@@ -49,8 +49,7 @@ void free_bar_config(struct bar_config *bar) {
 	free(bar->font);
 	free(bar->separator_symbol);
 	for (int i = 0; i < bar->bindings->length; i++) {
-		struct bar_binding *binding = bar->bindings->items[i];
-		free_bar_binding(binding);
+		free_bar_binding(bar->bindings->items[i]);
 	}
 	list_free(bar->bindings);
 	free_flat_list(bar->outputs);
