@@ -73,14 +73,11 @@ static void handle_display_destroy(struct wl_listener *listener, void *data) {
 	unlink(ipc_sockaddr->sun_path);
 
 	while (ipc_client_list->length) {
-		struct ipc_client *client = ipc_client_list->items[0];
-		ipc_client_disconnect(client);
+		ipc_client_disconnect(ipc_client_list->items[ipc_client_list->length-1]);
 	}
 	list_free(ipc_client_list);
 
-	if (ipc_sockaddr) {
-		free(ipc_sockaddr);
-	}
+	free(ipc_sockaddr);
 
 	wl_list_remove(&ipc_display_destroy.link);
 }

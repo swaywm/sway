@@ -97,14 +97,6 @@ list_t *split_string(const char *str, const char *delims) {
 	return res;
 }
 
-void free_flat_list(list_t *list) {
-	int i;
-	for (i = 0; i < list->length; ++i) {
-		free(list->items[i]);
-	}
-	list_free(list);
-}
-
 char **split_args(const char *start, int *argc) {
 	*argc = 0;
 	int alloc = 2;

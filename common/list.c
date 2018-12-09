@@ -30,15 +30,6 @@ void list_free(list_t *list) {
 	free(list);
 }
 
-void list_foreach(list_t *list, void (*callback)(void *item)) {
-	if (list == NULL || callback == NULL) {
-		return;
-	}
-	for (int i = 0; i < list->length; i++) {
-		callback(list->items[i]);
-	}
-}
-
 void list_add(list_t *list, void *item) {
 	list_resize(list);
 	list->items[list->length++] = item;
@@ -57,8 +48,7 @@ void list_del(list_t *list, int index) {
 }
 
 void list_cat(list_t *list, list_t *source) {
-	int i;
-	for (i = 0; i < source->length; ++i) {
+	for (int i = 0; i < source->length; ++i) {
 		list_add(list, source->items[i]);
 	}
 }
@@ -156,3 +146,15 @@ void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
 		list_inplace_sort(list, 0, list->length - 1, compare);
 	}
 }
+
+void list_free_items_and_destroy(list_t *list) {
+	if (!list) {
+		return;
+	}
+
+	for (int i = 0; i < list->length; ++i) {
+		free(list->items[i]);
+	}
+	list_free(list);
+}
+

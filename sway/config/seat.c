@@ -117,11 +117,8 @@ void free_seat_config(struct seat_config *seat) {
 
 	free(seat->name);
 	for (int i = 0; i < seat->attachments->length; ++i) {
-		struct seat_attachment_config *attachment =
-			seat->attachments->items[i];
-		seat_attachment_config_free(attachment);
+		seat_attachment_config_free(seat->attachments->items[i]);
 	}
-
 	list_free(seat->attachments);
 	free(seat);
 }

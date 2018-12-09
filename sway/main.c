@@ -393,13 +393,12 @@ int main(int argc, char **argv) {
 	while (config->cmd_queue->length) {
 		char *line = config->cmd_queue->items[0];
 		list_t *res_list = execute_command(line, NULL, NULL);
-		while (res_list->length) {
-			struct cmd_results *res = res_list->items[0];
+		for (int i = 0; i < res_list->length; ++i) {
+			struct cmd_results *res = res_list->items[i];
 			if (res->status != CMD_SUCCESS) {
 				wlr_log(WLR_ERROR, "Error on line '%s': %s", line, res->error);
 			}
 			free_cmd_results(res);
-			list_del(res_list, 0);
 		}
 		list_free(res_list);
 		free(line);

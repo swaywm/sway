@@ -38,26 +38,24 @@
 struct sway_config *config = NULL;
 
 static void free_mode(struct sway_mode *mode) {
-	int i;
-
 	if (!mode) {
 		return;
 	}
 	free(mode->name);
 	if (mode->keysym_bindings) {
-		for (i = 0; i < mode->keysym_bindings->length; i++) {
+		for (int i = 0; i < mode->keysym_bindings->length; i++) {
 			free_sway_binding(mode->keysym_bindings->items[i]);
 		}
 		list_free(mode->keysym_bindings);
 	}
 	if (mode->keycode_bindings) {
-		for (i = 0; i < mode->keycode_bindings->length; i++) {
+		for (int i = 0; i < mode->keycode_bindings->length; i++) {
 			free_sway_binding(mode->keycode_bindings->items[i]);
 		}
 		list_free(mode->keycode_bindings);
 	}
 	if (mode->mouse_bindings) {
-		for (i = 0; i < mode->mouse_bindings->length; i++) {
+		for (int i = 0; i < mode->mouse_bindings->length; i++) {
 			free_sway_binding(mode->mouse_bindings->items[i]);
 		}
 		list_free(mode->mouse_bindings);
@@ -446,7 +444,7 @@ bool load_main_config(const char *file, bool is_active, bool validating) {
 			}
 		}
 
-		free_flat_list(secconfigs);
+		list_free_items_and_destroy(secconfigs);
 	}
 	*/
 
@@ -654,8 +652,7 @@ bool read_config(FILE *file, struct sway_config *config,
 
 			if (read + length > config_size) {
 				wlr_log(WLR_ERROR, "Config file changed during reading");
-				list_foreach(stack, free);
-				list_free(stack);
+				list_free_items_and_destroy(stack);
 				free(line);
 				return false;
 			}
@@ -684,8 +681,7 @@ bool read_config(FILE *file, struct sway_config *config,
 		}
 		char *expanded = expand_line(block, line, brace_detected > 0);
 		if (!expanded) {
-			list_foreach(stack, free);
-			list_free(stack);
+			list_free_items_and_destroy(stack);
 			free(line);
 			return false;
 		}
@@ -750,8 +746,7 @@ bool read_config(FILE *file, struct sway_config *config,
 		free(line);
 		free_cmd_results(res);
 	}
-	list_foreach(stack, free);
-	list_free(stack);
+	list_free_items_and_destroy(stack);
 	config->current_config_line_number = 0;
 	config->current_config_line = NULL;
 

@@ -9,7 +9,6 @@ typedef struct {
 
 list_t *create_list(void);
 void list_free(list_t *list);
-void list_foreach(list_t *list, void (*callback)(void* item));
 void list_add(list_t *list, void *item);
 void list_insert(list_t *list, int index, void *item);
 void list_del(list_t *list, int index);
@@ -27,4 +26,10 @@ void list_stable_sort(list_t *list, int compare(const void *a, const void *b));
 void list_swap(list_t *list, int src, int dest);
 // move item to end of list
 void list_move_to_end(list_t *list, void *item);
+
+/* Calls `free` for each item in the list, then frees the list.
+ * Do not use this to free lists of primitives or items that require more
+ * complicated deallocation code.
+ */
+void list_free_items_and_destroy(list_t *list);
 #endif

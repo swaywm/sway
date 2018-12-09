@@ -33,7 +33,7 @@ static struct workspace_config *workspace_config_find_or_create(char *ws_name) {
 
 void free_workspace_config(struct workspace_config *wsc) {
 	free(wsc->workspace);
-	free_flat_list(wsc->outputs);
+	list_free_items_and_destroy(wsc->outputs);
 	free(wsc);
 }
 
