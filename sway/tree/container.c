@@ -68,7 +68,7 @@ void container_destroy(struct sway_container *con) {
 	list_free(con->current.children);
 	list_free(con->outputs);
 
-	free_flat_list(con->marks);
+	list_free_items_and_destroy(con->marks);
 	wlr_texture_destroy(con->marks_focused);
 	wlr_texture_destroy(con->marks_focused_inactive);
 	wlr_texture_destroy(con->marks_unfocused);

@@ -147,7 +147,7 @@ void list_stable_sort(list_t *list, int compare(const void *a, const void *b)) {
 	}
 }
 
-void free_flat_list(list_t *list) {
+void list_free_items_and_destroy(list_t *list) {
 	if (!list) {
 		return;
 	}

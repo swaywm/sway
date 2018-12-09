@@ -23,7 +23,7 @@ void free_sway_binding(struct sway_binding *binding) {
 		return;
 	}
 
-	free_flat_list(binding->keys);
+	list_free_items_and_destroy(binding->keys);
 	free(binding->input);
 	free(binding->command);
 	free(binding);
@@ -220,14 +220,14 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
 		uint32_t *key = calloc(1, sizeof(uint32_t));
 		if (!key) {
 			free_sway_binding(binding);
-			free_flat_list(split);
+			list_free_items_and_destroy(split);
 			return cmd_results_new(CMD_FAILURE, bindtype,
 					"Unable to allocate binding key");
 		}
 		*key = key_val;
 		list_add(binding->keys, key);
 	}
-	free_flat_list(split);
+	list_free_items_and_destroy(split);
 	binding->order = binding_order++;
 
 	// refine region of interest for mouse binding once we are certain

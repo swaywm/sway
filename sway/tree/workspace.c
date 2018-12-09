@@ -142,7 +142,7 @@ void workspace_destroy(struct sway_workspace *workspace) {
 
 	free(workspace->name);
 	free(workspace->representation);
-	free_flat_list(workspace->output_priority);
+	list_free_items_and_destroy(workspace->output_priority);
 	list_free(workspace->floating);
 	list_free(workspace->tiling);
 	list_free(workspace->current.floating);

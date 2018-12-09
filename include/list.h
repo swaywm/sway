@@ -31,5 +31,5 @@ void list_move_to_end(list_t *list, void *item);
  * Do not use this to free lists of primitives or items that require more
  * complicated deallocation code.
  */
-void free_flat_list(list_t *list);
+void list_free_items_and_destroy(list_t *list);
 #endif
