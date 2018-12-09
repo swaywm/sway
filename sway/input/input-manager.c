@@ -49,7 +49,7 @@ char *input_device_get_identifier(struct wlr_input_device *device) {
 	int vendor = device->vendor;
 	int product = device->product;
 	char *name = strdup(device->name);
-	name = strip_whitespace(name);
+	strip_whitespace(name);
 
 	char *p = name;
 	for (; *p; ++p) {

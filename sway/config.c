@@ -580,7 +580,7 @@ static int detect_brace_on_following_line(FILE *file, char *line,
 			free(peeked);
 			peeked = peek_line(file, lines, &position);
 			if (peeked) {
-				peeked = strip_whitespace(peeked);
+				strip_whitespace(peeked);
 			}
 			lines++;
 		} while (peeked && strlen(peeked) == 0);
@@ -663,7 +663,7 @@ bool read_config(FILE *file, struct sway_config *config,
 			read += length + 1;
 		}
 
-		line = strip_whitespace(line);
+		strip_whitespace(line);
 		if (line[0] == '#') {
 			free(line);
 			continue;
